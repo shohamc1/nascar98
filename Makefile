@@ -46,7 +46,8 @@ MASPSX := $(PYTHON) tools/maspsx/maspsx.py --aspsx-version=$(ASPSX_VER) -G$(GP_S
 CPPFLAGS := -Iinclude -undef -Wall -lang-c -nostdinc \
             -D__GNUC__=2 -D__OPTIMIZE__ -Dmips -D__mips__ -D__mips -Dpsx \
             -D__psx__ -D__psx -D_PSYQ -D_MIPSEL -D_LANGUAGE_C -DLANGUAGE_C
-CFLAGS   := -O2 -G$(GP_SIZE) -mgas -msoft-float -fgnu-linker -quiet -w
+# R4000 scheduling matches func_8002DDA0; keep the PSX instruction set.
+CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=r4000 -mips1 -mgas -msoft-float -fgnu-linker -quiet -w
 ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt

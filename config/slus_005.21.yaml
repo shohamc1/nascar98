@@ -47,6 +47,7 @@ segments:
     type: code
     start: 0x800
     vram: 0x80012000
+    align: 4
     bss_size: 0x2B7E0
     subsegments:
       # Game code, written by Stormfront Studios.
@@ -55,8 +56,10 @@ segments:
       # tools/psyq_sigs.py identifies the objects (libs 3.5, LIBSND and
       # LIBGTE 3.6).
       - [0x6268C, asm, psyq]
-      # .rdata and .data. Not split yet.
-      - [0x7B250, data, data]
+      # LIBPRESS strings end here; game data starts at 0x80090DC8.
+      # This section boundary is inferred; see kb/ for the evidence.
+      - [0x7B250, rodata, rodata]
+      - [0x7F5C8, data, data]
       - [0x914E0, sdata, sdata]
       - { start: 0x91BC0, type: bss, vram: 0x800A33C0, name: bss }
   - [0x92000]

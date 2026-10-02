@@ -78,7 +78,7 @@ and writes `build/report.json` for decomp.dev.
   `config/symbol_addrs.txt` and run `make split`.
 - Strings and `switch` jump tables live in `.rdata`, which isn't split per
   file yet. Until it is, reach strings through `extern` symbols. See
-  "Where does `.data` start?" in the open questions.
+  "`.rodata` / `.data` split" in the game's `overview.md`.
 
 ## Name things
 

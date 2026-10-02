@@ -506,8 +506,6 @@ extern s32 D_800A2EB0;
 extern s32 D_800A3984[];
 s32 func_80044738(s32);
 
-#ifdef NON_MATCHING
-// The original loads D_800A2EB0 before the stack adjust.
 s32 func_8002DDA0(void) {
     s32 size;
 
@@ -518,9 +516,6 @@ s32 func_8002DDA0(void) {
     D_800A3984[0] = func_80044738(size);
     return D_800A3984[0] == 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8002DDA0);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002DDD8);
 
@@ -595,8 +590,8 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80032450);
 INCLUDE_ASM("asm/nonmatchings/game", func_80032494);
 
 #ifdef NON_MATCHING
-// Load scheduling differs: the original hoists both loads between the
-// constant halves. See the knowledge base, "load hoisting".
+// Instruction order and temporary registers still differ. See the
+// knowledge base, "addPrim instruction order and registers".
 void func_800324EC(u32 *ot, u32 *p) {
     u32 tag = *ot;
 
