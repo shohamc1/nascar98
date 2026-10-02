@@ -68,5 +68,12 @@ tools.
   [objdiff](https://github.com/encounter/objdiff) supply the matching tools.
 - [psx_psyq_signatures](https://github.com/lab313ru/psx_psyq_signatures)
   identifies the Psy-Q SDK.
-- [sotn-decomp](https://github.com/Xeeynamo/sotn-decomp) showed the way for
-  PlayStation decompilation.
+- [sotn-decomp](https://github.com/Xeeynamo/sotn-decomp) supplies the
+  Psy-Q SDK headers (`include/psxsdk/`) and base types (`include/types.h`),
+  and its layout is the model for this project.
+
+## Licence
+
+This project is licensed under the GNU Affero General Public License
+version 3. See `LICENSE`. The SDK headers from sotn-decomp carry the same
+licence.
