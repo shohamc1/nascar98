@@ -35,6 +35,7 @@ These are the paths you work with:
 | `config/` | Splat config, symbol names, SHA-1 files | Yes |
 | `disc/` | Files from your disc image (`make extract`) | No |
 | `include/` | Headers. Splat writes `include_asm.h` and the `.inc` files | Yours only |
+| `include/psxsdk/`, `include/types.h` | SDK headers and base types copied from sotn-decomp (AGPL-3.0). Don't edit them; see `include/psxsdk/README.md` | Yes |
 | `src/` | Decompiled C. `src/game.c` holds every game function for now | Yes |
 | `tools/` | Project scripts, plus submodules and downloads | Scripts and submodules |
 
@@ -80,11 +81,57 @@ and writes `build/report.json` for decomp.dev.
   file yet. Until it is, reach strings through `extern` symbols. See
   "`.rodata` / `.data` split" in the game's `overview.md`.
 
-## Name things
+## Name things as you learn them
 
-Add names to `config/symbol_addrs.txt` (`Name = 0xADDRESS; // type:func`)
-and run `make split` to regenerate `asm/`. The SDK names at the top come
-from `tools/psyq_sigs.py`; don't edit them by hand.
+Replace a placeholder name (`func_8001E040`, `D_800A36CC`, `unk354`) as
+soon as its purpose is clear from the code, its callers, or the data it
+touches. Don't wait for a function to match: a name helps the next person
+read its callers. If you're unsure, keep the placeholder and write your
+guess in the knowledge base instead.
+
+To rename something:
+
+1. For a function or global, add or edit its line in
+   `config/symbol_addrs.txt` (`NAME = 0xADDRESS; // type:func`; omit
+   `type:func` for data), then run `make split`.
+2. Update every C reference to the old name, then run `make check`.
+3. Record the name and your evidence in
+   `kb/games/nascar98-us/functions.md`.
+
+Rename locals, parameters, and struct fields directly in the C. The SDK
+names at the top of `symbol_addrs.txt` come from `tools/psyq_sigs.py`;
+don't edit them by hand.
+
+## Write in the style of 1997
+
+The game was written in C89 for Psy-Q around 1997. Write the C the way a
+Stormfront programmer would have, so the source reads like the original:
+
+- Use C89 only: declarations at the top of a block, `/* */` comments, no
+  `//`, `bool`, `inline`, `<stdint.h>`, or designated initialisers. GCC
+  2.7.2 rejects most of these anyway.
+- Integer types are the exception: use splat's `s8` to `u32` from
+  `include/common.h`, not the era's `u_char`, `u_short`, and `u_long`.
+- Include SDK headers the way sotn-decomp does: `#include <psxsdk/libgpu.h>`.
+- Use the SDK's own types where the code touches the SDK: `DRAWENV`,
+  `DISPENV`, `RECT`, `SVECTOR`, `VECTOR`, `MATRIX`, `POLY_FT4`, and so on,
+  with the field names from `include/psxsdk/`.
+- Name things after the SDK's pattern: `ResetGraph`, `SsSeqSetVol`.
+
+These are the naming patterns:
+
+| Kind | Pattern | Example |
+| --- | --- | --- |
+| Function | Subsystem, then verb and object, in PascalCase | `CarUpdatePhysics`, `MenuDrawTitle` |
+| Global variable | `g`, then PascalCase | `gRaceLaps` |
+| File-scope `static` | `s`, then PascalCase | `sFrameCount` |
+| Struct typedef | PascalCase | `Car`, `TrackSection` |
+| Struct field, local, parameter | lowerCamelCase | `lapCount`, `car`, `i` |
+| Unknown field | `unk` and its hex offset | `unk354` |
+| Macro, enum constant | UPPER_SNAKE_CASE | `MAX_CARS`, `CAMERA_CHASE` |
+
+Names never change the compiled bytes, so rename freely. `static`,
+declaration order, and types do change them; check with `make check`.
 
 ## Split `src/game.c`
 
