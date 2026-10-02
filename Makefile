@@ -43,7 +43,7 @@ GP_SIZE   ?= 8
 CC_DIR := tools/cc/$(CC_VER)
 CPP    := $(CC_DIR)/cpp
 CC1    := $(CC_DIR)/cc1
-MASPSX := $(PYTHON) tools/maspsx/maspsx.py --aspsx-version=$(ASPSX_VER) -G$(GP_SIZE) --dont-force-G0
+MASPSX := $(PYTHON) tools/maspsx_extern.py --aspsx-version=$(ASPSX_VER) -G$(GP_SIZE) --dont-force-G0 --expand-div
 
 CPPFLAGS := -Iinclude -undef -Wall -lang-c -nostdinc \
             -D__GNUC__=2 -D__OPTIMIZE__ -Dmips -D__mips__ -D__mips -Dpsx \

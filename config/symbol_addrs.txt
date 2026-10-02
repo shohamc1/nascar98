@@ -519,7 +519,31 @@ timeout = 0x8008C8D4; // type:func
 
 // Game functions
 GraphicsInit = 0x80012008; // type:func
+MathFixedDivide = 0x80015E20; // type:func
+MathSqrt = 0x80017C9C; // type:func
+RandomCountMark = 0x80017CE0; // type:func
+RandomSeedGet = 0x80017CF4; // type:func
+RandomSeedSet = 0x80017D00; // type:func
+RandomScaledGet = 0x80017D14; // type:func
+SoundOpenSequence = 0x8003F338; // type:func
+SoundSetSequenceLoop = 0x8003F38C; // type:func
+SoundPauseSequence = 0x8003F3D0; // type:func
+SoundPlaySequence = 0x8003F3FC; // type:func
+SoundReplaySequence = 0x8003F454; // type:func
 SoundSetSequenceVolume = 0x8003F480; // type:func
+HeapInit = 0x800446F4; // type:func
+HeapResetInitFlag = 0x8004472C; // type:func
+HeapAlloc = 0x80044738; // type:func
+HeapFreeSpaceCount = 0x80044884; // type:func
+HeapCoalesce = 0x800448E0; // type:func
+HeapFree = 0x800449F0; // type:func
 
 // Game data
+gRandomSeed = 0x800A2D70;
+gRandomCount = 0x800A2D74;
 gSequenceId = 0x800A2F92;
+gHeapBase = 0x800A2FB4; // first HeapBlock, lazy-init copies the startup word at 0x8009B9C4 into it
+gHeapInit = 0x800A2FB8; // byte, 1 after lazy heap init, HeapAlloc and HeapInit set it
+gHeapBigAllocFlag = 0x800A2FC4; // byte, set when HeapAlloc rounds a request to 0x3D18 or 0x4168, never read
+gHeapBreak = 0x800A355C; // end of the last block, grows toward 0x801F6000, retracted by HeapCoalesce
+gRandomCountMark = 0x800A3920;

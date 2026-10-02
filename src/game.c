@@ -100,7 +100,19 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80015BF8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80015D10);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80015E20);
+s32 MathFixedDivide(s32 numerator, s32 denominator) {
+    s32 quotient;
+    s32 remainder;
+
+    if (denominator == 0) {
+        return 0x7FFFFFFF;
+    }
+    quotient = numerator / denominator;
+    remainder = numerator % denominator;
+    remainder = (remainder << 15) / denominator;
+    numerator = remainder << 1;
+    return (quotient << 16) + numerator;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80015EAC);
 
@@ -128,15 +140,51 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800179AC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80017C5C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80017C9C);
+u32 MathSqrt(u32 value) {
+    u32 result;
+    u32 bit;
+    u32 rootBitSum;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80017CE0);
+    result = 0;
+    bit = 0x40000000;
+    while (bit != 0) {
+        rootBitSum = result + bit;
+        result >>= 1;
+        if (value >= rootBitSum) {
+            value -= rootBitSum;
+            result += bit;
+        }
+        bit >>= 2;
+    }
+    if (result < value) {
+        return result + 1;
+    }
+    return result;
+}
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80017CF4);
+INCLUDE_ASM("asm/nonmatchings/game", RandomCountMark);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80017D00);
+INCLUDE_ASM("asm/nonmatchings/game", RandomSeedGet);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80017D14);
+INCLUDE_ASM("asm/nonmatchings/game", RandomSeedSet);
+
+extern s32 gRandomSeed;
+extern s32 gRandomCount;
+
+s32 RandomScaledGet(s32 scale) {
+    s32 seed;
+
+    gRandomCount++;
+    if (gRandomCount >= 1000) {
+        gRandomCount = 0;
+    }
+    seed = (gRandomSeed * 25173 + 13849) & 0xFFFF;
+    /* Keep the store and return in one scheduling block. */
+    do {
+        gRandomSeed = seed;
+        return (u32)(seed * scale) >> 16;
+    } while (0);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80017D80);
 
@@ -526,7 +574,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002DC2C);
 
 extern s32 D_800A2EB0;
 extern s32 D_800A3984[];
-s32 func_80044738(s32);
+void *HeapAlloc(u32);
 
 s32 func_8002DDA0(void) {
     s32 size;
@@ -535,7 +583,7 @@ s32 func_8002DDA0(void) {
     if (D_800A2EB0 <= 0) {
         size = 0x8200;
     }
-    D_800A3984[0] = func_80044738(size);
+    D_800A3984[0] = (s32)HeapAlloc(size);
     return D_800A3984[0] == 0;
 }
 
@@ -885,17 +933,48 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003F284);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003F2AC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F338);
-
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F38C);
-
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F3D0);
-
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F3FC);
-
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F454);
+INCLUDE_ASM("asm/nonmatchings/game", SoundOpenSequence);
 
 extern s16 gSequenceId;
+extern void SsSetLoop(short seqAccessNum, short para1, short para2);
+extern void SsSeqPlay(short seqAccessNum, short playMode, short playCount);
+extern void SsSeqReplay(short seqAccessNum);
+
+/* A loop count of -1 means loop forever, which SsSetLoop spells as 0. */
+void SoundSetSequenceLoop(s8 loopCount) {
+    int seqId;
+
+    if (gSequenceId != -1) {
+        seqId = gSequenceId;
+        if (loopCount == -1) {
+            SsSetLoop(seqId, 0, 0);
+        } else {
+            SsSetLoop(seqId, 0, loopCount);
+        }
+    }
+}
+
+INCLUDE_ASM("asm/nonmatchings/game", SoundPauseSequence);
+
+void SoundPlaySequence(s8 playCount, u8 playMode) {
+    short count;
+
+    if (gSequenceId != -1) {
+        if (playCount == -1) {
+            count = 0;
+        } else {
+            count = playCount;
+        }
+        SsSeqPlay(gSequenceId, playMode != 0, count);
+    }
+}
+
+void SoundReplaySequence(void) {
+    if (gSequenceId != -1) {
+        SsSeqReplay(gSequenceId);
+    }
+}
+
 extern void SsSeqSetVol(short seqAccessNum, short leftVolume, short rightVolume);
 
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume) {
@@ -1035,17 +1114,166 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80044354);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80044594);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800446F4);
+INCLUDE_ASM("asm/nonmatchings/game", HeapInit);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8004472C);
+INCLUDE_ASM("asm/nonmatchings/game", HeapResetInitFlag);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80044738);
+typedef struct HeapBlock {
+    u32 size; /* payload size in bytes; bit 0 set while the block is free */
+} HeapBlock;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80044884);
+extern u32 D_8009B9C4[]; /* heap start address, stored by the startup code */
+extern u8 *gHeapBase;
+extern s8 gHeapInit;
+extern u8 gHeapBigAllocFlag;
+extern u8 *gHeapBreak;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800448E0);
+/*
+ * First-fit allocator. Each block starts with a header word holding the
+ * payload size; bit 0 is set while the block is free. A free block splits
+ * when the remainder can hold a header and 0x20 bytes.
+ */
+void *HeapAlloc(u32 size) {
+    u32 *block;
+    u32 *result;
+    u32 hdr;
+    u8 found;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800449F0);
+    if (gHeapInit == 0) {
+        if (gHeapBase == NULL) {
+            gHeapBase = (u8 *)D_8009B9C4[0];
+        }
+        gHeapInit = 1;
+        gHeapBreak = gHeapBase;
+    }
+    size += 3;
+    size = size / 4 * 4;
+    switch (size) {
+    case 0x3D18:
+    case 0x4168:
+        gHeapBigAllocFlag = 1;
+        break;
+    }
+    if (gHeapBase == gHeapBreak) {
+        result = (u32 *)gHeapBase;
+        *result++ = size;
+        gHeapBreak = (u8 *)result + size;
+    } else {
+        block = (u32 *)gHeapBase;
+        found = 0;
+        while (found == 0 && block != (u32 *)gHeapBreak) {
+            hdr = *block;
+            if ((hdr & 1) != 0 && (hdr ^= 1) >= size) {
+                found = 1;
+            } else {
+                block = (u32 *)((u8 *)block + (hdr + 4));
+            }
+        }
+        if (found != 0) {
+            if (hdr >= size + 0x24) {
+                hdr -= size + 4;
+                hdr |= 1;
+                result = block + 1;
+                *block = size;
+                block = (u32 *)((u8 *)result + size);
+                *block = hdr;
+            } else {
+                *block = hdr;
+                result = block + 1;
+            }
+        } else {
+            if ((u32)block + size + 4 > 0x801F6000) {
+                return NULL;
+            }
+            *block = size;
+            result = block + 1;
+            gHeapBreak = (u8 *)block + size + 4;
+        }
+    }
+    return result;
+}
+
+u32 HeapFreeSpaceCount(void) {
+    HeapBlock *block;
+    u32 total;
+    u32 size;
+
+    total = 0;
+    block = (HeapBlock *)gHeapBase;
+    while (block != (HeapBlock *)gHeapBreak) {
+        size = block->size;
+        if (size & 1) {
+            size ^= 1;
+            total += size;
+        }
+        block = (HeapBlock *)((u8 *)block + (size + 4));
+    }
+    size = 0x801F5FFC - (u32)gHeapBreak;
+    return total + size;
+}
+
+void HeapCoalesce(void) {
+    u32 *cur;
+    u32 *next;
+    u8 *heapEnd;
+    u32 size;
+    u32 nextSize;
+    u8 freeSeen;
+
+    cur = (u32 *)gHeapBase;
+    while (cur != (u32 *)gHeapBreak) {
+        freeSeen = 0;
+        heapEnd = gHeapBreak;
+        if (cur == (u32 *)heapEnd) {
+            return;
+        }
+        do {
+            size = *cur;
+            if (size & 1) {
+                freeSeen = 1;
+                size ^= 1;
+            } else {
+                cur = (u32 *)((u8 *)cur + size + 4);
+            }
+            if (cur == (u32 *)gHeapBreak) {
+                return;
+            }
+        } while (freeSeen == 0);
+        if (cur == (u32 *)gHeapBreak) {
+            return;
+        }
+        next = (u32 *)((u8 *)cur + size + 4);
+        if (next == (u32 *)gHeapBreak) {
+            gHeapBreak = (u8 *)cur;
+            return;
+        }
+        freeSeen = 1;
+        while (freeSeen != 0 && next != (u32 *)gHeapBreak) {
+            nextSize = *next;
+            if (nextSize & 1) {
+                nextSize ^= 1;
+                size += 4 + nextSize;
+                *cur = size | 1;
+                next = (u32 *)((u8 *)cur + size + 4);
+                if (next == (u32 *)gHeapBreak) {
+                    gHeapBreak = (u8 *)cur;
+                    break;
+                }
+            } else {
+                freeSeen = 0;
+            }
+        }
+        if (cur == (u32 *)gHeapBreak) {
+            return;
+        }
+        cur = (u32 *)((u8 *)cur + size + 4);
+    }
+}
+
+void HeapFree(void *ptr) {
+    ((HeapBlock *)((u8 *)ptr - 4))->size |= 1;
+    HeapCoalesce();
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80044A1C);
 
