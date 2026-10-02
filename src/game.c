@@ -1,9 +1,30 @@
 #include "common.h"
+#include <psxsdk/libgpu.h>
 
 void func_80012000(void) {
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80012008);
+void GraphicsInit(void) {
+    DRAWENV draw;
+    DISPENV disp;
+    s32 fontIds[2];
+
+    ResetGraph(0);
+    SetGraphDebug(0);
+    SetDispMask(1);
+    SetDefDrawEnv(&draw, 0, 0, 320, 240);
+    SetDefDispEnv(&disp, 0, 0, 320, 240);
+    draw.isbg = 1;
+    draw.r0 = 0;
+    draw.g0 = 0;
+    draw.b0 = 0;
+    FntLoad(960, 256);
+    fontIds[0] = FntOpen(32, 32, 400, 112, 0x300, 255);
+    fontIds[1] = FntOpen(32, 32, 400, 112, 0x300, 255);
+    PutDrawEnv(&draw);
+    PutDispEnv(&disp);
+    SetDispMask(1);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80012108);
 

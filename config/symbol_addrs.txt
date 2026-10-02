@@ -516,3 +516,6 @@ MDEC_out = 0x8008C714; // type:func
 MDEC_in_sync = 0x8008C7A4; // type:func
 MDEC_out_sync = 0x8008C83C; // type:func
 timeout = 0x8008C8D4; // type:func
+
+// Game functions
+GraphicsInit = 0x80012008; // type:func
