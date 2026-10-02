@@ -55,7 +55,7 @@ segments:
       # Psy-Q runtime and SDK libraries, from __SN_ENTRY_POINT on.
       # tools/psyq_sigs.py identifies the objects (libs 3.5, LIBSND and
       # LIBGTE 3.6).
-      - [0x6268C, asm, psyq]
+      - [0x6268C, asm, psxsdk]
       # LIBPRESS strings end here; game data starts at 0x80090DC8.
       # This section boundary is inferred; see kb/ for the evidence.
       - [0x7B250, rodata, rodata]

@@ -14,7 +14,7 @@ import sys
 
 # Objects that hold code, by progress category. Data-only objects
 # (asm/data/*) aren't units: decomp.dev tracks code.
-SDK_ASM = ["asm/psyq.s"]
+SDK_ASM = ["asm/psxsdk.s"]
 
 
 def unit(src: pathlib.Path, category: str) -> dict:
