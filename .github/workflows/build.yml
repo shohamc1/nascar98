@@ -13,10 +13,10 @@ jobs:
     env:
       BASEROM_URL: ${{ secrets.BASEROM_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10
       - name: Install binutils
         run: sudo apt-get update && sudo apt-get install -y binutils-mipsel-linux-gnu
       - name: Fetch tools
@@ -30,7 +30,7 @@ jobs:
       - name: Report
         if: ${{ hashFiles('disc/SLUS_005.21') != '' }}
         run: make report
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ hashFiles('build/report.json') != '' }}
         with:
           name: us_report
