@@ -1,0 +1,62 @@
+# splat config for NASCAR 98 (USA), SLUS-00521.
+# Run `make split` to regenerate asm/ and the linker script from disc/.
+name: SLUS_005.21
+sha1: 7397d323f5fff007c7c413b8bb6ce166746a226a
+options:
+  basename: slus_005.21
+  target_path: disc/SLUS_005.21
+  elf_path: build/slus_005.21.elf
+  base_path: ..
+  platform: psx
+  compiler: PSYQ
+
+  asm_path: asm
+  src_path: src
+  build_path: build
+  ld_script_path: build/slus_005.21.ld
+  ld_dependencies: True
+  create_asm_dependencies: True
+
+  find_file_boundaries: False
+  gp_value: 0x800A2CE0
+  ld_gp_expression: main_SDATA_START
+
+  o_as_suffix: False
+  ld_bss_is_noload: True
+  use_legacy_include_asm: False
+  include_asm_macro_style: maspsx_hack
+  section_order: [".text", ".rodata", ".data", ".sdata", ".sbss", ".bss"]
+
+  symbol_addrs_path:
+    - config/symbol_addrs.txt
+  undefined_funcs_auto_path: build/undefined_funcs_auto.txt
+  undefined_syms_auto_path: build/undefined_syms_auto.txt
+
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+
+segments:
+  - name: header
+    type: header
+    start: 0x0
+
+  - name: main
+    type: code
+    start: 0x800
+    vram: 0x80012000
+    bss_size: 0x2B7E0
+    subsegments:
+      # Game code, written by Stormfront Studios.
+      - [0x800, c, game]
+      # Psy-Q runtime and SDK libraries, from __SN_ENTRY_POINT on.
+      # tools/psyq_sigs.py identifies the objects (libs 3.5, LIBSND and
+      # LIBGTE 3.6).
+      - [0x6268C, asm, psyq]
+      # .rdata and .data. Not split yet.
+      - [0x7B250, data, data]
+      - [0x914E0, sdata, sdata]
+      - { start: 0x91BC0, type: bss, vram: 0x800A33C0, name: bss }
+  - [0x92000]

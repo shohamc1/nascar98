@@ -1,0 +1,30 @@
+# Copyrighted game data. Supply your own disc; `make extract` fills disc/.
+/disc/
+/NASCAR 98 (USA)/
+*.bin
+*.cue
+*.iso
+
+# Generated from disc/ by splat (`make split`): disassembly holds game bytes.
+/asm/
+/include/macro.inc
+/include/labels.inc
+/include/gte_macros.inc
+/include/include_asm.h
+
+# Build output.
+/build/
+/expected/
+/objdiff.json
+/nonmatchings/
+
+# Downloaded tools (`make tools`).
+/tools/bin/
+/tools/cc/
+/.venv/
+__pycache__/
+
+# The agent knowledge base lives outside the repo; kb/ is a symlink to it.
+/kb
+
+.DS_Store

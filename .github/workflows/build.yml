@@ -1,0 +1,37 @@
+# Builds the EXE, checks it matches, and uploads the objdiff report that
+# decomp.dev reads. The EXE never enters Git: set the BASEROM_URL secret to
+# a private URL that serves SLUS_005.21.
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      BASEROM_URL: ${{ secrets.BASEROM_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: astral-sh/setup-uv@v6
+      - name: Install binutils
+        run: sudo apt-get update && sudo apt-get install -y binutils-mipsel-linux-gnu
+      - name: Fetch tools
+        run: make tools
+      - name: Fetch the EXE
+        if: ${{ env.BASEROM_URL != '' }}
+        run: mkdir -p disc && curl -sfL "$BASEROM_URL" -o disc/SLUS_005.21
+      - name: Check
+        if: ${{ hashFiles('disc/SLUS_005.21') != '' }}
+        run: make check
+      - name: Report
+        if: ${{ hashFiles('disc/SLUS_005.21') != '' }}
+        run: make report
+      - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('build/report.json') != '' }}
+        with:
+          name: us_report
+          path: build/report.json

@@ -1,0 +1,15 @@
+[submodule "tools/maspsx"]
+	path = tools/maspsx
+	url = https://github.com/mkst/maspsx
+[submodule "tools/asm-differ"]
+	path = tools/asm-differ
+	url = https://github.com/simonlindholm/asm-differ
+[submodule "tools/m2c"]
+	path = tools/m2c
+	url = https://github.com/matt-kempster/m2c
+[submodule "tools/decomp-permuter"]
+	path = tools/decomp-permuter
+	url = https://github.com/simonlindholm/decomp-permuter
+[submodule "tools/psyq_signatures"]
+	path = tools/psyq_signatures
+	url = https://github.com/lab313ru/psx_psyq_signatures

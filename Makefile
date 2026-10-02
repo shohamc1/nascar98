@@ -1,0 +1,137 @@
+# NASCAR 98 (USA) matching decompilation.
+#
+#   make extract   copy the EXE and data out of your disc image (once)
+#   make split     regenerate asm/ and the linker script with splat
+#   make check     build SLUS_005.21 and compare it with the original
+#   make expected  snapshot a matching build for objdiff
+#   make report    write build/report.json for decomp.dev
+
+SHELL := bash
+.SHELLFLAGS := -o pipefail -c
+
+BASENAME := slus_005.21
+EXE      := build/SLUS_005.21
+ELF      := build/$(BASENAME).elf
+LD_SCRIPT := build/$(BASENAME).ld
+SPLAT_CFG := config/$(BASENAME).yaml
+CUE      ?= $(firstword $(wildcard disc/*.cue) $(wildcard */*.cue))
+
+PYTHON := .venv/bin/python
+
+UNAME := $(shell uname -s)-$(shell uname -m)
+ifeq ($(UNAME),Darwin-arm64)
+  OBJDIFF_PLATFORM := macos-arm64
+  OLD_GCC_SUFFIX := -macos
+else ifeq ($(UNAME),Darwin-x86_64)
+  OBJDIFF_PLATFORM := macos-x86_64
+  OLD_GCC_SUFFIX := -macos
+else
+  OBJDIFF_PLATFORM := linux-x86_64
+  OLD_GCC_SUFFIX :=
+endif
+CROSS  := mipsel-linux-gnu-
+AS      := $(CROSS)as
+LD      := $(CROSS)ld
+OBJCOPY := $(CROSS)objcopy
+
+# Compiler and assembler versions, decided by matching. See AGENTS.md.
+CC_VER    ?= 2.7.2-psx
+ASPSX_VER ?= 2.34
+GP_SIZE   ?= 8
+CC_DIR := tools/cc/$(CC_VER)
+CPP    := $(CC_DIR)/cpp
+CC1    := $(CC_DIR)/cc1
+MASPSX := $(PYTHON) tools/maspsx/maspsx.py --aspsx-version=$(ASPSX_VER) -G$(GP_SIZE) --dont-force-G0
+
+CPPFLAGS := -Iinclude -undef -Wall -lang-c -nostdinc \
+            -D__GNUC__=2 -D__OPTIMIZE__ -Dmips -D__mips__ -D__mips -Dpsx \
+            -D__psx__ -D__psx -D_PSYQ -D_MIPSEL -D_LANGUAGE_C -DLANGUAGE_C
+CFLAGS   := -O2 -G$(GP_SIZE) -mgas -msoft-float -fgnu-linker -quiet -w
+ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
+LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
+            -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt
+
+# Splat writes asm/ and the linker script, and the file lists below need
+# them, so a fresh tree splits before Make reads the lists.
+ifeq ($(wildcard $(LD_SCRIPT)),)
+ifneq ($(wildcard disc/SLUS_005.21),)
+$(info Running splat on disc/SLUS_005.21)
+$(shell $(PYTHON) -m splat split $(SPLAT_CFG) > build-split.log 2>&1 || cat build-split.log >&2; rm -f build-split.log)
+endif
+endif
+
+C_FILES := $(shell find src -name '*.c' 2>/dev/null)
+S_FILES := $(shell find asm -name '*.s' -not -path 'asm/nonmatchings/*' 2>/dev/null)
+O_FILES := $(C_FILES:%=build/%.o) $(S_FILES:%=build/%.o)
+
+OBJDIFF := tools/bin/objdiff-cli
+OBJDIFF_VER := v3.8.2
+OLD_GCC_VER := 0.17
+
+.PHONY: all check extract split expected report tools clean distclean
+.DELETE_ON_ERROR:
+
+all: $(EXE)
+
+check: $(EXE)
+	@shasum -c config/SLUS_005.21.sha1 >/dev/null 2>&1 \
+	  && echo "MATCH" || (echo "MISMATCH"; exit 1)
+
+extract:
+	@test -n "$(CUE)" || (echo "Set CUE=path/to/NASCAR 98 (USA).cue"; exit 1)
+	$(PYTHON) tools/extract.py "$(CUE)" disc
+
+split:
+	$(PYTHON) -m splat split $(SPLAT_CFG)
+
+$(LD_SCRIPT): $(SPLAT_CFG) config/symbol_addrs.txt
+	$(PYTHON) -m splat split $(SPLAT_CFG)
+
+build/%.c.o: %.c $(LD_SCRIPT)
+	@mkdir -p $(@D)
+	$(CPP) $(CPPFLAGS) $< | $(CC1) $(CFLAGS) | $(MASPSX) | $(AS) $(ASFLAGS) -G$(GP_SIZE) -o $@
+
+build/%.s.o: %.s $(LD_SCRIPT)
+	@mkdir -p $(@D)
+	$(AS) $(ASFLAGS) -G0 -o $@ $<
+
+$(ELF): $(O_FILES) $(LD_SCRIPT)
+	$(LD) $(LDFLAGS) -Map build/$(BASENAME).map -o $@
+
+# The retail EXE pads its last sector with zeros to 0x92000 bytes.
+$(EXE): $(ELF)
+	$(OBJCOPY) -O binary --gap-fill 0 --pad-to 0x92000 $< $@
+
+objdiff.json: tools/objdiff_config.py $(C_FILES)
+	python3 tools/objdiff_config.py > $@
+
+# objdiff's target objects. Take the snapshot only from a matching build.
+expected: check objdiff.json
+	rm -rf expected
+	mkdir -p expected
+	cp -R build expected/build
+
+report: objdiff.json $(EXE)
+	@test -d expected || $(MAKE) expected
+	$(OBJDIFF) report generate -o build/report.json
+	@python3 -c "import json; m=json.load(open('build/report.json'))['measures']; \
+	  print('code %.2f%%  functions %s/%s' % (m.get('matched_code_percent', 0), \
+	  m.get('matched_functions', 0), m.get('total_functions', 0)))"
+
+# Download the compilers and objdiff, and set up the Python environment.
+tools:
+	git submodule update --init
+	uv venv -q .venv
+	uv pip install -q --python $(PYTHON) -r requirements.txt
+	mkdir -p tools/bin
+	curl -sL -o $(OBJDIFF) https://github.com/encounter/objdiff/releases/download/$(OBJDIFF_VER)/objdiff-cli-$(OBJDIFF_PLATFORM)
+	chmod +x $(OBJDIFF)
+	for v in 2.7.2-psx 2.8.1-psx; do mkdir -p tools/cc/$$v && \
+	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-$$v$(OLD_GCC_SUFFIX).tar.gz \
+	  | tar xz -C tools/cc/$$v; done
+
+clean:
+	rm -rf build
+
+distclean: clean
+	rm -rf asm expected objdiff.json
