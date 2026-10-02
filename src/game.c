@@ -1,5 +1,6 @@
 #include "common.h"
 #include <psxsdk/libgpu.h>
+#include <psxsdk/libsnd.h>
 
 void func_80012000(void) {
 }
@@ -894,7 +895,20 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003F3FC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003F454);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F480);
+extern s16 gSequenceId;
+extern void SsSeqSetVol(short seqAccessNum, short leftVolume, short rightVolume);
+
+void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume) {
+    if (gSequenceId != -1) {
+        if (leftVolume == 0) {
+            leftVolume = 1;
+        }
+        if (rightVolume == 0) {
+            rightVolume = 1;
+        }
+        SsSeqSetVol(gSequenceId, leftVolume, rightVolume);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003F4D0);
 

@@ -16,6 +16,9 @@ C, most still as `INCLUDE_ASM`. Run `make report` for the live figure.
 You need Git, Make, Python 3.11 or newer, [uv](https://docs.astral.sh/uv/),
 and GNU binutils for little-endian MIPS.
 
+`make tools` builds the project's patched GCC 2.7.2 from source. On macOS
+this needs the Xcode command-line tools. On Linux it needs Docker.
+
 On macOS:
 
 ```sh

@@ -44,7 +44,9 @@ These are the paths you work with:
 1. Install `mipsel-linux-gnu-binutils` (Homebrew) or
    `binutils-mipsel-linux-gnu` (apt), `uv`, and Python 3.11 or newer.
 2. Run `make tools` to fetch the submodules, compilers, objdiff, and the
-   Python environment.
+   Python environment. It also builds the default compiler,
+   `2.7.2-psx-nascar98`, from `tools/gcc-load-latency.patch`. On Linux,
+   that build needs Docker.
 3. Run `make extract CUE="path/to/NASCAR 98 (USA).cue"`.
 4. Run `make check`. It runs splat on the first build.
 

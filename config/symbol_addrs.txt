@@ -519,3 +519,7 @@ timeout = 0x8008C8D4; // type:func
 
 // Game functions
 GraphicsInit = 0x80012008; // type:func
+SoundSetSequenceVolume = 0x8003F480; // type:func
+
+// Game data
+gSequenceId = 0x800A2F92;

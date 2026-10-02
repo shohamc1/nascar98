@@ -35,7 +35,9 @@ LD      := $(CROSS)ld
 OBJCOPY := $(CROSS)objcopy
 
 # Compiler and assembler versions, decided by matching. See AGENTS.md.
-CC_VER    ?= 2.7.2-psx
+# 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-load-latency.patch. See
+# "Compiler search, second pass" in kb/psx/toolchain.md.
+CC_VER    ?= 2.7.2-psx-nascar98
 ASPSX_VER ?= 2.34
 GP_SIZE   ?= 8
 CC_DIR := tools/cc/$(CC_VER)
@@ -122,7 +124,7 @@ report: objdiff.json $(EXE)
 # Download the compilers and objdiff, and set up the Python environment.
 tools:
 	git submodule update --init
-	uv venv -q .venv
+	uv venv -q --allow-existing .venv
 	uv pip install -q --python $(PYTHON) -r requirements.txt
 	mkdir -p tools/bin
 	curl -sL -o $(OBJDIFF) https://github.com/encounter/objdiff/releases/download/$(OBJDIFF_VER)/objdiff-cli-$(OBJDIFF_PLATFORM)
@@ -130,6 +132,7 @@ tools:
 	for v in 2.7.2-psx 2.8.1-psx; do mkdir -p tools/cc/$$v && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-$$v$(OLD_GCC_SUFFIX).tar.gz \
 	  | tar xz -C tools/cc/$$v; done
+	test -x tools/cc/2.7.2-psx-nascar98/cc1 || sh tools/build_cc.sh
 
 clean:
 	rm -rf build
