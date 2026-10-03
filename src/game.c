@@ -6170,21 +6170,35 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003EBD0);
 #endif
 
 #ifdef NON_MATCHING
-extern u8 *D_800A3878[];
-extern u8 *D_800BE97C[];
+/* Walls (w8e): (1) retail copies the param (move t1,a0) and loads
+ * D_800A3878 into a0; gcc keeps object in a0 and loads the pointer into
+ * a1 - no source form produced the copy (needs the D_800A3878 symbol to
+ * lui-address: live scalar decl at func_8002EE88 forces gp, hence the
+ * D_800A387C-4 neighbor read). (2) src/dst inits hoist above the count
+ * check (retail: move t0,t1/move a3,t1 right before the loop).
+ * (3) frame is -8 in retail; every all-s32 shape (with or without a
+ * volatile pad) gives -0x10, an s16 local gives -8 but adds an
+ * lhu+sll/sra pair at the f27C load (+8 bytes). With the s16 ext the
+ * loop went clean; all-s32 the loop is clean and the body is 8 SHORT.
+ * Nearest drafts below / in git history of the wave notes. */
+extern u8 D_800A387C[];
 extern s32 D_800AE84C[];
 
 void func_8003ECB8(u8 *object) {
+    volatile s32 pad[1];
     u8 *current;
     u8 *base;
     s32 id;
     s32 depth;
     s32 i;
     s32 value;
+    s32 extra;
+    u16 u16v;
+    u8 *row;
     u8 *src;
     u8 *dst;
 
-    current = D_800A3878[0];
+    current = *(u8 **)(D_800A387C - 4);
     base = D_800BE97C[0];
     if (current != 0) {
         id = *(s16 *)(object + 0xC) - 1;
@@ -6194,14 +6208,16 @@ void func_8003ECB8(u8 *object) {
         }
         if (current != 0 && *(s16 *)(current + 0x1EC) != 1 && *(u8 *)(current + 0x268) != 0) {
             depth = *(s16 *)(current + 0x27C);
-            src = object;
-            dst = object;
-            for (i = 0; i < *(s16 *)(object + 0xA); i++) {
-                value = *(s16 *)(src + 0x94) + *(s32 *)(object + 0x218) - depth;
-                if (value < 0)
+            for (src = object, dst = object, i = 0; i < *(s16 *)(object + 0xA); i++) {
+                value = *(s16 *)(src + 0x94);
+                extra = *(s32 *)(object + 0x218);
+                u16v = *(u16 *)(dst + 0x10);
+                row = base + (u16v << 3);
+                value = value + extra - depth;
+                if (value < 0) {
                     value += 3;
-                *(s16 *)(base + (*(u16 *)(dst + 0x10) << 3) + 4) =
-                    (value >> 2) - D_800AE84C[0];
+                }
+                *(s16 *)(row + 4) = (value >> 2) - D_800AE84C[0];
                 src += 6;
                 dst += 2;
             }
@@ -6717,10 +6733,6 @@ void *func_8003FFF0(s32 arg0, void *arg1) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
 #endif
 
-#ifdef NON_MATCHING
-/* Wall: the search loops exit to out-of-line blocks (beq to found,
- * latch falls to the next loop); for+break gives the inverse shape.
- * Try the KB while(A&&B) conjunct idiom or goto form. */
 extern s32 D_80098D00[];
 extern u8 D_800A354C[];
 extern s32 D_800BE988[];
@@ -6729,32 +6741,37 @@ extern u8 D_800A39D0;
 extern u8 D_800BA048[];
 
 void func_800400D8(s32 arg0) {
+    volatile s32 pad[4];
     s32 i;
-    s32 j;
     u8 next;
 
-    for (i = 0; i < 4; i++) {
+    i = 0;
+    do {
         if (D_80098D00[i] == arg0) {
-            D_800A354C[i] = 1;
-            return;
+            goto found;
         }
-    }
-    for (j = 0; j < 4; j++) {
-        if (D_80098D00[j] == 0) {
-            D_80098D00[j] = arg0;
-            D_800BE988[j] = -1;
-            D_800A354C[j] = 1;
-            D_800A2FA4[j] = 5;
-            return;
+        i++;
+    } while (i < 4);
+    i = 0;
+    do {
+        if (D_80098D00[i] == 0) {
+            goto empty;
         }
-    }
+        i++;
+    } while (i < 4);
     next = D_800A39D0;
     D_800A39D0 = next + 1;
     *(s32 *)((u8 *)D_800BA048 + (((s32)(s8)next << 24) >> 22)) = arg0;
+    return;
+found:
+    D_800A354C[i] = 1;
+    return;
+empty:
+    D_80098D00[i] = arg0;
+    D_800BE988[i] = -1;
+    D_800A354C[i] = 1;
+    D_800A2FA4[i] = 5;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800400D8);
-#endif
 
 
 extern s8 D_800A2FA4[];
@@ -7051,8 +7068,15 @@ u32 func_80041BAC(s32 arg0) {
 
 
 #ifdef NON_MATCHING
-/* Wall: register flow (bank wants v1 not a1) and 0x14 bytes extra.
- * First diff row: lb v1,0x20b vs lb a1. */
+/* Walls (w8e): entry test wants retail's bgez->body with the ret0 block
+ * falling through inline (gcc emits bltz to an end-placed ret0 block);
+ * retail's dead 8-byte frame is unexplained (s16 bank gives the frame
+ * but turns the s8 load into lbu+sll/sra, +12); arm A wants srl24 before
+ * the join jump with the 3C8 store shared after it (gcc sinks the store
+ * into the arm, or with asm("") past the reloaded byte).
+ * Matches except: entry branch layout, frame, srl24 placement,
+ * nor operand order (r). D_8008CA08 needs the (u8 *) cast: live u32[]
+ * decl at line ~6575 makes +bank*8 scale by 32. */
 extern u8 D_8008CA06[];
 extern u32 D_8008CA08[];
 extern s8 D_800A3A24[];
@@ -7067,21 +7091,19 @@ u16 func_80041BFC(u8 *arg0) {
     if (bank < 0) {
         return 0;
     }
+    data = *(u32 *)((u8 *)D_8008CA08 + bank * 8);
     if (D_800A3A24[bank] == 2) {
-        data = *(u32 *)(D_8008CA08 + bank * 8);
         arg0[0x3C6] = data >> 8;
         arg0[0x3C7] = data >> 0x10;
-        arg0[0x3C8] = data >> 0x18;
         arg0[0x3C5] = data;
     } else {
-        data = *(u32 *)(D_8008CA08 + bank * 8);
         arg0[0x3C6] = data >> 8;
         arg0[0x3C5] = data >> 0x10;
         arg0[0x3C7] = data;
-        arg0[0x3C8] = data >> 0x18;
     }
-    pad = *(u16 *)(D_8008CA06 + bank * 8);
-    mode = ~((pad >> 8) | ((pad & 0xFF) << 8));
+    arg0[0x3C8] = data >> 0x18;
+    pad = *(u16 *)(D_8008CA06 + *(s8 *)(arg0 + 0x20B) * 8);
+    mode = ~(((pad & 0xFF) << 8) | (pad >> 8));
     if (mode & 0x1000) {
         mode |= 8;
     }
@@ -7317,7 +7339,10 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80043F7C);
 
 #ifdef NON_MATCHING
 /* Wall: the loop-1 walker init folds to move (retail keeps addu a0,v1
- * with v1=0); loop-2 strength reduction goes negative-offset. */
+ * with v1=0); loop-2 strength reduction goes negative-offset. Also:
+ * tail load/store of D_800A3960 CSEs into one lui/addiu base across the
+ * branch (asm("") does NOT block it); retail has lui+lw %lo then a
+ * second lui $at+sw. */
 extern u8 D_800A2EE0[];
 extern u32 D_800A3960[];
 
@@ -7355,7 +7380,6 @@ void func_80044114(u8 *arg0) {
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80044114);
 #endif
-
 
 void func_8004419C(u8 *object) {
     s32 i;
