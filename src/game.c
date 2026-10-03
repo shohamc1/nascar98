@@ -6656,7 +6656,79 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003FA0C);
 #endif
 
 
+/* w9e draft: decision tree matches retail exactly (incl. switch-style
+ * beq arms for 0x2A/0x2B/0x2C/0x2D/0x29 and the dead 0x29 arm); only
+ * preset (ours t1, retail a0) and the raw entry index (ours a0, retail
+ * t1) are swapped. gcc refuses to move arg0 out of a0 unless the param
+ * itself is assigned, and assigning it rehomes arg1 as well. Round 5
+ * (preset declared first) segfaulted cc1. */
+#ifdef NON_MATCHING
+extern u8 D_800A3880;
+extern s16 D_800B9E24[];
+extern u8 D_800B9E26[];
+extern s16 D_800B9E2A[];
+extern s32 SsUtPitchBend(s16, s16, s8, s16, s8);
+
+void func_8003FA84(s32 arg0, s32 arg1, s8 arg2) {
+    s32 voice;
+    s16 preset;
+    u8 t;
+    s32 v;
+
+    voice = arg0;
+    preset = D_800B9E24[(s8)voice * 6];
+    if (preset == -1) {
+        return;
+    }
+    t = D_800B9E26[(s8)voice * 12];
+    if (D_800A3880 != 0) {
+        arg2 = ((s8)voice == 1) ? 0xF : 0;
+    } else {
+        v = (s8)t;
+        if (v >= 0x40) {
+            arg2 = 0xA;
+        } else if (v >= 0x20) {
+            if (v >= 0x2C) {
+                switch (v) {
+                case 0x2C:
+                    arg2 = 0x24;
+                    break;
+                case 0x2D:
+                    arg2 = 0x26;
+                    break;
+                case 0x29:
+                    arg2 = 0x29;
+                    break;
+                default:
+                    break;
+                }
+                arg2 -= 0x20;
+            } else if (v < 0x2A) {
+                arg2 = t - 0x20;
+            } else {
+                switch (v) {
+                case 0x2A:
+                    arg2 = 0x12;
+                    break;
+                case 0x2B:
+                    arg2 = 0x13;
+                    break;
+                default:
+                    break;
+                }
+            }
+        } else if ((u32)(t - 0xC) < 4) {
+            arg2 = 0x1A - t;
+        } else {
+            arg2 = 0xF;
+        }
+    }
+    SsUtPitchBend(preset, gVabId, arg2, D_800B9E2A[(s8)voice * 6], (s8)arg1);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FA84);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FC0C);
 
