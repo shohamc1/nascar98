@@ -11477,7 +11477,58 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80064C14);
 INCLUDE_ASM("asm/nonmatchings/game", func_80064CD8);
 #endif
 
+#ifdef NON_MATCHING
+/*
+ * w9h draft: scene draw dispatch. func_80065058's first arg re-reads
+ * D_800A3778 after the store (volatile-cast read per the w2b recipe).
+ * D_800A3778/D_800A35DC are new untracked externs - recheck the map.
+ */
+void func_80064E6C(void) {
+    extern s32 D_800A2EB0[];
+    extern u8 D_800A3778;
+    extern u8 D_800A35DC;
+    extern void func_80064CD8(s32);
+    extern void func_80065058(s32, s32);
+    extern void func_80065F80(void);
+    extern void func_80066080(s32);
+    u8 **base;
+
+    ClearOTagR((u32 *)gOrderingTableBank, 4);
+    func_80064CD8(1);
+    func_8006499C();
+    D_800A367C = (s32)D_800A369C;
+    func_8005A7B8(2, 4);
+    func_8005A818(0x80, 0x80, 0xC0);
+    base = D_8009A400;
+    func_8005B0E4(0x140, (s32)*base);
+    func_8005A9F4((s32)*base, (s16)func_8005B0E4(0x140, (s32)*base), 0xC8, 0, 0, 0, 0, 0);
+    if (D_800A2EB0[0] != 0) {
+        func_8005B0E4(0x140, (s32)D_8009A418[0]);
+        func_8005A9F4((s32)D_8009A418[0], (s16)func_8005B0E4(0x140, (s32)D_8009A418[0]), 0xC8, 0, 0, 0, 0, 0);
+    } else {
+        func_8005B0E4(0x140, (s32)D_8009A3F0[0]);
+        func_8005A9F4((s32)D_8009A3F0[0], (s16)func_8005B0E4(0x140, (s32)D_8009A3F0[0]), 0xC8, 0, 0, 0, 0, 0);
+    }
+    ClearOTagR((u32 *)gOrderingTableBank, 4);
+    D_800A367C = (s32)(D_800A369C + D_800A3698 * 0x28);
+    if (D_800A3644[0] != 0 && D_800A3073[0] == 0) {
+        func_80065F80();
+        func_80066080(1);
+    } else {
+        func_80065838(1);
+        D_800A3778 = 0;
+        func_80065058(*(volatile u8 *)&D_800A3778, 1);
+        if (D_800A3644[0] != 0 && D_800A3073[0] != 0) {
+            D_800A35DC = 3;
+        } else {
+            D_800A35DC = 0xB;
+        }
+    }
+    D_800A3884 = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80064E6C);
+#endif
 
 extern s32 D_800A367C;
 s32 func_80065028(void) {
@@ -11610,9 +11661,168 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80065F80);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066080);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800663B0);
+#ifdef NON_MATCHING
+/*
+ * w9h draft: display/OT flip with gp save+restore (GetGp + the w4d
+ * inline-asm restore). New block-scope externs D_800A3940/D_800A3760 are
+ * untracked - recheck the map at the gate. Watch the redundant
+ * `andi 0xFF` after the D_800A3884 lbu (func_800669B8 wall family).
+ */
+void func_800663B0(void) {
+    extern s32 D_800A2EB0[];
+    extern u8 D_800A39E4[];
+    extern u16 D_800A3940;
+    extern u8 D_800A3760;
+    extern u8 D_800A3884;
+    extern u8 D_800A3A4C;
+    extern u8 *D_800A369C;
+    extern s32 D_800A3538;
+    extern s32 D_800A367C;
+    extern volatile u8 D_800A3360;
+    extern void func_8006594C(s32, s32);
+    extern void func_80066080(s32);
+    extern u8 *D_8009A3F0[];
+    extern u8 *D_8009A418[];
+    s32 oldGp;
+    u8 *walk;
+    char *text;
+    s32 count;
+    s32 len;
+    s32 i;
 
+    oldGp = GetGp();
+    func_80058D08(D_8008CA4C[0]);
+    SetDispMask(1);
+    if ((u8)(D_800A39E4[0] + 3) < 2) {
+        if ((s16)D_800A3940 <= 0) {
+            if (D_800A3884 == 1) {
+                PutDrawEnv(D_800BDD4C);
+                ClearOTagR((u32 *)gOrderingTableBank, 4);
+                count = D_800A3A4C;
+                walk = (u8 *)D_800A369C + count * 0x28;
+                if (D_800A2EB0[0] != 0) {
+                    text = (char *)D_8009A418[0];
+                } else {
+                    text = (char *)D_8009A3F0[0];
+                }
+                len = strlen(text);
+                for (i = 0; i < len; i++) {
+                    AddPrim((u32 *)gOrderingTableBank + 3, walk);
+                    walk += 0x28;
+                }
+                D_800A367C = D_800A3538;
+                func_80066080(0);
+                DrawOTag((u32 *)gOrderingTableBank + 3);
+                DrawSync(0);
+                D_800A3884 = 2;
+            }
+        } else {
+            PutDrawEnv(D_800BDD4C);
+            func_8006594C(D_800A3760, 1);
+            DrawOTag((u32 *)gOrderingTableBank + 3);
+            DrawSync(0);
+        }
+    }
+    D_800A3360 = 1;
+    asm("addu $gp, %0, $zero" : : "r"(oldGp));
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_800663B0);
+#endif
+
+#ifdef NON_MATCHING
+/*
+ * w9h draft: F4 gradient quad allocator (2 setup slots, then 7x10 quads
+ * walking a 0x18-byte queue, ping-pong source slot per outer pass).
+ * Locals are REUSED across phases per retail (s0 walker->x0, s2 &slots[0]
+ * ->inner counter, s3 rgb8->selector, s4 rgb0x18->y0, s5 arg1->y2).
+ */
+void *func_8006654C(void *queue, s32 arg1) {
+    extern s32 D_800A39C8[];
+    extern void *func_80057D50(s32);
+    s32 *slots[2];
+    s32 *p;
+    s32 *start;
+    s32 cursor;
+    s32 c;
+    s32 d;
+    s32 y;
+    s32 scale;
+    s32 n;
+    s32 i;
+    s32 x;
+    s32 *src;
+    s32 *dst;
+
+    cursor = (s32)queue;
+    y = arg1;
+    c = 0x18;
+    d = 8;
+    start = slots;
+    p = start;
+    do {
+        if (cursor != 0) {
+            *p = cursor;
+            cursor += 0x18;
+        } else {
+            *p = (s32)func_80057D50(0);
+        }
+        SetPolyF4((u_long *)*p);
+        SetSemiTrans((u_long *)*p, 1);
+        if (p == start) {
+            ((u8 *)slots[0])[4] = d;
+            ((u8 *)slots[0])[5] = d;
+            ((u8 *)slots[0])[6] = d;
+        } else {
+            ((u8 *)*p)[4] = c;
+            ((u8 *)*p)[5] = c;
+            ((u8 *)*p)[6] = c;
+        }
+        p += 1;
+    } while (p < start + 2);
+    n = 0;
+    c = 0;
+    scale = y << 2;
+    do {
+        d = (n & 1) == 0;
+        i = 0;
+        x = 0;
+        y = c + 0x20;
+        do {
+            if (cursor != 0) {
+                dst = (s32 *)cursor;
+                cursor += 0x18;
+            } else {
+                dst = (s32 *)func_80057D50(0);
+            }
+            src = slots[d];
+            d ^= 1;
+            dst[0] = src[0];
+            dst[1] = src[1];
+            dst[2] = src[2];
+            dst[3] = src[3];
+            dst[4] = src[4];
+            dst[5] = src[5];
+            ((u16 *)dst)[4] = x;
+            ((u16 *)dst)[8] = x;
+            x += 0x20;
+            ((u16 *)dst)[5] = c;
+            ((u16 *)dst)[6] = x;
+            ((u16 *)dst)[7] = c;
+            ((u16 *)dst)[9] = y;
+            ((u16 *)dst)[10] = x;
+            ((u16 *)dst)[11] = y;
+            AddPrim((u32 *)D_800A39C8[0] + scale, dst);
+            i += 1;
+        } while (i < 0xA);
+        n += 1;
+        c += 0x20;
+    } while (n < 7);
+    return (void *)cursor;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006654C);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066730);
 
@@ -11695,61 +11905,270 @@ void func_80066B08(void) {
     D_800A335C = 0;
 }
 
+#ifdef NON_MATCHING
+/*
+ * w9h draft: double-buffer env setup (2 iterations, +0x5C DRAWENV stride,
+ * +0x14 DISPENV stride; sizeof(DRAWENV)=0x58 so byte offsets). Branchless
+ * env-x args per the w7a recipe. D_800A365C/D_800A39F4 are new untracked
+ * externs - recheck the map at the gate.
+ */
+void func_80066B70(void) {
+    extern s32 D_800A2EB0[];
+    extern s32 D_800A365C;
+    extern s32 D_800A39F4;
+    s32 i;
+    s32 height;
+    s32 flag;
+    s32 off14;
+    s32 off5C;
+    u8 *env;
+
+    i = 0;
+    height = 0xF0;
+    flag = 8;
+    off14 = 0;
+    off5C = 0;
+    D_800A365C = gPrimitiveCursor[0];
+    func_80050028(D_8009A400[0], 0x8C, 0xD6, 1);
+    D_800A39F4 = gPrimitiveCursor[0];
+    func_80050028(D_8009A428[0], 0x82, 0xF1, 1);
+    for (i = 0; i < 2; i++) {
+        env = (u8 *)D_800BDD4C + off5C;
+        SetDefDrawEnv((DRAWENV *)env, (0 - (i != 0)) & 0x140, 0, 0x140, height);
+        SetDefDispEnv((DISPENV *)((u8 *)D_800BDE04 + off14), (0 - (i == 0)) & 0x140, 0, 0x140, height);
+        D_800BDD62[off5C] = 0;
+        if (D_800A2EB0[0] == 2) {
+            env[0x1A] = 7;
+            env[0x19] = 0;
+            env[0x1B] = 0x26;
+        } else {
+            env[0x19] = flag;
+            env[0x1A] = flag;
+            env[0x1B] = flag;
+        }
+        off14 += 0x14;
+        off5C += 0x5C;
+    }
+    if (D_800A2EB0[0] == 2) {
+        D_800BDD64[0] = 1;
+    }
+    PutDrawEnv(D_800BDD4C);
+    D_800BDDC0[0] = 1;
+    D_800BDD64[0] = 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80066B70);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066CFC);
 
 #ifdef NON_MATCHING
 /*
- * All instructions and the guard/do-while shape match except the cursor
- * base: retail keeps ONE induction (start+0x22) with field offsets
- * -0x1C..0; our gcc re-associates to a second induction at start+0x1A for
- * three fields (+4 bytes, bss shifts). Distinct-expression anchoring and
- * a struct-array walk both re-associated the same way.
+ * w9h retry with the func_8006709C/679C4 recipe (byte-cursor for loop,
+ * compound += of (shift >> 24)): still re-associates. gcc folds
+ * shift = delta << 24 + the four >> 24 reads into ONE sll+sra pair on
+ * the parameter (retail keeps t3 = sll and emits four per-use sra) and
+ * splits the cursor into TWO IVs (a0+0x1A for the -0x18..-8 fields,
+ * a0+0x22 for the +0 field; +8 bytes total). The same field pattern in
+ * 6709C/679C4 kept one IV - there the walk base/limit came from MEMORY
+ * (globals); here they are PARAMETERS. Suspect loop.c ivrs treats
+ * param-derived pointers differently. Entry-assigned shift did not help.
  */
 void func_80067020(u8 *start, u8 *end, u8 delta) {
-    u8 *cursor;
-    u8 *endCursor;
-    s16 x0;
-    s16 x1;
-    s16 x2;
-    s16 x3;
+    u8 *walk;
+    s32 shift;
 
     if (start < end) {
-        cursor = start + 0x22;
-        endCursor = end + 0x22;
-        do {
-            if (*(cursor - 0x1C) != 0) {
-                x0 = *(s16 *)(cursor - 0x18);
-                x1 = *(s16 *)(cursor - 0x10);
-                x2 = *(s16 *)(cursor - 8);
-                x3 = *(s16 *)(cursor);
-                x0 += (s8)delta;
-                x1 += (s8)delta;
-                x2 += (s8)delta;
-                x3 += (s8)delta;
-                *(s16 *)(cursor - 0x18) = x0;
-                *(s16 *)(cursor - 0x10) = x1;
-                *(s16 *)(cursor - 8) = x2;
-                *(s16 *)(cursor) = x3;
+        shift = delta << 24;
+        for (walk = start + 0x22; walk < end + 0x22; walk += 0x28) {
+            if (walk[-0x1C] != 0) {
+                *(u16 *)(walk - 0x18) += shift >> 24;
+                *(u16 *)(walk - 0x10) += shift >> 24;
+                *(u16 *)(walk - 0x8) += shift >> 24;
+                *(u16 *)(walk + 0) += shift >> 24;
             }
-            cursor += 0x28;
-        } while (cursor < endCursor);
+        }
     }
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80067020);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006709C);
+#ifdef NON_MATCHING
+/*
+ * w9h draft: palette delta walk. SCRATCH_TOP unlock (fixed_address);
+ * D_800A3848/3898/389C are newly declared here (untracked - recheck the
+ * map at the gate). Retail recomputes (shift >> 24) per field; watch for
+ * gcc CSE merging the four sra into one (the func_80067020 wall).
+ */
+void func_8006709C(u8 arg0) {
+    extern s32 D_800A3848[];
+    extern u8 D_800A3644[];
+    extern u16 *D_800A39C8[];
+    extern u16 *D_800A3898;
+    extern u16 *D_800A389C[];
+    extern u16 SCRATCH_TOP[];
+    s32 cur;
+    s32 shift;
+    s32 arg;
+    u16 *base;
+    u16 *limit;
+    u8 *walk;
 
+    shift = arg0 << 24;
+    cur = D_800A3848[0] - (shift >> 23);
+    D_800A3848[0] = cur;
+    if (cur < 0xA0) {
+        D_800A3848[0] = 0xA0;
+        return;
+    }
+    if (cur >= 0x1EB) {
+        D_800A3848[0] = 0x1EA;
+        return;
+    }
+    if (D_800A3644[0] != 0) {
+        return;
+    }
+    arg = arg0;
+    base = D_800A39C8[0];
+    limit = D_800A3898;
+    if (base + 8 < limit) {
+        for (walk = (u8 *)base + 0x32; walk < (u8 *)limit + 0x22; walk += 0x28) {
+            if (walk[-0x1C] != 0) {
+                *(u16 *)(walk - 0x18) += shift >> 24;
+                *(u16 *)(walk - 0x10) += shift >> 24;
+                *(u16 *)(walk - 0x8) += shift >> 24;
+                *(u16 *)(walk + 0) += shift >> 24;
+            }
+        }
+    }
+    base = D_800A389C[0];
+    if (base != 0 && base < (u16 *)SCRATCH_TOP) {
+        shift = arg << 24;
+        for (walk = (u8 *)base + 0x22; walk < (u8 *)SCRATCH_TOP + 0x22; walk += 0x28) {
+            if (walk[-0x1C] != 0) {
+                *(u16 *)(walk - 0x18) += shift >> 24;
+                *(u16 *)(walk - 0x10) += shift >> 24;
+                *(u16 *)(walk - 0x8) += shift >> 24;
+                *(u16 *)(walk + 0) += shift >> 24;
+            }
+        }
+    }
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_8006709C);
+#endif
+
+#ifdef NON_MATCHING
+/*
+ * w9h draft: two rotated u16 loops over ordering-table bases. Retail
+ * reaches D_800A387C/D_800A36BC through $gp (block-scope scalar externs
+ * here; D_800A36BC is untracked - recheck the map at the gate) and the
+ * D_8009A400/D_8009A428/D_800A39C8 pointer slots absolutely (array form).
+ * D_8009A428 = D_8009A400[10] (already-declared neighbor, +0x28).
+ */
+void func_80067228(void) {
+    extern u16 *D_800A387C;
+    extern u16 *D_800A36BC;
+    extern u16 *D_800A39C8[];
+    extern u8 *D_8009A400[];
+    u16 *baseA;
+    u16 *baseB;
+    u16 *baseB2;
+    u16 *cursor;
+    u16 *end;
+    s32 i;
+    s32 len;
+
+    len = strlen(D_8009A400[0]);
+    baseA = D_800A387C;
+    baseB = D_800A39C8[0];
+    baseB2 = baseB + 0x2000;
+    i = 0;
+    if (len > 0) {
+        cursor = baseA + 0x11;
+        end = baseB + 0x2011;
+        for (i = 0; i < len; i++) {
+            cursor[-0xC] = 0xF1;
+            cursor[-0x8] = 0xF1;
+            cursor[-0x4] = 0xF1;
+            cursor[0] = 0xF1;
+            if (cursor < end) {
+                cursor += 0x14;
+            } else {
+                cursor -= 0x14;
+            }
+        }
+    }
+    baseA = D_800A36BC;
+    len = strlen(D_8009A400[10]);
+    if (len > 0) {
+        cursor = baseA + 0x11;
+        end = baseB2 + 0x11;
+        for (i = 0; i < len; i++) {
+            cursor[-0xC] -= 0x1B;
+            cursor[-0x8] -= 0x1B;
+            cursor[-0x4] -= 0x1B;
+            cursor[0] -= 0x1B;
+            if (cursor < end) {
+                cursor += 0x14;
+            } else {
+                cursor -= 0x14;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80067228);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006733C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80067598);
 
+#ifdef NON_MATCHING
+/*
+ * w9h draft: palette delta walks over two linked lists (+= then -=).
+ * Same recipe as the func_8006709C loops; D_800A3568/D_800A3970 are
+ * newly declared (untracked - recheck the map at the gate).
+ */
+void func_800679C4(u8 arg0) {
+    extern u16 *D_800A3568;
+    extern u16 *D_800A367C;
+    extern u16 *D_800A3970;
+    s32 shift;
+    s32 arg;
+    u16 *base;
+    u16 *limit;
+    u8 *walk;
+
+    arg = arg0;
+    base = D_800A3568;
+    limit = D_800A367C;
+    if (base < limit) {
+        shift = arg0 << 24;
+        for (walk = (u8 *)base + 0x20; walk < (u8 *)limit + 0x20; walk += 0x28) {
+            *(u16 *)(walk - 0x18) += shift >> 24;
+            *(u16 *)(walk - 0x10) += shift >> 24;
+            *(u16 *)(walk - 0x8) += shift >> 24;
+            *(u16 *)(walk + 0) += shift >> 24;
+        }
+    }
+    base = D_800A367C;
+    limit = D_800A3970;
+    if (base < limit) {
+        shift = arg << 24;
+        for (walk = (u8 *)base + 0x2C; walk < (u8 *)limit + 0x2C; walk += 0x34) {
+            *(u16 *)(walk - 0x24) -= shift >> 24;
+            *(u16 *)(walk - 0x18) -= shift >> 24;
+            *(u16 *)(walk - 0xC) -= shift >> 24;
+            *(u16 *)(walk + 0) -= shift >> 24;
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800679C4);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80067AB4);
 
@@ -12215,7 +12634,73 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006A3E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006A7C8);
 
+#ifdef NON_MATCHING
+/*
+ * w9h draft: memory-card save open (find/open/close, three section
+ * scans). New untracked block-scope externs D_800A3380/3384/3388/338C
+ * (path prefix halves) - recheck the map at the gate.
+ */
+s32 func_8006AA70(void) {
+    extern s32 func_8005A0F0(void *, s32, s32, u8, void *);
+    extern s32 D_800A3380;
+    extern s16 D_800A3384;
+    extern s32 D_800A3388;
+    extern s16 D_800A338C;
+    char path[0x40];
+    struct DIRENTRY entry;
+    s32 handle;
+    s32 fd;
+    s32 ret;
+
+    D_800A3808 = 0;
+    if (D_800A337C == 0) {
+        *(s32 *)path = D_800A3380;
+        *(s16 *)(path + 4) = D_800A3384;
+    } else {
+        *(s32 *)path = D_800A3388;
+        *(s16 *)(path + 4) = D_800A338C;
+    }
+    strcat(path, D_8008FC60);
+    handle = 0;
+    if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
+        fd = CardOpenFile(path, 0x200);
+        if (fd == -1) {
+            D_800A3808 = 5;
+            return 0;
+        }
+        CardCloseFile(fd);
+        handle = 1;
+        if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
+            D_800A3808 = 0xA;
+            return 0;
+        }
+    }
+    if (handle != 0) {
+        if ((func_8005A0F0(&entry, 0, 4, D_800A337C, D_8009B1E4) & 0xFF) == 0) {
+            D_800A3808 = 8;
+            return 0;
+        }
+    }
+    if ((func_8005A0F0(&entry, 4, 0x16, D_800A337C, (void *)D_800A3604) & 0xFF) == 0) {
+        D_800A3808 = 8;
+        return 0;
+    }
+    if (handle == 0) {
+        return 1;
+    }
+    *(s32 *)D_800A3A0C = 0;
+    *(u8 *)(D_800A3A0C + 4) = 0;
+    *(u8 *)(D_800A3A0C + 0x14) = 0;
+    *(u8 *)(D_800A3A0C + 0x34) = 0;
+    if ((func_8005A0F0(&entry, 0x1A, 3, D_800A337C, (void *)D_800A3A0C) & 0xFF) == 0) {
+        D_800A3808 = 8;
+        return 0;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006AA70);
+#endif
 
 #ifdef NON_MATCHING
 /* Draft is structurally close but gcc anchors the store base differently:
@@ -12325,7 +12810,75 @@ s32 func_8006AD44(char *name) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006ADC4);
 
+#ifdef NON_MATCHING
+/*
+ * w9h draft: delete entry idx by shifting later 0xE8-byte records down
+ * one slot through a 0xE8 stack buffer. Leaf, frame == buffer.
+ */
+void func_8006B088(s32 arg0) {
+    s32 buf[0x3A];
+    s32 count;
+    s32 n;
+    char *src;
+    char *dst;
+    char *end;
+    s32 i;
+
+    count = arg0 & 0xFF;
+    if (count == 0) {
+        return;
+    }
+    src = D_800A35F4 + count * 0xE8;
+    dst = (char *)buf;
+    end = src + 0xE0;
+    do {
+        ((s32 *)dst)[0] = ((s32 *)src)[0];
+        ((s32 *)dst)[1] = ((s32 *)src)[1];
+        ((s32 *)dst)[2] = ((s32 *)src)[2];
+        ((s32 *)dst)[3] = ((s32 *)src)[3];
+        src += 0x10;
+        dst += 0x10;
+    } while (src != end);
+    ((s32 *)dst)[0] = ((s32 *)src)[0];
+    ((s32 *)dst)[1] = ((s32 *)src)[1];
+    n = (arg0 & 0xFF) - 1;
+    if (n >= 0) {
+        i = n * 0xE8;
+        do {
+            src = D_800A35F4 + i;
+            dst = src + 0xE8;
+            end = src + 0xE0;
+            do {
+                ((s32 *)dst)[0] = ((s32 *)src)[0];
+                ((s32 *)dst)[1] = ((s32 *)src)[1];
+                ((s32 *)dst)[2] = ((s32 *)src)[2];
+                ((s32 *)dst)[3] = ((s32 *)src)[3];
+                src += 0x10;
+                dst += 0x10;
+            } while (src != end);
+            ((s32 *)dst)[0] = ((s32 *)src)[0];
+            ((s32 *)dst)[1] = ((s32 *)src)[1];
+            n -= 1;
+            i -= 0xE8;
+        } while (n >= 0);
+    }
+    src = (char *)buf;
+    dst = D_800A35F4;
+    end = (char *)buf + 0xE0;
+    do {
+        ((s32 *)dst)[0] = ((s32 *)src)[0];
+        ((s32 *)dst)[1] = ((s32 *)src)[1];
+        ((s32 *)dst)[2] = ((s32 *)src)[2];
+        ((s32 *)dst)[3] = ((s32 *)src)[3];
+        src += 0x10;
+        dst += 0x10;
+    } while (src != end);
+    ((s32 *)dst)[0] = ((s32 *)src)[0];
+    ((s32 *)dst)[1] = ((s32 *)src)[1];
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B088);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B1CC);
 
@@ -12373,7 +12926,35 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006B3E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B464);
 
+#ifdef NON_MATCHING
+/*
+ * w9h draft: retail re-reads the D_800A3604 pointer (gp) before every
+ * store, so the pointer variable is volatile here. The D_800A306C-3072/75
+ * bytes are untracked; reached as D_800A3073[-N]/[+2] (already declared
+ * in this TU).
+ */
+extern u8 *volatile D_800A3604;
+extern u8 D_800A3073[];
+extern u8 D_800A3078[];
+extern u16 D_800A3694Absolute[];
+extern s32 D_800A37D0[];
+
+void func_8006B5BC(void) {
+    s32 i;
+
+    D_800A3604[0] = D_800A3073[-3] << 7 | D_800A3073[-7] << 6 | D_800A3073[-6] << 5 | D_800A3073[-4] << 2 | D_800A3073[-5];
+    D_800A3604[0xB] = D_800A3073[2] << 2 | D_800A3073[-1] << 1 | D_800A3073[-2] & 1;
+    D_800A3604[1] = D_800A3694Absolute[0];
+    D_800A3604[2] = D_800A3694Absolute[1];
+    D_800A3604[3] = D_800A3078[0];
+    for (i = 0; i < 6; i++) {
+        D_800A3604[4 + i] = D_800A331CAbsolute[i];
+    }
+    D_800A3604[0xA] = D_800A37D0[0];
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B5BC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B6B8);
 
