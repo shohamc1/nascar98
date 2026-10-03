@@ -4513,7 +4513,27 @@ void func_80041848(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80041850);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8004195C);
+extern void func_8003F284(void);
+extern void func_8003F564(s32, s32);
+extern void func_8003FDE8(s8, s32, s32);
+
+void func_8004195C(void) {
+    SsStart2();
+    func_8003F284();
+    func_8003F564(0, 0);
+    func_8003FDE8(0, 0, 0);
+    VSync(0);
+    VSync(0);
+    VSync(0);
+    func_8003F564(1, 0xC);
+    func_8003FDE8(1, 0, 0);
+    func_8003F564(2, 0xD);
+    func_8003FDE8(2, 0, 0);
+    func_8003F564(3, 0xE);
+    func_8003FDE8(3, 0, 0);
+    func_8003F564(4, 0xF);
+    func_8003FDE8(4, 0, 0);
+}
 
 extern u8 D_800A2F9D;
 extern void func_8003FDE8(s8, s32, s32);
