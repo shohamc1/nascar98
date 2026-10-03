@@ -226,7 +226,21 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_flush);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_initvol);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_initintr);
+extern u32 D_8009BA80[];
+extern u32 D_8009BA7C[];
+extern u32 D_8009BA90[];
+extern u32 D_8009BA8C[];
+extern void callback();
+
+int CD_initintr(void) {
+    D_8009BA80[0] = 0;
+    D_8009BA7C[0] = 0;
+    D_8009BA90[0] = 0;
+    D_8009BA8C[0] = 0;
+    ResetCallback();
+    InterruptCallback(2, callback);
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_init);
 
@@ -234,7 +248,12 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_datasync);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_getsector);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_set_test_parmnum);
+extern u32 D_8009BD24[];
+
+void CD_set_test_parmnum(int parmNum) {
+    D_8009BD24[0] = parmNum;
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", callback);
 
