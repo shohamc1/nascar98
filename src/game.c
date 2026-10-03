@@ -5264,7 +5264,20 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800373B4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80038D78);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80039008);
+s32 func_80039008(u8 *arg0, u8 *arg1) {
+    extern s32 func_8003702C();
+    volatile s32 pad[4];
+    s32 result;
+
+    if (*(s32 *)(arg0 + 0x90) <= *(s32 *)(arg1 + 0x90)) {
+        return 0;
+    }
+    result = func_8003702C(arg0, arg1);
+    if (result >= 2) {
+        return 0;
+    }
+    return (*(s32 *)(arg0 + 0x90) - *(s32 *)(arg1 + 0x90)) / 20 >> 16 >= result;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800390A0);
 
@@ -5306,7 +5319,53 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003A880);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003A950);
 
+#ifdef NON_MATCHING
+/*
+ * Wall (w8d): semantics + statement order complete. Remaining diffs are
+ * register allocation: retail keeps the loaded counter in v0 (addiu v1,v0,1
+ * with the sh deferred past the sll16/sra15) and pan lives in a1 for its
+ * whole life (negu a1 / lh a1); our gcc loads the counter into v1, stores
+ * immediately, and puts pan in a2. Tried: u16 vs s32 counter, store-first
+ * vs table-first statement orders. The tail (sra7/subu, volatile reload,
+ * -0x320000 clamp with branchy if/else, callback) is exact.
+ */
+extern s16 D_800982D4[];
+extern void func_8003ABC0();
+
+void func_8003AA20(u8 *object) {
+    s32 counter;
+    s32 pan;
+    s32 value;
+
+    if (*(s16 *)(object + 0x102) != 0) {
+        counter = *(u16 *)(object + 0x1BC);
+        *(u16 *)(object + 0x1BC) = counter + 1;
+        pan = *(s16 *)(D_800982D4 + (s16)counter);
+        pan = -pan;
+    } else {
+        counter = *(u16 *)(object + 0x1BC);
+        *(u16 *)(object + 0x1BC) = counter + 1;
+        pan = *(s16 *)(D_800982D4 + (s16)counter);
+    }
+    *(u16 *)(object + 0x114) = *(u16 *)(object + 0x114) + pan + 0x400 & 0x3FF;
+    value = *(s32 *)(object + 0x90);
+    value -= value >> 7;
+    *(s32 *)(object + 0x90) = value;
+    if (pan == 0) {
+        value = *(volatile s32 *)(object + 0x90);
+        value -= 0x320000;
+        *(u16 *)(object + 0x1BC) = 0;
+        if (value < 0) {
+            *(s32 *)(object + 0x90) = 0;
+        } else {
+            *(s32 *)(object + 0x90) = value;
+        }
+        ObjectSetCallbackIfAllowed((Batch0CallbackObject *)object, func_8003ABC0);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003AA20);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003AAEC);
 
@@ -5369,7 +5428,61 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003B5F8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003B6DC);
 
+#ifdef NON_MATCHING
+/*
+ * Wall (w8d): everything matches except callee-saved s-reg BOOKING: retail
+ * next=s1, count=s2, offset=s0; our gcc insists next=s0 regardless of local
+ * declaration order (tried 3 orders). Prologue (head load before the stack
+ * adjust), loop body, store order (0,4,8), delay slots and the post-loop
+ * head block are otherwise identical. Table reads are BYTE offsets into
+ * D_800BE72C/730/738 (cast form). Head read via
+ * ((u8 **)D_800A3854Absolute)[9] == D_800A3878 (no alias defsym for it).
+ */
+extern void func_8002D4CC();
+extern void func_8003B6DC(s32 arg0);
+extern u8 *D_800A3854Absolute[];
+extern s32 D_800BE72C[];
+extern s32 D_800BE730[];
+extern s16 D_800BE738[];
+extern s32 D_800A2F60;
+extern s32 D_800A2EACAbsolute[];
+
+void func_8003BCAC(void) {
+    s32 offset;
+    u8 *next;
+    s32 count;
+    u8 *object;
+
+    next = *(u8 **)(((u8 **)D_800A3854Absolute)[9] + 0x3E0);
+    if (next != 0) {
+        count = 0;
+        offset = 0;
+        do {
+            func_8002D4CC(next);
+            *(s32 *)(next + 0) = *(s32 *)((u8 *)D_800BE72C + offset);
+            *(s32 *)(next + 4) = *(s32 *)((u8 *)D_800BE730 + offset);
+            *(s32 *)(next + 8) = 0;
+            func_80022FB8(next, *(s16 *)((u8 *)D_800BE738 + offset));
+            next = *(u8 **)(next + 0x3E0);
+            count += 1;
+            offset += 0x10;
+        } while (next != 0);
+    }
+    object = ((u8 **)D_800A3854Absolute)[9];
+    offset = count * 0x10;
+    *(s32 *)(object + 0) = *(s32 *)((u8 *)D_800BE72C + offset);
+    *(s32 *)(object + 4) = *(s32 *)((u8 *)D_800BE730 + offset);
+    *(s32 *)(object + 8) = 0;
+    func_8002D4CC(object);
+    func_80022FB8(object, *(s16 *)((u8 *)D_800BE738 + offset));
+    D_800A2F60 = 0x14;
+    func_8001D1E4();
+    D_800A2EACAbsolute[0] = 0;
+    func_8003B6DC(1);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003BCAC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003BDBC);
 
@@ -5397,7 +5510,33 @@ void CdDisableDebug(void) {
     CdSetDebug(0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003C584);
+extern s32 D_800A2F74;
+extern s32 D_800A37CC;
+extern CdlLOC D_800BDEBC[];
+extern s32 D_80098340[];
+extern s32 D_800A45A8[];
+extern s32 D_800A45AC[];
+
+void *func_8003C584(s32 arg0, void *arg1) {
+    u8 pad[0x40];
+    u8 result[8];
+    void *pos;
+    s32 value;
+
+    if (D_800A2F74 == 0) {
+        CdGetToc(D_800BDEBC);
+        D_800A2F74 = 1;
+    }
+    CdIntToPos(D_80098340[arg0 * 3] + 0x13C, D_800A45A8);
+    while (CdSync(1, result) == 0) {
+        VSync(0);
+    }
+    value = D_80098340[arg0 * 3 + 1];
+    D_800A45AC[0] = value;
+    D_800A37CC = arg0;
+    pos = &D_800A45AC[-1];
+    return pos;
+}
 
 void func_8003C63C(void) {
 }
@@ -5432,9 +5571,54 @@ void func_8003C8C8(u8 *string) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003C928);
+extern void *HeapAlloc(u32);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003CA18);
+void *func_8003C928(s32 arg0) {
+    u8 pad[0x40];
+    u8 result[8];
+    s32 value;
+    s32 size;
+    void *buffer;
+
+    if (D_800A2F74 == 0) {
+        CdGetToc(D_800BDEBC);
+        D_800A2F74 = 1;
+    }
+    CdIntToPos(D_80098340[arg0 * 3] + 0x13C, D_800A45A8);
+    while (CdSync(1, result) == 0) {
+        VSync(0);
+    }
+    value = D_80098340[arg0 * 3 + 1];
+    D_800A37CC = arg0;
+    D_800A45AC[0] = value;
+    size = (value + 0x7FF) >> 11 << 11;
+    buffer = HeapAlloc(size);
+    if (buffer != 0) {
+        func_8003C644(buffer, 1, size, D_800A45A8);
+    }
+    return buffer;
+}
+
+extern void func_8003C644();
+
+void func_8003CA18(s32 arg0, s32 arg1) {
+    u8 pad[0x40];
+    u8 result[8];
+    s32 value;
+
+    if (D_800A2F74 == 0) {
+        CdGetToc(D_800BDEBC);
+        D_800A2F74 = 1;
+    }
+    CdIntToPos(D_80098340[arg1 * 3] + 0x13C, D_800A45A8);
+    while (CdSync(1, result) == 0) {
+        VSync(0);
+    }
+    value = D_80098340[arg1 * 3 + 1];
+    D_800A37CC = arg1;
+    D_800A45AC[0] = value;
+    func_8003C644(arg0, 1, value, D_800A45A8);
+}
 
 #ifdef NON_MATCHING
 /*
@@ -5495,9 +5679,54 @@ void func_8003CAE8(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003CAE8);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003CC48);
+extern s32 D_800A2EC8[];
+extern s32 D_800A2F70;
+extern u8 D_800A2F9CAbsolute[];
+extern u8 D_800AE24C[];
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003CCE0);
+void func_8003CC48(void) {
+    u_char param[8];
+    u_char result[8];
+
+    if (D_800A2F9CAbsolute[0] == 0) {
+        return;
+    }
+    if (D_800A2EC8[0] != 0) {
+        return;
+    }
+    CdControl(1, 0, D_800AE24C);
+    param[0] = 0;
+    CdControl(0x11, param, result);
+    if (result[0] == D_800A2F70) {
+        return;
+    }
+    CdControl(2, (u_char *)&D_800BDEBC[D_800A2F70], 0);
+    CdControl(3, 0, 0);
+}
+
+void func_8003CCE0(s32 arg0) {
+    u_char pad[0x10];
+    u_char *status;
+    s32 target;
+
+    pad[0] = 0;
+    if (arg0 != 0) {
+        CdControl(3, 0, 0);
+        CdControlB(0xC, 0, 0);
+        return;
+    }
+    status = D_800AE24C;
+    CdControlB(1, 0, status);
+    if (*(s32 *)status != 0x42) {
+        CdControl(9, 0, 0);
+        return;
+    }
+    target = 0x82;
+    do {
+        CdControl(1, 0, status);
+    } while (*(s32 *)status != target);
+    CdControl(9, 0, 0);
+}
 
 void CdStop(void) {
     CdControl(8, 0, 0);
@@ -5514,6 +5743,7 @@ void CdStop(void) {
 extern void *CdGetToc(void *);
 extern s32 D_800A2F74;
 extern s32 D_800A37CC;
+extern CdlLOC D_800BDEBC[];
 extern s32 D_800BDEBC[];
 extern s32 D_80098340[];
 extern s32 D_800A45AC[];
