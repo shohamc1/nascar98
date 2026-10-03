@@ -4334,7 +4334,34 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003FC0C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FDE8);
 
+#ifdef NON_MATCHING
+/* Wall: gcc hoists the D_800B9E24 base into a 4th callee-saved reg; retail
+ * re-materializes lui per iteration with only s0/s1/s2 live. */
+extern s16 D_800B9E24[];
+extern void SpuGetAllKeysStatus(u8 *);
+extern void func_8003F914(s8);
+
+void func_8003FEB8(void) {
+    s8 keys[24];
+    s8 *keyState;
+    s8 i;
+    s16 voice;
+
+    SpuGetAllKeysStatus(keys);
+    keyState = keys;
+    i = 0;
+    do {
+        voice = D_800B9E24[i * 6];
+        if (voice != -1 && keyState[voice] == 3) {
+            func_8003F914(i);
+        }
+        i++;
+    } while (i < 0x18);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FEB8);
+#endif
+
 
 extern char D_8008D1A8[];
 extern char D_8008D1C4[];
