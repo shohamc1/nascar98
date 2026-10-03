@@ -9329,15 +9329,160 @@ void ListSetRangeFields(UnkNode1C *node, s32 low, s32 high, s16 value) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80064898);
+extern u8 *D_800A38FC[];
+extern u8 *D_800A3900[];
+extern u8 *D_800A39A0[];
+extern u8 *D_800A39A4[];
+extern u8 *D_800A39AC[];
+extern u8 *D_800A35E4[];
+extern u8 *D_800A35E8[];
+extern s8 D_800A3A14;
+extern void func_8005B688(u8 *first, u8 friction);
+extern void func_8005B8B8(u8 *first, u8 value);
+extern void func_80064000(s32 mode, s32 a, s32 b);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006499C);
+void func_80064898(void) {
+    func_8005B8B8(D_800A38FC[1], 0xFF);
+    if (D_800A38FC[0] != 0) {
+        func_8005B688(D_800A38FC[0], 1);
+        func_8005B8B8(D_800A3900[-1], 0xFF);
+    }
+    if (D_800A39A0[0] != 0) {
+        func_8005B688(D_800A39A0[0], 1);
+        func_8005B8B8(D_800A39A4[-1], 0xFF);
+    }
+    func_8005B688(D_800A35E4[0], 1);
+    func_8005B8B8(D_800A35E8[-1], 0xFF);
+    func_80064000(0, 0, 0);
+    if (D_800A3A14 != 0 || D_800A39AC[-3] != 0) {
+        func_8005B688(D_800A35E8[0], 1);
+        func_8005B8B8(D_800A35E8[0], 0xFF);
+        func_80064000(1, 0, 0);
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80064AB4);
+void func_8006499C(void) {
+    RECT rect;
+
+    rect.x = 0x140;
+    rect.y = 0x140;
+    rect.h = 0x48;
+    rect.w = 0x140;
+    MoveImage(&rect, 0x140, 0);
+    DrawSync(0);
+    rect.x = 0x280;
+    rect.y = 0x140;
+    rect.h = 0x48;
+    rect.w = 0x40;
+    MoveImage(&rect, 0x140, 0x48);
+    DrawSync(0);
+    rect.x = 0x140;
+    rect.y = 0x188;
+    rect.h = 0x48;
+    rect.w = 0x100;
+    MoveImage(&rect, 0x180, 0x48);
+    rect.x = 0x240;
+    rect.y = 0x188;
+    rect.h = 0x48;
+    rect.w = 0x80;
+    MoveImage(&rect, 0x140, 0x90);
+    DrawSync(0);
+    rect.x = 0x100;
+    rect.y = 0x1D0;
+    rect.h = 0x18;
+    rect.w = 0x100;
+    MoveImage(&rect, 0x140, 0xD8);
+    DrawSync(0);
+}
+
+extern u8 D_8009B00C[];
+extern u8 D_8009B028[];
+extern u8 D_8009B02A[];
+extern u16 D_8009B048[][7];
+extern u8 D_8009B04A[];
+extern u16 D_8009B050[][7];
+extern u16 D_8009B054[][7];
+
+void func_80064AB4(u8 *prim, u8 idx) {
+    SetShadeTex(prim, 0);
+    ((u8 *)prim)[4] = 0x80;
+    ((u8 *)prim)[5] = 0x80;
+    ((u8 *)prim)[6] = 0x80;
+    SetSemiTrans(prim, 0);
+    *(s16 *)(prim + 0xE) = GetClut(0x140, 0xEF - idx);
+    *(s16 *)(prim + 0x16) = GetTPage(D_8009B054[idx][0], 0,
+                                     D_8009B048[idx][0],
+                                     D_8009B048[idx][1]);
+    ((u8 *)prim)[0xC] = D_8009B050[idx][0];
+    ((u8 *)prim)[0xD] = D_8009B048[idx][5];
+    ((u8 *)prim)[0x14] = D_8009B04A[idx * 14 + 6] + 0x3F;
+    ((u8 *)prim)[0x15] = D_8009B054[idx][-1];
+    ((u8 *)prim)[0x1C] = D_8009B048[idx][4];
+    ((u8 *)prim)[0x1D] = D_8009B028[idx * 14 + 0x2A] + 0x47;
+    ((u8 *)prim)[0x24] = D_8009B00C[idx * 14 + 0x44] + 0x3F;
+    ((u8 *)prim)[0x25] = D_8009B02A[idx * 14 + 0x28] + 0x47;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80064C14);
 
+#ifdef NON_MATCHING
+/*
+ * Closest draft: 0xC long. gcc folds the D_800BDD62 array extern into
+ * absolute lui/sb stores and drops the v1 pointer that retail keeps for
+ * flags[0]/0x5F/0x60/0x61 (+1 instruction per store, -3 for the missing
+ * lui/addiu). Everything else (prologue, both if/else SetDef pairs,
+ * absolute BDD64-67/C0-C3/BDDBE stores) matches.
+ */
+extern u8 D_800BDD62[];
+extern u8 D_800BDD64[];
+extern u8 D_800BDD65[];
+extern u8 D_800BDD66[];
+extern u8 D_800BDD67[];
+extern u8 D_800BDDBE[];
+extern u8 D_800BDDC0[];
+extern u8 D_800BDDC1[];
+extern u8 D_800BDDC2[];
+extern u8 D_800BDDC3[];
+
+void func_80064CD8(u8 mode) {
+    u8 *flags;
+
+    SetDefDrawEnv(&D_800BDD4C[0], 0, 0, 0x140, 0xF0);
+    SetDefDispEnv(&D_800BDE04[0], 0, 0, 0x140, 0xF0);
+    if (mode != 0) {
+        SetDefDrawEnv((DRAWENV *)((u8 *)D_800BDD4C + 0x5C), 0, 0, 0x140, 0xF0);
+        SetDefDispEnv(&D_800BDE04[1], 0, 0, 0x140, 0xF0);
+    } else {
+        SetDefDrawEnv((DRAWENV *)((u8 *)D_800BDD4C + 0x5C), 0x140, 0, 0x140, 0xF0);
+        SetDefDispEnv(&D_800BDE04[1], 0x140, 0, 0x140, 0xF0);
+    }
+    flags = D_800BDD62;
+    flags[0] = 0;
+    D_800BDDC0[0] = 1;
+    D_800BDD64[0] = 1;
+    D_800BDDBE[0] = 0;
+    if (mode != 0) {
+        D_800BDD65[0] = 0;
+        D_800BDD66[0] = 0;
+        D_800BDD67[0] = 0xA;
+        flags[0x5F] = 0;
+        flags[0x60] = 0;
+        flags[0x61] = 0xA;
+    } else {
+        D_800BDD65[0] = 0;
+        D_800BDD66[0] = 7;
+        D_800BDD67[0] = 0x26;
+        D_800BDDC1[0] = 0;
+        D_800BDDC2[0] = 7;
+        D_800BDDC3[0] = 0x26;
+    }
+    SetDispMask(0);
+    PutDrawEnv(&D_800BDD4C[0]);
+    PutDispEnv(&D_800BDE04[0]);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80064CD8);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80064E6C);
 
