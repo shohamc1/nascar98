@@ -100,7 +100,15 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3A54Small=D_800A3A54 \
             --defsym=D_800A3A54Absolute=D_800A3A54 \
             --defsym=gOrderingTableBankSmall=gOrderingTableBank \
-            --defsym=gOrderingTableBankAbsolute=gOrderingTableBank
+            --defsym=gOrderingTableBankAbsolute=gOrderingTableBank \
+            --defsym=D_800A384CSmall=D_800A384C \
+            --defsym=D_800A384CAbsolute=D_800A384C \
+            --defsym=D_800A3854Small=D_800A3854 \
+            --defsym=D_800A3854Absolute=D_800A3854 \
+            --defsym=D_800A36D0Small=D_800A36D0 \
+            --defsym=D_800A36D0Absolute=D_800A36D0 \
+            --defsym=D_800A36D4Small=D_800A36D4 \
+            --defsym=D_800A36D4Absolute=D_800A36D4
 
 # SDK C matches with R3000 scheduling. Game flags stay above.
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
