@@ -2328,7 +2328,32 @@ void func_80028FAC(void *object) {
     func_80028980(object);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80028FCC);
+void func_80028D80(u8 *);
+void func_80028980(u8 *);
+
+void func_80028FCC(u8 *arg0) {
+    s32 x84;
+
+    if (arg0 != 0) {
+        do {
+            *(s32 *)(arg0 + 0x94) = *(s32 *)(arg0 + 0x90);
+            x84 = *(s32 *)(arg0 + 0x84);
+            if (*(s32 *)(arg0 + 0x90) < x84) {
+                func_80028D80(arg0);
+                if (x84 < *(s32 *)(arg0 + 0x90)) {
+                    *(s32 *)(arg0 + 0x90) = x84;
+                }
+            } else {
+                if (x84 < *(s32 *)(arg0 + 0x90)) {
+                    *(s32 *)(arg0 + 0x90) =
+                        *(s32 *)(arg0 + 0x90) - 0x40000;
+                }
+            }
+            func_80028980(arg0);
+            arg0 = *(u8 **)(arg0 + 0x3E0);
+        } while (arg0 != 0);
+    }
+}
 
 extern u8 D_800A2E18;
 typedef struct {
