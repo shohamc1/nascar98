@@ -4907,7 +4907,31 @@ void func_80058030(void) {
     PutDrawEnv(&D_800BDD4C[D_800A305C]);
 }
 
+#ifdef NON_MATCHING
+extern s32 D_800A3090[];
+extern s32 func_8003C584(s32, s32);
+extern s32 func_8003C8BC(s32, s32, s32);
+extern s32 func_8003C644(s32, s32, s32, s32);
+extern s32 func_8003C63C(s32);
+s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
+    s32 sector;
+    s32 size;
+
+    sector = func_8003C584(arg0, (s32)D_800A3090);
+    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11;
+    size = size << 11;
+    if (data == 0) {
+        data = (s32)HeapAlloc(size);
+    }
+    func_8003C8BC(sector, 0, 0);
+    func_8003C644(data, 1, size, sector);
+    func_8003C63C(sector);
+    *arg1 = data + 4;
+    return data;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80058094);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80058148);
 
@@ -4928,7 +4952,35 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800587A0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80058D08);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80058D14);
+void func_80058D14(u16 *src, u16 *dst, s32 arg2) {
+    u8 *end;
+    u16 bits;
+    u32 pixel;
+    u8 value;
+    s32 shift;
+    u8 j;
+
+    end = (u8 *)dst + 0x257FE;
+    do {
+        bits = *src;
+        pixel = 0;
+        shift = 0;
+        j = 0;
+        do {
+            value = (u8)(arg2 + (bits & 0x1F));
+            if (value >= 0x20) {
+                value = 0x1F;
+            }
+            pixel |= value << shift;
+            shift += 5;
+            j++;
+            bits >>= 5;
+        } while ((j & 0xFF) < 3);
+        *dst = pixel;
+        dst = (u16 *)((u8 *)dst + 2);
+        src = (u16 *)((u8 *)src + 2);
+    } while (end >= (u8 *)dst);
+}
 
 void func_80058D8C(void) {
 }
@@ -4982,7 +5034,7 @@ u8 CardDeleteFile(char *path) {
 
 extern void CardTestEvents(void);
 extern void func_8005A414(void);
-extern void func_800598FC(void);
+extern s32 func_800598FC(void);
 void func_800598C4(void) {
     CardTestEvents();
     func_8005A414();
@@ -4990,16 +5042,95 @@ void func_800598C4(void) {
     ChangeClearPAD(0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800598FC);
+#ifdef NON_MATCHING
+extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
+extern s32 D_800A38C8, D_800A38CC, D_800A38D0, D_800A38D4;
+extern s32 DisableEvent(s32);
+s32 func_800598FC(void) {
+    s32 result;
+    s32 enabled;
 
-extern void CardEnableEvents(void), CardTestEvents(void), func_8005A414(void);
+    EnterCriticalSection();
+    enabled = DisableEvent(D_800A3824) != 0;
+    result = enabled;
+    if (enabled == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A3828) == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A382C) == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A3834) == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A38C8) == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A38CC) == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A38D0) == 0) {
+        result = 0;
+    }
+    if (DisableEvent(D_800A38D4) == 0) {
+        result = 0;
+    }
+    ExitCriticalSection();
+    return result;
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_800598FC);
+#endif
+
+extern s32 CardEnableEvents(void);
+extern void CardTestEvents(void), func_8005A414(void);
+extern s32 func_8005A294(void);
 void func_800599E4(void) {
     CardEnableEvents();
     CardTestEvents();
     func_8005A414();
 }
 
+#ifdef NON_MATCHING
+s32 CardEnableEvents(void) {
+    s32 result;
+    s32 enabled;
+
+    EnterCriticalSection();
+    enabled = EnableEvent(D_800A3824) != 0;
+    result = enabled;
+    if (enabled == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A3828) == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A382C) == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A3834) == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A38C8) == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A38CC) == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A38D0) == 0) {
+        result = 0;
+    }
+    if (EnableEvent(D_800A38D4) == 0) {
+        result = 0;
+    }
+    ExitCriticalSection();
+    return result;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", CardEnableEvents);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", CardCheckStatus);
 
@@ -5100,7 +5231,27 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005A0F0);
 
 INCLUDE_ASM("asm/nonmatchings/game", CardCountOtherFileBlocks);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005A294);
+s32 func_8005A294(void) {
+    u32 i;
+
+    i = 0;
+    do {
+        i++;
+        if (TestEvent(D_800A3824) == 1) {
+            return 0;
+        }
+        if (TestEvent(D_800A3828) == 1) {
+            return 1;
+        }
+        if (TestEvent(D_800A382C) == 1) {
+            return 2;
+        }
+        if (TestEvent(D_800A3834) == 1) {
+            return 3;
+        }
+    } while (i < 0x40000);
+    return 1;
+}
 
 extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
 void CardTestEvents(void) {
