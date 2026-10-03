@@ -6230,7 +6230,51 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8004DF38);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004E294);
 
+#ifdef NON_MATCHING
+/* Wall (draft below, 0x104 vs retail 0x108): gcc 2.7.2 CSEs the
+ * loop-invariant address p+idx into one register hoisted before the
+ * loop; retail recomputes addu a2,t0,t2 inside the loop and reads it
+ * twice per iteration. Also missing retail's empty 8-byte frame
+ * (addiu sp,-8). Tried: pointer locals q/p, distinct expressions,
+ * i*2 array indexing. The s8 counter (sll24/sra24), the guarded div
+ * (break 7/6), and the fresh lui/lw before the *2+1 tail all match. */
+extern s32 D_800A2CE0;
+extern s8 D_800992D0[];
+extern s32 D_800A8A2C[];
+extern s32 D_800A8A30[];
+extern s8 D_800A3498;
+extern s8 D_800A349C;
+extern s8 D_800A34A8;
+extern s16 D_800A34A0;
+extern s16 D_800A34A4;
+void func_8004E700(void) {
+    s32 idx;
+    s32 *q;
+    s8 *p;
+    s8 i;
+    s32 a1;
+
+    idx = D_800A2CE0;
+    D_800A34A8 = 0;
+    D_800A3498 = 0;
+    D_800A34A4 = 0;
+    D_800A349C = 0x3C;
+    if (D_800992D0[idx] > 0) {
+        q = &D_800BE974[0];
+        p = D_800992D0;
+        i = 0;
+        do {
+            a1 = *q;
+            D_800A8A30[i * 2] = 0x7FFFFFFF;
+            D_800A8A2C[i * 2] = a1 + a1 * (i + 1) / p[idx];
+            i++;
+        } while (i < p[idx]);
+    }
+    D_800A34A0 = D_800BE974[0] * 2 + 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8004E700);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004E808);
 
@@ -6799,46 +6843,51 @@ void func_800599E4(void) {
 #ifdef NON_MATCHING
 /* Wall: with asm("") in each if-body the branch shape matches; the
  * remaining diff is the first normalize: retail computes
- * sltu v0,zero,v0 before the second call and copies it to s0 in the
- * jal delay slot; ours schedules the sltu itself into the delay slot
- * (one instruction short). */
+ * sltu v0,zero,v0 (in v0, before the second call) then copies it to
+ * s0 in the second jal's delay slot. gcc 2.7.2 coalesces the compare
+ * straight into s0 (tried: two locals enabled/result, split
+ * `enabled = call(); enabled = enabled != 0;` -- both copy-propagate
+ * back to sltu s0,zero,v0). */
 extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
 extern s32 D_800A38C8, D_800A38CC, D_800A38D0, D_800A38D4;
 s32 CardEnableEvents(void) {
     s32 enabled;
+    s32 result;
 
     EnterCriticalSection();
-    enabled = EnableEvent(D_800A3824) != 0;
+    enabled = EnableEvent(D_800A3824);
+    enabled = enabled != 0;
+    result = enabled;
     if (EnableEvent(D_800A3828) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     if (EnableEvent(D_800A382C) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     if (EnableEvent(D_800A3834) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     if (EnableEvent(D_800A38C8) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     if (EnableEvent(D_800A38CC) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     if (EnableEvent(D_800A38D0) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     if (EnableEvent(D_800A38D4) == 0) {
         asm("");
-        enabled = 0;
+        result = 0;
     }
     ExitCriticalSection();
-    return enabled;
+    return result;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", CardEnableEvents);
@@ -6896,6 +6945,12 @@ void func_80059DC4(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80059E0C);
 
 #ifdef NON_MATCHING
+/* Wall (w4c): prologue allocation matches with the draft as-is
+ * (channel stmt first -> retries s0, channel s1); remaining diffs vs
+ * retail: retail zeroes retries FIRST (before the channel andi/sltu),
+ * keeps the compare-constant 3 in callee-saved s2 (ours: li v0 at
+ * use), and defers the ra save to after that li. Reordering
+ * statements flips the s0/s1 allocation (w3a param-copy priority). */
 extern s32 func_8005A294(void);
 extern void CardTestEvents(void);
 extern s32 CardWaitForEvent(void);
