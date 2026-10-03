@@ -2229,6 +2229,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003DB5C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003DBA8);
 
+#ifdef NON_MATCHING
 extern u8 D_800A372C[];
 extern s32 D_800A2CE0[];
 extern s32 D_800A2EA8[];
@@ -2316,6 +2317,9 @@ s32 func_8003E78C(u8 *object) {
     *(s32 *)(object + 0x29C) = pace - 2 + value;
     return 1;
 }
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_8003E78C);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003EA94);
 
