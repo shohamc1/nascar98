@@ -2330,7 +2330,90 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80024E90);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80025370);
 
+#ifdef NON_MATCHING
+/* Whole body matches except: retail loads the s16 count directly into its
+ * register (lh t5) and allocates minX/minY/minZ one register later
+ * (t6/t7/t8); gcc 2.7.2 routes the s16 lh through a temp (lh v1 + move t8)
+ * and shifts the min/max triple one register earlier. Frame is correct
+ * (-8) only with the s16 count; s32 count gives a 0 or 0x10 frame. */
+void func_80025454(s32 *track) {
+    s16 count;
+    s32 minX;
+    s32 minY;
+    s32 minZ;
+    s32 maxX;
+    s32 maxY;
+    s32 maxZ;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 i;
+    s32 limit;
+    s32 *cursor;
+
+    limit = 0;
+    minX = 0;
+    minY = 0;
+    minZ = 0;
+    maxX = 0;
+    maxY = 0;
+    maxZ = 0;
+    i = 0;
+    count = *(s16 *)((u8 *)track + 0x28);
+    cursor = *(s32 **)((u8 *)track + 0x14);
+    for (; i < count; i++) {
+        x = cursor[2];
+        if (x < minX) {
+            minX = x;
+        }
+        y = cursor[3];
+        if (y < minY) {
+            minY = y;
+        }
+        z = cursor[4];
+        if (z < minZ) {
+            minZ = z;
+        }
+        if (maxX < x) {
+            maxX = x;
+        }
+        if (maxY < y) {
+            maxY = y;
+        }
+        if (maxZ < z) {
+            maxZ = z;
+        }
+        cursor += 5;
+    }
+    if (limit < -minX) {
+        limit = -minX;
+    }
+    if (limit < maxX) {
+        limit = maxX;
+    }
+    if (limit < -minY) {
+        limit = -minY;
+    }
+    if (limit < maxY) {
+        limit = maxY;
+    }
+    if (limit < -minZ) {
+        limit = -minZ;
+    }
+    if (limit < maxZ) {
+        limit = maxZ;
+    }
+    *(s32 *)((u8 *)track + 0x18) = limit - 5;
+    *(s16 *)((u8 *)track + 0x1C) = minX;
+    *(s16 *)((u8 *)track + 0x20) = minY;
+    *(s16 *)((u8 *)track + 0x24) = minZ;
+    *(s16 *)((u8 *)track + 0x1E) = maxX;
+    *(s16 *)((u8 *)track + 0x22) = maxY;
+    *(s16 *)((u8 *)track + 0x26) = maxZ;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80025454);
+#endif
 
 void func_80025594(u8 *object) {
     *(s16 *)(object + 0x1BC) = 0;
@@ -2763,7 +2846,24 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800294A8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800297D0);
 
+#ifdef NON_MATCHING
+/* Same length; differs only in store scheduling: retail sinks each result
+ * store past the next call's a1 load and materializes the table base into
+ * v1, keeping the result live in v0. Our gcc stores early and reuses v0. */
+extern s32 *D_800A3A2CAbsolute[];
+extern s32 *D_800A3A34Absolute[];
+void func_800298E0(s32 *car) {
+    s32 index;
+
+    index = ((s16 *)car)[0x8A];
+    car[0x31] = MathMultiplyFixed16(D_800A3A2CAbsolute[0][index], car[0x24]);
+    car[0x32] = MathMultiplyFixed16(D_800A3A34Absolute[0][index], car[0x24]);
+    car[0x34] = MathMultiplyFixed16(D_800A3A2CAbsolute[0][index], car[0x24]);
+    car[0x35] = MathMultiplyFixed16(D_800A3A34Absolute[0][index], car[0x24]);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800298E0);
+#endif
 
 extern void func_8003644C(s32, s32, s32, s32);
 
@@ -2792,7 +2892,27 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80029A78);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80029CB4);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80029DA8);
+extern void func_80029CB4(s32 *arg0);
+extern void func_80039B74(s32 *arg0, s32 arg1);
+void func_80029DA8(s32 *car) {
+    volatile s32 debugBuffer[16];
+    s32 a;
+    s32 b;
+    s32 c;
+
+    func_8002D16C(car);
+    func_8002B538(car);
+    func_80029A78(car);
+    func_80029150(car);
+    a = car[0] + car[0x2C];
+    b = car[1] + car[0x2D];
+    c = car[2] + car[0x2E];
+    car[0] = a;
+    car[1] = b;
+    car[2] = c;
+    func_80029CB4(car);
+    func_80039B74(car, 0);
+}
 
 void func_80029E2C(void) {
 }
@@ -2847,11 +2967,40 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002A2F8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002A954);
 
+#ifdef NON_MATCHING
+/* Closest shape: all chains/registers match except the +3000 absorbs into
+ * the total register (addiu v0 + addu v0,a1,v0) instead of the weight
+ * register (retail: addiu a1 + addu v0,v0,a1). gcc 2.7.2 combine always
+ * absorbs the constant into the final addu's destination operand. */
+s32 func_8002AAA0(s32 *car) {
+    s32 weight;
+    s32 total;
+
+    weight = (car[0x14] * 200) >> 16;
+    total = (car[0x90] * 35 + car[0x91] * 5) >> 16;
+    return weight + 3000 + total;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8002AAA0);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002AAF0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002AD20);
+extern s32 *D_800A3A2CAbsolute[];
+extern s32 *D_800A3A34Absolute[];
+void func_8002AD20(s32 *car, s32 index) {
+    s32 entryA;
+    s32 entryB;
+
+    entryA = D_800A3A2CAbsolute[0][index];
+    entryB = D_800A3A34Absolute[0][index];
+    car[0x31] = MathMultiplyFixed16(entryA, car[0x24]);
+    car[0x32] = MathMultiplyFixed16(entryB, car[0x24]);
+    car[0x34] = MathMultiplyFixed16(entryA, car[0x24]);
+    car[0x35] = MathMultiplyFixed16(entryB, car[0x24]);
+    car[0x2C] = MathMultiplyFixed16(entryA, car[0x24]) >> 16;
+    car[0x2D] = MathMultiplyFixed16(entryB, car[0x24]) >> 16;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002ADE0);
 
