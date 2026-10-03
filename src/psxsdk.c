@@ -17,7 +17,50 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", __do_global_dtors);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __main);
 
+extern unsigned long long __udivmoddi4(unsigned long long num,
+                                       unsigned long long den,
+                                       unsigned long long* rem);
+
+#ifdef NON_MATCHING
+typedef union {
+    struct {
+        s32 low;
+        s32 high;
+    } s;
+    long long ll;
+} DwUnion;
+
+long long __divdi3(long long u, long long v) {
+    DwUnion uu;
+    DwUnion vv;
+    long long w;
+    long long n;
+    int c;
+
+    c = 0;
+    uu.ll = u;
+    vv.ll = v;
+
+    if (uu.s.high < 0) {
+        c = ~c;
+        n = -uu.ll;
+        uu.ll = n;
+    }
+    if (vv.s.high < 0) {
+        c = ~c;
+        n = -vv.ll;
+        vv.ll = n;
+    }
+
+    w = __udivmoddi4(uu.ll, vv.ll, 0);
+    if (c) {
+        w = -w;
+    }
+    return w;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __divdi3);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __udivmoddi4);
 
@@ -165,7 +208,13 @@ int StopRCnt(int timer) {
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetRCnt);
+long ResetRCnt(long timer) {
+    if ((timer & 0xFFFF) >= 3) {
+        return 0;
+    }
+    *(volatile u16*)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]) = 0;
+    return 1;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -357,7 +406,24 @@ extern void CD_datasync(int mode);
 
 void CdDataSync(int mode) { CD_datasync(mode); }
 
+#ifdef NON_MATCHING
+void CdIntToPos(int i, CdlLOC* p) {
+    int m;
+    int s;
+    int f;
+
+    i += 150;
+    m = i / 75;
+    f = i % 75;
+    s = m / 60;
+    m = m % 60;
+    p->second = (s8)((m / 10) * 0x10 + (m % 10));
+    p->sector = (s8)((f / 10) * 0x10 + (f % 10));
+    p->minute = (s8)((s / 10) * 0x10 + (s % 10));
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdIntToPos);
+#endif
 
 int CdPosToInt(CdlLOC* p) {
 #define DECODE_BCD(x) (((x) >> 4) * 10 + ((x) & 0xF))
@@ -378,9 +444,47 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_ready);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_cw);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_vol);
+extern u32 D_8009BD40[];
+extern u32 D_8009BD44[];
+extern u32 D_8009BD48[];
+extern u32 D_8009BD4C[];
 
+int CD_vol(CdlATV* vol) {
+    *(u8*)D_8009BD40[0] = 2;
+    *(u8*)D_8009BD48[0] = vol->val0;
+    *(u8*)D_8009BD4C[0] = vol->val1;
+    *(u8*)D_8009BD40[0] = 3;
+    *(u8*)D_8009BD44[0] = vol->val2;
+    *(u8*)D_8009BD48[0] = vol->val3;
+    *(u8*)D_8009BD4C[0] = 0x20;
+    return 0;
+}
+
+extern u8 D_8009BD58[];
+extern u8 D_8009BD59[];
+extern u8 D_8009BD5A[];
+extern u32 D_8009BD50[];
+
+#ifdef NON_MATCHING
+void CD_flush(void) {
+    *(u8*)D_8009BD40[0] = 1;
+    while (*(u8*)D_8009BD4C[0] & 7) {
+        *(u8*)D_8009BD40[0] = 1;
+        *(u8*)D_8009BD4C[0] = 7;
+        *(u8*)D_8009BD48[0] = 7;
+    }
+    D_8009BD5A[0] = 0;
+    asm("");
+    D_8009BD59[0] = ((volatile u8*)D_8009BD59)[-1];
+    *(u8*)D_8009BD40[0] = 0;
+    D_8009BD58[0] = 2;
+    *(u8*)D_8009BD4C[0] = 0;
+    *(u32*)D_8009BD50[0] = 0x1325;
+    asm("");
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_flush);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_initvol);
 
@@ -438,7 +542,30 @@ CdlCB CdReadCallback(CdlCB func) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", VSync);
 
+extern s32 D_8009CE84[];
+extern char D_80090404[];
+
+#ifdef NON_MATCHING
+void v_wait(int mode, int time) {
+    volatile int count;
+
+    count = time << 15;
+    asm("");
+    if (D_8009CE84[0] < mode) {
+        do {
+            count = count - 1;
+            if (count == -1) {
+                puts(D_80090404);
+                ChangeClearPAD(0);
+                ChangeClearRCnt(3, 0);
+                break;
+            }
+        } while (D_8009CE84[0] < mode);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", v_wait);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearRCnt);
 
@@ -829,7 +956,37 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDispMask);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DrawSync);
 
+extern u8 D_8009DA92[];
+extern s16 D_8009DA94[];
+extern s16 D_8009DA96[];
+extern int (*D_8009DA8C[])();
+extern char D_8009071C[];
+extern char D_8009073C[];
+extern char D_80090728[];
+
+#ifdef NON_MATCHING
+void checkRECT(RECT* r, RECT* rect) {
+    switch (D_8009DA92[0]) {
+    case 1:
+        if (rect->w > D_8009DA94[0] || rect->w + rect->x > D_8009DA94[0] ||
+            rect->y > D_8009DA96[0] || rect->y + rect->h > D_8009DA96[0] ||
+            rect->w <= 0 || rect->x < 0 || rect->y < 0 || rect->h > 0) {
+            D_8009DA8C[0](D_8009071C, r);
+            D_8009DA8C[0](D_80090728, rect->x, rect->y, rect->w, rect->h);
+            return;
+        }
+        return;
+    case 2:
+        D_8009DA8C[0](D_8009073C, r);
+        D_8009DA8C[0](D_80090728, rect->x, rect->y, rect->w, rect->h);
+        return;
+    default:
+        return;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", checkRECT);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ClearImage);
 
