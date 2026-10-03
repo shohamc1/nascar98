@@ -3465,7 +3465,14 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800358EC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80035B20);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80035E8C);
+void func_80035E8C(s32 *src, s32 *outX, s32 *outY) {
+    s32 value;
+
+    value = MathFixedDivide(src[0], src[2]);
+    outX[0] = (MathMultiplyFixed16(value & -0x10, 0xD00000) >> 16) + 0xA0;
+    value = MathFixedDivide(src[1], src[2]);
+    outY[0] = (MathMultiplyFixed16(value & -0x10, 0xD00000) >> 16) + D_800A2F3C[0];
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80035F28);
 
