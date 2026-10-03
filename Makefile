@@ -54,7 +54,53 @@ ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
             --defsym=D_800A2F9CAbsolute=D_800A2F9C \
-            --defsym=D_800A3378Small=D_800A3378
+            --defsym=D_800A3378Small=D_800A3378 \
+            --defsym=D_800A37E8Small=D_800A37E8 \
+            --defsym=D_800A37E8Absolute=D_800A37E8 \
+            --defsym=D_800A397CSmall=D_800A397C \
+            --defsym=D_800A397CAbsolute=D_800A397C \
+            --defsym=D_800A3A3CSmall=D_800A3A3C \
+            --defsym=D_800A3A3CAbsolute=D_800A3A3C \
+            --defsym=D_800A3A2CSmall=D_800A3A2C \
+            --defsym=D_800A3A2CAbsolute=D_800A3A2C \
+            --defsym=D_800A3A34Small=D_800A3A34 \
+            --defsym=D_800A3A34Absolute=D_800A3A34 \
+            --defsym=D_800A2F9DSmall=D_800A2F9D \
+            --defsym=D_800A2F9DAbsolute=D_800A2F9D \
+            --defsym=D_800A3694Small=D_800A3694 \
+            --defsym=D_800A3694Absolute=D_800A3694 \
+            --defsym=D_800A2EACSmall=D_800A2EAC \
+            --defsym=D_800A2EACAbsolute=D_800A2EAC \
+            --defsym=D_800A2EC0Small=D_800A2EC0 \
+            --defsym=D_800A2EC0Absolute=D_800A2EC0 \
+            --defsym=D_800A2EB0Small=D_800A2EB0 \
+            --defsym=D_800A2EB0Absolute=D_800A2EB0 \
+            --defsym=D_800A2E24Small=D_800A2E24 \
+            --defsym=D_800A2E24Absolute=D_800A2E24 \
+            --defsym=D_800A331CSmall=D_800A331C \
+            --defsym=D_800A331CAbsolute=D_800A331C \
+            --defsym=D_800A3320Small=D_800A3320 \
+            --defsym=D_800A3320Absolute=D_800A3320 \
+            --defsym=D_800A3668Small=D_800A3668 \
+            --defsym=D_800A3668Absolute=D_800A3668 \
+            --defsym=D_800A2E84Small=D_800A2E84 \
+            --defsym=D_800A2E84Absolute=D_800A2E84 \
+            --defsym=D_800A39A4Small=D_800A39A4 \
+            --defsym=D_800A39A4Absolute=D_800A39A4 \
+            --defsym=D_800A3A40Small=D_800A3A40 \
+            --defsym=D_800A3A40Absolute=D_800A3A40 \
+            --defsym=D_800A3A8CSmall=D_800A3A8C \
+            --defsym=D_800A3A8CAbsolute=D_800A3A8C \
+            --defsym=D_800A2EA0Small=D_800A2EA0 \
+            --defsym=D_800A2EA0Absolute=D_800A2EA0 \
+            --defsym=D_800A2EA4Small=D_800A2EA4 \
+            --defsym=D_800A2EA4Absolute=D_800A2EA4 \
+            --defsym=D_800A2EC8Small=D_800A2EC8 \
+            --defsym=D_800A2EC8Absolute=D_800A2EC8 \
+            --defsym=D_800A3A54Small=D_800A3A54 \
+            --defsym=D_800A3A54Absolute=D_800A3A54 \
+            --defsym=gOrderingTableBankSmall=gOrderingTableBank \
+            --defsym=gOrderingTableBankAbsolute=gOrderingTableBank
 
 # SDK C matches with R3000 scheduling. Game flags stay above.
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
