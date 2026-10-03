@@ -1694,7 +1694,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsInit);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80080728);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80080758);
+void func_80080758(void) {
+    SpuQuit();
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -1835,7 +1837,9 @@ void _SsSndPause(s16 access, s16 sequence) {
     D_800BDE3C[access][sequence].unk90 &= ~2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_8008134C);
+void func_8008134C(s16 arg0, s16 arg1) {
+    _SsSeqPlay(arg0, arg1);
+}
 
 /* SPDX-License-Identifier: MIT */
 void _SsSndReplay(s16 access, s16 sequence) {
@@ -2057,9 +2061,13 @@ extern s16 D_800AE280[];
 
 int SsUtGetReverbType(void) { return D_800AE280[0]; }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80082B50);
+void func_80082B50(void) {
+    SpuSetReverb(1);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80082B70);
+void func_80082B70(void) {
+    SpuSetReverb(0);
+}
 
 extern SpuReverbAttr D_800AE27C[];
 
@@ -2196,7 +2204,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAutoPan);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAllKeyOff);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80087CC0);
+void func_80087CC0(void) {
+    _SpuInit(0);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SpuInit);
 
