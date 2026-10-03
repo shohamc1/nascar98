@@ -9415,15 +9415,14 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80072A70);
 
 extern volatile s32 *D_800A351C;
 #ifdef NON_MATCHING
-/* Byte-exact except one byte: our maspsx expand_load_immediate drops the
- * source register for `li $reg,0` (the TODO else-branch), so the divisor
- * high word assembles as `ori a3,a3,0` (0x34E70000) instead of retail's
- * `ori a3,zero,0` (0x34070000). Every C variant hits it. Fix maspsx, then
- * retest this draft - the rest of the function already matches. */
+/* Enabled after the maspsx li-$reg,0 wrapper fix; see matching.md. */
 extern long long __divdi3(long long dividend, long long divisor);
 s32 func_80072AFC(u32 arg) {
+    u32 factor;
+
     if (D_800A351C[0x7B74 / 4] == 1) {
-        return __divdi3((long long)arg * 0x271000, 0xBB5);
+        factor = (arg << 10) | 0x1000;
+        return __divdi3((long long)arg * factor, 0xBB5);
     }
     return arg << 10;
 }
