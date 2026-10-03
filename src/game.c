@@ -2461,7 +2461,32 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002AF94);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002B258);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002B538);
+void func_8002B538(u8 *arg0) {
+    s32 speed;
+    s32 half;
+
+    speed = (*(s32 *)(arg0 + 0x90) / *(s16 *)(arg0 + 0x2B4)) >> 16;
+    if (*(s16 *)(arg0 + 0x120) != 0 || *(u8 *)(arg0 + 0xF8) != 0) {
+        speed = speed * 4;
+    }
+    *(s32 *)(arg0 + 0x2B8) -= speed;
+    *(s32 *)(arg0 + 0x2E0) -= speed;
+    half = speed / 2;
+    if (*(s32 *)(arg0 + 0x2B8) <= 0x9FFFF) {
+        *(s32 *)(arg0 + 0x2B8) = 0xA0000;
+    }
+    if (*(s32 *)(arg0 + 0x2E0) <= 0x9FFFF) {
+        *(s32 *)(arg0 + 0x2E0) = 0xA0000;
+    }
+    *(s32 *)(arg0 + 0x308) -= half;
+    *(s32 *)(arg0 + 0x330) -= half;
+    if (*(s32 *)(arg0 + 0x308) <= 0x9FFFF) {
+        *(s32 *)(arg0 + 0x308) = 0xA0000;
+    }
+    if (*(s32 *)(arg0 + 0x330) <= 0x9FFFF) {
+        *(s32 *)(arg0 + 0x330) = 0xA0000;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002B63C);
 
@@ -2477,9 +2502,91 @@ s32 func_8002CF1C(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002CF24);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002D16C);
+extern s32 D_800A2E94[];
+s32 func_8003702C(u8 *, u8 *);
+s32 func_8002CF24(u8 *, u8 *);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002D27C);
+void func_8002D16C(u8 *arg0) {
+    u8 *other;
+    s32 flag;
+    s32 flag40;
+    s32 value;
+    s32 newValue;
+
+    *(u8 *)(arg0 + 0x3FC) = 0;
+    if (0x8BFFFF < *(s32 *)(arg0 + 0x90)) {
+        if (D_800A2E94[0] >= 2) {
+            other = *(u8 **)(*(s32 *)(arg0 + 0x3F0) + 8);
+            if (other != 0) {
+                flag = 1;
+                flag40 = 0x28;
+                do {
+                    if (arg0 == other) {
+                        goto decay;
+                    }
+                    if (func_8003702C(arg0, other) < -0xA) {
+                        goto decay;
+                    }
+                    if ((func_8002CF24(arg0, other) & 0xFF) != 0) {
+                        *(u8 *)(arg0 + 0x3FC) = flag;
+                        if (*(s16 *)(other + 0x1EC) == 0) {
+                            return;
+                        }
+                        *(u8 *)(other + 0x3FC) = flag40;
+                        return;
+                    }
+                    other = *(u8 **)(*(s32 *)(other + 0x3F0) + 8);
+                } while (other != 0);
+            }
+decay:
+            value = *(s32 *)(arg0 + 0x22C);
+            if (value > 0) {
+                newValue = value - 0x8000;
+                *(s32 *)(arg0 + 0x22C) = newValue;
+                if (newValue < 0) {
+                    *(s32 *)(arg0 + 0x22C) = 0;
+                }
+            }
+            return;
+        }
+        *(s32 *)(arg0 + 0x22C) = 0;
+    }
+}
+
+void func_8002D27C(u8 *arg0) {
+    s32 value;
+
+    if (!(0x9FFFF < *(s32 *)(arg0 + 0x90))) {
+        *(s16 *)(arg0 + 0x120) = 0;
+        *(s16 *)(arg0 + 0x11E) = 0;
+    } else {
+        if (*(s16 *)(arg0 + 0x120) > 0) {
+            *(s16 *)(arg0 + 0x120) = *(s16 *)(arg0 + 0x120) - 1;
+            value = RandomScaledGet(4);
+            if (value < 0) {
+                value = -RandomScaledGet(4);
+            } else {
+                value = RandomScaledGet(4);
+            }
+            func_80029994(arg0, value);
+        }
+        if (*(s32 *)(arg0 + 0x238) & 0x80) {
+            if (*(s8 *)(arg0 + 0x3C4) == 4) {
+                *(u16 *)(arg0 + 0x11E) += 1;
+            } else {
+                if (*(s32 *)(arg0 + 0x3C0) >= MathFixedDivide(0xFA, 0x7D0)) {
+                    *(u16 *)(arg0 + 0x11E) += 1;
+                }
+            }
+        } else {
+            *(s16 *)(arg0 + 0x11E) = 0;
+        }
+        if (*(s16 *)(arg0 + 0x11E) >= 0x13) {
+            *(s16 *)(arg0 + 0x120) = 0x23;
+            *(s16 *)(arg0 + 0x11E) = 0;
+        }
+    }
+}
 
 extern s32 D_800A3984[];
 extern s32 D_800A2E84;
