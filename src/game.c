@@ -12592,7 +12592,45 @@ void func_8006D0F0(void) {
     func_800598C4();
 }
 
+extern u8 D_800A358C;
+extern char D_800B0A2C[];
+#ifdef NON_MATCHING
+/* w9i draft: switch on c gives retail's beqz/beq pair (the `== ||` if
+ * form goes branchless sltiu/xori/or); single entry test = the while
+ * condition only (an extra `if (i >= 0)` duplicates bltz); found=0 must
+ * be the FIRST statement (s0=zero before the base materializes);
+ * (s8) casts on an s32 i keep gcc's lazy extends (an s8 i materializes).
+ * Remaining wall: gcc hoists only idx*16 into a temp and re-adds the s1
+ * base via a per-iteration t0 copy, and puts i in a0 / ' ' in a3 where
+ * retail has entry=v1=base+idx*16 hoisted, i in a1, ' ' in a0. */
+s32 func_8006D178(void) {
+    s32 i;
+    s8 c;
+    u8 found;
+
+    found = 0;
+    i = strlen(&D_800B0A2C[D_800A358C * 0x10]);
+    while ((s8)i >= 0 && found == 0) {
+        c = ((s8 *)&D_800B0A2C[D_800A358C * 0x10])[(s8)i];
+        switch (c) {
+        case 0:
+        case ' ':
+            i--;
+            break;
+        default:
+            found = 1;
+            break;
+        }
+    }
+    if (found == 0) {
+        return 0;
+    }
+    ((s8 *)&D_800B0A2C[D_800A358C * 0x10])[(s8)i + 1] = 0;
+    return 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D178);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D258);
 
@@ -12680,7 +12718,55 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006DD28);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006DE68);
 
+#ifdef NON_MATCHING
+/* w9i draft: dispatch structure is EXACT (switch on mode with cases in
+0,1,2 source order gives retail's middle-value-first beq a1,1 dispatch;
+the a1<2 slti tree; per-case j-to-epilogue with shared 0x3C6/0x3C7 lbu
+sites). result/extra locals give the pre-dispatch `li 1` and the raw
+arg3 copy. Remaining wall: retail keeps `result` in v0 (ori v0,1 at
+top, lbu v0 at every case tail, bare jr) while gcc pins it to v1 with
+the 1-load in the first branch's delay slot; statement order, init
+order and declaration order all leave it there. */
+u8 func_8006DF98(void *arg0, s32 arg1, s32 arg2, s32 arg3) {
+    u8 mode;
+    s32 extra;
+    u8 result;
+
+    mode = arg1;
+    extra = arg3;
+    result = 1;
+    switch (mode) {
+    case 0:
+        if ((u8)arg2 != 2) {
+            result = ((u8 *)arg0)[0x3C6];
+        } else if ((u8)extra == 0 || (u8)extra == (u8)arg2) {
+            result = ((u8 *)arg0)[0x3C7];
+        } else {
+            result = ((u8 *)arg0)[0x3C6];
+        }
+        break;
+    case 1:
+        if ((u8)arg2 != 2) {
+            result = ((u8 *)arg0)[0x3C6];
+        } else if ((u8)extra != 0 && (u8)extra != (u8)arg2) {
+            result = ((u8 *)arg0)[0x3C7];
+        } else {
+            result = ((u8 *)arg0)[0x3C6];
+        }
+        break;
+    case 2:
+        if ((u8)arg2 == mode && (u8)((u8)extra - 2) < 2) {
+            result = ~((u8 *)arg0)[0x3C5];
+        } else {
+            result = ((u8 *)arg0)[0x3C5];
+        }
+        break;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006DF98);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006E07C);
 
@@ -12757,7 +12843,23 @@ void SoundInitOutput(void) {
     SsSetMute(0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006F9C4);
+extern u8 D_800A3394[];
+extern u8 D_800A3397;
+extern u8 D_800A39BC;
+extern s32 func_8006F4DC(s32, s32, s32, s32, s32, s32, s32, s32);
+s32 func_8006F9C4(s32 arg0, s32 arg1, s32 arg2) {
+    volatile s32 pad[14];
+    void *handle;
+
+    CD_initvol();
+    SsSetSerialAttr(0, 0, 1);
+    SsSetSerialVol(0, 0x7FFF, 0x7FFF);
+    SsSetMute(0);
+    handle = func_8003C584(arg0, D_800A3394);
+    D_800A3397 = (u8)arg1;
+    D_800A39BC = (u8)arg2;
+    return func_8006F4DC((s32)handle, 1, 0x800, 0, 0xA, 1, 0xC8, 0x400) & 0xFF;
+}
 
 extern void SpuSetCommonAttr(SpuCommonAttr *);
 void SoundSetMasterVolume(s16 left, s16 right) {
@@ -13003,12 +13105,45 @@ s32 func_80072A5C(void) {
     return D_800A351C[0x7B24 / 4];
 }
 
+#ifdef NON_MATCHING
+/* w9i: unit-diff clean at exact 0x8c (multu+mfhi/mflo, __divdi3 x2, both
+ * branch arms) under differ/`make build/src/game.c.o`, but the clean-gate
+ * build flips allocation: retail lw v1,0x7B24(v0) + ori v0,0x64 + multu
+ * v1,v0 vs gate lw v0,0x7B24(v0) + ori a0,0x64 + multu v0,a0 -- 3 bytes,
+ * same length. Gate-vs-interactive wall (w7i func_8007005C/720D0 family).
+ * NOTE: `(long long)(u32)sym[...] * 100` silently kills cc1 (0-symbol
+ * object); the val-local form below is the alive spelling. */
+s32 func_80072A70(void) {
+    u32 val;
+    long long q;
+    s32 mode;
+
+    val = D_800A351C[0x7B24 / 4];
+    q = (long long)val * 100;
+    q = __divdi3(q, 0x100);
+    mode = D_800A351C[0x7B74 / 4];
+    if (mode != 0) {
+        if (mode == 1) {
+            q = __divdi3(q, 0x1388);
+        }
+    } else {
+        q = __divdi3(q, 0x176A);
+    }
+    return (s32)q;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80072A70);
+#endif
 
 extern volatile s32 *D_800A351C;
-#ifdef NON_MATCHING
 /* Enabled after the maspsx li-$reg,0 wrapper fix; see matching.md. */
 extern long long __divdi3(long long dividend, long long divisor);
+#ifdef NON_MATCHING
+/* w9i: w3c's named early-return recipe and the ==1 draft both now emit a
+ * prologue `move a1,a0` param copy (arg->a1, factor->a0) and a beq+j
+ * skip path, 8 bytes long, after func_80072A70 went live C above it.
+ * TU-context param-copy wall (extends w3a/w4b); the maspsx li-$reg,0
+ * wrapper fix in tools/maspsx_extern.py IS present and working. */
 s32 func_80072AFC(u32 arg) {
     u32 factor;
 
@@ -13061,7 +13196,38 @@ s32 func_80072BB0(s32 *size) {
     return D_800A351C[0] - difference;
 }
 
+#ifdef NON_MATCHING
+/* w9i draft: byte-identical except the ELSE arm loads its word into a1
+ * (v1 with a separate word2 local) where retail reuses a0. Every other
+ * shape (xor+sltiu check idiom, duplicated bswaps, unmerged arms, delay
+ * addiu) is exact at 0xCC. */
+u32 func_80072BDC(void *arg0) {
+    u32 word;
+    u32 swapped;
+    u32 swapped2;
+    u32 size;
+    u32 check;
+
+    word = *(u32 *)arg0;
+    swapped = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) | (word << 24);
+    check = (swapped & 0xFFFFFF00) == 0x61643200;
+    if ((swapped & 0xFFFF0000) == 0x61640000) {
+        word = *((u32 *)arg0 + 1);
+        swapped2 = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) | (word << 24);
+        size = swapped2 - 0x10;
+    } else {
+        word = *((u32 *)arg0 + 1);
+        swapped2 = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) | (word << 24);
+        size = swapped2 - 0xC;
+    }
+    if (check != 0) {
+        size >>= 1;
+    }
+    return size;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80072BDC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80072CA8);
 
