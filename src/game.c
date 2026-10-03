@@ -6056,9 +6056,37 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8004F880);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004FCF4);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8004FF3C);
+extern u8 *D_800A3554[];
+extern u8 *D_800A8A80[];
+void func_8004FF3C(void) {
+    D_800A8A80[0][0] = *(u16 *)(D_800A3554[0] + 0x2AA);
+    D_800A8A80[0][1] = *(u16 *)(D_800A3554[0] + 0x2A4);
+    *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(D_800A3554[0] + 0x1D6);
+}
 
+#ifdef NON_MATCHING
+/* Wall: every instruction matches, but gcc allocates arg3->s0, arg1->s1,
+ * arg2->s2 (retail: arg1->s0, arg2->s1, arg3->s2) and arg0->t0 (retail
+ * v1). Rotation persists across param-type variants. */
+extern char D_800A3020[];
+extern u8 D_800A37F4;
+extern s32 sprintf(char *, const char *, ...);
+extern void func_80050028(char *, s16, s16, s8);
+void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    char text[16];
+
+    if ((s8)arg3 == 1) {
+        D_800A37F4 = 6;
+    } else {
+        D_800A37F4 = 9;
+    }
+    sprintf(text, D_800A3020, arg0);
+    func_80050028(text, (s16)arg1, (s16)arg2, (s8)arg3);
+    D_800A37F4 = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8004FF90);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80050028);
 
@@ -6080,19 +6108,22 @@ void GraphicsSetColor(u8 red, u8 green, u8 blue) {
 }
 
 #ifdef NON_MATCHING
-extern s16 D_80098D16[];
+extern u8 D_80098D16[];
 s32 func_80050940(u8 *str) {
-    s32 width;
+    s32 sum;
     u8 c;
 
-    width = 0;
-    c = *str;
-    while (c != 0) {
-        str++;
-        width += D_80098D16[(c - 0x20) * 5];
+    sum = 0;
+    if (*str != 0) {
+        asm("");
         c = *str;
+        do {
+            str++;
+            sum += *(s16 *)&D_80098D16[(c - 0x20) * 10];
+            c = *str;
+        } while (c != 0);
     }
-    return width;
+    return sum;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80050940);
@@ -6204,22 +6235,79 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80057160);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800571EC);
 
-#ifdef NON_MATCHING
-extern s32 D_800A3678[];
-extern u8 D_800A35EC[];
-extern s32 D_800A3654[];
-extern u8 D_800A37BC[];
+extern s32 D_800A3668Absolute[];
+extern u8 D_800A37B4Absolute[];
 void func_80057A9C(void) {
-    D_800A3678[0] = (s32)HeapAlloc(0x1AB8);
-    D_800A35EC[0] = 0;
-    D_800A3654[0] = (s32)HeapAlloc(0x834);
-    D_800A37BC[0] = 0;
+    ((s32 *)D_800A3668Absolute)[4] = (s32)HeapAlloc(0x1AB8);
+    ((u8 *)D_800A3668Absolute)[-0x7C] = 0;
+    ((s32 *)D_800A3668Absolute)[-5] = (s32)HeapAlloc(0x834);
+    D_800A37B4Absolute[8] = 0;
+}
+
+#ifdef NON_MATCHING
+/* Wall: needs a gp store to D_800A3548 (untracked sdata label, no
+ * linker alias). Declaring it shifts every sdata label +0x10 and the
+ * full build MISMATCHes. Also needs lui for D_800A39E8, which is
+ * scalar-declared (gp) for the TU. */
+extern void func_80012E28(void);
+extern void *HeapAlloc(u32);
+extern s32 D_800A3548;
+extern s32 D_800A3998;
+extern s32 D_800A3A18;
+extern s32 D_800A39A8;
+extern s32 D_800A39CC;
+extern s32 D_800A3780;
+extern s32 D_800A35B8;
+extern s32 D_800A3544;
+extern s32 D_800A38EC;
+extern s32 D_800A397CAbsolute[];
+extern void func_8005E47C(void);
+void func_80057AE4(void) {
+    POLY_FT4 *poly;
+    POLY_F4 *shade;
+    u8 *color;
+    u32 count;
+    s32 base;
+
+    func_80012E28();
+    poly = HeapAlloc(0x4290);
+    D_800A3548 = (s32)poly;
+    color = (u8 *)poly + 6;
+    for (count = 0; count < 0x1AA; count++) {
+        SetPolyFT4(poly);
+        SetShadeTex(poly, 0);
+        color[-2] = 0x80;
+        color[-1] = 0x80;
+        color[0] = 0x80;
+        color += 0x28;
+        poly++;
+    }
+    base = D_800A3548;
+    D_800A397CAbsolute[27] = base;
+    D_800A3998 = base + 0x3E80;
+    D_800A3A18 = base + 0x3E80;
+    D_800A39A8 = base + 0x4268;
+    D_800A39CC = base + 0x4268;
+    shade = HeapAlloc(0x4B0);
+    color = (u8 *)shade + 6;
+    D_800A3780 = (s32)shade;
+    D_800A35B8 = (s32)shade;
+    D_800A3544 = (s32)shade + 0x3C0;
+    D_800A38EC = (s32)shade + 0x3C0;
+    for (count = 0; count < 0x32; count++) {
+        SetPolyF4(shade);
+        SetSemiTrans(shade, 0);
+        color[-2] = 0x80;
+        color[-1] = 0x80;
+        color[0] = 0x80;
+        color += 0x18;
+        shade++;
+    }
+    func_8005E47C();
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80057A9C);
-#endif
-
 INCLUDE_ASM("asm/nonmatchings/game", func_80057AE4);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80057BFC);
 
@@ -6294,19 +6382,23 @@ void func_80058030(void) {
     PutDrawEnv(&D_800BDD4C[D_800A305C]);
 }
 
-#ifdef NON_MATCHING
+#if 0
+/* Wall: two register pairs remain swapped vs retail (sector/size get
+ * s0/s2 where retail has s2/s0; the entry copies and the blocks
+ * intermediate already match). Permuter candidate. */
 extern s32 D_800A3090[];
 extern s32 func_8003C584(s32, s32);
 extern s32 func_8003C8BC(s32, s32, s32);
 extern s32 func_8003C644(s32, s32, s32, s32);
 extern s32 func_8003C63C(s32);
 s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
-    s32 sector;
     s32 size;
+    s32 blocks;
+    s32 sector;
 
     sector = func_8003C584(arg0, (s32)D_800A3090);
-    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11;
-    size = size << 11;
+    blocks = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11;
+    size = blocks << 11;
     if (data == 0) {
         data = (s32)HeapAlloc(size);
     }
@@ -6316,9 +6408,8 @@ s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
     *arg1 = data + 4;
     return data;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80058094);
 #endif
+INCLUDE_ASM("asm/nonmatchings/game", func_80058094);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80058148);
 
@@ -6337,6 +6428,7 @@ u8 TableFindByte(u8 value) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800587A0);
 
+/* func_80058D08: writes $gp directly; not expressible in C. */
 INCLUDE_ASM("asm/nonmatchings/game", func_80058D08);
 
 void func_80058D14(u16 *src, u16 *dst, s32 arg2) {
@@ -6383,7 +6475,43 @@ s32 ColorPack555(s32 red, s32 green, u8 blue) {
     return color;
 }
 
+#ifdef NON_MATCHING
+/* Wall: prologue and loop body match. Retail batches the five pixel
+ * constants into five registers (v0,v1,a1,a2,a3) before storing; ours
+ * materializes each constant just before its store (single recycled
+ * register). Loop uses pointer=v1/counter=v0; retail has them swapped.
+ * Permuter candidate. */
+extern void *HeapAlloc(u32);
+extern void HeapFree(void *);
+void func_80059648(void) {
+    RECT rect;
+    s16 *pixels;
+    s32 i;
+    s16 *p;
+
+    rect.x = 0x100;
+    rect.y = 0x1FF;
+    rect.h = 1;
+    rect.w = 0x10;
+    pixels = HeapAlloc(0x20);
+    p = pixels + 8;
+    for (i = 8; i >= 0; i--) {
+        *p = -0x3DF0;
+        p--;
+    }
+    pixels[11] = -0x62D7;
+    pixels[9] = -0x5674;
+    pixels[10] = -0x5A95;
+    pixels[12] = -0x6AF8;
+    pixels[13] = -0x733A;
+    pixels[14] = 0;
+    pixels[15] = 0;
+    LoadImage(&rect, (u_long *)pixels);
+    HeapFree(pixels);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80059648);
+#endif
 
 extern u8 D_800A2F9CAbsolute[];
 extern u8 D_800A3694;
@@ -6481,39 +6609,48 @@ void func_800599E4(void) {
 }
 
 #ifdef NON_MATCHING
+/* Wall: with asm("") in each if-body the branch shape matches; the
+ * remaining diff is the first normalize: retail computes
+ * sltu v0,zero,v0 before the second call and copies it to s0 in the
+ * jal delay slot; ours schedules the sltu itself into the delay slot
+ * (one instruction short). */
+extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
+extern s32 D_800A38C8, D_800A38CC, D_800A38D0, D_800A38D4;
 s32 CardEnableEvents(void) {
-    s32 result;
     s32 enabled;
 
     EnterCriticalSection();
     enabled = EnableEvent(D_800A3824) != 0;
-    result = enabled;
-    if (enabled == 0) {
-        result = 0;
-    }
     if (EnableEvent(D_800A3828) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     if (EnableEvent(D_800A382C) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     if (EnableEvent(D_800A3834) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     if (EnableEvent(D_800A38C8) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     if (EnableEvent(D_800A38CC) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     if (EnableEvent(D_800A38D0) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     if (EnableEvent(D_800A38D4) == 0) {
-        result = 0;
+        asm("");
+        enabled = 0;
     }
     ExitCriticalSection();
-    return result;
+    return enabled;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", CardEnableEvents);
@@ -6769,7 +6906,38 @@ void func_8005A82C(void) {
     D_800A3618 = 0x40;
 }
 
+#ifdef NON_MATCHING
+/* Wall: structure matches; case-4 register pair is mirrored (retail
+ * lh v0 / chain v1, ours lh v1 / chain v0). case-2 is correct. Permuter
+ * candidate. */
+extern u8 D_800A3534;
+extern s32 D_800A35AC;
+s16 func_8005A84C(void) {
+    s32 tripled;
+    s32 product;
+    s32 scaled;
+    s32 quotient;
+    s32 result;
+
+    if (D_800A3534 == 2) {
+        tripled = *(s16 *)(D_800A35AC + 8) * 3;
+        if (tripled < 0) {
+            tripled += 3;
+        }
+        result = tripled << 0xE;
+    } else if (D_800A3534 == 4) {
+        scaled = *(s16 *)(D_800A35AC + 8);
+        product = scaled * 9;
+        quotient = product / 10;
+        result = quotient << 0x10;
+    } else {
+        return *(s16 *)(D_800A35AC + 8);
+    }
+    return (s16)(result >> 0x10);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A84C);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A8E0);
 
@@ -6807,7 +6975,21 @@ s32 func_8005B138(u8 *str) {
     return count + 1;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005B138);
+s32 func_8005B138(u8 *str) {
+    s32 count;
+
+    count = 0;
+    if (*str != 0) {
+        do {
+            if (*str == 0xA) {
+                asm("");
+                count++;
+            }
+            str++;
+        } while (*str != 0);
+    }
+    return count + 1;
+}
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B17C);
