@@ -4503,7 +4503,64 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003C928);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003CA18);
 
+#ifdef NON_MATCHING
+/*
+ * w6e draft, 4 bytes short (0x15c vs 0x160): the %6 block's register
+ * allocation differs - retail keeps the remainder in v0 and copies
+ * v0->s0 in the bgez DELAY SLOT (negu reads s0); ours sinks
+ * `lui a0,0x19649` into that delay slot instead and swaps v0/v1 in the
+ * sra/subu pair. Frame is correct (0x58: volatile u_char result[0x30]
+ * at 0x10, u8 filter at 0x18). Retail's two-symbol trick verified:
+ * CdGetToc takes D_800BDEBC inline while the six CdIntToPos calls hoist
+ * &D_800BDEC4[0] into s0 (overlapping externs; cse does not merge).
+ * Next: make the v0->s0 copy a real statement, or permuter.
+ */
+extern s32 CdGetToc(void *);
+extern CdlLOC D_800BDEBC[];
+extern CdlLOC D_800BDEC4[];
+extern s32 D_800A2F70;
+extern u8 D_800A2F9CAbsolute[];
+
+void func_8003CAE8(s32 arg0) {
+    volatile u_char result[0x30];
+    u8 filter;
+    CdlATV vol;
+    CdlLOC *pos;
+    s32 remainder;
+
+    if (CdGetToc(D_800BDEBC) < 2) {
+        return;
+    }
+    filter = 5;
+    if (CdControl(0xE, &filter, 0) == 0) {
+        return;
+    }
+    CdSetDebug(0);
+    remainder = arg0 % 6;
+    if (remainder < 0) {
+        remainder = -remainder;
+    }
+    D_800A2F70 = remainder + 2;
+    pos = &D_800BDEC4[0];
+    CdIntToPos(0x19649, pos);
+    CdIntToPos(0x1C4B8, pos + 1);
+    CdIntToPos(0x1F278, pos + 2);
+    CdIntToPos(0x2219A, pos + 3);
+    CdIntToPos(0x250DB, pos + 4);
+    CdIntToPos(0x25EFF, pos + 5);
+    CdControl(2, (u_char *)(pos + D_800A2F70 - 2), 0);
+    if (D_800A2F9CAbsolute[0] != 0) {
+        CdControlB(3, 0, 0);
+    }
+    vol.val0 = 0x7F;
+    vol.val1 = 0x7F;
+    vol.val2 = 0x7F;
+    vol.val3 = 0x7F;
+    CdMix(&vol);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003CAE8);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003CC48);
 
@@ -4513,7 +4570,59 @@ void CdStop(void) {
     CdControl(8, 0, 0);
 }
 
+#ifdef NON_MATCHING
+/*
+ * cc1 2.7.2 ICE wall (w6e): any `for` loop with a memory STORE in its body
+ * in this function segfaults cc1 at this TU position (exit 139, truncated
+ * object; repro `for (i = 0; i < count; i++) D_800B9F44[i] = i;` alone).
+ * Load-only loops compile. Function shape below diffs clean otherwise
+ * (not yet verified end to end). Same class as the func_8001E17C ICE.
+ */
+extern void *CdGetToc(void *);
+extern s32 D_800A2F74;
+extern s32 D_800A37CC;
+extern s32 D_800BDEBC[];
+extern s32 D_80098340[];
+extern s32 D_800A45AC[];
+extern char D_8008D188[];
+
+void func_8003CDBC(s32 arg0) {
+    u8 result[16];
+    s32 *pos;
+    s32 value;
+    s32 posValue;
+    u32 base;
+    s32 count;
+    s32 i;
+    s32 *src;
+
+    if (D_800A2F74 == 0) {
+        CdGetToc(D_800BDEBC);
+        D_800A2F74 = 1;
+    }
+    CdIntToPos(D_80098340[arg0 * 3] + 0x13C, &D_800A45AC[-1]);
+    while (CdSync(1, result) == 0) {
+        VSync(0);
+    }
+    value = D_80098340[arg0 * 3 + 1];
+    pos = &D_800A45AC[-1];
+    D_800A37CC = arg0;
+    D_800A45AC[0] = value;
+    if (pos == NULL) {
+        SystemShowFatalError(D_8008D188);
+    }
+    posValue = D_800A45AC[0];
+    base = (0x1F4000 - posValue) | 0x80000000;
+    func_8003C644(base, posValue, 1, pos);
+    count = *(s32 *)base;
+    src = (s32 *)(base + 4);
+    for (i = 0; i < count; i++) {
+        D_800B9F44[i] = src[i] + base;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003CDBC);
+#endif
 
 void func_8003CEFC(void) {
 }
