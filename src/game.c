@@ -2252,7 +2252,33 @@ void func_80025DD4(u8 *arg0, u8 *arg1) {
                       RandomScaledGet(50) + 75);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80025F40);
+extern void func_8003644C(s32, s32, s32, s32);
+
+void func_80025F40(u8 *arg0, s32 arg1) {
+    s32 pos[3];
+    s32 x;
+    s32 y;
+    s32 x2;
+    s32 y2;
+    u8 *entry;
+
+    entry = (u8 *)(*(s32 *)(*(s32 *)(arg0 + 0x370) + 0x40) +
+                   (1 - (arg1 & 0xFF)) * 0x18);
+    pos[0] = *(s32 *)(entry + 4);
+    pos[1] = *(s32 *)(entry + 8);
+    pos[2] = 0x4B;
+    func_8001EEC4(arg0, arg1 & 0xFF);
+    func_8001F1D4(pos);
+    pos[0] += *(s32 *)(arg0 + 0);
+    pos[1] += *(s32 *)(arg0 + 4);
+    pos[2] += *(s32 *)(arg0 + 8);
+    x = pos[0] + RandomScaledGet(25);
+    y = pos[1] + RandomScaledGet(25);
+    func_8003644C(0, x, y, pos[2] + RandomScaledGet(50));
+    x2 = pos[0] + RandomScaledGet(25);
+    y2 = pos[1] + RandomScaledGet(25);
+    func_8003644C(1, x2, y2, pos[2] + RandomScaledGet(50));
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80026074);
 
