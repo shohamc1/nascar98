@@ -4660,7 +4660,47 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80043D6C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80043F7C);
 
+#ifdef NON_MATCHING
+/* Wall: the loop-1 walker init folds to move (retail keeps addu a0,v1
+ * with v1=0); loop-2 strength reduction goes negative-offset. */
+extern u8 D_800A2EE0[];
+extern u32 D_800A3960[];
+
+void func_80044114(u8 *arg0) {
+    s32 i;
+    u8 *slot;
+    s32 j;
+    u8 *entry;
+
+    *(s16 *)(arg0 + 0x3A4) = 0;
+    i = 0;
+    slot = arg0;
+    do {
+        i++;
+        slot[0x3A6] = 1;
+        slot[0x3AE] = 0;
+        slot = arg0 + i;
+    } while (i < 8);
+    if (D_800A2EE0[0] != 0) {
+        *(s16 *)(arg0 + 0x1BC) = 3;
+        j = 0;
+        entry = arg0;
+        do {
+            *(s16 *)(entry + 0x2AC) = 0;
+            *(s16 *)(entry + 0x2B0) = 0;
+            j++;
+            entry += 0x28;
+        } while (j < 4);
+        *(s16 *)(arg0 + 0x10C) = 0;
+    }
+    if (arg0 == (u8 *)D_800A3960[0]) {
+        D_800A3960[0] = 0;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80044114);
+#endif
+
 
 void func_8004419C(u8 *object) {
     s32 i;
