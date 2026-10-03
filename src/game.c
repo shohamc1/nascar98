@@ -2304,7 +2304,93 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003DB5C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003DBA8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003E78C);
+extern u8 D_800A372C[];
+extern s32 D_800A2CE0[];
+extern s32 D_800A2EA8[];
+extern s32 D_800BE974[];
+extern s32 D_800A3560;
+extern s32 D_800A376C;
+extern s32 D_800A3820;
+extern s32 D_800A39E0;
+
+s32 func_8003E78C(u8 *object) {
+    s32 laps;
+    s32 value;
+    s32 start;
+    s32 end;
+    u8 flag;
+    s32 ahead;
+    s32 pace;
+
+    if (*(s16 *)(object + 0x288) != 0) {
+        if (D_800A372C[0] != 0 && D_800A2CE0[0] == 3 &&
+            *(s16 *)(object + 0x1EC) == 0 && *(s16 *)(object + 0x1E0) >= 100) {
+            return 1;
+        }
+        value = (D_800A376C + (D_800A3560 + 8)) % D_800BE974[0];
+        end = (D_800A39E0 - (D_800A3820 + 0x14) + D_800BE974[0]) % D_800BE974[0];
+        start = *(s16 *)(object + 0x1E0);
+        if (value < end) {
+            if (value >= start) {
+                value += D_800BE974[0];
+                flag = 1;
+            } else {
+                value += D_800BE974[0];
+                flag = 0;
+                if (start >= end)
+                    flag = value >= start;
+            }
+        } else {
+            flag = 0;
+            if (start >= end)
+                flag = value >= start;
+        }
+        if (flag != 0)
+            return 1;
+        *(s16 *)(object + 0x288) = 0;
+        *(u16 *)(object + 0x284) = *(u16 *)(object + 0x284) + 1;
+        return 0;
+    }
+    laps = *(s16 *)(object + 0x1D6);
+    if (laps < 2)
+        return 0;
+    if (*(s16 *)(object + 0x276) == 0) {
+        if ((u32)laps >= (u32)*(s32 *)(object + 0x29C) || D_800A2EA8[0] < laps)
+            *(s16 *)(object + 0x276) = 1;
+        return 0;
+    }
+    if (D_800A372C[0] != 0)
+        return 0;
+    value = (D_800A39E0 - (D_800A3820 + 7) + D_800BE974[0]) % D_800BE974[0];
+    end = (D_800A39E0 - (D_800A3820 + 0xF) + D_800BE974[0]) % D_800BE974[0];
+    start = *(s16 *)(object + 0x1E0);
+    if (value < end) {
+        if (value >= start) {
+            value += D_800BE974[0];
+            flag = 1;
+        } else {
+            value += D_800BE974[0];
+            flag = 0;
+            if (start >= end)
+                flag = value >= start;
+        }
+    } else {
+        flag = 0;
+        if (start >= end)
+            flag = value >= start;
+    }
+    if (flag == 0)
+        return 0;
+    *(s16 *)(object + 0x288) = 1;
+    ahead = *(s16 *)(object + 0x282);
+    pace = *(s32 *)(object + 0x29C);
+    if (RandomScaledGet(5) < 0)
+        value = ahead - RandomScaledGet(5);
+    else
+        value = ahead + RandomScaledGet(5);
+    *(s32 *)(object + 0x29C) = pace - 2 + value;
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003EA94);
 
