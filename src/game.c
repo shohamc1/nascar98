@@ -1861,7 +1861,118 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002FFB8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80030204);
 
+extern s32 D_800A3A80;
+#ifdef NON_MATCHING
+s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
+    SVECTOR **points;
+    SVECTOR *pairB;
+    SVECTOR *pairA;
+    SVECTOR **points;
+    SVECTOR *pointA;
+    SVECTOR *pointB;
+    SVECTOR *point;
+    s32 sampleX;
+    s32 sampleY;
+    s32 x0;
+    s32 x1;
+    s32 y0;
+    s32 y1;
+    s32 z0;
+    s32 z1;
+    s32 left;
+    s32 right;
+    s32 leftHeight;
+    s32 result;
+    s32 i;
+
+    sampleX = query[0];
+    sampleY = query[1];
+    pairA = NULL;
+    points = (SVECTOR **)(object + 6);
+    for (i = 4; i > 0; i--) {
+        pointA = points[i & 3];
+        pointB = points[i - 1];
+        if (pointB->vy < pointA->vy) {
+            point = pointA;
+            pointA = pointB;
+            pointB = point;
+        }
+        if (sampleY < pointA->vy)
+            continue;
+        if (sampleY >= pointB->vy)
+            continue;
+        if (pointA->vy == pointB->vy)
+            continue;
+        if (pairA == NULL) {
+            pairA = pointA;
+            pairB = pointB;
+            continue;
+        }
+        x0 = pairA->vx;
+        x1 = pairB->vx;
+        y0 = pairA->vy;
+        y1 = pairB->vy;
+        if (y1 == y0) {
+            left = x0;
+        } else {
+            left = x0 + (x1 - x0) * (sampleY - y0) / (y1 - y0);
+        }
+        x0 = pointA->vx;
+        x1 = pointB->vx;
+        y0 = pointA->vy;
+        y1 = pointB->vy;
+        if (y1 == y0) {
+            right = x0;
+        } else {
+            right = x0 + (x1 - x0) * (sampleY - y0) / (y1 - y0);
+        }
+        if (right < left) {
+            result = left;
+            left = right;
+            right = result;
+            point = pairA;
+            pairA = pointA;
+            pointA = point;
+            point = pairB;
+            pairB = pointB;
+            pointB = point;
+        }
+        if (sampleX < left - 5)
+            return 0;
+        if (right + 5 < sampleX)
+            return 0;
+        z0 = pairA->vz;
+        z1 = pairB->vz;
+        y0 = pairA->vy;
+        y1 = pairB->vy;
+        if (y1 == y0) {
+            leftHeight = z0;
+        } else {
+            leftHeight = z0 + (z1 - z0) * (sampleY - y0) / (y1 - y0);
+        }
+        z0 = pointA->vz;
+        z1 = pointB->vz;
+        y0 = pointA->vy;
+        y1 = pointB->vy;
+        if (y1 == y0) {
+            result = z0;
+        } else {
+            result = z0 + (z1 - z0) * (sampleY - y0) / (y1 - y0);
+        }
+        if (right == left) {
+            result = leftHeight;
+        } else {
+            result = leftHeight + (result - leftHeight) * (sampleX - left) / (right - left);
+        }
+        query[2] = result;
+        D_800A3A80 = object;
+        return 1;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800309DC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80030CDC);
 
