@@ -4813,7 +4813,29 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80044248);
 #endif
 
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800442C8);
+extern u8 D_800A2EDC[];
+
+void func_800442C8(u8 *arg0, u8 *arg1) {
+    u32 bits;
+    s32 i;
+
+    bits = *(u32 *)(arg1 + 8);
+    if (D_800A2EDC[0] != 0) {
+        i = 0;
+        do {
+            if ((*(u16 *)(arg1 + 0xC) >> i & 1) != 0) {
+                *(u8 *)(arg0 + 0x3A6 + i) = 0;
+            } else {
+                *(u8 *)(arg0 + 0x3A6 + i) = 1;
+            }
+            i++;
+        } while (i < 8);
+        arg0[0x3AE] = (bits & 0x3FFF) >> 12;
+        arg0[0x3AF] = (bits & 0xFFF) >> 10;
+        arg0[0x3B0] = (bits & 0x3FF) >> 8;
+        arg0[0x3B1] = (bits & 0xFF) >> 6;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80044354);
 
