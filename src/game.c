@@ -4241,7 +4241,28 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003F564);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003F914);
 
+#ifdef NON_MATCHING
+/* Wall: gcc hoists the D_800B9E24 base into s2 across the loop; retail
+ * re-materializes lui per iteration. Extra callee-saved reg shifts the
+ * stack frame. */
+extern s16 D_800B9E24[];
+extern void func_8003F914(s8);
+
+void func_8003FA0C(void) {
+    s8 i;
+
+    i = 0;
+    do {
+        if (D_800B9E24[(u8)i * 6] != -1) {
+            func_8003F914(i);
+        }
+        i++;
+    } while ((u8)i < 0x18);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FA0C);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FA84);
 
@@ -4581,7 +4602,55 @@ void func_800441C8(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800441C8);
 #endif
 
+#ifdef NON_MATCHING
+/* Wall: loads/stores batch correctly with w0..w3 temps, but strength
+ * reduction emits -8/-4 offsets with pre-bumped pointer copies instead
+ * of 0/4/8/0xc offsets. */
+extern u8 D_800BBAAC[];
+extern u8 D_800AD9B0[];
+extern void func_80036540(void);
+
+void func_80044248(void) {
+    u32 w0;
+    u32 w1;
+    u32 w2;
+    u32 w3;
+    u32 *src;
+    u32 *dst;
+    u32 *end;
+    u8 *srcBlock;
+    u8 *dstBlock;
+    s32 block;
+
+    func_80036540();
+    srcBlock = D_800BBAAC;
+    dstBlock = D_800AD9B0;
+    block = 0;
+    do {
+        src = (u32 *)srcBlock;
+        dst = (u32 *)dstBlock;
+        end = (u32 *)(srcBlock + 0x30);
+        do {
+            w0 = src[0];
+            w1 = src[1];
+            w2 = src[2];
+            w3 = src[3];
+            dst[0] = w0;
+            dst[1] = w1;
+            dst[2] = w2;
+            dst[3] = w3;
+            src += 4;
+            dst += 4;
+        } while (src != end);
+        srcBlock += 0x30;
+        block++;
+        dstBlock += 0x30;
+    } while (block < 0x28);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80044248);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800442C8);
 
