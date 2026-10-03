@@ -4336,7 +4336,26 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003FDE8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FEB8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003FF5C);
+extern char D_8008D1A8[];
+extern char D_8008D1C4[];
+
+s16 func_8003FF5C(u8 *arg0, u8 *arg1) {
+    s16 vabId;
+    s16 result;
+
+    vabId = SsVabOpenHead(arg0, -1);
+    if (vabId == -1) {
+        SystemShowFatalError(D_8008D1A8);
+    } else {
+        result = SsVabTransBody(arg1, vabId);
+        if (result == vabId) {
+            SsVabTransCompleted(1);
+            return result;
+        }
+        SystemShowFatalError(D_8008D1C4);
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
 
