@@ -4191,7 +4191,12 @@ void func_8003F284(void) {
     func_80082B50();
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F2AC);
+extern u8 D_800A2F94;
+
+void func_8003F2AC(s32 arg0, s32 arg1) {
+    SsUtSetReverbDepth((s16)((arg0 & 0xFF) * D_800A2F94 / 127),
+                       (s16)((arg1 & 0xFF) * D_800A2F94 / 127));
+}
 
 extern u8 *func_8003FFF0(void *entry, s32 index);
 extern s16 gVabId;
