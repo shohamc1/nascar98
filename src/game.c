@@ -12028,7 +12028,53 @@ extern u8 *D_800A377C[];
 void func_8006C9DC(void) {    *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
 }
 
+#ifdef NON_MATCHING
+/* w8i draft, one segment from matching: gcc merges val/status into s0
+ * (move s0,v0 before the first store, addiu s0,v0,-1, gp reload in v0)
+ * where retail keeps the byte value in v0 (`sb v0,5` twice) and reloads
+ * D_800A358C into v1. AEC8 chain (`*(s8 *)(entry + status)` spelling)
+ * and the ptr-local tail are verified byte-exact shapes. */
+extern u8 D_800A358C;
+extern char D_800B0A2C[];
+extern s32 func_8005AEC8(s32, s32);
+extern s32 func_8005AFF0(s32);
+void func_8006C9F8(void) {
+    u8 *obj;
+    u8 *ptr;
+    s8 *entry;
+    s32 status;
+    s32 val;
+
+    obj = *(u8 **)(D_800A377C[0] + 0x1C);
+    entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
+    *(s16 *)(obj + 0x1A) = 1;
+    val = strlen((char *)entry);
+    *(u8 *)(obj + 5) = val;
+    asm("");
+    if ((s8)val >= 0xF) {
+        *(u8 *)(obj + 5) = 0xE;
+    }
+    val = *(u8 *)(obj + 5) - 1;
+    *(u8 *)(obj + 5) = val;
+    entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
+    func_8005A7B8(2, 2);
+    status = val;
+    status &= 0xFF;
+    if (*entry == 0) {
+        *(s16 *)(obj + 0x16) = func_8005AFF0(0x20);
+        status = 0;
+    } else {
+        val = func_8005AEC8(status, entry);
+        *(s16 *)(obj + 0x16) = func_8005AFF0(*(s8 *)(entry + status));
+        status = val;
+    }
+    ptr = *(u8 **)D_800A377C;
+    *(s16 *)(obj + 6) = status + 0xA;
+    *(s16 *)(obj + 8) = *(u16 *)(ptr + 8) + 9;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006C9F8);
+#endif
 
 void func_8006CB00(void) {
     s32 value;
@@ -12056,7 +12102,35 @@ void func_8006CB40(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006CB80);
 
+#ifdef NON_MATCHING
+/* w8i: body byte-exact except the frame: retail -0x20, ours -0x28 (one
+ * phantom 8-byte local slot; s32/u8 status and declaration order tried).
+ * Branch sense (`if (*entry == 0)` gives retail's bnez) and entry-as-s8*
+ * (PSX gcc chars are unsigned) verified. */
+extern char D_800B0A2D[];
+void func_8006CE64(void) {
+    u8 *obj;
+    s8 *entry;
+    s32 status;
+
+    D_800B0A2C[D_800A358C * 0x10] = 0x41;
+    D_800B0A2D[D_800A358C * 0x10] = 0;
+    obj = *(u8 **)(D_800A377C[0] + 0x1C);
+    *(u8 *)(obj + 5) = 0;
+    entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
+    func_8005A7B8(2, 2);
+    if (*entry == 0) {
+        *(s16 *)(obj + 0x16) = func_8005AFF0(0x20);
+        status = 0;
+    } else {
+        status = func_8005AEC8(0, entry);
+        *(s16 *)(obj + 0x16) = func_8005AFF0(*entry);
+    }
+    *(s16 *)(obj + 6) = status + 0xA;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006CE64);
+#endif
 
 extern u8 D_800A358C;
 extern u8 D_800A3968;
@@ -12103,7 +12177,30 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006D178);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D258);
 
+#ifdef NON_MATCHING
+/* w7i: draft to 0xa4 exact length, 7 rows off: entry order and
+ * i/j register naming (target: i in a3 inited FIRST at entry, j in a2;
+ * both row-pointer temps outer-loop). src[j + 0x24] keeps the +0x24 in
+ * the lbu displacement. */
+extern u8 D_800BBA24[];
+extern char *D_800A35F4;
+void func_8006D424(u8 arg0, u8 arg1) {
+    char *src;
+    u8 *dst;
+    u8 i;
+    u8 j;
+
+    for (i = 0; i < 0x11; i++) {
+        dst = &D_800BBA24[arg0 * 0x44 + i * 4];
+        src = D_800A35F4 + arg1 * 0xE8 + i * 0xC;
+        for (j = 0; j < 4; j++) {
+            dst[j] = src[j + 0x24];
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D424);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D4C8);
 
@@ -12125,7 +12222,27 @@ void func_8006D634(s32 arg) {
     } while (i < 4);
 }
 
+#ifdef NON_MATCHING
+/* w7i: full shape known; closest draft: src row via
+ * &D_800BBA24[arg0 * 4 + i * 0x44], D_800A3860 base materialized FIRST,
+ * `move a1,zero` (j init) placed before the row math. */
+void func_8006D684(u8 arg0) {
+    u8 *dst;
+    u8 *src;
+    u8 i;
+    u8 j;
+
+    for (i = 0; i < 2; i++) {
+        dst = D_800A3860[i];
+        src = &D_800BBA24[arg0 * 4 + i * 0x44];
+        for (j = 0; j < 4; j++) {
+            dst[j] = src[j];
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D684);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D708);
 
@@ -12249,31 +12366,30 @@ void func_80070018(void) {
 }
 
 #ifdef NON_MATCHING
-/* Structure matches. Two walls: (1) retail keeps D_800A3398's reloaded
- * value in caller-saved v1 and defers the base `addu a0,v1,a0` into the
- * PutDispEnv/PutDrawEnv delay slots; our gcc materializes the base into
- * callee-saved s1 and defers the small addiu instead. (2) retail sinks
- * `sw v0,0x114(a1)` into the PutDrawEnv delay slot; our gcc will not sink
- * a store across a call (aliasing), so it stays after the jal and forces
- * an s0 save (frame 0x20 vs retail 0x18). */
+/* w7i draft: clean unit diff at 0x9c in one cc1 run. Under both w7i's and
+ * w8i's gates the same source allocates site1 {base v0, idx a1} /
+ * site2 {base v1, idx a1} vs retail {v1,v0}/{a1,v1} -- same length,
+ * registers only (4 content bytes). Unguarding it in w8i ALSO flipped
+ * func_8006E07C's gp-load registers (pre-existing live C) -- see the
+ * TU-context note in notes-w8i.md. */
 extern s32 *D_800A3398;
 void func_8007005C(void) {
     s32 *s;
+    s32 *s2;
     s32 idx;
     s32 other;
 
-    s = D_800A3398;
-    if (s[0x11C / 4] != 0) {
+    if (D_800A3398[0x11C / 4] != 0) {
         DrawSync(0);
         VSync(0);
         s = D_800A3398;
         idx = s[0x114 / 4];
-        PutDispEnv((DISPENV *)((u8 *)s + idx * 20 + 0xEC));
-        s = D_800A3398;
-        idx = s[0x114 / 4];
+        PutDispEnv((DISPENV *)((u8 *)s + (idx * 20 + 0xEC)));
+        s2 = D_800A3398;
+        idx = s2[0x114 / 4];
         other = 1 - idx;
-        PutDrawEnv((DRAWENV *)((u8 *)s + other * 92 + 0x34));
-        s[0x114 / 4] = other;
+        s2[0x114 / 4] = other;
+        PutDrawEnv((DRAWENV *)((u8 *)s2 + (other * 92 + 0x34)));
     }
 }
 #else
@@ -12398,7 +12514,37 @@ s32 func_80071EC0(s32 index, s32 base, s32 item) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80071EEC);
 
+#ifdef NON_MATCHING
+/* w7i draft: 0-row unit diff at exact length 0xa8 interactively; the
+ * w8i gate reproduced retail's -0x20 frame BUT unguarding it flipped
+ * func_8006E07C's allocation (TU-context cc1 flake) -- re-guarded. */
+extern s32 D_800A33B8, D_800A33BC;
+void func_800720D0(void) {
+    s32 enabled;
+
+    if (D_800A3500[0x420 / 4] != 0) {
+        CdDataCallback((void *)D_800A3500[0x574 / 4]);
+        CdReadCallback((void *)D_800A3500[0x578 / 4]);
+        SwEnterCriticalSection();
+        enabled = D_800A3500[0x420 / 4];
+        D_800A3500[0x41C / 4] = 0;
+        D_800A3500[0x410 / 4] = 0;
+        D_800A3500[0x408 / 4] = 0;
+        D_800A3500[0x40C / 4] = 0;
+        asm("");
+        if (enabled != 0) {
+            CdSyncCallback((void *)D_800A33B8);
+            CdReadyCallback((void *)D_800A33BC);
+            D_800A33B8 = 0;
+            D_800A33BC = 0;
+            D_800A3500[0x420 / 4] = 0;
+        }
+        SwExitCriticalSection();
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800720D0);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80072178);
 
