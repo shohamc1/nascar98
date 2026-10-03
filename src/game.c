@@ -7238,7 +7238,77 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80045480);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80045864);
 
+extern u8 D_800A342C[];
+extern s32 D_800A3430[];
+extern u8 D_80090F32[];
+extern u8 D_800991E8[];
+extern u8 D_800991E9[];
+extern u8 D_800991EA[];
+
+#ifdef NON_MATCHING
+/* Wall: size and instruction shape exact (0x214), but gcc pins the
+ * HeapAlloc result to s4 (slot 5) instead of fp no matter where buf
+ * is declared; retail order is row s0, poly s1, ptr s2, j s3, b2 s4,
+ * b1 s5, b0 s6, i s7, buf fp. Decomp-permuter candidate. */
+void func_80045F70(void) {
+    u8 *buf;
+    s8 i;
+    u8 b0;
+    u8 b1;
+    u8 b2;
+    s8 j;
+    u8 *ptr;
+    u8 *poly;
+    u8 *row;
+    s32 v0;
+    s32 v1;
+
+    i = 0;
+    if (D_800A2EB0Absolute[1] > 0) {
+        ptr = D_80090F32;
+        do {
+            D_800A342C[i] = 0;
+            buf = (u8 *)HeapAlloc(0x500);
+            v1 = *(s8 *)(D_800A3984[0] + (i * 5 << 8) + 0x876);
+            D_800A3430[i] = (s32)buf;
+            j = 0;
+            v0 = v1 * 3;
+            b0 = D_800991E8[v0];
+            b1 = D_800991E9[v0];
+            b2 = D_800991EA[v0];
+            do {
+                row = buf + j * 0x80;
+                poly = row + 0x10;
+                SetPolyFT4((POLY_FT4 *)poly);
+                SetShadeTex((POLY_FT4 *)poly, 0);
+                row[0x11] = 0x24;
+                *(u32 *)(row + 0x28) = (u32)(row + 0x60);
+                *(u32 *)(row + 0x2C) = (u32)(row + 0x68);
+                *(u32 *)(row + 0x30) = (u32)(row + 0x78);
+                row[0x14] = b0;
+                row[0x15] = b1;
+                row[0x16] = b2;
+                *(u32 *)(row + 0x34) = (u32)(row + 0x70);
+                *(s16 *)(row + 0x1E) = GetTPage(
+                    *(u16 *)ptr, 0, *(u16 *)(ptr - 0xC), *(u16 *)(ptr - 0xA));
+                row[0x18] = ptr[-4] + 0x6F;
+                row[0x19] = *(u16 *)(ptr - 2);
+                row[0x1C] = ptr[-4] + 0x60;
+                row[0x1D] = *(u16 *)(ptr - 2);
+                row[0x20] = ptr[-4] + 0x6F;
+                row[0x21] = ptr[-2] + 0xF;
+                row[0x24] = ptr[-4] + 0x60;
+                row[0x25] = ptr[-2] + 0xF;
+                row[0x00] = 0;
+                j++;
+            } while (j < 10);
+            i++;
+        } while (i < D_800A2EB0Absolute[1]);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80045F70);
+#endif
 
 #ifdef NON_MATCHING
 /* Wall: D_800BE980 base hoisted into a spare reg across the loop
@@ -7328,7 +7398,55 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8004A0C4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004A510);
 
+extern u8 D_8009AE14[];
+extern u8 D_800A2FD0[];
+extern u8 D_80098BD0[];
+
+#ifdef NON_MATCHING
+void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
+    s16 *out;
+    s32 i;
+    s32 j;
+    s32 x;
+    s32 w;
+    s32 t;
+    s32 v0;
+    s32 v1;
+    s32 sum;
+
+    i = 0;
+    do {
+        j = 0;
+        x = arg1[i * 2];
+        w = arg1[i * 2 + 1] + (s8)D_800A2FD0[arg0];
+        if (*(s8 *)D_8009AE14[i] != 0) {
+            out = (s16 *)((u8 *)arg2 + 0x22);
+            do {
+                t = *(s8 *)(D_8009AE14[i] + j);
+                v0 = *(s16 *)&D_80098BD0[t * 10 + 6];
+                out[-13] = x;
+                out[-12] = w;
+                out[-8] = w;
+                out[-5] = x;
+                sum = x + ((v0 * 3) >> 2);
+                out[-9] = sum;
+                v1 = *(s16 *)&D_80098BD0[t * 10 + 8];
+                out[-1] = sum;
+                out[-4] = w + ((v1 * 3) >> 2);
+                v1 = *(s16 *)&D_80098BD0[t * 10 + 8];
+                out[0] = w + ((v1 * 3) >> 2);
+                x = sum;
+                j++;
+                arg2 += 0x14;
+                out += 0x14;
+            } while (t != 0);
+        }
+        i++;
+    } while (i < 7);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8004AFE0);
+#endif
 
 extern s32 D_800A2E50[];
 extern s16 D_800A38E4[];
@@ -7716,50 +7834,39 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80050D1C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800511E4);
 
-#ifdef NON_MATCHING
 extern s8 D_800A34CC;
 extern s8 D_800A34CD;
 extern s8 D_800A34CE;
 extern s8 D_800A34CF;
 extern s8 D_800A34D0;
 extern s8 D_800A34D1;
-extern s8 D_800A8B00;
-extern s8 D_800A8B01;
-extern s8 D_800A8B02;
+extern u8 D_800A8B00[];
+extern u8 D_800A8B01[];
+extern u8 D_800A8B02[];
 
-void func_800514EC(s8 arg0, s8 arg1, s8 arg2) {
-    u32 value0;
-    u32 value1;
-
+void func_800514EC(u8 arg0, u8 arg1, u8 arg2) {
     D_800A34CC = arg0;
     D_800A34CD = arg1;
     D_800A34CE = arg2;
-    if ((u32)(arg0 & 0xFF) >= 0x40U) {
+    if (arg0 >= 0x40) {
         D_800A34CF = arg0 - 0x40;
-        value0 = arg1 & 0xFF;
     } else {
         D_800A34CF = 0;
-        value0 = arg1 & 0xFF;
     }
-    if (value0 >= 0x40U) {
+    if (arg1 >= 0x40) {
         D_800A34D0 = arg1 - 0x40;
-        value1 = arg2 & 0xFF;
     } else {
         D_800A34D0 = 0;
-        value1 = arg2 & 0xFF;
     }
-    if (value1 >= 0x40U) {
+    if (arg2 >= 0x40) {
         D_800A34D1 = arg2 - 0x40;
     } else {
         D_800A34D1 = 0;
     }
-    D_800A8B00 = arg0;
-    D_800A8B01 = arg1;
-    D_800A8B02 = arg2;
+    D_800A8B00[0] = arg0;
+    D_800A8B01[0] = arg1;
+    D_800A8B02[0] = arg2;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800514EC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005157C);
 
