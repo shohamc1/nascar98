@@ -1352,7 +1352,43 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001D638);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001D778);
 
+#ifdef NON_MATCHING
+/* Wall (w8b): cc1 2.7.2 SEGFAULTS (exit 139) on this draft's tail at this
+   TU position; removing only the AddPrim statement lets cc1 finish (exit
+   33, diagnostics only). Tried (u8*) cast, (void*) cast, no cast, and a
+   hoisted otEntry local -- all crash. Statement-stream ICE class
+   (func_8001E17C). Externs: D_800A3D0C[] and D_800A2DB8 need first-time
+   declarations (sibling func_8001DA48 pattern). */
+extern u8 D_800A3D0C[];
+extern s32 D_800A2DB8;
+void func_8001D914(s16 arg0, s16 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
+        u8 arg6, s32 arg7) {
+    u8 *entry;
+
+    entry = D_800A3D0C + (D_800A2DB8 * 2 + D_800A2DB8) * 8;
+    SetPolyF4(entry);
+    D_800A2DB8 = (D_800A2DB8 + 1) % 24;
+    *(s16 *)(entry + 0xA) = arg1;
+    *(s16 *)(entry + 0xE) = arg1;
+    arg3 += arg1;
+    *(s16 *)(entry + 8) = arg0;
+    arg2 += arg0;
+    *(s16 *)(entry + 0xC) = arg2;
+    *(s16 *)(entry + 0x10) = arg0;
+    *(s16 *)(entry + 0x12) = arg3;
+    *(s16 *)(entry + 0x14) = arg2;
+    *(s16 *)(entry + 0x16) = arg3;
+    if ((arg7 << 0x18) != 0) {
+        SetSemiTrans(entry, 1);
+    }
+    *(u8 *)(entry + 4) = arg4;
+    *(u8 *)(entry + 5) = arg5;
+    *(u8 *)(entry + 6) = arg6;
+    AddPrim((u8 *)D_800A39C8[0], entry);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001D914);
+#endif
 
 #ifdef NON_MATCHING
 /* Wall (w6a): semantics fully recovered (entry = D_800A3F4C + D_800A2DBC*24,
@@ -2061,7 +2097,27 @@ void func_8001F8C0(s32 *object) {
     object[23] = value8;
 }
 
+/* Wall: gcc schedules the second D_800A3A34 value reload (needed for the
+ * third read) AFTER the subu/sra/sh chain instead of directly after the
+ * call as retail does, so it needs a hazard nop (+4 bytes). The product
+ * save (move s0,v0) is also emitted before the cos shift instead of in
+ * the second jal's delay slot. Three source shapes tried. */
+#ifdef NON_MATCHING
+void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3) {
+    s32 sinValue;
+    s32 cosValue;
+    s32 product;
+
+    sinValue = arg1 << 16;
+    product = MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], sinValue);
+    cosValue = arg2 << 16;
+    arg3[0] = (product -= MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], cosValue)) >> 16;
+    arg3[1] = (MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], sinValue)
+        + MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], cosValue)) >> 16;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001F90C);
+#endif
 
 extern s32 D_800AE868[];
 extern s32 D_800AE86C[];
