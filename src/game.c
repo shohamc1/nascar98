@@ -725,7 +725,38 @@ void func_80016724(s32 value, s32 *next, s32 size) {
     D_800A2D5C += size;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80016744);
+extern s32 gOrderingTableBankAbsolute[];
+extern s32 D_800A2CF8[];
+extern s32 D_800A2D5C;
+extern s32 D_800A2D64;
+void func_80016744(u32 arg0) {
+    s32 bank;
+    u32 entries;
+    s32 oldEntry;
+    s32 value;
+    s32 offset;
+    s32 hw;
+    u32 ptr;
+    s32 size;
+    s32 extra;
+
+    bank = gOrderingTableBankAbsolute[0];
+    entries = (bank << 2) + arg0;
+    oldEntry = *(s32 *)(entries + 0x420);
+    if (oldEntry != 0) {
+        value = *(s8 *)(arg0 + bank + 0x41C);
+        offset = value * 0x44 + *(s32 *)(arg0 + 0x370);
+        hw = *(s16 *)(offset + 0x2A);
+        ptr = D_800A2D64;
+        size = D_800A2D5C;
+        extra = *(s32 *)(entries + 0x430);
+        *(s32 *)(ptr + 0x34) = oldEntry;
+        D_800A2D64 = extra;
+        *(s32 *)(entries + 0x420) = 0;
+        D_800A2D5C = size + hw;
+    }
+    *(s8 *)(arg0 + ((s32 *)D_800A2CF8)[-1] + 0x41C) = -1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800167BC);
 
@@ -814,7 +845,50 @@ s32 RandomScaledGet(s32 scale) {
 
 /* Primitives and text. */
 
+#ifdef NON_MATCHING
+/* Wall (w7a, same as func_80034B90): retail loads gPrimitiveCursor[0]
+ * into v0 and then copies it home twice (move t0,v0; move a3,t0); gcc
+ * binds the load directly into entry's home register and drops one
+ * move (4 bytes short). Tried here IN ADDITION to the sibling's list:
+ * a two-local split (cursorVal -> entry) — coalesced the same way.
+ * Everything else is exact: 0x10 struct-copy do-while, asm("")-split
+ * 8-byte tail, neighbor-symbol store D_800A36D0Absolute[-67] (relocs
+ * fold to 0x35c4), AddPrim(D_800A39C8[0], entry). */
+typedef struct {
+    s32 words[4];
+} Primitive16;
+
+extern s32 gPrimitiveCursor[];
+extern s32 D_800A39C8[];
+extern s32 D_800A36D0Absolute[];
+void func_80017D80(u8 *arg0) {
+    s32 cursorVal;
+    u8 *entry;
+    u8 *dst;
+    u8 *end;
+    s32 tailA;
+    s32 tailB;
+
+    cursorVal = gPrimitiveCursor[0];
+    entry = (u8 *)cursorVal;
+    end = arg0 + 0x20;
+    dst = entry;
+    ((s32 *)D_800A36D0Absolute)[-67] = cursorVal + 0x28;
+    do {
+        *(Primitive16 *)dst = *(Primitive16 *)arg0;
+        arg0 += 0x10;
+        dst += 0x10;
+    } while (arg0 != end);
+    tailA = *(s32 *)arg0;
+    tailB = *(s32 *)(arg0 + 4);
+    asm("");
+    *(s32 *)dst = tailA;
+    *(s32 *)(dst + 4) = tailB;
+    AddPrim((u8 *)D_800A39C8[0], entry);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80017D80);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80017E08);
 
@@ -3978,6 +4052,11 @@ void func_80032494(u8 *object) {
  * first load's delay slot with it. asm("") forces a strict split that
  * misplaces the ori; volatile flips the pseudo order. register-qualified
  * tag pins v1 but flips the constant registers.
+ * w7a retest: still one row off. C statement order does not matter —
+ * (old,upper,tag,mask) and (tag,mask,old,upper) both emit
+ * lui t0 / lw v1 / lw a2. The scheduler gives the mask pseudo's
+ * definition top priority; only a latency-3/5 rebuild could plausibly
+ * flip the tie and that cannot be delivered per-function.
  */
 void GraphicsLinkPrimitive(u32 *orderingTable, u32 *primitive) {
     u32 old;
@@ -7845,7 +7924,54 @@ s32 CardEnableEvents(void) {
 INCLUDE_ASM("asm/nonmatchings/game", CardEnableEvents);
 #endif
 
+extern s32 func_8005A294(void);
+extern void func_8005A414(void);
+#ifdef NON_MATCHING
+/* Wall (w7a): everything matches except two constant-handling rows.
+ * 1) gcc 2.7.2 hoists the compare/return constant into the prologue
+ * (li s3,0x3 before sw ra, frame 0x28 vs retail 0x20); retail
+ * re-materializes li v0,0x3 at the loop-top compare (in the beqz
+ * delay slot) and again at the return-3 merge. Switch form (case 0 /
+ * case 3) and if-forms both hoist; the hoist survives every shape
+ * tried (4 variants). 2) arg1's test: retail does andi v0,s2,0xff +
+ * bnez v0 at the use with s2 holding the raw a1 copy; ours hoists
+ * the mask into the prologue (andi s2,a1,0xff) for s32/u32/u8 arg1
+ * alike, or drops the andi for a plain s32 `arg1 != 0`. sltiu loop
+ * bound requires u32 retries; the (arg0&0xFF)!=0*0x10 channel line
+ * and the call/branch schedule match. */
+extern s32 func_8005A294(void);
+extern void func_8005A414(void);
+s32 CardCheckStatus(s32 arg0, u8 arg1) {
+    s32 channel;
+    u32 retries;
+    s32 status;
+
+    channel = ((arg0 & 0xFF) != 0) * 0x10;
+    retries = 0;
+    do {
+        _card_info(channel);
+        status = func_8005A294();
+        if (status == 0) {
+            return 0;
+        }
+        if (status == 3) {
+            func_8005A414();
+            _card_clear(channel);
+            status = CardWaitForEvent();
+            if (arg1 != 0) {
+                return 3;
+            }
+            if (status == 0) {
+                return 3;
+            }
+        }
+        retries++;
+    } while ((retries & 0xFF) < 8);
+    return status & 0xFF;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", CardCheckStatus);
+#endif
 
 s32 CardFindFirstFile(char *path, struct DIRENTRY *entry) {
     return firstfile(path, entry) == entry;
@@ -7948,7 +8074,48 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005A000);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A0F0);
 
+#ifdef NON_MATCHING
+/* Wall (w7a): whole body matches except a two-register swap: gcc keeps
+ * i in s1 and total in s2 under every init/declaration order tried
+ * (retail: i=s2, total=s1; count=s3, entry=s0 match). Frame rule found
+ * en route: gcc rounds a local DIRENTRY array of 16 up by 0x20 (frame
+ * 0x2a8 vs retail 0x288) but leaves 15 alone — retail's locals are
+ * 0x260 = 15*0x28 + 8. entries[15] + a volatile s32 framePad[2] gives
+ * the exact frame; call-per-arm with the ==0 branch sense reproduces
+ * the bnez/per-arm-a0/single-jal merge, i=0 before the blez lands,
+ * total=0 fills the blez delay slot. Only the s1/s2 swap remains.
+ * (framePad dropped again here — with it gcc renames nothing; without
+ * the frame is 8 short but the draft is guarded anyway.) */
+extern char D_800A3094[], D_800A309C[];
+s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
+    struct DIRENTRY entries[15];
+    s32 count;
+    u32 total;
+    s32 i;
+    struct DIRENTRY *entry;
+
+    if ((arg0 & 0xFF) == 0) {
+        count = CardScanDirectory(D_800A309C, entries);
+    } else {
+        count = CardScanDirectory(D_800A3094, entries);
+    }
+    i = 0;
+    total = 0;
+    if (count > 0) {
+        entry = entries;
+        do {
+            if (strcmp(entry->name, name) != 0) {
+                total += entry->size;
+            }
+            i++;
+            entry++;
+        } while (i < count);
+    }
+    return (total >> 13) & 0xFF;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", CardCountOtherFileBlocks);
+#endif
 
 s32 func_8005A294(void) {
     u32 i;
