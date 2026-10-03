@@ -380,31 +380,58 @@ void func_80013224(void *arg0) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800132F8);
 
 #ifdef NON_MATCHING
+/* Wall: semantics recovered (signed /50 then unsigned /100 final divide; D_80090ED8
+ * loaded before D_80099590), but gcc schedules both index shifts above both loads and
+ * allocates source into a2 / magic into a3, ours keeps expression order and picks a0/v1.
+ * Consistent with the latency-5 scheduling profile. */
 extern u16 D_80090ED8[];
 extern s32 D_80099590[];
-extern u8 D_800A3320;
-extern u8 D_800A331C;
+extern u8 D_800A3320Absolute[];
+extern u8 D_800A331CAbsolute[];
+
 s32 func_80014398(s32 arg0) {
     s32 source;
     s32 difference;
     s32 adjust;
     s32 value;
     s32 scale;
+    s32 tableValue;
+
+    tableValue = D_80090ED8[arg0];
     source = D_80099590[arg0];
-    difference = source - D_80090ED8[arg0];
-    adjust = difference * (0x64 - D_800A3320);
+    difference = source - tableValue;
+    adjust = difference * (0x64 - D_800A3320Absolute[0]);
     adjust = adjust / 50;
     value = source - adjust;
-    scale = D_800A331C + 0xC8;
+    scale = D_800A331CAbsolute[0] + 0xC8;
     scale = scale / 3;
     value = value * (0xC8 - scale);
-    return value / 100;
+    return (u32)value / 100;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80014398);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80014440);
+extern s32 D_800A2EB0Absolute[];
+extern s32 func_8003CAE8(s32);
+
+void func_80014440(void) {
+    s32 value;
+
+    value = RandomScaledGet(5);
+    if (value < 0) {
+        value = -RandomScaledGet(5);
+    } else {
+        value = RandomScaledGet(5);
+    }
+    if (value == 4) {
+        value = 5;
+    }
+    if (D_800A2EB0Absolute[0] == -1) {
+        value = 5;
+    }
+    func_8003CAE8(value);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800144B4);
 
@@ -653,11 +680,12 @@ extern s32 D_800A2D64;
 extern void *HeapAlloc(u32);
 
 #ifdef NON_MATCHING
-/* Wall: gcc folds the post-loop i * 0x38 to a constant, reverses the loop
- * to a down-count, and loses the base register; retail keeps i live
- * (slti up-count), reloads D_800A2D60, and computes i * 0x38 at runtime. */
+/* Wall: gcc folds the post-loop count * 0x38 to a constant, reverses the loop
+ * to a down-count, and loses the base register; retail keeps count live
+ * (slti up-count), reloads D_800A2D60, and computes count * 0x38 at runtime.
+ * A do { } while (count < 0x897) body still gets reversed and folded. */
 void func_8001636C(void) {
-    s32 i;
+    s32 count;
     s32 offset;
     u8 *base;
     u8 *entry;
@@ -669,13 +697,15 @@ void func_8001636C(void) {
     base = (u8 *)D_800A2D60;
     entry = base;
     offset = 0x38;
-    for (i = 0; i < 0x897; i++) {
+    count = 0;
+    do {
         *(s32 *)(entry + 0x34) = (s32)(base + offset);
         offset += 0x38;
+        count += 1;
         entry += 0x38;
-    }
+    } while (count < 0x897);
     D_800A2D5C = 0x898;
-    entry = (u8 *)D_800A2D60 + i * 0x38;
+    entry = (u8 *)D_800A2D60 + count * 0x38;
     *(s32 *)(entry + 0x34) = 0;
     D_800A2D64 = (s32)entry;
 }
@@ -797,7 +827,33 @@ void FontSetColor(s16 red, s16 green, s16 blue) {
     gFontColorBlue = blue;
 }
 
+#ifdef NON_MATCHING
+/* Wall: the two-statement width build (width = D_800A2D88; width = width +
+ * scale;) reproduces retail's lui/addiu-then-sll order, but gcc allocates
+ * scale into s3 and width into s2; retail has them swapped (scale s2, width
+ * s3). Only the register names differ. */
+extern void func_800180C0(s8, s32, s32, s32);
+extern s16 D_800A2D88[];
+
+void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
+    s16 *width;
+    s8 *p;
+
+    if (*text != 0) {
+        width = D_800A2D88;
+        width = width + scale;
+        p = text;
+        do {
+            func_800180C0(*p, x, y, scale);
+            x += *width;
+            p++;
+        } while (*p != 0);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001832C);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800183C0);
 
@@ -9095,11 +9151,64 @@ void func_80073978(void) {
     D_800A351C[0x7B78 / 4] = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8007398C);
+extern volatile s32 *D_800A351C;
+extern void SwEnterCriticalSection(void);
+extern void SwExitCriticalSection(void);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800739E0);
+void func_8007398C(void) {
+    volatile s32 *field;
+    volatile s32 *p;
+    u32 i;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80073A44);
+    volatile s32 *p;
+
+    SwEnterCriticalSection();
+    i = 0;
+    p = D_800A351C;
+    p[0] = 0;
+    p[1] = 0;
+    p[3] = 0;
+    field = p;
+    do {
+        field[0x7B2C / 4] = 0;
+        i += 1;
+        field += 1;
+    } while (i < 4);
+    SwExitCriticalSection();
+}
+
+void func_800739E0(void) {
+    volatile s32 *field;
+    volatile s32 *p;
+    u32 i;
+
+    volatile s32 *p;
+
+    SwEnterCriticalSection();
+    i = 0;
+    p = D_800A351C;
+    p[0] = 0;
+    p[1] = 0;
+    p[3] = 0;
+    field = p;
+    do {
+        field[0x7B2C / 4] = 0;
+        i += 1;
+        field += 1;
+    } while (i < 4);
+    D_800A351C[0x7B3C / 4] = 1;
+    D_800A351C[0x7B24 / 4] = 0;
+    SwExitCriticalSection();
+}
+
+extern void SpuSetKey(s32, s32);
+extern void SpuSetReverbVoice(s32, s32);
+
+void func_80073A44(void) {
+    SpuSetKey(0, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);
+    SpuSetReverbVoice(D_800A351C[0x7B6C / 4], D_800A351C[0x7B64 / 4]);
+    SpuSetReverbVoice(D_800A351C[0x7B70 / 4], D_800A351C[0x7B68 / 4]);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80073AA4);
 
