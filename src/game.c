@@ -3608,7 +3608,24 @@ void func_8005B688(u8 *first, u8 friction) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005B7DC);
+extern u8 *D_800A39C8[];
+void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
+    u8 *poly;
+
+    poly = *(u8 **)(object + 0x20);
+    *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6);
+    *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8);
+    *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+    *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8);
+    *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6);
+    *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+    *(u16 *)(poly + 0x14) = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+    *(u16 *)(poly + 0x16) = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+    if (semiTrans != 0xFF) {
+        SetSemiTrans(poly, semiTrans);
+    }
+    AddPrim(D_800A39C8[0] + index * 4, poly);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B8B8);
 
