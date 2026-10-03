@@ -3557,9 +3557,56 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80034B90);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80034C1C);
 
+#ifdef NON_MATCHING
+extern s32 D_800A3784[], D_800A3790[], D_800A3794[], D_800A3798[], D_800A379C[],
+    D_800A37A4[], D_800A37AC[], D_800A37B4[], D_800A37C4[];
+void func_80034C94(void) {
+    D_800A3784[0] = 0x10000;
+    D_800A3790[0] = 0;
+    D_800A3794[0] = 0;
+    D_800A3798[0] = 0;
+    D_800A37AC[0] = 0;
+    D_800A37A4[0] = D_800A36D4;
+    D_800A379C[0] = D_800A36D0;
+    D_800A37B4[0] = -D_800A36D4;
+    D_800A37C4[0] = D_800A36D0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80034C94);
+#endif
 
+#ifdef NON_MATCHING
+void func_80034CFC(void) {
+    D_800A3790[0] = 0;
+    D_800A3798[0] = 0;
+    D_800A379C[0] = 0x10000;
+    D_800A37A4[0] = 0;
+    D_800A37B4[0] = 0;
+    D_800A3794[0] = D_800A36C0;
+    D_800A3784[0] = D_800A36E8;
+    D_800A37AC[0] = -D_800A36C0;
+    D_800A37C4[0] = D_800A36E8;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80034CFC);
+#endif
+
+#ifdef NON_MATCHING
+void func_80034C1C(void) {
+    D_800A3794[0] = 0;
+    D_800A37A4[0] = 0;
+    D_800A37AC[0] = 0;
+    D_800A37B4[0] = 0;
+    D_800A37C4[0] = 0x10000;
+    D_800A3784[0] = D_800A36B0;
+    D_800A3790[0] = D_800A36B8;
+    D_800A3798[0] = -D_800A36C8;
+    D_800A379C[0] = D_800A36D0;
+}
+#else
+#endif
+
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80034D64);
 
@@ -3704,7 +3751,40 @@ void func_80036540(void) {
 }
 
 
+#ifdef NON_MATCHING
+extern s32 D_800B7398[];
+void func_800365B8(s32 *out) {
+    s32 i;
+    s32 count;
+    u8 *entry;
+    s32 value;
+    s32 temp;
+
+    count = 0;
+    entry = (u8 *)D_800B7398;
+    for (i = 0; i < 0x18; i++, entry += 0xC8) {
+        if (*(s16 *)((u32)entry + 0x10) == 0) {
+            continue;
+        }
+        value = *out;
+        value = (value & -0x800) | ((*(s32 *)((u32)entry - 8) >> 7) & 0x7FF);
+        *out = value;
+        value = (value & 0xFFC007FF) | (((*(s32 *)((u32)entry - 4) >> 7) & 0x7FF) << 11);
+        *out = value;
+        temp = *(s32 *)entry;
+        value = (value & 0x3FFFFF) | ((temp / 16) << 22);
+        *out = value;
+        out = out + 1;
+        count = count + 1;
+        if (count >= 0x14) {
+            return;
+        }
+    }
+    *out = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800365B8);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003667C);
 
@@ -3751,11 +3831,73 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800367DC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80036900);
 
+#ifdef NON_MATCHING
+s32 func_80036F64(s32 *a, s32 *b, s32 arg2) {
+    s32 index;
+    s32 temp1;
+    s32 temp2;
+
+    index = *(s16 *)((u8 *)b + 0x114) * 4;
+    temp1 = *(s32 *)((u8 *)D_800A3A2C + index);
+    temp2 = *(s32 *)((u8 *)D_800A3A34 + index);
+    return arg2 < (((a[0] - b[0]) * temp1 - (a[1] - b[1]) * temp2) >> 16);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80036F64);
+#endif
 
+#ifdef NON_MATCHING
+s32 func_80036FC8(s32 *a, s32 *b) {
+    s32 index;
+    s32 temp1;
+    s32 temp2;
+
+    index = *(s16 *)((u8 *)b + 0x114) * 4;
+    temp1 = *(s32 *)((u8 *)D_800A3A34 + index);
+    temp2 = *(s32 *)((u8 *)D_800A3A2C + index);
+    return ((a[0] - b[0]) * temp1 + (a[1] - b[1]) * temp2) >> 16 > 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80036FC8);
+#endif
 
+#ifdef NON_MATCHING
+extern s32 D_800BE974[];
+s32 func_8003702C(u8 *objectA, u8 *objectB) {
+    s32 limit;
+    s32 diff;
+    s32 a;
+    s32 b;
+
+    limit = D_800BE974[0];
+    diff = *(s16 *)(objectA + 0x1E0) - *(s16 *)(objectB + 0x1E0);
+    if (diff >= 0) {
+        if (diff < (limit >> 1)) {
+            return diff;
+        }
+    } else {
+        if ((limit >> 1) > -diff) {
+            return diff;
+        }
+    }
+    a = *(s16 *)(objectA + 0x1E0);
+    b = *(s16 *)(objectB + 0x1E0);
+    if (b < a) {
+        b = b + limit;
+        if (b - a < 0) {
+            return b - a;
+        }
+        return a - b;
+    }
+    a = a + limit;
+    if (a - b >= 0) {
+        return a - b;
+    }
+    return b - a;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003702C);
+#endif
 
 #ifdef NON_MATCHING
 extern s32 D_800BE974[];
