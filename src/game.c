@@ -7486,11 +7486,21 @@ s32 func_8005BF68(void) {
 }
 
 #ifdef NON_MATCHING
+/*
+ * w4d: all instructions and registers match retail except the head
+ * schedule: retail keeps the increment (`addiu v0,a2,1` / `sb v0`)
+ * before `lw v0,D_800A3678`; our gcc hoists the load above it and swaps
+ * the v0/v1 roles of the entry base and the stride chain. Tried:
+ * post-increment form, s32 count local, split/compound entry compute.
+ * The tail needs `prim = D_800A3654;` split from a COMPOUND
+ * `prim += primIndex * 12;` with `asm("");` between the counter store
+ * and the stride, or the addiu/sb lands after the sll chain.
+ */
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
 extern u8 D_800A37BC;
 extern s32 D_800A3654;
-void func_8005BF8C(s16 left, s16 top) {
+void func_8005BF8C(s32 left, s32 top) {
     u8 spriteIndex;
     u8 primIndex;
     u8 *object;
@@ -7502,24 +7512,26 @@ void func_8005BF8C(s16 left, s16 top) {
     object[3] = 0;
     object[2] = 0;
     primIndex = D_800A37BC;
-    *(s16 *)(object + 0xA) = left;
-    *(s16 *)(object + 0x6) = left;
-    *(s16 *)(object + 0x12) = 0;
-    *(s16 *)(object + 0x14) = 0;
-    *(s32 *)(object + 0x1C) = 0;
-    *(s16 *)(object + 0x1A) = 0;
-    *(s16 *)(object + 0x0) = 0;
-    *(s16 *)(object + 0xC) = top;
-    *(s16 *)(object + 0x8) = top;
-    *(s16 *)(object + 0xE) = 0;
-    *(s16 *)(object + 0x10) = 0;
-    *(s16 *)(object + 0x1A) = 0;
+    *(u16 *)(object + 0xA) = left;
+    *(u16 *)(object + 0x6) = left;
+    prim = (u8 *)D_800A3654;
+    *(u16 *)(object + 0x12) = 0;
+    *(u16 *)(object + 0x14) = 0;
+    *(u32 *)(object + 0x1C) = 0;
+    *(u16 *)(object + 0x1A) = 0;
+    *(u16 *)(object + 0x0) = 0;
+    *(u16 *)(object + 0xC) = top;
+    *(u16 *)(object + 0x8) = top;
+    *(u16 *)(object + 0xE) = 0;
+    *(u16 *)(object + 0x10) = 0;
+    *(u16 *)(object + 0x1A) = 0;
     D_800A37BC = primIndex + 1;
-    prim = (u8 *)(D_800A3654 + primIndex * 12);
-    *(u8 **)(object + 0x20) = prim;
+    asm("");
+    prim += primIndex * 12;
+    *(u32 *)(object + 0x20) = prim;
     prim[0] = 0;
     prim[3] = 0;
-    *(s32 *)(prim + 4) = 0;
+    prim[4] = 0;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005BF8C);
@@ -8110,18 +8122,24 @@ void func_8005EC5C(s32 arg0) {
  * while retail re-materializes `lui at` per store. Distinct-expression
  * forms (`(D_800A3814 + 0)`, `&D_800A3814[0]`) do not split it.
  */
+/* w4d: avoid the D_800A3814 extern entirely with the defsym'd neighbor
+ * ((s32 *)D_800A37C4Absolute)[20] (= 0x800A3814, [3] = 0x800A37D0); and
+ * the missing third argument of func_80012EA8 is the RAW mfhi of the
+ * magic multiply - pass ((value * D_800A37D0[0]) * 0x51EB851F) >> 32 so
+ * cse shares the one mult (retail: one chain, a2 = mfhi). */
 extern s16 D_8009AF84[];
-extern s32 D_800A3814[];
 void func_8005EC5C(u8 index) {
     s32 value;
+    s32 scaled;
 
     value = D_8009AF84[index] * D_800A37D0[0];
-    value = value / 100;
-    *(s32 *)(D_800A3814 + 0) = value;
-    if (value < 3) {
-        *(s32 *)&D_800A3814[0] = 3;
+    scaled = value / 100;
+    ((s32 *)D_800A37C4Absolute)[20] = scaled;
+    if (scaled < 3) {
+        ((s32 *)D_800A37C4Absolute)[20] = 3;
     }
-    func_80012EA8(*(s32 *)&D_800A3814[0], D_800BA058);
+    func_80012EA8(((s32 *)D_800A37C4Absolute)[20], D_800BA058,
+                  (value * 0x51EB851F) >> 32);
     strcat(D_800BA058, D_800A333C);
 }
 #else
@@ -8222,11 +8240,54 @@ void func_80060F10(s32 a, s32 b, s16 c) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80060F54);
+extern u8 D_800A2F9DAbsolute[];
+void func_80060F54(s32 arg0, s32 volume) {
+    u8 *node;
+    u8 x;
+
+    node = *(u8 **)(D_800A38A8 + 0x1C);
+    volume &= 0xFF;
+    x = arg0;
+    *(u16 *)(node + 0x16) = x;
+    if (volume != 0) {
+        x = arg0;
+        D_800A2F9DAbsolute[-9] = (x * 127) / 100;
+        func_8003FDE8(1, 0x7F, 0x7F);
+    } else {
+        CdSetMixVolume(x);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80060FD8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80062874);
+extern void *D_800A37C4Absolute[];
+extern void *D_800A3A2CAbsolute[];
+void func_80062874(s32 arg0, s32 arg1) {
+    u8 *node;
+    s16 flag;
+    s32 index;
+
+    index = arg0 & 0xFF;
+    flag = index != 0;
+    if ((arg1 & 0xFF) != 0) {
+        node = ((void **)D_800A3A2CAbsolute)[index - 4];
+    } else {
+        node = ((void **)D_800A37C4Absolute)[index + 5];
+    }
+    if (node != 0) {
+        do {
+            if (*(u16 *)(node + 6) < 0x141U) {
+                *(u16 *)(node + 0xE) = 2 - flag * 4;
+                if (flag != 0) {
+                    *(s16 *)(node + 0xA) = -0xA0;
+                } else {
+                    *(u16 *)(node + 0xA) = 0x1E0;
+                }
+            }
+            node = *(u8 **)(node + 0x1C);
+        } while (node != 0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80062910);
 
@@ -8557,7 +8618,41 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006654C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066730);
 
+extern s32 GetGp(void);
+extern s32 D_8008CA4C[];
+extern void func_80058D08(s32 gp);
+extern s8 D_800A3884;
+extern DISPENV D_800BDE04[];
+extern volatile u8 D_800A3360;
+#ifdef NON_MATCHING
+/*
+ * Every instruction matches except one: retail keeps
+ * `andi v0,v0,0xff` between `lbu v0,0xba4(gp)` (D_800A3884) and the
+ * `bne`. gcc 2.7.2 folds the redundant mask of any byte-typed load
+ * (s8 decl, u8 local, s32 local, split with asm("")); cse rewrites
+ * sign_extend+and to lbu across the barrier. Shapes needed for the
+ * mask survived nowhere. The gp-switch shape is otherwise verified:
+ * GetGp() pinned in s0 via the trailing asm("addu $gp, %0, $zero"),
+ * D_8008CA4C[0] passed as the SetGp value.
+ */
+void func_800669B8(void) {
+    s32 gp;
+    s32 flag;
+
+    gp = GetGp();
+    func_80058D08(D_8008CA4C[0]);
+    SetDispMask(1);
+    flag = D_800A3884;
+    asm("");
+    if ((flag & 0xFF) == 1) {
+        PutDispEnv(D_800BDE04);
+    }
+    D_800A3360 = 1;
+    asm("addu $gp, %0, $zero" : : "r"(gp));
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800669B8);
+#endif
 
 extern s32 GetGp(void);
 extern s32 D_8008CA4C[];
@@ -8660,7 +8755,27 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800679C4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80067AB4);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80067DFC);
+/*
+ * w4d: this TU position (after the func_80067AB4 slot) matches retail
+ * address order; the C body landed on 0x80067AB4 when placed before it.
+ */
+extern void func_8006733C(void);
+extern void func_80067AB4(void);
+void func_80067DFC(void) {
+    void (*callback)(void);
+
+    *(s32 *)D_8008CA4C = GetGp();
+    callback = func_8006733C;
+    if (D_800A2EB0Absolute[0] == 2) {
+        callback = func_80067AB4;
+    }
+    EnterCriticalSection();
+    D_800A335C = OpenEvent(0xF2000003, 2, 0x1000, callback);
+    EnableEvent(*(volatile s32 *)&D_800A335C);
+    SetRCnt(0xF2000003, 1, 0x1000);
+    StartRCnt(0xF2000003);
+    ExitCriticalSection();
+}
 
 typedef struct UnkPacket0C {
     u8 unk0, unk1, unk2, unk3;
@@ -8703,7 +8818,30 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800686FC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006894C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80068A3C);
+void func_80068A3C(u8 *head, u8 *other, s32 delta, s32 limit, s32 mid) {
+    s16 base;
+
+    if (delta > 0) {
+        base = *(s16 *)(head + 8);
+        if (limit < base + delta) {
+            delta = limit - base;
+        }
+    } else {
+        if (delta < 0) {
+            if ((s32)*(s16 *)(other + 8) + delta < mid) {
+                delta = mid - *(s16 *)(other + 8);
+            }
+        }
+    }
+    if (delta != 0) {
+        if (head != 0) {
+            do {
+                *(u16 *)(head + 8) += delta;
+                head = *(u8 **)(head + 0x1C);
+            } while (head != 0);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80068AC4);
 
