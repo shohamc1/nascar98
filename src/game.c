@@ -4355,7 +4355,30 @@ s32 func_8003E78C(u8 *object) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003E78C);
 #endif
 
+#ifdef NON_MATCHING
+/* Walls: retail keeps the walked pointer IN the a1 param register with
+ * the +0xc preheader addiu after the single rotated guard; gcc 2.7.2
+ * either copies the walk to another register, folds the +0xc into the
+ * loop load offsets, or drops the empty 8-byte frame. Closest draft: */
+void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
+    s32 count;
+    s32 i;
+    s32 *entries;
+
+    count = *(s16 *)(object + 2) - *(s16 *)(object + 0) + 1;
+    entries = *(s32 *)(object + 8) + arg2;
+    *(s32 *)(object + 8) = entries;
+    if (count > 0) {
+        entries = arg1 + 3;
+        for (i = 0; i < count; i++) {
+            *entries += arg2;
+            entries += 5;
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003EA94);
+#endif
 
 #ifdef NON_MATCHING
 void func_8003EAE8(u8 *object, s32 index) {
@@ -4854,7 +4877,32 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003FA84);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FC0C);
 
+#ifdef NON_MATCHING
+/* Wall: retail's unsigned /127 expansion is mult 0x81020409 (SIGNED
+ * mult) + mfhi + addu of the dividend + srl 6, with NO sra31/subu
+ * sign fixup; our gcc emits either the full signed expansion or the
+ * multu 0x02040811 variant, never this hybrid. */
+void func_8003FDE8(s8 arg0, s32 arg1, s32 arg2) {
+    s16 voice;
+    s32 volL;
+    s32 volR;
+
+    voice = D_800B9E24[(s8)arg0 * 6];
+    if (voice != -1) {
+        volL = ((arg1 & 0xFF) * D_800A2F94) / 127U;
+        volR = ((arg2 & 0xFF) * D_800A2F94) / 127U;
+        if ((u32)(volL & 0xFFFF) >= 0x80U) {
+            volL = 0x7F;
+        }
+        if ((u32)(volR & 0xFFFF) >= 0x7FU) {
+            volR = 0x7F;
+        }
+        SsUtSetVVol(voice, volL, volR);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FDE8);
+#endif
 
 #ifdef NON_MATCHING
 /* Wall: gcc hoists the D_800B9E24 base into a 4th callee-saved reg; retail
@@ -4977,7 +5025,51 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80040260);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800406D0);
 
+#ifdef NON_MATCHING
+/* Walls: gcc hoists the D_800A3554 base address into callee-saved s1
+ * (retail re-materializes lui/lw at each site) and converts the
+ * id=0x14/0x15 select into a branchless xor/sltu/negu/andi/ori chain;
+ * retail keeps bne + li/li. Frame 0x20 vs 0x18 from the s1 save. The
+ * div guard sequence, call shapes and field accesses otherwise match. */
+extern u8 D_800A2F9D;
+extern s32 D_800A2EA4[];
+extern void func_8003FC0C(s32, s32, s32);
+extern void func_8003F564(s32, s32);
+
+void func_800409A0(u8 *object) {
+    s32 id;
+
+    if (D_800A2F9D == 0) {
+        return;
+    }
+    if (object == D_800A3554[0]) {
+        id = 0x14;
+    } else {
+        id = 0x15;
+    }
+    func_8003FC0C(id,
+                  (s8)(*(s16 *)(object + 0x92) * 8 / *(s16 *)(object + 0x9A) + 0x2C),
+                  0);
+    if (*(s8 *)(object + 0x3B8) == 0) {
+        if (object == D_800A3554[0]) {
+            func_8003F564(0x14, 2);
+        } else if (object == *(u8 **)(D_800A3554[0] + 0x3E0) &&
+                   D_800A2EA4[0] == 2) {
+            func_8003F564(0x15, 2);
+        }
+    }
+    *(u8 *)(object + 0x3B9) = 1;
+    if (*(s16 *)(object + 0x120) != 0) {
+        *(u8 *)(object + 0x3B8) = 0x17;
+    }
+    *(u8 *)(object + 0x3B8) = *(u8 *)(object + 0x3B8) + 1;
+    if ((s8)*(u8 *)(object + 0x3B8) >= 0x19) {
+        *(u8 *)(object + 0x3B8) = 0x18;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800409A0);
+#endif
 
 void func_80040AC0(u8 *object) {
     object[0x3B9] = 0;
@@ -5166,28 +5258,24 @@ u16 func_80041B94(s32 index) {
 
 extern s32 gPadBuffers[];
 
-#ifdef NON_MATCHING
 /* Wall: retail computes the nibble before the 0xFF branch and keeps it
  * in a0 with a final move v0,a0 on both paths; our shapes either go
  * branchless (xori/sltu/negu) or compute after the branch. */
 u32 func_80041BAC(s32 arg0) {
     s32 temp;
-    u32 result;
+    s32 result;
 
     if (arg0 < 0) {
         return 0;
     }
     temp = gPadBuffers[arg0 * 3];
+    result = ((u32)(temp & 0xF000)) >> 12;
     if ((temp & 0xFF) == 0xFF) {
+        asm("");
         result = 0;
-    } else {
-        result = ((u32)(temp & 0xF000)) >> 12;
     }
     return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80041BAC);
-#endif
 
 
 
@@ -5356,19 +5444,22 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80042218);
 #endif
 
 
-#ifdef NON_MATCHING
 s32 func_8004229C(s32 arg0) {
-    u32 value;
-    value = arg0 & 0xFF;
-    if (value != 2) {
-        if (value < 5U)
-            return 0;
+    s32 var_v0;
+    u32 temp_a0;
+
+    temp_a0 = arg0 & 0xFF;
+    if (temp_a0 == 2) {
+        var_v0 = 1;
+    } else {
+        if (temp_a0 < 5U) {
+            var_v0 = 0;
+            return var_v0;
+        }
+        var_v0 = 1;
     }
-    return 1;
+    return var_v0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8004229C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800422C0);
 
