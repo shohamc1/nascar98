@@ -10824,7 +10824,43 @@ s32 func_80065040(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80065058);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80065838);
+extern u8 *D_8009A3F0[];
+extern u8 *D_8009A400[];
+extern u8 *D_8009A418[];
+extern u32 *D_800A38C4;
+extern u8 *D_800A369C;
+extern u8 D_800A3A4C;
+void func_80065838(s32 arg0) {
+    extern s32 D_800A2EB0Absolute[];
+    u8 *str;
+    u8 *ptr;
+    s32 count;
+    s32 len;
+    s32 temp;
+    volatile s32 framePad[2];
+
+    ptr = D_800A369C;
+    if (arg0 & 0xFF) {
+        str = D_8009A400[0];
+    } else {
+        ptr += D_800A3A4C * 0x28;
+        if (D_800A2EB0Absolute[0] == 0) {
+            str = D_8009A3F0[0];
+        } else {
+            str = D_8009A418[0];
+        }
+    }
+    count = 0;
+    len = strlen((char *)str);
+    if (len > 0) {
+        do {
+            temp = ptr;
+            ptr += 0x28;
+            count += 1;
+            AddPrim(D_800A38C4, temp);
+        } while (count < len);
+    }
+}
 
 extern u8 D_800A35B4;
 extern u8 *D_800A38D8;
@@ -10843,7 +10879,62 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006594C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80065C3C);
 
+#ifdef NON_MATCHING
+/*
+ * w8h: size-exact (0x100) and one scheduling row from matching: retail
+ * order is `lw a1,0(s0); li a0,0x140; sb v0->D_800A35B4; jal
+ * func_8005B0E4; nop` -- our gcc sinks the sb one slot later and fills
+ * the jal delay with the li (`sb; jal; li(delay)`). Also note arg1 of
+ * func_8005A9F4 is func_8005B0E4's RETURN (s16)-narrowed, not the
+ * strlen result; and the first strlen result goes straight to the sb,
+ * never into an s-reg (keeps s1/s2 free: retail s0=count s1=ptr s2=len).
+ * Tried: nested-call form shown; direct len arg shuffled s-regs.
+ * asm("") after the sb statement untested.
+ */
+extern void func_8005A7B8(s32 arg0, s32 arg1);
+extern void func_8005A818(u8 arg0, u8 arg1, u8 arg2);
+extern s32 func_8005B0E4(s16 arg0, s32 arg1);
+extern void func_8005A9F4(s32 arg0, s16 arg1, s16 arg2, u8 arg3, u8 arg4,
+                          s32 arg5, u8 arg6, u8 arg7);
+extern u8 *D_8009A3FC[];
+extern u8 *D_800A38D8;
+extern s32 D_800A3538;
+extern u8 D_800A3884;
+void func_80065F80(void) {
+    u8 **entry;
+    u8 *str;
+    u8 *ptr;
+    s32 count;
+    s32 len;
+    s32 temp;
+    volatile s32 framePad[2];
+
+    func_8005A7B8(2, 4);
+    func_8005A818(0x80, 0x80, 0xC0);
+    entry = D_8009A3FC;
+    D_800A38D8 = (u8 *)D_800A367C;
+    D_800A35B4 = strlen((char *)entry[0]);
+    func_8005A9F4((s32)entry[0], func_8005B0E4(0x140, (s32)entry[0]), 0x7F,
+                  0, 0, 0, 0, 0);
+    ClearOTagR(D_800A38C4, 4);
+    ptr = D_800A369C;
+    str = D_8009A400[0];
+    D_800A3538 = D_800A367C;
+    count = 0;
+    len = strlen((char *)str);
+    if (len > 0) {
+        do {
+            temp = ptr;
+            ptr += 0x28;
+            count += 1;
+            AddPrim(D_800A38C4, temp);
+        } while (count < len);
+    }
+    D_800A3884 = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80065F80);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066080);
 
@@ -11567,9 +11658,16 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006B088);
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B1CC);
 
 #ifdef NON_MATCHING
-/* Draft diffs to ONE row: retail `addu a0,v1,v0` for src (mask2*4 first);
-   every compound/plain spelling tried puts v0 first or ICEs cc1
-   (`src = m*4; src += tbl + a*0x44` kills cc1 reliably). */
+/*
+ * w8h: still diffs to ONE real row after restoring w7h's spelling:
+ * retail `addu a0,v1,v0` (v1 = mask2*4, materialized LAST by the sll
+ * right before the addu); gcc emits `addu a0,v0,v1` for every plain
+ * spelling, and compound/`src +=` spellings that DO put mask2*4 first
+ * materialize the sll early instead (before the tbl chain) and leave
+ * the sum in the wrong register. Also gcc defers `andi a2` (mask2) to
+ * its late first use; retail emits it first.asm("") between the node
+ * load and the conversion did not help (B3E0: between statements here).
+ */
 extern u8 D_800BBA24[];
 void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
     s32 i;
@@ -11607,7 +11705,72 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006B5BC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B6B8);
 
+#ifdef NON_MATCHING
+/*
+ * w8h: 8 bytes long and register-shuffled. Retail keeps ONE induction
+ * variable (a0 = entry base, +0xc in the bnez delay slot) with positive
+ * store offsets 4/6/8; our gcc creates a SECOND IV anchored at entry+8
+ * (`addiu a0,a1,8` + in-body `addiu a0,a0,0xc`) with stores -4/-2/0.
+ * Tried: k-first order, running base local, sw through byte+5 alias --
+ * all re-anchor (same family as func_8006ABF8's base/p merge).
+ * Register shuffle: retail a1=counter both loops, a0=base; ours v1/a2
+ * counter, a1 base. Constants land a2/a3/t0 in retail, t0/t1/a3 here.
+ */
+extern u8 D_800B9B6E[];
+extern u8 D_800B9B6F[];
+extern u8 D_800B9B70[];
+extern u8 D_800B9B71[];
+extern u8 D_800B9B72[];
+extern u8 D_800B9BB4[];
+void func_8006BD68(void);
+void func_8006BA68(void) {
+    u8 *base;
+    u8 *entry;
+    u8 *byte;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 ffff;
+    s32 fill;
+    s32 magic;
+
+    func_8006BD68();
+    i = 0x17;
+    base = D_800B9B6E;
+    entry = base + 0x44;
+    base[0] = 0;
+    D_800B9B6F[0] = 0;
+    D_800B9B70[0] = 0;
+    D_800B9B71[0] = 0;
+    D_800B9B72[0] = 0;
+    do {
+        *(s16 *)entry = 0;
+        i -= 1;
+        entry -= 2;
+    } while (i >= 0);
+    ffff = 0xFF;
+    fill = 0x20;
+    magic = 0x7FFFFFFF;
+    j = 0;
+    entry = D_800B9BB4;
+    do {
+        k = 3;
+        byte = entry + 3;
+        *(s16 *)(entry + 4) = ffff;
+        *(s16 *)(entry + 6) = ffff;
+        *(s32 *)(entry + 8) = magic;
+        do {
+            *byte = fill;
+            k -= 1;
+            byte -= 1;
+        } while (k >= 0);
+        j += 1;
+        entry += 0xC;
+    } while (j < 0x11);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006BA68);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006BB1C);
 
@@ -11671,6 +11834,19 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006C5E4);
 #endif
 
 #ifdef NON_MATCHING
+/*
+ * w8h: retail stores the table ADDRESS as a running pointer (v1 =
+ * D_800B0A2C + index*0x10, advanced 0x10 per iteration; sw v1,8(v0)) --
+ * the old draft's per-iteration load was wrong; fixed here. Still 4
+ * bytes short: retail has two delay-slot moves ours does not --
+ * (1) `move v1,a0` in the clamp bnez delay (raw arg0 saved, converted
+ * to (s8) AFTER the node load; gcc CSEs the two (s8)arg0 conversions
+ * and converts early instead) and (2) `move v1,v0` after the sentinel
+ * beq (sentinel loaded in v0, copied to v1 for the second loop's bne;
+ * ours loads it into v1 and needs no copy). asm("") between the node
+ * load and the conversion did not force (1). Register shuffle r-rows
+ * otherwise clean.
+ */
 extern u8 *D_800A3908[];
 extern u8 *D_800A377C[];
 
@@ -11680,17 +11856,20 @@ void func_8006C668(s32 arg0, s32 arg1) {
     s32 end;
     u8 *node;
     u8 *sentinel;
+    u8 *tbl;
     end = arg1;
     if (end >= 6)
         end = (s8)arg0 + 6;
     node = D_800A3908[0];
+    asm("");
     index = (s8)arg0;
     if (end >= index) {
+        tbl = D_800B0A2C + index * 0x10;
         do {
-            *(u32 *)(*(u8 **)(node + 0x20) + 8) =
-                *(u32 *)(D_800B0A2C + index * 0x10);
+            *(u32 *)(*(u8 **)(node + 0x20) + 8) = (u32)tbl;
             node = *(u8 **)(node + 0x1C);
             index++;
+            tbl += 0x10;
         } while (end >= index);
     }
     sentinel = D_800A377C[0];
