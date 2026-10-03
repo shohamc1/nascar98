@@ -5392,46 +5392,29 @@ void PadInitBuffers(void) {
 
 #ifdef NON_MATCHING
 extern s32 gPadBuffers[];
-extern u8 D_800B9E00[];
-s32 func_80041D60(void) {
-    u16 first;
-    u16 second;
-    u16 value;
-    value = *(u16 *)((u8 *)gPadBuffers + 2);
-    first = (u16) ~((value >> 8) | ((value & 0xFF) << 8));
-    value = *(u16 *)((u8 *)gPadBuffers + 0xE);
-    second = (u16) ~((value >> 8) | ((value & 0xFF) << 8));
-    if (!(*(u16 *)gPadBuffers & 0xF000))
-        first = 0;
-    if (!(*(u32 *)D_800B9E00 & 0xF000))
-        second = 0;
-    return ((u32)second << 16) | first;
-}
-#else
-#ifdef NON_MATCHING
-/* Wall: register flow around the gPadBuffers base (retail keeps a
- * v0 base with addiu +0xC step; we fold offsets into loads). */
-extern s32 gPadBuffers[];
 extern u32 D_800B9E00[];
 
 s32 func_80041D60(void) {
+    volatile u16 pad1;
+    volatile u16 pad2;
     u8 *pads;
-    u16 pad1;
-    u16 pad2;
-    u16 temp;
+    u16 value;
+    u32 flags;
 
     pads = (u8 *)gPadBuffers;
-    temp = *(u16 *)(pads + 2);
-    pad1 = ~((temp >> 8) | ((temp & 0xFF) << 8));
-    temp = *(u16 *)(pads + 0xE);
-    pad2 = ~((temp >> 8) | ((temp & 0xFF) << 8));
-    if ((*(s32 *)pads & 0xF000) == 0) {
+    value = *(u16 *)(pads + 2);
+    pad1 = ~(((value & 0xFF) << 8) | (value >> 8));
+    pads += 0xC;
+    value = *(u16 *)(pads + 2);
+    flags = *(u32 *)gPadBuffers;
+    pad2 = ~(((value & 0xFF) << 8) | (value >> 8));
+    if ((flags & 0xF000) == 0) {
         pad1 = 0;
     }
     if ((D_800B9E00[0] & 0xF000) == 0) {
         pad2 = 0;
     }
-    return (pad2 << 16) | pad1;
+    return ((u32)pad2 << 16) | pad1;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80041D60);
@@ -5446,8 +5429,12 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80041F54);
 INCLUDE_ASM("asm/nonmatchings/game", func_800420D8);
 
 #ifdef NON_MATCHING
-/* Wall: register homes only (walker wants t1 with a0 reused as the 0x3C
- * temp; OR chain wants v0). decomp-permuter candidate. */
+/* Wall (w4b): everything matches except retail's entry `move t1,a0`
+ * param copy: our gcc 2.7.2 coalesces `src = arg0` (tried s32 param +
+ * cast, K&R definition, walk-in-place). The copy frees a0, which retail
+ * reuses for the (bits & 0x3C) temp; without it the OR chain lands in
+ * v1/v0 homes and shift lands in t1 instead of t2. OR order is
+ * X|Y|Z = FC00>>8 | 3C<<10 | 3C0<<14 (accumulator starts at X). */
 void func_80042218(u8 *arg0, s32 *arg1, u8 *arg2) {
     u8 *src;
     u8 *dst;
@@ -5464,8 +5451,8 @@ void func_80042218(u8 *arg0, s32 *arg1, u8 *arg2) {
         *(u32 *)dst = *(u16 *)src;
         bits = *(u16 *)(src + 2);
         *(u32 *)(dst + 4) =
-            ((u32)((bits & 0x3C) << 10)) | ((u32)((bits & 0x3C0) << 14)) |
-            ((u32)((bits & 0xFC00) >> 8));
+            ((u32)((bits & 0xFC00) >> 8)) | ((u32)((bits & 0x3C) << 10)) |
+            ((u32)((bits & 0x3C0) << 14));
         if (i >= 2) {
             *arg1 |= (bits & 3) << shift;
         }
@@ -5595,72 +5582,90 @@ void func_8004419C(u8 *object) {
     }
 }
 
+typedef struct {
+    u32 w0;
+    u32 w1;
+    u32 w2;
+    u32 w3;
+} CopyEntry10;
+
 #ifdef NON_MATCHING
-extern u8 D_800AD9B0[];
-extern u8 D_800BBAAC[];
+/* w4b: do-while nested struct-copy loop. Everything matches except
+ * register homes: our src base lands in t1 and end in t0 (retail t0/t1);
+ * 45 diff units. Tried declaration-order permutations and an s32 end.
+ * Note: the mirror function func_80044248 matches with this exact shape. */
+extern CopyEntry10 D_800AD9B0[];
+extern CopyEntry10 D_800BBAAC[];
 extern void func_800364C4(void);
 void func_800441C8(void) {
-    u32 *src;
-    u32 *dst;
+    CopyEntry10 *end;
+    CopyEntry10 *src;
+    CopyEntry10 *dst;
+    CopyEntry10 *d;
+    CopyEntry10 *s;
     s32 row;
-    s32 word;
     func_800364C4();
-    for (row = 0; row < 0x28; row++) {
-        src = (u32 *)(D_800AD9B0 + row * 0x30);
-        dst = (u32 *)(D_800BBAAC + row * 0x30);
-        for (word = 0; word < 12; word++) {
-            dst[word] = src[word];
-        }
-    }
+    row = 0;
+    src = D_800AD9B0;
+    dst = D_800BBAAC;
+    do {
+        d = dst;
+        s = src;
+        end = src + 3;
+        do {
+            *d = *s;
+            d++;
+            s++;
+        } while (s != end);
+        src += 3;
+        dst += 3;
+        row++;
+    } while (row < 0x28);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_800441C8);
 #endif
 
 #ifdef NON_MATCHING
-/* Wall: loads/stores batch correctly with w0..w3 temps, but strength
- * reduction emits -8/-4 offsets with pre-bumped pointer copies instead
- * of 0/4/8/0xc offsets. */
-extern u8 D_800BBAAC[];
-extern u8 D_800AD9B0[];
-extern void func_80036540(void);
-
-void func_80044248(void) {
+/* w4b: nested struct-copy loop, mirror of func_800441C8 (bases swapped).
+ * Unit diff was clean (0) in one tree state but shows the same 45-unit
+ * t0/t1 base swap as func_800441C8 after later TU changes; allocation
+ * of src/end is sensitive to earlier in-file declarations. */
+typedef struct {
     u32 w0;
     u32 w1;
     u32 w2;
     u32 w3;
-    u32 *src;
-    u32 *dst;
-    u32 *end;
-    u8 *srcBlock;
-    u8 *dstBlock;
-    s32 block;
+} CopyEntry10;
 
+extern CopyEntry10 D_800AD9B0[];
+extern CopyEntry10 D_800BBAAC[];
+extern void func_80036540(void);
+
+void func_80044248(void) {
+    CopyEntry10 *end;
+    CopyEntry10 *src;
+    CopyEntry10 *dst;
+    CopyEntry10 *d;
+    CopyEntry10 *s;
+    s32 row;
     func_80036540();
-    srcBlock = D_800BBAAC;
-    dstBlock = D_800AD9B0;
-    block = 0;
+    row = 0;
+    src = D_800BBAAC;
+    dst = D_800AD9B0;
     do {
-        src = (u32 *)srcBlock;
-        dst = (u32 *)dstBlock;
-        end = (u32 *)(srcBlock + 0x30);
+        d = dst;
+        s = src;
+        end = src + 3;
         do {
-            w0 = src[0];
-            w1 = src[1];
-            w2 = src[2];
-            w3 = src[3];
-            dst[0] = w0;
-            dst[1] = w1;
-            dst[2] = w2;
-            dst[3] = w3;
-            src += 4;
-            dst += 4;
-        } while (src != end);
-        srcBlock += 0x30;
-        block++;
-        dstBlock += 0x30;
-    } while (block < 0x28);
+            *d = *s;
+            d++;
+            s++;
+        } while (s != end);
+        src += 3;
+        dst += 3;
+        row++;
+    } while (row < 0x28);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80044248);
