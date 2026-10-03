@@ -8190,6 +8190,54 @@ void func_80058D8C(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80058D94);
 
+#ifdef NON_MATCHING
+/*
+ * w8g: full body reached an exact unit diff EXCEPT data labels: any
+ * active C here (even size-identical to the stub) shifts the sdata
+ * labels -0xC and a shorter body shifts them differently (see
+ * matching.md). text side (all verified, keep these when retrying):
+ * - D_800A2EB0=-1 / D_800A2EA8=3 via D_800A2EB0Absolute[0] / [-2]
+ * - D_800A2CE0 twice via DISTINCT aliases (A2E24[-0x151] first,
+ *   A2EB0Absolute[-0x74] in the arm) or gcc hoists the address into s0
+ * - store the arm call result DIRECTLY (`D[...] = RandomScaledGet(0x10);`)
+ *   or gcc keeps the old value alive in v1 (`move v1,v0`, bne flipped)
+ * - tail: seed=D_800A36E0 (lbu gp), A2EA4/A2EDC/A2EE0 as u8 arrays
+ *   (lui), A38F0/A3A60 as u8 arrays (lui), A3064/A3065/A3718 scalar
+ *   (gp); u8 arrays DO get lui here, do not cast them (cast form
+ *   segfaults cc1 at this TU position)
+ * - CAST-FORM STORES `((u8 *)D_800A2EC8Absolute)[n] = v;` DETONATE cc1
+ *   here (0-symbol object, exit 0). Direct u8[] externs are fine.
+ */
+extern u8 D_800A2EDC[];
+extern u8 D_800A2EE0[];
+extern u8 D_800A38F0[];
+extern u8 D_800A3A60[];
+extern u8 D_800A3064;
+extern u8 D_800A3065;
+extern u8 D_800A3718;
+extern u8 D_800A36E0;
+void func_8005957C(void) {
+    s32 value;
+    u8 seed;
+
+    D_800A2EB0Absolute[0] = -1;
+    D_800A2EB0Absolute[-2] = 3;
+    value = RandomScaledGet(0x11);
+    D_800A2E24Absolute[-0x151] = value;
+    if (value == 0x10) {
+        D_800A2EB0Absolute[-0x74] = RandomScaledGet(0x10);
+    }
+    seed = D_800A36E0;
+    D_800A2EA4[0] = 0;
+    D_800A2EDC[0] = 0;
+    D_800A2EE0[0] = 1;
+    D_800A38F0[0] = 0;
+    D_800A3A60[0] = 0;
+    D_800A3064 = 0;
+    D_800A3065 = 0;
+    D_800A3718 = seed;
+}
+#endif
 INCLUDE_ASM("asm/nonmatchings/game", func_8005957C);
 
 s32 ColorPack555(s32 red, s32 green, u8 blue) {
@@ -9002,14 +9050,14 @@ s32 func_8005BF68(void) {
 
 #ifdef NON_MATCHING
 /*
- * w4d: all instructions and registers match retail except the head
- * schedule: retail keeps the increment (`addiu v0,a2,1` / `sb v0`)
- * before `lw v0,D_800A3678`; our gcc hoists the load above it and swaps
- * the v0/v1 roles of the entry base and the stride chain. Tried:
- * post-increment form, s32 count local, split/compound entry compute.
- * The tail needs `prim = D_800A3654;` split from a COMPOUND
- * `prim += primIndex * 12;` with `asm("");` between the counter store
- * and the stride, or the addiu/sb lands after the sll chain.
+ * w4d/w7g/w8g: instructions all match retail except ONE v0/v1 role swap:
+ * retail keeps the D_800A3678 load in v0 and the spriteIndex*36 chain in
+ * v1 (`addu v0,v0,v1`); gcc gives us base in v1, chain in v0, whatever
+ * source shape we try (single expr, operand swap, compound +=, separate
+ * base local). Suspect TU-position sensitivity (w4b). The TAIL fix from
+ * w8g is verified: `*(s32 *)(prim + 4) = 0;` (not prim[4]) gives
+ * retail's `sw zero,4(a0)` sunk into the jr delay slot; prim[4]=0 gave
+ * sb after jr.
  */
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
@@ -9020,10 +9068,12 @@ void func_8005BF8C(s32 left, s32 top) {
     u8 primIndex;
     u8 *object;
     u8 *prim;
+    u8 *base;
 
     spriteIndex = D_800A35EC++;
     asm("");
-    object = spriteIndex * 36 + D_800A3678;
+    base = D_800A3678;
+    object = base + spriteIndex * 36;
     object[4] = 0;
     object[3] = 0;
     object[2] = 0;
@@ -9047,7 +9097,7 @@ void func_8005BF8C(s32 left, s32 top) {
     *(u32 *)(object + 0x20) = prim;
     prim[0] = 0;
     prim[3] = 0;
-    prim[4] = 0;
+    *(s32 *)(prim + 4) = 0;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005BF8C);
