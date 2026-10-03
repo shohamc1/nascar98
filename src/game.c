@@ -10052,7 +10052,74 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80063C34);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063E7C);
 
+#ifdef NON_MATCHING
+/*
+ * Close (whole body + scratchpad loop structurally identical) but 4 bytes
+ * long: retail materializes the scratchpad base with a bare `lui`
+ * (0x1F800000), while any symbolic gScratchpad reference expands
+ * lui + addiu 0. Same wall as func_8006383C and func_800246C0
+ * (notes-agent2.md). Second wall: s-reg assignment is offset --
+ * retail arg0->s3, arg1->s2, arg2->s1; ours arg0->s2, arg1->s1,
+ * arg2->s3 (same copy order, different starting reg).
+ */
+extern u8 *D_800A35E4[];
+extern u32 gScratchpad[];
+void func_8003271C(void *arg0, s32 arg1);
+void func_8001775C(void *arg0, s32 arg1, s32 arg2, s32 arg3);
+void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
+    u8 *entry;
+    u8 *obj;
+    u16 height;
+    s32 x;
+    u32 i;
+    u32 grey;
+    u32 *pad;
+    s16 t;
+    s32 v1;
+    s32 v0;
+    u16 result;
+
+    entry = D_800A35E4[arg0 & 0xFF];
+    height = *(u16 *)(entry + 0xA);
+    if (height < 0x140U || *(s16 *)(entry + 6) != (s16)height) {
+        obj = *(u8 **)(entry + 0x20);
+        x = *(s16 *)(entry + 6);
+        if (arg2 & 0xFF) {
+            SetGeomOffset(x, 0x2D);
+        } else {
+            SetGeomOffset(x, *(s16 *)(entry + 8));
+        }
+        if (arg1 & 0xFF) {
+            pad = gScratchpad;
+            i = 0;
+            do {
+                grey = i >> 2;
+                pad[0] = (grey << 0x10) | (grey << 8) | grey;
+                pad += 1;
+                i += 1;
+            } while (i < 0x100U);
+        } else {
+            func_8003271C(0, 0);
+        }
+        func_8001775C(obj, 0, 0xFA, 0x44C);
+        if (!(arg0 & 0xFF) || (arg2 & 0xFF) || D_800A39E4[0] == 0xE) {
+            t = *(s16 *)(obj + 0x20E);
+            v1 = t + 0xFEC;
+            if (v1 < 0) {
+                v0 = t + 0x1FEB;
+            } else {
+                v0 = v1;
+            }
+            result = v1 - ((v0 >> 0xC) << 0xC);
+        } else {
+            result = *(u16 *)(D_800A3554[0] + 0x20E);
+        }
+        *(s16 *)(obj + 0x20E) = result;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80064000);
+#endif
 
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void func_80013224(void *arg0);
@@ -10198,64 +10265,42 @@ void func_80064AB4(u8 *prim, u8 idx) {
     ((u8 *)prim)[0x25] = D_8009B02A[idx * 14 + 0x28] + 0x47;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80064C14);
-
 #ifdef NON_MATCHING
 /*
- * Closest draft: 0xC long. gcc folds the D_800BDD62 array extern into
- * absolute lui/sb stores and drops the v1 pointer that retail keeps for
- * flags[0]/0x5F/0x60/0x61 (+1 instruction per store, -3 for the missing
- * lui/addiu). Everything else (prologue, both if/else SetDef pairs,
- * absolute BDD64-67/C0-C3/BDDBE stores) matches.
+ * w7h: cc1 2.7.2 positional ICE -- ANY statement body in this function
+ * segfaults cc1 (exit 139) at this TU position (crash lands after
+ * func_80064AB4; empty body compiles). Same class as func_8001E17C
+ * (kb/psx/matching.md w4a). Externs alone are safe; body content is not.
  */
-extern u8 D_800BDD62[];
-extern u8 D_800BDD64[];
-extern u8 D_800BDD65[];
-extern u8 D_800BDD66[];
-extern u8 D_800BDD67[];
-extern u8 D_800BDDBE[];
-extern u8 D_800BDDC0[];
-extern u8 D_800BDDC1[];
-extern u8 D_800BDDC2[];
-extern u8 D_800BDDC3[];
+extern u8 *D_8009A3F0[];
+extern u8 *D_8009A400[];
+extern u8 *D_8009A418[];
+extern u8 D_800A3698;
+extern u8 D_800A3A4C;
+extern u8 *D_800A39D8;
+extern u8 *D_800A369C;
+void func_8005A6EC(s32 arg0, s32 arg1, void *arg2);
+void func_80064C14(void) {
+    extern s32 D_800A2EB0Absolute[];
 
-void func_80064CD8(u8 mode) {
-    u8 *flags;
-
-    SetDefDrawEnv(&D_800BDD4C[0], 0, 0, 0x140, 0xF0);
-    SetDefDispEnv(&D_800BDE04[0], 0, 0, 0x140, 0xF0);
-    if (mode != 0) {
-        SetDefDrawEnv((DRAWENV *)((u8 *)D_800BDD4C + 0x5C), 0, 0, 0x140, 0xF0);
-        SetDefDispEnv(&D_800BDE04[1], 0, 0, 0x140, 0xF0);
+    D_800A38C4 = (u32 *)gOrderingTables;
+    D_800A39C8[0] = gOrderingTables;
+    D_800A39D8 = gOrderingTables + 0x20;
+    D_800A369C = gOrderingTables + 0x13A8;
+    if (D_800A2EB0Absolute[0] == 0) {
+        D_800A3698 = strlen(D_8009A3F0[0]);
     } else {
-        SetDefDrawEnv((DRAWENV *)((u8 *)D_800BDD4C + 0x5C), 0x140, 0, 0x140, 0xF0);
-        SetDefDispEnv(&D_800BDE04[1], 0x140, 0, 0x140, 0xF0);
+        D_800A3698 = strlen(D_8009A418[0]);
     }
-    flags = D_800BDD62;
-    flags[0] = 0;
-    D_800BDDC0[0] = 1;
-    D_800BDD64[0] = 1;
-    D_800BDDBE[0] = 0;
-    if (mode != 0) {
-        D_800BDD65[0] = 0;
-        D_800BDD66[0] = 0;
-        D_800BDD67[0] = 0xA;
-        flags[0x5F] = 0;
-        flags[0x60] = 0;
-        flags[0x61] = 0xA;
-    } else {
-        D_800BDD65[0] = 0;
-        D_800BDD66[0] = 7;
-        D_800BDD67[0] = 0x26;
-        D_800BDDC1[0] = 0;
-        D_800BDDC2[0] = 7;
-        D_800BDDC3[0] = 0x26;
-    }
-    SetDispMask(0);
-    PutDrawEnv(&D_800BDD4C[0]);
-    PutDispEnv(&D_800BDE04[0]);
+    D_800A3A4C = strlen(D_8009A400[0]);
+    D_800A3698 += D_800A3A4C;
+    D_800A367C = (s32)(D_800A369C + D_800A3698 * 0x28);
+    func_8005A6EC(2, 4, D_800A39D8);
 }
 #else
+INCLUDE_ASM("asm/nonmatchings/game", func_80064C14);
+#endif
+
 INCLUDE_ASM("asm/nonmatchings/game", func_80064CD8);
 #endif
 
@@ -10505,7 +10550,61 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80068220);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800686FC);
 
+#ifdef NON_MATCHING
+/*
+ * w7h: size-exact (0xF0) and 60/62 rows clean. The two rows: retail has
+ * `lh v1,8(v0); lh v0,0xc(v0)` feeding a plain `subu`; ours emits lhu
+ * for the same C -- gcc 2.7.2 combine rewrote the sign-extending loads
+ * to zero-extending because the difference only feeds addu+sh (extends
+ * the w5b "lh only before a multiply" wall to: never after, either).
+ * Also load-bearing for the rest of the match: the byte masks at the
+ * two table uses must be spelled INLINE (`D_800A360C[arg0 & 0xFF]`,
+ * `D_800A3858[arg0 & 0xFF]`) while the dead `index = arg0 & 0xFF`
+ * assignments stay -- they give retail's delay-slot andis at 0x8006896C
+ * and 0x80068998 (gcc does not CSE-kill them through the loop).
+ */
+void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
+    extern UnkNode1C *D_800A360C[];
+    extern UnkNode1C *D_800A3858[];
+    UnkNode1C *node;
+    u8 *other;
+    s32 index;
+    s16 v1;
+
+    index = arg0 & 0xFF;
+    node = D_800A360C[arg0 & 0xFF];
+    if (node != NULL) {
+        do {
+            node->unkE = arg3;
+            node->unk6 = node->unk12 + arg1;
+            node->unkA = node->unk12 + arg2;
+            node = node->next;
+            index = arg0 & 0xFF;
+        } while (node != NULL);
+    }
+    node = D_800A3858[arg0 & 0xFF];
+    if (arg4 != 0) {
+        other = (u8 *)D_800A3858[(arg0 ^ 1) & 0xFF];
+        v1 = *(s16 *)(other + 8);
+        v1 -= *(s16 *)(other + 0xC);
+    } else {
+        v1 = 0;
+    }
+    if (node != NULL) {
+        do {
+            node->unk6 = node->unk12 + arg1;
+            if (arg4 != 0) {
+                node->unk8 = node->unkC + v1;
+            }
+            node->unkE = arg3;
+            node->unkA = node->unk12 + arg2;
+            node = node->next;
+        } while (node != NULL);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006894C);
+#endif
 
 void func_80068A3C(u8 *head, u8 *other, s32 delta, s32 limit, s32 mid) {
     s16 base;
@@ -10899,7 +10998,36 @@ void func_8006ABF8(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8006ABF8);
 #endif
 
+#ifdef NON_MATCHING
+/*
+ * w7h: structurally close; gcc 2.7.2 hoists BOTH lui-addressed bases into
+ * callee-saved regs (walk table -> s0, string base -> s4, frame grows 4),
+ * retail recomputes both per iteration (lui a0 in-loop, addu in the jal
+ * delay slot). Single-use expressions do not block the loop-invariant
+ * hoist. Register map otherwise: retail s0=index s1=walk s2=mask s3=mask*0x18.
+ */
+extern char *D_8009AC1C[];
+extern char D_800BB9B4[];
+void func_8006AC78(s32 arg0) {
+    char **walk;
+    s32 mask;
+    s8 index;
+
+    index = 0;
+    mask = arg0 & 0xFF;
+    walk = D_8009AC1C;
+    do {
+        if (strcmp(D_800BB9B4 + mask * 0x18, *walk) == 0) {
+            D_800A36E0[mask] = index;
+            return;
+        }
+        index += 1;
+        walk += 1;
+    } while (index < 0x18);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006AC78);
+#endif
 
 extern u8 D_8009AD40[];
 u8 func_8006AD0C(u8 value) {
@@ -11014,7 +11142,32 @@ void func_8006C598(s32 low, s32 high, s32 color) {
     }
 }
 
+#ifdef NON_MATCHING
+/*
+ * w7h: size-exact (0x84) draft; prologue matches incl. the early
+ * lui/lw of D_800A3A10 BEFORE addiu sp (put the obj read first).
+ * Remaining: store/load order only -- retail reloads *entry after the
+ * sll/sra return extension and keeps the second D_800A3A10 lui/lw
+ * before the srl/addu/sra divide; ours sinks the reload after it.
+ * NOTE: plain asm(""); at this spot makes maspsx emit two hazard nops
+ * (+8 bytes) -- do not use it as an order barrier here.
+ */
+extern s32 D_8009A4C0[];
+void func_8006C5E4(s32 arg0) {
+    s32 *entry;
+    u8 *obj;
+    s32 value;
+
+    obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
+    entry = &D_8009A4C0[arg0 & 0xFF];
+    value = func_8005A8E0(*entry);
+    value = (0x78 - value) / 2;
+    *(s32 *)(obj + 8) = *entry;
+    *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006C5E4);
+#endif
 
 #ifdef NON_MATCHING
 extern u8 *D_800A3908[];
