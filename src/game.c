@@ -4473,7 +4473,31 @@ void func_80041AD0(void) {
     func_80041AF0();
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80041AF0);
+extern s32 gPadBuffers[];
+extern u32 D_8008CA04[];
+extern u32 D_8008CA08[];
+extern u32 D_8008CA0C[];
+extern u32 D_8008CA10[];
+extern u32 D_8008CA14[];
+extern u32 D_8008CA18[];
+extern u32 D_8008CA1C[];
+extern u32 D_8008CA20[];
+extern u32 D_800B9DF8[];
+extern u32 D_800B9E00[];
+extern u32 D_800B9E04[];
+extern void func_80041F54(s32 *, s32 *, s32, s32);
+
+void func_80041AF0(void) {
+    D_8008CA14[0] = 0xFFFF0000;
+    D_8008CA18[0] = 0;
+    D_8008CA1C[0] = 0xFFFF0000;
+    D_8008CA20[0] = 0;
+    D_8008CA04[0] = gPadBuffers[0];
+    D_8008CA08[0] = D_800B9DF8[0];
+    D_8008CA0C[0] = D_800B9E00[0];
+    D_8008CA10[0] = D_800B9E04[0];
+    func_80041F54(gPadBuffers, D_8008CA04, D_800B9DF8[0], D_800B9E00[0]);
+}
 
 extern u16 D_8008CA04[];
 s32 func_80041B7C(s32 index) {
