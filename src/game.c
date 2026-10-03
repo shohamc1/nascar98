@@ -8838,11 +8838,15 @@ void CdSetMixVolume(s32 arg) {
 #if 0
 /* Wall: only size/buf land in s1/s0 where retail has s0/s1 (same
  * allocator wall as func_80058094); everything else matches.
- * D_800A3090 must be D_800A2EB0Absolute + 120; the *next* load must be
- * written BEFORE the D_800A381C/D_800A3638 stores or the function grows
- * 4 bytes and drifts every later data label. */
+ * w9g: D_800A3090 is now name-true (direct extern compiles, no drift in
+ * unit diffs); retail also sinks the `buf = HeapAlloc(size)` copy into
+ * the second func_8003C8BC delay slot after pre-setting a2 one slot
+ * earlier - ours emits `move buf,v0` early and fills the delay with
+ * `move a2,zero`. Swapping the buf/size decl order does NOT flip the
+ * allocation. The *next* load must be written BEFORE the
+ * D_800A381C/D_800A3638 stores or the function grows 4 bytes. */
 extern s32 D_800A381C, D_800A3638, D_800A37EC;
-extern s32 D_800A2EB0Absolute[];
+extern s32 D_800A3090[];
 void func_8005978C(void) {
     extern s32 func_8003C584(s32, s32);
     extern s32 func_8003C8BC(s32, s32, s32);
@@ -8854,7 +8858,7 @@ void func_8005978C(void) {
     s32 buf;
     s32 next;
 
-    sector = func_8003C584(0, D_800A2EB0Absolute + 120);
+    sector = func_8003C584(0, D_800A3090);
     size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11 << 11;
     buf = (s32)HeapAlloc(size);
     func_8003C8BC(sector, 0, 0);
@@ -8871,8 +8875,9 @@ void func_8005978C(void) {
     PutDispEnv(&env);
     SetDispMask(1);
 }
-#endif
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005978C);
+#endif
 
 /* Memory card files and events. */
 
@@ -9098,40 +9103,43 @@ void func_80059DC4(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80059E0C);
 
 #ifdef NON_MATCHING
-/* Wall (w4c): prologue allocation matches with the draft as-is
- * (channel stmt first -> retries s0, channel s1); remaining diffs vs
- * retail: retail zeroes retries FIRST (before the channel andi/sltu),
- * keeps the compare-constant 3 in callee-saved s2 (ours: li v0 at
- * use), and defers the ra save to after that li. Reordering
- * statements flips the s0/s1 allocation (w3a param-copy priority). */
+/* Wall (w9g): closest shape is decl-init channel+retries (gives s0=retries,
+ * s1=channel, s2=const-3, retail prologue), do-while with two `break`s:
+ * `if (status == 0) { ...; if (status == 0) break; } asm("");
+ * if (status == 0) break;` while ((retries & 0xFF) < 8U).
+ * ONE row off: our SECOND beqz cross-jumps to the epilogue with the andi
+ * in its delay slot; retail keeps beqz -> 487b0 (nop delay, shared andi
+ * block). asm("") inside the break arm flips gcc to bnez+j+fold (worse).
+ * The decl-initializer trick (C89 decls emit RTL before body statements)
+ * is what fixes the w4c prologue-order-vs-allocation catch-22. */
 extern s32 func_8005A294(void);
 extern void CardTestEvents(void);
 extern s32 CardWaitForEvent(void);
 extern void func_8005A414(void);
 s32 func_80059F0C(s32 arg0) {
-    s32 channel;
-    s32 retries;
+    s32 channel = ((arg0 & 0xFF) != 0) * 0x10;
+    s32 retries = 0;
     s32 status;
-    channel = ((arg0 & 0xFF) != 0) * 0x10;
-    retries = 0;
-retry:
-    _card_info(channel);
-    status = func_8005A294();
-    if (status == 3) {
-        func_8005A414();
-        _card_clear(channel);
-        status = CardWaitForEvent();
-    }
-    if (status == 0) {
-        CardTestEvents();
-        _card_load(channel);
+    do {
+        _card_info(channel);
         status = func_8005A294();
-    }
-    if (status != 0) {
+        if (status == 3) {
+            func_8005A414();
+            _card_clear(channel);
+            status = CardWaitForEvent();
+        }
+        if (status == 0) {
+            CardTestEvents();
+            _card_load(channel);
+            status = func_8005A294();
+            if (status == 0)
+                break;
+        }
+        asm("");
+        if (status == 0)
+            break;
         retries++;
-        if (retries < 8)
-            goto retry;
-    }
+    } while ((retries & 0xFF) < 8U);
     return status & 0xFF;
 }
 #else
@@ -9145,7 +9153,62 @@ s32 CardOpenFile(char *path, s32 flags) {
     return open(path, flags);
 }
 
+#ifdef NON_MATCHING
+/* w9g draft. Semantics fully mapped; two walls remain.
+ * VERIFIED (w9g): the caller-saved limit shape DOES reproduce retail's
+ * `addu a2,v0,a2; slt v0,v0,a2` - use `limit = (sector & 0xFFFF) +
+ * arg2; if ((sector & 0xFFFF) >= limit) return 1; retries = 0;
+ * end = limit;` with the in-place `arg2 = arg2 & 0xFF;` first statement
+ * (gives the early prologue andi) and limit declared last.
+ * WALL 1: s-reg rotation - sector=s1/retries=s2/offset=s0 where retail
+ * has s0/s1/s2 (decl order does not flip it; both orders tried).
+ * WALL 2: gcc inverts the limit guard to bnez + folds both early
+ * returns into `li v0,1; j` / `move v0,zero; j` copies; retail keeps
+ * `beqz v0 -> shared ori v0,1 block` with `move s1,zero` (retries=0)
+ * in the branch delay slot, and `move s3,a2` (end) right after the
+ * guard where ours sinks it below `move s0,zero`. Same fold family as
+ * func_80059F0C - breaks-to-shared-blocks may be the cure here too. */
+extern void func_8005A414(void);
+extern void _new_card(void);
+extern void _card_read(s32, s32, s32);
+extern s32 CardWaitForEvent(void);
+s32 func_8005A000(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
+    s32 channel;
+    s32 sector;
+    s32 offset;
+    s32 retries;
+    s32 end;
+    s32 limit;
+    channel = ((arg3 & 0xFF) != 0) * 0x10;
+    arg2 = arg2 & 0xFF;
+    if (buf == 0)
+        return 1;
+    offset = 0;
+    sector = (arg1 & 0xFF) + *(s32 *)(arg0 + 0x20);
+    limit = (sector & 0xFFFF) + arg2;
+    if ((sector & 0xFFFF) >= limit)
+        return 1;
+    retries = 0;
+    end = limit;
+    do {
+        func_8005A414();
+        _new_card();
+        _card_read(channel, sector & 0xFFFF, buf + offset);
+        if (CardWaitForEvent() == 0) {
+            sector += 1;
+            offset += 0x80;
+            retries = 0;
+        } else if ((retries & 0xFF) < 0xB) {
+            retries += 1;
+        } else {
+            return 0;
+        }
+    } while ((sector & 0xFFFF) < end);
+    return 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A000);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A0F0);
 
