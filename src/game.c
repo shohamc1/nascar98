@@ -3557,23 +3557,22 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80034B90);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80034C1C);
 
-#ifdef NON_MATCHING
-extern s32 D_800A3784[], D_800A3790[], D_800A3794[], D_800A3798[], D_800A379C[],
-    D_800A37A4[], D_800A37AC[], D_800A37B4[], D_800A37C4[];
+extern s32 D_800A36D0Absolute[];
+extern s32 D_800A36D4Absolute[];
+extern s32 D_800A3784Absolute[], D_800A3790Absolute[], D_800A3794Absolute[],
+    D_800A3798Absolute[], D_800A379CAbsolute[], D_800A37A4Absolute[],
+    D_800A37ACAbsolute[], D_800A37B4Absolute[], D_800A37C4Absolute[];
 void func_80034C94(void) {
-    D_800A3784[0] = 0x10000;
-    D_800A3790[0] = 0;
-    D_800A3794[0] = 0;
-    D_800A3798[0] = 0;
-    D_800A37AC[0] = 0;
-    D_800A37A4[0] = D_800A36D4;
-    D_800A379C[0] = D_800A36D0;
-    D_800A37B4[0] = -D_800A36D4;
-    D_800A37C4[0] = D_800A36D0;
+    D_800A3784Absolute[0] = 0x10000;
+    D_800A3790Absolute[0] = 0;
+    D_800A3794Absolute[0] = 0;
+    D_800A3798Absolute[0] = 0;
+    D_800A37ACAbsolute[0] = 0;
+    D_800A379CAbsolute[0] = D_800A36D0Absolute[0];
+    D_800A37A4Absolute[0] = D_800A36D4Absolute[0];
+    D_800A37B4Absolute[0] = -D_800A36D4Absolute[0];
+    D_800A37C4Absolute[0] = D_800A36D0Absolute[0];
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80034C94);
-#endif
 
 #ifdef NON_MATCHING
 void func_80034CFC(void) {

@@ -108,7 +108,25 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A36D0Small=D_800A36D0 \
             --defsym=D_800A36D0Absolute=D_800A36D0 \
             --defsym=D_800A36D4Small=D_800A36D4 \
-            --defsym=D_800A36D4Absolute=D_800A36D4
+            --defsym=D_800A36D4Absolute=D_800A36D4 \
+            --defsym=D_800A3784Small=D_800A3784 \
+            --defsym=D_800A3784Absolute=D_800A3784 \
+            --defsym=D_800A3790Small=D_800A3790 \
+            --defsym=D_800A3790Absolute=D_800A3790 \
+            --defsym=D_800A3794Small=D_800A3794 \
+            --defsym=D_800A3794Absolute=D_800A3794 \
+            --defsym=D_800A3798Small=D_800A3798 \
+            --defsym=D_800A3798Absolute=D_800A3798 \
+            --defsym=D_800A379CSmall=D_800A379C \
+            --defsym=D_800A379CAbsolute=D_800A379C \
+            --defsym=D_800A37A4Small=D_800A37A4 \
+            --defsym=D_800A37A4Absolute=D_800A37A4 \
+            --defsym=D_800A37ACSmall=D_800A37AC \
+            --defsym=D_800A37ACAbsolute=D_800A37AC \
+            --defsym=D_800A37B4Small=D_800A37B4 \
+            --defsym=D_800A37B4Absolute=D_800A37B4 \
+            --defsym=D_800A37C4Small=D_800A37C4 \
+            --defsym=D_800A37C4Absolute=D_800A37C4
 
 # SDK C matches with R3000 scheduling. Game flags stay above.
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
