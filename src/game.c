@@ -3531,9 +3531,82 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005B314);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B474);
 
+#ifdef NON_MATCHING
+extern u8 D_800A35EC;
+extern u8 *D_800A3678;
+POLY_FT4 *func_80057CCC(u8);
+u8 *func_8005B598(s16 left, s16 top, s16 right, s16 bottom, s32 depth, u8 texture, u8 semiTrans) {
+    u8 index;
+    u8 *object;
+    POLY_FT4 *poly;
+    index = D_800A35EC++;
+    object = D_800A3678 + index * 36;
+    *(s16 *)(object + 0x12) = 0;
+    *(s16 *)(object + 0x14) = 0;
+    *(s32 *)(object + 0x1C) = 0;
+    object[4] = 0;
+    object[3] = 0;
+    object[2] = 0;
+    *(s16 *)(object + 0x1A) = 0;
+    *(s16 *)(object + 0x0) = 1;
+    *(s16 *)(object + 0xA) = left;
+    *(s16 *)(object + 0x6) = left;
+    *(s16 *)(object + 0xC) = top;
+    *(s16 *)(object + 0x8) = top;
+    *(s16 *)(object + 0x16) = right;
+    *(s16 *)(object + 0x18) = bottom;
+    *(s16 *)(object + 0xE) = 0;
+    poly = func_80057CCC(texture);
+    *(s16 *)(object + 0x10) = 0;
+    SetPolyFT4(poly);
+    SetShadeTex(poly, 0);
+    ((u8 *)poly)[4] = 0x80;
+    ((u8 *)poly)[5] = 0x80;
+    ((u8 *)poly)[6] = 0x80;
+    SetSemiTrans(poly, semiTrans);
+    *(POLY_FT4 **)(object + 0x20) = poly;
+    *(s16 *)(object + 0x1A) = depth;
+    return object;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B598);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005B688);
+void func_8005B688(u8 *first, u8 friction) {
+    u8 *object;
+    s16 sum;
+
+    object = first;
+    if (object != 0) {
+        do {
+            if (*(s16 *)(object + 0xE) != 0) {
+                sum = *(u16 *)(object + 0x6) + *(s16 *)(object + 0xE);
+                *(s16 *)(object + 0x6) = sum;
+                if ((*(s16 *)(object + 0xE) < 0 && sum < *(s16 *)(object + 0xA)) ||
+                    (*(s16 *)(object + 0xE) > 0 && *(s16 *)(object + 0xA) < sum)) {
+                    *(s16 *)(object + 0xE) = 0;
+                    *(u16 *)(object + 0x6) = *(u16 *)(object + 0xA);
+                } else if (friction != 0) {
+                    *(u16 *)(object + 0xE) =
+                        *(u16 *)(object + 0xE) + (s16)*(u16 *)(object + 0xE) / 2;
+                }
+            }
+            if (*(s16 *)(object + 0x10) != 0) {
+                sum = *(u16 *)(object + 0x8) + *(s16 *)(object + 0x10);
+                *(s16 *)(object + 0x8) = sum;
+                if ((*(s16 *)(object + 0x10) < 0 && sum < *(s16 *)(object + 0xC)) ||
+                    (*(s16 *)(object + 0x10) > 0 && *(s16 *)(object + 0xC) < sum)) {
+                    *(s16 *)(object + 0x10) = 0;
+                    *(u16 *)(object + 0x8) = *(u16 *)(object + 0xC);
+                } else if (friction != 0) {
+                    *(u16 *)(object + 0x10) =
+                        *(u16 *)(object + 0x10) + (s16)*(u16 *)(object + 0x10) / 2;
+                }
+            }
+            object = *(u8 **)(object + 0x1C);
+        } while (object != 0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B7DC);
 
