@@ -5122,7 +5122,44 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80045864);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80045F70);
 
+#ifdef NON_MATCHING
+/* Wall: D_800BE980 base hoisted into a spare reg across the loop
+ * (retail re-materializes lui); register flow differs. */
+extern s8 D_800A343C;
+extern s32 D_800A3444[];
+extern u32 D_800BE980[];
+extern void func_80032DEC(s32, s8, s16 *, s8);
+
+void func_80046184(u8 *arg0, s16 *arg2) {
+    s32 *entries;
+    u8 *tail;
+    s32 count;
+    s8 i;
+    s8 used;
+    u8 *entry;
+
+    entries = ((s32 *)D_800A3444)[*(s8 *)(arg0 + 0x20B)];
+    used = 1;
+    tail = (u8 *)entries + 4;
+    count = D_800A343C;
+    if (count > 1) {
+        i = 1;
+        do {
+            entry = (u8 *)entries + i * 0x58;
+            if (*(u16 *)(*(u8 **)D_800BE980 + *(s16 *)entry * 0x90 + 0xE) != 0) {
+                *(u32 *)(tail + 0x28) = (u32)(entry + 4);
+                tail = entry + 4;
+                used++;
+            }
+            i++;
+        } while (i < count);
+    }
+    func_80032DEC((s32)((u8 *)entries + 4), used, arg2, i);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80046184);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80046258);
 
