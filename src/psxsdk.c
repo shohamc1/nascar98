@@ -865,7 +865,19 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawArea);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawOffset);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetPriority);
+/* SPDX-License-Identifier: MIT */
+
+void SetPriority(void *arg0, s32 arg1, s32 arg2) {
+    u32 mode;
+
+    *((u8 *)arg0 + 3) = 2;
+    mode = 0xE6000000;
+    if (arg1 != 0) {
+        mode = 0xE6000002;
+    }
+    *((u32 *)arg0 + 1) = mode | (arg2 != 0);
+    *((u32 *)arg0 + 2) = 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawMode);
 
@@ -883,7 +895,11 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", get_tw);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", get_dx);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _status);
+/* SPDX-License-Identifier: MIT */
+
+extern s32 *D_8009DB64[];
+
+s32 _status(void) { return *(s32 *)D_8009DB64[0]; }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _otc);
 
@@ -893,9 +909,18 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _dws);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _drs);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _ctl);
+/* SPDX-License-Identifier: MIT */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _getctl);
+extern u8 D_800AD124[];
+
+void _ctl(u32 arg0) {
+    *(u32 *)D_8009DB64[0] = arg0;
+    D_800AD124[arg0 >> 24] = arg0;
+}
+
+/* SPDX-License-Identifier: MIT */
+
+u8 _getctl(s32 arg0) { return D_800AD124[arg0]; }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _cwb);
 
@@ -1466,9 +1491,21 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80080758);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsStart);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsStart);
+/* SPDX-License-Identifier: MIT */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsStart2);
+extern s32 _SsStart(s32);                                      /* extern */
+
+void SsStart(void) {
+    _SsStart(1);
+}
+
+/* SPDX-License-Identifier: MIT */
+
+extern s32 _SsStart(s32);                                      /* extern */
+
+void SsStart2(void) {
+    _SsStart(0);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsTrapIntrVSync);
 
