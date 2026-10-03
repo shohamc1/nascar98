@@ -3642,31 +3642,24 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80031D74);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80032328);
 
-#ifdef NON_MATCHING
 /*
- * Wall (extends notes-agent3 "same-global load+store address CSE"):
- * gcc keeps &D_800A3574 in s0 across both calls (lui s0 + addiu s0 +
- * two lw 0(s0), plus an extra s0 save); retail re-materializes
- * lui/lw(0x3574) before EACH call. volatile on the second read forces
- * the reload but not the address re-materialization; a neighbor-symbol
- * second access changes the %lo bytes. Also: this draft segfaults cc1
- * if D_800A3574's extern is missing before its first use — keep the
- * adjacent declarations.
+ * The second D_800A3574 read goes through the D_800A36D0Absolute
+ * neighbor ((s32 *)0x800A36D0)[-87] so gcc cannot CSE the address
+ * materialization across the first call; the -87*4 delta folds into
+ * the %lo displacement (0x36D0 - 0x15C = 0x3574).
  */
 extern s32 D_800A3574[];
 extern s32 D_800B9F44[];
 extern u8 D_800A2D4C[], D_800A2D4D[];
+extern s32 D_800A36D0Absolute[];
 void func_80025454(s32);
 void func_80031D74(s32, s32, s32);
 void func_800323F0(s32 index, s32 arg1) {
     func_80031D74(D_800A3574[0], *(s32 **)(D_800B9F44 + index), arg1);
     D_800A2D4C[0] = 1;
-    func_80025454(*(volatile s32 *)D_800A3574);
+    func_80025454(((s32 *)D_800A36D0Absolute)[-87]);
     D_800A2D4D[0] = 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800323F0);
-#endif
 
 void func_80031D74(s32, s32, s32);
 extern s32 D_800A3574[];
@@ -3855,15 +3848,47 @@ typedef struct {
 } Primitive40;
 
 #ifdef NON_MATCHING
+/*
+ * WALL: retail loads gPrimitiveCursor[0] into the expression temp v0
+ * and then copies it to entry's home (`move t0,v0; move a3,t0`); gcc
+ * 2.7.2 binds the load directly into entry's home register (t0) and
+ * drops one move, leaving the function 4 bytes short. Tried: volatile
+ * read (breaks the whole schedule, +materialization), double read
+ * (cse.c still binds the load to entry's home), statement reordering.
+ * The rest of the shape below is exact: the do-while 0x10 row struct
+ * copy, the asm("")-split 8-byte tail, and the neighbor-symbol store
+ * D_800A36D0Absolute[-67] (folds %lo back to 0x35c4) that defeats the
+ * load/store address CSE.
+ */
+typedef struct {
+    s32 words[4];
+} Primitive10;
+
 extern s32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
+extern s32 D_800A36D0Absolute[];
 void func_80034B90(u8 *prim) {
+    u8 *entry;
     u8 *dst;
+    u8 *end;
+    s32 tailA;
+    s32 tailB;
 
-    dst = (u8 *)gPrimitiveCursor[0];
-    gPrimitiveCursor[0] = (s32)dst + 0x28;
-    *(Primitive40 *)dst = *(Primitive40 *)prim;
-    AddPrim((u8 *)D_800A39C8[0] - 8, dst);
+    entry = (u8 *)gPrimitiveCursor[0];
+    end = prim + 0x20;
+    dst = entry;
+    ((s32 *)D_800A36D0Absolute)[-67] = gPrimitiveCursor[0] + 0x28;
+    do {
+        *(Primitive10 *)dst = *(Primitive10 *)prim;
+        prim += 0x10;
+        dst += 0x10;
+    } while (prim != end);
+    tailA = *(s32 *)prim;
+    tailB = *(s32 *)(prim + 4);
+    asm("");
+    *(s32 *)dst = tailA;
+    *(s32 *)(dst + 4) = tailB;
+    AddPrim((u8 *)D_800A39C8[0] - 8, entry);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80034B90);
@@ -3993,24 +4018,25 @@ void func_800356A8(s32 arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80035720);
 
-#ifdef NON_MATCHING
 extern u8 D_800A2DE1[];
 extern s32 D_800A2E9C[];
+extern s32 D_800A2E24Absolute[];
 void func_8002F0A8(s32);
 void func_80034D64(void);
 void func_80035720(s32);
 void func_8003587C(s32 arg0) {
+    /* second stores to each symbol go through existing defsym
+     * neighbors so gcc re-materializes lui/at instead of hoisting the
+     * addresses into callee-saved registers:
+     *   D_800A2E24-0x43 = 0x2DE1, D_800A2E24+70*4 = 0x2F3C */
     D_800A2DE1[0] = 1;
     func_8002F0A8(D_800A2E9C[0]);
-    D_800A2DE1[0] = 0;
+    ((u8 *)D_800A2E24Absolute)[-0x43] = 0;
     D_800A2F3C[0] = 0x23;
     func_80034D64();
     func_80035720(arg0);
-    D_800A2F3C[0] = 0x82;
+    ((s32 *)D_800A2E24Absolute)[70] = 0x82;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003587C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800358EC);
 
@@ -4301,25 +4327,43 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800370B8);
 #endif
 
 #ifdef NON_MATCHING
+/*
+ * WALLS: (1) retail re-reads *(s16 *)(object + 0x92) once per product
+ * (three lh) — plain reads CSE into one lh and a volatile s16 read
+ * emits lhu + sll16/sra16 instead of lh (extends the w5b entry);
+ * (2) retail gaps mult and mflo with the next row's lh/lw (two
+ * instructions + hazard nops); gcc 2.7.2 binds mult+mflo as one
+ * pattern, so mflo lands immediately after mult. Prologue solved:
+ * store-first with a volatile second 0x114 read puts the sh in the
+ * jal delay slot, though that read is lhu in ours vs lh in retail.
+ * Products map 0xB0=prod(0x60), 0xB4=prod(0x6C), 0xB8=prod(0x78);
+ * the volatile reloads of 0xB0/B4/B8 before the adds are exact.
+ */
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s16);
 void func_80037130(u8 *object) {
-    s32 value0;
-    s32 value1;
-    s32 value2;
+    s32 prod0;
+    s32 prod1;
+    s32 prod2;
+    s32 sum0;
+    s32 sum1;
+    s32 sum2;
 
-    *(s16 *)(object + 0x116) = *(s16 *)(object + 0x114) * 4;
+    *(s16 *)(object + 0x116) = *(volatile s16 *)(object + 0x114) * 4;
     func_8001FAC0(object, *(s16 *)(object + 0x114) * 4);
     func_8001FB28(object, *(s16 *)(object + 0x104));
-    value0 = (*(s32 *)(object + 0x60) * *(s16 *)(object + 0x92)) >> 16;
-    *(s32 *)(object + 0xB0) = value0;
-    value1 = (*(s32 *)(object + 0x6C) * *(s16 *)(object + 0x92)) >> 16;
-    *(s32 *)(object + 0xB4) = value1;
-    value2 = (*(s32 *)(object + 0x78) * *(s16 *)(object + 0x92)) >> 16;
-    *(s32 *)(object + 0xB8) = value2;
-    *(s32 *)(object + 0x0) += *(s32 *)(object + 0xB0);
-    *(s32 *)(object + 0x4) += *(s32 *)(object + 0xB4);
-    *(s32 *)(object + 0x8) += *(s32 *)(object + 0xB8);
+    prod0 = *(volatile s16 *)(object + 0x92) * *(s32 *)(object + 0x60);
+    prod1 = *(volatile s16 *)(object + 0x92) * *(s32 *)(object + 0x6C);
+    prod2 = *(volatile s16 *)(object + 0x92) * *(s32 *)(object + 0x78);
+    *(s32 *)(object + 0xB0) = prod0 >> 16;
+    *(s32 *)(object + 0xB4) = prod1 >> 16;
+    *(s32 *)(object + 0xB8) = prod2 >> 16;
+    sum0 = *(s32 *)(object + 0x0) + *(volatile s32 *)(object + 0xB0);
+    sum1 = *(s32 *)(object + 0x4) + *(volatile s32 *)(object + 0xB4);
+    sum2 = *(s32 *)(object + 0x8) + *(volatile s32 *)(object + 0xB8);
+    *(s32 *)(object + 0x0) = sum0;
+    *(s32 *)(object + 0x4) = sum1;
+    *(s32 *)(object + 0x8) = sum2;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80037130);
@@ -5476,7 +5520,55 @@ s16 func_8003FF5C(u8 *arg0, u8 *arg1) {
     return -1;
 }
 
+#ifdef NON_MATCHING
+/* w6f draft: file loader. Shape, length and scheduling all match; ONLY
+ * the s1/s2 homes swap (gcc gives the arg1 copy s2 and handle s1,
+ * retail the reverse). Tried: declaration orders, K&R definition,
+ * explicit buffer local assigned first. Notes:
+ * - D_800A2F98 itself is untracked in sdata (declaring it shifts the
+ *   sdata labels, see matching.md); reached here as the already-aliased
+ *   D_800A2F9CAbsolute minus 4, which folds into %lo identically.
+ * - Block-scope FULL prototypes for func_8003C8BC/func_8003C63C are
+ *   REQUIRED: the TU's 1-arg/0-arg definitions silently drop the
+ *   caller-side argument setups (a1/a2 constants, a0 for C63C) and the
+ *   function comes out 0x18 short.
+ * - size + 0x800 - size % 0x800 folds algebraically; a padded temp
+ *   (padded = size + 0x800; size = padded - size % 0x800) reproduces
+ *   retail's addiu v1,s0,0x800 in the bgez delay slot + subu s0,v1,v0. */
+extern char D_8008D1DC[];
+extern char D_8008D1F8[];
+extern u8 D_800A2F9CAbsolute[];
+
+void *func_8003FFF0(s32 arg0, void *arg1) {
+    extern s32 func_8003C8BC(void *, s32, s32);
+    extern void func_8003C63C(s32);
+    void *buffer;
+    void *handle;
+    s32 padded;
+    s32 size;
+
+    buffer = arg1;
+    handle = func_8003C584(arg0, (char *)D_800A2F9CAbsolute - 4);
+    if (handle == NULL) {
+        SystemShowFatalError(D_8008D1DC);
+    }
+    size = func_8003C8BC(handle, 0, 2);
+    func_8003C8BC(handle, 0, 0);
+    padded = size + 0x800;
+    size = padded - size % 0x800;
+    if (buffer == NULL) {
+        buffer = HeapAlloc(size);
+        if (buffer == NULL) {
+            SystemShowFatalError(D_8008D1F8);
+        }
+    }
+    func_8003C644((s32)buffer, 1, size, handle);
+    func_8003C63C((s32)handle);
+    return buffer;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
+#endif
 
 #ifdef NON_MATCHING
 /* Wall: the search loops exit to out-of-line blocks (beq to found,
@@ -5685,6 +5777,16 @@ void func_80041848(void) {
 
 /* Sound startup and shutdown. */
 
+/* w6f WALL (cc1 ICE): adding any function with a branch statement (if,
+ * if/else) near this position segfaults cc1 2.7.2 (cpp reports
+ * "output pipe has been closed"; the object emits 0 symbols and the
+ * link fails with hundreds of undefined references). Reproduced with a
+ * 3-line `if` touching only pre-existing symbols, and with the same
+ * probe inserted at other TU positions, so it is not positional. A
+ * for-loop body in the same function compiled fine. Also reproducible:
+ * the crash follows the statement stream, not one statement. Parked as
+ * assembly. Draft that produced the near-miss shape (before the ICE
+ * blocked iteration) is in kb/games/nascar98-us/notes-w6f.md. */
 INCLUDE_ASM("asm/nonmatchings/game", func_80041850);
 
 extern void func_8003F284(void);
@@ -5877,6 +5979,9 @@ void PadInitBuffers(void) {
 }
 
 #ifdef NON_MATCHING
+/* w6f: this w4b shape does NOT hold in the merged tree: both pad loads
+ * hoist to the top, the pads+2 offsets fold into %lo, and the final or
+ * operand order flips. Re-diff before trusting it. */
 extern s32 gPadBuffers[];
 extern u32 D_800B9E00[];
 
@@ -6116,7 +6221,9 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800441C8);
 /* w4b: nested struct-copy loop, mirror of func_800441C8 (bases swapped).
  * Unit diff was clean (0) in one tree state but shows the same 45-unit
  * t0/t1 base swap as func_800441C8 after later TU changes; allocation
- * of src/end is sensitive to earlier in-file declarations. */
+ * of src/end is sensitive to earlier in-file declarations.
+ * w6f: declaring src BEFORE end (the allocation order retail shows)
+ * does not flip it either. */
 typedef struct {
     u32 w0;
     u32 w1;
@@ -9394,7 +9501,19 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80069AFC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80069C60);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80069E88);
+extern char *D_800A35F4;
+extern char *D_800A3604;
+extern char *D_800A366C;
+extern char *D_800A3978;
+extern char *D_800A3A0C;
+
+void func_80069E88(void) {
+    D_800A366C = (char *)0x80010000;
+    D_800A3978 = (char *)0x8001000C;
+    D_800A3A0C = (char *)0x80010AEC;
+    D_800A35F4 = (char *)0x8001000C;
+    D_800A3604 = (char *)0x80010000;
+}
 
 extern u8 D_800A3938;
 extern u8 D_800A3808;
@@ -9614,7 +9733,40 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006B088);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B1CC);
 
+#ifdef NON_MATCHING
+/* Draft diffs to ONE row: retail `addu a0,v1,v0` for src (mask2*4 first);
+   every compound/plain spelling tried puts v0 first or ICEs cc1
+   (`src = m*4; src += tbl + a*0x44` kills cc1 reliably). */
+extern u8 D_800BBA24[];
+void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
+    s32 i;
+    u8 *tbl;
+    u8 *src;
+    u8 *walk;
+    u8 *dst;
+    u8 *q;
+    s32 off;
+    s32 mask2;
+
+    i = 0;
+    mask2 = arg2 & 0xFF;
+    arg0 &= 0xFF;
+    tbl = D_800BBA24;
+    src = mask2 * 4 + (tbl + arg0 * 0x44);
+    arg1 &= 0xFF;
+    walk = (u8 *)D_800A35F4 + arg1 * 0xE8;
+    off = mask2 * 0xC;
+    off += 0x1C;
+    dst = walk + off;
+    do {
+        q = dst + i;
+        q[8] = src[i];
+        i += 1;
+    } while (i < 4);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B3E0);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B464);
 
@@ -9845,7 +9997,24 @@ void func_8006EEBC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006EEE0);
 
+#ifdef NON_MATCHING
+/* Retail frame is 0x30 (saves at 0x28/0x2c); every unused-local phantom
+   tried (volatile s32 array/scalars, with and without initialisers) is
+   dropped by cc1 2.7.2 in this non-leaf, leaving an 0x18 frame. Body is
+   otherwise the matched func_8006F194 shape with +0x3A. */
+void func_8006F128(s32 arg0) {
+    if (D_800A2F9CAbsolute[0] != 0) {
+        func_8003CCE0(0);
+        ((u8 *)D_800A2F9DAbsolute)[-1] = 0;
+    }
+    func_8006F9C4((arg0 & 0xFF) + 0x3A, 0, 0);
+    func_800596F4();
+    CdSetMixVolume(D_800A3694Absolute[0]);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006F128);
+#endif
+
 
 extern u8 D_800A2F9CAbsolute[];
 extern u8 D_800A2F9DAbsolute[];
