@@ -1489,7 +1489,24 @@ void SsSetMono(void) { D_800B1EA4[0] = 1; }
 extern short D_800B1EA4[];
 void SsSetStereo(void) { D_800B1EA4[0] = 0; }
 
+#ifdef NON_MATCHING
+/* Only register allocation differs: the count load/store wants a dedicated
+ * address register (lui+addiu) instead of two lui/%lo pairs. */
+extern u8 D_800B9DE4[];
+extern void* D_800BE8F0[];
+extern u16 D_800BE8EC[];
+
+void SsVabClose(s16 vabid) {
+    if ((vabid >= 0 && vabid < 0x10) && D_800B9DE4[vabid] == 1) {
+        SpuFree(D_800BE8F0[vabid]);
+        D_800B9DE4[vabid] = 0;
+        D_800BE8EC[0] -= 1;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabClose);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpen);
 
@@ -1603,7 +1620,12 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOff);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeKeyOn);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeKeyOff);
+extern void SpuVmKeyOff();
+
+void SpuVmSeKeyOff(s16 vabId, s16 prog, u16 note) {
+    SpuVmKeyOff(0x21, vabId, prog, note);
+}
+
 
 void KeyOnCheck(void) {}
 
