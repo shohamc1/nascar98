@@ -3556,6 +3556,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002D4CC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002D874);
 
+
 void func_8002DA30(s32 *arg0) {
     arg0[0x3C / 4] = 0x10000;
     arg0[0x18 / 4] = 0x10000;
@@ -3632,11 +3633,162 @@ void func_8002EE88(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* w8c: structure matches through both arms; ours is 8 bytes short
+ * (frame 0x30 vs 0x38, retail has one extra 4-byte slot - likely a
+ * phantom local) and retail emits `move s1,a0` in the beqz delay slot
+ * with `li s2,0x4` after the branch, ours is reversed. Try a
+ * `volatile s32 debugBuffer[1];` for the slot, and per-arm statement
+ * order, before guarding again.
+ */
+extern s32 D_800A38AC[];
+extern u8 *D_800A3878;
+extern u8 D_800A2ED8;
+void func_8002EEFC(u8 *arg0) {
+    s32 refX;
+    s32 refY;
+    s32 refZ;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+    s32 dist;
+    s32 level;
+    s32 b;
+    s32 v;
+    u8 *node;
+    u8 *target;
+
+    refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
+    refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
+    refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
+    node = D_800A3878;
+    if (node == NULL) {
+        return;
+    }
+    level = 4;
+    target = arg0;
+    do {
+        if (node == target && *(s16 *)(node + 0x1EC) == 0 && D_800A2ED8 == 0
+            && *(s8 *)(node + 0x20C) == 0) {
+            *(u8 *)(node + 0x374) = level;
+            *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + 0x110;
+        } else {
+            dx = *(s32 *)(node + 0x0) - refX;
+            dy = *(s32 *)(node + 0x4) - refY;
+            dz = *(s32 *)(node + 0x8) - refZ;
+            dist = MathSqrt(dx * dx + dy * dy + dz * dz);
+            if (dist < 0x7D0) {
+                *(u8 *)(node + 0x374) = 0;
+            } else {
+                if (dist < 0x1770) {
+                    v = 1;
+                } else if (dist < 0x2EE0) {
+                    v = 2;
+                } else {
+                    v = 3;
+                }
+                *(u8 *)(node + 0x374) = v;
+            }
+            if (D_800A2ED8 != 0) {
+                b = *(s8 *)(node + 0x374);
+                if (b < 3) {
+                    *(s8 *)(node + 0x374) = b + 1;
+                }
+            }
+            if (*(s8 *)(node + 0x200) == level) {
+                *(u8 *)(node + 0x374) = 0;
+            }
+            if (node == target) {
+                *(u8 *)(node + 0x374) = 0;
+            }
+            b = *(u8 *)(node + 0x374);
+            *(u32 *)(node + 0x36C) =
+                *(u32 *)(node + 0x370) + (b * 0x44);
+        }
+        node = *(u8 **)(node + 0x3E0);
+    } while (node != NULL);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8002EEFC);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002F0A8);
+extern void *D_800A2EA0Small;
+extern u8 D_800A2ED8;
+extern s32 D_800A2EC4;
+extern s32 D_800A38AC[];
+extern s32 D_800A37C4Absolute[];
+extern s32 D_800A37B4Absolute[];
+extern s32 D_800A37ACAbsolute[];
+extern s32 D_800A37A4Absolute[];
+void func_8002F0A8(u8 *arg0) {
+    s32 local[8];
+    u8 *owner;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002F1A0);
+    D_800A2EA0Small = arg0;
+    owner = (u8 *)D_800A38AC[0];
+    if (arg0 != owner) {
+        *(u16 *)(owner + 0x1E0) = *(u16 *)(arg0 + 0x1E0);
+    } else {
+        *(u16 *)((u8 *)D_800A38AC[0] + 0x1E0) =
+            func_8002482C(*(s32 *)(arg0 + 0), *(s32 *)(arg0 + 4), (s32 *)(arg0 + 0x1F8));
+    }
+    func_8002DA30((s32 *)D_800A38AC[0]);
+    if (D_800A2ED8 != 0) {
+        func_800200B0((s32 *)D_800A37C4Absolute[0x3A], arg0, D_800A2EC4 + 4);
+    } else {
+        func_800200B0((s32 *)D_800A37B4Absolute[0x3E], arg0, *(s8 *)(arg0 + 0x20C));
+    }
+    func_8001EC38((s32 *)D_800A37ACAbsolute[0x40]);
+    MatrixBuildRotationFromTransform((s32 *)D_800A37A4Absolute[0x42], (s32 *)local);
+    local[7] = 0;
+    local[6] = 0;
+    local[5] = 0;
+    SetTransMatrix((MATRIX *)local);
+    SetRotMatrix((MATRIX *)local);
+    func_8002EEFC(arg0);
+}
+
+extern u8 D_800A2F9DAbsolute[];
+extern s32 D_800A2EACSmall;
+extern u8 *D_800A3878;
+void func_8002F1A0(void) {
+    u8 *node;
+
+    if (((u8 *)D_800A2F9DAbsolute)[-0x45] != 0) {
+        func_8003A440();
+        func_80028FCC(D_800A3878);
+        return;
+    }
+    if (D_800A2EACSmall != 0) {
+        func_8003A54C();
+        func_80028FCC(D_800A3878);
+        return;
+    }
+    func_80041AF0(0);
+    if ((func_80050D1C() & 0xFF) == 0) {
+        node = D_800A3878;
+        if (node != NULL) {
+            do {
+                func_8003CF0C(node);
+                ((void (*)(void *)) *(s32 *)(node + 0x350))(node);
+                node = *(u8 **)(node + 0x3E0);
+            } while (node != NULL);
+        }
+        func_80028FCC(D_800A3878);
+    }
+    func_80039CF4();
+    node = D_800A3878;
+    if (node != NULL) {
+        do {
+            if (*(s16 *)(node + 0x1EC) == 0) {
+                func_800297D0(node);
+            } else if ((*(u16 *)(node + 0x3A4) & 0xF) == 0) {
+                func_80038D78(node);
+            }
+            node = *(u8 **)(node + 0x3E0);
+        } while (node != NULL);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002F2CC);
 
