@@ -4295,7 +4295,32 @@ u16 func_80041B94(s32 index) {
     return D_8008CA04[index];
 }
 
+extern s32 gPadBuffers[];
+
+#ifdef NON_MATCHING
+/* Wall: retail computes the nibble before the 0xFF branch and keeps it
+ * in a0 with a final move v0,a0 on both paths; our shapes either go
+ * branchless (xori/sltu/negu) or compute after the branch. */
+u32 func_80041BAC(s32 arg0) {
+    s32 temp;
+    u32 result;
+
+    if (arg0 < 0) {
+        return 0;
+    }
+    temp = gPadBuffers[arg0 * 3];
+    if ((temp & 0xFF) == 0xFF) {
+        result = 0;
+    } else {
+        result = ((u32)(temp & 0xF000)) >> 12;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80041BAC);
+#endif
+
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80041BFC);
 
@@ -4659,7 +4684,20 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80048118);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80048568);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80048700);
+extern u8 *D_800A347C;
+extern void *D_800A3728;
+extern void func_8002D4CC(u8 *);
+
+void func_80048700(void) {
+    D_800A3728 = 0;
+    D_800A347C = HeapAlloc(0x500);
+    *(s16 *)(D_800A347C + 0x1EC) = 2;
+    func_8002DA30((s32 *)D_800A347C);
+    func_8002D4CC(D_800A347C);
+    func_8002D3A8(D_800A347C, -4);
+    *(s32 *)(D_800A347C + 0x10) = -1;
+    *(s32 *)(D_800A347C + 0xC) = -1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004875C);
 
