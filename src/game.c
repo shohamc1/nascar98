@@ -8847,7 +8847,50 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006A7C8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006AA70);
 
+#ifdef NON_MATCHING
+/* Draft is structurally close but gcc anchors the store base differently:
+ * retail keeps v1 = record base with positive offsets (0, 0x19, 0x1C-0x1F,
+ * sw -1 at 0x20) and v0 = v1+3 for the descending 0x20 byte fill; our gcc
+ * merges base/p into one register and re-anchors at +0x20 with negative
+ * offsets. Tried: recomputed p, running p, k-before-q order. */
+extern char *D_800A35F4;
+extern u8 D_800A3A58;
+void func_8006ABF8(void) {
+    char *p;
+    char *q;
+    s32 i;
+    s32 j;
+    s32 k;
+
+    i = 0;
+    do {
+        p = D_800A35F4 + i * 0xE8;
+        j = 0;
+        do {
+            p[0] = 0;
+            p[0x19] = 0;
+            k = 3;
+            q = p + 3;
+            p[0x1C] = 0;
+            p[0x1D] = 0;
+            p[0x1E] = 0;
+            p[0x1F] = 0;
+            *(s32 *)&p[0x20] = -1;
+            do {
+                q[0x24] = 0x20;
+                k--;
+                q--;
+            } while (k >= 0);
+            j += 0xC;
+            p += 0xC;
+        } while (j < 0xCC);
+        i++;
+    } while (i < 0xC);
+    D_800A3A58 = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006ABF8);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006AC78);
 
@@ -8987,7 +9030,19 @@ void func_8006CB00(void) {
     *(s16 *)(D_800A377C[0] + 0x1A) = value;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006CB40);
+extern u8 *D_800A377C[];
+void func_8006CB40(void) {
+    s32 value;
+
+    value = *(s16 *)(D_800A377C[0] + 0x1A);
+    if (value < 0) {
+        value = -value;
+    } else if (value == -255) {
+        asm("");
+        value = 0;
+    }
+    *(s16 *)(D_800A377C[0] + 0x1A) = value;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006CB80);
 
@@ -9042,7 +9097,23 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006D424);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D4C8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006D634);
+extern u8 D_800BBA24[];
+void func_8006D634(s32 arg) {
+    u8 *base;
+    u8 *tbl;
+    u8 i;
+    s32 offset;
+
+    i = 0;
+    offset = arg & 0xFF;
+    tbl = D_800BBA24;
+    base = tbl + offset * 4;
+    do {
+        base[i] = 0x20;
+        D_800A3860[0][i] = 0x20;
+        i += 1;
+    } while (i < 4);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D684);
 
@@ -9052,7 +9123,12 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006D8E8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006DA40);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006DCF0);
+extern ColorNode *D_800A3A10[];
+extern void func_8005B8B8(u8 *first, u8 value);
+void func_8006DCF0(void) {
+    func_8005B688(D_800A3A10[0], 1);
+    func_8005B8B8(((void **)D_800A3A3C)[-11], 0xFF);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006DD28);
 
@@ -9087,7 +9163,21 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006EEE0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006F128);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006F194);
+extern u8 D_800A2F9CAbsolute[];
+extern u8 D_800A2F9DAbsolute[];
+extern u8 D_800A3694Absolute[];
+extern void func_8003CCE0(s32);
+extern void func_8006F9C4(s32, s32, s32);
+extern void func_800596F4(void);
+void func_8006F194(s32 arg) {
+    if (D_800A2F9CAbsolute[0] != 0) {
+        func_8003CCE0(0);
+        ((u8 *)D_800A2F9DAbsolute)[-1] = 0;
+    }
+    func_8006F9C4((arg & 0xFF) + 0xC, 0, 0);
+    func_800596F4();
+    CdSetMixVolume(D_800A3694Absolute[0]);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006F200);
 
@@ -9131,7 +9221,37 @@ void func_80070018(void) {
         func_8006FDDC();
 }
 
+#ifdef NON_MATCHING
+/* Structure matches. Two walls: (1) retail keeps D_800A3398's reloaded
+ * value in caller-saved v1 and defers the base `addu a0,v1,a0` into the
+ * PutDispEnv/PutDrawEnv delay slots; our gcc materializes the base into
+ * callee-saved s1 and defers the small addiu instead. (2) retail sinks
+ * `sw v0,0x114(a1)` into the PutDrawEnv delay slot; our gcc will not sink
+ * a store across a call (aliasing), so it stays after the jal and forces
+ * an s0 save (frame 0x20 vs retail 0x18). */
+extern s32 *D_800A3398;
+void func_8007005C(void) {
+    s32 *s;
+    s32 idx;
+    s32 other;
+
+    s = D_800A3398;
+    if (s[0x11C / 4] != 0) {
+        DrawSync(0);
+        VSync(0);
+        s = D_800A3398;
+        idx = s[0x114 / 4];
+        PutDispEnv((DISPENV *)((u8 *)s + idx * 20 + 0xEC));
+        s = D_800A3398;
+        idx = s[0x114 / 4];
+        other = 1 - idx;
+        PutDrawEnv((DRAWENV *)((u8 *)s + other * 92 + 0x34));
+        s[0x114 / 4] = other;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8007005C);
+#endif
 
 extern s32 D_800A339C, D_800A33A0;
 void func_800700F8(void) {
@@ -9155,7 +9275,17 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80070248);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800703D0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80070750);
+extern u8 *D_800A33A8;
+extern u8 *D_800A33AC;
+extern u8 D_8009B800[];
+extern void func_80070798(u8 *first, u8 *second, u8 *table);
+void func_80070750(s32 arg) {
+    if (arg != 0) {
+        func_80070798(D_800A33A8, D_800A33AC, (u8 *)arg);
+    } else {
+        func_80070798(D_800A33A8, D_800A33AC, D_8009B800);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80070798);
 
@@ -9169,7 +9299,50 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800710D8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800711F0);
 
+#ifdef NON_MATCHING
+/* Structure matches; remaining wall is register assignment: retail keeps
+ * the node pointer in v1, copies the param to a1 (a0 is clobbered by the
+ * 0x444 load), and holds `remaining` in a0. Our gcc packs the three loads
+ * into a1/a2/a3 and never emits the param copy, so the encoded registers
+ * differ even though the instruction sequence is identical. Tried
+ * remaining-first declaration order - no effect. */
+extern s32 *D_800A3500;
+extern void func_800711F0(void);
+void func_800718D4(s32 arg) {
+    s32 remaining;
+    s32 *stream;
+    s32 *node;
+
+    stream = D_800A3500;
+    node = (s32 *)stream[0x42C / 4];
+    remaining = stream[0x444 / 4];
+    node[0x4 / 4] += arg;
+    remaining = 0x800 - remaining;
+    if (arg < remaining) {
+        stream[0x444 / 4] = stream[0x444 / 4] + arg;
+    } else {
+        arg -= remaining;
+        stream[0x444 / 4] = arg & 0x7FF;
+        stream[0x440 / 4] = stream[0x440 / 4] + (((u32)arg >> 11) + 1);
+    }
+    func_800711F0();
+    stream = D_800A3500;
+    node = (s32 *)stream[0x42C / 4];
+    if (node[0x4 / 4] == node[0x10 / 4]) {
+        if ((s32 *)stream[0x430 / 4] != node) {
+            if (stream[0x444 / 4] != 0) {
+                stream[0x440 / 4] += 1;
+            }
+            node = (s32 *)stream[0x430 / 4];
+            stream[0x44C / 4] = 0;
+            stream[0x42C / 4] = (s32)node;
+            stream[0x444 / 4] = node[0x28 / 4];
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800718D4);
+#endif
 
 extern s32 *D_800A3500;
 s32 func_800719D4(void) {
@@ -9240,9 +9413,43 @@ s32 func_80072A5C(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80072A70);
 
+extern volatile s32 *D_800A351C;
+#ifdef NON_MATCHING
+/* Byte-exact except one byte: our maspsx expand_load_immediate drops the
+ * source register for `li $reg,0` (the TODO else-branch), so the divisor
+ * high word assembles as `ori a3,a3,0` (0x34E70000) instead of retail's
+ * `ori a3,zero,0` (0x34070000). Every C variant hits it. Fix maspsx, then
+ * retest this draft - the rest of the function already matches. */
+extern long long __divdi3(long long dividend, long long divisor);
+s32 func_80072AFC(u32 arg) {
+    if (D_800A351C[0x7B74 / 4] == 1) {
+        return __divdi3((long long)arg * 0x271000, 0xBB5);
+    }
+    return arg << 10;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80072AFC);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80072B4C);
+extern volatile s32 *D_800A351C;
+s32 func_80072B4C(void) {
+    volatile s32 *p;
+    u32 i;
+    s32 count;
+
+    count = 0;
+    i = 0;
+    p = D_800A351C;
+    do {
+        if (p[0x7B2C / 4] != 0) {
+            asm("");
+            count += 1;
+        }
+        i += 1;
+        p += 1;
+    } while (i < 4);
+    return count;
+}
 
 extern volatile s32 *D_800A351C;
 s32 func_80072B88(void) {
@@ -9271,7 +9478,22 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80072FE4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80073100);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80073948);
+extern volatile s32 *D_800A351C;
+void func_80073948(void) {
+    volatile s32 *p;
+    volatile s32 *field;
+    u32 i;
+
+    i = 0;
+    p = D_800A351C;
+    p[0x7B78 / 4] = 1;
+    field = p;
+    do {
+        field[0x7B2C / 4] = 0;
+        i += 1;
+        field += 1;
+    } while (i < 4);
+}
 
 extern volatile s32 *D_800A351C;
 void func_80073978(void) {
