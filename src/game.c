@@ -10349,13 +10349,150 @@ void func_8006C668(s32 arg0, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8006C668);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006C700);
+#ifdef NON_MATCHING
+extern u8 *D_800A377C[];
+extern u8 *D_800A3908[];
+extern u8 D_800A358C;
+extern u8 D_800A3968;
+extern char D_800B0A2C[];
+s32 func_8006C700(s32 arg0, s32 arg1) {
+    s32 result;
+    s32 target;
+    s32 gear;
+    u8 *node;
+    u8 *walker;
+    u8 *sentinel;
+    s32 old;
+    s32 start;
+    s32 limit;
+    s32 i;
+    s32 tmp;
+    char *src;
 
+    if ((arg1 & 0xFF) != 0) {
+        target = D_800A3968;
+        if (target == 0xF) {
+            target = 0xE;
+        }
+    } else if (D_800A39E4[0] == 0x28) {
+        target = 1;
+    } else {
+        target = D_800A3968 - 1;
+    }
+
+    node = D_800A377C[0];
+    gear = *(s8 *)(node + 5);
+    result = 1;
+    if ((arg0 & 0xFF) != 0) {
+        if (gear < 6 && gear < target) {
+            old = D_800A358C;
+            tmp = *(u16 *)(node + 8);
+            old = old + 1;
+            tmp = tmp + 9;
+            *(u16 *)(node + 8) = tmp;
+            D_800A358C = old;
+            gear = gear + 1;
+        } else if (gear == 6 && D_800A358C < target) {
+            old = D_800A358C;
+            D_800A358C = old + 1;
+            start = old - 5;
+            if (target < 6) {
+                limit = target;
+            } else {
+                limit = (s8)start + 6;
+            }
+            walker = D_800A3908[0];
+            i = (s8)start;
+            if (limit >= i) {
+                src = i * 0x10 + D_800B0A2C;
+                do {
+                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) = (u32)src;
+                    i++;
+                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
+                    src += 0x10;
+                } while (limit >= i);
+            }
+            sentinel = D_800A377C[0];
+            if (walker != sentinel) {
+                do {
+                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) = 0;
+                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
+                } while (walker != sentinel);
+            }
+        } else {
+            result = 0;
+        }
+    } else if (gear > 0) {
+        old = D_800A358C;
+        tmp = *(u16 *)(node + 8);
+        gear = gear - 1;
+        old = old - 1;
+        tmp = tmp - 9;
+        D_800A358C = old;
+        *(u16 *)(node + 8) = tmp;
+    } else {
+        old = D_800A358C;
+        if (old != 0) {
+            D_800A358C = old - 1;
+            start = old - 1;
+            if (target < 6) {
+                limit = target;
+            } else {
+                limit = (s8)start + 6;
+            }
+            walker = D_800A3908[0];
+            i = (s8)start;
+            if (limit >= i) {
+                src = i * 0x10 + D_800B0A2C;
+                do {
+                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) = (u32)src;
+                    i++;
+                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
+                    src += 0x10;
+                } while (limit >= i);
+            }
+            sentinel = D_800A377C[0];
+            if (walker != sentinel) {
+                do {
+                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) = 0;
+                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
+                } while (walker != sentinel);
+            }
+        } else {
+            result = 0;
+        }
+    }
+    *(s8 *)(D_800A377C[0] + 5) = gear;
+    return result;
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_8006C700);
+#endif
+
+#ifdef NON_MATCHING
+s32 func_8006C94C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s16 *arg4) {
+    extern s32 func_8005AEC8(s32, s32);
+    extern s32 func_8005AFF0(s32);
+    s32 cur = arg3;
+    s32 val;
+    s32 ret;
+
+    func_8005A7B8(arg0 & 0xFF, arg1 & 0xFF);
+    val = arg2 & 0xFF;
+    if (*(s8 *)cur == 0) {
+        *arg4 = func_8005AFF0(0x20);
+        return 0;
+    }
+    ret = func_8005AEC8(val, cur);
+    *arg4 = func_8005AFF0(*(s8 *)(cur + val));
+    return ret;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006C94C);
+#endif
 
 extern u8 *D_800A377C[];
-void func_8006C9DC(void) {
-    *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
+void func_8006C9DC(void) {    *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006C9F8);
