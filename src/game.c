@@ -5104,7 +5104,23 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8004A510);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004AFE0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8004B128);
+extern s32 D_800A2E50[];
+extern s16 D_800A38E4[];
+
+void func_8004B128(u8 *arg0) {
+    s8 value;
+
+    if (arg0[0x3FC] != 0) {
+        value = (D_800A2E50[0] - D_800A38E4[0]) * 10 / D_800A2E50[0] + 2;
+    } else {
+        value = 0;
+    }
+    if (value >= 0xB) {
+        value = 0xA;
+    }
+    arg0[0x3FD] = value;
+    *(s16 *)(arg0 + 0x402) = *(u16 *)(arg0 + 0x108);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004B1C0);
 
