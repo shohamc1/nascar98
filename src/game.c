@@ -3249,9 +3249,58 @@ void func_8002AD20(s32 *car, s32 index) {
     car[0x2D] = MathMultiplyFixed16(entryB, car[0x24]) >> 16;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002ADE0);
+extern s32 *D_800A3A2CAbsolute[];
+extern s32 *D_800A3A34Absolute[];
+void func_8002ADE0(s32 *car, s32 arg1) {
+    s32 index;
+    s32 entryA;
+    s32 entryB;
 
+    index = (((s16 *)car)[0x8A] + 0x200) & 0x3FF;
+    entryA = D_800A3A2CAbsolute[0][index];
+    entryB = D_800A3A34Absolute[0][index];
+    car[0x31] = car[0x31] + MathMultiplyFixed16(entryA, arg1);
+    car[0x32] = car[0x32] + MathMultiplyFixed16(entryB, arg1);
+    car[0x34] = car[0x34] + MathMultiplyFixed16(entryA, arg1);
+    car[0x35] = car[0x35] + MathMultiplyFixed16(entryB, arg1);
+}
+
+#ifdef NON_MATCHING
+/* w7c: 0x50 short. Retail spills steer/slide to 0(sp)/4(sp) (frame -0x10),
+ * reloads both table entries for the second multiply pair, and issues
+ * mult early with the B loads filling the latency window before mflo.
+ * gcc 2.7.2 keeps everything in registers (frameless), CSEs the reloads,
+ * and emits mflo immediately after mult. sltiu needs the unsigned spelling
+ * ((temp & 0xFF) >= 0x65U). Same class as the func_800298E0 scheduling wall.
+ */
+extern s32 *D_800A3A2CAbsolute[];
+extern s32 *D_800A3A34Absolute[];
+s32 func_8002AEB0(u8 *arg0) {
+    s32 index;
+    s32 steer;
+    s32 slide;
+    s32 temp;
+
+    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
+    steer = ((D_800A3A2CAbsolute[0][index] * *(s32 *)(arg0 + 0xB0))
+            - (D_800A3A34Absolute[0][index] * *(s32 *)(arg0 + 0xB4))) >> 16;
+    slide = ((D_800A3A34Absolute[0][index] * *(s32 *)(arg0 + 0xB0))
+            + (D_800A3A2CAbsolute[0][index] * *(s32 *)(arg0 + 0xB4))) >> 16;
+    if (steer < 0) {
+        temp = -steer;
+        *(u8 *)(arg0 + 0x410) = temp;
+        steer = 0;
+        if ((temp & 0xFF) >= 0x65U) {
+            *(u8 *)(arg0 + 0x410) = 0x64;
+        }
+    } else {
+        *(u8 *)(arg0 + 0x410) = 0;
+    }
+    return steer << 16;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8002AEB0);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002AF94);
 
@@ -3407,7 +3456,45 @@ void func_8002D3A8(u8 *object, s32 index) {
     object[0x200] = index;
 }
 
+#ifdef NON_MATCHING
+/* w7c: walled. Needs gp_rel loads of D_800A2E7C/D_800A2E80 and a lui/lw
+ * read of D_800A2E64. ANY new C reference to that untracked sdata region
+ * (exact label OR Small/Absolute alias) shifted the auto data labels
+ * (exact externs: -8; alias spelling: D_800A2E84 itself drifted and the
+ * neighbor read became lui/lw absolute instead of gp_rel). Needs
+ * D_800A2E64/E7C/E80 tracked in config/symbol_addrs.txt first. Also open
+ * when enabled: loop walker re-based to entry+0x2B8 (agent3 rebase wall)
+ * and the (E7C-E80) diff landed in v1 instead of a2 (a2 holds the /63
+ * magic). Keep the externs inside the guard: they alone shift the map.
+ */
+extern s32 D_800A2E84Small;
+extern s32 D_800A2E84Absolute[];
+extern u8 D_800A3860[][4];
+void func_8002D3EC(u8 *arg0) {
+    u8 *entry;
+    s32 i;
+    s16 revs;
+
+    *(s32 *)(arg0 + 0x234) = *(&D_800A2E84Small - 1)
+        + (*(&D_800A2E84Small - 2) - *(&D_800A2E84Small - 1))
+            * *(s8 *)&D_800A3860[*(s8 *)(arg0 + 0x20B)][0] / 63;
+    revs = ((s32 *)D_800A2E84Absolute)[-8]
+        - *(s8 *)&D_800A3860[*(s8 *)(arg0 + 0x20B)][0] * 0xC8 / 63;
+    entry = arg0;
+    i = 0;
+    do {
+        *(s16 *)(entry + 0x2B2) = 0;
+        *(s16 *)(entry + 0x2B0) = 0;
+        *(s16 *)(entry + 0x2AE) = 0;
+        *(s16 *)(entry + 0x2B4) = revs;
+        i += 1;
+        *(s32 *)(entry + 0x2B8) = *(s32 *)(arg0 + 0x234);
+        entry += 0x28;
+    } while (i < 4);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8002D3EC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002D4CC);
 
@@ -3497,7 +3584,65 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002F1A0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002F2CC);
 
+#ifdef NON_MATCHING
+/* w7c: walled on D_800A2EDA - declaring this untracked sdata byte in C
+ * shifts the auto data labels -8 (retail lbu 0x1fa(gp) vs ours 0x1f2(gp)).
+ * Needs D_800A2EDA tracked in config/symbol_addrs.txt. Also fix when
+ * enabled: split the guard into nested ifs (gcc merged D_800A2EDA==0 &&
+ * node!=NULL into sltiu/sltu/and), make carIdx an s32 local assigned from
+ * *(s8 *)(node + 0x20B) (an s8 local gave lbu+sll18/sra16), and restate
+ * the green clamp flag as an expression in the arm so the slti recomputes
+ * instead of folding to li 1.
+ */
+extern u8 D_800A2EDA;
+extern s32 D_800A2EB0;
+extern u8 *D_800A3878;
+extern u8 D_800A3860[][4];
+void func_8002F454(void) {
+    u8 *node;
+    s32 red;
+    s32 green;
+    s32 flag;
+    s8 carIdx;
+
+    node = D_800A3878;
+    if (D_800A2EDA == 0 && node != NULL) {
+        do {
+            if (*(s16 *)(node + 0x1EC) == 0) {
+                carIdx = *(s8 *)(node + 0x20B);
+                red = 0x20;
+                if (D_800A2EB0 >= 0) {
+                    red = (*(s16 *)(node + 0x2A0) << 2) + 0x40;
+                    green = (*(s16 *)(node + 0x2A6) << 2) + 0x40;
+                    if (red < 0) {
+                        asm("");
+                        red = 0;
+                    }
+                    if (red >= 0x40) {
+                        red = 0x3F;
+                    }
+                    flag = green < 0x40;
+                    if (green < 0) {
+                        asm("");
+                        green = 0;
+                        flag = 1;
+                    }
+                    if (flag == 0) {
+                        green = 0x3F;
+                    }
+                } else {
+                    green = 0x20;
+                }
+                D_800A3860[carIdx][1] = green;
+                D_800A3860[carIdx][2] = red;
+            }
+            node = *(u8 **)(node + 0x3E0);
+        } while (node != NULL);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8002F454);
+#endif
 
 extern MATRIX D_800A4548[];
 extern s32 D_800A359C[];
