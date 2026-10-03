@@ -4410,7 +4410,27 @@ void func_8003F13C(s32 arg0) {
     gVabId = func_8003FF5C(D_800A3A08, value);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F13C);
+extern s16 gVabId;
+extern s32 D_800A3A00;
+extern s32 D_800A3A08;
+extern s32 func_8003FFF0(void *, void *);
+extern s16 func_8003FF5C(void *, void *);
+extern void SsVabClose(s16);
+extern void func_8003FA0C(void);
+
+void func_8003F13C(s32 arg0) {
+    volatile s32 buf[8];
+    s32 body;
+
+    func_8003FA0C();
+    if (gVabId != -1) {
+        SsVabClose(gVabId);
+    }
+    D_800A3A08 = func_8003FFF0((void *)(s32 *)arg0 + 1, 0);
+    body = func_8003FFF0((void *)arg0, (void *)0x80140000);
+    D_800A3A00 = body;
+    gVabId = func_8003FF5C((void *)D_800A3A08, (void *)body);
+}
 #endif
 
 #ifdef NON_MATCHING
