@@ -3638,7 +3638,45 @@ s32 func_8005BF68(void) {
     return D_800A3654 + index * 12;
 }
 
+#ifdef NON_MATCHING
+extern u8 D_800A35EC;
+extern u8 *D_800A3678;
+extern u8 D_800A37BC;
+extern s32 D_800A3654;
+void func_8005BF8C(s16 left, s16 top) {
+    u8 spriteIndex;
+    u8 primIndex;
+    u8 *object;
+    u8 *prim;
+
+    spriteIndex = D_800A35EC++;
+    object = spriteIndex * 36 + D_800A3678;
+    object[4] = 0;
+    object[3] = 0;
+    object[2] = 0;
+    primIndex = D_800A37BC;
+    *(s16 *)(object + 0xA) = left;
+    *(s16 *)(object + 0x6) = left;
+    *(s16 *)(object + 0x12) = 0;
+    *(s16 *)(object + 0x14) = 0;
+    *(s32 *)(object + 0x1C) = 0;
+    *(s16 *)(object + 0x1A) = 0;
+    *(s16 *)(object + 0x0) = 0;
+    *(s16 *)(object + 0xC) = top;
+    *(s16 *)(object + 0x8) = top;
+    *(s16 *)(object + 0xE) = 0;
+    *(s16 *)(object + 0x10) = 0;
+    *(s16 *)(object + 0x1A) = 0;
+    D_800A37BC = primIndex + 1;
+    prim = (u8 *)(D_800A3654 + primIndex * 12);
+    *(u8 **)(object + 0x20) = prim;
+    prim[0] = 0;
+    prim[3] = 0;
+    *(s32 *)(prim + 4) = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005BF8C);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005C020);
 
