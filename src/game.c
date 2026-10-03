@@ -4450,7 +4450,32 @@ void func_8003F1B0(s32 arg0) {
     }
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F1B0);
+extern s16 gVabId;
+extern s32 D_800A3A00;
+extern s32 D_800A3A08;
+extern s32 func_8003FFF0(void *, void *);
+extern s16 func_8003FF5C(void *, void *);
+extern void SsVabClose(s16);
+extern void HeapFree(void *);
+extern void func_8003FA0C(void);
+
+void func_8003F1B0(s32 arg0) {
+    volatile s32 buf[8];
+    s32 body;
+
+    func_8003FA0C();
+    if (gVabId != -1) {
+        SsVabClose(gVabId);
+    }
+    D_800A3A08 = func_8003FFF0((void *)arg0, 0);
+    body = func_8003FFF0((void *)(arg0 + 1), 0);
+    D_800A3A00 = body;
+    gVabId = func_8003FF5C((void *)D_800A3A08, (void *)body);
+    if (D_800A3A00 != 0) {
+        HeapFree((void *)D_800A3A00);
+        D_800A3A00 = 0;
+    }
+}
 #endif
 
 void func_80082B70(void);
