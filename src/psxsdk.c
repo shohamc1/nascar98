@@ -469,9 +469,37 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", GetTPage);
 
 u16 GetClut(s32 x, s32 y) { return getClut(x, y); }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpTPage);
+typedef int (*DebugPrintf)(const char *, ...);
+extern u32 D_8009DA8C[];
+extern char D_80090548[];
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpClut);
+#ifdef NON_MATCHING
+/* Retail's second branch computes ((tpage * 0x10) & 0x100) +
+ * ((tpage >> 2) & 0x200) — an extra OR'd term absent from the sotn-decomp
+ * source (different Psy-Q revision). Also gcc cross-jumps the two indirect
+ * call tails, which retail keeps separate. */
+void DumpTPage(u_short tpage) {
+    if (GetGraphType() == 1 || GetGraphType() == 2) {
+        ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 9) & 3,
+                                     (tpage >> 7) & 3, (tpage << 6) & 0x7C0,
+                                     (tpage * 8) & 0x300);
+        return;
+    }
+    ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 7) & 3,
+                                 (tpage >> 5) & 3, (tpage << 6) & 0x7C0,
+                                 (tpage * 0x10) & 0x100);
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpTPage);
+#endif
+
+typedef int (*DebugPrintf)(const char *, ...);
+extern u32 D_8009DA8C[];
+extern char D_80090560[];
+
+void DumpClut(u_short clut) {
+    ((DebugPrintf)D_8009DA8C[0])(D_80090560, (clut & 0x3F) * 0x10, clut >> 6);
+}
 
 void* NextPrim(void* p) { return nextPrim(p); }
 
