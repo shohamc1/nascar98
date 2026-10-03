@@ -4780,9 +4780,133 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800342D8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800345E0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800346D0);
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A36D0Absolute[];
+extern s32 D_800A3668Absolute[];
+extern s32 D_800A2F38[];
+extern s32 D_800A3640[];
+extern s16 D_800AFE2C[];
+extern u32 D_800B022C[];
+extern MATRIX D_800A4588[];
+extern MATRIX D_800A4568[];
+
+s32 func_800346D0(s32 threshold) {
+    s32 i;
+    u32 ret;
+
+    if (D_800A2CF8[0] == 3) {
+        return 0;
+    }
+    PushMatrix();
+    SetRotMatrix(D_800A4588);
+    SetTransMatrix(D_800A4588);
+    for (i = 0; i < D_800A2F38[0]; i++) {
+        D_800A3640[0] = D_800AFE2C[i];
+        ret = func_800342D8(&D_800B022C[i], gPrimitiveCursor[0]);
+        ((u32 *)D_800A36D0Absolute)[-67] = ret;
+        if (threshold <
+            (s32)(((ret & 0xFFFFFFF) -
+                   (((u32 *)D_800A3668Absolute)[-62] & 0xFFFFFFF)) / 40)) {
+            D_800A2F38[0] = i;
+        }
+    }
+    if (D_800A2CF8[0] < 2) {
+        SetRotMatrix(D_800A4568);
+        SetTransMatrix(D_800A4568);
+        func_80034834();
+    }
+    PopMatrix();
+    return D_800A2F38[0];
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80034834);
+
+#ifdef NON_MATCHING
+/*
+ * WALL (w9d): this draft is byte-exact except for ONE addressing fact:
+ * retail reads D_800A38C0 with `lhu %gp_rel(D_800A38C0)($gp)` here, but
+ * func_80013224 STORES the same symbol absolute (lui/sw). Declaring
+ * D_800A38C0 scalar for the gp read flips func_80013224's store to
+ * gp-rel (-4 bytes, whole-EXE shift; the w8b wall). Needs the Makefile
+ * defsym alias D_800A38C0Small=D_800A38C0 and an `extern u16
+ * D_800A38C0Small;` here -- then this draft should drop in unmodified.
+ * Everything else was verified clean by asm-differ: prologue (li s4,
+ * 0xA7 / li s3, 0xFD hoisted before the IV init), both FT4 loops (for +
+ * (i+1)<<7-1 CSE), and the F4 tail as a do-while with the f4 += 0x18
+ * before the test (it lands in the bnez delay slot). cursor = base +
+ * car * 0x28 is REQUIRED: spelling the 0xA0 stride as a separate `off`
+ * local puts move s5,zero before the li constants and breaks the
+ * prologue order.
+ */
+extern u16 D_800A38C0;
+extern u8 *D_800A3850;
+extern u8 *D_800A390C;
+extern u8 D_800AFBB8[];
+extern u8 D_800AFB18[];
+extern u8 D_800B1F30[];
+
+void func_80034990(void) {
+    u16 color;
+    s32 car;
+    s32 i;
+    u8 *cursor;
+    POLY_FT4 *prim;
+    POLY_F4 *f4;
+    s32 red;
+    s32 green;
+    s32 blue;
+
+    D_800A3850 = D_800AFBB8;
+    color = D_800A38C0;
+    for (car = 0; car < 0xC; car += 4) {
+        cursor = D_800AFB18 + car * 0x28;
+        for (i = 0; i < 2; i++) {
+            prim = (POLY_FT4 *)(cursor + i * 0x28);
+            SetPolyFT4(prim);
+            SetShadeTex(prim, 1);
+            prim->tpage = GetTPage(1, 0, 0x200, 0x100);
+            prim->clut = GetClut(0x200, 0x1FF);
+            prim->u0 = i << 7;
+            prim->v0 = 0xA7;
+            prim->u1 = ((i + 1) << 7) - 1;
+            prim->v1 = 0xA7;
+            prim->u2 = i << 7;
+            prim->v2 = 0xFD;
+            prim->u3 = ((i + 1) << 7) - 1;
+            prim->v3 = 0xFD;
+        }
+        for (i = 0; i < 2; i++) {
+            prim = (POLY_FT4 *)(cursor + 0x50 + i * 0x28);
+            SetPolyFT4(prim);
+            SetShadeTex(prim, 1);
+            prim->tpage = GetTPage(1, 0, 0x280, 0x100);
+            prim->clut = GetClut(0x200, 0x1FF);
+            prim->u0 = i << 7;
+            prim->v0 = 0xA7;
+            prim->u1 = ((i + 1) << 7) - 1;
+            prim->v1 = 0xA7;
+            prim->u2 = i << 7;
+            prim->v2 = 0xFD;
+            prim->u3 = ((i + 1) << 7) - 1;
+            prim->v3 = 0xFD;
+        }
+    }
+    red = (color & 0x7C00) >> 7;
+    green = (color & 0x3E0) >> 2;
+    blue = (color & 0x1F) << 3;
+    D_800A390C = D_800B1F30;
+    i = 0;
+    f4 = (POLY_F4 *)(D_800B1F30 - 0x60);
+    do {
+        SetPolyF4(f4);
+        f4->r0 = blue;
+        f4->g0 = green;
+        f4->b0 = red;
+        i++;
+        f4 += 0x18;
+    } while (i < 8);
+}
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80034990);
 
@@ -4958,6 +5082,83 @@ void func_800356A8(s32 arg0) {
     func_80035274();
     D_800A2F3C[0] = 0x46;
 }
+
+#ifdef NON_MATCHING
+/*
+ * WALL (w9d): clean except the LINE_F4 tail's first li. Retail emits
+ * `li v1,0xc8` immediately after the line pointer addu, keeps 0xC8 in
+ * v1 across the y/r/g/b constant stores (li v0,0x23 / 0x46 / 0x28 /
+ * 0x6a / 0x2), and sinks both x stores (sh v1,8 / sh v1,0x10) to just
+ * before AddPrim. Every C spelling tried puts the x stores early in v0
+ * (x-first: li v0 then sh v0,8/0x10 at once), or materializes 0xC8 late
+ * (y-first, lx-local, chained x0=x2=0xC8 all start with li v0,0x23).
+ * Suspect scheduler v0/v1 lifetime choice. The rest is byte-exact:
+ * the /2 then /64 rounding chain, the FT4 loop (y++ at body top, clamp
+ * y>=8 resets off then y, nx = x + 0x40 computed into v0 then
+ * move s0,v0, off IV += 0x28 after the x update), `c`/`nx` locals are
+ * load-bearing for the s4/s5 register pair.
+ */
+extern s32 D_800A2F44;
+extern u8 *D_800A3850;
+extern u8 *D_800A390C;
+
+void func_80035720(u_long *ot) {
+    s32 value;
+    s32 x;
+    s32 y;
+    s32 off;
+    s32 i;
+    s32 c;
+    s32 nx;
+    s32 lx;
+    POLY_FT4 *prim;
+    LINE_F4 *line;
+    s32 bank;
+
+    value = D_800A2F44;
+    x = (0x200 - value) / 2;
+    y = x / 64;
+    x = y * 64 - x;
+    i = 0;
+    c = 0x23;
+    off = y * 40;
+    for (; i < 5; i++) {
+        if (y >= 8) {
+            off = 0;
+            y = 0;
+        }
+        prim = (POLY_FT4 *)(D_800A3850 + off);
+        y++;
+        prim->x0 = x;
+        prim->x2 = x;
+        nx = x + 0x40;
+        x = nx;
+        off += 0x28;
+        prim->y0 = 0;
+        prim->x1 = nx;
+        prim->y1 = 0;
+        prim->y2 = c;
+        prim->x3 = nx;
+        prim->y3 = c;
+        AddPrim(ot + 0x3FF, prim);
+    }
+    bank = gOrderingTableBankAbsolute[0];
+    line = (LINE_F4 *)(D_800A390C + bank * 24);
+    lx = 0xC8;
+    line->y0 = 0x23;
+    line->y1 = 0x23;
+    line->y2 = 0x46;
+    line->y3 = 0x46;
+    line->x0 = lx;
+    line->x1 = 0;
+    line->x2 = lx;
+    line->x3 = 0;
+    line->r0 = 0x28;
+    line->g0 = 0x6A;
+    line->b0 = 2;
+    AddPrim(ot + 0x3FF, line);
+}
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80035720);
 
@@ -5232,6 +5433,58 @@ s32 func_8003702C(u8 *objectA, u8 *objectB) {
     return b - a;
 }
 #else
+#ifdef NON_MATCHING
+/*
+ * WALL (w9d): two diffs. (1) gcc copies arg0 to a2 at entry (`move
+ * a2,a0`) because the s16 fields are read twice (once for the early
+ * |diff| check, once for the wraparound path) and gcc 2.7.2 gives the
+ * pointer its own callee pseudo; retail reuses a0/a1 as both base and
+ * lh destination. (2) the inner `if (diff < half) return diff;`
+ * compiles beqz-to-common where retail has bnez-to-return (branch
+ * sense inverted; the ?: spelling was not tried in time). The wrap
+ * path shape is right: y >= x vs y < x arms, threshold added to the
+ * SMALLER value, sign flip on the negative result. D_800BE974 %lo
+ * showed +0x18 drift while this draft was active -- self-inflicted
+ * wrong length, not a split problem.
+ */
+extern s32 D_800BE974[];
+
+s32 func_8003702C(s32 arg0, s32 arg1) {
+    s32 diff;
+    s32 half;
+    s32 x;
+    s32 y;
+
+    diff = *(s16 *)(arg0 + 0x1E0) - *(s16 *)(arg1 + 0x1E0);
+    half = D_800BE974[0] >> 1;
+    if (diff >= 0) {
+        if (diff < half) {
+            return diff;
+        }
+    } else {
+        if (-diff < half) {
+            return diff;
+        }
+    }
+    x = *(s16 *)(arg0 + 0x1E0);
+    y = *(s16 *)(arg1 + 0x1E0);
+    if (y < x) {
+        y += D_800BE974[0];
+        diff = x - y;
+        if (diff < 0) {
+            return diff;
+        }
+        return x - y;
+    }
+    x += D_800BE974[0];
+    diff = x - y;
+    if (diff >= 0) {
+        return diff;
+    }
+    return y - x;
+}
+#endif
+
 INCLUDE_ASM("asm/nonmatchings/game", func_8003702C);
 #endif
 
