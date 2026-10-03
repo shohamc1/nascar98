@@ -1081,7 +1081,42 @@ void ListDispatchCallbacks(u8 *arg0) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Wall (w4a): gcc re-bases the two negative flagPtr reads into a second pointer register
+   (s2 = arg0+0x5a kept for the flags read, s0 = arg0+0x58 for vy/vz; 6 saved s-regs, frame
+   0x38) while retail keeps ONE flagPtr = arg0+0x5a with lhu -4/-2/0 offsets and 5 saved
+   s-regs, frame 0x30. Everything else matches. Tried: u16* q[-2]/q[-1], byte-offset casts,
+   u8* base with casts - the re-base survives all three. */
+extern long RotTransPers_nom();
+extern void func_8003382C();
+
+void func_8001D108(u8 *arg0) {
+    s32 flags;
+    s32 index;
+    u16 *vertexPtr;
+    u8 *flagPtr;
+    SVECTOR vertex;
+
+    flags = -1;
+    index = 0;
+    vertexPtr = (u16 *)(arg0 + 0x54);
+    flagPtr = arg0 + 0x5A;
+    do {
+        vertex.vx = vertexPtr[0];
+        vertex.vy = *(u16 *)(flagPtr - 4);
+        vertex.vz = *(u16 *)(flagPtr - 2);
+        RotTransPers_nom(&vertex);
+        func_8003382C(vertexPtr);
+        flags &= *(u16 *)flagPtr & 0x7EF6;
+        index += 1;
+        flagPtr += 8;
+        vertexPtr += 4;
+    } while (index < 4);
+    *(s16 *)(arg0 + 0xE) = flags;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001D108);
+#endif
 
 void func_8001D1B0(s32 *destination, s32 *source) {
     s32 first;
@@ -1125,21 +1160,30 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001DA48);
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DB20);
 
 #ifdef NON_MATCHING
-/* Wall: needs lui access to D_800A3A40, but line ~454 declares it scalar (gp) for another function; one TU cannot hold both. */
+/* Wall (w4a): only the i/offset s-register pair is flipped (retail i=s0, offset=s1; ours
+   i=s1, offset=s0, spill slots 0x10/0x14 vs 0x18/0x1c). Tried: decl order both ways, body
+   stmt order both ways, early-return guard shape, i++ fused into the latch (fixed 2
+   scheduling rows but not the pair). 6-8 rows allocation-only; length otherwise correct. */
 extern s32 D_800BE978[];
-extern ListNode28 *D_800A3A40[];
+extern ListNode28 *D_800A3A40Absolute[];
 
 extern void func_8001DB20(ListNode28 *, s32);
 
 void func_8001DF60(void) {
     s32 count;
-    s32 i;
     s32 offset;
+    s32 i;
 
     count = D_800BE978[0];
-    for (i = 0, offset = 0; i < count; i++, offset += 0x2C) {
-        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40[0] + offset), 1);
+    i = 0;
+    if (count <= 0) {
+        return;
     }
+    offset = 0;
+    do {
+        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40Absolute[0] + offset), 1);
+        offset += 0x2C;
+    } while (i++ < count);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DF60);
@@ -1199,7 +1243,42 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001E3E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001E7EC);
 
+#ifdef NON_MATCHING
+/* Wall (w4a): draft is 0x80 bytes, retail 0xAC. gcc cross-jumps the three identical
+   D_800A2DC8/2 tails (lw/srl/addu/sra/j) into one shared block (jumping into its middle);
+   retail keeps three separate copies with the 0x3C/0x46/0x82 li INSIDE each arm filling
+   the lw load delay. Tried: call-per-arm+return (needed for the out-of-line beq-taken
+   arms), mode-assign before/after div, volatile extern (no effect on the merge). */
+extern s32 D_800A2DC8;
+
+void func_8001EA90(s32 geomOffsetX, s32 mode) {
+    if (mode == 1) {
+        geomOffsetX = D_800A2DC8 / 2;
+        mode = 0x3C;
+        SetGeomOffset(geomOffsetX, mode);
+        return;
+    }
+    if (mode >= 2) {
+        if (mode == 3) {
+            geomOffsetX = D_800A2DC8 / 2;
+            mode = 0x82;
+            SetGeomOffset(geomOffsetX, mode);
+            return;
+        }
+        if (mode == 4) {
+            SetGeomOffset(0x32, 0x12);
+            return;
+        }
+        return;
+    }
+    if (mode == 0) {
+        geomOffsetX = D_800A2DC8 / 2;
+        SetGeomOffset(geomOffsetX, 0x46);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001EA90);
+#endif
 
 extern u8 D_800A3F95[];
 extern u8 D_800A3F96[];
@@ -1612,7 +1691,36 @@ void func_8001F440(s32 arg0, s32 arg1, s32 arg2) {
     D_800A37C4 = MathMultiplyFixed16(value12, matrixA[arg2]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F5BC);
+extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
+    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
+extern s32 MathMultiplyFixed16(s32, s32);
+
+void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB) {
+    s32 valueA;
+    s32 slotA;
+    s32 slotB;
+    s32 valueB;
+    s32 product;
+
+    valueA = ((s32 *)D_800A3A2C)[indexA];
+    slotA = ((s32 *)D_800A3A34)[indexA];
+    valueB = ((s32 *)D_800A3A2C)[indexB];
+    slotB = ((s32 *)D_800A3A34)[indexB];
+
+    D_800A3784 = valueA;
+    product = MathMultiplyFixed16(slotA, slotB);
+    D_800A3790 = -product;
+    product = MathMultiplyFixed16(slotA, valueB);
+    D_800A3794 = -product;
+    D_800A3798 = 0;
+    D_800A379C = valueB;
+    D_800A37A4 = -slotB;
+    D_800A37AC = slotA;
+    product = MathMultiplyFixed16(valueA, slotB);
+    D_800A37B4 = product;
+    product = MathMultiplyFixed16(valueA, valueB);
+    D_800A37C4 = product;
+}
 
 void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 MathMultiplyFixed16(s32, s32);
