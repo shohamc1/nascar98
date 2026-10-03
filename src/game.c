@@ -1061,7 +1061,54 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001C99C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CAB8);
 
+#ifdef NON_MATCHING
+/* Wall (w6a): body, addressing (D_800A2EC0Absolute alias, table=D_800BE97C[0]
+   hoisted to t3) and the phantom volatile framePad[2] (8-byte empty frame) all
+   match; loop schedule matches. Only the register ASSIGNMENT rotates with every
+   init/statement order tried: retail pseudo order is cursor=t0, base-copy=t1,
+   strideNeg=t2, table=t3, count=a2, walk=a3; ours permutes base/cursor/walk/
+   count between t0/t1/a2/a3 no matter the order of count=0 / cursor / walk /
+   strideNeg inits. Same class as the w3a func_8001F728 param-copy wall. */
+extern s32 D_800A2EC0Absolute[];
+extern void *D_800BE97C[];
+void func_8001CBD4(u8 *arg0) {
+    s32 temp;
+    s32 strideNeg;
+    s32 count;
+    s32 idx;
+    s32 val;
+    s32 base;
+    u8 *table;
+    u8 *cursor;
+    u8 *walk;
+    volatile s32 framePad[2];
+
+    temp = D_800A2EC0Absolute[0] & 0x3F;
+    table = D_800BE97C[0];
+    if (temp < 0x20) {
+        temp = temp - 0x20;
+    } else {
+        temp = 0x20 - temp;
+    }
+    if (*(s16 *)(arg0 + 0xA) > 0) {
+        cursor = arg0;
+        walk = arg0;
+        strideNeg = -(temp * 0x14);
+        count = 0;
+        do {
+            idx = *(u16 *)(walk + 0x10);
+            val = *(s16 *)(cursor + 0x94);
+            base = *(s32 *)(arg0 + 0x218);
+            *(s32 *)(table + idx * 0x14 + 0x10) = val + base + strideNeg;
+            cursor += 6;
+            count += 1;
+            walk += 2;
+        } while (count < *(s16 *)(arg0 + 0xA));
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CBD4);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CC7C);
 
@@ -1155,7 +1202,53 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001D778);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001D914);
 
+#ifdef NON_MATCHING
+/* Wall (w6a): semantics fully recovered (entry = D_800A3F4C + D_800A2DBC*24,
+   wrap to 0 at >=2; SetPolyF4; ten byte/half stores; AddPrim(arg0, entry)).
+   Prologue, gp/lui addressing, counter math and store schedule all match.
+   asm("") after the two sums pins retail's x2-addu-before-y2-stores order.
+   Remaining wall: the four parameter-copy registers rotate pairwise
+   (retail arg0->s3 arg1->s1 arg2->s2 arg3->s4; ours arg0->s4 arg1->s2
+   arg2->s1 arg3->s3) under every init/declaration/statement order tried --
+   same class as the func_8001CBD4 / w3a func_8001F728 allocation walls. */
+extern u8 D_800A3F4C[];
+extern s32 D_800A2DBC;
+void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
+    s32 counter;
+    s32 next;
+    u8 *entry;
+    s32 x2;
+    s32 y2;
+
+    counter = D_800A2DBC;
+    next = counter + 1;
+    entry = D_800A3F4C + (counter * 2 + counter) * 8;
+    D_800A2DBC = next;
+    if (next >= 2) {
+        D_800A2DBC = 0;
+    }
+    SetPolyF4(entry);
+    x2 = arg1;
+    x2 += arg3;
+    y2 = arg2;
+    y2 += arg4;
+    asm("");
+    *(s16 *)(entry + 0x12) = y2;
+    *(s16 *)(entry + 0x16) = y2;
+    *(s16 *)(entry + 8) = arg1;
+    *(s16 *)(entry + 0xA) = arg2;
+    *(s16 *)(entry + 0xC) = x2;
+    *(s16 *)(entry + 0xE) = arg2;
+    *(s16 *)(entry + 0x10) = arg1;
+    *(s16 *)(entry + 0x14) = x2;
+    *(u8 *)(entry + 4) = 2;
+    *(u8 *)(entry + 5) = 0;
+    *(u8 *)(entry + 6) = 0;
+    AddPrim(arg0, entry);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DA48);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DB20);
 
@@ -1960,7 +2053,49 @@ INCLUDE_ASM("asm/nonmatchings/game", VectorGetMagnitude2D);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FC6C);
 
+#ifdef NON_MATCHING
+/* Wall (w6a): head matches through the sw to +0x380 (asm("":::"memory") after
+   the u8 increment forces retail's fresh lb counter reload; held/mode/count
+   read order pins lh/lw/lb/sw). Remaining: gcc cross-jumps the mode==2 and
+   mode!=2 -2-store arms into one bnez + shared store (0x10 short; retail keeps
+   beqz v0,e594 / li -2 / j / nop + fall-through bnez), and the final value=1
+   lands in a1 with a nop in the second bne delay (retail: li v0,1 in both
+   delay slots, sb v0). */
+extern u8 D_800A3680[];
+extern s32 D_800A397CSmall;
+extern void func_80025730(void);
+void func_8001FD44(u8 *arg0) {
+    s32 value;
+    s32 count;
+    s32 held;
+    s32 mode;
+
+    if (arg0 == NULL) {
+        return;
+    }
+    *(u8 *)(arg0 + 0x20C) += 1;
+    asm("" : : : "memory");
+    held = *(s16 *)(arg0 + 0x114);
+    mode = D_800A397CSmall;
+    count = *(s8 *)(arg0 + 0x20C);
+    *(s32 *)(arg0 + 0x380) = held;
+    if (mode == 2) {
+        if (count >= 7) {
+            *(s8 *)(arg0 + 0x20C) = -2;
+        }
+    } else if (count >= 3) {
+        *(s8 *)(arg0 + 0x20C) = -2;
+    }
+    value = 1;
+    if (*(s32 *)(arg0 + 0x354) == (s32)func_80025730 &&
+        *(s8 *)(arg0 + 0x20C) == -1) {
+        *(s8 *)(arg0 + 0x20C) = 0;
+    }
+    D_800A3680[0] = value;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FD44);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FDD0);
 
