@@ -45,14 +45,19 @@ CPP    := $(CC_DIR)/cpp
 CC1    := $(CC_DIR)/cc1
 MASPSX := $(PYTHON) tools/maspsx_extern.py --aspsx-version=$(ASPSX_VER) -G$(GP_SIZE) --dont-force-G0 --expand-div
 
-CPPFLAGS := -Iinclude -undef -Wall -lang-c -nostdinc \
+CPPFLAGS := -Iinclude -Ibuild -undef -Wall -lang-c -nostdinc \
             -D__GNUC__=2 -D__OPTIMIZE__ -Dmips -D__mips__ -D__mips -Dpsx \
             -D__psx__ -D__psx -D_PSYQ -D_MIPSEL -D_LANGUAGE_C -DLANGUAGE_C
 # R4000 scheduling matches func_8002DDA0; keep the PSX instruction set.
 CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=r4000 -mips1 -mgas -msoft-float -fgnu-linker -quiet -w
 ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
-            -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt
+            -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
+            --defsym=D_800A2F9CAbsolute=D_800A2F9C \
+            --defsym=D_800A3378Small=D_800A3378
+
+# SDK C matches with R3000 scheduling. Game flags stay above.
+build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
 
 # Splat writes asm/ and the linker script, and the file lists below need
 # them, so a fresh tree splits before Make reads the lists.
@@ -90,7 +95,11 @@ split:
 $(LD_SCRIPT): $(SPLAT_CFG) config/symbol_addrs.txt
 	$(PYTHON) -m splat split $(SPLAT_CFG)
 
-build/%.c.o: %.c $(LD_SCRIPT)
+build/fixed_addrs.h: config/symbol_addrs.txt tools/fixed_addrs.py
+	@mkdir -p $(@D)
+	$(PYTHON) tools/fixed_addrs.py $< > $@
+
+build/%.c.o: %.c $(LD_SCRIPT) build/fixed_addrs.h
 	@mkdir -p $(@D)
 	$(CPP) $(CPPFLAGS) $< | $(CC1) $(CFLAGS) | $(MASPSX) | $(AS) $(ASFLAGS) -G$(GP_SIZE) -o $@
 

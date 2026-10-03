@@ -62,16 +62,73 @@ def score(text: bytes) -> None:
 
 
 def symbols(text: bytes, vram: int, vers: list[str]) -> None:
-    best = {}  # offset -> (length, ver, lib, obj, labels)
+    best = {}  # offset -> (length, [version, lib, obj, labels, ...])
     for ver in vers:
         for lib, obj, off, length, labels in matches(text, ver):
             if off not in best or length > best[off][0]:
-                best[off] = (length, ver, lib, obj, labels)
+                best[off] = (length, [(ver, lib, obj, labels)])
+            elif length == best[off][0]:
+                best[off][1].append((ver, lib, obj, labels))
+
+    ignored = ("loc_", "text_", "lab_", "def_")
+    starts = {}
+    for off, (_, candidates) in best.items():
+        names = {label["name"] for _, _, _, labels in candidates
+                 for label in labels
+                 if label["offset"] == 0 and not label["name"].startswith(ignored)}
+        starts[off] = names
+
+    # Resolve calls only through names that have no competing signature at
+    # their address. This is enough to distinguish the masked SpuRead/Write
+    # JAL without trusting signature file order.
+    callees = {}
+    for off, (_, candidates) in best.items():
+        if len(starts[off]) != 1:
+            continue
+        for _, _, _, labels in candidates:
+            for label in labels:
+                name = label["name"]
+                if not name.startswith(ignored):
+                    addr = vram + off + label["offset"]
+                    callees.setdefault(addr, set()).add(name)
+
     names = {}
-    for off, (length, ver, lib, obj, labels) in sorted(best.items()):
+    # These releases rename the same BIOS veneer in the same library object.
+    aliases = [
+        {"InitPAD", "InitPAD2"}, {"StartPAD", "StartPAD2"},
+        {"delete", "erase"}, {"InitCARD", "InitCARD2"},
+        {"StartCARD", "StartCARD2"}, {"StopCARD", "StopCARD2"},
+    ]
+    for off, (_, candidates) in sorted(best.items()):
+        is_alias = starts[off] in aliases and len({
+            (lib, obj) for _, lib, obj, _ in candidates
+        }) == 1
+        if len(starts[off]) > 1 and not is_alias:
+            is_spu_pair = starts[off] == {"SpuRead", "SpuWrite"} and all(
+                lib == "LIBSPU.LIB" and obj in ("S_R.OBJ", "S_W.OBJ")
+                for _, lib, obj, _ in candidates
+            )
+            if not is_spu_pair:
+                continue
+            word = struct.unpack_from("<I", text, off + 0x28)[0]
+            if word >> 26 != 3:  # JAL
+                continue
+            target = ((vram + off + 0x2C) & 0xF0000000) | ((word & 0x03FFFFFF) << 2)
+            target_names = callees.get(target, set())
+            wanted = {"_spu_read": "SpuRead", "_spu_write": "SpuWrite"}
+            if len(target_names) != 1 or next(iter(target_names), "") not in wanted:
+                continue
+            chosen = wanted[next(iter(target_names))]
+            candidates = [c for c in candidates if any(
+                label["offset"] == 0 and label["name"] == chosen
+                for label in c[3]
+            )]
+            if not candidates:
+                continue
+        _, _, _, labels = candidates[0]
         for label in labels:
             name = label["name"]
-            if name.startswith(("loc_", "text_", "lab_", "def_")):
+            if name.startswith(ignored):
                 continue
             addr = vram + off + label["offset"]
             names.setdefault(addr, name)

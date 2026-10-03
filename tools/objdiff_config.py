@@ -14,7 +14,7 @@ import sys
 
 # Objects that hold code, by progress category. Data-only objects
 # (asm/data/*) aren't units: decomp.dev tracks code.
-SDK_ASM = ["asm/psxsdk.s"]
+SDK_C = "src/psxsdk.c"
 
 
 def unit(src: pathlib.Path, category: str) -> dict:
@@ -32,8 +32,10 @@ def unit(src: pathlib.Path, category: str) -> dict:
 
 
 def main() -> None:
-    units = [unit(p, "game") for p in sorted(pathlib.Path("src").rglob("*.c"))]
-    units += [unit(pathlib.Path(p), "sdk") for p in SDK_ASM]
+    units = [
+        unit(p, "sdk" if str(p) == SDK_C else "game")
+        for p in sorted(pathlib.Path("src").rglob("*.c"))
+    ]
     config = {
         "$schema": "https://raw.githubusercontent.com/encounter/objdiff/main/config.schema.json",
         "custom_make": "make",

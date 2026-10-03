@@ -73,7 +73,7 @@ tools.
   identifies the Psy-Q SDK.
 - [sotn-decomp](https://github.com/Xeeynamo/sotn-decomp) supplies the
   Psy-Q SDK headers (`include/psxsdk/`) and base types (`include/types.h`),
-  and its layout is the model for this project.
+  selected [SDK C functions](src/psxsdk.md), and the project layout.
 
 ## Licence
 
