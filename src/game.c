@@ -4962,7 +4962,35 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003CF0C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003D25C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003D528);
+extern s32 func_80029EF8(void *object);
+
+void func_8003D528(u8 *object) {
+    s32 result;
+    s32 value;
+    s32 mask;
+
+    value = *(s32 *)(object + 0x28C) + 0x4B;
+    *(s32 *)(object + 0x28C) = value;
+    result = 0;
+    if (value >= 0x3E81) {
+        *(s32 *)(object + 0x28C) = 0x3E80;
+    }
+    if (*(s16 *)(object + 0x1EC) == 0) {
+        result = func_80029EF8(object);
+    }
+    if (*(s32 *)(object + 0x28C) == 0x3E80) {
+        goto trigger;
+    }
+    if (*(s16 *)(object + 0x1EC) == 0 && (*(u8 *)(object + 0x26A) & 1) == 0) {
+        mask = ~*(s32 *)(object + 0x23C) & 0x40;
+        if ((result & mask) != 0) {
+        trigger:
+            *(s32 *)(object + 0x290) = 0x7D000;
+            *(u8 *)(object + 0x26A) &= 0xDD;
+        }
+    }
+    *(s32 *)(object + 0x23C) = result;
+}
 
 void func_8003D5F8(u8 *object) {
     u16 flags;
@@ -6395,7 +6423,54 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80042EFC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800432C0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800436D0);
+extern void PushMatrix(void);
+extern void PopMatrix(void);
+extern void MulRotMatrix(MATRIX *matrix);
+extern void func_800328AC(void *arg0, s32 arg1);
+extern void func_80044BCC(s32 arg0);
+
+void func_800436D0(u8 *object) {
+    SVECTOR input;
+    VECTOR trans;
+    MATRIX matrix;
+    long lvm[18];
+    s32 *camera;
+    u8 *node;
+    s16 angle1;
+    s16 angle2;
+
+    PushMatrix();
+    camera = (s32 *)D_800A38AC[0];
+    input.vx = *(s32 *)(object + 0) - camera[0];
+    input.vy = *(s32 *)(object + 4) - camera[1];
+    input.vz = *(s32 *)(object + 8) - camera[2];
+    RotTrans(&input, &trans, &lvm[16]);
+    TransMatrix(&matrix, &trans);
+    if (*(s8 *)(object + 0x1D) == 0xA) {
+        input.vx = 0;
+        input.vy = *(u16 *)(object + 0x18);
+        input.vz = *(u16 *)(object + 0x16);
+        RotMatrix(&input, &matrix);
+        MulRotMatrix(&matrix);
+        SetTransMatrix(&matrix);
+        SetRotMatrix(&matrix);
+        func_80044BCC(*(s8 *)(object + 0x1E));
+    } else {
+        input.vx = 0;
+        input.vy = 0;
+        input.vz = *(u16 *)(object + 0x16);
+        RotMatrix(&input, &matrix);
+        MulRotMatrix(&matrix);
+        SetTransMatrix(&matrix);
+        SetRotMatrix(&matrix);
+        node = *(u8 **)(object + 0x2C);
+        angle1 = *(s16 *)(node + 0x10);
+        angle2 = *(s16 *)(node + 0x12);
+        func_800328AC(
+            (void *)(*(u32 *)(object + 0x28) + angle1 * 44), angle2);
+    }
+    PopMatrix();
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004382C);
 
