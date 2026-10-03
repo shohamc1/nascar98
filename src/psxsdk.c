@@ -474,9 +474,32 @@ DISPENV* SetDefDispEnv(DISPENV* env, s32 x, s32 y, s32 w, s32 h) {
     return env;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDumpFnt);
+extern u32 D_8009D038[];
+extern u32 D_8009D03C[];
+extern u32 D_8009DA8C[];
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", FntLoad);
+void SetDumpFnt(int id) {
+    if (id >= 0 && (s32)D_8009D038[0] >= id) {
+        D_8009D03C[0] = id;
+        D_8009DA8C[0] = (u32)FntPrint;
+    }
+}
+
+
+extern u16 D_800AD0DC[];
+extern u16 D_800AD0E0[];
+extern u32 D_8009D038[];
+extern u8 D_8009D040[];
+extern u8 D_8009CEB8[];
+extern void memset_8008B820();
+
+void FntLoad(int tx, int ty) {
+    D_800AD0E0[0] = LoadClut2(D_8009D040, tx, ty + 0x80);
+    D_800AD0DC[0] = LoadTPage(D_8009D040 + 0x200, 0, 0, tx, ty, 0x80, 0x20);
+    D_8009D038[0] = 0;
+    memset_8008B820(D_8009CEB8, 0, 0x180);
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 
