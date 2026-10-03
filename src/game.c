@@ -4150,7 +4150,26 @@ void func_8003D654(u8 *object) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Wall: register homes (base wants a1, temps v0/v1) and the -1 must
+ * recompute from the original load register. */
+void func_8003D69C(u8 *arg0) {
+    s16 counter;
+    s16 tenth;
+
+    counter = *(u16 *)(arg0 + 0x278);
+    tenth = counter / 10;
+    *(u16 *)(arg0 + 0x278) = counter - 1;
+    *(u16 *)(arg0 + 0x2A2) = tenth;
+    if (counter < 0) {
+        *(u16 *)(arg0 + 0x2A2) = 0;
+        arg0[0x26A] &= 0xFB;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003D69C);
+#endif
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003D6F8);
 
