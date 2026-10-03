@@ -8473,7 +8473,45 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005157C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80051874);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800524A0);
+extern u8 D_800A34E4;
+extern s32 D_800A34F4;
+extern u8 D_80090F7A[];
+
+void func_800524A0(u8 *arg0, s8 arg1) {
+    u8 *table;
+    u8 *entry;
+    s32 mode;
+    u16 w;
+    u32 v;
+
+    arg0 += arg1 * 0x28 + 0x2AC;
+    mode = *(s16 *)(arg0 + 0x26);
+    arg0[0x24] = 0;
+    arg0[0x20] = 0;
+    D_800A34E4 = 0;
+    if (mode != -1) {
+        table = D_80090F7A;
+        w = *(u16 *)(arg0 + 0x22);
+        entry = (u8 *)D_800A34F4 + (mode * 12 - mode) * 8;
+        if (w == 2) {
+            table += 0xE;
+        }
+        *(s16 *)(entry + 0x12) = GetClut(*(u16 *)(table + 4), *(u16 *)(table + 6));
+        *(s16 *)(entry + 0x16) = GetTPage(*(u16 *)(table + 0xC), 0, *(u16 *)(table + 0), *(u16 *)(table + 2));
+        v = table[8] + 0x3F;
+        entry[0x14] = v;
+        entry[0x10] = v;
+        v = table[8];
+        entry[0x1C] = v;
+        entry[0x18] = v;
+        v = table[0xA];
+        entry[0x19] = v;
+        entry[0x11] = v;
+        v = table[0xA] + 0x1F;
+        entry[0x1D] = v;
+        entry[0x15] = v;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800525A8);
 
@@ -8502,7 +8540,58 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800535A0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800539F0);
 
+#ifdef NON_MATCHING
+/* w9f: positional cc1 SIGSEGV (exit 139) whenever this function body is ACTIVE
+ * at this TU position: any runtime value in the func_8005D094 call args
+ * kills cc1 (constant args compile). Prototype, cast, local-temp and
+ * direct-read shapes all crash; D_800A39E4Small/D_800A3059 as call args
+ * are fine in func_80057160 earlier in the TU. 64MB stack does not help.
+ * Draft below is structurally complete; retest after any TU change. */
+extern u8 D_800A3608;
+
+void func_80053C00(s32 arg0, s32 arg1) {
+    extern s32 D_800A3914[];
+    extern void func_8006DCF0(void);
+    extern void func_8005B688(u8 *, u8);
+    extern void func_8005B8B8(u8 *, u8);
+    extern void func_80064898(void);
+    extern void func_800686FC(u8, u8);
+    extern void func_8005D094(D_800A39E4Small, D_800A3059, arg1);
+    extern s32 func_8005DCF0(void);
+    s32 modeB;
+    s32 flagB;
+
+    if (D_800A39E4Small == 0xFC) {
+        func_8006DCF0();
+    } else {
+        if (D_800A3914[0] != 0) {
+            func_8005B688((u8 *)D_800A3914[0], 1);
+        }
+        if ((u32)(D_800A39E4Small - 9) < 2 || D_800A39E4Small == 0xC) {
+            func_800686FC((u8)D_800A39E4Small, (u8)arg0);
+        } else if (D_800A39E4Small == 0xE) {
+            func_8005B8B8((u8 *)D_800A3914[0], 0xFF);
+            func_80064898();
+        } else {
+            func_8005B8B8((u8 *)D_800A3914[0], 0xFF);
+            modeB = D_800A39E4Small;
+            flagB = D_800A3059;
+            func_8005D094(modeB, flagB, arg1);
+        }
+    }
+    if (D_800A3608 != 0) {
+        D_800A3608 = D_800A3608 - 1;
+    } else {
+        if ((u32)(D_800A39E4Small - 0x10) < 2 || D_800A39E4Small == 0xE) {
+        } else if (func_8005DCF0() == 1) {
+            D_800A3608 = 0x78;
+        }
+    }
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80053C00);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80053D40);
 
@@ -8520,7 +8609,32 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80056F04);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80057008);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80057160);
+extern u8 D_800A3704;
+extern u8 D_800A3059;
+extern u8 D_800A39E4Small;
+
+void func_80057160(s32 arg0) {
+    extern void func_8006C9DC(void);
+    extern void func_8006C598(s32, s32, s32);
+    extern void func_8006C2D0(s32);
+    extern void func_8006CB40(void);
+    extern void func_80063770(u8);
+    extern void func_80069AFC(u8);
+    s32 result;
+
+    D_800A3704 = 1;
+    func_8006C9DC();
+    result = arg0 & 0xFF;
+    if (result != 0) {
+        func_8006C598(-0x78, 0, 2);
+    }
+    if (((u8 *)D_800A36D0Absolute)[0x138] == 0) {
+        func_8006C2D0(D_800A3059 == 2);
+        func_8006CB40();
+    }
+    func_80063770(0);
+    func_80069AFC(D_800A39E4Small);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800571EC);
 
@@ -8533,7 +8647,6 @@ void func_80057A9C(void) {
     D_800A37B4Absolute[8] = 0;
 }
 
-#ifdef NON_MATCHING
 /* Wall: needs a gp store to D_800A3548 (untracked sdata label, no
  * linker alias). Declaring it shifts every sdata label +0x10 and the
  * full build MISMATCHes. Also needs lui for D_800A39E8, which is
@@ -8551,6 +8664,12 @@ extern s32 D_800A3544;
 extern s32 D_800A38EC;
 extern s32 D_800A397CAbsolute[];
 extern void func_8005E47C(void);
+/* w9f unguard retry: D_800A3548 tracked extern works now (gp sw/lw match,
+ * size 0x118 exact) but the s-reg map is rotated: ours saves an extra s4
+ * and runs poly->s0/cursor->s2 vs retail s1/s0; retail pins the 0x80
+ * shade byte in s3 across both loops, ours rematerializes the literal.
+ * Candidate fix: a local holding 0x80 stored through both loops. Re-guarded. */
+#ifdef NON_MATCHING
 void func_80057AE4(void) {
     POLY_FT4 *poly;
     POLY_F4 *shade;
@@ -8598,11 +8717,98 @@ void func_80057AE4(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80057AE4);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80057BFC);
+extern s32 D_800A3548;
+extern s32 D_800A3780;
+extern s32 D_800A37EC;
 
+void func_80057BFC(void) {
+    extern void func_800697B4(void);
+    extern void func_8005E3DC(void);
+    extern void func_8005E408(void);
+    extern void func_80014A68(void);
+    extern void func_80063A20(void);
+
+    func_800697B4();
+    if (D_800A3780 != 0) {
+        HeapFree((void *)D_800A3780);
+    }
+    D_800A3780 = 0;
+    if (D_800A3548 != 0) {
+        HeapFree((void *)D_800A3548);
+    }
+    D_800A3548 = 0;
+    func_8005E3DC();
+    func_8005E408();
+    if (D_800A37EC != 0) {
+        HeapFree((void *)D_800A37EC);
+    }
+    D_800A37EC = 0;
+    if (D_800A36D0Absolute[-22] != 0) {
+        HeapFree((void *)D_800A36D0Absolute[-22]);
+    }
+    D_800A36C0Absolute[-18] = 0;
+    if (D_800A36D4Absolute[-32] != 0) {
+        HeapFree((void *)D_800A36D4Absolute[-32]);
+    }
+    D_800A36E8Absolute[-37] = 0;
+    func_80014A68();
+    func_80063A20();
+}
+
+extern s32 D_800A36EC;
+extern s32 D_800A3A18;
+extern s32 D_800A3964;
+extern s32 D_800A3580;
+extern s32 D_800A35B8;
+extern s32 D_800A3650;
+extern u8 D_800A39E4Small;
+
+#ifdef NON_MATCHING
+/* w9f: D_800A39E4Small unlock works (gp lbu matches). Remaining wall:
+ * the then-branch must interleave load,load,add,store,add,store with
+ * EC->v1 / A18->v0 (v1 reused for both increment results, anti-dep
+ * keeps the second addiu below the first store). Every plain-C form
+ * tried (+=, hoisted local, explicit count/next locals, asm("") barrier)
+ * gives loads->v0/v1 in C order with both addius before the first store;
+ * the asm("") form splits too far (+8, reloads after the store).
+ * gPrimitiveCursor[0] += 0x28 also ICEs cc1 at this TU position (0-symbol
+ * object); read/store it via D_800A36D0Absolute[-67] instead. */
+void func_80057CCC(s32 arg0) {
+    s32 cursor;
+
+    arg0 &= 0xFF;
+    if (arg0 != 0) {
+        D_800A36EC += 1;
+        D_800A3A18 += 0x28;
+    } else if (D_800A39E4Small != 0x80) {
+        D_800A3964 += 1;
+        cursor = D_800A36D0Absolute[-67];
+        D_800A36D0Absolute[-67] = cursor + 0x28;
+    } else {
+        D_800A36D0Absolute[-21] = D_800A36D0Absolute[-21] + 0x28;
+    }
+}
+
+void func_80057D50(s32 arg0) {
+    s32 cursor;
+
+    arg0 &= 0xFF;
+    if (arg0 != 0) {
+        D_800A3580 += 1;
+        D_800A35B8 += 0x18;
+    } else if (D_800A39E4Small != 0x80) {
+        D_800A3650 += 1;
+        cursor = D_800A36D0Absolute[-67];
+        D_800A36D0Absolute[-67] = cursor + 0x28;
+    } else {
+        D_800A36D0Absolute[-21] = D_800A36D0Absolute[-21] + 0x28;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80057CCC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80057D50);
+#endif
 
 extern s32 D_800A38EC, D_800A3650, D_800A3544;
 void func_80057DD4(void) {
