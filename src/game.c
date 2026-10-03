@@ -7367,38 +7367,46 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80045F70);
 #endif
 
 #ifdef NON_MATCHING
-/* Wall: D_800BE980 base hoisted into a spare reg across the loop
- * (retail re-materializes lui); register flow differs. */
+/* w8f: structure and instruction stream match retail exactly except three
+ * register-allocation diffs: (1) retail keeps count in v1 at entry and
+ * copies it to t2 after the guard (mine puts count straight in t2);
+ * (2) retail's loop-rotation precondition materializes a fresh li v0,1
+ * before slt (mine reuses i's register, 4 bytes short); (3) retail loads
+ * D_800BE980 via lui/lw %lo inside the loop (mine hoists its address into
+ * t3 via lui/addiu). The li v0,1 guard comes from gcc loop.c for-loop
+ * rotation: a for-loop shape produces the guard but still reuses i's reg.
+ * func_80032DEC takes TWO args here (s32, s8) - a2/a3 are call residue.
+ * Permuter candidate. */
 extern s8 D_800A343C;
-extern s32 D_800A3444[];
-extern u32 D_800BE980[];
-extern void func_80032DEC(s32, s8, s16 *, s8);
+extern s8 *D_800A3444[];
+extern s32 D_800BE980[];
 
-void func_80046184(u8 *arg0, s16 *arg2) {
-    s32 *entries;
-    u8 *tail;
+void func_80046184(s8 *arg0) {
+    extern void func_80032DEC(s32, s8);
+    s8 *base;
+    s8 *entry;
+    s8 *tail;
     s32 count;
+    s32 n;
     s8 i;
-    s8 used;
-    u8 *entry;
+    s32 id;
+    u16 flag;
+    u8 *p;
 
-    entries = ((s32 *)D_800A3444)[*(s8 *)(arg0 + 0x20B)];
-    used = 1;
-    tail = (u8 *)entries + 4;
     count = D_800A343C;
-    if (count > 1) {
-        i = 1;
-        do {
-            entry = (u8 *)entries + i * 0x58;
-            if (*(u16 *)(*(u8 **)D_800BE980 + *(s16 *)entry * 0x90 + 0xE) != 0) {
-                *(u32 *)(tail + 0x28) = (u32)(entry + 4);
-                tail = entry + 4;
-                used++;
-            }
-            i++;
-        } while (i < count);
+    base = D_800A3444[arg0[0x20B]];
+    for (n = 1, i = 1, tail = base + 4; i < count; i++) {
+        entry = base + i * 0x58;
+        id = *(s16 *)entry;
+        p = (u8 *)D_800BE980[0] + id * 0x90;
+        flag = *(u16 *)(p + 0xE);
+        if (flag != 0) {
+            *(s32 *)(tail + 0x28) = (s32)(entry + 4);
+            tail = entry + 4;
+            n++;
+        }
     }
-    func_80032DEC((s32)((u8 *)entries + 4), used, arg2, i);
+    func_80032DEC((s32)(base + 4), (s8)n);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80046184);
@@ -7459,10 +7467,15 @@ extern u8 D_800A2FD0[];
 extern u8 D_80098BD0[];
 
 #ifdef NON_MATCHING
+/* w8f: size and stream near-exact but 4 bytes short; register map differs
+   (missing arg2 entry copy, hoisted D_80098BD0 base, split store cursor).
+   Permuter candidate. */
+extern s8 *D_8009AE14X[];
+
 void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     s16 *out;
-    s32 i;
-    s32 j;
+    s8 i;
+    s8 j;
     s32 x;
     s32 w;
     s32 t;
@@ -7475,10 +7488,10 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
         j = 0;
         x = arg1[i * 2];
         w = arg1[i * 2 + 1] + (s8)D_800A2FD0[arg0];
-        if (*(s8 *)D_8009AE14[i] != 0) {
+        if (D_8009AE14X[i][0] != 0) {
             out = (s16 *)((u8 *)arg2 + 0x22);
             do {
-                t = *(s8 *)(D_8009AE14[i] + j);
+                t = D_8009AE14X[i][j];
                 v0 = *(s16 *)&D_80098BD0[t * 10 + 6];
                 out[-13] = x;
                 out[-12] = w;
@@ -7495,7 +7508,7 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
                 j++;
                 arg2 += 0x14;
                 out += 0x14;
-            } while (t != 0);
+            } while (D_8009AE14X[i][j] != 0);
         }
         i++;
     } while (i < 7);
