@@ -4929,7 +4929,56 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80041BAC);
 
 
 
+#ifdef NON_MATCHING
+/* Wall: register flow (bank wants v1 not a1) and 0x14 bytes extra.
+ * First diff row: lb v1,0x20b vs lb a1. */
+extern u8 D_8008CA06[];
+extern u32 D_8008CA08[];
+extern s8 D_800A3A24[];
+
+u16 func_80041BFC(u8 *arg0) {
+    s32 bank;
+    u32 data;
+    u16 pad;
+    s32 mode;
+
+    bank = *(s8 *)(arg0 + 0x20B);
+    if (bank < 0) {
+        return 0;
+    }
+    if (D_800A3A24[bank] == 2) {
+        data = *(u32 *)(D_8008CA08 + bank * 8);
+        arg0[0x3C6] = data >> 8;
+        arg0[0x3C7] = data >> 0x10;
+        arg0[0x3C8] = data >> 0x18;
+        arg0[0x3C5] = data;
+    } else {
+        data = *(u32 *)(D_8008CA08 + bank * 8);
+        arg0[0x3C6] = data >> 8;
+        arg0[0x3C5] = data >> 0x10;
+        arg0[0x3C7] = data;
+        arg0[0x3C8] = data >> 0x18;
+    }
+    pad = *(u16 *)(D_8008CA06 + bank * 8);
+    mode = ~((pad >> 8) | ((pad & 0xFF) << 8));
+    if (mode & 0x1000) {
+        mode |= 8;
+    }
+    if (mode & 0x4000) {
+        mode |= 2;
+    }
+    if (mode & 0x2000) {
+        mode |= 0x40;
+    }
+    if (mode & 0x8000) {
+        mode |= 0x80;
+    }
+    return mode & 0xFFFF;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80041BFC);
+#endif
+
 
 extern s32 gPadBuffers[];
 void InitPAD(void *, s32, void *, s32);
