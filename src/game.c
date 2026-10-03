@@ -350,7 +350,7 @@ extern u16 D_800A38C0[];
 
 extern void GsGetTimInfo(u8 *, u8 *);
 
-void func_80013224(u8 *arg0) {
+void func_80013224(void *arg0) {
     RECT rect;
     u8 image[0x20];
     s32 pixels;
@@ -428,7 +428,26 @@ void func_80014A70(void) {
     D_800A38F4 = (*((s32 *)D_800A3A54) & 0x0FFFFFFF) - value0;
 }
 
+#ifdef NON_MATCHING
+/* Wall: the D_800A2F10 load lands in v0 and the /40 shift in v1; retail
+ * has them swapped (load v1, shift v0). Every source shape tried keeps
+ * our allocation. */
+extern u32 gPrimitiveCursor;
+extern u32 D_800A3570;
+extern s32 D_800A38F4;
+extern s32 D_800A2F10[];
+
+s32 func_80014AC8(s32 arg0) {
+    s32 usedPrims;
+
+    usedPrims =
+        ((gPrimitiveCursor & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
+    D_800A38F4 = D_800A2F10[0] - usedPrims;
+    return arg0 < D_800A38F4;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80014AC8);
+#endif
 
 extern void *HeapAlloc(u32);
 extern void SystemShowFatalError(char *);
@@ -462,9 +481,70 @@ void func_80014B10(s32 arg0, s32 arg1, s32 arg2) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80014BEC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800157B0);
+extern s32 D_800A2D44;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80015870);
+extern void ListPushFront(u8 *, u8 **, u8 **);
+extern void func_8001C668(void *, void *);
+
+#ifdef NON_MATCHING
+/* Wall: scheduling of the -1 sentinel load, the value preload, and the
+ * ListPushFront argument setup differs (base add not in the jal delay). */
+s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
+    s32 count;
+    s16 *cursor;
+    s32 value;
+
+    count = 0;
+    if (arg0[0] != -1) {
+        cursor = arg0;
+        value = cursor[0];
+        do {
+            ListPushFront(arg2 + value * 0x2C, (u8 **)arg1,
+                          (u8 **)((u8 *)arg1 + 4));
+            cursor++;
+            value = cursor[0];
+            count++;
+        } while (value != -1);
+    }
+    if (count != 0) {
+        func_8001C668(arg1, (void *)((u8 *)arg1 + 4));
+    }
+    if ((count & 1) == 0) {
+        count += 1;
+    }
+    return count;
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_800157B0);
+#endif
+
+extern u8 D_8008CC6C[];
+
+extern s32 sprintf(char *, u8 *);
+
+void func_80015870(u8 *arg0, void *arg1) {
+    char buffer[0x40];
+    u8 *node;
+    u8 *next;
+
+    node = *(u8 **)arg0;
+    if (node != NULL) {
+        do {
+            next = *(u8 **)(node + 0x28);
+            if (*(u8 *)(node + 0x13) & 1) {
+                D_800A2D44 += 1;
+                ListRemoveNodeWithTail(node, arg0, arg0 + 4);
+                ListPushFront(node, (u8 **)arg1,
+                              (u8 **)((u8 *)arg1 + 4));
+            }
+            if (*(u8 *)(node + 0x12) >= 5) {
+                sprintf(buffer, D_8008CC6C);
+                GraphicsRenderFrame((s32)buffer);
+            }
+            node = next;
+        } while (node != NULL);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80015930);
 
@@ -530,9 +610,78 @@ s32 MathFixedDivide(s32 numerator, s32 denominator) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80015EAC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80016298);
+#ifdef NON_MATCHING
+/* Wall: register allocation swaps vertex and singles between s2/s3
+ * relative to retail; every declaration/statement order tried keeps the
+ * swap. */
+extern long RotTransPers_nom();
+extern long RotTransPers3_nom();
+extern void func_80033788();
+extern void func_8003379C();
 
+void func_80016298(s16 *arg0, u8 *arg1) {
+    s32 width;
+    u8 *vertex;
+    s32 singles;
+
+    width = (arg0[1] - arg0[0]) + 1;
+    singles = width % 3;
+    vertex = arg1;
+    while (singles > 0) {
+        RotTransPers_nom(vertex);
+        func_80033788(vertex);
+        vertex += 0x14;
+        singles--;
+        width--;
+    }
+    singles = width;
+    while (singles > 0) {
+        RotTransPers3_nom(vertex, vertex + 0x14, vertex + 0x28);
+        func_8003379C(vertex, vertex + 0x14, vertex + 0x28);
+        vertex += 0x3C;
+        singles -= 3;
+    }
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_80016298);
+#endif
+
+extern s32 D_800A2D60;
+extern s32 D_800A2D5C;
+extern s32 D_800A2D64;
+
+extern void *HeapAlloc(u32);
+
+#ifdef NON_MATCHING
+/* Wall: gcc folds the post-loop i * 0x38 to a constant, reverses the loop
+ * to a down-count, and loses the base register; retail keeps i live
+ * (slti up-count), reloads D_800A2D60, and computes i * 0x38 at runtime. */
+void func_8001636C(void) {
+    s32 i;
+    s32 offset;
+    u8 *base;
+    u8 *entry;
+
+    D_800A2D60 = (s32)HeapAlloc(0x1E140);
+    if (D_800A2D60 == 0) {
+        return;
+    }
+    base = (u8 *)D_800A2D60;
+    entry = base;
+    offset = 0x38;
+    for (i = 0; i < 0x897; i++) {
+        *(s32 *)(entry + 0x34) = (s32)(base + offset);
+        offset += 0x38;
+        entry += 0x38;
+    }
+    D_800A2D5C = 0x898;
+    entry = (u8 *)D_800A2D60 + i * 0x38;
+    *(s32 *)(entry + 0x34) = 0;
+    D_800A2D64 = (s32)entry;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001636C);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
 
@@ -919,7 +1068,26 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001DA48);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DB20);
 
+#ifdef NON_MATCHING
+/* Wall: needs lui access to D_800A3A40, but line ~454 declares it scalar (gp) for another function; one TU cannot hold both. */
+extern s32 D_800BE978[];
+extern ListNode28 *D_800A3A40[];
+
+extern void func_8001DB20(ListNode28 *, s32);
+
+void func_8001DF60(void) {
+    s32 count;
+    s32 i;
+    s32 offset;
+
+    count = D_800BE978[0];
+    for (i = 0, offset = 0; i < count; i++, offset += 0x2C) {
+        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40[0] + offset), 1);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DF60);
+#endif
 
 void func_8001DFC8(void) {
     extern ListNode28 D_800AE8C0[];
@@ -1494,13 +1662,70 @@ void MatrixRestoreState(void) {
     D_800A36E8 = D_800AE888[0];
 }
 
+#ifdef NON_MATCHING
+/* Wall: same scheduler wall as func_8001FB28: load/negu placement differs. */
+extern s16 *D_800A384C;
+extern s16 *D_800A3854;
+
+void func_8001FAC0(void *arg0, s32 index) {
+    *(s32 *)((u8 *)arg0 + 0x18) = D_800A384C[index] * 4;
+    *(s32 *)((u8 *)arg0 + 0x30) = 0;
+    *(s32 *)((u8 *)arg0 + 0x24) = D_800A3854[index] * 4;
+    *(s32 *)((u8 *)arg0 + 0x1C) = -D_800A3854[index] * 4;
+    *(s32 *)((u8 *)arg0 + 0x34) = 0;
+    *(s32 *)((u8 *)arg0 + 0x20) = 0;
+    *(s32 *)((u8 *)arg0 + 0x2C) = 0;
+    *(s32 *)((u8 *)arg0 + 0x38) = 0x10000;
+    *(s32 *)((u8 *)arg0 + 0x28) = D_800A384C[index] * 4;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FAC0);
+#endif
 
+#ifdef NON_MATCHING
+/* Wall: scheduler places the D_800A3A34 pointer load and the negu differently than retail. */
+extern s32 *D_800A3A2C;
+extern s32 *D_800A3A34;
+
+void func_8001FB28(void *arg0, s32 index) {
+    *(s32 *)((u8 *)arg0 + 0x60) = D_800A3A2C[index];
+    *(s32 *)((u8 *)arg0 + 0x6C) = D_800A3A34[index];
+    *(s32 *)((u8 *)arg0 + 0x64) = -D_800A3A34[index];
+    *(s32 *)((u8 *)arg0 + 0x7C) = 0;
+    *(s32 *)((u8 *)arg0 + 0x68) = 0;
+    *(s32 *)((u8 *)arg0 + 0x74) = 0;
+    *(s32 *)((u8 *)arg0 + 0x80) = 0x10000;
+    *(s32 *)((u8 *)arg0 + 0x78) = 0;
+    *(s32 *)((u8 *)arg0 + 0x70) = D_800A3A2C[index];
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FB28);
+#endif
 
+#ifdef NON_MATCHING
+/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
+s32 func_8001FB80(void *arg0) {
+    s32 dx;
+    s32 dy;
+    s32 dz;
+
+    dx = *(s32 *)((u8 *)arg0 + 0x9C);
+    dy = *(s32 *)((u8 *)arg0 + 0xA0);
+    dz = *(s32 *)((u8 *)arg0 + 0xA4);
+    return MathSqrt(dx * dx + dy * dy + dz * dz);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FB80);
+#endif
 
+#ifdef NON_MATCHING
+/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
+s32 func_8001FBDC(s32 x, s32 y, s32 z) {
+    return MathSqrt(x * x + y * y + z * z);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FBDC);
+#endif
 
 #ifdef NON_MATCHING
 /* Objects and scene state. */
@@ -1518,7 +1743,19 @@ u32 VectorGetMagnitude2D(CarVector *arg0) {
     return MathSqrt((u32)sum);
 }
 #else
+#ifdef NON_MATCHING
+/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
+s32 VectorGetMagnitude2D(void *arg0) {
+    s32 dx;
+    s32 dy;
+
+    dx = *(s32 *)((u8 *)arg0 + 0x9C);
+    dy = *(s32 *)((u8 *)arg0 + 0xA0);
+    return MathSqrt(dx * dx + dy * dy);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", VectorGetMagnitude2D);
+#endif
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FC6C);
