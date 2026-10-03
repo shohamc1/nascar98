@@ -8027,9 +8027,46 @@ void func_80057E10(void) {
     D_800A3A18 = D_800A3998;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80057E24);
-
 #ifdef NON_MATCHING
+/* Wall: the 10 untracked bss byte labels (D_800BDD62 etc.) needed for the
+ * per-store lui/sb sequence drift every later bss label -8 when declared
+ * as new externs; same shape as the sdata drift wall. */
+extern u8 D_800BDD62[], D_800BDDBE[], D_800BDDC0[], D_800BDD64[];
+extern u8 D_800BDD65[], D_800BDD66[], D_800BDD67[], D_800BDDC1[];
+extern u8 D_800BDDC2[], D_800BDDC3[];
+extern DRAWENV D_800BDD4C[];
+extern DISPENV D_800BDE04[];
+void func_80057E24(void) {
+    s32 height;
+    DRAWENV *draw;
+    DISPENV *disp;
+
+    height = 0xF0;
+    draw = D_800BDD4C;
+    SetDefDrawEnv(draw, 0, 0, 0x140, height);
+    disp = D_800BDE04;
+    SetDefDispEnv(disp, 0x140, 0, 0x140, height);
+    draw = (DRAWENV *)((u8 *)draw + 0x5C);
+    SetDefDrawEnv(draw, 0x140, 0, 0x140, height);
+    disp = (DISPENV *)((u8 *)disp + 0x14);
+    SetDefDispEnv(disp, 0, 0, 0x140, height);
+    D_800BDD62[0] = 0;
+    D_800BDDBE[0] = 0;
+    D_800BDDC0[0] = 1;
+    D_800BDD64[0] = 1;
+    D_800BDD65[0] = 0;
+    D_800BDD66[0] = 0;
+    D_800BDD67[0] = 0;
+    D_800BDDC1[0] = 0;
+    D_800BDDC2[0] = 0;
+    D_800BDDC3[0] = 0;
+    PutDrawEnv(draw);
+    PutDispEnv(disp);
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_80057E24);
+#endif
+
 extern u8 D_800A8C14[];
 extern u8 D_800A8B94[];
 extern s32 D_800A39C8[];
@@ -8037,17 +8074,16 @@ void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
                    s32 arg5) {
     u8 *env;
     u32 *ot;
+    s32 cond;
 
-    arg1 += (arg0 != 0) * 0x140;
+    cond = (arg0 != 0);
+    arg1 += -cond & 0x140;
     SetDefDrawEnv((DRAWENV *)D_800A8C14, arg1, arg2, arg3, arg4);
     env = D_800A8B94 + arg0 * 0x40;
     SetDrawEnv((DR_ENV *)env, (DRAWENV *)D_800A8C14);
     ot = (u32 *)D_800A39C8[0];
     AddPrim(ot + arg5, env);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80057F34);
-#endif
 
 void func_80057FC8(s32 hide) {
     if (hide & 0xFF) {
@@ -8071,22 +8107,22 @@ void func_80058030(void) {
 }
 
 #if 0
-/* Wall: two register pairs remain swapped vs retail (sector/size get
- * s0/s2 where retail has s2/s0; the entry copies and the blocks
- * intermediate already match). Permuter candidate. */
-extern s32 D_800A3090[];
+/* Wall: sector/size land in s0/s2, retail has s2/s0. Decl order
+ * (sector,size) and (size,sector) both swap; blocks-as-local also swaps.
+ * D_800A3090 must be reached as D_800A2EB0Absolute + 120 (declaring the
+ * untracked sdata label drifts data labels). asm-differ -m compares the
+ * LINKED exe, so run a relink before trusting a unit diff here. */
 extern s32 func_8003C584(s32, s32);
 extern s32 func_8003C8BC(s32, s32, s32);
 extern s32 func_8003C644(s32, s32, s32, s32);
 extern s32 func_8003C63C(s32);
+extern s32 D_800A2EB0Absolute[];
 s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
     s32 size;
-    s32 blocks;
     s32 sector;
 
-    sector = func_8003C584(arg0, (s32)D_800A3090);
-    blocks = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11;
-    size = blocks << 11;
+    sector = func_8003C584(arg0, D_800A2EB0Absolute + 120);
+    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11 << 11;
     if (data == 0) {
         data = (s32)HeapAlloc(size);
     }
@@ -8222,6 +8258,43 @@ void CdSetMixVolume(s32 arg) {
     CdMix(&vol);
 }
 
+#if 0
+/* Wall: only size/buf land in s1/s0 where retail has s0/s1 (same
+ * allocator wall as func_80058094); everything else matches.
+ * D_800A3090 must be D_800A2EB0Absolute + 120; the *next* load must be
+ * written BEFORE the D_800A381C/D_800A3638 stores or the function grows
+ * 4 bytes and drifts every later data label. */
+extern s32 D_800A381C, D_800A3638, D_800A37EC;
+extern s32 D_800A2EB0Absolute[];
+void func_8005978C(void) {
+    extern s32 func_8003C584(s32, s32);
+    extern s32 func_8003C8BC(s32, s32, s32);
+    extern s32 func_8003C644(s32, s32, s32, s32);
+    extern s32 func_8003C63C(s32);
+    DISPENV env;
+    s32 sector;
+    s32 size;
+    s32 buf;
+    s32 next;
+
+    sector = func_8003C584(0, D_800A2EB0Absolute + 120);
+    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11 << 11;
+    buf = (s32)HeapAlloc(size);
+    func_8003C8BC(sector, 0, 0);
+    func_8003C644(buf, 1, size, sector);
+    func_8003C63C(sector);
+    next = *(s32 *)(buf + 0x10);
+    D_800A381C = buf + 4;
+    D_800A3638 = buf;
+    buf += next;
+    D_800A37EC = buf;
+    func_80013224((void *)buf);
+    DrawSync(0);
+    SetDefDispEnv(&env, 0x140, 0, 0x140, 0xF0);
+    PutDispEnv(&env);
+    SetDispMask(1);
+}
+#endif
 INCLUDE_ASM("asm/nonmatchings/game", func_8005978C);
 
 /* Memory card files and events. */
@@ -8815,6 +8888,12 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005B314);
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B474);
 
 #ifdef NON_MATCHING
+/* w7g: everything matches except the store `*(s16 *)(object + 0x10) = 0`
+ * must land in the FIRST jal's delay slot. C order call-then-store puts
+ * it in the SECOND jal's delay; store-then-call emits sh,jal,nop
+ * (function 4 bytes long, 0xF4 vs 0xF0). asm("") after the call breaks
+ * the delay fill entirely. Also note func_80057CCC takes the `texture`
+ * arg and the whole function is otherwise byte-clean. */
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
 POLY_FT4 *func_80057CCC(u8);
@@ -8839,8 +8918,8 @@ u8 *func_8005B598(s16 left, s16 top, s16 right, s16 bottom, s32 depth, u8 textur
     *(s16 *)(object + 0x16) = right;
     *(s16 *)(object + 0x18) = bottom;
     *(s16 *)(object + 0xE) = 0;
-    poly = func_80057CCC(texture);
     *(s16 *)(object + 0x10) = 0;
+    poly = func_80057CCC(texture);
     SetPolyFT4(poly);
     SetShadeTex(poly, 0);
     ((u8 *)poly)[4] = 0x80;
@@ -8943,6 +9022,7 @@ void func_8005BF8C(s32 left, s32 top) {
     u8 *prim;
 
     spriteIndex = D_800A35EC++;
+    asm("");
     object = spriteIndex * 36 + D_800A3678;
     object[4] = 0;
     object[3] = 0;
@@ -9446,6 +9526,10 @@ void func_8005E47C(void) {
 }
 
 #ifdef NON_MATCHING
+/* Wall: body, registers, stores and lhu/sb shapes all match; retail's
+ * frame is 0x30, ours 0x28. Tried: a live s16 local (kept in reg), and
+ * volatile s32 x[2] (breaks cc1 wholesale). The inits of i/primOffset
+ * must stay INSIDE the if, or i=0 leaves the blez delay slot. */
 extern s32 D_800A393C;
 extern s32 D_800A38DC;
 void func_8005E4A4(u8 *table) {
@@ -9454,28 +9538,31 @@ void func_8005E4A4(u8 *table) {
     s32 primOffset;
     u8 *entry;
     u8 *prim;
+    s16 color;
 
     count = *(s32 *)table;
     D_800A393C = (s32)(table + 4);
     D_800A38DC = count;
-    i = 0;
-    primOffset = 0;
     if (count > 0) {
+        i = 0;
+        primOffset = 0;
         do {
             entry = (u8 *)(D_800A393C + i * 32);
             prim = D_800A399C[0] + primOffset;
             SetPolyF4(prim);
-            prim[4] = *(u16 *)(entry + 6);
-            prim[5] = *(u16 *)(entry + 0xE);
-            prim[6] = *(u16 *)(entry + 0x16);
+            color = *(s16 *)(entry + 6);
+            prim[4] = color;
+            color = *(s16 *)(entry + 0xE);
+            prim[5] = color;
+            color = *(s16 *)(entry + 0x16);
+            prim[6] = color;
             i++;
             primOffset += 0x18;
         } while (i < D_800A38DC);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005E4A4);
 #endif
+INCLUDE_ASM("asm/nonmatchings/game", func_8005E4A4);
 
 extern u8 *D_800AE178[];
 extern void *func_80058094(s32, void **, s32);
@@ -9580,6 +9667,27 @@ void func_8005EC5C(u8 index) {
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005EC5C);
+#endif
+
+#if 0
+/* w7g draft: everything matches except gcc CSEs the two D_800BA058
+ * materializations across the func_80012EA8/strcat calls into
+ * callee-saved s0 (function 8 bytes short; asm("") does not block
+ * cross-call cse). D_800A3814 is reached as D_800A37E8[11] (bss
+ * neighbor of an already-array symbol; declaring D_800A3814 drifts
+ * labels), and D_8009AF84 needs u8[] + s16 cast (retail strides 2). */
+extern u8 D_8009AF84[];
+void func_8005EC5C(u8 arg0) {
+    s32 value;
+
+    value = *(s16 *)&D_8009AF84[(arg0 & 0xFF) * 2] * D_800A37D0[0] / 100;
+    D_800A37E8[11] = value;
+    if (value < 3) {
+        *(D_800A37E8 + 11) = 3;
+    }
+    func_80012EA8(D_800A37E8[11], D_800BA058);
+    strcat(D_800BA058, D_800A333C);
+}
 #endif
 #endif
 
