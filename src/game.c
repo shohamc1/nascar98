@@ -1305,7 +1305,25 @@ void func_8001EC88(s32 *a, s32 *b, s32 *c) {
     D_800A36E8 = value8;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001ECD8);
+void func_8001ECD8(void) {
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    a = D_800A36B8;
+    b = D_800A36C8;
+    c = D_800A36D8;
+    d = D_800A36DC;
+    D_800A36C8 = a;
+    a = D_800A36C0;
+    D_800A36D8 = a;
+    a = D_800A36D4;
+    D_800A36B8 = b;
+    D_800A36C0 = c;
+    D_800A36D4 = d;
+    D_800A36DC = a;
+}
 
 void func_8001ED14(s32 *p) {
     s32 a;
@@ -1507,7 +1525,25 @@ void MatrixCombineState(void) {
         product22A + product22B + MathMultiplyFixed16(matrix22, D_800A36E8);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F198);
+void func_8001F198(void) {
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    a = D_800A3790;
+    b = D_800A3798;
+    c = D_800A37AC;
+    d = D_800A37B4;
+    D_800A3798 = a;
+    a = D_800A3794;
+    D_800A37AC = a;
+    a = D_800A37A4;
+    D_800A3790 = b;
+    D_800A3794 = c;
+    D_800A37A4 = d;
+    D_800A37B4 = a;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001F1D4);
 
