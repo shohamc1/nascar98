@@ -63,27 +63,133 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearPAD);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", GetGp);
 
+/* SPDX-License-Identifier: MIT */
+
+typedef struct {
+    u16 count;
+    u16 pad0;
+    u16 mode;
+    u16 pad1;
+    u16 target;
+    u16 pad2[3];
+} RCnt;
+
+extern u32 D_8009B9E8[];
+
+#ifdef NON_MATCHING
+long SetRCnt(long timer, unsigned short target, long mode) {
+    RCnt* r;
+    long md;
+    int t;
+    int isLow;
+    u32 addr;
+    int result;
+
+    t = timer & 0xFFFF;
+    if (t >= 3) {
+        return 0;
+    }
+    md = 0x48;
+    r = (RCnt*)(t * 16 + (u32)D_8009B9E8[0]);
+    isLow = (unsigned)t < 2;
+    r->mode = 0;
+    r->target = target;
+    asm("");
+    if (isLow) {
+        if (mode & 0x10) {
+            md = 0x49;
+        }
+        if (!(mode & 1)) {
+            md |= 0x100;
+        }
+    } else if (t == 2) {
+        if (!(mode & 1)) {
+            md = 0x248;
+        }
+    }
+    if (mode & 0x1000) {
+        md |= 0x10;
+    }
+    result = 1;
+    addr = t * 16;
+    ((RCnt*)(addr + (u32)D_8009B9E8[0]))->mode = md;
+    return result;
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
+#endif
 
+#ifdef NON_MATCHING
+long GetRCnt(long timer) {
+    RCnt* r;
+    long count;
+
+    if ((timer & 0xFFFF) < 3) {
+        r = (RCnt*)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]);
+        count = r->count;
+    } else {
+        count = 0;
+    }
+    return count;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", GetRCnt);
+#endif
 
+/* SPDX-License-Identifier: MIT */
+
+extern u32 D_8009B9E4[];
+extern u32 D_8009B9EC[];
+
+#ifdef NON_MATCHING
+int StartRCnt(int timer) {
+    u32* p;
+
+    p = (u32*)D_8009B9E4[0];
+    p[1] |= D_8009B9EC[timer & 0xFFFF];
+    return (timer & 0xFFFF) < 3;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", StartRCnt);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", StopRCnt);
+/* SPDX-License-Identifier: MIT */
+
+int StopRCnt(int timer) {
+    u32* p;
+
+    p = (u32*)D_8009B9E4[0];
+    p[1] = ~D_8009B9EC[timer & 0xFFFF] & p[1];
+    asm("");
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetRCnt);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc);
+/* SPDX-License-Identifier: MIT */
+
+extern int CdGetToc2(int mode, u8* toc);
+
+int CdGetToc(u8* toc) { return CdGetToc2(1, toc); }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc2);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdInit);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80074C98);
+/* SPDX-License-Identifier: MIT */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80074CC0);
+extern void DeliverEvent(unsigned long ev1, unsigned long ev2);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80074CE8);
+void func_80074C98(void) { DeliverEvent(0xF0000003, 0x20); }
+
+/* SPDX-License-Identifier: MIT */
+
+void func_80074CC0(void) { DeliverEvent(0xF0000003, 0x40); }
+
+/* SPDX-License-Identifier: MIT */
+
+void func_80074CE8(void) { DeliverEvent(0xF0000003, 0x40); }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DeliverEvent);
 
@@ -137,7 +243,18 @@ extern void CD_flush(void);
 
 void CdFlush(void) { CD_flush(); }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdSetDebug);
+/* SPDX-License-Identifier: MIT */
+
+extern u32 D_8009BA88[];
+extern u8 D_8009BA8C[];
+
+int CdSetDebug(int level) {
+    int old;
+
+    old = D_8009BA88[0];
+    ((u32*)D_8009BA8C)[-1] = level;
+    return old;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -175,9 +292,30 @@ extern int CD_ready(int mode, u8* result);
 
 int CdReady(int mode, u8* result) { return CD_ready(mode, result); }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdSyncCallback);
+/* SPDX-License-Identifier: MIT */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdReadyCallback);
+extern u32 D_8009BA7C[];
+extern u32 D_8009BA80[];
+
+CdlCB CdSyncCallback(CdlCB func) {
+    CdlCB old;
+
+    old = (CdlCB)D_8009BA7C[0];
+    ((CdlCB*)D_8009BA80)[-1] = func;
+    return old;
+}
+
+/* SPDX-License-Identifier: MIT */
+
+extern u32 D_8009BA88[];
+
+CdlCB CdReadyCallback(CdlCB func) {
+    CdlCB old;
+
+    old = (CdlCB)D_8009BA80[0];
+    ((CdlCB*)D_8009BA88)[-2] = func;
+    return old;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControl);
 
@@ -185,9 +323,29 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
+#ifdef NON_MATCHING
+extern void CD_vol(CdlATV* vol);
 
+int CdMix(CdlATV* vol) {
+    return (CD_vol(vol), 1);
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
+#endif
+
+/* SPDX-License-Identifier: MIT */
+
+extern int CD_getsector(void* madr, int size);
+
+#ifdef NON_MATCHING
+extern int CD_getsector(void* madr, int size);
+
+int CdGetSector(void* madr, int size) {
+    return !CD_getsector(madr, size);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetSector);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -265,7 +423,18 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdRead);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdReadSync);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdReadCallback);
+/* SPDX-License-Identifier: MIT */
+
+extern u32 D_8009BD88[];
+extern u32 D_8009BD8C[];
+
+CdlCB CdReadCallback(CdlCB func) {
+    CdlCB old;
+
+    old = (CdlCB)D_8009BD88[0];
+    ((CdlCB*)D_8009BD8C)[-1] = func;
+    return old;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", VSync);
 
@@ -1522,7 +1691,11 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabTransBody);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabTransCompleted);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80082670);
+/* SPDX-License-Identifier: MIT */
+
+extern u16 D_800AFD98[];
+
+void func_80082670(void) { D_800AFD98[0] = 0; }
 
 /* SPDX-License-Identifier: MIT */
 extern s16 D_800AFD98[];
@@ -1536,7 +1709,11 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetVagAtr);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbType);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetReverbType);
+/* SPDX-License-Identifier: MIT */
+
+extern s16 D_800AE280[];
+
+int SsUtGetReverbType(void) { return D_800AE280[0]; }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80082B50);
 
