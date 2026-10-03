@@ -35,7 +35,82 @@ void GraphicsInit(void) {
     SetDispMask(1);
 }
 
+#ifdef NON_MATCHING
+/*
+ * Needs lui addressing for D_800A2EAC and D_800A2EB0, but both are
+ * scalar-declared (gp addressing) for func_8002F514/func_8002F86C/
+ * func_8002DDA0 in this translation unit. One symbol name can only have
+ * one addressing mode per TU without a linker alias.
+ */
+extern u8 D_800A2D0D;
+extern u8 D_800A2D0E;
+extern u8 D_800A2D0F;
+extern u8 D_800A39E4[];
+extern s32 D_800A2EB8[];
+extern s32 D_800A2EC8[];
+
+extern void DecDCTReset(s32);
+extern void func_80058D94(void);
+extern void func_800531B8(void);
+extern void func_800122D8(void);
+extern void func_80066B08(void);
+extern void func_800587A0(void);
+extern void func_80059DC4(void);
+extern void func_8005978C(void);
+extern void func_800535A0(void);
+
+int main(void) __asm__("func_80012108");
+int main(void) {
+    s32 mode;
+    s32 exitCode;
+
+    D_800A2D0D = 0;
+    D_800A2EB8[0] = 0;
+    D_800A2EC8[-6] = 0;
+    ResetCallback();
+    mode = 0xF9;
+    ResetGraph(0);
+    SetDispMask(0);
+    SetVideoMode(0);
+    DecDCTReset(0);
+    SoundInitTables();
+    PadInitBuffers();
+    func_80059DC4();
+    CdInit();
+    InitGeom();
+    func_8005978C();
+    func_800535A0();
+    while (1) {
+        if (D_800A39E4[0] == mode) {
+            func_80058D94();
+        }
+        if (((D_800A39E4[0] + 3) & 0xFF) >= 2) {
+            func_800531B8();
+            HeapResetInitFlag();
+        }
+        func_800122D8();
+        D_800A2EC8[-7] = 0;
+        D_800A2EC8[0] = 0;
+        if (D_800A2D0E != 0 || D_800A2D0F != 0) {
+            func_80066B08();
+            D_800A39E4[0] = mode;
+            if (D_800A2D0F == 0) {
+                exitCode = -3;
+            } else {
+                func_800587A0();
+                exitCode = -2;
+            }
+            D_800A2EC8[-6] = exitCode;
+            D_800A2D0E = 0;
+            D_800A2D0F = 0;
+        } else {
+            func_800587A0();
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80012108);
+#endif
 
 void GraphicsCompactOrderingTable(s32 tableAddress) {
     u32 linkMask;
