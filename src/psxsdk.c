@@ -573,8 +573,8 @@ extern struct Callbacks *D_8009CE50[];
 void *ResetCallback(void) { return D_8009CE50[0]->ResetCallback(); }
 
 extern struct Callbacks *D_8009CE50[];
-void InterruptCallback(int irq, Callback callback) {
-    D_8009CE50[0]->InterruptCallback(irq, callback);
+Callback InterruptCallback(int irq, Callback callback) {
+    return D_8009CE50[0]->InterruptCallback(irq, callback);
 }
 
 extern struct Callbacks *D_8009CE50[];
@@ -899,7 +899,13 @@ void SetLineG4(LINE_G4* p) { setLineG4(p); }
 
 void SetBlockFill(BLK_FILL* p) { setBlockFill(p); }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawMove);
+/* SPDX-License-Identifier: MIT */
+
+void SetDrawMove(void *arg0) {
+    *((u8 *)arg0 + 3) = 5;
+    *((u8 *)arg0 + 7) = 1;
+    *((u32 *)arg0 + 2) = 0x80000000;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawTPage);
 
@@ -950,7 +956,24 @@ extern u8 D_8009DA92[];
 
 int GetGraphDebug(void) { return D_8009DA92[0]; }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DrawSyncCallback);
+/* SPDX-License-Identifier: MIT */
+
+extern u8 D_8009DA92[];
+extern u32 D_8009DA9C[];
+extern u32 D_8009DA8C[];
+extern u8 D_8009DAA0[];
+extern char D_800906D8[];
+
+Callback DrawSyncCallback(Callback func) {
+    Callback old;
+
+    if (D_8009DA92[0] >= 2) {
+        ((int (*)(const char *, ...))D_8009DA8C[0])(D_800906D8, func);
+    }
+    old = D_8009DA9C[0];
+    ((u32 *)D_8009DAA0)[-1] = func;
+    return old;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDispMask);
 
@@ -1008,11 +1031,30 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", PutDrawEnv);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DrawOTagEnv);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GetDrawEnv);
+/* SPDX-License-Identifier: MIT */
+
+extern u8 D_8009DAA0[];
+extern void *memcpy();
+
+DRAWENV *GetDrawEnv(DRAWENV *env) {
+    s32 size = 0x5C;
+
+    memcpy(env, D_8009DAA0, size);
+    return env;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", PutDispEnv);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GetDispEnv);
+/* SPDX-License-Identifier: MIT */
+
+extern u8 D_8009DAFC[];
+
+DISPENV *GetDispEnv(DISPENV *env) {
+    s32 size = 0x14;
+
+    memcpy(env, D_8009DAFC, size);
+    return env;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", GetODE);
 
@@ -1095,7 +1137,15 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _reset);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _sync);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", set_alarm);
+/* SPDX-License-Identifier: MIT */
+
+extern s32 D_8009DBA8[];
+extern s32 D_8009DBAC[];
+
+void set_alarm(void) {
+    D_8009DBA8[0] = VSync(-1) + 0xF0;
+    D_8009DBAC[0] = 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", get_alarm);
 
@@ -1646,7 +1696,105 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80080728);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80080758);
 
+/* SPDX-License-Identifier: MIT */
+
+extern s32 D_800A20A0[];
+extern u8 D_800A20A4[];
+extern Callback D_800A20A8[];
+extern s32 D_800A20AC[];
+extern u8 D_800A20B0[];
+extern u8 D_800A20B1[];
+extern u8 D_800A20B2[];
+extern void _SsTrapIntrVSync(void);
+extern void _SsSeqCalledTbyT_1per2(void);
+
+#ifdef NON_MATCHING
+/* w8j draft: everything matches through the switch; walls: (1) default-case
+   block needs ONE base register (a0=&D_800A20A4) for the word reads at 0/-4
+   and the byte at 0xD; this gcc constant-folds any pointer local and emits
+   at-form loads instead (+8); (2) the div quotient lands in a1 (mflo a1)
+   instead of v0. */
+
+s32 _SsStart(s32 arg0) {
+    s32 wait;
+    s32 mode;
+    s32 rcntSpec;
+    s32 rcntTarget;
+    Callback callback;
+
+    wait = 1000;
+    while (--wait >= 0) {
+    }
+    rcntSpec = 0xF2000002;
+    D_800A20B0[0] = 0;
+    mode = D_800A20A0[0];
+    D_800A20B2[0] = 6;
+    D_800A20B1[0] = 0;
+    D_800A20AC[0] = 0;
+    switch (mode) {
+    case 0:
+        ((u8 *)D_800A20B1)[1] = 0xFF;
+        return;
+    case 5:
+        ((u8 *)D_800A20A4)[0xE] = 0;
+        if (arg0 == 0) {
+            D_800A20B0[0] = 1;
+        } else {
+            rcntSpec = 0xF2000003;
+            rcntTarget = 1;
+        }
+        break;
+    case 3:
+        rcntTarget = 0x89D0;
+        break;
+    case 2:
+        rcntTarget = 0x44E8;
+        break;
+    default:
+        {
+            u8 *env;
+            u32 div;
+            s32 ticks;
+
+            env = D_800A20A4;
+            if (*(s32 *)&env[0] == 0) {
+                ticks = *(s32 *)&env[-4];
+                if (ticks < 0x46) {
+                    div = 0x204CC0 / ticks;
+                    asm("");
+                    env[0xD] += 1;
+                } else {
+                    div = 0x409980 / ticks;
+                }
+                rcntTarget = div;
+                break;
+            }
+        }
+        return;
+    }
+    if (D_800A20B0[0] != 0) {
+        EnterCriticalSection();
+        VSyncCallback(D_800A20A8[0]);
+    } else {
+        EnterCriticalSection();
+        ResetRCnt(rcntSpec);
+        SetRCnt(rcntSpec, rcntTarget & 0xFFFF, 0x1000);
+        if (D_800A20B2[0] == 0) {
+            D_800A20AC[0] = InterruptCallback(0, NULL);
+            callback = _SsTrapIntrVSync;
+        } else if (D_800A20B1[0] == 0) {
+            callback = D_800A20A8[0];
+        } else {
+            callback = _SsSeqCalledTbyT_1per2;
+        }
+        InterruptCallback(D_800A20B2[0], callback);
+    }
+    ExitCriticalSection();
+    return;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsStart);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -2385,15 +2533,29 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTGetEnv);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTPutEnv);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTBufSize);
+/* SPDX-License-Identifier: MIT */
+
+u16 DecDCTBufSize(u16 *buf) { return buf[0]; }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTin);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTout);
+/* SPDX-License-Identifier: MIT */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTinSync);
+extern void MDEC_out(u_long *);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCToutSync);
+void DecDCTout(u_long *buf) { MDEC_out(buf); }
+
+/* SPDX-License-Identifier: MIT */
+
+extern void MDEC_in_sync(void);
+
+void DecDCTinSync(void) { MDEC_in_sync(); }
+
+/* SPDX-License-Identifier: MIT */
+
+extern void MDEC_out_sync(void);
+
+void DecDCToutSync(void) { MDEC_out_sync(); }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTinCallback);
 
