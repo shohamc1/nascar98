@@ -4125,7 +4125,27 @@ void SoundStopSequence(void) {
         SsSeqStop(gSequenceId);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F4FC);
+extern s32 SpuGetKeyStatus(s32);
+
+extern s16 D_800B9E24[];
+extern s32 SpuGetKeyStatus(s32);
+
+s32 func_8003F4FC(s32 arg0) {
+    s16 voice;
+    s32 status;
+
+    voice = D_800B9E24[(s8)arg0 * 6];
+    if (voice != -1) {
+        status = SpuGetKeyStatus(1 << voice);
+        if (status == 1) {
+            return 1;
+        }
+        return status != 0;
+    }
+    return 0;
+}
+
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003F564);
 
