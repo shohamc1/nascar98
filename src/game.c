@@ -3179,6 +3179,15 @@ void func_80029E3C(void) {
 }
 
 #ifdef NON_MATCHING
+/* Wall (w9c): with D_800A38AC now tracked, the old drift wall is gone.
+   Best draft (below) is the same length as retail (0xB4) and differs only
+   in scheduling: retail emits lh a0/lh a1 adjacent, then addiu s1/s2, and
+   puts addiu s0,s0,0x54 in the jal delay slot with move a2,zero hoisted
+   before the register saves; gcc interleaves addiu s1 between the lh pair
+   and sinks move a2,zero into the jal delay slot. Locals for the lh args
+   add sll/sra pairs (s16 short-local rule). Tried: rowA/rowB before and
+   after the call, asm("") between the groups and before the call, h0/h1
+   locals. The a2=0 hoist above the register saves looks scheduler-only. */
 extern s32 D_800A38AC[];
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001F728(s32 arg0);
@@ -3200,10 +3209,13 @@ void func_80029E44(void) {
     *(s32 *)(ptr + 0x54) = *(s32 *)(ptr + 0x30);
     *(s32 *)(ptr + 0x58) = *(s32 *)(ptr + 0x34);
     *(s32 *)(ptr + 0x5C) = *(s32 *)(ptr + 0x38);
+    rowA = ptr + 0x3C;
+    rowB = ptr + 0x48;
     func_8001F2C4(*(s16 *)(ptr + 0x1C6), *(s16 *)(ptr + 0x1C8), 0);
-    func_8001F728((s32)(ptr + 0x3C));
-    func_8001F728((s32)(ptr + 0x48));
-    func_8001F728((s32)(ptr + 0x54));
+    ptr += 0x54;
+    func_8001F728((s32)rowA);
+    func_8001F728((s32)rowB);
+    func_8001F728((s32)ptr);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80029E44);
@@ -3513,29 +3525,33 @@ void func_8002D3A8(u8 *object, s32 index) {
 }
 
 #ifdef NON_MATCHING
-/* w7c: walled. Needs gp_rel loads of D_800A2E7C/D_800A2E80 and a lui/lw
- * read of D_800A2E64. ANY new C reference to that untracked sdata region
- * (exact label OR Small/Absolute alias) shifted the auto data labels
- * (exact externs: -8; alias spelling: D_800A2E84 itself drifted and the
- * neighbor read became lui/lw absolute instead of gp_rel). Needs
- * D_800A2E64/E7C/E80 tracked in config/symbol_addrs.txt first. Also open
- * when enabled: loop walker re-based to entry+0x2B8 (agent3 rebase wall)
- * and the (E7C-E80) diff landed in v1 instead of a2 (a2 holds the /63
- * magic). Keep the externs inside the guard: they alone shift the map.
- */
-extern s32 D_800A2E84Small;
-extern s32 D_800A2E84Absolute[];
-extern u8 D_800A3860[][4];
+/* w9c: UNLOCK CONFIRMED — with D_800A2E64/E7C/E80 tracked, direct externs
+ * give the gp_rel E7C/E80 loads and the lui/lw E64 read with no label
+ * drift (the w7c alias workaround is obsolete). Division magic 0x82082083
+ * verified numerically as signed /63. Remaining walls (extends the w8
+ * func_8006BA68 family): (1) retail computes the E7C-E80 diff into a2
+ * (then reuses a2 for the /63 magic) — gcc reuses v1, the destination of
+ * the E7C load, and no spelling tried (diff local, compound assign) moves
+ * it; (2) retail anchors the loop store group at the arg0 copy
+ * (move a1,a3; positive offsets) — gcc re-anchors at max offset
+ * (addiu a1,a3,0x2b8; negative offsets), insensitive to store order and
+ * sw placement. Draft below is length-exact; only those register rows
+ * differ. s16 revs also drops the sra31/subu sign-fix pair (keep s32). */
+extern s32 D_800A2E7C;
+extern s32 D_800A2E80;
+extern s32 D_800A2E64[];
+extern s8 D_800A3860[][4];
 void func_8002D3EC(u8 *arg0) {
     u8 *entry;
     s32 i;
-    s16 revs;
+    s32 diff;
+    s32 revs;
 
-    *(s32 *)(arg0 + 0x234) = *(&D_800A2E84Small - 1)
-        + (*(&D_800A2E84Small - 2) - *(&D_800A2E84Small - 1))
-            * *(s8 *)&D_800A3860[*(s8 *)(arg0 + 0x20B)][0] / 63;
-    revs = ((s32 *)D_800A2E84Absolute)[-8]
-        - *(s8 *)&D_800A3860[*(s8 *)(arg0 + 0x20B)][0] * 0xC8 / 63;
+    diff = D_800A2E7C - D_800A2E80;
+    *(s32 *)(arg0 + 0x234) = D_800A2E80
+        + diff * D_800A3860[*(s8 *)(arg0 + 0x20B)][0] / 63;
+    revs = D_800A2E64[0]
+        - D_800A3860[*(s8 *)(arg0 + 0x20B)][0] * 0xC8 / 63;
     entry = arg0;
     i = 0;
     do {
@@ -3543,8 +3559,8 @@ void func_8002D3EC(u8 *arg0) {
         *(s16 *)(entry + 0x2B0) = 0;
         *(s16 *)(entry + 0x2AE) = 0;
         *(s16 *)(entry + 0x2B4) = revs;
-        i += 1;
         *(s32 *)(entry + 0x2B8) = *(s32 *)(arg0 + 0x234);
+        i += 1;
         entry += 0x28;
     } while (i < 4);
 }
@@ -4524,7 +4540,45 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800319D4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80031D74);
 
+#ifdef NON_MATCHING
+/* w9c: STACK_BLOCK_801C0000 unlock works — the raw lui constant now emits
+ * (lui a0/a1,0x801c rows match). Remaining wall: retail allocates TWO
+ * s-regs, handle=s1 (first call result) and value=s0 (second call result,
+ * captured in the jal delay slot). gcc gives handle=s0 and coalesces the
+ * single-use value into v0 (move a1,v0), frame 0x18 vs 0x20. Tried: value
+ * declared first, nested call form, value local + plain sequence. No
+ * spelling reserved an s-reg for value. Function is otherwise byte-shaped;
+ * the -0xc label drift rows (0x2f28, 3c578...) are our own short frame. */
+extern s32 func_8003C584(s32, void *);
+extern s32 func_8003C8BC(void *, s32, s32);
+extern void func_8003C644(s32, s32, s32, s32);
+extern void func_8003C63C(s32);
+extern void func_80025454(s32);
+extern void func_80031D74(s32, s32, s32);
+extern char D_8008D08C[];
+extern void *D_800A2F34[];
+extern s32 D_800A3574[];
+extern u8 D_800A2D4C[], D_800A2D4D[];
+extern s32 D_800A36D0Absolute[];
+void func_80032328(s32 arg0) {
+    s32 value;
+    s32 handle;
+
+    handle = func_8003C584(arg0, D_800A2F34);
+    if (handle == 0) {
+        SystemShowFatalError(D_8008D08C);
+    }
+    func_8003C8BC(handle, 0, 2);
+    func_8003C644(STACK_BLOCK_801C0000, func_8003C8BC(handle, 0, 0), 1, handle);
+    func_80031D74(D_800A3574[0], STACK_BLOCK_801C0000, -1);
+    D_800A2D4C[0] = 1;
+    func_80025454(((s32 *)D_800A36D0Absolute)[-87]);
+    D_800A2D4D[0] = 0;
+    func_8003C63C(handle);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80032328);
+#endif
 
 /*
  * The second D_800A3574 read goes through the D_800A36D0Absolute
