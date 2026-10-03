@@ -4386,7 +4386,45 @@ s16 func_8003FF5C(u8 *arg0, u8 *arg1) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
 
+#ifdef NON_MATCHING
+/* Wall: the search loops exit to out-of-line blocks (beq to found,
+ * latch falls to the next loop); for+break gives the inverse shape.
+ * Try the KB while(A&&B) conjunct idiom or goto form. */
+extern s32 D_80098D00[];
+extern u8 D_800A354C[];
+extern s32 D_800BE988[];
+extern u8 D_800A2FA4[];
+extern u8 D_800A39D0;
+extern u8 D_800BA048[];
+
+void func_800400D8(s32 arg0) {
+    s32 i;
+    s32 j;
+    u8 next;
+
+    for (i = 0; i < 4; i++) {
+        if (D_80098D00[i] == arg0) {
+            D_800A354C[i] = 1;
+            return;
+        }
+    }
+    for (j = 0; j < 4; j++) {
+        if (D_80098D00[j] == 0) {
+            D_80098D00[j] = arg0;
+            D_800BE988[j] = -1;
+            D_800A354C[j] = 1;
+            D_800A2FA4[j] = 5;
+            return;
+        }
+    }
+    next = D_800A39D0;
+    D_800A39D0 = next + 1;
+    *(s32 *)((u8 *)D_800BA048 + (((s32)(s8)next << 24) >> 22)) = arg0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800400D8);
+#endif
+
 
 extern s8 D_800A2FA4[];
 extern s32 D_800BE988[];
