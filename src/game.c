@@ -7568,7 +7568,32 @@ void func_8005EC5C(s32 arg0) {
     strcat(D_800BA058, D_800A333C);
 }
 #else
+#ifdef NON_MATCHING
+/*
+ * Two walls: (a) the new `extern s32 D_800A3814[]` (untracked bss label)
+ * shifts the D_8009AF84/D_800A37D0 data labels 4 bytes low via the
+ * maspsx_extern interaction (see matching.md); (b) gcc CSEs all three
+ * &D_800A3814[0] accesses into one cached lui/addiu base and saves s0,
+ * while retail re-materializes `lui at` per store. Distinct-expression
+ * forms (`(D_800A3814 + 0)`, `&D_800A3814[0]`) do not split it.
+ */
+extern s16 D_8009AF84[];
+extern s32 D_800A3814[];
+void func_8005EC5C(u8 index) {
+    s32 value;
+
+    value = D_8009AF84[index] * D_800A37D0[0];
+    value = value / 100;
+    *(s32 *)(D_800A3814 + 0) = value;
+    if (value < 3) {
+        *(s32 *)&D_800A3814[0] = 3;
+    }
+    func_80012EA8(*(s32 *)&D_800A3814[0], D_800BA058);
+    strcat(D_800BA058, D_800A333C);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005EC5C);
+#endif
 #endif
 
 extern s32 D_8009A31C[];
@@ -7577,13 +7602,45 @@ void func_8005ED04(s32 index) {
     D_800A3740[8][2] = D_8009A31C[index & 0xFF];
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005ED28);
+extern u8 D_800A3860[][4];
+s32 func_8005ED28(u8 x, u8 y) {
+    u32 scale;
+    u32 level;
+
+    level = D_800A3860[x][y];
+    scale = ((level << 1) + level) << 2;
+    scale += level;
+    scale >>= 3;
+    if (scale == 0) {
+        scale = 1;
+    }
+    return scale;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005ED74);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005FE90);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005FFA8);
+extern u8 *D_800B9980[];
+u8 *func_8005FFA8(u8 x, u8 y) {
+    u32 scale;
+    u32 level;
+    u32 result;
+    u8 *node;
+    u8 *entry;
+
+    level = D_800A3860[x][y];
+    scale = ((level << 1) + level) << 2;
+    scale += level;
+    result = scale >> 3;
+    if (result == 0) {
+        result = 1;
+    }
+    node = D_800B9980[y];
+    entry = *(u8 **)(node + 0x1C);
+    *(s16 *)(entry + 0x16) = result;
+    return entry;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80060008);
 
@@ -7661,7 +7718,29 @@ void ListSetFieldsAndEnable(u8 *node, s16 a, s16 b, s16 c) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80062D38);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80062F04);
+extern u8 *D_800A3A84[];
+extern s32 D_8009ABFC[];
+void func_80062F04(u8 index, u8 kind, u8 sub) {
+    u32 code;
+    u8 *object;
+    s32 *target;
+
+    if (kind == 2) {
+        code = 2;
+        if (sub < 4) {
+            asm("");
+            code = 3;
+        }
+    } else {
+        code = 2;
+        if (sub < 2) {
+            code = 4;
+        }
+    }
+    object = D_800A3A84[index];
+    target = *(s32 **)(object + 0x20);
+    *(target + 2) = D_8009ABFC[code];
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80062F6C);
 
@@ -7682,24 +7761,152 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800631DC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063538);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80063638);
+extern u8 *D_800A3628[];
+void func_80063638(u8 mode) {
+    s16 left;
+    s16 width;
+    u8 *node;
+    s32 i;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80063694);
+    if (mode != 0) {
+        left = 0x6A;
+        width = 0x2E;
+    } else {
+        left = 0xBA;
+        width = 0x37;
+    }
+    node = D_800A3628[0];
+    for (i = 0; i < 2; i++) {
+        *(s16 *)(node + 8) = left;
+        *(s16 *)(node + 0xC) = left;
+        *(s16 *)(node + 0x12) = width;
+        if (i == 0) {
+            *(s16 *)(node + 0x12) = -width;
+        }
+        node = *(u8 **)(node + 0x1C);
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800636EC);
+extern u8 *D_800A35E4[];
+void func_80063694(u8 index, s16 dx, s16 dy, s16 code) {
+    u8 *node;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80063770);
+    node = D_800A35E4[index];
+    if (node != 0) {
+        do {
+            *(s16 *)(node + 6) = *(s16 *)(node + 0x12) + dx;
+            *(s16 *)(node + 0xE) = code;
+            node[5] = code;
+            *(s16 *)(node + 0xA) = *(s16 *)(node + 0x12) + dy;
+            node = *(u8 **)(node + 0x1C);
+        } while (node != 0);
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800637D8);
+extern char *D_8009AC1C[];
+extern u8 *D_800A3868[];
+void func_800636EC(u8 index, u8 kind) {
+    u8 *node;
+    u8 *object;
+    s32 value;
 
+    node = D_800A3868[index];
+    object = *(u8 **)(node + 0x20);
+    *(u8 **)(object + 8) = D_8009AC1C[kind];
+    func_8005A7B8(object[1], object[2]);
+    value = func_8005B0E4(0x64, *(s32 *)(object + 8));
+    *(s16 *)(node + 6) = value + 0xA;
+    *(s16 *)(node + 0x12) = value - 0x32;
+}
+
+extern u8 *D_800A3868[];
+void func_80063770(u8 index) {
+    u8 *node;
+    s16 value;
+
+    node = D_800A3868[index];
+    if (node != 0) {
+        do {
+            value = *(s16 *)(node + 0x1A);
+            if (value > 0) {
+                *(s16 *)(node + 0x1A) = -value;
+            } else if (value == 0) {
+                *(s16 *)(node + 0x1A) = -0x8000;
+            }
+            node = *(u8 **)(node + 0x1C);
+        } while (node != 0);
+    }
+}
+
+extern u8 *D_800A3868[];
+void func_800637D8(u8 index) {
+    u8 *node;
+    s16 value;
+
+    node = D_800A3868[index];
+    if (node != 0) {
+        do {
+            value = *(s16 *)(node + 0x1A);
+            if (value == -0x8000) {
+                *(s16 *)(node + 0x1A) = 0;
+            } else if (value < 0) {
+                *(s16 *)(node + 0x1A) = -value;
+            }
+            node = *(u8 **)(node + 0x1C);
+        } while (node != 0);
+    }
+}
+
+#ifdef NON_MATCHING
+/*
+ * Everything matches except one `addiu a2,a2,0`: retail materializes the
+ * scratchpad base with a bare `lui` (numeric 0x1F800000 constant, which
+ * the repo forbids). Any symbolic gScratchpad reference expands la into
+ * lui + addiu 0. Same wall as func_800246C0 (notes-agent2.md).
+ */
+extern u32 gScratchpad[];
+void func_8006383C(void) {
+    u32 i;
+    u32 greyLevel;
+
+    for (i = 0; i < 0x100; i++) {
+        greyLevel = i >> 2;
+        gScratchpad[i] = (greyLevel << 0x10) | (greyLevel << 8) | greyLevel;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006383C);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063874);
 
 void func_80063A20(void) {
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80063A28);
+void func_80063A28(void) {
+    RECT rect;
+    s32 i;
+    s16 srcX;
+    s16 tile;
+
+    i = 0;
+    tile = 0x40;
+    srcX = 0x300;
+    while (i < 2) {
+        rect.x = (i % 4) * 0x40 + 0x300;
+        rect.y = tile;
+        rect.h = tile;
+        rect.w = tile;
+        MoveImage(&rect, i * 0x40, 0x100);
+        rect.y = 0x3F;
+        rect.h = 1;
+        rect.x = srcX;
+        rect.w = 0x10;
+        MoveImage(&rect, 0, 0x140 + i);
+        srcX += 0x10;
+        i++;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063AE0);
 
@@ -7819,15 +8026,94 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80066730);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800669B8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80066A24);
+extern s32 GetGp(void);
+extern s32 D_8008CA4C[];
+extern u8 D_800A3073[];
+extern s32 D_800A335C;
+extern void func_800663B0(void);
+extern void func_80065C3C(void);
+extern void func_800669B8(void);
+void func_80066A24(u8 mode) {
+    void (*callback)(void);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80066B08);
+    *(s32 *)D_8008CA4C = GetGp();
+    if (D_800A3644[0] != 0 && D_800A3073[0] == 0) {
+        callback = func_800663B0;
+    } else {
+        callback = func_80065C3C;
+        if (mode == 2) {
+            callback = func_800669B8;
+        }
+    }
+    EnterCriticalSection();
+    D_800A335C = OpenEvent(0xF2000003, 2, 0x1000, callback);
+    EnableEvent(*(volatile s32 *)&D_800A335C);
+    SetRCnt(0xF2000003, 1, 0x1000);
+    StartRCnt(0xF2000003);
+    ExitCriticalSection();
+}
+
+extern s32 D_800A335C;
+extern volatile u8 D_800A3360;
+void func_80066B08(void) {
+    if (D_800A335C != 0) {
+        D_800A3360 = 0;
+        while (D_800A3360 == 0) {
+        }
+        EnterCriticalSection();
+        DisableEvent(D_800A335C);
+        CloseEvent(D_800A335C);
+        ExitCriticalSection();
+        DrawSync(0);
+    }
+    D_800A335C = 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066B70);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80066CFC);
 
+#ifdef NON_MATCHING
+/*
+ * All instructions and the guard/do-while shape match except the cursor
+ * base: retail keeps ONE induction (start+0x22) with field offsets
+ * -0x1C..0; our gcc re-associates to a second induction at start+0x1A for
+ * three fields (+4 bytes, bss shifts). Distinct-expression anchoring and
+ * a struct-array walk both re-associated the same way.
+ */
+void func_80067020(u8 *start, u8 *end, u8 delta) {
+    u8 *cursor;
+    u8 *endCursor;
+    s16 x0;
+    s16 x1;
+    s16 x2;
+    s16 x3;
+
+    if (start < end) {
+        cursor = start + 0x22;
+        endCursor = end + 0x22;
+        do {
+            if (*(cursor - 0x1C) != 0) {
+                x0 = *(s16 *)(cursor - 0x18);
+                x1 = *(s16 *)(cursor - 0x10);
+                x2 = *(s16 *)(cursor - 8);
+                x3 = *(s16 *)(cursor);
+                x0 += (s8)delta;
+                x1 += (s8)delta;
+                x2 += (s8)delta;
+                x3 += (s8)delta;
+                *(s16 *)(cursor - 0x18) = x0;
+                *(s16 *)(cursor - 0x10) = x1;
+                *(s16 *)(cursor - 8) = x2;
+                *(s16 *)(cursor) = x3;
+            }
+            cursor += 0x28;
+        } while (cursor < endCursor);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80067020);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006709C);
 
@@ -7864,7 +8150,17 @@ void func_80067EA4(UnkObject24 *obj, u8 a, u8 b, s32 c, u8 d, s32 e) {
     obj->unk1A = e;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80067ECC);
+extern char *D_8009AC1C[];
+u8 func_80067ECC(char *name) {
+    s32 i;
+
+    for (i = 0; i < 0x18; i++) {
+        if (strcmp(name, D_8009AC1C[i]) == 0) {
+            break;
+        }
+    }
+    return i;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80067F34);
 
