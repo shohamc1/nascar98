@@ -5209,7 +5209,35 @@ s32 func_80041D60(void) {
     return ((u32)second << 16) | first;
 }
 #else
+#ifdef NON_MATCHING
+/* Wall: register flow around the gPadBuffers base (retail keeps a
+ * v0 base with addiu +0xC step; we fold offsets into loads). */
+extern s32 gPadBuffers[];
+extern u32 D_800B9E00[];
+
+s32 func_80041D60(void) {
+    u8 *pads;
+    u16 pad1;
+    u16 pad2;
+    u16 temp;
+
+    pads = (u8 *)gPadBuffers;
+    temp = *(u16 *)(pads + 2);
+    pad1 = ~((temp >> 8) | ((temp & 0xFF) << 8));
+    temp = *(u16 *)(pads + 0xE);
+    pad2 = ~((temp >> 8) | ((temp & 0xFF) << 8));
+    if ((*(s32 *)pads & 0xF000) == 0) {
+        pad1 = 0;
+    }
+    if ((D_800B9E00[0] & 0xF000) == 0) {
+        pad2 = 0;
+    }
+    return (pad2 << 16) | pad1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80041D60);
+#endif
+
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80041DEC);
