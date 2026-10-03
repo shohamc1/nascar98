@@ -4506,7 +4506,40 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80041F54);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800420D8);
 
+#ifdef NON_MATCHING
+/* Wall: register homes only (walker wants t1 with a0 reused as the 0x3C
+ * temp; OR chain wants v0). decomp-permuter candidate. */
+void func_80042218(u8 *arg0, s32 *arg1, u8 *arg2) {
+    u8 *src;
+    u8 *dst;
+    s32 i;
+    s32 shift;
+    u16 bits;
+
+    src = arg0;
+    dst = arg2;
+    *arg1 = 0;
+    i = 0;
+    shift = -4;
+    do {
+        *(u32 *)dst = *(u16 *)src;
+        bits = *(u16 *)(src + 2);
+        *(u32 *)(dst + 4) =
+            ((u32)((bits & 0x3C) << 10)) | ((u32)((bits & 0x3C0) << 14)) |
+            ((u32)((bits & 0xFC00) >> 8));
+        if (i >= 2) {
+            *arg1 |= (bits & 3) << shift;
+        }
+        src += 4;
+        dst += 8;
+        i += 1;
+        shift += 2;
+    } while (i < 4);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80042218);
+#endif
+
 
 #ifdef NON_MATCHING
 s32 func_8004229C(s32 arg0) {
