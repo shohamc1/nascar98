@@ -4515,7 +4515,31 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80041850);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004195C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80041A28);
+extern u8 D_800A2F9D;
+extern void func_8003FDE8(s8, s32, s32);
+extern void SoundShutdown(void);
+extern void SsSetMute(s32);
+
+void func_80041A28(void) {
+    s32 i;
+
+    i = 0;
+    do {
+        func_8003FDE8((s8)i, 0, 0);
+        i++;
+    } while (i < 5);
+    func_8003F2AC(0, 0);
+    SoundSetSequenceVolume(0, 0);
+    func_8003F23C();
+    func_8003FA0C();
+    SsSetMVol(0, 0);
+    VSync(0);
+    VSync(0);
+    SoundShutdown();
+    if (D_800A2F9D == 0) {
+        SsSetMute(0);
+    }
+}
 
 void func_80041AF0();
 /* Controller state and input. */
