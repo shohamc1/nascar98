@@ -1184,8 +1184,86 @@ void func_8001CBD4(u8 *arg0) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CBD4);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001CC7C);
+#ifdef NON_MATCHING
+/* Wall (w7b): unit diff is clean through the second palette arm except the
+   if-arm tail: gcc cross-jumps the identical (sb 0x14, sb 0x15) tail into the
+   else arm (j + delay into its middle), 4-8 bytes short; retail keeps the
+   j-to-join with sb v1,0x15 in the delay slot. Tried: asm("") before/inside
+   the tail, volatile on the else tail stores, separate c pseudos per arm
+   (that one flips pal to v1 too). Everything else was solved this session:
+   (a) base-first expression order gives retail's base=a0/idx=v1 allocation;
+   (b) the D_800A2ED9 byte must load into the SAME variable that gets 0x40
+   (one `li v0,0x40` speculated into the beqz delay slot, both arms store
+   0x40 at +8/+0xC and reuse the variable for 0xBF); (c) the != 0 arm is the
+   fall-through; (d) if-arm +0xD/+0x15 store c (0x78), +9/+0x11 store 0;
+   (e) gOTB test must be `!= 0` with the 0-arg call as fall-through. */
+extern s32 D_800A2EC8Absolute[];
+extern ListNode28 *D_800A3A40Absolute[];
+extern s32 gOrderingTableBankAbsolute[];
 
+/* Sets up a shade-tex primitive (0x2C entry) from the D_800A3A40 pool:
+   entry +0xE tpage, +0xA clut (first arm only), +8..+0x15 palette bytes. */
+void func_8001CC7C(u8 *arg0) {
+    s32 idx;
+    s32 pal;
+    s32 c;
+    u8 *entry;
+
+    if (*(s16 *)(arg0 + 0xA) != 4) {
+        return;
+    }
+    entry = (u8 *)D_800A3A40Absolute[0]
+        + ((*(u16 *)(arg0 + 0x18) * 2 + *(u16 *)(arg0 + 0x18)) * 4
+            - *(u16 *)(arg0 + 0x18)) * 4;
+    SetShadeTex(entry, 1);
+    if (D_800A2EC8Absolute[0] != 0) {
+        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
+        *(s16 *)(entry + 0xA) = GetClut(0x200, 0x1FF);
+        *(u8 *)(entry + 0x8) = 0;
+        *(u8 *)(entry + 0x9) = 0xA7;
+        *(u8 *)(entry + 0xC) = 0;
+        *(u8 *)(entry + 0xD) = 0xFD;
+        *(u8 *)(entry + 0x10) = 0x7F;
+        *(u8 *)(entry + 0x11) = 0xA7;
+        *(u8 *)(entry + 0x14) = 0x7F;
+        *(u8 *)(entry + 0x15) = 0xFD;
+        return;
+    }
+    pal = ((u8 *)D_800A2EC8Absolute)[0x11];
+    if (pal != 0) {
+        pal = 0x40;
+        c = 0x78;
+        *(u8 *)(entry + 0x8) = pal;
+        *(u8 *)(entry + 0xC) = pal;
+        pal = 0xBF;
+        *(u8 *)(entry + 0x9) = 0;
+        *(u8 *)(entry + 0xD) = c;
+        *(u8 *)(entry + 0x10) = pal;
+        *(u8 *)(entry + 0x11) = 0;
+        *(u8 *)(entry + 0x14) = pal;
+        *(u8 *)(entry + 0x15) = c;
+    } else {
+        pal = 0x40;
+        c = 0x3C;
+        *(u8 *)(entry + 0x8) = pal;
+        *(u8 *)(entry + 0xC) = pal;
+        pal = 0xBF;
+        *(u8 *)(entry + 0x9) = c;
+        *(u8 *)(entry + 0xD) = pal;
+        *(u8 *)(entry + 0x10) = pal;
+        *(u8 *)(entry + 0x11) = c;
+        *(u8 *)(entry + 0x14) = pal;
+        *(u8 *)(entry + 0x15) = c;
+    }
+    if (gOrderingTableBankAbsolute[0] != 0) {
+        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0, 0);
+    } else {
+        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x140, 0);
+    }
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/game", func_8001CC7C);
+#endif
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CDDC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CF38);
@@ -2402,7 +2480,54 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80024B08);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80024E90);
 
+#ifdef NON_MATCHING
+/* Wall (w7b): 0xE8 vs retail 0xE4. The two func_8003C8BC results interleave:
+   retail sinks `move s0,v0` before the second call's argument setup; gcc
+   emits the second call's args first. Retail re-reads D_800A3A54 into v1
+   after the func_8003C644 call; our volatile read lands in v0 and rotates
+   the following addiu pair. Everything else matches (fatal-error arm,
+   0x1F4000-total|0x80000000, the four gp-cursor stores, the <<4/<<3 sums). */
+extern s32 D_800A3A54Small;
+extern s32 D_800A2E14[];
+extern s32 D_800A3810;
+extern s32 D_800A356C;
+extern char D_8008CFC0[];
+extern s32 func_8003C584(s32, void *);
+extern s32 func_8003C8BC(void *, s32, s32);
+extern void func_8003C644(s32, s32, s32, s32);
+extern void func_8003C63C(s32);
+
+/* Loads a track resource: resolves a handle, maps its memory, then records
+   the loaded row bounds into the small-data cursors. */
+void func_80025370(s32 arg0) {
+    s32 handle;
+    s32 total;
+    s32 cursor;
+    s32 row0;
+    s32 row1;
+
+    handle = func_8003C584(arg0, D_800A2E14);
+    if (handle == 0) {
+        SystemShowFatalError(D_8008CFC0);
+    }
+    total = func_8003C8BC(handle, 0, 2);
+    func_8003C8BC(handle, 0, 0);
+    D_800A3A54Small = (0x1F4000 - total) | 0x80000000;
+    func_8003C644(D_800A3A54Small, 1, total, handle);
+    cursor = *(volatile s32 *)&D_800A3A54Small;
+    D_800A3A54Small = cursor + 4;
+    row0 = *(s32 *)cursor;
+    D_800A3A54Small = cursor + 8;
+    D_800A2E08 = row0;
+    row1 = *(s32 *)(cursor + 4);
+    D_800A3838 = cursor + 8;
+    D_800A3810 = (cursor + 8) + (row0 << 4);
+    D_800A356C = D_800A3810 + (row1 << 3);
+    func_8003C63C(handle);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80025370);
+#endif
 
 #ifdef NON_MATCHING
 /* Whole body matches except: retail loads the s16 count directly into its
@@ -3035,7 +3160,55 @@ void func_8002A1D0(void) {
     D_800A2E24 = 0x1EF0000 - (D_800A2E1C - 3) * 0x30000;
 }
 
+#ifdef NON_MATCHING
+/* Wall (w7b): 0xF8 vs retail 0xFC, 4 bytes short, head register rows left.
+   Retail keeps the ~status mask in v1 (dead before the func_8001FD44 call)
+   and flags in s1 (live to the 0x238 store); gcc gives the mask pseudo an
+   s-reg and rotates the two `and` operands (and v0,v0,v1 vs and v0,s1,v0),
+   and merges/reorders one instruction somewhere in the call block. Tried:
+   mask as a local, mask inlined twice, both orders. Everything else matches
+   word for word (the %4 diamond, the xori/sltiu ==3 test, the ^1 arm, the
+   always-executed 0x238 store on every path). */
+extern s32 D_800A35D4[];
+extern s32 D_800A2EC4[];
+extern s32 D_800A2EA4[];
+extern s32 func_80029EF8();
+extern void func_8001FD44();
+
+/* Sets bit D_800A2EC4 when the object's 0x209 counter wraps to 3 and the
+   0x238 status mask from func_80029EF8 asks for the counter update. */
+void func_8002A1FC(u8 *arg0) {
+    s32 flags;
+    s32 v;
+    s32 t;
+
+    flags = func_80029EF8(arg0);
+    if (((flags & (~*(s32 *)(arg0 + 0x238) & 0x10)) != 0)
+        || ((flags & (~*(s32 *)(arg0 + 0x238) & 0x4000)) != 0)) {
+        func_8001FD44(arg0);
+    }
+    if (D_800A35D4[0] != 0) {
+        *(s32 *)(arg0 + 0x238) = flags;
+        return;
+    }
+    if (((flags & (~*(s32 *)(arg0 + 0x238) & 4)) != 0)) {
+        if (((s8 *)D_800A2EA4)[0] != 0) {
+            v = *(u8 *)(arg0 + 0x209) ^ 1;
+            *(u8 *)(arg0 + 0x209) = v;
+        } else {
+            t = *(s8 *)(arg0 + 0x209);
+            v = (t + 1) % 4;
+            *(u8 *)(arg0 + 0x209) = v;
+            D_800A2EC4[0] = ((s8)v == 3);
+        }
+        *(s32 *)(arg0 + 0x238) = flags;
+    } else {
+        *(s32 *)(arg0 + 0x238) = flags;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8002A1FC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002A2F8);
 
