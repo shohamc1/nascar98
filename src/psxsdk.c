@@ -1455,11 +1455,33 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80082B50);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80082B70);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbFeedback);
+extern SpuReverbAttr D_800AE27C[];
 
+void SsUtSetReverbFeedback(short feedback) {
+    D_800AE27C[0].mask = SPU_REV_FEEDBACK;
+    D_800AE27C[0].feedback = feedback;
+    SpuSetReverbModeParam(D_800AE27C);
+}
+
+#ifdef NON_MATCHING
+/* Registers only: the /127 magic constant lands in v0 instead of v1 and
+ * the two products shift one register down. Instruction sequence is
+ * otherwise identical. decomp-permuter candidate. */
+void SsUtSetReverbDepth(short ldepth, short rdepth) {
+    D_800AE27C[0].mask = 6;
+    D_800AE27C[0].depth.left = (ldepth * 0x7FFF) / 127;
+    D_800AE27C[0].depth.right = (rdepth * 0x7FFF) / 127;
+    SpuSetReverbModeParam(D_800AE27C);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbDepth);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbDelay);
+void SsUtSetReverbDelay(short delay) {
+    D_800AE27C[0].mask = SPU_REV_DELAYTIME;
+    D_800AE27C[0].delay = delay;
+    SpuSetReverbModeParam(D_800AE27C);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetVagAtr);
 
