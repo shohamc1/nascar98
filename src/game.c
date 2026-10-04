@@ -378,6 +378,9 @@ void func_80013224(void *arg0) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800132F8);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CB94);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBB4);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBD0);
 
 #ifdef NON_MATCHING
 /* Wall: semantics recovered (signed /50 then unsigned /100 final divide; D_80090ED8
@@ -507,6 +510,16 @@ void func_80014B10(s32 arg0, s32 arg1, s32 arg2) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80014BEC);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC6C);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC7C);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC9C);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCA8);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCBC);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCD0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCE0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCF0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CD00);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CD0C);
 
 extern s32 D_800A2D44;
 
@@ -545,9 +558,9 @@ s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800157B0);
 #endif
 
-extern u8 D_8008CC6C[];
-
 extern s32 sprintf(char *, u8 *);
+
+extern u8 D_8008CC6C[];
 
 void func_80015870(u8 *arg0, void *arg1) {
     char buffer[0x40];
@@ -580,8 +593,8 @@ void func_80015A74(s32 arg0) {
     extern void func_80014BEC(s32 *, s32);
     extern void func_8003C63C(s32);
     extern void SystemShowFatalError(char *);
-    extern u8 D_800A2D48[];
     extern char D_8008CC7C[];
+    extern u8 D_800A2D48[];
     extern s32 D_800BE970[];
     extern u8 D_800A2D4C[];
     s32 value0;
@@ -2583,6 +2596,7 @@ void func_80025370(s32 arg0) {
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80025370);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CFE0);
 #endif
 
 #ifdef NON_MATCHING
@@ -6092,6 +6106,8 @@ void func_8003CDBC(s32 arg0) {
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003CDBC);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1A8);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1C4);
 #endif
 
 void func_8003CEFC(void) {
@@ -7110,6 +7126,9 @@ void *func_8003FFF0(s32 arg0, void *arg1) {
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D21C);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D228);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D234);
 #endif
 
 extern s32 D_80098D00[];
@@ -8323,6 +8342,7 @@ void func_8004B128(u8 *arg0) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8004B1C0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8004BDD0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D4F4);
 
 #ifdef NON_MATCHING
 extern s32 D_800A2E94[3];
@@ -9211,6 +9231,7 @@ u8 TableFindByte(u8 value) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800587A0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D738);
 
 /* func_80058D08: writes $gp directly; not expressible in C. */
 INCLUDE_ASM("asm/nonmatchings/game", func_80058D08);
@@ -12486,6 +12507,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80069A90);
 INCLUDE_ASM("asm/nonmatchings/game", func_80069AFC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80069C60);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008FC60);
 
 extern char *D_800A35F4;
 extern char *D_800A3604;
@@ -13609,6 +13631,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006E484);
 INCLUDE_ASM("asm/nonmatchings/game", func_8006E628);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006E770);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008FCA4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006EB18);
 

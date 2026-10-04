@@ -7,10 +7,6 @@
 
 # Generated from disc/ by splat (`make split`): disassembly holds game bytes.
 /asm/
-/include/macro.inc
-/include/labels.inc
-/include/gte_macros.inc
-/include/include_asm.h
 
 # Build output.
 /build/

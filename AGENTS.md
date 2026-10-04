@@ -34,7 +34,7 @@ These are the paths you work with:
 | `asm/` | Splat's disassembly, one file per function under `asm/nonmatchings/` | No |
 | `config/` | Splat config, symbol names, SHA-1 files | Yes |
 | `disc/` | Files from your disc image (`make extract`) | No |
-| `include/` | Headers. Splat writes `include_asm.h` and the `.inc` files | Yours only |
+| `include/` | Headers, including the tracked `include_asm.h` and `.inc` files (splat no longer regenerates them) | Yours only |
 | `include/psxsdk/`, `include/types.h` | SDK headers and base types copied from sotn-decomp (AGPL-3.0). Don't edit them; see `include/psxsdk/README.md` | Yes |
 | `src/` | Decompiled C. `src/game.c` holds every game function for now | Yes |
 | `tools/` | Project scripts, plus submodules and downloads | Scripts and submodules |
@@ -79,9 +79,14 @@ and writes `build/report.json` for decomp.dev.
   `sll`/`sra` pairs.
 - Don't write a RAM or ROM address as a number. Name the symbol in
   `config/symbol_addrs.txt` and run `make split`.
-- Strings and `switch` jump tables live in `.rdata`, which isn't split per
-  file yet. Until it is, reach strings through `extern` symbols. See
-  "`.rodata` / `.data` split" in the game's `overview.md`.
+- Strings and `switch` jump tables live in `.rodata`, migrated per
+  function into each nonmatching `.s` file. When you decompile a
+  function, its `switch` regenerates its jump tables in place, but its
+  string and word-table symbols need `INCLUDE_RODATA` lines at the
+  function's old position, each with `force_not_migration:True` in
+  `config/symbol_addrs.txt`. Reach such strings through `extern`
+  symbols until their whole neighborhood is decompiled. See
+  "Per-function rodata migration" in the game's `overview.md`.
 
 ## Name things as you learn them
 

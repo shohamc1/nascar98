@@ -225,6 +225,9 @@ int CdGetToc(u8* toc) { return CdGetToc2(1, toc); }
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc2);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdInit);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090168);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902AC);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902BC);
 
 /* SPDX-License-Identifier: MIT */
 
@@ -802,6 +805,8 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntPrint);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090548);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090560);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", GetTPage);
 
@@ -947,6 +952,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphDebug);
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphQueue);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906D8);
 
 extern u8 D_8009DA90[];
 
@@ -1848,6 +1854,7 @@ void _SsSndReplay(s16 access, s16 sequence) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSetTickMode);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B38);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsEnd);
 

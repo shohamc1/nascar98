@@ -38,6 +38,17 @@ options:
   rodata_string_guesser_level: 2
   data_string_guesser_level: 2
 
+  # Move each function's rodata (jump tables, string literals) into its
+  # nonmatching .s file, so decompiling the function moves them into C.
+  # Orphan rodata stays in per-symbol .s files reached with INCLUDE_RODATA.
+  migrate_rodata_to_functions: True
+
+  # include_asm.h and the .inc files are owned by this repo (tracked in
+  # git). INCLUDE_RODATA needs the maspsx function wrapper; splat's
+  # generator would overwrite it with a file-scope form that GCC 2.7.2
+  # hoists above every function body, reordering .rodata.
+  generate_asm_macros_files: False
+
 segments:
   - name: header
     type: header
@@ -56,9 +67,13 @@ segments:
       # tools/psyq_sigs.py identifies the objects (libs 3.5, LIBSND and
       # LIBGTE 3.6).
       - [0x6268C, c, psxsdk]
+      # Game rodata, migrated per-function into asm/nonmatchings/game/.
+      # 0x7E810 is 0x80090010: the first SDK division table (D_80090010);
+      # the game/SDK rodata boundary is inferred, see kb/.
+      - [0x7B250, .rodata, game]
+      - [0x7E810, .rodata, psxsdk]
       # LIBPRESS strings end here; game data starts at 0x80090DC8.
       # This section boundary is inferred; see kb/ for the evidence.
-      - [0x7B250, rodata, rodata]
       - [0x7F5C8, data, data]
       - [0x914E0, sdata, sdata]
       - { start: 0x91BC0, type: bss, vram: 0x800A33C0, name: bss }
