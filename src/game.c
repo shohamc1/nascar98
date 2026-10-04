@@ -14858,7 +14858,93 @@ void __maspsx_include_asm_hack_jtblpad_80069A90() {
     );
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80069AFC);
+void func_80069AFC(s32 arg0) {
+    extern void *D_800A3914[];
+    extern void *D_800A3A24[];
+    extern s8 D_800A307C[];
+    extern s32 D_8009A2D4[];
+    extern s32 D_8009A2F4[];
+    extern void func_8005A7B8(s32, s32);
+    extern s32 func_8005B0E4(s16, s32);
+    register s32 group asm("v1");
+    s32 index;
+    s32 value;
+    u8 *obj;
+    u8 *child;
+
+    switch (arg0 & 0xFF) {
+    case 0:
+    case 1:
+    case 3:
+    case 6:
+    case 15:
+        group = 0;
+        break;
+    case 2:
+    case 4:
+    case 5:
+    case 7:
+    case 8:
+    case 11:
+        group = 1;
+        break;
+    case 10:
+        group = 3;
+        break;
+    case 12:
+    case 16:
+    case 17:
+        group = 4;
+        break;
+    case 34:
+    case 36:
+    case 40:
+        group = 5;
+        break;
+    case 35:
+        group = 6;
+        break;
+    case 9:
+    case 14:
+    case 33:
+        group = 7;
+        break;
+    default:
+        group = 0xFF;
+        break;
+    }
+    /* The retail compiler keeps the u8 truncation of the switch result. */
+    asm("andi %0, %0, 0xff" : "=r"(group) : "0"(group));
+    index = group;
+    if (group == 0xFF) {
+        register u8 *retObj asm("v1");
+
+        retObj = (u8 *)D_800A3914[0];
+        if (retObj != 0) {
+            *(s16 *)(retObj + 0x1A) = -0x32;
+            return;
+        }
+    }
+    func_8005A7B8(2, 2);
+    if (((s8 *)D_800A3A24)[0] == 2) {
+        value = func_8005B0E4(0x140, D_8009A2F4[index]);
+    } else {
+        value = func_8005B0E4(0x140, D_8009A2D4[index]);
+    }
+    obj = (u8 *)D_800A3914[0];
+    *(s16 *)(obj + 6) = value;
+    *(s16 *)(obj + 0x1A) = 0x32;
+    child = *(u8 **)(obj + 0x20);
+    if (((s8 *)D_800A3A24)[0] == 2 && D_800A307C[0] != 6) {
+        *(s32 *)(child + 8) = D_8009A2F4[index];
+    } else {
+        *(s32 *)(child + 8) = D_8009A2D4[index];
+    }
+    /* The retail jump table is followed by a zero pad word at 0x8008FBB8. */
+    asm(".rdata");
+    asm(".long 0");
+    asm(".text");
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80069C60);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008FC60);
