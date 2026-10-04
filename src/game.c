@@ -10529,7 +10529,76 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800531B8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800535A0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800539F0);
+extern void func_8005E550(s32);
+extern void func_80057AE4(void);
+extern void func_80057A9C(void);
+extern void func_8005A4E0(void);
+extern void func_8005A544(u8, u8);
+extern void func_8005A804(u8, u8, u8);
+extern void func_80059648(void);
+extern void func_800631B4(void);
+extern void func_80063E7C(void);
+extern void func_80064174(void);
+extern void func_80069744(void);
+extern void *func_80058094(s32, void **, s32);
+extern s32 D_800A37EC;
+extern u8 D_800A3724NM asm("D_800A3724.NON_MATCHING");
+extern u8 D_800A305ANM asm("D_800A305A.NON_MATCHING");
+extern s32 D_800A37F0NM asm("D_800A37F0.NON_MATCHING");
+extern s32 D_800A3830NM asm("D_800A3830.NON_MATCHING");
+
+void func_800539F0(void) {
+    void *table;
+    u8 i;
+    void *base;
+
+    D_800A37EC = (s32)HeapAlloc(0x26000);
+    func_8003CA18(D_800A37EC, 5);
+    func_8005E550(6);
+    func_80057AE4();
+    i = 0;
+    func_800631B4();
+    func_80063E7C();
+    func_80057A9C();
+    func_8005A4E0();
+    base = func_80058094(9, &table, 0);
+    func_80013224(base + ((s32 *)table)[0xB]);
+    DrawSync(0);
+    func_80013224(base + ((s32 *)table)[6]);
+    DrawSync(0);
+    func_80013224(base + ((s32 *)table)[0xA]);
+    DrawSync(0);
+    while (i < 5) {
+        func_80013224(base + ((s32 *)table)[i + 1]);
+        DrawSync(0);
+        i++;
+    }
+    i = 0;
+    func_80013224(base + ((s32 *)table)[9]);
+    DrawSync(0);
+    while (i < 2) {
+        func_80013224(base + ((s32 *)table)[i + 7]);
+        DrawSync(0);
+        i++;
+    }
+    func_80013224(base + ((s32 *)table)[0xC]);
+    DrawSync(0);
+    func_80013224(base + ((s32 *)table)[0]);
+    DrawSync(0);
+    func_80059648();
+    HeapFree(base);
+    func_80064174();
+    func_80069744();
+    func_8005A544(0, 0);
+    func_8005A544(1, 1);
+    func_8005A544(2, 2);
+    func_8005A804(0xA0, 0xA0, 0x40);
+    D_800A3724NM = 3;
+    D_800A305ANM = 0;
+    D_800A37F0NM = 1;
+    D_800A3830NM = 0;
+}
+
 
 #ifdef NON_MATCHING
 /* w9f: positional cc1 SIGSEGV (exit 139) whenever this function body is ACTIVE
@@ -15996,11 +16065,11 @@ void func_80068A3C(u8 *head, u8 *other, s32 delta, s32 limit, s32 mid) {
     }
 }
 
-extern s32 D_800A3830NM[] asm("D_800A3830.NON_MATCHING");
-extern s32 D_800A3830NC[] asm("D_800A3830.NON_MATCHING");
-extern s32 D_800A37F0NM[] asm("D_800A37F0.NON_MATCHING");
-extern s32 D_800A37F0NC[] asm("D_800A37F0.NON_MATCHING");
-extern s32 D_800A37F0ND[] asm("D_800A37F0.NON_MATCHING");
+extern s32 D_800A3830Absolute[];
+extern s32 D_800A3830Absolute2[];
+extern s32 D_800A37F0Absolute[];
+extern s32 D_800A37F0Absolute2[];
+extern s32 D_800A37F0Absolute3[];
 extern u8 D_800A39E4NM[] asm("D_800A39E4.NON_MATCHING");
 extern u8 D_800A3A58NM[] asm("D_800A3A58.NON_MATCHING");
 extern s16 D_800B9B84NM[] asm("D_800B9B84.NON_MATCHING");
@@ -16025,13 +16094,13 @@ void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
 
     threshold = 5;
     if (arg0 & ~arg1) {
-        D_800A3830NC[0] = 0;
+        D_800A3830Absolute2[0] = 0;
         limitSave = 1;
     } else {
-        D_800A3830NM[0] = D_800A3830NC[0] + 1;
-        if (threshold < D_800A3830NM[0]) {
-            D_800A37F0NM[0] = D_800A37F0NC[0] + D_800A37F0NC[0] / 2;
-            if (0x41 <= D_800A37F0NM[0]) {
+        D_800A3830Absolute[0] = D_800A3830Absolute2[0] + 1;
+        if (threshold < D_800A3830Absolute[0]) {
+            D_800A37F0Absolute[0] = D_800A37F0Absolute2[0] + D_800A37F0Absolute2[0] / 2;
+            if (0x41 <= D_800A37F0Absolute[0]) {
                 limitSave = 0x40;
             } else {
                 goto noStore;
@@ -16040,12 +16109,12 @@ void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
             return;
         }
     }
-    D_800A37F0ND[0] = limitSave;
+    D_800A37F0Absolute3[0] = limitSave;
 noStore:
     if (arg2 & 0xFF) {
-        delta = D_800A37F0ND[0];
+        delta = D_800A37F0Absolute3[0];
     } else {
-        dneg = D_800A37F0ND[0];
+        dneg = D_800A37F0Absolute3[0];
         asm("negu %0, %1" : "=r"(delta) : "r"(dneg));
     }
     val = D_800A39E4NM[0];
