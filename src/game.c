@@ -5685,7 +5685,133 @@ void func_80032D94(s8 *object) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80032DEC);
+extern s32 func_800337EC(void);
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A39C8[];
+extern u32 D_800B022C[];
+extern s16 D_800AFE2C[];
+extern s32 D_800A2F38NM asm("D_800A2F38.NON_MATCHING");
+
+void func_80032DEC(u8 *arg0, s32 arg1) {
+    register s32 *vec0 asm("a3");
+    register s32 *vec1 asm("t0");
+    register s32 *vec2 asm("t1");
+    register s32 w4 asm("v1");
+    register s32 w8 asm("a0");
+    register s32 wC asm("v0");
+    register s32 n0 asm("v1");
+    register s32 n1 asm("a0");
+    register s32 old asm("a0");
+    register s32 tmpa1 asm("a1");
+    register s32 sh asm("v1");
+    register s32 base asm("v0");
+    register u8 *obj asm("s0");
+    register u8 *prim18 asm("s1");
+    register u8 *prim asm("s2");
+    register s32 otz asm("s3");
+    register s32 count asm("s4");
+    register u32 *objCursor asm("s5");
+    register s32 entryCount asm("s6");
+    register s16 *zCursor asm("s7");
+    register u8 *otBase40 asm("s8");
+    register s32 shifted asm("v0");
+    register s32 aligned asm("v0");
+    register s32 mask asm("a0");
+    register s32 diff asm("v1");
+    register s32 guard asm("a2");
+    register s32 oldEnd asm("v0");
+    s32 *normal;
+    s32 w10;
+    s32 w14;
+
+    obj = arg0;
+    old = D_800A2F38NM;
+    asm("addu %0, %1, $zero" : "=r"(count) : "r"(arg1));
+    guard = count;
+    count = count - 1;
+    prim = (u8 *)gPrimitiveCursor[0];
+    tmpa1 = (s32)D_800A39C8[0];
+    otBase40 = (u8 *)tmpa1 + 0x40;
+    base = (s32)D_800B022C;
+    sh = old * 4;
+    objCursor = (u32 *)(sh + base);
+    sh = old * 2;
+    base = (s32)D_800AFE2C;
+    zCursor = (s16 *)(sh + base);
+    entryCount = old;
+    if (guard > 0) {
+        prim18 = prim + 0x18;
+        asm("" : "+r"(prim18));
+        do {
+            vec0 = *(s32 **)(obj + 0x18);
+            vec1 = *(s32 **)(obj + 0x1C);
+            vec2 = *(s32 **)(obj + 0x20);
+            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                         "lwc2 $1, 0x4(%0)\n\t"
+                         "lwc2 $2, 0x0(%1)\n\t"
+                         "lwc2 $3, 0x4(%1)\n\t"
+                         "lwc2 $4, 0x0(%2)\n\t"
+                         "lwc2 $5, 0x4(%2)"
+                         : : "r"(vec0), "r"(vec1), "r"(vec2));
+            w4 = *(s32 *)(obj + 0x4);
+            w8 = *(s32 *)(obj + 0x8);
+            asm volatile("rtpt");
+            wC = *(s32 *)(obj + 0xC);
+            w10 = *(s32 *)(obj + 0x10);
+            w14 = *(s32 *)(obj + 0x14);
+            *(s32 *)(prim18 - 0xC) = w8;
+            *(s32 *)(prim18 - 0x14) = w4;
+            *(s32 *)(prim18 - 4) = wC;
+            asm volatile("swc2 $12, 0x0(%0)\n\t"
+                         "swc2 $13, 0x0(%1)\n\t"
+                         "swc2 $14, 0x0(%2)"
+                         : : "r"(prim + 8), "r"(prim + 0x10), "r"(prim + 0x20));
+            normal = *(s32 **)(obj + 0x24);
+            n0 = normal[0];
+            n1 = normal[1];
+            asm volatile("avsz3");
+            *(s32 *)(prim18 + 4) = w10;
+            *(s32 *)(prim18 + 0xC) = w14;
+            asm volatile("mfc2 %0, $7" : "=r"(otz));
+            asm volatile("mtc2 %0, $0\n\tmtc2 %1, $1" : : "r"(n0), "r"(n1));
+            if (otz < 0x9B) {
+                asm volatile("rtps");
+                if (func_800337EC() != 0 && entryCount < 0x1FF) {
+                    otz = otz + *(s8 *)(obj + 1);
+                    if (otz >= 0) {
+                        entryCount = entryCount + 1;
+                        *objCursor = (u32)obj;
+                        objCursor = objCursor + 1;
+                        shifted = otz << 2;
+                        *zCursor = shifted;
+                        zCursor = zCursor + 1;
+                    }
+                    goto nextObj;
+                }
+            }
+            asm volatile("rtps");
+            tmpa1 = *(s8 *)(obj + 1);
+            aligned = (otz >> 2) << 2;
+            aligned = aligned + (s32)otBase40;
+            mask = 0xFF0000;
+            tmpa1 = tmpa1 * 4 + aligned;
+            *(u32 *)prim = *(u32 *)tmpa1 | 0x09000000;
+            mask = mask | 0xFFFF;
+            *(u32 *)tmpa1 = (u32)prim & mask;
+            asm volatile("swc2 $14, 0x0(%0)" : : "r"(prim18));
+            prim18 = prim18 + 0x28;
+            prim = prim + 0x28;
+nextObj:
+            obj = *(u8 **)(obj + 0x28);
+        } while (count-- > 0);
+    }
+    gPrimitiveCursor[0] = (u32)prim;
+    oldEnd = D_800A2F38NM;
+    diff = (s32)objCursor - (s32)D_800B022C;
+    diff = diff - oldEnd * 4;
+    D_800A2F38NM = oldEnd + (diff >> 2);
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80033000);
 
@@ -13971,7 +14097,109 @@ void func_80062F04(u8 index, u8 kind, u8 sub) {
     *(target + 2) = D_8009ABFC[code];
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80062F6C);
+extern u8 *D_800A37FC[];
+extern s32 *D_800A37D8[];
+extern u8 D_800AEE3D[];
+extern u8 D_800AEE3E[];
+extern u8 D_800AEE40[];
+extern u8 D_800AEE41[];
+extern u8 D_800AEE42[];
+extern u8 D_800AEE43[];
+
+void func_80062F6C(s32 arg0, s32 arg1) {
+    register s32 i asm("t0");
+    register u8 *obj asm("t1");
+    register s32 offset asm("t2");
+    s32 **entry;
+    register s32 b42 asm("v1");
+    register s32 b43 asm("a0");
+    register s32 val asm("a2");
+    register s32 lim asm("v0");
+    register s32 base2 asm("v0");
+    register s32 d asm("v0");
+    register s32 a asm("v0");
+    register s32 denom asm("v1");
+    register s32 b asm("v1");
+    register s32 mode asm("v1");
+    register s32 delta asm("v1");
+    s32 idx;
+    s32 base9;
+    s32 y;
+    s32 a;
+    s32 b;
+    s32 j;
+    s32 prod;
+    s16 sum;
+
+    idx = arg0 & 0xFF;
+    obj = (u8 *)D_800A37FC[idx];
+    i = 0;
+    base9 = idx * 9;
+    base2 = (s32)D_800A37D8;
+    entry = (s32 **)(idx * 4 + base2);
+    offset = -3;
+    for (; i < 3; i++) {
+        switch (i) {
+        case 0:
+            b42 = D_800AEE42[base9];
+            b43 = D_800AEE43[base9];
+            lim = 0x80;
+            val = lim - b42;
+            val = (val * 103) >> 8;
+            y = b43 - 0x80;
+            if (val >= 0x68) {
+                val = 0x67;
+            }
+            y = (y * 103) >> 8;
+            if (y >= 0x68) {
+                y = 0x67;
+            }
+            sum = val + y;
+            *(s16 *)(obj + 0x16) = sum;
+            if (sum >= 0x68) {
+                *(s16 *)(obj + 0x16) = 0x67;
+            }
+            *(s16 *)(obj + 0x12) = 0xAC - val;
+            break;
+        case 1:
+        case 2:
+            mode = arg1 & 0xFF;
+            if (mode == 2) {
+                j = offset + base9;
+                val = D_800AEE3D[j];
+                prod = val * 49;
+                asm("sra %0, %1, 0x8" : "=r"(val) : "r"(prod));
+                if (val >= 0x32) {
+                    val = 0x31;
+                }
+            } else {
+                if (i == 1) {
+                    denom = D_800AEE3E[base9];
+                    d = D_800AEE3D[base9];
+                    val = denom - d;
+                } else {
+                    a = D_800AEE40[base9];
+                    b = D_800AEE41[base9];
+                    val = a - b;
+                    denom = 0xFF - b;
+                }
+                prod = val * 48;
+                val = prod / denom;
+                if (val >= 0x31) {
+                    val = 0x30;
+                }
+            }
+            *(s16 *)(obj + 0x18) = val;
+            delta = val - 0x38;
+            *(s16 *)(obj + 0x14) =
+                *(u16 *)((u8 *)entry[0] + 0x14) - delta;
+            break;
+        }
+        obj = *(u8 **)(obj + 0x1C);
+        offset = offset + 3;
+    }
+}
+
 
 extern s16 *D_800AE290[];
 void func_80063180(s32 enabled) {
