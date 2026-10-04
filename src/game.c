@@ -11713,25 +11713,16 @@ void func_8005CC34(void) {
     *(s16 *)(D_800A38F8 + 0xA) = height;
 }
 
-#ifdef NON_MATCHING
-/* Wall (a6 agent, 2026-10-04): everything matches except an s1/s2 register swap:
- * our D_800BB9E4[id] CSE slot temp takes s1 and the buffer local takes s2;
- * retail has buffer in s1 and the slot in s2 (10 diff rows, no length change).
- * gcc 2.7.2 global-alloc orders these pseudos by floor_log2(refs)*refs/live_length;
- * the buffer def's sched1 position pins its live range too long to win s1.
- * Tried (all compile, none flip it): buffer statement moved before prim / after
- * the sb / after length=1 / into the merge block (that one flips to s0 and moves
- * the la past the branch); buffer declared with initializer (s3, early la);
- * declaration order permutations; no-buffer-local inline spellings (CSE temp
- * steals s0); entry[0] explicit local (5 s-regs, +0x10 frame); char*/s32-array
- * decls; (u8)id casts; asm("") barriers; s32/s16/u8 value local (s16 gives the
- * retail move+slti pair, u8 adds andi+sltiu, s32 shortens the function 8 bytes).
- */
+/* buffer is pinned to s1 with an explicit-register local: gcc 2.7.2 hands
+ * such variables their hard register directly (make_decl_rtl), so
+ * global-alloc never ranks it against the D_800BB9E4[id] slot address
+ * temp, which takes s2 as in retail. */
 extern u8 D_800A331CAbsolute[];
 extern u8 *D_800BB9E4[];
+extern char *strcpy(char *, const char *);
 s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
     u8 *prim;
-    u8 *buffer;
+    register u8 *buffer asm("$17");
     s32 length;
     u8 newValue;
     s16 value;
@@ -11794,9 +11785,15 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
     return inRange;
 }
 
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005CCEC);
-#endif
+/* The original toolchain padded this odd-length jump table with one zero
+ * word; the C switch regenerates the table, this restores the pad. */
+void __maspsx_include_asm_hack_jtblpad_8005CCEC() {
+    __asm__(
+        ".section .rodata # maspsx-keep \n"
+        "    .word 0 # maspsx-keep\n"
+        "    .section .text # maspsx-keep\n"
+    );
+}
 
 extern u8 D_800A3078[], D_800A3988[];
 extern void func_8005C8D8(s32), func_8005CCEC(u8, s32);
