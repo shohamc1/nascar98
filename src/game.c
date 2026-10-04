@@ -10090,7 +10090,90 @@ next:
 }
 
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80044FF8);
+extern s32 D_800A33F0;
+extern s32 D_800A33F4;
+extern s8 D_800A33F8;
+extern s32 D_800A3400;
+extern s32 D_800A3404;
+extern s32 D_80098184[];
+extern s32 D_80098134nm[] asm("D_80098134.NON_MATCHING");
+extern s32 D_8009813Cnm[] asm("D_8009813C.NON_MATCHING");
+extern u8 D_800A3880nm[] asm("D_800A3880.NON_MATCHING");
+
+void func_80044FF8(s32 arg0, s32 arg1) {
+    s32 i;
+    s32 off;
+    s32 *entry;
+    s32 temp;
+    s32 vol;
+    s32 cur;
+    s32 newv;
+
+    i = 0;
+    switch (arg0) {
+    case 0:
+        D_800A3404 = 0;
+        D_800A3400 = 0;
+        D_800A33F4 = 0;
+        D_800A33F0 = 0;
+        *(volatile s32 *)&D_800A33F8 = 0x20;
+        func_8003F564((s8)arg1, -(D_800A3880nm[0] != 0) & 7);
+        func_8003FDE8((s8)arg1, 0x7F, 0x7F);
+        return;
+    case 1:
+        if (D_800A3404 >= D_80098184[0]) {
+            D_800A3404 = 0;
+            D_800A3400 = 0;
+            D_800A33F0 = 0;
+        } else {
+            D_800A3404 =
+                D_800A3404 + ((D_80098134nm[D_800A33F0 * 6] * 7) >> 2);
+        }
+        if (D_800A33F4 != 0) {
+            D_800A33F4 = D_800A33F4 - 1;
+        }
+        off = i * 0x18;
+        while (D_800A3404 > *(s32 *)((s8 *)D_8009813Cnm + off)) {
+            i = i + 1;
+            off = off + 0x18;
+        }
+        entry = (s32 *)((s8 *)D_80098134nm + i * 0x18);
+        temp = MathFixedDivide(entry[4] - entry[3],
+                               (entry[2] - entry[1]) >> 16);
+        D_800A3400 = entry[3] +
+                     (MathMultiplyFixed16(temp, D_800A3404 - entry[1]) >>
+                      16);
+        if (D_800A33F0 < i) {
+            D_800A33F4 = 0x14;
+        }
+        D_800A33F0 = i;
+        if (D_800A33F4 < 0x12) {
+            vol = D_800A3400 / 110;
+        } else {
+            vol = 0x6E;
+        }
+        cur = *(volatile s32 *)&D_800A33F8;
+        if (cur + 7 < vol) {
+            *(volatile s32 *)&D_800A33F8 = cur + 7;
+            newv = cur + 7;
+        } else if (vol < cur - 5) {
+            *(volatile s32 *)&D_800A33F8 = cur - 5;
+            newv = cur - 5;
+        } else {
+            newv = vol;
+        }
+        *(volatile s32 *)&D_800A33F8 = newv;
+        if (newv >= 0x80) {
+            *(volatile s32 *)&D_800A33F8 = 0x7F;
+        }
+        func_8003FA84((s8)arg1, D_800A33F8);
+        return;
+    case 2:
+        func_8003F914((s8)arg1);
+        return;
+    }
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80045288);
 
@@ -10258,7 +10341,73 @@ void func_800488A4(u8 *object) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800488B8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80048C90);
+extern u8 D_800A38F0;
+extern u8 D_800A35FCnm asm("D_800A35FC.NON_MATCHING");
+extern s32 D_800A2EB0Absolute[];
+extern s32 D_800A37D0[];
+extern s32 D_800A37D4nm[] asm("D_800A37D4.NON_MATCHING");
+extern s32 D_800A2E94[];
+extern s32 D_800AE1EC[];
+extern s32 D_800A2EA8[];
+extern s32 D_800A7550[];
+extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
+
+void func_80048C90(void) {
+    s8 buf[24];
+    s8 i;
+    s8 j;
+    register s8 ni asm("$2");
+    s8 idx;
+    u8 *node;
+    s32 scale;
+    register s32 count asm("$18");
+    s32 limit;
+    register s32 bound asm("$3");
+    s32 raw;
+    s32 k;
+    s32 a1val;
+    register s32 slot asm("$18");
+    s32 r0;
+    s32 r2;
+    register s32 cnt asm("$6");
+
+    if (D_800A38F0 == 0 || (count = D_800A2EB0Absolute[0]) != 0) {
+        D_800A35FCnm = 0;
+        return;
+    }
+    r0 = RandomScaledGet((D_800A37D0[0] - 1) / 50 + 3);
+    cnt = D_800A2E94[0];
+    limit = 0x18 / cnt;
+    D_800A35FCnm = ((D_800A37D4nm[-1] + 0x18) / 50 + r0) / limit;
+    if (count < cnt) {
+        i = 0;
+        do {
+            buf[i] = 0;
+            ni = i + 1;
+            asm volatile("lui %1, %%hi(D_800A2E94.NON_MATCHING)\n\tlw %1, %%lo(D_800A2E94.NON_MATCHING)(%1)\n\taddu %0, %2, $zero"
+                : "=r"(i), "=r"(bound) : "r"(ni));
+        } while (ni < bound);
+    }
+    scale = MathFixedDivide(D_800AE1EC[0] * 0x14, 0x7D00);
+    for (i = 0; i < D_800A35FCnm; i++) {
+        do {
+            raw = RandomScaledGet(D_800A2E94[0]);
+            idx = (s8)raw;
+            slot = raw;
+        } while (buf[idx] != 0);
+        node = D_800A3878nm[0];
+        for (j = 0; j < idx; j++) {
+            node = *(u8 **)(node + 0x3E0);
+        }
+        a1val = D_800A2EA8[0];
+        D_800A7550[i] = node;
+        r2 = RandomScaledGet(MathMultiplyFixed16(scale, (a1val - 1) << 16) >> 16);
+        *(s32 *)(node + 0x414) = (scale >> 16) + r2;
+        asm("sll %0, %1, 0x18\n\tsra %0, %0, 0x18" : "=r"(k) : "r"(slot));
+        buf[k] = 1;
+    }
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80048EFC);
 
@@ -19292,4 +19441,110 @@ s32 func_80073BD8(void) {
     return D_800A351C[0x7B58 / 4];
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80073BEC);
+extern void bzero(void *, s32);
+extern void *SpuSetTransferCallback(void *);
+
+s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
+                   s32 arg5, s32 arg6) {
+    SpuVoiceAttr va;
+    SpuCommonAttr ca;
+    register SpuCommonAttr *caarg asm("$4");
+    u32 off;
+    register s32 voice asm("$16");
+    register s32 addr asm("$20");
+    register s32 a5 asm("$23");
+    s32 a6;
+    u8 val;
+
+    a5 = arg5;
+    a6 = arg6;
+    if (arg0 == 0) {
+        goto bail;
+    }
+    if (arg2 == 0) {
+        goto bail;
+    }
+    if (arg4 == 0) {
+        goto bail;
+    }
+    if (arg1 == 0) {
+        goto bail;
+    }
+    if (arg3 == 0) {
+        goto bail;
+    }
+    D_800A351C = (volatile s32 *)arg0;
+    bzero(arg0, 0x7B80);
+    off = 0;
+    val = 2;
+    do {
+        ((u8 *)D_800A351C + off)[0x7811] = val;
+        off = off + 0x10;
+    } while (off < 0x300);
+    D_800A351C[0x7B3C / 4] = 1;
+    D_800A351C[0x7B58 / 4] = 0;
+    D_800A351C[0x7B5C / 4] = arg2;
+    D_800A351C[0x7B60 / 4] = arg4;
+    D_800A351C[0x7B64 / 4] = arg1;
+    D_800A351C[0x7B68 / 4] = arg3;
+    D_800A351C[0x7B7C / 4] = a5;
+    voice = D_800A351C[0x7B64 / 4];
+    addr = D_800A351C[0x7B5C / 4];
+    ca.mask = 3;
+    ca.mvol.left = 0x3FFF;
+    ca.mvol.right = 0x3FFF;
+    SpuSetCommonAttr(&ca);    
+    va.mask = 0xFF93;
+    va.voice = voice;
+    va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
+    va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
+    va.pitch = a5;
+    va.addr = addr;
+    va.a_mode = 1;
+    va.s_mode = 1;
+    va.r_mode = 3;
+    va.ar = 0;
+    va.dr = 0;
+    va.sr = 0;
+    va.rr = 0;
+    va.sl = 0xF;
+    SpuSetVoiceAttr(&va);
+    voice = D_800A351C[0x7B68 / 4];
+    addr = D_800A351C[0x7B60 / 4];
+    {
+    asm volatile("addiu %0, $sp, 0x50" : "=r"(caarg));
+    ca.mask = 3;
+    ca.mvol.left = 0x3FFF;
+    ca.mvol.right = 0x3FFF;
+    SpuSetCommonAttr(caarg);
+    va.mask = 0xFF93;
+    va.voice = voice;
+    va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
+    va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
+    va.pitch = a5;
+    va.addr = addr;
+    va.a_mode = 1;
+    va.s_mode = 1;
+    va.r_mode = 3;
+    va.ar = 0;
+    va.dr = 0;
+    va.sr = 0;
+    va.rr = 0;
+    va.sl = 0xF;
+    SpuSetVoiceAttr(&va);
+    }
+    SwEnterCriticalSection();
+    D_800A351C[0x7B14 / 4] = (s32)SpuSetIRQCallback(0);
+    D_800A351C[0x7B18 / 4] = (s32)SpuSetTransferCallback(func_80072178);
+    D_800A351C[0x7B1C / 4] = a6;
+    if (a6 != 0) {
+        D_800A351C[0x7B10 / 4] = (s32)((Callback (*)(Callback))VSyncCallback)(func_8007270C);
+    } else {
+        D_800A351C[0x7B10 / 4] = 0;
+    }
+    SwExitCriticalSection();
+    return 1;
+bail:
+    return 0;
+}
+
