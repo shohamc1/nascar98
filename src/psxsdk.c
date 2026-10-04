@@ -4,6 +4,7 @@
 #include "psxsdk_internal.h"
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
+#include <psxsdk/stdarg.h>
 
 #include <psxsdk/libspu.h>
 #include <psxsdk/libgpu.h>
@@ -789,7 +790,17 @@ extern u16 D_800AD0DC[];
 extern u16 D_800AD0E0[];
 extern u32 D_8009D038[];
 extern u8 D_8009D040[];
-extern u8 D_8009CEB8[];
+
+typedef struct {
+    u8 unk00[0x1C];
+    s32 unk1C;
+    u8 unk20[4];
+    u8 *unk24;
+    s32 unk28;
+    u8 unk2C[4];
+} FntFont;
+
+extern FntFont D_8009CEB8[];
 extern void memset_8008B820();
 
 void FntLoad(int tx, int ty) {
@@ -804,7 +815,144 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
+#ifdef NON_MATCHING
+/* WALL (agent a9, 2026-10-04): structure and scheduling match; gcc 2.7.2
+ * global allocation swaps two register pairs vs retail (font/width in s1/s2,
+ * '%' constant and 0xCCCCCCCD magic in s4/s5). Declaration order, dead
+ * initializers, register-variable pins, statement order, and decomp-permuter
+ * runs did not flip either pair. */
+/* SPDX-License-Identifier: MIT */
+
+extern u8 *D_8009DA44[];
+extern int strlen(const char *);
+
+int FntPrint(const char *fmt, ...) {
+    u8 *buf;
+    s32 width;
+    FntFont *font;
+    u8 *str;
+    u32 value;
+    s32 ch;
+    s32 count;
+    u8 zeroPad;
+    volatile u8 pad[0x200];
+    va_list ap;
+
+    va_start(ap, fmt);
+    if ((s32)fmt < 0 || (s32)fmt >= (s32)D_8009D038[0]) {
+        str = (u8 *)fmt;
+        fmt = (const char *)D_8009D03C[0];
+        if (D_8009CEB8[(s32)fmt].unk24 == 0) {
+            return -1;
+        }
+    } else {
+        str = va_arg(ap, u8 *);
+    }
+    font = &D_8009CEB8[(s32)fmt];
+    if (font->unk28 > font->unk1C) {
+        return -1;
+    }
+    ch = *str;
+    while (ch != 0) {
+        if (ch != '%') {
+            goto store;
+        }
+        str++;
+        ch = *str;
+        width = 0;
+        if (ch != '%') {
+            goto format;
+        }
+store:
+        font->unk24[font->unk28++] = ch;
+        if (font->unk28 > font->unk1C) {
+            return -1;
+        }
+        goto tail;
+format:
+        zeroPad = (ch == '0');
+        while (ch >= '0' && ch <= '9') {
+            width = width * 10 - '0';
+            width = width + ch;
+            str++;
+            ch = *str;
+        }
+        if (width <= 0) {
+            width = 1;
+        }
+        buf = (u8 *)&ap;
+        switch (ch) {
+        case 'd':
+            value = va_arg(ap, u32);
+            ch = 0;
+            if ((s32)value < 0) {
+                value = -(s32)value;
+                ch = '-';
+            }
+            count = 0;
+            do {
+                buf--;
+                count++;
+                *buf = value % 10 + '0';
+                value = value / 10;
+            } while (count == 0 || value != 0);
+            if (ch != 0) {
+                buf--;
+                *buf = ch;
+                count++;
+            }
+            break;
+        case 'X':
+        case 'x':
+            count = 0;
+            value = va_arg(ap, u32);
+            do {
+                buf--;
+                *buf = D_8009DA44[0][value & 0xF];
+                value >>= 4;
+                count++;
+            } while (count == 0 || value != 0);
+            if (zeroPad) {
+                while (count < width) {
+                    buf--;
+                    *buf = '0';
+                    count++;
+                }
+            }
+            break;
+        case 'c':
+            buf--;
+            *buf = va_arg(ap, u8);
+            count = 1;
+            break;
+        case 's':
+            buf = va_arg(ap, u8 *);
+            count = strlen((char *)buf);
+            break;
+        }
+        while (count < width) {
+            font->unk24[font->unk28++] = ' ';
+            if (font->unk28 > font->unk1C) {
+                return -1;
+            }
+            width--;
+        }
+        while (--count != -1) {
+            font->unk24[font->unk28++] = *buf++;
+            if (font->unk28 > font->unk1C) {
+                return -1;
+            }
+        }
+tail:
+        str++;
+        ch = *str;
+    }
+    font->unk24[font->unk28] = 0;
+    return font->unk28;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntPrint);
+#endif
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090548);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090560);
 
@@ -1576,8 +1724,99 @@ void _SsSetProgramChange(s16 access, s16 sequence, u8 program) {
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSetControlChange);
+#ifdef NON_MATCHING
+/* WALL (agent a9, 2026-10-04): jump table regenerates byte-identically
+ * (122 entries; the retail source must list extra empty cases falling into
+ * default to push gcc over the table threshold - 16 added here). Remaining
+ * diffs: gcc puts `ch` in a callee-saved reg where retail uses caller-saved
+ * t0 with an s0 copy across calls, param/local homes shift (access/sequence/
+ * score/value), and (sequence << 8) | access narrows after the OR instead of
+ * promoting each operand. u8/s32 value spellings, implicit vs explicit callee
+ * prototypes, and a permuter run did not close them. */
+/* SPDX-License-Identifier: MIT */
+void SpuVmSetVol(s16, s16, u8, s16, u8);
+void SpuVmSetProgVol(s16, u8, u8);
+void _SsContDataEntry(s16, s16, u8);
+void _SsContPortamento(s16, s16, u8);
+void _SsContNrpn1(s16, s16, u8);
+void _SsContNrpn2(s16, s16, u8);
+void _SsContRpn1(s16, s16, u8);
+void _SsContResetAll(s16, s16);
 
+void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
+    struct SeqStruct *score;
+    u8 value;
+    s32 ch;
+
+    score = (struct SeqStruct *)((s32)D_800BDE3C[access] + sequence * 0xAC);
+    value = *score->readPos++;
+    ch = score->channel;
+    switch (event) {
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 8:
+    case 9:
+    case 12:
+    case 91:
+    case 92:
+    case 94:
+    case 95:
+    case 96:
+    case 97:
+    case 101:
+    case 120:
+    case 0:
+        score->unk4C = value;
+        break;
+    case 6:
+        _SsContDataEntry(access, sequence, value);
+        return;
+    case 7:
+        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch], value, score->panpot[ch]);
+        score->vol[ch] = value;
+        break;
+    case 10:
+        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch], score->vol[ch], value);
+        score->panpot[ch] = value;
+        break;
+    case 11:
+        SpuVmSetProgVol(score->unk4C, score->programs[ch], value);
+        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch], score->vol[ch], score->panpot[ch]);
+        break;
+    case 64:
+        if (value < 0x40) {
+            func_80082670();
+        } else {
+            SpuVmDamperOn();
+        }
+        break;
+    case 65:
+        _SsContPortamento(access, sequence, value);
+        return;
+    case 93:
+        SsUtSetReverbDepth(value, value);
+        break;
+    case 98:
+        _SsContNrpn1(access, sequence, value);
+        return;
+    case 99:
+        _SsContNrpn2(access, sequence, value);
+        return;
+    case 100:
+        _SsContRpn1(access, sequence, value);
+        return;
+    case 121:
+        _SsContResetAll(access, sequence);
+        return;
+    }
+    score->deltaValue = _SsReadDeltaValue(access, sequence);
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSetControlChange);
+#endif
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContModulation);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContPortaTime);
@@ -1707,7 +1946,7 @@ void func_80080758(void) {
 /* SPDX-License-Identifier: MIT */
 
 extern s32 D_800A20A0[];
-extern u8 D_800A20A4[];
+extern s32 D_800A20A4[];
 extern Callback D_800A20A8[];
 extern s32 D_800A20AC[];
 extern u8 D_800A20B0[];
@@ -1745,6 +1984,7 @@ s32 _SsStart(s32 arg0) {
         return;
     case 5:
         ((u8 *)D_800A20A4)[0xE] = 0;
+
         if (arg0 == 0) {
             D_800A20B0[0] = 1;
         } else {
@@ -1764,7 +2004,7 @@ s32 _SsStart(s32 arg0) {
             u32 div;
             s32 ticks;
 
-            env = D_800A20A4;
+            env = (u8 *)D_800A20A4;
             if (*(s32 *)&env[0] == 0) {
                 ticks = *(s32 *)&env[-4];
                 if (ticks < 0x46) {
@@ -1853,7 +2093,73 @@ void _SsSndReplay(s16 access, s16 sequence) {
     D_800BDE3C[access][sequence].unk90 &= ~8;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSetTickMode);
+/* SPDX-License-Identifier: MIT */
+
+extern s32 D_800BDE2C[];
+
+void SsSetTickMode(s32 tickMode) {
+    s32 videoMode;
+    s32 mode;
+
+    videoMode = GetVideoMode();
+    if (tickMode & 0x1000) {
+        D_800A20A4[0] = 1;
+        D_800A20A0[0] = tickMode & 0xFFF;
+    } else {
+        D_800A20A4[0] = 0;
+        D_800A20A0[0] = tickMode;
+    }
+    mode = D_800A20A0[0];
+    if (mode < 6) {
+        switch (mode) {
+        case 4:
+            D_800BDE2C[0] = 50;
+            if (videoMode == 1) {
+                D_800A20A0[0] = 5;
+            } else {
+                D_800A20A0[0] = 50;
+            }
+            break;
+        case 1:
+            D_800BDE2C[0] = 60;
+            if (videoMode == 0) {
+                D_800A20A0[0] = 5;
+            } else {
+                D_800A20A0[0] = 60;
+            }
+            break;
+        case 3:
+            D_800BDE2C[0] = 120;
+            break;
+        case 2:
+            D_800BDE2C[0] = 240;
+            break;
+        case 5:
+            if (videoMode == 0) {
+                D_800BDE2C[0] = 60;
+            } else if (videoMode == 1) {
+                D_800BDE2C[0] = 50;
+            } else {
+                D_800BDE2C[0] = 60;
+            }
+            break;
+        case 0:
+            if (videoMode == 0) {
+                D_800BDE2C[0] = 60;
+            } else if (videoMode == 1) {
+                D_800BDE2C[0] = 50;
+            } else {
+                D_800BDE2C[0] = 60;
+            }
+            break;
+        default:
+            D_800BDE2C[0] = 60;
+            break;
+        }
+    } else {
+        D_800BDE2C[0] = mode;
+    }
+}
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B38);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsEnd);
