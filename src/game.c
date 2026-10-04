@@ -3579,7 +3579,77 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80028754);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80028980);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80028D80);
+void func_80028D80(u8 *arg0) {
+    register u8 *node asm("$17");
+    extern void *D_800A3990;
+    extern s8 D_800A2E18;
+    extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
+    s16 mode;
+    s32 idx;
+    u8 *base;
+    u8 *row;
+    s32 scale;
+    s32 cur;
+    s32 lim;
+    s32 temp;
+    s32 v1;
+    register s32 v7 asm("$3");
+
+    node = arg0;
+    mode = *(s16 *)(node + 0x1EC);
+    if (mode == 0) {
+        if (*(s32 *)(node + 0x28C) <= 0 || (*(u16 *)(node + 0x3A4) & 0x1000) != 0) {
+            *(s32 *)(node + 0x88) = 0;
+            return;
+        }
+    } else if (mode == 1 && *(s32 *)(node + 0x290) <= 0) {
+        *(s32 *)(node + 0x88) = 0;
+        if (*(s16 *)(node + 0x1EC) == mode && *(s32 *)(node + 0x90) <= 0x63FFFF) {
+            *(s32 *)(node + 0x88) = MathFixedDivide(1, 0xA);
+        }
+        return;
+    }
+    idx = *(s16 *)(node + 0x10C);
+    base = node + 0x124;
+    D_800A3990 = base;
+    row = (u8 *)(idx * 0x18 + (s32)base);
+    scale = *(s32 *)row;
+    if (*(u8 *)(node + 0xF6) == 0) {
+        cur = *(s32 *)(node + 0x90);
+        lim = *(s32 *)(row + 4);
+        if (cur < lim) {
+            if ((lim >> 16) != 0) {
+                scale = MathMultiplyFixed16(scale, MathFixedDivide((cur >> 16) + 0x50, lim >> 16));
+            }
+        } else {
+            v1 = *(s32 *)(row + 8);
+            if (v1 < cur) {
+                scale = MathMultiplyFixed16(scale, MathFixedDivide(0x10, ((cur - v1) >> 16) + 0x10));
+            } else {
+                scale = scale + MathFixedDivide(1, 6);
+            }
+        }
+    } else {
+        v1 = *(s32 *)(base + (s32)D_800A2E18 * 0x18 - 0x10);
+        cur = *(s32 *)(node + 0x90);
+        if (v1 < cur) {
+            scale = MathMultiplyFixed16(scale, MathFixedDivide(0x10, ((cur - v1) >> 16) + 0x10));
+        }
+    }
+    v7 = scale * 8;
+    if (D_800A2EE4nm[0] != 0) {
+        if (*(s16 *)(node + 0x1EC) == 0) {
+            scale = MathMultiplyFixed16(scale,
+                MathFixedDivide((*(s8 *)(node + 0x205) - 1) * 0x64 + 0x64, 0x64));
+            v7 = scale * 8;
+        }
+    }
+    v7 = v7 - scale;
+    scale = v7 >> 2;
+    *(s32 *)(node + 0x88) = scale + (*(s32 *)(node + 0x22C) >> 4);
+    *(s32 *)(node + 0x90) = *(s32 *)(node + 0x90) + (scale + (*(s32 *)(node + 0x22C) >> 4));
+}
+
 
 typedef struct {
     u8 unk0[0x90];
@@ -15539,7 +15609,112 @@ void func_80068A3C(u8 *head, u8 *other, s32 delta, s32 limit, s32 mid) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80068AC4);
+extern s32 D_800A3830NM[] asm("D_800A3830.NON_MATCHING");
+extern s32 D_800A3830NC[] asm("D_800A3830.NON_MATCHING");
+extern s32 D_800A37F0NM[] asm("D_800A37F0.NON_MATCHING");
+extern s32 D_800A37F0NC[] asm("D_800A37F0.NON_MATCHING");
+extern s32 D_800A37F0ND[] asm("D_800A37F0.NON_MATCHING");
+extern u8 D_800A39E4NM[] asm("D_800A39E4.NON_MATCHING");
+extern u8 D_800A3A58NM[] asm("D_800A3A58.NON_MATCHING");
+extern s16 D_800B9B84NM[] asm("D_800B9B84.NON_MATCHING");
+extern u8 *D_800A3858NM[] asm("D_800A3858.NON_MATCHING");
+extern u8 *D_800A3918NM[] asm("D_800A3918.NON_MATCHING");
+extern u8 *D_800A3918NB[] asm("D_800A3918.NON_MATCHING");
+void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
+    extern u8 D_800A3944;
+    register s32 delta asm("$8");
+    s32 threshold;
+    register s32 delta2 asm("$4");
+    s32 sum;
+    register s32 posflag asm("$2");
+    s32 limit;
+    s32 limitSave;
+    s32 dneg;
+    s32 val;
+    s32 idx;
+    u8 *head;
+    u8 *other;
+    u8 *walk;
+
+    threshold = 5;
+    if (arg0 & ~arg1) {
+        D_800A3830NC[0] = 0;
+        limitSave = 1;
+    } else {
+        D_800A3830NM[0] = D_800A3830NC[0] + 1;
+        if (threshold < D_800A3830NM[0]) {
+            D_800A37F0NM[0] = D_800A37F0NC[0] + D_800A37F0NC[0] / 2;
+            if (0x41 <= D_800A37F0NM[0]) {
+                limitSave = 0x40;
+            } else {
+                goto noStore;
+            }
+        } else {
+            return;
+        }
+    }
+    D_800A37F0ND[0] = limitSave;
+noStore:
+    if (arg2 & 0xFF) {
+        delta = D_800A37F0ND[0];
+    } else {
+        dneg = D_800A37F0ND[0];
+        asm("negu %0, %1" : "=r"(delta) : "r"(dneg));
+    }
+    val = D_800A39E4NM[0];
+    if ((val & 0xFF) == 9) {
+        limit = 0x7B;
+    } else if ((val & 0xFF) == 0xA) {
+        limit = 0x35;
+    } else if ((val & 0xFF) == 0xC || (val - 0x10) < 2U) {
+        limit = 0x99;
+    }
+    limit = limit - 0xD;
+    if (D_800A39E4NM[0] == 9) {
+        if (D_800A3A58NM[0] == 0) {
+            return;
+        }
+    }
+    if (D_800A39E4NM[0] == 0xC) {
+        if (D_800B9B84NM[0] == 0) {
+            return;
+        }
+    }
+    idx = 0;
+    if (D_800A39E4NM[0] == 9) {
+        idx = D_800A3944;
+    }
+    head = D_800A3858NM[idx];
+    if (*(s16 *)(head + 8) >= 0) {
+        if (*(s16 *)(D_800A3918NM[idx] + 8) < limit) {
+            return;
+        }
+    }
+    other = D_800A3918NB[idx];
+    delta2 = delta;
+    if (delta2 > 0) {
+        sum = *(s16 *)(head + 8) + delta2;
+        asm("slt %0, $zero, %1" : "=r"(posflag) : "r"(sum));
+        if (posflag != 0) {
+            delta2 = -*(s16 *)(head + 8);
+        }
+    } else if (delta2 < 0) {
+        if (*(s16 *)(other + 8) + delta2 < limit) {
+            delta2 = limit - *(s16 *)(other + 8);
+        }
+    }
+    if (delta2 == 0) {
+        return;
+    }
+    walk = head;
+    if (walk != 0) {
+        do {
+            *(u16 *)(walk + 8) += delta2;
+            walk = *(u8 **)(walk + 0x1C);
+        } while (walk != 0);
+    }
+}
+
 
 typedef struct UnkTextObj {
     s16 unk0;
