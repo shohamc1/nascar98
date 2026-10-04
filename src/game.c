@@ -11245,7 +11245,218 @@ void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
     AddPrim(D_800A39C8[0] + index * 4, poly);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005B8B8);
+typedef struct {
+    u32 unk0[4];
+} UnkQuad;
+typedef struct {
+    u32 unk0[6];
+} UnkPrim18;
+typedef struct {
+    u32 unk0[5];
+} UnkPrim14;
+typedef struct {
+    u32 unk0[2];
+} UnkPrim8;
+
+extern u8 *func_80057CCC(s32);
+extern u8 *func_80057D50(s32);
+extern void func_8005C020(u8 *, u8 *);
+extern void func_8005C0F4(u8 *, s32);
+extern void func_8005CF34(u8 *, u8, u8, u8, s32);
+extern u8 D_800A39E4Absolute[];
+
+void func_8005B8B8(u8 *object, s32 arg1) {
+    u8 *src;
+    u8 *poly;
+    s32 semiTrans;
+    s32 half;
+    u8 scratch[0x40];
+
+    if (object == 0) {
+        return;
+    }
+    semiTrans = arg1 & 0xFF;
+    for (; object != 0; object = *(u8 **)(object + 0x1C)) {
+        if (*(s16 *)(object + 0x1A) >= 0) {
+            if (D_800A39E4Absolute[0] != 0xD || *(s8 *)(object + 5) != 0) {
+                switch (*(u16 *)(object)) {
+                case 1: {
+                    u8 *prim;
+                    u8 *src;
+                    u8 *dst;
+                    u8 *end;
+
+                    prim = func_80057CCC(0);
+                    src = *(u8 **)(object + 0x20);
+                    dst = prim;
+                    end = src + 0x20;
+                    do {
+                        *(UnkQuad *)dst = *(UnkQuad *)src;
+                        src += 0x10;
+                        dst += 0x10;
+                    } while (src != end);
+                    *(UnkPrim8 *)dst = *(UnkPrim8 *)src;
+                    if (D_800A39E4Absolute[0] == 0xD) {
+                        *(u16 *)(prim + 0x8) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                        *(u16 *)(prim + 0xA) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                        *(u16 *)(prim + 0x10) = *(u16 *)(object + 0x6) +
+                            *(u16 *)(object + 0x12) + *(u16 *)(object + 0x16);
+                        *(u16 *)(prim + 0x12) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                        *(u16 *)(prim + 0x18) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                        *(u16 *)(prim + 0x1A) = *(u16 *)(object + 0x8) +
+                            *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                        *(u16 *)(prim + 0x20) = *(u16 *)(object + 0x6) +
+                            *(u16 *)(object + 0x12) + *(u16 *)(object + 0x16);
+                        *(u16 *)(prim + 0x22) = *(u16 *)(object + 0x8) +
+                            *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                    } else {
+                        *(u16 *)(prim + 0x8) = *(u16 *)(object + 0x6);
+                        *(u16 *)(prim + 0xA) = *(u16 *)(object + 0x8);
+                        *(u16 *)(prim + 0x10) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+                        *(u16 *)(prim + 0x12) = *(u16 *)(object + 0x8);
+                        *(u16 *)(prim + 0x18) = *(u16 *)(object + 0x6);
+                        *(u16 *)(prim + 0x1A) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                        *(u16 *)(prim + 0x20) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+                        *(u16 *)(prim + 0x22) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                    }
+                    AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, prim);
+                    break;
+                }
+                case 2: {
+                    u8 *src2;
+
+                    poly = func_80057D50(0);
+                    src2 = *(u8 **)(object + 0x20);
+                    *(UnkPrim18 *)poly = *(UnkPrim18 *)src2;
+                    if (D_800A39E4Absolute[0] == 0xD) {
+                        if (*(s16 *)(object + 0x16) == 0) {
+                            break;
+                        }
+                        if (*(s16 *)(object + 0x18) == 0) {
+                            break;
+                        }
+                        *(u16 *)(poly + 0x8) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                        *(u16 *)(poly + 0xA) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                        *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
+                            *(u16 *)(object + 0x12) + *(u16 *)(object + 0x16);
+                        *(u16 *)(poly + 0xE) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                        *(u16 *)(poly + 0x10) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                        *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
+                            *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                        *(u16 *)(poly + 0x14) = *(u16 *)(object + 0x6) +
+                            *(u16 *)(object + 0x12) + *(u16 *)(object + 0x16);
+                        *(u16 *)(poly + 0x16) = *(u16 *)(object + 0x8) +
+                            *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                    } else {
+                        *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6);
+                        *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8);
+                        *(u16 *)(poly + 0xC) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+                        *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8);
+                        *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6);
+                        *(u16 *)(poly + 0x12) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                        *(u16 *)(poly + 0x14) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+                        *(u16 *)(poly + 0x16) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                    }
+                    if (semiTrans != 0xFF) {
+                        SetSemiTrans(poly, semiTrans);
+                    }
+                    AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, poly);
+                    break;
+                }
+                case 7:
+                case 8:
+                    poly = func_80057D50(0);
+                    src = *(u8 **)(object + 0x20);
+                    *(UnkPrim14 *)poly = *(UnkPrim14 *)src;
+                    if (*(u16 *)(object) == 7) {
+                        half = *(s16 *)(object + 0x16) / 2;
+                        if (*(s16 *)(object + 0x18) < 0) {
+                            *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6) +
+                                *(u16 *)(object + 0x12);
+                            *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8) +
+                                *(u16 *)(object + 0x14);
+                            *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
+                                *(u16 *)(object + 0x12) - half;
+                            *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8) +
+                                *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                            *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6) +
+                                *(u16 *)(object + 0x12) + half;
+                            *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
+                                *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                        } else {
+                            *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6) +
+                                *(u16 *)(object + 0x12);
+                            *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8) +
+                                *(u16 *)(object + 0x14);
+                            *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
+                                *(u16 *)(object + 0x12) + half;
+                            *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8) +
+                                *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                            *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6) +
+                                *(u16 *)(object + 0x12) - half;
+                            *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
+                                *(u16 *)(object + 0x14) + *(u16 *)(object + 0x18);
+                        }
+                    } else {
+                        half = *(s16 *)(object + 0x18) / 2;
+                        *(u16 *)(poly + 0x8) =
+                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                        *(u16 *)(poly + 0xA) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                        *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
+                            *(u16 *)(object + 0x12) + *(u16 *)(object + 0x16);
+                        *(u16 *)(poly + 0xE) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14) + half;
+                        *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6) +
+                            *(u16 *)(object + 0x12) + *(u16 *)(object + 0x16);
+                        *(u16 *)(poly + 0x12) =
+                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14) - half;
+                    }
+                    if (semiTrans != 0xFF) {
+                        SetSemiTrans(poly, semiTrans);
+                    }
+                    AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, poly);
+                    break;
+
+                case 0:
+                    func_8005CF34(object, 0, 0, 0, 0);
+                    break;
+                case 5:
+                    func_8005C020(object, scratch);
+                    func_8005CF34(object, 0, 0, 0, (s32)scratch);
+                    break;
+                case 6:
+                    func_8005C0F4(object, (s32)scratch);
+                    func_8005CF34(object, 0, 0, 9, (s32)scratch);
+                    break;
+                }
+        }
+    }
+}
+
+void __maspsx_include_asm_hack_pad_8008F94C(void) {
+    __asm__(
+        ".section .rodata # maspsx-keep\n"
+        "    .word 0 # maspsx-keep\n"
+        "    .section .text # maspsx-keep\n"
+    );
+}
 
 extern s32 D_800A3654;
 extern u8 D_800A37BC;
