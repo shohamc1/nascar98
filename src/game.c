@@ -7078,6 +7078,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800373B4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80038D78);
 
+
 s32 func_80039008(u8 *arg0, u8 *arg1) {
     extern s32 func_8003702C();
     volatile s32 pad[4];
@@ -15799,7 +15800,96 @@ void *func_8006654C(void *queue, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8006654C);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80066730);
+extern s32 D_800A39C8[];
+extern u8 D_800A305B[];
+extern u8 D_800A3884;
+extern u8 *D_8009A404[];
+extern u8 *D_8009A360[];
+extern u8 *D_8009A430[];
+extern u8 *D_8009A414[];
+extern u8 *D_8009A400[];
+extern u8 D_8009B198[];
+extern DRAWENV D_800BDDA8[];
+extern DRAWENV D_800BDD4C[];
+extern DISPENV D_800BDE18[];
+extern void func_80064CD8(s32);
+extern void func_8006654C(s32, s32);
+extern void func_8005E8EC(s32, s32, s32);
+extern void func_8005A7B8(s32, s32);
+extern void func_8005A818(u8, u8, u8);
+extern s16 func_8005A8E0(s32);
+extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
+extern s32 func_8005B0E4(s16, s32);
+extern s32 func_8005A9F4W();
+asm(".globl func_8005A9F4W");
+asm("func_8005A9F4W = func_8005A9F4");
+
+void func_80066730(void)
+{
+    u8 **table;
+    u8 **q;
+    s32 page;
+    s32 y;
+    u8 **p;
+    s32 i;
+    s16 y16;
+    s32 ret;
+    s16 x;
+    u8 **pp;
+    s32 raw;
+    s32 a0v;
+    s32 a1v;
+    s32 rawT;
+
+    func_80064CD8(0);
+    PutDrawEnv(&D_800BDDA8[0]);
+    table = D_8009A404;
+    q = table + 2;
+    for (page = 0; page < 2; page++) {
+        ClearOTagR((u32 *)D_800A39C8[0], 0x3FF);
+        func_80014A40(0);
+        func_8006654C(0, 0x3FC);
+        func_8005E8EC(0, 0, 1);
+        func_8005A7B8(2, 4);
+        func_8005A818(0x80, 0x80, 0xC0);
+        y = 0xA0;
+        i = 0;
+        p = table;
+        func_8005A9F4(D_8009A360[D_800A305B[0]], 0x20, 0x23, 0, 0, 0, 0, 0);
+        do {
+            y16 = (s16)y;
+            func_8005A9F4(p[0], 0x20, y16, 0, 0, 0, 0, 0);
+            ret = (s32)(s16)func_8005A8E0(p[0]);
+            x = (s16)(ret + 0x20);
+            switch (i) {
+            case 0:
+                func_8005A9F4(q[D_8009B198[D_800A305B[0]]], x, y16, 0, 0, 0, 0, 0);
+                break;
+            case 1:
+                func_8005A9F4(D_8009A430[D_800A305B[0]], x, y16, 0, 0, 0, 0, 0);
+                break;
+            }
+            y += 0xF;
+            i++;
+            p++;
+        } while (i < 2);
+        pp = D_8009A414;
+        if (page == 0) {
+            pp = D_8009A400;
+        }
+        raw = func_8005B0E4(0x140, (s32)pp[0]);
+        asm volatile("lw %0, 0(%3)\n\tsll %2, %4, 16\n\tsra %1, %2, 16" : "=r"(a0v), "=r"(a1v), "=r"(rawT) : "r"(pp), "2"(raw));
+        func_8005A9F4W(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
+        DrawOTag((u32 *)(D_800A39C8[0] + 0xFFC));
+        DrawSync(0);
+        if (page == 0) {
+            PutDrawEnv(&D_800BDD4C[0]);
+        }
+    }
+    PutDispEnv(&D_800BDE18[0]);
+    D_800A3884 = 0;
+}
+
 
 extern s32 GetGp(void);
 extern s32 D_8008CA4C[];
