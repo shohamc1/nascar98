@@ -1,0 +1,4 @@
+interface:
+  display_name: "NASCAR 98 Register Matching"
+  short_description: "Diagnose PSX GCC register and scheduling differences"
+  default_prompt: "Use $nascar98-register-matching to diagnose the selected function's register differences and test a C source change."
