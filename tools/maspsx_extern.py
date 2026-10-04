@@ -24,7 +24,18 @@ _preprocess_lines = MaspsxProcessor.preprocess_lines
 
 def preprocess_lines(self):
     _preprocess_lines(self)
-    for line in self.lines:
+    prev = None
+    for i, line in enumerate(self.lines):
+        # gcc 2.7.2 emits ".rdata / .align 3" before every switch jump
+        # table, but the retail tables sit at 4-byte alignment (430 words
+        # at 0 mod 8 vs 432 at 4 mod 8): ASPSX 2.34 did not 8-align them.
+        # GNU as reads .align logarithmically, so align the tables to 4.
+        if re.match(r"\s*\.align\s+3\s*$", line) and re.match(
+            r"\s*\.rdata\s*$", prev or ""
+        ):
+            self.lines[i] = re.sub(r"3\s*$", "2", line)
+        if line.strip():
+            prev = line
         match = re.match(r"\.extern\s+([^,\s]+)\s*,\s*([0-9]+)", line)
         if match and 0 < int(match.group(2)) <= self.sdata_limit:
             self.sdata_entries.setdefault(match.group(1), int(match.group(2)))

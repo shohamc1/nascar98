@@ -8872,7 +8872,29 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80055AA4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80055C78);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80056B0C);
+s32 func_80056B0C(s32 arg0, s32 arg1) {
+    extern u8 D_800A39E4Small;
+    s32 result;
+
+    result = 0;
+    switch (D_800A39E4Small) {
+    case 2:
+    case 3:
+    case 6:
+    case 8:
+    case 15:
+    case 16:
+    case 17:
+        result = 0xFF;
+        break;
+    case 4:
+        if ((arg1 & 0xFF) == 8) {
+            result = 0xFF;
+        }
+        break;
+    }
+    return result;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80056B5C);
 
