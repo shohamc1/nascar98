@@ -46,8 +46,8 @@ failed cc1 behind a successful assembler.
 
 The `.greg` dump gives allocation order, conflicts, preferences, assignments,
 and hard registers used. It is not a complete priority log. For exact
-priorities, trace or instrument counts and lengths in the matching compiler
-source. Keep instrumented compilers separate.
+priorities, use the helper in [psyq-tracing.md](psyq-tracing.md) to log counts,
+lengths, and assignments from a private compiler build. Keep it separate.
 
 ## Assembler and integration traps
 

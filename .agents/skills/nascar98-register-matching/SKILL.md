@@ -25,7 +25,9 @@ The references below retain the essential method without that dependency.
 4. Read [references/allocator.md](references/allocator.md) for allocation
    evidence. Use RTL dumps to inspect local assignments, global priorities,
    hard-register conflicts, copy preferences, and reload changes. A swapped
-   pair alone does not identify the failed pass.
+   pair alone does not identify the failed pass. For missing priority data,
+   read [references/psyq-tracing.md](references/psyq-tracing.md) and generate
+   a logging patch for a private compiler build.
 5. Test one source change at a time. Keep the function's meaning, SDK
    prototypes, and C89 style. Explain which lifetime, reference count,
    preference, or expression tree the change can affect.
