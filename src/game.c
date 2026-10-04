@@ -1271,7 +1271,81 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001BA94);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001BDBC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001C34C);
+extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
+extern s32 gOTBnm[] asm("gOrderingTableBank.NON_MATCHING");
+extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
+extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
+extern u8 *D_8009AE40nm[] asm("D_8009AE40.NON_MATCHING");
+extern s32 D_800A359Cnm[] asm("D_800A359C.NON_MATCHING");
+extern s32 D_800A3848small asm("D_800A3848.NON_MATCHING");
+extern u8 D_800A2D0Cnm[] asm("D_800A2D0C.NON_MATCHING");
+extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
+extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
+extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
+extern u8 *D_800A3554small asm("D_800A3554.NON_MATCHING");
+extern s32 D_800A39C8nm[] asm("D_800A39C8.NON_MATCHING");
+extern s32 D_800A397CAbsolute[];
+extern s32 D_800A2E24Absolute[];
+extern s32 D_800A3A3CAbsolute[];
+extern s32 D_800A2EB0Absolute[];
+extern s32 D_800A2EACAbsolute[];
+extern s32 D_800A3A2CAbsolute[];
+extern s32 D_800A3A34Absolute[];
+extern s32 D_800A2EC0Absolute[];
+
+void func_8001C34C(void) {
+    s32 mode;
+    s32 value;
+    s32 prim;
+    volatile s32 pad[6];
+
+    if (D_800A2EDAnm[0] != 0) {
+        if (D_800A2EC0nm[0] % 30 < 0x10) {
+            return;
+        }
+        GraphicsSetColor(0xFF, 0x80, 0x40);
+        func_80050028(D_8009AE40nm[0], 0x76, 0x1E, 0);
+        func_80044A1C(0x6E, 0x1A, 0x60, 0x12, 0, 0, 0, 1);
+        return;
+    }
+    value = D_800A359Cnm[0];
+    if (value != 0) {
+        func_8001BDBC(value >= 0x21C);
+        if (D_800A3848small < 0xA1) {
+            return;
+        }
+        D_800A2D0Cnm[0] = 1;
+        return;
+    }
+    if (D_800A2EC8nm[0] != 0) {
+        if (D_800A397CAbsolute[0] == 2) {
+            func_8001B3F0();
+        } else {
+            func_8001A778((void *)0x80010000, D_800A2ECCnm[0], D_800A2ED0nm[0]);
+        }
+    } else {
+        func_8005098C();
+    }
+    mode = 2;
+    if (D_800A2EA4nm[0] == mode) {
+        func_8001AEDC(D_800A3554small, -0xA);
+        func_80048EFC(D_800A3554small, -0x6E);
+        prim = *(s32 *)(D_800A3554small + 0x3E0);
+        D_800A2EB0Absolute[-111] = D_800A2E24Absolute[-76] + 1;
+        D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
+        func_8001AEDC(prim, -0x14);
+        func_80048EFC(*(s32 *)(D_800A3554small + 0x3E0), -0x7D);
+        D_800A2EC0Absolute[-115] = D_800A2EACAbsolute[-110] - 1;
+        D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+        return;
+    }
+    func_8001AEDC(D_800A3554small, 0);
+    func_80048EFC(D_800A3554small, 0);
+    if (*(s8 *)(D_800A3554small + 0x209) == mode) {
+        func_8001BA94(0);
+    }
+}
+
 
 /* Lists and callbacks. */
 
