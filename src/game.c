@@ -1093,10 +1093,6 @@ s32 MathFixedDivide(s32 numerator, s32 denominator) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80015EAC);
 
-#ifdef NON_MATCHING
-/* Wall: register allocation swaps vertex and singles between s2/s3
- * relative to retail; every declaration/statement order tried keeps the
- * swap. */
 extern long RotTransPers_nom();
 extern long RotTransPers3_nom();
 extern void func_80033788();
@@ -1104,7 +1100,7 @@ extern void func_8003379C();
 
 void func_80016298(s16 *arg0, u8 *arg1) {
     s32 width;
-    u8 *vertex;
+    register u8 *vertex asm("s3");
     s32 singles;
 
     width = (arg0[1] - arg0[0]) + 1;
@@ -1125,9 +1121,6 @@ void func_80016298(s16 *arg0, u8 *arg1) {
         singles -= 3;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80016298);
-#endif
 
 extern s32 D_800A2D60;
 extern s32 D_800A2D5C;
@@ -3158,7 +3151,16 @@ s32 func_8001FB80(void *arg0) {
 #ifdef NON_MATCHING
 /* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
 s32 func_8001FBDC(s32 x, s32 y, s32 z) {
-    return MathSqrt(x * x + y * y + z * z);
+    register s32 xSq asm("v1");
+    register s32 ySq asm("t0");
+    register s32 zSq asm("v0");
+    register s32 sum asm("a0");
+
+    xSq = x * x;
+    ySq = y * y;
+    zSq = z * z;
+    sum = xSq + ySq;
+    return MathSqrt(sum + zSq);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FBDC);
@@ -7901,7 +7903,6 @@ void func_8003A880(s32 car) {
     ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
 }
 
-
 extern void func_8003ABC0();
 extern s16 D_80098294[];
 
@@ -7944,7 +7945,6 @@ void func_8003A950(s32 car) {
     }
     ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
 }
-
 
 #ifdef NON_MATCHING
 /*
