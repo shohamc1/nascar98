@@ -13741,38 +13741,19 @@ void func_8005A82C(void) {
     D_800A3618 = 0x40;
 }
 
-#ifdef NON_MATCHING
-/* Wall: structure matches; case-4 register pair is mirrored (retail
- * lh v0 / chain v1, ours lh v1 / chain v0). case-2 is correct. Permuter
- * candidate. */
 extern u8 D_800A3534;
 extern s32 D_800A35AC;
 s16 func_8005A84C(void) {
-    s32 tripled;
-    s32 product;
-    s32 scaled;
-    s32 quotient;
-    s32 result;
-
+    s32 res;
     if (D_800A3534 == 2) {
-        tripled = *(s16 *)(D_800A35AC + 8) * 3;
-        if (tripled < 0) {
-            tripled += 3;
-        }
-        result = tripled << 0xE;
+        res = *(s16 *)(D_800A35AC + 8) * 3;
+        if (res < 0) res += 3;
+        return (s16)((res << 0xE) >> 0x10);
     } else if (D_800A3534 == 4) {
-        scaled = *(s16 *)(D_800A35AC + 8);
-        product = scaled * 9;
-        quotient = product / 10;
-        result = quotient << 0x10;
-    } else {
-        return *(s16 *)(D_800A35AC + 8);
+        return (s16)((*(s16 *)(D_800A35AC + 8) * 9 / 10 << 0x10) >> 0x10);
     }
-    return (s16)(result >> 0x10);
+    return *(s16 *)(D_800A35AC + 8);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005A84C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A8E0);
 
