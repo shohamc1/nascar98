@@ -20496,8 +20496,8 @@ void func_8006D684(u8 arg0) {
     u8 i;
     u8 j;
 
-    srcBase = D_800BBA24;
     i = 0;
+    srcBase = D_800BBA24;
     do {
         dst = D_800A3860[i];
         src = &srcBase[i * 0x44 + arg0 * 4];
