@@ -52,7 +52,10 @@ These are the paths you work with:
 
 ## The loop
 
-1. Pick a function. Check `kb/` for notes on it and its callers.
+1. Pick a function. `.venv/bin/python tools/funcs.py queue` lists unmatched
+   game functions, shortest first. `tools/funcs.py dups` lists functions
+   whose opcodes nearly match another function's; a matched partner's C is
+   a template. Check `kb/` for notes on the function and its callers.
 2. Draft C with m2c:
    `.venv/bin/python tools/m2c/m2c.py -t mipsel-gcc-c asm/nonmatchings/game/FUNC.s`.
    Treat the output as notes.
