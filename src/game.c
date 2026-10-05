@@ -10041,7 +10041,6 @@ s32 func_80041D60(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80041D60);
 #endif
 
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80041DEC);
 
@@ -15854,7 +15853,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80064C14);
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80064CD8);
-#endif
 
 #ifdef NON_MATCHING
 /*
