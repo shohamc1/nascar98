@@ -5,6 +5,7 @@
 #   make check     build SLUS_005.21 and compare it with the original
 #   make expected  snapshot a matching build for objdiff
 #   make report    write build/report.json for decomp.dev
+#   make format    run clang-format on the C sources and our own headers
 
 SHELL := bash
 .SHELLFLAGS := -o pipefail -c
@@ -174,7 +175,7 @@ OBJDIFF := tools/bin/objdiff-cli
 OBJDIFF_VER := v3.8.2
 OLD_GCC_VER := 0.17
 
-.PHONY: all check extract split expected report tools clean distclean
+.PHONY: all check extract split expected report format tools clean distclean
 .DELETE_ON_ERROR:
 
 all: $(EXE)
@@ -220,6 +221,10 @@ expected: check objdiff.json
 	rm -rf expected
 	mkdir -p expected
 	cp -R build expected/build
+
+# Our headers only: include/psxsdk/ and include/types.h come from sotn-decomp.
+format:
+	clang-format -i $(C_FILES) include/common.h include/include_asm.h
 
 report: objdiff.json $(EXE)
 	@test -d expected || $(MAKE) expected

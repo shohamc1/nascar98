@@ -42,7 +42,8 @@ These are the paths you work with:
 ## Set up
 
 1. Install `mipsel-linux-gnu-binutils` (Homebrew) or
-   `binutils-mipsel-linux-gnu` (apt), `uv`, and Python 3.11 or newer.
+   `binutils-mipsel-linux-gnu` (apt), `clang-format`, `uv`, and Python
+   3.11 or newer.
 2. Run `make tools` to fetch the submodules, compilers, objdiff, and the
    Python environment. It also builds the default compiler,
    `2.7.2-psx-nascar98`, from `tools/gcc-load-latency.patch`. On Linux,
@@ -62,8 +63,9 @@ These are the paths you work with:
 3. Replace the function's `INCLUDE_ASM` line in `src/game.c` with your C.
 4. Diff it: `.venv/bin/python tools/asm-differ/diff.py --no-pager --format plain -m FUNC`.
    Repeat until no lines differ.
-5. Run `make check`. On `MATCH`, run `make expected` so objdiff compares
-   against the new state.
+5. Run `make format`, then `make check`. On `MATCH`, run `make expected`
+   so objdiff compares against the new state. `make check` fails on any
+   cpp or cc1 error, not just on a byte difference.
 6. If you can't match it, keep the draft inside `#ifdef NON_MATCHING` with
    the `INCLUDE_ASM` line in the `#else`, and record the wall in
    `kb/psx/matching.md` or the game's `open-questions.md`.

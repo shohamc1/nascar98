@@ -1,0 +1,20 @@
+# C89 for GCC 2.7.2. Only whitespace may change: formatting must keep
+# `make check` printing MATCH. Options that rewrite tokens (InsertBraces,
+# RemoveParentheses, RemoveSemicolon) stay off, and include order is kept
+# because it decides which declaration cc1 sees first.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 80
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+SortIncludes: Never
+IncludeBlocks: Preserve
+ReflowComments: false
+BreakStringLiterals: false
+MaxEmptyLinesToKeep: 1
+InsertNewlineAtEOF: true
+WhitespaceSensitiveMacros:
+  - INCLUDE_ASM
+  - INCLUDE_RODATA
