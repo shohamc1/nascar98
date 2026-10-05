@@ -9149,7 +9149,142 @@ void func_800401B8(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80040260);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800406D0);
+extern s32 D_800BE890w16[] asm("D_800BE890.NON_MATCHING");
+extern u8 D_80098C00w16[] asm("D_80098C00.NON_MATCHING");
+extern u8 D_800A306Cw16[] asm("D_800A306C.NON_MATCHING");
+extern void func_8001F90C(s32, s32, s32, s16 *);
+extern void func_8003F564(s8, s8);
+extern void func_8003FDE8(s8, s32, s32);
+
+void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
+    extern u8 D_800A2F9DSmall;
+    u8 *car;
+    u8 *obj;
+    register s32 camX asm("s1");
+    register s32 camY asm("s3");
+    register s32 camZ asm("s6");
+    register s32 dx asm("s2");
+    register s32 dy asm("s1");
+    register s32 dz asm("s0");
+    s32 dist;
+    register s32 sum asm("a0");
+    register s32 dySq asm("v1");
+    register s32 square asm("t1");
+    register s32 rowA asm("v0");
+    register s32 rowB asm("v0");
+    register s32 rowC asm("v0");
+    register s32 fog asm("s3");
+    register s32 scaled asm("v0");
+    register s32 magic asm("v1");
+    register s32 hi asm("t0");
+    register s32 quot asm("v1");
+    s32 sign;
+    s32 gate;
+    s16 out[2];
+    s32 pan;
+    register s32 q asm("a1");
+    register s32 gain asm("a0");
+    register s32 prodA asm("v1");
+    s32 spread;
+    register s32 prodB asm("t1");
+    register s32 vol1 asm("s1");
+    register s32 vol2 asm("s2");
+
+    asm volatile("");
+    camX = *(s32 *)(arg0 + 0);
+    camY = *(s32 *)(arg0 + 4);
+    gate = D_800A2F9DSmall;
+    camZ = *(s32 *)(arg0 + 8);
+    car = arg0;
+    obj = arg1;
+    if (gate == 0) {
+        return;
+    }
+    if (D_800A2EC0nm[0] - D_800BE890w16[0] < 10) {
+        return;
+    }
+    D_800BE890w16[0] = D_800A2EC0nm[0];
+    if (func_8003702C(car, obj) < 0) {
+        if (-func_8003702C(car, obj) >= 0x29) {
+            goto fail;
+        }
+    } else {
+        if (func_8003702C(car, obj) >= 0x29) {
+fail:
+            func_8003FDE8((s8)arg2, 0, 0);
+            return;
+        }
+    }
+    rowA = *(s32 *)(obj + 0);
+    dx = (rowA - camX) >> 4;
+    asm volatile("mult\t%0,%0" : : "r"(dx));
+    rowB = *(s32 *)(obj + 4);
+    asm volatile("mflo\t%0" : "=r"(sum));
+    dy = (rowB - camY) >> 4;
+    asm volatile("mult\t%0,%0" : : "r"(dy));
+    rowC = *(s32 *)(obj + 8);
+    asm volatile("mflo\t%0" : "=r"(dySq));
+    dz = (rowC - camZ) >> 4;
+    asm volatile("mult\t%0,%0" : : "r"(dz));
+    sum = sum + dySq;
+    asm volatile("mflo\t%0" : "=r"(square));
+    dist = MathSqrt(sum + square);
+    magic = 0x5D9F0000;
+    if (dist >= 0x579) {
+        func_8003FDE8((s8)arg2, 0, 0);
+        return;
+    }
+    magic = magic | 0x7391;
+    scaled = (dist << 8) - dist;
+    asm volatile("mult\t%0,%1" : : "r"(scaled), "r"(magic));
+    sign = scaled >> 31;
+    asm volatile("mfhi\t%0" : "=r"(hi));
+    quot = hi >> 9;
+    fog = quot - sign;
+    if (fog >= 0x100) {
+        fog = 0xFF;
+    }
+    func_8001F90C((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
+    pan = out[1];
+    if (pan > 0) {
+        q = MathFixedDivide(pan, dist);
+        gain = D_80098C00w16[fog];
+        prodA = (q + 0x10000) * gain;
+        spread = 0x10000 - q;
+        asm volatile("mult\t%0,%1" : : "r"(spread), "r"(gain));
+        vol2 = prodA >> 16;
+        asm volatile("mflo\t%0" : "=r"(prodB));
+        vol1 = prodB >> 16;
+    } else {
+        if (pan < 0) {
+            pan = -pan;
+        }
+        q = MathFixedDivide(pan, dist);
+        gain = D_80098C00w16[fog];
+        prodA = (q + 0x10000) * gain;
+        spread = 0x10000 - q;
+        asm volatile("mult\t%0,%1" : : "r"(spread), "r"(gain));
+        vol1 = prodA >> 16;
+        asm volatile("mflo\t%0" : "=r"(prodB));
+        vol2 = prodB >> 16;
+    }
+    if (vol2 >= 0x65) {
+        vol2 = 0x64;
+    }
+    if (vol1 >= 0x65) {
+        vol1 = 0x64;
+    }
+    if (D_800A306Cw16[0] != 0) {
+        if (vol1 < vol2) {
+            vol1 = vol2;
+        } else {
+            vol2 = vol1;
+        }
+    }
+    func_8003F564((s8)arg2, (s8)arg3);
+    func_8003FDE8((s8)arg2, (u8)vol2, (u8)vol1);
+}
+
 
 #ifdef NON_MATCHING
 /* Walls: gcc hoists the D_800A3554 base address into callee-saved s1
