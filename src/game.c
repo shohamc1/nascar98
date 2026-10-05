@@ -14966,8 +14966,7 @@ void func_8005A4E0(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A544);
 
-#ifdef NON_MATCHING
-void func_8005A6EC(s32 id, s32 arg1, void *dest) {
+void func_8005A6EC(u8 id, s32 arg1, void *dest) {
     typedef struct {
         u32 w[4];
     } W16;
@@ -15011,9 +15010,6 @@ void func_8005A6EC(s32 id, s32 arg1, void *dest) {
     }
     D_800B1EBCx[id & 0xFF] = (s32)dest;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005A6EC);
-#endif
 
 extern s32 D_800A35A0;
 extern u8 D_800A3534;
