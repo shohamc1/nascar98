@@ -775,7 +775,6 @@ u_short LoadClut2(u_long *clut, int x, int y) {
     return GetClut(x, y);
 }
 
-#ifdef NON_MATCHING
 /* SPDX-License-Identifier: MIT */
 
 extern long GetVideoMode(void);
@@ -783,30 +782,36 @@ extern int GetGraphType(void);
 
 DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h) {
     register DRAWENV *sEnv asm("s1");
+    register s32 sX asm("s3");
+    register s32 sY asm("s4");
+    register s32 sW asm("s0");
     int videoMode;
 
     sEnv = env;
+    sX = x;
+    sY = y;
+    sW = w;
 
     videoMode = GetVideoMode();
-    sEnv->clip.x = x;
-    sEnv->clip.y = y;
-    sEnv->clip.w = w;
+    sEnv->clip.x = sX;
+    sEnv->clip.y = sY;
+    sEnv->clip.w = sW;
     sEnv->clip.h = h;
-    sEnv->ofs[0] = x;
-    sEnv->ofs[1] = y;
-    sEnv->r0 = 0;
-    sEnv->g0 = 0;
-    sEnv->b0 = 0;
-    sEnv->dtd = 1;
-    if (videoMode == 0) {
-        sEnv->dfe = h < 0x101;
-    } else {
-        sEnv->dfe = h < 0x121;
-    }
     sEnv->tw.x = 0;
     sEnv->tw.y = 0;
     sEnv->tw.w = 0;
     sEnv->tw.h = 0;
+    sEnv->r0 = 0;
+    sEnv->g0 = 0;
+    sEnv->b0 = 0;
+    sEnv->dtd = 1;
+    if (videoMode != 0) {
+        sEnv->dfe = h < 0x121;
+    } else {
+        sEnv->dfe = h < 0x101;
+    }
+    sEnv->ofs[0] = sX;
+    sEnv->ofs[1] = sY;
     if (GetGraphType() != 1) {
         GetGraphType();
     }
@@ -814,9 +819,6 @@ DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h) {
     sEnv->isbg = 0;
     return sEnv;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDefDrawEnv);
-#endif
 
 DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h) {
     env->disp.x = x;
