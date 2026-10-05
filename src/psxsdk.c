@@ -660,7 +660,13 @@ Callback setIntrVSync(int index, Callback callback) {
     return previous;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", memclr_80077BBC);
+void memclr_80077BBC(void *ptr, size_t size) {
+    int *end;
+    end = (int *)ptr;
+    while (size--) {
+        *end++ = 0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", startIntrDMA);
 
@@ -668,7 +674,13 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", trapIntrDMA);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", setIntrDMA);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", memclr_80077E64);
+void memclr_80077E64(void *ptr, size_t size) {
+    int *end;
+    end = (int *)ptr;
+    while (size--) {
+        *end++ = 0;
+    }
+}
 
 extern long D_8009CEB0[];
 extern long D_8009CEB4[];
@@ -716,7 +728,17 @@ u_short LoadClut(u_long* clut, int x, int y) {
     return GetClut(x, y);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", LoadClut2);
+u_short LoadClut2(u_long* clut, int x, int y) {
+    RECT rect;
+
+    rect.x = x;
+    rect.y = y;
+    rect.w = 0x10;
+    rect.h = 1;
+    LoadImage(&rect, clut);
+
+    return GetClut(x, y);
+}
 
 #ifdef NON_MATCHING
 /* SPDX-License-Identifier: MIT */

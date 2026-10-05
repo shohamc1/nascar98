@@ -8197,52 +8197,19 @@ void func_8003D654(u8 *object) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Wall: register homes (base wants a1, temps v0/v1) and the -1 must
- * recompute from the original load register. */
-void func_8003D69C(u8 *arg0) {
-    s16 counter;
-    s16 tenth;
-
-    counter = *(u16 *)(arg0 + 0x278);
-    tenth = counter / 10;
-    *(u16 *)(arg0 + 0x278) = counter - 1;
-    *(u16 *)(arg0 + 0x2A2) = tenth;
-    if (counter < 0) {
-        *(u16 *)(arg0 + 0x2A2) = 0;
-        arg0[0x26A] &= 0xFB;
-    }
-}
-#else
-#ifdef NON_MATCHING
-/*
- * Division is /10 (magic 0x66666667, mfhi, sra 2, subu sign) — the
- * retail magic identifies it. Remaining diffs: (1) retail copies the
- * param (move a1,a0) and reuses a0 for the magic constant and the
- * SECOND lhu of 0x278; gcc keeps the object base in a0 throughout and
- * materializes the magic in v0/v1. (2) retail is frameless; every
- * volatile spelling here adds a dead 8-byte frame. (3) the sign test
- * is sll 16 + bgez on the second load: (s16)now emits andi 0xffff
- * instead; `now << 16` untested. func_8003D6F8 is the same shape at
- * 0x27A/0x2A8 with mask 0xF7.
- */
 void func_8003D69C(u8 *object) {
     s32 value;
     s32 now;
 
-    value = *(u16 *)(object + 0x278);
-    now = *(volatile u16 *)(object + 0x278);
+    value = *(volatile u16 *)(object + 0x278);
+    now = *(u16 *)(object + 0x278);
     *(u16 *)(object + 0x278) = now - 1;
-    *(s16 *)(object + 0x2A2) = value / 10;
-    if ((s16)now < 0) {
+    *(s16 *)(object + 0x2A2) = (s16)value / 10;
+    if ((now << 16) < 0) {
         *(u16 *)(object + 0x2A2) = 0;
         *(u8 *)(object + 0x26A) &= ~0x04;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003D69C);
-#endif
-#endif
 
 
 void func_8003D6F8(u8 *object) {
