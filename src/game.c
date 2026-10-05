@@ -6059,9 +6059,17 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80030F24);
 
 #ifdef NON_MATCHING
 void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
+    register s32 xSq asm("v1");
+    register s32 ySq asm("t1");
+    register s32 zSq asm("v0");
+    register s32 sum asm("a0");
     s32 length;
 
-    length = MathSqrt(x * x + y * y + z * z);
+    xSq = x * x;
+    ySq = y * y;
+    sum = xSq + ySq;
+    zSq = z * z;
+    length = MathSqrt(sum + zSq);
     if (length == 0) {
         length = 1;
     }
@@ -13729,23 +13737,13 @@ void func_80059E0C(void) {
     ExitCriticalSection();
 }
 
-#ifdef NON_MATCHING
-/* Wall (w9g): closest shape is decl-init channel+retries (gives s0=retries,
- * s1=channel, s2=const-3, retail prologue), do-while with two `break`s:
- * `if (status == 0) { ...; if (status == 0) break; } asm("");
- * if (status == 0) break;` while ((retries & 0xFF) < 8U).
- * ONE row off: our SECOND beqz cross-jumps to the epilogue with the andi
- * in its delay slot; retail keeps beqz -> 487b0 (nop delay, shared andi
- * block). asm("") inside the break arm flips gcc to bnez+j+fold (worse).
- * The decl-initializer trick (C89 decls emit RTL before body statements)
- * is what fixes the w4c prologue-order-vs-allocation catch-22. */
 extern s32 func_8005A294(void);
 extern void CardTestEvents(void);
 extern s32 CardWaitForEvent(void);
 extern void func_8005A414(void);
 s32 func_80059F0C(s32 arg0) {
-    s32 channel = ((arg0 & 0xFF) != 0) * 0x10;
     s32 retries = 0;
+    register s32 channel asm("s1") = ((arg0 & 0xFF) != 0) * 0x10;
     s32 status;
     do {
         _card_info(channel);
@@ -13763,15 +13761,12 @@ s32 func_80059F0C(s32 arg0) {
                 break;
         }
         asm("");
+        retries++;
         if (status == 0)
             break;
-        retries++;
     } while ((retries & 0xFF) < 8U);
     return status & 0xFF;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80059F0C);
-#endif
 
 s32 CardOpenFile(char *path, s32 flags) {
     if (flags == 0x200) {
