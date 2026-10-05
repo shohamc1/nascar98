@@ -3073,19 +3073,16 @@ void MatrixRestoreState(void) {
 
 #ifdef NON_MATCHING
 /* Wall: same scheduler wall as func_8001FB28: load/negu placement differs. */
-extern s16 *D_800A384C;
-extern s16 *D_800A3854;
-
-void func_8001FAC0(void *arg0, s32 index) {
-    *(s32 *)((u8 *)arg0 + 0x18) = D_800A384C[index] * 4;
+void func_8001FAC0(u8 *arg0, s32 index) {
+    *(s32 *)((u8 *)arg0 + 0x18) = ((s16 *)D_800A384C)[index] * 4;
     *(s32 *)((u8 *)arg0 + 0x30) = 0;
-    *(s32 *)((u8 *)arg0 + 0x24) = D_800A3854[index] * 4;
-    *(s32 *)((u8 *)arg0 + 0x1C) = -D_800A3854[index] * 4;
+    *(s32 *)((u8 *)arg0 + 0x24) = ((s16 *)D_800A3854)[index] * 4;
+    *(s32 *)((u8 *)arg0 + 0x1C) = -((s16 *)D_800A3854)[index] * 4;
     *(s32 *)((u8 *)arg0 + 0x34) = 0;
     *(s32 *)((u8 *)arg0 + 0x20) = 0;
     *(s32 *)((u8 *)arg0 + 0x2C) = 0;
     *(s32 *)((u8 *)arg0 + 0x38) = 0x10000;
-    *(s32 *)((u8 *)arg0 + 0x28) = D_800A384C[index] * 4;
+    *(s32 *)((u8 *)arg0 + 0x28) = ((s16 *)D_800A384C)[index] * 4;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FAC0);
@@ -3093,19 +3090,21 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001FAC0);
 
 #ifdef NON_MATCHING
 /* Wall: scheduler places the D_800A3A34 pointer load and the negu differently than retail. */
-extern s32 *D_800A3A2C;
-extern s32 *D_800A3A34;
+void func_8001FB28(u8 *arg0, s32 index) {
+    s32 *table1;
+    s32 *table2;
 
-void func_8001FB28(void *arg0, s32 index) {
-    *(s32 *)((u8 *)arg0 + 0x60) = D_800A3A2C[index];
-    *(s32 *)((u8 *)arg0 + 0x6C) = D_800A3A34[index];
-    *(s32 *)((u8 *)arg0 + 0x64) = -D_800A3A34[index];
-    *(s32 *)((u8 *)arg0 + 0x7C) = 0;
-    *(s32 *)((u8 *)arg0 + 0x68) = 0;
-    *(s32 *)((u8 *)arg0 + 0x74) = 0;
-    *(s32 *)((u8 *)arg0 + 0x80) = 0x10000;
-    *(s32 *)((u8 *)arg0 + 0x78) = 0;
-    *(s32 *)((u8 *)arg0 + 0x70) = D_800A3A2C[index];
+    table1 = (s32 *)D_800A3A2C;
+    table2 = (s32 *)D_800A3A34;
+    *(s32 *)(arg0 + 0x60) = table1[index];
+    *(s32 *)(arg0 + 0x78) = 0;
+    *(s32 *)(arg0 + 0x6C) = table2[index];
+    *(s32 *)(arg0 + 0x64) = -table2[index];
+    *(s32 *)(arg0 + 0x7C) = 0;
+    *(s32 *)(arg0 + 0x68) = 0;
+    *(s32 *)(arg0 + 0x74) = 0;
+    *(s32 *)(arg0 + 0x80) = 0x10000;
+    *(s32 *)(arg0 + 0x70) = table1[index];
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FB28);
