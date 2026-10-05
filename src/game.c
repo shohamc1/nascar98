@@ -6123,36 +6123,16 @@ void func_80032494(u8 *object) {
     }
 }
 
-#ifdef NON_MATCHING
-/*
- * Wall: load-hoist of the 0xFFFFFF constant set. Best shape below gets
- * every register right (v1=tag, a2=old, t0=mask, a3=upper) with ONE
- * diff: gcc schedules `lui t0` before the first load; retail fills the
- * first load's delay slot with it. asm("") forces a strict split that
- * misplaces the ori; volatile flips the pseudo order. register-qualified
- * tag pins v1 but flips the constant registers.
- * w7a retest: still one row off. C statement order does not matter —
- * (old,upper,tag,mask) and (tag,mask,old,upper) both emit
- * lui t0 / lw v1 / lw a2. The scheduler gives the mask pseudo's
- * definition top priority; only a latency-3/5 rebuild could plausibly
- * flip the tie and that cannot be delivered per-function.
- */
 void GraphicsLinkPrimitive(u32 *orderingTable, u32 *primitive) {
     u32 old;
-    u32 mask;
-    u32 upper;
     u32 tag;
-
     old = *orderingTable;
-    upper = 0xFF000000;
     tag = *primitive;
-    mask = 0xFFFFFF;
-    *primitive = (tag & upper) | (old & mask);
-    *orderingTable = (old & upper) | ((u32)primitive & mask);
+    tag &= 0xFF000000;
+    tag |= old & 0xFFFFFF;
+    *primitive = tag;
+    *orderingTable = (old & 0xFF000000) | ((u32)primitive & 0xFFFFFF);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", GraphicsLinkPrimitive);
-#endif
 
 void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag) {
     *primitive = tag | *orderingTable;
