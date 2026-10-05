@@ -14487,19 +14487,13 @@ void func_800599E4(void) {
     func_8005A414();
 }
 
-#ifdef NON_MATCHING
-/* Wall: with asm("") in each if-body the branch shape matches; the
- * remaining diff is the first normalize: retail computes
- * sltu v0,zero,v0 (in v0, before the second call) then copies it to
- * s0 in the second jal's delay slot. gcc 2.7.2 coalesces the compare
- * straight into s0 (tried: two locals enabled/result, split
- * `enabled = call(); enabled = enabled != 0;` -- both copy-propagate
- * back to sltu s0,zero,v0). */
+/* result is s16: the narrowing keeps the first compare in v0 and copies
+ * it to s0 in the second jal delay slot (found by the permuter). */
 extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
 extern s32 D_800A38C8, D_800A38CC, D_800A38D0, D_800A38D4;
 s32 CardEnableEvents(void) {
     s32 enabled;
-    s32 result;
+    s16 result;
 
     EnterCriticalSection();
     enabled = EnableEvent(D_800A3824);
@@ -14536,9 +14530,6 @@ s32 CardEnableEvents(void) {
     ExitCriticalSection();
     return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", CardEnableEvents);
-#endif
 
 extern s32 func_8005A294(void);
 extern void func_8005A414(void);
