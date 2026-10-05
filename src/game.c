@@ -12721,11 +12721,11 @@ void GraphicsSetColor(u8 red, u8 green, u8 blue) {
     D_800A8ACA[0] = blue;
 }
 
-#ifdef NON_MATCHING
 extern u8 D_80098D16[];
 s32 func_80050940(u8 *str) {
     s32 sum;
     u8 c;
+    s32 offset;
 
     sum = 0;
     if (*(volatile u8 *)str != 0) {
@@ -12733,15 +12733,15 @@ s32 func_80050940(u8 *str) {
         c = *str;
         do {
             str++;
-            sum += *(s16 *)&D_80098D16[(c - 0x20) * 10];
+            offset = c;
+            offset = offset - 0x20;
+            offset = offset * 10;
+            sum += *(s16 *)&D_80098D16[offset];
             c = *str;
         } while (c != 0);
     }
     return sum;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80050940);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005098C);
 
