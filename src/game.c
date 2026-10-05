@@ -12818,10 +12818,6 @@ void func_80057E10(void) {
     D_800A3A18 = D_800A3998;
 }
 
-#ifdef NON_MATCHING
-/* Wall: the 10 untracked bss byte labels (D_800BDD62 etc.) needed for the
- * per-store lui/sb sequence drift every later bss label -8 when declared
- * as new externs; same shape as the sdata drift wall. */
 extern u8 D_800BDD62[], D_800BDDBE[], D_800BDDC0[], D_800BDD64[];
 extern u8 D_800BDD65[], D_800BDD66[], D_800BDD67[], D_800BDDC1[];
 extern u8 D_800BDDC2[], D_800BDDC3[];
@@ -12854,9 +12850,6 @@ void func_80057E24(void) {
     PutDrawEnv(draw);
     PutDispEnv(disp);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80057E24);
-#endif
 
 extern u8 D_800A8C14[];
 extern u8 D_800A8B94[];
