@@ -7656,7 +7656,6 @@ s32 func_800338D8(u16 *object) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80033900);
-#ifdef NON_MATCHING
 extern u32 gScratchpad[];
 extern s32 D_800A3640[];
 extern s32 D_800A39C8[];
@@ -7670,7 +7669,7 @@ u32 func_800342D8(u32 *entry, u32 primCursor) {
     register s32 w1 asm("s4");
     register s32 w2 asm("s3");
     register s32 w3 asm("s2");
-    register s32 w4 asm("s8");
+    s32 w4;
     register s32 w5 asm("s7");
     register s32 *v18base asm("s6");
     u8 *p8;
@@ -7805,9 +7804,6 @@ u32 func_800342D8(u32 *entry, u32 primCursor) {
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800342D8);
-#endif
 
 extern MATRIX D_800A4568[];
 extern MATRIX D_800A4588[];
