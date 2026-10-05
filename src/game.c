@@ -3180,7 +3180,21 @@ s32 VectorGetMagnitude2D(void *arg0) {
     return MathSqrt(dx * dx + dy * dy);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", VectorGetMagnitude2D);
+s32 VectorGetMagnitude2D(void *arg0) {
+    register s32 dx asm("v0");
+    register s32 dy asm("v0");
+    register s32 dxSq asm("v1");
+    register s32 dySq asm("a2");
+
+    dx = *(s32 *)((u8 *)arg0 + 0x9C);
+    asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
+    dy = *(s32 *)((u8 *)arg0 + 0xA0);
+    asm volatile("mflo\t%0" : "=r"(dxSq) : : "lo");
+    asm volatile("mult\t%0,%0" : : "r"(dy) : "hi", "lo");
+    asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
+    return MathSqrt(dxSq + dySq);
+}
+
 #endif
 #endif
 
