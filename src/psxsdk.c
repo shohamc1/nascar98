@@ -782,34 +782,37 @@ extern long GetVideoMode(void);
 extern int GetGraphType(void);
 
 DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h) {
+    register DRAWENV *sEnv asm("s1");
     int videoMode;
 
+    sEnv = env;
+
     videoMode = GetVideoMode();
-    env->clip.x = x;
-    env->clip.y = y;
-    env->clip.w = w;
-    env->clip.h = h;
-    env->ofs[0] = x;
-    env->ofs[1] = y;
-    env->r0 = 0;
-    env->g0 = 0;
-    env->b0 = 0;
-    env->dtd = 1;
+    sEnv->clip.x = x;
+    sEnv->clip.y = y;
+    sEnv->clip.w = w;
+    sEnv->clip.h = h;
+    sEnv->ofs[0] = x;
+    sEnv->ofs[1] = y;
+    sEnv->r0 = 0;
+    sEnv->g0 = 0;
+    sEnv->b0 = 0;
+    sEnv->dtd = 1;
     if (videoMode == 0) {
-        env->dfe = h < 0x101;
+        sEnv->dfe = h < 0x101;
     } else {
-        env->dfe = h < 0x121;
+        sEnv->dfe = h < 0x121;
     }
-    env->tw.x = 0;
-    env->tw.y = 0;
-    env->tw.w = 0;
-    env->tw.h = 0;
+    sEnv->tw.x = 0;
+    sEnv->tw.y = 0;
+    sEnv->tw.w = 0;
+    sEnv->tw.h = 0;
     if (GetGraphType() != 1) {
         GetGraphType();
     }
-    env->tpage = 10;
-    env->isbg = 0;
-    return env;
+    sEnv->tpage = 10;
+    sEnv->isbg = 0;
+    return sEnv;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDefDrawEnv);
@@ -2461,17 +2464,23 @@ void SsSetStereo(void) {
 }
 
 #ifdef NON_MATCHING
-/* Only register allocation differs: the count load/store wants a dedicated
- * address register (lui+addiu) instead of two lui/%lo pairs. */
+/* Score 5 (permuter find): a two-valued index variable keeps both count
+ * accesses in lui/%lo form. One immediate left: gcc reads new_var after
+ * the assignment-expr for the LOAD (-0x1712 against retail -0x1714);
+ * the store side is exact. Clean single-valued spellings all CSE back
+ * into one lui+addiu pointer (score 285). */
 extern u8 D_800B9DE4[];
 extern void *D_800BE8F0[];
 extern u16 D_800BE8EC[];
 
 void SsVabClose(s16 vabid) {
+    s32 new_var;
+
     if ((vabid >= 0 && vabid < 0x10) && D_800B9DE4[vabid] == 1) {
         SpuFree(D_800BE8F0[vabid]);
-        D_800B9DE4[vabid] = 0;
-        D_800BE8EC[0] -= 1;
+        new_var = 0;
+        D_800B9DE4[vabid] = new_var;
+        D_800BE8EC[new_var] -= (new_var = 1);
     }
 }
 #else
