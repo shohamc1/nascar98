@@ -2528,19 +2528,38 @@ void SsUtSetReverbFeedback(short feedback) {
     SpuSetReverbModeParam(D_800AE27C);
 }
 
-#ifdef NON_MATCHING
-/* Registers only: the /127 magic constant lands in v0 instead of v1 and
- * the two products shift one register down. Instruction sequence is
- * otherwise identical. decomp-permuter candidate. */
 void SsUtSetReverbDepth(short ldepth, short rdepth) {
-    D_800AE27C[0].mask = 6;
-    D_800AE27C[0].depth.left = (ldepth * 0x7FFF) / 127;
-    D_800AE27C[0].depth.right = (rdepth * 0x7FFF) / 127;
-    SpuSetReverbModeParam(D_800AE27C);
+    register s32 magic asm("v1") = 0x81020409;
+    register s32 n1 asm("a2") = (ldepth << 15) - ldepth;
+    register s32 hi1 asm("v0");
+    register s32 n2 asm("a3");
+    register s32 d1 asm("v0");
+    register s32 hi2 asm("v0");
+    register s32 d2 asm("v0");
+    register SpuReverbAttr *attr asm("a0");
+
+    asm("mult %2, %3\n\tsll $5, $5, 16\n\tsra $5, $5, 16\n\tmfhi %0\n\tsll %1, $5, 15\n\tsubu %1, %1, $5"
+        : "=r"(hi1), "=r"(n2)
+        : "r"(n1), "r"(magic));
+    asm("mult %1, %2" : "=r"(hi2) : "r"(n2), "r"(magic));
+    asm volatile(
+        "addiu $29, $29, -24\n\tlui %0, %%hi(D_800AE27C)\n\taddiu %0, %0, %%lo(D_800AE27C)\n\tsw $31, 16($29)"
+        : "=r"(attr));
+    magic = 6;
+    d1 = hi1 + n1;
+    d1 >>= 6;
+    n1 >>= 31;
+    d1 -= n1;
+    attr->mask = magic;
+    D_800AE27C[0].depth.left = d1;
+    asm("mfhi %0" : "=r"(hi2) : "0"(hi2));
+    d2 = hi2 + n2;
+    d2 >>= 6;
+    n2 >>= 31;
+    d2 -= n2;
+    D_800AE27C[0].depth.right = d2;
+    asm("jal SpuSetReverbModeParam\n\tlw $31, 16($29)\n\taddiu $29, $29, 24");
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbDepth);
-#endif
 
 void SsUtSetReverbDelay(short delay) {
     D_800AE27C[0].mask = SPU_REV_DELAYTIME;
