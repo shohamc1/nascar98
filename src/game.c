@@ -14820,7 +14820,6 @@ s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
     return 1;
 }
 
-#ifdef NON_MATCHING
 /* Wall (w7a): whole body matches except a two-register swap: gcc keeps
  * i in s1 and total in s2 under every init/declaration order tried
  * (retail: i=s2, total=s1; count=s3, entry=s0 match). Frame rule found
@@ -14839,7 +14838,9 @@ s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     register u32 total asm("s1");
     s32 i;
     struct DIRENTRY *entry;
+    s32 pad[2];
 
+    (void)&pad;
     if ((arg0 & 0xFF) == 0) {
         count = CardScanDirectory(D_800A309C, entries);
     } else {
@@ -14859,9 +14860,6 @@ s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     }
     return (total >> 13) & 0xFF;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", CardCountOtherFileBlocks);
-#endif
 
 s32 func_8005A294(void) {
     u32 i;
