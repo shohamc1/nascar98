@@ -9260,7 +9260,58 @@ s8 func_80039C68(TimingPoint *arg0, s32 arg1, s32 arg2) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80039C68);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80039CF4);
+extern s32 D_800BE980[];
+
+void func_80039CF4(void) {
+    register u8 *node asm("a3");
+    register u8 *track asm("a1");
+    register s32 index asm("v0");
+    register s32 entryX asm("a2");
+    register s32 tableA asm("v1");
+    register s32 prodA asm("a2");
+    register s32 baseB asm("a0");
+    register s32 entryY asm("a1");
+    register s32 objY asm("v1");
+    register s32 tableB asm("v0");
+    register s32 value asm("v0");
+    register u8 *base asm("v0");
+    s32 id;
+    s32 heading;
+    s32 objX;
+    s32 baseA;
+    s32 addrA;
+
+    base = (u8 *)D_800A3984[0];
+    node = base + 0x500;
+    while (node != NULL) {
+        id = *(s16 *)(node + 0x1E0);
+        if (id != -1) {
+            track = *(u8 **)D_800BE980;
+            track += id * 0x90;
+            heading = *(u16 *)(track + 0x10);
+            objX = *(s32 *)node;
+            asm volatile(
+                "lui %0, %%hi(D_800A3A34)\n\tlw %0, %%lo(D_800A3A34)(%0)"
+                : "=r"(baseA));
+            entryX = *(s32 *)(track + 0x14);
+            index = (0x400 - heading) & 0x3FF;
+            index <<= 2;
+            addrA = index + baseA;
+            asm volatile("lw\t%0,0(%1)" : "=r"(tableA) : "r"(addrA));
+            asm volatile("mult\t%0,%1" : : "r"(tableA), "r"(objX - entryX));
+            asm volatile(
+                "lui %0, %%hi(D_800A3A2C)\n\tlw %0, %%lo(D_800A3A2C)(%0)"
+                : "=r"(baseB));
+            entryY = *(s32 *)(track + 0x18);
+            objY = *(s32 *)(node + 4);
+            tableB = *(s32 *)(index + baseB);
+            asm volatile("mflo\t%0" : "=r"(prodA));
+            value = prodA + tableB * (objY - entryY);
+            *(s8 *)(node + 0x203) = (-(value >> 16)) / 250;
+        }
+        node = *(u8 **)(node + 0x3E0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80039DDC);
 
@@ -21767,7 +21818,58 @@ void SoundSetMasterVolume(s16 left, s16 right) {
     SpuSetCommonAttr(&attr);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006FAAC);
+extern s32 *D_800A3398;
+extern s32 D_800A33A0;
+extern void DecDCTout(u_long *, s32);
+void func_8006FAAC(void) {
+    typedef struct {
+        RECT unk0[2];
+        s32 unk10;
+        s32 unk14;
+        s32 unk18;
+        u16 unk1C;
+        u16 unk1E;
+        u16 unk20;
+        u16 unk22;
+        u_long *unk24;
+        u8 unk28[0xF4];
+        s32 unk11C;
+    } StreamVram;
+    volatile StreamVram *st;
+    volatile StreamVram *st2;
+    s16 *ex;
+    s16 *ew;
+    s32 xv;
+    s32 a;
+    s32 b;
+    register s32 w asm("$5");
+    s32 h;
+    u_long *buf;
+    s32 n;
+
+    st = (volatile StreamVram *)D_800A3398;
+    LoadImage((RECT *)&st->unk1C, st->unk24);
+    st2 = (volatile StreamVram *)D_800A3398;
+    st2->unk1C = st2->unk1C + D_800A33A0 * 8;
+    xv = (s16)st2->unk1C;
+    ex = &st2->unk0[st2->unk10].x;
+    a = *ex;
+    ew = &st2->unk0[st2->unk10].w;
+    b = *ew;
+    if (xv < a + b) {
+        w = (s16)st2->unk20;
+        h = (s16)st2->unk22;
+        asm volatile("mult %0, %1" : : "r"(w), "r"(h) : "lo", "hi");
+        buf = st2->unk24;
+        asm volatile("mflo %0" : "=r"(n));
+        DecDCTout(buf, n / 2);
+    } else {
+        st2->unk11C = 1;
+        st2->unk10 = !st2->unk10;
+        st2->unk1C = (u16)st2->unk0[st2->unk10].x;
+        st2->unk1E = (u16)st2->unk0[st2->unk10].y;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006FBB0);
 
@@ -22012,7 +22114,47 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800719FC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80071BE8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80071DCC);
+extern s32 *D_800A3500;
+extern s32 D_800A33B8, D_800A33BC;
+extern void func_80070F40(u_char, u_char *);
+extern void func_80070A60(u_char, u_char *);
+extern void SwEnterCriticalSection(void);
+extern void SwExitCriticalSection(void);
+void func_80071DCC(s32 enable) {
+    u8 mode;
+    s32 enabled;
+
+    if (enable != 0) {
+        CdSync(0, 0);
+        mode = CdlModeSpeed | CdlModeSize1;
+        CdControlB(CdlSetmode, &mode, 0);
+        SwEnterCriticalSection();
+        D_800A3500[0x410 / 4] = 0;
+        D_800A3500[0x408 / 4] = 0;
+        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+        D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
+        D_800A33BC = (s32)CdReadyCallback(func_80070A60);
+        D_800A3500[0x420 / 4] = 1;
+        D_800A3500[0x41C / 4] = 1;
+        asm("");
+    } else {
+        SwEnterCriticalSection();
+        enabled = D_800A3500[0x420 / 4];
+        D_800A3500[0x41C / 4] = 0;
+        D_800A3500[0x410 / 4] = 0;
+        D_800A3500[0x408 / 4] = 0;
+        D_800A3500[0x40C / 4] = 0;
+        asm("");
+        if (enabled != 0) {
+            CdSyncCallback((void *)D_800A33B8);
+            CdReadyCallback((void *)D_800A33BC);
+            D_800A33B8 = 0;
+            D_800A33BC = 0;
+            D_800A3500[0x420 / 4] = 0;
+        }
+    }
+    SwExitCriticalSection();
+}
 
 extern s32 D_800A3510;
 extern s32 D_800A3514;
