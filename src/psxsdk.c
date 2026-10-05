@@ -1959,7 +1959,14 @@ void SsSepClose(short sep_access_num) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsInit);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_80080728);
+extern void _SsInit(void);
+extern void func_80087CC0(void);
+
+void func_80080728(void) {
+    ResetCallback();
+    func_80087CC0();
+    _SsInit();
+}
 
 void func_80080758(void) {
     SpuQuit();
@@ -2702,7 +2709,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetReverbModeParam);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_setReverbAttr);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetReverbVoice);
+void SpuSetReverbVoice(s32 a, s32 b) { _SpuSetAnyVoice(a, b, 0xCC, 0xCD); }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuClearReverbWorkArea);
 
@@ -2904,7 +2911,7 @@ void DecDCToutSync(void) { MDEC_out_sync(); }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTinCallback);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCToutCallback);
+long DecDCToutCallback(void (*func)()) { return (long)DMACallback(1, func); }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", MDEC_reset);
 
