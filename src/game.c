@@ -5395,6 +5395,7 @@ extern s32 D_800A38AC[];
 extern u8 *D_800A3878;
 extern u8 D_800A2ED8;
 void func_8002EEFC(u8 *arg0) {
+    s32 pad[2];
     s32 refX;
     s32 refY;
     s32 refZ;
@@ -5406,8 +5407,9 @@ void func_8002EEFC(u8 *arg0) {
     s32 b;
     s32 v;
     u8 *node;
-    u8 *target;
+    register u8 *target asm("s1");
 
+    (void)&pad;
     refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
     refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
     refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
