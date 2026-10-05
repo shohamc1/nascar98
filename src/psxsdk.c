@@ -867,15 +867,21 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
 #ifdef NON_MATCHING
-/* WALL (agent a9, 2026-10-04): structure and scheduling match; gcc 2.7.2
- * global allocation swaps two register pairs vs retail (font/width in s1/s2,
- * '%' constant and 0xCCCCCCCD magic in s4/s5). Declaration order, dead
- * initializers, register-variable pins, statement order, and decomp-permuter
- * runs did not flip either pair. */
-/* SPDX-License-Identifier: MIT */
-
 extern u8 *D_8009DA44[];
 extern int strlen(const char *);
+
+/*
+ * PARKED DRAFT (w21e, 2026-10-06): 8 bytes off (was 59). The empty asm at
+ * the top of the loop keeps width live-in at the loop head so its global
+ * priority (gcc 2.7.2: floor_log2(n_refs)*n_refs/live_length) falls below
+ * font's: font wins s1, width s2, as retail. Remaining diffs: '%' and the
+ * 0xCCCCCCCD reciprocal constant still swap s4/s5 (retail pri(magic)>
+ * pri(pct) needs one more counted use of the const_double pseudo; a C-level
+ * u32 temp merges with neither cse nor loop.c's matcher because a C constant
+ * is a CONST_INT while expand_divmod's magic is a CONST_DOUBLE), and the
+ * umul result is realized in t0 by reload where retail coalesces it with the
+ * >>3 quotient in v1 (mfhi t0 vs mfhi v1). Details in the wave notes.
+ */
 
 int FntPrint(const char *fmt, ...) {
     u8 *buf;
@@ -883,6 +889,7 @@ int FntPrint(const char *fmt, ...) {
     FntFont *font;
     u8 *str;
     u32 value;
+    u32 t;
     s32 ch;
     s32 count;
     u8 zeroPad;
@@ -905,6 +912,7 @@ int FntPrint(const char *fmt, ...) {
     }
     ch = *str;
     while (ch != 0) {
+        asm("" : : "r"(width));
         if (ch != '%') {
             goto store;
         }
@@ -923,15 +931,15 @@ int FntPrint(const char *fmt, ...) {
     format:
         zeroPad = (ch == '0');
         while (ch >= '0' && ch <= '9') {
-            width = width * 10 - '0';
-            width = width + ch;
+            t = width * 10 - '0';
+            width = t + ch;
             str++;
             ch = *str;
         }
+        buf = (u8 *)&ap;
         if (width <= 0) {
             width = 1;
         }
-        buf = (u8 *)&ap;
         switch (ch) {
         case 'd':
             value = va_arg(ap, u32);

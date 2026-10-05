@@ -439,7 +439,43 @@ s32 func_80014398(s32 arg0) {
     return (u32)value / 100;
 }
 #else
+#ifdef NON_MATCHING
+extern u16 D_80090ED8[];
+extern s32 D_80099590[];
+extern u8 D_800A3320Absolute[];
+extern u8 D_800A331CAbsolute[];
+
+s32 func_80014398(s32 arg0) {
+    s32 *srcPtr;
+    u16 *tblPtr;
+    register s32 source asm("a2");
+    register s32 tableValue asm("a1");
+    register s32 raw asm("a0");
+    register s32 value asm("v1");
+    s32 difference;
+    s32 adjust;
+    s32 scale;
+    s32 prod;
+
+    srcPtr = D_80099590 + arg0;
+    tblPtr = D_80090ED8 + arg0;
+    tableValue = *tblPtr;
+    source = *srcPtr;
+    difference = source - tableValue;
+    adjust = difference * (0x64 - D_800A3320Absolute[0]);
+    raw = D_800A331CAbsolute[0];
+    scale = raw + 0xC8;
+    adjust = adjust / 50;
+    value = source - adjust;
+    scale = scale / 3;
+    asm volatile("");
+    prod = value * (0xC8 - scale);
+    asm("" : : "r"(value));
+    return (u32)prod / 100;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80014398);
+#endif
 #endif
 
 extern s32 D_800A2EB0Absolute[];
@@ -1128,39 +1164,37 @@ extern s32 *D_800A2D64;
 
 extern void *HeapAlloc(u32);
 
-#ifdef NON_MATCHING
-/* Wall: gcc folds the post-loop count * 0x38 to a constant, reverses the loop
- * to a down-count, and loses the base register; retail keeps count live
- * (slti up-count), reloads D_800A2D60, and computes count * 0x38 at runtime.
- * A do { } while (count < 0x897) body still gets reversed and folded. */
 void func_8001636C(void) {
     s32 count;
     s32 offset;
     u8 *base;
     u8 *entry;
+    u8 *tailp;
 
     D_800A2D60 = (s32)HeapAlloc(0x1E140);
     if (D_800A2D60 == 0) {
         return;
     }
-    base = (u8 *)D_800A2D60;
-    entry = base;
-    offset = 0x38;
     count = 0;
-    do {
-        *(s32 *)(entry + 0x34) = (s32)(base + offset);
-        offset += 0x38;
-        count += 1;
-        entry += 0x38;
-    } while (count < 0x897);
+    offset = 0x38;
+    base = (u8 *)D_800A2D60;
+    asm("");
+    asm("");
+    entry = base;
+again:
+    *(s32 *)(entry + 0x34) = (s32)(base + offset);
+    offset += 0x38;
+    count += 1;
+    entry += 0x38;
+    if (count < 0x897) {
+        goto again;
+    }
+    entry = (u8 *)D_800A2D60;
     D_800A2D5C = 0x898;
-    entry = (u8 *)D_800A2D60 + count * 0x38;
-    *(s32 *)(entry + 0x34) = 0;
-    D_800A2D64 = (s32 *)entry;
+    tailp = (u8 *)(count * 0x38 + (s32)entry);
+    *(s32 *)(tailp + 0x34) = 0;
+    D_800A2D64 = (s32 *)tailp;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001636C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
 
@@ -9851,81 +9885,129 @@ void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003EA94);
 #endif
 
-#ifdef NON_MATCHING
 void func_8003EAE8(u8 *object, s32 index) {
+    s32 pad[4];
     u8 *group;
     u8 *entry;
-    s32 *table;
     s32 count;
-    s32 low;
     s32 total;
+    s32 *base;
     s32 *ptr;
     s32 i;
 
     group = *(u8 **)(object + 0x370);
-    entry = *(u8 **)(group + 0x150) + index * 0x18;
+    entry = *(u8 **)(group + 0x150);
+    entry += index * 0x18;
     count = *(s32 *)(entry + 8);
     if (count > 0) {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        total = *(s16 *)(entry + 2) - low + 1;
-        *(s32 *)(entry + 8) = count + 0xE;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr += 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count + 0xE;
+            {
+                s32 high;
+
+                high = *(s16 *)(entry + 2);
+                base = (s32 *)(low * 20 + (u32)table);
+                total = high - low + 1;
+            }
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr += 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     } else {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        total = *(s16 *)(entry + 2) - low + 1;
-        *(s32 *)(entry + 8) = count - 0xE;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr -= 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count - 0xE;
+            {
+                s32 high;
+
+                high = *(s16 *)(entry + 2);
+                base = (s32 *)(low * 20 + (u32)table);
+                total = high - low + 1;
+            }
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr -= 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003EAE8);
-#endif
 
-#ifdef NON_MATCHING
 void func_8003EBD0(u8 *object, s32 index) {
     u8 *group;
     u8 *entry;
-    s32 *table;
     s32 count;
-    s32 low;
     s32 total;
+    s32 *base;
     s32 *ptr;
     s32 i;
+    volatile s32 pad[4];
 
     group = *(u8 **)(object + 0x370);
-    entry = *(u8 **)(group + 0x150) + index * 0x18;
+    entry = *(u8 **)(group + 0x150);
+    entry += index * 0x18;
     count = *(s32 *)(entry + 8);
     if (count > 0) {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        *(s32 *)(entry + 8) = count - 0xE;
-        total = *(s16 *)(entry + 2) - low + 1;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr -= 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count - 0xE;
+            base = (s32 *)(low * 0x14 + (u32)table);
+            total = *(s16 *)(entry + 2) - low + 1;
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr -= 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     } else {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        *(s32 *)(entry + 8) = count + 0xE;
-        total = *(s16 *)(entry + 2) - low + 1;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr += 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count + 0xE;
+            base = (s32 *)(low * 0x14 + (u32)table);
+            total = *(s16 *)(entry + 2) - low + 1;
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr += 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003EBD0);
-#endif
 
 #ifdef NON_MATCHING
 /* Walls (w8e): (1) retail copies the param (move t1,a0) and loads
