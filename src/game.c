@@ -19942,7 +19942,7 @@ void func_8006C598(s32 low, s32 high, s32 color) {
     }
 }
 
-#ifdef NON_MATCHING
+#if 1
 /*
  * w7h: size-exact (0x84) draft; prologue matches incl. the early
  * lui/lw of D_800A3A10 BEFORE addiu sp (put the obj read first).
@@ -19956,7 +19956,7 @@ extern s32 D_8009A4C0[];
 void func_8006C5E4(s32 arg0) {
     s32 *entry;
     u8 *obj;
-    s32 value;
+    register s32 value asm("v1");
 
     obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
     entry = &D_8009A4C0[arg0 & 0xFF];
