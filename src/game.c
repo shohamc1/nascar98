@@ -19856,7 +19856,7 @@ void func_8006C598(s32 low, s32 high, s32 color) {
     }
 }
 
-#if 1
+#ifdef NON_MATCHING
 /*
  * w7h: size-exact (0x84) draft; prologue matches incl. the early
  * lui/lw of D_800A3A10 BEFORE addiu sp (put the obj read first).
