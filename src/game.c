@@ -13847,7 +13847,7 @@ extern char D_800A3094[], D_800A309C[];
 s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     struct DIRENTRY entries[15];
     s32 count;
-    u32 total;
+    register u32 total asm("s1");
     s32 i;
     struct DIRENTRY *entry;
 
