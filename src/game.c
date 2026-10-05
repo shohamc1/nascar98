@@ -10322,52 +10322,21 @@ void func_800441C8(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800441C8);
 #endif
 
-#ifdef NON_MATCHING
-/* w4b: nested struct-copy loop, mirror of func_800441C8 (bases swapped).
- * Unit diff was clean (0) in one tree state but shows the same 45-unit
- * t0/t1 base swap as func_800441C8 after later TU changes; allocation
- * of src/end is sensitive to earlier in-file declarations.
- * w6f: declaring src BEFORE end (the allocation order retail shows)
- * does not flip it either. */
 typedef struct {
-    u32 w0;
-    u32 w1;
-    u32 w2;
-    u32 w3;
-} CopyEntry10;
+    u32 w[12];
+} CopyRow30;
 
-extern CopyEntry10 D_800AD9B0[];
-extern CopyEntry10 D_800BBAAC[];
+extern CopyRow30 D_800AD9B0[];
+extern CopyRow30 D_800BBAAC[];
 extern void func_80036540(void);
 
 void func_80044248(void) {
-    CopyEntry10 *end;
-    CopyEntry10 *src;
-    CopyEntry10 *dst;
-    CopyEntry10 *d;
-    CopyEntry10 *s;
     s32 row;
     func_80036540();
-    row = 0;
-    src = D_800BBAAC;
-    dst = D_800AD9B0;
-    do {
-        d = dst;
-        s = src;
-        end = src + 3;
-        do {
-            *d = *s;
-            d++;
-            s++;
-        } while (s != end);
-        src += 3;
-        dst += 3;
-        row++;
-    } while (row < 0x28);
+    for (row = 0; row < 0x28; row++) {
+        D_800AD9B0[row] = D_800BBAAC[row];
+    }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80044248);
-#endif
 
 
 extern u8 D_800A2EDC[];
