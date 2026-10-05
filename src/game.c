@@ -3675,7 +3675,7 @@ INCLUDE_RODATA("asm/nonmatchings/game", D_8008CFE0);
  * (t6/t7/t8); gcc 2.7.2 routes the s16 lh through a temp (lh v1 + move t8)
  * and shifts the min/max triple one register earlier. Frame is correct
  * (-8) only with the s16 count; s32 count gives a 0 or 0x10 frame. */
-void func_80025454(s32 *track) {
+void func_80025454(s32 track) {
     s16 count;
     s32 minX;
     s32 minY;
