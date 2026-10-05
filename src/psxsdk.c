@@ -20,7 +20,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", __main);
 
 extern unsigned long long __udivmoddi4(unsigned long long num,
                                        unsigned long long den,
-                                       unsigned long long* rem);
+                                       unsigned long long *rem);
 
 #ifdef NON_MATCHING
 typedef union {
@@ -122,7 +122,7 @@ extern u32 D_8009B9E8[];
 
 #ifdef NON_MATCHING
 long SetRCnt(long timer, unsigned short target, long mode) {
-    RCnt* r;
+    RCnt *r;
     long md;
     int t;
     int isLow;
@@ -134,7 +134,7 @@ long SetRCnt(long timer, unsigned short target, long mode) {
         return 0;
     }
     md = 0x48;
-    r = (RCnt*)(t * 16 + (u32)D_8009B9E8[0]);
+    r = (RCnt *)(t * 16 + (u32)D_8009B9E8[0]);
     isLow = (unsigned)t < 2;
     r->mode = 0;
     r->target = target;
@@ -156,7 +156,7 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     }
     result = 1;
     addr = t * 16;
-    ((RCnt*)(addr + (u32)D_8009B9E8[0]))->mode = md;
+    ((RCnt *)(addr + (u32)D_8009B9E8[0]))->mode = md;
     return result;
 }
 
@@ -166,11 +166,11 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
 
 #ifdef NON_MATCHING
 long GetRCnt(long timer) {
-    RCnt* r;
+    RCnt *r;
     long count;
 
     if ((timer & 0xFFFF) < 3) {
-        r = (RCnt*)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]);
+        r = (RCnt *)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]);
         count = r->count;
     } else {
         count = 0;
@@ -188,9 +188,9 @@ extern u32 D_8009B9EC[];
 
 #ifdef NON_MATCHING
 int StartRCnt(int timer) {
-    u32* p;
+    u32 *p;
 
-    p = (u32*)D_8009B9E4[0];
+    p = (u32 *)D_8009B9E4[0];
     p[1] |= D_8009B9EC[timer & 0xFFFF];
     return (timer & 0xFFFF) < 3;
 }
@@ -201,9 +201,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", StartRCnt);
 /* SPDX-License-Identifier: MIT */
 
 int StopRCnt(int timer) {
-    u32* p;
+    u32 *p;
 
-    p = (u32*)D_8009B9E4[0];
+    p = (u32 *)D_8009B9E4[0];
     p[1] = ~D_8009B9EC[timer & 0xFFFF] & p[1];
     asm("");
     return 1;
@@ -213,15 +213,17 @@ long ResetRCnt(long timer) {
     if ((timer & 0xFFFF) >= 3) {
         return 0;
     }
-    *(volatile u16*)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]) = 0;
+    *(volatile u16 *)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]) = 0;
     return 1;
 }
 
 /* SPDX-License-Identifier: MIT */
 
-extern int CdGetToc2(int mode, u8* toc);
+extern int CdGetToc2(int mode, u8 *toc);
 
-int CdGetToc(u8* toc) { return CdGetToc2(1, toc); }
+int CdGetToc(u8 *toc) {
+    return CdGetToc2(1, toc);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc2);
 
@@ -234,15 +236,21 @@ INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902BC);
 
 extern void DeliverEvent(unsigned long ev1, unsigned long ev2);
 
-void func_80074C98(void) { DeliverEvent(0xF0000003, 0x20); }
+void func_80074C98(void) {
+    DeliverEvent(0xF0000003, 0x20);
+}
 
 /* SPDX-License-Identifier: MIT */
 
-void func_80074CC0(void) { DeliverEvent(0xF0000003, 0x40); }
+void func_80074CC0(void) {
+    DeliverEvent(0xF0000003, 0x40);
+}
 
 /* SPDX-License-Identifier: MIT */
 
-void func_80074CE8(void) { DeliverEvent(0xF0000003, 0x40); }
+void func_80074CE8(void) {
+    DeliverEvent(0xF0000003, 0x40);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DeliverEvent);
 
@@ -250,25 +258,33 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", DeliverEvent);
 
 extern u8 D_8009BA8C[];
 
-char CdStatus(void) { return D_8009BA8C[0]; }
+char CdStatus(void) {
+    return D_8009BA8C[0];
+}
 
 /* SPDX-License-Identifier: MIT */
 
 extern u8 D_8009BA9C[];
 
-int CdMode(void) { return D_8009BA9C[0]; }
+int CdMode(void) {
+    return D_8009BA9C[0];
+}
 
 /* SPDX-License-Identifier: MIT */
 
 extern u8 D_8009BA9D[];
 
-int CdLastCom(void) { return D_8009BA9D[0]; }
+int CdLastCom(void) {
+    return D_8009BA9D[0];
+}
 
 /* SPDX-License-Identifier: MIT */
 
 extern u8 D_8009BA98[];
 
-unsigned char* CdLastPos(void) { return D_8009BA98; }
+unsigned char *CdLastPos(void) {
+    return D_8009BA98;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -294,7 +310,9 @@ int CdReset(int mode) {
 
 extern void CD_flush(void);
 
-void CdFlush(void) { CD_flush(); }
+void CdFlush(void) {
+    CD_flush();
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -305,16 +323,16 @@ int CdSetDebug(int level) {
     int old;
 
     old = D_8009BA88[0];
-    ((u32*)D_8009BA8C)[-1] = level;
+    ((u32 *)D_8009BA8C)[-1] = level;
     return old;
 }
 
 /* SPDX-License-Identifier: MIT */
 
-extern char* D_8009BAA0[];
+extern char *D_8009BAA0[];
 extern char D_80090168[];
 
-char* CdComstr(unsigned char com) {
+char *CdComstr(unsigned char com) {
     if (com > 0x1B) {
         return D_80090168;
     }
@@ -323,10 +341,10 @@ char* CdComstr(unsigned char com) {
 
 /* SPDX-License-Identifier: MIT */
 
-extern char* D_8009BB20[];
+extern char *D_8009BB20[];
 extern char D_80090168[];
 
-char* CdIntstr(u8 intr) {
+char *CdIntstr(u8 intr) {
     if (intr > 6) {
         return D_80090168;
     }
@@ -335,15 +353,19 @@ char* CdIntstr(u8 intr) {
 
 /* SPDX-License-Identifier: MIT */
 
-extern int CD_sync(int mode, u8* result);
+extern int CD_sync(int mode, u8 *result);
 
-int CdSync(int mode, u8* result) { return CD_sync(mode, result); }
+int CdSync(int mode, u8 *result) {
+    return CD_sync(mode, result);
+}
 
 /* SPDX-License-Identifier: MIT */
 
-extern int CD_ready(int mode, u8* result);
+extern int CD_ready(int mode, u8 *result);
 
-int CdReady(int mode, u8* result) { return CD_ready(mode, result); }
+int CdReady(int mode, u8 *result) {
+    return CD_ready(mode, result);
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -354,7 +376,7 @@ CdlCB CdSyncCallback(CdlCB func) {
     CdlCB old;
 
     old = (CdlCB)D_8009BA7C[0];
-    ((CdlCB*)D_8009BA80)[-1] = func;
+    ((CdlCB *)D_8009BA80)[-1] = func;
     return old;
 }
 
@@ -366,7 +388,7 @@ CdlCB CdReadyCallback(CdlCB func) {
     CdlCB old;
 
     old = (CdlCB)D_8009BA80[0];
-    ((CdlCB*)D_8009BA88)[-2] = func;
+    ((CdlCB *)D_8009BA88)[-2] = func;
     return old;
 }
 
@@ -377,9 +399,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 
 #ifdef NON_MATCHING
-extern void CD_vol(CdlATV* vol);
+extern void CD_vol(CdlATV *vol);
 
-int CdMix(CdlATV* vol) {
+int CdMix(CdlATV *vol) {
     return (CD_vol(vol), 1);
 }
 #else
@@ -388,12 +410,12 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
 
 /* SPDX-License-Identifier: MIT */
 
-extern int CD_getsector(void* madr, int size);
+extern int CD_getsector(void *madr, int size);
 
 #ifdef NON_MATCHING
-extern int CD_getsector(void* madr, int size);
+extern int CD_getsector(void *madr, int size);
 
-int CdGetSector(void* madr, int size) {
+int CdGetSector(void *madr, int size) {
     return !CD_getsector(madr, size);
 }
 #else
@@ -402,16 +424,20 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetSector);
 
 /* SPDX-License-Identifier: MIT */
 
-long CdDataCallback(void (*func)()) { return (long)DMACallback(3, func); }
+long CdDataCallback(void (*func)()) {
+    return (long)DMACallback(3, func);
+}
 
 /* SPDX-License-Identifier: MIT */
 
 extern void CD_datasync(int mode);
 
-void CdDataSync(int mode) { CD_datasync(mode); }
+void CdDataSync(int mode) {
+    CD_datasync(mode);
+}
 
 #ifdef NON_MATCHING
-void CdIntToPos(int i, CdlLOC* p) {
+void CdIntToPos(int i, CdlLOC *p) {
     int m;
     int s;
     int f;
@@ -429,7 +455,7 @@ void CdIntToPos(int i, CdlLOC* p) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdIntToPos);
 #endif
 
-int CdPosToInt(CdlLOC* p) {
+int CdPosToInt(CdlLOC *p) {
 #define DECODE_BCD(x) (((x) >> 4) * 10 + ((x) & 0xF))
 
     u8 sector = p->sector;
@@ -453,14 +479,14 @@ extern u32 D_8009BD44[];
 extern u32 D_8009BD48[];
 extern u32 D_8009BD4C[];
 
-int CD_vol(CdlATV* vol) {
-    *(u8*)D_8009BD40[0] = 2;
-    *(u8*)D_8009BD48[0] = vol->val0;
-    *(u8*)D_8009BD4C[0] = vol->val1;
-    *(u8*)D_8009BD40[0] = 3;
-    *(u8*)D_8009BD44[0] = vol->val2;
-    *(u8*)D_8009BD48[0] = vol->val3;
-    *(u8*)D_8009BD4C[0] = 0x20;
+int CD_vol(CdlATV *vol) {
+    *(u8 *)D_8009BD40[0] = 2;
+    *(u8 *)D_8009BD48[0] = vol->val0;
+    *(u8 *)D_8009BD4C[0] = vol->val1;
+    *(u8 *)D_8009BD40[0] = 3;
+    *(u8 *)D_8009BD44[0] = vol->val2;
+    *(u8 *)D_8009BD48[0] = vol->val3;
+    *(u8 *)D_8009BD4C[0] = 0x20;
     return 0;
 }
 
@@ -471,19 +497,19 @@ extern u32 D_8009BD50[];
 
 #ifdef NON_MATCHING
 void CD_flush(void) {
-    *(u8*)D_8009BD40[0] = 1;
-    while (*(u8*)D_8009BD4C[0] & 7) {
-        *(u8*)D_8009BD40[0] = 1;
-        *(u8*)D_8009BD4C[0] = 7;
-        *(u8*)D_8009BD48[0] = 7;
+    *(u8 *)D_8009BD40[0] = 1;
+    while (*(u8 *)D_8009BD4C[0] & 7) {
+        *(u8 *)D_8009BD40[0] = 1;
+        *(u8 *)D_8009BD4C[0] = 7;
+        *(u8 *)D_8009BD48[0] = 7;
     }
     D_8009BD5A[0] = 0;
     asm("");
-    D_8009BD59[0] = ((volatile u8*)D_8009BD59)[-1];
-    *(u8*)D_8009BD40[0] = 0;
+    D_8009BD59[0] = ((volatile u8 *)D_8009BD59)[-1];
+    *(u8 *)D_8009BD40[0] = 0;
     D_8009BD58[0] = 2;
-    *(u8*)D_8009BD4C[0] = 0;
-    *(u32*)D_8009BD50[0] = 0x1325;
+    *(u8 *)D_8009BD4C[0] = 0;
+    *(u32 *)D_8009BD50[0] = 0x1325;
     asm("");
 }
 #else
@@ -506,7 +532,6 @@ int CD_initintr(void) {
     InterruptCallback(2, callback);
 }
 
-
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_init);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_datasync);
@@ -518,7 +543,6 @@ extern u32 D_8009BD24[];
 void CD_set_test_parmnum(int parmNum) {
     D_8009BD24[0] = parmNum;
 }
-
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", callback);
 
@@ -539,7 +563,7 @@ CdlCB CdReadCallback(CdlCB func) {
     CdlCB old;
 
     old = (CdlCB)D_8009BD88[0];
-    ((CdlCB*)D_8009BD8C)[-1] = func;
+    ((CdlCB *)D_8009BD8C)[-1] = func;
     return old;
 }
 
@@ -573,7 +597,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", v_wait);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearRCnt);
 
 extern struct Callbacks *D_8009CE50[];
-void *ResetCallback(void) { return D_8009CE50[0]->ResetCallback(); }
+void *ResetCallback(void) {
+    return D_8009CE50[0]->ResetCallback();
+}
 
 extern struct Callbacks *D_8009CE50[];
 Callback InterruptCallback(int irq, Callback callback) {
@@ -596,16 +622,24 @@ Callback VSyncCallbacks(int channel, Callback callback) {
 }
 
 extern struct Callbacks *D_8009CE50[];
-void StopCallback(void) { D_8009CE50[0]->StopCallback(); }
+void StopCallback(void) {
+    D_8009CE50[0]->StopCallback();
+}
 
 extern struct Callbacks *D_8009CE50[];
-long RestartCallback(void) { return (long)D_8009CE50[0]->RestartCallback(); }
+long RestartCallback(void) {
+    return (long)D_8009CE50[0]->RestartCallback();
+}
 
 extern u16 D_8009BDCA[];
-int CheckCallback(void) { return D_8009BDCA[0]; }
+int CheckCallback(void) {
+    return D_8009BDCA[0];
+}
 
 extern volatile u16 *D_8009CE58[];
-u16 GetIntrMask(void) { return *D_8009CE58[0]; }
+u16 GetIntrMask(void) {
+    return *D_8009CE58[0];
+}
 
 extern volatile u16 *D_8009CE58[];
 u16 SetIntrMask(u16 arg0) {
@@ -691,9 +725,11 @@ long SetVideoMode(long mode) {
 }
 
 extern long D_8009CEB4[];
-long GetVideoMode(void) { return D_8009CEB4[0]; }
+long GetVideoMode(void) {
+    return D_8009CEB4[0];
+}
 
-u_short LoadTPage(u_long* pix, int tp, int abr, int x, int y, int w, int h) {
+u_short LoadTPage(u_long *pix, int tp, int abr, int x, int y, int w, int h) {
     RECT rect;
 
     rect.x = x;
@@ -715,7 +751,7 @@ u_short LoadTPage(u_long* pix, int tp, int abr, int x, int y, int w, int h) {
     return GetTPage(tp, abr, x, y);
 }
 
-u_short LoadClut(u_long* clut, int x, int y) {
+u_short LoadClut(u_long *clut, int x, int y) {
     RECT rect;
 
     rect.x = x;
@@ -727,7 +763,7 @@ u_short LoadClut(u_long* clut, int x, int y) {
     return GetClut(x, y);
 }
 
-u_short LoadClut2(u_long* clut, int x, int y) {
+u_short LoadClut2(u_long *clut, int x, int y) {
     RECT rect;
 
     rect.x = x;
@@ -745,7 +781,7 @@ u_short LoadClut2(u_long* clut, int x, int y) {
 extern long GetVideoMode(void);
 extern int GetGraphType(void);
 
-DRAWENV* SetDefDrawEnv(DRAWENV* env, s32 x, s32 y, s32 w, s32 h) {
+DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h) {
     int videoMode;
 
     videoMode = GetVideoMode();
@@ -779,7 +815,7 @@ DRAWENV* SetDefDrawEnv(DRAWENV* env, s32 x, s32 y, s32 w, s32 h) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDefDrawEnv);
 #endif
 
-DISPENV* SetDefDispEnv(DISPENV* env, s32 x, s32 y, s32 w, s32 h) {
+DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h) {
     env->disp.x = x;
     env->disp.y = y;
     env->disp.w = w;
@@ -806,7 +842,6 @@ void SetDumpFnt(int id) {
     }
 }
 
-
 extern u16 D_800AD0DC[];
 extern u16 D_800AD0E0[];
 extern u32 D_8009D038[];
@@ -830,7 +865,6 @@ void FntLoad(int tx, int ty) {
     D_8009D038[0] = 0;
     memset_8008B820(D_8009CEB8, 0, 0x180);
 }
-
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 
@@ -884,13 +918,13 @@ int FntPrint(const char *fmt, ...) {
         if (ch != '%') {
             goto format;
         }
-store:
+    store:
         font->unk24[font->unk28++] = ch;
         if (font->unk28 > font->unk1C) {
             return -1;
         }
         goto tail;
-format:
+    format:
         zeroPad = (ch == '0');
         while (ch >= '0' && ch <= '9') {
             width = width * 10 - '0';
@@ -964,7 +998,7 @@ format:
                 return -1;
             }
         }
-tail:
+    tail:
         str++;
         ch = *str;
     }
@@ -979,7 +1013,9 @@ INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090560);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", GetTPage);
 
-u16 GetClut(s32 x, s32 y) { return getClut(x, y); }
+u16 GetClut(s32 x, s32 y) {
+    return getClut(x, y);
+}
 
 typedef int (*DebugPrintf)(const char *, ...);
 extern u32 D_8009DA8C[];
@@ -997,9 +1033,8 @@ void DumpTPage(u_short tpage) {
                                      (tpage * 8) & 0x300);
         return;
     }
-    ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 7) & 3,
-                                 (tpage >> 5) & 3, (tpage << 6) & 0x7C0,
-                                 (tpage * 0x10) & 0x100);
+    ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 7) & 3, (tpage >> 5) & 3,
+                                 (tpage << 6) & 0x7C0, (tpage * 0x10) & 0x100);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpTPage);
@@ -1011,65 +1046,125 @@ void DumpClut(u_short clut) {
     ((DebugPrintf)D_8009DA8C[0])(D_80090560, (clut & 0x3F) * 0x10, clut >> 6);
 }
 
-void* NextPrim(void* p) { return nextPrim(p); }
+void *NextPrim(void *p) {
+    return nextPrim(p);
+}
 
-int IsEndPrim(void* p) { return isendprim(p); }
+int IsEndPrim(void *p) {
+    return isendprim(p);
+}
 
-void AddPrim(void* ot, void* p) { addPrim(ot, p); }
+void AddPrim(void *ot, void *p) {
+    addPrim(ot, p);
+}
 
-void AddPrims(void* ot, void* p0, void* p1) { addPrims(ot, p0, p1); }
+void AddPrims(void *ot, void *p0, void *p1) {
+    addPrims(ot, p0, p1);
+}
 
-void CatPrim(void* p0, void* p1) { catPrim(p0, p1); }
+void CatPrim(void *p0, void *p1) {
+    catPrim(p0, p1);
+}
 
-void TermPrim(void* p) { return termPrim(p); }
+void TermPrim(void *p) {
+    return termPrim(p);
+}
 
-void SetSemiTrans(void* p, int abe) { return setSemiTrans(p, abe); }
+void SetSemiTrans(void *p, int abe) {
+    return setSemiTrans(p, abe);
+}
 
-void SetShadeTex(void* p, int tge) { return setShadeTex(p, tge); }
+void SetShadeTex(void *p, int tge) {
+    return setShadeTex(p, tge);
+}
 
-void SetPolyF3(POLY_F3* p) { setPolyF3(p); }
+void SetPolyF3(POLY_F3 *p) {
+    setPolyF3(p);
+}
 
-void SetPolyFT3(POLY_FT3* p) { setPolyFT3(p); }
+void SetPolyFT3(POLY_FT3 *p) {
+    setPolyFT3(p);
+}
 
-void SetPolyG3(POLY_G3* p) { setPolyG3(p); }
+void SetPolyG3(POLY_G3 *p) {
+    setPolyG3(p);
+}
 
-void SetPolyGT3(POLY_GT3* p) { setPolyGT3(p); }
+void SetPolyGT3(POLY_GT3 *p) {
+    setPolyGT3(p);
+}
 
-void SetPolyF4(POLY_F4* p) { setPolyF4(p); }
+void SetPolyF4(POLY_F4 *p) {
+    setPolyF4(p);
+}
 
-void SetPolyFT4(POLY_FT4* p) { setPolyFT4(p); }
+void SetPolyFT4(POLY_FT4 *p) {
+    setPolyFT4(p);
+}
 
-void SetPolyG4(POLY_G4* p) { setPolyG4(p); }
+void SetPolyG4(POLY_G4 *p) {
+    setPolyG4(p);
+}
 
-void SetPolyGT4(POLY_GT4* p) { setPolyGT4(p); }
+void SetPolyGT4(POLY_GT4 *p) {
+    setPolyGT4(p);
+}
 
-void SetSprt8(SPRT_8* p) { setSprt8(p); }
+void SetSprt8(SPRT_8 *p) {
+    setSprt8(p);
+}
 
-void SetSprt16(SPRT_16* p) { setSprt16(p); }
+void SetSprt16(SPRT_16 *p) {
+    setSprt16(p);
+}
 
-void SetSprt(SPRT* p) { setSprt(p); }
+void SetSprt(SPRT *p) {
+    setSprt(p);
+}
 
-void SetTile1(TILE_1* p) { setTile1(p); }
+void SetTile1(TILE_1 *p) {
+    setTile1(p);
+}
 
-void SetTile8(TILE_8* p) { setTile8(p); }
+void SetTile8(TILE_8 *p) {
+    setTile8(p);
+}
 
-void SetTile16(TILE_16* p) { setTile16(p); }
+void SetTile16(TILE_16 *p) {
+    setTile16(p);
+}
 
-void SetTile(TILE* p) { setTile(p); }
+void SetTile(TILE *p) {
+    setTile(p);
+}
 
-void SetLineF2(LINE_F2* p) { setLineF2(p); }
+void SetLineF2(LINE_F2 *p) {
+    setLineF2(p);
+}
 
-void SetLineG2(LINE_G2* p) { setLineG2(p); }
+void SetLineG2(LINE_G2 *p) {
+    setLineG2(p);
+}
 
-void SetLineF3(LINE_F3* p) { setLineF3(p); }
+void SetLineF3(LINE_F3 *p) {
+    setLineF3(p);
+}
 
-void SetLineG3(LINE_G3* p) { setLineG3(p); }
+void SetLineG3(LINE_G3 *p) {
+    setLineG3(p);
+}
 
-void SetLineF4(LINE_F4* p) { setLineF4(p); }
+void SetLineF4(LINE_F4 *p) {
+    setLineF4(p);
+}
 
-void SetLineG4(LINE_G4* p) { setLineG4(p); }
+void SetLineG4(LINE_G4 *p) {
+    setLineG4(p);
+}
 
-void SetBlockFill(BLK_FILL* p) { setBlockFill(p); }
+void SetBlockFill(BLK_FILL *p) {
+    setBlockFill(p);
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -1109,8 +1204,8 @@ int SetGraphDebug(int level) {
 
     debug[0] = level;
     if ((u8)level) {
-        ((DebugPrintf)D_8009DA8C[0])(D_80090698, debug[0],
-                                     D_8009DA90[0], D_8009DA93[0]);
+        ((DebugPrintf)D_8009DA8C[0])(D_80090698, debug[0], D_8009DA90[0],
+                                     D_8009DA93[0]);
     }
     return old;
 }
@@ -1123,11 +1218,15 @@ INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906D8);
 
 extern u8 D_8009DA90[];
 
-int GetGraphType(void) { return D_8009DA90[0]; }
+int GetGraphType(void) {
+    return D_8009DA90[0];
+}
 
 extern u8 D_8009DA92[];
 
-int GetGraphDebug(void) { return D_8009DA92[0]; }
+int GetGraphDebug(void) {
+    return D_8009DA92[0];
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -1161,7 +1260,7 @@ extern char D_8009073C[];
 extern char D_80090728[];
 
 #ifdef NON_MATCHING
-void checkRECT(RECT* r, RECT* rect) {
+void checkRECT(RECT *r, RECT *rect) {
     switch (D_8009DA92[0]) {
     case 1:
         if (rect->w > D_8009DA94[0] || rect->w + rect->x > D_8009DA94[0] ||
@@ -1273,7 +1372,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", get_dx);
 
 extern s32 *D_8009DB64[];
 
-s32 _status(void) { return *(s32 *)D_8009DB64[0]; }
+s32 _status(void) {
+    return *(s32 *)D_8009DB64[0];
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _otc);
 
@@ -1294,7 +1395,9 @@ void _ctl(u32 arg0) {
 
 /* SPDX-License-Identifier: MIT */
 
-u8 _getctl(s32 arg0) { return D_800AD124[arg0]; }
+u8 _getctl(s32 arg0) {
+    return D_800AD124[arg0];
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _cwb);
 
@@ -1725,10 +1828,12 @@ void _SsNoteOn(s16 access, s16 sequence, s32 note, s32 velocity) {
         return;
     }
     if (velocity & 0xFF) {
-        SpuVmKeyOn(access | (sequence << 8), score->unk4C, score->programs[channel], note & 0xFF, volume, pan);
+        SpuVmKeyOn(access | (sequence << 8), score->unk4C,
+                   score->programs[channel], note & 0xFF, volume, pan);
         score->unkA8 = volume;
     } else {
-        SpuVmKeyOff(access | (sequence << 8), score->unk4C, score->programs[channel], note & 0xFF);
+        SpuVmKeyOff(access | (sequence << 8), score->unk4C,
+                    score->programs[channel], note & 0xFF);
     }
 }
 
@@ -1796,16 +1901,19 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
         _SsContDataEntry(access, sequence, value);
         return;
     case 7:
-        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch], value, score->panpot[ch]);
+        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch],
+                    value, score->panpot[ch]);
         score->vol[ch] = value;
         break;
     case 10:
-        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch], score->vol[ch], value);
+        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch],
+                    score->vol[ch], value);
         score->panpot[ch] = value;
         break;
     case 11:
         SpuVmSetProgVol(score->unk4C, score->programs[ch], value);
-        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch], score->vol[ch], score->panpot[ch]);
+        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch],
+                    score->vol[ch], score->panpot[ch]);
         break;
     case 64:
         if (value < 0x40) {
@@ -1872,7 +1980,8 @@ void _SsSetPitchBend(s16 access, s16 sequence) {
     score = (struct SeqStruct *)(offset + row);
     channel = score->channel;
     data = score->readPos++;
-    SpuVmPitchBend((sequence << 8) | access, score->unk4C, score->programs[channel], *data);
+    SpuVmPitchBend((sequence << 8) | access, score->unk4C,
+                   score->programs[channel], *data);
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
@@ -2026,26 +2135,25 @@ s32 _SsStart(s32 arg0) {
     case 2:
         rcntTarget = 0x44E8;
         break;
-    default:
-        {
-            u8 *env;
-            u32 div;
-            s32 ticks;
+    default: {
+        u8 *env;
+        u32 div;
+        s32 ticks;
 
-            env = (u8 *)D_800A20A4;
-            if (*(s32 *)&env[0] == 0) {
-                ticks = *(s32 *)&env[-4];
-                if (ticks < 0x46) {
-                    div = 0x204CC0 / ticks;
-                    asm("");
-                    env[0xD] += 1;
-                } else {
-                    div = 0x409980 / ticks;
-                }
-                rcntTarget = div;
-                break;
+        env = (u8 *)D_800A20A4;
+        if (*(s32 *)&env[0] == 0) {
+            ticks = *(s32 *)&env[-4];
+            if (ticks < 0x46) {
+                div = 0x204CC0 / ticks;
+                asm("");
+                env[0xD] += 1;
+            } else {
+                div = 0x409980 / ticks;
             }
+            rcntTarget = div;
+            break;
         }
+    }
         return;
     }
     if (D_800A20B0[0] != 0) {
@@ -2074,7 +2182,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsStart);
 
 /* SPDX-License-Identifier: MIT */
 
-extern s32 _SsStart(s32);                                      /* extern */
+extern s32 _SsStart(s32); /* extern */
 
 void SsStart(void) {
     _SsStart(1);
@@ -2082,7 +2190,7 @@ void SsStart(void) {
 
 /* SPDX-License-Identifier: MIT */
 
-extern s32 _SsStart(s32);                                      /* extern */
+extern s32 _SsStart(s32); /* extern */
 
 void SsStart2(void) {
     _SsStart(0);
@@ -2224,7 +2332,8 @@ void Snd_SetPlayMode(s16 access, s16 sequence, u8 mode, s16 loopCount) {
         D_800BDE3C[access][sequence].unk90 |= 1;
         score->loopIndex = 0;
         score->unk2B = 1;
-        SpuVmSetSeqVol(access | (sequence << 8), score->leftVolume, score->rightVolume, 0);
+        SpuVmSetSeqVol(access | (sequence << 8), score->leftVolume,
+                       score->rightVolume, 0);
     } else if (mode == 0) {
         D_800BDE3C[access][sequence].unk90 |= 2;
     }
@@ -2238,7 +2347,8 @@ void SsSeqPlay(short seq_access_num, char play_mode, short l_count) {
 
 extern void Snd_SetPlayMode(short, short, unsigned char, short);
 
-void SsSepPlay(short sep_access_num, short seq_num, char play_mode, short l_count) {
+void SsSepPlay(short sep_access_num, short seq_num, char play_mode,
+               short l_count) {
     Snd_SetPlayMode(sep_access_num, seq_num, play_mode, l_count);
 }
 
@@ -2271,7 +2381,8 @@ void SsSeqSetVol(short access_num, short voll, short volr) {
 extern s32 SpuVmSetSeqVol(s16, u16, u16, s16);
 
 void SsSepSetVol(short sep_access_num, short seq_num, short voll, short volr) {
-    SpuVmSetSeqVol(sep_access_num | (seq_num << 8), voll & 0xFFFF, volr & 0xFFFF, 0);
+    SpuVmSetSeqVol(sep_access_num | (seq_num << 8), voll & 0xFFFF,
+                   volr & 0xFFFF, 0);
 }
 
 extern long SpuVmGetSeqVol(short, short *, short *);
@@ -2340,16 +2451,20 @@ void SsSepStop(short sep_access_num, short seq_num) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSndTempo);
 
 extern short D_800B1EA4[];
-void SsSetMono(void) { D_800B1EA4[0] = 1; }
+void SsSetMono(void) {
+    D_800B1EA4[0] = 1;
+}
 
 extern short D_800B1EA4[];
-void SsSetStereo(void) { D_800B1EA4[0] = 0; }
+void SsSetStereo(void) {
+    D_800B1EA4[0] = 0;
+}
 
 #ifdef NON_MATCHING
 /* Only register allocation differs: the count load/store wants a dedicated
  * address register (lui+addiu) instead of two lui/%lo pairs. */
 extern u8 D_800B9DE4[];
-extern void* D_800BE8F0[];
+extern void *D_800BE8F0[];
 extern u16 D_800BE8EC[];
 
 void SsVabClose(s16 vabid) {
@@ -2362,7 +2477,6 @@ void SsVabClose(s16 vabid) {
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabClose);
 #endif
-
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpen);
 
@@ -2382,11 +2496,15 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabTransCompleted);
 
 extern u16 D_800AFD98[];
 
-void func_80082670(void) { D_800AFD98[0] = 0; }
+void func_80082670(void) {
+    D_800AFD98[0] = 0;
+}
 
 /* SPDX-License-Identifier: MIT */
 extern u16 D_800AFD98[];
-void SpuVmDamperOn(void) { D_800AFD98[0] = 2; }
+void SpuVmDamperOn(void) {
+    D_800AFD98[0] = 2;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetProgAtr);
 
@@ -2400,7 +2518,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbType);
 
 extern s16 D_800AE280[];
 
-int SsUtGetReverbType(void) { return D_800AE280[0]; }
+int SsUtGetReverbType(void) {
+    return D_800AE280[0];
+}
 
 void func_80082B50(void) {
     SpuSetReverb(1);
@@ -2456,9 +2576,11 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch2);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SePitchBend);
 
-void SsUtVibrateOn(void) {}
+void SsUtVibrateOn(void) {
+}
 
-void SsUtVibrateOff(void) {}
+void SsUtVibrateOff(void) {
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SeAutoVol);
 
@@ -2494,8 +2616,8 @@ void SpuVmSeKeyOff(s16 vabId, s16 prog, u16 note) {
     SpuVmKeyOff(0x21, vabId, prog, note);
 }
 
-
-void KeyOnCheck(void) {}
+void KeyOnCheck(void) {
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetSeqVol);
 
@@ -2626,7 +2748,9 @@ u32 _spu_FgetRXXa(s32 arg0, s32 arg1) {
     return temp << D_800A26D0[0];
 }
 
-void _SpuDataCallback(void (*arg0)()) { DMACallback(4, arg0); }
+void _SpuDataCallback(void (*arg0)()) {
+    DMACallback(4, arg0);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuQuit);
 
@@ -2641,7 +2765,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_gcSPU);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuFree);
 
 void _SpuSetAnyVoice(s32, u32, s32, s32);
-void SpuSetNoiseVoice(s32 a, s32 b) { _SpuSetAnyVoice(a, b, 0xCA, 0xCB); }
+void SpuSetNoiseVoice(s32 a, s32 b) {
+    _SpuSetAnyVoice(a, b, 0xCA, 0xCB);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SpuSetAnyVoice);
 
@@ -2669,7 +2795,8 @@ s32 _SpuIsInAllocateArea(u32 arg0) {
         if (arg0 <= (D_800A270C[0][i].addr & 0x0FFFFFFF)) {
             return 1;
         }
-        if (arg0 < (D_800A270C[0][i].addr & 0x0FFFFFFF) + D_800A270C[0][i].size) {
+        if (arg0 <
+            (D_800A270C[0][i].addr & 0x0FFFFFFF) + D_800A270C[0][i].size) {
             return 1;
         }
     }
@@ -2677,8 +2804,6 @@ s32 _SpuIsInAllocateArea(u32 arg0) {
 }
 
 /* SPDX-License-Identifier: MIT */
-
-
 
 extern SpuMallocItem *D_800A270C[];
 extern s32 D_800A26D0[];
@@ -2697,7 +2822,8 @@ s32 _SpuIsInAllocateArea_(u32 arg0) {
         if (arg0 <= (D_800A270C[0][i].addr & 0x0FFFFFFF)) {
             return 1;
         }
-        if (arg0 < (D_800A270C[0][i].addr & 0x0FFFFFFF) + D_800A270C[0][i].size) {
+        if (arg0 <
+            (D_800A270C[0][i].addr & 0x0FFFFFFF) + D_800A270C[0][i].size) {
             return 1;
         }
     }
@@ -2708,7 +2834,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetReverbModeParam);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_setReverbAttr);
 
-void SpuSetReverbVoice(s32 a, s32 b) { _SpuSetAnyVoice(a, b, 0xCC, 0xCD); }
+void SpuSetReverbVoice(s32 a, s32 b) {
+    _SpuSetAnyVoice(a, b, 0xCC, 0xCD);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuClearReverbWorkArea);
 
@@ -2731,7 +2859,9 @@ SpuIRQCallbackProc SpuSetIRQCallback(SpuIRQCallbackProc func) {
     return previous;
 }
 
-void _SpuCallback(s32 arg0) { InterruptCallback(9, arg0); }
+void _SpuCallback(s32 arg0) {
+    InterruptCallback(9, arg0);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetKey);
 
@@ -2804,7 +2934,9 @@ void _spu_setInTransfer(s32 arg0) {
 }
 
 extern s32 D_800A26DC[];
-s32 _spu_getInTransfer(void) { return D_800A26DC[0] == 0; }
+s32 _spu_getInTransfer(void) {
+    return D_800A26DC[0] == 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetCommonAttr);
 
@@ -2842,7 +2974,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", sprintf);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", memchr);
 
-void* memmove(u8* dest, u8* src, int count) {
+void *memmove(u8 *dest, u8 *src, int count) {
     if (dest >= src) {
         while (count-- > 0) {
             dest[count] = src[count];
@@ -2886,7 +3018,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTPutEnv);
 
 /* SPDX-License-Identifier: MIT */
 
-u16 DecDCTBufSize(u16 *buf) { return buf[0]; }
+u16 DecDCTBufSize(u16 *buf) {
+    return buf[0];
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTin);
 
@@ -2894,23 +3028,31 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTin);
 
 extern void MDEC_out(u_long *);
 
-void DecDCTout(u_long *buf) { MDEC_out(buf); }
+void DecDCTout(u_long *buf) {
+    MDEC_out(buf);
+}
 
 /* SPDX-License-Identifier: MIT */
 
 extern void MDEC_in_sync(void);
 
-void DecDCTinSync(void) { MDEC_in_sync(); }
+void DecDCTinSync(void) {
+    MDEC_in_sync();
+}
 
 /* SPDX-License-Identifier: MIT */
 
 extern void MDEC_out_sync(void);
 
-void DecDCToutSync(void) { MDEC_out_sync(); }
+void DecDCToutSync(void) {
+    MDEC_out_sync();
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTinCallback);
 
-long DecDCToutCallback(void (*func)()) { return (long)DMACallback(1, func); }
+long DecDCToutCallback(void (*func)()) {
+    return (long)DMACallback(1, func);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", MDEC_reset);
 
