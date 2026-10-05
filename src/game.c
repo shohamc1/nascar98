@@ -6247,6 +6247,7 @@ void func_80031874(u8 *quad, s32 *normal) {
     s32 crossX;
     s32 crossY;
     s32 crossZ;
+    u8 *back;
 
     if ((quad == NULL) || ((*(u8 *)(quad + 0x13) & 0x20) != 0)) {
         normal[0] = 0;
@@ -6254,26 +6255,23 @@ void func_80031874(u8 *quad, s32 *normal) {
         normal[2] = 0x10000;
         return;
     }
-    vecA[0] = *(s16 *)(*(u8 **)(quad + 0x20) + 0) -
-              *(s16 *)(*(u8 **)(quad + 0x1C) + 0);
-    vecA[1] = *(s16 *)(*(u8 **)(quad + 0x20) + 2) -
-              *(s16 *)(*(u8 **)(quad + 0x1C) + 2);
-    vecA[2] = *(s16 *)(*(u8 **)(quad + 0x20) + 4) -
-              *(s16 *)(*(u8 **)(quad + 0x1C) + 4);
-    vecB[0] = *(s16 *)(*(u8 **)(quad + 0x18) + 0) -
-              *(s16 *)(*(u8 **)(quad + 0x1C) + 0);
-    vecB[1] = *(s16 *)(*(u8 **)(quad + 0x18) + 2) -
-              *(s16 *)(*(u8 **)(quad + 0x1C) + 2);
-    vecB[2] = *(s16 *)(*(u8 **)(quad + 0x18) + 4) -
-              *(s16 *)(*(u8 **)(quad + 0x1C) + 4);
+    back = quad + 0x1C;
+    vecA[0] = *(s16 *)(*(u8 **)(quad + 0x20) + 0) - *(s16 *)(*(u8 **)back + 0);
+    vecA[1] = *(s16 *)(*(u8 **)(quad + 0x20) + 2) - *(s16 *)(*(u8 **)back + 2);
+    vecA[2] = *(s16 *)(*(u8 **)(quad + 0x20) + 4) - *(s16 *)(*(u8 **)back + 4);
+    vecB[0] = *(s16 *)(*(u8 **)(quad + 0x18) + 0) - *(s16 *)(*(u8 **)back + 0);
+    vecB[1] = *(s16 *)(*(u8 **)(quad + 0x18) + 2) - *(s16 *)(*(u8 **)back + 2);
+    vecB[2] = *(s16 *)(*(u8 **)(quad + 0x18) + 4) - *(s16 *)(*(u8 **)back + 4);
     OuterProduct0(vecA, vecB, cross);
     crossX = cross[0];
     crossY = cross[1];
+    do {
+    } while (0);
     crossZ = cross[2];
     cross[0] = crossX >> 6;
     cross[1] = crossY >> 6;
     cross[2] = crossZ >> 6;
-    VectorNormal(cross, normal, crossZ >> 6);
+    VectorNormal(cross, normal, cross[2]);
     normal[0] = normal[0] * 0x10;
     normal[1] = normal[1] * 0x10;
     normal[2] = normal[2] * 0x10;
@@ -8114,25 +8112,24 @@ extern s32 D_800A2F60;
 extern s32 D_800A2EACAbsolute[];
 
 void func_8003BCAC(void) {
-    s32 offset;
-    u8 *next;
-    s32 count;
+    register s32 count asm("s2");
+    register s32 offset asm("s0");
     u8 *object;
 
-    next = *(u8 **)(((u8 **)D_800A3854Absolute)[9] + 0x3E0);
-    if (next != 0) {
+    object = *(u8 **)(((u8 **)D_800A3854Absolute)[9] + 0x3E0);
+    if (object != 0) {
         count = 0;
         offset = 0;
         do {
-            func_8002D4CC(next);
-            *(s32 *)(next + 0) = *(s32 *)((u8 *)D_800BE72C + offset);
-            *(s32 *)(next + 4) = *(s32 *)((u8 *)D_800BE730 + offset);
-            *(s32 *)(next + 8) = 0;
-            func_80022FB8(next, *(s16 *)((u8 *)D_800BE738 + offset));
-            next = *(u8 **)(next + 0x3E0);
+            func_8002D4CC(object);
+            *(s32 *)(object + 0) = *(s32 *)((u8 *)D_800BE72C + offset);
+            *(s32 *)(object + 4) = *(s32 *)((u8 *)D_800BE730 + offset);
+            *(s32 *)(object + 8) = 0;
+            func_80022FB8(object, *(s16 *)((u8 *)D_800BE738 + offset));
+            object = *(u8 **)(object + 0x3E0);
             count += 1;
             offset += 0x10;
-        } while (next != 0);
+        } while (object != 0);
     }
     object = ((u8 **)D_800A3854Absolute)[9];
     offset = count * 0x10;
@@ -20605,16 +20602,11 @@ s32 func_80072BB0(s32 *size) {
     return D_800A351C[0] - difference;
 }
 
-#ifdef NON_MATCHING
-/* w9i draft: byte-identical except the ELSE arm loads its word into a1
- * (v1 with a separate word2 local) where retail reuses a0. Every other
- * shape (xor+sltiu check idiom, duplicated bswaps, unmerged arms, delay
- * addiu) is exact at 0xCC. */
 u32 func_80072BDC(void *arg0) {
-    u32 word;
+    register u32 word asm("a0");
     u32 swapped;
     u32 swapped2;
-    u32 size;
+    register u32 size asm("v0");
     u32 check;
 
     word = *(u32 *)arg0;
@@ -20635,11 +20627,11 @@ u32 func_80072BDC(void *arg0) {
     if (check != 0) {
         size >>= 1;
     }
+    if (swapped2) {
+        return size;
+    }
     return size;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80072BDC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80072CA8);
 
