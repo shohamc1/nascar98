@@ -20492,16 +20492,20 @@ void func_8006D634(s32 arg) {
 void func_8006D684(u8 arg0) {
     u8 *dst;
     u8 *src;
+    u8 *srcBase;
     u8 i;
     u8 j;
 
-    for (i = 0; i < 2; i++) {
+    srcBase = D_800BBA24;
+    i = 0;
+    do {
         dst = D_800A3860[i];
-        src = &D_800BBA24[arg0 * 4 + i * 0x44];
+        src = &srcBase[i * 0x44 + arg0 * 4];
         for (j = 0; j < 4; j++) {
             dst[j] = src[j];
         }
-    }
+        i++;
+    } while (i < 2);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D684);
