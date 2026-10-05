@@ -4566,22 +4566,16 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002A2F8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002A954);
 
-#ifdef NON_MATCHING
-/* Closest shape: all chains/registers match except the +3000 absorbs into
- * the total register (addiu v0 + addu v0,a1,v0) instead of the weight
- * register (retail: addiu a1 + addu v0,v0,a1). gcc 2.7.2 combine always
- * absorbs the constant into the final addu's destination operand. */
 s32 func_8002AAA0(s32 *car) {
     s32 weight;
     s32 total;
+    s32 base;
 
-    weight = (car[0x14] * 200) >> 16;
+    base = (car[0x14] * 200) >> 16;
     total = (car[0x90] * 35 + car[0x91] * 5) >> 16;
-    return weight + 3000 + total;
+    weight = base + 3000;
+    return total + weight;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8002AAA0);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002AAF0);
 
