@@ -763,7 +763,7 @@ void func_80014A70(void) {
 /* Wall: the D_800A2F10 load lands in v0 and the /40 shift in v1; retail
  * has them swapped (load v1, shift v0). Every source shape tried keeps
  * our allocation. */
-extern u32 gPrimitiveCursor;
+extern u32 gPrimitiveCursor[];
 extern u32 D_800A3570;
 extern s32 D_800A38F4;
 extern s32 D_800A2F10[];
@@ -772,7 +772,7 @@ s32 func_80014AC8(s32 arg0) {
     s32 usedPrims;
 
     usedPrims =
-        ((gPrimitiveCursor & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
+        ((gPrimitiveCursor[0] & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
     D_800A38F4 = D_800A2F10[0] - usedPrims;
     return arg0 < D_800A38F4;
 }
@@ -1305,7 +1305,7 @@ typedef struct {
     s32 words[4];
 } Primitive16;
 
-extern s32 gPrimitiveCursor[];
+extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
 extern s32 D_800A36D0Absolute[];
 void func_80017D80(u8 *arg0) {
@@ -3266,7 +3266,6 @@ extern u8 D_800A3680[];
 extern s32 D_800A397CSmall;
 extern void func_80025730(u8 *);
 void func_8001FD44(u8 *arg0) {
-    s32 value;
     s32 count;
     s32 held;
     s32 mode;
@@ -3287,12 +3286,11 @@ void func_8001FD44(u8 *arg0) {
     } else if (count >= 3) {
         *(s8 *)(arg0 + 0x20C) = -2;
     }
-    value = 1;
     if (*(s32 *)(arg0 + 0x354) == (s32)func_80025730 &&
         *(s8 *)(arg0 + 0x20C) == -1) {
         *(s8 *)(arg0 + 0x20C) = 0;
     }
-    D_800A3680[0] = value;
+    D_800A3680[0] = 1;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FD44);
@@ -6090,7 +6088,7 @@ extern s32 D_800A397C[];
 void func_800319D4(u8 *, s32);
 void func_8001F198(void);
 u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
-s16 func_8002482C(s32, s32, void *);
+extern s16 func_8002482Cs16(s32, s32, void *) asm("func_8002482C");
 void func_8001F5BC(s32, s32, s32);
 void func_80031264(u8 *object) {
     s32 corners[5][4];
@@ -6143,7 +6141,7 @@ void func_80031264(u8 *object) {
         object, corners[2], *(s16 *)(state + 0x1C), *(s16 *)(state + 0x22), 0);
     *(s16 *)(object + 0x368) = func_80030F24(
         object, corners[1], *(s16 *)(state + 0x1C), *(s16 *)(state + 0x20), 0);
-    *(s16 *)(object + 0x1E0) = func_8002482C(
+    *(s16 *)(object + 0x1E0) = func_8002482Cs16(
         *(s32 *)(object + 0x0), *(s32 *)(object + 0x4), object + 0x1F8);
     if (*(u16 *)(object + 0x362) == 0) {
         corners[3][2] = *(s32 *)(object + 0x8);
@@ -7058,7 +7056,7 @@ typedef struct {
     s32 words[4];
 } Primitive10;
 
-extern s32 gPrimitiveCursor[];
+extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
 extern s32 D_800A36D0Absolute[];
 void func_80034B90(u8 *prim) {
@@ -16698,7 +16696,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800663B0);
  */
 void *func_8006654C(void *queue, s32 arg1) {
     extern s32 D_800A39C8[];
-    extern void *func_80057D50(s32);
+    extern u8 *func_80057D50(s32);
     s32 *slots[2];
     s32 *p;
     s32 *start;
@@ -17054,7 +17052,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80067020);
 void func_8006709C(u8 arg0) {
     extern s32 D_800A3848[];
     extern u8 D_800A3644[];
-    extern u16 *D_800A39C8[];
+    extern u16 *D_800A39C8p[] asm("D_800A39C8.NON_MATCHING");
     extern u16 *D_800A3898;
     extern u16 *D_800A389C[];
     extern u16 SCRATCH_TOP[];
@@ -17080,7 +17078,7 @@ void func_8006709C(u8 arg0) {
         return;
     }
     arg = arg0;
-    base = D_800A39C8[0];
+    base = D_800A39C8p[0];
     limit = D_800A3898;
     if (base + 8 < limit) {
         for (walk = (u8 *)base + 0x32; walk < (u8 *)limit + 0x22;
@@ -17122,7 +17120,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006709C);
 void func_80067228(void) {
     extern u16 *D_800A387C;
     extern u16 *D_800A36BC;
-    extern u16 *D_800A39C8[];
+    extern u16 *D_800A39C8p[] asm("D_800A39C8.NON_MATCHING");
     extern u8 *D_8009A400[];
     u16 *baseA;
     u16 *baseB;
@@ -17134,7 +17132,7 @@ void func_80067228(void) {
 
     len = strlen(D_8009A400[0]);
     baseA = D_800A387C;
-    baseB = D_800A39C8[0];
+    baseB = D_800A39C8p[0];
     baseB2 = baseB + 0x2000;
     i = 0;
     if (len > 0) {
