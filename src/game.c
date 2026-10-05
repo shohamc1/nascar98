@@ -1424,7 +1424,31 @@ void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80018B18);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80018BD4);
+extern void func_800180C0(s8, s32, s32, s32);
+extern s16 D_800A2D88[];
+void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
+    s8 text[24];
+    s8 *start;
+    s16 *base;
+    s16 *width;
+    s8 *p;
+    s32 pen;
+
+    start = text;
+    text[0] = 0;
+    func_80012F94(value, start);
+    pen = x;
+    if (text[0] != 0) {
+        base = D_800A2D88;
+        width = base + scale;
+        p = start;
+        do {
+            func_800180C0(*p, pen, y, scale);
+            pen += *width;
+            p++;
+        } while (*p != 0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80018C88);
 
@@ -1708,26 +1732,14 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001C99C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CAB8);
 
-#ifdef NON_MATCHING
-/* Wall (w6a): body, addressing (D_800A2EC0Absolute alias, table=D_800BE97C[0]
-   hoisted to t3) and the phantom volatile framePad[2] (8-byte empty frame) all
-   match; loop schedule matches. Only the register ASSIGNMENT rotates with every
-   init/statement order tried: retail pseudo order is cursor=t0, base-copy=t1,
-   strideNeg=t2, table=t3, count=a2, walk=a3; ours permutes base/cursor/walk/
-   count between t0/t1/a2/a3 no matter the order of count=0 / cursor / walk /
-   strideNeg inits. Same class as the w3a func_8001F728 param-copy wall. */
-extern s32 D_800A2EC0Absolute[];
-extern void *D_800BE97C[];
 void func_8001CBD4(u8 *arg0) {
     s32 temp;
-    s32 strideNeg;
-    s32 count;
+    s32 i;
     s32 idx;
     s32 val;
     s32 base;
+    s32 strideNeg;
     u8 *table;
-    u8 *cursor;
-    u8 *walk;
     volatile s32 framePad[2];
 
     temp = D_800A2EC0Absolute[0] & 0x3F;
@@ -1738,24 +1750,18 @@ void func_8001CBD4(u8 *arg0) {
         temp = 0x20 - temp;
     }
     if (*(s16 *)(arg0 + 0xA) > 0) {
-        cursor = arg0;
-        walk = arg0;
+        i = 0;
+        asm("" : : "r"(i));
         strideNeg = -(temp * 0x14);
-        count = 0;
         do {
-            idx = *(u16 *)(walk + 0x10);
-            val = *(s16 *)(cursor + 0x94);
+            idx = *(u16 *)(arg0 + 0x10 + i * 2);
+            val = *(s16 *)(arg0 + 0x94 + i * 6);
             base = *(s32 *)(arg0 + 0x218);
             *(s32 *)(table + idx * 0x14 + 0x10) = val + base + strideNeg;
-            cursor += 6;
-            count += 1;
-            walk += 2;
-        } while (count < *(s16 *)(arg0 + 0xA));
+            i += 1;
+        } while (i < *(s16 *)(arg0 + 0xA));
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001CBD4);
-#endif
 
 #ifdef NON_MATCHING
 /* Wall (w7b): unit diff is clean through the second palette arm except the
@@ -3088,27 +3094,28 @@ void func_8001FAC0(u8 *arg0, s32 index) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8001FAC0);
 #endif
 
-#ifdef NON_MATCHING
-/* Wall: scheduler places the D_800A3A34 pointer load and the negu differently than retail. */
 void func_8001FB28(u8 *arg0, s32 index) {
     s32 *table1;
     s32 *table2;
+    s32 value1;
+    s32 value2;
+    s32 value3;
 
     table1 = (s32 *)D_800A3A2C;
+    value1 = table1[index];
     table2 = (s32 *)D_800A3A34;
-    *(s32 *)(arg0 + 0x60) = table1[index];
+    *(s32 *)(arg0 + 0x60) = value1;
+    value2 = table2[index];
     *(s32 *)(arg0 + 0x78) = 0;
-    *(s32 *)(arg0 + 0x6C) = table2[index];
+    *(s32 *)(arg0 + 0x6C) = value2;
     *(s32 *)(arg0 + 0x64) = -table2[index];
+    value3 = table1[index];
     *(s32 *)(arg0 + 0x7C) = 0;
     *(s32 *)(arg0 + 0x68) = 0;
     *(s32 *)(arg0 + 0x74) = 0;
     *(s32 *)(arg0 + 0x80) = 0x10000;
-    *(s32 *)(arg0 + 0x70) = table1[index];
+    *(s32 *)(arg0 + 0x70) = value3;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001FB28);
-#endif
 
 #ifdef NON_MATCHING
 /* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
@@ -11187,38 +11194,31 @@ void PadInitBuffers(void) {
     VSync(0);
 }
 
-#ifdef NON_MATCHING
-/* w6f: this w4b shape does NOT hold in the merged tree: both pad loads
- * hoist to the top, the pads+2 offsets fold into %lo, and the final or
- * operand order flips. Re-diff before trusting it. */
 extern s32 gPadBuffers[];
 extern u32 D_800B9E00[];
 
 s32 func_80041D60(void) {
-    volatile u16 pad1;
-    volatile u16 pad2;
-    u8 *pads;
-    u16 value;
-    u32 flags;
+    u16 pads[2];
+    u8 *cursor;
+    u16 value1;
+    u16 value2;
 
-    pads = (u8 *)gPadBuffers;
-    value = *(u16 *)(pads + 2);
-    pad1 = ~(((value & 0xFF) << 8) | (value >> 8));
-    pads += 0xC;
-    value = *(u16 *)(pads + 2);
-    flags = *(u32 *)gPadBuffers;
-    pad2 = ~(((value & 0xFF) << 8) | (value >> 8));
-    if ((flags & 0xF000) == 0) {
-        pad1 = 0;
+    cursor = (u8 *)gPadBuffers;
+    asm("" : "=r"(cursor) : "0"(cursor));
+    value1 = *(u16 *)(cursor + 2);
+    pads[0] = ~(((value1 & 0xFF) << 8) | (value1 >> 8));
+    cursor += 0xC;
+    asm("" : "=r"(cursor) : "0"(cursor));
+    value2 = *(u16 *)(cursor + 2);
+    pads[1] = ~(((value2 & 0xFF) << 8) | (value2 >> 8));
+    if ((*(u32 *)gPadBuffers & 0xF000) == 0) {
+        pads[0] = 0;
     }
     if ((D_800B9E00[0] & 0xF000) == 0) {
-        pad2 = 0;
+        pads[1] = 0;
     }
-    return ((u32)pad2 << 16) | pad1;
+    return ((u32)pads[1] << 16) | pads[0];
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80041D60);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80041DEC);
 
@@ -11478,49 +11478,32 @@ void func_80043D6C(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80043F7C);
 
-#ifdef NON_MATCHING
-/* Wall: the loop-1 walker init folds to move (retail keeps addu a0,v1
- * with v1=0); loop-2 strength reduction goes negative-offset. Also:
- * tail load/store of D_800A3960 CSEs into one lui/addiu base across the
- * branch (asm("") does NOT block it); retail has lui+lw %lo then a
- * second lui $at+sw. */
 extern u8 D_800A2EE0[];
-extern u32 D_800A3960[];
+extern u8 *D_800A3960[];
+extern u8 *D_800A3960w17[] asm("D_800A3960.NON_MATCHING");
 
 void func_80044114(u8 *arg0) {
     s32 i;
-    u8 *slot;
-    s32 j;
     u8 *entry;
 
-    *(s16 *)(arg0 + 0x3A4) = 0;
-    i = 0;
-    slot = arg0;
-    do {
-        i++;
-        slot[0x3A6] = 1;
-        slot[0x3AE] = 0;
-        slot = arg0 + i;
-    } while (i < 8);
-    if (D_800A2EE0[0] != 0) {
-        *(s16 *)(arg0 + 0x1BC) = 3;
-        j = 0;
-        entry = arg0;
-        do {
-            *(s16 *)(entry + 0x2AC) = 0;
-            *(s16 *)(entry + 0x2B0) = 0;
-            j++;
-            entry += 0x28;
-        } while (j < 4);
-        *(s16 *)(arg0 + 0x10C) = 0;
+    *(volatile s16 *)(arg0 + 0x3A4) = 0;
+    for (i = 0; i < 8; i++) {
+        *(volatile u8 *)(arg0 + i + 0x3A6) = 1;
+        *(volatile u8 *)(arg0 + i + 0x3AE) = 0;
     }
-    if (arg0 == (u8 *)D_800A3960[0]) {
-        D_800A3960[0] = 0;
+    if (D_800A2EE0[0] != 0) {
+        *(volatile s16 *)(arg0 + 0x1BC) = 3;
+        for (i = 0, entry = arg0; i < 4; i++) {
+            *(volatile s16 *)(entry + 0x2AC) = 0;
+            *(volatile s16 *)(entry + 0x2B0) = 0;
+            entry += 0x28;
+        }
+        *(volatile s16 *)(arg0 + 0x10C) = 0;
+    }
+    if (arg0 == D_800A3960[0]) {
+        D_800A3960w17[0] = 0;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80044114);
-#endif
 
 void func_8004419C(u8 *object) {
     s32 i;
