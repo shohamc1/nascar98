@@ -1244,21 +1244,17 @@ void FontSetColor(s16 red, s16 green, s16 blue) {
     gFontColorBlue = blue;
 }
 
-#ifdef NON_MATCHING
-/* Wall: the two-statement width build (width = D_800A2D88; width = width +
- * scale;) reproduces retail's lui/addiu-then-sll order, but gcc allocates
- * scale into s3 and width into s2; retail has them swapped (scale s2, width
- * s3). Only the register names differ. */
 extern void func_800180C0(s8, s32, s32, s32);
 extern s16 D_800A2D88[];
 
 void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
     s16 *width;
+    s16 *base;
     s8 *p;
 
     if (*text != 0) {
-        width = D_800A2D88;
-        width = width + scale;
+        base = D_800A2D88;
+        width = base + scale;
         p = text;
         do {
             func_800180C0(*p, x, y, scale);
@@ -1267,9 +1263,6 @@ void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
         } while (*p != 0);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001832C);
-#endif
 
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800183C0);
@@ -18682,9 +18675,8 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006B3E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B464);
 
-#ifdef NON_MATCHING
 /*
- * w9h draft: retail re-reads the D_800A3604 pointer (gp) before every
+ * Retail re-reads the D_800A3604 pointer (gp) before every
  * store, so the pointer variable is volatile here. The D_800A306C-3072/75
  * bytes are untracked; reached as D_800A3073[-N]/[+2] (already declared
  * in this TU).
@@ -18704,13 +18696,10 @@ void func_8006B5BC(void) {
     D_800A3604[2] = D_800A3694Absolute[1];
     D_800A3604[3] = D_800A3078[0];
     for (i = 0; i < 6; i++) {
-        D_800A3604[4 + i] = D_800A331CAbsolute[i];
+        (D_800A3604 + i)[4] = D_800A331CAbsolute[i];
     }
     D_800A3604[0xA] = D_800A37D0[0];
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006B5BC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B6B8);
 
@@ -20008,36 +19997,23 @@ void func_80070018(void) {
         func_8006FDDC();
 }
 
-#ifdef NON_MATCHING
-/* w7i draft: clean unit diff at 0x9c in one cc1 run. Under both w7i's and
- * w8i's gates the same source allocates site1 {base v0, idx a1} /
- * site2 {base v1, idx a1} vs retail {v1,v0}/{a1,v1} -- same length,
- * registers only (4 content bytes). Unguarding it in w8i ALSO flipped
- * func_8006E07C's gp-load registers (pre-existing live C) -- see the
- * TU-context note in notes-w8i.md. */
 extern s32 *D_800A3398;
 void func_8007005C(void) {
     s32 *s;
     s32 *s2;
-    s32 idx;
     s32 other;
 
     if (D_800A3398[0x11C / 4] != 0) {
         DrawSync(0);
         VSync(0);
         s = D_800A3398;
-        idx = s[0x114 / 4];
-        PutDispEnv((DISPENV *)((u8 *)s + (idx * 20 + 0xEC)));
+        PutDispEnv((DISPENV *)((u8 *)s + (s[0x114 / 4] * 20 + 0xEC)));
         s2 = D_800A3398;
-        idx = s2[0x114 / 4];
-        other = 1 - idx;
+        other = 1 - s2[0x114 / 4];
         s2[0x114 / 4] = other;
         PutDrawEnv((DRAWENV *)((u8 *)s2 + (other * 92 + 0x34)));
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8007005C);
-#endif
 
 extern s32 D_800A339C, D_800A33A0;
 void func_800700F8(void) {
@@ -20157,13 +20133,10 @@ s32 func_80071EC0(s32 index, s32 base, s32 item) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80071EEC);
 
-#ifdef NON_MATCHING
-/* w7i draft: 0-row unit diff at exact length 0xa8 interactively; the
- * w8i gate reproduced retail's -0x20 frame BUT unguarding it flipped
- * func_8006E07C's allocation (TU-context cc1 flake) -- re-guarded. */
 extern s32 D_800A33B8, D_800A33BC;
 void func_800720D0(void) {
     s32 enabled;
+    s32 pad[2];
 
     if (D_800A3500[0x420 / 4] != 0) {
         CdDataCallback((void *)D_800A3500[0x574 / 4]);
@@ -20185,9 +20158,6 @@ void func_800720D0(void) {
         SwExitCriticalSection();
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800720D0);
-#endif
 
 extern volatile s32 *D_800A351C;
 void func_80072178(void) {
