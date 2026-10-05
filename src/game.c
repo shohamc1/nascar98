@@ -5628,7 +5628,96 @@ void func_8002EEFC(u8 *arg0) {
     } while (node != NULL);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8002EEFC);
+extern s32 D_800A38AC[];
+extern u8 *D_800A3878;
+extern u8 D_800A2ED8;
+void func_8002EEFC(u8 *arg0) {
+    s32 pad[2];
+    s32 refX;
+    s32 refY;
+    s32 refZ;
+    s32 level;
+    s32 b;
+    s32 v;
+    u8 *node;
+    register s32 dx asm("a0");
+    register s32 coord asm("v0");
+    register s32 dySq asm("v1");
+    register s32 dzSq asm("a2");
+
+    (void)&pad;
+    refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
+    refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
+    refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
+    node = D_800A3878;
+    if (node == NULL) {
+        return;
+    }
+    level = 4;
+    do {
+        if (node != arg0) {
+            goto dist;
+        }
+        if (*(s16 *)(node + 0x1EC) != 0) {
+            goto dist;
+        }
+        if (D_800A2ED8 != 0) {
+            goto dist;
+        }
+        if (*(s8 *)(node + 0x20C) != 0) {
+            goto dist;
+        }
+        v = *(u32 *)(node + 0x370);
+    setLevel:
+        *(u8 *)(node + 0x374) = level;
+        asm volatile("" : "=r"(v) : "0"(v));
+        *(u32 *)(node + 0x36C) = v + 0x110;
+        goto nextNode;
+    dist:
+        coord = *(s32 *)(node + 0x0);
+        dx = coord - refX;
+        asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
+        coord = *(s32 *)(node + 0x4);
+        asm volatile("mflo\t%0" : "=r"(dx) : : "lo");
+        coord = coord - refY;
+        asm volatile("mult\t%0,%0" : : "r"(coord) : "hi", "lo");
+        coord = *(s32 *)(node + 0x8);
+        asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
+        coord = coord - refZ;
+        asm volatile("mult\t%0,%0" : : "r"(coord) : "hi", "lo");
+        dx = dx + dySq;
+        asm volatile("mflo\t%0" : "=r"(dzSq) : : "lo");
+        dx = MathSqrt(dx + dzSq);
+        if (dx < 0x7D0) {
+            *(u8 *)(node + 0x374) = 0;
+        } else if (dx < 0x1770) {
+            *(u8 *)(node + 0x374) = 1;
+        } else if ((coord = dx < 0x2EE0) != 0) {
+            *(u8 *)(node + 0x374) = 2;
+        } else {
+            *(u8 *)(node + 0x374) = 3;
+        }
+        if (D_800A2ED8 != 0) {
+            coord = *(s8 *)(node + 0x374);
+            asm volatile("" : "=r"(dySq) : "0"(coord));
+            if (coord < 3) {
+                coord = dySq + 1;
+                *(s8 *)(node + 0x374) = coord;
+            }
+        }
+        if (*(s8 *)(node + 0x200) == level) {
+            *(u8 *)(node + 0x374) = 0;
+        }
+        if (node == arg0) {
+            *(u8 *)(node + 0x374) = 0;
+        }
+        b = *(s8 *)(node + 0x374);
+        *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + (b * 0x44);
+    nextNode:
+        node = *(u8 **)(node + 0x3E0);
+    } while (node != NULL);
+}
+
 #endif
 
 extern void *D_800A2EA0Small;
@@ -8561,7 +8650,54 @@ void func_800365B8(s32 *out) {
     *out = 0;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_800365B8);
+extern s32 D_800B7398[];
+void func_800365B8(s32 *out) {
+    s32 i;
+    s32 count;
+    s32 mask1;
+    s32 mask2;
+    s32 mask3;
+    u8 *entry;
+    s32 value;
+    s32 temp;
+
+    count = 0;
+    i = 0;
+    mask1 = -0x800;
+    mask2 = 0xFFC007FF;
+    mask3 = 0x3FFFFF;
+    entry = (u8 *)D_800B7398;
+head:
+    if (*(s16 *)(entry + 0x10) == 0) {
+        goto tail;
+    }
+    value = *out;
+    value = (value & mask1) | ((*(s32 *)(entry - 8) >> 7) & 0x7FF);
+    *out = value;
+    value = (value & mask2) | (((*(s32 *)(entry - 4) >> 7) & 0x7FF) << 11);
+    *out = value;
+    temp = *(s32 *)entry;
+    if (temp < 0) {
+        temp = temp + 15;
+    }
+    value = (value & mask3) | ((temp >> 4) << 22);
+    *out = value;
+    out = out + 1;
+    count = count + 1;
+tail:
+    i = i + 1;
+    if (i < 0x18) {
+        goto check;
+    }
+    *out = 0;
+    return;
+check:
+    if (count < 0x14) {
+        entry = entry + 0xC8;
+        goto head;
+    }
+}
+
 #endif
 
 extern u8 D_800B7388Base[] asm("D_800B7388.NON_MATCHING");
@@ -8878,7 +9014,40 @@ s32 func_800370B8(s32 a, s32 b) {
     return b - a;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_800370B8);
+extern s32 D_800BE974[];
+
+s32 func_800370B8(s32 a, s32 b) {
+    s32 limit;
+    s32 diff;
+    s32 half;
+
+    limit = D_800BE974[0];
+    diff = a - b;
+    half = limit >> 1;
+    if (diff >= 0) {
+        if (diff < half) {
+            return diff;
+        }
+        asm("");
+    } else {
+        if (-diff < half) {
+            return diff;
+        }
+    }
+    if (b < a) {
+        b = b + limit;
+        if (b - a < 0) {
+            return b - a;
+        }
+        return a - b;
+    }
+    a = a + limit;
+    if (a - b >= 0) {
+        return a - b;
+    }
+    return b - a;
+}
+
 #endif
 
 #ifdef NON_MATCHING
@@ -8921,7 +9090,68 @@ void func_80037130(u8 *object) {
     *(s32 *)(object + 0x8) = sum2;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80037130);
+void func_8001FAC0(u8 *, s32);
+void func_8001FB28(u8 *, s32);
+void func_80037130(u8 *object) {
+    register s32 heading asm("a1");
+    register s32 steer asm("v0");
+    register s32 turn asm("a1");
+    register s32 rate0 asm("v1");
+    register s32 rate1 asm("v1");
+    register s32 rate2 asm("v1");
+    register s32 vel0 asm("v0");
+    register s32 vel1 asm("v0");
+    register s32 vel2 asm("v0");
+    register s32 prod0 asm("a1");
+    register s32 prod1 asm("a0");
+    register s32 prod2 asm("v1");
+    register s32 half0 asm("v0");
+    register s32 half1 asm("v0");
+    register s32 half2 asm("v0");
+    register s32 add0 asm("a1");
+    register s32 add1 asm("a2");
+    register s32 add2 asm("a3");
+    register s32 posX asm("v0");
+    register s32 posY asm("v1");
+    register s32 posZ asm("a0");
+
+    heading = *(s16 *)(object + 0x114);
+    asm volatile("lh\t%0,0x114(%1)" : "=r"(steer) : "r"(object));
+    turn = heading * 4;
+    asm volatile("");
+    *(s16 *)(object + 0x116) = steer * 4;
+    func_8001FAC0(object, turn);
+    func_8001FB28(object, *(s16 *)(object + 0x104));
+    asm volatile("lh\t%0,0x92(%1)" : "=r"(rate0) : "r"(object));
+    vel0 = *(s32 *)(object + 0x60);
+    asm volatile("mult\t%0,%1" : : "r"(vel0), "r"(rate0) : "hi", "lo");
+    asm volatile("lh\t%0,0x92(%1)" : "=r"(rate1) : "r"(object));
+    vel1 = *(s32 *)(object + 0x6C);
+    asm volatile("mflo\t%0" : "=r"(prod0) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(vel1), "r"(rate1) : "hi", "lo");
+    asm volatile("lh\t%0,0x92(%1)" : "=r"(rate2) : "r"(object));
+    vel2 = *(s32 *)(object + 0x78);
+    asm volatile("mflo\t%0" : "=r"(prod1) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(vel2), "r"(rate2) : "hi", "lo");
+    half0 = prod0 >> 16;
+    *(s32 *)(object + 0xB0) = half0;
+    add0 = *(volatile s32 *)(object + 0xB0);
+    half1 = prod1 >> 16;
+    *(s32 *)(object + 0xB4) = half1;
+    add1 = *(volatile s32 *)(object + 0xB4);
+    asm volatile("");
+    posZ = *(s32 *)(object + 0x8);
+    asm volatile("mflo\t%0" : "=r"(prod2) : : "lo");
+    half2 = prod2 >> 16;
+    *(s32 *)(object + 0xB8) = half2;
+    add2 = *(volatile s32 *)(object + 0xB8);
+    posX = *(s32 *)(object + 0x0);
+    posY = *(s32 *)(object + 0x4);
+    *(s32 *)(object + 0x0) = posX + add0;
+    *(s32 *)(object + 0x4) = posY + add1;
+    *(s32 *)(object + 0x8) = posZ + add2;
+}
+
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80037204);
@@ -20530,7 +20760,30 @@ void func_8006C5E4(s32 arg0) {
     *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006C5E4);
+extern s32 D_8009A4C0[];
+void func_8006C5E4(s32 arg0) {
+    s32 *entry;
+    u8 *obj;
+    s32 value;
+    s32 temp;
+    s32 *tbl;
+    s32 offset;
+    s32 elem;
+    ColorNode *node;
+
+    obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
+    offset = arg0 & 0xFF;
+    tbl = D_8009A4C0;
+    entry = tbl + offset;
+    value = func_8005A8E0(*entry);
+    elem = *entry;
+    temp = 0x78 - value;
+    node = D_800A3A10[0];
+    value = temp / 2;
+    *(s32 *)(obj + 8) = elem;
+    node->unk12 = value;
+}
+
 #endif
 
 #ifdef NON_MATCHING
