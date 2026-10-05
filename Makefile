@@ -221,8 +221,9 @@ report: objdiff.json $(EXE)
 	@test -d expected || $(MAKE) expected
 	$(OBJDIFF) report generate -o build/report.json
 	@python3 -c "import json; m=json.load(open('build/report.json'))['measures']; \
-	  print('code %.2f%%  functions %s/%s' % (m.get('matched_code_percent', 0), \
-	  m.get('matched_functions', 0), m.get('total_functions', 0)))"
+	  print('code %.2f%%  functions %s/%s  data %.2f%%' % (m.get('matched_code_percent', 0), \
+	  m.get('matched_functions', 0), m.get('total_functions', 0), \
+	  m.get('matched_data_percent', 0)))"
 
 # Download the compilers and objdiff, and set up the Python environment.
 tools:

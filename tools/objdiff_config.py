@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write objdiff.json: one unit per object that holds game or SDK code.
+"""Write objdiff.json: one unit per code object, plus the asm data objects.
 
 objdiff compares build/<obj> (your C) against expected/build/<obj>, the copy
 `make expected` takes from a matching build. Functions still in asm carry a
@@ -12,12 +12,15 @@ import json
 import pathlib
 import sys
 
-# Objects that hold code, by progress category. Data-only objects
-# (asm/data/*) aren't units: decomp.dev tracks code.
+# Objects that hold code, by progress category.
 SDK_C = "src/psxsdk.c"
 
+# Data-only objects, tracked like sotn-decomp's asm data units. No .bss:
+# objdiff counts it as matched because it has no bytes to compare.
+DATA_S = ["asm/data/data.data.s", "asm/data/sdata.sdata.s"]
 
-def unit(src: pathlib.Path, category: str) -> dict:
+
+def unit(src: pathlib.Path, category: str | None) -> dict:
     obj = f"build/{src}.o"
     return {
         "name": str(src.with_suffix("")),
@@ -25,7 +28,7 @@ def unit(src: pathlib.Path, category: str) -> dict:
         "base_path": obj,
         "metadata": {
             "source_path": str(src),
-            "progress_categories": [category],
+            "progress_categories": [category] if category else [],
             "auto_generated": src.suffix == ".s",
         },
     }
@@ -35,7 +38,7 @@ def main() -> None:
     units = [
         unit(p, "sdk" if str(p) == SDK_C else "game")
         for p in sorted(pathlib.Path("src").rglob("*.c"))
-    ]
+    ] + [unit(pathlib.Path(s), None) for s in DATA_S]
     config = {
         "$schema": "https://raw.githubusercontent.com/encounter/objdiff/main/config.schema.json",
         "custom_make": "make",

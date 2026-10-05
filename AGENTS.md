@@ -65,8 +65,9 @@ These are the paths you work with:
    the `INCLUDE_ASM` line in the `#else`, and record the wall in
    `kb/psx/matching.md` or the game's `open-questions.md`.
 
-To see progress, run `make report`. It prints matched code and functions,
-and writes `build/report.json` for decomp.dev.
+To see progress, run `make report`. It prints matched code, functions, and
+initialised data (`.data` and `.sdata`; `.bss` has no bytes to match), and
+writes `build/report.json` for decomp.dev.
 
 ## Write C that matches
 
