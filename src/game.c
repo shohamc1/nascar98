@@ -12728,7 +12728,7 @@ s32 func_80050940(u8 *str) {
     u8 c;
 
     sum = 0;
-    if (*str != 0) {
+    if (*(volatile u8 *)str != 0) {
         asm("");
         c = *str;
         do {
