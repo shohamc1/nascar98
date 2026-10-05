@@ -3264,7 +3264,7 @@ void func_8001FC6C(void) {
    delay slots, sb v0). */
 extern u8 D_800A3680[];
 extern s32 D_800A397CSmall;
-extern void func_80025730(void);
+extern void func_80025730(u8 *);
 void func_8001FD44(u8 *arg0) {
     s32 value;
     s32 count;
@@ -4429,16 +4429,14 @@ void func_800297D0(u8 *arg0) {
 /* Same length; differs only in store scheduling: retail sinks each result
  * store past the next call's a1 load and materializes the table base into
  * v1, keeping the result live in v0. Our gcc stores early and reuses v0. */
-extern s32 *D_800A3A2CAbsolute[];
-extern s32 *D_800A3A34Absolute[];
 void func_800298E0(s32 *car) {
     s32 index;
 
     index = ((s16 *)car)[0x8A];
-    car[0x31] = MathMultiplyFixed16(D_800A3A2CAbsolute[0][index], car[0x24]);
-    car[0x32] = MathMultiplyFixed16(D_800A3A34Absolute[0][index], car[0x24]);
-    car[0x34] = MathMultiplyFixed16(D_800A3A2CAbsolute[0][index], car[0x24]);
-    car[0x35] = MathMultiplyFixed16(D_800A3A34Absolute[0][index], car[0x24]);
+    car[0x31] = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
+    car[0x32] = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
+    car[0x34] = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
+    car[0x35] = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_800298E0);
@@ -4724,7 +4722,7 @@ void func_8002A1D0(void) {
    word for word (the %4 diamond, the xori/sltiu ==3 test, the ^1 arm, the
    always-executed 0x238 store on every path). */
 extern s32 D_800A35D4[];
-extern s32 D_800A2EC4[];
+extern s32 D_800A2EC4nm[] asm("D_800A2EC4.NON_MATCHING");
 extern s32 D_800A2EA4[];
 extern s32 func_80029EF8();
 extern void func_8001FD44();
@@ -4753,7 +4751,7 @@ void func_8002A1FC(u8 *arg0) {
             t = *(s8 *)(arg0 + 0x209);
             v = (t + 1) % 4;
             *(u8 *)(arg0 + 0x209) = v;
-            D_800A2EC4[0] = ((s8)v == 3);
+            D_800A2EC4nm[0] = ((s8)v == 3);
         }
         *(s32 *)(arg0 + 0x238) = flags;
     } else {
@@ -5150,8 +5148,8 @@ void func_8002D3A8(u8 *object, s32 index) {
  * (addiu a1,a3,0x2b8; negative offsets), insensitive to store order and
  * sw placement. Draft below is length-exact; only those register rows
  * differ. s16 revs also drops the sra31/subu sign-fix pair (keep s32). */
-extern s32 D_800A2E7C;
-extern s32 D_800A2E80;
+extern s32 D_800A2E7Cgp asm("D_800A2E7C.NON_MATCHING");
+extern s32 D_800A2E80gp asm("D_800A2E80.NON_MATCHING");
 extern s32 D_800A2E64[];
 extern s8 D_800A3860[][4];
 void func_8002D3EC(u8 *arg0) {
@@ -5160,7 +5158,7 @@ void func_8002D3EC(u8 *arg0) {
     s32 diff;
     s32 revs;
 
-    diff = D_800A2E7C - D_800A2E80;
+    diff = D_800A2E7Cgp - D_800A2E80gp;
     *(s32 *)(arg0 + 0x234) =
         D_800A2E80 + diff * D_800A3860[*(s8 *)(arg0 + 0x20B)][0] / 63;
     revs = D_800A2E64[0] - D_800A3860[*(s8 *)(arg0 + 0x20B)][0] * 0xC8 / 63;
