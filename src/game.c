@@ -20490,22 +20490,23 @@ void func_8006D634(s32 arg) {
  * &D_800BBA24[arg0 * 4 + i * 0x44], D_800A3860 base materialized FIRST,
  * `move a1,zero` (j init) placed before the row math. */
 void func_8006D684(u8 arg0) {
-    u8 *dst;
-    u8 *src;
     u8 *srcBase;
     u8 i;
     u8 j;
 
-    i = 0;
     srcBase = D_800BBA24;
+    i = 0;
     do {
-        dst = D_800A3860[i];
-        src = &srcBase[i * 0x44 + arg0 * 4];
-        for (j = 0; j < 4; j++) {
-            dst[j] = src[j];
-        }
-        i++;
-    } while (i < 2);
+        do {
+            if (1) {
+                ;
+            }
+            for (j = 0; j < 4; j++) {
+                D_800A3860[i][j] = (&srcBase[i * 0x44 + arg0 * 4])[j];
+            }
+            i++;
+        } while (i < 2);
+    } while (0);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D684);
