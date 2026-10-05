@@ -6544,13 +6544,386 @@ void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag) {
     *orderingTable = (u32)primitive & 0xFFFFFF;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80032544);
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A39C8[];
+extern u8 D_800A2DE0[];
+extern void SetPolyF4(u8 *prim);
+
+u8 *func_80032544(u8 *arg0, s32 arg1) {
+    register u8 *prim asm("$16");
+    register s32 gte asm("$17");
+    register u8 *walker asm("$18");
+    register u8 *pe asm("$19");
+    register s32 count asm("$20");
+    register u8 *obj asm("$21");
+    register u8 color asm("$22");
+    register s32 otBase asm("$23");
+    register s32 *vec0 asm("$6");
+    register s32 *vec1 asm("$7");
+    register s32 *vec2 asm("$8");
+    register s32 w3 asm("$6");
+    register u32 masked asm("$2");
+    register u32 *otEntry asm("$4");
+    register u32 mask asm("$5");
+    register s32 otWord asm("$2");
+
+    otWord = D_800A39C8[0];
+    prim = (u8 *)gPrimitiveCursor[0];
+    obj = arg0;
+    count = arg1;
+    otBase = otWord + 0x20;
+    if (count > 0) {
+        color = 16;
+        walker = arg0 + 0x24;
+        pe = prim + 0x10;
+        do {
+            vec0 = *(s32 **)(walker - 0xC);
+            vec1 = *(s32 **)(walker - 0x8);
+            vec2 = *(s32 **)(walker - 0x4);
+            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                         "lwc2 $1, 0x4(%0)\n\t"
+                         "lwc2 $2, 0x0(%1)\n\t"
+                         "lwc2 $3, 0x4(%1)\n\t"
+                         "lwc2 $4, 0x0(%2)\n\t"
+                         "lwc2 $5, 0x4(%2)\n\t"
+                         ".word 0\n\t"
+                         ".word 0\n\t"
+                         "rtpt"
+                         :
+                         : "r"(vec0), "r"(vec1), "r"(vec2));
+            SetPolyF4(prim);
+            SetSemiTrans(prim, 1);
+            asm volatile("cfc2 %0, $31\n\t"
+                         "nop"
+                         : "=r"(gte));
+            masked = gte & 0x66000;
+            if (masked != 0) {
+                goto next;
+            }
+            asm volatile(".word 0\n\t"
+                         ".word 0\n\t"
+                         "nclip");
+            pe[-0xC] = color;
+            pe[-0xB] = color;
+            pe[-0xA] = color;
+            asm volatile("mfc2 %0, $24\n\t"
+                         "nop"
+                         : "=r"(gte));
+            if (D_800A2DE0[0] != 0) {
+                if (gte >= 0) {
+                    goto draw;
+                }
+                goto next;
+            } else {
+                if (gte > 0) {
+                    goto next;
+                }
+            }
+        draw:
+            asm volatile(".word 0\n\t"
+                         ".word 0\n\t"
+                         "avsz3\n\t"
+                         "mfc2 %0, $7\n\t"
+                         "nop"
+                         : "=r"(gte));
+            gte += (s32)(s8) * (walker - 0x23) * 4;
+            asm volatile("swc2 $12, 0x0(%0)\n\t"
+                         "swc2 $13, 0x0(%1)\n\t"
+                         "swc2 $14, 0x0(%2)"
+                         :
+                         : "r"(prim + 8), "r"(prim + 0xC), "r"(prim + 0x14));
+            w3 = *(s32 *)walker;
+            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                         "lwc2 $1, 0x4(%0)\n\t"
+                         ".word 0\n\t"
+                         ".word 0\n\t"
+                         "rtps"
+                         :
+                         : "r"(w3));
+            asm volatile("swc2 $14, 0x0(%0)" : : "r"(pe));
+            mask = 0xFFFFFF;
+            otEntry = (u32 *)((gte >> 4) << 2);
+            otEntry = (u32 *)((s32)otEntry + otBase);
+            *(u32 *)prim = *otEntry | 0x05000000;
+            *otEntry = (u32)prim & mask;
+            pe += 0x18;
+            prim += 0x18;
+        next:
+            count--;
+            walker += 0x2C;
+            obj += 0x2C;
+        } while (count > 0);
+    }
+    gPrimitiveCursor[0] = (u32)prim;
+    return obj;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003271C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80032760);
+/*
+ * Handwritten-GTE textured triangle renderer: rtpt on three vertices,
+ * backface cull on nclip gated by the D_800A2DE0 double-sided flag, then
+ * link one primitive into the ordering table at D_800A39C8[0] + 0x20.
+ */
+u8 *func_80032760(u8 *arg0, u8 *arg1, s32 arg2) {
+    register u8 *prim asm("a1");
+    register s32 count asm("a2");
+    register s32 gte asm("a3");
+    register u8 *p asm("t0");
+    register s32 sh asm("t1");
+    register u8 *objCursor asm("t2");
+    register u8 *nextPrim asm("t3");
+    register s32 andMask asm("t4");
+    register u32 flag asm("t5");
+    register s32 otBase20 asm("t6");
+    register s32 flagMask asm("t7");
+    register s32 orBits asm("t8");
+    register s32 *vec0 asm("s0");
+    register s32 *vec1 asm("s1");
+    register s32 *vec2 asm("t9");
+    register s32 *normal asm("s0");
+    register u32 word asm("v0");
+    register s32 otEntry asm("v1");
+    register s32 otBase asm("v0");
+    register s32 byte asm("v0");
+    register u32 flags asm("v0");
+    register s32 sum asm("v0");
+    register u32 orResult asm("v0");
+    register u32 andResult asm("v0");
+    register u8 *dst20 asm("v0");
+    extern s32 D_800A39C8[];
+    extern u8 D_800A2DE0[];
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800328AC);
+    otBase = D_800A39C8[0];
+    flag = D_800A2DE0[0];
+    objCursor = arg0;
+    flagMask = 0x66000;
+    otBase20 = otBase + 0x20;
+    prim = arg1;
+    count = arg2;
+    if (count > 0) {
+        orBits = 0x0C000000;
+        andMask = 0xFFFFFF;
+        p = arg0 + 0x24;
+        do {
+            vec0 = *(s32 **)(p - 0xC);
+            vec1 = *(s32 **)(p - 0x8);
+            vec2 = *(s32 **)(p - 0x4);
+            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                         "lwc2 $1, 0x4(%0)\n\t"
+                         "lwc2 $2, 0x0(%1)\n\t"
+                         "lwc2 $3, 0x4(%1)\n\t"
+                         "lwc2 $4, 0x0(%2)\n\t"
+                         "lwc2 $5, 0x4(%2)\n\t"
+                         "nop\n\t"
+                         "nop\n\t"
+                         "rtpt"
+                         :
+                         : "r"(vec0), "r"(vec1), "r"(vec2));
+            byte = *(s8 *)(p - 0x23);
+            nextPrim = *(u8 **)(prim + 0x34);
+            asm("sll %0, %1, 0x2" : "=r"(sh) : "r"(byte));
+            asm volatile("cfc2 %0, $31\n\t"
+                         "nop"
+                         : "=r"(gte));
+            flags = gte & flagMask;
+            if (flags != 0) {
+                goto skipDraw;
+            }
+            asm volatile("nclip");
+            asm volatile("mfc2 %0, $24" : "=r"(gte));
+            if (flag == 0) {
+                goto checkPos;
+            }
+            if (gte >= 0) {
+                goto drawIt;
+            }
+            /* double-sided and backfacing: straight to the next object */
+            asm volatile(".set\tnoreorder\n\t"
+                         "j func_80032760+0x124\n\t"
+                         "addiu %0, %0, -1\n\t"
+                         ".set\treorder"
+                         : "=r"(count)
+                         : "0"(count));
+        checkPos:
+            if (gte > 0) {
+                goto skipDraw;
+            }
+        drawIt:
+            asm volatile("avsz3");
+            asm volatile("swc2 $12, 0x0(%0)\n\t"
+                         "swc2 $13, 0x0(%1)\n\t"
+                         "swc2 $14, 0x0(%2)"
+                         :
+                         : "r"(prim + 8), "r"(prim + 0x14), "r"(prim + 0x2C));
+            normal = *(s32 **)p;
+            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                         "lwc2 $1, 0x4(%0)"
+                         :
+                         : "r"(normal));
+            asm volatile("mfc2 %0, $7\n\t"
+                         "nop"
+                         : "=r"(gte));
+            sum = gte + sh;
+            asm("sra %0, %1, 0x4" : "=r"(gte) : "r"(sum));
+            asm volatile("rtps");
+            otEntry = gte * 4;
+            otEntry = otEntry + otBase20;
+            word = *(u32 *)otEntry;
+            orResult = word | orBits;
+            *(u32 *)prim = orResult;
+            andResult = (u32)prim & andMask;
+            *(u32 *)otEntry = andResult;
+            dst20 = prim + 0x20;
+            asm volatile("swc2 $14, 0x0(%0)" : : "r"(dst20));
+        skipDraw:
+            count = count - 1;
+            p = p + 0x2C;
+            objCursor = objCursor + 0x2C;
+            prim = nextPrim;
+        } while (count > 0);
+    }
+    return objCursor;
+}
+
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A39C8[];
+extern u8 D_800A2DE0[];
+
+void func_800328AC(void *arg0, s32 arg1) {
+    register s32 v0s asm("v0");
+    register u8 *ret asm("t5");
+    register u8 *prim asm("t3");
+    register u32 doublesided asm("t6");
+    register u8 *spad asm("t4");
+    register u32 flagMask asm("t8");
+    register u32 codeConst asm("t9");
+    register u8 *ot asm("t7");
+    register u8 *obj asm("a2");
+    register u8 *prim20 asm("a3");
+    register s32 *vec0 asm("s0");
+    register s32 *vec1 asm("s1");
+    register s32 *vec2 asm("s2");
+    register s32 gteWord asm("t2");
+    register s32 w8 asm("v1");
+    register s32 wC asm("t1");
+    register s32 w10 asm("t0");
+    register s32 w14 asm("a0");
+
+    ret = arg0;
+    asm("" : "=r"(ret) : "0"(ret));
+    v0s = D_800A39C8[0];
+    prim = (u8 *)gPrimitiveCursor[0];
+    doublesided = D_800A2DE0[0];
+    flagMask = 0x66000;
+    asm("lui %0, 0x1F80" : "=r"(spad));
+    asm volatile(".set\tnoreorder\n\t"
+                 "blez %1, func_800328AC+0x1C0\n\t"
+                 "addiu %0, %2, 0x20\n\t"
+                 ".set\treorder"
+                 : "=r"(ot)
+                 : "r"(arg1), "r"(v0s));
+    codeConst = 0x0C000000;
+    obj = (u8 *)arg0 + 1;
+    prim20 = prim + 0x20;
+    do {
+        vec0 = *(s32 **)(obj + 0x17);
+        vec1 = *(s32 **)(obj + 0x1B);
+        vec2 = *(s32 **)(obj + 0x1F);
+        asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                     "lwc2 $1, 0x4(%0)\n\t"
+                     "lwc2 $2, 0x0(%1)\n\t"
+                     "lwc2 $3, 0x4(%1)\n\t"
+                     "lwc2 $4, 0x0(%2)\n\t"
+                     "lwc2 $5, 0x4(%2)"
+                     :
+                     : "r"(vec0), "r"(vec1), "r"(vec2));
+        w8 = *(s32 *)(obj + 0x7);
+        wC = *(s32 *)(obj + 0xB);
+        asm volatile("rtpt");
+        w10 = *(s32 *)(obj + 0xF);
+        w14 = *(s32 *)(obj + 0x13);
+        *(s32 *)(prim20 - 0x14) = w8;
+        *(s32 *)(prim20 - 0x8) = wC;
+        *(s32 *)(prim20 + 0x4) = w10;
+        *(s32 *)(prim20 + 0x10) = w14;
+        asm volatile("cfc2 %0, $31\n\tnop" : "=r"(gteWord));
+        v0s = gteWord & flagMask;
+        if (v0s != 0) {
+            goto incr;
+        }
+        asm volatile("nclip");
+        w8 = *(s32 *)(obj + 0x3);
+        asm volatile("nop");
+        wC = w8 & 0xFF;
+        w8 >>= 8;
+        w10 = w8 & 0xFF;
+        w8 >>= 8;
+        w14 = w8 & 0xFF;
+        v0s = wC << 2;
+        v0s = v0s + (s32)spad;
+        wC = *(u32 *)v0s;
+        v0s = w10 << 2;
+        v0s = v0s + (s32)spad;
+        w10 = *(u32 *)v0s;
+        v0s = w14 << 2;
+        v0s = v0s + (s32)spad;
+        w14 = *(u32 *)v0s;
+        v0s = (w8 >> 6) & 0x3FC;
+        v0s = v0s + (s32)spad;
+        w8 = *(u32 *)v0s;
+        asm volatile("mfc2 %0, $24" : "=r"(gteWord));
+        if (doublesided != 0) {
+            if (gteWord >= 0) {
+                goto ok;
+            }
+            goto incr;
+        } else if (gteWord > 0) {
+            goto incr;
+        }
+    ok:
+        asm volatile("avsz3");
+        v0s = 0x3C000000;
+        v0s = wC | v0s;
+        *(u32 *)(prim20 + 0x8) = w14;
+        *(u32 *)(prim20 - 0x4) = w8;
+        *(u32 *)(prim20 - 0x1C) = v0s;
+        *(u32 *)(prim20 - 0x10) = w10;
+        asm volatile("swc2 $12, 0x0(%0)\n\t"
+                     "swc2 $13, 0x0(%1)\n\t"
+                     "swc2 $14, 0x0(%2)"
+                     :
+                     : "r"(prim + 0x8), "r"(prim + 0x14), "r"(prim + 0x2C));
+        vec0 = *(s32 **)(obj + 0x23);
+        asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                     "lwc2 $1, 0x4(%0)"
+                     :
+                     : "r"(vec0));
+        asm volatile("mfc2 %0, $7" : "=r"(gteWord));
+        v0s = *(s8 *)obj;
+        asm volatile("nop");
+        gteWord = gteWord + v0s * 4;
+        asm volatile("rtps");
+        w14 = gteWord >> 4;
+        w14 = w14 << 2;
+        w14 = w14 + (s32)ot;
+        v0s = *(u32 *)w14;
+        w8 = 0xFFFFFF;
+        w8 = (u32)prim & w8;
+        v0s = v0s | codeConst;
+        *(u32 *)prim = v0s;
+        *(u32 *)w14 = w8;
+        asm volatile("swc2 $14, 0x0(%0)" : : "r"(prim20));
+        prim20 += 0x34;
+        prim += 0x34;
+    incr:
+        arg1--;
+        obj += 0x2C;
+        ret += 0x2C;
+    } while (arg1 > 0);
+    gPrimitiveCursor[0] = (u32)prim;
+    asm volatile("addu $2, %0, $0" : : "r"(ret));
+}
 
 #ifdef NON_MATCHING
 /*
@@ -6918,7 +7291,6 @@ s32 func_800338D8(u16 *object) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80033900);
-
 INCLUDE_ASM("asm/nonmatchings/game", func_800342D8);
 
 extern MATRIX D_800A4568[];
