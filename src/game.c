@@ -443,7 +443,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80014398);
 #endif
 
 extern s32 D_800A2EB0Absolute[];
-extern s32 func_8003CAE8(s32);
+extern void func_8003CAE8(s32);
 
 void func_80014440(void) {
     s32 value;
@@ -13399,7 +13399,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80059648);
 
 extern u8 D_800A2F9CAbsolute[];
 extern u8 D_800A3694;
-extern s32 func_8003CAE8(s32);
+extern void func_8003CAE8(s32);
 extern void CdSetMixVolume(s32);
 void func_800596F4(void) {
     D_800A2F9CAbsolute[0] = 1;
@@ -16796,7 +16796,7 @@ extern DRAWENV D_800BDDA8[];
 extern DRAWENV D_800BDD4C[];
 extern DISPENV D_800BDE18[];
 extern void func_80064CD8(s32);
-extern void func_8006654C(s32, s32);
+extern void *func_8006654C(void *, s32);
 extern void func_8005E8EC(s32, s32, s32);
 extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
 extern void func_8005A818(u8, u8, u8);
@@ -16830,7 +16830,7 @@ void func_80066730(void) {
     for (page = 0; page < 2; page++) {
         ClearOTagR((u32 *)D_800A39C8Ptr[0], 0x3FF);
         func_80014A40(0);
-        func_8006654C(0, 0x3FC);
+        func_8006654C((void *)0, 0x3FC);
         func_8005E8EC(0, 0, 1);
         func_8005A7B8S32(2, 4);
         func_8005A818(0x80, 0x80, 0xC0);
@@ -18190,7 +18190,7 @@ void func_80069E88(void) {
 extern u8 D_800A3938;
 extern u8 D_800A3808;
 extern u8 D_800A337C;
-s32 CardCheckStatus(s32 arg0, s32 arg1);
+s32 CardCheckStatus(s32 arg0, u8 arg1);
 
 s32 func_80069EB8(void) {
     u8 status;
@@ -18276,7 +18276,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80069F30);
 extern u8 D_800A3938;
 extern u8 D_800A3808;
 extern u8 D_800A337C;
-s32 CardCheckStatus(s32 arg0, s32 arg1);
+s32 CardCheckStatus(s32 arg0, u8 arg1);
 
 s32 func_8006A080(void) {
     s32 count;
@@ -18309,7 +18309,7 @@ s32 func_8006A080(void) {
 
 extern u8 D_800A337C;
 extern char D_8008FC60[];
-extern s32 CardCountOtherFileBlocks(u8, char *);
+extern s32 CardCountOtherFileBlocks(s32, char *);
 u8 CardGetOtherFileBlocks(void) {
     return CardCountOtherFileBlocks(D_800A337C, D_8008FC60);
 }
