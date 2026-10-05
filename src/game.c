@@ -19778,7 +19778,101 @@ s32 func_8007270C(void) {
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80072750);
+void func_80072750(void) {
+    u8 *src;
+    s32 addr;
+    s32 addr2;
+    register u32 value asm("$2");
+    u32 size;
+    u32 i;
+    u32 j;
+    s32 base;
+
+    if (D_800A351C[2] == 0) {
+        D_800A351C[0x7B3C / 4] = 0x300;
+        for (i = 0; i < 3; i++) {
+            size = 0x300;
+            if ((u32)(D_800A351C[1] - D_800A351C[0]) > size &&
+                D_800A351C[0x7B78 / 4] == 0) {
+                u32 x;
+
+                x = (u32)D_800A351C[0];
+                asm("lui $2,0x8888\n\t"
+                    "ori $2,$2,0x8889\n\t"
+                    "multu %0,$2\n\t"
+                    "mfhi $6\n\t"
+                    "srl $3,$6,0xd\n\t"
+                    "sll $2,$3,4\n\t"
+                    "subu $2,$2,$3\n\t"
+                    "sll $2,$2,0xa\n\t"
+                    "subu %0,%0,$2"
+                    : "=r"(x) : "0"(x) : "$2", "$3", "$6", "hi", "lo");
+                x += 0x10;
+                addr = (s32)((u8 *)D_800A351C + x);
+            } else {
+                addr = 0;
+            }
+            src = (u8 *)addr;
+            if (src != 0) {
+                if ((u32)(D_800A351C[1] - D_800A351C[0]) > size &&
+                    D_800A351C[0x7B78 / 4] == 0) {
+                    u32 x;
+
+                    x = (u32)D_800A351C[0];
+                    asm("lui $2,0x8888\n\t"
+                        "ori $2,$2,0x8889\n\t"
+                        "multu %0,$2\n\t"
+                        "mfhi $6\n\t"
+                        "srl $3,$6,0xd\n\t"
+                        "sll $2,$3,4\n\t"
+                        "subu $2,$2,$3\n\t"
+                        "sll $2,$2,0xa\n\t"
+                        "subu %0,%0,$2"
+                        : "=r"(x) : "0"(x) : "$2", "$3", "$6", "hi", "lo");
+                    x += 0x3C10;
+                    addr2 = (s32)((u8 *)D_800A351C + x);
+                } else {
+                    asm("move %0,$0" : "=r"(addr2));
+                }
+                addr = addr2;
+            } else {
+                src = (u8 *)D_800A351C + 0x7810;
+                addr = (s32)src;
+            }
+            j = 0;
+            value = 1;
+            D_800A351C[0x7B48 / 4] = value;
+            D_800A351C[0x7B4C / 4] = value;
+            D_800A351C[0x7B50 / 4] = addr;
+            D_800A351C[0x7B54 / 4] = value;
+            addr = D_800A351C[0x7B3C / 4];
+            for (; j < 0x300; j += 0x10) {
+                src[j + 1] = 2;
+            }
+            if ((D_800A351C[0x7B44 / 4] & 3) == 0) {
+                src[1] = 6;
+            } else if (((D_800A351C[0x7B44 / 4] + 1) & 3) == 0) {
+                src[0x2F1] = 3;
+            }
+            D_800A351C[0x7B2C / 4 + (D_800A351C[0x7B44 / 4] & 3)] = addr;
+            base = D_800A351C[0x7B5C / 4] + (D_800A351C[0x7B44 / 4] & 3) * 0x300;
+            SpuSetTransferMode(0);
+            SpuSetTransferStartAddr(base);
+            SpuWrite(src, 0x300);
+            D_800A351C[0x7B3C / 4] += 0x300;
+            do {
+            } while (D_800A351C[0x7B48 / 4] != 0);
+        }
+        D_800A351C[0x7B48 / 4] = 3;
+        func_800722D0();
+        D_800A351C[0x7B48 / 4] = 0;
+        D_800A351C[2] = 1;
+    }
+    D_800A351C[0x7B6C / 4] = SpuSetReverbVoice(0, D_800A351C[0x7B64 / 4]);
+    D_800A351C[0x7B70 / 4] = SpuSetReverbVoice(0, D_800A351C[0x7B68 / 4]);
+    SpuSetKey(1, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);
+}
+
 
 extern volatile s32 *D_800A351C;
 void func_80072A20(s32 value) {
