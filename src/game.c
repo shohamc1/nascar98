@@ -5924,11 +5924,13 @@ extern s32 D_800A3A80;
 void func_80030D80(u8 *object, s32 *query) {
     s8 *node;
     u8 *entry;
+    s16 rot;
 
-    if (*(s16 *)(object + 0x1E0) >= 0) {
-        D_800A3A80 = 0;
-        entry = *(s16 *)(object + 0x1E0) * 0x90 + (u8 *)D_800BE980[0];
+    rot = *(s16 *)(object + 0x1E0);
+    if (rot >= 0) {
+        entry = rot * 0x90 + (u8 *)D_800BE980[0];
         node = *(s8 **)(entry + 0x20);
+        D_800A3A80 = 0;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC((s32 *)object, (s32 *)node, query) & 0xFF) !=
