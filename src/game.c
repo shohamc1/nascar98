@@ -1422,7 +1422,32 @@ void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80018B18);
+extern void func_800180C0(s8, s32, s32, s32);
+extern s16 D_800A2D88[];
+void func_80018B18(s32 value, s32 x, s32 y, s32 scale) {
+    s8 text[24];
+    s8 *start;
+    s16 *base;
+    s16 *width;
+    s8 *p;
+    s32 pen;
+
+    value = (s16)value;
+    start = text;
+    text[0] = 0;
+    func_80012EA8(value, start);
+    pen = x;
+    if (text[0] != 0) {
+        base = D_800A2D88;
+        width = base + scale;
+        p = start;
+        do {
+            func_800180C0(*p, pen, y, scale);
+            pen += *width;
+            p++;
+        } while (*p != 0);
+    }
+}
 
 extern void func_800180C0(s8, s32, s32, s32);
 extern s16 D_800A2D88[];
@@ -3091,7 +3116,29 @@ void func_8001FAC0(u8 *arg0, s32 index) {
     *(s32 *)((u8 *)arg0 + 0x28) = ((s16 *)D_800A384C)[index] * 4;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001FAC0);
+void func_8001FAC0(u8 *arg0, s32 index) {
+    s16 *table1;
+    s16 *table2;
+    s32 value1;
+    s32 value2;
+    s32 value3;
+
+    table1 = (s16 *)D_800A384C;
+    value1 = table1[index] * 4;
+    table2 = (s16 *)D_800A3854;
+    *(s32 *)(arg0 + 0x18) = value1;
+    value2 = table2[index] * 4;
+    *(s32 *)(arg0 + 0x30) = 0;
+    *(s32 *)(arg0 + 0x24) = value2;
+    *(s32 *)(arg0 + 0x1C) = -table2[index] * 4;
+    value3 = table1[index] * 4;
+    *(s32 *)(arg0 + 0x34) = 0;
+    *(s32 *)(arg0 + 0x20) = 0;
+    *(s32 *)(arg0 + 0x2C) = 0;
+    *(s32 *)(arg0 + 0x38) = 0x10000;
+    *(s32 *)(arg0 + 0x28) = value3;
+}
+
 #endif
 
 void func_8001FB28(u8 *arg0, s32 index) {
@@ -9955,16 +10002,21 @@ void SoundInitTables(void) {
     SsSetTickMode(1);
 }
 
-#ifdef NON_MATCHING
 extern s16 D_800B9E24[];
-extern s8 D_800A3880;
+extern u8 D_800A3880;
 extern void func_8003F13C(s32);
 
 void func_8003F060(s32 arg0) {
     u8 i;
+    s16 value;
 
-    for (i = 0; i < 24; i++) {
-        D_800B9E24[i * 6] = -1;
+    i = 0;
+    value = -1;
+again:
+    D_800B9E24[i * 6] = value;
+    i++;
+    if (i < 24) {
+        goto again;
     }
     gVabId = -1;
     gSequenceData = 0;
@@ -9972,28 +10024,26 @@ void func_8003F060(s32 arg0) {
     func_8003F13C(arg0);
     D_800A3880 = 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F060);
-#endif
 
-#ifdef NON_MATCHING
-void func_8003F0CC(void) {
+extern s16 D_800B9E24[];
+extern u8 D_800A3880;
+extern void func_8003F1B0(s32);
+
+void func_8003F0CC(s32 arg0) {
     u8 i;
+    s32 off;
 
-    i = 0;
-    do {
-        D_800B9E24[i * 6] = -1;
-        i++;
-    } while (i < 24);
+    for (i = 0; i < 24; i++) {
+        off = i;
+        off = off * 12;
+        *(s16 *)((u8 *)D_800B9E24 + off) = -1;
+    }
     gVabId = -1;
     gSequenceData = 0;
     D_800A3A08 = 0;
-    func_8003F1B0();
+    func_8003F1B0(arg0);
     D_800A3880 = 1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003F0CC);
-#endif
 
 #ifdef NON_MATCHING
 extern void func_8003FA0C(void);
@@ -12053,7 +12103,77 @@ void func_80045F70(void) {
     }
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80045F70);
+extern u8 D_800A342C[];
+extern s32 D_800A3430[];
+extern u8 D_80090F32[];
+extern u8 D_800991E8[];
+extern u8 D_800991E9[];
+extern u8 D_800991EA[];
+extern s32 D_800A2EB0Absolute[];
+extern s32 D_800A3984[];
+extern void *HeapAlloc(u32);
+
+void func_80045F70(void) {
+    u8 *buf;
+    s8 i;
+    u8 b0;
+    u8 b1;
+    u8 b2;
+    s8 j;
+    u8 *ptr;
+    u8 *poly;
+    u8 *row;
+    s32 t;
+    s32 u;
+    s32 v0;
+    s32 v1;
+
+    i = 0;
+    if (D_800A2EB0Absolute[1] > 0) {
+        ptr = D_80090F32;
+        do {
+            D_800A342C[i] = 0;
+            t = (s32)HeapAlloc(0x500);
+            u = D_800A3984[0];
+            D_800A3430[i] = t;
+            v1 = *(s8 *)((i * 5 << 8) + u + 0x876);
+            buf = (u8 *)t;
+            j = 0;
+            v0 = v1 * 3;
+            b0 = D_800991E8[v0];
+            b1 = D_800991E9[v0];
+            b2 = D_800991EA[v0];
+            do {
+                row = buf + j * 0x80;
+                poly = row + 0x10;
+                SetPolyFT4((POLY_FT4 *)poly);
+                SetShadeTex((POLY_FT4 *)poly, 0);
+                row[0x11] = 0x24;
+                *(u32 *)(row + 0x28) = (u32)(row + 0x60);
+                *(u32 *)(row + 0x2C) = (u32)(row + 0x68);
+                *(u32 *)(row + 0x30) = (u32)(row + 0x78);
+                row[0x14] = b0;
+                row[0x15] = b1;
+                row[0x16] = b2;
+                *(u32 *)(row + 0x34) = (u32)(row + 0x70);
+                *(s16 *)(row + 0x1E) = GetTPage(
+                    *(u16 *)ptr, 0, *(u16 *)(ptr - 0xC), *(u16 *)(ptr - 0xA));
+                row[0x18] = ptr[-4] + 0x6F;
+                row[0x19] = *(u16 *)(ptr - 2);
+                row[0x1C] = ptr[-4] + 0x60;
+                row[0x1D] = *(u16 *)(ptr - 2);
+                row[0x20] = ptr[-4] + 0x6F;
+                row[0x21] = ptr[-2] + 0xF;
+                row[0x24] = ptr[-4] + 0x60;
+                row[0x25] = ptr[-2] + 0xF;
+                row[0x00] = 0;
+                j++;
+            } while (j < 10);
+            i++;
+        } while (i < D_800A2EB0Absolute[1]);
+    }
+}
+
 #endif
 
 #ifdef NON_MATCHING
