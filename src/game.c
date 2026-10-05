@@ -10279,13 +10279,6 @@ void func_8004419C(u8 *object) {
 }
 
 typedef struct {
-    u32 w0;
-    u32 w1;
-    u32 w2;
-    u32 w3;
-} CopyEntry10;
-
-typedef struct {
     u32 w[12];
 } CopyRow30;
 
