@@ -427,19 +427,20 @@ void CdDataSync(int mode) {
 }
 
 #ifdef NON_MATCHING
-void CdIntToPos(int i, CdlLOC *p) {
+CdlLOC *CdIntToPos(int i, CdlLOC *p) {
     int m;
     int s;
     int f;
 
     i += 150;
-    m = i / 75;
     f = i % 75;
+    m = i / 75;
     s = m / 60;
     m = m % 60;
     p->second = (s8)((m / 10) * 0x10 + (m % 10));
     p->sector = (s8)((f / 10) * 0x10 + (f % 10));
     p->minute = (s8)((s / 10) * 0x10 + (s % 10));
+    return p;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdIntToPos);
