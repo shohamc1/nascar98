@@ -5401,7 +5401,6 @@ void func_8002EEFC(u8 *arg0) {
     s32 refZ;
     s32 dx;
     s32 dy;
-    s32 dz;
     s32 dist;
     s32 level;
     s32 b;
@@ -5417,8 +5416,8 @@ void func_8002EEFC(u8 *arg0) {
     if (node == NULL) {
         return;
     }
-    level = 4;
     target = arg0;
+    level = 4;
     do {
         if (node == target && *(s16 *)(node + 0x1EC) == 0 && D_800A2ED8 == 0 &&
             *(s8 *)(node + 0x20C) == 0) {
@@ -5427,8 +5426,8 @@ void func_8002EEFC(u8 *arg0) {
         } else {
             dx = *(s32 *)(node + 0x0) - refX;
             dy = *(s32 *)(node + 0x4) - refY;
-            dz = *(s32 *)(node + 0x8) - refZ;
-            dist = MathSqrt(dx * dx + dy * dy + dz * dz);
+            v = *(s32 *)(node + 0x8) - refZ;
+            dist = MathSqrt(dx * dx + dy * dy + v * v);
             if (dist < 0x7D0) {
                 *(u8 *)(node + 0x374) = 0;
             } else {
