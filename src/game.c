@@ -4411,7 +4411,108 @@ void func_80029E44(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80029E44);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80029EF8);
+extern u8 D_800A3A24w15f[] asm("D_800A3A24.NON_MATCHING");
+extern u8 D_800A2EE0w15f[] asm("D_800A2EE0.NON_MATCHING");
+extern u8 D_800A3764w15f[] asm("D_800A3764.NON_MATCHING");
+extern u8 D_800A372Cw15f[] asm("D_800A372C.NON_MATCHING");
+extern s16 D_800A35A4w15f[] asm("D_800A35A4.NON_MATCHING");
+extern s32 func_8006E770(u8);
+extern void func_8006EB18(u8 *);
+extern void func_80044114(u8 *);
+
+s32 func_80029EF8(u8 *obj) {
+    s32 flags;
+    s32 v;
+    s32 c4;
+    register s32 prod asm("a2");
+
+    c4 = *(s8 *)(obj + 0x3C4);
+    v = *(s8 *)(obj + 0x20B);
+    if (c4 == 0) {
+        obj[0x3C4] = D_800A3A24w15f[v];
+    }
+    flags = func_8006E770(obj[0x20B]);
+    v = *(s8 *)(obj + 0x3C4);
+    if (v == 2) {
+        goto twoFiveSeven;
+    }
+    if (v == 5) {
+        goto twoFiveSeven;
+    }
+    if (v != 7) {
+        goto notTwoFiveSeven;
+    }
+twoFiveSeven:
+    func_8006EB18(obj);
+    asm volatile("mult %0, %1" : : "r"((*(s8 *)(obj + 0x3C5)) << 2), "r"(D_800A2E1C + 2));
+    asm volatile("mflo %0" : "=r"(prod));
+    *(s16 *)(obj + 0x20E) = -prod / 128;
+    *(s32 *)(obj + 0x3BC) = MathFixedDivide(obj[0x3C6], 0xFF);
+    *(s32 *)(obj + 0x3C0) = MathFixedDivide(obj[0x3C7], 0x7D0);
+    if (obj[0x3C6] < 0x3C) {
+        flags &= ~0x40;
+    } else {
+        flags |= 0x40;
+    }
+    if (obj[0x3C7] < 0xE6) {
+        flags &= ~0x80;
+    } else {
+        flags |= 0x80;
+    }
+    v = *(s16 *)(obj + 0x20E);
+    if (v >= 2) {
+        flags |= 0x8000;
+    } else if (v < -1) {
+        flags |= 0x200;
+    }
+    goto afterStatus;
+notTwoFiveSeven:
+    if (flags & 0x40) {
+        *(s32 *)(obj + 0x3BC) += 0x2000;
+        if (0x10000 < *(s32 *)(obj + 0x3BC)) {
+            *(s32 *)(obj + 0x3BC) = 0x10000;
+        }
+    } else {
+        *(s32 *)(obj + 0x3BC) = 0;
+    }
+    *(s32 *)(obj + 0x3C0) = 0x10000;
+afterStatus:
+    if (D_800A2EE0w15f[0] != 0) {
+        if (obj[0x3B7] != 0) {
+            goto decr3b7;
+        }
+        if (*(s32 *)(obj + 0x354) == (s32)func_80025594 ||
+            *(s16 *)(obj + 0x1BC) == 4) {
+            if (flags & 0x40) {
+                if ((*(u16 *)(obj + 0x3A4) & 0xF) != 0 ||
+                    *(s16 *)(obj + 0x1BC) == 4 ||
+                    ((*(u16 *)(obj + 0x3A4) & 0x1000) != 0 &&
+                     *(s32 *)(obj + 0x90) == 0)) {
+                    func_80044114(obj);
+                }
+                goto skip3b7;
+            }
+        }
+        if (obj[0x3B7] != 0) {
+decr3b7:
+            asm("" : : : "memory");
+            obj[0x3B7]--;
+        }
+skip3b7: ;
+    }
+    if (*(s32 *)(obj + 0x354) == (s32)func_80025730 ||
+        obj[0xF4] == 0 || D_800A3764w15f[0] != 0 ||
+        (D_800A372Cw15f[0] != 0 && D_800A35A4w15f[0] >= 0x32)) {
+        flags &= ~(0x40 | 0x80 | 0x200 | 0x8000);
+        *(s32 *)(obj + 0x3BC) = 0;
+    } else if (*(s32 *)(obj + 0x28C) <= 0 ||
+               (*(s32 *)(obj + 0x3A4) & 0x100F) != 0) {
+        flags &= ~0x40;
+        *(s32 *)(obj + 0x3BC) = 0;
+    }
+    return flags;
+}
+
 
 extern s32 D_800A2E1C, D_800A2E24;
 void func_8002A1D0(void) {
