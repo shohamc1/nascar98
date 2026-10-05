@@ -14542,21 +14542,6 @@ INCLUDE_ASM("asm/nonmatchings/game", CardEnableEvents);
 
 extern s32 func_8005A294(void);
 extern void func_8005A414(void);
-#ifdef NON_MATCHING
-/* Wall (w7a): everything matches except two constant-handling rows.
- * 1) gcc 2.7.2 hoists the compare/return constant into the prologue
- * (li s3,0x3 before sw ra, frame 0x28 vs retail 0x20); retail
- * re-materializes li v0,0x3 at the loop-top compare (in the beqz
- * delay slot) and again at the return-3 merge. Switch form (case 0 /
- * case 3) and if-forms both hoist; the hoist survives every shape
- * tried (4 variants). 2) arg1's test: retail does andi v0,s2,0xff +
- * bnez v0 at the use with s2 holding the raw a1 copy; ours hoists
- * the mask into the prologue (andi s2,a1,0xff) for s32/u32/u8 arg1
- * alike, or drops the andi for a plain s32 `arg1 != 0`. sltiu loop
- * bound requires u32 retries; the (arg0&0xFF)!=0*0x10 channel line
- * and the call/branch schedule match. */
-extern s32 func_8005A294(void);
-extern void func_8005A414(void);
 s32 CardCheckStatus(s32 arg0, u8 arg1) {
     s32 channel;
     u32 retries;
@@ -14564,30 +14549,29 @@ s32 CardCheckStatus(s32 arg0, u8 arg1) {
 
     channel = ((arg0 & 0xFF) != 0) * 0x10;
     retries = 0;
-    do {
-        _card_info(channel);
-        status = func_8005A294();
+again:
+    _card_info(channel);
+    status = func_8005A294();
+    switch (status) {
+    case 0:
+        return 0;
+    case 3:
+        func_8005A414();
+        _card_clear(channel);
+        status = CardWaitForEvent();
+        if (arg1 != 0) {
+            return 3;
+        }
         if (status == 0) {
-            return 0;
+            return 3;
         }
-        if (status == 3) {
-            func_8005A414();
-            _card_clear(channel);
-            status = CardWaitForEvent();
-            if (arg1 != 0) {
-                return 3;
-            }
-            if (status == 0) {
-                return 3;
-            }
-        }
-        retries++;
-    } while ((retries & 0xFF) < 8);
+    }
+    retries++;
+    if ((retries & 0xFF) < 8) {
+        goto again;
+    }
     return status & 0xFF;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", CardCheckStatus);
-#endif
 
 s32 CardFindFirstFile(char *path, struct DIRENTRY *entry) {
     return firstfile(path, entry) == entry;
