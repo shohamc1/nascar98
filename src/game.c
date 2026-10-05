@@ -158,8 +158,6 @@ void func_80012AF8(void) {
     VSync(0);
 }
 
-extern void CdIntToPos(s32, void *);
-
 void func_80012B78(s32 arg0) {
     u8 pos[0x18];
     s8 filter[8];
@@ -1143,7 +1141,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80016298);
 
 extern s32 D_800A2D60;
 extern s32 D_800A2D5C;
-extern s32 D_800A2D64;
+extern s32 *D_800A2D64;
 
 extern void *HeapAlloc(u32);
 
@@ -1175,7 +1173,7 @@ void func_8001636C(void) {
     D_800A2D5C = 0x898;
     entry = (u8 *)D_800A2D60 + count * 0x38;
     *(s32 *)(entry + 0x34) = 0;
-    D_800A2D64 = (s32)entry;
+    D_800A2D64 = (s32 *)entry;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001636C);
@@ -1184,7 +1182,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001636C);
 INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
 
 extern s32 D_800A2D5C;
-extern s32 *D_800A2D64;
 void func_80016724(s32 value, s32 *next, s32 size) {
     s32 *current;
     current = D_800A2D64;
@@ -1196,7 +1193,6 @@ void func_80016724(s32 value, s32 *next, s32 size) {
 extern s32 gOrderingTableBankAbsolute[];
 extern s32 D_800A2CF8[];
 extern s32 D_800A2D5C;
-extern s32 D_800A2D64;
 void func_80016744(u32 arg0) {
     s32 bank;
     u32 entries;
@@ -1215,11 +1211,11 @@ void func_80016744(u32 arg0) {
         value = *(s8 *)(arg0 + bank + 0x41C);
         offset = value * 0x44 + *(s32 *)(arg0 + 0x370);
         hw = *(s16 *)(offset + 0x2A);
-        ptr = D_800A2D64;
+        ptr = (u32)D_800A2D64;
         size = D_800A2D5C;
         extra = *(s32 *)(entries + 0x430);
         *(s32 *)(ptr + 0x34) = oldEntry;
-        D_800A2D64 = extra;
+        D_800A2D64 = (s32 *)extra;
         *(s32 *)(entries + 0x420) = 0;
         D_800A2D5C = size + hw;
     }
@@ -1859,7 +1855,73 @@ void func_8001CC7C(u8 *arg0) {
     }
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001CC7C);
+extern s32 D_800A2EC8Absolute[];
+extern u8 *D_800A3A40Absolute[];
+
+void func_8001CC7C(u8 *arg0) {
+    register s32 pal asm("v0");
+    register u16 clut asm("v0");
+    register s32 c asm("v1");
+    register s32 d asm("a0");
+    u8 *entry;
+
+    if (*(s16 *)(arg0 + 0xA) != 4) {
+        return;
+    }
+    entry = (u8 *)D_800A3A40Absolute[0]
+        + ((*(u16 *)(arg0 + 0x18) * 2 + *(u16 *)(arg0 + 0x18)) * 4
+            - *(u16 *)(arg0 + 0x18)) * 4;
+    SetShadeTex(entry, 1);
+    if (D_800A2EC8Absolute[0] != 0) {
+        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
+        clut = GetClut(0x200, 0x1FF);
+        d = 0xA7;
+        c = 0xFD;
+        *(s16 *)(entry + 0xA) = clut;
+        pal = 0x7F;
+        *(u8 *)(entry + 0x8) = 0;
+        *(u8 *)(entry + 0x9) = d;
+        *(u8 *)(entry + 0xC) = 0;
+        *(u8 *)(entry + 0xD) = c;
+        *(u8 *)(entry + 0x10) = pal;
+        *(u8 *)(entry + 0x11) = d;
+        *(u8 *)(entry + 0x14) = pal;
+        *(u8 *)(entry + 0x15) = c;
+        return;
+    }
+    pal = ((u8 *)D_800A2EC8Absolute)[0x11];
+    if (pal != 0) {
+        pal = 0x40;
+        c = 0x78;
+        *(u8 *)(entry + 0x8) = pal;
+        *(u8 *)(entry + 0xC) = pal;
+        pal = 0xBF;
+        *(u8 *)(entry + 0x9) = 0;
+        *(u8 *)(entry + 0xD) = c;
+        *(u8 *)(entry + 0x10) = pal;
+        *(u8 *)(entry + 0x11) = 0;
+        *(u8 *)(entry + 0x14) = pal;
+        *(u8 *)(entry + 0x15) = c;
+    } else {
+        pal = 0x40;
+        c = 0x3C;
+        *(u8 *)(entry + 0x8) = pal;
+        *(u8 *)(entry + 0xC) = pal;
+        pal = 0xBF;
+        *(u8 *)(entry + 0x9) = c;
+        *(u8 *)(entry + 0xD) = pal;
+        *(u8 *)(entry + 0x10) = pal;
+        *(u8 *)(entry + 0x11) = c;
+        *(u8 *)(entry + 0x14) = pal;
+        *(u8 *)(entry + 0x15) = pal;
+    }
+    if (gOrderingTableBankAbsolute[0] != 0) {
+        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0, 0);
+    } else {
+        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x140, 0);
+    }
+}
+
 #endif
 extern s32 D_800A2EC8Absolute[];
 extern ListNode28 *D_800A3A40Absolute[];
@@ -1927,7 +1989,7 @@ void func_8001CDDC(u8 *arg0) {
 
 
 extern s32 D_800A2EC8Absolute[];
-extern u8 *D_800A3A40Absolute[];
+extern ListNode28 *D_800A3A40Absolute[];
 
 void func_8001CF38(u8 *arg0) {
     register s32 pal asm("v0");
@@ -2233,7 +2295,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001E17C);
 void func_8001E230(s32 arg0, s32 arg1) {
     extern s32 func_8003C584(s32, void *);
     extern void GraphicsInit(void);
-    extern s32 FntPrint(char *);
     extern u_long *FntFlush(s32);
     extern s32 func_8003C8BC(void *, s32, s32);
     extern void func_8003C644(s32, s32, s32, s32);
@@ -3674,7 +3735,6 @@ void func_80025594(u8 *object) {
     *(s16 *)(object + 0x388) = 0;
 }
 
-extern void func_80025594(void);
 
 void func_800255A0(u8 *arg0) {
     u16 temp;
@@ -3793,7 +3853,6 @@ typedef struct {
     u8 unk201[0x153];
     void (*callback)(void);
 } Batch0CallbackObject;
-extern void func_80025730(void);
 void ObjectSetCallbackIfAllowed(Batch0CallbackObject *object,
                                 void (*callback)(void)) {
     if (((object->unk1EC != 1) || (callback != func_80025730)) &&
@@ -3801,14 +3860,6 @@ void ObjectSetCallbackIfAllowed(Batch0CallbackObject *object,
         object->callback = callback;
     }
 }
-
-extern void func_80025730(void);
-
-extern void func_80025730(void);
-
-extern void func_80025730(void);
-
-extern void func_80025730(void);
 
 s32 func_80025938(u8 *arg0, u8 *arg1) {
     s32 dist[3];
@@ -4014,6 +4065,8 @@ void func_80025DD4(u8 *arg0, u8 *arg1) {
 }
 
 extern void func_8003644C(s32, s32, s32, s32);
+extern void func_8001EEC4Args(u8 *, s32);
+asm(".globl func_8001EEC4Args\nfunc_8001EEC4Args = func_8001EEC4");
 
 void func_80025F40(u8 *arg0, s32 arg1) {
     s32 pos[3];
@@ -4028,7 +4081,7 @@ void func_80025F40(u8 *arg0, s32 arg1) {
     pos[0] = *(s32 *)(entry + 4);
     pos[1] = *(s32 *)(entry + 8);
     pos[2] = 0x4B;
-    func_8001EEC4(arg0, arg1 & 0xFF);
+    func_8001EEC4Args(arg0, arg1 & 0xFF);
     func_8001F1D4(pos);
     pos[0] += *(s32 *)(arg0 + 0);
     pos[1] += *(s32 *)(arg0 + 4);
@@ -4081,8 +4134,6 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800261F8);
 
 s32 func_800270F4(void *arg0, s32 arg1) {
-    extern s32 *D_800A3A2CAbsolute[];
-    extern s32 *D_800A3A34Absolute[];
     register s32 sinValue asm("a1");
     register s32 product1 asm("a1");
     register s32 cosValue asm("v1");
@@ -4093,11 +4144,11 @@ s32 func_800270F4(void *arg0, s32 arg1) {
     s32 result;
 
     index = (0x400 - arg1) & 0x3FF;
-    sinValue = D_800A3A2CAbsolute[0][index];
+    sinValue = ((s32 **)D_800A3A2CAbsolute)[0][index];
     asm("");
     argVal = *(s32 *)arg0;
     asm volatile("mult %0, %1" : : "r"(sinValue), "r"(argVal) : "lo");
-    cosValue = D_800A3A34Absolute[0][index];
+    cosValue = ((s32 **)D_800A3A34Absolute)[0][index];
     argVal2 = *(s32 *)((s32)arg0 + 4);
     asm volatile("mflo %0" : "=r"(product1));
     asm volatile("nop");
@@ -4227,7 +4278,6 @@ void func_80028FAC(void *object) {
 }
 
 void func_80028D80(u8 *);
-void func_80028980(u8 *);
 
 void func_80028FCC(u8 *arg0) {
     s32 x84;
@@ -4704,14 +4754,12 @@ s32 func_8002AAA0(s32 *car) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002AAF0);
 
-extern s32 *D_800A3A2CAbsolute[];
-extern s32 *D_800A3A34Absolute[];
 void func_8002AD20(s32 *car, s32 index) {
     s32 entryA;
     s32 entryB;
 
-    entryA = D_800A3A2CAbsolute[0][index];
-    entryB = D_800A3A34Absolute[0][index];
+    entryA = ((s32 **)D_800A3A2CAbsolute)[0][index];
+    entryB = ((s32 **)D_800A3A34Absolute)[0][index];
     car[0x31] = MathMultiplyFixed16(entryA, car[0x24]);
     car[0x32] = MathMultiplyFixed16(entryB, car[0x24]);
     car[0x34] = MathMultiplyFixed16(entryA, car[0x24]);
@@ -4720,16 +4768,14 @@ void func_8002AD20(s32 *car, s32 index) {
     car[0x2D] = MathMultiplyFixed16(entryB, car[0x24]) >> 16;
 }
 
-extern s32 *D_800A3A2CAbsolute[];
-extern s32 *D_800A3A34Absolute[];
 void func_8002ADE0(s32 *car, s32 arg1) {
     s32 index;
     s32 entryA;
     s32 entryB;
 
     index = (((s16 *)car)[0x8A] + 0x200) & 0x3FF;
-    entryA = D_800A3A2CAbsolute[0][index];
-    entryB = D_800A3A34Absolute[0][index];
+    entryA = ((s32 **)D_800A3A2CAbsolute)[0][index];
+    entryB = ((s32 **)D_800A3A34Absolute)[0][index];
     car[0x31] = car[0x31] + MathMultiplyFixed16(entryA, arg1);
     car[0x32] = car[0x32] + MathMultiplyFixed16(entryB, arg1);
     car[0x34] = car[0x34] + MathMultiplyFixed16(entryA, arg1);
@@ -4744,8 +4790,6 @@ void func_8002ADE0(s32 *car, s32 arg1) {
  * and emits mflo immediately after mult. sltiu needs the unsigned spelling
  * ((temp & 0xFF) >= 0x65U). Same class as the func_800298E0 scheduling wall.
  */
-extern s32 *D_800A3A2CAbsolute[];
-extern s32 *D_800A3A34Absolute[];
 s32 func_8002AEB0(u8 *arg0) {
     s32 index;
     s32 steer;
@@ -4753,10 +4797,10 @@ s32 func_8002AEB0(u8 *arg0) {
     s32 temp;
 
     index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
-    steer = ((D_800A3A2CAbsolute[0][index] * *(s32 *)(arg0 + 0xB0))
-            - (D_800A3A34Absolute[0][index] * *(s32 *)(arg0 + 0xB4))) >> 16;
-    slide = ((D_800A3A34Absolute[0][index] * *(s32 *)(arg0 + 0xB0))
-            + (D_800A3A2CAbsolute[0][index] * *(s32 *)(arg0 + 0xB4))) >> 16;
+    steer = ((((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB0))
+            - (((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)(arg0 + 0xB4))) >> 16;
+    slide = ((((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)(arg0 + 0xB0))
+            + (((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB4))) >> 16;
     if (steer < 0) {
         temp = -steer;
         *(u8 *)(arg0 + 0x410) = temp;
