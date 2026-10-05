@@ -3131,7 +3131,28 @@ s32 func_8001FB80(void *arg0) {
     return MathSqrt(dx * dx + dy * dy + dz * dz);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001FB80);
+s32 func_8001FB80(void *arg0) {
+    register s32 dx asm("v0");
+    register s32 dy asm("v0");
+    register s32 dz asm("v0");
+    register s32 dxSq asm("a1");
+    register s32 dySq asm("v1");
+    register s32 dzSq asm("a3");
+    register s32 sum asm("a0");
+
+    dx = *(s32 *)((u8 *)arg0 + 0x9C);
+    asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
+    dy = *(s32 *)((u8 *)arg0 + 0xA0);
+    asm volatile("mflo\t%0" : "=r"(dxSq) : : "lo");
+    asm volatile("mult\t%0,%0" : : "r"(dy) : "hi", "lo");
+    dz = *(s32 *)((u8 *)arg0 + 0xA4);
+    asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
+    asm volatile("mult\t%0,%0" : : "r"(dz) : "hi", "lo");
+    sum = dxSq + dySq;
+    asm volatile("mflo\t%0" : "=r"(dzSq) : : "lo");
+    return MathSqrt(sum + dzSq);
+}
+
 #endif
 
 #ifdef NON_MATCHING
