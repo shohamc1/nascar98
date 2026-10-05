@@ -19509,7 +19509,119 @@ void func_8006F194(s32 arg) {
     CdSetMixVolume(D_800A3694Absolute[0]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006F200);
+extern s32 D_800A3904w16 asm("D_800A3904.NON_MATCHING");
+extern u8 *func_800719FC(s32 *);
+extern void func_800718D4(s32);
+extern void func_80072750(void);
+extern void func_80072A34(void);
+extern s32 func_80072A5C(void);
+extern s32 func_80072AFC(u32);
+extern void func_80072CA8(u8 *);
+extern void func_80073100(u8 *);
+extern void func_80070750(s32);
+extern void func_8007005C(void);
+extern void func_80070018Args(u8 *, s32, s32);
+asm(".globl func_80070018Args\nfunc_80070018Args = func_80070018");
+extern void func_80041AF0Arg(s32);
+asm(".globl func_80041AF0Arg\nfunc_80041AF0Arg = func_80041AF0");
+
+s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
+    s32 block;
+    u8 *p;
+    u32 w0;
+    u32 w1;
+    u32 magic;
+    u32 size;
+    s32 status;
+    u32 idx;
+    u32 limit;
+    s32 result;
+    u32 i;
+
+    block = arg2;
+    func_800719FC(&block);
+    i = 0;
+    result = 1;
+    D_800A3904w16 = 0;
+    while (1) {
+        if (i >= 4) {
+            func_80041AF0Arg(0);
+            status = func_80041B7C(0);
+            if (status & 0x840) {
+                D_800A3904w16 = status;
+                result = 0;
+                break;
+            }
+        }
+        block = 8;
+        p = func_800719FC(&block);
+        if (p == 0) {
+            goto done;
+        }
+        if (block == 0) {
+            goto done;
+        }
+        w0 = *(u32 *)p;
+        asm("" : "=r"(w0) : "0"(w0));
+        w1 = *(u32 *)(p + 4);
+        magic = (w0 >> 24) | ((w0 >> 8) & 0xFF00) | ((w0 & 0xFF00) << 8) |
+                (w0 << 24);
+        size = (w1 >> 24) | ((w1 >> 8) & 0xFF00) | ((w1 & 0xFF00) << 8) |
+               (w1 << 24);
+        if (size < 0x4400) {
+            block = size;
+            p = func_800719FC(&block);
+            if (p == 0) {
+                goto done;
+            }
+            if (block == 0) {
+                goto done;
+            }
+            switch (magic) {
+            case 0x564C4330:
+                func_80070750((s32)(p + 8));
+                break;
+            case 0x41643130:
+            case 0x41643131:
+            case 0x61643130:
+            case 0x61643131:
+            case 0x61643230:
+            case 0x61643231:
+                func_80072CA8(p);
+                break;
+            case 0x61753030:
+            case 0x61753031:
+                func_80073100(p);
+                break;
+            case 0x4D444332:
+            case 0x4D444543:
+                idx = i;
+                asm("" : "=r"(idx) : "0"(idx));
+                if (idx == 1) {
+                    func_80072750();
+                }
+                func_80072A34();
+                i = idx + 1;
+                limit = func_80072AFC(idx);
+                func_80070018Args(p, arg0, arg1);
+                while ((u32)func_80072A5C() < limit) {
+                    VSync(0);
+                }
+                func_8007005C();
+                break;
+            default:
+                block = 4;
+                break;
+            }
+        } else {
+            block = 4;
+        }
+        func_800718D4(block);
+    }
+done:
+    return result;
+}
+
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006F4DC);
 
