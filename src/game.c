@@ -19524,23 +19524,17 @@ void func_8006EEBC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006EEE0);
 
-#ifdef NON_MATCHING
-/* Retail frame is 0x30 (saves at 0x28/0x2c); every unused-local phantom
-   tried (volatile s32 array/scalars, with and without initialisers) is
-   dropped by cc1 2.7.2 in this non-leaf, leaving an 0x18 frame. Body is
-   otherwise the matched func_8006F194 shape with +0x3A. */
 void func_8006F128(s32 arg0) {
+    s32 pad[6];
+
     if (D_800A2F9CAbsolute[0] != 0) {
         func_8003CCE0(0);
         ((u8 *)D_800A2F9DAbsolute)[-1] = 0;
     }
     func_8006F9C4((arg0 & 0xFF) + 0x3A, 0, 0);
     func_800596F4();
-    CdSetMixVolume(D_800A3694Absolute[0]);
+    CdSetMixVolume(((u8 *)D_800A3694Absolute)[0]);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006F128);
-#endif
 
 
 extern u8 D_800A2F9CAbsolute[];
