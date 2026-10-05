@@ -2463,29 +2463,17 @@ void SsSetStereo(void) {
     D_800B1EA4[0] = 0;
 }
 
-#ifdef NON_MATCHING
-/* Score 5 (permuter find): a two-valued index variable keeps both count
- * accesses in lui/%lo form. One immediate left: gcc reads new_var after
- * the assignment-expr for the LOAD (-0x1712 against retail -0x1714);
- * the store side is exact. Clean single-valued spellings all CSE back
- * into one lui+addiu pointer (score 285). */
 extern u8 D_800B9DE4[];
 extern void *D_800BE8F0[];
 extern u16 D_800BE8EC[];
 
 void SsVabClose(s16 vabid) {
-    s32 new_var;
-
     if ((vabid >= 0 && vabid < 0x10) && D_800B9DE4[vabid] == 1) {
         SpuFree(D_800BE8F0[vabid]);
-        new_var = 0;
-        D_800B9DE4[vabid] = new_var;
-        D_800BE8EC[new_var] -= (new_var = 1);
+        D_800B9DE4[vabid] = 0;
+        D_800BE8EC[0] = *(u16 *)((u8 *)D_800BE8F0 - 4) - 1;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabClose);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpen);
 
