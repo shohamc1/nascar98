@@ -495,14 +495,13 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_initvol);
 extern u32 D_8009BA80[];
 extern u32 D_8009BA7C[];
 extern u32 D_8009BA90[];
-extern u32 D_8009BA8C[];
 extern void callback();
 
 int CD_initintr(void) {
     D_8009BA80[0] = 0;
     D_8009BA7C[0] = 0;
     D_8009BA90[0] = 0;
-    D_8009BA8C[0] = 0;
+    ((u32 *)D_8009BA8C)[0] = 0;
     ResetCallback();
     InterruptCallback(2, callback);
 }
@@ -1006,8 +1005,6 @@ void DumpTPage(u_short tpage) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpTPage);
 #endif
 
-typedef int (*DebugPrintf)(const char *, ...);
-extern u32 D_8009DA8C[];
 extern char D_80090560[];
 
 void DumpClut(u_short clut) {
@@ -1140,7 +1137,7 @@ extern u32 D_8009DA8C[];
 extern u8 D_8009DAA0[];
 extern char D_800906D8[];
 
-Callback DrawSyncCallback(Callback func) {
+u_long DrawSyncCallback(void (*func)()) {
     Callback old;
 
     if (D_8009DA92[0] >= 2) {
@@ -1158,7 +1155,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", DrawSync);
 extern u8 D_8009DA92[];
 extern s16 D_8009DA94[];
 extern s16 D_8009DA96[];
-extern int (*D_8009DA8C[])();
+
 extern char D_8009071C[];
 extern char D_8009073C[];
 extern char D_80090728[];
@@ -1170,14 +1167,16 @@ void checkRECT(RECT* r, RECT* rect) {
         if (rect->w > D_8009DA94[0] || rect->w + rect->x > D_8009DA94[0] ||
             rect->y > D_8009DA96[0] || rect->y + rect->h > D_8009DA96[0] ||
             rect->w <= 0 || rect->x < 0 || rect->y < 0 || rect->h > 0) {
-            D_8009DA8C[0](D_8009071C, r);
-            D_8009DA8C[0](D_80090728, rect->x, rect->y, rect->w, rect->h);
+            ((int (*)())D_8009DA8C[0])(D_8009071C, r);
+            ((int (*)())D_8009DA8C[0])(D_80090728, rect->x, rect->y, rect->w,
+                                       rect->h);
             return;
         }
         return;
     case 2:
-        D_8009DA8C[0](D_8009073C, r);
-        D_8009DA8C[0](D_80090728, rect->x, rect->y, rect->w, rect->h);
+        ((int (*)())D_8009DA8C[0])(D_8009073C, r);
+        ((int (*)())D_8009DA8C[0])(D_80090728, rect->x, rect->y, rect->w,
+                                   rect->h);
         return;
     default:
         return;
@@ -2126,7 +2125,7 @@ void _SsSndReplay(s16 access, s16 sequence) {
 
 extern s32 D_800BDE2C[];
 
-void SsSetTickMode(s32 tickMode) {
+void SsSetTickMode(long tickMode) {
     s32 videoMode;
     s32 mode;
 
@@ -2386,7 +2385,7 @@ extern u16 D_800AFD98[];
 void func_80082670(void) { D_800AFD98[0] = 0; }
 
 /* SPDX-License-Identifier: MIT */
-extern s16 D_800AFD98[];
+extern u16 D_800AFD98[];
 void SpuVmDamperOn(void) { D_800AFD98[0] = 2; }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetProgAtr);

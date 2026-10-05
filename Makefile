@@ -8,6 +8,10 @@
 
 SHELL := bash
 .SHELLFLAGS := -o pipefail -c
+# Make 3.81 (macOS) ignores .SHELLFLAGS, so pipelines that must fail on any
+# stage also say `set -o pipefail`. Delete a target whose recipe failed, so
+# the next make doesn't reuse a half-written object.
+.DELETE_ON_ERROR:
 
 BASENAME := slus_005.21
 EXE      := build/SLUS_005.21
@@ -195,7 +199,7 @@ build/fixed_addrs.h: config/symbol_addrs.txt tools/fixed_addrs.py
 
 build/%.c.o: %.c $(LD_SCRIPT) build/fixed_addrs.h
 	@mkdir -p $(@D)
-	$(CPP) $(CPPFLAGS) $< | $(CC1) $(CFLAGS) | $(MASPSX) | $(AS) $(ASFLAGS) -G$(GP_SIZE) -o $@
+	set -o pipefail; $(CPP) $(CPPFLAGS) $< | $(CC1) $(CFLAGS) | $(MASPSX) | $(AS) $(ASFLAGS) -G$(GP_SIZE) -o $@
 
 build/%.s.o: %.s $(LD_SCRIPT)
 	@mkdir -p $(@D)

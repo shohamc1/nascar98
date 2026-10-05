@@ -1856,7 +1856,7 @@ void func_8001CC7C(u8 *arg0) {
 }
 #else
 extern s32 D_800A2EC8Absolute[];
-extern u8 *D_800A3A40Absolute[];
+extern ListNode28 *D_800A3A40Absolute[];
 
 void func_8001CC7C(u8 *arg0) {
     register s32 pal asm("v0");
@@ -4821,8 +4821,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002AF94);
 
 extern s32 D_800A2E44nm asm("D_800A2E44.NON_MATCHING");
 extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
-extern s32 *D_800A3A2CAbsolute[];
-extern s32 *D_800A3A34Absolute[];
 
 void func_8002B258(u8 *arg0) {
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
@@ -5460,7 +5458,7 @@ void func_8002F1A0(void) {
 
 extern u8 D_800A3068[];
 extern u8 D_800A3069[];
-extern s8 D_800A3860[];
+extern s8 D_800A3860S8[] asm("D_800A3860");
 extern s8 D_800A3861[];
 extern s8 D_800A3862[];
 extern s8 D_800A3863[];
@@ -5490,7 +5488,7 @@ void func_8002F2CC(void) {
                 *(s16 *)(node + 0x112) = *(u16 *)(tableBase + carIdx * 22 + 0x14);
                 val = D_800A3863[carIdx * 4];
                 func_80028754(node, 9 - val * 10 / 64);
-                val = D_800A3860[carIdx * 4];
+                val = D_800A3860S8[carIdx * 4];
                 if (val == 0x3F) {
                     *(s32 *)(node + 0x234) = D_800A2E7C[0];
                 } else {
@@ -12793,12 +12791,11 @@ void func_80057160(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800571EC);
 
 extern s32 D_800A3668Absolute[];
-extern u8 D_800A37B4Absolute[];
 void func_80057A9C(void) {
     ((s32 *)D_800A3668Absolute)[4] = (s32)HeapAlloc(0x1AB8);
     ((u8 *)D_800A3668Absolute)[-0x7C] = 0;
     ((s32 *)D_800A3668Absolute)[-5] = (s32)HeapAlloc(0x834);
-    D_800A37B4Absolute[8] = 0;
+    ((u8 *)D_800A37B4Absolute)[8] = 0;
 }
 
 /* Wall: needs a gp store to D_800A3548 (untracked sdata label, no
@@ -13277,7 +13274,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80059648);
 
 extern u8 D_800A2F9CAbsolute[];
 extern u8 D_800A3694;
-extern void func_8003CAE8(s32);
+extern s32 func_8003CAE8(s32);
 extern void CdSetMixVolume(s32);
 void func_800596F4(void) {
     D_800A2F9CAbsolute[0] = 1;
@@ -14154,7 +14151,7 @@ void func_8005B688(u8 *first, u8 friction) {
     }
 }
 
-extern u8 *D_800A39C8[];
+extern s32 D_800A39C8[];
 void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
     u8 *poly;
 
@@ -14374,6 +14371,7 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                     func_8005CF34(object, 0, 0, 9, (s32)scratch);
                     break;
                 }
+            }
         }
     }
 }
@@ -14499,7 +14497,7 @@ extern u8 *D_800A3690;
 extern u8 *D_800A39C0;
 extern u8 *D_800A3A28;
 extern u8 D_800A3988[];
-extern void func_8005A7B8(s32, s32);
+extern void func_8005A7B8(u8, u8);
 extern s16 func_8005A8E0(s32);
 void func_8005C8D8(u8 index) {
     u8 *window;
@@ -14594,7 +14592,7 @@ extern u8 D_800A35C8;
 extern u8 D_800A35C9[];
 extern u8 D_800A3338[];
 extern char *strcat(char *, char *);
-extern void func_80012EA8(s32, char *);
+extern u8 *func_80012EA8(s32, u8 *);
 void func_8005CBC8(s32 number) {
     u8 *buffer;
     s32 length;
@@ -14724,7 +14722,9 @@ void __maspsx_include_asm_hack_jtblpad_8005CCEC() {
 }
 
 extern u8 D_800A3078[], D_800A3988[];
-extern void func_8005C8D8(s32), func_8005CCEC(u8, s32);
+extern void func_8005C8D8(u8);
+extern s32 func_8005CCECArgs(u8, s32);
+asm(".globl func_8005CCECArgs\nfunc_8005CCECArgs = func_8005CCEC");
 void func_8005CEDC(void) {
     s32 i;
     D_800A3988[0] = D_800A3078[0];
@@ -14732,7 +14732,7 @@ void func_8005CEDC(void) {
     func_8005C8D8(i);
     i = 1;
     do {
-        func_8005CCEC(i, 0);
+        func_8005CCECArgs(i, 0);
         i++;
     } while (i < 6);
 }
@@ -14857,7 +14857,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005DAD4);
 #endif
 
 extern s16 *D_800B12FC[];
-POLY_FT4 *func_80057CCC(u8);
+extern u8 *func_80057CCC(s32);
 s32 func_8005DCF0(void) {
     u8 done;
     s32 i;
@@ -14990,8 +14990,8 @@ void func_8005E408(void) {
 }
 
 extern char D_800BA058[], D_800A333C[];
-extern void func_80012EA8(s32, char *);
-extern char *strcat(char *, const char *);
+extern u8 *func_80012EA8(s32, u8 *);
+extern char *strcat(char *, char *);
 void func_8005E43C(s32 value) {
     func_80012EA8(value, D_800BA058);
     strcat(D_800BA058, D_800A333C);
@@ -15131,8 +15131,8 @@ extern s32 D_800A37D0;
 extern s32 D_800A3814;
 extern char D_800BA058[];
 extern char D_800A333C[];
-extern void func_80012EA8(s32, char *);
-extern char *strcat(char *, const char *);
+extern u8 *func_80012EA8(s32, u8 *);
+extern char *strcat(char *, char *);
 void func_8005EC5C(s32 arg0) {
     s32 value;
     s32 scaled;
@@ -15247,9 +15247,9 @@ u8 *func_8005FFA8(u8 x, u8 y) {
 }
 
 extern u8 D_800A3860[][4];
-extern u8 D_800A3861[][4];
-extern u8 D_800A3862[][4];
-extern u8 D_800A3863[][4];
+extern u8 D_800A3861U8[][4] asm("D_800A3861.NON_MATCHING");
+extern u8 D_800A3862U8[][4] asm("D_800A3862.NON_MATCHING");
+extern u8 D_800A3863U8[][4] asm("D_800A3863.NON_MATCHING");
 extern u8 *D_800B60B8[];
 
 void func_80060008(u8 arg0) {
@@ -15261,14 +15261,14 @@ void func_80060008(u8 arg0) {
     u8 *node;
     u8 *entry;
 
-    vals[0] = (0x3F - D_800A3861[arg0][0]) * 700 / 1000
-            + D_800A3863[arg0][0] * 300 / 1000;
-    aCol = D_800A3861[arg0][0];
+    vals[0] = (0x3F - D_800A3861U8[arg0][0]) * 700 / 1000
+            + D_800A3863U8[arg0][0] * 300 / 1000;
+    aCol = D_800A3861U8[arg0][0];
     vals[3] = aCol / 5
             + (0x3F - D_800A3860[arg0][0]) * 800 / 1000;
     vals[2] = D_800A3860[arg0][0] * 600 / 1000
-            + D_800A3862[arg0][0] * 400 / 1000;
-    diff = D_800A3862[arg0][0] - D_800A3861[arg0][0];
+            + D_800A3862U8[arg0][0] * 400 / 1000;
+    diff = D_800A3862U8[arg0][0] - D_800A3861U8[arg0][0];
     if (diff < 0) {
         asm("");
         diff = 0;
@@ -15278,9 +15278,9 @@ void func_80060008(u8 arg0) {
         vals[2] = 0;
     }
     cCol = D_800A3860[arg0][0];
-    vals[1] = (0x3F - D_800A3863[arg0][0]) * 600 / 1000
+    vals[1] = (0x3F - D_800A3863U8[arg0][0]) * 600 / 1000
             + cCol / 4
-            + (0x3F - D_800A3861[arg0][0]) * 150 / 1000;
+            + (0x3F - D_800A3861U8[arg0][0]) * 150 / 1000;
     diff = 0;
     do {
         q = vals[diff] * 48 / 61;
@@ -15316,7 +15316,7 @@ typedef struct PanelState {
 } PanelState;
 extern s32 D_8009A2B0[];
 extern PanelState *D_800A3A68;
-extern void func_8005A7B8(s32, s32);
+extern void func_8005A7B8(u8, u8);
 extern s16 func_8005A8E0(s32);
 void func_80060E94(s32 arg0) {
     s32 value;
@@ -15363,8 +15363,6 @@ void func_80060F54(s32 arg0, s32 volume) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80060FD8);
 
-extern void *D_800A37C4Absolute[];
-extern void *D_800A3A2CAbsolute[];
 void func_80062874(s32 arg0, s32 arg1) {
     u8 *node;
     s16 flag;
@@ -16638,7 +16636,7 @@ void *func_8006654C(void *queue, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8006654C);
 #endif
 
-extern u8 *D_800A39C8[];
+extern u8 *D_800A39C8Ptr[] asm("D_800A39C8");
 extern u8 D_800A305B[];
 extern u8 D_800A3884;
 extern u8 *D_8009A404[];
@@ -16653,7 +16651,7 @@ extern DISPENV D_800BDE18[];
 extern void func_80064CD8(s32);
 extern void func_8006654C(s32, s32);
 extern void func_8005E8EC(s32, s32, s32);
-extern void func_8005A7B8(s32, s32);
+extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
 extern void func_8005A818(u8, u8, u8);
 extern s16 func_8005A8E0(s32);
 extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
@@ -16684,11 +16682,11 @@ void func_80066730(void)
     table = D_8009A404;
     q = table + 2;
     for (page = 0; page < 2; page++) {
-        ClearOTagR((u32 *)D_800A39C8[0], 0x3FF);
+        ClearOTagR((u32 *)D_800A39C8Ptr[0], 0x3FF);
         func_80014A40(0);
         func_8006654C(0, 0x3FC);
         func_8005E8EC(0, 0, 1);
-        func_8005A7B8(2, 4);
+        func_8005A7B8S32(2, 4);
         func_8005A818(0x80, 0x80, 0xC0);
         y = 0xA0;
         i = 0;
@@ -16718,7 +16716,7 @@ void func_80066730(void)
         raw = func_8005B0E4(0x140, (s32)pp[0]);
         asm volatile("lw %0, 0(%3)\n\tsll %2, %4, 16\n\tsra %1, %2, 16" : "=r"(a0v), "=r"(a1v), "=r"(rawT) : "r"(pp), "2"(raw));
         func_8005A9F4W(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
-        DrawOTag((u32 *)(D_800A39C8[0] + 0xFFC));
+        DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0xFFC));
         DrawSync(0);
         if (page == 0) {
             PutDrawEnv(&D_800BDD4C[0]);
@@ -17182,7 +17180,7 @@ void func_80067F34(s32 arg0, s32 arg1) {
     char buf[0x48];
 
     obj = *(UnkTextObj67F34 **)((u8 *)D_800A3668Absolute - 0x5C + (arg0 & 0xFF) * 4);
-    func_8005A7B8(2, 3);
+    func_8005A7B8S32(2, 3);
     strcpy(buf, D_8009A474[0]);
     strcat(buf, D_8009A31C[arg1 & 0xFF]);
     w = func_8005A8E0((s32)buf);
@@ -17598,7 +17596,7 @@ void func_80068CE4(void) {
     }
     prev = func_8005BF8C(0, 0x2A);
     D_800A360C = prev;
-    func_8005A7B8(2, 3);
+    func_8005A7B8S32(2, 3);
     strcpy(buf, D_800B9B54);
     y = 0x39;
     strcat(buf, D_8009A498[0]);
@@ -17811,7 +17809,7 @@ void func_800697EC(u8 mode) {
 
     prev = func_8005BF8C(0, 0x2A);
     D_800A360C = prev;
-    func_8005A7B8(2, 3);
+    func_8005A7B8S32(2, 3);
     table = (s8 **)D_8009AD40 + 2;
     w = func_8005B0E4(0x140, (s32)table[mode]);
     prev->unk6 = w;
@@ -17829,7 +17827,7 @@ void func_800697EC(u8 mode) {
     } else {
         buf = (s8 *)D_800A3370;
     }
-    func_8005A7B8(2, 4);
+    func_8005A7B8S32(2, 4);
     width = func_8005A84C();
     x = 0;
     i = 0;
@@ -17934,7 +17932,6 @@ void func_80069AFC(s32 arg0) {
     extern s8 D_800A307C[];
     extern s32 D_8009A2D4[];
     extern s32 D_8009A2F4[];
-    extern void func_8005A7B8(s32, s32);
     extern s32 func_8005B0E4(s16, s32);
     register s32 group asm("v1");
     s32 index;
@@ -17995,7 +17992,7 @@ void func_80069AFC(s32 arg0) {
             return;
         }
     }
-    func_8005A7B8(2, 2);
+    func_8005A7B8S32(2, 2);
     if (((s8 *)D_800A3A24)[0] == 2) {
         value = func_8005B0E4(0x140, D_8009A2F4[index]);
     } else {
@@ -18985,7 +18982,7 @@ s32 func_8006C94C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s16 *arg4) {
     s32 val;
     s32 ret;
 
-    func_8005A7B8(arg0 & 0xFF, arg1 & 0xFF);
+    func_8005A7B8S32(arg0 & 0xFF, arg1 & 0xFF);
     val = arg2 & 0xFF;
     if (*(s8 *)cur == 0) {
         *arg4 = func_8005AFF0(0x20);
@@ -19032,7 +19029,7 @@ void func_8006C9F8(void) {
     val = *(u8 *)(obj + 5) - 1;
     *(u8 *)(obj + 5) = val;
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
-    func_8005A7B8(2, 2);
+    func_8005A7B8S32(2, 2);
     status = val;
     status &= 0xFF;
     if (*entry == 0) {
@@ -19093,7 +19090,7 @@ void func_8006CE64(void) {
     obj = *(u8 **)(D_800A377C[0] + 0x1C);
     *(u8 *)(obj + 5) = 0;
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
-    func_8005A7B8(2, 2);
+    func_8005A7B8S32(2, 2);
     if (*entry == 0) {
         *(s16 *)(obj + 0x16) = func_8005AFF0(0x20);
         status = 0;
@@ -19153,7 +19150,7 @@ void func_8006CF90(u32 mode)
     }
     idx = *(u8 *)(st + 5);
     entry = D_800B0A2C + D_800A358C * 16;
-    func_8005A7B8(2, 2);
+    func_8005A7B8S32(2, 2);
     ch = *entry;
     if (ch == 0) {
         *(u16 *)(st + 0x16) = func_8005AFF0(0x20);
