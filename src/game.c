@@ -15882,7 +15882,7 @@ void func_8005CEDC(void) {
 #ifdef NON_MATCHING
 extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
-    u8 *prim;
+    register u8 *prim asm("s3");
 
     prim = *(u8 **)(window + 0x20);
     func_8005A7B8(prim[1], prim[2]);
