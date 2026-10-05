@@ -19,7 +19,9 @@ bytes copied from them into C. Only source, configs, and tools go in Git.
 outside this repo and is never committed. If `kb/` is missing, run
 `ln -s ~/psx-decomp-kb kb`.
 
-- Before your first function: `kb/psx/toolchain.md`, `kb/psx/matching.md`.
+- Before your first function: `kb/psx/toolchain.md`. Skim the headings
+  of `kb/psx/matching.md`; it's indexed by diff symptom, so look up
+  the symptom you see instead of reading it end to end.
 - Before picking a target: `kb/games/nascar98-us/open-questions.md` and
   `functions.md`.
 - When you learn something, write it down in the same session. Follow
@@ -53,26 +55,51 @@ These are the paths you work with:
 
 ## The loop
 
-1. Pick a function. `.venv/bin/python tools/funcs.py queue` lists unmatched
-   game functions, shortest first. `tools/funcs.py dups` lists functions
-   whose opcodes nearly match another function's; a matched partner's C is
-   a template. Check `kb/` for notes on the function and its callers.
+1. Pick a function, in this order:
+   a. `.venv/bin/python tools/funcs.py near` ranks the parked
+      `#ifdef NON_MATCHING` drafts, closest first. A draft a few bytes
+      off is the cheapest match in the project. Run it after `make check`.
+   b. `.venv/bin/python tools/funcs.py dups` lists functions whose opcodes
+      nearly match another function's. A matched partner's C is a
+      template: copy it and change only the differing words.
+   c. `.venv/bin/python tools/funcs.py queue` lists unmatched game
+      functions, shortest first.
+   Check `kb/` for notes on the function and its callers.
 2. Draft C with m2c:
    `.venv/bin/python tools/m2c/m2c.py -t mipsel-gcc-c asm/nonmatchings/game/FUNC.s`.
-   Treat the output as notes.
+   Treat the output as notes. Skip this step for a parked draft.
 3. Replace the function's `INCLUDE_ASM` line in `src/game.c` with your C.
 4. Diff it: `.venv/bin/python tools/asm-differ/diff.py --no-pager --format plain -m FUNC`.
-   Repeat until no lines differ.
+   When a diff line resists the obvious C, find its symptom in
+   `kb/psx/matching.md` before you try your own ideas.
 5. Run `make format`, then `make check`. On `MATCH`, run `make expected`
    so objdiff compares against the new state. `make check` fails on any
    cpp or cc1 error, not just on a byte difference.
-6. If you can't match it, keep the draft inside `#ifdef NON_MATCHING` with
-   the `INCLUDE_ASM` line in the `#else`, and record the wall in
-   `kb/psx/matching.md` or the game's `open-questions.md`.
 
 To see progress, run `make report`. It prints matched code, functions, and
 initialised data (`.data` and `.sdata`; `.bss` has no bytes to match), and
 writes `build/report.json` for decomp.dev.
+
+## When a function won't match
+
+Near misses are where time goes. Follow these rules:
+
+- If eight compiles in a row don't lower the diff score, stop editing.
+- If every opcode matches and only registers or instruction order
+  differ, run the permuter instead of editing by hand:
+  `.venv/bin/python tools/permute.py FUNC --minutes 10`. It works on the
+  parked draft, so park the draft first. Copy any improvement from
+  `nonmatchings/FUNC/output-SCORE-N/source.c` back into the draft and
+  confirm it with asm-differ and `make check`. Permuter rewrites can be
+  ugly; keep the change and drop the noise.
+- To park a draft, keep it inside `#ifdef NON_MATCHING` with the
+  `INCLUDE_ASM` line in the `#else`, and add the wall to the
+  "Unsolved walls" table in `kb/psx/matching.md`: the remaining diff
+  and what you tried.
+- Then move on to the next function. Other work changes the code around
+  a draft, so `funcs.py near` can rank it closer later.
+- When you beat a wall, add a row to the matching section of
+  `kb/psx/matching.md` and delete the wall's row.
 
 ## Write C that matches
 

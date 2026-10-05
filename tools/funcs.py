@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""List functions still in asm, or find near-duplicate functions.
+"""List functions still in asm, find near-duplicates, or rank parked drafts.
 
     .venv/bin/python tools/funcs.py queue [--sdk] [--parked]
     .venv/bin/python tools/funcs.py dups [--threshold 0.94]
+    .venv/bin/python tools/funcs.py near [FUNC...]
 
 Both read the linked build (run `make check` first), so matched and asm
 functions are measured the same way. `queue` ranks unmatched functions
@@ -10,10 +11,14 @@ easiest first, the way sotn-decomp's function_finder does: by length,
 then branches. `dups` pairs functions whose opcode sequences have a
 Levenshtein similarity at or above the threshold, as sotn-decomp's dups
 tool does, and lists pairs where a matched function can guide an
-unmatched one first.
+unmatched one first. `near` builds the EXE once per parked
+`#ifdef NON_MATCHING` draft, with only that draft switched on, and ranks
+the drafts by how many bytes still differ from the retail EXE.
 """
 
 import argparse
+import concurrent.futures
+import os
 import pathlib
 import re
 import subprocess
@@ -22,6 +27,8 @@ import Levenshtein
 
 ELF = "build/slus_005.21.elf"
 EXE = "build/SLUS_005.21"
+LD_SCRIPT = "build/slus_005.21.ld"
+RETAIL = "disc/SLUS_005.21"
 VRAM = 0x80012000
 FILE_OFFSET = 0x800
 SDK_START = "__SN_ENTRY_POINT"
@@ -147,6 +154,117 @@ def dups(args: argparse.Namespace) -> None:
         )
 
 
+def parked_drafts(src: pathlib.Path) -> list[tuple[str, int]]:
+    """(function, line index of its `#ifdef NON_MATCHING`) for each draft."""
+    lines = src.read_text().splitlines()
+    drafts = []
+    for i, line in enumerate(lines):
+        if line != "#ifdef NON_MATCHING":
+            continue
+        depth, j = 1, i + 1
+        while depth:
+            if lines[j].startswith("#if"):
+                depth += 1
+            elif lines[j].startswith("#endif"):
+                depth -= 1
+            elif lines[j] == "#else" and depth == 1:
+                m = re.match(r'INCLUDE_ASM\("[^"]+", (\w+)\);', lines[j + 1])
+                if m:
+                    drafts.append((m[1], i))
+            j += 1
+    return drafts
+
+
+def make_command(target: str, touched: str, tool: str) -> str:
+    """The recipe line `make` would run for target, read from `make -n`."""
+    out = subprocess.run(
+        ["make", "-n", "-W", touched, target],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return next(line for line in out.splitlines() if tool in line)
+
+
+def score_draft(src: pathlib.Path, name: str, line: int, cmds: dict,
+                targets: dict) -> tuple:
+    """Build the EXE with one draft on; return (rank key, row)."""
+    work = pathlib.Path("build/near") / name
+    work.mkdir(parents=True, exist_ok=True)
+    lines = src.read_text().splitlines()
+    lines[line] = "#if 1"
+    variant = work / src.name
+    variant.write_text("\n".join(lines) + "\n")
+
+    obj = f"build/{src}.o"
+    cc = cmds["cc", str(src)].replace(f" {src} ", f" {variant} ")
+    cc = cc.replace(f"-o {obj}", f"-o {work}/unit.o")
+    p = subprocess.run(["bash", "-c", cc], capture_output=True, text=True,
+                       errors="replace")
+    if "Segmentation fault" in p.stderr:
+        return (2, 0, 0, name), (name, "cc1 crash", "", "", "")
+    if p.returncode or "error" in p.stderr:
+        first = next((l for l in p.stderr.splitlines()
+                      if "error" in l or "conflicting types" in l), "")
+        return (2, 0, 0, name), (name, "cc1 error", "", "", first[:70])
+
+    script = pathlib.Path(LD_SCRIPT).read_text().replace(obj, f"{work}/unit.o")
+    (work / "link.ld").write_text(script)
+    ld = cmds["ld"].replace(f"-T {LD_SCRIPT}", f"-T {work}/link.ld")
+    ld = ld.replace(f"-o {ELF}", f"-o {work}/game.elf")
+    ld = re.sub(r"-Map \S+", f"-Map {work}/game.map", ld)
+    p = subprocess.run(["bash", "-c", ld], capture_output=True, text=True,
+                       errors="replace")
+    if p.returncode:
+        return (2, 0, 0, name), (name, "link error", "", "", p.stderr[:70])
+    subprocess.run(
+        ["mipsel-linux-gnu-objcopy", "-O", "binary", "--gap-fill", "0",
+         "--pad-to", "0x92000", f"{work}/game.elf", f"{work}/game.exe"],
+        check=True,
+    )
+
+    nm = subprocess.run(["mipsel-linux-gnu-nm", "-S", f"{work}/game.elf"],
+                        capture_output=True, text=True, check=True).stdout
+    m = re.search(rf"^\w+ (\w+) [Tt] {name}$", nm, re.M)
+    size = int(m[1], 16) if m else 0
+    addr, want = targets[name]
+    delta = size - want
+    if delta:
+        return (1, abs(delta), 0, name), (name, f"{delta:+}", "", "", "")
+
+    built = (work / "game.exe").read_bytes()
+    retail = pathlib.Path(RETAIL).read_bytes()
+    start = addr - VRAM + FILE_OFFSET
+    in_func = sum(a != b for a, b in
+                  zip(built[start:start + size], retail[start:start + size]))
+    total = sum(a != b for a, b in zip(built, retail))
+    note = "MATCH" if total == 0 else ""
+    return (0, in_func, total, name), (name, "0", in_func, total, note)
+
+
+def near(args: argparse.Namespace) -> None:
+    syms = subprocess.run(["mipsel-linux-gnu-nm", "-S", ELF],
+                          capture_output=True, text=True, check=True).stdout
+    targets = {
+        m[3]: (int(m[1], 16), int(m[2], 16))
+        for m in re.finditer(r"^(\w+) (\w+) [Tt] (\w+)$", syms, re.M)
+    }
+    jobs = [
+        (src, name, line)
+        for src in sorted(pathlib.Path("src").rglob("*.c"))
+        for name, line in parked_drafts(src)
+        if not args.funcs or name in args.funcs
+    ]
+    cmds = {("cc", str(src)): make_command(f"build/{src}.o", str(src), "cc1")
+            for src in {src for src, _, _ in jobs}}
+    cmds["ld"] = make_command(ELF, "build/src/game.c.o", "-ld ")
+
+    with concurrent.futures.ThreadPoolExecutor(os.cpu_count()) as pool:
+        results = sorted(pool.map(
+            lambda job: score_draft(*job, cmds, targets), jobs))
+    print("name\tsize_delta\tfunc_bytes\texe_bytes\tnote")
+    for _, row in results:
+        print(*row, sep="\t")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(required=True)
@@ -159,6 +277,9 @@ def main() -> None:
     d.add_argument("--min-insns", type=int, default=8,
                    help="skip tiny functions; they match each other trivially")
     d.set_defaults(run=dups)
+    n = sub.add_parser("near", help="parked drafts, closest to matching first")
+    n.add_argument("funcs", nargs="*", help="rank only these functions")
+    n.set_defaults(run=near)
     args = parser.parse_args()
     args.run(args)
 
