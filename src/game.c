@@ -7837,9 +7837,93 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003A440);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003A54C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003A880);
+extern void func_8003ABC0();
+extern s16 D_80098254[];
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003A950);
+void func_8003A880(s32 car) {
+    s32 old;
+    s32 new;
+    s32 idx;
+    s32 turn;
+    s32 t;
+    s32 t2;
+    s32 t3;
+    s32 t4;
+
+    if (*(s16 *)(car + 0x102) != 0) {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = -D_80098254[idx];
+    } else {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = D_80098254[idx];
+    }
+    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turn + 0x400) & 0x3FF;
+    t = *(s32 *)(car + 0x90);
+    t2 = t - (t >> 5);
+    *(s32 *)(car + 0x90) = t2;
+    if (turn != 0) {
+        return;
+    }
+    *(u16 *)(car + 0x1BC) = 0x32;
+    t3 = *(s32 *)(car + 0x90);
+    t4 = t3 - 0x320000;
+    *(s32 *)(car + 0x90) = t4;
+    if (t4 < 0) {
+        *(s32 *)(car + 0x90) = 0;
+    }
+    ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
+}
+
+
+extern void func_8003ABC0();
+extern s16 D_80098294[];
+
+void func_8003A950(s32 car) {
+    s32 old;
+    s32 new;
+    s32 idx;
+    s32 turn;
+    s32 t;
+    s32 t2;
+    s32 t3;
+    s32 t4;
+
+    if (*(s16 *)(car + 0x102) != 0) {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = -D_80098294[idx];
+    } else {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = D_80098294[idx];
+    }
+    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turn + 0x400) & 0x3FF;
+    t = *(s32 *)(car + 0x90);
+    t2 = t - (t >> 5);
+    *(s32 *)(car + 0x90) = t2;
+    if (turn != 0) {
+        return;
+    }
+    *(u16 *)(car + 0x1BC) = 0x32;
+    t3 = *(s32 *)(car + 0x90);
+    t4 = t3 - 0x320000;
+    *(s32 *)(car + 0x90) = t4;
+    if (t4 < 0) {
+        *(s32 *)(car + 0x90) = 0;
+    }
+    ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
+}
+
 
 #ifdef NON_MATCHING
 /*
