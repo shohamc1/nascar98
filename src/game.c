@@ -4529,7 +4529,41 @@ void func_80029A78(u8 *car) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80029CB4);
+extern s32 D_800A3A04nm[] asm("D_800A3A04.NON_MATCHING");
+
+void func_80029CB4(s32 *arg0) {
+    s32 speed;
+    s32 limit;
+    s32 i;
+    s32 off;
+    s16 *entry;
+    s16 angle;
+
+    speed = D_800A3A04nm[0];
+    limit = speed * 4;
+    for (i = 0; i < 4; i++) {
+        off = 0x2AC + i * 0x28;
+        entry = (s16 *)((u8 *)arg0 + off);
+        if (entry[2] != 0 || entry[0] != 0) {
+            entry[0] += entry[2];
+            if (entry[0] < 0) {
+                entry[0] = 0;
+                if (entry[2] >= 0 ? limit >= entry[2] : limit >= -entry[2]) {
+                    entry[2] = 0;
+                } else {
+                    entry[2] = -entry[2] / 2;
+                }
+            } else {
+                entry[2] -= speed;
+            }
+            angle = entry[0];
+            if (angle >= 0x101) {
+                angle = 0x100;
+                entry[0] = angle;
+            }
+        }
+    }
+}
 
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
@@ -5018,7 +5052,27 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002B63C);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002B9AC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002BC88);
+extern s32 D_800A2E24Absolute[];
+extern s32 D_800A2E40;
+
+void func_8002BC88(u8 *arg0) {
+    s32 y;
+    s32 val;
+    s32 result;
+    s32 d;
+    s32 shifted;
+
+    y = (*(s16 *)(arg0 + 0x2A6) + 1) * 75 << 16;
+    val = D_800A2E24Absolute[0] + *(s32 *)(arg0 + 0x22C) -
+          (*(s16 *)(arg0 + 0x10E) << 17) - y / 15;
+    result = MathFixedDivide(*(s32 *)(arg0 + 0x28C), 16000);
+    d = D_800A2E40;
+    asm volatile("mult %0, %1" : : "r"(result), "r"(d));
+    shifted = (d / 2) << 16;
+    asm volatile("mflo $6\n\tsubu %0, $6, %1" : "=r"(shifted) : "0"(shifted));
+    val -= shifted;
+    *(s32 *)(arg0 + 0x98) = val;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002BD48);
 
@@ -6765,7 +6819,44 @@ s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/game", MathMultiplyFixed16);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800337EC);
+s32 func_800337EC(void) {
+    s32 sz0;
+    s32 sz1;
+    s32 test1;
+    s32 test2;
+    register s32 sz2 asm("v1");
+    register s32 sz3 asm("a0");
+    register s32 test3 asm("v0");
+
+    asm volatile("mfc2 %0, $16" : "=r"(sz0));
+    asm volatile("mfc2 %0, $17" : "=r"(sz1));
+    test1 = sz0 < 0x12C;
+    test2 = sz1 < 0x12C;
+    if (test1) {
+        goto out;
+    }
+    asm volatile(".set\tnoreorder\n\t"
+                 "bne %0, $0, func_800337EC+0x38\n\t"
+                 "mfc2 %1, $18\n\t"
+                 ".set\treorder"
+                 : "=r"(sz2)
+                 : "r"(test2));
+    asm volatile("mfc2 %0, $19" : "=r"(sz3));
+    test3 = sz2 < 0x12C;
+    if (test3) {
+        goto out;
+    }
+    asm("" : : "r"(test3));
+    asm volatile(".set\tnoreorder\n\t"
+                 "slti $2, %0, 0x12C\n\t"
+                 "j $31\n\t"
+                 "nop\n\t"
+                 ".set\treorder"
+                 :
+                 : "r"(sz3));
+out:
+    return 1;
+}
 
 void func_8003382C(s16 *out) {
     register s32 v1 asm("v1");
@@ -13807,7 +13898,40 @@ s32 func_8005A000(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A000);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005A0F0);
+extern void _new_card(void);
+extern void _card_write(s32, s32, s32);
+s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
+    s32 sector;
+    u32 retries;
+    s32 offset;
+    s32 end;
+    s32 limit;
+    s32 channel;
+
+    offset = 0;
+    retries = 0;
+    sector = (arg1 & 0xFF) + *(s32 *)(arg0 + 0x20);
+    channel = ((arg3 & 0xFF) != 0) * 0x10;
+    limit = (sector & 0xFFFF) + (arg2 & 0xFF);
+    if ((sector & 0xFFFF) < limit) {
+        end = limit;
+        do {
+            func_8005A414();
+            _new_card();
+            _card_write(channel, sector & 0xFFFF, buf + offset);
+            if (CardWaitForEvent() == 0) {
+                sector += 1;
+                offset += 0x80;
+                retries = 0;
+            } else if ((retries & 0xFF) < 0xB) {
+                retries += 1;
+            } else {
+                return 0;
+            }
+        } while ((sector & 0xFFFF) < end);
+    }
+    return 1;
+}
 
 #ifdef NON_MATCHING
 /* Wall (w7a): whole body matches except a two-register swap: gcc keeps
@@ -13956,7 +14080,54 @@ void func_8005A4E0(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A544);
 
+#ifdef NON_MATCHING
+void func_8005A6EC(s32 id, s32 arg1, void *dest) {
+    typedef struct {
+        u32 w[4];
+    } W16;
+    typedef struct {
+        u32 w[2];
+    } W8;
+    extern s32 D_800B1EBCx[] asm("D_800B1EBC");
+    extern u8 *D_800A35A0p asm("D_800A35A0");
+    extern u8 *D_800A3750p asm("D_800A3750");
+    u8 *src;
+    volatile u8 *d;
+    u8 *s;
+    u8 *e;
+    volatile u32 pad[2];
+    s32 count;
+    s32 i;
+    s32 n;
+    volatile u8 *cursor;
+
+    func_8005A7B8(id & 0xFF, arg1 & 0xFF);
+    count = *D_800A35A0p;
+    src = D_800A3750p;
+    cursor = (volatile u8 *)dest;
+    i = 0;
+    if (count > 0) {
+        n = count;
+        do {
+            d = cursor;
+            s = src;
+            e = s + 0x20;
+            do {
+                *(W16 *)d = *(W16 *)s;
+                s += 0x10;
+                d += 0x10;
+            } while (s != e);
+            *(W8 *)d = *(W8 *)s;
+            src += 0x28;
+            cursor += 0x28;
+            i++;
+        } while (i < n);
+    }
+    D_800B1EBCx[id & 0xFF] = (s32)dest;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A6EC);
+#endif
 
 extern s32 D_800A35A0;
 extern u8 D_800A3534;
