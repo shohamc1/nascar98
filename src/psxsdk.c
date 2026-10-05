@@ -164,22 +164,12 @@ long SetRCnt(long timer, unsigned short target, long mode) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
 #endif
 
-#ifdef NON_MATCHING
 long GetRCnt(long timer) {
-    RCnt *r;
-    long count;
-
-    if ((timer & 0xFFFF) < 3) {
-        r = (RCnt *)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]);
-        count = r->count;
-    } else {
-        count = 0;
+    if ((timer & 0xFFFF) >= 3) {
+        return 0;
     }
-    return count;
+    return *(volatile u16 *)((timer & 0xFFFF) * 16 + (u32)D_8009B9E8[0]);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GetRCnt);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 

@@ -2158,24 +2158,26 @@ void func_8001D914(s16 arg0, s16 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
 INCLUDE_ASM("asm/nonmatchings/game", func_8001D914);
 #endif
 
-#ifdef NON_MATCHING
-/* Wall (w6a): semantics fully recovered (entry = D_800A3F4C + D_800A2DBC*24,
-   wrap to 0 at >=2; SetPolyF4; ten byte/half stores; AddPrim(arg0, entry)).
-   Prologue, gp/lui addressing, counter math and store schedule all match.
-   asm("") after the two sums pins retail's x2-addu-before-y2-stores order.
-   Remaining wall: the four parameter-copy registers rotate pairwise
-   (retail arg0->s3 arg1->s1 arg2->s2 arg3->s4; ours arg0->s4 arg1->s2
-   arg2->s1 arg3->s3) under every init/declaration/statement order tried --
-   same class as the func_8001CBD4 / w3a func_8001F728 allocation walls. */
 extern u8 D_800A3F4C[];
 extern s32 D_800A2DBC;
 void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
+    register u8 *sPrim asm("s3");
+    register s32 sLeft asm("s1");
+    register s32 sTop asm("s2");
+    register s32 sWide asm("s4");
+    register s32 sBottom asm("s5");
     s32 counter;
-    s32 next;
+    register s32 next asm("a0");
     u8 *entry;
     s32 x2;
     s32 y2;
+    u8 *ot;
 
+    sPrim = arg0;
+    asm("" : "=r"(sLeft) : "0"(arg1));
+    asm("" : "=r"(sTop) : "0"(arg2));
+    sWide = arg3;
+    sBottom = arg4;
     counter = D_800A2DBC;
     next = counter + 1;
     entry = D_800A3F4C + (counter * 2 + counter) * 8;
@@ -2184,27 +2186,25 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
         D_800A2DBC = 0;
     }
     SetPolyF4(entry);
-    x2 = arg1;
-    x2 += arg3;
-    y2 = arg2;
-    y2 += arg4;
+    asm("" : "=r"(ot) : "0"(sPrim));
+    x2 = sLeft;
+    x2 += sWide;
+    y2 = sTop;
+    y2 += sBottom;
     asm("");
     *(s16 *)(entry + 0x12) = y2;
     *(s16 *)(entry + 0x16) = y2;
-    *(s16 *)(entry + 8) = arg1;
-    *(s16 *)(entry + 0xA) = arg2;
+    *(s16 *)(entry + 8) = sLeft;
+    *(s16 *)(entry + 0xA) = sTop;
     *(s16 *)(entry + 0xC) = x2;
-    *(s16 *)(entry + 0xE) = arg2;
-    *(s16 *)(entry + 0x10) = arg1;
+    *(s16 *)(entry + 0xE) = sTop;
+    *(s16 *)(entry + 0x10) = sLeft;
     *(s16 *)(entry + 0x14) = x2;
     *(u8 *)(entry + 4) = 2;
     *(u8 *)(entry + 5) = 0;
     *(u8 *)(entry + 6) = 0;
-    AddPrim(arg0, entry);
+    AddPrim(ot, entry);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001DA48);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DB20);
 
@@ -4431,10 +4431,14 @@ void func_800298E0(s32 *car) {
     s32 index;
 
     index = ((s16 *)car)[0x8A];
-    car[0x31] = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
-    car[0x32] = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
-    car[0x34] = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
-    car[0x35] = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
+    car[0x31] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
+    car[0x32] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
+    car[0x34] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
+    car[0x35] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_800298E0);
@@ -6242,16 +6246,15 @@ void func_80031264(u8 *object) {
 INCLUDE_ASM("asm/nonmatchings/game", func_80031264);
 #endif
 
-#ifdef NON_MATCHING
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
 void func_80031874(u8 *quad, s32 *normal) {
     s32 vecA[3];
     s32 vecB[3];
     s32 cross[3];
-    s32 crossX;
-    s32 crossY;
-    s32 crossZ;
+    register s32 crossX asm("$2");
+    register s32 crossY asm("$3");
+    register s32 crossZ asm("$6");
     u8 *back;
 
     if ((quad == NULL) || ((*(u8 *)(quad + 0x13) & 0x20) != 0)) {
@@ -6270,20 +6273,15 @@ void func_80031874(u8 *quad, s32 *normal) {
     OuterProduct0(vecA, vecB, cross);
     crossX = cross[0];
     crossY = cross[1];
-    do {
-    } while (0);
     crossZ = cross[2];
-    cross[0] = crossX >> 6;
-    cross[1] = crossY >> 6;
-    cross[2] = crossZ >> 6;
-    VectorNormal(cross, normal, cross[2]);
+    cross[0] = (crossX >>= 6);
+    cross[1] = (crossY >>= 6);
+    cross[2] = (crossZ >>= 6);
+    VectorNormal(cross, normal, crossZ);
     normal[0] = normal[0] * 0x10;
     normal[1] = normal[1] * 0x10;
     normal[2] = normal[2] * 0x10;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80031874);
-#endif
 
 #ifdef NON_MATCHING
 extern s32 D_800A2F2C;
@@ -7949,54 +7947,48 @@ void func_8003A950(s32 car) {
     ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
 }
 
-#ifdef NON_MATCHING
-/*
- * Wall (w8d): semantics + statement order complete. Remaining diffs are
- * register allocation: retail keeps the loaded counter in v0 (addiu v1,v0,1
- * with the sh deferred past the sll16/sra15) and pan lives in a1 for its
- * whole life (negu a1 / lh a1); our gcc loads the counter into v1, stores
- * immediately, and puts pan in a2. Tried: u16 vs s32 counter, store-first
- * vs table-first statement orders. The tail (sra7/subu, volatile reload,
- * -0x320000 clamp with branchy if/else, callback) is exact.
- */
 extern s16 D_800982D4[];
 extern void func_8003ABC0();
 
-void func_8003AA20(u8 *object) {
-    s32 counter;
-    s32 pan;
-    s32 value;
+void func_8003AA20(s32 car) {
+    s32 old;
+    s32 new;
+    s32 idx;
+    s32 turn;
+    s32 t;
+    s32 t2;
+    s32 t3;
+    s32 t4;
 
-    if (*(s16 *)(object + 0x102) != 0) {
-        counter = *(u16 *)(object + 0x1BC);
-        *(u16 *)(object + 0x1BC) = counter + 1;
-        pan = *(s16 *)(D_800982D4 + (s16)counter);
-        pan = -pan;
+    if (*(s16 *)(car + 0x102) != 0) {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = -D_800982D4[idx];
     } else {
-        counter = *(u16 *)(object + 0x1BC);
-        *(u16 *)(object + 0x1BC) = counter + 1;
-        pan = *(s16 *)(D_800982D4 + (s16)counter);
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = D_800982D4[idx];
     }
-    *(u16 *)(object + 0x114) = *(u16 *)(object + 0x114) + pan + 0x400 & 0x3FF;
-    value = *(s32 *)(object + 0x90);
-    value -= value >> 7;
-    *(s32 *)(object + 0x90) = value;
-    if (pan == 0) {
-        value = *(volatile s32 *)(object + 0x90);
-        value -= 0x320000;
-        *(u16 *)(object + 0x1BC) = 0;
-        if (value < 0) {
-            *(s32 *)(object + 0x90) = 0;
-        } else {
-            *(s32 *)(object + 0x90) = value;
-        }
-        ObjectSetCallbackIfAllowed((Batch0CallbackObject *)object,
-                                   func_8003ABC0);
+    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turn + 0x400) & 0x3FF;
+    t = *(s32 *)(car + 0x90);
+    t2 = t - (t >> 7);
+    *(s32 *)(car + 0x90) = t2;
+    if (turn != 0) {
+        return;
     }
+    *(u16 *)(car + 0x1BC) = 0;
+    t3 = *(s32 *)(car + 0x90);
+    t4 = t3 - 0x320000;
+    *(s32 *)(car + 0x90) = t4;
+    if (t4 < 0) {
+        *(s32 *)(car + 0x90) = 0;
+    }
+    ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003AA20);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003AAEC);
 
@@ -8097,18 +8089,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003B5F8);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003B6DC);
 
-#ifdef NON_MATCHING
-/*
- * Wall (w8d): everything matches except callee-saved s-reg BOOKING: retail
- * next=s1, count=s2, offset=s0; our gcc insists next=s0 regardless of local
- * declaration order (tried 3 orders). Prologue (head load before the stack
- * adjust), loop body, store order (0,4,8), delay slots and the post-loop
- * head block are otherwise identical. Table reads are BYTE offsets into
- * D_800BE72C/730/738 (cast form). Head read via
- * ((u8 **)D_800A3854Absolute)[9] == D_800A3878 (no alias defsym for it).
- */
 extern void func_8002D4CC();
-extern void func_8003B6DC(s32 arg0);
 extern u8 *D_800A3854Absolute[];
 extern s32 D_800BE72C[];
 extern s32 D_800BE730[];
@@ -8122,8 +8103,8 @@ void func_8003BCAC(void) {
     u8 *object;
 
     object = *(u8 **)(((u8 **)D_800A3854Absolute)[9] + 0x3E0);
+    count = 0;
     if (object != 0) {
-        count = 0;
         offset = 0;
         do {
             func_8002D4CC(object);
@@ -8148,9 +8129,6 @@ void func_8003BCAC(void) {
     D_800A2EACAbsolute[0] = 0;
     func_8003B6DC(1);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003BCAC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003BDBC);
 
