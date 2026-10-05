@@ -561,7 +561,7 @@ SoundSetMasterVolume = 0x8006FA7C; // type:func
 ListPushFront = 0x8001C88C; // type:func
 TableFindByte = 0x80058768; // type:func
 D_8008CA04 = 0x8008CA04; // u16 table, not executable code
-gScratchpad = 0x1F800000; // CPU scratchpad RAM
+gScratchpad = 0x1F800000; // allow_duplicated:True CPU scratchpad RAM
 
 GraphicsCompactOrderingTable = 0x80012270; // type:func
 SystemStopCounterAfterVSync = 0x80012C04; // type:func
@@ -674,3 +674,11 @@ D_8008D1A8 = 0x8008D1A8; // force_not_migration:True
 D_8008D1C4 = 0x8008D1C4; // force_not_migration:True
 D_80090560 = 0x80090560; // force_not_migration:True
 D_800906D8 = 0x800906D8; // force_not_migration:True
+SCRATCHPAD_BASE = 0x1F800000; // fixed_address allow_duplicated:True
+
+// Parked SDK drafts: retain their original rodata when C is enabled.
+D_80090404 = 0x80090404; // force_not_migration:True
+D_80090698 = 0x80090698; // force_not_migration:True
+D_8009071C = 0x8009071C; // force_not_migration:True
+D_80090728 = 0x80090728; // force_not_migration:True
+D_8009073C = 0x8009073C; // force_not_migration:True

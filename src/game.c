@@ -2460,42 +2460,24 @@ void func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Wall (w4a): draft is 0x80 bytes, retail 0xAC. gcc cross-jumps the three identical
-   D_800A2DC8/2 tails (lw/srl/addu/sra/j) into one shared block (jumping into its middle);
-   retail keeps three separate copies with the 0x3C/0x46/0x82 li INSIDE each arm filling
-   the lw load delay. Tried: call-per-arm+return (needed for the out-of-line beq-taken
-   arms), mode-assign before/after div, volatile extern (no effect on the merge). */
 extern s32 D_800A2DC8;
 
 void func_8001EA90(s32 geomOffsetX, s32 mode) {
-    if (mode == 1) {
-        geomOffsetX = D_800A2DC8 / 2;
-        mode = 0x3C;
-        SetGeomOffset(geomOffsetX, mode);
-        return;
-    }
-    if (mode >= 2) {
-        if (mode == 3) {
-            geomOffsetX = D_800A2DC8 / 2;
-            mode = 0x82;
-            SetGeomOffset(geomOffsetX, mode);
-            return;
-        }
-        if (mode == 4) {
-            SetGeomOffset(0x32, 0x12);
-            return;
-        }
-        return;
-    }
-    if (mode == 0) {
-        geomOffsetX = D_800A2DC8 / 2;
-        SetGeomOffset(geomOffsetX, 0x46);
+    switch (mode) {
+    case 0:
+        SetGeomOffset(D_800A2DC8 / 2, 0x46);
+        break;
+    case 1:
+        SetGeomOffset(D_800A2DC8 / 2, 0x3C);
+        break;
+    case 3:
+        SetGeomOffset(D_800A2DC8 / 2, 0x82);
+        break;
+    case 4:
+        SetGeomOffset(0x32, 0x12);
+        break;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001EA90);
-#endif
 
 extern u8 D_800A3F95[];
 extern u8 D_800A3F96[];
@@ -14440,7 +14422,7 @@ void CardCloseFile(s32 handle) {
 }
 
 u8 CardDeleteFile(char *path) {
-    return delete(path);
+    return delete (path);
 }
 
 extern void CardTestEvents(void);
@@ -15205,17 +15187,10 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005B314);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B474);
 
-#ifdef NON_MATCHING
-/* w7g: everything matches except the store `*(s16 *)(object + 0x10) = 0`
- * must land in the FIRST jal's delay slot. C order call-then-store puts
- * it in the SECOND jal's delay; store-then-call emits sh,jal,nop
- * (function 4 bytes long, 0xF4 vs 0xF0). asm("") after the call breaks
- * the delay fill entirely. Also note func_80057CCC takes the `texture`
- * arg and the whole function is otherwise byte-clean. */
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
-POLY_FT4 *func_80057CCC(u8);
-u8 *func_8005B598(s16 left, s16 top, s16 right, s16 bottom, s32 depth,
+u8 *func_80057CCC(s32);
+u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
                   u8 texture, u8 semiTrans) {
     u8 index;
     u8 *object;
@@ -15249,9 +15224,6 @@ u8 *func_8005B598(s16 left, s16 top, s16 right, s16 bottom, s32 depth,
     *(s16 *)(object + 0x1A) = depth;
     return object;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005B598);
-#endif
 
 void func_8005B688(u8 *first, u8 friction) {
     u8 *object;
@@ -15552,22 +15524,11 @@ s32 func_8005BF68(void) {
     return D_800A3654 + index * 12;
 }
 
-#ifdef NON_MATCHING
-/*
- * w4d/w7g/w8g: instructions all match retail except ONE v0/v1 role swap:
- * retail keeps the D_800A3678 load in v0 and the spriteIndex*36 chain in
- * v1 (`addu v0,v0,v1`); gcc gives us base in v1, chain in v0, whatever
- * source shape we try (single expr, operand swap, compound +=, separate
- * base local). Suspect TU-position sensitivity (w4b). The TAIL fix from
- * w8g is verified: `*(s32 *)(prim + 4) = 0;` (not prim[4]) gives
- * retail's `sw zero,4(a0)` sunk into the jr delay slot; prim[4]=0 gave
- * sb after jr.
- */
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
 extern u8 D_800A37BC;
 extern s32 D_800A3654;
-void func_8005BF8C(s32 left, s32 top) {
+struct UnkTextObj *func_8005BF8C(s32 left, s32 top) {
     u8 spriteIndex;
     u8 primIndex;
     u8 *object;
@@ -15602,10 +15563,8 @@ void func_8005BF8C(s32 left, s32 top) {
     prim[0] = 0;
     prim[3] = 0;
     *(s32 *)(prim + 4) = 0;
+    return (struct UnkTextObj *)object;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005BF8C);
-#endif
 
 typedef struct {
     u8 unk0;
@@ -16854,26 +16813,16 @@ void func_800637D8(u8 index) {
     }
 }
 
-#ifdef NON_MATCHING
-/*
- * Everything matches except one `addiu a2,a2,0`: retail materializes the
- * scratchpad base with a bare `lui` (numeric 0x1F800000 constant, which
- * the repo forbids). Any symbolic gScratchpad reference expands la into
- * lui + addiu 0. Same wall as func_800246C0 (notes-agent2.md).
- */
-extern u32 gScratchpad[];
 void func_8006383C(void) {
     u32 i;
     u32 greyLevel;
 
     for (i = 0; i < 0x100; i++) {
         greyLevel = i >> 2;
-        gScratchpad[i] = (greyLevel << 0x10) | (greyLevel << 8) | greyLevel;
+        ((u32 *)SCRATCHPAD_BASE)[i] =
+            (greyLevel << 0x10) | (greyLevel << 8) | greyLevel;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006383C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063874);
 
@@ -21842,7 +21791,7 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     D_800A351C[0x7B1C / 4] = a6;
     if (a6 != 0) {
         D_800A351C[0x7B10 / 4] =
-            (s32)((Callback (*)(Callback))VSyncCallback)(func_8007270C);
+            (s32)((Callback(*)(Callback))VSyncCallback)(func_8007270C);
     } else {
         D_800A351C[0x7B10 / 4] = 0;
     }

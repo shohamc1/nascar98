@@ -389,7 +389,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 
 #ifdef NON_MATCHING
-extern void CD_vol(CdlATV *vol);
+extern int CD_vol(CdlATV *vol);
 
 int CdMix(CdlATV *vol) {
     return (CD_vol(vol), 1);
@@ -584,6 +584,7 @@ void v_wait(int mode, int time) {
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", v_wait);
 #endif
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090404);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearRCnt);
 
@@ -1187,7 +1188,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphReverse);
 #ifdef NON_MATCHING
 /* SPDX-License-Identifier: MIT */
 
-typedef int (*DebugPrintf)(const char *, ...);
 extern u8 D_8009DA90[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DA93[];
@@ -1208,6 +1208,7 @@ int SetGraphDebug(int level) {
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphDebug);
 #endif
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090698);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphQueue);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906D8);
@@ -1255,31 +1256,30 @@ extern char D_8009071C[];
 extern char D_8009073C[];
 extern char D_80090728[];
 
-#ifdef NON_MATCHING
 void checkRECT(RECT *r, RECT *rect) {
     switch (D_8009DA92[0]) {
     case 1:
         if (rect->w > D_8009DA94[0] || rect->w + rect->x > D_8009DA94[0] ||
             rect->y > D_8009DA96[0] || rect->y + rect->h > D_8009DA96[0] ||
-            rect->w <= 0 || rect->x < 0 || rect->y < 0 || rect->h > 0) {
+            rect->w <= 0 || rect->x < 0 || rect->y < 0 || rect->h <= 0) {
             ((int (*)())D_8009DA8C[0])(D_8009071C, r);
-            ((int (*)())D_8009DA8C[0])(D_80090728, rect->x, rect->y, rect->w,
-                                       rect->h);
+            ((int (*)())((u32 *)D_8009DA90)[-1])(D_80090728, rect->x, rect->y,
+                                                 rect->w, rect->h);
             return;
         }
         return;
     case 2:
         ((int (*)())D_8009DA8C[0])(D_8009073C, r);
-        ((int (*)())D_8009DA8C[0])(D_80090728, rect->x, rect->y, rect->w,
-                                   rect->h);
+        ((int (*)())((u32 *)D_8009DA90)[-1])(D_80090728, rect->x, rect->y,
+                                             rect->w, rect->h);
         return;
     default:
         return;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", checkRECT);
-#endif
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009071C);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090728);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009073C);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ClearImage);
 
