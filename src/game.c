@@ -10285,49 +10285,21 @@ typedef struct {
     u32 w3;
 } CopyEntry10;
 
-#ifdef NON_MATCHING
-/* w4b: do-while nested struct-copy loop. Everything matches except
- * register homes: our src base lands in t1 and end in t0 (retail t0/t1);
- * 45 diff units. Tried declaration-order permutations and an s32 end.
- * Note: the mirror function func_80044248 matches with this exact shape. */
-extern CopyEntry10 D_800AD9B0[];
-extern CopyEntry10 D_800BBAAC[];
-extern void func_800364C4(void);
-void func_800441C8(void) {
-    CopyEntry10 *end;
-    CopyEntry10 *src;
-    CopyEntry10 *dst;
-    CopyEntry10 *d;
-    CopyEntry10 *s;
-    s32 row;
-    func_800364C4();
-    row = 0;
-    src = D_800AD9B0;
-    dst = D_800BBAAC;
-    do {
-        d = dst;
-        s = src;
-        end = src + 3;
-        do {
-            *d = *s;
-            d++;
-            s++;
-        } while (s != end);
-        src += 3;
-        dst += 3;
-        row++;
-    } while (row < 0x28);
-}
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800441C8);
-#endif
-
 typedef struct {
     u32 w[12];
 } CopyRow30;
 
 extern CopyRow30 D_800AD9B0[];
 extern CopyRow30 D_800BBAAC[];
+extern void func_800364C4(void);
+void func_800441C8(void) {
+    s32 row;
+    func_800364C4();
+    for (row = 0; row < 0x28; row++) {
+        D_800BBAAC[row] = D_800AD9B0[row];
+    }
+}
+
 extern void func_80036540(void);
 
 void func_80044248(void) {
@@ -18575,17 +18547,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006B088);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B1CC);
 
-#ifdef NON_MATCHING
-/*
- * w8h: still diffs to ONE real row after restoring w7h's spelling:
- * retail `addu a0,v1,v0` (v1 = mask2*4, materialized LAST by the sll
- * right before the addu); gcc emits `addu a0,v0,v1` for every plain
- * spelling, and compound/`src +=` spellings that DO put mask2*4 first
- * materialize the sll early instead (before the tbl chain) and leave
- * the sum in the wrong register. Also gcc defers `andi a2` (mask2) to
- * its late first use; retail emits it first.asm("") between the node
- * load and the conversion did not help (B3E0: between statements here).
- */
 extern u8 D_800BBA24[];
 void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
     s32 i;
@@ -18596,12 +18557,11 @@ void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
     u8 *q;
     s32 off;
     s32 mask2;
-
     i = 0;
     mask2 = arg2 & 0xFF;
     arg0 &= 0xFF;
     tbl = D_800BBA24;
-    src = mask2 * 4 + (tbl + arg0 * 0x44);
+    src = tbl + arg0 * 0x44;
     arg1 &= 0xFF;
     walk = (u8 *)D_800A35F4 + arg1 * 0xE8;
     off = mask2 * 0xC;
@@ -18609,13 +18569,10 @@ void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
     dst = walk + off;
     do {
         q = dst + i;
-        q[8] = src[i];
+        q[8] = *(src + mask2 * 4 + i);
         i += 1;
     } while (i < 4);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006B3E0);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B464);
 
