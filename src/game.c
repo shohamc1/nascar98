@@ -20399,15 +20399,16 @@ void func_8006D634(s32 arg) {
     } while (i < 4);
 }
 
-#ifdef NON_MATCHING
 /* w7i: full shape known; closest draft: src row via
  * &D_800BBA24[arg0 * 4 + i * 0x44], D_800A3860 base materialized FIRST,
  * `move a1,zero` (j init) placed before the row math. */
 void func_8006D684(u8 arg0) {
     u8 *srcBase;
+    s8(*dstBase)[4];
     u8 i;
     u8 j;
 
+    dstBase = D_800A3860;
     srcBase = D_800BBA24;
     i = 0;
     do {
@@ -20416,15 +20417,12 @@ void func_8006D684(u8 arg0) {
                 ;
             }
             for (j = 0; j < 4; j++) {
-                D_800A3860[i][j] = (&srcBase[i * 0x44 + arg0 * 4])[j];
+                dstBase[i][j] = (&srcBase[i * 0x44] + arg0 * 4)[j];
             }
             i++;
         } while (i < 2);
     } while (0);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006D684);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D708);
 
