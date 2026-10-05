@@ -7103,7 +7103,371 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
     D_800A2F38NM = oldEnd + (diff >> 2);
 }
 
+#ifdef NON_MATCHING
+extern u8 D_800A2DE0[];
+extern s32 D_800A2F08NM[] asm("D_800A2F08.NON_MATCHING");
+extern s32 D_800A2CFCNM[] asm("D_800A2CFC.NON_MATCHING");
+extern s32 D_800A394CNM asm("D_800A394C.NON_MATCHING");
+extern s32 D_800A3A74NM asm("D_800A3A74.NON_MATCHING");
+extern s32 D_800A396CNM asm("D_800A396C.NON_MATCHING");
+
+void func_80033000(u8 *arg0, u8 *arg1, u8 *arg2) {
+    register u8 *prim asm("s5");
+    u8 *listA;
+    u8 *listB;
+    s32 count;
+    u32 *otCursor;
+    s16 *zCursor;
+    u8 *group;
+    u8 *obj;
+    register s32 otz asm("s3");
+    s32 n0;
+    s32 n1;
+    u8 *curPrim;
+    s32 idx;
+    s32 off;
+    u8 *prim18;
+    u8 *prim4;
+    s32 objLeft;
+    s32 cull;
+    u8 *quadPtr;
+    u8 *base1;
+    u8 *vec0;
+    u8 *vec1;
+    u8 *vec2;
+    u8 *vec0b;
+    u8 *base1b;
+    u8 *svec0;
+    u8 *svec1;
+    u8 *svec2;
+    u8 *lvec0;
+    u8 *lvec1;
+    u8 *lvec2;
+    s32 colorW;
+    s32 w8;
+    s32 wC;
+    s32 w10;
+    register s32 w14 asm("a3");
+    u8 *normalPtr;
+    u8 *obj18;
+    u8 *objNext;
+    u8 *p18;
+    s32 old;
+    s32 shifted;
+    s32 z;
+    s32 diff;
+    u32 *slot;
+    s32 tmpa1;
+    s32 guard;
+    u8 *otBase40;
+    s32 counter;
+    s32 lod;
+    s32 mode;
+
+    prim = (u8 *)gPrimitiveCursor[0];
+    old = D_800A2F38NM;
+    count = 0;
+    mode = 1;
+    listA = arg2;
+    counter = 0;
+    listB = *(u8 **)listA;
+    otCursor = (u32 *)((u8 *)D_800B022C + old * 4);
+    lod = D_800A2F08NM[0];
+    otBase40 = (u8 *)D_800A39C8[0] + 0x40;
+    zCursor = (s16 *)((u8 *)D_800AFE2C + old * 2);
+    if ((listA = listA) != arg1 || (listB = listB) != arg0) {
+        do {
+            if (counter & 1) {
+                if (listA == arg1) {
+                    listB = *(u8 **)(listB + 4);
+                    group = listB;
+                } else {
+                    listA = *(u8 **)listA;
+                    group = listA;
+                }
+            } else {
+                if (listB != arg0) {
+                    listB = *(u8 **)(listB + 4);
+                    group = listB;
+                } else {
+                    listA = *(u8 **)listA;
+                    group = listA;
+                }
+            }
+            counter = counter + 1;
+            if (*(u16 *)(group + 0xE) == 0) {
+                if (lod < count) {
+                    quadPtr = group;
+                    off = 0;
+                    prim4 = prim + 4;
+                    for (idx = 0; idx < 5; idx++, off += 4) {
+                        if (mode) {
+                            base1 = *(u8 **)(*(u8 **)(group + 4) + 4);
+                            base1 = base1 + off;
+                            vec0 = *(u8 **)(*(u8 **)(group + 0) + off + 0x78);
+                            vec1 = *(u8 **)(base1 + 0x78);
+                            vec2 = *(u8 **)(base1 + 0x7C);
+                            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                                         "lwc2 $1, 0x4(%0)\n\t"
+                                         "lwc2 $2, 0x0(%1)\n\t"
+                                         "lwc2 $3, 0x4(%1)\n\t"
+                                         "lwc2 $4, 0x0(%2)\n\t"
+                                         "lwc2 $5, 0x4(%2)"
+                                         :
+                                         : "r"(vec0), "r"(vec1), "r"(vec2));
+                        } else {
+                            base1b = *(u8 **)(group + 4);
+                            lvec0 = *(u8 **)(quadPtr + 0x78);
+                            base1b = base1b + off;
+                            lvec1 = *(u8 **)(base1b + 0x78);
+                            lvec2 = *(u8 **)(base1b + 0x7C);
+                            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                                         "lwc2 $1, 0x4(%0)\n\t"
+                                         "lwc2 $2, 0x0(%1)\n\t"
+                                         "lwc2 $3, 0x4(%1)\n\t"
+                                         "lwc2 $4, 0x0(%2)\n\t"
+                                         "lwc2 $5, 0x4(%2)"
+                                         :
+                                         : "r"(lvec0), "r"(lvec1), "r"(lvec2));
+                        }
+                        curPrim = prim;
+                        asm volatile("nop\n\tnop\n\trtpt");
+                        if (idx == 2) {
+                            *(u32 *)prim4 = D_800A394CNM;
+                        } else if (idx & 1) {
+                            *(u32 *)prim4 = D_800A3A74NM;
+                        } else {
+                            *(u32 *)prim4 = D_800A396CNM;
+                        }
+                        SetPolyF4((POLY_F4 *)curPrim);
+                        asm volatile("cfc2 %0, $31" : "=r"(otz));
+                        asm volatile("swc2 $12, 0x0(%0)\n\t"
+                                     "swc2 $13, 0x0(%1)\n\t"
+                                     "swc2 $14, 0x0(%2)"
+                                     :
+                                     : "r"(curPrim + 8), "r"(curPrim + 0xC),
+                                       "r"(curPrim + 0x14));
+                        if ((otz & 0x6000) == 0) {
+                            asm volatile("nop\n\tnop\n\tavsz3");
+                            if (mode) {
+                                normalPtr =
+                                    *(u8 **)(*(u8 **)(group + 0) + off + 0x7C);
+                            } else {
+                                normalPtr = *(u8 **)(quadPtr + 0x7C);
+                            }
+                            n0 = *(s32 *)normalPtr;
+                            n1 = *(s32 *)(normalPtr + 4);
+                            asm volatile("mfc2 %0, $7" : "=r"(otz));
+                            asm volatile("mtc2 %0, $0\n\tmtc2 %1, $1"
+                                         :
+                                         : "r"(n0), "r"(n1));
+                            if (otz < 0x9B) {
+                                asm volatile("rtps");
+                                if (otz >= 0xF3D) {
+                                    otz = 0xF3C;
+                                }
+                                slot =
+                                    (u32 *)((s32)otBase40 + ((otz >> 2) << 2));
+                                *(u32 *)prim = *slot | 0x05000000;
+                                *slot = (u32)prim & 0xFFFFFF;
+                                asm volatile("swc2 $14, 0x0(%0)"
+                                             :
+                                             : "r"(curPrim + 0x10));
+                                prim4 = prim4 + 0x28;
+                                prim = prim + 0x28;
+                            }
+                        }
+                        quadPtr = quadPtr + 4;
+                    }
+                    mode = 0;
+                    *(u16 *)(group + 0xE) = 1;
+                } else {
+                    guard = *(u8 *)(group + 0x13);
+                    obj = otBase40;
+                    count = count + guard;
+                    objLeft = guard;
+                    objLeft = objLeft - 1;
+                    if (guard > 0) {
+                        prim18 = prim + 0x18;
+                        do {
+                            svec0 = *(u8 **)(obj + 0x18);
+                            svec1 = *(u8 **)(obj + 0x1C);
+                            svec2 = *(u8 **)(obj + 0x20);
+                            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                                         "lwc2 $1, 0x4(%0)\n\t"
+                                         "lwc2 $2, 0x0(%1)\n\t"
+                                         "lwc2 $3, 0x4(%1)\n\t"
+                                         "lwc2 $4, 0x0(%2)\n\t"
+                                         "lwc2 $5, 0x4(%2)"
+                                         :
+                                         : "r"(svec0), "r"(svec1), "r"(svec2));
+                            colorW = *(s32 *)(obj + 4);
+                            w8 = *(s32 *)(obj + 8);
+                            asm volatile("rtpt");
+                            wC = *(s32 *)(obj + 0xC);
+                            w10 = *(s32 *)(obj + 0x10);
+                            w14 = *(s32 *)(obj + 0x14);
+                            *(s32 *)(prim18 - 4) = wC;
+                            *(s32 *)(prim18 - 0x14) = colorW;
+                            *(s32 *)(prim18 - 0xC) = w8;
+                            asm volatile("swc2 $12, 0x0(%0)\n\t"
+                                         "swc2 $13, 0x0(%1)\n\t"
+                                         "swc2 $14, 0x0(%2)"
+                                         :
+                                         : "r"(prim + 8), "r"(prim + 0x10),
+                                           "r"(prim + 0x20));
+                            normalPtr = *(u8 **)(obj + 0x24);
+                            n0 = *(s32 *)normalPtr;
+                            n1 = *(s32 *)(normalPtr + 4);
+                            asm volatile("avsz3");
+                            *(s32 *)(prim18 + 4) = w10;
+                            *(s32 *)(prim18 + 0xC) = w14;
+                            asm volatile("mfc2 %0, $7" : "=r"(otz));
+                            asm volatile("mtc2 %0, $0\n\tmtc2 %1, $1"
+                                         :
+                                         : "r"(n0), "r"(n1));
+                            if (otz < 0x9B) {
+                                asm volatile("rtps");
+                                if (func_800337EC() != 0) {
+                                    otz = otz + *(s8 *)(obj + 1) * 2;
+                                    if (otz >= 0) {
+                                        *otCursor = (u32)obj;
+                                        otCursor = otCursor + 1;
+                                        shifted = otz << 2;
+                                        *zCursor = shifted;
+                                        zCursor = zCursor + 1;
+                                    }
+                                    goto nextObj1;
+                                }
+                            }
+                            asm volatile("rtps");
+                            tmpa1 = *(s8 *)(obj + 1);
+                            otz = (otz >> 2) + tmpa1;
+                            if (otz >= 0x3B7) {
+                                otz = 0x3B6;
+                            }
+                            slot = (u32 *)((s32)otBase40 + otz * 4);
+                            *(u32 *)prim = *slot | 0x09000000;
+                            *slot = (u32)prim & 0xFFFFFF;
+                            asm volatile("swc2 $14, 0x0(%0)" : : "r"(prim18));
+                            prim18 = prim18 + 0x28;
+                            prim = prim + 0x28;
+                        nextObj1:
+                            obj = *(u8 **)(obj + 0x28);
+                        } while (objLeft-- > 0);
+                    }
+                    cull = D_800A2DE0[0];
+                    if (obj != 0) {
+                        obj18 = obj + 0x18;
+                        prim18 = prim + 0x18;
+                        count = count + 1;
+                        do {
+                            p18 = obj18;
+                            lvec0 = *(u8 **)p18;
+                            lvec1 = *(u8 **)(p18 + 4);
+                            lvec2 = *(u8 **)(p18 + 8);
+                            asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                                         "lwc2 $1, 0x4(%0)\n\t"
+                                         "lwc2 $2, 0x0(%1)\n\t"
+                                         "lwc2 $3, 0x4(%1)\n\t"
+                                         "lwc2 $4, 0x0(%2)\n\t"
+                                         "lwc2 $5, 0x4(%2)"
+                                         :
+                                         : "r"(lvec0), "r"(lvec1), "r"(lvec2));
+                            colorW = *(s32 *)(obj + 4);
+                            w8 = *(s32 *)(obj + 8);
+                            asm volatile("rtpt");
+                            wC = *(s32 *)(obj + 0xC);
+                            w10 = *(s32 *)(obj + 0x10);
+                            w14 = *(s32 *)(obj + 0x14);
+                            *(s32 *)(prim18 - 0x14) = colorW;
+                            *(s32 *)(prim18 - 0xC) = w8;
+                            *(s32 *)(prim18 - 4) = wC;
+                            asm volatile("cfc2 %0, $31" : "=r"(otz));
+                            asm volatile("swc2 $12, 0x0(%0)\n\t"
+                                         "swc2 $13, 0x0(%1)\n\t"
+                                         "swc2 $14, 0x0(%2)"
+                                         :
+                                         : "r"(prim + 8), "r"(prim + 0x10),
+                                           "r"(prim + 0x20));
+                            if ((otz & 0x6000) == 0) {
+                                asm volatile("nclip");
+                                normalPtr = *(u8 **)(p18 + 0xC);
+                                n0 = *(s32 *)normalPtr;
+                                n1 = *(s32 *)(normalPtr + 4);
+                                *(s32 *)(prim18 + 4) = w10;
+                                *(s32 *)(prim18 + 0xC) = w14;
+                                asm volatile("mfc2 %0, $24" : "=r"(otz));
+                                asm volatile("mtc2 %0, $0\n\tmtc2 %1, $1"
+                                             :
+                                             : "r"(n0), "r"(n1));
+                                if (cull != 0) {
+                                    if (otz < 0) {
+                                        goto skipObj2;
+                                    }
+                                } else if (otz > 0) {
+                                    goto skipObj2;
+                                }
+                                asm volatile("avsz3");
+                                objNext = *(u8 **)(obj + 0x28);
+                                obj18 = objNext + 0x18;
+                                asm volatile("mfc2 %0, $7\n\tnop" : "=r"(otz));
+                                if (otz < 0x9B) {
+                                    asm volatile("rtps");
+                                    if (func_800337EC() != 0) {
+                                        otz = otz + *(s8 *)(obj + 1);
+                                        if (otz >= 0) {
+                                            *otCursor = (u32)obj;
+                                            otCursor = otCursor + 1;
+                                            shifted = otz << 2;
+                                            *zCursor = shifted;
+                                            zCursor = zCursor + 1;
+                                        }
+                                        goto bottom2;
+                                    }
+                                }
+                                asm volatile("rtps");
+                                tmpa1 = *(s8 *)(obj + 1);
+                                otz = (otz >> 2) + tmpa1;
+                                if (otz < 0x4B1) {
+                                    if (otz >= 0x3B7) {
+                                        otz = 0x3B6;
+                                    }
+                                    slot = (u32 *)((s32)otBase40 + otz * 4);
+                                    *(u32 *)prim = *slot | 0x09000000;
+                                    *slot = (u32)prim & 0xFFFFFF;
+                                    asm volatile("swc2 $14, 0x0(%0)"
+                                                 :
+                                                 : "r"(prim18));
+                                    prim18 = prim18 + 0x28;
+                                    prim = prim + 0x28;
+                                }
+                                goto bottom2;
+                            }
+                        skipObj2:
+                            objNext = *(u8 **)(obj + 0x28);
+                            obj18 = objNext + 0x18;
+                        bottom2:
+                            obj = objNext;
+                            count = count + 1;
+                        } while (obj != 0);
+                        count = count - 1;
+                    }
+                    *(u16 *)(group + 0xE) = 1;
+                }
+            }
+        } while ((listA = listA) != arg1 || (listB = listB) != arg0);
+    }
+    old = D_800A2F38NM;
+    diff = (s32)otCursor - (s32)D_800B022C;
+    D_800A2CFCNM[0] = count;
+    gPrimitiveCursor[0] = (u32)prim;
+    diff = diff - old * 4;
+    D_800A2F38NM = old + (diff >> 2);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_80033000);
+#endif
 
 void func_80033704(s16 *out) {
     register s32 v1 asm("v1");
@@ -7291,7 +7655,158 @@ s32 func_800338D8(u16 *object) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80033900);
+#ifdef NON_MATCHING
+extern u32 gScratchpad[];
+extern s32 D_800A3640[];
+extern s32 D_800A39C8[];
+extern s32 D_800A2EA4Absolute[];
+extern u8 D_800A2ED8Abs[] asm("D_800A2ED8.NON_MATCHING");
+
+u32 func_800342D8(u32 *entry, u32 primCursor) {
+    register u8 *obj asm("s0");
+    register s32 *spad asm("s1");
+    register s32 w0 asm("s5");
+    register s32 w1 asm("s4");
+    register s32 w2 asm("s3");
+    register s32 w3 asm("s2");
+    register s32 w4 asm("s8");
+    register s32 w5 asm("s7");
+    register s32 *v18base asm("s6");
+    u8 *p8;
+    u16 *quad;
+    s32 *v18p;
+    s32 *v1Cp;
+    s32 *v24p;
+    s32 *v20p;
+    s32 *vec;
+    s32 flags;
+    s32 t;
+    s32 kind;
+    s32 u1;
+
+    obj = *(u8 **)entry;
+    asm volatile("lui %0, %%hi(gScratchpad)" : "=r"(spad));
+    quad = (u16 *)0x1F80001C;
+    asm volatile("addiu %0, %1, 0x18" : "=r"(v18base) : "r"(obj));
+    p8 = obj + 8;
+
+    vec = v18base[0];
+    asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                 "lwc2 $1, 0x4(%0)"
+                 :
+                 : "r"(vec));
+    w0 = *(s32 *)(obj + 0);
+    w1 = *(s32 *)(obj + 4);
+    asm volatile("rtps");
+    w2 = *(s32 *)(obj + 8);
+    w3 = *(s32 *)(obj + 0xC);
+    w4 = *(s32 *)(obj + 0x10);
+    w5 = *(s32 *)(obj + 0x14);
+    vec = v18base[1];
+    asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                 "lwc2 $1, 0x4(%0)"
+                 :
+                 : "r"(vec));
+    func_80033704((s16 *)0x1F80001C);
+    asm volatile("rtps");
+    spad[0] = w0;
+    gScratchpad[1] = w1;
+    gScratchpad[2] = w2;
+    gScratchpad[3] = w3;
+    vec = v18base[3];
+    asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                 "lwc2 $1, 0x4(%0)"
+                 :
+                 : "r"(vec));
+    func_80033704((s16 *)0x1F800030);
+    asm volatile("rtps");
+    gScratchpad[4] = w4;
+    gScratchpad[5] = w5;
+    v18p = *(s32 **)(obj + 0x18);
+    vec = v18base[2];
+    w0 = v18p[0];
+    w4 = v18p[1];
+    asm volatile("lwc2 $0, 0x0(%0)\n\t"
+                 "lwc2 $1, 0x4(%0)"
+                 :
+                 : "r"(vec));
+    func_80033704((s16 *)0x1F800044);
+    asm volatile("rtps");
+    v1Cp = *(s32 **)(obj + 0x1C);
+    v24p = *(s32 **)(obj + 0x24);
+    w1 = v1Cp[0];
+    w5 = v1Cp[1];
+    w2 = v24p[0];
+    obj = (u8 *)v24p[1];
+    func_80033704((s16 *)0x1F800058);
+
+    flags = ((u16 *)gScratchpad)[0x11];
+    flags &= ((u16 *)gScratchpad)[0x1B];
+    flags &= ((u16 *)gScratchpad)[0x25];
+    flags &= ((u16 *)gScratchpad)[0x2F];
+    flags &= 0x7EFF;
+    asm volatile(".set\tnoreorder\n\t"
+                 "bne %0, $zero, 0f\n\t"
+                 "addu %0, $zero, $zero\n\t"
+                 "ori %0, $zero, 1\n"
+                 "0:\n\t"
+                 ".set\treorder"
+                 : "=r"(flags)
+                 : "0"(flags));
+    flags &= 0xFF;
+    if (flags == 0) {
+        *entry = 0;
+        return primCursor;
+    }
+
+    t = D_800A3640[0];
+    if (t < 0) {
+        spad[6] = D_800A39C8[0] + 0x40;
+    } else {
+        spad[6] = D_800A39C8[0] + ((t >> 4) << 2) + 0x40;
+    }
+    v20p = v18base[2];
+    w3 = v20p[0];
+    u1 = v20p[1];
+    spad = &spad[7];
+    spad[0] = w0;
+    spad[1] = w4;
+    spad[8] = w1;
+    spad[9] = w5;
+    spad[0x18] = w2;
+    spad[0x19] = obj;
+    spad[0x20] = w3;
+    spad[0x21] = u1;
+
+    w0 = *(u16 *)p8;
+    w1 = *(u16 *)(p8 + 4);
+    w2 = *(u16 *)(p8 + 8);
+    w3 = *(u16 *)(p8 + 0xC);
+    quad[3] = w0;
+    quad[0x13] = w1;
+    quad[0x33] = w2;
+    quad[0x43] = w3;
+
+    kind = *(s8 *)(*(u8 **)entry + 2);
+    if (kind >= 13) {
+        if (kind == 13) {
+            *entry = 0;
+            return func_80033900(spad, primCursor, 2);
+        } else {
+            *entry = 0;
+            return func_80033900(spad, primCursor, 1);
+        }
+    } else {
+        if (D_800A2EA4Absolute[0] != 0 || D_800A2ED8Abs[0] != 0) {
+            return func_80033900(spad, primCursor, 2);
+        } else {
+            return func_80033900(spad, primCursor, 0);
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800342D8);
+#endif
 
 extern MATRIX D_800A4568[];
 extern MATRIX D_800A4588[];
