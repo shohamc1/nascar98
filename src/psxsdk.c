@@ -120,14 +120,13 @@ typedef struct {
 
 extern u32 D_8009B9E8[];
 
-#ifdef NON_MATCHING
 long SetRCnt(long timer, unsigned short target, long mode) {
     RCnt *r;
     long md;
     int t;
     int isLow;
     u32 addr;
-    int result;
+    register int result asm("v0");
 
     t = timer & 0xFFFF;
     if (t >= 3) {
@@ -154,14 +153,15 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     }
     if (mode & 0x1000) {
         md |= 0x10;
-        addr = t * 16;
     }
-    ((RCnt *)((u32)D_8009B9E8[0] + addr))->mode = md;
-    return 1;
+    addr = t * 16;
+    asm("" : : "r"(addr));
+    result = 1;
+    asm("" : : "r"(result));
+    addr += (u32)D_8009B9E8[0];
+    ((RCnt *)addr)->mode = md;
+    return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
-#endif
 
 long GetRCnt(long timer) {
     if ((timer & 0xFFFF) >= 3) {

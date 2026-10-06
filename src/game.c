@@ -1892,7 +1892,28 @@ void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001C99C);
+extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
+extern void func_8001ED84(s32 *vec);
+void func_8001C99C(u8 *arg0) {
+    s32 i;
+    s32 *vec;
+    u8 *el;
+    u8 *base;
+
+    base = D_800BE97C[0];
+    vec = (s32 *)(arg0 + 0x210);
+    func_8001F2C4(0, 0, (D_800A2EC0Absolute[0] & 0x1F) << 5);
+    for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
+        el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
+        *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
+        *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
+        *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
+        func_8001ED84((s32 *)el);
+        *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
+        *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
+        *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001CAB8);
 
@@ -8412,19 +8433,6 @@ typedef struct {
     s32 words[10];
 } Primitive40;
 
-#ifdef NON_MATCHING
-/*
- * WALL: retail loads gPrimitiveCursor[0] into the expression temp v0
- * and then copies it to entry's home (`move t0,v0; move a3,t0`); gcc
- * 2.7.2 binds the load directly into entry's home register (t0) and
- * drops one move, leaving the function 4 bytes short. Tried: volatile
- * read (breaks the whole schedule, +materialization), double read
- * (cse.c still binds the load to entry's home), statement reordering.
- * The rest of the shape below is exact: the do-while 0x10 row struct
- * copy, the asm("")-split 8-byte tail, and the neighbor-symbol store
- * D_800A36D0Absolute[-67] (folds %lo back to 0x35c4) that defeats the
- * load/store address CSE.
- */
 typedef struct {
     s32 words[4];
 } Primitive10;
@@ -8433,16 +8441,20 @@ extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
 extern s32 D_800A36D0Absolute[];
 void func_80034B90(u8 *prim) {
+    s32 cursorVal;
     u8 *entry;
     u8 *dst;
     u8 *end;
     s32 tailA;
     s32 tailB;
 
-    entry = (u8 *)gPrimitiveCursor[0];
     end = prim + 0x20;
+    cursorVal = gPrimitiveCursor[0];
+    asm("");
+    entry = (u8 *)cursorVal;
     dst = entry;
-    ((s32 *)D_800A36D0Absolute)[-67] = gPrimitiveCursor[0] + 0x28;
+    asm volatile("" : : "r"(cursorVal));
+    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
     do {
         *(Primitive10 *)dst = *(Primitive10 *)prim;
         prim += 0x10;
@@ -8453,11 +8465,8 @@ void func_80034B90(u8 *prim) {
     asm("");
     *(s32 *)dst = tailA;
     *(s32 *)(dst + 4) = tailB;
-    AddPrim((u8 *)D_800A39C8[0] - 8, entry);
+    AddPrim((u8 *)D_800A39C8[0] + 0xFF8, entry);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80034B90);
-#endif
 
 extern s32 D_800A36D0Absolute[];
 extern s32 D_800A3784Absolute[], D_800A3790Absolute[], D_800A3794Absolute[];
@@ -22290,7 +22299,40 @@ s32 func_80070124(void) {
     return 0x130;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8007012C);
+extern u8 D_800A3397;
+extern void DrawPrim(void *pri);
+
+void func_8007012C(void) {
+    s32 i;
+    TILE tile;
+    DRAWENV env;
+    DISPENV disp;
+
+    for (i = 0; i < 2; i++) {
+        SetDefDrawEnv(&env, (0 - (i != 0)) & 0x140, 0, 0x140, 0xF0);
+        PutDrawEnv(&env);
+        SetDefDispEnv(&disp, (0 - (i == 0)) & 0x140, 0, 0x140, 0xF0);
+        PutDispEnv(&disp);
+        setBlockFill(&tile);
+        tile.x0 = 0;
+        tile.y0 = 0;
+        tile.w = 0x140;
+        tile.h = 0xF0;
+        if (D_800A3397 != 0) {
+            tile.r0 = 0xFF;
+            tile.g0 = 0xFF;
+            tile.b0 = 0xFF;
+        } else {
+            tile.r0 = 0;
+            tile.g0 = 0;
+            tile.b0 = 0;
+        }
+        DrawSync(0);
+        VSync(0);
+        DrawPrim(&tile);
+        DrawSync(0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80070248);
 
@@ -22373,7 +22415,6 @@ s32 func_800719D4(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800719FC);
 
-#ifdef NON_MATCHING
 extern void bzero(void *, s32);
 extern void func_80070F40(u_char, u_char *);
 extern void func_80070A60(u_char, u_char *);
@@ -22383,6 +22424,8 @@ extern void SwExitCriticalSection(void);
 void func_80071BE8(void) {
     u8 param[0x20];
     u8 result[0x20];
+    u8 *resultPtr;
+    u8 *resultPtr2;
     u32 i;
     s32 timedOut;
     s32 status;
@@ -22419,9 +22462,9 @@ void func_80071BE8(void) {
     }
     i = CdlComplete;
     SwEnterCriticalSection();
-    D_800A3500[0x410 / 4] = 0;
-    D_800A3500[0x408 / 4] = 0;
-    D_800A3500[0x40C / 4] = 0;
+    ((volatile s32 *)D_800A3500)[0x410 / 4] = 0;
+    ((volatile s32 *)D_800A3500)[0x408 / 4] = 0;
+    ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
     ((volatile s32 *)D_800A3500)[0x41C / 4] = 0;
     CdSyncCallback(0);
     CdReadyCallback(0);
@@ -22429,8 +22472,12 @@ void func_80071BE8(void) {
     CdControl(CdlStop, 0, 0);
     do {
         bzero(param, 0x20);
-        bzero(result, 0x20);
-        status = CdControl(CdlNop, param, result);
+        resultPtr = result;
+        bzero(resultPtr, 0x20);
+        resultPtr = 0;
+        resultPtr2 = result;
+        status = CdControl(CdlNop, param, resultPtr2);
+        resultPtr2 = 0;
         if (status != 0) {
             if (result[0] == CdlNoIntr || result[0] == i) {
                 retry = 0;
@@ -22452,9 +22499,6 @@ void func_80071BE8(void) {
     ((volatile s32 *)D_800A3500)[0x414 / 4] = 0;
     SwExitCriticalSection();
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80071BE8);
-#endif
 
 extern s32 *D_800A3500;
 extern s32 D_800A33B8, D_800A33BC;
