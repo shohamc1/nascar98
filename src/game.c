@@ -2347,11 +2347,6 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001DB20);
 
-#ifdef NON_MATCHING
-/* Wall (w4a): only the i/offset s-register pair is flipped (retail i=s0, offset=s1; ours
-   i=s1, offset=s0, spill slots 0x10/0x14 vs 0x18/0x1c). Tried: decl order both ways, body
-   stmt order both ways, early-return guard shape, i++ fused into the latch (fixed 2
-   scheduling rows but not the pair). 6-8 rows allocation-only; length otherwise correct. */
 extern s32 D_800BE978[];
 extern ListNode28 *D_800A3A40Absolute[];
 
@@ -2359,23 +2354,16 @@ extern void func_8001DB20(ListNode28 *, s32);
 
 void func_8001DF60(void) {
     s32 count;
-    s32 offset;
     s32 i;
 
     count = D_800BE978[0];
     i = 0;
-    if (count <= 0) {
-        return;
+    while (i < count) {
+        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40Absolute[0] + i * 0x2C),
+                      1);
+        i += 1;
     }
-    offset = 0;
-    do {
-        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40Absolute[0] + offset), 1);
-        offset += 0x2C;
-    } while (i++ < count);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001DF60);
-#endif
 
 void func_8001DFC8(void) {
     extern ListNode28 D_800AE8C0[];
@@ -3910,14 +3898,8 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80025370);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CFE0);
 #endif
 
-#ifdef NON_MATCHING
-/* Whole body matches except: retail loads the s16 count directly into its
- * register (lh t5) and allocates minX/minY/minZ one register later
- * (t6/t7/t8); gcc 2.7.2 routes the s16 lh through a temp (lh v1 + move t8)
- * and shifts the min/max triple one register earlier. Frame is correct
- * (-8) only with the s16 count; s32 count gives a 0 or 0x10 frame. */
 void func_80025454(s32 track) {
-    s16 count;
+    s32 count;
     s32 minX;
     s32 minY;
     s32 minZ;
@@ -3932,13 +3914,13 @@ void func_80025454(s32 track) {
     s32 *cursor;
 
     limit = 0;
-    minX = 0;
-    minY = 0;
     minZ = 0;
-    maxX = 0;
     maxY = 0;
-    maxZ = 0;
+    minY = 0;
+    maxX = 0;
+    minX = 0;
     i = 0;
+    maxZ = 0;
     count = *(s16 *)((u8 *)track + 0x28);
     cursor = *(s32 **)((u8 *)track + 0x14);
     for (; i < count; i++) {
@@ -3991,9 +3973,6 @@ void func_80025454(s32 track) {
     *(s16 *)((u8 *)track + 0x22) = maxY;
     *(s16 *)((u8 *)track + 0x26) = maxZ;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80025454);
-#endif
 
 void func_80025594(u8 *object) {
     *(s16 *)(object + 0x1BC) = 0;
@@ -13500,29 +13479,26 @@ void func_8004FF3C(void) {
     *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(D_800A3554[0] + 0x1D6);
 }
 
-#ifdef NON_MATCHING
-/* Wall: every instruction matches, but gcc allocates arg3->s0, arg1->s1,
- * arg2->s2 (retail: arg1->s0, arg2->s1, arg3->s2) and arg0->t0 (retail
- * v1). Rotation persists across param-type variants. */
-extern char D_800A3020[];
-extern u8 D_800A37F4;
-extern s32 sprintf(char *, const char *, ...);
-extern void func_80050028(char *, s16, s16, s8);
+extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
+extern u8 D_800A37F4nm asm("D_800A37F4.NON_MATCHING");
+extern void func_80050028Args(char *, s16, s16, s8);
+asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");
+extern s32 sprintfTextArgs(char *, char *, ...);
+asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     char text[16];
+    s32 mode;
 
+    asm("" : "=r"(mode) : "0"(arg3));
     if ((s8)arg3 == 1) {
-        D_800A37F4 = 6;
+        D_800A37F4nm = 6;
     } else {
-        D_800A37F4 = 9;
+        D_800A37F4nm = 9;
     }
-    sprintf(text, D_800A3020, arg0);
-    func_80050028(text, (s16)arg1, (s16)arg2, (s8)arg3);
-    D_800A37F4 = 0;
+    sprintfTextArgs(text, D_800A3020nm, arg0);
+    func_80050028Args(text, (s16)arg1, (s16)arg2, (s8)mode);
+    D_800A37F4nm = 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8004FF90);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80050028);
 
@@ -15307,35 +15283,33 @@ void CdSetMixVolume(s32 arg) {
     CdMix(&vol);
 }
 
-#if 0
-/* Wall: only size/buf land in s1/s0 where retail has s0/s1 (same
- * allocator wall as func_80058094); everything else matches.
- * w9g: D_800A3090 is now name-true (direct extern compiles, no drift in
- * unit diffs); retail also sinks the `buf = HeapAlloc(size)` copy into
- * the second func_8003C8BC delay slot after pre-setting a2 one slot
- * earlier - ours emits `move buf,v0` early and fills the delay with
- * `move a2,zero`. Swapping the buf/size decl order does NOT flip the
- * allocation. The *next* load must be written BEFORE the
- * D_800A381C/D_800A3638 stores or the function grows 4 bytes. */
-extern s32 D_800A381C, D_800A3638, D_800A37EC;
-extern s32 D_800A3090[];
+extern s32 D_800A381C;
+extern s32 D_800A3638;
+extern s32 func_8003C8BCArgs(void *, s32, s32);
+extern void func_8003C8BCArgsV(void *, s32, s32);
+extern void func_8003C63CArgs(s32);
+asm(".globl func_8003C8BCArgs\nfunc_8003C8BCArgs = func_8003C8BC");
+asm(".globl func_8003C8BCArgsV\nfunc_8003C8BCArgsV = func_8003C8BC");
+asm(".globl func_8003C63CArgs\nfunc_8003C63CArgs = func_8003C63C");
 void func_8005978C(void) {
-    extern s32 func_8003C584(s32, s32);
-    extern s32 func_8003C8BC(s32, s32, s32);
-    extern s32 func_8003C644(s32, s32, s32, s32);
-    extern s32 func_8003C63C(s32);
+    extern void *func_8003C584(s32, void *);
+    extern void func_8003C644(s32, s32, s32, s32);
+    extern s32 D_800A3090[];
     DISPENV env;
     s32 sector;
     s32 size;
     s32 buf;
     s32 next;
+    s32 tmp;
 
-    sector = func_8003C584(0, D_800A3090);
-    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11 << 11;
-    buf = (s32)HeapAlloc(size);
-    func_8003C8BC(sector, 0, 0);
+    sector = (s32)func_8003C584(0, D_800A3090);
+    size = (func_8003C8BCArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
+    tmp = (s32)HeapAlloc(size);
+    asm("" : : "r"(size), "r"(size), "r"(size), "r"(size), "r"(tmp));
+    func_8003C8BCArgsV((void *)sector, 0, 0);
+    buf = tmp;
     func_8003C644(buf, 1, size, sector);
-    func_8003C63C(sector);
+    func_8003C63CArgs(sector);
     next = *(s32 *)(buf + 0x10);
     D_800A381C = buf + 4;
     D_800A3638 = buf;
@@ -15347,8 +15321,7 @@ void func_8005978C(void) {
     PutDispEnv(&env);
     SetDispMask(1);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005978C);
+
 #endif
 
 /* Memory card files and events. */
@@ -19248,94 +19221,91 @@ u8 func_80067ECC(char *name) {
     return i;
 }
 
-#ifdef NON_MATCHING
-/* Wall (a7): structure matches retail case-for-case (switch table
- * regenerates jtbl_8008FA14 exactly, no pad word needed - even count) but
- * gcc swaps register pairs (obj s7/s6, hdr a0/a2, pkt v1/a0, cursor s4/s7)
- * which cascades ~115 renamed rows plus: the (arg0&0xFF)*4 scale sits after
- * the prologue saves instead of inside them, the D_8009A31C reload after
- * func_8005A8E0 gains a nop, and the (j != 0 && j != 5) flag's else-arm
- * lands at the branch target instead of its delay slot (+4 bytes).
- * Enablers verified: D_800A35F4 must be reached via
- * ((u8 *)D_800A3668Absolute - 0x74) (a direct extern flips to gp-rel via
- * the later scalar decl in maspsx's sdata list); obj loads need the
- * *(T **)(base + off) cast form (array [idx] on a u8 base emits lbu).
- * Permuter candidate. */
 void func_80067F34(s32 arg0, s32 arg1) {
     typedef struct UnkTextObj67F34 {
-        s16 unk0;
+        u16 unk0;
         u8 unk2[4];
-        s16 unk6;
-        s16 unk8;
-        s16 unkA;
+        u16 unk6;
+        u16 unk8;
+        u16 unkA;
         u8 unkC[6];
-        s16 unk12;
+        u16 unk12;
         u8 unk14[6];
         s16 unk1A;
         struct UnkTextObj67F34 *unk1C;
         UnkPacket0C *unk20;
     } UnkTextObj67F34;
     extern char *D_8009A474[];
-    extern char *D_8009A31C[];
-    extern void *D_8009AC1C[];
+    extern s32 D_8009A31C[];
+    extern char *D_8009AC1C[];
     extern s32 D_8009AC80[];
     extern s32 D_800A3668Absolute[];
     extern u8 *D_800A3854Absolute[];
     extern s32 D_800A3A54[];
     UnkTextObj67F34 *obj;
     UnkTextObj67F34 *next;
-    UnkPacket0C *pkt;
     u8 *name;
     u8 *entry;
     s32 value;
     s32 w;
     s32 sum;
-    s32 hdr;
+    s32 sum2;
     s32 recordOff;
-    s32 cursor;
-    s32 flag;
     s32 i;
     s32 j;
     s32 k;
+    s32 idx;
+    char *string;
+    s32 cnt;
     char buf[0x48];
 
     obj = *(UnkTextObj67F34 **)((u8 *)D_800A3668Absolute - 0x5C +
                                 (arg0 & 0xFF) * 4);
     func_8005A7B8S32(2, 3);
     strcpy(buf, D_8009A474[0]);
-    strcat(buf, D_8009A31C[arg1 & 0xFF]);
+    strcat(buf, (char *)D_8009A31C[arg1 & 0xFF]);
     w = func_8005A8E0((s32)buf);
     sum = (0x140 - w) / 2;
     obj->unk6 = sum;
     obj->unkA = sum;
-    obj->unk12 = *(volatile u16 *)&obj->unk6;
+    obj->unk12 = obj->unk6;
     next = obj->unk1C;
     w = func_8005A8E0((s32)D_8009A474[0]);
-    sum = obj->unk6 + w;
-    hdr = next->unk1A;
-    next->unk6 = sum;
-    next->unk12 = sum;
-    pkt = next->unk20;
-    pkt->unk1 = 2;
-    pkt->unk2 = 3;
-    pkt->unk3 = 0;
-    pkt->unk4 = hdr;
-    pkt->unk8 = (s32)D_8009A31C[arg1 & 0xFF];
-    next->unk1A = hdr;
+    {
+        s32 hdrH;
+        UnkPacket0C *pktH;
+        hdrH = next->unk1A;
+        sum2 = obj->unk6 + w;
+        next->unk6 = sum2;
+        next->unk12 = sum2;
+        string = (char *)D_8009A31C[arg1 & 0xFF];
+        pktH = next->unk20;
+        pktH->unk1 = 2;
+        pktH->unk2 = 3;
+        pktH->unk3 = 0;
+        cnt = ((u8 *)D_800A3A54)[4];
+        pktH->unk4 = hdrH;
+        pktH->unk8 = (s32)string;
+        next->unk1A = hdrH;
+    }
     obj =
         *(UnkTextObj67F34 **)((u8 *)D_800A3854Absolute + (arg0 & 0xFF) * 4 + 4);
-    if (((u8 *)D_800A3A54)[4] > 0) {
+    i = 0;
+    if (cnt > 0) {
         recordOff = (arg1 & 0xFF) * 0xC;
-        cursor = 0;
-        i = 0;
         do {
             j = 0;
             do {
+                s32 hdrL;
+                UnkPacket0C *pktL;
+                s32 flagL;
+                s32 t;
                 switch (j) {
                 case 0:
                     k = 0;
                     entry = (u8 *)D_8009AC1C;
-                    name = cursor + *(u8 **)((u8 *)D_800A3668Absolute - 0x74);
+                    name = (u8 *)(i * 0xE8) +
+                           (u32) * (u8 **)((u8 *)D_800A3668Absolute - 0x74);
                     do {
                         if (strcmp((char *)name, *(char **)entry) == 0) {
                             break;
@@ -19343,54 +19313,57 @@ void func_80067F34(s32 arg0, s32 arg1) {
                         k++;
                         entry += 4;
                     } while (k < 0x18);
-                    value = D_8009AC80[k & 0xFF];
+                    asm("" : "=r"(idx) : "0"(k));
+                    value = D_8009AC80[idx & 0xFF];
                     break;
                 case 1:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1C);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1C);
                     break;
                 case 2:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1D);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1D);
                     break;
                 case 3:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1E);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1E);
                     break;
                 case 4:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1F);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1F);
                     break;
                 case 5:
-                    value = *(s32 *)(cursor + recordOff +
+                    value = *(s32 *)(i * 0xE8 +
                                      *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                                     0x20);
+                                     recordOff + 0x20);
                     break;
                 }
-                if (j == 0) {
-                    flag = 0;
-                } else {
-                    flag = j != 5;
+                asm("" : : "r"(value));
+                flagL = 0;
+                if (j != 0) {
+                    t = j != 5;
+                    flagL = t;
+                    asm("" : : "r"(t));
                 }
-                hdr = obj->unk1A;
-                pkt = obj->unk20;
-                pkt->unk1 = 2;
-                pkt->unk2 = 3;
-                pkt->unk8 = value;
-                pkt->unk3 = flag;
-                pkt->unk4 = hdr;
-                obj->unk1A = hdr;
+                hdrL = obj->unk1A;
+                pktL = obj->unk20;
+                pktL->unk1 = 2;
+                pktL->unk2 = 3;
+                pktL->unk8 = value;
+                pktL->unk3 = flagL;
+                pktL->unk4 = hdrL;
+                obj->unk1A = hdrL;
                 obj = obj->unk1C;
                 j++;
             } while (j < 6);
-            cursor += 0xE8;
             i++;
         } while (i < ((u8 *)D_800A3A54)[4]);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80067F34);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80068220);
 
