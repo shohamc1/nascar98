@@ -1022,11 +1022,9 @@ typedef int (*DebugPrintf)(const char *, ...);
 extern u32 D_8009DA8C[];
 extern char D_80090548[];
 
-#ifdef NON_MATCHING
-/* Retail's second branch computes ((tpage * 0x10) & 0x100) +
- * ((tpage >> 2) & 0x200) — an extra OR'd term absent from the sotn-decomp
- * source (different Psy-Q revision). Also gcc cross-jumps the two indirect
- * call tails, which retail keeps separate. */
+extern u32 D_8009DA8C[];
+extern char D_80090548[];
+
 void DumpTPage(u_short tpage) {
     if (GetGraphType() == 1 || GetGraphType() == 2) {
         ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 9) & 3,
@@ -1034,12 +1032,10 @@ void DumpTPage(u_short tpage) {
                                      (tpage * 8) & 0x300);
         return;
     }
-    ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 7) & 3, (tpage >> 5) & 3,
-                                 (tpage << 6) & 0x7C0, (tpage * 0x10) & 0x100);
+    ((DebugPrintf)D_8009DA8C[0])(
+        D_80090548, (tpage >> 7) & 3, (tpage >> 5) & 3, (tpage << 6) & 0x7C0,
+        ((tpage * 0x10) & 0x100) + ((tpage >> 2) & 0x200));
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpTPage);
-#endif
 
 extern char D_80090560[];
 
@@ -1260,31 +1256,39 @@ extern char D_8009071C[];
 extern char D_8009073C[];
 extern char D_80090728[];
 
-#ifdef NON_MATCHING
+extern u8 D_8009DA92[];
+extern s16 D_8009DA94[];
+extern s16 D_8009DA96[];
+
+extern char D_8009071C[];
+extern char D_8009073C[];
+extern char D_80090728[];
+
 void checkRECT(RECT *r, RECT *rect) {
     switch (D_8009DA92[0]) {
     case 1:
         if (rect->w > D_8009DA94[0] || rect->w + rect->x > D_8009DA94[0] ||
             rect->y > D_8009DA96[0] || rect->y + rect->h > D_8009DA96[0] ||
-            rect->w <= 0 || rect->x < 0 || rect->y < 0 || rect->h > 0) {
+            rect->w <= 0 || rect->x < 0 || rect->y < 0 || rect->h <= 0) {
             ((int (*)())D_8009DA8C[0])(D_8009071C, r);
-            ((int (*)())D_8009DA8C[0])(D_80090728, rect->x, rect->y, rect->w,
-                                       rect->h);
+            ((int (*)())((u32 *)D_8009DA90)[-1])(D_80090728, rect->x, rect->y,
+                                                 rect->w, rect->h);
             return;
         }
         return;
     case 2:
         ((int (*)())D_8009DA8C[0])(D_8009073C, r);
-        ((int (*)())D_8009DA8C[0])(D_80090728, rect->x, rect->y, rect->w,
-                                   rect->h);
+        ((int (*)())((u32 *)D_8009DA90)[-1])(D_80090728, rect->x, rect->y,
+                                             rect->w, rect->h);
         return;
     default:
         return;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", checkRECT);
-#endif
+
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009071C);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090728);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009073C);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ClearImage);
 
