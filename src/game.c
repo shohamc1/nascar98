@@ -1480,7 +1480,38 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80018768);
+extern void func_80018588(void *, s32, s32);
+extern void func_80050028Text(s8 *, s16, s16, s8);
+asm(".globl func_80050028Text\nfunc_80050028Text = func_80050028");
+void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
+    s8 text[24];
+    s8 *p;
+    s16 *base;
+    s16 *width;
+    s8 *field;
+    s32 pen;
+
+    func_80018588(arg0, scale, text);
+    if (scale < 0) {
+        scale = -scale;
+    }
+    if (scale == 3) {
+        func_80050028Text(text, (s16)x, (s16)y, 0);
+        return;
+    }
+    pen = x;
+    p = text;
+    if (text[0] != 0) {
+        base = D_800A2D88;
+        width = base + scale;
+        field = p;
+        do {
+            func_800180C0(*field, pen, y, scale);
+            pen += *width;
+            field++;
+        } while (*field != 0);
+    }
+}
 
 extern void func_800183C0(s32, s32, s32, s32);
 void func_80018848(void *arg0, s32 arg1, s32 arg2) {
