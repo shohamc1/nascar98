@@ -4864,37 +4864,21 @@ void func_800297D0(u8 *arg0) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Independent absolute table references and explicit next-
- * call input staging restore retail length and stores. Two table-index
- * additions/load bases still use v0 where retail uses v1. */
-extern s32 *D_800A3A2CAbsolute2[];
-extern s32 *D_800A3A34Absolute2[];
+extern s32 D_800A3A2CAbsolute2[];
+extern s32 D_800A3A34Absolute2[];
 void func_800298E0(s32 *car) {
     s32 index;
-    s32 result;
-    s32 value;
-    s32 *table;
 
     index = ((s16 *)car)[0x8A];
-    result =
+    car[0x31] =
         MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
-    value = car[0x24];
-    table = *(s32 **)D_800A3A34Absolute;
-    car[0x31] = result;
-    result = MathMultiplyFixed16(table[index], value);
-    value = car[0x24];
-    table = D_800A3A2CAbsolute2[0];
-    car[0x32] = result;
-    result = MathMultiplyFixed16(table[index], value);
-    value = car[0x24];
-    table = D_800A3A34Absolute2[0];
-    car[0x34] = result;
-    car[0x35] = MathMultiplyFixed16(table[index], value);
+    car[0x32] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
+    car[0x34] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute2)[index], car[0x24]);
+    car[0x35] =
+        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[index], car[0x24]);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800298E0);
-#endif
 
 extern void func_8003644C(s32, s32, s32, s32);
 
@@ -7973,7 +7957,9 @@ void func_80033704(s16 *out) {
     out[3] = a1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80033780);
+void func_80033780(void *arg0) {
+    asm volatile("swc2 $14, 0x8(%0)\n\t.set\tnoreorder" : : "r"(arg0));
+}
 
 void func_80033788(u8 *arg0) {
     register u32 depth asm("$6");
@@ -9896,11 +9882,6 @@ void func_8003AAEC(s32 car) {
     ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_80025594);
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 88 bytes versus retail 88; 2 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The callback declaration must use the existing object pointer signature.
- */
 extern void func_80025594(u8 *);
 
 void func_8003ABC0(u8 *object) {
@@ -9913,6 +9894,7 @@ void func_8003ABC0(u8 *object) {
     timer = timer + 1;
     *(u16 *)(object + 0x1BC) = timer;
     if ((mode & 0xF) == 0) {
+        asm("" : : : "memory");
         if (*(s16 *)(object + 0x1BC) >= 0x65) {
             *(u16 *)(object + 0x1BC) = 0;
             ObjectSetCallbackIfAllowed((Batch0CallbackObject *)object,
@@ -9920,9 +9902,6 @@ void func_8003ABC0(u8 *object) {
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003ABC0);
-#endif
 
 extern void func_8003AA20();
 extern void func_8003A880();
@@ -12365,43 +12344,31 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80041F54);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800420D8);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 132 bytes versus retail 132; 24 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * A full-width packed-bit temporary and local lifetime permutations do not recover retail's initial parameter copy.
- */
-void func_80042218(u8 *arg0, s32 *arg1, u8 *arg2) {
-    u8 *src;
-    s32 lowBits;
-    u8 *dst;
+void func_80042218(u16 *src, s32 *acc, u32 *dst) {
     s32 i;
     s32 shift;
     u32 bits;
+    u32 bitsLo;
+    u32 bitsHi;
 
-    src = arg0;
-    dst = arg2;
-    *arg1 = 0;
+    *acc = 0;
     i = 0;
     shift = -4;
     do {
-        *(u32 *)dst = *(u16 *)src;
-        bits = *(u16 *)(src + 2);
-        *(u32 *)(dst + 4) = ((u32)((bits & 0xFC00) >> 8)) |
-                            ((u32)((bits & 0x3C) << 10)) |
-                            ((u32)((bits & 0x3C0) << 14));
-        lowBits = bits & 3;
+        dst[0] = src[0];
+        bits = src[1];
+        bitsLo = (bits & 0x3C) << 10;
+        bitsHi = (bits & 0x3C0) << 14;
+        dst[1] = ((bits & 0xFC00) >> 8) | bitsLo | bitsHi;
         if (i >= 2) {
-            *arg1 |= lowBits << shift;
+            *acc |= (bits & 3) << shift;
         }
-        src += 4;
-        dst += 8;
+        src += 2;
+        dst += 2;
         i += 1;
         shift += 2;
     } while (i < 4);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80042218);
-#endif
 
 s32 func_8004229C(s32 arg0) {
     s32 var_v0;
@@ -21167,48 +21134,54 @@ void func_8006C5E4(s32 arg0) {
 
 #endif
 
-#ifdef NON_MATCHING
-/* Retail-sized draft; remaining differences are the a0/a2 node/index
- * assignment and which raw-index copy feeds the two signed-byte casts.
- * The scoped sentinel load and table-address expression match their loops. */
 extern u8 *D_800A3908[];
 extern u8 *D_800A377C[];
 extern char D_800B0A2C[];
 void func_8006C668(s32 arg0, s32 arg1) {
+    register s32 start asm("v1");
     s32 index;
-    s32 start;
-    s32 end;
+    s32 t;
     u8 *node;
+    u8 *entry;
+    char *tbl;
+    s32 off;
+    register s32 conv asm("v0");
+    u8 *s;
     u8 *sentinel;
-    start = arg0;
-    end = arg1;
-    if (end >= 6) {
-        end = ((s8)arg0) + 6;
-    }
+
+    t = arg1 < 6;
     do {
-        node = D_800A3908[0];
     } while (0);
-    index = (s8)start;
-    if (end >= index) {
-        do {
-            *((u32 *)((*((u8 **)(node + 0x20))) + 8)) =
-                (u32)(D_800B0A2C + (index * 0x10));
-            node = *((u8 **)(node + 0x1C));
-            index++;
-        } while (end >= index);
+    start = arg0;
+    if (!t) {
+        arg1 = (s8)arg0 + 6;
     }
-    if (node != D_800A377C[0]) {
-        sentinel = D_800A377C[0];
+    node = D_800A3908[0];
+    asm("");
+    conv = start << 24;
+    index = conv >> 24;
+    if (arg1 >= index) {
+        off = index * 0x10;
+        tbl = (char *)D_800B0A2C;
+        tbl = (char *)((u32)off + (u32)tbl);
         do {
-            *((u32 *)((*((u8 **)(node + 0x20))) + 8)) = 0;
-            node = *((u8 **)(node + 0x1C));
+            entry = *(u8 **)(node + 0x20);
+            index = index + 1;
+            *(u32 *)(entry + 8) = (u32)tbl;
+            node = *(u8 **)(node + 0x1C);
+            tbl = tbl + 0x10;
+        } while (arg1 >= index);
+    }
+    s = D_800A377C[0];
+    if (node != s) {
+        asm("" : "=r"(sentinel) : "0"(s));
+        do {
+            entry = *(u8 **)(node + 0x20);
+            *(u32 *)(entry + 8) = 0;
+            node = *(u8 **)(node + 0x1C);
         } while (node != sentinel);
     }
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006C668);
-#endif
 
 #ifdef NON_MATCHING
 /* Draft preserves the two short-circuit tests and scoped sentinel copies.
@@ -22998,24 +22971,22 @@ s32 func_80072A70(void) {
 extern volatile s32 *D_800A351C;
 /* Enabled after the maspsx li-$reg,0 wrapper fix; see matching.md. */
 extern long long __divdi3(long long dividend, long long divisor);
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 88 bytes versus 80 retail. Restored constant multiplier 0x271000; the old
- * argument-dependent factor was semantically wrong. GCC still adds an entry
- * parameter copy and a branch/jump skip path. Equivalent early-return,
- * merged-return, ternary, and single-pass forms did not match. */
+extern volatile s32 *D_800A351C;
+extern long long __divdi3(long long dividend, long long divisor);
 s32 func_80072AFC(u32 arg) {
-    u32 factor;
+    register u32 mode asm("v1");
+    register u32 factor asm("v0");
+    long long q;
 
-    if (D_800A351C[0x7B74 / 4] == 1) {
+    mode = D_800A351C[0x7B74 / 4];
+    factor = 1;
+    if (mode == factor) {
         factor = 0x271000;
-        return __divdi3((long long)arg * factor, 0xBB5);
+        q = (long long)arg * factor;
+        return __divdi3(q, 0xBB5);
     }
     return arg << 10;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80072AFC);
-#endif
 
 extern volatile s32 *D_800A351C;
 s32 func_80072B4C(void) {
