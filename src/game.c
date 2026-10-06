@@ -35,20 +35,16 @@ void GraphicsInit(void) {
     SetDispMask(1);
 }
 
-#ifdef NON_MATCHING
-/*
- * Needs lui addressing for D_800A2EAC and D_800A2EB0, but both are
- * scalar-declared (gp addressing) for func_8002F514/func_8002F86C/
- * func_8002DDA0 in this translation unit. One symbol name can only have
- * one addressing mode per TU without a linker alias.
- */
 extern u8 D_800A2D0D;
 extern u8 D_800A2D0E;
 extern u8 D_800A2D0F;
 extern u8 D_800A39E4[];
+extern u8 D_800A39E4Absolute[];
+extern u8 D_800A39E4Absolute2[];
 extern s32 D_800A2EB8[];
 extern s32 D_800A2EC8[];
-
+extern s32 D_800A2EB0Absolute[];
+extern s32 D_800A2EACAbsolute[];
 extern void DecDCTReset(s32);
 extern void func_80058D94(void);
 extern void func_800531B8(void);
@@ -66,7 +62,7 @@ int main(void) {
 
     D_800A2D0D = 0;
     D_800A2EB8[0] = 0;
-    D_800A2EC8[-6] = 0;
+    D_800A2EB0Absolute[0] = 0;
     ResetCallback();
     mode = 0xF9;
     ResetGraph(0);
@@ -84,23 +80,24 @@ int main(void) {
         if (D_800A39E4[0] == mode) {
             func_80058D94();
         }
-        if (((D_800A39E4[0] + 3) & 0xFF) >= 2) {
+        if (((D_800A39E4Absolute[0] + 3) & 0xFFU) >= 2U) {
             func_800531B8();
             HeapResetInitFlag();
         }
         func_800122D8();
-        D_800A2EC8[-7] = 0;
+        D_800A2EACAbsolute[0] = 0;
         D_800A2EC8[0] = 0;
         if (D_800A2D0E != 0 || D_800A2D0F != 0) {
             func_80066B08();
-            D_800A39E4[0] = mode;
-            if (D_800A2D0F == 0) {
-                exitCode = -3;
-            } else {
+            exitCode = D_800A2D0F;
+            D_800A39E4Absolute2[0] = mode;
+            if (exitCode != 0) {
                 func_800587A0();
                 exitCode = -2;
+            } else {
+                exitCode = -3;
             }
-            D_800A2EC8[-6] = exitCode;
+            D_800A2EB0Absolute[0] = exitCode;
             D_800A2D0E = 0;
             D_800A2D0F = 0;
         } else {
@@ -108,9 +105,6 @@ int main(void) {
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80012108);
-#endif
 
 void GraphicsCompactOrderingTable(s32 tableAddress) {
     u32 linkMask;
