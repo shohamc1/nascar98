@@ -1915,7 +1915,28 @@ void func_8001C99C(u8 *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001CAB8);
+void func_8001CAB8(u8 *arg0) {
+    s32 i;
+    s32 *vec;
+    u8 *el;
+    u8 *base;
+    s32 temp;
+
+    temp = (D_800A2EC0Absolute[0] & 0x1F) << 5;
+    base = D_800BE97C[0];
+    vec = (s32 *)(arg0 + 0x210);
+    func_8001F2C4(temp, 0, temp);
+    for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
+        el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
+        *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
+        *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
+        *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
+        func_8001ED84((s32 *)el);
+        *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
+        *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
+        *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
+    }
+}
 
 void func_8001CBD4(u8 *arg0) {
     s32 temp;
@@ -23111,7 +23132,42 @@ void func_80073A44(void) {
     SpuSetReverbVoice(D_800A351C[0x7B70 / 4], D_800A351C[0x7B68 / 4]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80073AA4);
+extern void *SpuSetTransferCallback(void *);
+
+void func_80073AA4(void) {
+    volatile s32 *field;
+    volatile s32 *p;
+    u32 i;
+
+    SwEnterCriticalSection();
+    SpuSetKey(0, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);
+    SpuSetReverbVoice(D_800A351C[0x7B6C / 4], D_800A351C[0x7B64 / 4]);
+    SpuSetReverbVoice(D_800A351C[0x7B70 / 4], D_800A351C[0x7B68 / 4]);
+    SpuSetIRQ(0);
+    SpuSetIRQCallback((SpuIRQCallbackProc)D_800A351C[0x7B14 / 4]);
+    SpuSetTransferCallback((void *)D_800A351C[0x7B18 / 4]);
+    D_800A351C[0x7B20 / 4] = 0;
+    if (D_800A351C[0x7B1C / 4] != 0) {
+        VSyncCallback((Callback)D_800A351C[0x7B10 / 4]);
+    }
+    D_800A351C[0x7B24 / 4] = 0;
+    SwExitCriticalSection();
+    SwEnterCriticalSection();
+    i = 0;
+    p = D_800A351C;
+    p[0] = 0;
+    p[1] = 0;
+    p[3] = 0;
+    field = p;
+    do {
+        field[0x7B2C / 4] = 0;
+        i += 1;
+        field += 1;
+    } while (i < 4);
+    D_800A351C[0x7B3C / 4] = 1;
+    D_800A351C[0x7B24 / 4] = 0;
+    SwExitCriticalSection();
+}
 
 s32 func_80073BC8(void) {
     return 0xC00;
