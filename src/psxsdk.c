@@ -22,11 +22,6 @@ extern unsigned long long __udivmoddi4(unsigned long long num,
                                        unsigned long long den,
                                        unsigned long long *rem);
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 152 bytes, 92 linked text bytes differ. Explicit two-word operand negation
- * restores size; GCC still branches for the borrow and uses s0 rather than
- * retail s2 for the sign, with a different saved-register set. */
 typedef union {
     struct {
         s32 low;
@@ -35,12 +30,19 @@ typedef union {
     long long ll;
 } DwUnion;
 
+/* The negation temps are separate unions: one shared temp is coalesced into
+ * an in-place negu pair, separate ones give retail's t0/t1 temps and moves. */
 long long __divdi3(long long u, long long v) {
     DwUnion uu;
     DwUnion vv;
-    long long w;
-    DwUnion n;
+    DwUnion w;
+    DwUnion n1;
+    DwUnion n2;
+    DwUnion n3;
     int c;
+    s32 h1;
+    s32 h2;
+    s32 h3;
 
     c = 0;
     uu.ll = u;
@@ -48,26 +50,28 @@ long long __divdi3(long long u, long long v) {
 
     if (uu.s.high < 0) {
         c = ~c;
-        n.s.low = 0U - (u32)uu.s.low;
-        n.s.high = 0U - (u32)uu.s.high - (n.s.low != 0);
-        uu = n;
+        n1.s.low = -uu.s.low;
+        h1 = -uu.s.high;
+        n1.s.high = h1 - (0 < (u32)n1.s.low);
+        uu.ll = n1.ll;
     }
     if (vv.s.high < 0) {
         c = ~c;
-        n.s.low = 0U - (u32)vv.s.low;
-        n.s.high = 0U - (u32)vv.s.high - (n.s.low != 0);
-        vv = n;
+        n2.s.low = -vv.s.low;
+        h2 = -vv.s.high;
+        n2.s.high = h2 - (0 < (u32)n2.s.low);
+        vv.ll = n2.ll;
     }
 
-    w = __udivmoddi4(uu.ll, vv.ll, 0);
+    w.ll = __udivmoddi4(uu.ll, vv.ll, 0);
     if (c) {
-        w = -w;
+        n3.s.low = -w.s.low;
+        h3 = -w.s.high;
+        n3.s.high = h3 - (0 < (u32)n3.s.low);
+        return n3.ll;
     }
-    return w;
+    return w.ll;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", __divdi3);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __udivmoddi4);
 
