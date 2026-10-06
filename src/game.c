@@ -5049,9 +5049,14 @@ void func_80029E3C(void) {
 }
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Retail groups the two signed-halfword loads and advances
- * the third row in the call delay slot. Staging row addresses improves
- * scheduling, but the load/addiu/a2-zero schedule remains different. */
+/* Wave-34 (2026-10-06): 19 bytes off (7-word window at 0x80029E54-E6C):
+ * retail materialises addu a2,zero,zero between lw s0 and the s-reg saves;
+ * gcc prints it 7 slots later or in the jal delay. Root cause mapped via
+ * -da dumps: s-reg saves insert post-reg-alloc right after the first insn,
+ * sched2 hoists only lui/lw above them, and call-arg setups carry a
+ * 0x7f000001 sched-group pin hugging the call; no pure-C89 opacity emits
+ * zero instructions, so nothing can land in that window. Full mechanism
+ * and future leads in the wave-34e notes. */
 extern s32 D_800A38AC[];
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001F728(s32 arg0);
@@ -5062,7 +5067,11 @@ void func_80029E44(void) {
     u8 *ptr;
     u8 *rowA;
     u8 *rowB;
+    s32 zero;
+    s32 x;
+    s32 y;
     ptr = (u8 *)D_800A38AC[0];
+    asm("addu %0,$0,$0" : "=r"(zero));
     sourceRow = (s32 *)(ptr + 0x18);
     *((s32 *)(ptr + 0x3C)) = *sourceRow;
     *((s32 *)(ptr + 0x40)) = *((s32 *)(ptr + 0x1C));
@@ -5075,11 +5084,14 @@ void func_80029E44(void) {
     *((s32 *)(ptr + 0x54)) = *((s32 *)(ptr + 0x30));
     *((s32 *)(ptr + 0x58)) = *((s32 *)(ptr + 0x34));
     *((s32 *)(ptr + 0x5C)) = *((s32 *)(ptr + 0x38));
-    secondRow = ptr + 0x48;
+    asm("");
+    x = *((s16 *)(ptr + 0x1C6));
+    y = *((s16 *)(ptr + 0x1C8));
     rowA = ptr + 0x3C;
+    secondRow = ptr + 0x48;
     rowB = secondRow;
     ptr += 0x54;
-    func_8001F2C4(*((s16 *)(ptr + 0x172)), *((s16 *)(ptr + 0x174)), 0);
+    func_8001F2C4(x, y, zero);
     func_8001F728((s32)rowA);
     func_8001F728((s32)rowB);
     func_8001F728((s32)ptr);
@@ -7471,16 +7483,14 @@ void func_800328AC(void *arg0, s32 arg1) {
     asm volatile("addu $2, %0, $0" : : "r"(ret));
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: A real halfword return local improves the shared return
- * layout. GCC still omits retail's unused eight-byte leaf frame; a halfword
- * loop counter instead adds unwanted sign extensions. */
 extern s32 D_800A2CF8[];
 s32 func_80032A90(u8 *arg0) {
     u8 *entry;
     s32 i;
     s16 result;
+    s32 pad[2];
 
+    (void)&pad;
     if (D_800A2CF8[0] == 2) {
         result = 1;
         goto done;
@@ -7499,9 +7509,6 @@ s32 func_80032A90(u8 *arg0) {
 done:
     return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80032A90);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80032AE4);
 
@@ -10791,32 +10798,32 @@ s32 func_8003E78C(u8 *object) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003E78C);
 #endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 80 bytes versus retail 84; 9 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Walking the pointer parameter in a guarded do loop removes the duplicated loop guard and improves size.
- */
 void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
+    register s32 *entries asm("a1");
     s32 count;
+    s32 value;
     s32 i;
-    s32 *entries;
+    s32 pad[2];
 
+    entries = arg1;
     count = *(s16 *)(object + 2) - *(s16 *)(object + 0) + 1;
-    entries = *(s32 *)(object + 8) + arg2;
-    *(s32 *)(object + 8) = entries;
+    value = *(s32 *)(object + 8) + arg2;
+    *(s32 *)(object + 8) = value;
     i = 0;
-    if (count > 0) {
-        arg1 += 3;
-        do {
-            *arg1 += arg2;
-            arg1 += 5;
-            i++;
-        } while (i < count);
+    if (count <= 0) {
+        goto done;
     }
+    entries += 3;
+again:
+    *entries += arg2;
+    entries += 5;
+    i++;
+    if (i < count) {
+        goto again;
+    }
+done:
+    (void)&pad;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003EA94);
-#endif
 
 void func_8003EAE8(u8 *object, s32 index) {
     s32 pad[4];
@@ -11352,28 +11359,26 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003F564);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003F914);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 128 bytes versus retail 120; 13 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The draft's voice callback declaration conflicted with the existing s32 API.
- */
 extern s16 D_800B9E24[];
 extern void func_8003F914(s32);
 
 void func_8003FA0C(void) {
-    s32 i;
+    u8 i;
+    s32 value;
+    s16 voice;
 
     i = 0;
-    do {
-        if (D_800B9E24[(u8)i * 6] != -1) {
-            func_8003F914(i);
-        }
-        i++;
-    } while ((u8)i < 0x18);
+    value = -1;
+again:
+    voice = D_800B9E24[i * 6];
+    if (voice != value) {
+        func_8003F914((s8)i);
+    }
+    i++;
+    if (i < 24) {
+        goto again;
+    }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003FA0C);
-#endif
 
 /* w9e draft: decision tree matches retail exactly (incl. switch-style
  * beq arms for 0x2A/0x2B/0x2C/0x2D/0x29 and the dead 0x29 arm); only
@@ -11484,13 +11489,7 @@ void func_8003FDE8(s8 arg0, s32 arg1, s32 arg2) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FDE8);
 #endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 176 bytes versus retail 164; 15 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * SDK key-status and existing voice-callback declarations are reconciled.
- */
 extern s16 D_800B9E24[];
-extern void SpuGetAllKeysStatus(s8 *);
 extern void func_8003F914(s32);
 
 void func_8003FEB8(void) {
@@ -11498,21 +11497,22 @@ void func_8003FEB8(void) {
     s8 *keyState;
     s8 i;
     s16 voice;
+    s32 noVoice;
 
     SpuGetAllKeysStatus(keys);
-    keyState = keys;
     i = 0;
-    do {
-        voice = D_800B9E24[i * 6];
-        if (voice != -1 && keyState[voice] == 3) {
-            func_8003F914(i);
-        }
-        i++;
-    } while (i < 0x18);
+    noVoice = -1;
+    keyState = keys;
+again:
+    voice = D_800B9E24[i * 6];
+    if (voice != noVoice && keyState[voice] == 3) {
+        func_8003F914(i);
+    }
+    i++;
+    if (i < 0x18) {
+        goto again;
+    }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003FEB8);
-#endif
 
 extern char D_8008D1A8[];
 extern char D_8008D1C4[];
