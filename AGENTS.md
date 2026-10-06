@@ -120,6 +120,14 @@ Near misses are where time goes. Follow these rules:
   `config/symbol_addrs.txt`. Reach such strings through `extern`
   symbols until their whole neighborhood is decompiled. See
   "Per-function rodata migration" in the game's `overview.md`.
+- SDK functions whose Psy-Q source was assembly (BIOS table thunks,
+  `syscall` trappers, COP0 and GTE coprocessor moves) are written as
+  source, not kept as `INCLUDE_ASM`: the `ASM_FUNC` macro in
+  `src/psxsdk.c` for shapes no compiler emits (tail jumps, delay-slot
+  games), or plain C with the body in one `asm` string when the target
+  ends in `jr $ra; nop`. Transcribe each function's trailing nops from
+  its `.s` tail — they are retail's inter-function padding. See "SDK
+  functions whose original source was asm" in `kb/psx/matching.md`.
 
 ## Name things as you learn them
 

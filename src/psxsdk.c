@@ -12,6 +12,24 @@
 
 extern void SpuVmSeqKeyOff();
 
+/* SDK functions whose Psy-Q source was assembly: BIOS table thunks and
+ * GTE coprocessor moves no compiler emits. The wrapper's label and
+ * epilogue are dropped by maspsx exactly as for INCLUDE_ASM (see
+ * include/include_asm.h); the "# maspsx-keep" lines are the function. */
+#define ASM_FUNC(name, body)                                                   \
+    void __maspsx_include_asm_hack_##name(void) {                              \
+        __asm__(".text # maspsx-keep\n"                                        \
+                "    .align 2 # maspsx-keep\n"                                 \
+                "    .globl " #name " # maspsx-keep\n"                         \
+                "    .ent " #name " # maspsx-keep\n"                           \
+                "    " #name ": # maspsx-keep\n"                               \
+                "    .set noat # maspsx-keep\n"                                \
+                "    .set noreorder # maspsx-keep\n" body                      \
+                "    .set reorder # maspsx-keep\n"                             \
+                "    .set at # maspsx-keep\n"                                  \
+                "    .end " #name " # maspsx-keep\n");                         \
+    }
+
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __SN_ENTRY_POINT);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __do_global_dtors);
@@ -75,47 +93,120 @@ long long __divdi3(long long u, long long v) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __udivmoddi4);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", InitHeap);
+ASM_FUNC(InitHeap, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                   "    jr $t2 # maspsx-keep\n"
+                   "    addiu $t1, $zero, 0x39 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _bu_init);
+ASM_FUNC(_bu_init, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                   "    jr $t2 # maspsx-keep\n"
+                   "    addiu $t1, $zero, 0x70 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", OpenEvent);
+/* BIOS calls, B table (0xB0). */
+ASM_FUNC(OpenEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                    "    jr $t2 # maspsx-keep\n"
+                    "    addiu $t1, $zero, 0x8 # maspsx-keep\n"
+                    "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CloseEvent);
+ASM_FUNC(CloseEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0x9 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", TestEvent);
+ASM_FUNC(TestEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                    "    jr $t2 # maspsx-keep\n"
+                    "    addiu $t1, $zero, 0xB # maspsx-keep\n"
+                    "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", EnableEvent);
+ASM_FUNC(EnableEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                      "    jr $t2 # maspsx-keep\n"
+                      "    addiu $t1, $zero, 0xC # maspsx-keep\n"
+                      "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DisableEvent);
+ASM_FUNC(DisableEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                       "    jr $t2 # maspsx-keep\n"
+                       "    addiu $t1, $zero, 0xD # maspsx-keep\n"
+                       "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", InitPAD);
+ASM_FUNC(InitPAD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                  "    jr $t2 # maspsx-keep\n"
+                  "    addiu $t1, $zero, 0x12 # maspsx-keep\n"
+                  "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", StartPAD);
+ASM_FUNC(StartPAD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                   "    jr $t2 # maspsx-keep\n"
+                   "    addiu $t1, $zero, 0x13 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", EnterCriticalSection);
+void EnterCriticalSection(void) {
+    __asm__("addiu $a0, $zero, 1\n\t"
+            "syscall 0");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ExitCriticalSection);
+void ExitCriticalSection(void) {
+    __asm__("addiu $a0, $zero, 2\n\t"
+            "syscall 0");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SwEnterCriticalSection);
+void SwEnterCriticalSection(void) {
+    __asm__("mfc0 $a0, $12\n\t"
+            "nop\n\t"
+            "addiu $at, $zero, -0x402\n\t"
+            "and $a0, $a0, $at\n\t"
+            "mtc0 $a0, $12\n\t"
+            "nop");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SwExitCriticalSection);
+ASM_FUNC(SwExitCriticalSection, "    mfc0 $a0, $12 # maspsx-keep\n"
+                                "    nop # maspsx-keep\n"
+                                "    ori $a0, $a0, 0x401 # maspsx-keep\n"
+                                "    mtc0 $a0, $12 # maspsx-keep\n"
+                                "    nop # maspsx-keep\n"
+                                "    jr $ra # maspsx-keep\n"
+                                "    nop # maspsx-keep\n"
+                                "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", open);
+ASM_FUNC(open, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+               "    jr $t2 # maspsx-keep\n"
+               "    addiu $t1, $zero, 0x32 # maspsx-keep\n"
+               "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", close);
+ASM_FUNC(close, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                "    jr $t2 # maspsx-keep\n"
+                "    addiu $t1, $zero, 0x36 # maspsx-keep\n"
+                "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", format);
+ASM_FUNC(format, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x41 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", firstfile);
+ASM_FUNC(firstfile, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                    "    jr $t2 # maspsx-keep\n"
+                    "    addiu $t1, $zero, 0x42 # maspsx-keep\n"
+                    "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", nextfile);
+ASM_FUNC(nextfile, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                   "    jr $t2 # maspsx-keep\n"
+                   "    addiu $t1, $zero, 0x43 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", delete);
+ASM_FUNC(delete, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x45 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearPAD);
+ASM_FUNC(ChangeClearPAD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                         "    jr $t2 # maspsx-keep\n"
+                         "    addiu $t1, $zero, 0x5B # maspsx-keep\n"
+                         "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GetGp);
+ASM_FUNC(GetGp,
+         "    jr $ra # maspsx-keep\n"
+         "    addu $v0, $gp, $zero # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    nop # maspsx-keep\n")
 
 /* SPDX-License-Identifier: MIT */
 
@@ -247,7 +338,10 @@ void func_80074CE8(void) {
     DeliverEvent(0xF0000003, 0x40);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DeliverEvent);
+ASM_FUNC(DeliverEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                       "    jr $t2 # maspsx-keep\n"
+                       "    addiu $t1, $zero, 0x7 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n")
 
 /* SPDX-License-Identifier: MIT */
 
@@ -600,7 +694,10 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", v_wait);
 #endif
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090404);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearRCnt);
+ASM_FUNC(ChangeClearRCnt, "    addiu $t2, $zero, 0xC0 # maspsx-keep\n"
+                          "    jr $t2 # maspsx-keep\n"
+                          "    addiu $t1, $zero, 0xA # maspsx-keep\n"
+                          "    nop # maspsx-keep\n")
 
 extern struct Callbacks *D_8009CE50[];
 void *ResetCallback(void) {
@@ -673,13 +770,25 @@ void memclr(void *ptr, size_t size) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _96_remove);
+ASM_FUNC(_96_remove, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0x72 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ReturnFromException);
+ASM_FUNC(ReturnFromException, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                              "    jr $t2 # maspsx-keep\n"
+                              "    addiu $t1, $zero, 0x17 # maspsx-keep\n"
+                              "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetEntryInt);
+ASM_FUNC(ResetEntryInt, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                        "    jr $t2 # maspsx-keep\n"
+                        "    addiu $t1, $zero, 0x18 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", HookEntryInt);
+ASM_FUNC(HookEntryInt, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                       "    jr $t2 # maspsx-keep\n"
+                       "    addiu $t1, $zero, 0x19 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", startIntrVSync);
 
@@ -1461,7 +1570,10 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _version);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", memset);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GPU_cw);
+ASM_FUNC(GPU_cw, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x49 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
 void GsGetTimInfo(u8 *src, u8 *dst) {
     u32 flags;
@@ -1513,7 +1625,13 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", InitGeom);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", InvSquareRoot);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", VectorNormalS);
+/* Loads the vector as three words, then joins VectorNormalSS's
+ * .L8007C52C entry (included below), which runs the normalisation. */
+ASM_FUNC(VectorNormalS, "    lw $t0, 0x0($a0) # maspsx-keep\n"
+                        "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                        "    lw $t2, 0x8($a0) # maspsx-keep\n"
+                        "    b .L8007C52C # maspsx-keep\n"
+                        "    addu $a3, $ra, $zero # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", VectorNormal);
 
@@ -1583,17 +1701,45 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetMAC123);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetData32);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDQA);
+void SetDQA(long dqa) {
+    __asm__("ctc2 $a0, $27");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDQB);
+void SetDQB(long dqb) {
+    __asm__("ctc2 $a0, $28");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetBackColor);
+void SetBackColor(long rbk, long gbk, long bbk) {
+    __asm__("sll $a0, $a0, 4\n\t"
+            "sll $a1, $a1, 4\n\t"
+            "sll $a2, $a2, 4\n\t"
+            "ctc2 $a0, $13\n\t"
+            "ctc2 $a1, $14\n\t"
+            "ctc2 $a2, $15");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetFarColor);
+void SetFarColor(long rfc, long gfc, long bfc) {
+    __asm__("sll $a0, $a0, 4\n\t"
+            "sll $a1, $a1, 4\n\t"
+            "sll $a2, $a2, 4\n\t"
+            "ctc2 $a0, $21\n\t"
+            "ctc2 $a1, $22\n\t"
+            "ctc2 $a2, $23");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGeomOffset);
+ASM_FUNC(SetGeomOffset, "    sll $a0, $a0, 16 # maspsx-keep\n"
+                        "    sll $a1, $a1, 16 # maspsx-keep\n"
+                        "    ctc2 $a0, $24 # maspsx-keep\n"
+                        "    ctc2 $a1, $25 # maspsx-keep\n"
+                        "    jr $ra # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGeomScreen);
+ASM_FUNC(SetGeomScreen, "    ctc2 $a0, $26 # maspsx-keep\n"
+                        "    jr $ra # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", LightColor);
 
@@ -1615,7 +1761,13 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", OuterProduct12);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", OuterProduct0);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", Lzc);
+ASM_FUNC(Lzc, "    mtc2 $a0, $30 # maspsx-keep\n"
+              "    nop # maspsx-keep\n"
+              "    nop # maspsx-keep\n"
+              "    mfc2 $v0, $31 # maspsx-keep\n"
+              "    jr $ra # maspsx-keep\n"
+              "    nop # maspsx-keep\n"
+              "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", RotTrans);
 
@@ -1659,7 +1811,10 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _patch_gte);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", func_8007DCDC);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", FlushCache);
+ASM_FUNC(FlushCache, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0x44 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSetMute);
 
@@ -2882,7 +3037,10 @@ void SpuSetReverbVoice(s32 a, s32 b) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuClearReverbWorkArea);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", WaitEvent);
+ASM_FUNC(WaitEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                    "    jr $t2 # maspsx-keep\n"
+                    "    addiu $t1, $zero, 0xA # maspsx-keep\n"
+                    "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetIRQ);
 
@@ -2990,31 +3148,67 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuRGetAllKeysStatus);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuGetAllKeysStatus);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", exit);
+ASM_FUNC(exit, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+               "    jr $t2 # maspsx-keep\n"
+               "    addiu $t1, $zero, 0x38 # maspsx-keep\n"
+               "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", puts);
+ASM_FUNC(puts, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+               "    jr $t2 # maspsx-keep\n"
+               "    addiu $t1, $zero, 0x3F # maspsx-keep\n"
+               "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", setjmp);
+ASM_FUNC(setjmp, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x13 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", strcat);
+ASM_FUNC(strcat, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x15 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", strcmp);
+ASM_FUNC(strcmp, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x17 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", strcpy);
+ASM_FUNC(strcpy, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x19 # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", strlen);
+ASM_FUNC(strlen, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x1B # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", bzero);
+ASM_FUNC(bzero, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                "    jr $t2 # maspsx-keep\n"
+                "    addiu $t1, $zero, 0x28 # maspsx-keep\n"
+                "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", memcpy);
+ASM_FUNC(memcpy, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x2A # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", memset_8008B820);
+ASM_FUNC(memset_8008B820, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                          "    jr $t2 # maspsx-keep\n"
+                          "    addiu $t1, $zero, 0x2B # maspsx-keep\n"
+                          "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", printf);
+ASM_FUNC(printf, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x3F # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", sprintf);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", memchr);
+ASM_FUNC(memchr, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                 "    jr $t2 # maspsx-keep\n"
+                 "    addiu $t1, $zero, 0x2E # maspsx-keep\n"
+                 "    nop # maspsx-keep\n")
 
 void *memmove(u8 *dest, u8 *src, int count) {
     if (dest >= src) {
@@ -3032,23 +3226,50 @@ void *memmove(u8 *dest, u8 *src, int count) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", strtok);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_info);
+ASM_FUNC(_card_info, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0xAB # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_load);
+ASM_FUNC(_card_load, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0xAC # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_auto);
+ASM_FUNC(_card_auto, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0xAD # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", InitCARD);
+ASM_FUNC(InitCARD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                   "    jr $t2 # maspsx-keep\n"
+                   "    addiu $t1, $zero, 0x4A # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", StartCARD);
+ASM_FUNC(StartCARD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                    "    jr $t2 # maspsx-keep\n"
+                    "    addiu $t1, $zero, 0x4B # maspsx-keep\n"
+                    "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", StopCARD);
+ASM_FUNC(StopCARD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                   "    jr $t2 # maspsx-keep\n"
+                   "    addiu $t1, $zero, 0x4C # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_write);
+ASM_FUNC(_card_write, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                      "    jr $t2 # maspsx-keep\n"
+                      "    addiu $t1, $zero, 0x4E # maspsx-keep\n"
+                      "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_read);
+ASM_FUNC(_card_read, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                     "    jr $t2 # maspsx-keep\n"
+                     "    addiu $t1, $zero, 0x4F # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _new_card);
+ASM_FUNC(_new_card, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                    "    jr $t2 # maspsx-keep\n"
+                    "    addiu $t1, $zero, 0x50 # maspsx-keep\n"
+                    "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_clear);
 
