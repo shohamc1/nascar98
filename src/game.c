@@ -1453,25 +1453,14 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
     } else {
         sign = '+';
     }
-    asm volatile("
-                 lui $2,
-                 0x7482 ori $2, $2, 0x296b mult $7, $2 mfhi $8 lui $4,
-                 0x6666 ori $4, $4, 0x6667 mult $7, $4 lui $3, 0x1b4e ori $3,
-                 $3, 0x81b5 mfhi $5 sra $6, $7, 31 sra $2, $8, 18 mult $7,
-                 $3 subu $10, $2, $6 sra $5, $5, 6 subu $5, $5, $6 sll $2, $5,
-                 2 addu $2, $2, $5 sll $2, $2, 5 subu $2, $7, $2 sll $3, $2,
-                 5 subu $3, $3, $2 sll $3, $3, 2 addu $3, $3, $2 mfhi $8 sll $3,
-                 $3, 3 sll $2, $10, 4 mult $3, $4 subu $2, $2, $10 sll $2, $2,
-                 2 sra $4, $8, 10 subu $4, $4, $6 subu $8, $4, $2 sll $2, $4,
-                 4 subu $2, $2, $4 sll $2, $2, 2 subu $9, $5, $2 "
-                 : "=r"(hours), "=r"(totalSeconds), "=r"(minutes),
-                   "=r"(seconds), "=r"(rem1000)
-                 : "r"(time)
-                 : "$2", "$4", "$6");
+    asm volatile(
+        "\n\tlui\t$2,0x7482\n\tori\t$2,$2,0x296b\n\tmult\t$7,$2\n\tmfhi\t$8\n\tlui\t$4,0x6666\n\tori\t$4,$4,0x6667\n\tmult\t$7,$4\n\tlui\t$3,0x1b4e\n\tori\t$3,$3,0x81b5\n\tmfhi\t$5\n\tsra\t$6,$7,31\n\tsra\t$2,$8,18\n\tmult\t$7,$3\n\tsubu\t$10,$2,$6\n\tsra\t$5,$5,6\n\tsubu\t$5,$5,$6\n\tsll\t$2,$5,2\n\taddu\t$2,$2,$5\n\tsll\t$2,$2,5\n\tsubu\t$2,$7,$2\n\tsll\t$3,$2,5\n\tsubu\t$3,$3,$2\n\tsll\t$3,$3,2\n\taddu\t$3,$3,$2\n\tmfhi\t$8\n\tsll\t$3,$3,3\n\tsll\t$2,$10,4\n\tmult\t$3,$4\n\tsubu\t$2,$2,$10\n\tsll\t$2,$2,2\n\tsra\t$4,$8,10\n\tsubu\t$4,$4,$6\n\tsubu\t$8,$4,$2\n\tsll\t$2,$4,4\n\tsubu\t$2,$2,$4\n\tsll\t$2,$2,2\n\tsubu\t$9,$5,$2"
+        : "=r"(hours), "=r"(totalSeconds), "=r"(minutes), "=r"(seconds),
+          "=r"(rem1000)
+        : "r"(time)
+        : "$2", "$4", "$6");
     mode = D_800A2EACAbsolute[0];
-    asm volatile("
-                 sra $3,
-                 $3, 31 mfhi $14 sra $2, $14, 6 "
+    asm volatile("\n\tsra\t$3,$3,31\n\tmfhi\t$14\n\tsra\t$2,$14,6"
                  : "=r"(msSign), "=r"(msShift)
                  : "0"(rem1000)
                  : "$14");
@@ -9340,7 +9329,6 @@ s8 func_80039C68(u8 *arg0, s32 arg1, s32 arg2) {
     s32 entryY;
     s32 tableB;
     register s32 hi asm("t1");
-    s32 result;
     s32 result;
 
     heading = *(u16 *)(arg0 + 0x10);

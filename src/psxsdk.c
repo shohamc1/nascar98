@@ -139,6 +139,7 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     r->mode = 0;
     r->target = target;
     asm("");
+    asm("" : : "r"(timer));
     if (isLow) {
         if (mode & 0x10) {
             md = 0x49;
@@ -153,13 +154,11 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     }
     if (mode & 0x1000) {
         md |= 0x10;
+        addr = t * 16;
     }
-    result = 1;
-    addr = t * 16;
-    ((RCnt *)(addr + (u32)D_8009B9E8[0]))->mode = md;
-    return result;
+    ((RCnt *)((u32)D_8009B9E8[0] + addr))->mode = md;
+    return 1;
 }
-
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
 #endif
