@@ -2,6 +2,7 @@
 /* SDK C from sotn-decomp d818995ec49ef76e3b1625a96f4360108b3168be. */
 #include "common.h"
 #include "psxsdk_internal.h"
+#include "libpress.h"
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
 #include <psxsdk/stdarg.h>
@@ -3273,48 +3274,114 @@ ASM_FUNC(_new_card, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_clear);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTReset);
+extern void MDEC_reset(s32 mode);
+extern void MDEC_in(u_long *buf, s32 size);
+extern void MDEC_out(u_long *buf, s32 size);
+extern s32 MDEC_in_sync(void);
+extern s32 MDEC_out_sync(void);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTGetEnv);
+void DecDCTReset(s32 mode) {
+    if (mode == 0) {
+        ResetCallback();
+    }
+    MDEC_reset(mode);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTPutEnv);
+extern u_long gMdecLumaQuantTable[];
+extern u_long gMdecChromaQuantTable[];
+extern u_long gMdecIdctCoefficients[];
+extern u_long gMdecQuantTablePacket[];
+extern u_long gMdecIdctPacket[];
+
+DECDCTENV *DecDCTGetEnv(DECDCTENV *env) {
+    s32 i;
+    u_long *src;
+    u_long *dst;
+
+    dst = (u_long *)env->iq_y;
+    src = gMdecLumaQuantTable;
+    for (i = 15; i != -1; i--) {
+        *dst++ = *src++;
+    }
+    dst = (u_long *)env->iq_c;
+    src = gMdecChromaQuantTable;
+    for (i = 15; i != -1; i--) {
+        *dst++ = *src++;
+    }
+    dst = (u_long *)env->dct;
+    src = gMdecIdctCoefficients;
+    for (i = 31; i != -1; i--) {
+        *dst++ = *src++;
+    }
+    return env;
+}
+
+DECDCTENV *DecDCTPutEnv(DECDCTENV *env) {
+    s32 i;
+    u_long *src;
+    u_long *dst;
+
+    src = (u_long *)env->iq_y;
+    dst = gMdecLumaQuantTable;
+    for (i = 15; i != -1; i--) {
+        *dst++ = *src++;
+    }
+    dst = gMdecChromaQuantTable;
+    src = (u_long *)env->iq_c;
+    for (i = 15; i != -1; i--) {
+        *dst++ = *src++;
+    }
+    MDEC_in(gMdecQuantTablePacket, 32);
+    MDEC_in(gMdecIdctPacket, 32);
+    return env;
+}
 
 /* SPDX-License-Identifier: MIT */
 
-u16 DecDCTBufSize(u16 *buf) {
-    return buf[0];
+s32 DecDCTBufSize(u_long *buf) {
+    return *(u16 *)buf;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTin);
-
-/* SPDX-License-Identifier: MIT */
-
-extern void MDEC_out(u_long *);
-
-void DecDCTout(u_long *buf) {
-    MDEC_out(buf);
-}
-
-/* SPDX-License-Identifier: MIT */
-
-extern void MDEC_in_sync(void);
-
-void DecDCTinSync(void) {
-    MDEC_in_sync();
+void DecDCTin(u_long *buf, s32 mode) {
+    if (mode & 1) {
+        *buf &= ~0x08000000;
+    } else {
+        *buf |= 0x08000000;
+    }
+    if (mode & 2) {
+        *buf |= 0x02000000;
+    } else {
+        *buf &= ~0x02000000;
+    }
+    MDEC_in(buf, *(u16 *)buf);
 }
 
 /* SPDX-License-Identifier: MIT */
 
-extern void MDEC_out_sync(void);
-
-void DecDCToutSync(void) {
-    MDEC_out_sync();
+void DecDCTout(u_long *buf, s32 size) {
+    MDEC_out(buf, size);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DecDCTinCallback);
+/* SPDX-License-Identifier: MIT */
 
-long DecDCToutCallback(void (*func)()) {
-    return (long)DMACallback(1, func);
+s32 DecDCTinSync(s32 mode) {
+    /* This library version ignores mode. */
+    return MDEC_in_sync();
+}
+
+/* SPDX-License-Identifier: MIT */
+
+s32 DecDCToutSync(s32 mode) {
+    /* This library version ignores mode. */
+    return MDEC_out_sync();
+}
+
+s32 DecDCTinCallback(void (*func)(void)) {
+    return (s32)DMACallback(0, func);
+}
+
+s32 DecDCToutCallback(void (*func)(void)) {
+    return (s32)DMACallback(1, func);
 }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", MDEC_reset);

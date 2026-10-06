@@ -22,6 +22,62 @@ original compiler. Each imported function passed a complete executable byte
 comparison. `make check` also prints `MATCH` with the combined source.
 
 
+## SDK version and headers
+
+The 2026-10-07 audit identifies **Runtime Library 3.5 as the best matching
+baseline**. Run `.venv/bin/python tools/psyq_sigs.py disc/SLUS_005.21`.
+The 3.5 catalogue matches 174 objects with a summed signature length of
+103,672 bytes. Versions 3.6.10 and 3.6.11 each match 173 objects and 49,768
+bytes. These totals are signature scores, not decompilation progress or
+proof that every linked object came from one release. Relocation bytes
+marked with wildcards are excluded from comparison.
+
+Selected library scores (objects / signature bytes):
+
+| Library | 3.5 | 3.6.10 |
+| --- | ---: | ---: |
+| LIBCD | 5 / 10,156 | 4 / 4,268 |
+| LIBGPU | 4 / 17,248 | 2 / 3,432 |
+| LIBGTE | 19 / 6,656 | 23 / 5,360 |
+| LIBSND | 41 / 40,664 | 56 / 20,016 |
+| LIBSPU | 33 / 15,104 | 21 / 6,660 |
+| LIBPRESS | 1 / 1,808 | 0 / 0 |
+
+The extra 3.6 GTE and sound matches lie wholly inside larger 3.5 object
+matches. They do not establish a mixed-version build. LIBPRESS.OBJ matches
+at `0x8008C2F4`, including its full 1,808-byte text signature.
+
+The [SDK bundle](https://psx.arthus.net/sdk/Psy-Q/PSYQ_SDK.zip) contains
+`psyq/lib/old_libs/LIB35.ZIP`. Its README identifies it as release 3.5.
+The nested ZIP has SHA-256
+`f5ea3176debfa7843ac2e187397df5ce02ef3c59721a0d3681d9f6a214546973`.
+It contains 42 include-directory files and 22 library/object files.
+The original files are retained locally under `tools/psyq-reference/3.5/`,
+which Git ignores. They are reference inputs, not build dependencies.
+To reproduce the extraction, unpack the nested ZIP and replace backslashes
+in its member names with directory separators.
+
+`INCLUDE/LIBPRESS.H` explicitly identifies Runtime Library Version 3.5.
+Its SHA-256 is
+`dda3a7a92bacb1ad15fd7802d38f99ea2c5e520c5ba642b00522a1210cac4489`.
+The project-owned `include/libpress.h` declares the used video interface.
+Both game callers and SDK implementations include it. The vendored headers
+in `include/psxsdk/` remain unchanged.
+
+Five functions were reconstructed as C: `DecDCTReset`, `DecDCTGetEnv`,
+`DecDCTPutEnv`, `DecDCTin`, and `DecDCTinCallback` (512 bytes total).
+The existing output, sync, buffer-size, and output-callback wrappers now
+use the documented argument and return types. The 3.5 sync implementation
+ignores its public mode argument. `DecDCTPutEnv` copies the two quantization
+tables but uses the existing IDCT coefficients, as the retail code does.
+The environment layout has a compile-time size check. Full-executable
+`make check` prints `MATCH`; this is not a native video-playback test.
+
+The 3.5 `inline_c.h` has 186 distinct GTE macro names, of which 149 are
+absent from the project headers. `gtemac.h` adds 42 composite macro names.
+These are candidates for future function matching, not a reason to import
+all macros. The earlier 4.6 counts do not describe this release.
+
 ## MIT notice for imported code
 
 Attribution: contributors to Xeeynamo/sotn-decomp at the commit above.

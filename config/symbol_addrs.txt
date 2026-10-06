@@ -697,3 +697,10 @@ D_8008D228 = 0x8008D228; // force_not_migration:True
 D_8008D234 = 0x8008D234; // force_not_migration:True
 D_80090404 = 0x80090404; // force_not_migration:True
 D_80090698 = 0x80090698; // force_not_migration:True
+
+// MDEC tables and command packets, checked through DecDCTGetEnv/PutEnv.
+gMdecLumaQuantTable = 0x800A2BA0;
+gMdecChromaQuantTable = 0x800A2BE0;
+gMdecIdctCoefficients = 0x800A2C24;
+gMdecQuantTablePacket = 0x800A2B9C;
+gMdecIdctPacket = 0x800A2C20;

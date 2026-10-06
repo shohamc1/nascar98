@@ -1,4 +1,5 @@
 #include "common.h"
+#include "libpress.h"
 #include "fixed_addrs.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
@@ -45,7 +46,6 @@ extern s32 D_800A2EB8[];
 extern s32 D_800A2EC8[];
 extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A2EACAbsolute[];
-extern void DecDCTReset(s32);
 extern void func_80058D94(void);
 extern void func_800531B8(void);
 extern void func_800122D8(void);
@@ -22130,7 +22130,6 @@ void SoundSetMasterVolume(s16 left, s16 right) {
 
 extern s32 *D_800A3398;
 extern s32 D_800A33A0;
-extern void DecDCTout(u_long *, s32);
 void func_8006FAAC(void) {
     typedef struct {
         RECT unk0[2];
@@ -22183,9 +22182,6 @@ void func_8006FAAC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006FBB0);
 
-extern void DecDCTin(u_long *, s32);
-extern void DecDCTout(u_long *, s32);
-extern s32 DecDCToutSync(s32);
 extern void func_800708D8(void *, s32);
 extern s32 *D_800A3398;
 extern s32 D_800A339C;

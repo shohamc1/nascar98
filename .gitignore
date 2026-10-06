@@ -17,6 +17,7 @@
 # Downloaded tools (`make tools`).
 /tools/bin/
 /tools/cc/
+/tools/psyq-reference/
 /.venv/
 __pycache__/
 
