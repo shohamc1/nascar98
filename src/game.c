@@ -868,38 +868,40 @@ extern s32 D_800A2D44;
 extern void ListPushFront(u8 *, u8 **, u8 **);
 extern void func_8001C668(void *, void *);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Sentinel/value preload and ListPushFront argument setup
- * remain different; the next-node address does not occupy retail's call
- * delay slot and the best source is shorter. */
 s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
     s32 count;
+    s32 sentinel;
     s16 *cursor;
     s32 value;
+    register u8 **head asm("a1");
+    register u8 **tail asm("a2");
 
     count = 0;
-    cursor = arg0;
-    value = cursor[0];
-    if (value != -1) {
+    if (arg0[0] != -1) {
+        asm("" : : : "memory");
+        sentinel = -1;
+        cursor = arg0;
+        value = cursor[0];
         do {
-            ListPushFront(arg2 + value * 0x2C, (u8 **)arg1,
-                          (u8 **)((u8 *)arg1 + 4));
+            head = (u8 **)arg1;
             cursor++;
+            tail = (u8 **)((u8 *)arg1 + 4);
+            do {
+            } while (0);
+            ListPushFront(arg2 + value * 0x2C, head, tail);
             value = cursor[0];
             count++;
-        } while (value != -1);
+        } while (value != sentinel);
     }
     if (count != 0) {
         func_8001C668(arg1, (void *)((u8 *)arg1 + 4));
     }
     if ((count & 1) == 0) {
-        count += 1;
+        asm("");
+        count++;
     }
     return count;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800157B0);
-#endif
 
 extern s32 sprintf(char *, u8 *);
 
@@ -9044,10 +9046,6 @@ s32 func_80036F64(s32 *a, s32 *b, s32 arg2) {
     return arg2 < (((a[0] - b[0]) * temp1 - (a[1] - b[1]) * temp2) >> 16);
 }
 #else
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Absolute pointer loads are correct. GCC extracts the
- * first product before the second table load and reuses argument registers
- * differently; the function remains four bytes short. */
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 
@@ -9055,43 +9053,69 @@ s32 func_80036F64(u8 *arg0, u8 *arg1, s32 arg2) {
     s32 idx;
     s32 diffX;
     s32 diffY;
-    s32 crossY;
+    register s32 crossX asm("$8");
+    s32 tableAX;
+    s32 tableBY;
+    register s32 posAy asm("$2");
+    s32 posBy;
+    s32 multLo;
     idx = (*((s16 *)(arg1 + 0x114))) << 2;
+    tableAX = *((s32 *)(idx + ((u32)D_800A3A2CAbsolute[0])));
     diffX = (*((s32 *)arg0)) - (*((s32 *)arg1));
-    diffY = (*((s32 *)(arg0 + 4))) - (*((s32 *)(arg1 + 4)));
-    crossY = (*((s32 *)(idx + ((u32)D_800A3A34Absolute[0])))) * diffY;
-    return arg2 < ((((*((s32 *)(idx + ((u32)D_800A3A2CAbsolute[0])))) * diffX) -
-                    crossY) >>
-                   16);
+    asm volatile("mult %1,%2" : "=r"(multLo) : "r"(tableAX), "r"(diffX));
+    posAy = *((s32 *)(arg0 + 4));
+    posBy = *((s32 *)(arg1 + 4));
+    tableBY = *((s32 *)(idx + ((u32)D_800A3A34Absolute[0])));
+    asm volatile("mflo %0" : "=r"(crossX) : "r"(multLo));
+    diffY = posAy - posBy;
+    return arg2 < ((crossX - (tableBY * diffY)) >> 16);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80036F64);
-#endif
 #endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: The cross-product sibling recovers the correct absolute
- * table/difference structure for this dot product. Product-result timing and
- * argument-register reuse remain, including a four-byte size deficit. */
+extern s32 D_800A3A2CAbsolute[];
+extern s32 D_800A3A34Absolute[];
+
 s32 func_80036FC8(s32 *a, s32 *b) {
+    register s32 base1 asm("v0");
+    register s32 valueX asm("v1");
+    register s32 otherX asm("a3");
+    register s32 base2 asm("v1");
+    register s32 valueY asm("v0");
+    register s32 otherY asm("a0");
+    register s32 table1 asm("v0");
+    register s32 table2 asm("v1");
+    register s32 productX asm("a3");
+    register s32 productY asm("v1");
+    s32 heading;
     s32 index;
+    s32 addr1;
     s32 diffX;
+    s32 addr2;
     s32 diffY;
-    s32 productX;
-    s32 productY;
-    s32 *otherPosition;
-    index = (*((s16 *)(((u8 *)b) + 0x114))) << 2;
-    diffX = a[0] - b[0];
-    productX = (*((s32 *)(index + ((u32)D_800A3A34Absolute[0])))) * diffX;
-    otherPosition = b;
-    diffY = a[1] - otherPosition[1];
-    productY = diffY;
-    productY = (*((s32 *)(index + ((u32)D_800A3A2CAbsolute[0])))) * productY;
-    return ((productY + productX) >> 16) > 0;
+    heading = *(s16 *)(((u8 *)b) + 0x114);
+    asm volatile("lui %0, %%hi(D_800A3A34Absolute)\n\t"
+                 "lw %0, %%lo(D_800A3A34Absolute)(%0)"
+                 : "=r"(base1));
+    asm volatile("lw\t%0,0(%1)" : "=r"(valueX) : "r"(a));
+    asm volatile("lw\t%0,0(%1)" : "=r"(otherX) : "r"(b));
+    index = heading << 2;
+    addr1 = index + (u32)base1;
+    asm volatile("lw\t%0,0(%1)" : "=r"(table1) : "r"(addr1));
+    diffX = valueX - otherX;
+    asm volatile("mult\t%0,%1" : : "r"(table1), "r"(diffX));
+    asm volatile("lui %0, %%hi(D_800A3A2CAbsolute)\n\t"
+                 "lw %0, %%lo(D_800A3A2CAbsolute)(%0)"
+                 : "=r"(base2));
+    asm volatile("lw\t%0,4(%1)" : "=r"(valueY) : "r"(a));
+    asm volatile("lw\t%0,4(%1)" : "=r"(otherY) : "r"(b));
+    addr2 = index + (u32)base2;
+    asm volatile("lw\t%0,0(%1)" : "=r"(table2) : "r"(addr2));
+    asm volatile("mflo\t%0" : "=r"(productX));
+    diffY = valueY - otherY;
+    asm volatile("mult\t%0,%1" : : "r"(table2), "r"(diffY));
+    asm volatile("mflo\t%0" : "=r"(productY));
+    return ((productX + productY) >> 16) > 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80036FC8);
-#endif
 
 #ifdef NON_MATCHING
 extern s32 D_800BE974[];
@@ -10583,31 +10607,22 @@ s32 func_8003DB18(s32 start, s32 end, s32 value) {
     return result;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 76 bytes versus retail 76; 8 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * A single result local recovers retail length, but speculative division/compare delay-slot scheduling and the final result register/copy remain different.
- */
 s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
-    s32 limit;
-    s32 result;
-
-    limit = D_800BE974[0];
+    register s32 cmp asm("v1");
+    register s32 result asm("v0");
+    s32 offset;
+    offset = D_800BE974[0];
     if (arg2 < arg1) {
-        if (limit / 2 >= arg0) {
-            arg2 = arg2 + limit;
-            arg0 = arg0 + limit;
-        }
+        arg2 += offset;
+        if (offset / 2 >= arg0)
+            arg0 += offset;
     }
     result = 0;
-    if (arg0 >= arg1) {
+    cmp = arg0 < arg1;
+    if (cmp == 0)
         result = arg2 >= arg0;
-    }
     return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003DB5C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003DBA8);
 
@@ -21265,15 +21280,14 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006C700);
 #endif
 
 #ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 144 bytes, 9 linked function bytes differ after correcting func_8005AFF0 to
- * its existing s16(s8) prototype. Reusing the dead cursor for the empty-entry
- * zero return fixes most allocation differences. The first saved-argument
- * copies and commutative address operand order still differ; bounded
- * permutation and follow-up probes did not match. */
+/* Wave-32 (2026-10-06): 8 bytes off, all in 4 prologue words. gcc always
+ * homes arg2 to s0 as the early entry pair with the a3 copy deferred into the
+ * jal delay; retail is the inverse. 30+ source shapes failed; root cause mapped
+ * via cc1 -da dumps (notes in /tmp/n98-w32d/notes.md). addu operand order fixed
+ * via the s0 pin + hand asm below. */
+extern s32 func_8005AEC8(u32, void *);
 s32 func_8006C94C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s16 *arg4) {
-    extern s32 func_8005AEC8(s32, s32);
-    extern s16 func_8005AFF0(s8);
+    register s32 sum asm("s0");
     s32 cur = arg3;
     s32 val;
     s32 ret;
@@ -21285,9 +21299,9 @@ s32 func_8006C94C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s16 *arg4) {
         *arg4 = func_8005AFF0(0x20);
         return cur;
     }
-    ret = func_8005AEC8(val, cur);
-    val += cur;
-    *arg4 = func_8005AFF0(*(s8 *)val);
+    ret = func_8005AEC8(val, (void *)cur);
+    asm("addu %0,%1,%2" : "=r"(sum) : "r"(cur), "r"(val));
+    *arg4 = func_8005AFF0(*(s8 *)sum);
     return ret;
 }
 #else
