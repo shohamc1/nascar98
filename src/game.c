@@ -2257,40 +2257,38 @@ void ListDispatchCallbacks(u8 *arg0) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Indexed four-vertex traversal restores the five-save
- * 0x30 frame. GCC still chooses a different vertex/flag cursor recurrence,
- * loop-counter timing and mask operand ordering. */
 extern long RotTransPers_nom();
 extern void func_8003382C();
 
 void func_8001D108(u8 *arg0) {
     s32 flags;
+    u8 *vertexPtr;
     s32 index;
-    u16 *vertexPtr;
     u8 *flagPtr;
+    u8 *obj;
     SVECTOR vertex;
+    s32 masked;
 
+    obj = arg0;
     flags = -1;
+    vertexPtr = obj + 0x54;
     index = 0;
-
-    do {
-        vertexPtr = (u16 *)(arg0 + 0x54) + index * 4;
-        flagPtr = (u8 *)(vertexPtr + 3);
-        vertex.vx = vertexPtr[0];
-        vertex.vy = *(u16 *)(flagPtr - 4);
-        vertex.vz = *(u16 *)(flagPtr - 2);
-        RotTransPers_nom(&vertex);
-        func_8003382C(vertexPtr);
-        flags &= *(u16 *)flagPtr & 0x7EF6;
-        index += 1;
-
-    } while (index < 4);
-    *(s16 *)(arg0 + 0xE) = flags;
+    flagPtr = obj + 0x5A;
+again:
+    vertex.vx = *(u16 *)vertexPtr;
+    vertex.vy = *(u16 *)(flagPtr - 4);
+    vertex.vz = *(u16 *)(flagPtr - 2);
+    RotTransPers_nom(&vertex);
+    func_8003382C(vertexPtr);
+    masked = flags & 0x7EF6;
+    flags = *(u16 *)flagPtr & masked;
+    flagPtr += 8;
+    vertexPtr += 8;
+    if (++index < 4) {
+        goto again;
+    }
+    *(s16 *)(obj + 0xE) = flags;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001D108);
-#endif
 
 void func_8001D1B0(s32 *destination, s32 *source) {
     s32 first;
@@ -2468,7 +2466,64 @@ Unk16 *func_8001E040(s32 i) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001E050);
 
+#ifdef NON_MATCHING
+/* Wave-33 (2026-10-06): 11 bytes off (4 instructions, register-coalesce of the
+ * count sign-extension temp). The old positional-cc1-ICE wall is DEAD at this
+ * TU position (block-scope externs + TU shift; ~50 compiles, zero ICEs).
+ * gcc-source analysis (reorg.c) says retail's delay-slot fill is unreachable
+ * from plain C. Candidate name: GraphicsSelectImageBank. */
+void func_8001E17C(s32 index) {
+    extern s32 D_800B9F44[];
+    extern void *D_800A368C;
+    extern void *D_800A37E4;
+    extern u16 D_800A3754;
+    extern u16 D_800A3738;
+    extern void GraphicsLoadImageWithXOffset(s32);
+    volatile s32 pad[2];
+    register u8 *reg4 asm("$4");
+    register u8 *headReg asm("$7");
+    register s32 iReg asm("$5");
+    register u32 baseReg asm("$6");
+    register s32 limitReg asm("$8");
+    register s32 count asm("$3");
+    register u16 wReg asm("$2");
+    u16 h;
+
+    reg4 = (u8 *)D_800B9F44[index];
+    D_800A368C = reg4;
+    wReg = *(u16 *)reg4;
+    h = *(u16 *)(reg4 + 2);
+    headReg = reg4 + 4;
+    D_800A37E4 = headReg;
+    D_800A3754 = wReg;
+    count = (s16)wReg;
+    D_800A3738 = h;
+    D_800A36CC = (Unk16 *)(headReg + count * 8);
+    asm volatile(".set\tnoreorder\n"
+                 "\tblez\t%0, 9f\n"
+                 "\tmove\t%1, $0\n"
+                 "\tmove\t%2, %3\n"
+                 "\tmove\t%4, %0\n"
+                 "\tmove\t%3, %5\n"
+                 "\t.set\treorder"
+                 :
+                 : "r"(count), "r"(iReg), "r"(baseReg), "r"(reg4),
+                   "r"(limitReg), "r"(headReg)
+                 : "memory");
+    do {
+        ((u32 *)reg4)[0] += baseReg;
+        ((u32 *)reg4)[1] += baseReg;
+        iReg += 1;
+        reg4 = (u8 *)((u32 *)reg4 + 2);
+    } while (iReg < limitReg);
+    asm volatile("9:");
+    if (D_800A2EDAnm[0] != 0) {
+        GraphicsLoadImageWithXOffset(0);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8001E17C);
+#endif
 
 void func_8001E230(s32 arg0, s32 arg1) {
     extern s32 func_8003C584(s32, void *);
@@ -7133,7 +7188,23 @@ u8 *func_80032544(u8 *arg0, s32 arg1) {
     return obj;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003271C);
+void func_8003271C(s32 arg0) {
+    u32 i;
+    u32 *pad;
+
+    i = 0;
+    pad = (u32 *)SCRATCHPAD_BASE;
+    do {
+        if (arg0 < 0) {
+            pad[0] = 0;
+        } else {
+            pad[0] = (i << 0x10) | (i << 8) | i;
+        }
+        pad += 1;
+        i += 1;
+        arg0 += 1;
+    } while (i < 0x100U);
+}
 
 /*
  * Handwritten-GTE textured triangle renderer: rtpt on three vertices,
@@ -17524,31 +17595,22 @@ void func_8005EC5C(s32 arg0) {
     strcat(D_800BA058, D_800A333C);
 }
 #else
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * All three corrected alternatives produce 164 bytes versus 168 retail.
- * Removed undefined 32-bit shift-by-32 and an invalid third argument to
- * the two-argument function. Division naturally produces mfhi a2.
- * Remaining walls are CSE of the absolute result address and the buffer
- * address across calls.
- */
-extern s16 D_8009AF84[];
-void func_8005EC5C(u8 index) {
+extern u8 D_8009AF84[];
+extern s32 D_800A3814[];
+extern s32 D_800A3814Abs[];
+extern char D_800BA058NM[] asm("D_800BA058.NON_MATCHING");
+asm(".globl D_800A3814Abs\nD_800A3814Abs = D_800A3814");
+void func_8005EC5C(u8 arg0) {
     s32 value;
-    s32 scaled;
 
-    value = D_8009AF84[index] * D_800A37D0[0];
-    scaled = value / 100;
-    ((s32 *)D_800A37C4Absolute)[20] = scaled;
-    if (scaled < 3) {
-        ((s32 *)D_800A37C4Absolute)[20] = 3;
+    value = *(s16 *)&D_8009AF84[(arg0 & 0xFF) * 2] * D_800A37D0[0] / 100;
+    *(s32 *)&D_800A3808b[0] = value;
+    if (value < 3) {
+        D_800A3814[0] = 3;
     }
-    func_80012EA8(((s32 *)D_800A37C4Absolute)[20], D_800BA058);
-    strcat(D_800BA058, D_800A333C);
+    func_80012EA8(D_800A3814Abs[0], D_800BA058);
+    strcat(D_800BA058NM, D_800A333C);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005EC5C);
-#endif
 
 #if 0
 /* w7g draft: everything matches except gcc CSEs the two D_800BA058
@@ -22912,21 +22974,17 @@ s32 func_80072A5C(void) {
     return D_800A351C[0x7B24 / 4];
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 140 bytes, only 3 linked function bytes differ. The accurate __divdi3
- * 64-bit prototype must precede the calls; without it the old draft loses 20
- * bytes through implicit-int truncation. Remaining three instructions use
- * different registers for the input and multiplication constant. Eight source
- * probes plus a 10-minute permutation run did not remove the register swap. */
+extern volatile s32 *D_800A351C;
 extern long long __divdi3(long long dividend, long long divisor);
 s32 func_80072A70(void) {
-    u32 val;
+    register u32 val asm("v1");
+    register u32 pct asm("v0");
     long long q;
     s32 mode;
 
     val = D_800A351C[0x7B24 / 4];
-    q = (long long)val * 100;
+    pct = 100;
+    q = (long long)val * pct;
     q = __divdi3(q, 0x100);
     mode = D_800A351C[0x7B74 / 4];
     if (mode != 0) {
@@ -22938,9 +22996,6 @@ s32 func_80072A70(void) {
     }
     return (s32)q;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80072A70);
-#endif
 
 extern volatile s32 *D_800A351C;
 /* Enabled after the maspsx li-$reg,0 wrapper fix; see matching.md. */
