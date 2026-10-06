@@ -795,26 +795,22 @@ void func_80014A70(void) {
     D_800A38F4 = (*((s32 *)D_800A3A54) & 0x0FFFFFFF) - value0;
 }
 
-#ifdef NON_MATCHING
-/* Wall: the D_800A2F10 load lands in v0 and the /40 shift in v1; retail
- * has them swapped (load v1, shift v0). Every source shape tried keeps
- * our allocation. */
-extern u32 gPrimitiveCursor[];
+extern u32 gPrimitiveCursor_gp asm("gPrimitiveCursor.NON_MATCHING");
 extern u32 D_800A3570;
 extern s32 D_800A38F4;
 extern s32 D_800A2F10[];
 
 s32 func_80014AC8(s32 arg0) {
+    s32 freePrims;
     s32 usedPrims;
 
     usedPrims =
-        ((gPrimitiveCursor[0] & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
-    D_800A38F4 = D_800A2F10[0] - usedPrims;
+        ((gPrimitiveCursor_gp & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
+    freePrims = D_800A2F10[0];
+    D_800A38F4 = freePrims - usedPrims;
+    asm volatile("" : : "r"(freePrims));
     return arg0 < D_800A38F4;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80014AC8);
-#endif
 
 extern void *HeapAlloc(u32);
 extern void SystemShowFatalError(char *);
@@ -2998,7 +2994,75 @@ void func_8001F198(void) {
     D_800A37B4 = a;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F1D4);
+extern s32 D_800A3784;
+extern s32 D_800A3790;
+extern s32 D_800A3794;
+extern s32 D_800A3798;
+extern s32 D_800A379C;
+extern s32 D_800A37A4;
+extern s32 D_800A37AC;
+extern s32 D_800A37B4;
+extern s32 D_800A37C4;
+
+void func_8001F1D4(s32 *vec) {
+    register s32 m asm("v0");
+    register s32 x asm("a2");
+    register s32 y asm("a1");
+    register s32 z asm("v1");
+    register s32 p0 asm("t4");
+    register s32 p1 asm("t3");
+    register s32 p2 asm("t1");
+    register s32 p3 asm("t2");
+    register s32 p4 asm("t0");
+    register s32 p5 asm("a3");
+    register s32 p6 asm("a2");
+    register s32 p7 asm("a1");
+    register s32 p8 asm("v1");
+    register s32 row asm("v0");
+
+    x = vec[0];
+    m = D_800A3784;
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    y = vec[1];
+    m = D_800A3790;
+    asm volatile("mflo\t%0" : "=r"(p0) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    z = vec[2];
+    m = D_800A3794;
+    asm volatile("mflo\t%0" : "=r"(p1) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    m = D_800A3798;
+    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    m = D_800A379C;
+    asm volatile("mflo\t%0" : "=r"(p3) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    m = D_800A37A4;
+    asm volatile("mflo\t%0" : "=r"(p4) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    m = D_800A37AC;
+    asm volatile("mflo\t%0" : "=r"(p5) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    m = D_800A37B4;
+    asm volatile("mflo\t%0" : "=r"(p6) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    m = D_800A37C4;
+    asm volatile("mflo\t%0" : "=r"(p7) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    row = p0 + p1;
+    row = row + p2;
+    row = row >> 16;
+    vec[0] = row;
+    row = p3 + p4;
+    row = row + p5;
+    row = row >> 16;
+    vec[1] = row;
+    row = p6 + p7;
+    asm volatile("mflo\t%0" : "=r"(p8) : : "lo");
+    row = row + p8;
+    row = row >> 16;
+    vec[2] = row;
+}
 
 extern s32 MathMultiplyFixed16(s32, s32);
 extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
@@ -3195,25 +3259,19 @@ void func_8001F8C0(s32 *object) {
  * call as retail does, so it needs a hazard nop (+4 bytes). The product
  * save (move s0,v0) is also emitted before the cos shift instead of in
  * the second jal's delay slot. Three source shapes tried. */
-#ifdef NON_MATCHING
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3) {
-    s32 sinValue;
-    s32 cosValue;
-    s32 product;
+    s32 *matrixB;
+    s32 productA;
+    s32 productB;
 
-    sinValue = arg1 << 16;
-    product = MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], sinValue);
-    cosValue = arg2 << 16;
-    arg3[0] =
-        (product -= MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], cosValue)) >>
-        16;
-    arg3[1] = (MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], sinValue) +
-               MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], cosValue)) >>
+    productA = MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], arg1 << 16);
+    productB = MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], arg2 << 16);
+    matrixB = (s32 *)D_800A3A34;
+    arg3[0] = (productA - productB) >> 16;
+    arg3[1] = (MathMultiplyFixed16(matrixB[arg0], arg1 << 16) +
+               MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], arg2 << 16)) >>
               16;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F90C);
-#endif
 
 extern s32 D_800AE868[];
 extern s32 D_800AE86C[];
@@ -4000,7 +4058,39 @@ void func_800255A0(u8 *arg0) {
     *(s32 *)(arg0 + 0x354) = (s32)func_80025594;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80025614);
+void func_80025614(u8 *arg0) {
+    s32 value;
+    s32 heading;
+    s32 *table1;
+    s32 *table2;
+    s32 index;
+
+    *(s32 *)(arg0 + 0x238) = *(s32 *)(arg0 + 0x238) & 0xFFFF7DBF;
+    value = RandomScaledGet(10);
+    if (value < 0) {
+        value = -RandomScaledGet(10);
+    } else {
+        value = RandomScaledGet(10);
+    }
+    *(s16 *)(arg0 + 0x2B0) = value + 20;
+    value = RandomScaledGet(10);
+    if (value < 0) {
+        value = -RandomScaledGet(10);
+    } else {
+        value = RandomScaledGet(10);
+    }
+    value = value + 20;
+    asm("");
+    heading = *(s16 *)(arg0 + 0x114);
+    *(s16 *)(arg0 + 0x2D8) = value;
+    table1 = *(s32 **)D_800A3A2CAbsolute;
+    table2 = *(s32 **)D_800A3A34Absolute;
+    *(s16 *)(arg0 + 0x1BC) = 0;
+    index = (0x480 - heading) & 0x3FF;
+    *(s32 *)(arg0 + 0xC4) += table1[index] * 20;
+    *(s32 *)(arg0 + 0xC8) += table2[index] * 20;
+    *(s32 *)(arg0 + 0x354) = (s32)func_80025594;
+}
 
 void func_80025594();
 
@@ -17307,7 +17397,29 @@ s32 func_8005ED28(u8 x, u8 y) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005ED74);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005FE90);
+void func_8005FE90(void) {
+    extern u8 *D_800B996C[];
+    extern u8 *D_800B9980[];
+    extern u8 *D_800BB9F4[];
+    extern u8 *D_800AE168[];
+    extern u8 *D_800B60B8[];
+    extern u8 *D_800A39ACSmall asm("D_800A39AC.NON_MATCHING");
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 4; i++) {
+        func_8005B688(D_800B996C[i], 1);
+        func_8005B688(D_800B9980[i], 1);
+        for (j = 0; j < 3; j++) {
+            func_8005B688(D_800BB9F4[i * 3 + j], 1);
+        }
+    }
+    func_8005B688(D_800A39ACSmall, 1);
+    for (i = 0; i < 4; i++) {
+        func_8005B688(D_800AE168[i], 1);
+        func_8005B688(D_800B60B8[i], 1);
+    }
+}
 
 extern u8 *D_800B9980[];
 u8 *func_8005FFA8(u8 x, u8 y) {
