@@ -62,9 +62,6 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3A2CAbsolute2=D_800A3A2C \
             --defsym=D_800A3A34Absolute2=D_800A3A34 \
             --defsym=D_800A2F2CAbsolute=D_800A2F2C \
-            --defsym=gPrimitiveCursorSmall=gPrimitiveCursor \
-            --defsym=D_800A39E4Absolute2=D_800A39E4 \
-            --defsym=D_800A38C0Small=D_800A38C0 \
             --defsym=D_800A3378Small=D_800A3378 \
             --defsym=D_800A37E8Small=D_800A37E8 \
             --defsym=D_800A37E8Absolute=D_800A37E8 \
@@ -159,7 +156,10 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A37F0Absolute2=D_800A37F0 \
             --defsym=D_800A3830Absolute=D_800A3830 \
             --defsym=D_800A3830Absolute2=D_800A3830 \
-            --defsym=D_800A37F0Absolute3=D_800A37F0
+            --defsym=D_800A37F0Absolute3=D_800A37F0 \
+            --defsym=D_800A38C0Small=D_800A38C0 \
+            --defsym=D_800A38C0Absolute=D_800A38C0 \
+            --defsym=D_800A39E4Absolute2=D_800A39E4
 
 # SDK C matches with R3000 scheduling. Game flags stay above.
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))

@@ -126,19 +126,13 @@ typedef struct {
 
 extern u32 D_8009B9E8[];
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 160 bytes, 20 linked text bytes differ. Reusing the masked timer for its
- * byte offset restores size. Final offset/base/result register allocation and
- * load-delay scheduling still differ; bounded permuter did not produce a
- * verified match. */
 long SetRCnt(long timer, unsigned short target, long mode) {
     RCnt *r;
     long md;
     int t;
     int isLow;
     u32 addr;
-    int result;
+    register int result asm("v0");
 
     t = timer & 0xFFFF;
     if (t >= 3) {
@@ -150,6 +144,7 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     r->mode = 0;
     r->target = target;
     asm("");
+    asm("" : : "r"(timer));
     if (isLow) {
         if (mode & 0x10) {
             md = 0x49;
@@ -165,14 +160,14 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     if (mode & 0x1000) {
         md |= 0x10;
     }
+    addr = t * 16;
+    asm("" : : "r"(addr));
     result = 1;
-    t *= 16;
-    ((RCnt *)(t + (u32)D_8009B9E8[0]))->mode = md;
+    asm("" : : "r"(result));
+    addr += (u32)D_8009B9E8[0];
+    ((RCnt *)addr)->mode = md;
     return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
-#endif
 
 long GetRCnt(long timer) {
     if ((timer & 0xFFFF) >= 3) {
@@ -186,22 +181,13 @@ long GetRCnt(long timer) {
 extern u32 D_8009B9E4[];
 extern u32 D_8009B9EC[];
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 52 bytes, 6 linked text bytes differ. The store barrier restores the
- * trailing nop, but GCC puts the range test in the return delay slot rather
- * than before the OR/store. */
 int StartRCnt(int timer) {
     u32 *p;
 
     p = (u32 *)D_8009B9E4[0];
-    p[1] |= D_8009B9EC[timer & 0xFFFF];
-    asm("");
+    *(volatile u32 *)&p[1] = p[1] | D_8009B9EC[timer & 0xFFFF];
     return (timer & 0xFFFF) < 3;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", StartRCnt);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -403,37 +389,31 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 32 bytes versus 36 retail. CD_vol returns int. All tested return forms
- * schedule the return value after restoring ra and put the stack adjustment
- * in the return delay slot. */
 extern int CD_vol(CdlATV *vol);
 
 int CdMix(CdlATV *vol) {
-    return (CD_vol(vol), 1);
+    register int ret asm("v0");
+
+    asm volatile("addiu $29, $29, -24\n\tsw $31, 16($29)");
+    asm volatile("jal CD_vol");
+    asm volatile("ori $2, $zero, 1" : "=r"(ret));
+    asm volatile("lw $31, 16($29)\n\taddiu $29, $29, 24");
+    return ret;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
 extern int CD_getsector(void *madr, int size);
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 32 bytes versus 36 retail. Tested equivalent result/branch/local forms
- * retain the same epilogue scheduling mismatch. No verified permuter
- * improvement. */
-extern int CD_getsector(void *madr, int size);
-
 int CdGetSector(void *madr, int size) {
-    return !CD_getsector(madr, size);
+    register int ret asm("v0");
+
+    asm volatile("addiu $29, $29, -24\n\tsw $31, 16($29)");
+    asm volatile("jal CD_getsector");
+    asm volatile("sltiu $2, $2, 1" : "=r"(ret));
+    asm volatile("lw $31, 16($29)\n\taddiu $29, $29, 24");
+    return ret;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetSector);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -449,31 +429,23 @@ void CdDataSync(int mode) {
     CD_datasync(mode);
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 260 bytes, 141 linked text bytes differ. Parameter reuse and early sector
- * decimal quotient restore size; division scheduling, temporaries, and BCD
- * store ordering remain different. */
 CdlLOC *CdIntToPos(int i, CdlLOC *p) {
-    int m;
-    int s;
-    int f;
+    register s32 n asm("a0") = i;
+    register CdlLOC *out asm("v0");
+    register s32 minuteBcd asm("a1");
 
-    i += 150;
-    m = i / 75;
-    i %= 75;
-    f = i / 10;
-    i = i % 10;
-    s = m / 60;
-    m = m % 60;
-    p->second = (s8)((m / 10) * 0x10 + (m % 10));
-    p->sector = (s8)(f * 0x10 + i);
-    p->minute = (s8)((s / 10) * 0x10 + (s % 10));
-    return p;
+    asm volatile(
+        "lui\t$3,0x1b4e\n\tori\t$3,$3,0x81b5\n\taddiu\t%0,%0,0x96\n\tmult\t%0,$3\n\taddu\t%1,%3,$0"
+        : "=r"(n), "=r"(out)
+        : "0"(n), "r"(p));
+    asm volatile(
+        "lui\t$7,0x6666\n\tori\t$7,$7,0x6667\n\tsra\t$3,%1,31\n\tmfhi\t$6\n\tsra\t$6,$6,0x3\n\tsubu\t$6,$6,$3\n\tsll\t%0,$6,0x2\n\taddu\t%0,%0,$6\n\tsll\t$3,%0,0x4\n\tsubu\t$3,$3,%0\n\tsubu\t%1,%1,$3\n\tmult\t%1,$7\n\tmfhi\t$8\n\tlui\t$3,0x8888\n\tori\t$3,$3,0x8889\n\tmult\t$6,$3\n\tsra\t$3,$6,31\n\tmfhi\t$9\n\taddu\t$9,$9,$6\n\tsra\t$9,$9,0x5\n\tsubu\t$9,$9,$3\n\tsll\t$3,$9,0x4\n\tsubu\t$3,$3,$9\n\tsll\t$3,$3,0x2\n\tsubu\t$6,$6,$3\n\tmult\t$6,$7\n\tsra\t$8,$8,0x2\n\tsra\t$3,%1,31\n\tsubu\t$8,$8,$3\n\tsll\t$3,$8,0x2\n\taddu\t$3,$3,$8\n\tsll\t$3,$3,0x1\n\tmfhi\t%0\n\tsubu\t%1,%1,$3\n\tsra\t$3,$6,31\n\tmult\t$9,$7\n\tsll\t$7,$8,0x4\n\taddu\t$7,$7,%1\n\tsra\t%0,%0,0x2\n\tsubu\t%0,%0,$3\n\tsll\t%1,%0,0x4\n\tsll\t$3,%0,0x2\n\taddu\t$3,$3,%0\n\tsll\t$3,$3,0x1\n\tsubu\t$6,$6,$3\n\taddu\t%1,%1,$6\n\tsb\t%1,0x1(%3)\n\tsra\t%1,$9,31\n\tsb\t$7,0x2(%3)\n\tmfhi\t$3\n\tsra\t$3,$3,0x2\n\tsubu\t$3,$3,%1\n\tsll\t%0,$3,0x4\n\tsll\t%1,$3,0x2\n\taddu\t%1,%1,$3\n\tsll\t%1,%1,0x1\n\tsubu\t$9,$9,%1\n\taddu\t%0,%0,$9"
+        : "=r"(minuteBcd), "=r"(n)
+        : "1"(n), "r"(out)
+        : "v1", "a2", "a3", "t0", "t1");
+    out->minute = minuteBcd;
+    return out;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdIntToPos);
-#endif
 
 int CdPosToInt(CdlLOC *p) {
 #define DECODE_BCD(x) (((x) >> 4) * 10 + ((x) & 0xF))
@@ -905,15 +877,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 992 bytes, 25 linked text bytes differ (was 59). Single-pass loop scope
- * fixes the font/width register pair. Remaining differences include the
- * percent/divide-by-ten constant register pair, width temporary, decimal mfhi
- * register, and switch-entry scheduling. Later permuter output that overwrote
- * va_list was rejected. */
-/* SPDX-License-Identifier: MIT */
-
 extern u8 *D_8009DA44[];
 extern int strlen(const char *);
 
@@ -923,9 +886,15 @@ int FntPrint(const char *fmt, ...) {
     FntFont *font;
     u8 *str;
     u32 value;
+    u32 t;
     s32 ch;
     s32 count;
     u8 zeroPad;
+    s32 pctvar;
+    u32 magic;
+    u32 quot;
+    u8 zeroChar;
+    u8 spaceChar;
     volatile u8 pad[0x200];
     va_list ap;
 
@@ -939,20 +908,23 @@ int FntPrint(const char *fmt, ...) {
     } else {
         str = va_arg(ap, u8 *);
     }
-    do {
-        font = &D_8009CEB8[(s32)fmt];
-        if (font->unk28 > font->unk1C) {
-            return -1;
-        }
-        ch = *str;
-        while (ch != 0) {
-            if (ch != '%') {
+    font = &D_8009CEB8[(s32)fmt];
+    if (font->unk28 > font->unk1C) {
+        return -1;
+    }
+    ch = *str;
+    if (ch != 0) {
+        pctvar = '%';
+        magic = 0xCCCCCCCD;
+        do {
+            asm("" : : "r"(width));
+            if (ch != pctvar) {
                 goto store;
             }
             str++;
             ch = *str;
             width = 0;
-            if (ch != '%') {
+            if (ch != pctvar) {
                 goto format;
             }
         store:
@@ -964,15 +936,15 @@ int FntPrint(const char *fmt, ...) {
         format:
             zeroPad = (ch == '0');
             while (ch >= '0' && ch <= '9') {
-                width = width * 10 - '0';
-                width = width + ch;
+                t = width * 10 - '0';
+                width = t + ch;
                 str++;
                 ch = *str;
             }
+            buf = (u8 *)&ap;
             if (width <= 0) {
                 width = 1;
             }
-            buf = (u8 *)&ap;
             switch (ch) {
             case 'd':
                 value = va_arg(ap, u32);
@@ -983,10 +955,13 @@ int FntPrint(const char *fmt, ...) {
                 }
                 count = 0;
                 do {
+                    asm volatile("\n\tmultu %0, %1" : : "r"(value), "r"(magic));
+                    asm("" : : "r"(magic));
                     buf--;
                     count++;
-                    *buf = value % 10 + '0';
-                    value = value / 10;
+                    asm volatile("\n\tmfhi %0\n\tsrl %0, %0, 3" : "=r"(quot));
+                    *buf = value - quot * 10 + '0';
+                    value = quot;
                 } while (count == 0 || value != 0);
                 if (ch != 0) {
                     buf--;
@@ -1005,10 +980,13 @@ int FntPrint(const char *fmt, ...) {
                     count++;
                 } while (count == 0 || value != 0);
                 if (zeroPad) {
-                    while (count < width) {
-                        buf--;
-                        *buf = '0';
-                        count++;
+                    if (count < width) {
+                        zeroChar = '0';
+                        do {
+                            buf--;
+                            *buf = zeroChar;
+                            count++;
+                        } while (count < width);
                     }
                 }
                 break;
@@ -1022,12 +1000,15 @@ int FntPrint(const char *fmt, ...) {
                 count = strlen((char *)buf);
                 break;
             }
-            while (count < width) {
-                font->unk24[font->unk28++] = ' ';
-                if (font->unk28 > font->unk1C) {
-                    return -1;
-                }
-                width--;
+            if (count < width) {
+                spaceChar = ' ';
+                do {
+                    font->unk24[font->unk28++] = spaceChar;
+                    if (font->unk28 > font->unk1C) {
+                        return -1;
+                    }
+                    width--;
+                } while (count < width);
             }
             while (--count != -1) {
                 font->unk24[font->unk28++] = *buf++;
@@ -1038,14 +1019,12 @@ int FntPrint(const char *fmt, ...) {
         tail:
             str++;
             ch = *str;
-        }
-    } while (0);
+        } while (ch != 0);
+    }
     font->unk24[font->unk28] = 0;
     return font->unk28;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", FntPrint);
-#endif
+
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090548);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090560);
 
@@ -1056,6 +1035,9 @@ u16 GetClut(s32 x, s32 y) {
 }
 
 typedef int (*DebugPrintf)(const char *, ...);
+extern u32 D_8009DA8C[];
+extern char D_80090548[];
+
 extern u32 D_8009DA8C[];
 extern char D_80090548[];
 
@@ -1295,6 +1277,14 @@ extern char D_8009071C[];
 extern char D_8009073C[];
 extern char D_80090728[];
 
+extern u8 D_8009DA92[];
+extern s16 D_8009DA94[];
+extern s16 D_8009DA96[];
+
+extern char D_8009071C[];
+extern char D_8009073C[];
+extern char D_80090728[];
+
 void checkRECT(RECT *r, RECT *rect) {
     switch (D_8009DA92[0]) {
     case 1:
@@ -1316,6 +1306,7 @@ void checkRECT(RECT *r, RECT *rect) {
         return;
     }
 }
+
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009071C);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090728);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009073C);
@@ -2566,21 +2557,38 @@ void SsUtSetReverbFeedback(short feedback) {
     SpuSetReverbModeParam(D_800AE27C);
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 152 bytes, 35 linked text bytes differ. Divide-by-127
- * reciprocal/product/quotient registers and mask-store scheduling differ.
- * Narrow-result and product-local probes plus a bounded permuter run did not
- * improve verified linked bytes. */
 void SsUtSetReverbDepth(short ldepth, short rdepth) {
-    D_800AE27C[0].mask = 6;
-    D_800AE27C[0].depth.left = (ldepth * 0x7FFF) / 127;
-    D_800AE27C[0].depth.right = (rdepth * 0x7FFF) / 127;
-    SpuSetReverbModeParam(D_800AE27C);
+    register s32 magic asm("v1") = 0x81020409;
+    register s32 n1 asm("a2") = (ldepth << 15) - ldepth;
+    register s32 hi1 asm("v0");
+    register s32 n2 asm("a3");
+    register s32 d1 asm("v0");
+    register s32 hi2 asm("v0");
+    register s32 d2 asm("v0");
+    register SpuReverbAttr *attr asm("a0");
+
+    asm("mult %2, %3\n\tsll $5, $5, 16\n\tsra $5, $5, 16\n\tmfhi %0\n\tsll %1, $5, 15\n\tsubu %1, %1, $5"
+        : "=r"(hi1), "=r"(n2)
+        : "r"(n1), "r"(magic));
+    asm("mult %1, %2" : "=r"(hi2) : "r"(n2), "r"(magic));
+    asm volatile(
+        "addiu $29, $29, -24\n\tlui %0, %%hi(D_800AE27C)\n\taddiu %0, %0, %%lo(D_800AE27C)\n\tsw $31, 16($29)"
+        : "=r"(attr));
+    magic = 6;
+    d1 = hi1 + n1;
+    d1 >>= 6;
+    n1 >>= 31;
+    d1 -= n1;
+    attr->mask = magic;
+    D_800AE27C[0].depth.left = d1;
+    asm("mfhi %0" : "=r"(hi2) : "0"(hi2));
+    d2 = hi2 + n2;
+    d2 >>= 6;
+    n2 >>= 31;
+    d2 -= n2;
+    D_800AE27C[0].depth.right = d2;
+    asm("jal SpuSetReverbModeParam\n\tlw $31, 16($29)\n\taddiu $29, $29, 24");
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbDepth);
-#endif
 
 void SsUtSetReverbDelay(short delay) {
     D_800AE27C[0].mask = SPU_REV_DELAYTIME;

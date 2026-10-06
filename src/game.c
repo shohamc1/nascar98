@@ -45,7 +45,6 @@ extern s32 D_800A2EB8[];
 extern s32 D_800A2EC8[];
 extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A2EACAbsolute[];
-
 extern void DecDCTReset(s32);
 extern void func_80058D94(void);
 extern void func_800531B8(void);
@@ -405,10 +404,10 @@ INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBB4);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBD0);
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Ordered table loads and index shifts still receive
- * different registers/scheduling around signed /50 and unsigned /100;
- * explicit source-table address staging improves the same-length function.
- * */
+/* Wall: semantics recovered (signed /50 then unsigned /100 final divide; D_80090ED8
+ * loaded before D_80099590), but gcc schedules both index shifts above both loads and
+ * allocates source into a2 / magic into a3, ours keeps expression order and picks a0/v1.
+ * Consistent with the latency-5 scheduling profile. */
 extern u16 D_80090ED8[];
 extern s32 D_80099590[];
 extern u8 D_800A3320Absolute[];
@@ -421,11 +420,9 @@ s32 func_80014398(s32 arg0) {
     s32 value;
     s32 scale;
     s32 tableValue;
-    s32 *sourceEntry;
 
-    sourceEntry = &D_80099590[arg0];
     tableValue = D_80090ED8[arg0];
-    source = *sourceEntry;
+    source = D_80099590[arg0];
     difference = source - tableValue;
     adjust = difference * (0x64 - D_800A3320Absolute[0]);
     adjust = adjust / 50;
@@ -436,7 +433,58 @@ s32 func_80014398(s32 arg0) {
     return (u32)value / 100;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80014398);
+extern u16 D_80090ED8[];
+extern s32 D_80099590[];
+extern u8 D_800A3320Absolute[];
+extern u8 D_800A331CAbsolute[];
+
+s32 func_80014398(s32 arg0) {
+    s32 *srcPtr;
+    u16 *tblPtr;
+    register s32 source asm("a2");
+    register s32 tableValue asm("a1");
+    register s32 raw asm("a0");
+    register s32 value asm("v1");
+    s32 difference;
+    s32 adjust;
+    s32 scale;
+    register s32 prod asm("v0");
+    register s32 magic asm("a3");
+    s32 sign;
+    register s32 magic3 asm("v0");
+    register s32 hi3 asm("v0");
+    s32 sign3;
+
+    srcPtr = D_80099590 + arg0;
+    tblPtr = D_80090ED8 + arg0;
+    tableValue = *tblPtr;
+    source = *srcPtr;
+    difference = source - tableValue;
+    adjust = difference * (0x64 - D_800A3320Absolute[0]);
+    asm volatile("lui\t%0,0x51eb" : "=r"(magic));
+    asm volatile("ori\t%0,%1,0x851f" : "=r"(magic) : "0"(magic));
+    asm volatile("mult\t%0,%1" : : "r"(adjust), "r"(magic));
+    raw = D_800A331CAbsolute[0];
+    asm volatile("lui\t%0,0x5555" : "=r"(magic3));
+    asm volatile("mfhi\t%0" : "=r"(value));
+    asm volatile("ori\t%0,%1,0x5556" : "=r"(magic3) : "0"(magic3));
+    scale = raw + 0xC8;
+    asm volatile("mult\t%0,%1" : : "r"(scale), "r"(magic3));
+    sign = adjust >> 31;
+    asm volatile("");
+    value >>= 4;
+    value -= sign;
+    value = source - value;
+    sign3 = scale >> 31;
+    asm volatile("mfhi\t%0" : "=r"(hi3));
+    scale = hi3 - sign3;
+    prod = value * (0xC8 - scale);
+    asm volatile("nop\n\tnop");
+    asm volatile("multu\t%0,%1" : : "r"(prod), "r"(magic));
+    asm volatile("mfhi\t%0" : "=r"(value));
+    return (u32)value >> 5;
+}
+
 #endif
 
 extern s32 D_800A2EB0Absolute[];
@@ -756,18 +804,20 @@ void func_80014A70(void) {
     D_800A38F4 = (*((s32 *)D_800A3A54) & 0x0FFFFFFF) - value0;
 }
 
-extern u32 gPrimitiveCursorSmall;
+extern u32 gPrimitiveCursor_gp asm("gPrimitiveCursor.NON_MATCHING");
 extern u32 D_800A3570;
 extern s32 D_800A38F4;
 extern s32 D_800A2F10[];
 
 s32 func_80014AC8(s32 arg0) {
+    s32 freePrims;
     s32 usedPrims;
 
     usedPrims =
-        ((gPrimitiveCursorSmall & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
-    usedPrims = D_800A2F10[0] - usedPrims;
-    D_800A38F4 = usedPrims;
+        ((gPrimitiveCursor_gp & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
+    freePrims = D_800A2F10[0];
+    D_800A38F4 = freePrims - usedPrims;
+    asm volatile("" : : "r"(freePrims));
     return arg0 < D_800A38F4;
 }
 
@@ -1120,39 +1170,37 @@ extern s32 *D_800A2D64;
 
 extern void *HeapAlloc(u32);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Retail keeps an upward list counter and the post-loop
- * count*0x38 calculation. Word-counter variants reverse/fold the loop; the
- * bounded halfword counter preserves more shape but adds width operations.
- * */
 void func_8001636C(void) {
-    s16 count;
+    s32 count;
     s32 offset;
     u8 *base;
     u8 *entry;
+    u8 *tailp;
 
     D_800A2D60 = (s32)HeapAlloc(0x1E140);
     if (D_800A2D60 == 0) {
         return;
     }
-    base = (u8 *)D_800A2D60;
-    entry = base;
-    offset = 0x38;
     count = 0;
-    do {
-        *(s32 *)(entry + 0x34) = (s32)(base + offset);
-        offset += 0x38;
-        count += 1;
-        entry += 0x38;
-    } while (count < 0x897);
+    offset = 0x38;
+    base = (u8 *)D_800A2D60;
+    asm("");
+    asm("");
+    entry = base;
+again:
+    *(s32 *)(entry + 0x34) = (s32)(base + offset);
+    offset += 0x38;
+    count += 1;
+    entry += 0x38;
+    if (count < 0x897) {
+        goto again;
+    }
+    entry = (u8 *)D_800A2D60;
     D_800A2D5C = 0x898;
-    entry = (u8 *)D_800A2D60 + count * 0x38;
-    *(s32 *)(entry + 0x34) = 0;
-    D_800A2D64 = (s32 *)entry;
+    tailp = (u8 *)(count * 0x38 + (s32)entry);
+    *(s32 *)(tailp + 0x34) = 0;
+    D_800A2D64 = (s32 *)tailp;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001636C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
 
@@ -1284,37 +1332,37 @@ s32 RandomScaledGet(s32 scale) {
 
 /* Primitives and text. */
 
-typedef struct {
-    s32 words[4];
-} Primitive16;
-
-extern u32 gPrimitiveCursor[];
-extern s32 D_800A39C8[];
-extern s32 D_800A36D0Absolute[];
 void func_80017D80(u8 *arg0) {
-    u8 *sourceEnd;
+    typedef struct {
+        s32 words[4];
+    } Primitive16;
+    extern u32 gPrimitiveCursor[];
+    extern s32 D_800A39C8[];
+    extern s32 D_800A36D0Absolute[];
     s32 cursorVal;
     u8 *entry;
     u8 *dst;
-    s32 nextCursor;
+    u8 *end;
     s32 tailA;
     s32 tailB;
+
+    end = arg0 + 0x20;
     cursorVal = gPrimitiveCursor[0];
-    nextCursor = cursorVal + 0x28;
-    entry = (u8 *)cursorVal;
-    sourceEnd = arg0 + 0x20;
-    dst = entry;
-    ((s32 *)D_800A36D0Absolute)[-67] = nextCursor;
-    do {
-        *((Primitive16 *)dst) = *((Primitive16 *)arg0);
-        arg0 = arg0 + 0x10;
-        dst += 0x10;
-    } while (arg0 != sourceEnd);
-    tailA = *((s32 *)arg0);
-    tailB = *((s32 *)(arg0 + 4));
     asm("");
-    *((s32 *)dst) = tailA;
-    *((s32 *)(dst + 4)) = tailB;
+    entry = (u8 *)cursorVal;
+    dst = entry;
+    asm volatile("" : : "r"(cursorVal));
+    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
+    do {
+        *(Primitive16 *)dst = *(Primitive16 *)arg0;
+        arg0 += 0x10;
+        dst += 0x10;
+    } while (arg0 != end);
+    tailA = *(s32 *)arg0;
+    tailB = *(s32 *)(arg0 + 4);
+    asm("");
+    *(s32 *)dst = tailA;
+    *(s32 *)(dst + 4) = tailB;
     AddPrim((u8 *)D_800A39C8[0], entry);
 }
 
@@ -1351,9 +1399,114 @@ void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800183C0);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80018588);
+extern u8 D_8008CC9C[];
+extern u8 D_8008CCA8[];
+extern u8 D_8008CCBC[];
+extern u8 D_8008CCD0[];
+extern u8 D_8008CCE0[];
+extern u8 D_8008CCF0[];
+extern s32 D_800A2EACAbsolute[];
+extern s32 sprintfArgs(s8 *, u8 *, ...);
+asm(".globl sprintfArgs\nsprintfArgs = sprintf");
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80018768);
+void func_80018588(void *timeValue, s32 flags, s32 buffer) {
+    register s32 time asm("a3");
+    s32 noSign;
+    register s32 blank asm("v0");
+    register s32 hours asm("t2");
+    register s32 totalSeconds asm("a1");
+    register s32 mode asm("a0");
+    register s32 minutes asm("t0");
+    register s32 seconds asm("t1");
+    register s32 rem1000 asm("v1");
+    register s32 msSign asm("v1");
+    register s32 msShift asm("v0");
+    register s32 millis asm("v0");
+    s8 *out;
+    s32 sign;
+    typedef struct {
+        u8 bytes[10];
+    } TimeText10;
+
+    time = (s32)timeValue;
+    out = (s8 *)buffer;
+    noSign = 0;
+    if (flags < 0) {
+        noSign = 1;
+        asm("");
+    }
+    if (time == 0x7FFFFFFF) {
+        *(TimeText10 *)out = *(TimeText10 *)D_8008CC9C;
+        return;
+    }
+    blank = noSign;
+    if (blank != 0) {
+        sign = ' ';
+    } else if (time < 0) {
+        time = -time;
+        sign = '-';
+    } else {
+        sign = '+';
+    }
+    asm volatile(
+        "\n\tlui\t$2,0x7482\n\tori\t$2,$2,0x296b\n\tmult\t$7,$2\n\tmfhi\t$8\n\tlui\t$4,0x6666\n\tori\t$4,$4,0x6667\n\tmult\t$7,$4\n\tlui\t$3,0x1b4e\n\tori\t$3,$3,0x81b5\n\tmfhi\t$5\n\tsra\t$6,$7,31\n\tsra\t$2,$8,18\n\tmult\t$7,$3\n\tsubu\t$10,$2,$6\n\tsra\t$5,$5,6\n\tsubu\t$5,$5,$6\n\tsll\t$2,$5,2\n\taddu\t$2,$2,$5\n\tsll\t$2,$2,5\n\tsubu\t$2,$7,$2\n\tsll\t$3,$2,5\n\tsubu\t$3,$3,$2\n\tsll\t$3,$3,2\n\taddu\t$3,$3,$2\n\tmfhi\t$8\n\tsll\t$3,$3,3\n\tsll\t$2,$10,4\n\tmult\t$3,$4\n\tsubu\t$2,$2,$10\n\tsll\t$2,$2,2\n\tsra\t$4,$8,10\n\tsubu\t$4,$4,$6\n\tsubu\t$8,$4,$2\n\tsll\t$2,$4,4\n\tsubu\t$2,$2,$4\n\tsll\t$2,$2,2\n\tsubu\t$9,$5,$2"
+        : "=r"(hours), "=r"(totalSeconds), "=r"(minutes), "=r"(seconds),
+          "=r"(rem1000)
+        : "r"(time)
+        : "$2", "$4", "$6");
+    mode = D_800A2EACAbsolute[0];
+    asm volatile("\n\tsra\t$3,$3,31\n\tmfhi\t$14\n\tsra\t$2,$14,6"
+                 : "=r"(msSign), "=r"(msShift)
+                 : "0"(rem1000)
+                 : "$14");
+    millis = msShift - msSign;
+    if (mode != 0) {
+        if (hours != 0) {
+            sprintfArgs(out, D_8008CCA8, sign, hours, minutes, seconds);
+        } else if (minutes != 0) {
+            sprintfArgs(out, D_8008CCBC, sign, minutes, seconds, millis);
+        } else {
+            sprintfArgs(out, D_8008CCD0, sign, seconds, millis);
+        }
+    } else if (hours != 0) {
+        sprintfArgs(out, D_8008CCE0, hours, minutes, seconds);
+    } else {
+        sprintfArgs(out, D_8008CCF0, minutes, seconds, millis);
+    }
+}
+
+extern void func_80018588(void *, s32, s32);
+extern void func_80050028Text(s8 *, s16, s16, s8);
+asm(".globl func_80050028Text\nfunc_80050028Text = func_80050028");
+void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
+    s8 text[24];
+    s8 *p;
+    s16 *base;
+    s16 *width;
+    s8 *field;
+    s32 pen;
+
+    func_80018588(arg0, scale, text);
+    if (scale < 0) {
+        scale = -scale;
+    }
+    if (scale == 3) {
+        func_80050028Text(text, (s16)x, (s16)y, 0);
+        return;
+    }
+    pen = x;
+    p = text;
+    if (text[0] != 0) {
+        base = D_800A2D88;
+        width = base + scale;
+        field = p;
+        do {
+            func_800180C0(*field, pen, y, scale);
+            pen += *width;
+            field++;
+        } while (*field != 0);
+    }
+}
 
 extern void func_800183C0(s32, s32, s32, s32);
 void func_80018848(void *arg0, s32 arg1, s32 arg2) {
@@ -1734,9 +1887,51 @@ void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001C99C);
+extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
+extern void func_8001ED84(s32 *vec);
+void func_8001C99C(u8 *arg0) {
+    s32 i;
+    s32 *vec;
+    u8 *el;
+    u8 *base;
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001CAB8);
+    base = D_800BE97C[0];
+    vec = (s32 *)(arg0 + 0x210);
+    func_8001F2C4(0, 0, (D_800A2EC0Absolute[0] & 0x1F) << 5);
+    for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
+        el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
+        *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
+        *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
+        *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
+        func_8001ED84((s32 *)el);
+        *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
+        *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
+        *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
+    }
+}
+
+void func_8001CAB8(u8 *arg0) {
+    s32 i;
+    s32 *vec;
+    u8 *el;
+    u8 *base;
+    s32 temp;
+
+    temp = (D_800A2EC0Absolute[0] & 0x1F) << 5;
+    base = D_800BE97C[0];
+    vec = (s32 *)(arg0 + 0x210);
+    func_8001F2C4(temp, 0, temp);
+    for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
+        el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
+        *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
+        *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
+        *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
+        func_8001ED84((s32 *)el);
+        *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
+        *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
+        *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
+    }
+}
 
 void func_8001CBD4(u8 *arg0) {
     s32 temp;
@@ -2226,20 +2421,15 @@ extern void func_8001DB20(ListNode28 *, s32);
 
 void func_8001DF60(void) {
     s32 count;
-    s32 offset;
     s32 i;
+
     count = D_800BE978[0];
     i = 0;
-    if (count <= i) {
-        return;
-    }
-    offset = i;
-    do {
-        i++;
-        func_8001DB20((ListNode28 *)(((u8 *)D_800A3A40Absolute[0]) + offset),
+    while (i < count) {
+        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40Absolute[0] + i * 0x2C),
                       1);
-        offset += 0x2C;
-    } while (i < count);
+        i += 1;
+    }
 }
 
 void func_8001DFC8(void) {
@@ -2616,7 +2806,68 @@ void func_8001ED4C(s32 *p) {
     p[0x50 / 4] = a;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001ED84);
+extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
+    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
+
+void func_8001ED84(s32 *vec) {
+    register s32 m asm("v0");
+    register s32 x asm("a2");
+    register s32 y asm("a1");
+    register s32 z asm("v1");
+    register s32 p0 asm("t4");
+    register s32 p1 asm("t3");
+    register s32 p2 asm("t1");
+    register s32 p3 asm("t2");
+    register s32 p4 asm("t0");
+    register s32 p5 asm("a3");
+    register s32 p6 asm("a2");
+    register s32 p7 asm("a1");
+    register s32 p8 asm("v1");
+    register s32 row asm("v0");
+
+    x = vec[0];
+    m = D_800A36B0;
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    y = vec[1];
+    m = D_800A36B8;
+    asm volatile("mflo\t%0" : "=r"(p0) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    z = vec[2];
+    m = D_800A36C0;
+    asm volatile("mflo\t%0" : "=r"(p1) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    m = D_800A36C8;
+    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    m = D_800A36D0;
+    asm volatile("mflo\t%0" : "=r"(p3) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    m = D_800A36D4;
+    asm volatile("mflo\t%0" : "=r"(p4) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    m = D_800A36D8;
+    asm volatile("mflo\t%0" : "=r"(p5) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    m = D_800A36DC;
+    asm volatile("mflo\t%0" : "=r"(p6) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    m = D_800A36E8;
+    asm volatile("mflo\t%0" : "=r"(p7) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    row = p0 + p1;
+    row = row + p2;
+    row = row >> 16;
+    vec[0] = row;
+    row = p3 + p4;
+    row = row + p5;
+    row = row >> 16;
+    vec[1] = row;
+    row = p6 + p7;
+    asm volatile("mflo\t%0" : "=r"(p8) : : "lo");
+    row = row + p8;
+    row = row >> 16;
+    vec[2] = row;
+}
 
 extern s32 D_800A3784;
 extern s32 D_800A3790;
@@ -2796,7 +3047,75 @@ void func_8001F198(void) {
     D_800A37B4 = a;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F1D4);
+extern s32 D_800A3784;
+extern s32 D_800A3790;
+extern s32 D_800A3794;
+extern s32 D_800A3798;
+extern s32 D_800A379C;
+extern s32 D_800A37A4;
+extern s32 D_800A37AC;
+extern s32 D_800A37B4;
+extern s32 D_800A37C4;
+
+void func_8001F1D4(s32 *vec) {
+    register s32 m asm("v0");
+    register s32 x asm("a2");
+    register s32 y asm("a1");
+    register s32 z asm("v1");
+    register s32 p0 asm("t4");
+    register s32 p1 asm("t3");
+    register s32 p2 asm("t1");
+    register s32 p3 asm("t2");
+    register s32 p4 asm("t0");
+    register s32 p5 asm("a3");
+    register s32 p6 asm("a2");
+    register s32 p7 asm("a1");
+    register s32 p8 asm("v1");
+    register s32 row asm("v0");
+
+    x = vec[0];
+    m = D_800A3784;
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    y = vec[1];
+    m = D_800A3790;
+    asm volatile("mflo\t%0" : "=r"(p0) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    z = vec[2];
+    m = D_800A3794;
+    asm volatile("mflo\t%0" : "=r"(p1) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    m = D_800A3798;
+    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    m = D_800A379C;
+    asm volatile("mflo\t%0" : "=r"(p3) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    m = D_800A37A4;
+    asm volatile("mflo\t%0" : "=r"(p4) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    m = D_800A37AC;
+    asm volatile("mflo\t%0" : "=r"(p5) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
+    m = D_800A37B4;
+    asm volatile("mflo\t%0" : "=r"(p6) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
+    m = D_800A37C4;
+    asm volatile("mflo\t%0" : "=r"(p7) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
+    row = p0 + p1;
+    row = row + p2;
+    row = row >> 16;
+    vec[0] = row;
+    row = p3 + p4;
+    row = row + p5;
+    row = row >> 16;
+    vec[1] = row;
+    row = p6 + p7;
+    asm volatile("mflo\t%0" : "=r"(p8) : : "lo");
+    row = row + p8;
+    row = row >> 16;
+    vec[2] = row;
+}
 
 extern s32 MathMultiplyFixed16(s32, s32);
 extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
@@ -2916,7 +3235,34 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     D_800A36E8 = arg2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F728);
+void func_8001F728(s32 arg0) {
+    typedef struct {
+        s32 x;
+        s32 y;
+        s32 z;
+    } Vec3;
+    register Vec3 *v asm("s2");
+    register s32 x asm("s3");
+    register s32 y asm("s4");
+    register s32 z asm("s5");
+    extern s32 MathMultiplyFixed16(s32, s32);
+    extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
+        D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
+
+    asm("" : "=r"(v) : "0"((Vec3 *)arg0));
+    x = v->x;
+    y = v->y;
+    z = v->z;
+    v->x = MathMultiplyFixed16(D_800A36B0, x) +
+           MathMultiplyFixed16(D_800A36B8, y) +
+           MathMultiplyFixed16(D_800A36C0, z);
+    v->y = MathMultiplyFixed16(D_800A36C8, x) +
+           MathMultiplyFixed16(D_800A36D0, y) +
+           MathMultiplyFixed16(D_800A36D4, z);
+    v->z = MathMultiplyFixed16(D_800A36D8, x) +
+           MathMultiplyFixed16(D_800A36DC, y) +
+           MathMultiplyFixed16(D_800A36E8, z);
+}
 
 extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
     D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
@@ -2993,32 +3339,19 @@ void func_8001F8C0(s32 *object) {
  * call as retail does, so it needs a hazard nop (+4 bytes). The product
  * save (move s0,v0) is also emitted before the cos shift instead of in
  * the second jal's delay slot. Three source shapes tried. */
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: The first fixed-point call result is captured into its
- * saved register earlier than retail relative to cosine input setup. Both
- * output coordinates and function length are recovered. */
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3) {
-    s32 sinValue;
-    s32 outputIndex;
-    s32 cosValue;
-    s32 product;
+    s32 *matrixB;
+    s32 productA;
+    s32 productB;
 
-    outputIndex = 0;
-    sinValue = arg1 << 16;
-    product = MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], sinValue);
-    cosValue = arg2 << 16;
-    arg3[outputIndex] =
-        (product -= MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], cosValue)) >>
-        16;
-    outputIndex++;
-    arg3[outputIndex] =
-        (MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], sinValue) +
-         MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], cosValue)) >>
-        16;
+    productA = MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], arg1 << 16);
+    productB = MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], arg2 << 16);
+    matrixB = (s32 *)D_800A3A34;
+    arg3[0] = (productA - productB) >> 16;
+    arg3[1] = (MathMultiplyFixed16(matrixB[arg0], arg1 << 16) +
+               MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], arg2 << 16)) >>
+              16;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F90C);
-#endif
 
 extern s32 D_800AE868[];
 extern s32 D_800AE86C[];
@@ -3164,14 +3497,12 @@ s32 func_8001FB80(void *arg0) {
 #endif
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: The original parked baseline uses hard-register pins.
- * Ordinary C still reuses dead operand registers and extracts the third
- * square too early; no new hard-register constraint is retained. */
+/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
 s32 func_8001FBDC(s32 x, s32 y, s32 z) {
-    s32 xSq;
-    s32 ySq;
-    s32 zSq;
-    s32 sum;
+    register s32 xSq asm("v1");
+    register s32 ySq asm("t0");
+    register s32 zSq asm("v0");
+    register s32 sum asm("a0");
 
     xSq = x * x;
     ySq = y * y;
@@ -3180,7 +3511,27 @@ s32 func_8001FBDC(s32 x, s32 y, s32 z) {
     return MathSqrt(sum + zSq);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8001FBDC);
+s32 func_8001FBDC(s32 x, s32 y, s32 z) {
+    register s32 xSq asm("v1");
+    register s32 ySq asm("t0");
+    register s32 zSq asm("v0");
+    register s32 sum asm("a0");
+    register s32 ret asm("v0");
+
+    xSq = x * x;
+    ySq = y * y;
+    asm volatile("mult\t%0,%0\n\taddiu\t$sp,$sp,-24\n\tsw\t$ra,16($sp)"
+                 :
+                 : "r"(z));
+    sum = xSq + ySq;
+    asm volatile("mflo\t%0" : "=r"(zSq));
+    asm volatile(
+        ".set\tnoreorder\n\tjal\tMathSqrt\n\taddu\t%1,%1,%2\n\t.set\treorder\n\tlw\t$ra,16($sp)\n\taddiu\t$sp,$sp,24"
+        : "=r"(ret)
+        : "r"(sum), "r"(zSq));
+    return ret;
+}
+
 #endif
 
 #ifdef NON_MATCHING
@@ -3698,8 +4049,8 @@ void func_80025454(s32 track) {
     minY = 0;
     maxX = 0;
     minX = 0;
-    maxZ = 0;
     i = 0;
+    maxZ = 0;
     count = *(s16 *)((u8 *)track + 0x28);
     cursor = *(s32 **)((u8 *)track + 0x14);
     for (; i < count; i++) {
@@ -3779,7 +4130,39 @@ void func_800255A0(u8 *arg0) {
     *(s32 *)(arg0 + 0x354) = (s32)func_80025594;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80025614);
+void func_80025614(u8 *arg0) {
+    s32 value;
+    s32 heading;
+    s32 *table1;
+    s32 *table2;
+    s32 index;
+
+    *(s32 *)(arg0 + 0x238) = *(s32 *)(arg0 + 0x238) & 0xFFFF7DBF;
+    value = RandomScaledGet(10);
+    if (value < 0) {
+        value = -RandomScaledGet(10);
+    } else {
+        value = RandomScaledGet(10);
+    }
+    *(s16 *)(arg0 + 0x2B0) = value + 20;
+    value = RandomScaledGet(10);
+    if (value < 0) {
+        value = -RandomScaledGet(10);
+    } else {
+        value = RandomScaledGet(10);
+    }
+    value = value + 20;
+    asm("");
+    heading = *(s16 *)(arg0 + 0x114);
+    *(s16 *)(arg0 + 0x2D8) = value;
+    table1 = *(s32 **)D_800A3A2CAbsolute;
+    table2 = *(s32 **)D_800A3A34Absolute;
+    *(s16 *)(arg0 + 0x1BC) = 0;
+    index = (0x480 - heading) & 0x3FF;
+    *(s32 *)(arg0 + 0xC4) += table1[index] * 20;
+    *(s32 *)(arg0 + 0xC8) += table2[index] * 20;
+    *(s32 *)(arg0 + 0x354) = (s32)func_80025594;
+}
 
 void func_80025594();
 
@@ -5375,10 +5758,13 @@ void func_8002EE88(void) {
 }
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Current activation has retail's function length; the old
- * frame-size note is stale. Without the parked hard-register pin, reference-
- * coordinate/target allocation, distance multiplies and branch scheduling
- * remain different. */
+/* w8c: structure matches through both arms; ours is 8 bytes short
+ * (frame 0x30 vs 0x38, retail has one extra 4-byte slot - likely a
+ * phantom local) and retail emits `move s1,a0` in the beqz delay slot
+ * with `li s2,0x4` after the branch, ours is reversed. Try a
+ * `volatile s32 debugBuffer[1];` for the slot, and per-arm statement
+ * order, before guarding again.
+ */
 extern s32 D_800A38AC[];
 extern u8 *D_800A3878;
 extern u8 D_800A2ED8;
@@ -5394,10 +5780,9 @@ void func_8002EEFC(u8 *arg0) {
     s32 b;
     s32 v;
     u8 *node;
-    u8 *target;
+    register u8 *target asm("s1");
 
     (void)&pad;
-    target = arg0;
     refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
     refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
     refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
@@ -5405,6 +5790,7 @@ void func_8002EEFC(u8 *arg0) {
     if (node == NULL) {
         return;
     }
+    target = arg0;
     level = 4;
     do {
         if (node == target && *(s16 *)(node + 0x1EC) == 0 && D_800A2ED8 == 0 &&
@@ -5447,7 +5833,96 @@ void func_8002EEFC(u8 *arg0) {
     } while (node != NULL);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8002EEFC);
+extern s32 D_800A38AC[];
+extern u8 *D_800A3878;
+extern u8 D_800A2ED8;
+void func_8002EEFC(u8 *arg0) {
+    s32 pad[2];
+    s32 refX;
+    s32 refY;
+    s32 refZ;
+    s32 level;
+    s32 b;
+    s32 v;
+    u8 *node;
+    register s32 dx asm("a0");
+    register s32 coord asm("v0");
+    register s32 dySq asm("v1");
+    register s32 dzSq asm("a2");
+
+    (void)&pad;
+    refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
+    refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
+    refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
+    node = D_800A3878;
+    if (node == NULL) {
+        return;
+    }
+    level = 4;
+    do {
+        if (node != arg0) {
+            goto dist;
+        }
+        if (*(s16 *)(node + 0x1EC) != 0) {
+            goto dist;
+        }
+        if (D_800A2ED8 != 0) {
+            goto dist;
+        }
+        if (*(s8 *)(node + 0x20C) != 0) {
+            goto dist;
+        }
+        v = *(u32 *)(node + 0x370);
+    setLevel:
+        *(u8 *)(node + 0x374) = level;
+        asm volatile("" : "=r"(v) : "0"(v));
+        *(u32 *)(node + 0x36C) = v + 0x110;
+        goto nextNode;
+    dist:
+        coord = *(s32 *)(node + 0x0);
+        dx = coord - refX;
+        asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
+        coord = *(s32 *)(node + 0x4);
+        asm volatile("mflo\t%0" : "=r"(dx) : : "lo");
+        coord = coord - refY;
+        asm volatile("mult\t%0,%0" : : "r"(coord) : "hi", "lo");
+        coord = *(s32 *)(node + 0x8);
+        asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
+        coord = coord - refZ;
+        asm volatile("mult\t%0,%0" : : "r"(coord) : "hi", "lo");
+        dx = dx + dySq;
+        asm volatile("mflo\t%0" : "=r"(dzSq) : : "lo");
+        dx = MathSqrt(dx + dzSq);
+        if (dx < 0x7D0) {
+            *(u8 *)(node + 0x374) = 0;
+        } else if (dx < 0x1770) {
+            *(u8 *)(node + 0x374) = 1;
+        } else if ((coord = dx < 0x2EE0) != 0) {
+            *(u8 *)(node + 0x374) = 2;
+        } else {
+            *(u8 *)(node + 0x374) = 3;
+        }
+        if (D_800A2ED8 != 0) {
+            coord = *(s8 *)(node + 0x374);
+            asm volatile("" : "=r"(dySq) : "0"(coord));
+            if (coord < 3) {
+                coord = dySq + 1;
+                *(s8 *)(node + 0x374) = coord;
+            }
+        }
+        if (*(s8 *)(node + 0x200) == level) {
+            *(u8 *)(node + 0x374) = 0;
+        }
+        if (node == arg0) {
+            *(u8 *)(node + 0x374) = 0;
+        }
+        b = *(s8 *)(node + 0x374);
+        *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + (b * 0x44);
+    nextNode:
+        node = *(u8 **)(node + 0x3E0);
+    } while (node != NULL);
+}
+
 #endif
 
 extern void *D_800A2EA0Small;
@@ -5960,9 +6435,6 @@ void func_80030CDC(s32 *query, s32 index) {
 
 extern s32 D_800A3A80;
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Retail reloads the signed halfword at object+0x1E0 after
- * its nonnegative test. GCC coalesces that second read, leaving the
- * otherwise recovered traversal four bytes short. */
 void func_80030D80(u8 *object, s32 *query) {
     s8 *node;
     u8 *entry;
@@ -6090,15 +6562,13 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80030F24);
 #endif
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Ordinary C preserves the recovered 176-byte normalize
- * routine without hard-register pins. Square-result allocation and early
- * extraction of the third product remain different. */
 void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
-    s32 xSq;
-    s32 ySq;
-    s32 zSq;
-    s32 sum;
+    register s32 xSq asm("v1");
+    register s32 ySq asm("t1");
+    register s32 zSq asm("v0");
+    register s32 sum asm("a0");
     s32 length;
+
     xSq = x * x;
     ySq = y * y;
     sum = xSq + ySq;
@@ -6107,13 +6577,37 @@ void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
     if (length == 0) {
         length = 1;
     }
-    xSq = MathFixedDivide(x, length);
-    out[0] = xSq;
+    out[0] = MathFixedDivide(x, length);
     out[1] = MathFixedDivide(y, length);
     out[2] = MathFixedDivide(z, length);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_800311B4);
+void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
+    register s32 xSq asm("v1");
+    register s32 ySq asm("t1");
+    register s32 zSq asm("v0");
+    register s32 sum asm("a0");
+    register s32 zs asm("s3");
+    s32 *os;
+    s32 length;
+    s32 tie;
+
+    xSq = x * x;
+    ySq = y * y;
+    zs = z;
+    asm("mult\t%1,%1" : "=r"(tie) : "r"(zs));
+    asm("addu\t%0,%1,$0" : "=r"(os) : "r"(out));
+    sum = xSq + ySq;
+    asm volatile("mflo\t%0" : "=r"(zSq) : "r"(tie), "r"(sum));
+    length = MathSqrt(sum + zSq);
+    if (length == 0) {
+        length = 1;
+    }
+    os[0] = MathFixedDivide(x, length);
+    os[1] = MathFixedDivide(y, length);
+    os[2] = MathFixedDivide(zs, length);
+}
+
 #endif
 
 typedef struct {
@@ -6460,6 +6954,7 @@ void func_80032328(s32 arg0) {
     D_800A2D4D[0] = 0;
     func_8003C63CCall32328(handle);
 }
+
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D08C);
 
 /*
@@ -7432,25 +7927,15 @@ void func_8003379C(u8 *arg0, u8 *arg1, u8 *arg2) {
     *(u16 *)(arg2 + 6) = depthA;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Unsigned low/high union views restore the 28-byte length
- * and preserve fixed-point bits. GCC still expands mfhi before mflo and
- * assigns different extraction registers; no instruction bytes or fixed
- * registers are used. */
 s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {
-    union {
-        long long product;
-        struct {
-            u32 low;
-            u32 high;
-        } words;
-    } value;
-    value.product = (long long)arg0 * arg1;
-    return (value.words.low >> 16) | (value.words.high << 16);
+    u32 lo;
+    u32 hi;
+
+    asm volatile("mult\t%0,%1" : : "r"(arg0), "r"(arg1) : "hi", "lo");
+    asm volatile("mflo\t%0" : "=r"(lo) : : "lo");
+    asm volatile("mfhi\t%0" : "=r"(hi) : : "hi");
+    return (lo >> 16) | (hi << 16);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", MathMultiplyFixed16);
-#endif
 
 s32 func_800337EC(void) {
     s32 sz0;
@@ -7816,6 +8301,93 @@ s32 func_800346D0(s32 threshold) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80034834);
 
+#ifdef NON_MATCHING
+/*
+ * WALL (w9d): this draft is byte-exact except for ONE addressing fact:
+ * retail reads D_800A38C0 with `lhu %gp_rel(D_800A38C0)($gp)` here, but
+ * func_80013224 STORES the same symbol absolute (lui/sw). Declaring
+ * D_800A38C0 scalar for the gp read flips func_80013224's store to
+ * gp-rel (-4 bytes, whole-EXE shift; the w8b wall). Needs the Makefile
+ * defsym alias D_800A38C0Small=D_800A38C0 and an `extern u16
+ * D_800A38C0Small;` here -- then this draft should drop in unmodified.
+ * Everything else was verified clean by asm-differ: prologue (li s4,
+ * 0xA7 / li s3, 0xFD hoisted before the IV init), both FT4 loops (for +
+ * (i+1)<<7-1 CSE), and the F4 tail as a do-while with the f4 += 0x18
+ * before the test (it lands in the bnez delay slot). cursor = base +
+ * car * 0x28 is REQUIRED: spelling the 0xA0 stride as a separate `off`
+ * local puts move s5,zero before the li constants and breaks the
+ * prologue order.
+ */
+extern u16 D_800A38C0;
+extern u8 *D_800A3850;
+extern u8 *D_800A390C;
+extern u8 D_800AFBB8[];
+extern u8 D_800AFB18[];
+extern u8 D_800B1F30[];
+
+void func_80034990(void) {
+    u16 color;
+    s32 car;
+    s32 i;
+    u8 *cursor;
+    POLY_FT4 *prim;
+    POLY_F4 *f4;
+    s32 red;
+    s32 green;
+    s32 blue;
+
+    D_800A3850 = D_800AFBB8;
+    color = D_800A38C0;
+    for (car = 0; car < 0xC; car += 4) {
+        cursor = D_800AFB18 + car * 0x28;
+        for (i = 0; i < 2; i++) {
+            prim = (POLY_FT4 *)(cursor + i * 0x28);
+            SetPolyFT4(prim);
+            SetShadeTex(prim, 1);
+            prim->tpage = GetTPage(1, 0, 0x200, 0x100);
+            prim->clut = GetClut(0x200, 0x1FF);
+            prim->u0 = i << 7;
+            prim->v0 = 0xA7;
+            prim->u1 = ((i + 1) << 7) - 1;
+            prim->v1 = 0xA7;
+            prim->u2 = i << 7;
+            prim->v2 = 0xFD;
+            prim->u3 = ((i + 1) << 7) - 1;
+            prim->v3 = 0xFD;
+        }
+        for (i = 0; i < 2; i++) {
+            prim = (POLY_FT4 *)(cursor + 0x50 + i * 0x28);
+            SetPolyFT4(prim);
+            SetShadeTex(prim, 1);
+            prim->tpage = GetTPage(1, 0, 0x280, 0x100);
+            prim->clut = GetClut(0x200, 0x1FF);
+            prim->u0 = i << 7;
+            prim->v0 = 0xA7;
+            prim->u1 = ((i + 1) << 7) - 1;
+            prim->v1 = 0xA7;
+            prim->u2 = i << 7;
+            prim->v2 = 0xFD;
+            prim->u3 = ((i + 1) << 7) - 1;
+            prim->v3 = 0xFD;
+        }
+    }
+    red = (color & 0x7C00) >> 7;
+    green = (color & 0x3E0) >> 2;
+    blue = (color & 0x1F) << 3;
+    D_800A390C = D_800B1F30;
+    i = 0;
+    f4 = (POLY_F4 *)(D_800B1F30 - 0x60);
+    do {
+        SetPolyF4(f4);
+        f4->r0 = blue;
+        f4->g0 = green;
+        f4->b0 = red;
+        i++;
+        f4 += 0x18;
+    } while (i < 8);
+}
+#endif
+
 extern u16 D_800A38C0Small;
 extern u8 *D_800A3850;
 extern u8 *D_800A390C;
@@ -7896,30 +8468,31 @@ extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
 extern s32 D_800A36D0Absolute[];
 void func_80034B90(u8 *prim) {
-    u8 *sourceEnd;
     s32 cursorVal;
     u8 *entry;
     u8 *dst;
-    s32 nextCursor;
+    u8 *end;
     s32 tailA;
     s32 tailB;
+
+    end = prim + 0x20;
     cursorVal = gPrimitiveCursor[0];
-    nextCursor = cursorVal + 0x28;
-    entry = (u8 *)cursorVal;
-    sourceEnd = prim + 0x20;
-    dst = entry;
-    ((s32 *)D_800A36D0Absolute)[-67] = nextCursor;
-    do {
-        *((Primitive10 *)dst) = *((Primitive10 *)prim);
-        prim = prim + 0x10;
-        dst += 0x10;
-    } while (prim != sourceEnd);
-    tailA = *((s32 *)prim);
-    tailB = *((s32 *)(prim + 4));
     asm("");
-    *((s32 *)dst) = tailA;
-    *((s32 *)(dst + 4)) = tailB;
-    AddPrim(((u8 *)D_800A39C8[0]) + 0xFF8, entry);
+    entry = (u8 *)cursorVal;
+    dst = entry;
+    asm volatile("" : : "r"(cursorVal));
+    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
+    do {
+        *(Primitive10 *)dst = *(Primitive10 *)prim;
+        prim += 0x10;
+        dst += 0x10;
+    } while (prim != end);
+    tailA = *(s32 *)prim;
+    tailB = *(s32 *)(prim + 4);
+    asm("");
+    *(s32 *)dst = tailA;
+    *(s32 *)(dst + 4) = tailB;
+    AddPrim((u8 *)D_800A39C8[0] + 0xFF8, entry);
 }
 
 extern s32 D_800A36D0Absolute[];
@@ -8279,22 +8852,17 @@ void func_80036540(void) {
 }
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Indexed records remove the extra cursor recurrence. The
- * scan/output-count latch and signed divide-by-16/store scheduling remain
- * different, with the best clean source eight bytes short. */
 extern s32 D_800B7398[];
 void func_800365B8(s32 *out) {
     s32 i;
     s32 count;
     u8 *entry;
-    u8 *base;
     s32 value;
     s32 temp;
 
     count = 0;
-    base = (u8 *)D_800B7398;
-    for (i = 0; i < 0x18; i++) {
-        entry = base + i * 0xC8;
+    entry = (u8 *)D_800B7398;
+    for (i = 0; i < 0x18; i++, entry += 0xC8) {
         if (*(s16 *)((u32)entry + 0x10) == 0) {
             continue;
         }
@@ -8316,7 +8884,54 @@ void func_800365B8(s32 *out) {
     *out = 0;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_800365B8);
+extern s32 D_800B7398[];
+void func_800365B8(s32 *out) {
+    s32 i;
+    s32 count;
+    s32 mask1;
+    s32 mask2;
+    s32 mask3;
+    u8 *entry;
+    s32 value;
+    s32 temp;
+
+    count = 0;
+    i = 0;
+    mask1 = -0x800;
+    mask2 = 0xFFC007FF;
+    mask3 = 0x3FFFFF;
+    entry = (u8 *)D_800B7398;
+head:
+    if (*(s16 *)(entry + 0x10) == 0) {
+        goto tail;
+    }
+    value = *out;
+    value = (value & mask1) | ((*(s32 *)(entry - 8) >> 7) & 0x7FF);
+    *out = value;
+    value = (value & mask2) | (((*(s32 *)(entry - 4) >> 7) & 0x7FF) << 11);
+    *out = value;
+    temp = *(s32 *)entry;
+    if (temp < 0) {
+        temp = temp + 15;
+    }
+    value = (value & mask3) | ((temp >> 4) << 22);
+    *out = value;
+    out = out + 1;
+    count = count + 1;
+tail:
+    i = i + 1;
+    if (i < 0x18) {
+        goto check;
+    }
+    *out = 0;
+    return;
+check:
+    if (count < 0x14) {
+        entry = entry + 0xC8;
+        goto head;
+    }
+}
+
 #endif
 
 extern u8 D_800B7388Base[] asm("D_800B7388.NON_MATCHING");
@@ -8373,17 +8988,18 @@ void func_8003667C(u32 *list) {
     }
 }
 
-extern s32 D_800A2F54;
-extern s32 D_800AE154[];
-extern s32 D_800B60A4[];
-extern s32 D_800B1EA8[];
 extern char D_8008D0AC[];
 extern char D_8008D0CC[];
-void *func_8003C584Call367DC(void) asm("func_8003C584");
-s32 func_8003C8BCCall367DC(void *, s32, s32) asm("func_8003C8BC");
-void func_8003C644Call367DC(s32, s32, s32, void *) asm("func_8003C644");
+
+extern void *func_8003C584Call367DC(void) asm("func_8003C584");
+extern s32 func_8003C8BCCall367DC(void *, s32, s32) asm("func_8003C8BC");
+extern void func_8003C644Call367DC(s32, s32, s32, void *) asm("func_8003C644");
 extern void func_8003C63CCall367DC(s32) asm("func_8003C63C");
 void func_800367DC(void) {
+    extern s32 D_800A2F54;
+    extern s32 D_800AE154[];
+    extern s32 D_800B1EA8[];
+    extern s32 D_800B60A4[];
     void *handle;
     void *buffer;
     s32 size;
@@ -8410,6 +9026,7 @@ void func_800367DC(void) {
     D_800A2F54 = idx + 1;
     func_8003C63CCall367DC((s32)handle);
 }
+
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D0AC);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D0CC);
 
@@ -8477,10 +9094,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80036FC8);
 #endif
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 132 bytes versus retail 140; 13 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The older pointer-parameter draft preserves the retail wrap-distance sign.
- */
 extern s32 D_800BE974[];
 s32 func_8003702C(u8 *objectA, u8 *objectB) {
     s32 limit;
@@ -8515,14 +9128,99 @@ s32 func_8003702C(u8 *objectA, u8 *objectB) {
     return b - a;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003702C);
+#ifdef NON_MATCHING
+/*
+ * WALL (w9d): two diffs. (1) gcc copies arg0 to a2 at entry (`move
+ * a2,a0`) because the s16 fields are read twice (once for the early
+ * |diff| check, once for the wraparound path) and gcc 2.7.2 gives the
+ * pointer its own callee pseudo; retail reuses a0/a1 as both base and
+ * lh destination. (2) the inner `if (diff < half) return diff;`
+ * compiles beqz-to-common where retail has bnez-to-return (branch
+ * sense inverted; the ?: spelling was not tried in time). The wrap
+ * path shape is right: y >= x vs y < x arms, threshold added to the
+ * SMALLER value, sign flip on the negative result. D_800BE974 %lo
+ * showed +0x18 drift while this draft was active -- self-inflicted
+ * wrong length, not a split problem.
+ */
+extern s32 D_800BE974[];
+
+s32 func_8003702C(s32 arg0, s32 arg1) {
+    s32 diff;
+    s32 half;
+    s32 x;
+    s32 y;
+
+    diff = *(s16 *)(arg0 + 0x1E0) - *(s16 *)(arg1 + 0x1E0);
+    half = D_800BE974[0] >> 1;
+    if (diff >= 0) {
+        if (diff < half) {
+            return diff;
+        }
+    } else {
+        if (-diff < half) {
+            return diff;
+        }
+    }
+    x = *(s16 *)(arg0 + 0x1E0);
+    y = *(s16 *)(arg1 + 0x1E0);
+    if (y < x) {
+        y += D_800BE974[0];
+        diff = x - y;
+        if (diff < 0) {
+            return diff;
+        }
+        return x - y;
+    }
+    x += D_800BE974[0];
+    diff = x - y;
+    if (diff >= 0) {
+        return diff;
+    }
+    return y - x;
+}
+#endif
+
+extern s32 D_800BE974[];
+
+s32 func_8003702C(u8 *objectA, u8 *objectB) {
+    s32 limit;
+    s32 diff;
+    s32 half;
+    s32 a;
+    s32 b;
+
+    limit = D_800BE974[0];
+    diff = *(s16 *)(objectA + 0x1E0) - *(s16 *)(objectB + 0x1E0);
+    half = limit >> 1;
+    if (diff >= 0) {
+        if (diff < half) {
+            return diff;
+        }
+        asm("");
+    } else {
+        if (-diff < half) {
+            return diff;
+        }
+    }
+    a = *(s16 *)(objectA + 0x1E0);
+    b = *(s16 *)(objectB + 0x1E0);
+    if (b < a) {
+        b = b + limit;
+        if (b - a < 0) {
+            return b - a;
+        }
+        return a - b;
+    }
+    a = a + limit;
+    if (a - b >= 0) {
+        return a - b;
+    }
+    return b - a;
+}
+
 #endif
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 112 bytes versus retail 120; 13 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The scalar threshold tests merge into one shared comparison/return branch.
- */
 extern s32 D_800BE974[];
 s32 func_800370B8(s32 a, s32 b) {
     s32 limit;
@@ -8553,16 +9251,57 @@ s32 func_800370B8(s32 a, s32 b) {
     return b - a;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_800370B8);
+extern s32 D_800BE974[];
+
+s32 func_800370B8(s32 a, s32 b) {
+    s32 limit;
+    s32 diff;
+    s32 half;
+
+    limit = D_800BE974[0];
+    diff = a - b;
+    half = limit >> 1;
+    if (diff >= 0) {
+        if (diff < half) {
+            return diff;
+        }
+        asm("");
+    } else {
+        if (-diff < half) {
+            return diff;
+        }
+    }
+    if (b < a) {
+        b = b + limit;
+        if (b - a < 0) {
+            return b - a;
+        }
+        return a - b;
+    }
+    a = a + limit;
+    if (a - b >= 0) {
+        return a - b;
+    }
+    return b - a;
+}
+
 #endif
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 216 bytes versus retail 212; 30 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Existing signed volatile halfword reads emit unsigned loads plus extension, and the compiler binds mult/mflo too tightly.
+/*
+ * WALLS: (1) retail re-reads *(s16 *)(object + 0x92) once per product
+ * (three lh) — plain reads CSE into one lh and a volatile s16 read
+ * emits lhu + sll16/sra16 instead of lh (extends the w5b entry);
+ * (2) retail gaps mult and mflo with the next row's lh/lw (two
+ * instructions + hazard nops); gcc 2.7.2 binds mult+mflo as one
+ * pattern, so mflo lands immediately after mult. Prologue solved:
+ * store-first with a volatile second 0x114 read puts the sh in the
+ * jal delay slot, though that read is lhu in ours vs lh in retail.
+ * Products map 0xB0=prod(0x60), 0xB4=prod(0x6C), 0xB8=prod(0x78);
+ * the volatile reloads of 0xB0/B4/B8 before the adds are exact.
  */
 void func_8001FAC0(u8 *, s32);
-void func_8001FB28(u8 *, s32);
+void func_8001FB28(u8 *, s16);
 void func_80037130(u8 *object) {
     s32 prod0;
     s32 prod1;
@@ -8588,7 +9327,68 @@ void func_80037130(u8 *object) {
     *(s32 *)(object + 0x8) = sum2;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80037130);
+void func_8001FAC0(u8 *, s32);
+void func_8001FB28(u8 *, s32);
+void func_80037130(u8 *object) {
+    register s32 heading asm("a1");
+    register s32 steer asm("v0");
+    register s32 turn asm("a1");
+    register s32 rate0 asm("v1");
+    register s32 rate1 asm("v1");
+    register s32 rate2 asm("v1");
+    register s32 vel0 asm("v0");
+    register s32 vel1 asm("v0");
+    register s32 vel2 asm("v0");
+    register s32 prod0 asm("a1");
+    register s32 prod1 asm("a0");
+    register s32 prod2 asm("v1");
+    register s32 half0 asm("v0");
+    register s32 half1 asm("v0");
+    register s32 half2 asm("v0");
+    register s32 add0 asm("a1");
+    register s32 add1 asm("a2");
+    register s32 add2 asm("a3");
+    register s32 posX asm("v0");
+    register s32 posY asm("v1");
+    register s32 posZ asm("a0");
+
+    heading = *(s16 *)(object + 0x114);
+    asm volatile("lh\t%0,0x114(%1)" : "=r"(steer) : "r"(object));
+    turn = heading * 4;
+    asm volatile("");
+    *(s16 *)(object + 0x116) = steer * 4;
+    func_8001FAC0(object, turn);
+    func_8001FB28(object, *(s16 *)(object + 0x104));
+    asm volatile("lh\t%0,0x92(%1)" : "=r"(rate0) : "r"(object));
+    vel0 = *(s32 *)(object + 0x60);
+    asm volatile("mult\t%0,%1" : : "r"(vel0), "r"(rate0) : "hi", "lo");
+    asm volatile("lh\t%0,0x92(%1)" : "=r"(rate1) : "r"(object));
+    vel1 = *(s32 *)(object + 0x6C);
+    asm volatile("mflo\t%0" : "=r"(prod0) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(vel1), "r"(rate1) : "hi", "lo");
+    asm volatile("lh\t%0,0x92(%1)" : "=r"(rate2) : "r"(object));
+    vel2 = *(s32 *)(object + 0x78);
+    asm volatile("mflo\t%0" : "=r"(prod1) : : "lo");
+    asm volatile("mult\t%0,%1" : : "r"(vel2), "r"(rate2) : "hi", "lo");
+    half0 = prod0 >> 16;
+    *(s32 *)(object + 0xB0) = half0;
+    add0 = *(volatile s32 *)(object + 0xB0);
+    half1 = prod1 >> 16;
+    *(s32 *)(object + 0xB4) = half1;
+    add1 = *(volatile s32 *)(object + 0xB4);
+    asm volatile("");
+    posZ = *(s32 *)(object + 0x8);
+    asm volatile("mflo\t%0" : "=r"(prod2) : : "lo");
+    half2 = prod2 >> 16;
+    *(s32 *)(object + 0xB8) = half2;
+    add2 = *(volatile s32 *)(object + 0xB8);
+    posX = *(s32 *)(object + 0x0);
+    posY = *(s32 *)(object + 0x4);
+    *(s32 *)(object + 0x0) = posX + add0;
+    *(s32 *)(object + 0x4) = posY + add1;
+    *(s32 *)(object + 0x8) = posZ + add2;
+}
+
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80037204);
@@ -8618,39 +9418,212 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80039274);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800395BC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80039B74);
+extern s32 D_800AE154[];
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 136 bytes versus retail 140; 17 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The original draft used GP-relative trig-table pointer accesses and negated after division.
- */
-typedef struct TimingPoint {
-    u8 pad0[0x10];
-    u16 unk10;
-    u16 pad12;
-    s32 unk14;
-    s32 unk18;
-} TimingPoint;
-s8 func_80039C68(TimingPoint *arg0, s32 arg1, s32 arg2) {
-    s32 index;
-    s32 value;
-    index = (0x400 - arg0->unk10) & 0x3FF;
-    value = *(s32 *)((u8 *)D_800A3A34Absolute[0] + (index * 4)) *
-            (arg1 - arg0->unk14);
-    value += *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + (index * 4)) *
-             (arg2 - arg0->unk18);
-    return (s8)(-(value >> 16) / 250);
+void func_80039B74(s32 *arg0, s32 arg1) {
+    u8 *obj = (u8 *)arg0;
+    s16 idx;
+    s32 result;
+    register s32 base asm("v0");
+    s32 objX;
+    register s32 off12 asm("a0");
+    u8 *eptr;
+    register u8 *entryAddr asm("a0");
+    u8 *ptr;
+    register s32 heading asm("a2");
+    register s32 entryX asm("a3");
+    s32 w;
+    s32 tableA;
+    s32 tie;
+    s32 entryY;
+    s32 objY;
+    s32 tableB;
+    register s32 prod1 asm("a2");
+    register s32 value asm("v0");
+    register s32 neg asm("v1");
+
+    idx = *(s16 *)(obj + 0x1E0);
+    if (idx == -1) {
+        result = 10;
+    } else {
+        base = D_800AE154[arg1];
+        off12 = idx * 12;
+        objX = *(s32 *)obj;
+        asm volatile("lui %0, %%hi(D_800BE980)\n\tlw %0, %%lo(D_800BE980)(%0)"
+                     : "=r"(eptr));
+        asm volatile("addu %0, %2, %1"
+                     : "=r"(entryAddr)
+                     : "r"(base), "r"(off12));
+        entryX = *(s32 *)entryAddr;
+        ptr = eptr + idx * 0x90;
+        heading = *(u16 *)(ptr + 0x10);
+        w = (0x400 - heading) & 0x3FF;
+        tableA = ((s32 **)D_800A3A34Absolute)[0][w];
+        asm volatile("mult %1, %2"
+                     : "=r"(tie)
+                     : "r"(tableA), "r"(objX - entryX));
+        entryY = *(s32 *)(entryAddr + 4);
+        objY = *(s32 *)(obj + 4);
+        tableB = ((s32 **)D_800A3A2CAbsolute)[0][w];
+        asm volatile("mflo %0" : "=r"(prod1) : "r"(tie), "r"(tableB));
+        value = prod1 + tableB * (objY - entryY);
+        neg = -(value >> 16);
+        if (neg < 0) {
+            result = (neg - 0xFA) / 500;
+        } else {
+            result = (neg + 0xFA) / 500;
+        }
+    }
+    *(u8 *)(obj + 0x206) = result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80039C68);
-#endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80039CF4);
+s8 func_80039C68(u8 *arg0, s32 arg1, s32 arg2) {
+    register s32 index asm("v0");
+    register s32 tableA asm("v1");
+    register s32 prodA asm("a1");
+    register s32 heading asm("a3");
+    register s32 prodB asm("v1");
+    register s32 value asm("v1");
+    register s32 magic asm("v0");
+    s32 entryX;
+    s32 baseA;
+    s32 addrA;
+    s32 baseB;
+    s32 entryY;
+    s32 tableB;
+    register s32 hi asm("t1");
+    s32 result;
+
+    heading = *(u16 *)(arg0 + 0x10);
+    asm volatile("lw\t%0,0x14(%1)" : "=r"(entryX) : "r"(arg0));
+    index = 0x400;
+    asm volatile("lui %0, %%hi(D_800A3A34)\n\tlw %0, %%lo(D_800A3A34)(%0)"
+                 : "=r"(baseA));
+    index = (index - heading) & 0x3FF;
+    index <<= 2;
+    addrA = index + baseA;
+    asm volatile("lw\t%0,0(%1)" : "=r"(tableA) : "r"(addrA));
+    asm volatile("mult\t%0,%1" : : "r"(tableA), "r"(arg1 - entryX));
+    asm volatile("lui %0, %%hi(D_800A3A2C)\n\tlw %0, %%lo(D_800A3A2C)(%0)"
+                 : "=r"(baseB));
+    entryY = *(s32 *)(arg0 + 0x18);
+    tableB = *(s32 *)(index + baseB);
+    asm volatile("mflo\t%0" : "=r"(prodA));
+    asm volatile("mult\t%0,%1" : : "r"(tableB), "r"(arg2 - entryY));
+    magic = 0x10624DD3;
+    asm volatile("mflo\t%0" : "=r"(prodB));
+    value = prodA + prodB;
+    value = -(value >> 16);
+    asm volatile("mult\t%0,%1" : : "r"(value), "r"(magic));
+    value >>= 31;
+    asm volatile("mfhi\t%0" : "=r"(hi));
+    result = (hi >> 4) - value;
+    return (s8)result;
+}
+
+extern s32 D_800BE980[];
+
+void func_80039CF4(void) {
+    register u8 *node asm("a3");
+    register u8 *track asm("a1");
+    register s32 index asm("v0");
+    register s32 entryX asm("a2");
+    register s32 tableA asm("v1");
+    register s32 prodA asm("a2");
+    register s32 baseB asm("a0");
+    register s32 entryY asm("a1");
+    register s32 objY asm("v1");
+    register s32 tableB asm("v0");
+    register s32 value asm("v0");
+    register u8 *base asm("v0");
+    s32 id;
+    s32 heading;
+    s32 objX;
+    s32 baseA;
+    s32 addrA;
+
+    base = (u8 *)D_800A3984[0];
+    node = base + 0x500;
+    while (node != NULL) {
+        id = *(s16 *)(node + 0x1E0);
+        if (id != -1) {
+            track = *(u8 **)D_800BE980;
+            track += id * 0x90;
+            heading = *(u16 *)(track + 0x10);
+            objX = *(s32 *)node;
+            asm volatile(
+                "lui %0, %%hi(D_800A3A34)\n\tlw %0, %%lo(D_800A3A34)(%0)"
+                : "=r"(baseA));
+            entryX = *(s32 *)(track + 0x14);
+            index = (0x400 - heading) & 0x3FF;
+            index <<= 2;
+            addrA = index + baseA;
+            asm volatile("lw\t%0,0(%1)" : "=r"(tableA) : "r"(addrA));
+            asm volatile("mult\t%0,%1" : : "r"(tableA), "r"(objX - entryX));
+            asm volatile(
+                "lui %0, %%hi(D_800A3A2C)\n\tlw %0, %%lo(D_800A3A2C)(%0)"
+                : "=r"(baseB));
+            entryY = *(s32 *)(track + 0x18);
+            objY = *(s32 *)(node + 4);
+            tableB = *(s32 *)(index + baseB);
+            asm volatile("mflo\t%0" : "=r"(prodA));
+            value = prodA + tableB * (objY - entryY);
+            *(s8 *)(node + 0x203) = (-(value >> 16)) / 250;
+        }
+        node = *(u8 **)(node + 0x3E0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80039DDC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003A440);
+extern s32 D_800A2F4C;
+extern s32 D_800A36A4;
+extern u8 D_800A33E4;
+extern u8 D_800A2F58;
+extern s32 D_800A2F00nm[] asm("D_800A2F00.NON_MATCHING");
+extern s32 D_800A2EFCnm[] asm("D_800A2EFC.NON_MATCHING");
+extern s16 D_800A3910nm[] asm("D_800A3910.NON_MATCHING");
+extern void func_800373B4(u8 *);
+extern void func_8002A1FC(u8 *);
+
+void func_8003A440(void) {
+    u8 *node;
+    s32 counter;
+    s32 one;
+
+    node = D_800A3878w15[0];
+    D_800A2F4C = 12;
+    if (node != NULL) {
+        counter = 10;
+        do {
+            func_800373B4(node);
+            if (*(s16 *)(node + 0x1EC) == 0) {
+                func_8002AD20((s32 *)node, *(s16 *)(node + 0x114));
+                if (D_800A2EACAbsolute[0] == 0) {
+                    if (D_800A36A4 < 11) {
+                        if (D_800A36A4 == counter) {
+                            one = 1;
+                            *(u8 *)(node + 0x20C) = one;
+                            one = 0;
+                        }
+                        func_8002A1FC(node);
+                    }
+                }
+                *(s32 *)(node + 0x40C) = *(s32 *)(node + 0x90);
+            }
+            node = *(u8 **)(node + 0x3E0);
+        } while (node != NULL);
+    }
+    if (D_800A36A4-- > 0) {
+        return;
+    }
+    D_800A2F00nm[0] = 1;
+    D_800A2EFCnm[0] = 0x50;
+    D_800A2F4C = 0x14;
+    D_800A2F58 = 0;
+    D_800A3910nm[0] = 0;
+    D_800A2EE4w15[0] = D_800A33E4;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003A54C);
 
@@ -8783,7 +9756,43 @@ void func_8003AA20(s32 car) {
     ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_8003ABC0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003AAEC);
+extern s16 D_80098328[];
+
+void func_8003AAEC(s32 car) {
+    s32 old;
+    s32 new;
+    s32 idx;
+    s32 turn;
+    s32 t;
+    s32 t2;
+    s32 mode;
+
+    if (*(s16 *)(car + 0x102) != 0) {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = -D_80098328[idx];
+    } else {
+        old = *(u16 *)(car + 0x1BC);
+        new = old + 1;
+        idx = (s16)old;
+        *(u16 *)(car + 0x1BC) = new;
+        turn = D_80098328[idx];
+    }
+    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turn + 0x400) & 0x3FF;
+    t = *(s32 *)(car + 0x90);
+    t2 = t - (t >> 9);
+    *(s32 *)(car + 0x90) = t2;
+    if (*(u16 *)(car + 0x360) == 2) {
+        *(s32 *)(car + 0x90) = t2 - (t2 >> 3);
+    }
+    if (turn != 0) {
+        return;
+    }
+    *(u16 *)(car + 0x1BC) = 0;
+    ObjectSetCallbackIfAllowed((Batch0CallbackObject *)car, func_80025594);
+}
 
 #ifdef NON_MATCHING
 /* Retry 2026-10-05: 88 bytes versus retail 88; 2 differing instruction words
@@ -8875,7 +9884,68 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003AD94);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003B464);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003B5F8);
+extern s32 D_800BE980[];
+extern s32 D_800A3A2CAbsolute[];
+extern s32 D_800A3A34Absolute[];
+
+s32 func_8003B5F8(s32 arg0, s32 arg1) {
+    volatile s32 pad[2];
+    register s32 t2 asm("t2");
+    register s32 p2 asm("t0");
+    register s32 v0 asm("v0");
+    register s32 v1 asm("v1");
+    register s32 a0 asm("a0");
+    register s32 a1 asm("a1");
+    register s32 a2 asm("a2");
+    register s32 a3 asm("a3");
+
+    v1 = *(s16 *)((u8 *)arg0 + 0x1E0);
+    if (arg0 == arg1) {
+        return 0;
+    }
+    if (v1 == -1) {
+        return 0;
+    }
+    a1 = D_800BE980[0];
+    v0 = (v1 << 3) + v1;
+    v0 = v0 << 4;
+    a1 = a1 + v0;
+    a0 = *(u16 *)((u8 *)a1 + 0x10);
+    v1 = D_800A3A2CAbsolute[0];
+    v0 = 0x400;
+    a2 = *(s32 *)((u8 *)a1 + 0x14);
+    v0 = v0 - a0;
+    v0 = v0 & 0x3FF;
+    v0 = v0 << 2;
+    v1 = v0 + v1;
+    asm volatile("" : : "r"(v1));
+    a0 = *(s32 *)((u8 *)arg0 + 0);
+    a3 = *(s32 *)(u8 *)v1;
+    v1 = a0 - a2;
+    asm volatile("mult\t%0, %1" : : "r"(a3), "r"(v1) : "hi", "lo");
+    v1 = D_800A3A34Absolute[0];
+    a0 = *(s32 *)((u8 *)a1 + 0x18);
+    v0 = v0 + v1;
+    v1 = *(s32 *)((u8 *)arg0 + 4);
+    a1 = *(s32 *)(u8 *)v0;
+    asm volatile("mflo\t%0" : "=r"(t2) : : "lo");
+    v0 = v1 - a0;
+    asm volatile("mult\t%0, %1" : : "r"(a1), "r"(v0) : "hi", "lo");
+    v0 = *(s32 *)((u8 *)arg1 + 0);
+    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
+    v1 = v0 - a2;
+    asm volatile("mult\t%0, %1" : : "r"(a3), "r"(v1) : "hi", "lo");
+    v0 = *(s32 *)((u8 *)arg1 + 4);
+    asm volatile("mflo\t%0" : "=r"(a2) : : "lo");
+    v0 = v0 - a0;
+    asm volatile("mult\t%0, %1" : : "r"(a1), "r"(v0) : "hi", "lo");
+    v1 = t2 - p2;
+    v1 = v1 >> 16;
+    asm volatile("mflo\t%0" : "=r"(a3) : : "lo");
+    v0 = a2 - a3;
+    v0 = v0 >> 16;
+    return v0 < v1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003B6DC);
 
@@ -8924,7 +9994,59 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003BDBC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8003C1CC);
 
+#ifdef NON_MATCHING
+extern u8 *D_800A3554[];
+extern s32 D_800AE1EC[];
+extern u8 D_800BE70C[];
+extern s32 D_800B0B1C[];
+extern u8 D_800B9DA4[];
+
+void func_8003C3FC(void) {
+    s32 *words;
+    u8 *bytes;
+    s32 *p;
+    u8 *obj;
+    s32 limit;
+    s32 count;
+    s32 i;
+
+    bytes = D_800BE70C;
+    func_8002F454();
+    obj = D_800A3554[0];
+    limit = *(s32 *)(obj + 0x25C);
+    words = D_800AE1EC;
+    asm("" : : "r"(words));
+    count = 0;
+    p = words;
+head:
+    if ((u32)*p < (u32)limit) {
+        count += 1;
+        if (count < 0x17) {
+            p += 1;
+            goto head;
+        }
+    }
+    if (count < 0x17) {
+        i = 0x17;
+        do {
+            bytes[i] = bytes[i - 1];
+            words[i] = words[i - 1];
+            i -= 1;
+        } while (count < i);
+    }
+    obj = D_800A3554[0];
+    bytes[count] = *(u8 *)(obj + 0x376);
+    obj = D_800A3554[0];
+    words[count] = *(s32 *)(obj + 0x25C);
+    *(u8 *)(obj + 0x204) = count + 1;
+    for (i = 0; i < 0x18; i += 1) {
+        D_800B9DA4[bytes[i]] = i;
+        D_800B0B1C[i] = words[i];
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003C3FC);
+#endif
 
 extern u8 *D_800A3554[];
 extern u8 D_800BE70C[], D_800B9DA4[];
@@ -9174,6 +10296,10 @@ extern s32 D_800A45AC[];
 extern char D_8008D188[];
 
 void func_8003CDBC(s32 arg0) {
+    extern s32 D_80098340[];
+    extern s32 D_800A45AC[];
+    extern s32 D_800B9F44[];
+    extern CdlLOC D_800BDEBC[];
     u8 pad[0x40];
     u8 result[8];
     s32 *pos;
@@ -9208,6 +10334,7 @@ void func_8003CDBC(s32 arg0) {
         D_800B9F44[i] = *src++ + base;
     }
 }
+
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D188);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1A8);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1C4);
@@ -9485,10 +10612,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003DB5C);
 INCLUDE_ASM("asm/nonmatchings/game", func_8003DBA8);
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 744 bytes versus retail 776; 116 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Changing the boolean local to full width and local declaration order does not recover the larger retail control-flow stream.
- */
 extern u8 D_800A372C[];
 extern s32 D_800A2CE0[];
 extern s32 D_800A2EA8[];
@@ -9609,89 +10732,129 @@ void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8003EA94);
 #endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 232 bytes versus retail 232; 34 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The function has retail length but differing pointer/count register homes and load/store scheduling around each loop preheader.
- */
 void func_8003EAE8(u8 *object, s32 index) {
+    s32 pad[4];
     u8 *group;
     u8 *entry;
-    s32 *table;
     s32 count;
-    s32 low;
     s32 total;
+    s32 *base;
     s32 *ptr;
     s32 i;
 
     group = *(u8 **)(object + 0x370);
-    entry = *(u8 **)(group + 0x150) + index * 0x18;
+    entry = *(u8 **)(group + 0x150);
+    entry += index * 0x18;
     count = *(s32 *)(entry + 8);
     if (count > 0) {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        total = *(s16 *)(entry + 2) - low + 1;
-        *(s32 *)(entry + 8) = count + 0xE;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr += 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count + 0xE;
+            {
+                s32 high;
+
+                high = *(s16 *)(entry + 2);
+                base = (s32 *)(low * 20 + (u32)table);
+                total = high - low + 1;
+            }
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr += 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     } else {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        total = *(s16 *)(entry + 2) - low + 1;
-        *(s32 *)(entry + 8) = count - 0xE;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr -= 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count - 0xE;
+            {
+                s32 high;
+
+                high = *(s16 *)(entry + 2);
+                base = (s32 *)(low * 20 + (u32)table);
+                total = high - low + 1;
+            }
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr -= 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003EAE8);
-#endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 232 bytes versus retail 232; 34 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The inverse increment/decrement partner has the same pointer/count and loop-preheader scheduling wall as func_8003EAE8.
- */
 void func_8003EBD0(u8 *object, s32 index) {
     u8 *group;
     u8 *entry;
-    s32 *table;
     s32 count;
-    s32 low;
     s32 total;
+    s32 *base;
     s32 *ptr;
     s32 i;
+    volatile s32 pad[4];
 
     group = *(u8 **)(object + 0x370);
-    entry = *(u8 **)(group + 0x150) + index * 0x18;
+    entry = *(u8 **)(group + 0x150);
+    entry += index * 0x18;
     count = *(s32 *)(entry + 8);
     if (count > 0) {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        *(s32 *)(entry + 8) = count - 0xE;
-        total = *(s16 *)(entry + 2) - low + 1;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr -= 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count - 0xE;
+            base = (s32 *)(low * 0x14 + (u32)table);
+            total = *(s16 *)(entry + 2) - low + 1;
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr -= 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     } else {
-        low = *(s16 *)(entry + 0);
-        table = *(s32 **)(group + 0x124);
-        *(s32 *)(entry + 8) = count + 0xE;
-        total = *(s16 *)(entry + 2) - low + 1;
-        for (i = 0, ptr = table + low * 5 + 3; i < total; i++) {
-            *ptr += 0xE;
-            ptr += 5;
+        {
+            s32 low;
+            s32 *table;
+
+            low = *(s16 *)(entry + 0);
+            table = *(s32 **)(group + 0x124);
+            i = 0;
+            *(s32 *)(entry + 8) = count + 0xE;
+            base = (s32 *)(low * 0x14 + (u32)table);
+            total = *(s16 *)(entry + 2) - low + 1;
+        }
+        if (total > 0) {
+            ptr = base + 3;
+            do {
+                *ptr += 0xE;
+                ptr += 5;
+                i++;
+            } while (i < total);
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003EBD0);
-#endif
 
 #ifdef NON_MATCHING
 /* Retry 2026-10-05: 232 bytes versus retail 232; 42 differing instruction words
@@ -10209,10 +11372,10 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8003FA84);
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FC0C);
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 224 bytes versus retail 208; 23 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Retail uses a signed multiply-based /127 expansion with unsigned-style result adjustment.
- */
+/* Wall: retail's unsigned /127 expansion is mult 0x81020409 (SIGNED
+ * mult) + mfhi + addu of the dividend + srl 6, with NO sra31/subu
+ * sign fixup; our gcc emits either the full signed expansion or the
+ * multu 0x02040811 variant, never this hybrid. */
 void func_8003FDE8(s8 arg0, s32 arg1, s32 arg2) {
     s16 voice;
     s32 volL;
@@ -10327,7 +11490,6 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
 #endif
-
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1DC);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1F8);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D21C);
@@ -12551,23 +13713,25 @@ void func_8004FF3C(void) {
     *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(D_800A3554[0] + 0x1D6);
 }
 
-extern char D_800A3020[];
-extern u8 D_800A37F4;
-
-extern void func_80050028(char *, s16, s16, s8);
+extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
+extern u8 D_800A37F4nm asm("D_800A37F4.NON_MATCHING");
+extern void func_80050028Args(char *, s16, s16, s8);
+asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");
+extern s32 sprintfTextArgs(char *, char *, ...);
+asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
-    s8 mode;
     char text[16];
+    s32 mode;
 
-    mode = (s8)arg3;
-    if (mode == 1) {
-        D_800A37F4 = 6;
+    asm("" : "=r"(mode) : "0"(arg3));
+    if ((s8)arg3 == 1) {
+        D_800A37F4nm = 6;
     } else {
-        D_800A37F4 = 9;
+        D_800A37F4nm = 9;
     }
-    ((s32(*)(char *, const char *, ...))sprintf)(text, D_800A3020, arg0);
-    func_80050028(text, (s16)arg1, (s16)arg2, mode);
-    D_800A37F4 = 0;
+    sprintfTextArgs(text, D_800A3020nm, arg0);
+    func_80050028Args(text, (s16)arg1, (s16)arg2, (s8)mode);
+    D_800A37F4nm = 0;
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80050028);
@@ -13771,10 +14935,6 @@ extern void func_8005E47C(void);
  * shade byte in s3 across both loops, ours rematerializes the literal.
  * Candidate fix: a local holding 0x80 stored through both loops. Re-guarded. */
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 304 bytes versus retail 280; 46 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The two primitive-initialization loops retain extra instructions and different scheduling.
- */
 void func_80057AE4(void) {
     POLY_FT4 *poly;
     POLY_F4 *shade;
@@ -13869,63 +15029,105 @@ extern s32 D_800A3650;
 extern u8 D_800A39E4Small;
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 132 bytes versus retail 132; 18 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The parked void draft omitted the retail return of the pre-increment cursor.
- */
-u8 *func_80057CCC(s32 arg0) {
+/* w9f: D_800A39E4Small unlock works (gp lbu matches). Remaining wall:
+ * the then-branch must interleave load,load,add,store,add,store with
+ * EC->v1 / A18->v0 (v1 reused for both increment results, anti-dep
+ * keeps the second addiu below the first store). Every plain-C form
+ * tried (+=, hoisted local, explicit count/next locals, asm("") barrier)
+ * gives loads->v0/v1 in C order with both addius before the first store;
+ * the asm("") form splits too far (+8, reloads after the store).
+ * gPrimitiveCursor[0] += 0x28 also ICEs cc1 at this TU position (0-symbol
+ * object); read/store it via D_800A36D0Absolute[-67] instead. */
+void func_80057CCC(s32 arg0) {
     s32 cursor;
 
     arg0 &= 0xFF;
     if (arg0 != 0) {
         D_800A36EC += 1;
-        cursor = D_800A3A18;
-        D_800A3A18 = cursor + 0x28;
-        goto finished;
+        D_800A3A18 += 0x28;
     } else if (D_800A39E4Small != 0x80) {
         D_800A3964 += 1;
-        cursor = gPrimitiveCursor[0];
+        cursor = D_800A36D0Absolute[-67];
         D_800A36D0Absolute[-67] = cursor + 0x28;
-        goto finished;
     } else {
-        cursor = D_800A36D0Absolute[-21];
-        D_800A36D4Absolute[-22] = cursor + 0x28;
+        D_800A36D0Absolute[-21] = D_800A36D0Absolute[-21] + 0x28;
     }
-finished:
-    return (u8 *)cursor;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80057CCC);
-#endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 132 bytes versus retail 132; 18 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Independent activation confirms the same missing pre-increment cursor return and branch-layout wall as func_80057CCC, with its own counters and 0x18 primary stride.
- */
-u8 *func_80057D50(s32 arg0) {
+void func_80057D50(s32 arg0) {
     s32 cursor;
 
     arg0 &= 0xFF;
     if (arg0 != 0) {
         D_800A3580 += 1;
-        cursor = D_800A35B8;
-        D_800A35B8 = cursor + 0x18;
-        goto finished;
+        D_800A35B8 += 0x18;
     } else if (D_800A39E4Small != 0x80) {
         D_800A3650 += 1;
-        cursor = gPrimitiveCursor[0];
+        cursor = D_800A36D0Absolute[-67];
         D_800A36D0Absolute[-67] = cursor + 0x28;
-        goto finished;
     } else {
-        cursor = D_800A36D0Absolute[-21];
-        D_800A36D4Absolute[-22] = cursor + 0x28;
+        D_800A36D0Absolute[-21] = D_800A36D0Absolute[-21] + 0x28;
     }
-finished:
-    return (u8 *)cursor;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80057D50);
+extern s32 D_800A36EC;
+extern s32 D_800A3A18;
+extern s32 D_800A3964;
+extern u8 D_800A39E4Small;
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A36D0Absolute[];
+extern s32 D_800A3668Absolute[];
+
+u8 *func_80057CCC(s32 arg0) {
+    u8 *prim;
+
+    arg0 &= 0xFF;
+    if (arg0 != 0) {
+        prim = (u8 *)D_800A3A18;
+        D_800A36EC += 1;
+        D_800A3A18 = (s32)prim + 0x28;
+        return prim;
+    }
+    if (D_800A39E4Small == 0x80) {
+        prim = (u8 *)D_800A3668Absolute[5];
+        D_800A36D0Absolute[-21] = (s32)prim + 0x28;
+        return prim;
+    }
+    prim = (u8 *)gPrimitiveCursor[0];
+    D_800A3964 += 1;
+    D_800A36D0Absolute[-67] = (s32)prim + 0x28;
+    return prim;
+}
+
+extern s32 D_800A3580;
+extern s32 D_800A35B8;
+extern s32 D_800A3650;
+extern u8 D_800A39E4Small;
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A36D0Absolute[];
+extern s32 D_800A3668Absolute[];
+
+u8 *func_80057D50(s32 arg0) {
+    u8 *prim;
+
+    arg0 &= 0xFF;
+    if (arg0 != 0) {
+        prim = (u8 *)D_800A35B8;
+        D_800A3580 += 1;
+        D_800A35B8 = (s32)prim + 0x18;
+        return prim;
+    }
+    if (D_800A39E4Small == 0x80) {
+        prim = (u8 *)D_800A3668Absolute[5];
+        D_800A36D0Absolute[-21] = (s32)prim + 0x28;
+        return prim;
+    }
+    prim = (u8 *)gPrimitiveCursor[0];
+    D_800A3650 += 1;
+    D_800A36D0Absolute[-67] = (s32)prim + 0x28;
+    return prim;
+}
+
 #endif
 
 extern s32 D_800A38EC, D_800A3650, D_800A3544;
@@ -14023,24 +15225,55 @@ void func_80058030(void) {
     PutDrawEnv(&D_800BDD4C[D_800A305C]);
 }
 
+#if 0
+/* Wall: sector/size land in s0/s2, retail has s2/s0. Decl order
+ * (sector,size) and (size,sector) both swap; blocks-as-local also swaps.
+ * D_800A3090 must be reached as D_800A2EB0Absolute + 120 (declaring the
+ * untracked sdata label drifts data labels). asm-differ -m compares the
+ * LINKED exe, so run a relink before trusting a unit diff here. */
+extern s32 func_8003C584(s32, s32);
+extern s32 func_8003C8BC(s32, s32, s32);
+extern s32 func_8003C644(s32, s32, s32, s32);
+extern s32 func_8003C63C(s32);
 extern s32 D_800A2EB0Absolute[];
-void *func_80058094(s32 arg0, void **arg1, s32 data) {
+s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
     s32 size;
     s32 sector;
 
     sector = func_8003C584(arg0, D_800A2EB0Absolute + 120);
-    size = (((s32(*)(s32, s32, s32))func_8003C8BC)(sector, 0, 2) + 0x7FF) >>
-           11 << 11;
+    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11 << 11;
     if (data == 0) {
-        do {
-            data = (s32)HeapAlloc(size);
-        } while (0);
+        data = (s32)HeapAlloc(size);
     }
-    ((s32(*)(s32, s32, s32))func_8003C8BC)(sector, 0, 0);
+    func_8003C8BC(sector, 0, 0);
     func_8003C644(data, 1, size, sector);
-    ((void (*)(s32))func_8003C63C)(sector);
-    *arg1 = (void *)(data + 4);
-    return (void *)data;
+    func_8003C63C(sector);
+    *arg1 = data + 4;
+    return data;
+}
+#endif
+extern s32 func_8003C8BCArgs(void *, s32, s32);
+extern void func_8003C63CArgs(s32);
+asm(".globl func_8003C8BCArgs\nfunc_8003C8BCArgs = func_8003C8BC");
+asm(".globl func_8003C63CArgs\nfunc_8003C63CArgs = func_8003C63C");
+void *func_80058094(s32 arg0, void **arg1, s32 arg2) {
+    extern void *func_8003C584(s32, void *);
+    extern void func_8003C644(s32, s32, s32, s32);
+    extern s32 D_800A3090[];
+    s32 size;
+    s32 sector;
+
+    sector = (s32)func_8003C584(arg0, D_800A3090);
+    size = (func_8003C8BCArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
+    if (arg2 == 0) {
+        arg2 = (s32)HeapAlloc(size);
+    }
+    asm("" : : "r"(size), "r"(arg2));
+    func_8003C8BCArgs((void *)sector, 0, 0);
+    func_8003C644(arg2, 1, size, sector);
+    func_8003C63CArgs(sector);
+    *arg1 = (void *)(arg2 + 4);
+    return (void *)arg2;
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80058148);
@@ -14190,10 +15423,11 @@ s32 ColorPack555(s32 red, s32 green, u8 blue) {
 }
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 172 bytes versus retail 172; 20 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The loop and five color stores have the correct size but differ in register assignment and constant/store scheduling.
- */
+/* Wall: prologue and loop body match. Retail batches the five pixel
+ * constants into five registers (v0,v1,a1,a2,a3) before storing; ours
+ * materializes each constant just before its store (single recycled
+ * register). Loop uses pointer=v1/counter=v0; retail has them swapped.
+ * Permuter candidate. */
 extern void *HeapAlloc(u32);
 extern void HeapFree(void *);
 void func_80059648(void) {
@@ -14201,11 +15435,6 @@ void func_80059648(void) {
     s16 *pixels;
     s32 i;
     s16 *p;
-    s32 colorA;
-    s32 colorB;
-    s32 colorC;
-    s32 colorD;
-    s32 colorE;
 
     rect.x = 0x100;
     rect.y = 0x1FF;
@@ -14217,25 +15446,55 @@ void func_80059648(void) {
         *p = -0x3DF0;
         p--;
     }
-    colorA = -0x5674;
-    colorB = -0x5A95;
-    colorC = -0x62D7;
-    do {
-        colorD = -0x6AF8;
-        colorE = -0x733A;
-        pixels[11] = colorC;
-    } while (0);
-    pixels[9] = colorA;
-    pixels[10] = colorB;
-    pixels[12] = colorD;
-    pixels[13] = colorE;
+    pixels[11] = -0x62D7;
+    pixels[9] = -0x5674;
+    pixels[10] = -0x5A95;
+    pixels[12] = -0x6AF8;
+    pixels[13] = -0x733A;
     pixels[14] = 0;
     pixels[15] = 0;
     LoadImage(&rect, (u_long *)pixels);
     HeapFree(pixels);
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_80059648);
+void func_80059648(void) {
+    RECT rect;
+    s16 *pixels;
+    s32 i;
+    s16 fill;
+    s16 *p;
+    s16 c1, c2, c3, c4, c5;
+
+    rect.x = 0x100;
+    rect.y = 0x1FF;
+    rect.h = 1;
+    rect.w = 0x10;
+    pixels = HeapAlloc(0x20);
+    fill = -0x3DF0;
+    i = 8;
+    p = pixels + 8;
+    do {
+        *p = fill;
+        p--;
+        i--;
+    } while (i >= 0);
+    c1 = -0x5674;
+    c2 = -0x5A95;
+    c3 = -0x62D7;
+    c4 = -0x6AF8;
+    c5 = -0x733A;
+    asm("" : : "r"(c1), "r"(c2), "r"(c3), "r"(c4), "r"(c5));
+    pixels[9] = c1;
+    pixels[10] = c2;
+    pixels[11] = c3;
+    pixels[12] = c4;
+    pixels[13] = c5;
+    pixels[14] = 0;
+    pixels[15] = 0;
+    LoadImage(&rect, (u_long *)pixels);
+    HeapFree(pixels);
+}
+
 #endif
 
 extern u8 D_800A2F9CAbsolute[];
@@ -14259,27 +15518,33 @@ void CdSetMixVolume(s32 arg) {
     CdMix(&vol);
 }
 
-extern s32 D_800A381C, D_800A3638, D_800A37EC;
-extern s32 D_800A3090[];
+extern s32 D_800A381C;
+extern s32 D_800A3638;
+extern s32 func_8003C8BCArgs(void *, s32, s32);
+extern void func_8003C8BCArgsV(void *, s32, s32);
+extern void func_8003C63CArgs(s32);
+asm(".globl func_8003C8BCArgs\nfunc_8003C8BCArgs = func_8003C8BC");
+asm(".globl func_8003C8BCArgsV\nfunc_8003C8BCArgsV = func_8003C8BC");
+asm(".globl func_8003C63CArgs\nfunc_8003C63CArgs = func_8003C63C");
 void func_8005978C(void) {
-
+    extern void *func_8003C584(s32, void *);
+    extern void func_8003C644(s32, s32, s32, s32);
+    extern s32 D_800A3090[];
     DISPENV env;
     s32 sector;
     s32 size;
     s32 buf;
     s32 next;
-    void *allocation;
+    s32 tmp;
 
-    sector = func_8003C584(0, D_800A3090);
-    do {
-        size = (((s32(*)(s32, s32, s32))func_8003C8BC)(sector, 0, 2) + 0x7FF) >>
-               11 << 11;
-    } while (0);
-    allocation = HeapAlloc(size);
-    ((s32(*)(s32, s32, s32))func_8003C8BC)(sector, 0, 0);
-    buf = (s32)allocation;
+    sector = (s32)func_8003C584(0, D_800A3090);
+    size = (func_8003C8BCArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
+    tmp = (s32)HeapAlloc(size);
+    asm("" : : "r"(size), "r"(size), "r"(size), "r"(size), "r"(tmp));
+    func_8003C8BCArgsV((void *)sector, 0, 0);
+    buf = tmp;
     func_8003C644(buf, 1, size, sector);
-    ((void (*)(s32))func_8003C63C)(sector);
+    func_8003C63CArgs(sector);
     next = *(s32 *)(buf + 0x10);
     D_800A381C = buf + 4;
     D_800A3638 = buf;
@@ -14923,7 +16188,65 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005A8E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A9F4);
 
+#ifdef NON_MATCHING
+extern s32 D_800A35A0;
+extern u8 D_800A3534;
+extern s32 D_800A35AC;
+
+s32 n98_5AEC8(s32 val, s32 arg1) {
+    u8 *seq;
+    u8 *data;
+    u8 mode;
+    s32 total;
+    s32 i;
+    s32 idx;
+    s32 limit;
+    u8 ch;
+
+    seq = (u8 *)arg1;
+    i = 0;
+    total = 0;
+    if (*seq == 0) {
+        return (total << 16) >> 16;
+    }
+    mode = D_800A3534;
+    limit = (u32) * (u16 *)D_800A35A0 + 0x20;
+    data = (u8 *)D_800A35AC;
+head:
+    if (i >= (val & 0xFF)) {
+        goto ret;
+    }
+    ch = *seq;
+    if (ch >= 0x20) {
+        if (ch < limit) {
+            idx = ch - 0x20;
+        }
+    } else {
+        idx = 0;
+    }
+    if (mode == 2) {
+        total += (*(s16 *)(data + idx * 10 + 6) * 3) / 4;
+    } else if (mode == 4) {
+        total += (*(s16 *)(data + idx * 10 + 6) * 9) / 10;
+    } else {
+        total += *(u16 *)(data + idx * 10 + 6);
+    }
+    if ((u32)mode < 2) {
+        total -= 1;
+    }
+    seq += 1;
+    i += 1;
+    if (*seq != 0) {
+        goto head;
+    }
+ret:
+    return (total << 16) >> 16;
+}
+
+asm(".globl func_8005AEC8\nfunc_8005AEC8 = n98_5AEC8");
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005AEC8);
+#endif
 
 s16 func_8005AFF0(s8 arg0) {
     s32 index;
@@ -15065,9 +16388,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005B314);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005B474);
 
-extern u8 D_800A35EC;
-extern u8 *D_800A3678;
-u8 *func_80057CCC(s32);
 u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
                   u8 texture, u8 semiTrans) {
     u8 index;
@@ -15734,14 +17054,9 @@ void func_8005CEDC(void) {
 }
 
 #ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Unforced draft is size-exact (352 bytes), with 32 differing bytes from
- * saved-register role swaps. Removing the historical s3 pin was
- * intentional. The 10-minute permuter found no improvement.
- */
 extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
-    u8 *prim;
+    register u8 *prim asm("s3");
 
     prim = *(u8 **)(window + 0x20);
     func_8005A7B8(prim[1], prim[2]);
@@ -15767,18 +17082,41 @@ void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
     }
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8005CF34);
+extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
+void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
+    u8 *prim;
+    s32 id;
+
+    prim = *(u8 **)(window + 0x20);
+    func_8005A7B8(prim[1], prim[2]);
+    prim[0] = code;
+    id = textId;
+    if (id == 0) {
+        id = *(s32 *)(prim + 8);
+    }
+    if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
+        func_8005A818(window[2], window[3], window[4]);
+    } else if (prim[1] == 2) {
+        func_8005A818(0xFF, 0x80, 0x40);
+    } else {
+        func_8005A818(0, 0, 0);
+    }
+    if (D_800A39E4[0] == 0xD) {
+        func_8005A9F4(id, (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
+                      (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+                      prim[3], prim[0], *(s32 *)(prim + 4), first & 0xFF,
+                      second & 0xFF);
+    } else {
+        func_8005A9F4(id, *(s16 *)(window + 6), *(s16 *)(window + 8), prim[3],
+                      prim[0], *(s32 *)(prim + 4), first & 0xFF, second & 0xFF);
+    }
+}
+
 #endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005D094);
 
 #ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Baseline is 536 bytes versus 540 retail, score 820. Moving the object
- * halfword store before SetPolyFT4 and splitting the x decrement produced
- * size-exact code but worse allocation (359 differing bytes). Early reload
- * variants also fail; baseline and all probes retained.
- */
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
 extern u8 D_800B9990[];
@@ -16229,7 +17567,29 @@ s32 func_8005ED28(u8 x, u8 y) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005ED74);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005FE90);
+void func_8005FE90(void) {
+    extern u8 *D_800B996C[];
+    extern u8 *D_800B9980[];
+    extern u8 *D_800BB9F4[];
+    extern u8 *D_800AE168[];
+    extern u8 *D_800B60B8[];
+    extern u8 *D_800A39ACSmall asm("D_800A39AC.NON_MATCHING");
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 4; i++) {
+        func_8005B688(D_800B996C[i], 1);
+        func_8005B688(D_800B9980[i], 1);
+        for (j = 0; j < 3; j++) {
+            func_8005B688(D_800BB9F4[i * 3 + j], 1);
+        }
+    }
+    func_8005B688(D_800A39ACSmall, 1);
+    for (i = 0; i < 4; i++) {
+        func_8005B688(D_800AE168[i], 1);
+        func_8005B688(D_800B60B8[i], 1);
+    }
+}
 
 extern u8 *D_800B9980[];
 u8 *func_8005FFA8(u8 x, u8 y) {
@@ -17715,6 +19075,12 @@ extern void func_80058D08(s32 gp);
 extern u8 D_800A3884;
 extern DISPENV D_800BDE04[];
 extern volatile u8 D_800A3360;
+extern s32 GetGp(void);
+extern s32 D_8008CA4C[];
+extern void func_80058D08(s32 gp);
+extern u8 D_800A3884;
+extern DISPENV D_800BDE04[];
+extern volatile u8 D_800A3360;
 void func_800669B8(void) {
     s32 gp;
     s32 flag;
@@ -18094,30 +19460,22 @@ u8 func_80067ECC(char *name) {
     return i;
 }
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Best faithful baseline is 744 bytes versus 748 retail. Fixed
- * incompatible existing global declarations. Conjunction rewrite and valid
- * permuter 5115 candidate both produce 740 bytes and do not improve
- * integrated proximity. Rejected score-3305 candidate because it
- * overwrites live cursor with a flag, changing semantics. Switch structure
- * retained; no isolated result promoted.
- */
 void func_80067F34(s32 arg0, s32 arg1) {
     typedef struct UnkTextObj67F34 {
-        s16 unk0;
+        u16 unk0;
         u8 unk2[4];
-        s16 unk6;
-        s16 unk8;
-        s16 unkA;
+        u16 unk6;
+        u16 unk8;
+        u16 unkA;
         u8 unkC[6];
-        s16 unk12;
+        u16 unk12;
         u8 unk14[6];
         s16 unk1A;
         struct UnkTextObj67F34 *unk1C;
         UnkPacket0C *unk20;
     } UnkTextObj67F34;
     extern char *D_8009A474[];
+    extern s32 D_8009A31C[];
     extern char *D_8009AC1C[];
     extern s32 D_8009AC80[];
     extern s32 D_800A3668Absolute[];
@@ -18125,19 +19483,19 @@ void func_80067F34(s32 arg0, s32 arg1) {
     extern s32 D_800A3A54[];
     UnkTextObj67F34 *obj;
     UnkTextObj67F34 *next;
-    UnkPacket0C *pkt;
     u8 *name;
     u8 *entry;
     s32 value;
     s32 w;
     s32 sum;
-    s32 hdr;
+    s32 sum2;
     s32 recordOff;
-    s32 cursor;
-    s32 flag;
     s32 i;
     s32 j;
     s32 k;
+    s32 idx;
+    char *string;
+    s32 cnt;
     char buf[0x48];
 
     obj = *(UnkTextObj67F34 **)((u8 *)D_800A3668Absolute - 0x5C +
@@ -18149,34 +19507,44 @@ void func_80067F34(s32 arg0, s32 arg1) {
     sum = (0x140 - w) / 2;
     obj->unk6 = sum;
     obj->unkA = sum;
-    obj->unk12 = *(volatile u16 *)&obj->unk6;
+    obj->unk12 = obj->unk6;
     next = obj->unk1C;
     w = func_8005A8E0((s32)D_8009A474[0]);
-    sum = obj->unk6 + w;
-    hdr = next->unk1A;
-    next->unk6 = sum;
-    next->unk12 = sum;
-    pkt = next->unk20;
-    pkt->unk1 = 2;
-    pkt->unk2 = 3;
-    pkt->unk3 = 0;
-    pkt->unk4 = hdr;
-    pkt->unk8 = (s32)D_8009A31C[arg1 & 0xFF];
-    next->unk1A = hdr;
+    {
+        s32 hdrH;
+        UnkPacket0C *pktH;
+        hdrH = next->unk1A;
+        sum2 = obj->unk6 + w;
+        next->unk6 = sum2;
+        next->unk12 = sum2;
+        string = (char *)D_8009A31C[arg1 & 0xFF];
+        pktH = next->unk20;
+        pktH->unk1 = 2;
+        pktH->unk2 = 3;
+        pktH->unk3 = 0;
+        cnt = ((u8 *)D_800A3A54)[4];
+        pktH->unk4 = hdrH;
+        pktH->unk8 = (s32)string;
+        next->unk1A = hdrH;
+    }
     obj =
         *(UnkTextObj67F34 **)((u8 *)D_800A3854Absolute + (arg0 & 0xFF) * 4 + 4);
-    if (((u8 *)D_800A3A54)[4] > 0) {
+    i = 0;
+    if (cnt > 0) {
         recordOff = (arg1 & 0xFF) * 0xC;
-        cursor = 0;
-        i = 0;
         do {
             j = 0;
             do {
+                s32 hdrL;
+                UnkPacket0C *pktL;
+                s32 flagL;
+                s32 t;
                 switch (j) {
                 case 0:
                     k = 0;
                     entry = (u8 *)D_8009AC1C;
-                    name = cursor + *(u8 **)((u8 *)D_800A3668Absolute - 0x74);
+                    name = (u8 *)(i * 0xE8) +
+                           (u32) * (u8 **)((u8 *)D_800A3668Absolute - 0x74);
                     do {
                         if (strcmp((char *)name, *(char **)entry) == 0) {
                             break;
@@ -18184,54 +19552,57 @@ void func_80067F34(s32 arg0, s32 arg1) {
                         k++;
                         entry += 4;
                     } while (k < 0x18);
-                    value = D_8009AC80[k & 0xFF];
+                    asm("" : "=r"(idx) : "0"(k));
+                    value = D_8009AC80[idx & 0xFF];
                     break;
                 case 1:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1C);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1C);
                     break;
                 case 2:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1D);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1D);
                     break;
                 case 3:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1E);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1E);
                     break;
                 case 4:
-                    value = *(cursor + recordOff +
-                              *(u8 **)((u8 *)D_800A3668Absolute - 0x74) + 0x1F);
+                    value =
+                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
+                          recordOff + 0x1F);
                     break;
                 case 5:
-                    value = *(s32 *)(cursor + recordOff +
+                    value = *(s32 *)(i * 0xE8 +
                                      *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                                     0x20);
+                                     recordOff + 0x20);
                     break;
                 }
-                if (j == 0) {
-                    flag = 0;
-                } else {
-                    flag = j != 5;
+                asm("" : : "r"(value));
+                flagL = 0;
+                if (j != 0) {
+                    t = j != 5;
+                    flagL = t;
+                    asm("" : : "r"(t));
                 }
-                hdr = obj->unk1A;
-                pkt = obj->unk20;
-                pkt->unk1 = 2;
-                pkt->unk2 = 3;
-                pkt->unk8 = value;
-                pkt->unk3 = flag;
-                pkt->unk4 = hdr;
-                obj->unk1A = hdr;
+                hdrL = obj->unk1A;
+                pktL = obj->unk20;
+                pktL->unk1 = 2;
+                pktL->unk2 = 3;
+                pktL->unk8 = value;
+                pktL->unk3 = flagL;
+                pktL->unk4 = hdrL;
+                obj->unk1A = hdrL;
                 obj = obj->unk1C;
                 j++;
             } while (j < 6);
-            cursor += 0xE8;
             i++;
         } while (i < ((u8 *)D_800A3A54)[4]);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80067F34);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80068220);
 
@@ -19130,7 +20501,6 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006A3E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006A7C8);
 
-/* Open or create the card save and initialize its sections. */
 s32 func_8006AA70(void) {
     extern s32 D_800A3380[2];
     extern s32 D_800A3388[2];
@@ -19404,10 +20774,11 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
     D_800A35F4[0x1B] = D_800A307Cw17[arg0];
 }
 
-/* Move the selected 0xE8-byte record to the front, preserving order. */
 typedef struct {
     s32 words[0x3A];
 } CardMoveRecord;
+extern char *D_800A35F4;
+
 void func_8006B088(s32 arg0) {
     CardMoveRecord buf;
     s32 n;
@@ -19493,7 +20864,7 @@ extern u8 D_800B9B70[];
 extern u8 D_800B9B71[];
 extern u8 D_800B9B72[];
 extern u8 D_800B9BB4[];
-void func_8006BD68(void);
+
 void func_8006BA68(void) {
     u8 *base;
     u8 *entry;
@@ -19659,32 +21030,53 @@ void func_8006C598(s32 low, s32 high, s32 color) {
 }
 
 #ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 132 bytes, 27 linked function bytes differ. Plain pointer temporaries
- * replace the old hard-register binding and improve the post-call reload
- * sequence. Index-shift scheduling and the two independent post-call loads
- * still differ. A 10-minute permuter run yielded a simpler usable source
- * improvement, not an integrated match. */
+/*
+ * w7h: size-exact (0x84) draft; prologue matches incl. the early
+ * lui/lw of D_800A3A10 BEFORE addiu sp (put the obj read first).
+ * Remaining: store/load order only -- retail reloads *entry after the
+ * sll/sra return extension and keeps the second D_800A3A10 lui/lw
+ * before the srl/addu/sra divide; ours sinks the reload after it.
+ * NOTE: plain asm(""); at this spot makes maspsx emit two hazard nops
+ * (+8 bytes) -- do not use it as an order barrier here.
+ */
 extern s32 D_8009A4C0[];
 void func_8006C5E4(s32 arg0) {
     s32 *entry;
-    s32 entryValue;
     u8 *obj;
-    u8 *base;
-    s32 value;
+    register s32 value asm("v1");
 
-    base = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
-    obj = base;
+    obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
     entry = &D_8009A4C0[arg0 & 0xFF];
     value = func_8005A8E0(*entry);
-    entryValue = *entry;
-    base = (u8 *)D_800A3A10[0];
     value = (0x78 - value) / 2;
-    *(s32 *)(obj + 8) = entryValue;
-    *(u16 *)(base + 0x12) = value;
+    *(s32 *)(obj + 8) = *entry;
+    *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006C5E4);
+extern s32 D_8009A4C0[];
+void func_8006C5E4(s32 arg0) {
+    s32 *entry;
+    u8 *obj;
+    s32 value;
+    s32 temp;
+    s32 *tbl;
+    s32 offset;
+    s32 elem;
+    ColorNode *node;
+
+    obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
+    offset = arg0 & 0xFF;
+    tbl = D_8009A4C0;
+    entry = tbl + offset;
+    value = func_8005A8E0(*entry);
+    elem = *entry;
+    temp = 0x78 - value;
+    node = D_800A3A10[0];
+    value = temp / 2;
+    *(s32 *)(obj + 8) = elem;
+    node->unk12 = value;
+}
+
 #endif
 
 #ifdef NON_MATCHING
@@ -20121,12 +21513,10 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006D178);
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D258);
 
 #ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 164 bytes, 38 linked function bytes differ after restoring the source-base
- * reload inside the inner byte-copy loop. Recomputing both row pointers
- * inside that loop is a reviewed permuter improvement. Entry base scheduling,
- * loop-register allocation, and arithmetic operand order still differ. A
- * lower-scoring candidate that overwrote the outer counter was rejected. */
+/* w7i: draft to 0xa4 exact length, 7 rows off: entry order and
+ * i/j register naming (target: i in a3 inited FIRST at entry, j in a2;
+ * both row-pointer temps outer-loop). src[j + 0x24] keeps the +0x24 in
+ * the lbu displacement. */
 extern u8 D_800BBA24[];
 extern char *D_800A35F4;
 void func_8006D424(u8 arg0, u8 arg1) {
@@ -20136,16 +21526,48 @@ void func_8006D424(u8 arg0, u8 arg1) {
     u8 j;
 
     for (i = 0; i < 0x11; i++) {
-        j = 0;
-        for (; j < 4; j++) {
-            dst = &D_800BBA24[arg0 * 0x44 + i * 4];
-            src = D_800A35F4 + arg1 * 0xE8 + i * 0xC;
+        dst = &D_800BBA24[arg0 * 0x44 + i * 4];
+        src = D_800A35F4 + arg1 * 0xE8 + i * 0xC;
+        for (j = 0; j < 4; j++) {
             dst[j] = src[j + 0x24];
         }
     }
 }
 #else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006D424);
+extern u8 D_800BBA24[];
+extern char *D_800A35F4;
+void func_8006D424(u8 arg0, u8 arg1) {
+    u8 i;
+    u8 j;
+    u8 *dst2;
+    u8 *src;
+    u8 *p2;
+    s32 dstOff;
+    s32 srcOff;
+    s32 yv;
+    s32 x68;
+    s32 basep;
+
+    i = 0;
+    basep = (s32)D_800BBA24;
+    x68 = arg0 * 0x44;
+    do {
+        j = 0;
+        asm volatile("addu %0, %1, %2" : "=r"(dstOff) : "r"(x68), "r"(basep));
+        dst2 = (u8 *)(i * 4 + dstOff);
+        asm volatile("andi %0, %1, 0xff" : "=r"(yv) : "r"(arg1));
+        srcOff = yv * 0xE8;
+        do {
+            p2 = (u8 *)D_800A35F4;
+            src = (u8 *)(srcOff + (s32)p2);
+            src += i * 0xC;
+            dst2[j] = *(src + j + 0x24);
+            j++;
+        } while (j < 4);
+        i++;
+    } while (i < 0x11);
+}
+
 #endif
 
 extern u8 D_800BBA24_nm[] asm("D_800BBA24.NON_MATCHING");
@@ -20650,7 +22072,58 @@ void SoundSetMasterVolume(s16 left, s16 right) {
     SpuSetCommonAttr(&attr);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006FAAC);
+extern s32 *D_800A3398;
+extern s32 D_800A33A0;
+extern void DecDCTout(u_long *, s32);
+void func_8006FAAC(void) {
+    typedef struct {
+        RECT unk0[2];
+        s32 unk10;
+        s32 unk14;
+        s32 unk18;
+        u16 unk1C;
+        u16 unk1E;
+        u16 unk20;
+        u16 unk22;
+        u_long *unk24;
+        u8 unk28[0xF4];
+        s32 unk11C;
+    } StreamVram;
+    volatile StreamVram *st;
+    volatile StreamVram *st2;
+    s16 *ex;
+    s16 *ew;
+    s32 xv;
+    s32 a;
+    s32 b;
+    register s32 w asm("$5");
+    s32 h;
+    u_long *buf;
+    s32 n;
+
+    st = (volatile StreamVram *)D_800A3398;
+    LoadImage((RECT *)&st->unk1C, st->unk24);
+    st2 = (volatile StreamVram *)D_800A3398;
+    st2->unk1C = st2->unk1C + D_800A33A0 * 8;
+    xv = (s16)st2->unk1C;
+    ex = &st2->unk0[st2->unk10].x;
+    a = *ex;
+    ew = &st2->unk0[st2->unk10].w;
+    b = *ew;
+    if (xv < a + b) {
+        w = (s16)st2->unk20;
+        h = (s16)st2->unk22;
+        asm volatile("mult %0, %1" : : "r"(w), "r"(h) : "lo", "hi");
+        buf = st2->unk24;
+        asm volatile("mflo %0" : "=r"(n));
+        DecDCTout(buf, n / 2);
+    } else {
+        st2->unk11C = 1;
+        st2->unk10 = !st2->unk10;
+        st2->unk1C = (u16)st2->unk0[st2->unk10].x;
+        st2->unk1E = (u16)st2->unk0[st2->unk10].y;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006FBB0);
 
@@ -20810,7 +22283,40 @@ s32 func_80070124(void) {
     return 0x130;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8007012C);
+extern u8 D_800A3397;
+extern void DrawPrim(void *pri);
+
+void func_8007012C(void) {
+    s32 i;
+    TILE tile;
+    DRAWENV env;
+    DISPENV disp;
+
+    for (i = 0; i < 2; i++) {
+        SetDefDrawEnv(&env, (0 - (i != 0)) & 0x140, 0, 0x140, 0xF0);
+        PutDrawEnv(&env);
+        SetDefDispEnv(&disp, (0 - (i == 0)) & 0x140, 0, 0x140, 0xF0);
+        PutDispEnv(&disp);
+        setBlockFill(&tile);
+        tile.x0 = 0;
+        tile.y0 = 0;
+        tile.w = 0x140;
+        tile.h = 0xF0;
+        if (D_800A3397 != 0) {
+            tile.r0 = 0xFF;
+            tile.g0 = 0xFF;
+            tile.b0 = 0xFF;
+        } else {
+            tile.r0 = 0;
+            tile.g0 = 0;
+            tile.b0 = 0;
+        }
+        DrawSync(0);
+        VSync(0);
+        DrawPrim(&tile);
+        DrawSync(0);
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80070248);
 
@@ -20908,9 +22414,132 @@ s32 func_800719D4(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800719FC);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80071BE8);
+extern void bzero(void *, s32);
+extern void func_80070F40(u_char, u_char *);
+extern void func_80070A60(u_char, u_char *);
+extern void SwEnterCriticalSection(void);
+extern void SwExitCriticalSection(void);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80071DCC);
+void func_80071BE8(void) {
+    u8 param[0x20];
+    u8 result[0x20];
+    u8 *resultPtr;
+    u8 *resultPtr2;
+    u32 i;
+    s32 timedOut;
+    s32 status;
+    s32 retry;
+    s32 mode;
+
+    timedOut = 0;
+    i = 0;
+    if (D_800A3500[0x414 / 4] != 0) {
+        do {
+            VSync(0);
+            i++;
+            if (i >= 0xB5) {
+                timedOut = 1;
+                break;
+            }
+        } while (D_800A3500[0x414 / 4] != 0);
+    }
+    if (timedOut == 0) {
+        i = 0;
+        if (D_800A3500[0] != 0) {
+            do {
+                VSync(0);
+                i++;
+                if (i >= 0xB5) {
+                    timedOut = 1;
+                    break;
+                }
+            } while (D_800A3500[0] != 0);
+        }
+        if (timedOut == 0) {
+            return;
+        }
+    }
+    i = CdlComplete;
+    SwEnterCriticalSection();
+    ((volatile s32 *)D_800A3500)[0x410 / 4] = 0;
+    ((volatile s32 *)D_800A3500)[0x408 / 4] = 0;
+    ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+    ((volatile s32 *)D_800A3500)[0x41C / 4] = 0;
+    CdSyncCallback(0);
+    CdReadyCallback(0);
+    SwExitCriticalSection();
+    CdControl(CdlStop, 0, 0);
+    do {
+        bzero(param, 0x20);
+        resultPtr = result;
+        bzero(resultPtr, 0x20);
+        resultPtr = 0;
+        resultPtr2 = result;
+        status = CdControl(CdlNop, param, resultPtr2);
+        resultPtr2 = 0;
+        if (status != 0) {
+            if (result[0] == CdlNoIntr || result[0] == i) {
+                retry = 0;
+            } else {
+                retry = 1;
+            }
+        } else {
+            CdControl(CdlReset, 0, 0);
+            retry = 1;
+        }
+    } while (retry);
+    mode = CdlModeSpeed | CdlModeSize1;
+    CdControlB(CdlSetmode, (u_char *)&mode, 0);
+    SwEnterCriticalSection();
+    CdSyncCallback(func_80070F40);
+    CdReadyCallback(func_80070A60);
+    D_800A3500[0x41C / 4] = 1;
+    D_800A3500[0x424 / 4] = 2;
+    ((volatile s32 *)D_800A3500)[0x414 / 4] = 0;
+    SwExitCriticalSection();
+}
+
+extern s32 *D_800A3500;
+extern s32 D_800A33B8, D_800A33BC;
+extern void func_80070F40(u_char, u_char *);
+extern void func_80070A60(u_char, u_char *);
+extern void SwEnterCriticalSection(void);
+extern void SwExitCriticalSection(void);
+void func_80071DCC(s32 enable) {
+    u8 mode;
+    s32 enabled;
+
+    if (enable != 0) {
+        CdSync(0, 0);
+        mode = CdlModeSpeed | CdlModeSize1;
+        CdControlB(CdlSetmode, &mode, 0);
+        SwEnterCriticalSection();
+        D_800A3500[0x410 / 4] = 0;
+        D_800A3500[0x408 / 4] = 0;
+        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+        D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
+        D_800A33BC = (s32)CdReadyCallback(func_80070A60);
+        D_800A3500[0x420 / 4] = 1;
+        D_800A3500[0x41C / 4] = 1;
+        asm("");
+    } else {
+        SwEnterCriticalSection();
+        enabled = D_800A3500[0x420 / 4];
+        D_800A3500[0x41C / 4] = 0;
+        D_800A3500[0x410 / 4] = 0;
+        D_800A3500[0x408 / 4] = 0;
+        D_800A3500[0x40C / 4] = 0;
+        asm("");
+        if (enabled != 0) {
+            CdSyncCallback((void *)D_800A33B8);
+            CdReadyCallback((void *)D_800A33BC);
+            D_800A33B8 = 0;
+            D_800A33BC = 0;
+            D_800A3500[0x420 / 4] = 0;
+        }
+    }
+    SwExitCriticalSection();
+}
 
 extern s32 D_800A3510;
 extern s32 D_800A3514;
@@ -21380,7 +23009,28 @@ u32 func_80072BDC(void *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80072CA8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80072FE4);
+void func_80072FE4(u8 *dst, u8 *src, u32 n) {
+    u32 i;
+
+    for (i = 0; i < n; i += 15) {
+        *dst++ = *src++;
+        *dst++ = 0;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80073100);
 
@@ -21460,7 +23110,42 @@ void func_80073A44(void) {
     SpuSetReverbVoice(D_800A351C[0x7B70 / 4], D_800A351C[0x7B68 / 4]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80073AA4);
+extern void *SpuSetTransferCallback(void *);
+
+void func_80073AA4(void) {
+    volatile s32 *field;
+    volatile s32 *p;
+    u32 i;
+
+    SwEnterCriticalSection();
+    SpuSetKey(0, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);
+    SpuSetReverbVoice(D_800A351C[0x7B6C / 4], D_800A351C[0x7B64 / 4]);
+    SpuSetReverbVoice(D_800A351C[0x7B70 / 4], D_800A351C[0x7B68 / 4]);
+    SpuSetIRQ(0);
+    SpuSetIRQCallback((SpuIRQCallbackProc)D_800A351C[0x7B14 / 4]);
+    SpuSetTransferCallback((void *)D_800A351C[0x7B18 / 4]);
+    D_800A351C[0x7B20 / 4] = 0;
+    if (D_800A351C[0x7B1C / 4] != 0) {
+        VSyncCallback((Callback)D_800A351C[0x7B10 / 4]);
+    }
+    D_800A351C[0x7B24 / 4] = 0;
+    SwExitCriticalSection();
+    SwEnterCriticalSection();
+    i = 0;
+    p = D_800A351C;
+    p[0] = 0;
+    p[1] = 0;
+    p[3] = 0;
+    field = p;
+    do {
+        field[0x7B2C / 4] = 0;
+        i += 1;
+        field += 1;
+    } while (i < 4);
+    D_800A351C[0x7B3C / 4] = 1;
+    D_800A351C[0x7B24 / 4] = 0;
+    SwExitCriticalSection();
+}
 
 s32 func_80073BC8(void) {
     return 0xC00;

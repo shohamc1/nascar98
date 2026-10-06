@@ -1,5 +1,39 @@
 # Parked-function retry — 2026-10-05
 
+## Integration update — 2026-10-06
+
+This report's original results below use baseline
+`b259427a6f8291246e9bfc7d6a0594cb9900157b`. They are historical; they are not
+new-match counts against current `main`.
+
+The branch has been reconciled with `main` at
+`2ab895218ee635add526582151737123c9c7fe96`:
+
+- All 35 historical promotions were already active on `main`, which also
+  independently promoted 28 of the report's 96 remaining targets.
+- All newer `main` implementations are preserved. Evaluating the source
+  guards yields identical default-build C token streams in both translation
+  units after excluding the explicit rodata include directives; the ordered
+  default `INCLUDE_ASM` lists are also unchanged.
+- 68 targets from this report remain parked. The branch retains 58 improved
+  function definitions (57 bodies and one signature), plus five declaration-only
+  block updates, rodata support, and investigation notes.
+- All 68 remaining selected drafts compile and link when enabled individually
+  in the reconciled translation units, including the two nested draft guards.
+- Supporting changes add three linker aliases and keep the relevant rodata
+  outside draft-only guards. The obsolete `gPrimitiveCursorSmall` alias is
+  omitted because `main` already has a newer matching implementation.
+- The reconciled result passes `make format`, a clean `make check` (`MATCH`),
+  direct `cmp` against the private retail executable, `make expected`, and
+  `make report`: **753/1,399 functions**, **23.818563% code**. Retail SHA-1 and
+  size remain **7397d323f5fff007c7c413b8bb6ce166746a226a**, **598,016 bytes**.
+
+The per-target measurements below remain the original 2026-10-05 baseline
+measurements. They must not be read as refreshed measurements against the
+reconciled source. CI status is recorded on the pull request separately.
+
+## Original retry results
+
 All **131** parked targets were retried: **35 matched**, **96 remain parked**.
 
 The scope is all 129 `NON_MATCHING` drafts plus both supplemental `#if 0` drafts. It includes the five symbols the original scanner missed. Every target has fresh source-level attempts; unresolved functions retain reviewed C and their retail ASM fallback.
