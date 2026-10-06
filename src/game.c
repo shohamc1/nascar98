@@ -8409,7 +8409,73 @@ void func_80034990(void) {
 }
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80034990);
+extern u16 D_800A38C0Small;
+extern u8 *D_800A3850;
+extern u8 *D_800A390C;
+extern u8 D_800AFBB8[];
+extern u8 D_800AFB18[];
+extern u8 D_800B1F30[];
+
+void func_80034990(void) {
+    u16 color;
+    s32 car;
+    s32 i;
+    u8 *cursor;
+    POLY_FT4 *prim;
+    POLY_F4 *f4;
+    s32 red;
+    s32 green;
+    s32 blue;
+
+    D_800A3850 = D_800AFBB8;
+    color = D_800A38C0Small;
+    for (car = 0; car < 0xC; car += 4) {
+        cursor = D_800AFB18 + car * 0x28;
+        for (i = 0; i < 2; i++) {
+            prim = (POLY_FT4 *)(cursor + i * 0x28);
+            SetPolyFT4(prim);
+            SetShadeTex(prim, 1);
+            prim->tpage = GetTPage(1, 0, 0x200, 0x100);
+            prim->clut = GetClut(0x200, 0x1FF);
+            prim->u0 = i << 7;
+            prim->v0 = 0xA7;
+            prim->u1 = ((i + 1) << 7) - 1;
+            prim->v1 = 0xA7;
+            prim->u2 = i << 7;
+            prim->v2 = 0xFD;
+            prim->u3 = ((i + 1) << 7) - 1;
+            prim->v3 = 0xFD;
+        }
+        for (i = 0; i < 2; i++) {
+            prim = (POLY_FT4 *)(cursor + 0x50 + i * 0x28);
+            SetPolyFT4(prim);
+            SetShadeTex(prim, 1);
+            prim->tpage = GetTPage(1, 0, 0x280, 0x100);
+            prim->clut = GetClut(0x200, 0x1FF);
+            prim->u0 = i << 7;
+            prim->v0 = 0xA7;
+            prim->u1 = ((i + 1) << 7) - 1;
+            prim->v1 = 0xA7;
+            prim->u2 = i << 7;
+            prim->v2 = 0xFD;
+            prim->u3 = ((i + 1) << 7) - 1;
+            prim->v3 = 0xFD;
+        }
+    }
+    red = (color & 0x7C00) >> 7;
+    green = (color & 0x3E0) >> 2;
+    blue = (color & 0x1F) << 3;
+    D_800A390C = D_800B1F30;
+    i = 0;
+    f4 = (POLY_F4 *)(D_800B1F30 - 0x60);
+    do {
+        SetPolyF4(f4 + i);
+        f4[i].r0 = blue;
+        f4[i].g0 = green;
+        f4[i].b0 = red;
+        i++;
+    } while (i < 8);
+}
 
 typedef struct {
     s32 words[10];
@@ -17997,26 +18063,16 @@ void func_800637D8(u8 index) {
     }
 }
 
-#ifdef NON_MATCHING
-/*
- * Everything matches except one `addiu a2,a2,0`: retail materializes the
- * scratchpad base with a bare `lui` (numeric 0x1F800000 constant, which
- * the repo forbids). Any symbolic gScratchpad reference expands la into
- * lui + addiu 0. Same wall as func_800246C0 (notes-agent2.md).
- */
-extern u32 gScratchpad[];
 void func_8006383C(void) {
     u32 i;
     u32 greyLevel;
 
     for (i = 0; i < 0x100; i++) {
         greyLevel = i >> 2;
-        gScratchpad[i] = (greyLevel << 0x10) | (greyLevel << 8) | greyLevel;
+        ((u32 *)SCRATCHPAD_BASE)[i] =
+            (greyLevel << 0x10) | (greyLevel << 8) | greyLevel;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006383C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063874);
 
