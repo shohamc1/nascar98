@@ -6936,19 +6936,10 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800319D4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80031D74);
 
-#ifdef NON_MATCHING
-/* w9c: STACK_BLOCK_801C0000 unlock works — the raw lui constant now emits
- * (lui a0/a1,0x801c rows match). Remaining wall: retail allocates TWO
- * s-regs, handle=s1 (first call result) and value=s0 (second call result,
- * captured in the jal delay slot). gcc gives handle=s0 and coalesces the
- * single-use value into v0 (move a1,v0), frame 0x18 vs 0x20. Tried: value
- * declared first, nested call form, value local + plain sequence. No
- * spelling reserved an s-reg for value. Function is otherwise byte-shaped;
- * the -0xc label drift rows (0x2f28, 3c578...) are our own short frame. */
-extern s32 func_8003C584(s32, void *);
-extern s32 func_8003C8BC(void *, s32, s32);
-extern void func_8003C644(s32, s32, s32, s32);
-extern void func_8003C63C(s32);
+extern s32 func_8003C584Call32328(s32, void *) asm("func_8003C584");
+extern s32 func_8003C8BCCall32328(void *, s32, s32) asm("func_8003C8BC");
+extern void func_8003C644Call32328(s32, s32, s32, s32) asm("func_8003C644");
+extern void func_8003C63CCall32328(s32) asm("func_8003C63C");
 extern void func_80025454(s32);
 extern void func_80031D74(s32, s32, s32);
 extern char D_8008D08C[];
@@ -6960,21 +6951,21 @@ void func_80032328(s32 arg0) {
     s32 value;
     s32 handle;
 
-    handle = func_8003C584(arg0, D_800A2F34);
+    handle = func_8003C584Call32328(arg0, D_800A2F34);
     if (handle == 0) {
         SystemShowFatalError(D_8008D08C);
     }
-    func_8003C8BC(handle, 0, 2);
-    func_8003C644(STACK_BLOCK_801C0000, func_8003C8BC(handle, 0, 0), 1, handle);
+    value = func_8003C8BCCall32328(handle, 0, 2);
+    func_8003C8BCCall32328(handle, 0, 0);
+    func_8003C644Call32328(STACK_BLOCK_801C0000, value, 1, handle);
     func_80031D74(D_800A3574[0], STACK_BLOCK_801C0000, -1);
     D_800A2D4C[0] = 1;
     func_80025454(((s32 *)D_800A36D0Absolute)[-87]);
     D_800A2D4D[0] = 0;
-    func_8003C63C(handle);
+    func_8003C63CCall32328(handle);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80032328);
-#endif
+
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D08C);
 
 /*
  * The second D_800A3574 read goes through the D_800A36D0Absolute
@@ -9009,46 +9000,47 @@ void func_8003667C(u32 *list) {
     }
 }
 
-#ifdef NON_MATCHING
-extern s32 D_800A2F54;
-extern s32 D_800AE154[];
-extern s32 D_800B60A4[];
-extern s32 D_800B1EA8[];
 extern char D_8008D0AC[];
 extern char D_8008D0CC[];
-void *func_8003C584(void);
-s32 func_8003C8BC(void *, s32, s32);
-void func_8003C644(s32, s32, s32, void *);
+
+extern void *func_8003C584Call367DC(void) asm("func_8003C584");
+extern s32 func_8003C8BCCall367DC(void *, s32, s32) asm("func_8003C8BC");
+extern void func_8003C644Call367DC(s32, s32, s32, void *) asm("func_8003C644");
+extern void func_8003C63CCall367DC(s32) asm("func_8003C63C");
 void func_800367DC(void) {
+    extern s32 D_800A2F54;
+    extern s32 D_800AE154[];
+    extern s32 D_800B1EA8[];
+    extern s32 D_800B60A4[];
     void *handle;
     void *buffer;
     s32 size;
     s32 idx;
     s32 entry;
 
-    handle = func_8003C584();
+    handle = func_8003C584Call367DC();
     if (handle == NULL) {
         SystemShowFatalError(D_8008D0AC);
     }
-    func_8003C8BC(handle, 0, 2);
-    size = func_8003C8BC(handle, 0, 0);
+    size = func_8003C8BCCall367DC(handle, 0, 2);
+    func_8003C8BCCall367DC(handle, 0, 0);
     buffer = HeapAlloc(((size + 0x7FF) >> 11) << 11);
     D_800AE154[D_800A2F54] = (s32)buffer;
     if (buffer == NULL) {
         SystemShowFatalError(D_8008D0CC);
     }
-    func_8003C644(D_800AE154[D_800A2F54], 1, size, handle);
+    func_8003C644Call367DC(D_800AE154[D_800A2F54], 1, size, handle);
     idx = D_800A2F54;
     entry = D_800AE154[idx];
     D_800B60A4[idx] = entry;
     D_800B1EA8[idx] = *(s32 *)entry;
     D_800AE154[idx] = entry + 4;
     D_800A2F54 = idx + 1;
-    func_8003C63C((s32)handle);
+    func_8003C63CCall367DC((s32)handle);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800367DC);
-#endif
+
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D0AC);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D0CC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80036900);
 
@@ -10311,25 +10303,22 @@ void CdStop(void) {
     CdControl(8, 0, 0);
 }
 
-#ifdef NON_MATCHING
-/*
- * cc1 2.7.2 ICE wall (w6e): any `for` loop with a memory STORE in its body
- * in this function segfaults cc1 at this TU position (exit 139, truncated
- * object; repro `for (i = 0; i < count; i++) D_800B9F44[i] = i;` alone).
- * Load-only loops compile. Function shape below diffs clean otherwise
- * (not yet verified end to end). Same class as the func_8001E17C ICE.
- */
-extern void *CdGetToc(void *);
+extern s32 CdGetToc(void *);
 extern s32 D_800A2F74;
 extern s32 D_800A37CC;
 extern CdlLOC D_800BDEBC[];
-extern s32 D_800BDEBC[];
+
 extern s32 D_80098340[];
 extern s32 D_800A45AC[];
 extern char D_8008D188[];
 
 void func_8003CDBC(s32 arg0) {
-    u8 result[16];
+    extern s32 D_80098340[];
+    extern s32 D_800A45AC[];
+    extern s32 D_800B9F44[];
+    extern CdlLOC D_800BDEBC[];
+    u8 pad[0x40];
+    u8 result[8];
     s32 *pos;
     s32 value;
     s32 posValue;
@@ -10354,19 +10343,18 @@ void func_8003CDBC(s32 arg0) {
         SystemShowFatalError(D_8008D188);
     }
     posValue = D_800A45AC[0];
-    base = (0x1F4000 - posValue) | 0x80000000;
+    base = (0x1F4000 - posValue) | RAM_CACHED_BASE;
     func_8003C644(base, posValue, 1, pos);
-    count = *(s32 *)base;
-    src = (s32 *)(base + 4);
+    src = (s32 *)base;
+    count = *src++;
     for (i = 0; i < count; i++) {
-        D_800B9F44[i] = src[i] + base;
+        D_800B9F44[i] = *src++ + base;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003CDBC);
+
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008D188);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1A8);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1C4);
-#endif
 
 void func_8003CEFC(void) {
 }
@@ -20761,75 +20749,27 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
     D_800A35F4[0x1B] = D_800A307Cw17[arg0];
 }
 
-#ifdef NON_MATCHING
-/*
- * w9h draft: delete entry idx by shifting later 0xE8-byte records down
- * one slot through a 0xE8 stack buffer. Leaf, frame == buffer.
- */
-void func_8006B088(s32 arg0) {
-    s32 buf[0x3A];
-    s32 count;
-    s32 n;
-    char *src;
-    char *dst;
-    char *end;
-    s32 i;
+typedef struct {
+    s32 words[0x3A];
+} CardMoveRecord;
+extern char *D_800A35F4;
 
-    count = arg0 & 0xFF;
-    if (count == 0) {
+void func_8006B088(s32 arg0) {
+    CardMoveRecord buf;
+    s32 n;
+
+    if ((arg0 & 0xFF) == 0) {
         return;
     }
-    src = D_800A35F4 + count * 0xE8;
-    dst = (char *)buf;
-    end = src + 0xE0;
-    do {
-        ((s32 *)dst)[0] = ((s32 *)src)[0];
-        ((s32 *)dst)[1] = ((s32 *)src)[1];
-        ((s32 *)dst)[2] = ((s32 *)src)[2];
-        ((s32 *)dst)[3] = ((s32 *)src)[3];
-        src += 0x10;
-        dst += 0x10;
-    } while (src != end);
-    ((s32 *)dst)[0] = ((s32 *)src)[0];
-    ((s32 *)dst)[1] = ((s32 *)src)[1];
+    buf = ((CardMoveRecord *)D_800A35F4)[arg0 & 0xFF];
     n = (arg0 & 0xFF) - 1;
-    if (n >= 0) {
-        i = n * 0xE8;
-        do {
-            src = D_800A35F4 + i;
-            dst = src + 0xE8;
-            end = src + 0xE0;
-            do {
-                ((s32 *)dst)[0] = ((s32 *)src)[0];
-                ((s32 *)dst)[1] = ((s32 *)src)[1];
-                ((s32 *)dst)[2] = ((s32 *)src)[2];
-                ((s32 *)dst)[3] = ((s32 *)src)[3];
-                src += 0x10;
-                dst += 0x10;
-            } while (src != end);
-            ((s32 *)dst)[0] = ((s32 *)src)[0];
-            ((s32 *)dst)[1] = ((s32 *)src)[1];
-            n -= 1;
-            i -= 0xE8;
-        } while (n >= 0);
+    while (n >= 0) {
+        ((CardMoveRecord *)D_800A35F4)[n + 1] =
+            ((CardMoveRecord *)D_800A35F4)[n];
+        n--;
     }
-    src = (char *)buf;
-    dst = D_800A35F4;
-    end = (char *)buf + 0xE0;
-    do {
-        ((s32 *)dst)[0] = ((s32 *)src)[0];
-        ((s32 *)dst)[1] = ((s32 *)src)[1];
-        ((s32 *)dst)[2] = ((s32 *)src)[2];
-        ((s32 *)dst)[3] = ((s32 *)src)[3];
-        src += 0x10;
-        dst += 0x10;
-    } while (src != end);
-    ((s32 *)dst)[0] = ((s32 *)src)[0];
-    ((s32 *)dst)[1] = ((s32 *)src)[1];
+    *(CardMoveRecord *)D_800A35F4 = buf;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006B088);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B1CC);
 
@@ -20893,30 +20833,18 @@ void func_8006B5BC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006B6B8);
 
-#ifdef NON_MATCHING
-/*
- * w8h: 8 bytes long and register-shuffled. Retail keeps ONE induction
- * variable (a0 = entry base, +0xc in the bnez delay slot) with positive
- * store offsets 4/6/8; our gcc creates a SECOND IV anchored at entry+8
- * (`addiu a0,a1,8` + in-body `addiu a0,a0,0xc`) with stores -4/-2/0.
- * Tried: k-first order, running base local, sw through byte+5 alias --
- * all re-anchor (same family as func_8006ABF8's base/p merge).
- * Register shuffle: retail a1=counter both loops, a0=base; ours v1/a2
- * counter, a1 base. Constants land a2/a3/t0 in retail, t0/t1/a3 here.
- */
 extern u8 D_800B9B6E[];
 extern u8 D_800B9B6F[];
 extern u8 D_800B9B70[];
 extern u8 D_800B9B71[];
 extern u8 D_800B9B72[];
 extern u8 D_800B9BB4[];
-void func_8006BD68(void);
+
 void func_8006BA68(void) {
     u8 *base;
     u8 *entry;
     u8 *byte;
     s32 i;
-    s32 j;
     s32 k;
     s32 ffff;
     s32 fill;
@@ -20936,12 +20864,12 @@ void func_8006BA68(void) {
         i -= 1;
         entry -= 2;
     } while (i >= 0);
+    i = 0;
     ffff = 0xFF;
-    fill = 0x20;
     magic = 0x7FFFFFFF;
-    j = 0;
-    entry = D_800B9BB4;
+    fill = 0x20;
     do {
+        entry = D_800B9BB4 + i * 0xC;
         k = 3;
         byte = entry + 3;
         *(s16 *)(entry + 4) = ffff;
@@ -20952,13 +20880,9 @@ void func_8006BA68(void) {
             k -= 1;
             byte -= 1;
         } while (k >= 0);
-        j += 1;
-        entry += 0xC;
-    } while (j < 0x11);
+        i += 1;
+    } while (i < 0x11);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8006BA68);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006BB1C);
 
