@@ -15322,8 +15322,6 @@ void func_8005978C(void) {
     SetDispMask(1);
 }
 
-#endif
-
 /* Memory card files and events. */
 
 void CardCloseFile(s32 handle) {
