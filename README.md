@@ -11,6 +11,9 @@ This repository holds no game data. You must supply your own disc image.
 The build reproduces `SLUS_005.21` with every game function wired through
 C, most still as `INCLUDE_ASM`. Run `make report` for the live figure.
 
+[2026-10-05 parked-function retry](docs/parked-functions-2026-10-05.md):
+all 131 targets attempted, 35 new matches and 96 measured remaining drafts.
+
 ## Build
 
 You need Git, Make, Python 3.11 or newer, [uv](https://docs.astral.sh/uv/),

@@ -637,7 +637,7 @@ STACK_BLOCK_801C0000 = 0x801C0000; // fixed_address
 USER_RAM_TOP = 0x80140000; // fixed_address
 
 // Data labels tracked so guarded drafts can reference them directly (wave 6-8 requests).
-D_8008CFC0 = 0x8008CFC0;
+D_8008CFC0 = 0x8008CFC0; // force_not_migration:True
 D_8008CF28 = 0x8008CF28; // force_not_migration:True
 D_800A2DEC = 0x800A2DEC;
 D_800A2DF0 = 0x800A2DF0;
@@ -682,3 +682,21 @@ D_80090698 = 0x80090698; // force_not_migration:True
 D_8009071C = 0x8009071C; // force_not_migration:True
 D_80090728 = 0x80090728; // force_not_migration:True
 D_8009073C = 0x8009073C; // force_not_migration:True
+
+D_8008D188 = 0x8008D188; // force_not_migration:True
+
+RAM_CACHED_BASE = 0x80000000; // fixed_address
+D_8008D08C = 0x8008D08C; // force_not_migration:True
+D_8008D0AC = 0x8008D0AC; // force_not_migration:True
+D_8008D0CC = 0x8008D0CC; // force_not_migration:True
+
+D_8008D1DC = 0x8008D1DC; // force_not_migration:True
+
+D_8008D1F8 = 0x8008D1F8; // force_not_migration:True
+
+D_8008D21C = 0x8008D21C; // force_not_migration:True
+
+D_8008D228 = 0x8008D228; // force_not_migration:True
+
+D_8008D234 = 0x8008D234; // force_not_migration:True
+D_8008CFE0 = 0x8008CFE0; // force_not_migration:True

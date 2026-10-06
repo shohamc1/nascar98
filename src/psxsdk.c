@@ -23,6 +23,10 @@ extern unsigned long long __udivmoddi4(unsigned long long num,
                                        unsigned long long *rem);
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 152 bytes, 92 linked text bytes differ. Explicit two-word operand negation
+ * restores size; GCC still branches for the borrow and uses s0 rather than
+ * retail s2 for the sign, with a different saved-register set. */
 typedef union {
     struct {
         s32 low;
@@ -35,7 +39,7 @@ long long __divdi3(long long u, long long v) {
     DwUnion uu;
     DwUnion vv;
     long long w;
-    long long n;
+    DwUnion n;
     int c;
 
     c = 0;
@@ -44,13 +48,15 @@ long long __divdi3(long long u, long long v) {
 
     if (uu.s.high < 0) {
         c = ~c;
-        n = -uu.ll;
-        uu.ll = n;
+        n.s.low = 0U - (u32)uu.s.low;
+        n.s.high = 0U - (u32)uu.s.high - (n.s.low != 0);
+        uu = n;
     }
     if (vv.s.high < 0) {
         c = ~c;
-        n = -vv.ll;
-        vv.ll = n;
+        n.s.low = 0U - (u32)vv.s.low;
+        n.s.high = 0U - (u32)vv.s.high - (n.s.low != 0);
+        vv = n;
     }
 
     w = __udivmoddi4(uu.ll, vv.ll, 0);
@@ -121,6 +127,11 @@ typedef struct {
 extern u32 D_8009B9E8[];
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 160 bytes, 20 linked text bytes differ. Reusing the masked timer for its
+ * byte offset restores size. Final offset/base/result register allocation and
+ * load-delay scheduling still differ; bounded permuter did not produce a
+ * verified match. */
 long SetRCnt(long timer, unsigned short target, long mode) {
     RCnt *r;
     long md;
@@ -155,11 +166,10 @@ long SetRCnt(long timer, unsigned short target, long mode) {
         md |= 0x10;
     }
     result = 1;
-    addr = t * 16;
-    ((RCnt *)(addr + (u32)D_8009B9E8[0]))->mode = md;
+    t *= 16;
+    ((RCnt *)(t + (u32)D_8009B9E8[0]))->mode = md;
     return result;
 }
-
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRCnt);
 #endif
@@ -177,11 +187,16 @@ extern u32 D_8009B9E4[];
 extern u32 D_8009B9EC[];
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 52 bytes, 6 linked text bytes differ. The store barrier restores the
+ * trailing nop, but GCC puts the range test in the return delay slot rather
+ * than before the OR/store. */
 int StartRCnt(int timer) {
     u32 *p;
 
     p = (u32 *)D_8009B9E4[0];
     p[1] |= D_8009B9EC[timer & 0xFFFF];
+    asm("");
     return (timer & 0xFFFF) < 3;
 }
 #else
@@ -389,6 +404,10 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 32 bytes versus 36 retail. CD_vol returns int. All tested return forms
+ * schedule the return value after restoring ra and put the stack adjustment
+ * in the return delay slot. */
 extern int CD_vol(CdlATV *vol);
 
 int CdMix(CdlATV *vol) {
@@ -403,6 +422,10 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
 extern int CD_getsector(void *madr, int size);
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 32 bytes versus 36 retail. Tested equivalent result/branch/local forms
+ * retain the same epilogue scheduling mismatch. No verified permuter
+ * improvement. */
 extern int CD_getsector(void *madr, int size);
 
 int CdGetSector(void *madr, int size) {
@@ -427,18 +450,24 @@ void CdDataSync(int mode) {
 }
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 260 bytes, 141 linked text bytes differ. Parameter reuse and early sector
+ * decimal quotient restore size; division scheduling, temporaries, and BCD
+ * store ordering remain different. */
 CdlLOC *CdIntToPos(int i, CdlLOC *p) {
     int m;
     int s;
     int f;
 
     i += 150;
-    f = i % 75;
     m = i / 75;
+    i %= 75;
+    f = i / 10;
+    i = i % 10;
     s = m / 60;
     m = m % 60;
     p->second = (s8)((m / 10) * 0x10 + (m % 10));
-    p->sector = (s8)((f / 10) * 0x10 + (f % 10));
+    p->sector = (s8)(f * 0x10 + i);
     p->minute = (s8)((s / 10) * 0x10 + (s % 10));
     return p;
 }
@@ -487,6 +516,11 @@ extern u8 D_8009BD5A[];
 extern u32 D_8009BD50[];
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 220 bytes versus 224 retail; 72 linked text bytes differ including the size
+ * deficit. Retail copies status byte D_8009BD5A to D_8009BD59, not
+ * D_8009BD58. The loop matches; status-address materialization and final
+ * stores still differ. */
 void CD_flush(void) {
     *(u8 *)D_8009BD40[0] = 1;
     while (*(u8 *)D_8009BD4C[0] & 7) {
@@ -496,9 +530,9 @@ void CD_flush(void) {
     }
     D_8009BD5A[0] = 0;
     asm("");
-    D_8009BD59[0] = ((volatile u8 *)D_8009BD59)[-1];
-    *(u8 *)D_8009BD40[0] = 0;
+    D_8009BD59[0] = ((volatile u8 *)D_8009BD59)[1];
     D_8009BD58[0] = 2;
+    *(u8 *)D_8009BD40[0] = 0;
     *(u8 *)D_8009BD4C[0] = 0;
     *(u32 *)D_8009BD50[0] = 0x1325;
     asm("");
@@ -564,12 +598,16 @@ extern s32 D_8009CE84[];
 extern char D_80090404[];
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 156 bytes, 22 linked text bytes differ. Moving the existing empty barrier
+ * inside the condition slightly improves the prologue. Remaining differences
+ * concern initial load/store ordering and the ra save delay slot. */
 void v_wait(int mode, int time) {
     volatile int count;
 
     count = time << 15;
-    asm("");
     if (D_8009CE84[0] < mode) {
+        asm("");
         do {
             count = count - 1;
             if (count == -1) {
@@ -868,11 +906,12 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
 #ifdef NON_MATCHING
-/* WALL (agent a9, 2026-10-04): structure and scheduling match; gcc 2.7.2
- * global allocation swaps two register pairs vs retail (font/width in s1/s2,
- * '%' constant and 0xCCCCCCCD magic in s4/s5). Declaration order, dead
- * initializers, register-variable pins, statement order, and decomp-permuter
- * runs did not flip either pair. */
+/* WALL (2026-10-05):
+ * 992 bytes, 25 linked text bytes differ (was 59). Single-pass loop scope
+ * fixes the font/width register pair. Remaining differences include the
+ * percent/divide-by-ten constant register pair, width temporary, decimal mfhi
+ * register, and switch-entry scheduling. Later permuter output that overwrote
+ * va_list was rejected. */
 /* SPDX-License-Identifier: MIT */
 
 extern u8 *D_8009DA44[];
@@ -900,105 +939,107 @@ int FntPrint(const char *fmt, ...) {
     } else {
         str = va_arg(ap, u8 *);
     }
-    font = &D_8009CEB8[(s32)fmt];
-    if (font->unk28 > font->unk1C) {
-        return -1;
-    }
-    ch = *str;
-    while (ch != 0) {
-        if (ch != '%') {
-            goto store;
-        }
-        str++;
-        ch = *str;
-        width = 0;
-        if (ch != '%') {
-            goto format;
-        }
-    store:
-        font->unk24[font->unk28++] = ch;
+    do {
+        font = &D_8009CEB8[(s32)fmt];
         if (font->unk28 > font->unk1C) {
             return -1;
         }
-        goto tail;
-    format:
-        zeroPad = (ch == '0');
-        while (ch >= '0' && ch <= '9') {
-            width = width * 10 - '0';
-            width = width + ch;
+        ch = *str;
+        while (ch != 0) {
+            if (ch != '%') {
+                goto store;
+            }
+            str++;
+            ch = *str;
+            width = 0;
+            if (ch != '%') {
+                goto format;
+            }
+        store:
+            font->unk24[font->unk28++] = ch;
+            if (font->unk28 > font->unk1C) {
+                return -1;
+            }
+            goto tail;
+        format:
+            zeroPad = (ch == '0');
+            while (ch >= '0' && ch <= '9') {
+                width = width * 10 - '0';
+                width = width + ch;
+                str++;
+                ch = *str;
+            }
+            if (width <= 0) {
+                width = 1;
+            }
+            buf = (u8 *)&ap;
+            switch (ch) {
+            case 'd':
+                value = va_arg(ap, u32);
+                ch = 0;
+                if ((s32)value < 0) {
+                    value = -(s32)value;
+                    ch = '-';
+                }
+                count = 0;
+                do {
+                    buf--;
+                    count++;
+                    *buf = value % 10 + '0';
+                    value = value / 10;
+                } while (count == 0 || value != 0);
+                if (ch != 0) {
+                    buf--;
+                    *buf = ch;
+                    count++;
+                }
+                break;
+            case 'X':
+            case 'x':
+                count = 0;
+                value = va_arg(ap, u32);
+                do {
+                    buf--;
+                    *buf = D_8009DA44[0][value & 0xF];
+                    value >>= 4;
+                    count++;
+                } while (count == 0 || value != 0);
+                if (zeroPad) {
+                    while (count < width) {
+                        buf--;
+                        *buf = '0';
+                        count++;
+                    }
+                }
+                break;
+            case 'c':
+                buf--;
+                *buf = va_arg(ap, u8);
+                count = 1;
+                break;
+            case 's':
+                buf = va_arg(ap, u8 *);
+                count = strlen((char *)buf);
+                break;
+            }
+            while (count < width) {
+                font->unk24[font->unk28++] = ' ';
+                if (font->unk28 > font->unk1C) {
+                    return -1;
+                }
+                width--;
+            }
+            while (--count != -1) {
+                font->unk24[font->unk28++] = *buf++;
+                if (font->unk28 > font->unk1C) {
+                    return -1;
+                }
+            }
+        tail:
             str++;
             ch = *str;
         }
-        if (width <= 0) {
-            width = 1;
-        }
-        buf = (u8 *)&ap;
-        switch (ch) {
-        case 'd':
-            value = va_arg(ap, u32);
-            ch = 0;
-            if ((s32)value < 0) {
-                value = -(s32)value;
-                ch = '-';
-            }
-            count = 0;
-            do {
-                buf--;
-                count++;
-                *buf = value % 10 + '0';
-                value = value / 10;
-            } while (count == 0 || value != 0);
-            if (ch != 0) {
-                buf--;
-                *buf = ch;
-                count++;
-            }
-            break;
-        case 'X':
-        case 'x':
-            count = 0;
-            value = va_arg(ap, u32);
-            do {
-                buf--;
-                *buf = D_8009DA44[0][value & 0xF];
-                value >>= 4;
-                count++;
-            } while (count == 0 || value != 0);
-            if (zeroPad) {
-                while (count < width) {
-                    buf--;
-                    *buf = '0';
-                    count++;
-                }
-            }
-            break;
-        case 'c':
-            buf--;
-            *buf = va_arg(ap, u8);
-            count = 1;
-            break;
-        case 's':
-            buf = va_arg(ap, u8 *);
-            count = strlen((char *)buf);
-            break;
-        }
-        while (count < width) {
-            font->unk24[font->unk28++] = ' ';
-            if (font->unk28 > font->unk1C) {
-                return -1;
-            }
-            width--;
-        }
-        while (--count != -1) {
-            font->unk24[font->unk28++] = *buf++;
-            if (font->unk28 > font->unk1C) {
-                return -1;
-            }
-        }
-    tail:
-        str++;
-        ch = *str;
-    }
+    } while (0);
     font->unk24[font->unk28] = 0;
     return font->unk28;
 }
@@ -1018,11 +1059,6 @@ typedef int (*DebugPrintf)(const char *, ...);
 extern u32 D_8009DA8C[];
 extern char D_80090548[];
 
-#ifdef NON_MATCHING
-/* Retail's second branch computes ((tpage * 0x10) & 0x100) +
- * ((tpage >> 2) & 0x200) — an extra OR'd term absent from the sotn-decomp
- * source (different Psy-Q revision). Also gcc cross-jumps the two indirect
- * call tails, which retail keeps separate. */
 void DumpTPage(u_short tpage) {
     if (GetGraphType() == 1 || GetGraphType() == 2) {
         ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 9) & 3,
@@ -1030,12 +1066,10 @@ void DumpTPage(u_short tpage) {
                                      (tpage * 8) & 0x300);
         return;
     }
-    ((DebugPrintf)D_8009DA8C[0])(D_80090548, (tpage >> 7) & 3, (tpage >> 5) & 3,
-                                 (tpage << 6) & 0x7C0, (tpage * 0x10) & 0x100);
+    ((DebugPrintf)D_8009DA8C[0])(
+        D_80090548, (tpage >> 7) & 3, (tpage >> 5) & 3, (tpage << 6) & 0x7C0,
+        ((tpage * 0x10) & 0x100) + ((tpage >> 2) & 0x200));
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpTPage);
-#endif
 
 extern char D_80090560[];
 
@@ -1186,6 +1220,11 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetGraph);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphReverse);
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 108 bytes, 24 linked text bytes differ after removing the duplicate typedef
+ * and retaining rodata. Debug pointer allocation and indirect-printer
+ * argument/load ordering still differ. A printer temporary did not improve
+ * linked bytes. */
 /* SPDX-License-Identifier: MIT */
 
 extern u8 D_8009DA90[];
@@ -1847,14 +1886,12 @@ void _SsSetProgramChange(s16 access, s16 sequence, u8 program) {
 }
 
 #ifdef NON_MATCHING
-/* WALL (agent a9, 2026-10-04): jump table regenerates byte-identically
- * (122 entries; the retail source must list extra empty cases falling into
- * default to push gcc over the table threshold - 16 added here). Remaining
- * diffs: gcc puts `ch` in a callee-saved reg where retail uses caller-saved
- * t0 with an s0 copy across calls, param/local homes shift (access/sequence/
- * score/value), and (sequence << 8) | access narrows after the OR instead of
- * promoting each operand. u8/s32 value spellings, implicit vs explicit callee
- * prototypes, and a permuter run did not close them. */
+/* WALL (2026-10-05):
+ * 692 bytes versus 792 retail; 632 linked text bytes differ including the
+ * size deficit. Extra empty controller cases now correctly go to default, not
+ * bank select. Channel lifetime, call-argument narrowing, save set, and
+ * branch-tail shape remain different. Earlier claims of a matching jump table
+ * were not reproduced. */
 /* SPDX-License-Identifier: MIT */
 void SpuVmSetVol(s16, s16, u8, s16, u8);
 void SpuVmSetProgVol(s16, u8, u8);
@@ -1868,28 +1905,12 @@ void _SsContResetAll(s16, s16);
 void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     struct SeqStruct *score;
     u8 value;
-    s32 ch;
+    u8 ch;
 
     score = (struct SeqStruct *)((s32)D_800BDE3C[access] + sequence * 0xAC);
     value = *score->readPos++;
     ch = score->channel;
     switch (event) {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 8:
-    case 9:
-    case 12:
-    case 91:
-    case 92:
-    case 94:
-    case 95:
-    case 96:
-    case 97:
-    case 101:
-    case 120:
     case 0:
         score->unk4C = value;
         break;
@@ -1936,6 +1957,24 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     case 121:
         _SsContResetAll(access, sequence);
         return;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 8:
+    case 9:
+    case 12:
+    case 91:
+    case 92:
+    case 94:
+    case 95:
+    case 96:
+    case 97:
+    case 101:
+    case 120:
+    default:
+        break;
     }
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
@@ -2089,11 +2128,11 @@ extern void _SsTrapIntrVSync(void);
 extern void _SsSeqCalledTbyT_1per2(void);
 
 #ifdef NON_MATCHING
-/* w8j draft: everything matches through the switch; walls: (1) default-case
-   block needs ONE base register (a0=&D_800A20A4) for the word reads at 0/-4
-   and the byte at 0xD; this gcc constant-folds any pointer local and emits
-   at-form loads instead (+8); (2) the div quotient lands in a1 (mflo a1)
-   instead of v0. */
+/* WALL (2026-10-05):
+ * 616 bytes, 234 linked text bytes differ. Direct rcntTarget assignment
+ * restores size but does not recover the shared D_800A20A4 base or retail
+ * quotient/branch-tail allocation. A permuter candidate using an
+ * uninitialized base pointer was rejected. */
 
 s32 _SsStart(s32 arg0) {
     s32 wait;
@@ -2140,13 +2179,12 @@ s32 _SsStart(s32 arg0) {
         if (*(s32 *)&env[0] == 0) {
             ticks = *(s32 *)&env[-4];
             if (ticks < 0x46) {
-                div = 0x204CC0 / ticks;
+                rcntTarget = 0x204CC0 / ticks;
                 asm("");
                 env[0xD] += 1;
             } else {
-                div = 0x409980 / ticks;
+                rcntTarget = 0x409980 / ticks;
             }
-            rcntTarget = div;
             break;
         }
     }
@@ -2529,9 +2567,11 @@ void SsUtSetReverbFeedback(short feedback) {
 }
 
 #ifdef NON_MATCHING
-/* Registers only: the /127 magic constant lands in v0 instead of v1 and
- * the two products shift one register down. Instruction sequence is
- * otherwise identical. decomp-permuter candidate. */
+/* WALL (2026-10-05):
+ * 152 bytes, 35 linked text bytes differ. Divide-by-127
+ * reciprocal/product/quotient registers and mask-store scheduling differ.
+ * Narrow-result and product-local probes plus a bounded permuter run did not
+ * improve verified linked bytes. */
 void SsUtSetReverbDepth(short ldepth, short rdepth) {
     D_800AE27C[0].mask = 6;
     D_800AE27C[0].depth.left = (ldepth * 0x7FFF) / 127;
