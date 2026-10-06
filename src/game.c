@@ -12546,7 +12546,92 @@ s32 func_80041D60(void) {
     return ((u32)pads[1] << 16) | pads[0];
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80041DEC);
+extern u8 D_800A3A24Small;
+extern void *D_800A3A24[];
+extern s8 D_800A3A25[];
+extern u8 D_800A3A26[];
+extern u8 D_800A3A27[];
+extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
+extern u32 D_8008CA2C[];
+extern u32 D_8008CA30[];
+extern u32 D_8008CA34[];
+extern u32 D_8008CA38[];
+extern u32 D_8008CA3C[];
+extern u32 D_8008CA40[];
+extern u32 D_8008CA44[];
+extern u32 D_8008CA48[];
+
+void func_80041DEC(void) {
+    u32 word;
+    register u32 nibble asm("v1");
+    u8 *node;
+    s32 i;
+    u32 pad0;
+    u32 pad1;
+    u32 pad2;
+    u32 pad3;
+    s32 *p;
+    s32 *cursor;
+    u32 conn;
+
+    word = gPadBuffers[0];
+    conn = 0xFF;
+    nibble = word & 0xF000;
+    if ((word & 0xFF) == conn) {
+        nibble = 0;
+    } else {
+        nibble = nibble >> 12;
+    }
+    D_800A3A24Small = nibble;
+    word = D_800B9E00[0];
+    nibble = word & 0xF000;
+    if ((word & 0xFF) == conn) {
+        nibble = 0;
+    } else {
+        nibble = nibble >> 12;
+    }
+    node = D_800A3878nm[0];
+    D_800A3A25[0] = nibble;
+    D_800A3A26[0] = 0;
+    D_800A3A27[0] = 0;
+    i = 7;
+    if (node != 0) {
+        do {
+            if (*(s16 *)(node + 0x1EC) == 0) {
+                node[0x3C4] = ((u8 *)D_800A3A24)[*(s8 *)(node + 0x20B)];
+            }
+            node = *(u8 **)(node + 0x3E0);
+            i = 7;
+        } while (node != 0);
+    }
+    i = 7;
+    cursor = gPadBuffers;
+    asm("" : "=r"(cursor) : "0"(cursor));
+    pad0 = cursor[0];
+    pad1 = D_800B9DF8[0];
+    pad2 = D_800B9E00[0];
+    pad3 = D_800B9E04[0];
+    p = D_8008CA04;
+    D_8008CA3C[0] = 0xFFFF0000;
+    D_8008CA14[0] = 0xFFFF0000;
+    D_8008CA40[0] = 0;
+    D_8008CA18[0] = 0;
+    D_8008CA44[0] = 0xFFFF0000;
+    D_8008CA1C[0] = 0xFFFF0000;
+    D_8008CA48[0] = 0;
+    D_8008CA20[0] = 0;
+    D_8008CA2C[0] = pad0;
+    p[0] = pad0;
+    D_8008CA30[0] = pad1;
+    D_8008CA08[0] = pad1;
+    D_8008CA34[0] = pad2;
+    D_8008CA0C[0] = pad2;
+    D_8008CA38[0] = pad3;
+    D_8008CA10[0] = pad3;
+    for (i = 7; i >= 0; i--) {
+        p[i] = 0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80041F54);
 
@@ -12880,7 +12965,69 @@ void func_800442C8(u8 *arg0, u8 *arg1) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80044354);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80044594);
+void func_80044594(u8 *arg0) {
+    u32 *wp;
+    u8 *rec;
+    u8 *typ;
+    register s32 i asm("$8");
+    s8 *bp;
+    u8 *fp;
+    u32 word;
+    u32 src40;
+    u32 mode;
+    u8 w;
+    u32 val38;
+    s32 z;
+
+    wp = (u32 *)arg0;
+    rec = (u8 *)&D_800AD9B0[0];
+    i = 0;
+    bp = (s8 *)arg0 + 2;
+    fp = rec + 0x1A;
+loop:
+    if (*wp == 0) {
+        for (; i < 0x28; i++, fp += 0x30) {
+            fp[2] = 0;
+        }
+        return;
+    }
+    fp[2] = 1;
+    word = *wp;
+    typ = D_800A3878w15[0] + ((word >> 24) & 0x1F) * 0x500;
+    if ((word & 0xE0000000) == 0x80000000) {
+        src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40);
+        fp[3] = 10;
+    } else {
+        mode = word >> 29;
+        src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40) + mode * 0x18;
+        fp[3] = mode;
+    }
+    *(s32 *)rec = (*(s8 *)wp << 6) + *(s32 *)typ;
+    *(s32 *)(fp - 0x16) = (bp[-1] << 6) + *(s32 *)(typ + 4);
+    w = ((u8 *)wp)[3];
+    *(u32 *)(fp + 0x12) = src40;
+    fp[4] = w & 0x1F;
+    val38 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x38);
+    i++;
+    rec += 0x30;
+    *(u32 *)(fp + 0xA) = 0;
+    *(u32 *)(fp + 0x6) = 0;
+    *(s16 *)(fp - 0x8) = 0;
+    *(s16 *)(fp - 0x6) = 0;
+    *(u32 *)(fp + 0xE) = val38;
+    z = *bp;
+    wp++;
+    bp += 4;
+    *(s16 *)fp = 0xC8;
+    *(s16 *)(fp - 0xA) = 0;
+    *(s16 *)(fp - 4) = 0;
+    *(s16 *)(fp - 2) = 0;
+    *(s16 *)(fp - 0xE) = z << 5;
+    fp += 0x30;
+    if (i < 10) {
+        goto loop;
+    }
+}
 
 extern u32 D_8009B9C4[];
 extern u8 *gHeapBase, *gHeapBreak;
@@ -18495,7 +18642,62 @@ void func_80063AE0(s32 arg0, s32 arg1) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80063C34);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80063E7C);
+extern s32 D_800A2E84Absolute[];
+extern u8 *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
+extern void func_80063874(void);
+
+void func_80063E7C(void) {
+    RECT rect;
+    u8 *entry;
+    u8 *prev1;
+    u8 *prev2;
+    s32 i;
+    s16 srcX;
+    s16 tile;
+
+    func_80063874();
+    D_800A2E84Absolute[0] = 0;
+    entry = func_8002D874(-1, 0, 0, -1);
+    *(s32 *)(entry + 0) = -0x2EE;
+    *(s32 *)(entry + 4) = 0xC8;
+    *(s32 *)(entry + 8) = 0xC8;
+    *(u8 *)(entry + 0x20C) = 4;
+    D_800A3558[0] = (s32)entry;
+    D_800A38AC[0] = (s32)entry;
+    *(s32 *)(entry + 0x3DC) = 0;
+    D_800A2E94[0] = 0;
+    prev1 = entry;
+    entry = func_8002D874(0, 0, 0x1B, 0);
+    *(s32 *)(entry + 0) = 0x1F4;
+    *(s32 *)(entry + 4) = 0;
+    *(s32 *)(prev1 + 0x3E0) = (s32)entry;
+    *(s32 *)(entry + 0x3DC) = (s32)prev1;
+    D_800A3554[0] = entry;
+    prev2 = entry;
+    entry = func_8002D874(0, 1, 0x18, -1);
+    i = 0;
+    tile = 0x40;
+    srcX = 0x300;
+    *(s32 *)(entry + 0) = 0;
+    *(s32 *)(entry + 4) = 0;
+    *(s32 *)(prev2 + 0x3E0) = (s32)entry;
+    *(s32 *)(entry + 0x3DC) = (s32)prev2;
+    *(s32 *)(entry + 0x3E0) = 0;
+    while (i < 2) {
+        rect.x = (i % 4) * 0x40 + 0x300;
+        rect.y = tile;
+        rect.h = tile;
+        rect.w = tile;
+        MoveImage(&rect, i * 0x40, 0x100);
+        rect.y = 0x3F;
+        rect.h = 1;
+        rect.x = srcX;
+        rect.w = 0x10;
+        MoveImage(&rect, 0, 0x140 + i);
+        srcX += 0x10;
+        i++;
+    }
+}
 
 #ifdef NON_MATCHING
 /* Fresh attempt, 2026-10-05:
@@ -22817,7 +23019,52 @@ void func_8007012C(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80070248);
+extern u8 D_800A3578[];
+extern void SwEnterCriticalSection(void);
+extern void SwExitCriticalSection(void);
+
+void func_80070248(s32 arg0) {
+    TILE tile;
+    DRAWENV env;
+    DISPENV disp;
+
+    if (D_800A3398 != 0) {
+        D_800A3578[0] = (u8)D_800A3398[0x45];
+        DecDCTinSync(0);
+        DecDCToutSync(0);
+        DrawSync(0);
+        SwEnterCriticalSection();
+        DecDCToutCallback((void (*)(void))D_800A3398[0x48]);
+        DecDCTinCallback((void (*)(void))D_800A3398[0x49]);
+        DrawSyncCallback((void (*)())D_800A3398[0x4A]);
+        D_800A3398[0x48] = 0;
+        D_800A3398[0x49] = 0;
+        D_800A3398[0x4A] = 0;
+        SwExitCriticalSection();
+        DecDCTReset(1);
+        if (D_800A3397 == 1 && (arg0 & 0xFF)) {
+            SetDefDrawEnv(&env, 0, 0, 0x140, 0xF0);
+            PutDrawEnv(&env);
+            setBlockFill(&tile);
+            tile.w = 0x140;
+            tile.h = 0xF0;
+            tile.x0 = 0;
+            tile.y0 = 0;
+            tile.r0 = 0xFF;
+            tile.g0 = 0xFF;
+            tile.b0 = 0xFF;
+            DrawSync(0);
+            VSync(0);
+            DrawPrim(&tile);
+            DrawSync(0);
+            SetDefDispEnv(&disp, 0, 0, 0x140, 0xF0);
+            PutDispEnv(&disp);
+        } else {
+            SetDispMask(0);
+        }
+        D_800A3398 = 0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800703D0);
 
@@ -22945,7 +23192,126 @@ s32 func_80070798Ret(u32 dst1, u32 dst2, u8 *src) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800708D8);
+extern u8 *D_800A33A8;
+extern u8 *D_800A33AC;
+
+extern s32 func_800708D8Ret(void *arg0, s32 arg1);
+asm(".globl func_800708D8\nfunc_800708D8 = func_800708D8Ret");
+
+s32 func_800708D8Ret(void *arg0, s32 arg1) {
+    register u16 *src asm("$9");
+    u16 *out;
+    register u8 *tbl1 asm("$12");
+    register u8 *tbl2 asm("$11");
+    register u16 *tbl1v asm("$14");
+    register u16 *tbl2v asm("$13");
+    register u32 bits asm("$6");
+    register u32 quant asm("$3");
+    u32 block;
+    register u32 nw asm("$7");
+    register u32 nw2 asm("$4");
+    register u32 count asm("$6");
+    register u32 nwp asm("$2");
+    register u32 nw5 asm("$4");
+    register u32 sym asm("$7");
+    u32 len;
+    register u32 bitpos asm("$8");
+    register u8 *lenp asm("$10");
+    register u16 *symp asm("$7");
+    register u32 scale asm("$2");
+    u32 hdr;
+
+    src = (u16 *)arg0;
+    asm("" : "=r"(src) : "0"(src));
+    out = (u16 *)arg1;
+    tbl1 = D_800A33A8;
+    tbl2 = D_800A33AC;
+    bitpos = 0;
+    out[0] = src[0];
+    nw = src[1];
+    tbl1v = (u16 *)(tbl1 + 0x2000);
+    tbl2v = (u16 *)(tbl2 + 0x200);
+    out++;
+    *out++ = nw;
+    quant = src[2] << 10;
+    nwp = src[4];
+    nwp <<= 16;
+    nw5 = src[5];
+    bits = nwp | nw5;
+    src += 6;
+    block = bits >> 22;
+
+outer_loop:
+    if (block == 0x1FF)
+        goto done;
+    bitpos += 10;
+    bits <<= 10;
+    if (bitpos & 0x10) {
+        nw = *src;
+        bitpos &= 0xF;
+        src++;
+        bits |= nw << bitpos;
+    } else {
+        bitpos &= 0xF;
+    }
+    hdr = block | quant;
+    *out++ = hdr;
+inner_loop:
+    block = bits >> 19;
+    if (block < 0x20) {
+        bitpos += 8;
+        bits <<= 8;
+        if (bitpos & 0x10) {
+            nw2 = *src;
+            bitpos &= 0xF;
+            src++;
+            bits |= nw2 << bitpos;
+        } else {
+            bitpos &= 0xF;
+        }
+        block = bits >> 23;
+        lenp = tbl2 + block;
+        scale = block * 2;
+        symp = (u16 *)((u8 *)tbl2v + scale);
+    } else {
+        lenp = tbl1 + block;
+        scale = block * 2;
+        symp = (u16 *)((u8 *)tbl1v + scale);
+    }
+    sym = *symp;
+    asm("" : : : "memory");
+    len = *lenp;
+    bits <<= len;
+    bitpos += len;
+    if (bitpos & 0x10) {
+        nw2 = *src;
+        bitpos &= 0xF;
+        src++;
+        bits |= nw2 << bitpos;
+    } else {
+        bitpos &= 0xF;
+    }
+    if (sym == 0x7C1F)
+        goto escape;
+    *out++ = sym;
+    if (sym != 0xFE00)
+        goto inner_loop;
+    block = bits >> 22;
+    goto outer_loop;
+escape:
+    *out++ = bits >> 16;
+    nw2 = *src++;
+    bits = (bits << 16) | (nw2 << bitpos);
+    goto inner_loop;
+done:
+    count = 0x40;
+    do {
+        *out++ = 0xFE00;
+        count--;
+    } while (count != 0);
+    asm volatile("" : : : "a2");
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80070A60);
 
