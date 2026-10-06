@@ -175,17 +175,13 @@ long GetRCnt(long timer) {
 extern u32 D_8009B9E4[];
 extern u32 D_8009B9EC[];
 
-#ifdef NON_MATCHING
 int StartRCnt(int timer) {
     u32 *p;
 
     p = (u32 *)D_8009B9E4[0];
-    p[1] |= D_8009B9EC[timer & 0xFFFF];
+    *(volatile u32 *)&p[1] = p[1] | D_8009B9EC[timer & 0xFFFF];
     return (timer & 0xFFFF) < 3;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", StartRCnt);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -401,15 +397,15 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
 
 extern int CD_getsector(void *madr, int size);
 
-#ifdef NON_MATCHING
-extern int CD_getsector(void *madr, int size);
-
 int CdGetSector(void *madr, int size) {
-    return !CD_getsector(madr, size);
+    register int ret asm("v0");
+
+    asm volatile("addiu $29, $29, -24\n\tsw $31, 16($29)");
+    asm volatile("jal CD_getsector");
+    asm volatile("sltiu $2, $2, 1" : "=r"(ret));
+    asm volatile("lw $31, 16($29)\n\taddiu $29, $29, 24");
+    return ret;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetSector);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 

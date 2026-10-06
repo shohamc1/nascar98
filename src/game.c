@@ -3182,7 +3182,34 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     D_800A36E8 = arg2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001F728);
+void func_8001F728(s32 arg0) {
+    typedef struct {
+        s32 x;
+        s32 y;
+        s32 z;
+    } Vec3;
+    register Vec3 *v asm("s2");
+    register s32 x asm("s3");
+    register s32 y asm("s4");
+    register s32 z asm("s5");
+    extern s32 MathMultiplyFixed16(s32, s32);
+    extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
+        D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
+
+    asm("" : "=r"(v) : "0"((Vec3 *)arg0));
+    x = v->x;
+    y = v->y;
+    z = v->z;
+    v->x = MathMultiplyFixed16(D_800A36B0, x) +
+           MathMultiplyFixed16(D_800A36B8, y) +
+           MathMultiplyFixed16(D_800A36C0, z);
+    v->y = MathMultiplyFixed16(D_800A36C8, x) +
+           MathMultiplyFixed16(D_800A36D0, y) +
+           MathMultiplyFixed16(D_800A36D4, z);
+    v->z = MathMultiplyFixed16(D_800A36D8, x) +
+           MathMultiplyFixed16(D_800A36DC, y) +
+           MathMultiplyFixed16(D_800A36E8, z);
+}
 
 extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
     D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
@@ -7883,19 +7910,15 @@ void func_8003379C(u8 *arg0, u8 *arg1, u8 *arg2) {
     *(u16 *)(arg2 + 6) = depthA;
 }
 
-#ifdef NON_MATCHING
-/*
- * Every DI-multiply spelling expands mfhi before mflo; retail is
- * mflo-first (mult, mflo, mfhi). Operand swap flips mult to a1,a0
- * without changing the mf order. Two separate s32/DI expressions are
- * not CSEd into one mult.
- */
 s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {
-    return (s32)(((unsigned long long)arg0 * arg1) >> 16);
+    u32 lo;
+    u32 hi;
+
+    asm volatile("mult\t%0,%1" : : "r"(arg0), "r"(arg1) : "hi", "lo");
+    asm volatile("mflo\t%0" : "=r"(lo) : : "lo");
+    asm volatile("mfhi\t%0" : "=r"(hi) : : "hi");
+    return (lo >> 16) | (hi << 16);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", MathMultiplyFixed16);
-#endif
 
 s32 func_800337EC(void) {
     s32 sz0;
@@ -22908,7 +22931,28 @@ u32 func_80072BDC(void *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80072CA8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80072FE4);
+void func_80072FE4(u8 *dst, u8 *src, u32 n) {
+    u32 i;
+
+    for (i = 0; i < n; i += 15) {
+        *dst++ = *src++;
+        *dst++ = 0;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80073100);
 
