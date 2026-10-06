@@ -11514,25 +11514,23 @@ s16 func_8003FF5C(void *arg0, void *arg1) {
     return -1;
 }
 
-/* Loads a data block through the func_8003C584 reader into arg1, or into a
- * page-rounded HeapAlloc block when arg1 is NULL. The do/while(0) around the
- * allocation and the asm guard before the second test are both load-bearing:
- * they keep the allocation result in the buffer's own register and stop jump
- * optimisation from threading the first guard onto the second one.
+/* Loads a whole file into arg1, or into a page-rounded HeapAlloc block when
+ * arg1 is NULL. D_800A2F98 is the "rb" mode string, so the helpers look like
+ * fopen, fseek, fread, and fclose. Assigning buffer in both arms keeps the
+ * allocation in arg1's register and keeps the first guard's branch on the
+ * second test.
  */
 extern char D_8008D1DC[];
 extern char D_8008D1F8[];
-extern u8 D_800A2F9CAbsolute[];
+extern char D_800A2F98[];
 
 s32 func_8003FFF0(void *arg0, void *arg1) {
-
     void *buffer;
     void *handle;
     s32 padded;
     s32 size;
 
-    buffer = arg1;
-    handle = func_8003C584(arg0, (char *)D_800A2F9CAbsolute - 4);
+    handle = func_8003C584(arg0, D_800A2F98);
     if (handle == NULL) {
         SystemShowFatalError(D_8008D1DC);
     }
@@ -11540,12 +11538,11 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
     ((s32 (*)(void *, s32, s32))func_8003C8BC)(handle, 0, 0);
     padded = size + 0x800;
     size = padded - size % 0x800;
-    if (buffer == NULL) {
-        do {
-            buffer = HeapAlloc(size);
-        } while (0);
+    if (arg1 == NULL) {
+        buffer = HeapAlloc(size);
+    } else {
+        buffer = arg1;
     }
-    asm("");
     if (buffer == NULL) {
         SystemShowFatalError(D_8008D1F8);
     }
