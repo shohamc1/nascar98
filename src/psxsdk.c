@@ -23,6 +23,10 @@ extern unsigned long long __udivmoddi4(unsigned long long num,
                                        unsigned long long *rem);
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 152 bytes, 92 linked text bytes differ. Explicit two-word operand negation
+ * restores size; GCC still branches for the borrow and uses s0 rather than
+ * retail s2 for the sign, with a different saved-register set. */
 typedef union {
     struct {
         s32 low;
@@ -35,7 +39,7 @@ long long __divdi3(long long u, long long v) {
     DwUnion uu;
     DwUnion vv;
     long long w;
-    long long n;
+    DwUnion n;
     int c;
 
     c = 0;
@@ -44,13 +48,15 @@ long long __divdi3(long long u, long long v) {
 
     if (uu.s.high < 0) {
         c = ~c;
-        n = -uu.ll;
-        uu.ll = n;
+        n.s.low = 0U - (u32)uu.s.low;
+        n.s.high = 0U - (u32)uu.s.high - (n.s.low != 0);
+        uu = n;
     }
     if (vv.s.high < 0) {
         c = ~c;
-        n = -vv.ll;
-        vv.ll = n;
+        n.s.low = 0U - (u32)vv.s.low;
+        n.s.high = 0U - (u32)vv.s.high - (n.s.low != 0);
+        vv = n;
     }
 
     w = __udivmoddi4(uu.ll, vv.ll, 0);
@@ -482,6 +488,11 @@ extern u8 D_8009BD5A[];
 extern u32 D_8009BD50[];
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 220 bytes versus 224 retail; 72 linked text bytes differ including the size
+ * deficit. Retail copies status byte D_8009BD5A to D_8009BD59, not
+ * D_8009BD58. The loop matches; status-address materialization and final
+ * stores still differ. */
 void CD_flush(void) {
     *(u8 *)D_8009BD40[0] = 1;
     while (*(u8 *)D_8009BD4C[0] & 7) {
@@ -491,9 +502,9 @@ void CD_flush(void) {
     }
     D_8009BD5A[0] = 0;
     asm("");
-    D_8009BD59[0] = ((volatile u8 *)D_8009BD59)[-1];
-    *(u8 *)D_8009BD40[0] = 0;
+    D_8009BD59[0] = ((volatile u8 *)D_8009BD59)[1];
     D_8009BD58[0] = 2;
+    *(u8 *)D_8009BD40[0] = 0;
     *(u8 *)D_8009BD4C[0] = 0;
     *(u32 *)D_8009BD50[0] = 0x1325;
     asm("");
@@ -559,12 +570,16 @@ extern s32 D_8009CE84[];
 extern char D_80090404[];
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 156 bytes, 22 linked text bytes differ. Moving the existing empty barrier
+ * inside the condition slightly improves the prologue. Remaining differences
+ * concern initial load/store ordering and the ra save delay slot. */
 void v_wait(int mode, int time) {
     volatile int count;
 
     count = time << 15;
-    asm("");
     if (D_8009CE84[0] < mode) {
+        asm("");
         do {
             count = count - 1;
             if (count == -1) {
@@ -579,6 +594,7 @@ void v_wait(int mode, int time) {
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", v_wait);
 #endif
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090404);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ChangeClearRCnt);
 
@@ -1186,9 +1202,13 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetGraph);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphReverse);
 
 #ifdef NON_MATCHING
+/* WALL (2026-10-05):
+ * 108 bytes, 24 linked text bytes differ after removing the duplicate typedef
+ * and retaining rodata. Debug pointer allocation and indirect-printer
+ * argument/load ordering still differ. A printer temporary did not improve
+ * linked bytes. */
 /* SPDX-License-Identifier: MIT */
 
-typedef int (*DebugPrintf)(const char *, ...);
 extern u8 D_8009DA90[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DA93[];
@@ -1209,6 +1229,7 @@ int SetGraphDebug(int level) {
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphDebug);
 #endif
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090698);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphQueue);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906D8);
@@ -1856,14 +1877,12 @@ void _SsSetProgramChange(s16 access, s16 sequence, u8 program) {
 }
 
 #ifdef NON_MATCHING
-/* WALL (agent a9, 2026-10-04): jump table regenerates byte-identically
- * (122 entries; the retail source must list extra empty cases falling into
- * default to push gcc over the table threshold - 16 added here). Remaining
- * diffs: gcc puts `ch` in a callee-saved reg where retail uses caller-saved
- * t0 with an s0 copy across calls, param/local homes shift (access/sequence/
- * score/value), and (sequence << 8) | access narrows after the OR instead of
- * promoting each operand. u8/s32 value spellings, implicit vs explicit callee
- * prototypes, and a permuter run did not close them. */
+/* WALL (2026-10-05):
+ * 692 bytes versus 792 retail; 632 linked text bytes differ including the
+ * size deficit. Extra empty controller cases now correctly go to default, not
+ * bank select. Channel lifetime, call-argument narrowing, save set, and
+ * branch-tail shape remain different. Earlier claims of a matching jump table
+ * were not reproduced. */
 /* SPDX-License-Identifier: MIT */
 void SpuVmSetVol(s16, s16, u8, s16, u8);
 void SpuVmSetProgVol(s16, u8, u8);
@@ -1877,28 +1896,12 @@ void _SsContResetAll(s16, s16);
 void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     struct SeqStruct *score;
     u8 value;
-    s32 ch;
+    u8 ch;
 
     score = (struct SeqStruct *)((s32)D_800BDE3C[access] + sequence * 0xAC);
     value = *score->readPos++;
     ch = score->channel;
     switch (event) {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 8:
-    case 9:
-    case 12:
-    case 91:
-    case 92:
-    case 94:
-    case 95:
-    case 96:
-    case 97:
-    case 101:
-    case 120:
     case 0:
         score->unk4C = value;
         break;
@@ -1945,6 +1948,24 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     case 121:
         _SsContResetAll(access, sequence);
         return;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 8:
+    case 9:
+    case 12:
+    case 91:
+    case 92:
+    case 94:
+    case 95:
+    case 96:
+    case 97:
+    case 101:
+    case 120:
+    default:
+        break;
     }
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
@@ -2098,11 +2119,11 @@ extern void _SsTrapIntrVSync(void);
 extern void _SsSeqCalledTbyT_1per2(void);
 
 #ifdef NON_MATCHING
-/* w8j draft: everything matches through the switch; walls: (1) default-case
-   block needs ONE base register (a0=&D_800A20A4) for the word reads at 0/-4
-   and the byte at 0xD; this gcc constant-folds any pointer local and emits
-   at-form loads instead (+8); (2) the div quotient lands in a1 (mflo a1)
-   instead of v0. */
+/* WALL (2026-10-05):
+ * 616 bytes, 234 linked text bytes differ. Direct rcntTarget assignment
+ * restores size but does not recover the shared D_800A20A4 base or retail
+ * quotient/branch-tail allocation. A permuter candidate using an
+ * uninitialized base pointer was rejected. */
 
 s32 _SsStart(s32 arg0) {
     s32 wait;
@@ -2149,13 +2170,12 @@ s32 _SsStart(s32 arg0) {
         if (*(s32 *)&env[0] == 0) {
             ticks = *(s32 *)&env[-4];
             if (ticks < 0x46) {
-                div = 0x204CC0 / ticks;
+                rcntTarget = 0x204CC0 / ticks;
                 asm("");
                 env[0xD] += 1;
             } else {
-                div = 0x409980 / ticks;
+                rcntTarget = 0x409980 / ticks;
             }
-            rcntTarget = div;
             break;
         }
     }
