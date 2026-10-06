@@ -11535,10 +11535,11 @@ s16 func_8003FF5C(void *arg0, void *arg1) {
     return -1;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 232 bytes versus retail 232; 1 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Activation requires the existing public loader signature, explicit complete call types at old-style helper call sites, and preservation of the function's migrated strings plus following rodata.
+/* Loads a data block through the func_8003C584 reader into arg1, or into a
+ * page-rounded HeapAlloc block when arg1 is NULL. The do/while(0) around the
+ * allocation and the asm guard before the second test are both load-bearing:
+ * they keep the allocation result in the buffer's own register and stop jump
+ * optimisation from threading the first guard onto the second one.
  */
 extern char D_8008D1DC[];
 extern char D_8008D1F8[];
@@ -11565,17 +11566,14 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
             buffer = HeapAlloc(size);
         } while (0);
     }
-    if (buffer != NULL) {
-    } else {
+    asm("");
+    if (buffer == NULL) {
         SystemShowFatalError(D_8008D1F8);
     }
     func_8003C644((s32)buffer, 1, size, handle);
     ((void (*)(s32))func_8003C63C)((s32)handle);
     return (s32)buffer;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_8003FFF0);
-#endif
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1DC);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1F8);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D21C);
