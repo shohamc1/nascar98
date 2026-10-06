@@ -16183,7 +16183,65 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8005A8E0);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005A9F4);
 
+#ifdef NON_MATCHING
+extern s32 D_800A35A0;
+extern u8 D_800A3534;
+extern s32 D_800A35AC;
+
+s32 n98_5AEC8(s32 val, s32 arg1) {
+    u8 *seq;
+    u8 *data;
+    u8 mode;
+    s32 total;
+    s32 i;
+    s32 idx;
+    s32 limit;
+    u8 ch;
+
+    seq = (u8 *)arg1;
+    i = 0;
+    total = 0;
+    if (*seq == 0) {
+        return (total << 16) >> 16;
+    }
+    mode = D_800A3534;
+    limit = (u32) * (u16 *)D_800A35A0 + 0x20;
+    data = (u8 *)D_800A35AC;
+head:
+    if (i >= (val & 0xFF)) {
+        goto ret;
+    }
+    ch = *seq;
+    if (ch >= 0x20) {
+        if (ch < limit) {
+            idx = ch - 0x20;
+        }
+    } else {
+        idx = 0;
+    }
+    if (mode == 2) {
+        total += (*(s16 *)(data + idx * 10 + 6) * 3) / 4;
+    } else if (mode == 4) {
+        total += (*(s16 *)(data + idx * 10 + 6) * 9) / 10;
+    } else {
+        total += *(u16 *)(data + idx * 10 + 6);
+    }
+    if ((u32)mode < 2) {
+        total -= 1;
+    }
+    seq += 1;
+    i += 1;
+    if (*seq != 0) {
+        goto head;
+    }
+ret:
+    return (total << 16) >> 16;
+}
+
+asm(".globl func_8005AEC8\nfunc_8005AEC8 = n98_5AEC8");
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_8005AEC8);
+#endif
 
 s16 func_8005AFF0(s8 arg0) {
     s32 index;
