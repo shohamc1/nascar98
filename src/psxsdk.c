@@ -203,11 +203,10 @@ ASM_FUNC(ChangeClearPAD, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
                          "    addiu $t1, $zero, 0x5B # maspsx-keep\n"
                          "    nop # maspsx-keep\n")
 
-ASM_FUNC(GetGp,
-         "    jr $ra # maspsx-keep\n"
-         "    addu $v0, $gp, $zero # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    nop # maspsx-keep\n")
+ASM_FUNC(GetGp, "    jr $ra # maspsx-keep\n"
+                "    addu $v0, $gp, $zero # maspsx-keep\n"
+                "    nop # maspsx-keep\n"
+                "    nop # maspsx-keep\n")
 
 /* SPDX-License-Identifier: MIT */
 
