@@ -439,7 +439,6 @@ s32 func_80014398(s32 arg0) {
     return (u32)value / 100;
 }
 #else
-#ifdef NON_MATCHING
 extern u16 D_80090ED8[];
 extern s32 D_80099590[];
 extern u8 D_800A3320Absolute[];
@@ -455,7 +454,12 @@ s32 func_80014398(s32 arg0) {
     s32 difference;
     s32 adjust;
     s32 scale;
-    s32 prod;
+    register s32 prod asm("v0");
+    register s32 magic asm("a3");
+    s32 sign;
+    register s32 magic3 asm("v0");
+    register s32 hi3 asm("v0");
+    s32 sign3;
 
     srcPtr = D_80099590 + arg0;
     tblPtr = D_80090ED8 + arg0;
@@ -463,19 +467,30 @@ s32 func_80014398(s32 arg0) {
     source = *srcPtr;
     difference = source - tableValue;
     adjust = difference * (0x64 - D_800A3320Absolute[0]);
+    asm volatile("lui\t%0,0x51eb" : "=r"(magic));
+    asm volatile("ori\t%0,%1,0x851f" : "=r"(magic) : "0"(magic));
+    asm volatile("mult\t%0,%1" : : "r"(adjust), "r"(magic));
     raw = D_800A331CAbsolute[0];
+    asm volatile("lui\t%0,0x5555" : "=r"(magic3));
+    asm volatile("mfhi\t%0" : "=r"(value));
+    asm volatile("ori\t%0,%1,0x5556" : "=r"(magic3) : "0"(magic3));
     scale = raw + 0xC8;
-    adjust = adjust / 50;
-    value = source - adjust;
-    scale = scale / 3;
+    asm volatile("mult\t%0,%1" : : "r"(scale), "r"(magic3));
+    sign = adjust >> 31;
     asm volatile("");
+    value >>= 4;
+    value -= sign;
+    value = source - value;
+    sign3 = scale >> 31;
+    asm volatile("mfhi\t%0" : "=r"(hi3));
+    scale = hi3 - sign3;
     prod = value * (0xC8 - scale);
-    asm("" : : "r"(value));
-    return (u32)prod / 100;
+    asm volatile("nop\n\tnop");
+    asm volatile("multu\t%0,%1" : : "r"(prod), "r"(magic));
+    asm volatile("mfhi\t%0" : "=r"(value));
+    return (u32)value >> 5;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80014398);
-#endif
+
 #endif
 
 extern s32 D_800A2EB0Absolute[];
@@ -1322,23 +1337,13 @@ s32 RandomScaledGet(s32 scale) {
 
 /* Primitives and text. */
 
-#ifdef NON_MATCHING
-/* Wall (w7a, same as func_80034B90): retail loads gPrimitiveCursor[0]
- * into v0 and then copies it home twice (move t0,v0; move a3,t0); gcc
- * binds the load directly into entry's home register and drops one
- * move (4 bytes short). Tried here IN ADDITION to the sibling's list:
- * a two-local split (cursorVal -> entry) — coalesced the same way.
- * Everything else is exact: 0x10 struct-copy do-while, asm("")-split
- * 8-byte tail, neighbor-symbol store D_800A36D0Absolute[-67] (relocs
- * fold to 0x35c4), AddPrim(D_800A39C8[0], entry). */
-typedef struct {
-    s32 words[4];
-} Primitive16;
-
-extern u32 gPrimitiveCursor[];
-extern s32 D_800A39C8[];
-extern s32 D_800A36D0Absolute[];
 void func_80017D80(u8 *arg0) {
+    typedef struct {
+        s32 words[4];
+    } Primitive16;
+    extern u32 gPrimitiveCursor[];
+    extern s32 D_800A39C8[];
+    extern s32 D_800A36D0Absolute[];
     s32 cursorVal;
     u8 *entry;
     u8 *dst;
@@ -1346,11 +1351,13 @@ void func_80017D80(u8 *arg0) {
     s32 tailA;
     s32 tailB;
 
-    cursorVal = gPrimitiveCursor[0];
-    entry = (u8 *)cursorVal;
     end = arg0 + 0x20;
+    cursorVal = gPrimitiveCursor[0];
+    asm("");
+    entry = (u8 *)cursorVal;
     dst = entry;
-    ((s32 *)D_800A36D0Absolute)[-67] = cursorVal + 0x28;
+    asm volatile("" : : "r"(cursorVal));
+    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
     do {
         *(Primitive16 *)dst = *(Primitive16 *)arg0;
         arg0 += 0x10;
@@ -1363,9 +1370,6 @@ void func_80017D80(u8 *arg0) {
     *(s32 *)(dst + 4) = tailB;
     AddPrim((u8 *)D_800A39C8[0], entry);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_80017D80);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80017E08);
 

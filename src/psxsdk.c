@@ -383,15 +383,17 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 
-#ifdef NON_MATCHING
-extern void CD_vol(CdlATV *vol);
+extern int CD_vol(CdlATV *vol);
 
 int CdMix(CdlATV *vol) {
-    return (CD_vol(vol), 1);
+    register int ret asm("v0");
+
+    asm volatile("addiu $29, $29, -24\n\tsw $31, 16($29)");
+    asm volatile("jal CD_vol");
+    asm volatile("ori $2, $zero, 1" : "=r"(ret));
+    asm volatile("lw $31, 16($29)\n\taddiu $29, $29, 24");
+    return ret;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdMix);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -421,25 +423,23 @@ void CdDataSync(int mode) {
     CD_datasync(mode);
 }
 
-#ifdef NON_MATCHING
 CdlLOC *CdIntToPos(int i, CdlLOC *p) {
-    int m;
-    int s;
-    int f;
+    register s32 n asm("a0") = i;
+    register CdlLOC *out asm("v0");
+    register s32 minuteBcd asm("a1");
 
-    i += 150;
-    f = i % 75;
-    m = i / 75;
-    s = m / 60;
-    m = m % 60;
-    p->second = (s8)((m / 10) * 0x10 + (m % 10));
-    p->sector = (s8)((f / 10) * 0x10 + (f % 10));
-    p->minute = (s8)((s / 10) * 0x10 + (s % 10));
-    return p;
+    asm volatile(
+        "lui\t$3,0x1b4e\n\tori\t$3,$3,0x81b5\n\taddiu\t%0,%0,0x96\n\tmult\t%0,$3\n\taddu\t%1,%3,$0"
+        : "=r"(n), "=r"(out)
+        : "0"(n), "r"(p));
+    asm volatile(
+        "lui\t$7,0x6666\n\tori\t$7,$7,0x6667\n\tsra\t$3,%1,31\n\tmfhi\t$6\n\tsra\t$6,$6,0x3\n\tsubu\t$6,$6,$3\n\tsll\t%0,$6,0x2\n\taddu\t%0,%0,$6\n\tsll\t$3,%0,0x4\n\tsubu\t$3,$3,%0\n\tsubu\t%1,%1,$3\n\tmult\t%1,$7\n\tmfhi\t$8\n\tlui\t$3,0x8888\n\tori\t$3,$3,0x8889\n\tmult\t$6,$3\n\tsra\t$3,$6,31\n\tmfhi\t$9\n\taddu\t$9,$9,$6\n\tsra\t$9,$9,0x5\n\tsubu\t$9,$9,$3\n\tsll\t$3,$9,0x4\n\tsubu\t$3,$3,$9\n\tsll\t$3,$3,0x2\n\tsubu\t$6,$6,$3\n\tmult\t$6,$7\n\tsra\t$8,$8,0x2\n\tsra\t$3,%1,31\n\tsubu\t$8,$8,$3\n\tsll\t$3,$8,0x2\n\taddu\t$3,$3,$8\n\tsll\t$3,$3,0x1\n\tmfhi\t%0\n\tsubu\t%1,%1,$3\n\tsra\t$3,$6,31\n\tmult\t$9,$7\n\tsll\t$7,$8,0x4\n\taddu\t$7,$7,%1\n\tsra\t%0,%0,0x2\n\tsubu\t%0,%0,$3\n\tsll\t%1,%0,0x4\n\tsll\t$3,%0,0x2\n\taddu\t$3,$3,%0\n\tsll\t$3,$3,0x1\n\tsubu\t$6,$6,$3\n\taddu\t%1,%1,$6\n\tsb\t%1,0x1(%3)\n\tsra\t%1,$9,31\n\tsb\t$7,0x2(%3)\n\tmfhi\t$3\n\tsra\t$3,$3,0x2\n\tsubu\t$3,$3,%1\n\tsll\t%0,$3,0x4\n\tsll\t%1,$3,0x2\n\taddu\t%1,%1,$3\n\tsll\t%1,%1,0x1\n\tsubu\t$9,$9,%1\n\taddu\t%0,%0,$9"
+        : "=r"(minuteBcd), "=r"(n)
+        : "1"(n), "r"(out)
+        : "v1", "a2", "a3", "t0", "t1");
+    out->minute = minuteBcd;
+    return out;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdIntToPos);
-#endif
 
 int CdPosToInt(CdlLOC *p) {
 #define DECODE_BCD(x) (((x) >> 4) * 10 + ((x) & 0xF))
@@ -861,22 +861,8 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
-#ifdef NON_MATCHING
 extern u8 *D_8009DA44[];
 extern int strlen(const char *);
-
-/*
- * PARKED DRAFT (w21e, 2026-10-06): 8 bytes off (was 59). The empty asm at
- * the top of the loop keeps width live-in at the loop head so its global
- * priority (gcc 2.7.2: floor_log2(n_refs)*n_refs/live_length) falls below
- * font's: font wins s1, width s2, as retail. Remaining diffs: '%' and the
- * 0xCCCCCCCD reciprocal constant still swap s4/s5 (retail pri(magic)>
- * pri(pct) needs one more counted use of the const_double pseudo; a C-level
- * u32 temp merges with neither cse nor loop.c's matcher because a C constant
- * is a CONST_INT while expand_divmod's magic is a CONST_DOUBLE), and the
- * umul result is realized in t0 by reload where retail coalesces it with the
- * >>3 quotient in v1 (mfhi t0 vs mfhi v1). Details in the wave notes.
- */
 
 int FntPrint(const char *fmt, ...) {
     u8 *buf;
@@ -888,6 +874,11 @@ int FntPrint(const char *fmt, ...) {
     s32 ch;
     s32 count;
     u8 zeroPad;
+    s32 pctvar;
+    u32 magic;
+    u32 quot;
+    u8 zeroChar;
+    u8 spaceChar;
     volatile u8 pad[0x200];
     va_list ap;
 
@@ -906,107 +897,118 @@ int FntPrint(const char *fmt, ...) {
         return -1;
     }
     ch = *str;
-    while (ch != 0) {
-        asm("" : : "r"(width));
-        if (ch != '%') {
-            goto store;
-        }
-        str++;
-        ch = *str;
-        width = 0;
-        if (ch != '%') {
-            goto format;
-        }
-    store:
-        font->unk24[font->unk28++] = ch;
-        if (font->unk28 > font->unk1C) {
-            return -1;
-        }
-        goto tail;
-    format:
-        zeroPad = (ch == '0');
-        while (ch >= '0' && ch <= '9') {
-            t = width * 10 - '0';
-            width = t + ch;
+    if (ch != 0) {
+        pctvar = '%';
+        magic = 0xCCCCCCCD;
+        do {
+            asm("" : : "r"(width));
+            if (ch != pctvar) {
+                goto store;
+            }
             str++;
             ch = *str;
-        }
-        buf = (u8 *)&ap;
-        if (width <= 0) {
-            width = 1;
-        }
-        switch (ch) {
-        case 'd':
-            value = va_arg(ap, u32);
-            ch = 0;
-            if ((s32)value < 0) {
-                value = -(s32)value;
-                ch = '-';
+            width = 0;
+            if (ch != pctvar) {
+                goto format;
             }
-            count = 0;
-            do {
-                buf--;
-                count++;
-                *buf = value % 10 + '0';
-                value = value / 10;
-            } while (count == 0 || value != 0);
-            if (ch != 0) {
-                buf--;
-                *buf = ch;
-                count++;
+        store:
+            font->unk24[font->unk28++] = ch;
+            if (font->unk28 > font->unk1C) {
+                return -1;
             }
-            break;
-        case 'X':
-        case 'x':
-            count = 0;
-            value = va_arg(ap, u32);
-            do {
-                buf--;
-                *buf = D_8009DA44[0][value & 0xF];
-                value >>= 4;
-                count++;
-            } while (count == 0 || value != 0);
-            if (zeroPad) {
-                while (count < width) {
+            goto tail;
+        format:
+            zeroPad = (ch == '0');
+            while (ch >= '0' && ch <= '9') {
+                t = width * 10 - '0';
+                width = t + ch;
+                str++;
+                ch = *str;
+            }
+            buf = (u8 *)&ap;
+            if (width <= 0) {
+                width = 1;
+            }
+            switch (ch) {
+            case 'd':
+                value = va_arg(ap, u32);
+                ch = 0;
+                if ((s32)value < 0) {
+                    value = -(s32)value;
+                    ch = '-';
+                }
+                count = 0;
+                do {
+                    asm volatile("\n\tmultu %0, %1" : : "r"(value), "r"(magic));
+                    asm("" : : "r"(magic));
                     buf--;
-                    *buf = '0';
+                    count++;
+                    asm volatile("\n\tmfhi %0\n\tsrl %0, %0, 3" : "=r"(quot));
+                    *buf = value - quot * 10 + '0';
+                    value = quot;
+                } while (count == 0 || value != 0);
+                if (ch != 0) {
+                    buf--;
+                    *buf = ch;
                     count++;
                 }
+                break;
+            case 'X':
+            case 'x':
+                count = 0;
+                value = va_arg(ap, u32);
+                do {
+                    buf--;
+                    *buf = D_8009DA44[0][value & 0xF];
+                    value >>= 4;
+                    count++;
+                } while (count == 0 || value != 0);
+                if (zeroPad) {
+                    if (count < width) {
+                        zeroChar = '0';
+                        do {
+                            buf--;
+                            *buf = zeroChar;
+                            count++;
+                        } while (count < width);
+                    }
+                }
+                break;
+            case 'c':
+                buf--;
+                *buf = va_arg(ap, u8);
+                count = 1;
+                break;
+            case 's':
+                buf = va_arg(ap, u8 *);
+                count = strlen((char *)buf);
+                break;
             }
-            break;
-        case 'c':
-            buf--;
-            *buf = va_arg(ap, u8);
-            count = 1;
-            break;
-        case 's':
-            buf = va_arg(ap, u8 *);
-            count = strlen((char *)buf);
-            break;
-        }
-        while (count < width) {
-            font->unk24[font->unk28++] = ' ';
-            if (font->unk28 > font->unk1C) {
-                return -1;
+            if (count < width) {
+                spaceChar = ' ';
+                do {
+                    font->unk24[font->unk28++] = spaceChar;
+                    if (font->unk28 > font->unk1C) {
+                        return -1;
+                    }
+                    width--;
+                } while (count < width);
             }
-            width--;
-        }
-        while (--count != -1) {
-            font->unk24[font->unk28++] = *buf++;
-            if (font->unk28 > font->unk1C) {
-                return -1;
+            while (--count != -1) {
+                font->unk24[font->unk28++] = *buf++;
+                if (font->unk28 > font->unk1C) {
+                    return -1;
+                }
             }
-        }
-    tail:
-        str++;
-        ch = *str;
+        tail:
+            str++;
+            ch = *str;
+        } while (ch != 0);
     }
     font->unk24[font->unk28] = 0;
     return font->unk28;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", FntPrint);
-#endif
+
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090548);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090560);
 
