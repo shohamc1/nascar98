@@ -1002,21 +1002,21 @@ void func_80015930(u8 *arg0) {
 }
 
 void func_80015A74(s32 arg0) {
-    extern s32 func_8003C584(s32, void *);
+    extern s32 FileOpen(s32, void *);
     extern void func_80014BEC(s32 *, s32);
-    extern void func_8003C63C(s32);
+    extern void FileClose(s32);
     extern void SystemShowFatalError(char *);
     extern char D_8008CC7C[];
     extern u8 D_800A2D48[];
     extern s32 D_800BE970[];
     extern u8 D_800A2D4C[];
     s32 value0;
-    value0 = func_8003C584(arg0, D_800A2D48);
+    value0 = FileOpen(arg0, D_800A2D48);
     if (value0 == 0)
         SystemShowFatalError(D_8008CC7C);
     func_80014BEC(D_800BE970, value0);
     D_800A2D4C[0] = 1;
-    func_8003C63C(value0);
+    FileClose(value0);
 }
 
 /* Geometry, projection, and drawing buffers. */
@@ -2526,13 +2526,13 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001E17C);
 #endif
 
 void func_8001E230(s32 arg0, s32 arg1) {
-    extern s32 func_8003C584(s32, void *);
+    extern s32 FileOpen(s32, void *);
     extern void GraphicsInit(void);
     extern u_long *FntFlush(s32);
-    extern s32 func_8003C8BC(void *, s32, s32);
-    extern void func_8003C644(s32, s32, s32, s32);
+    extern s32 FileSeek(void *, s32, s32);
+    extern void FileRead(s32, s32, s32, s32);
     extern void GraphicsLoadImageWithXOffset(s32);
-    extern void func_8003C63C(s32);
+    extern void FileClose(s32);
     extern u8 D_800A2DC0[];
     extern char D_8008CD0C[];
     extern void *D_800A368C;
@@ -2551,7 +2551,7 @@ void func_8001E230(s32 arg0, s32 arg1) {
     u32 base;
     volatile s32 pad[2];
 
-    handle = func_8003C584(arg0, D_800A2DC0);
+    handle = FileOpen(arg0, D_800A2DC0);
     if (handle == 0) {
         GraphicsInit();
         FntPrint(D_8008CD0C);
@@ -2559,15 +2559,15 @@ void func_8001E230(s32 arg0, s32 arg1) {
         for (;;) {
         }
     }
-    size = func_8003C8BC(handle, 0, 2);
-    func_8003C8BC(handle, 0, 0);
+    size = FileSeek(handle, 0, 2);
+    FileSeek(handle, 0, 0);
     size = (size + 0x7FF) >> 11 << 11;
     if (arg1 == 0) {
         D_800A368C = HeapAlloc(size);
     } else {
         D_800A368C = (void *)arg1;
     }
-    func_8003C644((s32)D_800A368C, 1, size, handle);
+    FileRead((s32)D_800A368C, 1, size, handle);
     image = (u8 *)D_800A368C;
     w = *(u16 *)image;
     h = *(u16 *)(image + 2);
@@ -2588,7 +2588,7 @@ void func_8001E230(s32 arg0, s32 arg1) {
         } while (i < limit);
     }
     GraphicsLoadImageWithXOffset(0);
-    func_8003C63C(handle);
+    FileClose(handle);
 }
 
 extern void *D_800A37E4;
@@ -4045,10 +4045,10 @@ extern s32 D_800A2E14[];
 extern s32 D_800A3810;
 extern s32 D_800A356C;
 extern char D_8008CFC0[];
-extern s32 func_8003C584Call(s32, void *) asm("func_8003C584");
-extern s32 func_8003C8BCCall(void *, s32, s32) asm("func_8003C8BC");
-extern void func_8003C644(s32, s32, s32, s32);
-extern void func_8003C63CCall(s32) asm("func_8003C63C");
+extern s32 FileOpenCall(s32, void *) asm("FileOpen");
+extern s32 FileSeekCall(void *, s32, s32) asm("FileSeek");
+extern void FileRead(s32, s32, s32, s32);
+extern void FileCloseCall(s32) asm("FileClose");
 
 /* Loads a track resource: resolves a handle, maps its memory, then records
    the loaded row bounds into the small-data cursors. */
@@ -4059,14 +4059,14 @@ void func_80025370(s32 arg0) {
     s32 cursor;
     s32 row0;
     s32 row1;
-    handle = func_8003C584Call(arg0, D_800A2E14);
+    handle = FileOpenCall(arg0, D_800A2E14);
     if (handle == 0) {
         SystemShowFatalError(D_8008CFC0);
     }
-    total = func_8003C8BCCall(handle, 0, 2);
-    func_8003C8BCCall(handle, 0, 0);
+    total = FileSeekCall(handle, 0, 2);
+    FileSeekCall(handle, 0, 0);
     D_800A3A54Small = (0x1F4000 - total) | 0x80000000;
-    func_8003C644(D_800A3A54Small, 1, total, handle);
+    FileRead(D_800A3A54Small, 1, total, handle);
     cursor = *((volatile s32 *)(&D_800A3A54Small));
     D_800A3A54Small = cursor + 4;
     row0 = *((s32 *)cursor);
@@ -4077,7 +4077,7 @@ void func_80025370(s32 arg0) {
     D_800A3838 = cursor + headerSize;
     D_800A3810 = (cursor + headerSize) + (row0 << 4);
     D_800A356C = D_800A3810 + (row1 << 3);
-    func_8003C63CCall(handle);
+    FileCloseCall(handle);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/game", func_80025370);
@@ -6979,10 +6979,10 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800319D4);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80031D74);
 
-extern s32 func_8003C584Call32328(s32, void *) asm("func_8003C584");
-extern s32 func_8003C8BCCall32328(void *, s32, s32) asm("func_8003C8BC");
-extern void func_8003C644Call32328(s32, s32, s32, s32) asm("func_8003C644");
-extern void func_8003C63CCall32328(s32) asm("func_8003C63C");
+extern s32 FileOpenCall32328(s32, void *) asm("FileOpen");
+extern s32 FileSeekCall32328(void *, s32, s32) asm("FileSeek");
+extern void FileReadCall32328(s32, s32, s32, s32) asm("FileRead");
+extern void FileCloseCall32328(s32) asm("FileClose");
 extern void func_80025454(s32);
 extern void func_80031D74(s32, s32, s32);
 extern char D_8008D08C[];
@@ -6994,18 +6994,18 @@ void func_80032328(s32 arg0) {
     s32 value;
     s32 handle;
 
-    handle = func_8003C584Call32328(arg0, D_800A2F34);
+    handle = FileOpenCall32328(arg0, D_800A2F34);
     if (handle == 0) {
         SystemShowFatalError(D_8008D08C);
     }
-    value = func_8003C8BCCall32328(handle, 0, 2);
-    func_8003C8BCCall32328(handle, 0, 0);
-    func_8003C644Call32328(STACK_BLOCK_801C0000, value, 1, handle);
+    value = FileSeekCall32328(handle, 0, 2);
+    FileSeekCall32328(handle, 0, 0);
+    FileReadCall32328(STACK_BLOCK_801C0000, value, 1, handle);
     func_80031D74(D_800A3574[0], STACK_BLOCK_801C0000, -1);
     D_800A2D4C[0] = 1;
     func_80025454(((s32 *)D_800A36D0Absolute)[-87]);
     D_800A2D4D[0] = 0;
-    func_8003C63CCall32328(handle);
+    FileCloseCall32328(handle);
 }
 
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D08C);
@@ -9057,10 +9057,10 @@ void func_8003667C(u32 *list) {
 extern char D_8008D0AC[];
 extern char D_8008D0CC[];
 
-extern void *func_8003C584Call367DC(void) asm("func_8003C584");
-extern s32 func_8003C8BCCall367DC(void *, s32, s32) asm("func_8003C8BC");
-extern void func_8003C644Call367DC(s32, s32, s32, void *) asm("func_8003C644");
-extern void func_8003C63CCall367DC(s32) asm("func_8003C63C");
+extern void *FileOpenCall367DC(void) asm("FileOpen");
+extern s32 FileSeekCall367DC(void *, s32, s32) asm("FileSeek");
+extern void FileReadCall367DC(s32, s32, s32, void *) asm("FileRead");
+extern void FileCloseCall367DC(s32) asm("FileClose");
 void func_800367DC(void) {
     extern s32 D_800A2F54;
     extern s32 D_800AE154[];
@@ -9072,25 +9072,25 @@ void func_800367DC(void) {
     s32 idx;
     s32 entry;
 
-    handle = func_8003C584Call367DC();
+    handle = FileOpenCall367DC();
     if (handle == NULL) {
         SystemShowFatalError(D_8008D0AC);
     }
-    size = func_8003C8BCCall367DC(handle, 0, 2);
-    func_8003C8BCCall367DC(handle, 0, 0);
+    size = FileSeekCall367DC(handle, 0, 2);
+    FileSeekCall367DC(handle, 0, 0);
     buffer = HeapAlloc(((size + 0x7FF) >> 11) << 11);
     D_800AE154[D_800A2F54] = (s32)buffer;
     if (buffer == NULL) {
         SystemShowFatalError(D_8008D0CC);
     }
-    func_8003C644Call367DC(D_800AE154[D_800A2F54], 1, size, handle);
+    FileReadCall367DC(D_800AE154[D_800A2F54], 1, size, handle);
     idx = D_800A2F54;
     entry = D_800AE154[idx];
     D_800B60A4[idx] = entry;
     D_800B1EA8[idx] = *(s32 *)entry;
     D_800AE154[idx] = entry + 4;
     D_800A2F54 = idx + 1;
-    func_8003C63CCall367DC((s32)handle);
+    FileCloseCall367DC((s32)handle);
 }
 
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D0AC);
@@ -10156,7 +10156,7 @@ extern s32 D_80098340[];
 extern s32 D_800A45A8[];
 extern s32 D_800A45AC[];
 
-void *func_8003C584(s32 arg0, void *arg1) {
+void *FileOpen(s32 fileId, void *mode) {
     u8 pad[0x40];
     u8 result[8];
     void *pos;
@@ -10166,28 +10166,28 @@ void *func_8003C584(s32 arg0, void *arg1) {
         CdGetToc(D_800BDEBC);
         D_800A2F74 = 1;
     }
-    CdIntToPos(D_80098340[arg0 * 3] + 0x13C, D_800A45A8);
+    CdIntToPos(D_80098340[fileId * 3] + 0x13C, D_800A45A8);
     while (CdSync(1, result) == 0) {
         VSync(0);
     }
-    value = D_80098340[arg0 * 3 + 1];
+    value = D_80098340[fileId * 3 + 1];
     D_800A45AC[0] = value;
-    D_800A37CC = arg0;
+    D_800A37CC = fileId;
     pos = &D_800A45AC[-1];
     return pos;
 }
 
-void func_8003C63C(void) {
+void FileClose(void) {
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8003C644);
+INCLUDE_ASM("asm/nonmatchings/game", FileRead);
 
 s32 func_8003C8B4(void) {
     return 0;
 }
 
-s32 func_8003C8BC(s32 *data) {
-    return data[1];
+s32 FileSeek(s32 *handle) {
+    return handle[1];
 }
 
 void func_8003C8C8(u8 *string) {
@@ -10233,12 +10233,12 @@ void *func_8003C928(s32 arg0) {
     size = (value + 0x7FF) >> 11 << 11;
     buffer = HeapAlloc(size);
     if (buffer != 0) {
-        func_8003C644(buffer, 1, size, D_800A45A8);
+        FileRead(buffer, 1, size, D_800A45A8);
     }
     return buffer;
 }
 
-extern void func_8003C644();
+extern void FileRead();
 
 void func_8003CA18(s32 arg0, s32 arg1) {
     u8 pad[0x40];
@@ -10256,7 +10256,7 @@ void func_8003CA18(s32 arg0, s32 arg1) {
     value = D_80098340[arg1 * 3 + 1];
     D_800A37CC = arg1;
     D_800A45AC[0] = value;
-    func_8003C644(arg0, 1, value, D_800A45A8);
+    FileRead(arg0, 1, value, D_800A45A8);
 }
 
 #ifdef NON_MATCHING
@@ -10408,7 +10408,7 @@ void func_8003CDBC(s32 arg0) {
     }
     posValue = D_800A45AC[0];
     base = (0x1F4000 - posValue) | RAM_CACHED_BASE;
-    func_8003C644(base, posValue, 1, pos);
+    FileRead(base, posValue, 1, pos);
     src = (s32 *)base;
     count = *src++;
     for (i = 0; i < count; i++) {
@@ -11515,10 +11515,9 @@ s16 func_8003FF5C(void *arg0, void *arg1) {
 }
 
 /* Loads a whole file into arg1, or into a page-rounded HeapAlloc block when
- * arg1 is NULL. D_800A2F98 is the "rb" mode string, so the helpers look like
- * fopen, fseek, fread, and fclose. Assigning buffer in both arms keeps the
- * allocation in arg1's register and keeps the first guard's branch on the
- * second test.
+ * arg1 is NULL. D_800A2F98 is the "rb" mode string for FileOpen. Assigning
+ * buffer in both arms keeps the allocation in arg1's register and keeps the
+ * first guard's branch on the second test.
  */
 extern char D_8008D1DC[];
 extern char D_8008D1F8[];
@@ -11530,12 +11529,12 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
     s32 padded;
     s32 size;
 
-    handle = func_8003C584(arg0, D_800A2F98);
+    handle = FileOpen(arg0, D_800A2F98);
     if (handle == NULL) {
         SystemShowFatalError(D_8008D1DC);
     }
-    size = ((s32 (*)(void *, s32, s32))func_8003C8BC)(handle, 0, 2);
-    ((s32 (*)(void *, s32, s32))func_8003C8BC)(handle, 0, 0);
+    size = ((s32 (*)(void *, s32, s32))FileSeek)(handle, 0, 2);
+    ((s32 (*)(void *, s32, s32))FileSeek)(handle, 0, 0);
     padded = size + 0x800;
     size = padded - size % 0x800;
     if (arg1 == NULL) {
@@ -11546,8 +11545,8 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
     if (buffer == NULL) {
         SystemShowFatalError(D_8008D1F8);
     }
-    func_8003C644((s32)buffer, 1, size, handle);
-    ((void (*)(s32))func_8003C63C)((s32)handle);
+    FileRead((s32)buffer, 1, size, handle);
+    ((void (*)(s32))FileClose)((s32)handle);
     return (s32)buffer;
 }
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008D1DC);
@@ -15292,47 +15291,47 @@ void func_80058030(void) {
  * D_800A3090 must be reached as D_800A2EB0Absolute + 120 (declaring the
  * untracked sdata label drifts data labels). asm-differ -m compares the
  * LINKED exe, so run a relink before trusting a unit diff here. */
-extern s32 func_8003C584(s32, s32);
-extern s32 func_8003C8BC(s32, s32, s32);
-extern s32 func_8003C644(s32, s32, s32, s32);
-extern s32 func_8003C63C(s32);
+extern s32 FileOpen(s32, s32);
+extern s32 FileSeek(s32, s32, s32);
+extern s32 FileRead(s32, s32, s32, s32);
+extern s32 FileClose(s32);
 extern s32 D_800A2EB0Absolute[];
 s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
     s32 size;
     s32 sector;
 
-    sector = func_8003C584(arg0, D_800A2EB0Absolute + 120);
-    size = (func_8003C8BC(sector, 0, 2) + 0x7FF) >> 11 << 11;
+    sector = FileOpen(arg0, D_800A2EB0Absolute + 120);
+    size = (FileSeek(sector, 0, 2) + 0x7FF) >> 11 << 11;
     if (data == 0) {
         data = (s32)HeapAlloc(size);
     }
-    func_8003C8BC(sector, 0, 0);
-    func_8003C644(data, 1, size, sector);
-    func_8003C63C(sector);
+    FileSeek(sector, 0, 0);
+    FileRead(data, 1, size, sector);
+    FileClose(sector);
     *arg1 = data + 4;
     return data;
 }
 #endif
-extern s32 func_8003C8BCArgs(void *, s32, s32);
-extern void func_8003C63CArgs(s32);
-asm(".globl func_8003C8BCArgs\nfunc_8003C8BCArgs = func_8003C8BC");
-asm(".globl func_8003C63CArgs\nfunc_8003C63CArgs = func_8003C63C");
+extern s32 FileSeekArgs(void *, s32, s32);
+extern void FileCloseArgs(s32);
+asm(".globl FileSeekArgs\nFileSeekArgs = FileSeek");
+asm(".globl FileCloseArgs\nFileCloseArgs = FileClose");
 void *func_80058094(s32 arg0, void **arg1, s32 arg2) {
-    extern void *func_8003C584(s32, void *);
-    extern void func_8003C644(s32, s32, s32, s32);
+    extern void *FileOpen(s32, void *);
+    extern void FileRead(s32, s32, s32, s32);
     extern s32 D_800A3090[];
     s32 size;
     s32 sector;
 
-    sector = (s32)func_8003C584(arg0, D_800A3090);
-    size = (func_8003C8BCArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
+    sector = (s32)FileOpen(arg0, D_800A3090);
+    size = (FileSeekArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
     if (arg2 == 0) {
         arg2 = (s32)HeapAlloc(size);
     }
     asm("" : : "r"(size), "r"(arg2));
-    func_8003C8BCArgs((void *)sector, 0, 0);
-    func_8003C644(arg2, 1, size, sector);
-    func_8003C63CArgs(sector);
+    FileSeekArgs((void *)sector, 0, 0);
+    FileRead(arg2, 1, size, sector);
+    FileCloseArgs(sector);
     *arg1 = (void *)(arg2 + 4);
     return (void *)arg2;
 }
@@ -15581,15 +15580,15 @@ void CdSetMixVolume(s32 arg) {
 
 extern s32 D_800A381C;
 extern s32 D_800A3638;
-extern s32 func_8003C8BCArgs(void *, s32, s32);
-extern void func_8003C8BCArgsV(void *, s32, s32);
-extern void func_8003C63CArgs(s32);
-asm(".globl func_8003C8BCArgs\nfunc_8003C8BCArgs = func_8003C8BC");
-asm(".globl func_8003C8BCArgsV\nfunc_8003C8BCArgsV = func_8003C8BC");
-asm(".globl func_8003C63CArgs\nfunc_8003C63CArgs = func_8003C63C");
+extern s32 FileSeekArgs(void *, s32, s32);
+extern void FileSeekArgsV(void *, s32, s32);
+extern void FileCloseArgs(s32);
+asm(".globl FileSeekArgs\nFileSeekArgs = FileSeek");
+asm(".globl FileSeekArgsV\nFileSeekArgsV = FileSeek");
+asm(".globl FileCloseArgs\nFileCloseArgs = FileClose");
 void func_8005978C(void) {
-    extern void *func_8003C584(s32, void *);
-    extern void func_8003C644(s32, s32, s32, s32);
+    extern void *FileOpen(s32, void *);
+    extern void FileRead(s32, s32, s32, s32);
     extern s32 D_800A3090[];
     DISPENV env;
     s32 sector;
@@ -15598,14 +15597,14 @@ void func_8005978C(void) {
     s32 next;
     s32 tmp;
 
-    sector = (s32)func_8003C584(0, D_800A3090);
-    size = (func_8003C8BCArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
+    sector = (s32)FileOpen(0, D_800A3090);
+    size = (FileSeekArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
     tmp = (s32)HeapAlloc(size);
     asm("" : : "r"(size), "r"(size), "r"(size), "r"(size), "r"(tmp));
-    func_8003C8BCArgsV((void *)sector, 0, 0);
+    FileSeekArgsV((void *)sector, 0, 0);
     buf = tmp;
-    func_8003C644(buf, 1, size, sector);
-    func_8003C63CArgs(sector);
+    FileRead(buf, 1, size, sector);
+    FileCloseArgs(sector);
     next = *(s32 *)(buf + 0x10);
     D_800A381C = buf + 4;
     D_800A3638 = buf;
@@ -22114,7 +22113,7 @@ s32 func_8006F9C4(s32 arg0, s32 arg1, s32 arg2) {
     SsSetSerialAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
     SsSetMute(0);
-    handle = func_8003C584(arg0, D_800A3394);
+    handle = FileOpen(arg0, D_800A3394);
     D_800A3397 = (u8)arg1;
     D_800A39BC = (u8)arg2;
     return func_8006F4DC((s32)handle, 1, 0x800, 0, 0xA, 1, 0xC8, 0x400) & 0xFF;
