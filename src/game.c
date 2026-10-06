@@ -5299,7 +5299,74 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8002A1FC);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8002A2F8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8002A954);
+extern u8 D_800A331C[];
+extern u8 D_800A331D[];
+extern u8 D_800A331F[];
+extern u8 D_800A3320[];
+extern u8 D_800A2E20[];
+extern s32 D_800A2E30;
+extern s32 D_800A2E38;
+extern s32 D_800A2E3C;
+extern s32 D_800A2E44;
+extern s32 D_800A2E48;
+extern s32 D_800A2E4C;
+extern s32 D_800A2E54;
+extern s16 D_800A2E58;
+extern s32 D_800A2E5C;
+extern s32 D_800A3A04;
+extern s32 D_800A2E50nm asm("D_800A2E50.NON_MATCHING");
+
+void func_8002A954(void) {
+    register s32 magic asm("a1");
+    register s32 hiWord asm("t1");
+    register s16 revLimit asm("a3");
+    register u8 tempByte asm("a1");
+    register s32 magic5 asm("v1");
+    register s32 quot5 asm("v1");
+    s32 speedScale;
+    register s32 scaleVal asm("v1");
+    s32 e54val;
+    s32 isLow;
+    s32 temp5;
+    s32 sign5;
+
+    revLimit = 0x3A98 / (D_800A331D[0] - 0x46);
+    speedScale = 0x28A0000 / (D_800A331F[0] - 0x14);
+    scaleVal = D_800A331C[0];
+    asm volatile("lui\t%0,0x5555" : "=r"(magic));
+    asm volatile("ori\t%0,%1,0x5556" : "=r"(magic) : "0"(magic));
+    scaleVal = scaleVal + 0xC8;
+    asm volatile("mult\t%0,%1" : : "r"(scaleVal), "r"(magic));
+    asm volatile("lbu\t%0,D_800A3320" : "=r"(tempByte));
+    D_800A2E44 = 0x5D;
+    D_800A2E48 = 0x1A;
+    D_800A2E50nm = (D_800A331D[0] - 0x32) * 0x50;
+    e54val = (0x70 - D_800A331F[0]) * 0x10000;
+    asm volatile("sra\t%0,%1,31" : "=r"(scaleVal) : "0"(scaleVal));
+    D_800A2E54 = e54val;
+    isLow = (u32)D_800A331F[0] < 0x65;
+    D_800A2E20[0] = tempByte;
+    asm volatile("mfhi\t%0" : "=r"(hiWord));
+    scaleVal = hiWord - scaleVal;
+    D_800A2E4C = scaleVal;
+    D_800A2E58 = revLimit;
+    D_800A2E5C = speedScale;
+    if (isLow) {
+    } else {
+        asm volatile("lui\t%0,0x6666" : "=r"(magic5));
+        asm volatile("ori\t%0,%1,0x6667" : "=r"(magic5) : "0"(magic5));
+        temp5 = (D_800A331F[0] - 0x64) * 0x10000;
+        asm volatile("mult\t%0,%1" : : "r"(temp5), "r"(magic5));
+        sign5 = temp5 >> 31;
+        asm volatile("mfhi\t%0" : "=r"(hiWord));
+        quot5 = hiWord >> 1;
+        D_800A2E54 = 0xC0000 - (quot5 - sign5);
+    }
+    D_800A2E30 = 0x10CC;
+    D_800A2E38 = 0x23;
+    D_800A2E3C = 0x23;
+    D_800A3A04 = 0xD;
+}
 
 s32 func_8002AAA0(s32 *car) {
     s32 weight;
@@ -8424,7 +8491,93 @@ s32 func_800346D0(s32 threshold) {
     return D_800A2F38[0];
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80034834);
+extern s32 D_800A39C8[];
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A2F38[];
+extern u32 D_800B022C[];
+
+void func_80034834(void) {
+    s32 pad[2];
+    register u8 *p asm("s0");
+    register u8 *cursor asm("s1");
+    register s32 i asm("s2");
+    register u32 *it asm("s3");
+    u8 *ot;
+    u8 *e;
+    u32 *vec0;
+    u32 *vec1;
+    u32 *vec2;
+    register s32 e4 asm("v1");
+    register s32 e8 asm("a0");
+    register s32 eC asm("v0");
+    s32 e10;
+    s32 e14;
+    u32 *col;
+    register s32 c0 asm("v1");
+    register s32 c1 asm("a0");
+
+    (void)&pad;
+    ot = (u8 *)D_800A39C8[0] + 0x80;
+    cursor = (u8 *)gPrimitiveCursor[0];
+    i = 0;
+    if (D_800A2F38[0] > 0) {
+        it = D_800B022C;
+        p = cursor + 0x18;
+        do {
+            e = (u8 *)it[0];
+            if (e != 0) {
+                if ((*(u8 *)(e + 0x13) & 0x80) == 0) {
+                    vec0 = *(u32 **)(e + 0x18);
+                    vec1 = *(u32 **)(e + 0x1C);
+                    vec2 = *(u32 **)(e + 0x20);
+                    gte_ldv3(vec0, vec1, vec2);
+                    asm volatile("lw %0, 0x4(%2)\n\t"
+                                 "lw %1, 0x8(%2)"
+                                 : "=r"(e4), "=r"(e8)
+                                 : "r"(e));
+                    asm volatile("rtpt");
+                    eC = *(s32 *)(e + 0xC);
+                    e10 = *(s32 *)(e + 0x10);
+                    e14 = *(s32 *)(e + 0x14);
+                    asm volatile("sw %0, -0xC(%1)\n\t"
+                                 "addiu $4, %2, 0x8\n\t"
+                                 "sw %3, -0x14(%1)\n\t"
+                                 "addiu $3, %2, 0x10\n\t"
+                                 "sw %4, -0x4(%1)\n\t"
+                                 "addiu $2, %2, 0x20\n\t"
+                                 "swc2 $12, 0x0($4)\n\t"
+                                 "swc2 $13, 0x0($3)\n\t"
+                                 "swc2 $14, 0x0($2)"
+                                 :
+                                 : "r"(e8), "r"(p), "r"(cursor), "r"(e4),
+                                   "r"(eC)
+                                 : "memory");
+                    col = *(u32 **)(e + 0x24);
+                    c0 = *(s32 *)((u8 *)col + 0);
+                    c1 = *(s32 *)((u8 *)col + 4);
+                    asm volatile("sw %0, 0x4(%1)"
+                                 :
+                                 : "r"(e10), "r"(p)
+                                 : "memory");
+                    asm volatile("sw %0, 0xC(%1)"
+                                 :
+                                 : "r"(e14), "r"(p)
+                                 : "memory");
+                    asm volatile("mtc2 %0, $0" : : "r"(c0));
+                    asm volatile("mtc2 %0, $1" : : "r"(c1));
+                    gte_rtps();
+                    GraphicsAddTaggedPrimitive((u32 *)(ot + 0xC0),
+                                               (u32 *)cursor, 0x09000000);
+                    gte_stsxy2(p);
+                    p += 0x28;
+                    cursor += 0x28;
+                }
+            }
+            it++;
+        } while (++i < D_800A2F38[0]);
+    }
+    gPrimitiveCursor[0] = (u32)cursor;
+}
 
 #ifdef NON_MATCHING
 /*
@@ -16503,7 +16656,62 @@ void func_8005B300(void) {
     D_800A35EC = D_800A39C4;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005B314);
+struct UnkTextObj *func_8005B314(x, y, width, height, poly, red, green, blue,
+                                 semiTrans, texture)
+s32 x;
+s32 y;
+s32 width;
+s32 height;
+s32 poly;
+u8 red;
+u8 green;
+u8 blue;
+u8 semiTrans;
+u8 texture;
+{
+    u8 index;
+    u8 *object;
+
+    index = D_800A35EC++;
+    object = D_800A3678 + index * 36;
+    *(s16 *)(object + 0x12) = 0;
+    *(s16 *)(object + 0x14) = 0;
+    *(s32 *)(object + 0x1C) = 0;
+    object[4] = 0;
+    object[3] = 0;
+    object[2] = 0;
+    *(s16 *)(object + 0x1A) = 0;
+    *(s16 *)(object + 0x0) = 2;
+    *(s16 *)(object + 0x6) = x;
+    *(s16 *)(object + 0xA) = x;
+    *(s16 *)(object + 0x8) = y;
+    *(s16 *)(object + 0xC) = y;
+    *(s16 *)(object + 0xE) = 0;
+    *(s16 *)(object + 0x10) = 0;
+    *(s16 *)(object + 0x16) = width;
+    *(s16 *)(object + 0x18) = height;
+    object[2] = red;
+    object[3] = green;
+    object[4] = blue;
+    if (poly == 0) {
+        poly = (s32)func_80057D50(texture);
+    }
+    *(u8 **)(object + 0x20) = (u8 *)poly;
+    SetPolyF4((u8 *)poly);
+    SetSemiTrans((void *)poly, semiTrans);
+    ((u8 *)poly)[4] = red;
+    ((u8 *)poly)[5] = green;
+    ((u8 *)poly)[6] = blue;
+    *(s16 *)((u8 *)poly + 0x8) = x;
+    *(s16 *)((u8 *)poly + 0xA) = y;
+    *(s16 *)((u8 *)poly + 0xC) = x + width;
+    *(s16 *)((u8 *)poly + 0xE) = y;
+    *(s16 *)((u8 *)poly + 0x10) = x;
+    *(s16 *)((u8 *)poly + 0x12) = y + height;
+    *(s16 *)((u8 *)poly + 0x14) = x + width;
+    *(s16 *)((u8 *)poly + 0x16) = y + height;
+    return (struct UnkTextObj *)object;
+}
 
 extern void SetPolyF3(POLY_F3 *);
 u8 *func_8005B474(x, y, width, height, poly, red, green, blue, semiTrans,
@@ -20986,7 +21194,57 @@ void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
     } while (i < 4);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006B464);
+extern u8 *volatile D_800A3604Vol asm("D_800A3604.NON_MATCHING");
+extern u8 D_800A3073[];
+extern u8 D_800A306D[];
+extern u8 D_800A3078[];
+extern u8 D_800A2F94R[] asm("D_800A2F94.NON_MATCHING");
+extern u8 D_800A2F95R[] asm("D_800A2F95.NON_MATCHING");
+
+void func_8006B464(void) {
+    u8 *rec;
+    s32 b0;
+    s32 a1;
+    u32 bB;
+    s32 b2;
+    u8 *rec2;
+    s32 i;
+
+    rec = D_800A3604Vol;
+    b0 = rec[0];
+    asm("andi %0,%1,0x3" : "=r"(a1) : "r"(b0));
+    do {
+    } while (0);
+    D_800A3073[-4] = ((u8)b0 >> 2) & 1;
+    D_800A3073[-5] = a1;
+    D_800A3073[-7] = ((u8)b0 >> 6) & 1;
+    D_800A3073[-3] = (u8)b0 >> 7;
+    bB = rec[0xB];
+    D_800A3073[-2] = bB & 1;
+    if ((bB & 1) != 0) {
+        if (a1 != 1) {
+            D_800A3073[-2] = 0;
+        }
+    }
+    D_800A3073[-1] = (bB >> 1) & 1;
+    rec2 = D_800A3604Vol;
+    D_800A3694w15[0] = rec2[1];
+    b2 = rec2[2];
+    D_800A3696w15[0] = b2;
+    D_800A2F94R[0] = b2 * 127 / 100;
+    if (D_800A306D[-1] != 0) {
+        D_800A2F95R[0] = 0;
+    } else {
+        D_800A2F95R[0] = 1;
+    }
+    D_800A3078[0] = D_800A3604Vol[3];
+    i = 0;
+    do {
+        D_800A331CAbsolute[i] = (D_800A3604Vol + i)[4];
+        i += 1;
+    } while (i < 6);
+    D_800A37D0[0] = D_800A3604Vol[0xA];
+}
 
 /*
  * Retail re-reads the D_800A3604 pointer (gp) before every
