@@ -18572,7 +18572,64 @@ void func_8005E5BC(s32 unused, s32 x, s16 y, s32 flag) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005E644);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005E7F8);
+void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    extern s32 D_8009A31C[];
+    u8 index;
+    u8 primIndex;
+    u8 *object;
+    u8 *prim;
+    u8 *prim2;
+    u8 *cur;
+    s32 value;
+    s32 word;
+    s32 offset;
+
+    index = D_800A35EC++;
+    object = D_800A3678 + index * 36;
+    object[4] = 0;
+    object[3] = 0;
+    object[2] = 0;
+    primIndex = D_800A37BC;
+    *(u16 *)(object + 0xA) = arg1;
+    *(u16 *)(object + 6) = arg1;
+    prim = (u8 *)D_800A3654;
+    *(u16 *)(object + 0x12) = 0;
+    *(u16 *)(object + 0x14) = 0;
+    *(u32 *)(object + 0x1C) = 0;
+    *(u16 *)(object + 0x1A) = 0;
+    *(u16 *)(object + 0x0) = 0;
+    *(u16 *)(object + 0xC) = 0xAB;
+    *(u16 *)(object + 0x8) = 0xAB;
+    *(u16 *)(object + 0xE) = 0;
+    *(u16 *)(object + 0x10) = 0;
+    *(u16 *)(object + 0x1A) = 0;
+    D_800A37BC = primIndex + 1;
+    asm("");
+    prim += primIndex * 12;
+    *(u32 *)(object + 0x20) = prim;
+    prim[0] = 0;
+    prim[3] = 0;
+    *(s32 *)(prim + 4) = 0;
+    prim2 = *(u8 **)(object + 0x20);
+    offset = (arg0 & 0xFF) * 4;
+    asm("");
+    D_800A3740 = (s32 **)object;
+    prim2[2] = 2;
+    prim2[1] = 2;
+    value = *(s32 *)((u8 *)D_8009A31C + offset);
+    cur = (u8 *)D_800A3740;
+    *(s32 *)(prim2 + 8) = value;
+    word = *(u16 *)(cur + 6);
+    word = word + 5;
+    *(u16 *)(cur + 6) = word;
+    word = 5;
+    *(u16 *)(cur + 0xA) = word;
+    if (arg3 & 0xFF) {
+        word = 0x82;
+        *(u16 *)(cur + 0xA) = word;
+    }
+    *(u16 *)((u8 *)D_800A3740 + 0xE) = arg2;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8005E8EC);
 
@@ -18865,7 +18922,80 @@ void ListSetFieldsAndEnable(u8 *node, s16 a, s16 b, s16 c) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80062D38);
+extern u8 *D_800A37FC[];
+extern s32 *D_800A37D8[];
+extern u8 D_800AEE3E[];
+extern u8 D_800AEE41[];
+
+void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
+    register u8 *obj asm("t0");
+    register u8 *p asm("t1");
+    register s32 j asm("t3");
+    register s32 **entry asm("t4");
+    register s32 i asm("a3");
+    register s32 delta asm("v1");
+    register s32 base2 asm("v1");
+    register s32 sh4 asm("v0");
+    s32 base9;
+    s32 idx;
+    s32 mode;
+    s32 val;
+
+    obj = D_800A37FC[arg0 & 0xFF];
+    for (i = 2; i >= 0; i--) {
+        obj = *(u8 **)(obj + 0x1C);
+    }
+    for (i = 0; i < 3; i++) {
+        mode = arg1 & 0xFF;
+        idx = arg0 & 0xFF;
+        base9 = idx * 9;
+        j = 0;
+        p = arg2 + i;
+        base2 = (s32)D_800A37D8;
+        asm("sll %0, %1, 0x2" : "=r"(sh4) : "r"(idx));
+        entry = (s32 **)(base2 + sh4);
+        do {
+            switch (i) {
+            case 0:
+            case 1:
+                if (mode == 2) {
+                    val = (p[0] * 49) >> 8;
+                    if (val >= 0x32) {
+                        val = 0x31;
+                    }
+                } else {
+                    if (i == 0) {
+                        if (D_800AEE3E[base9] < arg2[0]) {
+                            arg2[0] = D_800AEE3E[base9];
+                        }
+                        val = D_800AEE3E[base9] - arg2[0];
+                    } else {
+                        if (p[0] < D_800AEE41[base9]) {
+                            p[0] = D_800AEE41[base9];
+                        }
+                        val = p[0] - D_800AEE41[base9];
+                    }
+                    val = (val * 3) >> 3;
+                    if (val >= 0x31) {
+                        val = 0x30;
+                    }
+                }
+                delta = val - 0x37;
+                *(s16 *)(obj + 0x14) = *(u16 *)((u8 *)entry[0] + 0x14) - delta;
+                break;
+            case 2:
+                val = (arg2[2] * 103) >> 8;
+                if (val >= 0x68) {
+                    val = 0x67;
+                }
+                *(s16 *)(obj + 0x12) = val + 0x78;
+                break;
+            }
+            obj = *(u8 **)(obj + 0x1C);
+            j++;
+        } while (j < 2);
+    }
+}
 
 extern u8 *D_800A3A84[];
 extern s32 D_8009ABFC[];
@@ -22826,7 +22956,60 @@ s32 func_8006D178(void) {
 INCLUDE_ASM("asm/nonmatchings/game", func_8006D178);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006D258);
+extern u8 D_800B9B73[];
+extern u8 D_800B9B74[];
+extern u8 D_800A3980[];
+extern void func_8006BB1C(void);
+extern void func_8006EEBC(void);
+
+s32 func_8006D258(void) {
+    typedef struct {
+        s32 words[0x13C / 4];
+    } SaveRec;
+    extern u8 D_800A305BR2[] asm("D_800A305B.NON_MATCHING");
+    extern u8 D_800A305BR3[] asm("D_800A305B.NON_MATCHING");
+    s32 status;
+    s32 match;
+    s32 i;
+    SaveRec *rec;
+    u8 idx;
+    u8 *paint;
+
+    func_800599E4();
+    status = CardCheckStatus(D_800A337C, 1);
+    func_800598C4();
+    status &= 0xFF;
+    if (status == 3) {
+        D_800A3808 = 0xF;
+        return 0;
+    }
+    if (status != 0) {
+        D_800A3808 = 1;
+        return 0;
+    }
+    rec = (SaveRec *)(D_800A3A0C + 4);
+    *(SaveRec *)&D_800B9B44[0] = rec[D_800A358C];
+    func_8006BB1C();
+    idx = D_800B9B74[0];
+    paint = D_800AE178[idx];
+    D_800A305B[0] = idx;
+    func_8005E4A4(paint);
+    func_8005ED04(D_800A305BR2[0]);
+    func_8005EC5C(D_800A305BR3[0]);
+    D_800A36E0[0] = D_800B9B73[0];
+    func_80063AE0(0, D_800A36E0[0]);
+    func_800636EC(0, D_800A36E1[-1]);
+    for (i = 0; i < 0x18; i++) {
+        if (D_800A36E1w15[-1] == D_8009AD40[i]) {
+            match = i;
+            break;
+        }
+    }
+    D_800A3980[0] = match;
+    strcpy(D_800BB9B4, D_8009AC1C[D_800A36E0[0]]);
+    func_8006EEBC();
+    return 1;
+}
 
 #ifdef NON_MATCHING
 /* w7i: draft to 0xa4 exact length, 7 rows off: entry order and
