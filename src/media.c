@@ -1072,7 +1072,7 @@ extern char *strtok(char *, const char *);
 extern u8 *D_800A3554[];
 extern u8 *D_800A8A80[];
 extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
-extern u8 D_800A37F4nm asm("D_800A37F4.NON_MATCHING");
+extern u8 gTextColorNm asm("gTextColor.NON_MATCHING");
 extern void func_80050028Args(char *, s16, s16, s8);
 extern s32 sprintfTextArgs(char *, char *, ...);
 void SetPolyFT4(POLY_FT4 *);

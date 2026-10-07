@@ -1554,7 +1554,7 @@ void func_80045288(void) {
     extern u8 D_800A3424;
     extern u8 D_800A3590;
     extern u8 D_800A34B0;
-    extern u8 D_800A37F4;
+    extern u8 gTextColor;
     extern u8 D_800A34AC;
     extern s16 D_800A383C;
     extern s16 D_800A383E[];
@@ -1602,7 +1602,7 @@ void func_80045288(void) {
     D_800A3960gp = 0;
     D_800A3590 = 0;
     D_800A34B0 = 0;
-    D_800A37F4 = 0;
+    gTextColor = 0;
     asm volatile("" : : : "memory");
     D_800A35F8gp = 1;
     D_800A34AC = 60;
@@ -2108,20 +2108,16 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004B1C0);
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004BDD0);
 INCLUDE_RODATA("asm/nonmatchings/scene", D_8008D4F4);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 2092 bytes versus retail 2044; 467 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Activation required reconciling scalar/array aliases, pointer-array views and the formatting call with existing TU declarations.
- */
-extern s32 D_800A2E94[3];
-extern s32 D_800A2EA4[3];
-extern s32 D_800A2EA8[3];
+extern s32 D_800A2E94[];
+extern s32 D_800A2EA4[];
+extern s32 D_800A2EA8[];
 extern s32 D_800A2EACAbsolute[];
 extern s32 D_800A2EB0Absolute[];
-extern u8 D_800A2FE4;
-extern u8 D_800A2FE5;
-extern u8 D_800A2FE6;
-extern u8 D_800A2FE7;
+extern u8 gStandingsPlaceX;
+extern u8 gStandingsNameX;
+extern u8 gStandingsNameXAbsolute[];
+extern u8 gStandingsLapX;
+extern u8 gStandingsTimeX;
 extern char D_800A301C[];
 extern char D_800A3020[];
 extern char D_800A3024[];
@@ -2130,211 +2126,213 @@ extern char D_800A3034[];
 extern char D_800A3038[];
 extern u8 *D_800A3554[];
 extern s32 D_800A35E0[];
-extern u8 D_800A37F4;
-
+extern u8 gTextColor;
 extern u8 D_800BE70C[];
 extern s32 D_800BE974[];
+extern s32 D_800AE1EC[];
 extern char *D_8009AC1C[];
-extern void *D_8009ADEC[];
-extern void *D_8009ADF0[];
-extern void *D_8009ADF4[];
-extern void *D_8009AE94[];
-extern void func_80050028Call4D73C(char *, u8, s32, s32) asm("func_80050028");
-extern void func_8004FF90Call4D73C(s16, u8, s32, s32) asm("func_8004FF90");
-extern void func_80050670(void *, u8, s32, s32, s32);
-extern void func_8001D778(s32, s32, s32, s32, s32, s32, s32, s32);
+extern char *D_8009ADEC[];
+extern char *D_8009ADF0[];
+extern char *D_8009ADF4[];
+extern char *D_8009AE94[];
+typedef struct Car {
+    u8 unk0[0xF4];
+    u8 unkF4;
+    u8 unkF5[0x1D6 - 0xF5];
+    s16 lap;
+    u8 unk1D8[0x1E0 - 0x1D8];
+    s16 unk1E0;
+    u8 unk1E2[0x1EC - 0x1E2];
+    s16 unk1EC;
+    u8 unk1EE[0x204 - 0x1EE];
+    s8 place;
+    u8 unk205[0x25C - 0x205];
+    s32 unk25C;
+    s32 unk260;
+    s32 unk264;
+    u8 unk268[0x34C - 0x268];
+    char *name;
+    u8 unk350[0x3E8 - 0x350];
+    struct CarLink *unk3E8;
+} Car;
 
-void func_8004D73C(s8 arg0, s32 arg1) {
+typedef struct CarLink {
+    u8 unk0[8];
+    Car *next;
+} CarLink;
+
+extern s32 sprintfRow(char *, char *, ...) asm("sprintf");
+extern void func_80050028Row(char *, s32, s32, s32) asm("func_80050028");
+extern void func_8004FF90Row(s16, s32, s32, s32) asm("func_8004FF90");
+extern void func_80050670Row(s32, s32, s32, s32, s32) asm("func_80050670");
+
+void HudDrawStandings(s8 arg0, s32 y) {
     char text[8];
-    u8 *entry;
-    u8 *car;
+    Car *entry;
     s8 index;
-    s8 carIndex;
     s8 rowStart;
     s8 row;
+    s8 carIndex;
     u8 selected;
-    s32 y;
+    s32 gap;
+    s32 limit;
+    u8 *column;
+    s32 textY;
 
-    y = arg1;
-    if (D_800A2EB0Absolute[0] == 0) {
-        entry = (u8 *)D_800A35E0[0];
-        index = 0;
-        while (index < (u8)arg0) {
-            index++;
-            entry = *(u8 **)(*(u8 **)(entry + 0x3E8) + 8);
-        }
+    if (D_800A2EB0Absolute[0] != 0) {
+        selected = 0;
         rowStart = arg0;
         row = 1;
-        while (rowStart < D_800A2E94[0] && row != 0xF) {
-            func_80050028Call4D73C(*(char **)(entry + 0x34C), D_800A2FE5, (u8)y,
-                                   0);
-            if (D_800A2EA4[0] != 0) {
-                func_8004FF90Call4D73C(*(s16 *)(entry + 0x204),
-                                       D_800A2FE5 + 6 - 1, (u8)y, 0);
-            } else {
-                if (*(s8 *)(entry + 0x204) < 0xA) {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A301C, *(s8 *)(entry + 0x204));
-                } else {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A3020, *(s8 *)(entry + 0x204));
-                }
-                D_800A37F4 = 9;
-                func_80050028Call4D73C(text, D_800A2FE5 + 3 - 1, (u8)y, 0);
-                D_800A37F4 = 0;
-            }
-            if (*(u8 *)(entry + 0xF4) == 0 &&
-                D_800A2EA8[0] >= *(s16 *)(entry + 0x1D6)) {
-                func_80050028Call4D73C(D_8009ADF4[0], D_800A2FE7, (u8)y, 0);
-            } else {
-                D_800A37F4 = 9;
-                if (D_800A2EA8[0] < *(s16 *)(entry + 0x1D6)) {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A3024, *(s16 *)D_8009AE94[0]);
-                } else if (*(s16 *)(entry + 0x1D6) >= 0x64) {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A3020, *(s16 *)(entry + 0x1D6));
-                } else if (*(s16 *)(entry + 0x1D6) >= 0xA) {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A301C, *(s16 *)(entry + 0x1D6));
-                } else {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A302C, *(s16 *)(entry + 0x1D6));
-                }
-                func_80050028Call4D73C(text, D_800A2FE6 - 4, (u8)y, 0);
-                if (*(s16 *)(entry + 0x1D6) == 0) {
-                    func_80050670((void *)0x7FFFFFFF, D_800A2FE7, (u8)y, 0, 0);
-                } else if (entry == (u8 *)D_800A35E0[0]) {
-                    func_80050670(*(void **)(entry + 0x260), D_800A2FE7, (u8)y,
-                                  0, 0);
-                } else {
-                    car = (u8 *)D_800A35E0[0];
-                    selected = ((*(s16 *)(car + 0x1D6) * D_800BE974[0] +
-                                 *(s16 *)(car + 0x1E0)) -
-                                (*(s16 *)(entry + 0x1D6) * D_800BE974[0] +
-                                 *(s16 *)(entry + 0x1E0))) /
-                               D_800BE974[0];
-                    D_800A37F4 = 9;
-                    if ((s16)selected > 0) {
-                        func_80050028Call4D73C(D_800A3034, D_800A2FE7 - 0xA,
-                                               (u8)y, 0);
-                        func_8004FF90Call4D73C((s16)selected, D_800A2FE7, (u8)y,
-                                               0);
-                        if ((s16)selected == 1) {
-                            func_80050028Call4D73C(D_8009ADF0[0],
-                                                   D_800A2FE7 + 0xF, (u8)y, 0);
-                        } else if ((s16)selected < 0xA) {
-                            func_80050028Call4D73C(D_8009ADEC[0],
-                                                   D_800A2FE7 + 0xF, (u8)y, 0);
-                        } else if ((s16)selected < 0x64) {
-                            func_80050028Call4D73C(D_8009ADEC[0],
-                                                   D_800A2FE7 + 0x19, (u8)y, 0);
-                        } else {
-                            func_80050028Call4D73C(D_8009ADEC[0],
-                                                   D_800A2FE7 + 0x23, (u8)y, 0);
-                        }
-                    } else {
-                        func_80050028Call4D73C(D_800A3038, D_800A2FE7 - 0xA,
-                                               (u8)y, 0);
-                        func_80050670(*(void **)(entry + 0x264), D_800A2FE7,
-                                      (u8)y, 0, 1);
+        carIndex = arg0 + 1;
+        do {
+            sprintfRow(text, carIndex < 10 ? D_800A301C : D_800A3020, carIndex);
+            gTextColor = 9;
+            textY = (u8)y;
+            func_80050028Row(text, gStandingsPlaceX + 3, textY, 0);
+            if (carIndex == ((Car *)D_800A3554[0])->place) {
+                if (selected == 0 && D_800A2EACAbsolute[0] == 0) {
+                    gTextColor = 0;
+                    func_80050028Row(((Car *)D_800A3554[0])->name,
+                                     gStandingsNameX, textY, 0);
+                    gTextColor = 9;
+                    func_8004FF90Row(((Car *)D_800A3554[0])->lap,
+                                     gStandingsLapX + 8, textY, 0);
+                    func_80050670Row(((Car *)D_800A3554[0])->unk25C,
+                                     gStandingsTimeX, textY, 0, 1);
+                    func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
+                    if (row == 15) {
+                        return;
                     }
+                    selected = 1;
+                    row++;
+                    carIndex++;
+                    gTextColor = 9;
+                    y += 12;
+                    sprintfRow(text, carIndex < 10 ? D_800A301C : D_800A3020,
+                               carIndex);
+                    func_80050028Row(text, gStandingsPlaceX + 3, (u8)y, 0);
+                }
+                if (carIndex == ((Car *)D_800A3554[0])->place &&
+                    D_800A2EA8[0] >= ((Car *)D_800A3554[0])->lap) {
+                    goto skipBlank;
                 }
             }
-            if (*(s16 *)(entry + 0x1EC) == 0 && D_800A2E94[0] >= 3) {
-                func_8001D778(0, (u8)y - 1, 0x140, 0xC, 0, 0, 0x80, 0);
+            func_80050028Row(D_8009AE94[0], gStandingsLapX + 8, (u8)y, 0);
+        skipBlank:
+            gTextColor = 0;
+            limit = (u8)arg0 + 1;
+            index = rowStart;
+            if (((Car *)D_800A3554[0])->place < limit &&
+                D_800A2EACAbsolute[0] == 0) {
+                index = rowStart - 1;
+            }
+            textY = (u8)y;
+            func_80050028Row(D_8009AC1C[D_800BE70C[index]], gStandingsNameX,
+                             textY, 0);
+            if (carIndex == ((Car *)D_800A3554[0])->place &&
+                ((Car *)D_800A3554[0])->lap < 2) {
+                func_80050028Row(D_8009ADF4[0], gStandingsTimeX, textY, 0);
+            } else {
+                func_80050670Row(D_800AE1EC[index], gStandingsTimeX, (u8)y, 0,
+                                 1);
+            }
+            if (D_800A2EACAbsolute[0] != 0 &&
+                carIndex == ((Car *)D_800A3554[0])->place) {
+                func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
             rowStart++;
             row++;
-            entry = *(u8 **)(*(u8 **)(entry + 0x3E8) + 8);
-            y += 0xC;
-        }
+            carIndex++;
+            y += 12;
+        } while (row < 16);
         return;
     }
-    selected = 0;
+    entry = (Car *)D_800A35E0[0];
+    for (rowStart = 0; rowStart < (u8)arg0; rowStart++) {
+        entry = entry->unk3E8->next;
+    }
     rowStart = arg0;
     row = 1;
-    carIndex = arg0 + 1;
-    index = (u8)arg0 + 1;
-    do {
-        car = (u8 *)D_800A3554[0];
-        if (carIndex < 0xA) {
-            ((s32 (*)(char *, const char *, ...))sprintf)(text, D_800A301C,
-                                                          carIndex);
-        } else {
-            ((s32 (*)(char *, const char *, ...))sprintf)(text, D_800A3020,
-                                                          carIndex);
-        }
-        D_800A37F4 = 9;
-        func_80050028Call4D73C(text, D_800A2FE4 + 3, (u8)y, 0);
-        if (carIndex == *(s8 *)(car + 0x204)) {
-            if (selected == 0 && D_800A2EACAbsolute[0] == 0) {
-                D_800A37F4 = 0;
-                func_80050028Call4D73C(*(char **)(car + 0x34C), D_800A2FE5,
-                                       (u8)y, 0);
-                D_800A37F4 = 9;
-                func_8004FF90Call4D73C(*(s16 *)(car + 0x1D6), D_800A2FE6 + 8,
-                                       (u8)y, 0);
-                func_80050670(*(void **)(car + 0x25C), D_800A2FE7, (u8)y, 0, 1);
-                func_8001D778(0, (u8)y - 1, 0x140, 0xC, 0, 0, 0x80, 0);
-                selected = 1;
-                if (row == 0xF) {
-                    return;
-                }
-                row++;
-                carIndex++;
-                D_800A37F4 = 9;
-                y += 0xC;
-                if (carIndex < 0xA) {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A301C, carIndex);
+    if (rowStart < D_800A2E94[0]) {
+        column = gStandingsNameXAbsolute;
+        do {
+            func_80050028Row(entry->name, gStandingsNameX, (u8)y, 0);
+            if (D_800A2EA4[0] != 0) {
+                func_8004FF90Row(entry->place, column[-1] + 6, (u8)y, 0);
+            } else {
+                sprintfRow(text, entry->place < 10 ? D_800A301C : D_800A3020,
+                           entry->place);
+                gTextColor = 9;
+                func_80050028Row(text, column[-1] + 3, (u8)y, 0);
+                gTextColor = 0;
+            }
+            if (entry->unkF4 == 0 && D_800A2EA8[0] >= entry->lap) {
+                func_80050028Row(D_8009ADF4[0], gStandingsTimeX, (u8)y, 0);
+            } else {
+                s32 lap;
+
+                lap = entry->lap;
+                gTextColor = 9;
+                if (D_800A2EA8[0] < lap) {
+                    sprintfRow(text, D_800A3024, D_8009AE94[0]);
+                } else if (lap >= 100) {
+                    sprintfRow(text, D_800A3020, lap);
+                } else if (lap >= 10) {
+                    sprintfRow(text, D_800A301C, lap);
                 } else {
-                    ((s32 (*)(char *, const char *, ...))sprintf)(
-                        text, D_800A3020, carIndex);
+                    sprintfRow(text, D_800A302C, lap);
                 }
-                func_80050028Call4D73C(text, D_800A2FE4 + 3, (u8)y, 0);
+                textY = (u8)y;
+                func_80050028Row(text, gStandingsLapX - 4, textY, 0);
+                if (entry->lap == 0) {
+                    func_80050670Row(0x7FFFFFFF, gStandingsTimeX, textY, 0, 0);
+                } else if (entry == (Car *)D_800A35E0[0]) {
+                    func_80050670Row(entry->unk260, gStandingsTimeX, textY, 0,
+                                     0);
+                } else {
+                    gap = (s16)(((((Car *)D_800A35E0[0])->lap * D_800BE974[0] +
+                                  ((Car *)D_800A35E0[0])->unk1E0) -
+                                 (entry->lap * D_800BE974[0] + entry->unk1E0)) /
+                                D_800BE974[0]);
+                    gTextColor = 9;
+                    if (gap > 0) {
+                        func_80050028Row(D_800A3034, gStandingsTimeX - 10,
+                                         textY, 0);
+                        func_8004FF90Row(gap, gStandingsTimeX, textY, 0);
+                        if (gap == 1) {
+                            func_80050028Row(D_8009ADF0[0],
+                                             gStandingsTimeX + 15, textY, 0);
+                        } else if (gap < 10) {
+                            func_80050028Row(D_8009ADEC[0],
+                                             gStandingsTimeX + 15, textY, 0);
+                        } else if (gap < 100) {
+                            func_80050028Row(D_8009ADEC[0],
+                                             gStandingsTimeX + 25, textY, 0);
+                        } else {
+                            func_80050028Row(D_8009ADEC[0],
+                                             gStandingsTimeX + 35, textY, 0);
+                        }
+                    } else {
+                        func_80050028Row(D_800A3038, gStandingsTimeX - 10,
+                                         textY, 0);
+                        func_80050670Row(entry->unk264, gStandingsTimeX, textY,
+                                         0, 1);
+                    }
+                }
             }
-            car = (u8 *)D_800A3554[0];
-            if (carIndex == *(s8 *)(car + 0x204) &&
-                D_800A2EA8[0] >= *(s16 *)(car + 0x1D6)) {
-                func_80050028Call4D73C(D_8009AE94[0], D_800A2FE6 + 8, (u8)y, 0);
+            if (entry->unk1EC == 0 && D_800A2E94[0] >= 3) {
+                func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
-        } else {
-            func_80050028Call4D73C(D_8009AE94[0], D_800A2FE6 + 8, (u8)y, 0);
-        }
-        car = (u8 *)D_800A3554[0];
-        D_800A37F4 = 0;
-        index = rowStart;
-        if (*(s8 *)(car + 0x204) < index && D_800A2EACAbsolute[0] == 0) {
-            index = rowStart - 1;
-        }
-        func_80050028Call4D73C(D_8009AC1C[D_800BE70C[index]], D_800A2FE5, (u8)y,
-                               0);
-        car = (u8 *)D_800A3554[0];
-        if (carIndex == *(s8 *)(car + 0x204)) {
-            if (*(s16 *)(car + 0x1D6) < 2) {
-                func_80050028Call4D73C(D_8009ADF4[0], D_800A2FE7, (u8)y, 0);
-                goto nextRow;
+            if (row == 15) {
+                return;
             }
-        } else {
-            goto drawCar;
-        }
-        selected = 1;
-    drawCar:
-        func_80050670(((u8 *)D_800AE1EC)[index], D_800A2FE7, (u8)y, 0, 1);
-    nextRow:
-        if (D_800A2EACAbsolute[0] != 0 && carIndex == *(s8 *)(car + 0x204)) {
-            func_8001D778(0, (u8)y - 1, 0x140, 0xC, 0, 0, 0x80, 0);
-        }
-        rowStart++;
-        row++;
-        carIndex++;
-        y += 0xC;
-    } while (row < 0x10);
+            rowStart++;
+            row++;
+            entry = entry->unk3E8->next;
+            y += 12;
+        } while (rowStart < D_800A2E94[0]);
+    }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004D73C);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004DF38);
 
@@ -2537,7 +2535,7 @@ void func_8004FF3C(void) {
 }
 
 extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
-extern u8 D_800A37F4nm asm("D_800A37F4.NON_MATCHING");
+extern u8 gTextColorNm asm("gTextColor.NON_MATCHING");
 extern void func_80050028Args(char *, s16, s16, s8);
 asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");
 extern s32 sprintfTextArgs(char *, char *, ...);
@@ -2548,13 +2546,13 @@ void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 
     asm("" : "=r"(mode) : "0"(arg3));
     if ((s8)arg3 == 1) {
-        D_800A37F4nm = 6;
+        gTextColorNm = 6;
     } else {
-        D_800A37F4nm = 9;
+        gTextColorNm = 9;
     }
     sprintfTextArgs(text, D_800A3020nm, arg0);
     func_80050028Args(text, (s16)arg1, (s16)arg2, (s8)mode);
-    D_800A37F4nm = 0;
+    gTextColorNm = 0;
 }
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80050028);

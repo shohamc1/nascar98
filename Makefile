@@ -98,6 +98,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A39A4Absolute=D_800A39A4 \
             --defsym=D_800A3A40Small=D_800A3A40 \
             --defsym=D_800A3A40Absolute=D_800A3A40 \
+            --defsym=gStandingsNameXAbsolute=gStandingsNameX \
             --defsym=D_800A3A8CSmall=D_800A3A8C \
             --defsym=D_800A3A8CAbsolute=D_800A3A8C \
             --defsym=D_800A2EA0Small=D_800A2EA0 \
