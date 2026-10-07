@@ -1313,7 +1313,94 @@ void func_800168F8(u8 *arg0, s32 arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80016ACC);
+extern s32 MathMultiplyFixed16(s32, s32);
+
+s32 func_80016ACC(u8 *arg0, s16 *arg1) {
+    extern s32 D_800A3A34Absolute[];
+    s32 pad[4];
+    register s32 f asm("a0");
+    register s32 fade asm("a1");
+    s32 y0;
+    s32 y1;
+    u8 *base;
+    u8 *p;
+    s32 count;
+    u8 *lp;
+    s32 i;
+    s32 den;
+    s32 den2;
+    s32 q;
+    s32 rem;
+    s32 t;
+    s32 q2;
+    s32 rem2;
+    s32 fdiv1;
+    s32 fdiv2;
+    s32 x;
+    register s32 scale asm("a1");
+    s32 t2;
+    s32 w;
+
+    (void)&pad;
+    y0 = arg1[0];
+    base = *(u8 **)(arg0 + 0x36C);
+    f = arg0[0x410];
+    p = *(u8 **)(base + 0x14) + y0 * 0x14;
+    y1 = arg1[1];
+    count = y1 - y0 + 1;
+    if (f < 0x31U) {
+        goto copyOnly;
+    }
+    fade = f;
+    den = 100;
+    q = fade / den;
+    rem = fade % den;
+    fdiv1 = (q << 0x10) + (((rem << 15) / den) << 1);
+    t = fade;
+    if (fade < 0) {
+        t = fade + 15;
+    }
+    t = t & 0x1F0;
+    t = fade - t;
+    den2 = 16;
+    q2 = t / den2;
+    rem2 = t % den2;
+    fdiv2 = (q2 << 0x10) + (((rem2 << 15) / den2) << 1);
+    x = MathMultiplyFixed16(0x04000000, fdiv2);
+    x = MathMultiplyFixed16(0x640000, (*(s32 **)D_800A3A34Absolute)[x >> 16]);
+    x = MathMultiplyFixed16(fdiv1, x);
+    x = x >> 16;
+    scale = x;
+    if (x < 0) {
+        scale = -scale;
+    }
+    t2 = (u32)scale >> 31;
+    asm("addu %0, %1, %0" : "=r"(t2) : "r"(scale), "0"(t2));
+    scale = t2 >> 1;
+    i = 0;
+    if (count > 0) {
+        lp = p + 4;
+        do {
+            w = *(s32 *)(lp + 0xC);
+            i++;
+            asm("addu %0, %0, %2" : "=r"(w) : "0"(w), "r"(scale), "r"(i));
+            *(s16 *)lp = w;
+            lp += 0x14;
+        } while (i < count);
+    }
+    return 0;
+copyOnly:
+    i = 0;
+    if (count > 0) {
+        lp = p + 4;
+        do {
+            *(s16 *)lp = *(s32 *)(lp + 0xC);
+            i++;
+            lp += 0x14;
+        } while (i < count);
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_80016CD8);
 
@@ -1880,7 +1967,132 @@ void ListRemoveNode(u8 **head, u8 *target) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001C668);
+void func_8001C668(void *arg0, void *arg1) {
+    u8 **head;
+    u8 **tail;
+    u8 *node;
+    u8 *next;
+    u8 *prevNode;
+    u8 *temp;
+
+    head = (u8 **)arg0;
+    tail = (u8 **)arg1;
+    node = *head;
+    next = NULL;
+    prevNode = NULL;
+    *(u8 **)(*tail + 0x28) = 0;
+    while (node != NULL) {
+        next = *(u8 **)(node + 0x28);
+        while (next != NULL) {
+            if ((node[0x13] & 0x80) != 0 && (next[0x13] & 0x80) == 0) {
+                {
+                    u8 *current;
+                    u8 *previous;
+                    current = *head;
+                    previous = current;
+                    while (current != 0) {
+                        if (current == node) {
+                            if (current == previous) {
+                                *head = *(u8 **)(current + 0x28);
+                            } else {
+                                *(u8 **)(previous + 0x28) =
+                                    *(u8 **)(current + 0x28);
+                            }
+                            goto remove1Done;
+                        }
+                        if (current != *head)
+                            previous = *(u8 **)(previous + 0x28);
+                        current = *(u8 **)(current + 0x28);
+                    }
+                remove1Done:;
+                }
+                {
+                    u8 *current;
+                    u8 *previous;
+                    if (next == 0) {
+                        *(u8 **)(node + 0x28) = *head;
+                        *head = node;
+                        goto insert2Done;
+                    }
+                    current = *head;
+                    previous = current;
+                    while (current != 0) {
+                        if (current == next) {
+                            if (current == previous) {
+                                *(u8 **)(node + 0x28) = *head;
+                                *head = node;
+                            } else {
+                                *(u8 **)(node + 0x28) = current;
+                                *(u8 **)(previous + 0x28) = node;
+                            }
+                            goto insert2Done;
+                        }
+                        if (current != *head)
+                            previous = *(u8 **)(previous + 0x28);
+                        current = *(u8 **)(current + 0x28);
+                    }
+                insert2Done:;
+                }
+                {
+                    u8 *current;
+                    u8 *previous;
+                    current = *head;
+                    previous = current;
+                    while (current != 0) {
+                        if (current == next) {
+                            if (current == previous) {
+                                *head = *(u8 **)(current + 0x28);
+                            } else {
+                                *(u8 **)(previous + 0x28) =
+                                    *(u8 **)(current + 0x28);
+                            }
+                            goto remove3Done;
+                        }
+                        if (current != *head)
+                            previous = *(u8 **)(previous + 0x28);
+                        current = *(u8 **)(current + 0x28);
+                    }
+                remove3Done:;
+                }
+                {
+                    u8 *current;
+                    u8 *previous;
+                    if (prevNode == 0) {
+                        *(u8 **)(next + 0x28) = *head;
+                        *head = next;
+                        goto insert4Done;
+                    }
+                    current = *head;
+                    previous = current;
+                    while (current != 0) {
+                        if (current == prevNode) {
+                            if (current == previous) {
+                                *(u8 **)(next + 0x28) = *head;
+                                *head = next;
+                            } else {
+                                *(u8 **)(next + 0x28) = current;
+                                *(u8 **)(previous + 0x28) = next;
+                            }
+                            goto insert4Done;
+                        }
+                        if (current != *head)
+                            previous = *(u8 **)(previous + 0x28);
+                        current = *(u8 **)(current + 0x28);
+                    }
+                insert4Done:;
+                }
+                temp = next;
+                next = node;
+                node = temp;
+            }
+            next = *(u8 **)(next + 0x28);
+        }
+        prevNode = node;
+        next = node;
+        node = *(u8 **)(next + 0x28);
+    }
+    *tail = next;
+}
 
 void ListPushFront(u8 *node, u8 **head, u8 **tail) {
     u8 *oldHead;
@@ -22706,7 +22918,75 @@ void func_8006B088(s32 arg0) {
     *(CardMoveRecord *)D_800A35F4 = buf;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006B1CC);
+void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
+                   u8 arg6, u8 arg7) {
+    register u8 j asm("$7");
+    register u8 *tbl asm("$13");
+    register u8 i asm("$8");
+    register s32 slot asm("t4");
+    register u8 driver asm("a2");
+    register u32 seven asm("a0");
+    register s32 m asm("a0");
+    u8 *rec;
+    u8 *src;
+    s32 row;
+    s32 p;
+    s32 sum;
+    s32 slotM;
+
+    slot = arg1;
+    rec = (u8 *)D_800A35F4 + (slot & 0xFF) * 0xE8 + (arg2 * 0xC + 0x1C);
+    driver = arg0;
+    seven = arg7;
+    if (arg5 == 0) {
+        rec[0] = rec[0] + 1;
+        if (arg3 == 0) {
+            if (arg6 == 0) {
+                rec[1] = rec[1] + 1;
+            }
+        }
+        if (seven >= 6) {
+            if (arg3 < 5) {
+                rec[2] = rec[2] + 1;
+            }
+        }
+        if (seven >= 0xB) {
+            if (arg3 < 0xA) {
+                rec[3] = rec[3] + 1;
+            }
+        }
+    }
+    asm("" : : "r"(seven));
+    if (arg4 < *(u32 *)(rec + 4)) {
+        *(u32 *)(rec + 4) = arg4;
+    }
+    i = 0;
+    row = (slot & 0xFF) * 0xE8;
+    tbl = D_800BBA24w17;
+    p = driver * 0x11;
+outer:
+    j = 0;
+    rec = (u8 *)D_800A35F4;
+    rec += row;
+    m = i;
+    rec += m * 0xC + 0x1C;
+    sum = p * 4 + (u32)tbl;
+    src = (u8 *)(m * 4 + sum);
+    do {
+        *(rec + j + 8) = src[j];
+        j++;
+    } while (j < 4);
+    i++;
+    if (i < 17) {
+        goto outer;
+    }
+    slotM = slot & 0xFF;
+    D_800A35F4[slotM * 0xE8 + 0x19] =
+        D_800A3068w17[driver * 2] | (D_800A3069w17[driver * 2] << 1);
+    D_800A35F4[slotM * 0xE8 + 0x1A] = D_800A3A24w17[driver];
+    D_800A35F4[slotM * 0xE8 + 0x1B] = D_800A307Cw17[driver];
+    asm("" : : "r"(slot));
+}
 
 extern u8 D_800BBA24[];
 void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
@@ -24387,7 +24667,143 @@ void func_8006FAAC(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006FBB0);
+extern void func_800708D8(void *, s32);
+extern s32 *D_800A3398;
+extern s32 D_800A339C;
+extern s32 D_800A33A0;
+
+void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
+    typedef struct {
+        RECT unk0[2];
+        s32 unk10;
+        s32 unk14;
+        s32 unk18;
+        u16 unk1C;
+        u16 unk1E;
+        u16 unk20;
+        u16 unk22;
+        u_long *unk24;
+        u32 unk28[2];
+        s32 unk30;
+        u8 unk34[0xE4];
+        s32 unk118;
+        s32 unk11C;
+    } StreamVram;
+    register StreamVram *st asm("$7");
+    StreamVram *st2;
+    register u32 bsw asm("$5");
+    register u32 nsec asm("$9");
+    register u32 w8 asm("$2");
+    register u32 cnt asm("$4");
+    register u32 word asm("$4");
+    register u32 wA asm("$3");
+    register u32 wAhi asm("$4");
+    register u32 w8hi asm("$3");
+    register u32 scaleV asm("$3");
+    u32 wAlo;
+    u32 w8lo;
+    register u32 xv asm("$2");
+    register u32 mdecId asm("$4");
+    register u32 prod asm("$10");
+    register u32 wv asm("$2");
+    register volatile StreamVram *vst asm("$4");
+    register u32 mdecId2 asm("$2");
+    s32 magic;
+    register u32 w16u asm("$5");
+    register u32 h16u asm("$2");
+    register u32 spinMax asm("$5");
+    s32 prod2;
+    u_long *outp;
+    s32 w32;
+    s32 h32;
+    u32 i;
+
+    word = *(u32 *)arg0;
+    w8 = *(u16 *)(arg0 + 8);
+    st = (StreamVram *)D_800A3398;
+
+    bsw = word >> 0x18;
+    bsw = bsw | ((word >> 8) & 0xFF00);
+    bsw = bsw | ((word & 0xFF00) << 8);
+    magic = bsw | (word << 0x18);
+    wA = *(u16 *)(arg0 + 0xA);
+    asm volatile("srl %0, %1, 8" : "=r"(wAhi) : "r"(wA));
+    wAlo = wA & 0xFF;
+    asm volatile("lhu %0, 8(%1)" : "=r"(w8) : "r"(arg0));
+    wAlo = wAlo << 8;
+    bsw = wAhi | wAlo;
+    asm volatile("lw %0, 0x118(%1)" : "=r"(cnt) : "r"(st));
+    asm volatile("srl %0, %1, 8" : "=r"(w8hi) : "r"(w8));
+    w8lo = w8 & 0xFF;
+    w8lo = w8lo << 8;
+    nsec = w8hi | w8lo;
+    if (cnt == 0) {
+        scaleV = D_800A33A0;
+        mdecId = 0x4D444543;
+        asm("" : "=r"(mdecId) : "0"(mdecId));
+        asm("" : "=r"(xv) : "0"(arg1));
+        st->unk0[0].x = arg1;
+        st->unk0[0].y = arg2;
+        st->unk0[0].h = bsw;
+        st->unk0[1].y = arg2;
+        st->unk0[1].h = bsw;
+        asm volatile("mult %0, %1" : : "r"(nsec), "r"(scaleV) : "lo", "hi");
+        st->unk1C = xv;
+        st->unk1E = arg2;
+        do {
+        } while (0);
+        st->unk0[1].x = arg1 + scaleV * 0xA0;
+        st->unk20 = scaleV * 8;
+        st->unk22 = bsw;
+        st->unk10 = 0;
+        asm volatile("mflo %0" : "=r"(prod));
+        wv = prod >> 1;
+        st->unk0[0].w = wv;
+        st->unk0[1].w = wv;
+        if (magic == mdecId) {
+            func_800708D8(arg0 + 0x10, (s32)st->unk28[st->unk30]);
+        }
+        D_800A3398[0x47] = 0;
+        asm volatile("");
+    } else {
+        st->unk11C = 0;
+        DecDCTin((u_long *)st->unk28[1 - st->unk30], D_800A339C);
+        st2 = (StreamVram *)D_800A3398;
+        asm volatile("lhu %0, 0x20(%1)" : "=r"(w16u) : "r"(st2));
+        asm volatile("lhu %0, 0x22(%1)" : "=r"(h16u) : "r"(st2));
+        w32 = (s16)w16u;
+        h32 = (s16)h16u;
+        asm volatile("mult %0, %1" : : "r"(w32), "r"(h32) : "lo", "hi");
+        outp = (u_long *)st2->unk24;
+        asm volatile("mflo %0" : "=r"(prod2));
+        DecDCTout(outp, prod2 / 2);
+        mdecId2 = 0x4D444543;
+        asm("" : "=r"(mdecId2) : "0"(mdecId2));
+        if (magic == mdecId2) {
+            st2 = (StreamVram *)D_800A3398;
+            func_800708D8(arg0 + 0x10, (s32)st2->unk28[st2->unk30]);
+        }
+        DecDCToutSync(0);
+        vst = (volatile StreamVram *)D_800A3398;
+        i = 0;
+        if (vst->unk11C == 0) {
+            spinMax = 0x30D40;
+        again:
+            if (i > spinMax) {
+                goto done;
+            }
+            i++;
+            if (vst->unk11C == 0) {
+                goto again;
+            }
+        }
+    }
+done:
+    DecDCTReset(1);
+    D_800A3398[0x46] = D_800A3398[0x46] + 1;
+    D_800A3398[0xC] = 1 - D_800A3398[0xC];
+}
+asm(".globl func_8006FBB0\nfunc_8006FBB0 = func_8006FBB0Args");
 
 extern void func_800708D8(void *, s32);
 extern s32 *D_800A3398;
