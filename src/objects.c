@@ -4582,40 +4582,37 @@ extern s16 D_800AFE2C[];
 extern s32 D_800A2F38NM asm("D_800A2F38.NON_MATCHING");
 
 void func_80032DEC(u8 *arg0, s32 arg1) {
-    register s32 *vec0 asm("a3");
-    register s32 *vec1 asm("t0");
-    register s32 *vec2 asm("t1");
     register s32 w4 asm("v1");
-    register s32 w8 asm("a0");
+    s32 w8;
     register s32 wC asm("v0");
     register s32 n0 asm("v1");
     register s32 n1 asm("a0");
     register s32 old asm("a0");
     register s32 tmpa1 asm("a1");
     register s32 sh asm("v1");
-    register s32 base asm("v0");
-    register u8 *obj asm("s0");
+    s32 base;
+    u8 *obj;
     register u8 *prim18 asm("s1");
-    register u8 *prim asm("s2");
+    u8 *prim;
     register s32 otz asm("s3");
-    register s32 count asm("s4");
-    register u32 *objCursor asm("s5");
-    register s32 entryCount asm("s6");
-    register s16 *zCursor asm("s7");
+    s32 count;
+    u32 *objCursor;
+    s32 entryCount;
+    s16 *zCursor;
     register u8 *otBase40;
     register s32 shifted asm("v0");
     register s32 aligned asm("v0");
-    register s32 mask asm("a0");
-    register s32 diff asm("v1");
+    s32 mask;
+    s32 diff;
     register s32 guard asm("a2");
-    register s32 oldEnd asm("v0");
+    s32 oldEnd;
     s32 *normal;
     s32 w10;
     s32 w14;
 
     obj = arg0;
     old = D_800A2F38NM;
-    asm("addu %0, %1, $zero" : "=r"(count) : "r"(arg1));
+    count = arg1;
     guard = count;
     count = count - 1;
     prim = (u8 *)gPrimitiveCursor[0];
@@ -4631,17 +4628,8 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
     if (guard > 0) {
         prim18 = prim + 0x18;
         do {
-            vec0 = *(s32 **)(obj + 0x18);
-            vec1 = *(s32 **)(obj + 0x1C);
-            vec2 = *(s32 **)(obj + 0x20);
-            asm volatile("lwc2 $0, 0x0(%0)\n\t"
-                         "lwc2 $1, 0x4(%0)\n\t"
-                         "lwc2 $2, 0x0(%1)\n\t"
-                         "lwc2 $3, 0x4(%1)\n\t"
-                         "lwc2 $4, 0x0(%2)\n\t"
-                         "lwc2 $5, 0x4(%2)"
-                         :
-                         : "r"(vec0), "r"(vec1), "r"(vec2));
+            gte_ldv3(*(s32 **)(obj + 0x18), *(s32 **)(obj + 0x1C),
+                     *(s32 **)(obj + 0x20));
             w4 = *(s32 *)(obj + 0x4);
             w8 = *(s32 *)(obj + 0x8);
             asm volatile("rtpt");
@@ -4651,11 +4639,7 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
             *(s32 *)(prim18 - 0xC) = w8;
             *(s32 *)(prim18 - 0x14) = w4;
             *(s32 *)(prim18 - 4) = wC;
-            asm volatile("swc2 $12, 0x0(%0)\n\t"
-                         "swc2 $13, 0x0(%1)\n\t"
-                         "swc2 $14, 0x0(%2)"
-                         :
-                         : "r"(prim + 8), "r"(prim + 0x10), "r"(prim + 0x20));
+            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
             normal = *(s32 **)(obj + 0x24);
             n0 = normal[0];
             n1 = normal[1];
@@ -4688,7 +4672,7 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
             *(u32 *)prim = *(u32 *)tmpa1 | 0x09000000;
             mask = mask | 0xFFFF;
             *(u32 *)tmpa1 = (u32)prim & mask;
-            asm volatile("swc2 $14, 0x0(%0)" : : "r"(prim18));
+            gte_stsxy2(prim18);
             prim18 = prim18 + 0x28;
             prim = prim + 0x28;
         nextObj:
