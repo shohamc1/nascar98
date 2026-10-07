@@ -2185,9 +2185,14 @@ void func_8002ADE0(s32 *car, s32 arg1) {
 }
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: A real two-component rotation array preserves the
- * previously discarded second component and stack stores. Multiply-result
- * timing, repeated table loads and an eight-byte size deficit remain. */
+/* Retry 2026-10-07 (unfused multiply): mult scheduling, the mid-function
+ * frame push and the dead result spills all come out of plain C now. The
+ * two table pointers are D_800A3A24nm (true 0x800A3A2C) and
+ * D_800A3A2CAbsolute (true 0x800A3A34); the label run sits +8 above its
+ * names. Left: gcc keeps rotated[0] in memory (zero-store + reload) where
+ * retail keeps the value in a register with both array stores dead. */
+extern s32 D_800A3A24nm[] asm("D_800A3A24.NON_MATCHING");
+
 s32 func_8002AEB0(u8 *arg0) {
     s32 index;
     s32 rotated[2];
@@ -2195,12 +2200,12 @@ s32 func_8002AEB0(u8 *arg0) {
 
     index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
     rotated[0] =
-        ((((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB0)) -
-         (((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)(arg0 + 0xB4))) >>
+        ((((s32 **)D_800A3A24nm)[0][index] * *(s32 *)(arg0 + 0xB0)) -
+         (((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB4))) >>
         16;
     rotated[1] =
-        ((((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)(arg0 + 0xB0)) +
-         (((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB4))) >>
+        ((((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB0)) +
+         (((s32 **)D_800A3A24nm)[0][index] * *(s32 *)(arg0 + 0xB4))) >>
         16;
     if (rotated[0] < 0) {
         temp = -rotated[0];
@@ -2522,11 +2527,6 @@ void func_8002D3A8(u8 *object, s32 index) {
     object[0x200] = index;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Indexed four-record stores fix the unwanted +0x2B8
- * cursor rebasing. Only four register bytes remain: initial
- * difference/multiply uses v1 rather than a2, and the final rev-count
- * subtraction/store uses v1 rather than a0. */
 extern s32 D_800A2E7Cgp asm("D_800A2E7C.NON_MATCHING");
 extern s32 D_800A2E80gp asm("D_800A2E80.NON_MATCHING");
 extern s32 D_800A2E64[];
@@ -2538,8 +2538,9 @@ void func_8002D3EC(u8 *arg0) {
     s32 diff;
 
     diff = D_800A2E7Cgp - D_800A2E80gp;
+    i = diff;
     *(s32 *)(arg0 + 0x234) =
-        D_800A2E80gp + diff * (s8)D_800A3860[*(s8 *)(arg0 + 0x20B)][0] / 63;
+        D_800A2E80gp + i * (s8)D_800A3860[*(s8 *)(arg0 + 0x20B)][0] / 63;
     diff = D_800A2E64[0] - (s8)D_800A3860[*(s8 *)(arg0 + 0x20B)][0] * 0xC8 / 63;
     entry = arg0;
     i = 0;
@@ -2553,9 +2554,6 @@ void func_8002D3EC(u8 *arg0) {
         entry += 0x28;
     } while (i < 4);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002D3EC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002D4CC);
 
