@@ -441,8 +441,8 @@ extern u8 D_800A331CAbsolute[];
 s32 func_80014398(s32 arg0) {
     s32 *srcPtr;
     u16 *tblPtr;
-    register s32 source asm("a2");
-    register s32 tableValue asm("a1");
+    s32 source;
+    s32 tableValue;
     register s32 raw asm("a0");
     register s32 value asm("v1");
     s32 difference;
@@ -451,8 +451,8 @@ s32 func_80014398(s32 arg0) {
     register s32 prod asm("v0");
     register s32 magic asm("a3");
     s32 sign;
-    register s32 magic3 asm("v0");
-    register s32 hi3 asm("v0");
+    s32 magic3;
+    s32 hi3;
     s32 sign3;
 
     srcPtr = D_80099590 + arg0;
@@ -461,17 +461,20 @@ s32 func_80014398(s32 arg0) {
     source = *srcPtr;
     difference = source - tableValue;
     adjust = difference * (0x64 - D_800A3320Absolute[0]);
-    asm volatile("lui\t%0,0x51eb" : "=r"(magic));
-    asm volatile("ori\t%0,%1,0x851f" : "=r"(magic) : "0"(magic));
+    magic = 0x51eb << 16;
+    do {
+    } while (0);
+    magic = magic | 0x851f;
     asm volatile("mult\t%0,%1" : : "r"(adjust), "r"(magic));
     raw = D_800A331CAbsolute[0];
-    asm volatile("lui\t%0,0x5555" : "=r"(magic3));
+    magic3 = 0x5555 << 16;
     asm volatile("mfhi\t%0" : "=r"(value));
     asm volatile("ori\t%0,%1,0x5556" : "=r"(magic3) : "0"(magic3));
     scale = raw + 0xC8;
     asm volatile("mult\t%0,%1" : : "r"(scale), "r"(magic3));
     sign = adjust >> 31;
-    asm volatile("");
+    do {
+    } while (0);
     value >>= 4;
     value -= sign;
     value = source - value;
@@ -531,7 +534,7 @@ extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
 void func_800144B4(void) {
     volatile s32 pad[128];
-    register u8 *tbl asm("v1");
+    u8 *tbl;
     u8 *p;
     u8 *be70c;
     u8 *q;
@@ -547,11 +550,10 @@ void func_800144B4(void) {
     s32 c2;
     s32 c3;
     s32 c1;
-
     mode = 0;
     be70c = D_800BE70Cw15;
     if (D_800A364Cw15[-8] == 1) {
-        mode = D_800A2EB0w15[0] != -1;
+        mode = D_800A2EB0w15[0] != (-1);
     }
     i = 0;
     c20 = 0x20;
@@ -563,44 +565,55 @@ void func_800144B4(void) {
     c2 = 2;
     c3 = 3;
     c1 = 1;
-    asm volatile("lui %0, 0x8001\n\tori %0, %0, 0x1E04" : "=r"(tbl));
+    tbl = (u8 *)LOW_RAM_TABLE_80011E04;
+loop:
+    tbl[0xF] = 0;
+
     do {
-        tbl[0xF] = 0;
         tbl[0x10] = c20;
         tbl[0x11] = c20;
         tbl[0x12] = c20;
         tbl[0x0] = 0;
-        *(s16 *)(tbl + 0x14) = c2BC;
-        tbl[0x7] = c6;
-        tbl[0x8] = c7;
-        tbl[0x6] = c4;
-        tbl[0x5] = c5;
-        tbl[0xC] = c2;
-        tbl[0xB] = c3;
-        tbl[0xD] = c1;
-        tbl[0xE] = 0;
-        tbl = tbl + 0x16;
-        i = i + 1;
-    } while (i < 4);
-    if (mode == 0)
+    } while (0);
+    *((s16 *)(tbl + 0x14)) = c2BC;
+    tbl[0x7] = c6;
+    tbl[0x8] = c7;
+    tbl[0x6] = c4;
+    tbl[0x5] = c5;
+    tbl[0xC] = c2;
+    tbl[0xB] = c3;
+    tbl[0xD] = c1;
+    tbl[0xE] = 0;
+    tbl = tbl + 0x16;
+    i = i + 1;
+    if (i < 4) {
+        goto loop;
+    }
+    if (mode == 0) {
         goto case0;
-    if (mode == 1)
+    }
+    if (mode == 1) {
         goto case1;
+    }
     goto dispatchDone;
 case0:
     D_800A2EA4w15[0] = 0;
+
     goto dispatchShared;
 case1:
     D_800A2EA4w15[0] = 2;
+
 dispatchShared:
     D_8008CA28[0] = 0;
+
 dispatchDone:
     func_800132F8(0);
+
     v = D_800A2EB0w15[0];
     if (v > 0) {
         D_800A2E90w15[0] = 0;
     }
-    if (v == -1) {
+    if (v == (-1)) {
         D_800A2EDAw15[0] = 1;
     } else {
         D_800A2EDAw15[0] = 0;
@@ -643,8 +656,9 @@ dispatchDone:
         p = D_800B9DA4w15;
         do {
             p[0] = i;
-            asm("");
-            q = (u8 *)(i + (s32)be70c);
+            do {
+            } while (0);
+            q = (u8 *)(i + ((s32)be70c));
             q[1] = i - 1;
             i = i + 1;
             p = p + 1;
@@ -681,7 +695,7 @@ void func_8001475C(void) {
     s32 i;
     s32 value;
     u32 mask;
-    register s32 one asm("$7");
+    s32 one;
 
     if (D_800A2EA4w18c[0] == 0) {
         D_800A33C0w18c = func_80041B7C(0);
@@ -816,8 +830,8 @@ s32 func_80014AC8(s32 arg0) {
     usedPrims =
         ((gPrimitiveCursor_gp & 0xFFFFFFF) - (D_800A3570 & 0xFFFFFFF)) / 40;
     freePrims = D_800A2F10[0];
-    D_800A38F4 = freePrims - usedPrims;
-    asm volatile("" : : "r"(freePrims));
+    usedPrims = freePrims - usedPrims;
+    D_800A38F4 = usedPrims;
     return arg0 < D_800A38F4;
 }
 
@@ -897,7 +911,6 @@ s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
         func_8001C668(arg1, (void *)((u8 *)arg1 + 4));
     }
     if ((count & 1) == 0) {
-        asm("");
         count++;
     }
     return count;
@@ -1175,22 +1188,23 @@ extern void *HeapAlloc(u32);
 void func_8001636C(void) {
     s32 count;
     s32 offset;
+    s32 zero;
     u8 *base;
     u8 *entry;
     u8 *tailp;
-
     D_800A2D60 = (s32)HeapAlloc(0x1E140);
     if (D_800A2D60 == 0) {
         return;
     }
     count = 0;
     offset = 0x38;
+    zero = 0;
     base = (u8 *)D_800A2D60;
-    asm("");
-    asm("");
-    entry = base;
+    tailp = base;
+    entry = tailp;
 again:
-    *(s32 *)(entry + 0x34) = (s32)(base + offset);
+    *((s32 *)(entry + 0x34)) = (s32)(base + offset);
+
     offset += 0x38;
     count += 1;
     entry += 0x38;
@@ -1199,8 +1213,8 @@ again:
     }
     entry = (u8 *)D_800A2D60;
     D_800A2D5C = 0x898;
-    tailp = (u8 *)(count * 0x38 + (s32)entry);
-    *(s32 *)(tailp + 0x34) = 0;
+    tailp = (u8 *)((count * 0x38) + ((s32)entry));
+    *((s32 *)(tailp + 0x34)) = zero;
     D_800A2D64 = (s32 *)tailp;
 }
 
@@ -1383,7 +1397,7 @@ s32 func_80016ACC(u8 *arg0, s16 *arg1) {
         do {
             w = *(s32 *)(lp + 0xC);
             i++;
-            asm("addu %0, %0, %2" : "=r"(w) : "0"(w), "r"(scale), "r"(i));
+            w = w + scale;
             *(s16 *)lp = w;
             lp += 0x14;
         } while (i < count);

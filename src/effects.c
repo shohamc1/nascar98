@@ -1334,56 +1334,55 @@ extern u8 D_800B1A26[];
 extern u8 D_800B1A26R[] asm("D_800B1A26.NON_MATCHING");
 
 void func_80043D6C(void) {
-    register s32 base asm("a3");
-    register s32 m3base asm("s2");
-    register s32 m3 asm("t5");
-    register s32 m1 asm("t9");
-    register s32 m2 asm("t6");
+    s32 base;
+    s32 m3base;
+    s32 m3;
+    s32 m1;
+    s32 m2;
     register s32 d1 asm("s1");
     register s32 d2 asm("s0");
     register s32 d3 asm("t8");
-    register s32 d4 asm("t7");
+    s32 d4;
     s32 value;
     register s32 temp asm("a0");
     s32 value2;
     s32 masked;
-    register s32 value3 asm("$2");
+    s32 value3;
     s32 prod;
     s32 prodlo;
-    register s32 rowOff asm("t4");
+    s32 rowOff;
     s32 end;
-    register s32 midOff asm("t1");
-    register s32 mo asm("t0");
+    s32 midOff;
+    s32 mo;
     register s32 colOff asm("a1");
     s32 off1;
     s32 off2;
     s32 off3;
-    register s32 i asm("t3");
-    register s32 j asm("t2");
+    s32 i;
+    s32 j;
 
     i = 0;
     base = 9;
     do {
         j = 0;
-        asm volatile("" ::"r"(j));
         rowOff = i * 0x40;
-        asm volatile("sll %0, %1, 3" : "=r"(m3base) : "r"(i));
-        asm volatile("addu %0, %1, $zero" : "=r"(d1) : "r"(base));
+        m3base = i << 3;
+        d1 = base;
         asm volatile("addu %0, %1, $zero" : "=r"(d2) : "r"(base));
         asm volatile("addu %0, %1, $zero" : "=r"(m1) : "r"(base));
         asm volatile("addu %0, %1, $zero" : "=r"(d3) : "r"(base));
         midOff = 0;
         do {
-            asm volatile("addu %0, %1, $zero" : "=r"(mo) : "r"(midOff));
+            mo = midOff;
             asm volatile("addu %0, %1, $zero" : "=r"(d4) : "r"(base));
             asm volatile("addu %0, %1, $zero" : "=r"(m2) : "r"(base));
             asm volatile("addiu %0, %1, 8" : "=r"(m3) : "r"(m3base));
             colOff = rowOff;
             do {
                 temp = gRandomSeed16;
-                asm volatile("addu %0, %1, %2"
-                             : "=r"(off1)
-                             : "r"(colOff), "r"(mo));
+                off1 = colOff + mo;
+                do {
+                } while (0);
                 value = (temp * 0x6255) + 0x3619;
                 asm("andi %0, %1, 0xFFFF" : "=r"(masked) : "r"(value));
                 gRandomSeed16 = masked;
@@ -1391,7 +1390,6 @@ void func_80043D6C(void) {
                 value &= 0xFFFF;
                 value2 = ((value * 0x6255) + 0x3619) & 0xFFFF;
                 gRandomSeed16 = value2;
-                asm volatile("" ::: "memory");
                 asm volatile("mult %0, %1"
                              :
                              : "r"(value2), "r"(m1)
@@ -1409,7 +1407,6 @@ void func_80043D6C(void) {
                 value &= 0xFFFF;
                 value2 = ((value * 0x6255) + 0x3619) & 0xFFFF;
                 gRandomSeed16 = value2;
-                asm volatile("" ::: "memory");
                 asm volatile("mult %0, %1"
                              :
                              : "r"(value2), "r"(m2)
@@ -1419,7 +1416,6 @@ void func_80043D6C(void) {
                 temp = gRandomSeed16;
                 value3 = ((temp * 0x6255) + 0x3619) & 0xFFFF;
                 gRandomSeed16 = value3;
-                asm volatile("" ::: "memory");
                 asm volatile("mult %0, %1"
                              :
                              : "r"(value3), "r"(m3)
@@ -1438,7 +1434,6 @@ void func_80043D6C(void) {
         } while (j < 6);
         asm("" ::"r"(d1));
         asm("" ::"r"(d2));
-        asm("" ::"r"(d3));
         i += 1;
         base += 9;
     } while (i < 3);

@@ -238,7 +238,8 @@ long SetRCnt(long timer, unsigned short target, long mode) {
     isLow = (unsigned)t < 2;
     r->mode = 0;
     r->target = target;
-    asm("");
+    do {
+    } while (0);
     asm("" : : "r"(timer));
     if (isLow) {
         if (mode & 0x10) {
@@ -256,7 +257,8 @@ long SetRCnt(long timer, unsigned short target, long mode) {
         md |= 0x10;
     }
     addr = t * 16;
-    asm("" : : "r"(addr));
+    do {
+    } while (0);
     result = 1;
     asm("" : : "r"(result));
     addr += (u32)D_8009B9E8[0];
@@ -291,7 +293,6 @@ int StopRCnt(int timer) {
 
     p = (u32 *)D_8009B9E4[0];
     p[1] = ~D_8009B9EC[timer & 0xFFFF] & p[1];
-    asm("");
     return 1;
 }
 
@@ -490,13 +491,8 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
 extern int CD_vol(CdlATV *vol);
 
 int CdMix(CdlATV *vol) {
-    register int ret asm("v0");
-
-    asm volatile("addiu $29, $29, -24\n\tsw $31, 16($29)");
-    asm volatile("jal CD_vol");
-    asm volatile("ori $2, $zero, 1" : "=r"(ret));
-    asm volatile("lw $31, 16($29)\n\taddiu $29, $29, 24");
-    return ret;
+    CD_vol(vol);
+    return 1;
 }
 
 /* SPDX-License-Identifier: MIT */
@@ -504,13 +500,7 @@ int CdMix(CdlATV *vol) {
 extern int CD_getsector(void *madr, int size);
 
 int CdGetSector(void *madr, int size) {
-    register int ret asm("v0");
-
-    asm volatile("addiu $29, $29, -24\n\tsw $31, 16($29)");
-    asm volatile("jal CD_getsector");
-    asm volatile("sltiu $2, $2, 1" : "=r"(ret));
-    asm volatile("lw $31, 16($29)\n\taddiu $29, $29, 24");
-    return ret;
+    return CD_getsector(madr, size) == 0;
 }
 
 /* SPDX-License-Identifier: MIT */
@@ -528,9 +518,9 @@ void CdDataSync(int mode) {
 }
 
 CdlLOC *CdIntToPos(int i, CdlLOC *p) {
-    register s32 n asm("a0") = i;
-    register CdlLOC *out asm("v0");
-    register s32 minuteBcd asm("a1");
+    s32 n = i;
+    CdlLOC *out;
+    s32 minuteBcd;
 
     asm volatile(
         "lui\t$3,0x1b4e\n\tori\t$3,$3,0x81b5\n\taddiu\t%0,%0,0x96\n\tmult\t%0,$3\n\taddu\t%1,%3,$0"
@@ -896,9 +886,9 @@ extern long GetVideoMode(void);
 extern int GetGraphType(void);
 
 DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h) {
-    register DRAWENV *sEnv asm("s1");
-    register s32 sX asm("s3");
-    register s32 sY asm("s4");
+    DRAWENV *sEnv;
+    s32 sX;
+    s32 sY;
     register s32 sW asm("s0");
     int videoMode;
 
@@ -1030,7 +1020,6 @@ int FntPrint(const char *fmt, ...) {
         pctvar = '%';
         magic = 0xCCCCCCCD;
         do {
-            asm("" : : "r"(width));
             if (ch != pctvar) {
                 goto store;
             }
@@ -1069,7 +1058,6 @@ int FntPrint(const char *fmt, ...) {
                 count = 0;
                 do {
                     asm volatile("\n\tmultu %0, %1" : : "r"(value), "r"(magic));
-                    asm("" : : "r"(magic));
                     buf--;
                     count++;
                     asm volatile("\n\tmfhi %0\n\tsrl %0, %0, 3" : "=r"(quot));
@@ -2717,13 +2705,13 @@ void SsUtSetReverbFeedback(short feedback) {
 }
 
 void SsUtSetReverbDepth(short ldepth, short rdepth) {
-    register s32 magic asm("v1") = 0x81020409;
+    s32 magic = 0x81020409;
     register s32 n1 asm("a2") = (ldepth << 15) - ldepth;
     register s32 hi1 asm("v0");
     register s32 n2 asm("a3");
     register s32 d1 asm("v0");
     register s32 hi2 asm("v0");
-    register s32 d2 asm("v0");
+    s32 d2;
     register SpuReverbAttr *attr asm("a0");
 
     asm("mult %2, %3\n\tsll $5, $5, 16\n\tsra $5, $5, 16\n\tmfhi %0\n\tsll %1, $5, 15\n\tsubu %1, %1, $5"

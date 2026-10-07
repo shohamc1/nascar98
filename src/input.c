@@ -1259,8 +1259,8 @@ u32 func_80041BAC(s32 arg0) {
     temp = gPadBuffers[arg0 * 3];
     result = ((u32)(temp & 0xF000)) >> 12;
     if ((temp & 0xFF) == 0xFF) {
-        asm("");
-        result = 0;
+        temp = 0;
+        result = temp;
     }
     return result;
 }

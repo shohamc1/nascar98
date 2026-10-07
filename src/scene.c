@@ -6,6 +6,7 @@
 #include <psxsdk/libetc.h>
 #include <psxsdk/libcd.h>
 #include <psxsdk/libgte.h>
+#include "gte.h"
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
@@ -1316,7 +1317,7 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
     register u8 *prim asm("$18");
     register u8 *walker asm("$20");
     register u8 *pe asm("$17");
-    register s32 count asm("$22");
+    s32 count;
     u8 *rgb;
     u8 g;
     u8 b;
@@ -1325,7 +1326,7 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
     register s32 obt asm("$10");
     register u32 *a0arg asm("$4");
     register u32 *a1arg asm("$5");
-    register u32 a2arg asm("$6");
+    u32 a2arg;
     u16 xy0;
     u16 xy1;
     u16 xy2;
@@ -1362,35 +1363,20 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
             v0_ = *(s32 *)(walker - 0xC);
             v1_ = *(s32 *)(walker - 0x8);
             v2_ = *(s32 *)(walker - 0x4);
-            asm volatile("lwc2 $0, 0x0(%0)\n\t"
-                         "lwc2 $1, 0x4(%0)\n\t"
-                         "lwc2 $2, 0x0(%1)\n\t"
-                         "lwc2 $3, 0x4(%1)\n\t"
-                         "lwc2 $4, 0x0(%2)\n\t"
-                         "lwc2 $5, 0x4(%2)\n\t"
-                         ".word 0\n\t"
-                         ".word 0\n\t"
-                         "rtpt"
-                         :
-                         : "r"(v0_), "r"(v1_), "r"(v2_));
+            gte_ldv3(v0_, v1_, v2_);
+            gte_rtpt();
             SetLineF4(prim);
-            asm volatile("cfc2 %0, $31\n\t"
-                         "nop"
-                         : "=r"(gte));
+            gte_cfc2(gte, 31);
             masked = gte & 0x66000;
             if (masked != 0) {
                 goto next;
             }
-            asm volatile(".word 0\n\t"
-                         ".word 0\n\t"
-                         "nclip");
+            gte_nclip();
             rv = r;
             *(u8 *)(pe - 0x9) = g;
             *(u8 *)(pe - 0x8) = b;
             *(u8 *)(pe - 0xA) = rv;
-            asm volatile("mfc2 %0, $24\n\t"
-                         "nop"
-                         : "=r"(gte));
+            gte_mfc2(gte, 24);
             if (D_800A2DE0[0] != 0) {
                 if (gte < 0) {
                     goto next;
@@ -1400,27 +1386,14 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
                     goto next;
                 }
             }
-            asm volatile(".word 0\n\t"
-                         ".word 0\n\t"
-                         "avsz3\n\t"
-                         "mfc2 %0, $7\n\t"
-                         "nop"
-                         : "=r"(gte));
+            gte_avsz3();
+            gte_mfc2(gte, 7);
             gte += (s32)(s8) * (walker - 0x23) * 4;
-            asm volatile("swc2 $12, 0x0(%0)\n\t"
-                         "swc2 $13, 0x0(%1)\n\t"
-                         "swc2 $14, 0x0(%2)"
-                         :
-                         : "r"(prim + 8), "r"(prim + 0xC), "r"(prim + 0x10));
+            gte_stsxy3(prim + 8, prim + 0xC, prim + 0x10);
             w3 = *(s32 *)(walker);
-            asm volatile("lwc2 $0, 0x0(%0)\n\t"
-                         "lwc2 $1, 0x4(%0)\n\t"
-                         ".word 0\n\t"
-                         ".word 0\n\t"
-                         "rtps"
-                         :
-                         : "r"(w3));
-            asm volatile("swc2 $14, 0x0(%0)" : : "r"(prim + 0x14));
+            gte_ldv0(w3);
+            gte_rtps();
+            gte_stsxy(prim + 0x14);
             otEntry = gte >> 4;
             otEntry = otEntry << 2;
             obt = otBase;
@@ -1437,7 +1410,7 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
             a0arg = (u32 *)otEntry;
             *(u8 *)(pe - 0x9) = rgb[1];
             btmp = rgb[2];
-            asm volatile("lhu %0, -0x22(%1)" : "=r"(xy3) : "r"(pe));
+            xy3 = *(u16 *)((u8 *)(pe) + -0x22);
             a1arg = (u32 *)prim;
             asm volatile("lui %0, 0x300" : "=r"(a2arg));
             prim += 0x10;
@@ -1603,7 +1576,8 @@ void func_80045288(void) {
     D_800A3590 = 0;
     D_800A34B0 = 0;
     gTextColor = 0;
-    asm volatile("" : : : "memory");
+    do {
+    } while (0);
     D_800A35F8gp = 1;
     D_800A34AC = 60;
     D_800A383E[0] = 1000;
@@ -1975,7 +1949,7 @@ void func_80048C90(void) {
     s32 scale;
     register s32 count asm("$18");
     s32 limit;
-    register s32 bound asm("$3");
+    s32 bound;
     s32 raw;
     s32 k;
     s32 a1val;
@@ -2452,7 +2426,7 @@ extern char *strtok(char *, const char *);
 void func_8004EA34(void) {
     register s32 len asm("v1");
     register u8 *car asm("a1");
-    register u8 *e0 asm("a0");
+    u8 *e0;
     register s32 prod2 asm("$8");
     s32 prod1;
     s32 refDist;
@@ -2475,8 +2449,8 @@ void func_8004EA34(void) {
     car1d6 = *(s16 *)(car + 0x1D6);
     asm volatile("mflo %0" : "=r"(prod1));
     asm volatile("mult\t%0, %1" : : "r"(car1d6), "r"(len));
-    asm volatile("lh\t%0, 0x1E0(%1)" : "=r"(e0dist) : "r"(e0));
-    asm volatile("lh\t%0, 0x1E0(%1)" : "=r"(cardist) : "r"(car));
+    e0dist = *(s16 *)((u8 *)(e0) + 0x1E0);
+    cardist = *(s16 *)((u8 *)(car) + 0x1E0);
     asm volatile("sw\t$zero, %gp_rel(D_800A34C0)($gp)");
     asm volatile("sw\t$zero, %gp_rel(D_800A34BC)($gp)");
     refDist = prod1 + e0dist;
@@ -2487,7 +2461,7 @@ void func_8004EA34(void) {
             e0 = *(u8 **)(*(u8 **)(car + 0x3E4) + 8);
             t1 = *(s32 *)(car + 0x264);
             t2 = *(s32 *)(e0 + 0x264);
-            asm volatile("lw\t%0, 0x34C(%1)" : "=r"(car) : "r"(e0));
+            car = *(s32 *)((u8 *)(e0) + 0x34C);
             D_800A34BC = t1 - t2;
             strcpy(D_800A8A4C, (char *)car);
             D_800A34B4 = (s32)strtok(D_800A8A4C, D_800A303C);
@@ -2582,7 +2556,6 @@ s32 func_80050940(u8 *str) {
 
     sum = 0;
     if (*(volatile u8 *)str != 0) {
-        asm("");
         c = *str;
         do {
             str++;

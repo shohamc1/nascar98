@@ -2418,7 +2418,6 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
     u32 limit;
     s32 result;
     u32 i;
-
     block = arg2;
     func_800719FC(&block);
     i = 0;
@@ -2428,7 +2427,7 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
         if (i >= 4) {
             func_80041AF0Arg(0);
             status = func_80041B7C(0);
-            if (status & 0x840) {
+            if ((status & 0x840)) {
                 D_800A3904w16 = status;
                 result = 0;
                 break;
@@ -2442,12 +2441,12 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
         if (block == 0) {
             goto done;
         }
-        w0 = *(u32 *)p;
-        asm("" : "=r"(w0) : "0"(w0));
-        w1 = *(u32 *)(p + 4);
-        magic = (w0 >> 24) | ((w0 >> 8) & 0xFF00) | ((w0 & 0xFF00) << 8) |
+        idx = 8;
+        w0 = *((u32 *)p);
+        magic = (((w0 >> 24) | ((w0 >> 8) & 0xFF00)) | ((w0 & 0xFF00) << 8)) |
                 (w0 << 24);
-        size = (w1 >> 24) | ((w1 >> 8) & 0xFF00) | ((w1 & 0xFF00) << 8) |
+        w1 = *((u32 *)(p + 4));
+        size = (((w1 >> 24) | ((w1 >> 8) & 0xFF00)) | ((w1 & 0xFF00) << 8)) |
                (w1 << 24);
         if (size < 0x4400) {
             block = size;
@@ -2462,22 +2461,31 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
             case 0x564C4330:
                 func_80070750((s32)(p + 8));
                 break;
+
             case 0x41643130:
+
             case 0x41643131:
+
             case 0x61643130:
+
             case 0x61643131:
+
             case 0x61643230:
+
             case 0x61643231:
                 func_80072CA8(p);
                 break;
+
             case 0x61753030:
+
             case 0x61753031:
                 func_80073100(p);
                 break;
+
             case 0x4D444332:
+
             case 0x4D444543:
                 idx = i;
-                asm("" : "=r"(idx) : "0"(idx));
                 if (idx == 1) {
                     func_80072750();
                 }
@@ -2485,20 +2493,24 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
                 i = idx + 1;
                 limit = func_80072AFC(idx);
                 func_80070018Args(p, arg0, arg1);
-                while ((u32)func_80072A5C() < limit) {
+                while (((u32)func_80072A5C()) < limit) {
                     VSync(0);
                 }
+
                 func_8007005C();
                 break;
+
             default:
                 block = 4;
                 break;
             }
+
         } else {
             block = 4;
         }
         func_800718D4(block);
     }
+
 done:
     return result;
 }
@@ -2616,28 +2628,28 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
         s32 unk118;
         s32 unk11C;
     } StreamVram;
-    register StreamVram *st asm("$7");
+    StreamVram *st;
     StreamVram *st2;
     register u32 bsw asm("$5");
-    register u32 nsec asm("$9");
-    register u32 w8 asm("$2");
-    register u32 cnt asm("$4");
-    register u32 word asm("$4");
+    u32 nsec;
+    u32 w8;
+    u32 cnt;
+    u32 word;
     register u32 wA asm("$3");
     register u32 wAhi asm("$4");
-    register u32 w8hi asm("$3");
+    u32 w8hi;
     register u32 scaleV asm("$3");
     u32 wAlo;
     u32 w8lo;
-    register u32 xv asm("$2");
-    register u32 mdecId asm("$4");
+    u32 xv;
+    u32 mdecId;
     register u32 prod asm("$10");
     register u32 wv asm("$2");
-    register volatile StreamVram *vst asm("$4");
-    register u32 mdecId2 asm("$2");
+    volatile StreamVram *vst;
+    u32 mdecId2;
     s32 magic;
     register u32 w16u asm("$5");
-    register u32 h16u asm("$2");
+    u32 h16u;
     register u32 spinMax asm("$5");
     s32 prod2;
     u_long *outp;
@@ -2659,7 +2671,7 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
     asm volatile("lhu %0, 8(%1)" : "=r"(w8) : "r"(arg0));
     wAlo = wAlo << 8;
     bsw = wAhi | wAlo;
-    asm volatile("lw %0, 0x118(%1)" : "=r"(cnt) : "r"(st));
+    cnt = *(s32 *)((u8 *)(st) + 0x118);
     asm volatile("srl %0, %1, 8" : "=r"(w8hi) : "r"(w8));
     w8lo = w8 & 0xFF;
     w8lo = w8lo << 8;
@@ -2667,7 +2679,6 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
     if (cnt == 0) {
         scaleV = D_800A33A0;
         mdecId = 0x4D444543;
-        asm("" : "=r"(mdecId) : "0"(mdecId));
         asm("" : "=r"(xv) : "0"(arg1));
         st->unk0[0].x = arg1;
         st->unk0[0].y = arg2;
@@ -2690,8 +2701,7 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
         if (magic == mdecId) {
             func_800708D8(arg0 + 0x10, (s32)st->unk28[st->unk30]);
         }
-        D_800A3398[0x47] = 0;
-        asm volatile("");
+        ((volatile s32 *)D_800A3398)[0x47] = 0;
     } else {
         st->unk11C = 0;
         DecDCTin((u_long *)st->unk28[1 - st->unk30], D_800A339C);
@@ -2705,7 +2715,6 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
         asm volatile("mflo %0" : "=r"(prod2));
         DecDCTout(outp, prod2 / 2);
         mdecId2 = 0x4D444543;
-        asm("" : "=r"(mdecId2) : "0"(mdecId2));
         if (magic == mdecId2) {
             st2 = (StreamVram *)D_800A3398;
             func_800708D8(arg0 + 0x10, (s32)st2->unk28[st2->unk30]);
@@ -2771,8 +2780,7 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
             func_800708D8(arg0 + 0x10,
                           *(s32 *)((s32)str + str[0xC] * 4 + 0x28));
         }
-        D_800A3398[0x47] = 0;
-        asm volatile("");
+        ((volatile s32 *)D_800A3398)[0x47] = 0;
     } else {
         output = str[9];
         DecDCTin((u_long *)*(s32 *)((s32)str + (1 - str[0xC]) * 4 + 0x28),
@@ -3061,30 +3069,29 @@ extern s32 func_800708D8Ret(void *arg0, s32 arg1);
 asm(".globl func_800708D8\nfunc_800708D8 = func_800708D8Ret");
 
 s32 func_800708D8Ret(void *arg0, s32 arg1) {
-    register u16 *src asm("$9");
+    u16 *src;
     u16 *out;
-    register u8 *tbl1 asm("$12");
-    register u8 *tbl2 asm("$11");
-    register u16 *tbl1v asm("$14");
-    register u16 *tbl2v asm("$13");
+    u8 *tbl1;
+    u8 *tbl2;
+    u16 *tbl1v;
+    u16 *tbl2v;
     register u32 bits asm("$6");
-    register u32 quant asm("$3");
+    u32 quant;
     u32 block;
     register u32 nw asm("$7");
     register u32 nw2 asm("$4");
     register u32 count asm("$6");
     register u32 nwp asm("$2");
     register u32 nw5 asm("$4");
-    register u32 sym asm("$7");
+    u32 sym;
     u32 len;
-    register u32 bitpos asm("$8");
-    register u8 *lenp asm("$10");
+    u32 bitpos;
+    u8 *lenp;
     register u16 *symp asm("$7");
-    register u32 scale asm("$2");
+    u32 scale;
     u32 hdr;
 
     src = (u16 *)arg0;
-    asm("" : "=r"(src) : "0"(src));
     out = (u16 *)arg1;
     tbl1 = D_800A33A8;
     tbl2 = D_800A33AC;
@@ -3141,7 +3148,8 @@ inner_loop:
         symp = (u16 *)((u8 *)tbl1v + scale);
     }
     sym = *symp;
-    asm("" : : : "memory");
+    do {
+    } while (0);
     len = *lenp;
     bits <<= len;
     bitpos += len;
@@ -3310,8 +3318,7 @@ u8 *func_800719FC(s32 *arg0) {
     volatile s32 *stream;
     volatile s32 *pre;
     s32 *head;
-    register s32 room asm("a0");
-    s32 limit;
+    s32 room;
     s32 avail;
     u32 counter;
     u32 retries;
@@ -3325,15 +3332,9 @@ u8 *func_800719FC(s32 *arg0) {
     s32 *node;
     u32 third;
     u8 *result;
-
     head = (s32 *)((volatile s32 *)D_800A3500)[0x42C / 4];
-    room = head[0x10 / 4];
-    room = room - head[0x4 / 4];
-    limit = *arg0;
-    if (room < limit) {
-        limit = room;
-    }
-    *arg0 = limit;
+    room = head[0x10 / 4] - head[0x4 / 4];
+    *arg0 = ((*arg0) > room) ? (room) : (*arg0);
     pre = (volatile s32 *)D_800A3500;
     counter = 0;
     retries = 0;
@@ -3345,10 +3346,9 @@ u8 *func_800719FC(s32 *arg0) {
         avail = (stream[0x448 / 4] << 11) -
                 ((stream[0x440 / 4] << 11) + stream[0x444 / 4]);
         if (avail < 0) {
-            asm("");
-            avail = 0;
+            avail = (x = 0);
         }
-        if (avail < *arg0) {
+        if (avail < (*arg0)) {
             if (stream[0x43C / 4] != 0) {
                 return 0;
             }
@@ -3357,7 +3357,7 @@ u8 *func_800719FC(s32 *arg0) {
                 stream[0x424 / 4] = stream[0x424 / 4] + 2;
             }
             if (((volatile s32 *)D_800A3500)[0x414 / 4] != 0) {
-                if ((u32)((volatile s32 *)D_800A3500)[0x424 / 4] < 2) {
+                if (((u32)((volatile s32 *)D_800A3500)[0x424 / 4]) < 2) {
                     continue;
                 }
             }
@@ -3371,19 +3371,20 @@ u8 *func_800719FC(s32 *arg0) {
         }
         break;
     }
+
     {
         node = (s32 *)((volatile s32 *)D_800A3500)[0x42C / 4];
         first = ((volatile s32 *)D_800A3500)[0x440 / 4];
         second = ((volatile s32 *)D_800A3500)[0x444 / 4];
-        x = (u32)(((volatile s32 *)D_800A3500)[0x440 / 4] + node[0x34 / 4]) %
+        x = ((u32)(((volatile s32 *)D_800A3500)[0x440 / 4] + node[0x34 / 4])) %
             D_800A3510w;
-        w = (u32)first % D_800A3510w;
+        w = ((u32)first) % D_800A3510w;
         third = ((volatile s32 *)D_800A3500)[0x444 / 4];
         result = (u8 *)(node[0x30 / 4] + ((x << 11) + third));
         left = D_800A3510w - 1;
         tail = ((left - w) << 11) + 0x800;
         size = tail - second;
-        if (size < *arg0) {
+        if (size < (*arg0)) {
             memcpy(result - (D_800A3510w << 11), result, size);
             result = result - (D_800A3510w << 11);
         }
@@ -3497,16 +3498,14 @@ void func_80071DCC(s32 enable) {
         D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
         D_800A33BC = (s32)CdReadyCallback(func_80070A60);
         D_800A3500[0x420 / 4] = 1;
-        D_800A3500[0x41C / 4] = 1;
-        asm("");
+        ((volatile s32 *)D_800A3500)[0x41C / 4] = 1;
     } else {
         SwEnterCriticalSection();
         enabled = D_800A3500[0x420 / 4];
         D_800A3500[0x41C / 4] = 0;
         D_800A3500[0x410 / 4] = 0;
         D_800A3500[0x408 / 4] = 0;
-        D_800A3500[0x40C / 4] = 0;
-        asm("");
+        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
         if (enabled != 0) {
             CdSyncCallback((void *)D_800A33B8);
             CdReadyCallback((void *)D_800A33BC);
@@ -3623,8 +3622,7 @@ void func_800720D0(void) {
         D_800A3500[0x41C / 4] = 0;
         D_800A3500[0x410 / 4] = 0;
         D_800A3500[0x408 / 4] = 0;
-        D_800A3500[0x40C / 4] = 0;
-        asm("");
+        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
         if (enabled != 0) {
             CdSyncCallback((void *)D_800A33B8);
             CdReadyCallback((void *)D_800A33BC);
@@ -3936,33 +3934,26 @@ extern long long __divdi3(long long dividend, long long divisor);
 extern volatile s32 *D_800A351C;
 extern long long __divdi3(long long dividend, long long divisor);
 s32 func_80072AFC(u32 arg) {
-    register u32 mode asm("v1");
-    register u32 factor asm("v0");
-    long long q;
-
-    mode = D_800A351C[0x7B74 / 4];
-    factor = 1;
-    if (mode == factor) {
-        factor = 0x271000;
-        q = (long long)arg * factor;
-        return __divdi3(q, 0xBB5);
+    if (D_800A351C[0x7B74 / 4] == 1) {
+        return (long long)arg * 0x271000 / 0xBB5;
     }
     return arg << 10;
 }
 
 extern volatile s32 *D_800A351C;
 s32 func_80072B4C(void) {
+    u16 flag;
     volatile s32 *p;
     u32 i;
     s32 count;
-
     count = 0;
     i = 0;
     p = D_800A351C;
     do {
-        if (p[0x7B2C / 4] != 0) {
-            asm("");
-            count += 1;
+        flag = p[0x7B2C / 4] != 0;
+        if (flag) {
+            flag = 1;
+            count += flag;
         }
         i += 1;
         p += 1;
@@ -4180,11 +4171,11 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
                   s32 arg6) {
     SpuVoiceAttr va;
     SpuCommonAttr ca;
-    register SpuCommonAttr *caarg asm("$4");
+    SpuCommonAttr *caarg;
     u32 off;
     register s32 voice asm("$16");
     register s32 addr asm("$20");
-    register s32 a5 asm("$23");
+    s32 a5;
     s32 a6;
     u8 val;
 

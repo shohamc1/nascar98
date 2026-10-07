@@ -6,4 +6,7 @@
 #include "include_asm.h"
 #include "types.h"
 
+/* Evaluates x twice, as the game's own macro did: ABS(f()) calls f twice. */
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+
 #endif /* COMMON_H */

@@ -2178,7 +2178,6 @@ void func_80067F34(s32 arg0, s32 arg1) {
                                      recordOff + 0x20);
                     break;
                 }
-                asm("" : : "r"(value));
                 flagL = 0;
                 if (j != 0) {
                     t = j != 5;
@@ -2354,11 +2353,12 @@ extern u8 *D_800A3918NM[] asm("D_800A3918.NON_MATCHING");
 extern u8 *D_800A3918NB[] asm("D_800A3918.NON_MATCHING");
 void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
     extern u8 D_800A3944;
-    register s32 delta asm("$8");
+    s32 zero;
+    s32 delta;
     s32 threshold;
-    register s32 delta2 asm("$4");
+    s32 delta2;
     s32 sum;
-    register s32 posflag asm("$2");
+    s32 posflag;
     s32 limit;
     s32 limitSave;
     s32 dneg;
@@ -2367,16 +2367,15 @@ void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
     u8 *head;
     u8 *other;
     u8 *walk;
-
     threshold = 5;
-    if (arg0 & ~arg1) {
+    if (arg0 & (~arg1)) {
         D_800A3830Absolute2[0] = 0;
         limitSave = 1;
     } else {
         D_800A3830Absolute[0] = D_800A3830Absolute2[0] + 1;
         if (threshold < D_800A3830Absolute[0]) {
             D_800A37F0Absolute[0] =
-                D_800A37F0Absolute2[0] + D_800A37F0Absolute2[0] / 2;
+                D_800A37F0Absolute2[0] + (D_800A37F0Absolute2[0] / 2);
             if (0x41 <= D_800A37F0Absolute[0]) {
                 limitSave = 0x40;
             } else {
@@ -2392,14 +2391,15 @@ noStore:
         delta = D_800A37F0Absolute3[0];
     } else {
         dneg = D_800A37F0Absolute3[0];
-        asm("negu %0, %1" : "=r"(delta) : "r"(dneg));
+        delta = -dneg;
     }
+
     val = D_800A39E4NM[0];
     if ((val & 0xFF) == 9) {
         limit = 0x7B;
     } else if ((val & 0xFF) == 0xA) {
         limit = 0x35;
-    } else if ((val & 0xFF) == 0xC || (val - 0x10) < 2U) {
+    } else if (((val & 0xFF) == 0xC) || ((val - 0x10) < 2U)) {
         limit = 0x99;
     }
     limit = limit - 0xD;
@@ -2418,22 +2418,23 @@ noStore:
         idx = D_800A3944;
     }
     head = D_800A3858NM[idx];
-    if (*(s16 *)(head + 8) >= 0) {
-        if (*(s16 *)(D_800A3918NM[idx] + 8) < limit) {
+    if ((*((s16 *)(head + 8))) >= 0) {
+        if ((*((s16 *)(D_800A3918NM[idx] + 8))) < limit) {
             return;
         }
     }
     other = D_800A3918NB[idx];
     delta2 = delta;
+    zero = (s32)0;
     if (delta2 > 0) {
-        sum = *(s16 *)(head + 8) + delta2;
-        asm("slt %0, $zero, %1" : "=r"(posflag) : "r"(sum));
+        sum = (*((s16 *)(head + 8))) + delta2;
+        posflag = zero < ((s32)sum);
         if (posflag != 0) {
-            delta2 = -*(s16 *)(head + 8);
+            delta2 = -(*((s16 *)(head + 8)));
         }
     } else if (delta2 < 0) {
-        if (*(s16 *)(other + 8) + delta2 < limit) {
-            delta2 = limit - *(s16 *)(other + 8);
+        if (((*((s16 *)(other + 8))) + delta2) < limit) {
+            delta2 = limit - (*((s16 *)(other + 8)));
         }
     }
     if (delta2 == 0) {
@@ -2442,8 +2443,8 @@ noStore:
     walk = head;
     if (walk != 0) {
         do {
-            *(u16 *)(walk + 8) += delta2;
-            walk = *(u8 **)(walk + 0x1C);
+            *((u16 *)(walk + 8)) += delta2;
+            walk = *((u8 **)(walk + 0x1C));
         } while (walk != 0);
     }
 }
@@ -2862,63 +2863,87 @@ void func_80069AFC(s32 arg0) {
     extern s8 D_800A307C[];
     extern s32 D_8009A2D4[];
     extern s32 D_8009A2F4[];
+    u8 group8;
     extern s32 func_8005B0E4(s16, s32);
-    register s32 group asm("v1");
+    s32 group;
     s32 index;
     s32 value;
     u8 *obj;
     u8 *child;
-
     switch (arg0 & 0xFF) {
     case 0:
+
     case 1:
+
     case 3:
+
     case 6:
+
     case 15:
         group = 0;
         break;
+
     case 2:
+
     case 4:
+        do {
+        } while (0);
+
     case 5:
+
     case 7:
+
     case 8:
+
     case 11:
         group = 1;
         break;
+
     case 10:
         group = 3;
         break;
+
     case 12:
+
     case 16:
+
     case 17:
         group = 4;
         break;
+
     case 34:
+
     case 36:
+
     case 40:
         group = 5;
         break;
+
     case 35:
         group = 6;
         break;
+
     case 9:
+
     case 14:
+
     case 33:
         group = 7;
         break;
+
     default:
         group = 0xFF;
         break;
     }
-    /* The retail compiler keeps the u8 truncation of the switch result. */
-    asm("andi %0, %0, 0xff" : "=r"(group) : "0"(group));
-    index = group;
-    if (group == 0xFF) {
-        register u8 *retObj asm("v1");
 
+    group = group & 0xff;
+    group8 = group;
+    index = group8;
+    if (group == 0xFF) {
+        u8 *retObj;
         retObj = (u8 *)D_800A3914[0];
         if (retObj != 0) {
-            *(s16 *)(retObj + 0x1A) = -0x32;
+            *((s16 *)(retObj + 0x1A)) = -0x32;
             return;
         }
     }
@@ -2929,15 +2954,14 @@ void func_80069AFC(s32 arg0) {
         value = func_8005B0E4(0x140, D_8009A2D4[index]);
     }
     obj = (u8 *)D_800A3914[0];
-    *(s16 *)(obj + 6) = value;
-    *(s16 *)(obj + 0x1A) = 0x32;
-    child = *(u8 **)(obj + 0x20);
-    if (((s8 *)D_800A3A24)[0] == 2 && D_800A307C[0] != 6) {
-        *(s32 *)(child + 8) = D_8009A2F4[index];
+    *((s16 *)(obj + 6)) = value;
+    *((s16 *)(obj + 0x1A)) = 0x32;
+    child = *((u8 **)(obj + 0x20));
+    if ((((s8 *)D_800A3A24)[0] == 2) && (D_800A307C[0] != 6)) {
+        *((s32 *)(child + 8)) = D_8009A2F4[index];
     } else {
-        *(s32 *)(child + 8) = D_8009A2D4[index];
+        *((s32 *)(child + 8)) = D_8009A2D4[index];
     }
-    /* The retail jump table is followed by a zero pad word at 0x8008FBB8. */
     asm(".rdata");
     asm(".long 0");
     asm(".text");
@@ -3259,11 +3283,11 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
     } SaveEntry;
 
     register s32 count asm("$6");
-    register s32 iv asm("$9");
+    s32 iv;
     register s32 j asm("$10");
-    register s32 k asm("$2");
+    s32 k;
     register s32 i asm("t2");
-    register s32 one asm("t1");
+    s32 one;
     u32 d3;
     u32 lt5;
     u32 lt10;
@@ -3395,13 +3419,13 @@ void func_8006B088(s32 arg0) {
 
 void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
                    u8 arg6, u8 arg7) {
-    register u8 j asm("$7");
-    register u8 *tbl asm("$13");
-    register u8 i asm("$8");
+    u8 j;
+    u8 *tbl;
+    u8 i;
     register s32 slot asm("t4");
-    register u8 driver asm("a2");
+    u8 driver;
     register u32 seven asm("a0");
-    register s32 m asm("a0");
+    s32 m;
     u8 *rec;
     u8 *src;
     s32 row;
@@ -3508,7 +3532,7 @@ void func_8006B464(void) {
 
     rec = D_800A3604Vol;
     b0 = rec[0];
-    asm("andi %0,%1,0x3" : "=r"(a1) : "r"(b0));
+    a1 = b0 & 3;
     do {
     } while (0);
     D_800A3073[-4] = ((u8)b0 >> 2) & 1;
@@ -3817,7 +3841,6 @@ void func_8006C668(s32 arg0, s32 arg1) {
         arg1 = (s8)arg0 + 6;
     }
     node = D_800A3908[0];
-    asm("");
     conv = start << 24;
     index = conv >> 24;
     if (arg1 >= index) {
@@ -4067,15 +4090,15 @@ void func_8006CB00(void) {
 extern u8 *D_800A377C[];
 void func_8006CB40(void) {
     s32 value;
-
-    value = *(s16 *)(D_800A377C[0] + 0x1A);
+    s8 zero;
+    value = *((s16 *)(D_800A377C[0] + 0x1A));
     if (value < 0) {
         value = -value;
-    } else if (value == -255) {
-        asm("");
-        value = 0;
+    } else if (value == (-255)) {
+        zero = 0;
+        value = zero;
     }
-    *(s16 *)(D_800A377C[0] + 0x1A) = value;
+    *((s16 *)(D_800A377C[0] + 0x1A)) = value;
 }
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006CB80);
@@ -4312,33 +4335,31 @@ extern char *D_800A35F4;
 void func_8006D424(u8 arg0, u8 arg1) {
     u8 i;
     u8 j;
-    u8 *dst2;
+    u8 *dst;
     u8 *src;
-    u8 *p2;
-    s32 dstOff;
     s32 srcOff;
-    s32 yv;
-    s32 x68;
-    s32 basep;
+    s32 row;
+    s32 base;
+    s32 dstOff;
 
     i = 0;
-    basep = (s32)D_800BBA24;
-    x68 = arg0 * 0x44;
+    base = (s32)D_800BBA24;
+    row = arg0 * 0x44;
+outer:
+    j = 0;
+    dstOff = row + base;
+    dst = (u8 *)(i * 4 + dstOff);
+    srcOff = arg1 * 0xE8;
     do {
-        j = 0;
-        asm volatile("addu %0, %1, %2" : "=r"(dstOff) : "r"(x68), "r"(basep));
-        dst2 = (u8 *)(i * 4 + dstOff);
-        asm volatile("andi %0, %1, 0xff" : "=r"(yv) : "r"(arg1));
-        srcOff = yv * 0xE8;
-        do {
-            p2 = (u8 *)D_800A35F4;
-            src = (u8 *)(srcOff + (s32)p2);
-            src += i * 0xC;
-            dst2[j] = *(src + j + 0x24);
-            j++;
-        } while (j < 4);
-        i++;
-    } while (i < 0x11);
+        src = (u8 *)(srcOff + (s32)D_800A35F4);
+        src += i * 0xC;
+        dst[j] = *(src + j + 0x24);
+        j++;
+    } while (j < 4);
+    i++;
+    if (i < 0x11) {
+        goto outer;
+    }
 }
 
 #endif
@@ -4352,38 +4373,38 @@ extern s8 D_800A3A24_nm[] asm("D_800A3A24.NON_MATCHING");
 void func_8006D4C8(u8 arg0, u8 arg1) {
     u8 i;
     u8 j;
-    u8 *dst2;
+    u8 *dst;
     u8 *src;
-    u8 *p2;
-    s32 dstOff;
+    s32 bit;
     s32 srcOff;
-    s32 yv;
-    s32 x68;
-    s32 basep;
-
+    s32 row;
+    s32 base;
+    s32 dstOff;
     i = 0;
-    basep = (s32)D_800BBA24_nm;
-    x68 = arg0 * 0x44;
+    base = (s32)D_800BBA24_nm;
+    row = arg0 * 0x44;
+outer:
+    j = 0;
+
+    dstOff = row + base;
+    dst = (u8 *)((i * 4) + dstOff);
+    srcOff = arg1 * 0xE8;
     do {
-        asm("" ::"r"(j));
-        j = 0;
-        asm volatile("addu %0, %1, %2" : "=r"(dstOff) : "r"(x68), "r"(basep));
-        dst2 = (u8 *)(i * 4 + dstOff);
-        asm volatile("andi %0, %1, 0xff" : "=r"(yv) : "r"(arg1));
-        srcOff = yv * 0xE8;
-        do {
-            p2 = (u8 *)D_800A35F4;
-            src = (u8 *)(srcOff + (s32)p2);
-            src += i * 0xC;
-            dst2[j] = *(src + j + 0x24);
-            j++;
-        } while (j < 4);
-        i++;
-    } while (i < 0x11);
-    D_800A3068_nm[arg0 * 2] = ((u8 *)D_800A35F4)[arg1 * 0xE8 + 0x19] & 1;
-    D_800A3069_nm[arg0 * 2] = (((u8 *)D_800A35F4)[arg1 * 0xE8 + 0x19] >> 1) & 1;
-    if (((u8 *)D_800A35F4)[arg1 * 0xE8 + 0x1A] == D_800A3A24_nm[arg0]) {
-        D_800A307C_nm[arg0] = ((u8 *)D_800A35F4)[arg1 * 0xE8 + 0x1B];
+        src = (u8 *)(srcOff + ((s32)D_800A35F4));
+        src += i * 0xC;
+        dst[j] = *((src + j) + 0x24);
+        j++;
+    } while (j < 4);
+    i++;
+    if (i < 0x11) {
+        goto outer;
+    }
+    bit = ((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x19] & 1;
+    D_800A3068_nm[arg0 * 2] = bit;
+    D_800A3069_nm[arg0 * 2] =
+        (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x19] >> 1) & 1;
+    if (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1A] == D_800A3A24_nm[arg0]) {
+        D_800A307C_nm[arg0] = ((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1B];
         D_800A308C_nm[arg0] = ((u8 *)D_800A3A24_nm)[arg0];
     } else {
         D_800A307C_nm[arg0] = 0;
@@ -4526,12 +4547,12 @@ void func_8006DA40(void) {
     u8 *node;
     u8 *prev;
     u8 *pkt;
+    u8 *field10;
     u8 idx;
     s32 err;
     s32 height;
     s32 i;
     s32 y;
-
     y = 0x50;
     i = 0;
     do {
@@ -4539,26 +4560,30 @@ void func_8006DA40(void) {
         if (i == 0) {
             D_800A3A10[0] = (ColorNode *)node;
         } else {
-            *(u8 **)(prev + 0x1C) = node;
+            *((u8 **)(prev + 0x1C)) = node;
         }
-        pkt = *(u8 **)(node + 0x20);
-        *(s16 *)(node + 0xE) = 2;
-        *(s16 *)(node + 0x10) = 0;
-        *(s16 *)(node + 0x6) = -0x78;
+        field10 = node + 0x10;
+        pkt = *((u8 **)(node + 0x20));
+        *((s16 *)(node + 0xE)) = 2;
+        *((s16 *)field10) = 0;
+        *((s16 *)(node + 0x6)) = -0x78;
         switch (i) {
         case 0:
             height = 0;
             break;
+
         case 1:
             height = 0xC;
             break;
+
         case 2:
             height = 0x18;
             break;
         }
-        func_8005B17C(pkt, 9, 0, height, *(u16 *)(node + 0x16),
-                      *(u16 *)(node + 0x18));
-        y += *(s16 *)(node + 0x18);
+
+        func_8005B17C(pkt, 9, 0, height, *((u16 *)(node + 0x16)),
+                      *((u16 *)(node + 0x18)));
+        y += *((s16 *)(node + 0x18));
         prev = node;
         i += 1;
     } while (i < 3);
@@ -4567,22 +4592,21 @@ void func_8006DA40(void) {
     do {
         node =
             (u8 *)func_8005B314(0x64, y, 0x78, 0x48, 0, 0x20, 0x20, 0x40, 1, 1);
-        *(s16 *)(node + 0x6) = -0x78;
-        *(s16 *)(node + 0xE) = 2;
-        *(s16 *)(node + 0x1A) = 0xA;
-        *(u8 **)(prev + 0x1C) = node;
+        *((s16 *)(node + 0x6)) = -0x78;
+        *((s16 *)(node + 0xE)) = 2;
+        *((s16 *)(node + 0x1A)) = 0xA;
+        *((u8 **)(prev + 0x1C)) = node;
         prev = node;
         i += 1;
     } while (i < 2);
     node = (u8 *)func_8005BF8C(0x71, 0x55);
     err = D_800A3808;
-    *(s16 *)(node + 0x1A) = 2;
+    *((s16 *)(node + 0x1A)) = 2;
     if (err == 2) {
         idx = 0x1B;
     } else if (err == 0x1C) {
         idx = 0x1C;
         if (D_800A337C == 1) {
-            asm("");
             idx = 0x1D;
         }
     } else if (err == 0xD) {
@@ -4593,16 +4617,16 @@ void func_8006DA40(void) {
     }
     if (D_800A3A24_nm[0] == 2) {
         func_80067EA4((UnkObject24 *)node, 2, 2, (s32)D_8009AB80nm[idx], 0,
-                      *(s16 *)(node + 0x1A));
+                      *((s16 *)(node + 0x1A)));
     } else {
         func_80067EA4((UnkObject24 *)node, 2, 2, (s32)D_8009AB00nm[idx], 0,
-                      *(s16 *)(node + 0x1A));
+                      *((s16 *)(node + 0x1A)));
     }
-    *(s16 *)(node + 0xE) = 2;
-    *(s16 *)(node + 0x12) = 0xB;
-    *(s16 *)(node + 0x6) = -0x6B;
+    *((s16 *)(node + 0xE)) = 2;
+    *((s16 *)(node + 0x12)) = 0xB;
+    *((s16 *)(node + 0x6)) = -0x6B;
     D_800A3908nm[0] = node;
-    *(u8 **)(prev + 0x1C) = node;
+    *((u8 **)(prev + 0x1C)) = node;
 }
 
 extern ColorNode *D_800A3A10[];
@@ -4810,24 +4834,20 @@ void func_8006E484(u32 arg0, u32 arg1) {
     s32 d;
     u8 *q;
     u8 *v;
-
     i = 0;
     m = (u8)arg0;
     pos = (m << 3) + m;
-    maxb = 0x80;
-    white = 0xFF;
-    n = (u8)arg1;
-    lt = n < 5;
-    p = 0;
     do {
-        asm volatile("lui %0, %%hi(D_800AEE3C)\n\t"
-                     "addiu %0, %0, %%lo(D_800AEE3C)\n\t"
-                     "addu %0, %1, %0"
-                     : "=r"(v)
-                     : "r"(p));
-        asm("addu %0, %1, %2" : "=r"(q) : "r"(pos), "r"(v));
+        maxb = 0x80;
+        white = 0xFF;
+        n = (u8)arg1;
+        lt = n < 5;
+        p = 0;
+    loop:
+        v = (u8 *)(p + ((s32)D_800AEE3C));
+        q = (u8 *)(pos + ((s32)v));
         if (i == 2) {
-            if ((u32)(q[2] - 0x60) >= 0x41) {
+            if (((u32)(q[2] - 0x60)) >= 0x41) {
                 q[2] = maxb;
             }
             d = q[1] - q[2];
@@ -4839,7 +4859,7 @@ void func_8006E484(u32 arg0, u32 arg1) {
                 q[0] = 0;
             }
         } else if (!lt) {
-            if ((u32)((q[2] - 0x40) & 0xFF) >= 0x81) {
+            if (((u32)((q[2] - 0x40) & 0xFF)) >= 0x81) {
                 q[2] = maxb;
             }
             if (i == 0) {
@@ -4858,6 +4878,8 @@ void func_8006E484(u32 arg0, u32 arg1) {
             setg:
                 q[1] = 0;
             nextg:;
+                ;
+                ;
             } else {
                 d = q[1] - q[2];
                 if (d >= 0) {
@@ -4883,8 +4905,11 @@ void func_8006E484(u32 arg0, u32 arg1) {
             }
         }
         i++;
-        p += 3;
-    } while (i < 3);
+    } while (0);
+    p += 3;
+    if (i < 3) {
+        goto loop;
+    }
 }
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006E628);

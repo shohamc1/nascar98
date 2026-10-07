@@ -1694,31 +1694,24 @@ s32 CardEnableEvents(void) {
     enabled = enabled != 0;
     result = enabled;
     if (EnableEvent(D_800A3828) == 0) {
-        asm("");
         result = 0;
     }
     if (EnableEvent(D_800A382C) == 0) {
-        asm("");
         result = 0;
     }
     if (EnableEvent(D_800A3834) == 0) {
-        asm("");
         result = 0;
     }
     if (EnableEvent(D_800A38C8) == 0) {
-        asm("");
         result = 0;
     }
     if (EnableEvent(D_800A38CC) == 0) {
-        asm("");
         result = 0;
     }
     if (EnableEvent(D_800A38D0) == 0) {
-        asm("");
         result = 0;
     }
     if (EnableEvent(D_800A38D4) == 0) {
-        asm("");
         result = 0;
     }
     ExitCriticalSection();
@@ -1783,17 +1776,21 @@ void func_80059C2C(void) {
     D_800A3828 = value;
     asm("" : : "r"(flag) : "memory");
     D_800A382C = OpenEvent(0xF4000001, 0x100, 0x2000, 0);
-    asm("" : : : "memory");
+    do {
+    } while (0);
     D_800A3834 = OpenEvent(0xF4000001, 0x2000, 0x2000, 0);
-    asm("" : : : "memory");
+    do {
+    } while (0);
     D_800A38C8 = OpenEvent(0xF0000011, 4, 0x2000, 0);
-    asm("" : : : "memory");
+    do {
+    } while (0);
     D_800A38CC = OpenEvent(0xF0000011, 0x8000, 0x2000, 0);
-    asm("" : : : "memory");
+    do {
+    } while (0);
     D_800A38D0 = OpenEvent(0xF0000011, 0x100, 0x2000, 0);
-    asm("" : : : "memory");
+    do {
+    } while (0);
     D_800A38D4 = OpenEvent(0xF0000011, 0x2000, 0x2000, 0);
-    asm("" : : : "memory");
     ExitCriticalSection();
 }
 
@@ -1862,7 +1859,7 @@ extern s32 CardWaitForEvent(void);
 extern void func_8005A414(void);
 s32 func_80059F0C(s32 arg0) {
     s32 retries = 0;
-    register s32 channel asm("s1") = ((arg0 & 0xFF) != 0) * 0x10;
+    s32 channel = ((arg0 & 0xFF) != 0) * 0x10;
     s32 status;
     do {
         _card_info(channel);
@@ -1876,15 +1873,17 @@ s32 func_80059F0C(s32 arg0) {
             CardTestEvents();
             _card_load(channel);
             status = func_8005A294();
-            if (status == 0)
+            if (status == 0) {
                 break;
+            }
         }
-        asm("");
         retries++;
-        if (status == 0)
+        if (status == 0) {
             break;
+        }
     } while ((retries & 0xFF) < 8U);
-    return status & 0xFF;
+    retries = status;
+    return retries & 0xFF;
 }
 
 s32 CardOpenFile(char *path, s32 flags) {
@@ -1981,22 +1980,22 @@ s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
  * the frame is 8 short but the draft is guarded anyway.) */
 extern char D_800A3094[], D_800A309C[];
 s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
+    s32 zero;
     struct DIRENTRY entries[15];
     s32 count;
-    register u32 total asm("s1");
+    u32 total;
     s32 i;
     struct DIRENTRY *entry;
-    s32 pad[2];
 
-    (void)&pad;
     if ((arg0 & 0xFF) == 0) {
         count = CardScanDirectory(D_800A309C, entries);
     } else {
         count = CardScanDirectory(D_800A3094, entries);
     }
     i = 0;
-    total = 0;
-    if (count > 0) {
+    zero = 0;
+    total = zero;
+    if (count > zero) {
         entry = entries;
         do {
             if (strcmp(entry->name, name) != 0) {
@@ -2285,30 +2284,28 @@ INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005AEC8);
 s16 func_8005AFF0(s8 arg0) {
     s32 index;
     s32 entry;
-    register s32 scaled asm("v0");
-    register s32 value asm("v1");
+    s32 scaled;
+    short value;
     s32 product;
     s32 quotient;
-
-    entry = *(u16 *)D_800A35A0;
+    entry = *((u16 *)D_800A35A0);
     index = 0;
-    if (arg0 >= 0x20 && arg0 < entry + 0x20) {
+    if ((arg0 >= 0x20) && (arg0 < (entry + 0x20))) {
         index = arg0 - 0x20;
     }
     if (D_800A3534 == 2) {
-        scaled = *(s16 *)(D_800A35AC + index * 0xA + 6) * 3;
-        value = (u32)scaled >> 2;
+        scaled = (*((s16 *)((D_800A35AC + (index * 0xA)) + 6))) * 3;
+        value = ((u32)scaled) >> 2;
         if (scaled < 0) {
             scaled += 3;
-            value = (u32)scaled >> 2;
+            value = ((u32)scaled) >> 2;
         }
     } else if (D_800A3534 == 4) {
-        value = *(s16 *)(D_800A35AC + index * 0xA + 6);
-        asm("" ::"r"(value));
+        value = *((s16 *)((D_800A35AC + (index * 0xA)) + 6));
         product = value * 9;
         value = product / 10;
     } else {
-        value = *(u16 *)(D_800A35AC + index * 0xA + 6);
+        value = *((u16 *)((D_800A35AC + (index * 0xA)) + 6));
     }
     if (D_800A3534 < 2U) {
         value -= 1;
@@ -2351,7 +2348,6 @@ s32 func_8005B138(u8 *str) {
     if (*str != 0) {
         do {
             if (*str == 0xA) {
-                asm("");
                 count++;
             }
             str++;
@@ -2874,7 +2870,6 @@ struct UnkTextObj *func_8005BF8C(s32 left, s32 top) {
     u8 *base;
 
     spriteIndex = D_800A35EC++;
-    asm("");
     base = D_800A3678;
     object = base + spriteIndex * 36;
     object[4] = 0;
@@ -2895,7 +2890,8 @@ struct UnkTextObj *func_8005BF8C(s32 left, s32 top) {
     *(u16 *)(object + 0x10) = 0;
     *(u16 *)(object + 0x1A) = 0;
     D_800A37BC = primIndex + 1;
-    asm("");
+    do {
+    } while (0);
     prim += primIndex * 12;
     *(u32 *)(object + 0x20) = prim;
     prim[0] = 0;
@@ -3105,39 +3101,43 @@ extern u8 *D_800BB9E4[];
 extern char *strcpy(char *, const char *);
 s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
     u8 *prim;
-    register u8 *buffer asm("$17");
+    u8 *buffer;
     s32 length;
     u8 newValue;
     s16 value;
     s32 inRange;
-
     switch (id & 0xFF) {
     case 1:
         id = 0;
         min = 0x4B;
         max = 0x73;
         break;
+
     case 2:
         id = 1;
         min = 0x50;
         max = 0x82;
         break;
+
     case 3:
         id = 2;
         min = 0x5A;
         max = 0x96;
         break;
+
     case 4:
         id = 3;
         min = 0x4B;
         max = 0x78;
         break;
+
     case 5:
         id = 4;
         min = 0x32;
         max = 0x64;
         break;
     }
+
     newValue = D_800A331CAbsolute[id & 0xFF] + delta;
     D_800A331CAbsolute[id & 0xFF] = newValue;
     inRange = 1;
@@ -3148,24 +3148,28 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         D_800A331CAbsolute[id & 0xFF] = max;
         inRange = 0;
     }
-    prim = *(u8 **)(D_800BB9E4[id & 0xFF] + 0x20);
+    prim = *((u8 **)(D_800BB9E4[id & 0xFF] + 0x20));
     value = D_800A331CAbsolute[id & 0xFF];
     buffer = D_800A35C9 - 1;
     D_800A35C8 = 0x20;
-    length = 1;
-    if (value < 0x64) {
-        D_800A35C9[0] = 0x20;
-        length = 2;
-    }
-    D_800A35C9[length - 1] = 0;
-    func_80012EA8(value, buffer + length);
-    strcat(buffer, D_800A3338);
-    strcpy(*(char **)(prim + 8), (char *)buffer);
+    do {
+        length = 1;
+        if (value < 0x64) {
+            D_800A35C9[0] = 0x20;
+            length = 2;
+        }
+        D_800A35C9[length - 1] = 0;
+        func_80012EA8(value, buffer + length);
+        strcat(buffer, D_800A3338);
+        strcpy(*((char **)(prim + 8)), (char *)buffer);
+    } while (0);
     func_8005A7B8(prim[1], prim[2]);
-    *(s16 *)(D_800BB9E4[id & 0xFF] + 0x16) = func_8005A8E0(*(s32 *)(prim + 8));
-    *(s16 *)(D_800BB9E4[id & 0xFF] + 6) =
-        0x131 - *(s16 *)(D_800BB9E4[id & 0xFF] + 0x16);
-    *(s16 *)(D_800BB9E4[id & 0xFF] + 0xA) = *(s16 *)(D_800BB9E4[id & 0xFF] + 6);
+    *((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)) =
+        func_8005A8E0(*((s32 *)(prim + 8)));
+    *((s16 *)(D_800BB9E4[id & 0xFF] + 6)) =
+        0x131 - (*((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)));
+    *((s16 *)(D_800BB9E4[id & 0xFF] + 0xA)) =
+        *((s16 *)(D_800BB9E4[id & 0xFF] + 6));
     return inRange;
 }
 

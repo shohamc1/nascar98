@@ -1441,7 +1441,6 @@ void func_8003D25C(u8 *object) {
             }
             if (*(s16 *)(object + i * 2 + 0x26C) > 0) {
                 flag = 0;
-                asm("");
             }
         }
         if (flag != 0) {
@@ -1611,19 +1610,22 @@ s32 func_8003DB18(s32 start, s32 end, s32 value) {
 }
 
 s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
-    register s32 cmp asm("v1");
-    register s32 result asm("v0");
+    s32 cmp;
+    s32 result;
     s32 offset;
     offset = D_800BE974[0];
     if (arg2 < arg1) {
         arg2 += offset;
-        if (offset / 2 >= arg0)
+        if ((offset / 2) >= arg0) {
             arg0 += offset;
+        }
     }
     result = 0;
-    cmp = arg0 < arg1;
-    if (cmp == 0)
+    offset = arg0 < arg1;
+    cmp = offset;
+    if (cmp == 0) {
         result = arg2 >= arg0;
+    }
     return result;
 }
 
@@ -1724,30 +1726,30 @@ INCLUDE_ASM("asm/nonmatchings/cd", func_8003E78C);
 #endif
 
 void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
-    register s32 *entries asm("a1");
+    s32 *entries;
     s32 count;
     s32 value;
-    s32 i;
     s32 pad[2];
-
-    entries = arg1;
-    count = *(s16 *)(object + 2) - *(s16 *)(object + 0) + 1;
-    value = *(s32 *)(object + 8) + arg2;
-    *(s32 *)(object + 8) = value;
+    s32 i;
     i = 0;
+    entries = arg1;
+    count = ((*((s16 *)(object + 2))) - (*((s16 *)(object + 0)))) + 1;
+    value = (*((s32 *)(object + 8))) + arg2;
+    *((s32 *)(object + 8)) = value;
     if (count <= 0) {
         goto done;
     }
     entries += 3;
 again:
     *entries += arg2;
+
     entries += 5;
     i++;
     if (i < count) {
         goto again;
     }
 done:
-    (void)&pad;
+    (void)(&pad);
 }
 
 void func_8003EAE8(u8 *object, s32 index) {

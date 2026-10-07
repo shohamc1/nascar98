@@ -1,16 +1,22 @@
 #!/bin/sh
 # Build the measured NASCAR 98 scheduling profile, not a retail compiler.
+# With "sdk", also apply tools/gcc-sdk.patch for the Psy-Q library code.
 set -eu
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 revision=b74211c9d959e9724802f3177c8229cd67202c87
 dest="$repo/tools/cc/2.7.2-psx-nascar98"
+patches="$repo/tools/gcc-nascar98.patch"
+if [ "${1:-}" = sdk ]; then
+    dest="$repo/tools/cc/2.7.2-psx-nascar98-sdk"
+    patches="$patches $repo/tools/gcc-sdk.patch"
+fi
 
 git -C "$work" init -q
 git -C "$work" fetch -q --depth=1 https://github.com/decompals/old-gcc.git "$revision"
 git -C "$work" checkout -q FETCH_HEAD
-cp "$repo/tools/gcc-nascar98.patch" "$work/patches/nascar98.patch"
+cat $patches > "$work/patches/nascar98.patch"
 
 # Reuse the upstream host fixes and compiler checks on both platforms.
 python3 - "$work" <<'PY'
@@ -20,7 +26,7 @@ import sys
 root = Path(sys.argv[1])
 for name, marker, command in (
     ("gcc-2.7.2-psx-macos.sh", "./configure \\\n",
-     'chmod u+w config/mips/mips.md\npatch -p1 < "$PATCHES/nascar98.patch"\n'),
+     'chmod u+w config/mips/mips.md config/mips/mips.h\npatch -p1 < "$PATCHES/nascar98.patch"\n'),
     ("gcc-2.7.2-psx.Dockerfile", "RUN ./configure \\\n",
      'RUN patch -p1 < /work/patches/nascar98.patch\n\n'),
 ):
@@ -34,6 +40,8 @@ case "$(uname -s)" in
     Darwin)
         bash "$work/gcc-2.7.2-psx-macos.sh"
         mkdir -p "$dest"
+        # Overwriting a signed binary in place makes macOS kill it.
+        rm -f "$dest/cc1" "$dest/cpp"
         cp "$work/build-gcc-2.7.2-psx/cc1" "$work/build-gcc-2.7.2-psx/cpp" "$dest/"
         ;;
     Linux)
@@ -44,4 +52,4 @@ case "$(uname -s)" in
 esac
 
 # Record the patch so `make tools` rebuilds when it changes.
-cp "$repo/tools/gcc-nascar98.patch" "$dest/nascar98.patch"
+cat $patches > "$dest/nascar98.patch"

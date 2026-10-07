@@ -27,3 +27,12 @@
    "mult\\t%1,%2"
    [(set_attr "type"	"imul")
     (set_attr "mode"	"SI")
+--- a/config/mips/mips.h
++++ b/config/mips/mips.h
+@@ -2933,5 +2933,4 @@
+ 
+ /* ??? Fix this to be right for the R8000.  */
+-#define BRANCH_COST \
+-  ((mips_cpu == PROCESSOR_R4000 || mips_cpu == PROCESSOR_R6000) ? 2 : 1)
++#define BRANCH_COST 1
+ 

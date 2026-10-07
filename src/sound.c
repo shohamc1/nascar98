@@ -1736,13 +1736,13 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     s32 camX;
     s32 camY;
     s32 camZ;
-    register s32 dx asm("s2");
-    register s32 dy asm("s1");
+    s32 dx;
+    s32 dy;
     register s32 dz asm("s0");
     s32 dist;
     register s32 fog asm("s3");
     s32 pan;
-    register s32 q asm("a1");
+    s32 q;
     register s32 gain asm("a0");
     register s32 vol1 asm("s1");
     register s32 vol2 asm("s2");
@@ -1750,7 +1750,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     register s32 row asm("v0");
     register s32 scaled asm("v0");
     register s32 square asm("t1");
-    register s32 sum asm("a0");
+    s32 sum;
     register s32 dySq asm("v1");
     register s32 prodB asm("t1");
     register s32 prodA asm("v1");
@@ -1919,36 +1919,27 @@ void func_80040AC8(u8 *object) {
         if (*(s32 *)(object + 0x90) <= 0x1FFFFF) {
             vol = *(s32 *)(object + 0x90) >> 15;
             if (vol < 0) {
-                asm("");
                 vol = 0;
             }
         }
         if (*(u16 *)(object + 0x362) == 2) {
-            asm("");
             count1++;
         } else if (*(u16 *)(object + 0x362) == 3) {
-            asm("");
             count3++;
         }
         if (*(u16 *)(object + 0x364) == 2) {
-            asm("");
             count2++;
         } else if (*(u16 *)(object + 0x364) == 3) {
-            asm("");
             count4++;
         }
         if (*(u16 *)(object + 0x366) == 2) {
-            asm("");
             count1++;
         } else if (*(u16 *)(object + 0x366) == 3) {
-            asm("");
             count3++;
         }
         if (*(u16 *)(object + 0x368) == 2) {
-            asm("");
             count2++;
         } else if (*(u16 *)(object + 0x368) == 3) {
-            asm("");
             count4++;
         }
     }

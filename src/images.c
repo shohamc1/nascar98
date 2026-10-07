@@ -45,7 +45,7 @@ extern void *D_800A3A8C;
 extern s32 strlen(char *);
 extern u8 gOrderingTables[];
 extern s32 gOrderingTableBank;
-extern void func_8001E7EC(void *, s32, s32);
+extern s32 func_8001E7EC(void *, s32, s32);
 extern u8 D_800A39B0[];
 extern s32 D_800A36B4;
 extern s32 D_800A3948;
@@ -480,9 +480,8 @@ extern u8 D_800A433Cw15[] asm("D_800A433C.NON_MATCHING");
 extern s32 D_800A39C4w15[] asm("D_800A39C4.NON_MATCHING");
 extern s32 D_800A39CCw15[] asm("D_800A39CC.NON_MATCHING");
 
-void func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
+s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
     u8 *envPtr;
-    register s32 flag asm("v0");
 
     if (arg2 != 0) {
         FntPrint((const char *)arg1);
@@ -497,51 +496,50 @@ void func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
     envPtr = D_800A3F7Cw15 + D_800A2DC4w15 * 0x5C;
     PutDrawEnv((DRAWENV *)envPtr);
     PutDispEnv((DISPENV *)(D_800A4034w15 + D_800A2DC4w15 * 0x14));
-    if (arg2 == 0) {
-        flag = 0;
-        asm("" : : "r"(flag));
-        if (D_800A2EA4nm[0] == 2) {
-            u8 *otFFC;
-            u8 *ot1000;
-            u8 *ot1FFC;
+    if (arg2 != 0) {
+        return 0;
+    }
+    if (D_800A2EA4nm[0] == 2) {
+        u8 *otFFC;
+        u8 *ot1000;
+        u8 *ot1FFC;
 
-            D_800A39C8nm[0] = (s32)arg0;
-            func_8003565C(0);
-            ot1000 = (u8 *)arg0 + 0x1000;
-            D_800A39C4w15[1] = (s32)ot1000;
-            func_800356A8(1);
-            otFFC = (u8 *)arg0 + 0xFFC;
-            AddPrim(otFFC, D_800A43BCw15 + (D_800A2DC4w15 << 6));
-            ot1FFC = (u8 *)arg0 + 0x1FFC;
-            AddPrim(ot1FFC, D_800A43BCw15 + 0x80 + (D_800A2DC4w15 << 6));
-            D_800A39CCw15[-1] = (s32)ot1000;
-            if ((D_800A2ED0w15[0] & 8) == 0) {
-                func_8001D778(0, 0x77, 0x140, 2, 8, 8, 8, 0);
-            }
-            AddPrim(ot1000, D_800A43BCw15 - 0x80 + (D_800A2DC4w15 << 6));
-            DrawOTag((OT_TYPE *)otFFC);
-            DrawOTag((OT_TYPE *)ot1FFC);
-        } else if (D_800A2EC4w15[0] != 0 && D_800A2EC8nm[0] == 0) {
-            u8 *otFFC;
-            u8 *ot1000;
-            u8 *ot1FFC;
-
-            D_800A39C8nm[0] = (s32)arg0;
-            func_8003565C(0);
-            ot1000 = (u8 *)arg0 + 0x1000;
-            func_8003587C(ot1000);
-            otFFC = (u8 *)arg0 + 0xFFC;
-            AddPrim(otFFC, D_800A433Cw15 + (D_800A2DC4w15 << 6));
-            func_8001DA48((u8 *)arg0, 0xC6, 0x12, 0x69, 0x26);
-            DrawOTag((OT_TYPE *)otFFC);
-            ot1FFC = (u8 *)arg0 + 0x1FFC;
-            AddPrim(ot1FFC, D_800A433Cw15 + 0x180 + (D_800A2DC4w15 << 6));
-            AddPrim(ot1000, D_800A433Cw15 + (D_800A2DC4w15 << 6));
-            DrawOTag((OT_TYPE *)ot1FFC);
-        } else {
-            func_8003565C(0);
-            DrawOTag((OT_TYPE *)((u8 *)arg0 + 0xFFC));
+        D_800A39C8nm[0] = (s32)arg0;
+        func_8003565C(0);
+        ot1000 = (u8 *)arg0 + 0x1000;
+        D_800A39C4w15[1] = (s32)ot1000;
+        func_800356A8(1);
+        otFFC = (u8 *)arg0 + 0xFFC;
+        AddPrim(otFFC, D_800A43BCw15 + (D_800A2DC4w15 << 6));
+        ot1FFC = (u8 *)arg0 + 0x1FFC;
+        AddPrim(ot1FFC, D_800A43BCw15 + 0x80 + (D_800A2DC4w15 << 6));
+        D_800A39CCw15[-1] = (s32)ot1000;
+        if ((D_800A2ED0w15[0] & 8) == 0) {
+            func_8001D778(0, 0x77, 0x140, 2, 8, 8, 8, 0);
         }
+        AddPrim(ot1000, D_800A43BCw15 - 0x80 + (D_800A2DC4w15 << 6));
+        DrawOTag((OT_TYPE *)otFFC);
+        DrawOTag((OT_TYPE *)ot1FFC);
+    } else if (D_800A2EC4w15[0] != 0 && D_800A2EC8nm[0] == 0) {
+        u8 *otFFC;
+        u8 *ot1000;
+        u8 *ot1FFC;
+
+        D_800A39C8nm[0] = (s32)arg0;
+        func_8003565C(0);
+        ot1000 = (u8 *)arg0 + 0x1000;
+        func_8003587C(ot1000);
+        otFFC = (u8 *)arg0 + 0xFFC;
+        AddPrim(otFFC, D_800A433Cw15 + (D_800A2DC4w15 << 6));
+        func_8001DA48((u8 *)arg0, 0xC6, 0x12, 0x69, 0x26);
+        DrawOTag((OT_TYPE *)otFFC);
+        ot1FFC = (u8 *)arg0 + 0x1FFC;
+        AddPrim(ot1FFC, D_800A433Cw15 + 0x180 + (D_800A2DC4w15 << 6));
+        AddPrim(ot1000, D_800A433Cw15 + (D_800A2DC4w15 << 6));
+        DrawOTag((OT_TYPE *)ot1FFC);
+    } else {
+        func_8003565C(0);
+        DrawOTag((OT_TYPE *)((u8 *)arg0 + 0xFFC));
     }
 }
 
@@ -1073,10 +1071,10 @@ void func_8001F728(s32 arg0) {
         s32 y;
         s32 z;
     } Vec3;
-    register Vec3 *v asm("s2");
-    register s32 x asm("s3");
-    register s32 y asm("s4");
-    register s32 z asm("s5");
+    Vec3 *v;
+    s32 x;
+    s32 y;
+    s32 z;
     extern s32 MathMultiplyFixed16(s32, s32);
     extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
         D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
@@ -1303,10 +1301,10 @@ s32 func_8001FB80(void *arg0) {
 }
 
 s32 func_8001FBDC(s32 x, s32 y, s32 z) {
-    register s32 xSq asm("v1");
-    register s32 ySq asm("t0");
-    register s32 zSq asm("v0");
-    register s32 sum asm("a0");
+    s32 xSq;
+    s32 ySq;
+    s32 zSq;
+    s32 sum;
 
     xSq = x * x;
     ySq = y * y;

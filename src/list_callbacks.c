@@ -507,7 +507,6 @@ void func_8001CBD4(u8 *arg0) {
     s32 strideNeg;
     u8 *table;
     volatile s32 framePad[2];
-
     temp = D_800A2EC0Absolute[0] & 0x3F;
     table = D_800BE97C[0];
     if (temp < 0x20) {
@@ -515,17 +514,19 @@ void func_8001CBD4(u8 *arg0) {
     } else {
         temp = 0x20 - temp;
     }
-    if (*(s16 *)(arg0 + 0xA) > 0) {
-        i = 0;
-        asm("" : : "r"(i));
-        strideNeg = -(temp * 0x14);
+    if ((*((s16 *)(arg0 + 0xA))) > 0) {
         do {
-            idx = *(u16 *)(arg0 + 0x10 + i * 2);
-            val = *(s16 *)(arg0 + 0x94 + i * 6);
-            base = *(s32 *)(arg0 + 0x218);
-            *(s32 *)(table + idx * 0x14 + 0x10) = val + base + strideNeg;
+            i = 0;
+            strideNeg = -(temp * 0x14);
+        } while (0);
+        do {
+            idx = *((u16 *)((arg0 + 0x10) + (i * 2)));
+            val = *((s16 *)((arg0 + 0x94) + (i * 6)));
+            base = *((s32 *)(arg0 + 0x218));
+            *((s32 *)((table + (idx * 0x14)) + 0x10)) =
+                (val + base) + strideNeg;
             i += 1;
-        } while (i < *(s16 *)(arg0 + 0xA));
+        } while (i < (*((s16 *)(arg0 + 0xA))));
     }
 }
 
@@ -612,67 +613,67 @@ extern s32 D_800A2EC8Absolute[];
 extern ListNode28 *D_800A3A40Absolute[];
 
 void func_8001CC7C(u8 *arg0) {
-    register s32 pal asm("v0");
-    register u16 clut asm("v0");
-    register s32 c asm("v1");
-    register s32 d asm("a0");
+    s32 pal;
+    u16 clut;
+    s32 c;
+    s32 d;
     u8 *entry;
-
-    if (*(s16 *)(arg0 + 0xA) != 4) {
+    if ((*((s16 *)(arg0 + 0xA))) != 4) {
         return;
     }
-    entry = (u8 *)D_800A3A40Absolute[0] +
-            ((*(u16 *)(arg0 + 0x18) * 2 + *(u16 *)(arg0 + 0x18)) * 4 -
-             *(u16 *)(arg0 + 0x18)) *
-                4;
+    entry =
+        ((u8 *)D_800A3A40Absolute[0]) +
+        ((((((*((u16 *)(arg0 + 0x18))) * 2) + (*((u16 *)(arg0 + 0x18)))) * 4) -
+          (*((u16 *)(arg0 + 0x18)))) *
+         4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
+        *((s16 *)(entry + 0xE)) = GetTPage(1, 0, 0x200, 0x100);
         clut = GetClut(0x200, 0x1FF);
         d = 0xA7;
         c = 0xFD;
-        *(s16 *)(entry + 0xA) = clut;
+        *((s16 *)(entry + 0xA)) = clut;
         pal = 0x7F;
-        *(u8 *)(entry + 0x8) = 0;
-        *(u8 *)(entry + 0x9) = d;
-        *(u8 *)(entry + 0xC) = 0;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = d;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = c;
+        *((u8 *)(entry + 0x8)) = 0;
+        *((u8 *)(entry + 0x9)) = d;
+        *((u8 *)(entry + 0xC)) = 0;
+        *((u8 *)(entry + 0xD)) = 0xFD;
+        *((u8 *)(entry + 0x10)) = 0x7F;
+        *((u8 *)(entry + 0x11)) = d;
+        *((u8 *)(entry + 0x14)) = pal;
+        *((u8 *)(entry + 0x15)) = c;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         pal = 0x40;
         c = 0x78;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        *((u8 *)(entry + 0x8)) = pal;
+        *((u8 *)(entry + 0xC)) = pal;
         pal = 0xBF;
-        *(u8 *)(entry + 0x9) = 0;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = 0;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = c;
+        *((u8 *)(entry + 0x9)) = 0;
+        *((u8 *)(entry + 0xD)) = c;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = 0;
+        *((u8 *)(entry + 0x14)) = pal;
+        *((u8 *)(entry + 0x15)) = c;
     } else {
         pal = 0x40;
         c = 0x3C;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        *((u8 *)(entry + 0x8)) = pal;
+        *((u8 *)(entry + 0xC)) = pal;
         pal = 0xBF;
-        *(u8 *)(entry + 0x9) = c;
-        *(u8 *)(entry + 0xD) = pal;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = c;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = pal;
+        *((u8 *)(entry + 0x9)) = c;
+        *((u8 *)(entry + 0xD)) = pal;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = c;
+        *((u8 *)(entry + 0x14)) = pal;
+        *((u8 *)(entry + 0x15)) = pal;
     }
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0, 0);
+        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0, 0);
     } else {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x140, 0);
+        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0x140, 0);
     }
 }
 
@@ -682,63 +683,66 @@ extern ListNode28 *D_800A3A40Absolute[];
 extern s32 gOrderingTableBankAbsolute[];
 
 void func_8001CDDC(u8 *arg0) {
-    register s32 pal asm("$2");
-    register s32 c asm("$4");
+    s32 pal;
+    s32 c;
     s32 d;
     u8 *entry;
-
-    if (*(s16 *)(arg0 + 0xA) != 4) {
+    if ((*((s16 *)(arg0 + 0xA))) != 4) {
         return;
     }
-    entry = (u8 *)D_800A3A40Absolute[0] +
-            ((*(u16 *)(arg0 + 0x18) * 2 + *(u16 *)(arg0 + 0x18)) * 4 -
-             *(u16 *)(arg0 + 0x18)) *
-                4;
+    entry =
+        ((u8 *)D_800A3A40Absolute[0]) +
+        ((((((*((u16 *)(arg0 + 0x18))) * 2) + (*((u16 *)(arg0 + 0x18)))) * 4) -
+          (*((u16 *)(arg0 + 0x18)))) *
+         4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
-        *(s16 *)(entry + 0xA) = GetClut(0x200, 0x1FF);
+        d = 0x100;
+        do {
+            *((s16 *)(entry + 0xE)) = GetTPage(1, 0, 0x200, d);
+            *((s16 *)(entry + 0xA)) = GetClut(0x200, 0x1FF);
+        } while (0);
         pal = 0x80;
         c = 0xA7;
         d = 0xFD;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        *((u8 *)(entry + 0x8)) = pal;
+        *((u8 *)(entry + 0xC)) = pal;
         pal = 0x9F;
-        *(u8 *)(entry + 0x9) = c;
-        *(u8 *)(entry + 0xD) = d;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = c;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = d;
+        *((u8 *)(entry + 0x9)) = c;
+        *((u8 *)(entry + 0xD)) = d;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = c;
+        *((u8 *)(entry + 0x14)) = pal;
+        *((u8 *)(entry + 0x15)) = d;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         d = 0x78;
         pal = 0x1F;
-        *(u8 *)(entry + 0x8) = 0;
-        *(u8 *)(entry + 0x9) = 0;
-        *(u8 *)(entry + 0xC) = 0;
-        *(u8 *)(entry + 0xD) = d;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = 0;
+        *((u8 *)(entry + 0x8)) = 0;
+        *((u8 *)(entry + 0x9)) = 0;
+        *((u8 *)(entry + 0xC)) = 0;
+        *((u8 *)(entry + 0xD)) = d;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = 0;
     } else {
         c = 0x3C;
         d = 0xBF;
         pal = 0x1F;
-        *(u8 *)(entry + 0x8) = 0;
-        *(u8 *)(entry + 0x9) = c;
-        *(u8 *)(entry + 0xC) = 0;
-        *(u8 *)(entry + 0xD) = d;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = c;
+        *((u8 *)(entry + 0x8)) = 0;
+        *((u8 *)(entry + 0x9)) = c;
+        *((u8 *)(entry + 0xC)) = 0;
+        *((u8 *)(entry + 0xD)) = d;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = c;
     }
-    *(u8 *)(entry + 0x14) = pal;
-    *(u8 *)(entry + 0x15) = d;
+    *((u8 *)(entry + 0x14)) = pal;
+    *((u8 *)(entry + 0x15)) = d;
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0xC0, 0);
+        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0xC0, 0);
     } else {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x200, 0);
+        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0x200, 0);
     }
 }
 
@@ -746,65 +750,67 @@ extern s32 D_800A2EC8Absolute[];
 extern ListNode28 *D_800A3A40Absolute[];
 
 void func_8001CF38(u8 *arg0) {
-    register s32 pal asm("v0");
+    s32 pal;
     s32 c;
     s32 d;
     u8 *entry;
-
-    if (*(s16 *)(arg0 + 0xA) != 4) {
+    if ((*((s16 *)(arg0 + 0xA))) != 4) {
         return;
     }
-    entry = (u8 *)D_800A3A40Absolute[0] +
-            ((*(u16 *)(arg0 + 0x18) * 2 + *(u16 *)(arg0 + 0x18)) * 4 -
-             *(u16 *)(arg0 + 0x18)) *
-                4;
+    entry =
+        ((u8 *)D_800A3A40Absolute[0]) +
+        ((((((*((u16 *)(arg0 + 0x18))) * 2) + (*((u16 *)(arg0 + 0x18)))) * 4) -
+          (*((u16 *)(arg0 + 0x18)))) *
+         4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
-        *(s16 *)(entry + 0xA) = GetClut(0x200, 0x1FF);
-        pal = 0xA0;
-        d = 0xA7;
-        c = 0xFD;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
-        pal = 0xBF;
-        *(u8 *)(entry + 0x9) = d;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = d;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = c;
+        *((s16 *)(entry + 0xE)) = GetTPage(1, 0, 0x200, 0x100);
+        *((s16 *)(entry + 0xA)) = GetClut(0x200, 0x1FF);
+        do {
+            pal = 0xA0;
+            d = 0xA7;
+            c = 0xFD;
+            *((u8 *)(entry + 0x8)) = pal;
+            *((u8 *)(entry + 0xC)) = pal;
+            pal = 0xBF;
+        } while (0);
+        *((u8 *)(entry + 0x9)) = d;
+        *((u8 *)(entry + 0xD)) = c;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = d;
+        *((u8 *)(entry + 0x14)) = pal;
+        *((u8 *)(entry + 0x15)) = c;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         pal = 0x20;
         c = 0x78;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        *((u8 *)(entry + 0x8)) = pal;
+        *((u8 *)(entry + 0xC)) = pal;
         pal = 0x3F;
-        *(u8 *)(entry + 0x9) = 0;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = 0;
+        *((u8 *)(entry + 0x9)) = 0;
+        *((u8 *)(entry + 0xD)) = c;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = 0;
     } else {
         pal = 0x20;
         d = 0x3C;
         c = 0xBF;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        *((u8 *)(entry + 0x8)) = pal;
+        *((u8 *)(entry + 0xC)) = pal;
         pal = 0x3F;
-        *(u8 *)(entry + 0x9) = d;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = d;
+        *((u8 *)(entry + 0x9)) = d;
+        *((u8 *)(entry + 0xD)) = c;
+        *((u8 *)(entry + 0x10)) = pal;
+        *((u8 *)(entry + 0x11)) = d;
     }
-    *(u8 *)(entry + 0x14) = pal;
-    *(u8 *)(entry + 0x15) = c;
+    *((u8 *)(entry + 0x14)) = pal;
+    *((u8 *)(entry + 0x15)) = c;
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0xC0, 0);
+        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0xC0, 0);
     } else {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x200, 0);
+        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0x200, 0);
     }
 }
 
@@ -945,7 +951,6 @@ void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
     } while (src != end);
     tailA = *(s32 *)src;
     tailB = *(s32 *)(src + 4);
-    asm("");
     *(s32 *)dst = tailA;
     *(s32 *)(dst + 4) = tailB;
     AddPrim((u8 *)D_800A39C8[0], entry);
@@ -993,13 +998,13 @@ INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D914);
 extern u8 D_800A3F4C[];
 extern s32 D_800A2DBC;
 void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
-    register u8 *sPrim asm("s3");
+    u8 *sPrim;
     register s32 sLeft asm("s1");
-    register s32 sTop asm("s2");
+    s32 sTop;
     register s32 sWide asm("s4");
-    register s32 sBottom asm("s5");
+    s32 sBottom;
     s32 counter;
-    register s32 next asm("a0");
+    s32 next;
     u8 *entry;
     s32 x2;
     s32 y2;
@@ -1023,7 +1028,8 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
     x2 += sWide;
     y2 = sTop;
     y2 += sBottom;
-    asm("");
+    do {
+    } while (0);
     *(s16 *)(entry + 0x12) = y2;
     *(s16 *)(entry + 0x16) = y2;
     *(s16 *)(entry + 8) = sLeft;

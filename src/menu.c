@@ -2012,7 +2012,8 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     *(u16 *)(object + 0x10) = 0;
     *(u16 *)(object + 0x1A) = 0;
     D_800A37BC = primIndex + 1;
-    asm("");
+    do {
+    } while (0);
     prim += primIndex * 12;
     *(u32 *)(object + 0x20) = prim;
     prim[0] = 0;
@@ -2191,7 +2192,6 @@ void func_80060008(u8 arg0) {
         D_800A3860[arg0][0] * 600 / 1000 + D_800A3862U8[arg0][0] * 400 / 1000;
     diff = D_800A3862U8[arg0][0] - D_800A3861U8[arg0][0];
     if (diff < 0) {
-        asm("");
         diff = 0;
     }
     vals[2] = vals[2] - diff;
@@ -2336,12 +2336,12 @@ extern u8 D_800AEE3E[];
 extern u8 D_800AEE41[];
 
 void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
-    register u8 *obj asm("t0");
-    register u8 *p asm("t1");
-    register s32 j asm("t3");
-    register s32 **entry asm("t4");
+    u8 *obj;
+    u8 *p;
+    s32 j;
+    s32 **entry;
     register s32 i asm("a3");
-    register s32 delta asm("v1");
+    s32 delta;
     register s32 base2 asm("v1");
     register s32 sh4 asm("v0");
     s32 base9;
@@ -2415,7 +2415,6 @@ void func_80062F04(u8 index, u8 kind, u8 sub) {
     if (kind == 2) {
         code = 2;
         if (sub < 4) {
-            asm("");
             code = 3;
         }
     } else {
@@ -2439,21 +2438,21 @@ extern u8 D_800AEE42[];
 extern u8 D_800AEE43[];
 
 void func_80062F6C(s32 arg0, s32 arg1) {
-    register s32 i asm("t0");
-    register u8 *obj asm("t1");
-    register s32 offset asm("t2");
+    s32 i;
+    u8 *obj;
+    s32 offset;
     s32 **entry;
-    register s32 b42 asm("v1");
+    s32 b42;
     register s32 b43 asm("a0");
-    register s32 val asm("a2");
-    register s32 lim asm("v0");
-    register s32 base2 asm("v0");
-    register s32 d asm("v0");
-    register s32 a asm("v0");
-    register s32 denom asm("v1");
-    register s32 b asm("v1");
+    s32 val;
+    s32 lim;
+    s32 base2;
+    s32 d;
+    s32 a;
+    s32 denom;
+    s32 b;
     register s32 mode asm("v1");
-    register s32 delta asm("v1");
+    s32 delta;
     s32 idx;
     s32 base9;
     s32 y;
@@ -2498,7 +2497,7 @@ void func_80062F6C(s32 arg0, s32 arg1) {
                 j = offset + base9;
                 val = D_800AEE3D[j];
                 prod = val * 49;
-                asm("sra %0, %1, 0x8" : "=r"(val) : "r"(prod));
+                val = (s32)prod >> 0x8;
                 if (val >= 0x32) {
                     val = 0x31;
                 }
@@ -2563,7 +2562,6 @@ void func_80063538(s32 arg0, s32 arg1) {
         for (i = 0; i < 2; i++) {
             offs = 4;
             if (i != 0) {
-                asm("");
                 offs = -4;
             }
             node =

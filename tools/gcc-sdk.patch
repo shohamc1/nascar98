@@ -1,0 +1,11 @@
+--- a/config/mips/mips.h
++++ b/config/mips/mips.h
+@@ -2038,7 +2038,7 @@
+    On the mips, we need a slot if either no stack has been allocated,
+    or the only register saved is the return register.  */
+ 
+-#define DELAY_SLOTS_FOR_EPILOGUE mips_epilogue_delay_slots ()
++#define DELAY_SLOTS_FOR_EPILOGUE 0
+ 
+ /* Define whether INSN can be placed in delay slot N for the epilogue.
+    No references to the stack must be made, since on the MIPS, the

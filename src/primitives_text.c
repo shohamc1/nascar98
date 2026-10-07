@@ -178,7 +178,6 @@ void func_80017D80(u8 *arg0) {
     } while (arg0 != end);
     tailA = *(s32 *)arg0;
     tailB = *(s32 *)(arg0 + 4);
-    asm("");
     *(s32 *)dst = tailA;
     *(s32 *)(dst + 4) = tailB;
     AddPrim((u8 *)D_800A39C8[0], entry);
@@ -232,14 +231,14 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
     s32 noSign;
     register s32 blank asm("v0");
     register s32 hours asm("t2");
-    register s32 totalSeconds asm("a1");
-    register s32 mode asm("a0");
+    s32 totalSeconds;
+    s32 mode;
     register s32 minutes asm("t0");
     register s32 seconds asm("t1");
-    register s32 rem1000 asm("v1");
-    register s32 msSign asm("v1");
-    register s32 msShift asm("v0");
-    register s32 millis asm("v0");
+    s32 rem1000;
+    s32 msSign;
+    s32 msShift;
+    s32 millis;
     s8 *out;
     s32 sign;
     typedef struct {
@@ -456,7 +455,6 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
     flag = D_800A2EC8[0];
     cursor = gPrimitiveCursor[0];
     ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
-    asm("");
     poly = (POLY_FT4 *)cursor;
     if (flag == 0 || D_800A397CAbsolute[0] != 2) {
         switch (kind) {
@@ -511,7 +509,7 @@ void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
     s16 *ptrB;
     s16 *ptrA;
     s32 i;
-    register s32 radiusB asm("s5");
+    s32 radiusB;
     register u8 *poly asm("s6");
     s32 radiusA;
     u16 corners[8];

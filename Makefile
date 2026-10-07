@@ -163,8 +163,11 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A38C0Absolute=D_800A38C0 \
             --defsym=D_800A39E4Absolute2=D_800A39E4
 
-# SDK C matches with R3000 scheduling. Game flags stay above.
+# SDK C matches with R3000 scheduling. Game flags stay above. The SDK
+# compiler adds tools/gcc-sdk.patch: Sony's library compiler never fills
+# the epilogue delay slot (0 of 483 SDK returns, 7 of 857 game returns).
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
+build/src/psxsdk.c.o: CC1 := tools/cc/$(CC_VER)-sdk/cc1
 
 # Splat writes asm/ and the linker script, and the file lists below need
 # them, so a fresh tree splits before Make reads the lists.
@@ -255,6 +258,9 @@ tools:
 	  | tar xz -C tools/cc/$$v; done
 	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
 	  || sh tools/build_cc.sh
+	cat tools/gcc-nascar98.patch tools/gcc-sdk.patch \
+	  | cmp -s - tools/cc/2.7.2-psx-nascar98-sdk/nascar98.patch \
+	  || sh tools/build_cc.sh sdk
 
 clean:
 	rm -rf build
