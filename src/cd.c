@@ -1035,7 +1035,100 @@ void *FileOpen(s32 fileId, void *mode) {
 void FileClose(void) {
 }
 
+#ifdef NON_MATCHING
+/* 2026-10-07 (unfused multiply), first real draft: the count homing
+ * (`mult s0,a1` via an opaque copy), the saves interleaved into the
+ * mult->mflo window, status in a1, the file-table columns via the
+ * name-true labels (loc/size = D_80098340[idx*3]/[idx*3+1], checksum
+ * compare + print through D_80098340[idx*3+2] / D_80098348nm so the
+ * base does not CSE into a callee-saved reg across GraphicsInit), the
+ * `total = -1` multiphase local, and the != branch shape all match.
+ * Left (with buf pinned s2 / retries s4): the sw s2 / sw s4 save pair
+ * comes out swapped and a sixth slot is saved (frame -0x40 vs -0x38);
+ * unpinned, gcc homes buf to s5 and retries to s4. Untried: getting
+ * buf into s2 with the save order intact. */
+extern char D_8008D110[];
+extern char D_8008D144[];
+extern char D_8008D16C[];
+extern char D_8008D178[];
+extern s32 D_80098348nm[] asm("D_80098348.NON_MATCHING");
+
+s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
+    s32 total;
+    register s32 sectors asm("s1");
+    register s32 hnd asm("s3") = handle;
+    register s32 buf asm("s2");
+    register s32 retries asm("s4");
+    u8 result[8];
+    register s32 status asm("a1");
+    s32 *ptr;
+    s32 i;
+    s32 words;
+
+    asm("" : "=r"(total) : "0"(count));
+    buf = buffer;
+    retries = 0;
+    total = total * size;
+    DrawSync(0);
+    VSync(0);
+    VSync(0);
+    total += 0x7FF;
+    sectors = total >> 11;
+    while (CdSync(1, result) == 0) {
+        VSync(0);
+    }
+    total = -1;
+retry:
+    while (CdControl(2, (u_char *)hnd, 0) == 0) {
+    }
+    CdSeekToSector(D_80098340[D_800A37CC * 3] + 0x13C);
+    CdRead(sectors, buf, 0x80);
+    do {
+        status = CdReadSync(1, 0);
+    } while (status > 0);
+    if (status == total) {
+        goto retry;
+    }
+    ptr = (s32 *)buf;
+    i = 0;
+    words = sectors << 9;
+    total = 0;
+    if (words > 0) {
+        do {
+            total += *ptr;
+            ptr += 1;
+            i += 1;
+        } while (i < words);
+    }
+    retries += 1;
+    if (D_80098340[D_800A37CC * 3 + 2] != total) {
+        if (retries < 0x32) {
+            CdControl(9, 0, 0);
+            CdSync(0, result);
+            CdReady(0, result);
+            CdInit();
+            total = -1;
+            goto retry;
+        }
+        GraphicsInit();
+        FntPrint(D_8008D110, D_80098348nm[D_800A37CC * 3], total);
+        FntPrint(D_8008D144, buf & 0x7FFFFFFF, D_800A37CC);
+        FntPrint(D_8008D16C, D_80098340[D_800A37CC * 3 + 1]);
+        FntPrint(D_8008D178, D_80098340[D_800A37CC * 3] + 0x13C);
+        FntFlush(-1);
+        while (1) {
+        }
+    }
+    return status;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/cd", FileRead);
+#endif
+
+INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D110);
+INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D144);
+INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D16C);
+INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D178);
 
 s32 func_8003C8B4(void) {
     return 0;
@@ -1092,8 +1185,6 @@ void *FileLoadToHeap(s32 arg0) {
     }
     return buffer;
 }
-
-extern void FileRead();
 
 void func_8003CA18(s32 arg0, s32 arg1) {
     u8 pad[0x40];
