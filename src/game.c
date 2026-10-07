@@ -2323,7 +2323,70 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8001D220);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8001D638);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8001D778);
+extern u8 D_800A3C6C[];
+extern s32 gOrderingTableBankAbsolute[];
+extern u32 gPrimitiveCursor[];
+extern s32 D_800A39C8[];
+extern s32 D_800A36D0Absolute[];
+void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
+                   u8 arg6, s32 arg7) {
+    typedef struct {
+        s32 words[4];
+    } Primitive16;
+    POLY_FT4 *prim;
+    u8 *src;
+    u8 *end;
+    u8 *dst;
+    POLY_FT4 *entry;
+    u32 cursorVal;
+    s32 tailA;
+    s32 tailB;
+
+    prim = (POLY_FT4 *)(D_800A3C6C + gOrderingTableBankAbsolute[0] * 0x28);
+    SetPolyFT4(prim);
+    prim->y0 = arg1;
+    prim->y1 = arg1;
+    prim->x0 = arg0;
+    prim->x1 = arg0 + arg2;
+    prim->x2 = arg0;
+    prim->y2 = arg1 + arg3;
+    prim->x3 = arg0 + arg2;
+    prim->y3 = arg1 + arg3;
+    prim->tpage = GetTPage(2, 0, 0x300, 0);
+    prim->u0 = 0;
+    prim->v0 = 0;
+    prim->u1 = 1;
+    prim->v1 = 0;
+    prim->u2 = 0;
+    prim->v2 = 1;
+    prim->u3 = 1;
+    prim->v3 = 1;
+    if ((arg7 << 0x18) != 0) {
+        SetSemiTrans(prim, 1);
+    }
+    prim->r0 = arg4;
+    prim->g0 = arg5;
+    prim->b0 = arg6;
+    src = (u8 *)prim;
+    end = src + 0x20;
+    cursorVal = gPrimitiveCursor[0];
+    asm("");
+    entry = (POLY_FT4 *)cursorVal;
+    asm volatile("" : : "r"(cursorVal));
+    dst = (u8 *)entry;
+    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
+    do {
+        *(Primitive16 *)dst = *(Primitive16 *)src;
+        src += 0x10;
+        dst += 0x10;
+    } while (src != end);
+    tailA = *(s32 *)src;
+    tailB = *(s32 *)(src + 4);
+    asm("");
+    *(s32 *)dst = tailA;
+    *(s32 *)(dst + 4) = tailB;
+    AddPrim((u8 *)D_800A39C8[0], entry);
+}
 
 #ifdef NON_MATCHING
 /* Retry 2026-10-05: The old crash was an undeclared ordering-table symbol.
@@ -14443,7 +14506,59 @@ void func_800524A0(u8 *arg0, s8 arg1) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800525A8);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80052E18);
+extern s16 D_800A34E8;
+extern s8 D_800A34EC;
+extern s8 D_800A34F0;
+extern s32 D_800A34F4;
+extern s32 D_800BE974[];
+extern s32 D_800BE980[];
+extern u8 *D_800A3878NM[] asm("D_800A3878.NON_MATCHING");
+
+void func_80052E18(void) {
+    s16 i;
+    u8 *elem;
+    u8 *poly;
+    u8 *p;
+    u8 *entry;
+
+    D_800A34E8 = 0;
+    D_800A34F0 = 0;
+    D_800A34EC = 0;
+    D_800A34F4 = (s32)HeapAlloc(0x2260);
+    i = 0;
+    do {
+        elem = (u8 *)D_800A34F4 + i * 0x58;
+        poly = elem + 8;
+        SetPolyFT4((POLY_FT4 *)poly);
+        SetSemiTrans(poly, 1);
+        SetShadeTex(poly, 1);
+        elem[9] = 0x10;
+        *(u32 *)(elem + 0x20) = (u32)(elem + 0x34);
+        *(u32 *)(elem + 0x24) = (u32)(elem + 0x3C);
+        *(u32 *)(elem + 0x28) = (u32)(elem + 0x4C);
+        *(u32 *)(elem + 0x2C) = (u32)(elem + 0x44);
+        elem[0xA] = 0xD;
+        *(s32 *)(elem + 0x30) = 0;
+        *(s16 *)elem = -1;
+        i++;
+    } while (i < 100);
+    i = 0;
+    while (i < D_800BE974[0]) {
+        *(s32 *)((u8 *)D_800BE980[0] + i * 0x90 + 0x74) = 0;
+        i++;
+    }
+    p = D_800A3878NM[0];
+    while (p != 0) {
+        for (i = 0; i < 4; i++) {
+            entry = p + i * 0x28;
+            *(s16 *)(entry + 0x2D2) = -1;
+            entry[0x2D0] = 0;
+            entry[0x2CC] = 0;
+        }
+        p[0x3B9] = 0;
+        p = *(u8 **)(p + 0x3E0);
+    }
+}
 
 extern s8 D_800A34EC;
 extern s8 D_800A34F0;
@@ -14460,7 +14575,44 @@ void func_80052FC4(s8 arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8005301C);
+extern void func_8003FC0C(s32, s32, s32);
+
+void func_8005301C(void) {
+    u8 *obj;
+
+    if (D_800A2F9Dw15[0] == 0) {
+        return;
+    }
+    obj = D_800A3554[0];
+    if (*(s8 *)(obj + 0x3B9) != 0) {
+        func_8003FC0C(
+            0x14, (s8)(*(s16 *)(obj + 0x92) * 8 / *(s16 *)(obj + 0x9A) + 0x2C),
+            0);
+        if (*(u8 *)&D_800A34EC == 0) {
+            func_8003F564(0x14, 2);
+            D_800A34EC = 1;
+        }
+    } else if (*(u8 *)&D_800A34EC != 0) {
+        func_8003F914(0x14);
+        D_800A34EC = 0;
+    }
+    if (D_800A2EA4Absolute[0] == 0) {
+        return;
+    }
+    obj = *(u8 **)(D_800A3554[0] + 0x3E0);
+    if (*(s8 *)(obj + 0x3B9) != 0) {
+        func_8003FC0C(
+            0x15, (s8)(*(s16 *)(obj + 0x92) * 8 / *(s16 *)(obj + 0x9A) + 0x2C),
+            0);
+        if (*(u8 *)&D_800A34F0 == 0) {
+            func_8003F564(0x15, 2);
+            D_800A34F0 = 1;
+        }
+    } else if (*(u8 *)&D_800A34F0 != 0) {
+        func_8003F914(0x15);
+        D_800A34F0 = 0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800531B8);
 
@@ -22794,7 +22946,94 @@ INCLUDE_ASM("asm/nonmatchings/game", func_8006DF98);
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006E07C);
 
-INCLUDE_ASM("asm/nonmatchings/game", func_8006E484);
+void func_8006E484(u32 arg0, u32 arg1) {
+    s32 i;
+    s32 m;
+    u32 n;
+    s32 pos;
+    s32 maxb;
+    s32 white;
+    s32 lt;
+    s32 p;
+    s32 d;
+    u8 *q;
+    u8 *v;
+
+    i = 0;
+    m = (u8)arg0;
+    pos = (m << 3) + m;
+    maxb = 0x80;
+    white = 0xFF;
+    n = (u8)arg1;
+    lt = n < 5;
+    p = 0;
+    do {
+        asm volatile("lui %0, %%hi(D_800AEE3C)\n\t"
+                     "addiu %0, %0, %%lo(D_800AEE3C)\n\t"
+                     "addu %0, %1, %0"
+                     : "=r"(v)
+                     : "r"(p));
+        asm("addu %0, %1, %2" : "=r"(q) : "r"(pos), "r"(v));
+        if (i == 2) {
+            if ((u32)(q[2] - 0x60) >= 0x41) {
+                q[2] = maxb;
+            }
+            d = q[1] - q[2];
+            if (d < 9) {
+                q[1] = white;
+            }
+            d = q[2] - q[0];
+            if (d < 9) {
+                q[0] = 0;
+            }
+        } else if (!lt) {
+            if ((u32)((q[2] - 0x40) & 0xFF) >= 0x81) {
+                q[2] = maxb;
+            }
+            if (i == 0) {
+                d = q[2] - q[1];
+                if (d >= 0) {
+                    if (d < 9) {
+                        goto setg;
+                    }
+                } else {
+                    d = q[1] - q[2];
+                    if (d < 9) {
+                        goto setg;
+                    }
+                }
+                goto nextg;
+            setg:
+                q[1] = 0;
+            nextg:;
+            } else {
+                d = q[1] - q[2];
+                if (d >= 0) {
+                    if (d < 9) {
+                        goto setw;
+                    }
+                } else {
+                    d = q[2] - q[1];
+                    if (d < 9) {
+                        q[1] = white;
+                    }
+                }
+            }
+        } else {
+            if (q[2] >= 0x81) {
+                q[2] = 0;
+            }
+            d = q[1] - q[0];
+            if (d < 9) {
+                q[0] = 0;
+            setw:
+                q[1] = white;
+            }
+        }
+        i++;
+        p += 3;
+    } while (i < 3);
+}
 
 INCLUDE_ASM("asm/nonmatchings/game", func_8006E628);
 
