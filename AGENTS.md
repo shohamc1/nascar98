@@ -38,7 +38,7 @@ These are the paths you work with:
 | `disc/` | Files from your disc image (`make extract`) | No |
 | `include/` | Headers, including the tracked `include_asm.h` and `.inc` files (splat no longer regenerates them) | Yours only |
 | `include/psxsdk/`, `include/types.h` | SDK headers and base types copied from sotn-decomp (AGPL-3.0). Don't edit them; see `include/psxsdk/README.md` | Yes |
-| `src/` | Decompiled C. `src/game.c` holds every game function for now | Yes |
+| `src/` | Decompiled C. Game functions live in subsystem files (`game.c`, `util.c`, `cd.c`, and so on); each file is an address range, see `kb/games/nascar98-us/open-questions.md` | Yes |
 | `tools/` | Project scripts, plus submodules and downloads | Scripts and submodules |
 
 ## Set up
@@ -68,7 +68,7 @@ These are the paths you work with:
 2. Draft C with m2c:
    `.venv/bin/python tools/m2c/m2c.py -t mipsel-gcc-c asm/nonmatchings/game/FUNC.s`.
    Treat the output as notes. Skip this step for a parked draft.
-3. Replace the function's `INCLUDE_ASM` line in `src/game.c` with your C.
+3. Replace the function's `INCLUDE_ASM` line in its `src/` file with your C.
 4. Diff it: `.venv/bin/python tools/asm-differ/diff.py --no-pager --format plain -m FUNC`.
    When a diff line resists the obvious C, find its symptom in
    `kb/psx/matching.md` before you try your own ideas.
