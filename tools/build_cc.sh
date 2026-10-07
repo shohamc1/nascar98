@@ -10,7 +10,7 @@ dest="$repo/tools/cc/2.7.2-psx-nascar98"
 git -C "$work" init -q
 git -C "$work" fetch -q --depth=1 https://github.com/decompals/old-gcc.git "$revision"
 git -C "$work" checkout -q FETCH_HEAD
-cp "$repo/tools/gcc-load-latency.patch" "$work/patches/nascar98.patch"
+cp "$repo/tools/gcc-nascar98.patch" "$work/patches/nascar98.patch"
 
 # Reuse the upstream host fixes and compiler checks on both platforms.
 python3 - "$work" <<'PY'
@@ -42,3 +42,6 @@ case "$(uname -s)" in
         ;;
     *) echo "Unsupported compiler build host" >&2; exit 1 ;;
 esac
+
+# Record the patch so `make tools` rebuilds when it changes.
+cp "$repo/tools/gcc-nascar98.patch" "$dest/nascar98.patch"

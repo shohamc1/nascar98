@@ -2566,7 +2566,7 @@ void func_8006FAAC(void) {
     s32 xv;
     s32 a;
     s32 b;
-    register s32 w asm("$5");
+    s32 w;
     s32 h;
     u_long *buf;
     s32 n;
@@ -2583,9 +2583,8 @@ void func_8006FAAC(void) {
     if (xv < a + b) {
         w = (s16)st2->unk20;
         h = (s16)st2->unk22;
-        asm volatile("mult %0, %1" : : "r"(w), "r"(h) : "lo", "hi");
         buf = st2->unk24;
-        asm volatile("mflo %0" : "=r"(n));
+        n = w * h;
         DecDCTout(buf, n / 2);
     } else {
         st2->unk11C = 1;
@@ -2741,57 +2740,29 @@ extern s32 D_800A33A0;
 void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
     RECT rect;
     volatile s32 pad[2];
-    s32 scaleV;
     u32 word;
     u32 wA;
+    u32 w8;
     s32 magic;
-    s32 stride;
     s32 height16;
     s32 output;
     u32 i;
-    register s32 prod asm("$10");
-    s32 wv;
-    s32 hv;
-    register s32 *str asm("$6");
-    register u32 w8 asm("$7");
-    register u32 nsectors16 asm("$18");
-    register u32 w8hi asm("$2");
-    register u32 xoff9 asm("$9");
-    register s32 prodr asm("$10");
-    register u32 stride160 asm("$2");
-    register s32 sq asm("$3");
-    register u32 halfv asm("$2");
-    register s32 dbl asm("$2");
-    u32 n4;
-    s32 xv;
-    s32 sx;
-    u32 b0;
-    u32 b1;
+    s32 *str;
+    u32 nsectors16;
+    s32 stride;
 
-    scaleV = D_800A33A0;
     word = *(u32 *)arg0;
     w8 = *(u16 *)(arg0 + 8);
-    asm volatile("mult %0, %1" : : "r"(arg1), "r"(scaleV) : "lo", "hi");
     wA = *(u16 *)(arg0 + 0xA);
-    asm volatile("srl %0, %1, 0x18" : "=r"(b0) : "r"(word));
-    b1 = (word >> 8) & 0xFF00;
-    magic = b0 | b1 | ((word & 0xFF00) << 8) | (word << 0x18);
-    asm volatile("");
+    magic = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) |
+            (word << 0x18);
     rect.y = arg2;
-    asm volatile("lw %0, D_800A3398" : "=r"(str));
+    str = D_800A3398;
     height16 = (wA >> 8) | ((wA & 0xFF) << 8);
-    asm volatile("srl %0, %1, 8" : "=r"(w8hi) : "r"(w8));
-    asm volatile("mflo %0" : "=r"(prodr));
-    asm volatile("srl $9, %0, 1" : : "r"(prodr));
-    rect.x = xoff9;
-    nsectors16 = w8hi | ((w8 & 0xFF) << 8);
+    rect.x = (u32)(arg1 * D_800A33A0) >> 1;
+    nsectors16 = (w8 >> 8) | ((w8 & 0xFF) << 8);
     if (str[0x45] != 0) {
-        register u32 xsum asm("$2");
-        stride160 = D_800A33A0 * 0xA0;
-        asm volatile("addu %0, %1, %2"
-                     : "=r"(xsum)
-                     : "r"(xoff9), "r"(stride160));
-        rect.x = xsum;
+        rect.x = rect.x + D_800A33A0 * 0xA0;
     }
     rect.w = D_800A33A0 * 8;
     rect.h = height16;
@@ -2807,13 +2778,8 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
         DecDCTin((u_long *)*(s32 *)((s32)str + (1 - str[0xC]) * 4 + 0x28),
                  D_800A339C);
         stride = D_800A33A0 * 8;
-        asm volatile("mult %1, %2\n\tmflo %0"
-                     : "=r"(sq)
-                     : "r"(height16), "r"(stride)
-                     : "lo", "hi");
-        n4 = nsectors16 >> 4;
-        asm volatile("srl %0, %1, 1" : "=r"(halfv) : "r"(sq));
-        DecDCTout((u_long *)output, halfv * n4);
+        DecDCTout((u_long *)output,
+                  ((u32)(height16 * stride) >> 1) * (nsectors16 >> 4));
         if (magic == 0x4D444543) {
             func_800708D8(arg0 + 0x10, *(s32 *)((s32)D_800A3398 +
                                                 D_800A3398[0xC] * 4 + 0x28));
@@ -2823,15 +2789,9 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
         if (nsectors16 != 0) {
             do {
                 LoadImage(&rect, (u_long *)output);
-                wv = rect.w;
-                hv = rect.h;
-                asm volatile("mult %0, %1" : : "r"(wv), "r"(hv) : "lo", "hi");
                 i += 0x10;
-                xv = (u16)rect.x + D_800A33A0 * 8;
-                asm("mflo %0" : "=r"(prod) : "r"(xv));
-                dbl = prod * 2;
-                output += dbl;
-                rect.x = xv;
+                rect.x = (u16)rect.x + D_800A33A0 * 8;
+                output += rect.w * rect.h * 2;
             } while (i < nsectors16);
         }
         D_800A3398[0x47] = 1;
@@ -3863,7 +3823,6 @@ void func_80072750(void) {
     u8 *src;
     s32 addr;
     s32 addr2;
-    register u32 value asm("$2");
     u32 size;
     u32 i;
     u32 j;
@@ -3875,23 +3834,8 @@ void func_80072750(void) {
             size = 0x300;
             if ((u32)(D_800A351C[1] - D_800A351C[0]) > size &&
                 D_800A351C[0x7B78 / 4] == 0) {
-                u32 x;
-
-                x = (u32)D_800A351C[0];
-                asm("lui $2,0x8888\n\t"
-                    "ori $2,$2,0x8889\n\t"
-                    "multu %0,$2\n\t"
-                    "mfhi $6\n\t"
-                    "srl $3,$6,0xd\n\t"
-                    "sll $2,$3,4\n\t"
-                    "subu $2,$2,$3\n\t"
-                    "sll $2,$2,0xa\n\t"
-                    "subu %0,%0,$2"
-                    : "=r"(x)
-                    : "0"(x)
-                    : "$2", "$3", "$6", "hi", "lo");
-                x += 0x10;
-                addr = (s32)((u8 *)D_800A351C + x);
+                addr = (s32)((u8 *)D_800A351C +
+                             ((u32)D_800A351C[0] % 0x3C00 + 0x10));
             } else {
                 addr = 0;
             }
@@ -3899,25 +3843,10 @@ void func_80072750(void) {
             if (src != 0) {
                 if ((u32)(D_800A351C[1] - D_800A351C[0]) > size &&
                     D_800A351C[0x7B78 / 4] == 0) {
-                    u32 x;
-
-                    x = (u32)D_800A351C[0];
-                    asm("lui $2,0x8888\n\t"
-                        "ori $2,$2,0x8889\n\t"
-                        "multu %0,$2\n\t"
-                        "mfhi $6\n\t"
-                        "srl $3,$6,0xd\n\t"
-                        "sll $2,$3,4\n\t"
-                        "subu $2,$2,$3\n\t"
-                        "sll $2,$2,0xa\n\t"
-                        "subu %0,%0,$2"
-                        : "=r"(x)
-                        : "0"(x)
-                        : "$2", "$3", "$6", "hi", "lo");
-                    x += 0x3C10;
-                    addr2 = (s32)((u8 *)D_800A351C + x);
+                    addr2 = (s32)((u8 *)D_800A351C +
+                                  ((u32)D_800A351C[0] % 0x3C00 + 0x3C10));
                 } else {
-                    asm("move %0,$0" : "=r"(addr2));
+                    addr2 = 0;
                 }
                 addr = addr2;
             } else {
@@ -3925,11 +3854,10 @@ void func_80072750(void) {
                 addr = (s32)src;
             }
             j = 0;
-            value = 1;
-            D_800A351C[0x7B48 / 4] = value;
-            D_800A351C[0x7B4C / 4] = value;
+            D_800A351C[0x7B48 / 4] = 1;
+            D_800A351C[0x7B4C / 4] = 1;
             D_800A351C[0x7B50 / 4] = addr;
-            D_800A351C[0x7B54 / 4] = value;
+            D_800A351C[0x7B54 / 4] = 1;
             addr = D_800A351C[0x7B3C / 4];
             for (; j < 0x300; j += 0x10) {
                 src[j + 1] = 2;

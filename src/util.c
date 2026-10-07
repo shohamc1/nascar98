@@ -206,9 +206,7 @@ s32 RandomScaledGet(s32 scale) {
         gRandomCount = 0;
     }
     seed = (gRandomSeed * 25173 + 13849) & 0xFFFF;
-    /* Keep the store and return in one scheduling block. */
-    do {
-        gRandomSeed = seed;
-        return (u32)(seed * scale) >> 16;
-    } while (0);
+    gRandomSeed = seed;
+    seed *= scale;
+    return (u32)seed >> 16;
 }

@@ -1253,12 +1253,10 @@ s32 func_8004229C(s32 arg0);
 
 u32 RandomGetScaled16(s32 arg0) {
     s32 value0;
-
     value0 = ((gRandomSeed16 * 0x6255) + 0x3619) & 0xFFFF;
-    do {
-        gRandomSeed16 = value0;
-        return (u32)(value0 * arg0) >> 0x10;
-    } while (0);
+    gRandomSeed16 = value0;
+    value0 *= arg0;
+    return (u32)value0 >> 0x10;
 }
 
 extern u8 D_800AD9CC[];
@@ -1394,7 +1392,12 @@ void func_80043D6C(void) {
                 value2 = ((value * 0x6255) + 0x3619) & 0xFFFF;
                 gRandomSeed16 = value2;
                 asm volatile("" ::: "memory");
-                D_800B1A24[off1] = -(s32)((u32)(value2 * m1) >> 16);
+                asm volatile("mult %0, %1"
+                             :
+                             : "r"(value2), "r"(m1)
+                             : "lo", "hi");
+                asm volatile("mflo %0" : "=r"(prodlo));
+                D_800B1A24[off1] = -(s32)((u32)prodlo >> 16);
                 temp = gRandomSeed16;
                 asm volatile("addu %0, %1, %2"
                              : "=r"(off2)
@@ -1407,7 +1410,12 @@ void func_80043D6C(void) {
                 value2 = ((value * 0x6255) + 0x3619) & 0xFFFF;
                 gRandomSeed16 = value2;
                 asm volatile("" ::: "memory");
-                D_800B1A25[off2] = -(s32)((u32)(value2 * m2) >> 16);
+                asm volatile("mult %0, %1"
+                             :
+                             : "r"(value2), "r"(m2)
+                             : "lo", "hi");
+                asm volatile("mflo %0" : "=r"(prodlo));
+                D_800B1A25[off2] = -(s32)((u32)prodlo >> 16);
                 temp = gRandomSeed16;
                 value3 = ((temp * 0x6255) + 0x3619) & 0xFFFF;
                 gRandomSeed16 = value3;

@@ -40,7 +40,8 @@ LD      := $(CROSS)ld
 OBJCOPY := $(CROSS)objcopy
 
 # Compiler and assembler versions, decided by matching. See AGENTS.md.
-# 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-load-latency.patch. See
+# 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-nascar98.patch: load
+# latency 4 and an unfused R4000 multiply. See "Unfused multiply" and
 # "Compiler search, second pass" in kb/psx/toolchain.md.
 CC_VER    ?= 2.7.2-psx-nascar98
 ASPSX_VER ?= 2.34
@@ -251,7 +252,8 @@ tools:
 	for v in 2.7.2-psx 2.8.1-psx; do mkdir -p tools/cc/$$v && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-$$v$(OLD_GCC_SUFFIX).tar.gz \
 	  | tar xz -C tools/cc/$$v; done
-	test -x tools/cc/2.7.2-psx-nascar98/cc1 || sh tools/build_cc.sh
+	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
+	  || sh tools/build_cc.sh
 
 clean:
 	rm -rf build

@@ -732,63 +732,18 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
     D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 
 void func_8001ED84(s32 *vec) {
-    register s32 m asm("v0");
-    register s32 x asm("a2");
-    register s32 y asm("a1");
-    register s32 z asm("v1");
-    register s32 p0 asm("t4");
-    register s32 p1 asm("t3");
-    register s32 p2 asm("t1");
-    register s32 p3 asm("t2");
-    register s32 p4 asm("t0");
-    register s32 p5 asm("a3");
-    register s32 p6 asm("a2");
-    register s32 p7 asm("a1");
-    register s32 p8 asm("v1");
-    register s32 row asm("v0");
+    s32 x, y, z;
+    s32 a, b, c;
 
     x = vec[0];
-    m = D_800A36B0;
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
     y = vec[1];
-    m = D_800A36B8;
-    asm volatile("mflo\t%0" : "=r"(p0) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
     z = vec[2];
-    m = D_800A36C0;
-    asm volatile("mflo\t%0" : "=r"(p1) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
-    m = D_800A36C8;
-    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
-    m = D_800A36D0;
-    asm volatile("mflo\t%0" : "=r"(p3) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
-    m = D_800A36D4;
-    asm volatile("mflo\t%0" : "=r"(p4) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
-    m = D_800A36D8;
-    asm volatile("mflo\t%0" : "=r"(p5) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
-    m = D_800A36DC;
-    asm volatile("mflo\t%0" : "=r"(p6) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
-    m = D_800A36E8;
-    asm volatile("mflo\t%0" : "=r"(p7) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
-    row = p0 + p1;
-    row = row + p2;
-    row = row >> 16;
-    vec[0] = row;
-    row = p3 + p4;
-    row = row + p5;
-    row = row >> 16;
-    vec[1] = row;
-    row = p6 + p7;
-    asm volatile("mflo\t%0" : "=r"(p8) : : "lo");
-    row = row + p8;
-    row = row >> 16;
-    vec[2] = row;
+    a = (D_800A36B0 * x + D_800A36B8 * y + D_800A36C0 * z) >> 16;
+    b = (D_800A36C8 * x + D_800A36D0 * y + D_800A36D4 * z) >> 16;
+    c = (D_800A36D8 * x + D_800A36DC * y + D_800A36E8 * z) >> 16;
+    vec[0] = a;
+    vec[1] = b;
+    vec[2] = c;
 }
 
 extern s32 D_800A3784;
@@ -980,63 +935,18 @@ extern s32 D_800A37B4;
 extern s32 D_800A37C4;
 
 void func_8001F1D4(s32 *vec) {
-    register s32 m asm("v0");
-    register s32 x asm("a2");
-    register s32 y asm("a1");
-    register s32 z asm("v1");
-    register s32 p0 asm("t4");
-    register s32 p1 asm("t3");
-    register s32 p2 asm("t1");
-    register s32 p3 asm("t2");
-    register s32 p4 asm("t0");
-    register s32 p5 asm("a3");
-    register s32 p6 asm("a2");
-    register s32 p7 asm("a1");
-    register s32 p8 asm("v1");
-    register s32 row asm("v0");
+    s32 x, y, z;
+    s32 a, b, c;
 
     x = vec[0];
-    m = D_800A3784;
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
     y = vec[1];
-    m = D_800A3790;
-    asm volatile("mflo\t%0" : "=r"(p0) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
     z = vec[2];
-    m = D_800A3794;
-    asm volatile("mflo\t%0" : "=r"(p1) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
-    m = D_800A3798;
-    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
-    m = D_800A379C;
-    asm volatile("mflo\t%0" : "=r"(p3) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
-    m = D_800A37A4;
-    asm volatile("mflo\t%0" : "=r"(p4) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
-    m = D_800A37AC;
-    asm volatile("mflo\t%0" : "=r"(p5) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(x) : "hi", "lo");
-    m = D_800A37B4;
-    asm volatile("mflo\t%0" : "=r"(p6) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(y) : "hi", "lo");
-    m = D_800A37C4;
-    asm volatile("mflo\t%0" : "=r"(p7) : : "lo");
-    asm volatile("mult\t%0,%1" : : "r"(m), "r"(z) : "hi", "lo");
-    row = p0 + p1;
-    row = row + p2;
-    row = row >> 16;
-    vec[0] = row;
-    row = p3 + p4;
-    row = row + p5;
-    row = row >> 16;
-    vec[1] = row;
-    row = p6 + p7;
-    asm volatile("mflo\t%0" : "=r"(p8) : : "lo");
-    row = row + p8;
-    row = row >> 16;
-    vec[2] = row;
+    a = (D_800A3784 * x + D_800A3790 * y + D_800A3794 * z) >> 16;
+    b = (D_800A3798 * x + D_800A379C * y + D_800A37A4 * z) >> 16;
+    c = (D_800A37AC * x + D_800A37B4 * y + D_800A37C4 * z) >> 16;
+    vec[0] = a;
+    vec[1] = b;
+    vec[2] = c;
 }
 
 extern s32 MathMultiplyFixed16(s32, s32);
@@ -1381,8 +1291,6 @@ void func_8001FB28(u8 *arg0, s32 index) {
     *(s32 *)(arg0 + 0x70) = value3;
 }
 
-#ifdef NON_MATCHING
-/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
 s32 func_8001FB80(void *arg0) {
     s32 dx;
     s32 dy;
@@ -1393,33 +1301,7 @@ s32 func_8001FB80(void *arg0) {
     dz = *(s32 *)((u8 *)arg0 + 0xA4);
     return MathSqrt(dx * dx + dy * dy + dz * dz);
 }
-#else
-s32 func_8001FB80(void *arg0) {
-    register s32 dx asm("v0");
-    register s32 dy asm("v0");
-    register s32 dz asm("v0");
-    register s32 dxSq asm("a1");
-    register s32 dySq asm("v1");
-    register s32 dzSq asm("a3");
-    register s32 sum asm("a0");
 
-    dx = *(s32 *)((u8 *)arg0 + 0x9C);
-    asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
-    dy = *(s32 *)((u8 *)arg0 + 0xA0);
-    asm volatile("mflo\t%0" : "=r"(dxSq) : : "lo");
-    asm volatile("mult\t%0,%0" : : "r"(dy) : "hi", "lo");
-    dz = *(s32 *)((u8 *)arg0 + 0xA4);
-    asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
-    asm volatile("mult\t%0,%0" : : "r"(dz) : "hi", "lo");
-    sum = dxSq + dySq;
-    asm volatile("mflo\t%0" : "=r"(dzSq) : : "lo");
-    return MathSqrt(sum + dzSq);
-}
-
-#endif
-
-#ifdef NON_MATCHING
-/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
 s32 func_8001FBDC(s32 x, s32 y, s32 z) {
     register s32 xSq asm("v1");
     register s32 ySq asm("t0");
@@ -1432,26 +1314,3 @@ s32 func_8001FBDC(s32 x, s32 y, s32 z) {
     sum = xSq + ySq;
     return MathSqrt(sum + zSq);
 }
-#else
-s32 func_8001FBDC(s32 x, s32 y, s32 z) {
-    register s32 xSq asm("v1");
-    register s32 ySq asm("t0");
-    register s32 zSq asm("v0");
-    register s32 sum asm("a0");
-    register s32 ret asm("v0");
-
-    xSq = x * x;
-    ySq = y * y;
-    asm volatile("mult\t%0,%0\n\taddiu\t$sp,$sp,-24\n\tsw\t$ra,16($sp)"
-                 :
-                 : "r"(z));
-    sum = xSq + ySq;
-    asm volatile("mflo\t%0" : "=r"(zSq));
-    asm volatile(
-        ".set\tnoreorder\n\tjal\tMathSqrt\n\taddu\t%1,%1,%2\n\t.set\treorder\n\tlw\t$ra,16($sp)\n\taddiu\t$sp,$sp,24"
-        : "=r"(ret)
-        : "r"(sum), "r"(zSq));
-    return ret;
-}
-
-#endif

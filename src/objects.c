@@ -421,24 +421,6 @@ void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
 s32 func_8001FBDC(s32 x, s32 y, s32 z);
 
-#ifdef NON_MATCHING
-/* Objects and scene state. */
-
-typedef struct CarVector {
-    u8 pad[0x9C];
-    s32 x;
-    s32 y;
-} CarVector;
-
-u32 VectorGetMagnitude2D(CarVector *arg0) {
-    s32 sum;
-    sum = arg0->x * arg0->x;
-    sum += arg0->y * arg0->y;
-    return MathSqrt((u32)sum);
-}
-#else
-#ifdef NON_MATCHING
-/* Wall: retail emits each square into a fresh temp (mflo v1/t0...) and recycles v0 for the next load; our compiler reuses the dead operand register for mflo. Also retail spaces the two mults one slot wider. Consistent with the latency-5 compiler profile in kb/psx/toolchain.md. */
 s32 VectorGetMagnitude2D(void *arg0) {
     s32 dx;
     s32 dy;
@@ -447,24 +429,6 @@ s32 VectorGetMagnitude2D(void *arg0) {
     dy = *(s32 *)((u8 *)arg0 + 0xA0);
     return MathSqrt(dx * dx + dy * dy);
 }
-#else
-s32 VectorGetMagnitude2D(void *arg0) {
-    register s32 dx asm("v0");
-    register s32 dy asm("v0");
-    register s32 dxSq asm("v1");
-    register s32 dySq asm("a2");
-
-    dx = *(s32 *)((u8 *)arg0 + 0x9C);
-    asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
-    dy = *(s32 *)((u8 *)arg0 + 0xA0);
-    asm volatile("mflo\t%0" : "=r"(dxSq) : : "lo");
-    asm volatile("mult\t%0,%0" : : "r"(dy) : "hi", "lo");
-    asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
-    return MathSqrt(dxSq + dySq);
-}
-
-#endif
-#endif
 
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008CF28);
 extern char D_8008CF28[];
@@ -605,17 +569,15 @@ void func_80022CA4(void) {
     u8 *p;
     s32 current;
     s32 count;
-    register s32 multL asm("v1");
     u8 *baseAddr;
     s32 offset;
     u32 bits;
-    register u32 w2 asm("a2");
+    u32 w2;
     s32 d;
     s32 dm1;
     register u16 val asm("v1");
     s32 v90;
-    register s32 t114 asm("a0");
-    register s32 z1 asm("a1");
+    s32 t114;
     s32 i;
 
     current = D_800A3A3CSmall;
@@ -627,10 +589,8 @@ void func_80022CA4(void) {
         D_800A2ED4[0] = 1;
         func_80052FC4(0);
     }
-    multL = D_800A3A3CSmall;
-    asm volatile("mult %0, %1" : : "r"(multL), "r"(D_800A2E94[0] + 6));
+    count = D_800A3A3CSmall * (D_800A2E94[0] + 6);
     node = D_800A3878w15[0];
-    asm volatile("mflo %0" : "=r"(count));
     if (node != 0) {
         offset = count * 20;
         do {
@@ -667,11 +627,9 @@ void func_80022CA4(void) {
                     *(s16 *)(node + 0x2AC + i * 0x28) = *(u16 *)(node + 0xFE);
                 }
                 t114 = *(s16 *)(node + 0x114);
-                asm volatile("addu %0, $zero, $zero" : "=r"(z1));
                 *(s16 *)(node + 0x388) = (w2 << 12) >> 22;
-                asm("");
                 *(s16 *)(node + 0x38A) = w2 & 0x3FF;
-                func_8001F2C4(t114, z1, 0);
+                func_8001F2C4(t114, 0, 0);
                 func_8001F828((s32 *)node);
                 func_8001F874((s32 *)node);
                 *(s32 *)(node + 0x228) = 0;
@@ -1429,31 +1387,17 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
 INCLUDE_ASM("asm/nonmatchings/objects", func_800261F8);
 
 s32 func_800270F4(void *arg0, s32 arg1) {
-    register s32 sinValue asm("a1");
-    register s32 product1 asm("a1");
-    register s32 cosValue asm("v1");
-    register s32 product2 asm("v1");
-    register s32 argVal asm("v1");
     s32 index;
-    s32 argVal2;
+    register s32 product asm("a1");
     s32 result;
 
     index = (0x400 - arg1) & 0x3FF;
-    sinValue = ((s32 **)D_800A3A2CAbsolute)[0][index];
-    asm("");
-    argVal = *(s32 *)arg0;
-    asm volatile("mult %0, %1" : : "r"(sinValue), "r"(argVal) : "lo");
-    cosValue = ((s32 **)D_800A3A34Absolute)[0][index];
-    argVal2 = *(s32 *)((s32)arg0 + 4);
-    asm volatile("mflo %0" : "=r"(product1));
-    asm volatile("nop");
-    asm volatile("nop");
-    asm volatile("mult %0, %1" : : "r"(cosValue), "r"(argVal2) : "lo");
-    asm volatile("mflo %0" : "=r"(product2));
-    result = product1 - product2;
+    product = ((s32 **)D_800A3A2CAbsolute)[0][index];
+    product *= *(s32 *)arg0;
+    result = product -
+             ((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)((s32)arg0 + 4);
     result = -(result >> 16) * 3;
     if (result < 0) {
-        asm("");
         result += 3;
     }
     return result >> 2;
@@ -1832,10 +1776,8 @@ void func_80029A78(u8 *car) {
     s32 dist10;
     s32 value;
     s32 scale;
+    s32 vx;
     s32 vy;
-    register s32 vxr asm("$2");
-    register s32 sq2r asm("$8");
-    register s32 sq1r asm("$3");
 
     *(u16 *)(car + 0x104) = *(u16 *)(car + 0x114);
     func_8001F2C4(*(s16 *)(car + 0x114), 0, 0);
@@ -1851,13 +1793,9 @@ void func_80029A78(u8 *car) {
                                   : -*(s32 *)(car + 0xB0) < 0x28) {
         if (*(s32 *)(car + 0xB4) >= 0 ? *(s32 *)(car + 0xB4) < 0x28
                                       : -*(s32 *)(car + 0xB4) < 0x28) {
-            vxr = *(s32 *)(car + 0xB0);
-            asm volatile("mult %0, %0" : : "r"(vxr) : "lo", "hi");
+            vx = *(s32 *)(car + 0xB0);
             vy = *(s32 *)(car + 0xB4);
-            asm volatile("mflo %0\n\tnop\n\tnop" : "=r"(sq1r));
-            asm volatile("mult %0, %0" : : "r"(vy) : "lo", "hi");
-            asm volatile("mflo %0" : "=r"(sq2r));
-            dist10 = (s32)MathSqrt(sq1r + sq2r) * D_800A2E1C / 10;
+            dist10 = (s32)MathSqrt(vx * vx + vy * vy) * D_800A2E1C / 10;
             if (*(s16 *)(car + 0x20E) >= 0 ? dist10 < *(s16 *)(car + 0x20E)
                                            : dist10 < -*(s16 *)(car + 0x20E)) {
                 if (*(s16 *)(car + 0x20E) >= 0) {
@@ -2019,7 +1957,6 @@ s32 func_80029EF8(u8 *obj) {
     s32 flags;
     s32 v;
     s32 c4;
-    register s32 prod asm("a2");
 
     c4 = *(s8 *)(obj + 0x3C4);
     v = *(s8 *)(obj + 0x20B);
@@ -2039,11 +1976,8 @@ s32 func_80029EF8(u8 *obj) {
     }
 twoFiveSeven:
     func_8006EB18(obj);
-    asm volatile("mult %0, %1"
-                 :
-                 : "r"((*(s8 *)(obj + 0x3C5)) << 2), "r"(D_800A2E1C + 2));
-    asm volatile("mflo %0" : "=r"(prod));
-    *(s16 *)(obj + 0x20E) = -prod / 128;
+    *(s16 *)(obj + 0x20E) =
+        -((*(s8 *)(obj + 0x3C5) << 2) * (D_800A2E1C + 2)) / 128;
     *(s32 *)(obj + 0x3BC) = MathFixedDivide(obj[0x3C6], 0xFF);
     *(s32 *)(obj + 0x3C0) = MathFixedDivide(obj[0x3C7], 0x7D0);
     if (obj[0x3C6] < 0x3C) {
@@ -2092,7 +2026,6 @@ afterStatus:
         }
         if (obj[0x3B7] != 0) {
         decr3b7:
-            asm("" : : : "memory");
             obj[0x3B7]--;
         }
     skip3b7:;
@@ -2180,50 +2113,29 @@ extern s32 D_800A3A04;
 extern s32 D_800A2E50nm asm("D_800A2E50.NON_MATCHING");
 
 void func_8002A954(void) {
-    register s32 magic asm("a1");
-    register s32 hiWord asm("t1");
-    register s16 revLimit asm("a3");
-    register u8 tempByte asm("a1");
-    register s32 magic5 asm("v1");
-    register s32 quot5 asm("v1");
+    s16 revLimit;
     s32 speedScale;
-    register s32 scaleVal asm("v1");
+    s32 scaleVal;
+    register u8 tempByte asm("a1");
     s32 e54val;
     s32 isLow;
-    s32 temp5;
-    s32 sign5;
 
     revLimit = 0x3A98 / (D_800A331D[0] - 0x46);
     speedScale = 0x28A0000 / (D_800A331F[0] - 0x14);
-    scaleVal = D_800A331C[0];
-    asm volatile("lui\t%0,0x5555" : "=r"(magic));
-    asm volatile("ori\t%0,%1,0x5556" : "=r"(magic) : "0"(magic));
-    scaleVal = scaleVal + 0xC8;
-    asm volatile("mult\t%0,%1" : : "r"(scaleVal), "r"(magic));
-    asm volatile("lbu\t%0,D_800A3320" : "=r"(tempByte));
+    scaleVal = D_800A331C[0] + 0xC8;
+    tempByte = D_800A3320[0];
     D_800A2E44 = 0x5D;
     D_800A2E48 = 0x1A;
     D_800A2E50nm = (D_800A331D[0] - 0x32) * 0x50;
     e54val = (0x70 - D_800A331F[0]) * 0x10000;
-    asm volatile("sra\t%0,%1,31" : "=r"(scaleVal) : "0"(scaleVal));
     D_800A2E54 = e54val;
     isLow = (u32)D_800A331F[0] < 0x65;
     D_800A2E20[0] = tempByte;
-    asm volatile("mfhi\t%0" : "=r"(hiWord));
-    scaleVal = hiWord - scaleVal;
-    D_800A2E4C = scaleVal;
+    D_800A2E4C = scaleVal / 3;
     D_800A2E58 = revLimit;
     D_800A2E5C = speedScale;
-    if (isLow) {
-    } else {
-        asm volatile("lui\t%0,0x6666" : "=r"(magic5));
-        asm volatile("ori\t%0,%1,0x6667" : "=r"(magic5) : "0"(magic5));
-        temp5 = (D_800A331F[0] - 0x64) * 0x10000;
-        asm volatile("mult\t%0,%1" : : "r"(temp5), "r"(magic5));
-        sign5 = temp5 >> 31;
-        asm volatile("mfhi\t%0" : "=r"(hiWord));
-        quot5 = hiWord >> 1;
-        D_800A2E54 = 0xC0000 - (quot5 - sign5);
+    if (!isLow) {
+        D_800A2E54 = 0xC0000 - (D_800A331F[0] - 0x64) * 0x10000 / 5;
     }
     D_800A2E30 = 0x10CC;
     D_800A2E38 = 0x23;
@@ -2484,17 +2396,12 @@ void func_8002BC88(u8 *arg0) {
     s32 val;
     s32 result;
     s32 d;
-    s32 shifted;
-
     y = (*(s16 *)(arg0 + 0x2A6) + 1) * 75 << 16;
     val = D_800A2E24Absolute[0] + *(s32 *)(arg0 + 0x22C) -
           (*(s16 *)(arg0 + 0x10E) << 17) - y / 15;
     result = MathFixedDivide(*(s32 *)(arg0 + 0x28C), 16000);
     d = D_800A2E40;
-    asm volatile("mult %0, %1" : : "r"(result), "r"(d));
-    shifted = (d / 2) << 16;
-    asm volatile("mflo $6\n\tsubu %0, $6, %1" : "=r"(shifted) : "0"(shifted));
-    val -= shifted;
+    val -= result * d - ((d / 2) << 16);
     *(s32 *)(arg0 + 0x98) = val;
 }
 
@@ -2874,85 +2781,10 @@ void func_8002EE88(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* w8c: structure matches through both arms; ours is 8 bytes short
- * (frame 0x30 vs 0x38, retail has one extra 4-byte slot - likely a
- * phantom local) and retail emits `move s1,a0` in the beqz delay slot
- * with `li s2,0x4` after the branch, ours is reversed. Try a
- * `volatile s32 debugBuffer[1];` for the slot, and per-arm statement
- * order, before guarding again.
- */
 extern s32 D_800A38AC[];
 extern u8 *D_800A3878;
 extern u8 D_800A2ED8;
-void func_8002EEFC(u8 *arg0) {
-    s32 pad[2];
-    s32 refX;
-    s32 refY;
-    s32 refZ;
-    s32 dx;
-    s32 dy;
-    s32 dist;
-    s32 level;
-    s32 b;
-    s32 v;
-    u8 *node;
-    register u8 *target asm("s1");
 
-    (void)&pad;
-    refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
-    refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
-    refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
-    node = D_800A3878;
-    if (node == NULL) {
-        return;
-    }
-    target = arg0;
-    level = 4;
-    do {
-        if (node == target && *(s16 *)(node + 0x1EC) == 0 && D_800A2ED8 == 0 &&
-            *(s8 *)(node + 0x20C) == 0) {
-            *(u8 *)(node + 0x374) = level;
-            *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + 0x110;
-        } else {
-            dx = *(s32 *)(node + 0x0) - refX;
-            dy = *(s32 *)(node + 0x4) - refY;
-            v = *(s32 *)(node + 0x8) - refZ;
-            dist = MathSqrt(dx * dx + dy * dy + v * v);
-            if (dist < 0x7D0) {
-                *(u8 *)(node + 0x374) = 0;
-            } else {
-                if (dist < 0x1770) {
-                    v = 1;
-                } else if (dist < 0x2EE0) {
-                    v = 2;
-                } else {
-                    v = 3;
-                }
-                *(u8 *)(node + 0x374) = v;
-            }
-            if (D_800A2ED8 != 0) {
-                b = *(s8 *)(node + 0x374);
-                if (b < 3) {
-                    *(s8 *)(node + 0x374) = b + 1;
-                }
-            }
-            if (*(s8 *)(node + 0x200) == level) {
-                *(u8 *)(node + 0x374) = 0;
-            }
-            if (node == target) {
-                *(u8 *)(node + 0x374) = 0;
-            }
-            b = *(u8 *)(node + 0x374);
-            *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + (b * 0x44);
-        }
-        node = *(u8 **)(node + 0x3E0);
-    } while (node != NULL);
-}
-#else
-extern s32 D_800A38AC[];
-extern u8 *D_800A3878;
-extern u8 D_800A2ED8;
 void func_8002EEFC(u8 *arg0) {
     s32 pad[2];
     s32 refX;
@@ -2962,10 +2794,10 @@ void func_8002EEFC(u8 *arg0) {
     s32 b;
     s32 v;
     u8 *node;
-    register s32 dx asm("a0");
-    register s32 coord asm("v0");
-    register s32 dySq asm("v1");
-    register s32 dzSq asm("a2");
+    s32 dx;
+    s32 coord;
+    s32 dySq;
+    s32 dzSq;
 
     (void)&pad;
     refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
@@ -2998,17 +2830,14 @@ void func_8002EEFC(u8 *arg0) {
     dist:
         coord = *(s32 *)(node + 0x0);
         dx = coord - refX;
-        asm volatile("mult\t%0,%0" : : "r"(dx) : "hi", "lo");
+        dx = dx * dx;
         coord = *(s32 *)(node + 0x4);
-        asm volatile("mflo\t%0" : "=r"(dx) : : "lo");
         coord = coord - refY;
-        asm volatile("mult\t%0,%0" : : "r"(coord) : "hi", "lo");
+        dySq = coord * coord;
         coord = *(s32 *)(node + 0x8);
-        asm volatile("mflo\t%0" : "=r"(dySq) : : "lo");
         coord = coord - refZ;
-        asm volatile("mult\t%0,%0" : : "r"(coord) : "hi", "lo");
+        dzSq = coord * coord;
         dx = dx + dySq;
-        asm volatile("mflo\t%0" : "=r"(dzSq) : : "lo");
         dx = MathSqrt(dx + dzSq);
         if (dx < 0x7D0) {
             *(u8 *)(node + 0x374) = 0;
@@ -3039,8 +2868,6 @@ void func_8002EEFC(u8 *arg0) {
         node = *(u8 **)(node + 0x3E0);
     } while (node != NULL);
 }
-
-#endif
 
 extern void *D_800A2EA0Small;
 extern u8 D_800A2ED8;
@@ -3678,19 +3505,10 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
 INCLUDE_ASM("asm/nonmatchings/objects", func_80030F24);
 #endif
 
-#ifdef NON_MATCHING
 void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
-    register s32 xSq asm("v1");
-    register s32 ySq asm("t1");
-    register s32 zSq asm("v0");
-    register s32 sum asm("a0");
     s32 length;
 
-    xSq = x * x;
-    ySq = y * y;
-    sum = xSq + ySq;
-    zSq = z * z;
-    length = MathSqrt(sum + zSq);
+    length = MathSqrt(x * x + y * y + z * z);
     if (length == 0) {
         length = 1;
     }
@@ -3698,34 +3516,6 @@ void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
     out[1] = MathFixedDivide(y, length);
     out[2] = MathFixedDivide(z, length);
 }
-#else
-void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
-    register s32 xSq asm("v1");
-    register s32 ySq asm("t1");
-    register s32 zSq asm("v0");
-    register s32 sum asm("a0");
-    register s32 zs asm("s3");
-    s32 *os;
-    s32 length;
-    s32 tie;
-
-    xSq = x * x;
-    ySq = y * y;
-    zs = z;
-    asm("mult\t%1,%1" : "=r"(tie) : "r"(zs));
-    asm("addu\t%0,%1,$0" : "=r"(os) : "r"(out));
-    sum = xSq + ySq;
-    asm volatile("mflo\t%0" : "=r"(zSq) : "r"(tie), "r"(sum));
-    length = MathSqrt(sum + zSq);
-    if (length == 0) {
-        length = 1;
-    }
-    os[0] = MathFixedDivide(x, length);
-    os[1] = MathFixedDivide(y, length);
-    os[2] = MathFixedDivide(zs, length);
-}
-
-#endif
 
 typedef struct {
     s32 x;
@@ -6306,87 +6096,37 @@ INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0CC);
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80036900);
 
-#ifdef NON_MATCHING
-s32 func_80036F64(s32 *a, s32 *b, s32 arg2) {
-    s32 index;
-    s32 temp1;
-    s32 temp2;
-
-    index = *(s16 *)((u8 *)b + 0x114) * 4;
-    temp1 = *(s32 *)((u8 *)D_800A3A2C + index);
-    temp2 = *(s32 *)((u8 *)D_800A3A34 + index);
-    return arg2 < (((a[0] - b[0]) * temp1 - (a[1] - b[1]) * temp2) >> 16);
-}
-#else
-extern s32 D_800A3A2CAbsolute[];
-extern s32 D_800A3A34Absolute[];
-
 s32 func_80036F64(u8 *arg0, u8 *arg1, s32 arg2) {
     s32 idx;
-    s32 diffX;
-    s32 diffY;
-    register s32 crossX asm("$8");
-    s32 tableAX;
-    s32 tableBY;
-    register s32 posAy asm("$2");
-    s32 posBy;
-    s32 multLo;
+    s32 tA;
+    s32 tB;
+    s32 dx;
+    s32 dy;
+
     idx = (*((s16 *)(arg1 + 0x114))) << 2;
-    tableAX = *((s32 *)(idx + ((u32)D_800A3A2CAbsolute[0])));
-    diffX = (*((s32 *)arg0)) - (*((s32 *)arg1));
-    asm volatile("mult %1,%2" : "=r"(multLo) : "r"(tableAX), "r"(diffX));
-    posAy = *((s32 *)(arg0 + 4));
-    posBy = *((s32 *)(arg1 + 4));
-    tableBY = *((s32 *)(idx + ((u32)D_800A3A34Absolute[0])));
-    asm volatile("mflo %0" : "=r"(crossX) : "r"(multLo));
-    diffY = posAy - posBy;
-    return arg2 < ((crossX - (tableBY * diffY)) >> 16);
+    dx = *(s32 *)arg0 - *(s32 *)arg1;
+    tA = *((s32 *)(idx + ((u32)D_800A3A2CAbsolute[0])));
+    dy = *(s32 *)(arg0 + 4) - *(s32 *)(arg1 + 4);
+    tB = *((s32 *)(idx + ((u32)D_800A3A34Absolute[0])));
+    return arg2 < ((tA * dx - tB * dy) >> 16);
 }
-#endif
 
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 
 s32 func_80036FC8(s32 *a, s32 *b) {
-    register s32 base1 asm("v0");
-    register s32 valueX asm("v1");
-    register s32 otherX asm("a3");
-    register s32 base2 asm("v1");
-    register s32 valueY asm("v0");
-    register s32 otherY asm("a0");
-    register s32 table1 asm("v0");
-    register s32 table2 asm("v1");
-    register s32 productX asm("a3");
-    register s32 productY asm("v1");
-    s32 heading;
     s32 index;
-    s32 addr1;
-    s32 diffX;
-    s32 addr2;
-    s32 diffY;
-    heading = *(s16 *)(((u8 *)b) + 0x114);
-    asm volatile("lui %0, %%hi(D_800A3A34Absolute)\n\t"
-                 "lw %0, %%lo(D_800A3A34Absolute)(%0)"
-                 : "=r"(base1));
-    asm volatile("lw\t%0,0(%1)" : "=r"(valueX) : "r"(a));
-    asm volatile("lw\t%0,0(%1)" : "=r"(otherX) : "r"(b));
-    index = heading << 2;
-    addr1 = index + (u32)base1;
-    asm volatile("lw\t%0,0(%1)" : "=r"(table1) : "r"(addr1));
-    diffX = valueX - otherX;
-    asm volatile("mult\t%0,%1" : : "r"(table1), "r"(diffX));
-    asm volatile("lui %0, %%hi(D_800A3A2CAbsolute)\n\t"
-                 "lw %0, %%lo(D_800A3A2CAbsolute)(%0)"
-                 : "=r"(base2));
-    asm volatile("lw\t%0,4(%1)" : "=r"(valueY) : "r"(a));
-    asm volatile("lw\t%0,4(%1)" : "=r"(otherY) : "r"(b));
-    addr2 = index + (u32)base2;
-    asm volatile("lw\t%0,0(%1)" : "=r"(table2) : "r"(addr2));
-    asm volatile("mflo\t%0" : "=r"(productX));
-    diffY = valueY - otherY;
-    asm volatile("mult\t%0,%1" : : "r"(table2), "r"(diffY));
-    asm volatile("mflo\t%0" : "=r"(productY));
-    return ((productX + productY) >> 16) > 0;
+    s32 t1;
+    s32 t2;
+    s32 x;
+    s32 y;
+
+    index = *(s16 *)(((u8 *)b) + 0x114) << 2;
+    x = a[0] - b[0];
+    t1 = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
+    y = a[1] - b[1];
+    t2 = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
+    return ((t1 * x + t2 * y) >> 16) > 0;
 }
 
 #ifdef NON_MATCHING
@@ -6875,23 +6615,21 @@ void func_80039B74(s32 *arg0, s32 arg1) {
     u8 *obj = (u8 *)arg0;
     s16 idx;
     s32 result;
-    register s32 base asm("v0");
-    s32 objX;
-    register s32 off12 asm("a0");
-    u8 *eptr;
-    register u8 *entryAddr asm("a0");
-    u8 *ptr;
-    register s32 heading asm("a2");
-    register s32 entryX asm("a3");
-    s32 w;
-    s32 tableA;
-    s32 tie;
+    s32 base;
+    s32 off12;
+    register s32 objX asm("a1");
+    s32 entryX;
     s32 entryY;
-    s32 objY;
-    s32 tableB;
-    register s32 prod1 asm("a2");
-    register s32 value asm("v0");
+    register s32 objY asm("v1");
+    s32 w;
+    s32 value;
+    register s32 tableA asm("v1");
+    s32 prod;
+    register s32 prod2 asm("v0");
     register s32 neg asm("v1");
+    u8 *eptr;
+    u8 *entryAddr;
+    u8 *ptr;
 
     idx = *(s16 *)(obj + 0x1E0);
     if (idx == -1) {
@@ -6900,24 +6638,17 @@ void func_80039B74(s32 *arg0, s32 arg1) {
         base = D_800AE154[arg1];
         off12 = idx * 12;
         objX = *(s32 *)obj;
-        asm volatile("lui %0, %%hi(D_800BE980)\n\tlw %0, %%lo(D_800BE980)(%0)"
-                     : "=r"(eptr));
-        asm volatile("addu %0, %2, %1"
-                     : "=r"(entryAddr)
-                     : "r"(base), "r"(off12));
+        eptr = *(u8 **)D_800BE980;
+        entryAddr = (u8 *)(off12 + base);
         entryX = *(s32 *)entryAddr;
         ptr = eptr + idx * 0x90;
-        heading = *(u16 *)(ptr + 0x10);
-        w = (0x400 - heading) & 0x3FF;
+        w = (0x400 - *(u16 *)(ptr + 0x10)) & 0x3FF;
         tableA = ((s32 **)D_800A3A34Absolute)[0][w];
-        asm volatile("mult %1, %2"
-                     : "=r"(tie)
-                     : "r"(tableA), "r"(objX - entryX));
+        prod = tableA * (objX - entryX);
         entryY = *(s32 *)(entryAddr + 4);
         objY = *(s32 *)(obj + 4);
-        tableB = ((s32 **)D_800A3A2CAbsolute)[0][w];
-        asm volatile("mflo %0" : "=r"(prod1) : "r"(tie), "r"(tableB));
-        value = prod1 + tableB * (objY - entryY);
+        prod2 = ((s32 **)D_800A3A2CAbsolute)[0][w] * (objY - entryY);
+        value = prod + prod2;
         neg = -(value >> 16);
         if (neg < 0) {
             result = (neg - 0xFA) / 500;
@@ -6929,72 +6660,40 @@ void func_80039B74(s32 *arg0, s32 arg1) {
 }
 
 s8 func_80039C68(u8 *arg0, s32 arg1, s32 arg2) {
-    register s32 index asm("v0");
-    register s32 tableA asm("v1");
-    register s32 prodA asm("a1");
-    register s32 heading asm("a3");
-    register s32 prodB asm("v1");
-    register s32 value asm("v1");
-    register s32 magic asm("v0");
-    s32 entryX;
-    s32 baseA;
-    s32 addrA;
-    s32 baseB;
-    s32 entryY;
-    s32 tableB;
-    register s32 hi asm("t1");
-    s32 result;
+    s32 heading;
+    s32 x;
+    s32 index;
+    s32 y;
 
     heading = *(u16 *)(arg0 + 0x10);
-    asm volatile("lw\t%0,0x14(%1)" : "=r"(entryX) : "r"(arg0));
-    index = 0x400;
-    asm volatile("lui %0, %%hi(D_800A3A34)\n\tlw %0, %%lo(D_800A3A34)(%0)"
-                 : "=r"(baseA));
-    index = (index - heading) & 0x3FF;
-    index <<= 2;
-    addrA = index + baseA;
-    asm volatile("lw\t%0,0(%1)" : "=r"(tableA) : "r"(addrA));
-    asm volatile("mult\t%0,%1" : : "r"(tableA), "r"(arg1 - entryX));
-    asm volatile("lui %0, %%hi(D_800A3A2C)\n\tlw %0, %%lo(D_800A3A2C)(%0)"
-                 : "=r"(baseB));
-    entryY = *(s32 *)(arg0 + 0x18);
-    tableB = *(s32 *)(index + baseB);
-    asm volatile("mflo\t%0" : "=r"(prodA));
-    asm volatile("mult\t%0,%1" : : "r"(tableB), "r"(arg2 - entryY));
-    magic = 0x10624DD3;
-    asm volatile("mflo\t%0" : "=r"(prodB));
-    value = prodA + prodB;
-    value = -(value >> 16);
-    asm volatile("mult\t%0,%1" : : "r"(value), "r"(magic));
-    value >>= 31;
-    asm volatile("mfhi\t%0" : "=r"(hi));
-    result = (hi >> 4) - value;
-    return (s8)result;
+    x = *(s32 *)(arg0 + 0x14);
+    index = (0x400 - heading) & 0x3FF;
+    y = *(s32 *)(arg0 + 0x18);
+    return -((((s32 **)D_800A3A34Absolute)[0][index] * (arg1 - x) +
+              ((s32 **)D_800A3A2CAbsolute)[0][index] * (arg2 - y)) >>
+             16) /
+           250;
 }
 
 extern s32 D_800BE980[];
 
 void func_80039CF4(void) {
-    register u8 *node asm("a3");
-    register u8 *track asm("a1");
-    register s32 index asm("v0");
-    register s32 entryX asm("a2");
-    register s32 tableA asm("v1");
-    register s32 prodA asm("a2");
-    register s32 baseB asm("a0");
-    register s32 entryY asm("a1");
-    register s32 objY asm("v1");
-    register s32 tableB asm("v0");
-    register s32 value asm("v0");
-    register u8 *base asm("v0");
+    u8 *node;
+    u8 *track;
+    s32 index;
     s32 id;
-    s32 heading;
+    s32 angle;
+    register s32 heading asm("v0");
     s32 objX;
-    s32 baseA;
-    s32 addrA;
+    s32 entryX;
+    s32 entryY;
+    s32 objY;
+    s32 tableA;
+    s32 tableB;
+    s32 prodA;
+    s32 value;
 
-    base = (u8 *)D_800A3984[0];
-    node = base + 0x500;
+    node = (u8 *)D_800A3984[0] + 0x500;
     while (node != NULL) {
         id = *(s16 *)(node + 0x1E0);
         if (id != -1) {
@@ -7002,22 +6701,14 @@ void func_80039CF4(void) {
             track += id * 0x90;
             heading = *(u16 *)(track + 0x10);
             objX = *(s32 *)node;
-            asm volatile(
-                "lui %0, %%hi(D_800A3A34)\n\tlw %0, %%lo(D_800A3A34)(%0)"
-                : "=r"(baseA));
             entryX = *(s32 *)(track + 0x14);
-            index = (0x400 - heading) & 0x3FF;
-            index <<= 2;
-            addrA = index + baseA;
-            asm volatile("lw\t%0,0(%1)" : "=r"(tableA) : "r"(addrA));
-            asm volatile("mult\t%0,%1" : : "r"(tableA), "r"(objX - entryX));
-            asm volatile(
-                "lui %0, %%hi(D_800A3A2C)\n\tlw %0, %%lo(D_800A3A2C)(%0)"
-                : "=r"(baseB));
-            entryY = *(s32 *)(track + 0x18);
+            angle = heading;
+            index = ((0x400 - angle) & 0x3FF) << 2;
+            tableA = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
+            prodA = tableA * (objX - entryX);
             objY = *(s32 *)(node + 4);
-            tableB = *(s32 *)(index + baseB);
-            asm volatile("mflo\t%0" : "=r"(prodA));
+            entryY = *(s32 *)(track + 0x18);
+            tableB = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
             value = prodA + tableB * (objY - entryY);
             *(s8 *)(node + 0x203) = (-(value >> 16)) / 250;
         }
