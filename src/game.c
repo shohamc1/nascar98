@@ -136,7 +136,7 @@ void GraphicsCompactOrderingTable(s32 tableAddress) {
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800122D8);
 
-void func_80012AF8(void) {
+void SystemDrainHardware(void) {
     u8 result[16];
 
     DrawSync(0);
@@ -152,7 +152,7 @@ void func_80012AF8(void) {
     VSync(0);
 }
 
-void func_80012B78(s32 arg0) {
+void CdSeekToSector(s32 arg0) {
     u8 pos[0x18];
     s8 filter[8];
     u8 result[8];
@@ -316,12 +316,12 @@ void SystemInitCounter(void) {
     ResetRCnt(RCntCNT1);
 }
 
-void func_800130D4(void) {
+void TextureLoadAll(void) {
     typedef struct {
         u8 b[8];
     } XBytes;
     extern u8 D_800A2D1CNM[] asm("D_800A2D1C.NON_MATCHING");
-    extern void func_80013224();
+    extern void TextureLoadTim();
     extern void func_8003CDBC();
     extern s32 D_800B9F44[];
     XBytes env;
@@ -336,16 +336,16 @@ void func_800130D4(void) {
     LoadImage(&rect, (u_long *)&env);
     func_8003CDBC(0x40, (void *)STACK_BLOCK_80180000);
     for (i = 0; i < 0x16; i++) {
-        func_80013224((void *)D_800B9F44[i]);
+        TextureLoadTim((void *)D_800B9F44[i]);
     }
 }
 
 void func_8001317C(s32 arg0) {
     extern void func_8003CA18(s32, s32);
-    extern void func_80013224(void *);
+    extern void TextureLoadTim(void *);
 
     func_8003CA18(STACK_BLOCK_801E0000, arg0);
-    func_80013224((void *)STACK_BLOCK_801E0000);
+    TextureLoadTim((void *)STACK_BLOCK_801E0000);
 }
 
 extern u8 gOrderingTables[];
@@ -371,7 +371,7 @@ extern u16 D_800A38C0[];
 
 extern void GsGetTimInfo(u8 *, u8 *);
 
-void func_80013224(void *arg0) {
+void TextureLoadTim(void *arg0) {
     RECT rect;
     u8 image[0x20];
     s32 pixels;
@@ -3142,7 +3142,7 @@ void func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
 
 extern s32 D_800A2DC8;
 
-void func_8001EA90(s32 geomOffsetX, s32 mode) {
+void GraphicsSetGeomOffsetForMode(s32 geomOffsetX, s32 mode) {
     switch (mode) {
     case 0:
         SetGeomOffset(D_800A2DC8 / 2, 0x46);
@@ -9151,8 +9151,8 @@ void func_80034834(void) {
 /*
  * WALL (w9d): this draft is byte-exact except for ONE addressing fact:
  * retail reads D_800A38C0 with `lhu %gp_rel(D_800A38C0)($gp)` here, but
- * func_80013224 STORES the same symbol absolute (lui/sw). Declaring
- * D_800A38C0 scalar for the gp read flips func_80013224's store to
+ * TextureLoadTim STORES the same symbol absolute (lui/sw). Declaring
+ * D_800A38C0 scalar for the gp read flips TextureLoadTim's store to
  * gp-rel (-4 bytes, whole-EXE shift; the w8b wall). Needs the Makefile
  * defsym alias D_800A38C0Small=D_800A38C0 and an `extern u16
  * D_800A38C0Small;` here -- then this draft should drop in unmodified.
@@ -11401,7 +11401,7 @@ void func_8003C8C8(u8 *string) {
 
 extern void *HeapAlloc(u32);
 
-void *func_8003C928(s32 arg0) {
+void *FileLoadToHeap(s32 arg0) {
     u8 pad[0x40];
     u8 result[8];
     s32 value;
@@ -12272,7 +12272,7 @@ void SoundInitTables(void) {
 
 extern s16 D_800B9E24[];
 extern u8 D_800A3880;
-extern void func_8003F13C(s32);
+extern void SoundLoadVab(s32);
 
 void func_8003F060(s32 arg0) {
     u8 i;
@@ -12289,13 +12289,13 @@ again:
     gVabId = -1;
     gSequenceData = 0;
     D_800A3A08 = 0;
-    func_8003F13C(arg0);
+    SoundLoadVab(arg0);
     D_800A3880 = 0;
 }
 
 extern s16 D_800B9E24[];
 extern u8 D_800A3880;
-extern void func_8003F1B0(s32);
+extern void SoundReloadVab(s32);
 
 void func_8003F0CC(s32 arg0) {
     u8 i;
@@ -12309,15 +12309,15 @@ void func_8003F0CC(s32 arg0) {
     gVabId = -1;
     gSequenceData = 0;
     D_800A3A08 = 0;
-    func_8003F1B0(arg0);
+    SoundReloadVab(arg0);
     D_800A3880 = 1;
 }
 
 #ifdef NON_MATCHING
 extern void func_8003FA0C(void);
-extern s32 func_8003FF5C(s32, s32);
+extern s32 SoundVabOpen(s32, s32);
 
-void func_8003F13C(s32 arg0) {
+void SoundLoadVab(s32 arg0) {
     s32 value;
 
     func_8003FA0C();
@@ -12326,18 +12326,18 @@ void func_8003F13C(s32 arg0) {
     D_800A3A08 = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
     value = (s32)func_8003FFF0((void *)arg0, 0x80140000);
     D_800A3A00 = (void *)value;
-    gVabId = func_8003FF5C(D_800A3A08, value);
+    gVabId = SoundVabOpen(D_800A3A08, value);
 }
 #else
 extern s16 gVabId;
 extern void *D_800A3A00;
 extern s32 D_800A3A08;
 extern s32 func_8003FFF0(void *, void *);
-extern s16 func_8003FF5C(void *, void *);
+extern s16 SoundVabOpen(void *, void *);
 extern void SsVabClose(s16);
 extern void func_8003FA0C(void);
 
-void func_8003F13C(s32 arg0) {
+void SoundLoadVab(s32 arg0) {
     volatile s32 buf[8];
     s32 body;
 
@@ -12348,12 +12348,12 @@ void func_8003F13C(s32 arg0) {
     D_800A3A08 = func_8003FFF0((void *)(s32 *)arg0 + 1, 0);
     body = func_8003FFF0((void *)arg0, (void *)0x80140000);
     D_800A3A00 = body;
-    gVabId = func_8003FF5C((void *)D_800A3A08, (void *)body);
+    gVabId = SoundVabOpen((void *)D_800A3A08, (void *)body);
 }
 #endif
 
 #ifdef NON_MATCHING
-void func_8003F1B0(s32 arg0) {
+void SoundReloadVab(s32 arg0) {
     s32 value;
 
     func_8003FA0C();
@@ -12362,7 +12362,7 @@ void func_8003F1B0(s32 arg0) {
     D_800A3A08 = (s32)func_8003FFF0((void *)arg0, 0);
     value = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
     D_800A3A00 = (void *)value;
-    gVabId = func_8003FF5C(D_800A3A08, value);
+    gVabId = SoundVabOpen(D_800A3A08, value);
     if (D_800A3A00 != 0) {
         HeapFree(D_800A3A00);
         D_800A3A00 = 0;
@@ -12373,12 +12373,12 @@ extern s16 gVabId;
 extern void *D_800A3A00;
 extern s32 D_800A3A08;
 extern s32 func_8003FFF0(void *, void *);
-extern s16 func_8003FF5C(void *, void *);
+extern s16 SoundVabOpen(void *, void *);
 extern void SsVabClose(s16);
 extern void HeapFree(void *);
 extern void func_8003FA0C(void);
 
-void func_8003F1B0(s32 arg0) {
+void SoundReloadVab(s32 arg0) {
     volatile s32 buf[8];
     s32 body;
 
@@ -12389,7 +12389,7 @@ void func_8003F1B0(s32 arg0) {
     D_800A3A08 = func_8003FFF0((void *)arg0, 0);
     body = func_8003FFF0((void *)(arg0 + 1), 0);
     D_800A3A00 = body;
-    gVabId = func_8003FF5C((void *)D_800A3A08, (void *)body);
+    gVabId = SoundVabOpen((void *)D_800A3A08, (void *)body);
     if (D_800A3A00 != 0) {
         HeapFree((void *)D_800A3A00);
         D_800A3A00 = 0;
@@ -12754,7 +12754,7 @@ again:
 extern char D_8008D1A8[];
 extern char D_8008D1C4[];
 
-s16 func_8003FF5C(void *arg0, void *arg1) {
+s16 SoundVabOpen(void *arg0, void *arg1) {
     s16 vabId;
     s16 result;
 
@@ -15944,28 +15944,28 @@ void func_800539F0(void) {
     func_80057A9C();
     func_8005A4E0();
     base = func_80058094(9, &table, 0);
-    func_80013224(base + ((s32 *)table)[0xB]);
+    TextureLoadTim(base + ((s32 *)table)[0xB]);
     DrawSync(0);
-    func_80013224(base + ((s32 *)table)[6]);
+    TextureLoadTim(base + ((s32 *)table)[6]);
     DrawSync(0);
-    func_80013224(base + ((s32 *)table)[0xA]);
+    TextureLoadTim(base + ((s32 *)table)[0xA]);
     DrawSync(0);
     while (i < 5) {
-        func_80013224(base + ((s32 *)table)[i + 1]);
+        TextureLoadTim(base + ((s32 *)table)[i + 1]);
         DrawSync(0);
         i++;
     }
     i = 0;
-    func_80013224(base + ((s32 *)table)[9]);
+    TextureLoadTim(base + ((s32 *)table)[9]);
     DrawSync(0);
     while (i < 2) {
-        func_80013224(base + ((s32 *)table)[i + 7]);
+        TextureLoadTim(base + ((s32 *)table)[i + 7]);
         DrawSync(0);
         i++;
     }
-    func_80013224(base + ((s32 *)table)[0xC]);
+    TextureLoadTim(base + ((s32 *)table)[0xC]);
     DrawSync(0);
-    func_80013224(base + ((s32 *)table)[0]);
+    TextureLoadTim(base + ((s32 *)table)[0]);
     DrawSync(0);
     func_80059648();
     HeapFree(base);
@@ -17229,7 +17229,7 @@ extern u8 D_800BDD65[], D_800BDD66[], D_800BDD67[], D_800BDDC1[];
 extern u8 D_800BDDC2[], D_800BDDC3[];
 extern DRAWENV D_800BDD4C[];
 extern DISPENV D_800BDE04[];
-void func_80057E24(void) {
+void GraphicsInitDoubleBufferSwapped(void) {
     s32 height;
     DRAWENV *draw;
     DISPENV *disp;
@@ -17691,7 +17691,7 @@ void func_8005978C(void) {
     D_800A3638 = buf;
     buf += next;
     D_800A37EC = buf;
-    func_80013224((void *)buf);
+    TextureLoadTim((void *)buf);
     DrawSync(0);
     SetDefDispEnv(&env, 0x140, 0, 0x140, 0xF0);
     PutDispEnv(&env);
@@ -20687,7 +20687,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_80064000);
 #endif
 
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
-void func_80013224(void *arg0);
+void TextureLoadTim(void *arg0);
 
 void func_80064174(void) {
     void *data;
@@ -20696,7 +20696,7 @@ void func_80064174(void) {
 
     data = func_80058094(10, (void **)&offsets, 0);
     for (i = 0; i < 0x18; i++) {
-        func_80013224((u8 *)data + offsets[i]);
+        TextureLoadTim((u8 *)data + offsets[i]);
     }
     DrawSync(0);
     HeapFree(data);
@@ -20862,7 +20862,7 @@ extern u8 D_800BDD65[], D_800BDD66[], D_800BDD67[], D_800BDDC1[];
 extern u8 D_800BDDC2[], D_800BDDC3[];
 extern DRAWENV D_800BDD4C[];
 extern DISPENV D_800BDE04[];
-void func_80064CD8(s32 mode) {
+void GraphicsInitDoubleBuffer(s32 mode) {
     s32 height;
     DRAWENV *draw;
     DRAWENV *draw2;
@@ -20928,7 +20928,7 @@ void func_80064E6C(void) {
     extern s32 D_800A2EB0Absolute[];
     extern u8 D_800A3778;
     extern u8 D_800A35DC;
-    extern void func_80064CD8(s32);
+    extern void GraphicsInitDoubleBuffer(s32);
     extern void func_80065058(s32, s32);
     extern void func_80065F80(void);
     extern void func_80066080(s32);
@@ -20937,7 +20937,7 @@ void func_80064E6C(void) {
     s32 text;
 
     ClearOTagR(D_800A38C4, 4);
-    func_80064CD8(1);
+    GraphicsInitDoubleBuffer(1);
     func_8006499C();
     D_800A367C = (s32)D_800A369C;
     func_8005A7B8(2, 4);
@@ -21527,7 +21527,7 @@ extern u8 D_8009B198[];
 extern DRAWENV D_800BDDA8[];
 extern DRAWENV D_800BDD4C[];
 extern DISPENV D_800BDE18[];
-extern void func_80064CD8(s32);
+extern void GraphicsInitDoubleBuffer(s32);
 extern void *func_8006654C(void *, s32);
 extern void func_8005E8EC(s32, s32, s32);
 extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
@@ -21555,7 +21555,7 @@ void func_80066730(void) {
     s32 a1v;
     s32 rawT;
 
-    func_80064CD8(0);
+    GraphicsInitDoubleBuffer(0);
     PutDrawEnv(&D_800BDDA8[0]);
     table = D_8009A404;
     q = table + 2;
@@ -24873,10 +24873,10 @@ void func_8006EEE0(s32 arg0) {
     s32 textId;
 
     idx = arg0 * 2;
-    heap = func_8003C928(idx + 0xE);
+    heap = FileLoadToHeap(idx + 0xE);
     func_8006F9C4(idx + 0xF, 2, 0);
     SetDispMask(0);
-    func_80013224(heap);
+    TextureLoadTim(heap);
     rect = *(RECT *)&D_800A39B0[0];
     pixptr = D_800A36B4nm[0];
     SetDefDispEnv(&disp, 0, 0, 0x140, 0xF0);
