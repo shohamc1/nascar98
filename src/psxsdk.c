@@ -3171,54 +3171,54 @@ long AverageZ4(long sz0, long sz1, long sz2, long sz3) {
                      "mfc2 $v0, $7");
 }
 
-/* Handwritten GTE asm: outer product of v0 and v1 via the cop2 rotation
- * registers and the aspsx `op` helper call (jal, with the first result
- * store sunk into its delay slot). The "0"/"12" suffix picks the helper. */
-ASM_FUNC(OuterProduct12, "    cfc2 $t5, $0 # maspsx-keep\n"
-                         "    cfc2 $t6, $2 # maspsx-keep\n"
-                         "    cfc2 $t7, $4 # maspsx-keep\n"
-                         "    lw $t0, 0x0($a0) # maspsx-keep\n"
-                         "    lw $t1, 0x4($a0) # maspsx-keep\n"
-                         "    lw $t2, 0x8($a0) # maspsx-keep\n"
-                         "    ctc2 $t0, $0 # maspsx-keep\n"
-                         "    ctc2 $t1, $2 # maspsx-keep\n"
-                         "    ctc2 $t2, $4 # maspsx-keep\n"
-                         "    lwc2 $11, 0x8($a1) # maspsx-keep\n"
-                         "    lwc2 $9, 0x0($a1) # maspsx-keep\n"
-                         "    lwc2 $10, 0x4($a1) # maspsx-keep\n"
-                         "    nop # maspsx-keep\n"
-                         "    op 1 # maspsx-keep\n"
-                         "    swc2 $25, 0x0($a2) # maspsx-keep\n"
-                         "    swc2 $26, 0x4($a2) # maspsx-keep\n"
-                         "    swc2 $27, 0x8($a2) # maspsx-keep\n"
-                         "    ctc2 $t5, $0 # maspsx-keep\n"
-                         "    ctc2 $t6, $2 # maspsx-keep\n"
-                         "    ctc2 $t7, $4 # maspsx-keep\n"
-                         "    jr $ra # maspsx-keep\n"
-                         "    nop # maspsx-keep\n")
+/* Outer product of v0 and v1 into v2: saves the rotation matrix
+ * diagonal, loads v0 into it and v1 into IR1-3, runs `op`, then restores
+ * the diagonal. The sf bit (12 or 0) is the fraction shift. */
+VECTOR *OuterProduct12(VECTOR *v0, VECTOR *v1, VECTOR *v2) {
+    __asm__ volatile("cfc2 $t5, $0\n\t"
+                     "cfc2 $t6, $2\n\t"
+                     "cfc2 $t7, $4\n\t"
+                     "lw $t0, 0($a0)\n\t"
+                     "lw $t1, 4($a0)\n\t"
+                     "lw $t2, 8($a0)\n\t"
+                     "ctc2 $t0, $0\n\t"
+                     "ctc2 $t1, $2\n\t"
+                     "ctc2 $t2, $4\n\t"
+                     "lwc2 $11, 8($a1)\n\t"
+                     "lwc2 $9, 0($a1)\n\t"
+                     "lwc2 $10, 4($a1)\n\t"
+                     "nop\n\t"
+                     "op 1\n\t"
+                     "swc2 $25, 0($a2)\n\t"
+                     "swc2 $26, 4($a2)\n\t"
+                     "swc2 $27, 8($a2)\n\t"
+                     "ctc2 $t5, $0\n\t"
+                     "ctc2 $t6, $2\n\t"
+                     "ctc2 $t7, $4");
+}
 
-ASM_FUNC(OuterProduct0, "    cfc2 $t5, $0 # maspsx-keep\n"
-                        "    cfc2 $t6, $2 # maspsx-keep\n"
-                        "    cfc2 $t7, $4 # maspsx-keep\n"
-                        "    lw $t0, 0x0($a0) # maspsx-keep\n"
-                        "    lw $t1, 0x4($a0) # maspsx-keep\n"
-                        "    lw $t2, 0x8($a0) # maspsx-keep\n"
-                        "    ctc2 $t0, $0 # maspsx-keep\n"
-                        "    ctc2 $t1, $2 # maspsx-keep\n"
-                        "    ctc2 $t2, $4 # maspsx-keep\n"
-                        "    lwc2 $11, 0x8($a1) # maspsx-keep\n"
-                        "    lwc2 $9, 0x0($a1) # maspsx-keep\n"
-                        "    lwc2 $10, 0x4($a1) # maspsx-keep\n"
-                        "    nop # maspsx-keep\n"
-                        "    op 0 # maspsx-keep\n"
-                        "    swc2 $25, 0x0($a2) # maspsx-keep\n"
-                        "    swc2 $26, 0x4($a2) # maspsx-keep\n"
-                        "    swc2 $27, 0x8($a2) # maspsx-keep\n"
-                        "    ctc2 $t5, $0 # maspsx-keep\n"
-                        "    ctc2 $t6, $2 # maspsx-keep\n"
-                        "    ctc2 $t7, $4 # maspsx-keep\n"
-                        "    jr $ra # maspsx-keep\n"
-                        "    nop # maspsx-keep\n")
+VECTOR *OuterProduct0(VECTOR *v0, VECTOR *v1, VECTOR *v2) {
+    __asm__ volatile("cfc2 $t5, $0\n\t"
+                     "cfc2 $t6, $2\n\t"
+                     "cfc2 $t7, $4\n\t"
+                     "lw $t0, 0($a0)\n\t"
+                     "lw $t1, 4($a0)\n\t"
+                     "lw $t2, 8($a0)\n\t"
+                     "ctc2 $t0, $0\n\t"
+                     "ctc2 $t1, $2\n\t"
+                     "ctc2 $t2, $4\n\t"
+                     "lwc2 $11, 8($a1)\n\t"
+                     "lwc2 $9, 0($a1)\n\t"
+                     "lwc2 $10, 4($a1)\n\t"
+                     "nop\n\t"
+                     "op 0\n\t"
+                     "swc2 $25, 0($a2)\n\t"
+                     "swc2 $26, 4($a2)\n\t"
+                     "swc2 $27, 8($a2)\n\t"
+                     "ctc2 $t5, $0\n\t"
+                     "ctc2 $t6, $2\n\t"
+                     "ctc2 $t7, $4");
+}
 
 ASM_FUNC(Lzc, "    mtc2 $a0, $30 # maspsx-keep\n"
               "    nop # maspsx-keep\n"
