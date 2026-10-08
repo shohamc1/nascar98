@@ -1940,23 +1940,21 @@ extern s32 D_800A7550[];
 extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
 
 void func_80048C90(void) {
+    extern s32 D_800A2E94nm[] asm("D_800A2E94.NON_MATCHING");
     s8 buf[24];
+    s8 *p;
     s8 i;
     s8 j;
-    register s8 ni asm("$2");
     s8 idx;
     u8 *node;
     s32 scale;
-    register s32 count asm("$18");
+    s32 count;
     s32 limit;
-    s32 bound;
-    s32 raw;
-    s32 k;
+    register s32 raw asm("$2");
     s32 a1val;
-    register s32 slot asm("$18");
     s32 r0;
     s32 r2;
-    register s32 cnt asm("$6");
+    s32 cnt;
 
     if (D_800A38F0 == 0 || (count = D_800A2EB0Absolute[0]) != 0) {
         D_800A35FCnm = 0;
@@ -1968,22 +1966,21 @@ void func_80048C90(void) {
     D_800A35FCnm = ((D_800A37D4nm[-1] + 0x18) / 50 + r0) / limit;
     if (count < cnt) {
         i = 0;
-        do {
-            buf[i] = 0;
-            ni = i + 1;
-            asm volatile(
-                "lui %1, %%hi(D_800A2E94.NON_MATCHING)\n\tlw %1, %%lo(D_800A2E94.NON_MATCHING)(%1)\n\taddu %0, %2, $zero"
-                : "=r"(i), "=r"(bound)
-                : "r"(ni));
-        } while (ni < bound);
+        p = buf;
+    clear:
+        p[i] = 0;
+        i++;
+        if (i < D_800A2E94nm[0]) {
+            goto clear;
+        }
     }
     scale = MathFixedDivide(D_800AE1EC[0] * 0x14, 0x7D00);
     for (i = 0; i < D_800A35FCnm; i++) {
         do {
             raw = RandomScaledGet(D_800A2E94[0]);
             idx = (s8)raw;
-            slot = raw;
         } while (buf[idx] != 0);
+        count = raw;
         node = D_800A3878nm[0];
         for (j = 0; j < idx; j++) {
             node = *(u8 **)(node + 0x3E0);
@@ -1993,8 +1990,7 @@ void func_80048C90(void) {
         r2 = RandomScaledGet(MathMultiplyFixed16(scale, (a1val - 1) << 16) >>
                              16);
         *(s32 *)(node + 0x414) = (scale >> 16) + r2;
-        asm("sll %0, %1, 0x18\n\tsra %0, %0, 0x18" : "=r"(k) : "r"(slot));
-        buf[k] = 1;
+        buf[(s8)count] = 1;
     }
 }
 
@@ -4471,16 +4467,17 @@ void func_80059648(void) {
     i = 8;
     p = pixels + 8;
     do {
-        *p = fill;
-        p--;
-        i--;
-    } while (i >= 0);
-    c1 = -0x5674;
-    c2 = -0x5A95;
-    c3 = -0x62D7;
-    c4 = -0x6AF8;
+        do {
+            *p = fill;
+            p--;
+            i--;
+        } while (i >= 0);
+        c1 = -0x5674;
+        c2 = -0x5A95;
+        c3 = -0x62D7;
+        c4 = -0x6AF8;
+    } while (0);
     c5 = -0x733A;
-    asm("" : : "r"(c1), "r"(c2), "r"(c3), "r"(c4), "r"(c5));
     pixels[9] = c1;
     pixels[10] = c2;
     pixels[11] = c3;

@@ -2195,11 +2195,17 @@ extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
 
 void func_8002B258(u8 *arg0) {
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
+    extern s32 D_800A3A2CAbsoluteB[] asm("D_800A3A2CAbsolute");
+    extern s32 D_800A3A34AbsoluteB[] asm("D_800A3A34Absolute");
     volatile s32 pad[16];
     s32 speed;
     s32 index;
     s32 scale;
     s32 value;
+    s32 p;
+    s32 *q;
+    s32 v;
+    s32 x;
 
     if (*(s32 *)(arg0 + 0x238) & 0x80) {
         speed = D_800A2E48nm << 16;
@@ -2218,7 +2224,6 @@ void func_8002B258(u8 *arg0) {
         if (*(s32 *)(arg0 + 0x228) > *(s32 *)(arg0 + 0x90)) {
             *(s32 *)(arg0 + 0x228) = *(s32 *)(arg0 + 0x90);
         }
-        asm volatile("" : : : "$16");
         scale = *(s32 *)(arg0 + 0x228);
         index = *(s16 *)(arg0 + 0x104);
         if (D_800A2EE4nm[0] != 0) {
@@ -2241,70 +2246,26 @@ void func_8002B258(u8 *arg0) {
             if (scale == 0) {
                 scale = 0x50000;
             }
-            asm volatile("" : : "r"(index));
-            asm volatile("" : : "r"(index));
-            asm volatile("" : : "r"(index));
-            asm volatile("" : : "r"(index));
-            asm volatile("" : : "r"(index));
-            asm volatile("" : : "r"(index));
-            asm volatile("" : : "r"(index));
-            asm volatile("lui $2,%%hi(D_800A3A2CAbsolute)\n\t"
-                         "lw $2,%%lo(D_800A3A2CAbsolute)($2)\n\t"
-                         "sll $16,$16,2\n\t"
-                         "addu $2,$16,$2\n\t"
-                         "lw $4,0($2)\n\t"
-                         ".set\tnoreorder\n\t"
-                         "jal MathMultiplyFixed16\n\t"
-                         "addu $5,$18,$0\n\t"
-                         ".set\treorder"
-                         :
-                         :
-                         : "$2", "$4", "$5", "$31", "hi", "lo", "memory");
-            asm volatile("lw $3,0xC4($17)\n\t"
-                         "lui $4,%%hi(D_800A3A34Absolute)\n\t"
-                         "lw $4,%%lo(D_800A3A34Absolute)($4)\n\t"
-                         "subu $3,$3,$2\n\t"
-                         "addu $4,$16,$4\n\t"
-                         "sw $3,0xC4($17)\n\t"
-                         "lw $4,0($4)\n\t"
-                         ".set\tnoreorder\n\t"
-                         "jal MathMultiplyFixed16\n\t"
-                         "addu $5,$18,$0\n\t"
-                         ".set\treorder"
-                         :
-                         : "r"(scale), "r"(index)
-                         : "$2", "$3", "$4", "$5", "$31", "hi", "lo", "memory");
-            asm volatile("lw $3,0xC8($17)\n\t"
-                         "lui $4,%%hi(D_800A3A2CAbsolute)\n\t"
-                         "lw $4,%%lo(D_800A3A2CAbsolute)($4)\n\t"
-                         "subu $3,$3,$2\n\t"
-                         "addu $4,$16,$4\n\t"
-                         "sw $3,0xC8($17)\n\t"
-                         "lw $4,0($4)\n\t"
-                         ".set\tnoreorder\n\t"
-                         "jal MathMultiplyFixed16\n\t"
-                         "addu $5,$18,$0\n\t"
-                         ".set\treorder"
-                         :
-                         : "r"(scale), "r"(index)
-                         : "$2", "$3", "$4", "$5", "$31", "hi", "lo", "memory");
-            asm volatile("lw $3,0xD0($17)\n\t"
-                         "lui $4,%%hi(D_800A3A34Absolute)\n\t"
-                         "lw $4,%%lo(D_800A3A34Absolute)($4)\n\t"
-                         "subu $3,$3,$2\n\t"
-                         "addu $16,$16,$4\n\t"
-                         "sw $3,0xD0($17)\n\t"
-                         "lw $4,0($16)\n\t"
-                         ".set\tnoreorder\n\t"
-                         "jal MathMultiplyFixed16\n\t"
-                         "addu $5,$18,$0\n\t"
-                         ".set\treorder\n\t"
-                         "lw $3,0xD4($17)\n\t"
-                         "subu $3,$3,$2\n\t"
-                         "sw $3,0xD4($17)"
-                         :
-                         : "r"(scale), "r"(index)
-                         : "$2", "$3", "$4", "$5", "$31", "hi", "lo", "memory");
+            v = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index],
+                                    scale);
+            x = *(s32 *)(arg0 + 0xC4);
+            p = *(s32 *)D_800A3A34Absolute;
+            x -= v;
+            *(s32 *)(arg0 + 0xC4) = x;
+            q = (s32 *)(index * 4 + p);
+            v = MathMultiplyFixed16(*q, scale);
+            x = *(s32 *)(arg0 + 0xC8);
+            p = *(s32 *)D_800A3A2CAbsoluteB;
+            x -= v;
+            *(s32 *)(arg0 + 0xC8) = x;
+            q = (s32 *)(index * 4 + p);
+            v = MathMultiplyFixed16(*q, scale);
+            x = *(s32 *)(arg0 + 0xD0);
+            p = *(s32 *)D_800A3A34AbsoluteB;
+            x -= v;
+            *(s32 *)(arg0 + 0xD0) = x;
+            *(s32 *)(arg0 + 0xD4) -=
+                MathMultiplyFixed16(*(s32 *)(index * 4 + p), scale);
         }
         if (*(s32 *)(arg0 + 0x90) > 0x17C0000 && RandomScaledGet(0xA) == 0) {
             value = RandomScaledGet(4);
@@ -4784,7 +4745,7 @@ u32 func_800342D8(u32 *entry, u32 primCursor) {
     s32 *v24p;
     s32 *v20p;
     s32 *vec;
-    s32 flags;
+    register s32 flags asm("v0");
     s32 t;
     s32 kind;
     s32 u1;
@@ -4838,17 +4799,15 @@ u32 func_800342D8(u32 *entry, u32 primCursor) {
     flags &= ((u16 *)gScratchpad)[0x25];
     flags &= ((u16 *)gScratchpad)[0x2F];
     flags &= 0x7EFF;
-    asm volatile(".set\tnoreorder\n\t"
-                 "bne %0, $zero, 0f\n\t"
-                 "addu %0, $zero, $zero\n\t"
-                 "ori %0, $zero, 1\n"
-                 "0:\n\t"
-                 ".set\treorder"
-                 : "=r"(flags)
-                 : "0"(flags));
+    if (flags != 0) {
+        flags = 0;
+    } else {
+        flags = 1;
+    }
     flags &= 0xFF;
     if (flags == 0) {
-        *entry = 0;
+        flags = 0;
+        *entry = flags;
         return primCursor;
     }
 
@@ -6140,17 +6099,18 @@ extern s32 D_800BE980[];
 
 s32 func_80037204(u8 *obj) {
     extern u8 *D_800A3960[];
+    extern void *D_800BE980z[] asm("D_800BE980");
     u8 *node;
     s32 tmp;
     s32 heading;
     s32 num;
-    register s32 den asm("v1");
+    s32 den;
     s32 rem;
     u8 *base;
     register s32 t asm("v1");
     register s32 idx asm("v0");
     u8 *b2;
-    register u8 *addr asm("v0");
+    u8 *addr;
     u8 *entry;
     u16 counter;
     u16 val;
@@ -6183,10 +6143,7 @@ s32 func_80037204(u8 *obj) {
         *(u8 *)(obj + 0xF4) = 0;
         num = D_800A39E0[0] + heading;
         den = D_800BE974[0];
-        asm volatile("rem\t%0,%1,%2"
-                     : "=r"(rem)
-                     : "r"(num), "r"(den)
-                     : "hi", "lo");
+        rem = num % den;
         base = (u8 *)D_800BE980[0];
         idx = rem * 0x90;
         entry = base + idx;
@@ -6194,10 +6151,8 @@ s32 func_80037204(u8 *obj) {
         *(s32 *)(obj + 0x0) = t;
         t = *(s32 *)(entry + 0x4C);
         *(s32 *)(obj + 0x4) = t;
-        asm volatile("lui %0, %%hi(D_800BE980)\n\tlw %0, %%lo(D_800BE980)(%0)"
-                     : "=r"(b2));
-        asm volatile("addu %0, %1, %2" : "=r"(addr) : "r"(idx), "r"(b2));
-        val = *(u16 *)(addr + 0x10);
+        b2 = (u8 *)D_800BE980z[0];
+        val = *(u16 *)(idx + (s32)b2 + 0x10);
         counter = *(u16 *)(obj + 0x1D6);
         counter = counter - 2;
         *(u16 *)(obj + 0x1D6) = counter;

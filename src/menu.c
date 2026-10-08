@@ -2453,7 +2453,6 @@ void func_80062F6C(s32 arg0, s32 arg1) {
     s32 a;
     s32 denom;
     s32 b;
-    register s32 mode asm("v1");
     s32 delta;
     s32 idx;
     s32 base9;
@@ -2494,8 +2493,8 @@ void func_80062F6C(s32 arg0, s32 arg1) {
             break;
         case 1:
         case 2:
-            mode = arg1 & 0xFF;
-            if (mode == 2) {
+            delta = arg1 & 0xFF;
+            if (delta == 2) {
                 j = offset + base9;
                 val = D_800AEE3D[j];
                 prod = val * 49;
@@ -3636,8 +3635,6 @@ void func_800663B0(void) {
     s32 count;
     s32 len;
     s32 i;
-    s32 flag;
-    s32 one;
 
     oldGp = GetGp();
     func_80058D08(D_8008CA4C[0]);
@@ -3649,13 +3646,7 @@ void func_800663B0(void) {
             DrawOTag(D_800A38C4 + 3);
             DrawSync(0);
         } else {
-            asm("");
-            flag = D_800A3884;
-            one = 1;
-            /* Preserve the explicit mask without changing the byte read or
-             * binding a hardware register. Both operands keep their values. */
-            asm("" : "=r"(flag) : "0"(flag), "r"(one));
-            if ((flag & 0xFF) == one) {
+            if (*(volatile u8 *)&D_800A3884 == 1) {
                 PutDrawEnv(D_800BDD4C);
                 ClearOTagR(D_800A38C4, 4);
                 count = D_800A3A4C;
@@ -3880,19 +3871,11 @@ extern DISPENV D_800BDE04[];
 extern volatile u8 D_800A3360;
 void func_800669B8(void) {
     s32 gp;
-    s32 flag;
-    s32 one;
 
     gp = GetGp();
     func_80058D08(D_8008CA4C[0]);
     SetDispMask(1);
-    flag = D_800A3884;
-    one = 1;
-    /* Keep the byte value opaque until its explicit 8-bit comparison.
-     * The tied empty asm preserves flag without binding a hardware register;
-     * the comparison constant is ready at the same scheduling boundary. */
-    asm("" : "=r"(flag) : "0"(flag), "r"(one));
-    if ((flag & 0xFF) == one) {
+    if (*(volatile u8 *)&D_800A3884 == 1) {
         PutDispEnv(D_800BDE04);
     }
     D_800A3360 = 1;

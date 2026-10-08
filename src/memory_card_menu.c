@@ -3282,11 +3282,10 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
         s32 words[0x3A];
     } SaveEntry;
 
-    register s32 count asm("$6");
+    s32 count;
     s32 iv;
-    register s32 j asm("$10");
     s32 k;
-    register s32 i asm("t2");
+    s32 i;
     s32 one;
     u32 d3;
     u32 lt5;
@@ -3296,11 +3295,10 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
     u32 table;
     u32 d0;
     u32 d0x16;
-    register s32 off asm("t0");
+    s32 off;
     u8 *rec;
     u8 *src;
-    register u32 sum asm("$2");
-    s32 jj;
+    u32 sum;
 
     if (D_800A3A58 != 0) {
         count = D_800A3A58 - 1;
@@ -3309,17 +3307,16 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
         } else {
             D_800A3A58 = D_800A3A58 + 1;
         }
-        j = count;
-        asm("" : "=r"(j) : "0"(j));
-        if (j >= 0) {
-            k = j * 29;
+        i = count;
+        if (i >= 0) {
+            k = i * 29;
             iv = k << 3;
             do {
                 *(SaveEntry *)(iv + (u32)D_800A35F4 + 0xE8) =
                     *(SaveEntry *)(iv + (u32)D_800A35F4);
-                j--;
+                i--;
                 iv -= 0xE8;
-            } while (j >= 0);
+            } while (i >= 0);
         }
     } else {
         D_800A3A58 = D_800A3A58 + 1;
@@ -3340,6 +3337,7 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
     d0x16 = d0 << 4;
     off = 0x1C;
 
+outer:
     do {
         rec = D_800A35F4 + off;
         if (i == arg2) {
@@ -3379,17 +3377,17 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
             rec[3] = 0;
             *(s32 *)(rec + 4) = 0x7FFFFFFF;
         }
-        jj = 0;
-        asm volatile("addu %0, %1, %2\n\tsll %0, %0, 2\n\taddu %0, %0, %3"
-                     : "=r"(sum)
-                     : "r"(d0x16), "r"(d0), "r"(table));
+        sum = (d0x16 + d0) * 4 + table;
         src = (u8 *)(i * 4 + sum);
-        for (jj = 0; jj < 4; jj++) {
-            *(rec + jj + 8) = src[jj];
+        for (count = 0; count < 4; count++) {
+            *(rec + count + 8) = src[count];
         }
         i++;
         off += 0xC;
-    } while (i < 17);
+    } while (0);
+    if (i < 17) {
+        goto outer;
+    }
 
     D_800A35F4[0x1A] = D_800A3A24w17[arg0];
     D_800A35F4[0x1B] = D_800A307Cw17[arg0];
@@ -3422,9 +3420,9 @@ void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
     u8 j;
     u8 *tbl;
     u8 i;
-    register s32 slot asm("t4");
+    s32 slot;
     u8 driver;
-    register u32 seven asm("a0");
+    u32 seven;
     s32 m;
     u8 *rec;
     u8 *src;
@@ -3455,7 +3453,6 @@ void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
             }
         }
     }
-    asm("" : : "r"(seven));
     if (arg4 < *(u32 *)(rec + 4)) {
         *(u32 *)(rec + 4) = arg4;
     }
@@ -3464,18 +3461,20 @@ void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
     tbl = D_800BBA24w17;
     p = driver * 0x11;
 outer:
-    j = 0;
-    rec = (u8 *)D_800A35F4;
-    rec += row;
-    m = i;
-    rec += m * 0xC + 0x1C;
-    sum = p * 4 + (u32)tbl;
-    src = (u8 *)(m * 4 + sum);
     do {
-        *(rec + j + 8) = src[j];
-        j++;
-    } while (j < 4);
-    i++;
+        j = 0;
+        rec = (u8 *)D_800A35F4;
+        rec += row;
+        m = i;
+        rec += m * 0xC + 0x1C;
+        sum = p * 4 + (u32)tbl;
+        src = (u8 *)(m * 4 + sum);
+        do {
+            *(rec + j + 8) = src[j];
+            j++;
+        } while (j < 4);
+        i++;
+    } while (0);
     if (i < 17) {
         goto outer;
     }
@@ -3484,7 +3483,6 @@ outer:
         D_800A3068w17[driver * 2] | (D_800A3069w17[driver * 2] << 1);
     D_800A35F4[slotM * 0xE8 + 0x1A] = D_800A3A24w17[driver];
     D_800A35F4[slotM * 0xE8 + 0x1B] = D_800A307Cw17[driver];
-    asm("" : : "r"(slot));
 }
 
 extern u8 D_800BBA24[];
@@ -3857,7 +3855,7 @@ void func_8006C668(s32 arg0, s32 arg1) {
     }
     s = D_800A377C[0];
     if (node != s) {
-        asm("" : "=r"(sentinel) : "0"(s));
+        sentinel = s;
         do {
             entry = *(u8 **)(node + 0x20);
             *(u32 *)(entry + 8) = 0;

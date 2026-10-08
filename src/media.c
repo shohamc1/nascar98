@@ -2636,21 +2636,16 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
     u32 cnt;
     u32 word;
     register u32 wA asm("$3");
-    register u32 wAhi asm("$4");
     u32 w8hi;
-    register u32 scaleV asm("$3");
     u32 wAlo;
     u32 w8lo;
     u32 xv;
     u32 mdecId;
     register u32 prod asm("$10");
-    register u32 wv asm("$2");
     volatile StreamVram *vst;
     u32 mdecId2;
     s32 magic;
-    register u32 w16u asm("$5");
     u32 h16u;
-    register u32 spinMax asm("$5");
     s32 prod2;
     u_long *outp;
     s32 w32;
@@ -2666,18 +2661,18 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
     bsw = bsw | ((word & 0xFF00) << 8);
     magic = bsw | (word << 0x18);
     wA = *(u16 *)(arg0 + 0xA);
-    asm volatile("srl %0, %1, 8" : "=r"(wAhi) : "r"(wA));
+    asm volatile("srl %0, %1, 8" : "=r"(cnt) : "r"(wA));
     wAlo = wA & 0xFF;
     asm volatile("lhu %0, 8(%1)" : "=r"(w8) : "r"(arg0));
     wAlo = wAlo << 8;
-    bsw = wAhi | wAlo;
+    bsw = cnt | wAlo;
     cnt = *(s32 *)((u8 *)(st) + 0x118);
     asm volatile("srl %0, %1, 8" : "=r"(w8hi) : "r"(w8));
     w8lo = w8 & 0xFF;
     w8lo = w8lo << 8;
     nsec = w8hi | w8lo;
     if (cnt == 0) {
-        scaleV = D_800A33A0;
+        wA = D_800A33A0;
         mdecId = 0x4D444543;
         asm("" : "=r"(xv) : "0"(arg1));
         st->unk0[0].x = arg1;
@@ -2685,19 +2680,19 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
         st->unk0[0].h = bsw;
         st->unk0[1].y = arg2;
         st->unk0[1].h = bsw;
-        asm volatile("mult %0, %1" : : "r"(nsec), "r"(scaleV) : "lo", "hi");
+        asm volatile("mult %0, %1" : : "r"(nsec), "r"(wA) : "lo", "hi");
         st->unk1C = xv;
         st->unk1E = arg2;
         do {
         } while (0);
-        st->unk0[1].x = arg1 + scaleV * 0xA0;
-        st->unk20 = scaleV * 8;
+        st->unk0[1].x = arg1 + wA * 0xA0;
+        st->unk20 = wA * 8;
         st->unk22 = bsw;
         st->unk10 = 0;
         asm volatile("mflo %0" : "=r"(prod));
-        wv = prod >> 1;
-        st->unk0[0].w = wv;
-        st->unk0[1].w = wv;
+        w8 = prod >> 1;
+        st->unk0[0].w = w8;
+        st->unk0[1].w = w8;
         if (magic == mdecId) {
             func_800708D8(arg0 + 0x10, (s32)st->unk28[st->unk30]);
         }
@@ -2706,9 +2701,9 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
         st->unk11C = 0;
         DecDCTin((u_long *)st->unk28[1 - st->unk30], D_800A339C);
         st2 = (StreamVram *)D_800A3398;
-        asm volatile("lhu %0, 0x20(%1)" : "=r"(w16u) : "r"(st2));
+        asm volatile("lhu %0, 0x20(%1)" : "=r"(bsw) : "r"(st2));
         asm volatile("lhu %0, 0x22(%1)" : "=r"(h16u) : "r"(st2));
-        w32 = (s16)w16u;
+        w32 = (s16)bsw;
         h32 = (s16)h16u;
         asm volatile("mult %0, %1" : : "r"(w32), "r"(h32) : "lo", "hi");
         outp = (u_long *)st2->unk24;
@@ -2723,9 +2718,9 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
         vst = (volatile StreamVram *)D_800A3398;
         i = 0;
         if (vst->unk11C == 0) {
-            spinMax = 0x30D40;
+            bsw = 0x30D40;
         again:
-            if (i > spinMax) {
+            if (i > bsw) {
                 goto done;
             }
             i++;
@@ -2993,7 +2988,7 @@ s32 func_80070798Ret(u32 dst1, u32 dst2, u8 *src) {
         one = 1;
         tbl = D_8009B480;
         q = tbl + 2;
-        asm("" : "=r"(p) : "0"(tbl));
+        p = tbl;
         while (i < 0x60) {
             val16 = *(u16 *)src2;
             shift = *p;
@@ -3037,7 +3032,7 @@ s32 func_80070798Ret(u32 dst1, u32 dst2, u8 *src) {
         one = 1;
         tbl = D_8009B600;
         q = tbl + 2;
-        asm("" : "=r"(p) : "0"(tbl));
+        p = tbl;
         while (i < 0x80) {
             val16 = *(u16 *)src2;
             shift = *p;
@@ -3075,19 +3070,16 @@ s32 func_800708D8Ret(void *arg0, s32 arg1) {
     u8 *tbl2;
     u16 *tbl1v;
     u16 *tbl2v;
-    register u32 bits asm("$6");
+    u32 bits;
     u32 quant;
     u32 block;
     register u32 nw asm("$7");
     register u32 nw2 asm("$4");
-    register u32 count asm("$6");
-    register u32 nwp asm("$2");
-    register u32 nw5 asm("$4");
+    u32 nwp;
     u32 sym;
     u32 len;
     u32 bitpos;
     u8 *lenp;
-    register u16 *symp asm("$7");
     u32 scale;
     u32 hdr;
 
@@ -3105,8 +3097,8 @@ s32 func_800708D8Ret(void *arg0, s32 arg1) {
     quant = src[2] << 10;
     nwp = src[4];
     nwp <<= 16;
-    nw5 = src[5];
-    bits = nwp | nw5;
+    nw2 = src[5];
+    bits = nwp | nw2;
     src += 6;
     block = bits >> 22;
 
@@ -3141,13 +3133,13 @@ inner_loop:
         block = bits >> 23;
         lenp = tbl2 + block;
         scale = block * 2;
-        symp = (u16 *)((u8 *)tbl2v + scale);
+        nw = (u32)((u8 *)tbl2v + scale);
     } else {
         lenp = tbl1 + block;
         scale = block * 2;
-        symp = (u16 *)((u8 *)tbl1v + scale);
+        nw = (u32)((u8 *)tbl1v + scale);
     }
-    sym = *symp;
+    sym = *(u16 *)nw;
     do {
     } while (0);
     len = *lenp;
@@ -3171,15 +3163,15 @@ inner_loop:
 escape:
     *out++ = bits >> 16;
     nw2 = *src++;
-    bits = (bits << 16) | (nw2 << bitpos);
+    bits <<= 16;
+    bits |= nw2 << bitpos;
     goto inner_loop;
 done:
-    count = 0x40;
+    bits = 0x40;
     do {
         *out++ = 0xFE00;
-        count--;
-    } while (count != 0);
-    asm volatile("" : : : "a2");
+        bits--;
+    } while (bits != 0);
     return 0;
 }
 
@@ -3984,7 +3976,7 @@ u32 func_80072BDC(void *arg0) {
     register u32 word asm("a0");
     u32 swapped;
     u32 swapped2;
-    register u32 size asm("v0");
+    u32 size;
     u32 check;
 
     word = *(u32 *)arg0;
@@ -4004,11 +3996,11 @@ u32 func_80072BDC(void *arg0) {
     }
     if (check != 0) {
         size >>= 1;
+        return size;
     }
     if (swapped2) {
         return size;
     }
-    return size;
 }
 
 INCLUDE_ASM("asm/nonmatchings/media", func_80072CA8);
@@ -4174,13 +4166,10 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     SpuCommonAttr *caarg;
     u32 off;
     register s32 voice asm("$16");
-    register s32 addr asm("$20");
-    s32 a5;
-    s32 a6;
+    s32 addr;
     u8 val;
+    s32 base;
 
-    a5 = arg5;
-    a6 = arg6;
     if (arg0 == 0) {
         goto bail;
     }
@@ -4210,7 +4199,7 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     D_800A351C[0x7B60 / 4] = arg4;
     D_800A351C[0x7B64 / 4] = arg1;
     D_800A351C[0x7B68 / 4] = arg3;
-    D_800A351C[0x7B7C / 4] = a5;
+    D_800A351C[0x7B7C / 4] = arg5;
     voice = D_800A351C[0x7B64 / 4];
     addr = D_800A351C[0x7B5C / 4];
     ca.mask = 3;
@@ -4221,7 +4210,7 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     va.voice = voice;
     va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
     va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
-    va.pitch = a5;
+    va.pitch = arg5;
     va.addr = addr;
     va.a_mode = 1;
     va.s_mode = 1;
@@ -4233,7 +4222,7 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     va.sl = 0xF;
     SpuSetVoiceAttr(&va);
     voice = D_800A351C[0x7B68 / 4];
-    addr = D_800A351C[0x7B60 / 4];
+    addr = (base = D_800A351C[0x7B60 / 4]);
     {
         asm volatile("addiu %0, $sp, 0x50" : "=r"(caarg));
         ca.mask = 3;
@@ -4244,7 +4233,7 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
         va.voice = voice;
         va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
         va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
-        va.pitch = a5;
+        va.pitch = arg5;
         va.addr = addr;
         va.a_mode = 1;
         va.s_mode = 1;
@@ -4259,8 +4248,8 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     SwEnterCriticalSection();
     D_800A351C[0x7B14 / 4] = (s32)SpuSetIRQCallback(0);
     D_800A351C[0x7B18 / 4] = (s32)SpuSetTransferCallback(func_80072178);
-    D_800A351C[0x7B1C / 4] = a6;
-    if (a6 != 0) {
+    D_800A351C[0x7B1C / 4] = arg6;
+    if (arg6 != 0) {
         D_800A351C[0x7B10 / 4] =
             (s32)((Callback (*)(Callback))VSyncCallback)(func_8007270C);
     } else {

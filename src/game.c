@@ -1050,7 +1050,7 @@ void MatrixBuildRotationFromTransform(s32 *transform, MATRIX *matrix) {
 
 void func_80015D10(MATRIX *matrix) {
     s32 a;
-    register s32 b asm("v1");
+    s32 b;
     s32 c;
 
     extern s32 D_800A3798Absolute[];
@@ -1114,14 +1114,16 @@ void func_80015D10(MATRIX *matrix) {
     if (a < 0) {
         a += 15;
     }
-    b = D_800A3794Absolute[0];
-    matrix->m[1][2] = (s16)(a >> 4);
+    do {
+        b = D_800A3794Absolute[0];
+        matrix->m[1][2] = (s16)(a >> 4);
 
-    if (b < 0) {
-        b += 15;
-    }
-    a = b >> 4;
-    matrix->m[2][2] = (s16)a;
+        if (b < 0) {
+            b += 15;
+        }
+        a = b >> 4;
+        matrix->m[2][2] = (s16)a;
+    } while (0);
 }
 
 s32 MathFixedDivide(s32 numerator, s32 denominator) {
@@ -1341,7 +1343,6 @@ s32 func_80016ACC(u8 *arg0, s16 *arg1) {
     s32 fdiv1;
     s32 fdiv2;
     s32 x;
-    register s32 scale asm("a1");
     s32 t2;
     s32 w;
 
@@ -1374,20 +1375,20 @@ s32 func_80016ACC(u8 *arg0, s16 *arg1) {
     x = MathMultiplyFixed16(0x640000, (*(s32 **)D_800A3A34Absolute)[x >> 16]);
     x = MathMultiplyFixed16(fdiv1, x);
     x = x >> 16;
-    scale = x;
+    fade = x;
     if (x < 0) {
-        scale = -scale;
+        fade = -fade;
     }
-    t2 = (u32)scale >> 31;
-    asm("addu %0, %1, %0" : "=r"(t2) : "r"(scale), "0"(t2));
-    scale = t2 >> 1;
+    t2 = (u32)fade >> 31;
+    t2 = fade - -t2;
+    fade = t2 >> 1;
     i = 0;
     if (count > 0) {
         lp = p + 4;
         do {
             w = *(s32 *)(lp + 0xC);
             i++;
-            w = w + scale;
+            w = w + fade;
             *(s16 *)lp = w;
             lp += 0x14;
         } while (i < count);
