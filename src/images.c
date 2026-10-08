@@ -1079,7 +1079,7 @@ void func_8001F728(s32 arg0) {
     extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
         D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 
-    asm("" : "=r"(v) : "0"((Vec3 *)arg0));
+    v = (Vec3 *)arg0;
     x = v->x;
     y = v->y;
     z = v->z;

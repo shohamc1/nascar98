@@ -486,8 +486,7 @@ void func_8001FD44(u8 *arg0) {
     if (arg0 == NULL) {
         return;
     }
-    *(u8 *)(arg0 + 0x20C) += 1;
-    asm("" : : : "memory");
+    *(volatile u8 *)(arg0 + 0x20C) += 1;
     held = *(s16 *)(arg0 + 0x114);
     mode = D_800A397CSmall;
     count = *(s8 *)(arg0 + 0x20C);
@@ -1317,7 +1316,7 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     s32 ld5;
     s32 flag;
     volatile s32 pad[16];
-    register s32 dx asm("$6");
+    s32 dx;
 
     ld5 = arg5;
     flag = ld5;
@@ -1329,7 +1328,8 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
         *(s32 *)(arg0 + 0xD0) -= (*(volatile s32 *)&arg2 << 16) >> 1;
         *(s32 *)(arg0 + 0xD4) -= (*(volatile s32 *)&arg3 << 16) >> 1;
     } else {
-        dx = (arg2 << 16) >> 1;
+        dx = arg2 << 16;
+        dx = dx >> 1;
         *(s32 *)(arg0 + 0xC4) -= dx;
         *(s32 *)(arg0 + 0xC8) -= (*(volatile s32 *)&arg3 << 16) >> 1;
         *(s32 *)(arg0 + 0xD0) -= *(volatile s32 *)&arg2 << 16;
@@ -1401,7 +1401,7 @@ void func_80028754(u8 *arg0, s32 arg1) {
     extern s8 D_800A2E18;
     u8 *dst;
     s32 i;
-    register s32 scale asm("s2");
+    s32 scale;
     s32 offset;
     s32 *cur;
     s32 *table;
@@ -1451,7 +1451,8 @@ void func_80028754(u8 *arg0, s32 arg1) {
         if (D_800A2EB8[0] == 0) {
             v = *arr1E4;
         } else {
-            v = *arr194;
+            scale = *arr194;
+            v = scale;
         }
         scale = MathFixedDivide(v, 0x3E8);
         do {
@@ -1501,7 +1502,7 @@ void func_80028D80(u8 *arg0) {
     s32 lim;
     s32 temp;
     s32 v1;
-    register s32 v7 asm("$3");
+    s32 v7;
 
     node = arg0;
     mode = *(s16 *)(node + 0x1EC);
@@ -1549,15 +1550,14 @@ void func_80028D80(u8 *arg0) {
                 scale, MathFixedDivide(0x10, ((cur - v1) >> 16) + 0x10));
         }
     }
-    v7 = scale * 8;
     if (D_800A2EE4nm[0] != 0) {
         if (*(s16 *)(node + 0x1EC) == 0) {
             scale = MathMultiplyFixed16(
                 scale, MathFixedDivide(
                            (*(s8 *)(node + 0x205) - 1) * 0x64 + 0x64, 0x64));
-            v7 = scale * 8;
         }
     }
+    v7 = scale * 8;
     v7 = v7 - scale;
     scale = v7 >> 2;
     *(s32 *)(node + 0x88) = scale + (*(s32 *)(node + 0x22C) >> 4);
@@ -2962,8 +2962,8 @@ extern s32 D_800A2EB0;
 extern u8 *D_800A3878;
 extern u8 D_800A3860[][4];
 void func_8002F454(void) {
-    u8 *node;
     s32 red;
+    u8 *node;
     s32 green;
     s32 carIdx;
 
@@ -2980,7 +2980,6 @@ void func_8002F454(void) {
                     red = (*(s16 *)(node + 0x2A0) << 2) + 0x40;
                     green = (*(s16 *)(node + 0x2A6) << 2) + 0x40;
                     if (red < 0) {
-                        asm("");
                         red = 0;
                     }
                     if (red >= 0x40) {
@@ -5770,7 +5769,7 @@ extern s32 D_800A2ED4[];
 
 void func_8003667C(u32 *list) {
     u8 *p;
-    register s32 i asm("s1");
+    s32 i;
     s32 tmp;
     s32 flag;
     s32 v;
@@ -5806,7 +5805,8 @@ void func_8003667C(u32 *list) {
             *(s32 *)(p + 8) = v;
             tmp = ((*list >> 11) & 0x7FF) << 7;
             if ((s32)RandomGetScaled16(0x20) < 0) {
-                v = tmp - RandomGetScaled16(0x20);
+                v = RandomGetScaled16(0x20);
+                v = tmp - v;
             } else {
                 v = tmp + RandomGetScaled16(0x20);
             }
@@ -6867,7 +6867,7 @@ extern s32 D_800A2EACAbsolute[];
 
 void func_8003BCAC(void) {
     s32 count;
-    register s32 offset asm("s0");
+    s32 offset;
     u8 *object;
 
     object = *(u8 **)(((u8 **)D_800A3854Absolute)[9] + 0x3E0);
@@ -6886,12 +6886,11 @@ void func_8003BCAC(void) {
         } while (object != 0);
     }
     object = ((u8 **)D_800A3854Absolute)[9];
-    offset = count * 0x10;
-    *(s32 *)(object + 0) = *(s32 *)((u8 *)D_800BE72C + offset);
-    *(s32 *)(object + 4) = *(s32 *)((u8 *)D_800BE730 + offset);
+    *(s32 *)(object + 0) = *(s32 *)((u8 *)D_800BE72C + count * 0x10);
+    *(s32 *)(object + 4) = *(s32 *)((u8 *)D_800BE730 + count * 0x10);
     *(s32 *)(object + 8) = 0;
     func_8002D4CC(object);
-    func_80022FB8(object, *(s16 *)((u8 *)D_800BE738 + offset));
+    func_80022FB8(object, *(s16 *)((u8 *)D_800BE738 + count * 0x10));
     D_800A2F60 = 0x14;
     func_8001D1E4();
     D_800A2EACAbsolute[0] = 0;

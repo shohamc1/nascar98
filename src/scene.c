@@ -2514,18 +2514,16 @@ extern void func_80050028Args(char *, s16, s16, s8);
 asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");
 extern s32 sprintfTextArgs(char *, char *, ...);
 asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");
-void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s8 arg3) {
     char text[16];
-    s32 mode;
 
-    asm("" : "=r"(mode) : "0"(arg3));
-    if ((s8)arg3 == 1) {
+    if (arg3 == 1) {
         gTextColorNm = 6;
     } else {
         gTextColorNm = 9;
     }
     sprintfTextArgs(text, D_800A3020nm, arg0);
-    func_80050028Args(text, (s16)arg1, (s16)arg2, (s8)mode);
+    func_80050028Args(text, (s16)arg1, (s16)arg2, arg3);
     gTextColorNm = 0;
 }
 
@@ -4164,7 +4162,7 @@ extern s32 FileSeek(s32, s32, s32);
 extern s32 FileRead(s32, s32, s32, s32);
 extern s32 FileClose(s32);
 extern s32 D_800A2EB0Absolute[];
-s32 func_80058094(s32 arg0, s32 *arg1, s32 data) {
+s32 func_80058094Old(s32 arg0, s32 *arg1, s32 data) {
     s32 size;
     s32 sector;
 
@@ -4538,9 +4536,10 @@ void func_8005978C(void) {
 
     sector = (s32)FileOpen(0, D_800A3090);
     size = (FileSeekArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
-    tmp = (s32)HeapAlloc(size);
-    asm("" : : "r"(size), "r"(size), "r"(size), "r"(size), "r"(tmp));
-    FileSeekArgsV((void *)sector, 0, 0);
+    do {
+        tmp = (s32)HeapAlloc(size);
+        FileSeekArgsV((void *)sector, 0, 0);
+    } while (0);
     buf = tmp;
     FileRead(buf, 1, size, sector);
     FileCloseArgs(sector);

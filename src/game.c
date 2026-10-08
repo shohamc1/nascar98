@@ -884,28 +884,18 @@ extern void func_8001C668(void *, void *);
 
 s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
     s32 count;
-    s32 sentinel;
     s16 *cursor;
-    s32 value;
-    register u8 **head asm("a1");
-    register u8 **tail asm("a2");
+    s32 sentinel;
 
     count = 0;
     if (arg0[0] != -1) {
-        asm("" : : : "memory");
         sentinel = -1;
         cursor = arg0;
-        value = cursor[0];
         do {
-            head = (u8 **)arg1;
+            ListPushFront(arg2 + *cursor * 0x2C, arg1, (u8 *)arg1 + 4);
             cursor++;
-            tail = (u8 **)((u8 *)arg1 + 4);
-            do {
-            } while (0);
-            ListPushFront(arg2 + value * 0x2C, head, tail);
-            value = cursor[0];
             count++;
-        } while (value != sentinel);
+        } while (*cursor != sentinel);
     }
     if (count != 0) {
         func_8001C668(arg1, (void *)((u8 *)arg1 + 4));
@@ -1157,24 +1147,22 @@ extern void func_8003379C();
 
 void func_80016298(s16 *arg0, u8 *arg1) {
     s32 width;
-    register u8 *vertex asm("s3");
     s32 singles;
 
     width = (arg0[1] - arg0[0]) + 1;
     singles = width % 3;
-    vertex = arg1;
     while (singles > 0) {
-        RotTransPers_nom(vertex);
-        func_80033788(vertex);
-        vertex += 0x14;
+        RotTransPers_nom(arg1);
+        func_80033788(arg1);
+        arg1 += 0x14;
         singles--;
         width--;
     }
     singles = width;
     while (singles > 0) {
-        RotTransPers3_nom(vertex, vertex + 0x14, vertex + 0x28);
-        func_8003379C(vertex, vertex + 0x14, vertex + 0x28);
-        vertex += 0x3C;
+        RotTransPers3_nom(arg1, arg1 + 0x14, arg1 + 0x28);
+        func_8003379C(arg1, arg1 + 0x14, arg1 + 0x28);
+        arg1 += 0x3C;
         singles -= 3;
     }
 }
@@ -1266,7 +1254,7 @@ INCLUDE_ASM("asm/nonmatchings/game", func_800167BC);
 void func_800168F8(u8 *arg0, s32 arg1) {
     s32 pad[2];
     s16 clutCur;
-    register s32 clutNew asm("s3");
+    s32 clutNew;
     s32 clutOld;
     s32 tpage;
     s32 scroll;
@@ -1299,29 +1287,31 @@ void func_800168F8(u8 *arg0, s32 arg1) {
             tpage = GetTPage(0, 0, (arg1 % 4) * 64 + 0x300, 0x100);
             scroll = ((arg1 - 12) / 4) * 64 - 0x40;
         }
-        scroll -= *(s16 *)(arg0 + 0x32);
-        i = 0;
-        if (count > 0) {
-            p = array + 0x15;
-        again:
-            if (*(s16 *)(p - 0xB) == clutOld) {
-                x0 = *(u8 *)(p - 0xC);
-                x1 = *(u8 *)(p - 0x8);
-                x2 = *(u8 *)(p - 0x4);
-                x3 = *(u8 *)(p);
-                *(s16 *)(p - 0xB) = clutNew;
-                *(s16 *)(p - 0x7) = tpage;
-                *(u8 *)(p - 0xC) = x0 + scroll;
-                *(u8 *)(p - 0x8) = x1 + scroll;
-                *(u8 *)(p - 0x4) = x2 + scroll;
-                *(u8 *)(p) = x3 + scroll;
+        do {
+            scroll -= *(s16 *)(arg0 + 0x32);
+            i = 0;
+            if (count > 0) {
+                p = array + 0x15;
+            again:
+                if (*(s16 *)(p - 0xB) == clutOld) {
+                    x0 = *(u8 *)(p - 0xC);
+                    x1 = *(u8 *)(p - 0x8);
+                    x2 = *(u8 *)(p - 0x4);
+                    x3 = *(u8 *)(p);
+                    *(s16 *)(p - 0xB) = clutNew;
+                    *(s16 *)(p - 0x7) = tpage;
+                    *(u8 *)(p - 0xC) = x0 + scroll;
+                    *(u8 *)(p - 0x8) = x1 + scroll;
+                    *(u8 *)(p - 0x4) = x2 + scroll;
+                    *(u8 *)(p) = x3 + scroll;
+                }
+                i++;
+                p += 0x2C;
+                if (i < count) {
+                    goto again;
+                }
             }
-            i++;
-            p += 0x2C;
-            if (i < count) {
-                goto again;
-            }
-        }
+        } while (0);
         *(s16 *)(arg0 + 0x30) = clutNew;
         *(s16 *)(arg0 + 0x32) = *(u16 *)(arg0 + 0x32) + scroll;
     }

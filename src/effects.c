@@ -1582,7 +1582,7 @@ void func_80044594(u8 *arg0) {
     u32 *wp;
     u8 *rec;
     u8 *typ;
-    register s32 i asm("$8");
+    s32 i;
     s8 *bp;
     u8 *fp;
     u32 word;
@@ -1594,27 +1594,31 @@ void func_80044594(u8 *arg0) {
 
     wp = (u32 *)arg0;
     rec = (u8 *)&D_800AD9B0[0];
-    i = 0;
-    bp = (s8 *)arg0 + 2;
-    fp = rec + 0x1A;
-loop:
-    if (*wp == 0) {
-        for (; i < 0x28; i++, fp += 0x30) {
-            fp[2] = 0;
+    do {
+        i = 0;
+        bp = (s8 *)arg0 + 2;
+        fp = rec + 0x1A;
+    loop:
+        if (*wp == 0) {
+            for (; i < 0x28; i++, fp += 0x30) {
+                fp[2] = 0;
+            }
+            return;
         }
-        return;
-    }
-    fp[2] = 1;
-    word = *wp;
-    typ = D_800A3878w15[0] + ((word >> 24) & 0x1F) * 0x500;
-    if ((word & 0xE0000000) == 0x80000000) {
-        src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40);
-        fp[3] = 10;
-    } else {
-        mode = word >> 29;
-        src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40) + mode * 0x18;
-        fp[3] = mode;
-    }
+        fp[2] = 1;
+        word = *wp;
+        typ = D_800A3878w15[0] + ((word >> 24) & 0x1F) * 0x500;
+        if ((word & 0xE0000000) == 0x80000000) {
+            src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40);
+            fp[3] = 10;
+        } else {
+            do {
+                mode = word >> 29;
+                src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40) + mode * 0x18;
+                fp[3] = mode;
+            } while (0);
+        }
+    } while (0);
     *(s32 *)rec = (*(s8 *)wp << 6) + *(s32 *)typ;
     *(s32 *)(fp - 0x16) = (bp[-1] << 6) + *(s32 *)(typ + 4);
     w = ((u8 *)wp)[3];

@@ -1991,6 +1991,7 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 value;
     s32 word;
     s32 offset;
+    s32 stride;
 
     index = D_800A35EC++;
     object = D_800A3678 + index * 36;
@@ -2020,11 +2021,12 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     prim[3] = 0;
     *(s32 *)(prim + 4) = 0;
     prim2 = *(u8 **)(object + 0x20);
-    offset = (arg0 & 0xFF) * 4;
-    asm("");
+    offset = arg0 & 0xFF;
+    stride = 4;
+    offset = offset * stride;
     D_800A3740 = (s32 **)object;
-    prim2[2] = 2;
     prim2[1] = 2;
+    prim2[2] = 2;
     value = *(s32 *)((u8 *)D_8009A31C + offset);
     cur = (u8 *)D_800A3740;
     *(s32 *)(prim2 + 8) = value;
@@ -3812,7 +3814,6 @@ void func_80066730(void) {
     s32 raw;
     s32 a0v;
     s32 a1v;
-    s32 rawT;
 
     GraphicsInitDoubleBuffer(0);
     PutDrawEnv(&D_800BDDA8[0]);
@@ -3852,9 +3853,8 @@ void func_80066730(void) {
             pp = D_8009A400;
         }
         raw = func_8005B0E4(0x140, (s32)pp[0]);
-        asm volatile("lw %0, 0(%3)\n\tsll %2, %4, 16\n\tsra %1, %2, 16"
-                     : "=r"(a0v), "=r"(a1v), "=r"(rawT)
-                     : "r"(pp), "2"(raw));
+        a0v = (s32)pp[0];
+        a1v = (s16)raw;
         func_8005A9F4W(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
         DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0xFFC));
         DrawSync(0);

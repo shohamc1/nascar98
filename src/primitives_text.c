@@ -496,7 +496,6 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
 extern s32 MathMultiplyFixed16(s32, s32);
 
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
-
     s32 num;
     s32 den;
     s32 rem;
@@ -510,7 +509,6 @@ void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
     s16 *ptrA;
     s32 i;
     s32 radiusB;
-    register u8 *poly asm("s6");
     s32 radiusA;
     u16 corners[8];
     u16 *corner;
@@ -519,7 +517,6 @@ void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
     extern u8 D_800A3A2CAbsolute[];
     extern u8 D_800A3A34Absolute[];
 
-    poly = arg1;
     num = 0x230;
     den = 0x32C8;
     rem = num % den;
@@ -531,29 +528,32 @@ void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
     ptrB = D_80091072;
     ptrA = ptrB - 1;
     for (; i < 4; i++) {
-        product1 = MathMultiplyFixed16(radiusA, (s32)*ptrA << 16);
-        product2 = MathMultiplyFixed16(radiusB, (s32)*ptrB << 16);
-        x = (product1 - product2) >> 16;
-        product3 = MathMultiplyFixed16(radiusB, (s32)*ptrA << 16);
-        y = (product3 + MathMultiplyFixed16(radiusA, (s32)*ptrB << 16)) >> 16;
-        off = i * 4;
-        corner = (u16 *)((s32)corners + off);
-        *corner = x + 0x2C;
-        corner[1] = y + 0xAE;
+        do {
+            product1 = MathMultiplyFixed16(radiusA, (s32)*ptrA << 16);
+            product2 = MathMultiplyFixed16(radiusB, (s32)*ptrB << 16);
+            x = (product1 - product2) >> 16;
+            product3 = MathMultiplyFixed16(radiusB, (s32)*ptrA << 16);
+            y = (product3 + MathMultiplyFixed16(radiusA, (s32)*ptrB << 16)) >>
+                16;
+            off = i * 4;
+            corner = (u16 *)((s32)corners + off);
+            *corner = x + 0x2C;
+            corner[1] = y + 0xAE;
+        } while (0);
         if (arg2 != 0) {
             corner[1] = y + 0x4A;
         }
         ptrB += 2;
         ptrA += 2;
     }
-    ((u16 *)poly)[4] = corners[0];
-    ((u16 *)poly)[5] = corners[1];
-    ((u16 *)poly)[8] = corners[2];
-    ((u16 *)poly)[9] = corners[3];
-    ((u16 *)poly)[12] = corners[4];
-    ((u16 *)poly)[13] = corners[5];
-    ((u16 *)poly)[16] = corners[6];
-    ((u16 *)poly)[17] = corners[7];
+    ((u16 *)arg1)[4] = corners[0];
+    ((u16 *)arg1)[5] = corners[1];
+    ((u16 *)arg1)[8] = corners[2];
+    ((u16 *)arg1)[9] = corners[3];
+    ((u16 *)arg1)[12] = corners[4];
+    ((u16 *)arg1)[13] = corners[5];
+    ((u16 *)arg1)[16] = corners[6];
+    ((u16 *)arg1)[17] = corners[7];
 }
 
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_80019C10);
