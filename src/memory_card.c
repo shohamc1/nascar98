@@ -1604,73 +1604,49 @@ u8 CardDeleteFile(char *path) {
 
 extern void CardTestEvents(void);
 extern void func_8005A414(void);
-extern s32 func_800598FC(void);
+extern s32 CardDisableEvents(void);
 void func_800598C4(void) {
     CardTestEvents();
     func_8005A414();
-    func_800598FC();
+    CardDisableEvents();
     ChangeClearPAD(0);
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 200 bytes versus retail 232; 40 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The compiler if-converts the repeated event-result tests, shortening retail's conditional branch blocks.
- */
 extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
 extern s32 D_800A38C8, D_800A38CC, D_800A38D0, D_800A38D4;
 extern s32 DisableEvent(s32);
-s32 func_800598FC(void) {
-    s32 result;
+s32 CardDisableEvents(void) {
     s32 enabled;
+    s16 result;
 
     EnterCriticalSection();
-    enabled = DisableEvent(D_800A3824) != 0;
+    enabled = DisableEvent(D_800A3824);
+    enabled = enabled != 0;
     result = enabled;
-    if (enabled == 0) {
+    if (DisableEvent(D_800A3828) == 0) {
         result = 0;
     }
-    do {
-        if (DisableEvent(D_800A3828) != 0)
-            break;
+    if (DisableEvent(D_800A382C) == 0) {
         result = 0;
-    } while (0);
-    do {
-        if (DisableEvent(D_800A382C) != 0)
-            break;
+    }
+    if (DisableEvent(D_800A3834) == 0) {
         result = 0;
-    } while (0);
-    do {
-        if (DisableEvent(D_800A3834) != 0)
-            break;
+    }
+    if (DisableEvent(D_800A38C8) == 0) {
         result = 0;
-    } while (0);
-    do {
-        if (DisableEvent(D_800A38C8) != 0)
-            break;
+    }
+    if (DisableEvent(D_800A38CC) == 0) {
         result = 0;
-    } while (0);
-    do {
-        if (DisableEvent(D_800A38CC) != 0)
-            break;
+    }
+    if (DisableEvent(D_800A38D0) == 0) {
         result = 0;
-    } while (0);
-    do {
-        if (DisableEvent(D_800A38D0) != 0)
-            break;
+    }
+    if (DisableEvent(D_800A38D4) == 0) {
         result = 0;
-    } while (0);
-    do {
-        if (DisableEvent(D_800A38D4) != 0)
-            break;
-        result = 0;
-    } while (0);
+    }
     ExitCriticalSection();
     return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card", func_800598FC);
-#endif
 
 extern s32 CardEnableEvents(void);
 extern void CardTestEvents(void), func_8005A414(void);

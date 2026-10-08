@@ -1532,9 +1532,104 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _cwc);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _param);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _addque);
+/* SPDX-License-Identifier: MIT */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _addque2);
+extern s32 D_8009DB94[];
+extern s32 D_8009DB98[];
+extern s32 D_8009DB9C[];
+extern volatile s32 D_8009DA98[];
+extern u8 D_8009DA91[];
+extern s32 *D_8009DB70[];
+extern s32 D_8009DB84[];
+extern s32 D_8009DB88[];
+extern s32 D_8009DB8C[];
+extern s32 D_800BC558[];
+extern s32 D_800BC550[];
+extern s32 D_800BC554[];
+extern s32 D_800BC54C[];
+extern void set_alarm(void);
+extern s32 get_alarm(void);
+extern void _exeque(void);
+extern s32 SetIntrMaskFull(s32 arg0) asm("SetIntrMask");
+
+s32 _addque2(Callback func, s32 *arg, s32 size, s32 arg2);
+
+s32 _addque(Callback func, s32 *arg, s32 arg2) {
+    return _addque2(func, arg, 0, arg2);
+}
+
+s32 _addque2(Callback func, s32 *arg, s32 size, s32 arg2) {
+    s32 i;
+    s32 *cursor;
+    s32 *buf;
+    s32 old;
+    s32 spinMask;
+    s32 debugFlag;
+    s32 dmaStat;
+    register s32 idxv asm("v1");
+
+    set_alarm();
+    while (((D_8009DB94[0] + 1) & 0x3F) == D_8009DB98[0]) {
+        if (get_alarm() != 0) {
+            return -1;
+        }
+        _exeque();
+    }
+    old = SetIntrMaskFull(0);
+    D_8009DA98[0] = 1;
+    debugFlag = D_8009DA91[0];
+    asm("");
+    D_8009DB9C[0] = old;
+    spinMask = 0x4000000;
+    if (debugFlag != 0) {
+        if (D_8009DB94[0] != D_8009DB98[0]) {
+            goto queue;
+        }
+        asm("");
+        dmaStat = *D_8009DB70[0];
+        if ((dmaStat & 0x1000000) != 0) {
+            goto queue;
+        }
+        if (D_8009DA9C[0] != 0) {
+            goto queue;
+        }
+    }
+    do {
+    } while ((*(volatile s32 *)D_8009DB64[0] & spinMask) == 0);
+    func(arg, arg2);
+    *(volatile Callback *)&D_8009DB84[0] = func;
+    D_8009DB88[0] = (s32)arg;
+    D_8009DB8C[0] = arg2;
+    SetIntrMaskFull(D_8009DB9C[0]);
+    return 0;
+queue:
+    DMACallback(2, _exeque);
+    i = 0;
+    if (size != 0) {
+        buf = D_800BC558;
+        cursor = arg;
+        asm("" : : "r"(size));
+    copyLoop:
+        if (i < size / 4) {
+            idxv = D_8009DB94[0];
+            *(s32 *)(i * 4 + (idxv * 0x60 + (u32)buf)) = *cursor;
+            cursor++;
+            i++;
+            asm("");
+            goto copyLoop;
+        }
+        *(s32 *)((u8 *)D_800BC550 + D_8009DB94[0] * 0x60) =
+            D_8009DB94[0] * 0x60 + (u32)D_800BC558;
+    } else {
+        *(s32 *)((u8 *)D_800BC550 + D_8009DB94[0] * 0x60) = (s32)arg;
+    }
+    *(s32 *)((u8 *)D_800BC554 + D_8009DB94[0] * 0x60) = arg2;
+    *(Callback *)((u8 *)D_800BC54C + D_8009DB94[0] * 0x60) = func;
+    ((s32 *)D_8009DB98)[-1] = (D_8009DB94[0] + 1) & 0x3F;
+    SetIntrMaskFull(D_8009DB9C[0]);
+    _exeque();
+    return (((s32 *)D_8009DB9C)[-2] - D_8009DB98[0]) & 0x3F;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _exeque);
 
@@ -1609,9 +1704,86 @@ void SetFogNear(s32 a, s32 h) {
     SetDQB(0x01400000);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", InitGeom);
+/* Saves $ra in D_8009DBB0 (the GTE patcher needs it), enables the GTE
+ * in COP0 SR, then resets the GTE control registers: FLAG, OFX, H,
+ * DQA, DQB, and the screen offsets. C cannot express the COP0 moves or
+ * $ra used as data, so this is the Psy-Q assembly verbatim. */
+ASM_FUNC(InitGeom, "    lui $at, %hi(D_8009DBB0) # maspsx-keep\n"
+                   "    sw $ra, %lo(D_8009DBB0)($at) # maspsx-keep\n"
+                   "    jal _patch_gte # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lui $ra, %hi(D_8009DBB0) # maspsx-keep\n"
+                   "    lw $ra, %lo(D_8009DBB0)($ra) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    mfc0 $v0, $12 # maspsx-keep\n"
+                   "    lui $v1, (0x40000000 >> 16) # maspsx-keep\n"
+                   "    or $v0, $v0, $v1 # maspsx-keep\n"
+                   "    mtc0 $v0, $12 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    addiu $t0, $zero, 0x155 # maspsx-keep\n"
+                   "    ctc2 $t0, $29 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    addiu $t0, $zero, 0x100 # maspsx-keep\n"
+                   "    ctc2 $t0, $30 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    addiu $t0, $zero, 0x3E8 # maspsx-keep\n"
+                   "    ctc2 $t0, $26 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    addiu $t0, $zero, -0x1062 # maspsx-keep\n"
+                   "    ctc2 $t0, $27 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lui $t0, (0x1400000 >> 16) # maspsx-keep\n"
+                   "    ctc2 $t0, $28 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    ctc2 $zero, $24 # maspsx-keep\n"
+                   "    ctc2 $zero, $25 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    jr $ra # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", InvSquareRoot);
+/* 1/sqrt via the GTE leading-zero counter: LZCR of n picks the scale,
+ * then the seed comes from the short table at D_8009DBD4. Writes the
+ * seed to *a1 and the exponent to *a2, returns 1, or -1 when n <= 0.
+ * The sub/addi/b forms and the dead $t0 andi are Psy-Q assembly that
+ * gcc 2.7.2 cannot emit, so the body is verbatim keep lines. */
+ASM_FUNC(InvSquareRoot, "    mtc2 $a0, $30 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    mfc2 $v0, $31 # maspsx-keep\n"
+                        "    addiu $at, $zero, 0x20 # maspsx-keep\n"
+                        "    beq $v0, $at, .L8007C4D0 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    beqz $v0, .L8007C4D0 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    andi $t0, $v0, 0x1 # maspsx-keep\n"
+                        "    addiu $t2, $zero, -0x2 # maspsx-keep\n"
+                        "    and $t2, $v0, $t2 # maspsx-keep\n"
+                        "    addiu $t1, $zero, 0x1F # maspsx-keep\n"
+                        "    sub $t1, $t1, $t2 # maspsx-keep\n"
+                        "    sra $t1, $t1, 1 # maspsx-keep\n"
+                        "    addi $t3, $t2, -0x18 # maspsx-keep\n"
+                        "    bltz $t3, .L8007C49C # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    sllv $t4, $a0, $t3 # maspsx-keep\n"
+                        "    b .L8007C4A8 # maspsx-keep\n"
+                        "    .L8007C49C: # maspsx-keep\n"
+                        "    addiu $t3, $zero, 0x18 # maspsx-keep\n"
+                        "    sub $t3, $t3, $t2 # maspsx-keep\n"
+                        "    srav $t4, $a0, $t3 # maspsx-keep\n"
+                        "    .L8007C4A8: # maspsx-keep\n"
+                        "    addi $t4, $t4, -0x40 # maspsx-keep\n"
+                        "    sll $t4, $t4, 1 # maspsx-keep\n"
+                        "    lui $t5, %hi(D_8009DBD4) # maspsx-keep\n"
+                        "    addu $t5, $t5, $t4 # maspsx-keep\n"
+                        "    lh $t5, %lo(D_8009DBD4)($t5) # maspsx-keep\n"
+                        "    sw $t1, 0x0($a2) # maspsx-keep\n"
+                        "    sw $t5, 0x0($a1) # maspsx-keep\n"
+                        "    addiu $v0, $zero, 0x1 # maspsx-keep\n"
+                        "    jr $ra # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    .L8007C4D0: # maspsx-keep\n"
+                        "    jr $ra # maspsx-keep\n"
+                        "    addiu $v0, $zero, -0x1 # maspsx-keep\n")
 
 /* Loads the vector as three words, then joins VectorNormalSS's
  * .L8007C52C entry (included below), which runs the normalisation. */
@@ -1621,23 +1793,445 @@ ASM_FUNC(VectorNormalS, "    lw $t0, 0x0($a0) # maspsx-keep\n"
                         "    b .L8007C52C # maspsx-keep\n"
                         "    addu $a3, $ra, $zero # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", VectorNormal);
+/* Loads the vector as three words, saves $ra in $a3, and calls the
+ * shared normaliser; $t0-$t2 hold the scaled result on return. */
+ASM_FUNC(VectorNormal, "    lw $t0, 0x0($a0) # maspsx-keep\n"
+                       "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                       "    lw $t2, 0x8($a0) # maspsx-keep\n"
+                       "    addu $a3, $ra, $zero # maspsx-keep\n"
+                       "    jal func_8007C548 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    addu $ra, $a3, $zero # maspsx-keep\n"
+                       "    sw $t0, 0x0($a1) # maspsx-keep\n"
+                       "    sw $t1, 0x4($a1) # maspsx-keep\n"
+                       "    jr $ra # maspsx-keep\n"
+                       "    sw $t2, 0x8($a1) # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", VectorNormalSS);
+/* VectorNormalS branches into this function at .L8007C52C, so that
+ * label must stay between the $ra save and the call. */
+ASM_FUNC(VectorNormalSS, "    lh $t0, 0x0($a0) # maspsx-keep\n"
+                         "    lh $t1, 0x2($a0) # maspsx-keep\n"
+                         "    lh $t2, 0x4($a0) # maspsx-keep\n"
+                         "    nop # maspsx-keep\n"
+                         "    addu $a3, $ra, $zero # maspsx-keep\n"
+                         "    .L8007C52C: # maspsx-keep\n"
+                         "    jal func_8007C548 # maspsx-keep\n"
+                         "    nop # maspsx-keep\n"
+                         "    addu $ra, $a3, $zero # maspsx-keep\n"
+                         "    sh $t0, 0x0($a1) # maspsx-keep\n"
+                         "    sh $t1, 0x2($a1) # maspsx-keep\n"
+                         "    jr $ra # maspsx-keep\n"
+                         "    sh $t2, 0x4($a1) # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", func_8007C548);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MatrixNormal);
+/* Handwritten GTE asm: normalises m0's rotation matrix with two OP
+ * commands and the VectorNormalS worker (func_8007C548), thrice.
+ * The final nop is retail's padding before CompMatrix. */
+ASM_FUNC(MatrixNormal, "    lh $t0, 0x0($a0) # maspsx-keep\n"
+                       "    lh $t1, 0x2($a0) # maspsx-keep\n"
+                       "    lh $t2, 0x4($a0) # maspsx-keep\n"
+                       "    lh $t3, 0x6($a0) # maspsx-keep\n"
+                       "    lh $t4, 0x8($a0) # maspsx-keep\n"
+                       "    lh $t5, 0xA($a0) # maspsx-keep\n"
+                       "    cfc2 $v0, $0 # maspsx-keep\n"
+                       "    cfc2 $v1, $2 # maspsx-keep\n"
+                       "    cfc2 $a2, $4 # maspsx-keep\n"
+                       "    ctc2 $t0, $0 # maspsx-keep\n"
+                       "    ctc2 $t1, $2 # maspsx-keep\n"
+                       "    ctc2 $t2, $4 # maspsx-keep\n"
+                       "    mtc2 $t5, $11 # maspsx-keep\n"
+                       "    mtc2 $t3, $9 # maspsx-keep\n"
+                       "    mtc2 $t4, $10 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    op 1 # maspsx-keep\n"
+                       "    mfc2 $t7, $25 # maspsx-keep\n"
+                       "    mfc2 $t8, $26 # maspsx-keep\n"
+                       "    mfc2 $t9, $27 # maspsx-keep\n"
+                       "    ctc2 $t3, $0 # maspsx-keep\n"
+                       "    ctc2 $t4, $2 # maspsx-keep\n"
+                       "    ctc2 $t5, $4 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    op 1 # maspsx-keep\n"
+                       "    mtc2 $t3, $0 # maspsx-keep\n"
+                       "    mtc2 $t4, $1 # maspsx-keep\n"
+                       "    mtc2 $t5, $2 # maspsx-keep\n"
+                       "    mfc2 $t0, $25 # maspsx-keep\n"
+                       "    mfc2 $t1, $26 # maspsx-keep\n"
+                       "    mfc2 $t2, $27 # maspsx-keep\n"
+                       "    ctc2 $v0, $0 # maspsx-keep\n"
+                       "    ctc2 $v1, $2 # maspsx-keep\n"
+                       "    ctc2 $a2, $4 # maspsx-keep\n"
+                       "    addu $a3, $ra, $zero # maspsx-keep\n"
+                       "    jal func_8007C548 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    sh $t0, 0x0($a1) # maspsx-keep\n"
+                       "    sh $t1, 0x2($a1) # maspsx-keep\n"
+                       "    sh $t2, 0x4($a1) # maspsx-keep\n"
+                       "    mfc2 $t0, $0 # maspsx-keep\n"
+                       "    mfc2 $t1, $1 # maspsx-keep\n"
+                       "    mfc2 $t2, $2 # maspsx-keep\n"
+                       "    jal func_8007C548 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    sh $t0, 0x6($a1) # maspsx-keep\n"
+                       "    sh $t1, 0x8($a1) # maspsx-keep\n"
+                       "    sh $t2, 0xA($a1) # maspsx-keep\n"
+                       "    addu $t0, $t7, $zero # maspsx-keep\n"
+                       "    addu $t1, $t8, $zero # maspsx-keep\n"
+                       "    jal func_8007C548 # maspsx-keep\n"
+                       "    addu $t2, $t9, $zero # maspsx-keep\n"
+                       "    addu $ra, $a3, $zero # maspsx-keep\n"
+                       "    sh $t0, 0xC($a1) # maspsx-keep\n"
+                       "    sh $t1, 0xE($a1) # maspsx-keep\n"
+                       "    jr $ra # maspsx-keep\n"
+                       "    sh $t2, 0x10($a1) # maspsx-keep\n"
+                       "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CompMatrix);
+ASM_FUNC(CompMatrix, "    lw $t0, 0x0($a0) # maspsx-keep\n"
+                     "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                     "    lw $t2, 0x8($a0) # maspsx-keep\n"
+                     "    lw $t3, 0xC($a0) # maspsx-keep\n"
+                     "    lw $t4, 0x10($a0) # maspsx-keep\n"
+                     "    ctc2 $t0, $0 # maspsx-keep\n"
+                     "    ctc2 $t1, $1 # maspsx-keep\n"
+                     "    ctc2 $t2, $2 # maspsx-keep\n"
+                     "    ctc2 $t3, $3 # maspsx-keep\n"
+                     "    ctc2 $t4, $4 # maspsx-keep\n"
+                     "    lhu $t0, 0x0($a1) # maspsx-keep\n"
+                     "    lw $t1, 0x4($a1) # maspsx-keep\n"
+                     "    lw $t2, 0xC($a1) # maspsx-keep\n"
+                     "    lui $at, 0xFFFF # maspsx-keep\n"
+                     "    and $t1, $t1, $at # maspsx-keep\n"
+                     "    or $t0, $t0, $t1 # maspsx-keep\n"
+                     "    mtc2 $t0, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    lhu $t0, 0x2($a1) # maspsx-keep\n"
+                     "    lw $t1, 0x8($a1) # maspsx-keep\n"
+                     "    lh $t2, 0xE($a1) # maspsx-keep\n"
+                     "    sll $t1, $t1, 16 # maspsx-keep\n"
+                     "    or $t0, $t0, $t1 # maspsx-keep\n"
+                     "    mfc2 $t3, $9 # maspsx-keep\n"
+                     "    mfc2 $t4, $10 # maspsx-keep\n"
+                     "    mfc2 $t5, $11 # maspsx-keep\n"
+                     "    mtc2 $t0, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    lhu $t0, 0x4($a1) # maspsx-keep\n"
+                     "    lw $t1, 0x8($a1) # maspsx-keep\n"
+                     "    lw $t2, 0x10($a1) # maspsx-keep\n"
+                     "    lui $at, 0xFFFF # maspsx-keep\n"
+                     "    and $t1, $t1, $at # maspsx-keep\n"
+                     "    or $t0, $t0, $t1 # maspsx-keep\n"
+                     "    mfc2 $t6, $9 # maspsx-keep\n"
+                     "    mfc2 $t7, $10 # maspsx-keep\n"
+                     "    mfc2 $t8, $11 # maspsx-keep\n"
+                     "    mtc2 $t0, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    andi $t3, $t3, 0xFFFF # maspsx-keep\n"
+                     "    sll $t6, $t6, 16 # maspsx-keep\n"
+                     "    or $t6, $t6, $t3 # maspsx-keep\n"
+                     "    sw $t6, 0x0($a2) # maspsx-keep\n"
+                     "    andi $t5, $t5, 0xFFFF # maspsx-keep\n"
+                     "    sll $t8, $t8, 16 # maspsx-keep\n"
+                     "    or $t8, $t8, $t5 # maspsx-keep\n"
+                     "    sw $t8, 0xC($a2) # maspsx-keep\n"
+                     "    mfc2 $t0, $9 # maspsx-keep\n"
+                     "    mfc2 $t1, $10 # maspsx-keep\n"
+                     "    swc2 $11, 0x10($a2) # maspsx-keep\n"
+                     "    lhu $t5, 0x14($a1) # maspsx-keep\n"
+                     "    lw $t6, 0x18($a1) # maspsx-keep\n"
+                     "    lw $t2, 0x1C($a1) # maspsx-keep\n"
+                     "    sll $t6, $t6, 16 # maspsx-keep\n"
+                     "    or $t5, $t5, $t6 # maspsx-keep\n"
+                     "    mtc2 $t5, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    sll $t4, $t4, 16 # maspsx-keep\n"
+                     "    andi $t0, $t0, 0xFFFF # maspsx-keep\n"
+                     "    or $t0, $t0, $t4 # maspsx-keep\n"
+                     "    sw $t0, 0x4($a2) # maspsx-keep\n"
+                     "    andi $t7, $t7, 0xFFFF # maspsx-keep\n"
+                     "    sll $t1, $t1, 16 # maspsx-keep\n"
+                     "    or $t1, $t1, $t7 # maspsx-keep\n"
+                     "    sw $t1, 0x8($a2) # maspsx-keep\n"
+                     "    mfc2 $t0, $25 # maspsx-keep\n"
+                     "    mfc2 $t1, $26 # maspsx-keep\n"
+                     "    mfc2 $t2, $27 # maspsx-keep\n"
+                     "    lw $t3, 0x14($a0) # maspsx-keep\n"
+                     "    lw $t4, 0x18($a0) # maspsx-keep\n"
+                     "    lw $t5, 0x1C($a0) # maspsx-keep\n"
+                     "    add $t0, $t0, $t3 # maspsx-keep\n"
+                     "    add $t1, $t1, $t4 # maspsx-keep\n"
+                     "    add $t2, $t2, $t5 # maspsx-keep\n"
+                     "    sw $t0, 0x14($a2) # maspsx-keep\n"
+                     "    sw $t1, 0x18($a2) # maspsx-keep\n"
+                     "    sw $t2, 0x1C($a2) # maspsx-keep\n"
+                     "    addu $v0, $a2, $zero # maspsx-keep\n"
+                     "    jr $ra # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MulMatrix0);
+ASM_FUNC(MulMatrix0, "    lw $t0, 0x0($a0) # maspsx-keep\n"
+                     "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                     "    lw $t2, 0x8($a0) # maspsx-keep\n"
+                     "    lw $t3, 0xC($a0) # maspsx-keep\n"
+                     "    lw $t4, 0x10($a0) # maspsx-keep\n"
+                     "    ctc2 $t0, $0 # maspsx-keep\n"
+                     "    ctc2 $t1, $1 # maspsx-keep\n"
+                     "    ctc2 $t2, $2 # maspsx-keep\n"
+                     "    ctc2 $t3, $3 # maspsx-keep\n"
+                     "    ctc2 $t4, $4 # maspsx-keep\n"
+                     "    lhu $t0, 0x0($a1) # maspsx-keep\n"
+                     "    lw $t1, 0x4($a1) # maspsx-keep\n"
+                     "    lw $t2, 0xC($a1) # maspsx-keep\n"
+                     "    lui $at, 0xFFFF # maspsx-keep\n"
+                     "    and $t1, $t1, $at # maspsx-keep\n"
+                     "    or $t0, $t0, $t1 # maspsx-keep\n"
+                     "    mtc2 $t0, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    lhu $t0, 0x2($a1) # maspsx-keep\n"
+                     "    lw $t1, 0x8($a1) # maspsx-keep\n"
+                     "    lh $t2, 0xE($a1) # maspsx-keep\n"
+                     "    sll $t1, $t1, 16 # maspsx-keep\n"
+                     "    or $t0, $t0, $t1 # maspsx-keep\n"
+                     "    mfc2 $t3, $9 # maspsx-keep\n"
+                     "    mfc2 $t4, $10 # maspsx-keep\n"
+                     "    mfc2 $t5, $11 # maspsx-keep\n"
+                     "    mtc2 $t0, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    lhu $t0, 0x4($a1) # maspsx-keep\n"
+                     "    lw $t1, 0x8($a1) # maspsx-keep\n"
+                     "    lw $t2, 0x10($a1) # maspsx-keep\n"
+                     "    lui $at, 0xFFFF # maspsx-keep\n"
+                     "    and $t1, $t1, $at # maspsx-keep\n"
+                     "    or $t0, $t0, $t1 # maspsx-keep\n"
+                     "    mfc2 $t6, $9 # maspsx-keep\n"
+                     "    mfc2 $t7, $10 # maspsx-keep\n"
+                     "    mfc2 $t8, $11 # maspsx-keep\n"
+                     "    mtc2 $t0, $0 # maspsx-keep\n"
+                     "    mtc2 $t2, $1 # maspsx-keep\n"
+                     "    nop # maspsx-keep\n"
+                     "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                     "    andi $t3, $t3, 0xFFFF # maspsx-keep\n"
+                     "    sll $t6, $t6, 16 # maspsx-keep\n"
+                     "    or $t6, $t6, $t3 # maspsx-keep\n"
+                     "    sw $t6, 0x0($a2) # maspsx-keep\n"
+                     "    andi $t5, $t5, 0xFFFF # maspsx-keep\n"
+                     "    sll $t8, $t8, 16 # maspsx-keep\n"
+                     "    or $t8, $t8, $t5 # maspsx-keep\n"
+                     "    sw $t8, 0xC($a2) # maspsx-keep\n"
+                     "    mfc2 $t0, $9 # maspsx-keep\n"
+                     "    mfc2 $t1, $10 # maspsx-keep\n"
+                     "    andi $t0, $t0, 0xFFFF # maspsx-keep\n"
+                     "    sll $t4, $t4, 16 # maspsx-keep\n"
+                     "    or $t0, $t0, $t4 # maspsx-keep\n"
+                     "    sw $t0, 0x4($a2) # maspsx-keep\n"
+                     "    andi $t7, $t7, 0xFFFF # maspsx-keep\n"
+                     "    sll $t1, $t1, 16 # maspsx-keep\n"
+                     "    or $t1, $t1, $t7 # maspsx-keep\n"
+                     "    sw $t1, 0x8($a2) # maspsx-keep\n"
+                     "    swc2 $11, 0x10($a2) # maspsx-keep\n"
+                     "    addu $v0, $a2, $zero # maspsx-keep\n"
+                     "    jr $ra # maspsx-keep\n"
+                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MulRotMatrix0);
+ASM_FUNC(MulRotMatrix0, "    lhu $t0, 0x0($a0) # maspsx-keep\n"
+                        "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                        "    lw $t2, 0xC($a0) # maspsx-keep\n"
+                        "    lui $at, 0xFFFF # maspsx-keep\n"
+                        "    and $t1, $t1, $at # maspsx-keep\n"
+                        "    or $t0, $t0, $t1 # maspsx-keep\n"
+                        "    mtc2 $t0, $0 # maspsx-keep\n"
+                        "    mtc2 $t2, $1 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                        "    lhu $t0, 0x2($a0) # maspsx-keep\n"
+                        "    lw $t1, 0x8($a0) # maspsx-keep\n"
+                        "    lh $t2, 0xE($a0) # maspsx-keep\n"
+                        "    sll $t1, $t1, 16 # maspsx-keep\n"
+                        "    or $t0, $t0, $t1 # maspsx-keep\n"
+                        "    mfc2 $t3, $9 # maspsx-keep\n"
+                        "    mfc2 $t4, $10 # maspsx-keep\n"
+                        "    mfc2 $t5, $11 # maspsx-keep\n"
+                        "    mtc2 $t0, $0 # maspsx-keep\n"
+                        "    mtc2 $t2, $1 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                        "    lhu $t0, 0x4($a0) # maspsx-keep\n"
+                        "    lw $t1, 0x8($a0) # maspsx-keep\n"
+                        "    lw $t2, 0x10($a0) # maspsx-keep\n"
+                        "    lui $at, 0xFFFF # maspsx-keep\n"
+                        "    and $t1, $t1, $at # maspsx-keep\n"
+                        "    or $t0, $t0, $t1 # maspsx-keep\n"
+                        "    mfc2 $t6, $9 # maspsx-keep\n"
+                        "    mfc2 $t7, $10 # maspsx-keep\n"
+                        "    mfc2 $t8, $11 # maspsx-keep\n"
+                        "    mtc2 $t0, $0 # maspsx-keep\n"
+                        "    mtc2 $t2, $1 # maspsx-keep\n"
+                        "    nop # maspsx-keep\n"
+                        "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                        "    andi $t3, $t3, 0xFFFF # maspsx-keep\n"
+                        "    sll $t6, $t6, 16 # maspsx-keep\n"
+                        "    or $t6, $t6, $t3 # maspsx-keep\n"
+                        "    sw $t6, 0x0($a1) # maspsx-keep\n"
+                        "    andi $t5, $t5, 0xFFFF # maspsx-keep\n"
+                        "    sll $t8, $t8, 16 # maspsx-keep\n"
+                        "    or $t8, $t8, $t5 # maspsx-keep\n"
+                        "    sw $t8, 0xC($a1) # maspsx-keep\n"
+                        "    mfc2 $t0, $9 # maspsx-keep\n"
+                        "    mfc2 $t1, $10 # maspsx-keep\n"
+                        "    andi $t0, $t0, 0xFFFF # maspsx-keep\n"
+                        "    sll $t4, $t4, 16 # maspsx-keep\n"
+                        "    or $t0, $t0, $t4 # maspsx-keep\n"
+                        "    sw $t0, 0x4($a1) # maspsx-keep\n"
+                        "    andi $t7, $t7, 0xFFFF # maspsx-keep\n"
+                        "    sll $t1, $t1, 16 # maspsx-keep\n"
+                        "    or $t1, $t1, $t7 # maspsx-keep\n"
+                        "    sw $t1, 0x8($a1) # maspsx-keep\n"
+                        "    swc2 $11, 0x10($a1) # maspsx-keep\n"
+                        "    addu $v0, $a1, $zero # maspsx-keep\n"
+                        "    jr $ra # maspsx-keep\n"
+                        "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MulRotMatrix);
+ASM_FUNC(MulRotMatrix, "    lw $t0, 0x0($a0) # maspsx-keep\n"
+                       "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                       "    lw $t2, 0xC($a0) # maspsx-keep\n"
+                       "    andi $t0, $t0, 0xFFFF # maspsx-keep\n"
+                       "    lui $at, 0xFFFF # maspsx-keep\n"
+                       "    and $t1, $t1, $at # maspsx-keep\n"
+                       "    or $t0, $t0, $t1 # maspsx-keep\n"
+                       "    mtc2 $t0, $0 # maspsx-keep\n"
+                       "    mtc2 $t2, $1 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                       "    lhu $t0, 0x2($a0) # maspsx-keep\n"
+                       "    lw $t1, 0x8($a0) # maspsx-keep\n"
+                       "    lh $t2, 0xE($a0) # maspsx-keep\n"
+                       "    sll $t1, $t1, 16 # maspsx-keep\n"
+                       "    or $t0, $t0, $t1 # maspsx-keep\n"
+                       "    mfc2 $t3, $9 # maspsx-keep\n"
+                       "    mfc2 $t4, $10 # maspsx-keep\n"
+                       "    mfc2 $t5, $11 # maspsx-keep\n"
+                       "    mtc2 $t0, $0 # maspsx-keep\n"
+                       "    mtc2 $t2, $1 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                       "    lhu $t0, 0x4($a0) # maspsx-keep\n"
+                       "    lw $t1, 0x8($a0) # maspsx-keep\n"
+                       "    lw $t2, 0x10($a0) # maspsx-keep\n"
+                       "    lui $at, 0xFFFF # maspsx-keep\n"
+                       "    and $t1, $t1, $at # maspsx-keep\n"
+                       "    or $t0, $t0, $t1 # maspsx-keep\n"
+                       "    mfc2 $t6, $9 # maspsx-keep\n"
+                       "    mfc2 $t7, $10 # maspsx-keep\n"
+                       "    mfc2 $t8, $11 # maspsx-keep\n"
+                       "    mtc2 $t0, $0 # maspsx-keep\n"
+                       "    mtc2 $t2, $1 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                       "    andi $t3, $t3, 0xFFFF # maspsx-keep\n"
+                       "    sll $t6, $t6, 16 # maspsx-keep\n"
+                       "    or $t6, $t6, $t3 # maspsx-keep\n"
+                       "    sw $t6, 0x0($a0) # maspsx-keep\n"
+                       "    andi $t5, $t5, 0xFFFF # maspsx-keep\n"
+                       "    sll $t8, $t8, 16 # maspsx-keep\n"
+                       "    or $t8, $t8, $t5 # maspsx-keep\n"
+                       "    sw $t8, 0xC($a0) # maspsx-keep\n"
+                       "    mfc2 $t0, $9 # maspsx-keep\n"
+                       "    mfc2 $t1, $10 # maspsx-keep\n"
+                       "    andi $t0, $t0, 0xFFFF # maspsx-keep\n"
+                       "    sll $t4, $t4, 16 # maspsx-keep\n"
+                       "    or $t0, $t0, $t4 # maspsx-keep\n"
+                       "    sw $t0, 0x4($a0) # maspsx-keep\n"
+                       "    andi $t7, $t7, 0xFFFF # maspsx-keep\n"
+                       "    sll $t1, $t1, 16 # maspsx-keep\n"
+                       "    or $t1, $t1, $t7 # maspsx-keep\n"
+                       "    sw $t1, 0x8($a0) # maspsx-keep\n"
+                       "    swc2 $11, 0x10($a0) # maspsx-keep\n"
+                       "    addu $v0, $a0, $zero # maspsx-keep\n"
+                       "    jr $ra # maspsx-keep\n"
+                       "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetMulMatrix);
+/* m0 = m0 * m1, using the GTE rotation matrix registers and mvmva; the
+ * product is written back to the rotation registers and m0 is returned.
+ * Handwritten library asm (LIBGTE MTX_00C), kept verbatim. */
+ASM_FUNC(SetMulMatrix, "    lw $t0, 0x0($a0) # maspsx-keep\n"
+                       "    lw $t1, 0x4($a0) # maspsx-keep\n"
+                       "    lw $t2, 0x8($a0) # maspsx-keep\n"
+                       "    lw $t3, 0xC($a0) # maspsx-keep\n"
+                       "    lw $t4, 0x10($a0) # maspsx-keep\n"
+                       "    ctc2 $t0, $0 # maspsx-keep\n"
+                       "    ctc2 $t1, $1 # maspsx-keep\n"
+                       "    ctc2 $t2, $2 # maspsx-keep\n"
+                       "    ctc2 $t3, $3 # maspsx-keep\n"
+                       "    ctc2 $t4, $4 # maspsx-keep\n"
+                       "    lhu $t0, 0x0($a1) # maspsx-keep\n"
+                       "    lw $t1, 0x4($a1) # maspsx-keep\n"
+                       "    lw $t2, 0xC($a1) # maspsx-keep\n"
+                       "    lui $at, (0xFFFF0000 >> 16) # maspsx-keep\n"
+                       "    and $t1, $t1, $at # maspsx-keep\n"
+                       "    or $t0, $t0, $t1 # maspsx-keep\n"
+                       "    mtc2 $t0, $0 # maspsx-keep\n"
+                       "    mtc2 $t2, $1 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                       "    lhu $t0, 0x2($a1) # maspsx-keep\n"
+                       "    lw $t1, 0x8($a1) # maspsx-keep\n"
+                       "    lh $t2, 0xE($a1) # maspsx-keep\n"
+                       "    sll $t1, $t1, 16 # maspsx-keep\n"
+                       "    or $t0, $t0, $t1 # maspsx-keep\n"
+                       "    mfc2 $t3, $9 # maspsx-keep\n"
+                       "    mfc2 $t4, $10 # maspsx-keep\n"
+                       "    mfc2 $t5, $11 # maspsx-keep\n"
+                       "    mtc2 $t0, $0 # maspsx-keep\n"
+                       "    mtc2 $t2, $1 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                       "    lhu $t0, 0x4($a1) # maspsx-keep\n"
+                       "    lw $t1, 0x8($a1) # maspsx-keep\n"
+                       "    lw $t2, 0x10($a1) # maspsx-keep\n"
+                       "    lui $at, (0xFFFF0000 >> 16) # maspsx-keep\n"
+                       "    and $t1, $t1, $at # maspsx-keep\n"
+                       "    or $t0, $t0, $t1 # maspsx-keep\n"
+                       "    mfc2 $t6, $9 # maspsx-keep\n"
+                       "    mfc2 $t7, $10 # maspsx-keep\n"
+                       "    mfc2 $t8, $11 # maspsx-keep\n"
+                       "    mtc2 $t0, $0 # maspsx-keep\n"
+                       "    mtc2 $t2, $1 # maspsx-keep\n"
+                       "    nop # maspsx-keep\n"
+                       "    mvmva 1, 0, 0, 3, 0 # maspsx-keep\n"
+                       "    andi $t3, $t3, 0xFFFF # maspsx-keep\n"
+                       "    sll $t6, $t6, 16 # maspsx-keep\n"
+                       "    or $t6, $t6, $t3 # maspsx-keep\n"
+                       "    andi $t5, $t5, 0xFFFF # maspsx-keep\n"
+                       "    sll $t8, $t8, 16 # maspsx-keep\n"
+                       "    or $t8, $t8, $t5 # maspsx-keep\n"
+                       "    mfc2 $t0, $9 # maspsx-keep\n"
+                       "    mfc2 $t1, $10 # maspsx-keep\n"
+                       "    mfc2 $t2, $11 # maspsx-keep\n"
+                       "    andi $t0, $t0, 0xFFFF # maspsx-keep\n"
+                       "    sll $t4, $t4, 16 # maspsx-keep\n"
+                       "    or $t0, $t0, $t4 # maspsx-keep\n"
+                       "    andi $t7, $t7, 0xFFFF # maspsx-keep\n"
+                       "    sll $t1, $t1, 16 # maspsx-keep\n"
+                       "    or $t1, $t1, $t7 # maspsx-keep\n"
+                       "    ctc2 $t6, $0 # maspsx-keep\n"
+                       "    ctc2 $t0, $1 # maspsx-keep\n"
+                       "    ctc2 $t1, $2 # maspsx-keep\n"
+                       "    ctc2 $t8, $3 # maspsx-keep\n"
+                       "    ctc2 $t2, $4 # maspsx-keep\n"
+                       "    addu $v0, $a0, $zero # maspsx-keep\n"
+                       "    jr $ra # maspsx-keep\n"
+                       "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ApplyMatrixLV);
 
@@ -1649,11 +2243,74 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", PushMatrix);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", PopMatrix);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ReadRotMatrix);
+/* libgte.h cannot be included in this unit (its SetFogNear prototype
+ * conflicts with the local one), so the GTE matrix type is defined here. */
+typedef struct {
+    short m[3][3];
+    long t[3];
+} MATRIX;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ReadLightMatrix);
+void ReadRotMatrix(MATRIX *m) {
+    __asm__("cfc2 $t0, $0\n\t"
+            "cfc2 $t1, $1\n\t"
+            "cfc2 $t2, $2\n\t"
+            "cfc2 $t3, $3\n\t"
+            "cfc2 $t4, $4\n\t"
+            "sw $t0, 0($a0)\n\t"
+            "sw $t1, 4($a0)\n\t"
+            "sw $t2, 8($a0)\n\t"
+            "sw $t3, 12($a0)\n\t"
+            "sw $t4, 16($a0)\n\t"
+            "cfc2 $t0, $5\n\t"
+            "cfc2 $t1, $6\n\t"
+            "cfc2 $t2, $7\n\t"
+            "sw $t0, 20($a0)\n\t"
+            "sw $t1, 24($a0)\n\t"
+            "sw $t2, 28($a0)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ReadColorMatrix);
+void ReadLightMatrix(MATRIX *m) {
+    __asm__("cfc2 $t0, $8\n\t"
+            "cfc2 $t1, $9\n\t"
+            "cfc2 $t2, $10\n\t"
+            "cfc2 $t3, $11\n\t"
+            "cfc2 $t4, $12\n\t"
+            "sw $t0, 0($a0)\n\t"
+            "sw $t1, 4($a0)\n\t"
+            "sw $t2, 8($a0)\n\t"
+            "sw $t3, 12($a0)\n\t"
+            "sw $t4, 16($a0)\n\t"
+            "cfc2 $t0, $13\n\t"
+            "cfc2 $t1, $14\n\t"
+            "cfc2 $t2, $15\n\t"
+            "sw $t0, 20($a0)\n\t"
+            "sw $t1, 24($a0)\n\t"
+            "sw $t2, 28($a0)");
+}
+
+/* The three nops after the delay slot are retail's padding before
+ * MulMatrix2; they belong to this function's footprint. */
+ASM_FUNC(ReadColorMatrix, "    cfc2 $t0, $16 # maspsx-keep\n"
+                          "    cfc2 $t1, $17 # maspsx-keep\n"
+                          "    cfc2 $t2, $18 # maspsx-keep\n"
+                          "    cfc2 $t3, $19 # maspsx-keep\n"
+                          "    cfc2 $t4, $20 # maspsx-keep\n"
+                          "    sw $t0, 0($a0) # maspsx-keep\n"
+                          "    sw $t1, 4($a0) # maspsx-keep\n"
+                          "    sw $t2, 8($a0) # maspsx-keep\n"
+                          "    sw $t3, 12($a0) # maspsx-keep\n"
+                          "    sw $t4, 16($a0) # maspsx-keep\n"
+                          "    cfc2 $t0, $21 # maspsx-keep\n"
+                          "    cfc2 $t1, $22 # maspsx-keep\n"
+                          "    cfc2 $t2, $23 # maspsx-keep\n"
+                          "    sw $t0, 20($a0) # maspsx-keep\n"
+                          "    sw $t1, 24($a0) # maspsx-keep\n"
+                          "    sw $t2, 28($a0) # maspsx-keep\n"
+                          "    jr $ra # maspsx-keep\n"
+                          "    nop # maspsx-keep\n"
+                          "    nop # maspsx-keep\n"
+                          "    nop # maspsx-keep\n"
+                          "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", MulMatrix2);
 
@@ -1663,31 +2320,93 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRotMatrix);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetTransMatrix);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetVertex0);
+/* libgte.h cannot be included in this unit (its SetFogNear prototype
+ * conflicts with the local one), so the GTE vector types are defined here. */
+typedef struct {
+    short vx, vy, vz;
+    short pad;
+} SVECTOR;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetVertex1);
+typedef struct {
+    u8 r, g, b;
+    u8 cd;
+} CVECTOR;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetVertex2);
+void SetVertex0(SVECTOR *v0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetVertexTri);
+void SetVertex1(SVECTOR *v1) {
+    __asm__ volatile("lwc2 $2, 0($a0)\n\t"
+                     "lwc2 $3, 4($a0)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRGBfifo);
+void SetVertex2(SVECTOR *v2) {
+    __asm__ volatile("lwc2 $4, 0($a0)\n\t"
+                     "lwc2 $5, 4($a0)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetIR123);
+void SetVertexTri(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetIR0);
+void SetRGBfifo(CVECTOR *r0, CVECTOR *r1, CVECTOR *r2) {
+    __asm__ volatile("lwc2 $20, 0($a0)\n\t"
+                     "lwc2 $21, 0($a1)\n\t"
+                     "lwc2 $22, 0($a2)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetSZfifo3);
+void SetIR123(long r1, long r2, long r3) {
+    __asm__("mtc2 $a0, $9\n\t"
+            "mtc2 $a1, $10\n\t"
+            "mtc2 $a2, $11");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetSZfifo4);
+void SetIR0(long r0) {
+    __asm__("mtc2 $a0, $8");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetSXSYfifo);
+void SetSZfifo3(long sz1, long sz2, long sz3) {
+    __asm__("mtc2 $a0, $17\n\t"
+            "mtc2 $a1, $18\n\t"
+            "mtc2 $a2, $19");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetRii);
+void SetSZfifo4(long sz0, long sz1, long sz2, long sz3) {
+    __asm__("mtc2 $a0, $16\n\t"
+            "mtc2 $a1, $17\n\t"
+            "mtc2 $a2, $18\n\t"
+            "mtc2 $a3, $19");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetMAC123);
+void SetSXSYfifo(long sxy0, long sxy1, long sxy2) {
+    __asm__("mtc2 $a0, $12\n\t"
+            "mtc2 $a1, $13\n\t"
+            "mtc2 $a2, $14");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetData32);
+/* Each word packs two 16-bit rotation coefficients: R11R12, R22R23, R33. */
+void SetRii(long r11r12, long r22r23, long r33) {
+    __asm__("ctc2 $a0, $0\n\t"
+            "ctc2 $a1, $2\n\t"
+            "ctc2 $a2, $4");
+}
+
+void SetMAC123(long mac1, long mac2, long mac3) {
+    __asm__("mtc2 $a0, $25\n\t"
+            "mtc2 $a1, $26\n\t"
+            "mtc2 $a2, $27");
+}
+
+void SetData32(long d) {
+    __asm__("mtc2 $a0, $30");
+}
 
 void SetDQA(long dqa) {
     __asm__("ctc2 $a0, $27");
@@ -1735,11 +2454,47 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", DpqColorLight);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DpqColor3);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", Intpl);
+/* Loads the 3-word vector into IR1-3 and t into IR0, runs the GTE
+ * interpolation, and stores the packed RGB result ($22). */
+void Intpl(long *v0, long t, long *out) {
+    __asm__ volatile("lwc2 $9, 0($a0)\n\t"
+                     "lwc2 $10, 4($a0)\n\t"
+                     "lwc2 $11, 8($a0)\n\t"
+                     "mtc2 $a1, $8\n\t"
+                     "nop\n\t"
+                     "intpl\n\t"
+                     "swc2 $22, 0($a2)");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", Square12);
+/* libgte.h types this TU needs: psxsdk.c does not include libgte.h. */
+typedef struct {
+    long vx, vy, vz;
+    long pad;
+} VECTOR;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", Square0);
+VECTOR *Square12(VECTOR *v0, VECTOR *v1) {
+    __asm__ volatile("lwc2 $9, 0($a0)\n\t"
+                     "lwc2 $10, 4($a0)\n\t"
+                     "lwc2 $11, 8($a0)\n\t"
+                     "nop\n\t"
+                     "sqr 1\n\t"
+                     "swc2 $25, 0($a1)\n\t"
+                     "swc2 $26, 4($a1)\n\t"
+                     "swc2 $27, 8($a1)");
+    return v1;
+}
+
+VECTOR *Square0(VECTOR *v0, VECTOR *v1) {
+    __asm__ volatile("lwc2 $9, 0($a0)\n\t"
+                     "lwc2 $10, 4($a0)\n\t"
+                     "lwc2 $11, 8($a0)\n\t"
+                     "nop\n\t"
+                     "sqr 0\n\t"
+                     "swc2 $25, 0($a1)\n\t"
+                     "swc2 $26, 4($a1)\n\t"
+                     "swc2 $27, 8($a1)");
+    return v1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", AverageZ3);
 
@@ -1757,41 +2512,289 @@ ASM_FUNC(Lzc, "    mtc2 $a0, $30 # maspsx-keep\n"
               "    nop # maspsx-keep\n"
               "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotTrans);
+ASM_FUNC(RotTrans, "    lwc2 $0, 0($a0) # maspsx-keep\n"
+                   "    lwc2 $1, 4($a0) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    mvmva 1, 0, 0, 0, 0 # maspsx-keep\n"
+                   "    swc2 $25, 0($a1) # maspsx-keep\n"
+                   "    swc2 $26, 4($a1) # maspsx-keep\n"
+                   "    swc2 $27, 8($a1) # maspsx-keep\n"
+                   "    cfc2 $v0, $31 # maspsx-keep\n"
+                   "    jr $ra # maspsx-keep\n"
+                   "    sw $v0, 0($a2) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotTransPers_nom);
+/* The _nom variants run the GTE command bare, without the result
+ * readback the macro wrappers add. */
+void RotTransPers_nom(SVECTOR *v0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "nop\n\t"
+                     "rtps");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotTransPers3_nom);
+void RotTransPers3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotTrans_nom);
+void RotTrans_nom(SVECTOR *v0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "nop\n\t"
+                     "mvmva 1, 0, 0, 0, 0");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotTransPers4_nom);
+/* Rotates the first three vertices with rtpt and the fourth with rtps.
+ * Returns the flag ($v0); the third vertex's screen xy is left in $v1. */
+long RotTransPers4_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "mfc2 $v1, $12\n\t"
+                     "lwc2 $0, 0($a3)\n\t"
+                     "lwc2 $1, 4($a3)\n\t"
+                     "nop\n\t"
+                     "rtps");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotAverage3_nom);
+long RotAverage3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "avsz3");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotNclip3_nom);
+long RotNclip3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "nclip");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotAverageNclip3_nom);
+long RotAverageNclip3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "avsz3\n\t"
+                     "nclip");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotColorDpq_nom);
+/* Transforms one vertex (rtps) with the GTE's current matrix, then
+ * depth-cues the normal n0 against the base color c0 (ncds). Returns
+ * the GTE flag. */
+long RotColorDpq_nom(SVECTOR *v0, SVECTOR *n0, CVECTOR *c0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "nop\n\t"
+                     "rtps\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "lwc2 $0, 0($a1)\n\t"
+                     "lwc2 $1, 4($a1)\n\t"
+                     "lwc2 $6, 0($a2)\n\t"
+                     "nop\n\t"
+                     "ncds");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotColorDpq3_nom);
+/* Triple form: transforms v0-v2 (rtpt), then depth-cues the normals
+ * n0-n2 against the base color c0 (ncdt). The fourth through seventh
+ * arguments arrive on the stack and are read from there directly. */
+long RotColorDpq3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *n0,
+                      SVECTOR *n1, SVECTOR *n2, CVECTOR *c0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "lwc2 $0, 0($a3)\n\t"
+                     "lwc2 $1, 4($a3)\n\t"
+                     "lw $t0, 0x10($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $2, 0($t0)\n\t"
+                     "lwc2 $3, 4($t0)\n\t"
+                     "lw $t0, 0x14($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $4, 0($t0)\n\t"
+                     "lwc2 $5, 4($t0)\n\t"
+                     "lw $t0, 0x18($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $6, 0($t0)\n\t"
+                     "nop\n\t"
+                     "ncdt");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotAverageNclipColorDpq3_nom);
+/* Triple form with depth cue: transforms v0-v2 (rtpt), averages the Z
+ * values (avsz3) and computes the clipping product (nclip), then
+ * depth-cues the normals n0-n2 against the base color c0 (ncdt). */
+long RotAverageNclipColorDpq3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2,
+                                  SVECTOR *n0, SVECTOR *n1, SVECTOR *n2,
+                                  CVECTOR *c0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "avsz3\n\t"
+                     "nclip\n\t"
+                     "lwc2 $0, 0($a3)\n\t"
+                     "lwc2 $1, 4($a3)\n\t"
+                     "lw $t0, 0x10($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $2, 0($t0)\n\t"
+                     "lwc2 $3, 4($t0)\n\t"
+                     "lw $t0, 0x14($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $4, 0($t0)\n\t"
+                     "lwc2 $5, 4($t0)\n\t"
+                     "lw $t0, 0x18($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $6, 0($t0)\n\t"
+                     "nop\n\t"
+                     "ncdt");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotAverageNclipColorCol3_nom);
+/* Triple form with color calculation: transforms v0-v2 (rtpt), averages
+ * the Z values (avsz3) and computes the clipping product (nclip), then
+ * lights the normals n0-n2 against the base color c0 (ncct). */
+long RotAverageNclipColorCol3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2,
+                                  SVECTOR *n0, SVECTOR *n1, SVECTOR *n2,
+                                  CVECTOR *c0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "rtpt\n\t"
+                     "cfc2 $v0, $31\n\t"
+                     "avsz3\n\t"
+                     "nclip\n\t"
+                     "lwc2 $0, 0($a3)\n\t"
+                     "lwc2 $1, 4($a3)\n\t"
+                     "lw $t0, 0x10($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $2, 0($t0)\n\t"
+                     "lwc2 $3, 4($t0)\n\t"
+                     "lw $t0, 0x14($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $4, 0($t0)\n\t"
+                     "lwc2 $5, 4($t0)\n\t"
+                     "lw $t0, 0x18($sp)\n\t"
+                     "nop\n\t"
+                     "lwc2 $6, 0($t0)\n\t"
+                     "nop\n\t"
+                     "ncct");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", NormalColor_nom);
+/* Normal-colour GTE veneers: load the normal(s), plus the primary
+ * colour ($6) and depth-cue factor ($8, IR0) where the command wants
+ * them, then run the command. The nop before each command is the GTE
+ * load latency; the colours stay in the colour FIFO for the caller. */
+void NormalColor_nom(SVECTOR *v0) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "nop\n\t"
+                     "ncs");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", NormalColor3_nom);
+void NormalColor3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "nop\n\t"
+                     "nct");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", NormalColorDpq_nom);
+void NormalColorDpq_nom(SVECTOR *v0, CVECTOR *bk, long dq) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $6, 0($a1)\n\t"
+                     "mtc2 $a2, $8\n\t"
+                     "nop\n\t"
+                     "ncds");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", NormalColorDpq3_nom);
+/* dq is the fifth argument, reached on the stack; the veneer reads it
+ * at 0x10($sp) as retail does. */
+void NormalColorDpq3_nom(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, CVECTOR *bk,
+                         long dq) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $2, 0($a1)\n\t"
+                     "lwc2 $3, 4($a1)\n\t"
+                     "lwc2 $4, 0($a2)\n\t"
+                     "lwc2 $5, 4($a2)\n\t"
+                     "lwc2 $6, 0($a3)\n\t"
+                     "lwc2 $8, 0x10($sp)\n\t"
+                     "nop\n\t"
+                     "ncdt");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", NormalColorCol_nom);
+void NormalColorCol_nom(SVECTOR *v0, CVECTOR *col) {
+    __asm__ volatile("lwc2 $0, 0($a0)\n\t"
+                     "lwc2 $1, 4($a0)\n\t"
+                     "lwc2 $6, 0($a1)\n\t"
+                     "nop\n\t"
+                     "nccs");
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", NormalColorCol3_nom);
+/* The trailing nop is retail's padding before RotMatrix; it belongs to
+ * this function's footprint. */
+ASM_FUNC(NormalColorCol3_nom, "    lwc2 $0, 0($a0) # maspsx-keep\n"
+                              "    lwc2 $1, 4($a0) # maspsx-keep\n"
+                              "    lwc2 $2, 0($a1) # maspsx-keep\n"
+                              "    lwc2 $3, 4($a1) # maspsx-keep\n"
+                              "    lwc2 $4, 0($a2) # maspsx-keep\n"
+                              "    lwc2 $5, 4($a2) # maspsx-keep\n"
+                              "    lwc2 $6, 0($a3) # maspsx-keep\n"
+                              "    nop # maspsx-keep\n"
+                              "    ncct # maspsx-keep\n"
+                              "    jr $ra # maspsx-keep\n"
+                              "    nop # maspsx-keep\n"
+                              "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", RotMatrix);
 
@@ -2032,7 +3035,7 @@ void _SsSetProgramChange(s16 access, s16 sequence, u8 program) {
  * were not reproduced. */
 /* SPDX-License-Identifier: MIT */
 void SpuVmSetVol(s16, s16, u8, s16, u8);
-void SpuVmSetProgVol(s16, u8, u8);
+s32 SpuVmSetProgVol(s16, u8, u8);
 void _SsContDataEntry(s16, s16, u8);
 void _SsContPortamento(s16, s16, u8);
 void _SsContNrpn1(s16, s16, u8);
@@ -2804,23 +3807,127 @@ void SpuVmSeKeyOff(s16 vabId, s16 prog, u16 note) {
 void KeyOnCheck(void) {
 }
 
+extern s16 D_800B9DDA[];
+extern u8 D_800B9C80[];
+extern u8 D_800AD224[];
+extern u8 D_800AD3A4[];
+extern u16 D_800AD3CA[][26];
+
+#ifdef NON_MATCHING
+s32 SpuVmSetSeqVol(s16 seq_access, u16 volL, u16 volR, s16 applyNow) {
+    struct SeqStruct *score;
+    s32 mvolL;
+    s32 mvolR;
+    s16 i;
+
+    score = D_800BDE3C[seq_access & 0xFF];
+    D_800B9DDA[0] = seq_access;
+    score[(u16)seq_access >> 8].leftVolume = volL;
+    score[(u16)seq_access >> 8].rightVolume = volR;
+    if (score[(u16)seq_access >> 8].leftVolume >= 0x80) {
+        score[(u16)seq_access >> 8].leftVolume = 0x7F;
+    }
+    if (score[(u16)seq_access >> 8].rightVolume >= 0x80) {
+        score[(u16)seq_access >> 8].rightVolume = 0x7F;
+    }
+    mvolL = volL * 129;
+    mvolR = volR * 129;
+    if (applyNow == 1) {
+        for (i = 0; i < D_800B9C80[0]; i++) {
+            if (D_800AD3CA[i][0] == (u16)seq_access) {
+                *(s16 *)&D_800AD224[i * 16] = mvolL;
+                *(s16 *)&D_800AD224[i * 16 + 2] = mvolR;
+                D_800AD3A4[i] |= 3;
+            }
+        }
+    }
+    return D_800B9DDA[0];
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetSeqVol);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmGetSeqVol);
+extern s16 D_800B9DDA[];
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmGetSeqLVol);
+long SpuVmGetSeqVol(short seq_access, short *volL, short *volR) {
+    struct SeqStruct *score;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmGetSeqRVol);
+    score = D_800BDE3C[seq_access & 0xFF];
+    D_800B9DDA[0] = seq_access;
+    *volL = score[(seq_access & 0xFF00) >> 8].leftVolume;
+    *volR = score[(seq_access & 0xFF00) >> 8].rightVolume;
+    return D_800B9DDA[0];
+}
+
+extern s16 D_800B9DDA[];
+
+s16 SpuVmGetSeqLVol(s16 seq_access) {
+    struct SeqStruct *score;
+
+    score = D_800BDE3C[seq_access & 0xFF];
+    D_800B9DDA[0] = seq_access;
+    return *(s16 *)&score[(seq_access & 0xFF00) >> 8].leftVolume;
+}
+
+s16 SpuVmGetSeqRVol(s16 seq_access) {
+    struct SeqStruct *score;
+
+    score = D_800BDE3C[seq_access & 0xFF];
+    D_800B9DDA[0] = seq_access;
+    return *(s16 *)&score[(seq_access & 0xFF00) >> 8].rightVolume;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeqKeyOff);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetProgVol);
+extern s32 SpuVmVSetUp();
+extern u32 D_800B9928[];
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmGetProgVol);
+s32 SpuVmSetProgVol(vabId, prog, vol)
+s16 vabId;
+s16 prog;
+s32 vol;
+{
+    if (SpuVmVSetUp(vabId, prog) != 0) {
+        return -1;
+    }
+    ((u8 *)D_800B9928[0])[prog * 16 + 1] = vol;
+    return ((u8 *)D_800B9928[0])[prog * 16 + 1];
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetProgPan);
+extern s32 SpuVmVSetUp();
+extern u32 D_800B9928[];
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmGetProgPan);
+s32 SpuVmGetProgVol(vabId, prog)
+s16 vabId;
+s16 prog;
+{
+    if (SpuVmVSetUp(vabId, prog) != 0) {
+        return -1;
+    }
+    return ((u8 *)D_800B9928[0])[prog * 16 + 1];
+}
+
+s32 SpuVmSetProgPan(vabId, prog, pan)
+s16 vabId;
+s16 prog;
+s32 pan;
+{
+    if (SpuVmVSetUp(vabId, prog) != 0) {
+        return -1;
+    }
+    ((u8 *)D_800B9928[0])[prog * 16 + 4] = pan;
+    return ((u8 *)D_800B9928[0])[prog * 16 + 4];
+}
+
+s32 SpuVmGetProgPan(vabId, prog)
+s16 vabId;
+s16 prog;
+{
+    if (SpuVmVSetUp(vabId, prog) != 0) {
+        return -1;
+    }
+    return ((u8 *)D_800B9928[0])[prog * 16 + 4];
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetVol);
 
@@ -2846,9 +3953,25 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetVVol);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetVVol);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAutoVol);
+extern void SeAutoVol(s16 seq_access, s16 vol1, s16 vol2, s16 mSec);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAutoPan);
+s32 SsUtAutoVol(s32 seq_access, s32 vol1, s32 vol2, s32 mSec) {
+    if ((u16)seq_access < 24) {
+        SeAutoVol(seq_access, vol1, vol2, mSec);
+        return 0;
+    }
+    return -1;
+}
+
+extern void SeAutoPan(s16 seq_access, s16 pan1, s16 pan2, s16 mSec);
+
+s32 SsUtAutoPan(s32 seq_access, s32 pan1, s32 pan2, s32 mSec) {
+    if ((u16)seq_access < 24) {
+        SeAutoPan(seq_access, pan1, pan2, mSec);
+        return 0;
+    }
+    return -1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAllKeyOff);
 

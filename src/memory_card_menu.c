@@ -1214,7 +1214,7 @@ extern void FileSeekArgsV(void *, s32, s32);
 extern void FileCloseArgs(s32);
 extern void CardTestEvents(void);
 extern void func_8005A414(void);
-extern s32 func_800598FC(void);
+extern s32 CardDisableEvents(void);
 extern s32 CardEnableEvents(void);
 extern void CardTestEvents(void), func_8005A414(void);
 extern s32 func_8005A294(void);

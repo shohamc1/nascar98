@@ -595,6 +595,7 @@ PadInitBuffers = 0x80041CE8; // type:func
 RandomGetScaled16 = 0x80042E74; // type:func
 GraphicsSetColor = 0x80050920; // type:func
 CdSetMixVolume = 0x8005972C; // type:func
+CardDisableEvents = 0x800598FC; // type:func
 CardEnableEvents = 0x80059A14; // type:func
 CardCheckStatus = 0x80059AFC; // type:func
 CardFormat = 0x80059BEC; // type:func
