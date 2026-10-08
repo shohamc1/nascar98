@@ -553,7 +553,808 @@ void func_8001FF3C(u8 *arg0, u8 *arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800200B0);
+typedef struct {
+    s32 x;
+    s32 y;
+    s32 z;
+} Vec3;
+
+/* Shared layout of a car and the camera that follows it. */
+typedef struct {
+    Vec3 pos;         /* 0x000 */
+    u8 unkC[0xC];     /* 0x00C */
+    Vec3 basis[3];    /* 0x018 */
+    Vec3 rot[3];      /* 0x03C */
+    u8 unk60[0x3C];   /* 0x060 */
+    Vec3 toCamera;    /* 0x09C */
+    u8 unkA8[0x6C];   /* 0x0A8 */
+    s16 heading;      /* 0x114 */
+    u8 unk116[0xCA];  /* 0x116 */
+    s16 unk1E0;       /* 0x1E0 */
+    u8 unk1E2[0x1E];  /* 0x1E2 */
+    s8 unk200;        /* 0x200 */
+    u8 unk201[0xA];   /* 0x201 */
+    s8 slot;          /* 0x20B */
+    s8 cameraMode;    /* 0x20C */
+    u8 unk20D[0x7];   /* 0x20D */
+    s16 orbitAngle;   /* 0x214 */
+    u8 unk216[0x16A]; /* 0x216 */
+    s32 cameraAngle;  /* 0x380 */
+    u8 unk384[0x4];   /* 0x384 */
+    s16 unk388;       /* 0x388 */
+    s16 unk38A;       /* 0x38A */
+    u8 unk38C[0x14];  /* 0x38C */
+    s32 unk3A0;       /* 0x3A0 */
+} RaceObject;
+
+typedef struct {
+    s32 x;
+    s32 y;
+    s32 z;
+    u8 unkC[0x4C];
+} TrackPoint;
+
+/* One 0x90-byte entry of the array at D_800BE980. */
+typedef struct {
+    u8 unk0[0x10];
+    u32 unk10 : 17;
+    u32 point : 7;
+    u32 unk10Top : 8;
+    s32 unk14;
+    s32 unk18;
+    u8 unk1C[0x4];
+    u8 *unk20;
+    u8 unk24[0x6C];
+} TrackRacer;
+
+s32 MathFixedDivide(s32 numerator, s32 denominator);
+s32 MathGetAngleDelta(s32 arg0, s32 arg1);
+void func_8002DA30(s32 *arg0);
+extern s32 D_800A2DCCSmall asm("D_800A2DCC.NON_MATCHING");
+extern s32 D_800A2DD0Small asm("D_800A2DD0.NON_MATCHING");
+extern s32 D_800A2DD4Small asm("D_800A2DD4.NON_MATCHING");
+extern s32 D_800A2DD8Small asm("D_800A2DD8.NON_MATCHING");
+extern s32 D_800A2DDCSmall asm("D_800A2DDC.NON_MATCHING");
+extern u8 D_800A2DE0Small asm("D_800A2DE0.NON_MATCHING");
+extern u8 D_800A2DE1Small asm("D_800A2DE1.NON_MATCHING");
+extern s32 D_800A2DE8Small asm("D_800A2DE8.NON_MATCHING");
+/* A global seen through a 16-byte type: gcc reads it as a plain scalar for
+ * alias analysis, but its size keeps it out of $gp addressing. */
+typedef struct {
+    s32 unk[4];
+} FarVar;
+#define FAR_VAR(type, var) (*(type *)&(var))
+extern FarVar gFarFlag2ED8 asm("D_800A2ED8.NON_MATCHING");
+extern FarVar gFarFlag2EE8 asm("D_800A2EE8");
+extern FarVar gFarFlag39D4 asm("D_800A39D4");
+extern FarVar gFarFlag2EDA asm("D_800A2EDA.NON_MATCHING");
+extern FarVar gFarPaused asm("D_800A2ED4");
+extern FarVar gFarMode2EA4 asm("D_800A2EA4");
+extern FarVar gFarMode2CE0 asm("D_800A2CE0.NON_MATCHING");
+extern FarVar gFarBlend2EAC asm("D_800A2EAC.NON_MATCHING");
+extern FarVar gFarTrack asm("D_800BE980");
+extern FarVar gFarPlayer asm("D_800A38AC");
+extern FarVar gFarOffsetX asm("D_800AE844");
+extern FarVar gFarOffsetY asm("D_800AE848");
+extern FarVar gFarOffsetZ asm("D_800AE84C");
+extern FarVar gFarCosTable asm("D_800A3A2CAbsolute");
+extern FarVar gFarSinTable asm("D_800A3A34Absolute");
+extern s32 D_800A3584nm[] asm("D_800A3584.NON_MATCHING");
+extern u8 D_800A363Cnm[] asm("D_800A363C.NON_MATCHING");
+extern s16 D_800A383Cnm[] asm("D_800A383C.NON_MATCHING");
+extern s16 D_800A3840nm[] asm("D_800A3840.NON_MATCHING");
+extern s16 D_800A3844nm[] asm("D_800A3844.NON_MATCHING");
+extern TrackPoint D_800B1348nm[] asm("D_800B1348.NON_MATCHING");
+extern Vec3 D_800B9954nm[] asm("D_800B9954.NON_MATCHING");
+
+#define COS_TABLE FAR_VAR(s32 *, gFarCosTable)
+#define SIN_TABLE FAR_VAR(s32 *, gFarSinTable)
+
+/* Aims the camera at the car: stores the car-to-camera vector and rebuilds
+ * the camera's rotation rows from its yaw and pitch. */
+#define CAMERA_LOOK_AT(cam, car, row0, row1, row2)                             \
+    {                                                                          \
+        u32 dist3;                                                             \
+        u32 dist2;                                                             \
+        s32 cosPitch;                                                          \
+        s32 sinPitch;                                                          \
+        s32 cosYaw;                                                            \
+                                                                               \
+        func_8001EC38((s32 *)(cam));                                           \
+        (car)->toCamera.x = (car)->pos.x - (cam)->pos.x;                       \
+        (car)->toCamera.y = (car)->pos.y - (cam)->pos.y;                       \
+        (car)->toCamera.z = (car)->pos.z - (cam)->pos.z;                       \
+        func_8001ED84((s32 *)&(car)->toCamera);                                \
+        dist3 = MathSqrt((car)->toCamera.x * (car)->toCamera.x +               \
+                         (car)->toCamera.y * (car)->toCamera.y +               \
+                         (car)->toCamera.z * (car)->toCamera.z);               \
+        dist2 = MathSqrt((car)->toCamera.x * (car)->toCamera.x +               \
+                         (car)->toCamera.y * (car)->toCamera.y);               \
+        cosPitch = MathFixedDivide(dist2, dist3);                              \
+        sinPitch = MathFixedDivide((car)->toCamera.z, dist3);                  \
+        cosYaw = MathFixedDivide((car)->toCamera.x, dist2);                    \
+        func_8001F684(cosYaw, MathFixedDivide((car)->toCamera.y, dist2),       \
+                      cosPitch, sinPitch);                                     \
+        func_8001F728((s32)(row0));                                            \
+        func_8001F728((s32)(row1));                                            \
+        func_8001F728((s32)(row2));                                            \
+    }
+
+/* Update the camera for one car and camera mode. */
+void CameraUpdateForCar(RaceObject *cam, RaceObject *car, s32 mode) {
+    s32 pos[3];
+    s32 unused[4];
+    s8 slot;
+    s32 speed;
+    s32 delta;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+    s32 recip;
+    s32 count;
+    s32 index;
+    s32 point;
+    u32 dist;
+    s16 *from;
+    s16 *to;
+    TrackRacer *track;
+    s16 *rate;
+    Vec3 *row0;
+    Vec3 *row1;
+    Vec3 *row2;
+    Vec3 *aimRow0;
+    Vec3 *aimRow1;
+    Vec3 *aimRow2;
+
+    slot = car->slot;
+    D_800A2DE0Small = 0;
+    if (FAR_VAR(u8, gFarFlag2ED8) == 0) {
+        if (FAR_VAR(s32, gFarMode2EA4) == 2) {
+            D_800A2DCCSmall = 0x320;
+            D_800A2DD0Small = 0x4B0;
+            D_800A2DD4Small = 0xF0;
+            D_800A2DD8Small = 0x78;
+            D_800A2DDCSmall = 0x82;
+        } else {
+            D_800A2DCCSmall = 0x2EE;
+            D_800A2DD0Small = 0x3E8;
+            D_800A2DD4Small = 0xFA;
+            D_800A2DD8Small = 0x3C;
+            D_800A2DDCSmall = 0x32;
+        }
+        speed = D_800A2DE8Small;
+        car->unk3A0++;
+        if (car->unk3A0 >= 2) {
+            car->unk3A0 = 0;
+        }
+        if (mode == 5) {
+            mode = 11;
+        }
+    } else {
+        D_800A2DCCSmall = 0x4B0;
+        D_800A2DD0Small = 0x708;
+        D_800A2DD4Small = 0x1F4;
+        D_800A2DD8Small = 0x96;
+        speed = 0x5DC;
+        if (mode == 7) {
+            mode = cam->cameraMode;
+        }
+        if (mode == 5) {
+            D_800A2DE0Small = 1;
+        }
+    }
+
+    switch (mode) {
+    case 0:
+        car->orbitAngle = 0;
+        cam->basis[0] = car->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[0] = car->rot[0];
+        cam->rot[1] = car->rot[1];
+        cam->rot[2] = car->rot[2];
+        func_8001ED4C((s32 *)cam);
+        delta = (car->unk38A + car->unk388) -
+                (car->unk38A + car->unk388) / 1024 * 1024;
+        recip =
+            (0x96 - (delta - 0x200 >= 0 ? (0x400 - delta) >> 2 : delta >> 2))
+            << 16;
+        cam->pos.x =
+            car->pos.x + ((MathMultiplyFixed16(cam->rot[0].y, 100 << 16) +
+                           MathMultiplyFixed16(cam->rot[0].z, recip)) >>
+                          16);
+        cam->pos.y =
+            car->pos.y + ((MathMultiplyFixed16(cam->rot[1].y, 100 << 16) +
+                           MathMultiplyFixed16(cam->rot[1].z, recip)) >>
+                          16);
+        cam->pos.z =
+            car->pos.z + ((MathMultiplyFixed16(cam->rot[2].y, 100 << 16) +
+                           MathMultiplyFixed16(cam->rot[2].z, recip)) >>
+                          16);
+        break;
+    case -1:
+        cam->basis[0] = car->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[0] = car->rot[0];
+        cam->rot[1] = car->rot[1];
+        cam->rot[2] = car->rot[2];
+        func_8001ED4C((s32 *)cam);
+        if (car->unk200 == 4) {
+            cam->pos.x =
+                car->pos.x + ((MathMultiplyFixed16(cam->rot[0].x, -500 << 16) +
+                               MathMultiplyFixed16(cam->rot[0].z, 400 << 16)) >>
+                              16);
+            cam->pos.y =
+                car->pos.y + ((MathMultiplyFixed16(cam->rot[1].x, -500 << 16) +
+                               MathMultiplyFixed16(cam->rot[1].z, 400 << 16)) >>
+                              16);
+            cam->pos.z =
+                car->pos.z + ((MathMultiplyFixed16(cam->rot[2].x, -500 << 16) +
+                               MathMultiplyFixed16(cam->rot[2].z, 400 << 16)) >>
+                              16);
+        } else if (FAR_VAR(s32, gFarMode2EA4) != 0) {
+            cam->pos.x =
+                car->pos.x + ((MathMultiplyFixed16(cam->rot[0].x, -100 << 16) +
+                               MathMultiplyFixed16(cam->rot[0].z, 225 << 16)) >>
+                              16);
+            cam->pos.y =
+                car->pos.y + ((MathMultiplyFixed16(cam->rot[1].x, -100 << 16) +
+                               MathMultiplyFixed16(cam->rot[1].z, 225 << 16)) >>
+                              16);
+            cam->pos.z =
+                car->pos.z + ((MathMultiplyFixed16(cam->rot[2].x, -100 << 16) +
+                               MathMultiplyFixed16(cam->rot[2].z, 225 << 16)) >>
+                              16);
+        } else {
+            cam->pos.x =
+                car->pos.x + ((MathMultiplyFixed16(cam->rot[0].x, -250 << 16) +
+                               MathMultiplyFixed16(cam->rot[0].z, 375 << 16)) >>
+                              16);
+            cam->pos.y =
+                car->pos.y + ((MathMultiplyFixed16(cam->rot[1].x, -250 << 16) +
+                               MathMultiplyFixed16(cam->rot[1].z, 375 << 16)) >>
+                              16);
+            cam->pos.z =
+                car->pos.z + ((MathMultiplyFixed16(cam->rot[2].x, -250 << 16) +
+                               MathMultiplyFixed16(cam->rot[2].z, 375 << 16)) >>
+                              16);
+        }
+        dx = car->pos.x;
+        dy = car->pos.y;
+        dz = car->pos.z;
+        car->pos.x += MathMultiplyFixed16(car->rot[0].x, 1500 << 16) >> 16;
+        car->pos.y += MathMultiplyFixed16(car->rot[0].y, 1500 << 16) >> 16;
+        car->pos.z += MathMultiplyFixed16(car->rot[0].z, 1500 << 16) >> 16;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        car->pos.x = dx;
+        car->pos.y = dy;
+        car->pos.z = dz;
+        break;
+    case -2:
+        car->orbitAngle = 0;
+        cam->basis[0] = car->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[0] = car->rot[0];
+        cam->rot[1] = car->rot[1];
+        cam->rot[2] = car->rot[2];
+        func_8001ED4C((s32 *)cam);
+        delta = (car->unk38A + car->unk388) -
+                (car->unk38A + car->unk388) / 1024 * 1024;
+        recip =
+            (0x64 - (delta - 0x200 >= 0 ? (0x400 - delta) >> 2 : delta >> 2))
+            << 16;
+        cam->pos.x =
+            car->pos.x + ((MathMultiplyFixed16(cam->rot[0].x, 250 << 16) +
+                           MathMultiplyFixed16(cam->rot[0].z, recip)) >>
+                          16);
+        cam->pos.y =
+            car->pos.y + ((MathMultiplyFixed16(cam->rot[1].x, 250 << 16) +
+                           MathMultiplyFixed16(cam->rot[1].z, recip)) >>
+                          16);
+        cam->pos.z =
+            car->pos.z + ((MathMultiplyFixed16(cam->rot[2].x, 250 << 16) +
+                           MathMultiplyFixed16(cam->rot[2].z, recip)) >>
+                          16);
+        break;
+    case 1:
+        if (FAR_VAR(s32, gFarPaused) == 0 && D_800A2DE1Small == 0) {
+            delta = MathGetAngleDelta(car->cameraAngle, car->heading);
+            if (delta < 0) {
+                delta = delta / 10 - 1;
+            } else if (delta > 0) {
+                delta = delta / 10 + 1;
+            }
+            car->cameraAngle = (car->cameraAngle - delta + 0x400) & 0x3FF;
+        }
+        cam->pos.x =
+            car->pos.x - (MathMultiplyFixed16(COS_TABLE[car->cameraAngle],
+                                              D_800A2DCCSmall << 16) >>
+                          16);
+        cam->pos.y =
+            car->pos.y - (MathMultiplyFixed16(SIN_TABLE[car->cameraAngle],
+                                              D_800A2DCCSmall << 16) >>
+                          16);
+        cam->pos.z = car->pos.z + D_800A2DD4Small;
+        if (FAR_VAR(u8, gFarFlag2EE8) != 0) {
+            cam->rot[0] = car->rot[0];
+            cam->rot[1] = car->rot[1];
+            cam->rot[2] = car->rot[2];
+            func_8001ED4C((s32 *)cam);
+            dz = car->pos.z -
+                 (MathMultiplyFixed16(cam->rot[2].x, D_800A2DCCSmall << 16) >>
+                  16) +
+                 D_800A2DD4Small * 3 / 4;
+            if (cam->pos.z < dz) {
+                cam->pos.z = dz;
+            }
+            cam->rot[0] = cam->basis[0];
+            cam->rot[1] = cam->basis[1];
+            cam->rot[2] = cam->basis[2];
+        }
+        if (D_800A397CSmall == 2 && FAR_VAR(u8, gFarFlag39D4) != 0) {
+            func_8001FF3C((u8 *)cam, (u8 *)car);
+        }
+        car->pos.z += D_800A2DD8Small;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        car->pos.z -= D_800A2DD8Small;
+        break;
+    case 2:
+        if (FAR_VAR(s32, gFarPaused) == 0 && D_800A2DE1Small == 0) {
+            delta = MathGetAngleDelta(car->cameraAngle, car->heading);
+            if (delta < 0) {
+                delta = delta / 8 - 1;
+            } else if (delta > 0) {
+                delta = delta / 8 + 1;
+            }
+            car->cameraAngle = (car->cameraAngle - delta + 0x400) & 0x3FF;
+        }
+        cam->pos.x =
+            car->pos.x - (MathMultiplyFixed16(COS_TABLE[car->cameraAngle],
+                                              D_800A2DD0Small << 16) >>
+                          16);
+        cam->pos.y =
+            car->pos.y - (MathMultiplyFixed16(SIN_TABLE[car->cameraAngle],
+                                              D_800A2DD0Small << 16) >>
+                          16);
+        cam->pos.z = car->pos.z + 0x1C2;
+        if (FAR_VAR(u8, gFarFlag2EE8) != 0) {
+            cam->rot[0] = car->rot[0];
+            cam->rot[1] = car->rot[1];
+            cam->rot[2] = car->rot[2];
+            func_8001ED4C((s32 *)cam);
+            dz = car->pos.z -
+                 (MathMultiplyFixed16(cam->rot[2].x, D_800A2DD0Small << 16) >>
+                  16) +
+                 0x142;
+            if (cam->pos.z < dz) {
+                cam->pos.z = dz;
+            }
+            cam->rot[0] = cam->basis[0];
+            cam->rot[1] = cam->basis[1];
+            cam->rot[2] = cam->basis[2];
+        }
+        if (D_800A397CSmall == 2 && FAR_VAR(u8, gFarFlag39D4) != 0) {
+            func_8001FF3C((u8 *)cam, (u8 *)car);
+        }
+        car->pos.z += D_800A2DDCSmall;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        car->pos.z -= D_800A2DDCSmall;
+        break;
+    case 11:
+        cam->basis[0] = car->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->basis[2] = car->basis[2];
+        if (FAR_VAR(u8, gFarFlag2EDA) != 0) {
+            delta = MathGetAngleDelta(car->cameraAngle,
+                                      (car->heading + 0x200) & 0x3FF);
+            if (delta < 0) {
+                delta = delta / 8 - 1;
+            } else if (delta > 0) {
+                delta = delta / 8 + 1;
+            }
+            car->cameraAngle = (car->cameraAngle - delta + 0x400) & 0x3FF;
+            cam->pos.x =
+                car->pos.x - (MathMultiplyFixed16(COS_TABLE[car->cameraAngle],
+                                                  D_800A2DCCSmall << 16) >>
+                              16);
+            cam->pos.y =
+                car->pos.y - (MathMultiplyFixed16(SIN_TABLE[car->cameraAngle],
+                                                  D_800A2DCCSmall << 16) >>
+                              16);
+            cam->pos.z = car->pos.z + 0xFA;
+        } else {
+            cam->pos.x =
+                car->pos.x +
+                (MathMultiplyFixed16(cam->basis[0].x, D_800A2DCCSmall << 16) >>
+                 16);
+            cam->pos.y =
+                car->pos.y +
+                (MathMultiplyFixed16(cam->basis[1].x, D_800A2DCCSmall << 16) >>
+                 16);
+            cam->pos.z =
+                car->pos.z +
+                (MathMultiplyFixed16(cam->basis[2].x, D_800A2DCCSmall << 16) >>
+                 16) +
+                0xFA;
+        }
+        if (FAR_VAR(u8, gFarFlag39D4) != 0) {
+            func_8001FF3C((u8 *)cam, (u8 *)car);
+        }
+        car->pos.z += D_800A2DD8Small;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        car->pos.z -= D_800A2DD8Small;
+        break;
+    case 3:
+        cam->basis[0] = car->basis[0];
+        cam->rot[0] = cam->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->rot[1] = cam->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[2] = cam->basis[2];
+        if (FAR_VAR(s32, gFarPaused) == 0 && FAR_VAR(u8, gFarFlag2ED8) == 0) {
+            car->orbitAngle = (car->orbitAngle + 6) & 0x3FF;
+        }
+        cam->pos.x =
+            car->pos.x - (MathMultiplyFixed16(COS_TABLE[car->orbitAngle],
+                                              D_800A2DCCSmall << 16) >>
+                          16);
+        cam->pos.y =
+            car->pos.y - (MathMultiplyFixed16(SIN_TABLE[car->orbitAngle],
+                                              D_800A2DCCSmall << 16) >>
+                          16);
+        cam->pos.z = car->pos.z + D_800A2DD4Small;
+        if (FAR_VAR(u8, gFarFlag39D4) != 0) {
+            func_8001FF3C((u8 *)cam, (u8 *)car);
+        }
+        car->pos.z += D_800A2DD8Small;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        car->pos.z -= D_800A2DD8Small;
+        break;
+    case 4:
+    case 7:
+    case 8:
+    case 18:
+        cam->basis[0] = car->basis[0];
+        cam->rot[0] = cam->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->rot[1] = cam->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[2] = cam->basis[2];
+        index = car->unk1E0;
+        if (index >= 0) {
+            point = FAR_VAR(TrackRacer *, gFarTrack)[index].point;
+        } else {
+            point = 0;
+        }
+        cam->pos.x = D_800B1348nm[point].x;
+        cam->pos.y = D_800B1348nm[point].y;
+        cam->pos.z = D_800B1348nm[point].z;
+        dx = car->pos.x - cam->pos.x;
+        dy = car->pos.y - cam->pos.y;
+        dz = car->pos.z - cam->pos.z;
+        dx = dx > 0x7FFF ? 0x7FFF : (dx < -0x7FFF ? -0x7FFF : dx);
+        dy = dy > 0x7FFF ? 0x7FFF : (dy < -0x7FFF ? -0x7FFF : dy);
+        recip = MathFixedDivide(speed, MathSqrt(dx * dx + dy * dy + dz * dz));
+        cam->pos.x = car->pos.x - (MathMultiplyFixed16(dx << 16, recip) >> 16);
+        cam->pos.y = car->pos.y - (MathMultiplyFixed16(dy << 16, recip) >> 16);
+        cam->pos.z = car->pos.z - (MathMultiplyFixed16(dz << 16, recip) >> 16);
+        func_8002DA30((s32 *)cam);
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        break;
+    case 5:
+        cam->basis[0] = car->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[0] = car->rot[0];
+        cam->rot[1] = car->rot[1];
+        cam->rot[2] = car->rot[2];
+        func_8001ED4C((s32 *)cam);
+        cam->pos.x =
+            car->pos.x + ((MathMultiplyFixed16(cam->rot[0].y, 100 << 16) +
+                           MathMultiplyFixed16(cam->rot[0].z, 150 << 16)) >>
+                          16);
+        cam->pos.y =
+            car->pos.y + ((MathMultiplyFixed16(cam->rot[1].y, 100 << 16) +
+                           MathMultiplyFixed16(cam->rot[1].z, 150 << 16)) >>
+                          16);
+        cam->pos.z =
+            car->pos.z + ((MathMultiplyFixed16(cam->rot[2].y, 100 << 16) +
+                           MathMultiplyFixed16(cam->rot[2].z, 150 << 16)) >>
+                          16);
+        func_8001F2C4(0x200, 0, 0);
+        func_8001F728((s32)&cam->rot[0]);
+        func_8001F728((s32)&cam->rot[1]);
+        func_8001F728((s32)&cam->rot[2]);
+        cam->rot[0].y = -cam->rot[0].y;
+        cam->rot[1].y = -cam->rot[1].y;
+        cam->rot[2].y = -cam->rot[2].y;
+        break;
+    case 6:
+        cam->pos.x =
+            car->pos.x -
+            (MathMultiplyFixed16(cam->basis[0].x, D_800A2DCCSmall << 16) >> 16);
+        cam->pos.y =
+            car->pos.y -
+            (MathMultiplyFixed16(cam->basis[1].x, D_800A2DCCSmall << 16) >> 16);
+        cam->pos.z =
+            car->pos.z -
+            (MathMultiplyFixed16(cam->basis[2].x, D_800A2DCCSmall << 16) >>
+             16) +
+            0x9C4;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        break;
+    case 12:
+        cam->basis[0] = car->basis[0];
+        cam->rot[0] = cam->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->rot[1] = cam->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[2] = cam->basis[2];
+        index = car->slot;
+        if ((car->unk1E0 >= D_800A3584nm[index] + 1 ||
+             D_800A363Cnm[index] != 0) &&
+            FAR_VAR(s32, gFarPaused) == 0) {
+            count = D_800A363Cnm[index]++;
+            dx = car->pos.x - (MathMultiplyFixed16(COS_TABLE[car->heading],
+                                                   D_800A2DCCSmall << 16) >>
+                               16);
+            dy = car->pos.y - (MathMultiplyFixed16(SIN_TABLE[car->heading],
+                                                   D_800A2DCCSmall << 16) >>
+                               16);
+            dz = car->pos.z + D_800A2DD4Small;
+            dx = D_800B9954nm[car->slot].x - dx;
+            dy = D_800B9954nm[car->slot].y - dy;
+            dz = D_800B9954nm[car->slot].z - dz;
+            if (count >= 0x1F) {
+                count = 0x1E;
+                car->cameraMode = 1;
+            }
+            {
+                /* Pairs keep the asm within GCC's ten-operand limit. */
+                s64 scratchV, scratchA, scratchB;
+                s64 scratchHigh;
+                s64 product;
+                /* shortcut: Pin the /30 schedule until pure C matches. */
+                asm volatile(".set\tnoreorder\n\t"
+                             ".set noat\n\t"
+                             "mult %5, %8\n\t"
+                             "mflo %M2\n\t"
+                             "lui %M1, 0x8888\n\t"
+                             "ori %M1, %M1, 0x8889\n\t"
+                             "mult %M2, %M1\n\t"
+                             "mfhi %L2\n\t"
+                             "nop\n\t"
+                             "nop\n\t"
+                             "mult %6, %8\n\t"
+                             "mflo %L1\n\t"
+                             "nop\n\t"
+                             "nop\n\t"
+                             "mult %L1, %M1\n\t"
+                             "lb %L3, 0x20B(%9)\n\t"
+                             "nop\n\t"
+                             "sll %M3, %L3, 1\n\t"
+                             "addu %M3, %M3, %L3\n\t"
+                             "sll %M3, %M3, 2\n\t"
+                             "addu %L3, %L2, %M2\n\t"
+                             "lui $1, %%hi(D_800B9954)\n\t"
+                             "addu $1, $1, %M3\n\t"
+                             "lw %L2, %%lo(D_800B9954)($1)\n\t"
+                             "sra %L3, %L3, 4\n\t"
+                             "mfhi %L0\n\t"
+                             "sra %M2, %M2, 31\n\t"
+                             "subu %L3, %L3, %M2\n\t"
+                             "mult %7, %8\n\t"
+                             "subu %L2, %L2, %L3\n\t"
+                             "lui $1, %%hi(D_800B9954)\n\t"
+                             "addu $1, $1, %M3\n\t"
+                             "sw %L2, %%lo(D_800B9954)($1)\n\t"
+                             "lb %L3, 0x20B(%9)\n\t"
+                             "nop\n\t"
+                             "sll %L2, %L3, 1\n\t"
+                             "addu %L2, %L2, %L3\n\t"
+                             "sll %L2, %L2, 2\n\t"
+                             "lui $1, %%hi(D_800B9958)\n\t"
+                             "addu $1, $1, %L2\n\t"
+                             "lw %M3, %%lo(D_800B9958)($1)\n\t"
+                             "addu %L3, %L0, %L1\n\t"
+                             "mflo %M2\n\t"
+                             "sra %L3, %L3, 4\n\t"
+                             "sra %L1, %L1, 31\n\t"
+                             "mult %M2, %M1\n\t"
+                             "subu %L3, %L3, %L1\n\t"
+                             "subu %M3, %M3, %L3\n\t"
+                             "lui $1, %%hi(D_800B9958)\n\t"
+                             "addu $1, $1, %L2\n\t"
+                             "sw %M3, %%lo(D_800B9958)($1)\n\t"
+                             "lb %L3, 0x20B(%9)\n\t"
+                             "nop\n\t"
+                             "sll %L2, %L3, 1\n\t"
+                             "addu %L2, %L2, %L3\n\t"
+                             "sll %L2, %L2, 2\n\t"
+                             "lui $1, %%hi(D_800B995C)\n\t"
+                             "addu $1, $1, %L2\n\t"
+                             "lw %M3, %%lo(D_800B995C)($1)\n\t"
+                             "mfhi %L0\n\t"
+                             "addu %L3, %L0, %M2\n\t"
+                             "sra %L3, %L3, 4\n\t"
+                             "sra %M2, %M2, 31\n\t"
+                             "subu %L3, %L3, %M2\n\t"
+                             "subu %M3, %M3, %L3\n\t"
+                             "lui $1, %%hi(D_800B995C)\n\t"
+                             "addu $1, $1, %L2\n\t"
+                             "sw %M3, %%lo(D_800B995C)($1)\n\t"
+                             ".set at\n\t"
+                             : "=&r"(scratchHigh), "=&r"(scratchB),
+                               "=&r"(scratchA), "=&r"(scratchV), "=x"(product)
+                             : "r"(dx), "r"(dy), "r"(dz), "r"(count), "r"(car)
+                             : "memory");
+            }
+            car->cameraAngle = car->heading;
+        }
+        cam->pos.x = D_800B9954nm[car->slot].x;
+        cam->pos.y = D_800B9954nm[car->slot].y;
+        cam->pos.z = D_800B9954nm[car->slot].z;
+        func_8002DA30((s32 *)cam);
+        car->pos.z += D_800A2DD8Small;
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        car->pos.z -= D_800A2DD8Small;
+        break;
+    case 13:
+        cam->basis[0] = car->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[0] = car->rot[0];
+        cam->rot[1] = car->rot[1];
+        cam->rot[2] = car->rot[2];
+        func_8001ED4C((s32 *)cam);
+        cam->pos.x =
+            car->pos.x +
+            ((MathMultiplyFixed16(cam->rot[0].x, D_800A383Cnm[slot] << 16) -
+              MathMultiplyFixed16(cam->rot[0].y, D_800A3840nm[slot] << 16) +
+              MathMultiplyFixed16(cam->rot[0].z, D_800A3844nm[slot] << 16)) >>
+             16);
+        cam->pos.y =
+            car->pos.y +
+            ((MathMultiplyFixed16(cam->rot[1].x, D_800A383Cnm[slot] << 16) -
+              MathMultiplyFixed16(cam->rot[1].y, D_800A3840nm[slot] << 16) +
+              MathMultiplyFixed16(cam->rot[1].z, D_800A3844nm[slot] << 16)) >>
+             16);
+        cam->pos.z =
+            car->pos.z +
+            ((MathMultiplyFixed16(cam->rot[2].x, D_800A383Cnm[slot] << 16) -
+              MathMultiplyFixed16(cam->rot[2].y, D_800A3840nm[slot] << 16) +
+              MathMultiplyFixed16(cam->rot[2].z, D_800A3844nm[slot] << 16)) >>
+             16);
+        row0 = &cam->rot[0];
+        row1 = &cam->rot[1];
+        row2 = &cam->rot[2];
+        if (D_800A383Cnm[slot] >= -0x15D) {
+            cam->rot[0] = car->rot[1];
+            cam->rot[1].x = -car->rot[0].x;
+            cam->rot[1].y = -car->rot[0].y;
+            cam->rot[1].z = -car->rot[0].z;
+            cam->rot[2] = car->rot[2];
+            func_8001ED4C((s32 *)cam);
+        } else {
+            dx = MathMultiplyFixed16(cam->rot[0].x, 350 << 16) >> 16;
+            dy = MathMultiplyFixed16(cam->rot[1].x, 350 << 16) >> 16;
+            car->pos.x -= dx;
+            car->pos.y -= dy;
+            car->pos.z += 0x4B;
+            CAMERA_LOOK_AT(cam, car, row0, row1, row2);
+            car->pos.x += dx;
+            car->pos.y += dy;
+            car->pos.z -= 0x4B;
+            if (FAR_VAR(s32, gFarPaused) == 0) {
+                rate = &D_800A3840nm[slot];
+                *rate = *rate > 0 ? *rate - 10 : 0;
+                D_800A3844nm[slot] =
+                    D_800A3844nm[slot] >= 0xFA ? 0xFA : D_800A3844nm[slot] + 5;
+            }
+        }
+        if (FAR_VAR(s32, gFarPaused) == 0) {
+            D_800A383Cnm[slot] -= 20;
+        }
+        break;
+    case 16:
+        cam->basis[0] = car->basis[0];
+        cam->rot[0] = cam->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->rot[1] = cam->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[2] = cam->basis[2];
+        if (FAR_VAR(s32, gFarMode2CE0) == 10) {
+            to = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xB28);
+            from = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xB3C);
+        } else {
+            to = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xFA8);
+            from = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xFBC);
+        }
+        dx = from[0] + (to[0] - from[0]) * FAR_VAR(s32, gFarBlend2EAC) / 120;
+        dy = from[1] + (to[1] - from[1]) * FAR_VAR(s32, gFarBlend2EAC) / 120;
+        dz = from[2] + (to[2] - from[2]) * FAR_VAR(s32, gFarBlend2EAC) / 120;
+        /* Array-member reads retain dependencies on the camera stores. */
+        cam->pos.x = (dx + gFarOffsetX.unk[0]) * 4;
+        cam->pos.y = (dy + gFarOffsetY.unk[0]) * 4;
+        cam->pos.z = (dz + gFarOffsetZ.unk[0]) * 4 + 0x640;
+        dx = (car->pos.x - cam->pos.x) / 4;
+        dy = (car->pos.y - cam->pos.y) / 4;
+        dz = (car->pos.z - cam->pos.z) / 4;
+        dist = MathSqrt(dx * dx + dy * dy + dz * dz);
+        if (dist > 0x4E20) {
+            if (dist > 0x7F58) {
+                dist = 0x7F58;
+            }
+            recip = MathFixedDivide(0x4E20, dist);
+            cam->pos.x =
+                (car->pos.x - MathMultiplyFixed16(dx << 16, recip)) >> 14;
+            cam->pos.y =
+                (car->pos.y - MathMultiplyFixed16(dy << 16, recip)) >> 14;
+            cam->pos.z =
+                (car->pos.z - MathMultiplyFixed16(dz << 16, recip)) >> 14;
+        }
+        cam->pos.x = car->pos.x - dx;
+        cam->pos.y = car->pos.y - dy;
+        cam->pos.z = car->pos.z - dz;
+        func_8002DA30((s32 *)cam);
+        CAMERA_LOOK_AT(cam, car, &cam->rot[0], &cam->rot[1], &cam->rot[2]);
+        break;
+    case 17:
+        cam->basis[0] = car->basis[0];
+        cam->rot[0] = cam->basis[0];
+        cam->basis[1] = car->basis[1];
+        cam->rot[1] = cam->basis[1];
+        cam->basis[2] = car->basis[2];
+        cam->rot[2] = cam->basis[2];
+        track = FAR_VAR(TrackRacer *, gFarTrack);
+        point = track->point;
+        pos[0] = track->unk14;
+        pos[1] = track->unk18;
+        pos[2] = *(s16 *)(*(u8 **)(track->unk20 + 0x18) + 4);
+        pos[2] = (pos[2] + FAR_VAR(s32, gFarOffsetZ)) * 4;
+        dx = pos[0] - D_800B1348nm[point].x;
+        dy = pos[1] - D_800B1348nm[point].y;
+        delta = pos[2] - 1000;
+        dz = delta - D_800B1348nm[point].z;
+        dist = MathSqrt(dx * dx + dy * dy + dz * dz);
+        aimRow0 = &cam->rot[0];
+        aimRow1 = &cam->rot[1];
+        aimRow2 = &cam->rot[2];
+        if (dist > 0x32C8) {
+            dist = 0x32C8;
+        }
+        recip = MathFixedDivide(speed, dist);
+        D_800A2DE8Small += 20;
+        cam->pos.x = pos[0] - (MathMultiplyFixed16(dx << 16, recip) >> 16);
+        cam->pos.y = pos[1] - (MathMultiplyFixed16(dy << 16, recip) >> 16);
+        cam->pos.z = pos[2] - (MathMultiplyFixed16(dz << 16, recip) >> 16);
+        {
+            s32 stepX;
+            s32 stepY;
+            s32 stepZ;
+
+            stepX = MathMultiplyFixed16(dx << 16, recip) >> 16;
+            stepY = MathMultiplyFixed16(dy << 16, recip) >> 16;
+            stepZ = MathMultiplyFixed16(dz << 16, recip) >> 16;
+            MathSqrt(stepX * stepX + stepY * stepY + stepZ * stepZ);
+        }
+        func_8002DA30((s32 *)cam);
+        dx = car->pos.x;
+        dy = car->pos.y;
+        dz = car->pos.z;
+        car->pos.x = pos[0];
+        car->pos.y = pos[1];
+        car->pos.z = pos[2];
+        CAMERA_LOOK_AT(cam, car, aimRow0, aimRow1, aimRow2);
+        car->pos.x = dx;
+        car->pos.y = dy;
+        car->pos.z = dz;
+        *(s16 *)(FAR_VAR(u8 *, gFarPlayer) + 0x1E0) = 0;
+        break;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002267C);
 
@@ -2813,10 +3614,11 @@ void func_8002F0A8(u8 *arg0) {
     }
     func_8002DA30((s32 *)D_800A38AC[0]);
     if (D_800A2ED8 != 0) {
-        func_800200B0((s32 *)D_800A37C4Absolute[0x3A], arg0, D_800A2EC4 + 4);
+        CameraUpdateForCar((RaceObject *)D_800A37C4Absolute[0x3A],
+                           (RaceObject *)arg0, D_800A2EC4 + 4);
     } else {
-        func_800200B0((s32 *)D_800A37B4Absolute[0x3E], arg0,
-                      *(s8 *)(arg0 + 0x20C));
+        CameraUpdateForCar((RaceObject *)D_800A37B4Absolute[0x3E],
+                           (RaceObject *)arg0, *(s8 *)(arg0 + 0x20C));
     }
     func_8001EC38((s32 *)D_800A37ACAbsolute[0x40]);
     MatrixBuildRotationFromTransform((s32 *)D_800A37A4Absolute[0x42],

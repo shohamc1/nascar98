@@ -41,8 +41,8 @@ OBJCOPY := $(CROSS)objcopy
 
 # Compiler and assembler versions, decided by matching. See AGENTS.md.
 # 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-nascar98.patch: load
-# latency 4 and an unfused R4000 multiply. See "Unfused multiply" and
-# "Compiler search, second pass" in kb/psx/toolchain.md.
+# latency 4, high-part multiply latency 12, and an unfused R4000 multiply.
+# See "High-part multiply scheduling" in kb/psx/toolchain.md.
 CC_VER    ?= 2.7.2-psx-nascar98
 ASPSX_VER ?= 2.34
 GP_SIZE   ?= 8
