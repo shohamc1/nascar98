@@ -1199,7 +1199,18 @@ int FntPrint(const char *fmt, ...) {
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090548);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090560);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GetTPage);
+u_short GetTPage(int tp, int abr, int x, int y) {
+    int t, last;
+    if (GetGraphType() == 1 || GetGraphType() == 2) {
+        t = ((tp & 0x3) << 9) | ((abr & 0x3) << 7) | ((y & 0x300) >> 3);
+        last = (x & 0x3ff) >> 6;
+    } else {
+        t = ((tp & 0x3) << 7) | ((abr & 0x3) << 5) | ((y & 0x100) >> 4) |
+            ((x & 0x3ff) >> 6);
+        last = (y & 0x200) << 2;
+    }
+    return t | last;
+}
 
 u16 GetClut(s32 x, s32 y) {
     return getClut(x, y);
