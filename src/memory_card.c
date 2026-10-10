@@ -1742,30 +1742,40 @@ s32 CardFormat(s32 second) {
 void func_80059C2C(void) {
     extern u32 D_800A3824, D_800A3828, D_800A382C, D_800A3834;
     extern s32 D_800A38C8, D_800A38CC, D_800A38D0, D_800A38D4;
-    register s32 flag asm("s0");
-    s32 value;
+    s32 event;
 
     EnterCriticalSection();
     D_800A3824 = OpenEvent(0xF4000001, 4, 0x2000, 0);
-    value = OpenEvent(0xF4000001, 0x8000, 0x2000, 0);
-    flag = -1;
-    D_800A3828 = value;
-    asm("" : : "r"(flag) : "memory");
-    D_800A382C = OpenEvent(0xF4000001, 0x100, 0x2000, 0);
-    do {
-    } while (0);
-    D_800A3834 = OpenEvent(0xF4000001, 0x2000, 0x2000, 0);
-    do {
-    } while (0);
-    D_800A38C8 = OpenEvent(0xF0000011, 4, 0x2000, 0);
-    do {
-    } while (0);
-    D_800A38CC = OpenEvent(0xF0000011, 0x8000, 0x2000, 0);
-    do {
-    } while (0);
-    D_800A38D0 = OpenEvent(0xF0000011, 0x100, 0x2000, 0);
-    do {
-    } while (0);
+    event = OpenEvent(0xF4000001, 0x8000, 0x2000, 0);
+    D_800A3828 = event;
+    if (event == -1) {
+        event = 0;
+    }
+    event = OpenEvent(0xF4000001, 0x100, 0x2000, 0);
+    D_800A382C = event;
+    if (event == -1) {
+        event = 0;
+    }
+    event = OpenEvent(0xF4000001, 0x2000, 0x2000, 0);
+    D_800A3834 = event;
+    if (event == -1) {
+        event = 0;
+    }
+    event = OpenEvent(0xF0000011, 4, 0x2000, 0);
+    D_800A38C8 = event;
+    if (event == -1) {
+        event = 0;
+    }
+    event = OpenEvent(0xF0000011, 0x8000, 0x2000, 0);
+    D_800A38CC = event;
+    if (event == -1) {
+        event = 0;
+    }
+    event = OpenEvent(0xF0000011, 0x100, 0x2000, 0);
+    D_800A38D0 = event;
+    if (event == -1) {
+        event = 0;
+    }
     D_800A38D4 = OpenEvent(0xF0000011, 0x2000, 0x2000, 0);
     ExitCriticalSection();
 }
