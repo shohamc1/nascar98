@@ -1837,7 +1837,6 @@ extern u16 D_8009AF24[];
 extern u16 D_8009AF2A[];
 extern u8 D_8009AF26[];
 extern u8 D_8009AF28[];
-#ifdef NON_MATCHING
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
 extern u8 *D_800A392C;
@@ -1850,6 +1849,7 @@ void func_8005DFA0(void) {
     s32 primOffset;
     u8 index;
     u8 *object;
+    u8 *slot;
     s32 panelH;
     s32 panelB;
     u8 *prim;
@@ -1867,144 +1867,133 @@ void func_8005DFA0(void) {
     i = 0;
     primOffset = 0;
 again:
-    {
-        index = D_800A35EC;
-        object = D_800A3678 + index * 36;
-        index++;
-        D_800A35EC = index;
-        *(s16 *)(object + 0x12) = 0;
-        *(s16 *)(object + 0x14) = 0;
-        *(s32 *)(object + 0x1C) = 0;
-        object[4] = 0;
-        object[3] = 0;
-        object[2] = 0;
-        *(s16 *)(object + 0x1A) = 0;
-        *(s16 *)(object + 0) = 1;
-        if (i == 0) {
-            D_800A392C = object;
-        } else {
-            *(u8 **)(D_800A392C + 0x1C) = object;
-        }
-        *(s16 *)(object + 0xA) = 0;
-        *(s16 *)(object + 0xC) = y;
-        *(s16 *)(object + 8) = y;
-        *(s16 *)(object + 0x16) = 0x78;
-        *(s16 *)(object + 0x18) = (i == 0) ? 0x18 : 0x15;
-        prim = D_800AFDDC + primOffset;
-        *(s16 *)(object + 0xE) = 2;
-        *(s16 *)(object + 0x10) = 0;
-        SetPolyFT4(prim);
-        SetShadeTex(prim, 0);
-        prim[4] = 0x80;
-        prim[5] = 0x80;
-        prim[6] = 0x80;
-        SetSemiTrans(prim, 1);
-        if (i == 0) {
-            u16 w;
-            u16 h;
-            w = *(u16 *)(object + 0x16);
-            h = *(u16 *)(object + 0x18);
-            *(s16 *)(prim + 0xE) = GetClut(D_8009AF22[0], D_8009AF24[0]);
-            *(s16 *)(prim + 0x16) =
-                GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], D_8009AF20[0]);
-            prim[0xC] = D_8009AF26[0];
-            prim[0xD] = D_8009AF28[0];
-            prim[0x14] = *(u8 *)((u8 *)D_8009AF1E + 8) + w;
-            prim[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10);
-            prim[0x1C] = *(u8 *)((u8 *)D_8009AF22 + 4);
-            prim[0x1D] = *(u8 *)((u8 *)D_8009AF22 + 6) + h;
-            prim[0x24] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
-            prim[0x25] = *(u8 *)((u8 *)D_8009AF2A - 2) + h;
-        } else {
-            u16 w;
-            w = *(u16 *)(object + 0x16);
-            *(s16 *)(prim + 0xE) = GetClut(D_8009AF22[0], D_8009AF24[0]);
-            *(s16 *)(prim + 0x16) =
-                GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], D_8009AF20[0]);
-            prim[0xC] = D_8009AF26[0];
-            prim[0xD] = D_8009AF28[0] + 0x1B;
-            prim[0x14] = *(u8 *)((u8 *)D_8009AF1E + 8) + w;
-            prim[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10) + 0x1B;
-            prim[0x1C] = *(u8 *)((u8 *)D_8009AF22 + 4);
-            prim[0x1D] = *(u8 *)((u8 *)D_8009AF22 + 6) + 0x30;
-            prim[0x24] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
-            prim[0x25] = *(u8 *)((u8 *)D_8009AF2A - 2) + 0x30;
-        }
-        y += 0x18;
-        primOffset += 0x28;
-        i++;
-        *(s16 *)(object + 0x1A) = 0x3FC;
-        *(u8 **)(object + 0x20) = prim;
+    index = D_800A35EC++;
+    slot = D_800A3678 + index * 36;
+    *(s16 *)(slot + 0x12) = 0;
+    object = slot;
+    *(s16 *)(object + 0x14) = 0;
+    *(s32 *)(object + 0x1C) = 0;
+    object[4] = 0;
+    object[3] = 0;
+    object[2] = 0;
+    *(s16 *)(object + 0x1A) = 0;
+    *(s16 *)(object + 0) = 1;
+    if (i == 0) {
+        D_800A392C = object;
+    } else {
+        *(u8 **)(D_800A392C + 0x1C) = object;
     }
+    *(s16 *)(object + 0xA) = 0;
+    *(s16 *)(object + 0xC) = y;
+    *(s16 *)(object + 8) = y;
+    *(s16 *)(object + 0x16) = 0x78;
+    *(s16 *)(object + 0x18) = (i == 0) ? 0x18 : 0x15;
+    prim = D_800AFDDC + primOffset;
+    *(s16 *)(object + 0xE) = 2;
+    *(s16 *)(object + 0x10) = 0;
+    SetPolyFT4(prim);
+    SetShadeTex(prim, 0);
+    prim[4] = 0x80;
+    prim[5] = 0x80;
+    prim[6] = 0x80;
+    SetSemiTrans(prim, 1);
+    if (i == 0) {
+        u16 w;
+        u16 h;
+        w = *(u16 *)(object + 0x16);
+        h = *(u16 *)(object + 0x18);
+        *(s16 *)(prim + 0xE) = GetClut(D_8009AF22[0], D_8009AF24[0]);
+        *(s16 *)(prim + 0x16) =
+            GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], D_8009AF20[0]);
+        prim[0xC] = D_8009AF26[0];
+        prim[0xD] = D_8009AF28[0];
+        prim[0x14] = *(u8 *)((u8 *)D_8009AF1E + 8) + w;
+        prim[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10);
+        prim[0x1C] = *(u8 *)((u8 *)D_8009AF22 + 4);
+        prim[0x1D] = *(u8 *)((u8 *)D_8009AF22 + 6) + h;
+        prim[0x24] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
+        prim[0x25] = *(u8 *)((u8 *)D_8009AF2A - 2) + h;
+    } else {
+        u16 w;
+        w = *(u16 *)(object + 0x16);
+        *(s16 *)(prim + 0xE) = GetClut(D_8009AF22[0], D_8009AF24[0]);
+        *(s16 *)(prim + 0x16) =
+            GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], D_8009AF20[0]);
+        prim[0xC] = D_8009AF26[0];
+        prim[0xD] = D_8009AF28[0] + 0x1B;
+        prim[0x14] = *(u8 *)((u8 *)D_8009AF1E + 8) + w;
+        prim[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10) + 0x1B;
+        prim[0x1C] = *(u8 *)((u8 *)D_8009AF22 + 4);
+        prim[0x1D] = *(u8 *)((u8 *)D_8009AF22 + 6) + 0x30;
+        prim[0x24] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
+        prim[0x25] = *(u8 *)((u8 *)D_8009AF2A - 2) + 0x30;
+    }
+    y += 0x18;
+    primOffset += 0x28;
+    i++;
+    *(s16 *)(object + 0x1A) = 0x3FC;
+    *(u8 **)(object + 0x20) = prim;
     if (i < 2) {
         goto again;
     }
-    do {
-        i = 0;
-        panelY = 0xA7;
-        panelW = 0x78;
-        color = 0x20;
-        code = 2;
-        panelOffset = 0;
-    } while (0);
+    i = 0;
+    panelY = 0xA7;
+    panelW = 0x78;
+    color = 0x20;
+    code = 2;
+    panelOffset = 0;
 again2:
-    {
-        index = D_800A35EC;
-        panelPrim = D_800AE1BC + panelOffset;
-        D_800A35EC = index + 1;
-        panel = D_800A3678 + index * 36;
-        panel[4] = 0;
-        *(s16 *)(panel + 0x18) = panelH;
-        *(s16 *)(panel + 0x12) = 0;
-        *(s16 *)(panel + 0x14) = 0;
-        *(s32 *)(panel + 0x1C) = 0;
-        panel[3] = 0;
-        panel[2] = 0;
-        *(s16 *)(panel + 0x1A) = 0;
-        *(s16 *)(panel + 0) = code;
-        *(s16 *)(panel + 6) = 0;
-        *(s16 *)(panel + 0xA) = 0;
-        *(s16 *)(panel + 8) = panelY;
-        *(s16 *)(panel + 0xC) = panelY;
-        *(s16 *)(panel + 0xE) = 0;
-        *(s16 *)(panel + 0x10) = 0;
-        *(s16 *)(panel + 0x16) = panelW;
-        panel[2] = color;
-        panel[3] = color;
-        panel[4] = panelB;
-        if (panelPrim == 0) {
-            panelPrim = func_80057D50(1);
-        }
-        *(u8 **)(panel + 0x20) = panelPrim;
-        SetPolyF4(panelPrim);
-        SetSemiTrans(panelPrim, 1);
-        *(s16 *)(panelPrim + 0x12) = 0xD4;
-        *(s16 *)(panelPrim + 0x16) = 0xD4;
-        panelPrim[4] = color;
-        panelPrim[5] = color;
-        panelPrim[6] = panelB;
-        *(s16 *)(panelPrim + 8) = 0;
-        *(s16 *)(panelPrim + 0xA) = panelY;
-        *(s16 *)(panelPrim + 0xC) = panelW;
-        *(s16 *)(panelPrim + 0xE) = panelY;
-        *(s16 *)(panelPrim + 0x10) = 0;
-        *(s16 *)(panelPrim + 0x14) = panelW;
-        *(s16 *)(panel + 0xE) = code;
-        *(s16 *)(panel + 0x1A) = 0x3FD;
-        *(u8 **)(object + 0x1C) = panel;
-        object = panel;
-        i++;
-        panelOffset += 0x18;
+    index = D_800A35EC;
+    panelPrim = D_800AE1BC + panelOffset;
+    D_800A35EC = index + 1;
+    panel = D_800A3678 + index * 36;
+    panel[4] = 0;
+    *(s16 *)(panel + 0x18) = panelH;
+    *(s16 *)(panel + 0x12) = 0;
+    *(s16 *)(panel + 0x14) = 0;
+    *(s32 *)(panel + 0x1C) = 0;
+    panel[3] = 0;
+    panel[2] = 0;
+    *(s16 *)(panel + 0x1A) = 0;
+    *(s16 *)(panel + 0) = code;
+    *(s16 *)(panel + 6) = 0;
+    *(s16 *)(panel + 0xA) = 0;
+    *(s16 *)(panel + 8) = panelY;
+    *(s16 *)(panel + 0xC) = panelY;
+    *(s16 *)(panel + 0xE) = 0;
+    *(s16 *)(panel + 0x10) = 0;
+    *(s16 *)(panel + 0x16) = panelW;
+    panel[2] = color;
+    panel[3] = color;
+    panel[4] = panelB;
+    if (panelPrim == 0) {
+        panelPrim = func_80057D50(1);
     }
+    *(u8 **)(panel + 0x20) = panelPrim;
+    SetPolyF4(panelPrim);
+    SetSemiTrans(panelPrim, 1);
+    panelPrim[4] = color;
+    panelPrim[5] = color;
+    panelPrim[6] = panelB;
+    *(s16 *)(panelPrim + 0x12) = 0xD4;
+    *(s16 *)(panelPrim + 0x16) = 0xD4;
+    *(s16 *)(panelPrim + 8) = 0;
+    *(s16 *)(panelPrim + 0xA) = panelY;
+    *(s16 *)(panelPrim + 0xC) = panelW;
+    *(s16 *)(panelPrim + 0xE) = panelY;
+    *(s16 *)(panelPrim + 0x10) = 0;
+    *(s16 *)(panelPrim + 0x14) = panelW;
+    *(s16 *)(panel + 0xE) = code;
+    *(s16 *)(panel + 0x1A) = 0x3FD;
+    *(u8 **)(object + 0x1C) = panel;
+    object = panel;
+    i++;
+    panelOffset += 0x18;
     if (i < 2) {
         goto again2;
     }
     D_800A39C4 = D_800A35EC;
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_8005DFA0);
-#endif
 
 extern void *D_800A3954;
 void func_8005E3DC(void) {
