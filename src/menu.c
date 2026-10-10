@@ -4593,17 +4593,15 @@ extern u8 D_800AEE41[];
 
 void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
     u8 *obj;
-    u8 *p;
     s32 j;
-    s32 **entry;
-    register s32 i asm("a3");
-    s32 delta;
-    register s32 base2 asm("v1");
-    register s32 sh4 asm("v0");
+    s32 i;
     s32 base9;
     s32 idx;
     s32 mode;
     s32 val;
+    s32 tmp;
+    u8 *p;
+    s32 **entry;
 
     obj = D_800A37FC[arg0 & 0xFF];
     for (i = 2; i >= 0; i--) {
@@ -4614,10 +4612,17 @@ void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
         idx = arg0 & 0xFF;
         base9 = idx * 9;
         j = 0;
-        p = arg2 + i;
-        base2 = (s32)D_800A37D8;
-        asm("sll %0, %1, 0x2" : "=r"(sh4) : "r"(idx));
-        entry = (s32 **)(base2 + sh4);
+        /*
+         * p is set twice, so the loop pass doesn't strength-reduce
+         * arg2 + i. val and tmp also hold the table address and index:
+         * with two live ranges each, the entry chain stays in the loop
+         * and takes v1/v0 as in retail.
+         */
+        p = arg2;
+        p += i;
+        val = (s32)D_800A37D8;
+        tmp = idx << 2;
+        entry = (s32 **)(val + tmp);
         do {
             switch (i) {
             case 0:
@@ -4644,8 +4649,9 @@ void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
                         val = 0x30;
                     }
                 }
-                delta = val - 0x37;
-                *(s16 *)(obj + 0x14) = *(u16 *)((u8 *)entry[0] + 0x14) - delta;
+                val -= 0x37;
+                tmp = *(u16 *)((u8 *)entry[0] + 0x14);
+                *(s16 *)(obj + 0x14) = tmp - val;
                 break;
             case 2:
                 val = (arg2[2] * 103) >> 8;
