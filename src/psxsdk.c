@@ -6477,28 +6477,21 @@ u8 SpuVmAllocDraft(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmAlloc);
 #endif
 
-#ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
-void SpuVmKeyOnNow(u8 vagCount, u16 arg2) {
-    struct SpuVoice {
-        s16 unk0;
-        s16 unk2;
-        s16 unk04;
-        u16 unk6;
-        s16 unk8;
-        char unka;
-        char unkb;
-        s16 note;
-        s16 unke;
-        s16 unk10;
-        s16 prog;
-        s16 tone;
-        s16 vabId;
-        s16 unk18;
-        u8 pad[1];
-        u8 unk1b;
-        s16 tail[12];
-    };
+/* Matches (0 words) under GNU C 2.6.3-psx only. Retail's codegen needs these
+ * spellings:
+ * - pos is a u16 (andi 0xFFFF before the shift);
+ * - D_800AD224 is the base of the sreg buffer: the pitch store is index
+ *   pos + 2, not D_800AD228 + pos;
+ * - D_800B1EA4, not D_800B9DD8, is the mono flag;
+ * - the voice flag stores go through D_800AD3C0 and D_800AD3D7, so no
+ *   voice-table base is shared;
+ * - every mask register is read through one symbol and written through a
+ *   neighbour symbol (D_800AD9AC[-2] for D_800AD9A8, and so on). A load
+ *   and a store of one constant share a single la, which retail doesn't
+ *   have. The "on" masks are written first and the "off" masks last. */
+void SpuVmKeyOnNow(vagCount, pitch) u8 vagCount;
+u16 pitch;
+{
     extern s32 D_800B9930[];
     extern u8 D_800B9DC8[];
     extern u8 D_800B9DCE[];
@@ -6517,37 +6510,36 @@ void SpuVmKeyOnNow(u8 vagCount, u16 arg2) {
     extern u16 D_800BEB98[];
     extern u16 D_800BEB9C[];
     extern u8 D_800AD3A4[];
-    extern u8 D_800AD3BC[];
-    extern u16 D_800AD228[];
-    extern s32 note2pitch2();
+    extern u16 D_800AD224[];
+    extern u8 D_800AD3C0[];
+    extern u8 D_800AD3D7[];
+    extern s16 D_800B1EA4[];
     struct SeqStruct *score;
-    struct SpuVoice *voices;
-    s32 pos;
+    u16 pos;
     u16 bitsUpper;
     u16 bitsLower;
     u32 voll;
     u32 volr;
-    u32 voll_t;
-    u32 volr_t;
-    s32 mvol_scaled;
+    u32 vollT;
+    u32 volrT;
+    s32 mvolScaled;
 
-    voices = (struct SpuVoice *)D_800AD3BC;
     pos = D_800B9DDE[0] * 8;
-    mvol_scaled = (*(u8 *)((s32)D_800B9930[0] + 0x18)) * 0x3FFF;
-    voll_t = ((D_800B9DC8[0] * mvol_scaled) / 0x7F) / 0x7F;
-    voll_t = ((voll_t * D_800B9DCE[0] * D_800B9DD1[0]) / 0x7F) / 0x7F;
-    volr_t = voll_t;
+    mvolScaled = (*(u8 *)((s32)D_800B9930[0] + 0x18)) * 0x3FFF;
+    vollT = ((D_800B9DC8[0] * mvolScaled) / 0x7F) / 0x7F;
+    vollT = ((vollT * D_800B9DCE[0] * D_800B9DD1[0]) / 0x7F) / 0x7F;
+    volrT = vollT;
     score = D_800BDE3C[D_800B9DDA[0] & 0xFF] + ((D_800B9DDA[0] & 0xFF00) >> 8);
     if (D_800B9DDA[0] != 0x21) {
-        voll_t = (voll_t * score->leftVolume) / 0x7F;
-        volr_t = (volr_t * score->rightVolume) / 0x7F;
+        vollT = (vollT * score->leftVolume) / 0x7F;
+        volrT = (volrT * score->rightVolume) / 0x7F;
     }
     if (D_800B9DD2[0] < 0x40) {
-        voll = voll_t;
-        volr = (volr_t * D_800B9DD2[0]) / 0x3F;
+        voll = vollT;
+        volr = (volrT * D_800B9DD2[0]) / 0x3F;
     } else {
-        voll = (voll_t * (0x7F - D_800B9DD2[0])) / 0x3F;
-        volr = volr_t;
+        voll = (vollT * (0x7F - D_800B9DD2[0])) / 0x3F;
+        volr = volrT;
     }
     if (D_800B9DCF[0] < 0x40) {
         volr = (volr * D_800B9DCF[0]) / 0x3F;
@@ -6559,7 +6551,7 @@ void SpuVmKeyOnNow(u8 vagCount, u16 arg2) {
     } else {
         voll = (voll * (0x7F - D_800B9DC9[0])) / 0x3F;
     }
-    if (D_800B9DD8[0] == 1) {
+    if (D_800B1EA4[0] == 1) {
         if (voll < volr) {
             voll = volr;
         } else {
@@ -6568,12 +6560,12 @@ void SpuVmKeyOnNow(u8 vagCount, u16 arg2) {
     }
     voll = (voll * voll) / 0x3FFF;
     volr = (volr * volr) / 0x3FFF;
-    D_800AD228[pos + 2] = arg2;
-    D_800AD228[pos + 0] = voll;
-    D_800AD228[pos + 1] = volr;
+    D_800AD224[pos + 2] = pitch;
+    D_800AD224[pos + 0] = voll;
+    D_800AD224[pos + 1] = volr;
     D_800AD3A4[D_800B9DDE[0]] |= 7;
-    voices[D_800B9DDE[0]].unk04 = arg2;
-    voices[D_800B9DDE[0]].unk1b = 1;
+    *(u16 *)(D_800AD3C0 + D_800B9DDE[0] * 52) = pitch;
+    D_800AD3D7[D_800B9DDE[0] * 52] = 1;
     if (D_800B9DDE[0] < 0x10) {
         bitsLower = 1 << D_800B9DDE[0];
         bitsUpper = 0;
@@ -6582,20 +6574,17 @@ void SpuVmKeyOnNow(u8 vagCount, u16 arg2) {
         bitsUpper = 1 << (D_800B9DDE[0] - 0x10);
     }
     if (D_800B9DD8[0] & 4) {
-        D_800AD9A8[0] |= bitsLower;
-        D_800AD9AC[0] |= bitsUpper;
+        ((u16 *)D_800AD9AC)[-2] = D_800AD9A8[0] | bitsLower;
+        ((u16 *)D_800AD9A8)[2] = D_800AD9AC[0] | bitsUpper;
     } else {
-        D_800AD9A8[0] &= ~bitsLower;
-        D_800AD9AC[0] &= ~bitsUpper;
+        ((u16 *)D_800AD9AC)[-2] = D_800AD9A8[0] & ~bitsLower;
+        ((u16 *)D_800AD9A8)[2] = D_800AD9AC[0] & ~bitsUpper;
     }
-    D_800BEB98[0] |= bitsLower;
-    D_800BEB9C[0] |= bitsUpper;
-    D_800AD96C[0] &= ~D_800BEB98[0];
-    D_800AD970[0] &= ~D_800BEB9C[0];
+    ((u16 *)D_800AD970)[-2] = D_800AD96C[0] | bitsLower;
+    ((u16 *)D_800AD96C)[2] = D_800AD970[0] | bitsUpper;
+    ((u16 *)D_800BEB9C)[-2] = D_800BEB98[0] & ~((u16 *)D_800AD970)[-2];
+    ((u16 *)D_800BEB98)[2] = D_800BEB9C[0] & ~((u16 *)D_800AD96C)[2];
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOnNow);
-#endif
 
 #ifdef NON_MATCHING
 /* Complete C draft; code generation still differs from retail. */
