@@ -3837,44 +3837,47 @@ extern char D_800B0A2C[];
 extern u8 D_800A358C;
 extern u8 D_800A3968;
 
-/* Declared inline: func_8006C700 expands it twice, while func_8006C2D0
- * still calls the out-of-line copy. */
-inline void func_8006C668(s32 start, s32 arg1) {
-    s8 first = start;
-    s32 index;
-    s32 limit;
-    u8 *node;
-    u8 *entry;
-    u8 *s;
-    u8 *sentinel;
+/* func_8006C700 expands this body twice, while func_8006C2D0 calls the
+ * out-of-line copy, so both share one macro. */
+#define CARD_MENU_SET_ROWS(startArg, limitArg)                                 \
+    {                                                                          \
+        s8 first = (startArg);                                                 \
+        s32 index;                                                             \
+        s32 limit;                                                             \
+        u8 *node;                                                              \
+        u8 *entry;                                                             \
+        u8 *s;                                                                 \
+        u8 *sentinel;                                                          \
+                                                                               \
+        if ((limitArg) < 6) {                                                  \
+            limit = (limitArg);                                                \
+        } else {                                                               \
+            limit = first + 6;                                                 \
+        }                                                                      \
+        node = D_800A3908[0];                                                  \
+        index = first;                                                         \
+        if (limit >= index) {                                                  \
+            do {                                                               \
+                entry = *(u8 **)(node + 0x20);                                 \
+                *(u32 *)(entry + 8) = (u32)(D_800B0A2C + index * 0x10);        \
+                index++;                                                       \
+                node = *(u8 **)(node + 0x1C);                                  \
+            } while (limit >= index);                                          \
+        }                                                                      \
+        s = D_800A377C[0];                                                     \
+        if (node != s) {                                                       \
+            sentinel = s;                                                      \
+            do {                                                               \
+                entry = *(u8 **)(node + 0x20);                                 \
+                *(u32 *)(entry + 8) = 0;                                       \
+                node = *(u8 **)(node + 0x1C);                                  \
+            } while (node != sentinel);                                        \
+        }                                                                      \
+    }
 
-    if (arg1 < 6) {
-        limit = arg1;
-    } else {
-        limit = first + 6;
-    }
-    node = D_800A3908[0];
-    index = first;
-    if (limit >= index) {
-        do {
-            entry = *(u8 **)(node + 0x20);
-            *(u32 *)(entry + 8) = (u32)(D_800B0A2C + index * 0x10);
-            index++;
-            node = *(u8 **)(node + 0x1C);
-        } while (limit >= index);
-    }
-    s = D_800A377C[0];
-    if (node != s) {
-        sentinel = s;
-        do {
-            entry = *(u8 **)(node + 0x20);
-            *(u32 *)(entry + 8) = 0;
-            node = *(u8 **)(node + 0x1C);
-        } while (node != sentinel);
-    }
-}
+void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
 
-s32 func_8006C700(s32 arg0, s32 arg1) {
+    s32 func_8006C700(s32 arg0, s32 arg1) {
     s32 result;
     s32 target;
     s32 gear;
@@ -3917,7 +3920,7 @@ s32 func_8006C700(s32 arg0, s32 arg1) {
             old = D_800A358C;
             D_800A358C = old + 1;
             start = old - 5;
-            func_8006C668(start, target);
+            CARD_MENU_SET_ROWS(start, target)
         } else {
             result = 0;
         }
@@ -3940,7 +3943,7 @@ s32 func_8006C700(s32 arg0, s32 arg1) {
         if (oldTop != 0) {
             newTop = oldTop - 1;
             D_800A358C = newTop;
-            func_8006C668(oldTop - 1, target);
+            CARD_MENU_SET_ROWS(oldTop - 1, target)
         } else {
             result = 0;
         }

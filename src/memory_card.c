@@ -1953,17 +1953,10 @@ s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
     return 1;
 }
 
-/* Wall (w7a): whole body matches except a two-register swap: gcc keeps
- * i in s1 and total in s2 under every init/declaration order tried
- * (retail: i=s2, total=s1; count=s3, entry=s0 match). Frame rule found
- * en route: gcc rounds a local DIRENTRY array of 16 up by 0x20 (frame
- * 0x2a8 vs retail 0x288) but leaves 15 alone — retail's locals are
- * 0x260 = 15*0x28 + 8. entries[15] + a volatile s32 framePad[2] gives
- * the exact frame; call-per-arm with the ==0 branch sense reproduces
- * the bnez/per-arm-a0/single-jal merge, i=0 before the blez lands,
- * total=0 fills the blez delay slot. Only the s1/s2 swap remains.
- * (framePad dropped again here — with it gcc renames nothing; without
- * the frame is 8 short but the draft is guarded anyway.) */
+/* gcc rounds a DIRENTRY[16] frame up by 0x20 but leaves [15] alone;
+ * retail's locals are 15*0x28 + 8. The call-per-arm with the ==0 branch
+ * sense reproduces the bnez/per-arm-a0/single-jal merge, and i=0 before
+ * the blez lets total=0 fill its delay slot. */
 extern char gMemoryCardDevice2[], gMemoryCardDevice1[];
 s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     s32 zero;
