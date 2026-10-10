@@ -4771,26 +4771,20 @@ void func_800539F0(void) {
     D_800A3830NM = 0;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 316 bytes versus retail 320; 36 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The historical positional cc1 crash did not reproduce.
- */
 extern u8 D_800A3608;
 
 extern u8 D_800A39E4Small;
 extern u8 D_800A3059;
 void func_80053C00(s32 arg0, s32 arg1) {
     extern s32 D_800A3914[];
+    extern s32 D_800A3914NM[] asm("D_800A3914.NON_MATCHING");
     extern void func_8006DCF0(void);
     extern void func_8005B688(u8 *, u8);
     extern void func_8005B8B8(u8 *, u8);
     extern void func_80064898(void);
     extern void func_800686FC(u8, u8);
-    extern void func_8005D094(s32, s32, s32);
+    extern void func_8005D094(u8, u8, u8);
     extern s32 func_8005DCF0(void);
-    s32 modeB;
-    s32 flagB;
 
     if (D_800A39E4Small == 0xFC) {
         func_8006DCF0();
@@ -4798,31 +4792,26 @@ void func_80053C00(s32 arg0, s32 arg1) {
         if (D_800A3914[0] != 0) {
             func_8005B688((u8 *)D_800A3914[0], 1);
         }
-        if ((u32)(D_800A39E4Small - 9) < 2 || D_800A39E4Small == 0xC ||
-            (u32)(D_800A39E4Small - 0x10) < 2) {
-            func_800686FC((u8)D_800A39E4Small, (u8)arg0);
-        } else if (D_800A39E4Small == 0xE) {
-            func_8005B8B8((u8 *)D_800A3914[0], 0xFF);
+        if ((D_800A39E4Small >= 9 && D_800A39E4Small <= 10) ||
+            D_800A39E4Small == 12 ||
+            (D_800A39E4Small >= 16 && D_800A39E4Small <= 17)) {
+            func_800686FC(D_800A39E4Small, arg0);
+        } else if (D_800A39E4Small == 14) {
+            func_8005B8B8((u8 *)D_800A3914NM[0], 0xFF);
             func_80064898();
         } else {
-            func_8005B8B8((u8 *)D_800A3914[0], 0xFF);
-            modeB = D_800A39E4Small;
-            flagB = D_800A3059;
-            func_8005D094(modeB, flagB, (u8)arg1);
+            func_8005B8B8((u8 *)D_800A3914NM[0], 0xFF);
+            func_8005D094(D_800A39E4Small, D_800A3059, arg1);
         }
     }
     if (D_800A3608 != 0) {
         D_800A3608 = D_800A3608 - 1;
-    } else {
-        if ((u32)(D_800A39E4Small - 0x10) < 2 || D_800A39E4Small == 0xE) {
-        } else if (func_8005DCF0() == 1) {
-            D_800A3608 = 0x78;
-        }
+    } else if (!((D_800A39E4Small >= 16 && D_800A39E4Small <= 17) ||
+                 D_800A39E4Small == 14) &&
+               func_8005DCF0() == 1) {
+        D_800A3608 = 0x78;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80053C00);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80053D40);
 
