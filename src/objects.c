@@ -2799,33 +2799,30 @@ void func_8002A1D0(void) {
     D_800A2E24 = 0x1EF0000 - (D_800A2E1C - 3) * 0x30000;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Retail's unsigned-byte gate and word-sized mode loads
- * are restored. Complemented status-mask lifetime/operand allocation and one
- * missing instruction still prevent a match. */
 extern s32 D_800A35D4[];
-extern s32 D_800A2EC4nm[] asm("D_800A2EC4.NON_MATCHING");
 extern s32 D_800A2EA4[];
 extern s32 func_80029EF8();
 extern void func_8001FD44();
 
 /* Sets bit D_800A2EC4 when the object's 0x209 counter wraps to 3 and the
-   0x238 status mask from func_80029EF8 asks for the counter update. */
+   0x238 status mask from func_80029EF8 asks for the counter update.
+   The (u16) casts keep `~status & MASK` as a unit that flags is ANDed
+   with; without them fold reassociates it into `(flags & MASK) & ~status`. */
 void func_8002A1FC(u8 *arg0) {
     s32 flags;
     s32 v;
     s32 t;
 
     flags = func_80029EF8(arg0);
-    if (((flags & (~*(s32 *)(arg0 + 0x238) & 0x10)) != 0) ||
-        ((flags & (~*(s32 *)(arg0 + 0x238) & 0x4000)) != 0)) {
+    if (((flags & ((u16) ~*(s32 *)(arg0 + 0x238) & 0x10)) != 0) ||
+        ((flags & ((u16) ~*(s32 *)(arg0 + 0x238) & 0x4000)) != 0)) {
         func_8001FD44(arg0);
     }
     if (*(u8 *)D_800A35D4 != 0) {
         *(s32 *)(arg0 + 0x238) = flags;
         return;
     }
-    if (((flags & (~*(s32 *)(arg0 + 0x238) & 4)) != 0)) {
+    if ((flags & ((u16) ~*(s32 *)(arg0 + 0x238) & 4)) != 0) {
         if (D_800A2EA4[0] != 0) {
             v = *(u8 *)(arg0 + 0x209) ^ 1;
             *(u8 *)(arg0 + 0x209) = v;
@@ -2833,16 +2830,13 @@ void func_8002A1FC(u8 *arg0) {
             t = *(s8 *)(arg0 + 0x209);
             v = (t + 1) % 4;
             *(u8 *)(arg0 + 0x209) = v;
-            D_800A2EC4nm[0] = ((s8)v == 3);
+            D_800A2EC4w15[0] = ((s8)v == 3);
         }
         *(s32 *)(arg0 + 0x238) = flags;
     } else {
         *(s32 *)(arg0 + 0x238) = flags;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002A1FC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002A2F8);
 
