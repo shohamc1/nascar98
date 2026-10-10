@@ -8915,7 +8915,7 @@ void SpuSetVoiceAttr(SpuVoiceAttr *arg) {
 #ifdef NON_MATCHING
 /* Complete C draft; code generation still differs from retail. */
 extern volatile u16 *D_800A26ACVA[];
-extern s16 _spu_note2pitch(u32, s32, u32, s32);
+extern u16 _spu_note2pitch();
 s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 sp10;
     s32 sp14;
@@ -9559,46 +9559,43 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetCommonAttr);
 #endif
 
-#ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern u16 D_800A2A08[];
-s32 _spu_note2pitch(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
-    s16 temp_a0;
-    s32 temp_v0;
-    s32 temp_v0_2;
-    s32 temp_v0_3;
-    s32 var_a1;
-    s32 var_v0;
-    s32 var_v1_2;
-    u16 var_v1;
-    var_v0 = (arg3 & 0xFFFF) + (arg1 & 0xFFFF);
-    if (var_v0 < 0)
-        var_v0 += 7;
-    temp_v0 = var_v0 >> 3;
-    var_a1 = temp_v0;
-    var_v1_2 = 0;
-    if (temp_v0 >= 0x10) {
-        do {
-            temp_v0_2 = var_a1 - 0x10;
-            var_a1 = temp_v0_2;
-            var_v1_2 += 1;
-        } while ((s16)temp_v0_2 >= 0x10);
+/* D_800A2A08 holds 12 rows of 16 columns. key % 12 picks the row, the fine
+ * sum / 8 picks the column, and key / 12 sets the octave shift. */
+u16 _spu_note2pitch(centerNote, centerFine, note, fine)
+s32 centerNote;
+u16 centerFine;
+s32 note;
+u16 fine;
+{
+    s16 shift;
+    s16 fineIdx;
+    s32 carry;
+    s16 key;
+    s16 semitone;
+    s32 biased;
+    u16 pitch;
+    fineIdx = (fine + centerFine) / 8;
+    carry = 0;
+    while (fineIdx >= 16) {
+        fineIdx -= 16;
+        carry++;
     }
-    if (var_a1 & 0x8000)
-        var_a1 = 0;
-    temp_v0_3 = (arg2 + 0x3C) - arg0;
-    var_v1 = D_800A2A08[(((s32)(((var_v1_2 + temp_v0_3) % 12) << 16) >> 12) +
-                         (s16)var_a1)];
-    temp_a0 = ((var_v1_2 + temp_v0_3) / 12) - 5;
-    if (temp_a0 > 0)
-        var_v1 <<= temp_a0;
-    else if (temp_a0 < 0)
-        var_v1 = (u16)((s32)(var_v1 & 0xFFFF) >> -temp_a0);
-    return var_v1 & 0xFFFF;
+    if (fineIdx < 0) {
+        fineIdx = 0;
+    }
+    biased = note + 60;
+    key = carry + (biased - centerNote);
+    semitone = key % 12;
+    pitch = D_800A2A08[(semitone << 4) + fineIdx];
+    shift = key / 12 - 5;
+    if (shift > 0) {
+        pitch <<= shift;
+    } else if (shift < 0) {
+        pitch >>= -shift;
+    }
+    return pitch;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_note2pitch);
-#endif
 
 #ifdef NON_MATCHING
 /* Complete C draft; code generation still differs from retail. */
