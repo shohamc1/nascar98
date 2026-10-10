@@ -6300,43 +6300,37 @@ void func_80067020(u8 *start, u8 *end, u8 delta) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * SDK POLY_FT4 loops now reproduce the per-field shifts and single cursor.
- * Current full-TU draft is 380 bytes versus 396 retail. Head-of-function
- * absolute D_800A3848 address CSE and fixed upper-bound comparison/guard
- * folding remain. Removed SCRATCH_TOP macro redeclaration and narrowed
- * saved delta copy. Initial activation-fixed 404-byte draft also retained.
- */
 void func_8006709C(u8 arg0) {
+    /* Retail reaches every D_800A3848 access with its own lui, so each
+     * store goes through a neighbour symbol: a shared la base would put
+     * the stores in jump delay slots. */
     extern s32 D_800A3848[];
+    extern s32 D_800A3844[];
+    extern s32 D_800A3840[];
+    extern s32 D_800A383C[];
     extern u8 D_800A3644[];
-    extern u16 *D_800A39C8p[] asm("D_800A39C8.NON_MATCHING");
     extern u16 *D_800A3898;
     extern u16 *D_800A389C[];
     s32 cur;
-    s32 shift;
     u8 arg;
     u16 *base;
     u16 *limit;
-    u8 *walk;
 
-    shift = arg0 << 24;
-    cur = D_800A3848[0] - (shift >> 23);
-    D_800A3848[0] = cur;
+    arg = arg0;
+    cur = D_800A3848[0] - ((s8)arg0 << 1);
+    D_800A3844[1] = cur;
     if (cur < 0xA0) {
-        D_800A3848[0] = 0xA0;
+        D_800A3840[2] = 0xA0;
         return;
     }
     if (cur >= 0x1EB) {
-        D_800A3848[0] = 0x1EA;
+        D_800A383C[3] = 0x1EA;
         return;
     }
     if (D_800A3644[0] != 0) {
         return;
     }
-    arg = arg0;
-    base = D_800A39C8p[0];
+    base = (u16 *)D_800A39C8Ptr[0];
     limit = D_800A3898;
     if (base + 8 < limit) {
         POLY_FT4 *quad;
@@ -6351,28 +6345,23 @@ void func_8006709C(u8 arg0) {
             quad++;
         } while ((u16 *)quad < limit);
     }
-    base = D_800A389C[0];
-    if (base == 0) {
+    if (D_800A389C[0] == 0) {
         return;
     }
-    asm("");
-    if (base < (u16 *)SCRATCH_TOP) {
+    {
         POLY_FT4 *quad;
-        quad = (POLY_FT4 *)base;
-        do {
+        u16 *end;
+        end = (u16 *)SCRATCH_TOP;
+        for (quad = (POLY_FT4 *)D_800A389C[0]; (u16 *)quad < end; quad++) {
             if (quad->b0 != 0) {
                 quad->y0 += (s8)arg;
                 quad->y1 += (s8)arg;
                 quad->y2 += (s8)arg;
                 quad->y3 += (s8)arg;
             }
-            quad++;
-        } while ((u8 *)&quad->y3 < (u8 *)SCRATCH_TOP + 0x22);
+        }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_8006709C);
-#endif
 
 void func_80067228(void) {
     extern u16 *D_800A387C;
