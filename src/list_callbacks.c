@@ -983,53 +983,31 @@ void func_8001D914(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
     AddPrim((u8 *)D_800A39C8[0], poly);
 }
 
-extern u8 D_800A3F4C[];
+extern POLY_F4 D_800A3F4C[];
 extern s32 D_800A2DBC;
-void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
-    u8 *sPrim;
-    register s32 sLeft asm("s1");
-    s32 sTop;
-    register s32 sWide asm("s4");
-    s32 sBottom;
-    s32 counter;
-    s32 next;
-    u8 *entry;
-    s32 x2;
-    s32 y2;
-    u8 *ot;
+void func_8001DA48(u8 *ot, s32 x, s32 y, s32 w, s32 h) {
+    POLY_F4 *poly;
+    s32 i;
 
-    sPrim = arg0;
-    asm("" : "=r"(sLeft) : "0"(arg1));
-    asm("" : "=r"(sTop) : "0"(arg2));
-    sWide = arg3;
-    sBottom = arg4;
-    counter = D_800A2DBC;
-    next = counter + 1;
-    entry = D_800A3F4C + (counter * 2 + counter) * 8;
-    D_800A2DBC = next;
-    if (next >= 2) {
+    i = D_800A2DBC;
+    poly = &D_800A3F4C[i];
+    D_800A2DBC = i + 1;
+    if (i + 1 >= 2) {
         D_800A2DBC = 0;
     }
-    SetPolyF4(entry);
-    asm("" : "=r"(ot) : "0"(sPrim));
-    x2 = sLeft;
-    x2 += sWide;
-    y2 = sTop;
-    y2 += sBottom;
-    do {
-    } while (0);
-    *(s16 *)(entry + 0x12) = y2;
-    *(s16 *)(entry + 0x16) = y2;
-    *(s16 *)(entry + 8) = sLeft;
-    *(s16 *)(entry + 0xA) = sTop;
-    *(s16 *)(entry + 0xC) = x2;
-    *(s16 *)(entry + 0xE) = sTop;
-    *(s16 *)(entry + 0x10) = sLeft;
-    *(s16 *)(entry + 0x14) = x2;
-    *(u8 *)(entry + 4) = 2;
-    *(u8 *)(entry + 5) = 0;
-    *(u8 *)(entry + 6) = 0;
-    AddPrim(ot, entry);
+    SetPolyF4(poly);
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->x1 = x + w;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    poly->r0 = 2;
+    poly->g0 = 0;
+    poly->b0 = 0;
+    AddPrim(ot, poly);
 }
 
 typedef struct {
