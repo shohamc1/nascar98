@@ -4053,17 +4053,19 @@ void func_80030CDC(s32 *query, s32 index) {
 }
 
 extern s32 D_800A3A80;
-#ifdef NON_MATCHING
-void func_80030D80(u8 *object, s32 *query) {
+/* The D_800A3A80 store sits before the second unk1E0 read so cse reloads it.
+ * Struct-typed reads (unk1E0, unk20) carry no dependence on that store, so
+ * sched sinks it below the unk20 load as retail does. */
+void func_80030D80(RaceObject *object, s32 *query) {
     s8 *node;
     u8 *entry;
     s16 rot;
 
-    rot = *(s16 *)(object + 0x1E0);
+    rot = object->unk1E0;
     if (rot >= 0) {
-        entry = rot * 0x90 + (u8 *)D_800BE980[0];
-        node = *(s8 **)(entry + 0x20);
         D_800A3A80 = 0;
+        entry = object->unk1E0 * 0x90 + (u8 *)D_800BE980[0];
+        node = (s8 *)((TrackRacer *)entry)->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC((s32 *)object, (s32 *)node, query) & 0xFF) !=
@@ -4073,7 +4075,7 @@ void func_80030D80(u8 *object, s32 *query) {
             node = *(s8 **)(node + 0x28);
         }
         entry = *(u8 **)(entry + 0);
-        *(s16 *)(object + 0x1E0) = *(u16 *)(entry + 8);
+        object->unk1E0 = *(u16 *)(entry + 8);
         node = *(s8 **)(entry + 0x20);
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
@@ -4084,7 +4086,7 @@ void func_80030D80(u8 *object, s32 *query) {
             node = *(s8 **)(node + 0x28);
         }
         entry = *(u8 **)(*(u8 **)(entry + 4) + 4);
-        *(s16 *)(object + 0x1E0) = *(u16 *)(entry + 8);
+        object->unk1E0 = *(u16 *)(entry + 8);
         node = *(s8 **)(entry + 0x20);
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
@@ -4096,9 +4098,6 @@ void func_80030D80(u8 *object, s32 *query) {
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_80030D80);
-#endif
 
 #ifdef NON_MATCHING
 /* Retry 2026-10-05: Shared absolute-table declarations are reconciled and
@@ -4151,7 +4150,7 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
     if ((*(s16 *)(object + 0x1EC) == 0) && (outZ == 2)) {
         point[0] = pointArray[0] / 4 - D_800AE844[0];
         point[1] = pointArray[1] / 4 - D_800AE848[0];
-        func_80030D80(object, point);
+        func_80030D80((RaceObject *)object, point);
         pointArray[2] = (point[2] + D_800AE84C[0]) * 4;
         if (D_800A3A80 == 0) {
             value = 5;
