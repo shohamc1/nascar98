@@ -475,35 +475,59 @@ void func_8001FC6C(void) {
     D_800A3A90Small = quotient;
 }
 
-extern u8 D_800A3680[];
-extern s32 D_800A397CSmall;
-extern void func_80025730(u8 *);
-void func_8001FD44(u8 *arg0) {
-    s32 count;
-    s32 held;
-    s32 mode;
+typedef struct {
+    s32 x;
+    s32 y;
+    s32 z;
+} Vec3;
 
-    if (arg0 == NULL) {
+/* Shared layout of a car and the camera that follows it. */
+typedef struct {
+    Vec3 pos;               /* 0x000 */
+    u8 unkC[0xC];           /* 0x00C */
+    Vec3 basis[3];          /* 0x018 */
+    Vec3 rot[3];            /* 0x03C */
+    u8 unk60[0x3C];         /* 0x060 */
+    Vec3 toCamera;          /* 0x09C */
+    u8 unkA8[0x6C];         /* 0x0A8 */
+    s16 heading;            /* 0x114 */
+    u8 unk116[0xCA];        /* 0x116 */
+    s16 unk1E0;             /* 0x1E0 */
+    u8 unk1E2[0x1E];        /* 0x1E2 */
+    s8 unk200;              /* 0x200 */
+    u8 unk201[0xA];         /* 0x201 */
+    s8 slot;                /* 0x20B */
+    s8 cameraMode;          /* 0x20C */
+    u8 unk20D[0x7];         /* 0x20D */
+    s16 orbitAngle;         /* 0x214 */
+    u8 unk216[0x13E];       /* 0x216 */
+    void (*callback)(u8 *); /* 0x354 */
+    u8 unk358[0x28];        /* 0x358 */
+    s32 cameraAngle;        /* 0x380 */
+    u8 unk384[0x4];         /* 0x384 */
+    s16 unk388;             /* 0x388 */
+    s16 unk38A;             /* 0x38A */
+    u8 unk38C[0x14];        /* 0x38C */
+    s32 unk3A0;             /* 0x3A0 */
+} RaceObject;
+
+extern u8 D_800A3680[];
+extern void func_80025730(u8 *);
+void func_8001FD44(RaceObject *car) {
+    s32 count;
+
+    if (car == NULL) {
         return;
     }
-    *(volatile u8 *)(arg0 + 0x20C) += 1;
-    held = *(s16 *)(arg0 + 0x114);
-    mode = D_800A397CSmall;
-    count = *(s8 *)(arg0 + 0x20C);
-    *(s32 *)(arg0 + 0x380) = held;
-    if (mode == 2) {
-        if (count >= 7)
-            goto resetCount;
-        goto countReady;
+    car->cameraMode++;
+    car->cameraAngle = car->heading;
+    count = car->cameraMode;
+    if ((D_800A397CSmall == 2 && count >= 7) ||
+        (D_800A397CSmall != 2 && count >= 3)) {
+        car->cameraMode = -2;
     }
-    if (count < 3)
-        goto countReady;
-resetCount:
-    *(s8 *)(arg0 + 0x20C) = -2;
-countReady:
-    if (*(s32 *)(arg0 + 0x354) == (s32)func_80025730 &&
-        *(s8 *)(arg0 + 0x20C) == -1) {
-        *(s8 *)(arg0 + 0x20C) = 0;
+    if (car->callback == func_80025730 && car->cameraMode == -1) {
+        car->cameraMode = 0;
     }
     D_800A3680[0] = 1;
 }
@@ -552,40 +576,6 @@ void func_8001FF3C(u8 *arg0, u8 *arg1) {
         *(s32 *)(arg0 + 0x8) = sp1C;
     }
 }
-
-typedef struct {
-    s32 x;
-    s32 y;
-    s32 z;
-} Vec3;
-
-/* Shared layout of a car and the camera that follows it. */
-typedef struct {
-    Vec3 pos;         /* 0x000 */
-    u8 unkC[0xC];     /* 0x00C */
-    Vec3 basis[3];    /* 0x018 */
-    Vec3 rot[3];      /* 0x03C */
-    u8 unk60[0x3C];   /* 0x060 */
-    Vec3 toCamera;    /* 0x09C */
-    u8 unkA8[0x6C];   /* 0x0A8 */
-    s16 heading;      /* 0x114 */
-    u8 unk116[0xCA];  /* 0x116 */
-    s16 unk1E0;       /* 0x1E0 */
-    u8 unk1E2[0x1E];  /* 0x1E2 */
-    s8 unk200;        /* 0x200 */
-    u8 unk201[0xA];   /* 0x201 */
-    s8 slot;          /* 0x20B */
-    s8 cameraMode;    /* 0x20C */
-    u8 unk20D[0x7];   /* 0x20D */
-    s16 orbitAngle;   /* 0x214 */
-    u8 unk216[0x16A]; /* 0x216 */
-    s32 cameraAngle;  /* 0x380 */
-    u8 unk384[0x4];   /* 0x384 */
-    s16 unk388;       /* 0x388 */
-    s16 unk38A;       /* 0x38A */
-    u8 unk38C[0x14];  /* 0x38C */
-    s32 unk3A0;       /* 0x3A0 */
-} RaceObject;
 
 typedef struct {
     s32 x;
