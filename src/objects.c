@@ -4160,9 +4160,9 @@ typedef struct {
 } Vector3;
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: Keeping height arithmetic signed until the real halfword
- * store restores the 1552-byte length. Stack-home choices, a reversed four-
- * corner loop and many multiply/load schedules still differ. */
+/* Retry 2026-10-10: right size (1552 bytes) and 2 words off. gcc 2.7.2
+ * sched2 puts `lw v0,0x3c(sp)` before the first `mult s7,t1`; retail puts it
+ * after. See the func_80031264 row in kb/psx/matching.md. */
 extern s32 D_800A2F2C;
 extern s32 D_800A397C[];
 void func_800319D4(u8 *, s32);
@@ -4170,30 +4170,33 @@ void func_8001F198(void);
 u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
 extern s16 func_8002482Cs16(s32, s32, void *) asm("func_8002482C");
 void func_8001F5BC(s32, s32, s32);
+typedef struct {
+    u8 pad[0x1C];
+    s16 unk1C;
+    s16 unk1E;
+    s16 unk20;
+    s16 unk22;
+} ObjectBounds;
+
 void func_80031264(u8 *object) {
     s32 corners[5][4];
     s32 normals[3][4];
-    u8 *state;
-    u8 *entry;
+    ObjectBounds *state;
     s32 length;
     s32 sum;
-    s32 sum4;
     s32 result;
     s32 i;
-    s32 edgeZ;
-    s32 edgeY;
     s32 a;
-    s32 b;
     s32 c;
     s32 d;
     s32 e;
     s32 f;
+    s32 sum4;
     s32 crossX;
     s32 crossY;
     s32 crossZ;
-    s32 value;
 
-    state = *(u8 **)(object + 0x370);
+    state = *(ObjectBounds **)(object + 0x370);
     if (*(s16 *)(object + 0x1EC) != 0) {
         func_800319D4(object, 0);
         return;
@@ -4213,14 +4216,14 @@ void func_80031264(u8 *object) {
     *(s16 *)(object + 0x1E4) = -1;
     *(u8 *)(object + 0xF5) = 0;
     D_800A2F2C = *(s32 *)(object + 0x1F8);
-    *(s16 *)(object + 0x362) = func_80030F24(
-        object, corners[3], *(s16 *)(state + 0x1E), *(s16 *)(state + 0x22), 0);
-    *(s16 *)(object + 0x364) = func_80030F24(
-        object, corners[0], *(s16 *)(state + 0x1E), *(s16 *)(state + 0x20), 0);
-    *(s16 *)(object + 0x366) = func_80030F24(
-        object, corners[2], *(s16 *)(state + 0x1C), *(s16 *)(state + 0x22), 0);
-    *(s16 *)(object + 0x368) = func_80030F24(
-        object, corners[1], *(s16 *)(state + 0x1C), *(s16 *)(state + 0x20), 0);
+    *(s16 *)(object + 0x362) =
+        func_80030F24(object, corners[3], state->unk1E, state->unk22, 0);
+    *(s16 *)(object + 0x364) =
+        func_80030F24(object, corners[0], state->unk1E, state->unk20, 0);
+    *(s16 *)(object + 0x366) =
+        func_80030F24(object, corners[2], state->unk1C, state->unk22, 0);
+    *(s16 *)(object + 0x368) =
+        func_80030F24(object, corners[1], state->unk1C, state->unk20, 0);
     *(s16 *)(object + 0x1E0) = func_8002482Cs16(
         *(s32 *)(object + 0x0), *(s32 *)(object + 0x4), object + 0x1F8);
     if (*(u16 *)(object + 0x362) == 0) {
@@ -4249,36 +4252,36 @@ void func_80031264(u8 *object) {
         corners[1][2] += *(s16 *)(object + 0x2D4);
         corners[2][2] += *(s16 *)(object + 0x2AC);
         corners[3][2] += *(s16 *)(object + 0x2FC);
-        sum = *(s16 *)(object + 0x324) + *(s16 *)(object + 0x2D4) +
-              *(s16 *)(object + 0x2AC) + *(s16 *)(object + 0x2FC);
-        if (sum < 0) {
-            sum += 3;
+        result = *(s16 *)(object + 0x324) + *(s16 *)(object + 0x2D4) +
+                 *(s16 *)(object + 0x2AC) + *(s16 *)(object + 0x2FC);
+        if (result < 0) {
+            result += 3;
         }
-        result = sum >> 2;
+        result >>= 2;
+        *(s16 *)(object + 0xFE) = result;
     } else {
-        i = 0;
-        entry = object;
-        do {
-            i = i + 1;
-            *(u16 *)(entry + 0x2AC) = *(u16 *)(object + 0x39A);
-            entry = entry + 0x28;
-        } while (i < 4);
-        result = *(s16 *)(object + 0x39A);
+        for (i = 0; i < 4; i++) {
+            *(u16 *)(object + i * 0x28 + 0x2AC) = *(u16 *)(object + 0x39A);
+        }
+        *(s16 *)(object + 0xFE) = *(u16 *)(object + 0x39A);
     }
-    *(s16 *)(object + 0xFE) = result;
     *(s32 *)(object + 0x8) = *(s16 *)(object + 0xFE) + sum4;
     *(s16 *)(object + 0x1E8) = *(u16 *)(object + 0x1E4);
     *(s16 *)(object + 0x1E6) = *(u16 *)(object + 0x1E2);
-    edgeZ = corners[2][2] - corners[1][2];
-    a = (corners[0][1] - corners[1][1]) >> 2;
-    b = edgeZ >> 2;
-    edgeY = corners[2][1] - corners[1][1];
-    d = (corners[0][2] - corners[1][2]) >> 2;
-    c = edgeY >> 2;
-    e = (corners[2][0] - corners[1][0]) >> 2;
-    f = (corners[0][0] - corners[1][0]) >> 2;
-    crossX = a * b - d * c;
-    crossY = d * e - f * b;
+    c = corners[2][1] - corners[1][1];
+    sum4 = corners[2][2] - corners[1][2];
+    a = corners[0][1] - corners[1][1];
+    d = corners[0][2] - corners[1][2];
+    e = corners[2][0] - corners[1][0];
+    f = corners[0][0] - corners[1][0];
+    a >>= 2;
+    sum4 >>= 2;
+    c >>= 2;
+    d >>= 2;
+    e >>= 2;
+    f >>= 2;
+    crossX = a * sum4 - d * c;
+    crossY = d * e - f * sum4;
     crossZ = f * c - a * e;
     length = MathSqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
     if (length == 0) {
@@ -4294,22 +4297,16 @@ void func_80031264(u8 *object) {
     normals[0][0] = MathFixedDivide(f, length);
     normals[0][1] = MathFixedDivide(a, length);
     normals[0][2] = MathFixedDivide(d, length);
-    length = MathSqrt(e * e + c * c + b * b);
+    length = MathSqrt(e * e + c * c + sum4 * sum4);
     if (length == 0) {
         length = 1;
     }
     normals[1][0] = MathFixedDivide(e, length);
     normals[1][1] = MathFixedDivide(c, length);
-    normals[1][2] = MathFixedDivide(b, length);
-    *(s32 *)(object + 0x3C) = normals[0][0];
-    *(s32 *)(object + 0x40) = normals[0][1];
-    *(s32 *)(object + 0x44) = normals[0][2];
-    *(s32 *)(object + 0x48) = normals[1][0];
-    *(s32 *)(object + 0x4C) = normals[1][1];
-    *(s32 *)(object + 0x50) = normals[1][2];
-    *(s32 *)(object + 0x54) = normals[2][0];
-    *(s32 *)(object + 0x58) = normals[2][1];
-    *(s32 *)(object + 0x5C) = normals[2][2];
+    normals[1][2] = MathFixedDivide(sum4, length);
+    *(Vector3 *)(object + 0x3C) = *(Vector3 *)normals[0];
+    *(Vector3 *)(object + 0x48) = *(Vector3 *)normals[1];
+    *(Vector3 *)(object + 0x54) = *(Vector3 *)normals[2];
     func_8001F5BC(0, (0x3FF - *(s16 *)(object + 0x38A)) & 0x3FF,
                   *(u16 *)(object + 0x388) & 0x3FF);
     func_8001EC38((s32 *)object);
