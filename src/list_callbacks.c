@@ -956,44 +956,32 @@ void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
     AddPrim((u8 *)D_800A39C8[0], entry);
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: The old crash was an undeclared ordering-table symbol.
- * Word-width coordinate arguments remove unsupported narrowing and restore
- * retail length; saved-register allocation and store/shift scheduling remain
- * different. */
-extern u8 D_800A3D0C[];
+extern POLY_F4 D_800A3D0C[];
 extern s32 D_800A2DB8;
 extern s32 D_800A39C8[];
-void func_8001D914(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7) {
+void func_8001D914(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
+                   s32 semiTrans) {
     POLY_F4 *poly;
-    u8 *entry;
 
-    entry = D_800A3D0C + (D_800A2DB8 * 2 + D_800A2DB8) * 8;
-    poly = (POLY_F4 *)entry;
+    poly = &D_800A3D0C[D_800A2DB8];
     SetPolyF4(poly);
     D_800A2DB8 = (D_800A2DB8 + 1) % 24;
-    poly->y0 = arg1;
-    poly->y1 = arg1;
-    arg3 += arg1;
-    poly->x0 = arg0;
-    arg2 += arg0;
-    poly->x1 = arg2;
-    poly->x2 = arg0;
-    poly->y2 = arg3;
-    poly->x3 = arg2;
-    poly->y3 = arg3;
-    if ((arg7 << 0x18) != 0) {
-        SetSemiTrans(entry, 1);
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->x1 = x + w;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    if ((semiTrans << 0x18) != 0) {
+        SetSemiTrans(poly, 1);
     }
-    *(u8 *)(entry + 4) = arg4;
-    *(u8 *)(entry + 5) = arg5;
-    *(u8 *)(entry + 6) = arg6;
-    AddPrim((u8 *)D_800A39C8[0], entry);
+    poly->r0 = r;
+    poly->g0 = g;
+    poly->b0 = b;
+    AddPrim((u8 *)D_800A39C8[0], poly);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D914);
-#endif
 
 extern u8 D_800A3F4C[];
 extern s32 D_800A2DBC;
