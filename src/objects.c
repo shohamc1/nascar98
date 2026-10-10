@@ -2916,44 +2916,35 @@ void func_8002ADE0(s32 *car, s32 arg1) {
     car[0x35] = car[0x35] + MathMultiplyFixed16(entryB, arg1);
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-07 (unfused multiply): mult scheduling, the mid-function
- * frame push and the dead result spills all come out of plain C now. The
- * two table pointers are D_800A3A24nm (true 0x800A3A2C) and
- * D_800A3A2CAbsolute (true 0x800A3A34); the label run sits +8 above its
- * names. Left: gcc keeps rotated[0] in memory (zero-store + reload) where
- * retail keeps the value in a register with both array stores dead. */
-extern s32 D_800A3A24nm[] asm("D_800A3A24.NON_MATCHING");
-
 s32 func_8002AEB0(u8 *arg0) {
     s32 index;
-    s32 rotated[2];
+    VECTOR rotated;
+    s32 value;
     s32 temp;
+    s32 product;
 
     index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
-    rotated[0] =
-        ((((s32 **)D_800A3A24nm)[0][index] * *(s32 *)(arg0 + 0xB0)) -
-         (((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB4))) >>
-        16;
-    rotated[1] =
-        ((((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB0)) +
-         (((s32 **)D_800A3A24nm)[0][index] * *(s32 *)(arg0 + 0xB4))) >>
-        16;
-    if (rotated[0] < 0) {
-        temp = -rotated[0];
+    product = ((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB0);
+    rotated.vx = (product - (((s32 **)D_800A3A34Absolute)[0][index] *
+                             *(s32 *)(arg0 + 0xB4))) >>
+                 16;
+    product = ((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)(arg0 + 0xB0);
+    rotated.vy = (product + (((s32 **)D_800A3A2CAbsolute)[0][index] *
+                             *(s32 *)(arg0 + 0xB4))) >>
+                 16;
+    value = rotated.vx;
+    if (value < 0) {
+        temp = -value;
         *(u8 *)(arg0 + 0x410) = temp;
-        rotated[0] = 0;
+        value = 0;
         if ((temp & 0xFF) >= 0x65U) {
             *(u8 *)(arg0 + 0x410) = 0x64;
         }
     } else {
         *(u8 *)(arg0 + 0x410) = 0;
     }
-    return rotated[0] << 16;
+    return value << 16;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002AEB0);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002AF94);
 
