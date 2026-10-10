@@ -1521,32 +1521,24 @@ s8 vol;
     }
 }
 
-#ifdef NON_MATCHING
-/* Wall: retail's unsigned /127 expansion is mult 0x81020409 (SIGNED
- * mult) + mfhi + addu of the dividend + srl 6, with NO sra31/subu
- * sign fixup; our gcc emits either the full signed expansion or the
- * multu 0x02040811 variant, never this hybrid. */
 void func_8003FDE8(s8 arg0, s32 arg1, s32 arg2) {
     s16 voice;
-    s32 volL;
-    s32 volR;
+    u16 volL;
+    u16 volR;
 
     voice = D_800B9E24[(s8)arg0 * 6];
     if (voice != -1) {
-        volL = ((arg1 & 0xFF) * D_800A2F94) / 127U;
-        volR = ((arg2 & 0xFF) * D_800A2F94) / 127U;
-        if ((u32)(volL & 0xFFFF) >= 0x80U) {
+        volL = ((arg1 & 0xFF) * D_800A2F94) / 127;
+        volR = ((arg2 & 0xFF) * D_800A2F94) / 127;
+        if (volL >= 0x80) {
             volL = 0x7F;
         }
-        if ((u32)(volR & 0xFFFF) >= 0x7FU) {
+        if (volR >= 0x7F) {
             volR = 0x7F;
         }
         SsUtSetVVol(voice, volL, volR);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/sound", func_8003FDE8);
-#endif
 
 extern s16 D_800B9E24[];
 extern void func_8003F914(s32);
