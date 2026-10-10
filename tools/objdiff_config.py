@@ -16,8 +16,10 @@ import sys
 SDK_C = "src/psxsdk.c"
 
 # Data-only objects, tracked like sotn-decomp's asm data units. No .bss:
-# objdiff counts it as matched because it has no bytes to compare.
-DATA_S = ["asm/data/data.data.s", "asm/data/sdata.sdata.s"]
+# objdiff counts it as matched because it has no bytes to compare. The
+# sdata range and several SDK data blocks are decompiled into C; the
+# data_*.data.s units hold the interleaved ranges still in asm.
+DATA_S = ["asm/data/data.data.s"]
 
 
 def unit(src: pathlib.Path, category: str | None) -> dict:

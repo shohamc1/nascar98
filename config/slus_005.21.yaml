@@ -19,7 +19,7 @@ options:
 
   find_file_boundaries: False
   gp_value: 0x800A2CE0
-  ld_gp_expression: main_SDATA_START
+  ld_gp_expression: main_sdata_start_OFFSET
 
   o_as_suffix: False
   ld_bss_is_noload: True
@@ -102,6 +102,13 @@ segments:
       # LIBPRESS strings end here; game data starts at 0x80090DC8.
       # This section boundary is inferred; see kb/ for the evidence.
       - [0x7F5C8, data, data]
-      - [0x914E0, sdata, sdata]
+      # Marker for the former .sdata range start (= _gp, 0x800A2CE0).
+      # The sdata bytes are decompiled into src/globals.c, which the
+      # linker script collects as the tail of .data; this zero-size
+      # subsegment emits sdata_start_OFFSET = . at the right place.
+      - [0x914E0, linker_offset, sdata_start]
+      # sdata is decompiled into src/globals.c (scalars, format strings,
+      # fopen modes, and other literals).
+      - [0x914E0, c, globals]
       - { start: 0x91BC0, type: bss, vram: 0x800A33C0, name: bss }
   - [0x92000]

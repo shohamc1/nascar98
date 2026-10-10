@@ -281,7 +281,86 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=SpuTransferCtrlT=D_800A26B8 \
             --defsym=SpuDelayCtrlT=D_800A26C0 \
             --defsym=SpuTransferCountT=D_800A26FC \
-            --defsym=SpuTransferBlocksT=D_800A2700
+            --defsym=SpuTransferBlocksT=D_800A2700 \
+            --defsym=D_800A2CE0.NON_MATCHING=D_800A2CE0 \
+            --defsym=D_800A2CFC.NON_MATCHING=D_800A2CFC \
+            --defsym=D_800A2D0C.NON_MATCHING=D_800A2D0C \
+            --defsym=D_800A2D0E.NON_MATCHING=D_800A2D0E \
+            --defsym=D_800A2D0F.NON_MATCHING=D_800A2D0F \
+            --defsym=D_800A2D14.NON_MATCHING=D_800A2D14 \
+            --defsym=D_800A2D18.NON_MATCHING=D_800A2D18 \
+            --defsym=D_800A2D1C.NON_MATCHING=D_800A2D1C \
+            --defsym=D_800A2DC4.NON_MATCHING=D_800A2DC4 \
+            --defsym=D_800A2DCC.NON_MATCHING=D_800A2DCC \
+            --defsym=D_800A2DD0.NON_MATCHING=D_800A2DD0 \
+            --defsym=D_800A2DD4.NON_MATCHING=D_800A2DD4 \
+            --defsym=D_800A2DD8.NON_MATCHING=D_800A2DD8 \
+            --defsym=D_800A2DDC.NON_MATCHING=D_800A2DDC \
+            --defsym=D_800A2DE0.NON_MATCHING=D_800A2DE0 \
+            --defsym=D_800A2DE1.NON_MATCHING=D_800A2DE1 \
+            --defsym=D_800A2DE4.NON_MATCHING=D_800A2DE4 \
+            --defsym=D_800A2DE8.NON_MATCHING=D_800A2DE8 \
+            --defsym=D_800A2DEC.NON_MATCHING=D_800A2DEC \
+            --defsym=D_800A2DF0.NON_MATCHING=D_800A2DF0 \
+            --defsym=D_800A2DF4.NON_MATCHING=D_800A2DF4 \
+            --defsym=D_800A2E44.NON_MATCHING=D_800A2E44 \
+            --defsym=D_800A2E48.NON_MATCHING=D_800A2E48 \
+            --defsym=D_800A2E7C.NON_MATCHING=D_800A2E7C \
+            --defsym=D_800A2E80.NON_MATCHING=D_800A2E80 \
+            --defsym=D_800A2E90.NON_MATCHING=D_800A2E90 \
+            --defsym=D_800A2E94.NON_MATCHING=D_800A2E94 \
+            --defsym=D_800A2EA4.NON_MATCHING=D_800A2EA4 \
+            --defsym=D_800A2EA8.NON_MATCHING=D_800A2EA8 \
+            --defsym=D_800A2EAC.NON_MATCHING=D_800A2EAC \
+            --defsym=D_800A2EB0.NON_MATCHING=D_800A2EB0 \
+            --defsym=D_800A2EB8.NON_MATCHING=D_800A2EB8 \
+            --defsym=D_800A2EC0.NON_MATCHING=D_800A2EC0 \
+            --defsym=D_800A2EC4.NON_MATCHING=D_800A2EC4 \
+            --defsym=D_800A2EC8.NON_MATCHING=D_800A2EC8 \
+            --defsym=D_800A2ECC.NON_MATCHING=D_800A2ECC \
+            --defsym=D_800A2ED0.NON_MATCHING=D_800A2ED0 \
+            --defsym=D_800A2ED4.NON_MATCHING=D_800A2ED4 \
+            --defsym=D_800A2ED8.NON_MATCHING=D_800A2ED8 \
+            --defsym=D_800A2EDA.NON_MATCHING=D_800A2EDA \
+            --defsym=D_800A2EDB.NON_MATCHING=D_800A2EDB \
+            --defsym=D_800A2EDC.NON_MATCHING=D_800A2EDC \
+            --defsym=D_800A2EE0.NON_MATCHING=D_800A2EE0 \
+            --defsym=D_800A2EE4.NON_MATCHING=D_800A2EE4 \
+            --defsym=D_800A2EFC.NON_MATCHING=D_800A2EFC \
+            --defsym=D_800A2F00.NON_MATCHING=D_800A2F00 \
+            --defsym=D_800A2F08.NON_MATCHING=D_800A2F08 \
+            --defsym=D_800A2F30.NON_MATCHING=D_800A2F30 \
+            --defsym=D_800A2F38.NON_MATCHING=D_800A2F38 \
+            --defsym=D_800A2F54.NON_MATCHING=D_800A2F54 \
+            --defsym=D_800A2F84.NON_MATCHING=D_800A2F84 \
+            --defsym=D_800A2F94.NON_MATCHING=D_800A2F94 \
+            --defsym=D_800A2F95.NON_MATCHING=D_800A2F95 \
+            --defsym=D_800A2F9C.NON_MATCHING=D_800A2F9C \
+            --defsym=D_800A2F9D.NON_MATCHING=D_800A2F9D \
+            --defsym=D_800A2FA4.NON_MATCHING=D_800A2FA4 \
+            --defsym=D_800A3020.NON_MATCHING=D_800A3020 \
+            --defsym=D_800A305A.NON_MATCHING=D_800A305A \
+            --defsym=D_800A305B.NON_MATCHING=D_800A305B \
+            --defsym=D_800A3064.NON_MATCHING=D_800A3064 \
+            --defsym=D_800A3065.NON_MATCHING=D_800A3065 \
+            --defsym=D_800A3068.NON_MATCHING=D_800A3068 \
+            --defsym=D_800A3069.NON_MATCHING=D_800A3069 \
+            --defsym=D_800A306C.NON_MATCHING=D_800A306C \
+            --defsym=D_800A306D.NON_MATCHING=D_800A306D \
+            --defsym=D_800A306E.NON_MATCHING=D_800A306E \
+            --defsym=D_800A306F.NON_MATCHING=D_800A306F \
+            --defsym=D_800A3070.NON_MATCHING=D_800A3070 \
+            --defsym=D_800A3071.NON_MATCHING=D_800A3071 \
+            --defsym=D_800A3072.NON_MATCHING=D_800A3072 \
+            --defsym=D_800A3073.NON_MATCHING=D_800A3073 \
+            --defsym=D_800A3074.NON_MATCHING=D_800A3074 \
+            --defsym=D_800A3078.NON_MATCHING=D_800A3078 \
+            --defsym=D_800A307C.NON_MATCHING=D_800A307C \
+            --defsym=D_800A308C.NON_MATCHING=D_800A308C \
+            --defsym=gOrderingTableBank.NON_MATCHING=gOrderingTableBank \
+            --defsym=func_800A2CE0=D_800A2CE0 \
+            --defsym=D_800A3384=D_800A3380+4 \
+            --defsym=D_800A338C=D_800A3388+4
 
 # SDK C matches with R3000 scheduling. Game flags stay above. The Psy-Q
 # libraries came from GNU C 2.6.3, not the game's 2.7.2: see "SDK compiler"
@@ -289,6 +368,13 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
 build/src/psxsdk.c.o: CC1 := tools/cc1-263.sh
 build/src/psxsdk.c.o: tools/cc1-263.sh
+
+# src/globals.c owns the former .sdata range. splat emits no .sdata
+# collection for c subsegments, so compile with -G0: every literal lands
+# in .data, and the linker script places globals.c.o(.data) — the last
+# .data entry — exactly where sdata began (0x800A2CE0 = main_DATA_END,
+# which is _gp). gp-relative references from other files are unchanged.
+build/src/globals.c.o: CFLAGS := $(subst -G$(GP_SIZE),-G0,$(CFLAGS))
 
 # Splat writes asm/ and the linker script, and the file lists below need
 # them, so a fresh tree splits before Make reads the lists.

@@ -1731,12 +1731,12 @@ s32 CardFindFirstFile(char *path, struct DIRENTRY *entry) {
     return firstfile(path, entry) == entry;
 }
 
-extern char D_800A3094[], D_800A309C[];
+extern char gMemoryCardDevice2[], gMemoryCardDevice1[];
 s32 CardFormat(s32 second) {
     if (!(second & 0xFF))
-        return format(D_800A309C) & 0xFF;
+        return format(gMemoryCardDevice1) & 0xFF;
     else
-        return format(D_800A3094) & 0xFF;
+        return format(gMemoryCardDevice2) & 0xFF;
 }
 
 void func_80059C2C(void) {
@@ -1964,7 +1964,7 @@ s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
  * total=0 fills the blez delay slot. Only the s1/s2 swap remains.
  * (framePad dropped again here — with it gcc renames nothing; without
  * the frame is 8 short but the draft is guarded anyway.) */
-extern char D_800A3094[], D_800A309C[];
+extern char gMemoryCardDevice2[], gMemoryCardDevice1[];
 s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     s32 zero;
     struct DIRENTRY entries[15];
@@ -1974,9 +1974,9 @@ s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     struct DIRENTRY *entry;
 
     if ((arg0 & 0xFF) == 0) {
-        count = CardScanDirectory(D_800A309C, entries);
+        count = CardScanDirectory(gMemoryCardDevice1, entries);
     } else {
-        count = CardScanDirectory(D_800A3094, entries);
+        count = CardScanDirectory(gMemoryCardDevice2, entries);
     }
     i = 0;
     zero = 0;
@@ -2060,7 +2060,7 @@ void func_8005A414(void) {
     TestEvent(D_800A38D4);
 }
 
-extern char D_800A30A4[];
+extern char gMemoryCardWildcard[];
 
 s32 CardScanDirectory(char *path, struct DIRENTRY *entry) {
     char buffer[128];
@@ -2068,7 +2068,7 @@ s32 CardScanDirectory(char *path, struct DIRENTRY *entry) {
     s32 count;
 
     strcpy(buffer, path);
-    strcat(buffer, D_800A30A4);
+    strcat(buffer, gMemoryCardWildcard);
     cursor = entry;
     count = 0;
     if (firstfile(buffer, cursor) == cursor) {
