@@ -2936,7 +2936,7 @@ INCLUDE_ASM("asm/nonmatchings/media", func_800703D0);
 extern u8 *D_800A33A8;
 extern u8 *D_800A33AC;
 extern u8 D_8009B800[];
-extern void func_80070798(u8 *first, u8 *second, u8 *table);
+extern s32 func_80070798(u8 *first, u8 *second, u8 *table);
 void func_80070750(s32 arg) {
     if (arg != 0) {
         func_80070798(D_800A33A8, D_800A33AC, (u8 *)arg);
@@ -2947,110 +2947,107 @@ void func_80070750(s32 arg) {
 
 extern u8 D_8009B480[];
 extern u8 D_8009B600[];
-extern s32 func_80070798Ret(u32 dst1, u32 dst2, u8 *src);
-asm(".globl func_80070798\nfunc_80070798 = func_80070798Ret");
 
-s32 func_80070798Ret(u32 dst1, u32 dst2, u8 *src) {
-    volatile s32 pad[4];
-    u8 *src2;
-    u32 end1;
+/* Builds two decode lookup tables: for each code entry, fills 1 << (bits - len)
+   slots with the code's length (u8 array) and value (u16 array after it). */
+s32 func_80070798(u8 *dst, u8 *dst2, u8 *src) {
+    s32 pad[4];
+    u8 *cursor;
+    u16 *vals;
     s32 i;
 
-    D_800A33A8 = (u8 *)dst1;
-    D_800A33AC = (u8 *)dst2;
-    if (dst1 == 0) {
+    D_800A33A8 = dst;
+    D_800A33AC = dst2;
+    if (dst == 0) {
         return -1;
     }
     if (dst2 == 0) {
         return -1;
     }
-    end1 = dst1 + 0x2000;
+    vals = (u16 *)(dst + 0x2000);
     if (src == 0) {
         src = D_8009B800;
     }
-    src2 = src;
     {
-        u8 *p;
-        register u8 *q asm("t6");
+        u8 *lenPtr;
+        u8 *codePtr;
         s32 j;
         s32 count;
-        s32 k;
+        s32 bits;
         s32 one;
         s32 base;
         s32 off;
-        u16 val16;
-        u16 s16v;
-        u8 shift;
-        u8 *tbl;
+        u16 val;
+        u8 len;
+        u8 *entries;
 
         i = 0;
-        k = 13;
+        bits = 13;
         one = 1;
-        tbl = D_8009B480;
-        q = tbl + 2;
-        p = tbl;
+        entries = D_8009B480;
+        codePtr = entries + 2;
+        lenPtr = entries;
+        cursor = src;
         while (i < 0x60) {
-            val16 = *(u16 *)src2;
-            shift = *p;
-            src2 += 2;
-            s16v = *(u16 *)q;
+            val = *(u16 *)cursor;
+            len = *lenPtr;
+            cursor += 2;
             j = 0;
-            count = one << (k - shift);
-            base = s16v >> 3;
+            count = one << (bits - len);
+            base = *(u16 *)codePtr >> 3;
             if (count > 0) {
                 do {
                     off = base | j;
-                    *(u8 *)(dst1 + off) = shift;
-                    *(u16 *)(end1 + off * 2) = val16;
+                    *(u8 *)(dst + off) = len;
+                    vals[off] = val;
                     j++;
                 } while (j < count);
             }
-            q += 4;
-            p += 4;
+            codePtr += 4;
+            lenPtr += 4;
             i++;
         }
     }
     {
-        register u32 d2 asm("a0");
-        u8 *p;
-        register u8 *q asm("t5");
+        u8 *lenPtr;
+        u8 *codePtr;
         s32 j;
         s32 count;
-        s32 k;
+        s32 bits;
         s32 one;
         s32 base;
         s32 off;
-        u16 val16;
-        u16 s16v;
-        u8 shift;
-        u8 *tbl;
+        u16 val;
+        u8 len;
+        u8 *entries;
+        u8 *cursor2;
 
-        d2 = dst2;
-        end1 = d2 + 0x200;
+        dst = dst2;
+        vals = (u16 *)(dst + 0x200);
         i = 0;
-        k = 9;
+        bits = 9;
         one = 1;
-        tbl = D_8009B600;
-        q = tbl + 2;
-        p = tbl;
+        entries = D_8009B600;
+        codePtr = entries + 2;
+        lenPtr = entries;
+        cursor2 = cursor;
         while (i < 0x80) {
-            val16 = *(u16 *)src2;
-            shift = *p;
-            src2 += 2;
-            s16v = *(u16 *)q;
+            val = *(u16 *)cursor2;
+            len = *lenPtr;
+            cursor2 += 2;
             j = 0;
-            count = one << (k - shift);
-            base = s16v >> 7;
+            count = one << (bits - len);
+            base = *(u16 *)codePtr >> 7;
             if (count > 0) {
                 do {
                     off = base | j;
-                    *(u8 *)(d2 + off) = shift;
-                    *(u16 *)(end1 + off * 2) = val16;
+                    *(u8 *)(dst + off) = len;
+                    vals[off] = val;
                     j++;
                 } while (j < count);
             }
-            q += 4;
-            p += 4;
+            codePtr += 4;
+            lenPtr += 4;
             i++;
         }
     }
