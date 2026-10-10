@@ -6291,7 +6291,108 @@ void func_8003587C(s32 arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_800358EC);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80035B20);
+extern u16 D_80090F24[];
+extern u16 D_80091004[];
+extern s32 D_800B60C8[];
+
+/* Initialise the 0x48-entry 0xC8-stride tile table at D_800B60C8: three
+ * banks of 24 entries. poly[1..4] of each entry become textured POLY_FT4s;
+ * the 4 u16s at entry+0x20 prime poly[0]'s tail (counter/type/uv). Bank 0
+ * takes 16x16 tiles from D_80090F24; banks 1-2 take translucent 64x64
+ * tiles from D_80091004 (v3 = u+0x3F here is the original's quirk). */
+void func_80035B20(void) {
+    u8 *entry;
+    u8 *prim;
+    u16 *tex;
+    s32 i;
+    s32 j;
+
+    entry = (u8 *)D_800B60C8;
+    i = 0;
+    tex = D_80090F24;
+    do {
+        *(u16 *)(entry + 0x20) = 0;
+        *(u16 *)(entry + 0x22) = 0;
+        *(u16 *)(entry + 0x24) = 0x10;
+        *(u16 *)(entry + 0x26) = 0x10;
+        j = 0;
+        do {
+            prim = entry + 0x28 + j * 0x28;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+            *(u16 *)(prim + 0x16) = GetTPage(tex[0], 0, tex[-6], tex[-5]);
+            *(u8 *)(prim + 0xC) = tex[-2];
+            *(u8 *)(prim + 0xD) = tex[-1];
+            *(u8 *)(prim + 0x14) = tex[-2] + 0xF;
+            *(u8 *)(prim + 0x15) = tex[-1];
+            *(u8 *)(prim + 0x1C) = tex[-2];
+            *(u8 *)(prim + 0x1D) = tex[-1] + 0xF;
+            *(u8 *)(prim + 0x24) = tex[-2] + 0xF;
+            *(u8 *)(prim + 0x25) = tex[-1] + 0xF;
+            j++;
+        } while (j < 4);
+        entry += 0xC8;
+        i++;
+    } while (i < 0x18);
+
+    i = 0;
+    tex = D_80091004;
+    do {
+        *(u16 *)(entry + 0x22) = 1;
+        *(u16 *)(entry + 0x24) = 0x80;
+        *(u16 *)(entry + 0x20) = 0;
+        *(u16 *)(entry + 0x26) = 0x100;
+        j = 0;
+        do {
+            prim = entry + 0x28 + j * 0x28;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+            *(u16 *)(prim + 0x16) = GetTPage(tex[0], 3, tex[-6], tex[-5]);
+            *(u16 *)(prim + 0xE) = GetClut(tex[-4], tex[-3]);
+            SetSemiTrans(prim, 1);
+            *(u8 *)(prim + 0xC) = tex[-2];
+            *(u8 *)(prim + 0xD) = tex[-1];
+            *(u8 *)(prim + 0x14) = tex[-2] + 0x3F;
+            *(u8 *)(prim + 0x15) = tex[-1];
+            *(u8 *)(prim + 0x1C) = tex[-2];
+            *(u8 *)(prim + 0x1D) = tex[-1] + 0x3F;
+            *(u8 *)(prim + 0x24) = tex[-2] + 0x3F;
+            *(u8 *)(prim + 0x25) = tex[-2] + 0x3F;
+            j++;
+        } while (j < 4);
+        entry += 0xC8;
+        i++;
+    } while (i < 0x18);
+
+    i = 0;
+    tex = D_80091004;
+    do {
+        *(u16 *)(entry + 0x22) = 2;
+        *(u16 *)(entry + 0x24) = 0x80;
+        *(u16 *)(entry + 0x20) = 0;
+        *(u16 *)(entry + 0x26) = 0x100;
+        j = 0;
+        do {
+            prim = entry + 0x28 + j * 0x28;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+            *(u16 *)(prim + 0x16) = GetTPage(tex[0], 3, tex[-6], tex[-5]);
+            *(u16 *)(prim + 0xE) = GetClut(tex[-4], tex[-3]);
+            SetSemiTrans(prim, 1);
+            *(u8 *)(prim + 0xC) = tex[-2];
+            *(u8 *)(prim + 0xD) = tex[-1];
+            *(u8 *)(prim + 0x14) = tex[-2] + 0x3F;
+            *(u8 *)(prim + 0x15) = tex[-1];
+            *(u8 *)(prim + 0x1C) = tex[-2];
+            *(u8 *)(prim + 0x1D) = tex[-1] + 0x3F;
+            *(u8 *)(prim + 0x24) = tex[-2] + 0x3F;
+            *(u8 *)(prim + 0x25) = tex[-2] + 0x3F;
+            j++;
+        } while (j < 4);
+        i++;
+        entry += 0xC8;
+    } while (i < 0x18);
+}
 
 void func_80035E8C(s32 *src, s32 *outX, s32 *outY) {
     s32 value;

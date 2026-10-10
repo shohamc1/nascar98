@@ -2086,7 +2086,82 @@ void func_8005A4E0(void) {
     func_8005A818(0xFF, 0x80, 0x40);
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005A544);
+void func_8005A544(u8 arg0, u8 arg1) {
+    typedef struct {
+        s16 x;
+        s16 y;
+        u8 w;
+        u8 h;
+        u8 ax;
+        u8 pad;
+        u8 ay;
+    } Dim;
+    typedef struct {
+        u8 count;
+        u8 pad;
+        u16 x;
+        u16 y;
+        Dim *table;
+    } Entry;
+    typedef struct {
+        u8 b[0x28];
+    } Prim28;
+    extern Entry D_80099FE4_g1b[] asm("D_80099FE4");
+    extern Prim28 *D_800A3768_g1b asm("D_800A3768");
+    Entry *entry;
+    Dim *table;
+    Dim *dim;
+    s32 *slot;
+    s32 *base;
+    u32 idx;
+    u8 *prim;
+    u8 *p;
+    u16 i;
+    Prim28 *old;
+    u8 n;
+    u16 count;
+    u32 total;
+    u32 bound;
+    u16 w;
+
+    entry = &D_80099FE4_g1b[arg1];
+    n = entry->count;
+    idx = arg0;
+    old = D_800A3768_g1b;
+    base = D_800B1EBC;
+    slot = idx + base;
+    do {
+    } while (0);
+    w = D_800A3874;
+    *slot = (s32)old;
+    count = n;
+    prim = *(u8 *volatile *)slot;
+    D_800A3874 = w + count;
+    D_800A3768_g1b = old + n;
+    table = (Dim *)entry->table;
+    total = count;
+    if (total != 0) {
+        i = 0;
+        bound = total;
+        do {
+            p = prim + 0x25;
+            *(u16 *)(p - 0x17) = GetClut(entry->x, entry->y);
+            dim = (Dim *)(i * 10 + (s32)table);
+            *(u16 *)(p - 0xF) = GetTPage(0, 0, dim->x, dim->y);
+            p[-0x19] = dim->w;
+            p[-0x18] = dim->h;
+            p[-0x11] = dim->w + dim->ax;
+            p[-0x10] = dim->h;
+            p[-0x9] = dim->w;
+            p[-0x8] = dim->h + dim->ay;
+            p[-0x1] = dim->w + dim->ax;
+            p[0] = dim->h + dim->ay;
+            SetSemiTrans(prim, 1);
+            prim += 0x28;
+            i++;
+        } while (i < bound);
+    }
+}
 
 void func_8005A6EC(u8 id, s32 arg1, void *dest) {
     typedef struct {
@@ -3236,7 +3311,6 @@ void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
 
 INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005D094);
 
-#ifdef NON_MATCHING
 extern u8 D_800A35EC;
 extern u8 *D_800A3678;
 extern u8 D_800B9990[];
@@ -3258,7 +3332,7 @@ extern u8 D_800A39C4;
 void func_8005DAD4(void) {
     s32 i;
     s32 primOffset;
-    s32 x;
+    s16 x;
     u8 index;
     u8 *object;
     u8 *prim;
@@ -3284,17 +3358,18 @@ void func_8005DAD4(void) {
         *(s16 *)(object + 0x1A) = 0;
         D_800B12FC[i] = (s16 *)object;
         *(s16 *)(object + 6) = x;
-        x = x - 1 - i;
+        x = x - 1;
+        x = x - i;
         *(s16 *)(object + 8) = 0x10;
         *(s16 *)(object + 0xC) = 0x10;
         *(s16 *)(object + 0xE) = 2;
         *(s16 *)(object + 0x16) = 0x40;
-        *(s16 *)(object + 0x18) = 0x13;
         *(s16 *)(object + 0x10) = 0;
+        *(s16 *)(object + 0x18) = 0x13;
         *(s16 *)(object + 0x1A) = 0;
         value = *(u16 *)(object + 6);
-        SetPolyFT4(prim);
         *(s16 *)(object + 0xA) = value;
+        SetPolyFT4(prim);
         SetShadeTex(prim, 0);
         prim[4] = 0x80;
         prim[5] = 0x80;
@@ -3319,9 +3394,6 @@ void func_8005DAD4(void) {
     } while (i < 10);
     D_800A39C4 = D_800A35EC;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005DAD4);
-#endif
 
 extern s16 *D_800B12FC[];
 extern u8 *func_80057CCC(s32);

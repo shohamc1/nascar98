@@ -1044,7 +1044,179 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
     AddPrim(ot, entry);
 }
 
-INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001DB20);
+typedef struct {
+    u8 pad[16];
+} Unk16;
+extern Unk16 *func_8001E040(s32);
+extern void func_80032D94(s8 *);
+
+typedef struct {
+    s16 x;
+    s16 y;
+} XyPair;
+
+void func_8001DB20(ListNode28 *arg0, s32 arg1) {
+    POLY_FT4 poly;
+    POLY_FT4 *prim;
+    Unk16 *tex;
+    u8 *vert;
+    u8 flag;
+    u8 r;
+    u8 g;
+    u8 b;
+    s32 i;
+    s32 x;
+    s32 y;
+    s32 mode;
+    s32 saved;
+    s32 pad[8];
+
+    flag = *(u8 *)((u8 *)arg0 + 0x13);
+    mode = arg1;
+    vert = (u8 *)arg0;
+    if ((flag & 1) != 0) {
+        return;
+    }
+    prim = &poly;
+    if (*(u8 *)((u8 *)arg0 + 0x12) != 3) {
+        SetPolyFT4(prim);
+        SetShadeTex(prim, 0);
+        prim->r0 = 0x80;
+        prim->g0 = 0x80;
+        prim->b0 = 0x80;
+        prim->tpage = GetTPage(2, 0, 0x280, 0);
+        prim->u0 = 0x80;
+        prim->v0 = 0;
+        prim->u1 = 0xFF;
+        prim->v1 = 0;
+        prim->u2 = 0x80;
+        prim->v2 = 0x7F;
+        prim->u3 = 0xFF;
+        prim->v3 = 0x7F;
+    } else {
+        SetPolyFT3((POLY_FT3 *)prim);
+        SetShadeTex(prim, 0);
+        prim->r0 = 0x80;
+        prim->g0 = 0x80;
+        prim->b0 = 0x80;
+        prim->tpage = GetTPage(2, 0, 0x280, 0);
+        prim->u0 = 0x80;
+        prim->v0 = 0;
+        prim->u1 = 0xFF;
+        prim->v1 = 0;
+        prim->u2 = 0xFF;
+        prim->v2 = 0x7F;
+    }
+    tex = 0;
+    if (*(s16 *)((u8 *)arg0 + 0x16) >= 0) {
+        tex = func_8001E040(*(s16 *)((u8 *)arg0 + 0x16));
+    }
+    saved = *(s8 *)((u8 *)arg0 + 1);
+    if (tex != 0) {
+        if (mode != 0) {
+            prim->tpage = GetTPage(*(u16 *)((u8 *)tex + 0), 0,
+                                   *(u16 *)((u8 *)tex + 2) - 0x100,
+                                   *(u16 *)((u8 *)tex + 4));
+            x = *(u16 *)((u8 *)tex + 0xA);
+            x = x - 0x100;
+            y = *(u16 *)((u8 *)tex + 0xC);
+        } else {
+            prim->tpage =
+                GetTPage(*(u16 *)((u8 *)tex + 0), 0, *(u16 *)((u8 *)tex + 2),
+                         *(u16 *)((u8 *)tex + 4));
+            x = *(u16 *)((u8 *)tex + 0xA);
+            y = *(u16 *)((u8 *)tex + 0xC);
+        }
+        prim->clut = GetClut(x, y);
+        for (i = 0; i < 4; i++) {
+            vert[i * 4 + 8] = vert[i * 4 + 8] + tex->pad[6];
+            vert[i * 4 + 9] = vert[i * 4 + 9] + tex->pad[8];
+        }
+        if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+            SetSemiTrans(prim, 1);
+        }
+    } else {
+        for (i = 0; i < 4; i++) {
+            vert[i * 4 + 8] = 0;
+            vert[i * 4 + 9] = 0;
+        }
+        vert[8] = 0;
+        vert[9] = 0;
+        vert[0xC] = 0x7F;
+        vert[0xD] = 0;
+        vert[0x10] = 0;
+        vert[0x11] = 0x7F;
+        vert[0x14] = 0x7F;
+        vert[0x15] = 0x7F;
+        if (mode == 0) {
+            *(u8 *)((u8 *)arg0 + 2) = 3;
+            *(u8 *)((u8 *)arg0 + 1) = 0;
+            r = *(u8 *)((u8 *)arg0 + 6);
+            g = *(u8 *)((u8 *)arg0 + 5);
+            b = *(u8 *)((u8 *)arg0 + 4);
+            prim->r0 = r;
+            prim->g0 = g;
+            prim->b0 = b;
+            if (*(u8 *)((u8 *)arg0 + 0x12) != 3) {
+                SetPolyF4((POLY_F4 *)prim);
+                if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+                    SetSemiTrans(prim, 1);
+                }
+                *(u8 *)((u8 *)arg0 + 1) = 0x10;
+            } else {
+                SetPolyF3((POLY_F3 *)prim);
+                if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+                    SetSemiTrans(prim, 1);
+                }
+            }
+        }
+    }
+    if (mode != 0) {
+        if (*(u8 *)((u8 *)arg0 + 0x12) == 3) {
+            SetPolyFT4(prim);
+            *(s32 *)((u8 *)arg0 + 0x24) = *(s32 *)((u8 *)arg0 + 0x20);
+            *(XyPair *)(vert + 0x14) = *(XyPair *)(vert + 0x10);
+        }
+    } else {
+        if (*(u8 *)((u8 *)arg0 + 0x12) == 3) {
+            *(s32 *)((u8 *)arg0 + 0x24) = *(s32 *)((u8 *)arg0 + 0x20);
+            *(XyPair *)(vert + 0x14) = *(XyPair *)(vert + 0x10);
+            if (*(s8 *)((u8 *)arg0 + 2) == 6) {
+                *(u8 *)((u8 *)arg0 + 7) = *(u8 *)((u8 *)arg0 + 6);
+            }
+        }
+        if (*(s8 *)((u8 *)arg0 + 2) < 3) {
+            SetPolyGT4((POLY_GT4 *)prim);
+            *(u8 *)((u8 *)arg0 + 2) = 6;
+            *(s32 *)((u8 *)arg0 + 4) = 0x80808080;
+        }
+    }
+    r = *(u8 *)((u8 *)arg0 + 6);
+    g = *(u8 *)((u8 *)arg0 + 5);
+    b = *(u8 *)((u8 *)arg0 + 4);
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
+    if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+        SetSemiTrans(prim, 1);
+    }
+    if (*(s32 *)((u8 *)arg0 + 4) == 0xADADAD ||
+        *(s32 *)((u8 *)arg0 + 4) == 0xFFFFFF) {
+        *(u8 *)((u8 *)arg0 + 0x13) = *(u8 *)((u8 *)arg0 + 0x13) & 0xEF;
+    } else {
+        *(u8 *)((u8 *)arg0 + 0x13) = *(u8 *)((u8 *)arg0 + 0x13) | 0x10;
+    }
+    *(u8 *)((u8 *)arg0 + 3) = *(u8 *)((u8 *)prim + 3);
+    if (*(s8 *)((u8 *)arg0 + 2) != 6) {
+        *(s32 *)((u8 *)arg0 + 4) = *(s32 *)&prim->r0;
+    }
+    *(u16 *)((u8 *)arg0 + 0xA) = prim->clut;
+    *(u16 *)((u8 *)arg0 + 0xE) = prim->tpage;
+    if (mode == 0) {
+        *(u8 *)((u8 *)arg0 + 1) = saved;
+    }
+    func_80032D94((s8 *)arg0);
+}
 
 extern s32 D_800BE978[];
 extern ListNode28 *D_800A3A40Absolute[];

@@ -1208,7 +1208,123 @@ again:
     D_800A2D64 = (s32 *)tailp;
 }
 
+#ifdef NON_MATCHING
+void *func_800163E8(u8 *arg0, s32 arg1) {
+    extern s32 gOrderingTableBankAbsolute[];
+    u8 *polys[250];
+    u8 *first;
+    u8 *poly;
+    u8 *obj;
+    u8 *array;
+    u8 *src;
+    s32 *ot;
+    s32 *lut;
+    s16 clutCur;
+    s32 clutNew;
+    s32 clutOld;
+    s32 tpage;
+    s32 scroll;
+    s32 count;
+    s32 cba;
+    s32 color;
+    s32 b0;
+    s32 b1;
+    s32 b2;
+    s32 r0;
+    s32 r1;
+    s32 r2;
+    s32 r3;
+    s32 w0;
+    s32 w1;
+    s32 w2;
+    s32 w3;
+    s32 i;
+    s32 off;
+
+    obj = *(u8 **)(arg0 + 0x36C);
+    poly = (u8 *)D_800A2D60;
+    count = *(s16 *)(obj + 0x2A);
+    array = *(u8 **)(obj + 0x38);
+    lut = (s32 *)0x1F800000;
+    first = poly;
+    if (count >= D_800A2D5C) {
+        return NULL;
+    }
+    clutCur = *(s16 *)(obj + 0x30);
+    if (clutCur == -1) {
+        clutOld = GetClut(0x300, 0x3F);
+        *(s16 *)(obj + 0x30) = clutOld;
+    } else {
+        clutOld = clutCur;
+    }
+    clutNew = GetClut((arg1 % 16) * 16 + 0x300, 0x3F - arg1 / 16);
+    if (arg1 < 0xC) {
+        tpage = GetTPage(0, 0, (arg1 % 4) * 64 + 0x300, 0);
+        scroll = (arg1 / 4) * 64;
+    } else {
+        tpage = GetTPage(0, 0, (arg1 % 4) * 64 + 0x300, 0x100);
+        scroll = ((arg1 - 12) / 4) * 64 - 0x40;
+    }
+    scroll -= *(s16 *)(obj + 0x32);
+    src = array + 0x18;
+    for (i = 0; i < count; i++) {
+        polys[i] = poly;
+        w0 = *(s32 *)(src - 0x10);
+        w1 = *(s32 *)(src - 0xC);
+        w2 = *(s32 *)(src - 8);
+        w3 = *(s32 *)(src - 4);
+        *(s32 *)(poly + 0xC) = w0;
+        *(s32 *)(poly + 0x18) = w1;
+        *(s32 *)(poly + 0x24) = w2;
+        *(s32 *)(poly + 0x30) = w3;
+        color = *(s32 *)(src - 0x14);
+        cba = *(u16 *)(poly + 0xE);
+        b0 = color & 0xFF;
+        color >>= 8;
+        b1 = color & 0xFF;
+        color >>= 8;
+        b2 = color & 0xFF;
+        r0 = lut[b0];
+        r1 = lut[b1];
+        r2 = lut[b2];
+        r3 = lut[(color >> 8) & 0xFF];
+        *(s32 *)(poly + 0x4) = r0 | 0x3C000000;
+        *(s32 *)(poly + 0x10) = r1;
+        *(s32 *)(poly + 0x28) = r2;
+        *(s32 *)(poly + 0x1C) = r3;
+        if (cba == clutOld) {
+            *(u16 *)(poly + 0xE) = clutNew;
+            *(u16 *)(poly + 0x1A) = tpage;
+            *(u8 *)(poly + 0xD) += scroll;
+            *(u8 *)(poly + 0x19) += scroll;
+            *(u8 *)(poly + 0x25) += scroll;
+            *(u8 *)(poly + 0x31) += scroll;
+        }
+        if (i < count - 1) {
+            src += 0x2C;
+            poly = *(u8 **)(poly + 0x34);
+        }
+    }
+    if (*(s16 *)(obj + 0x2C) > 0) {
+        ot = (s32 *)(gOrderingTableBankAbsolute[0] * 0x30 + (s32)arg0 + 0x440);
+        i = 0;
+        off = 0;
+        do {
+            ot[i] = polys[*(s16 *)(*(u8 **)(obj + 0x40) + off + 0x10)];
+            off += 0x18;
+            i++;
+        } while (i < *(s16 *)(obj + 0x2C));
+    }
+    i = *(s32 *)(poly + 0x34);
+    *(s32 *)(poly + 0x34) = 0;
+    D_800A2D5C -= count;
+    D_800A2D60 = i;
+    *(s32 *)(arg0 + gOrderingTableBankAbsolute[0] * 4 + 0x430) = (s32)poly;
+    return first;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
+#endif
 
 extern s32 D_800A2D5C;
 void func_80016724(s32 value, s32 *next, s32 size) {

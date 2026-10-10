@@ -1305,7 +1305,52 @@ void HeapFree(void *ptr);
 void func_80044A1C(s16 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4, u8 arg5,
                    u8 arg6, u8 arg7);
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80044BCC);
+extern u8 *D_800A3878NM[] asm("D_800A3878.NON_MATCHING");
+extern SVECTOR D_800992E4[];
+extern SVECTOR D_800992EC[];
+extern SVECTOR D_800992F4[];
+extern s32 D_800A39C8[];
+extern u32 gPrimitiveCursor[];
+extern void SetPolyFT3(POLY_FT3 *prim);
+
+void func_80044BCC(s32 arg0) {
+    s32 v;
+    s32 typeIndex;
+    u8 *prim;
+    s32 otz;
+    u32 *ot;
+
+    ot = (u32 *)(D_800A39C8[0] + 0x20);
+    prim = (u8 *)gPrimitiveCursor[0];
+    typeIndex = *(s8 *)(D_800A3878NM[0] + arg0 * 0x500 + 0x376);
+    gte_ldv3(D_800992E4, D_800992EC, D_800992F4);
+    gte_rtpt();
+    SetPolyFT3((POLY_FT3 *)prim);
+    SetShadeTex(prim, 1);
+    *(s16 *)(prim + 0xE) =
+        GetClut((typeIndex % 16) * 16 + 0x300, 0x3F - typeIndex / 16);
+    if (typeIndex < 12) {
+        *(s16 *)(prim + 0x16) = GetTPage(0, 0, (typeIndex % 4) * 64 + 0x300, 0);
+        v = typeIndex / 4;
+        v = v * 64 + 0x40;
+    } else {
+        *(s16 *)(prim + 0x16) =
+            GetTPage(0, 0, (typeIndex % 4) * 64 + 0x300, 0x100);
+        v = ((typeIndex - 12) / 4) * 64;
+    }
+    *(u8 *)(prim + 0x14) = 0x20;
+    *(u8 *)(prim + 0xC) = 0;
+    *(u8 *)(prim + 0xD) = v;
+    *(u8 *)(prim + 0x15) = v;
+    *(u8 *)(prim + 0x1C) = 0;
+    *(u8 *)(prim + 0x1D) = v + 0x20;
+    gte_avsz3();
+    asm volatile("mfc2 %0, $7\n\tnop" : "=r"(otz) : "0"(otz));
+    gte_stsxy3(prim + 8, prim + 0x10, prim + 0x18);
+    GraphicsAddTaggedPrimitive(&ot[otz >> 4], (u32 *)prim, 0x07000000);
+    prim += 0x20;
+    gPrimitiveCursor[0] = (u32)prim;
+}
 
 extern s32 D_800A39C8[];
 extern u32 gPrimitiveCursor[];
@@ -1834,7 +1879,101 @@ void func_80046184(s8 *arg0) {
 INCLUDE_ASM("asm/nonmatchings/scene", func_80046184);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80046258);
+typedef struct {
+    u16 tpx;
+    u16 tpy;
+    u16 clutX;
+    u16 clutY;
+    u8 u;
+    u8 unk9;
+    u8 v;
+    u8 unkB;
+    u16 tpage;
+} SceneTexture;
+
+extern SceneTexture D_80090F50[];
+extern s8 *D_800A3444[];
+extern s32 D_800AE15C[];
+extern s32 D_800BE974[];
+extern s32 D_800BE980[];
+extern u8 D_800A3424;
+extern s8 D_800A3438;
+extern s8 D_800A343C;
+
+void func_80046258(void) {
+    extern u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
+    extern void func_8004658C(void);
+    extern void SetPolyFT4(POLY_FT4 *);
+    s32 heights[2];
+    s32 point[3];
+    u8 object[0x500];
+    SceneTexture *tim;
+    u8 *elem;
+    u8 *objectPtr;
+    s32 *pointPtr;
+    u8 u;
+    u8 v;
+    u16 angle;
+    s32 dist;
+    s16 i;
+    s16 j;
+
+    tim = D_80090F50;
+    D_800A3438 = 0x40 >> D_800A3424;
+    D_800A343C = 0x40 >> (D_800A3424 - 1);
+    for (i = 0; i < D_800A3424; i++) {
+        D_800A3444[i] = HeapAlloc(D_800A343C * 0x58);
+        for (j = 0; j < D_800A343C; j++) {
+            elem = (u8 *)D_800A3444[i] + j * 0x58;
+            SetPolyFT4((POLY_FT4 *)(elem + 4));
+            SetSemiTrans(elem + 4, 1);
+            SetShadeTex(elem + 4, 1);
+            *(s16 *)(elem + 0xE) = GetClut(tim->clutX, tim->clutY);
+            *(u32 *)(elem + 0x1C) = (u32)(elem + 0x30);
+            *(u32 *)(elem + 0x20) = (u32)(elem + 0x38);
+            *(u32 *)(elem + 0x24) = (u32)(elem + 0x48);
+            *(u8 *)(elem + 0x5) = 0;
+            *(u32 *)(elem + 0x28) = (u32)(elem + 0x40);
+            *(u32 *)(elem + 0x2C) = 0;
+            *(s16 *)(elem + 0x12) = GetTPage(tim->tpage, 2, tim->tpx, tim->tpy);
+            *(u8 *)(elem + 0x6) = 0xE;
+            u = tim->u;
+            *(u8 *)(elem + 0x10) = u;
+            *(u8 *)(elem + 0xC) = u;
+            u = tim->u + 0x3F;
+            *(u8 *)(elem + 0x18) = u;
+            *(u8 *)(elem + 0x14) = u;
+            v = tim->v + 0x1F;
+            *(u8 *)(elem + 0x15) = v;
+            *(u8 *)(elem + 0xD) = v;
+            v = tim->v;
+            *(u8 *)(elem + 0x19) = v;
+            *(u8 *)(elem + 0x11) = v;
+        }
+    }
+    *(u16 *)(object + 0x118) = 0;
+    *(u16 *)(object + 0x1EC) = 2;
+    for (i = 0; i < D_800BE974[0]; i++) {
+        objectPtr = object;
+        pointPtr = point;
+        angle = *(u16 *)((u8 *)D_800BE980[0] + i * 0x90 + 0x10);
+        *(u16 *)(object + 0x114) = angle;
+        *(u16 *)(object + 0x116) = angle * 4;
+        for (j = 0; j < 2; j++) {
+            point[0] = *(s32 *)((u8 *)D_800AE15C[0] + i * 12);
+            point[1] = *(s32 *)((u8 *)D_800AE15C[0] + i * 12 + 4);
+            dist = 0x96;
+            if (j != 0) {
+                dist = -0x96;
+            }
+            func_80030F24(objectPtr, pointPtr, 0, dist, 0);
+            heights[j] = point[2];
+        }
+        *(s32 *)((u8 *)D_800BE980[0] + i * 0x90 + 0x1C) =
+            ((heights[0] + 0x4000) << 0x10) | (heights[1] + 0x4000);
+    }
+    func_8004658C();
+}
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004658C);
 
@@ -1998,11 +2137,307 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_80048EFC);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004A0C4);
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004A510);
+#ifdef NON_MATCHING
+typedef struct {
+    u16 tpx;
+    u16 tpy;
+    u16 clutX;
+    u16 clutY;
+    u16 u;
+    u16 v;
+    u16 u2;
+    u16 v2;
+    u16 u3;
+    u16 v3;
+    u16 tpage;
+} HudTexture;
+
+extern u8 D_800A3680[1];
+extern u8 D_800A3490;
+extern u8 D_800A2FD0[3];
+extern s32 D_800A2EA4[];
+extern u8 D_800A3484;
+extern u8 D_800A3485;
+extern s8 D_800A3488;
+extern s8 *D_8009AE2C[];
 
 extern u8 D_8009AE14[];
+extern u8 D_80098BD0[];
+extern s8 *D_800A78C4[];
+extern s8 *D_800A78CC[];
+extern u8 D_800A78D4[];
+extern u16 D_800A78E2[];
+extern u16 D_800A78EA[];
+extern POLY_FT4 D_800A789C[];
+extern u8 D_800A78A8[];
+extern u8 D_800A78A9[];
+extern u8 D_800A78B0[];
+extern u8 D_800A78B1[];
+extern u8 D_800A78B8[];
+extern u8 D_800A78B9[];
+extern u8 D_800A78C0[];
+extern u8 D_800A78C1[];
+extern u16 D_800A78B2[];
+extern HudTexture D_80090FEA[];
+extern u16 D_80090FEC[];
+extern u16 D_80090FEE[];
+extern u16 D_80090FF0[];
+extern u16 D_80090FF2[];
+extern u16 D_80090FF4[];
+extern u16 D_80090FF6[];
+extern u8 D_800A757C[];
+extern u16 D_800A7592[];
+extern TILE D_800A7924[][3];
+extern u8 D_800A7932[];
+extern u8 D_800A7944[];
+extern TILE D_800A7984[];
+extern u8 D_800A798B[];
+extern u16 D_800A798C[];
+extern u16 D_800A798E[];
+extern u16 D_800A7990[];
+extern u16 D_800A7992[];
+extern u8 D_800A7564[];
+extern u8 D_800B0B7C[];
+extern u16 D_800B0B92[];
+extern u16 D_80099298[];
+extern void SetPolyFT4(POLY_FT4 *);
+extern void func_8004AFE0(s8, u16 *, u16 *);
+asm(".globl D_80090FF2a\nD_80090FF2a = D_80090FF2");
+asm(".globl D_80090FF2b\nD_80090FF2b = D_80090FF2");
+asm(".globl D_80090FF2c\nD_80090FF2c = D_80090FF2");
+asm(".globl D_80090FF4a\nD_80090FF4a = D_80090FF4");
+asm(".globl D_80090FF4b\nD_80090FF4b = D_80090FF4");
+asm(".globl D_80090FF4c\nD_80090FF4c = D_80090FF4");
+asm(".globl D_800A757Ca\nD_800A757Ca = D_800A757C");
+extern u16 D_80090FF2a[];
+extern u16 D_80090FF2b[];
+extern u16 D_80090FF2c[];
+extern u16 D_80090FF4a[];
+extern u16 D_80090FF4b[];
+extern u16 D_80090FF4c[];
+extern u8 D_800A757Ca[];
+
+void func_8004A510(void) {
+    HudTexture *tex;
+    u8 *prim2;
+    u8 *p0;
+    u8 *p1;
+    u8 *p2;
+    u8 *p3;
+    u8 *p4;
+    u8 *p5;
+    u8 *f4base;
+    s16 *pts;
+    u8 *heap;
+    u8 *glyph;
+    s8 entry;
+    s8 col;
+    register s8 line asm("$23");
+    register s8 j asm("$19");
+    s8 row;
+
+    D_800A3680[0] = 0;
+    D_800A3490 = 0;
+    D_800A2FD0[0] = -(D_800A2EA4[0] != 0) & 0x92;
+    for (entry = 0; entry < D_800A3424; entry++) {
+        D_800A3485 = 0;
+        for (col = 0; col < 6; col++) {
+            D_800A3485 += strlen((char *)((s8 **)D_8009AE14)[col]);
+        }
+        D_800A3484 = D_800A3485 + strlen((char *)D_8009AE2C[0]);
+        for (col = 0; col < 3; col += 2) {
+            heap = (u8 *)HeapAlloc(D_800A3484 * 0x28);
+            D_800A78C4[(s8)(entry + col)] = (s8 *)heap;
+            for (line = 0; line < 7; line++) {
+                j = 0;
+                if (((s8 **)D_8009AE14)[line][0] != 0) {
+                    do {
+                        glyph = &D_80098BD0[((s8 **)D_8009AE14)[line][j] * 10];
+                        SetPolyFT4((POLY_FT4 *)heap);
+                        *(s16 *)(heap + 0xE) = GetClut(0x390, 0x3C);
+                        *(u8 *)(heap + 4) = 0x80;
+                        *(u8 *)(heap + 5) = 0x80;
+                        *(u8 *)(heap + 6) = 0xC0;
+                        *(s16 *)(heap + 0x16) = GetTPage(
+                            0, 0, *(s16 *)&glyph[0], *(s16 *)&glyph[2]);
+                        *(u8 *)(heap + 0xC) = glyph[4];
+                        *(u8 *)(heap + 0xD) = glyph[5];
+                        *(u8 *)(heap + 0x14) = glyph[4] + glyph[6];
+                        *(u8 *)(heap + 0x15) = glyph[5];
+                        *(u8 *)(heap + 0x1C) = glyph[4];
+                        *(u8 *)(heap + 0x1D) = glyph[5] + glyph[8];
+                        *(u8 *)(heap + 0x24) = glyph[4] + glyph[6];
+                        *(u8 *)(heap + 0x25) = glyph[5] + glyph[8];
+                        j++;
+                        heap += 0x28;
+                    } while (((s8 **)D_8009AE14)[line][j] != 0);
+                }
+            }
+        }
+        row = entry;
+        func_8004AFE0(row, D_80099298, (u16 *)D_800A78C4[row]);
+        prim = (u8 *)D_800A78CC;
+        func_8004AFE0(row, D_80099298, *(u16 **)(prim + row * 4));
+        D_800A3488 = strlen((char *)((s8 **)D_8009AE14)[0]);
+        prim = (u8 *)D_800A78D4 + row * 0x28;
+        SetPolyFT4((POLY_FT4 *)prim);
+        SetSemiTrans(prim, 1);
+        *(u8 *)(prim + 7) |= 1;
+        *(u8 *)(prim + 0xC) = D_80090FF2[0];
+        *(u8 *)(prim + 0xD) = D_80090FF4[0];
+        *(u8 *)(prim + 0x14) = D_80090FF2a[0] + 0x3C;
+        *(u8 *)(prim + 0x15) = D_80090FF4a[0];
+        *(u8 *)(prim + 0x1C) = D_80090FF2b[0];
+        *(u8 *)(prim + 0x1D) = D_80090FF4b[0] + 0x3C;
+        *(u8 *)(prim + 0x24) = D_80090FF2c[0] + 0x3C;
+        *(u8 *)(prim + 0x25) = D_80090FF4c[0] + 0x3C;
+        *(s16 *)(prim + 8) = 0xF5;
+        *(s16 *)(prim + 0xA) = (s8)D_800A2FD0[row] + 0xA0;
+        *(s16 *)(prim + 0x10) = 0x131;
+        *(s16 *)(prim + 0x12) = (s8)D_800A2FD0[row] + 0xA0;
+        *(s16 *)(prim + 0x18) = 0xF5;
+        *(s16 *)(prim + 0x1A) = (s8)D_800A2FD0[row] + 0xDC;
+        *(s16 *)(prim + 0x20) = 0x131;
+        *(s16 *)(prim + 0x22) = (s8)D_800A2FD0[row] + 0xDC;
+        *(u16 *)((u8 *)D_800A78E2 + row * 0x28) =
+            GetClut(D_80090FEE[0], D_80090FF0[0]);
+        tex = D_80090FEA;
+        *(u16 *)((u8 *)D_800A78EA + row * 0x28) =
+            GetTPage(D_80090FF6[0], 0, tex->tpx, D_80090FEC[0]);
+        tex -= 14;
+        for (col = 0; col < 10; col++) {
+            SetPolyFT4(
+                (POLY_FT4 *)((u8 *)D_800A757C + row * 0x190 + col * 0x28));
+            SetShadeTex((u8 *)D_800A757C + row * 0x190 + col * 0x28, 0);
+            prim2 = (u8 *)D_800A757Ca + row * 0x190 + col * 0x28;
+            *(u8 *)(prim2 + 4) = 0x40;
+            *(u8 *)(prim2 + 5) = 0x40;
+            *(u8 *)(prim2 + 6) = 0x40;
+            *(u8 *)(prim2 + 0xC) = tex->u + 0x60;
+            *(u8 *)(prim2 + 0xD) = tex->v;
+            *(u8 *)(prim2 + 0x14) = tex->u + 0x6F;
+            *(u8 *)(prim2 + 0x15) = tex->v;
+            *(u8 *)(prim2 + 0x1C) = tex->u + 0x60;
+            *(u8 *)(prim2 + 0x1D) = tex->v + 0xF;
+            *(u8 *)(prim2 + 0x24) = tex->u + 0x6F;
+            *(u8 *)(prim2 + 0x25) = tex->v + 0xF;
+            *(u16 *)(row * 0x190 + col * 0x28 + (u8 *)D_800A7592) =
+                GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
+            *(s16 *)(prim2 + 8) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                0x12C;
+            *(s16 *)(prim2 + 0xA) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                ((s8)D_800A2FD0[row] + 0xD7);
+            *(s16 *)(prim2 + 0x10) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                0x130;
+            *(s16 *)(prim2 + 0x12) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                ((s8)D_800A2FD0[row] + 0xD7);
+            *(s16 *)(prim2 + 0x18) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                0x12C;
+            *(s16 *)(prim2 + 0x1A) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                (s8)D_800A2FD0[row] + 0xDB;
+            *(s16 *)(prim2 + 0x20) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                0x130;
+            *(s16 *)(prim2 + 0x22) =
+                (MathMultiplyFixed16(0x370000,
+                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
+                                              col * 0x68 + 0x828)) >>
+                 0x10) +
+                (s8)D_800A2FD0[row] + 0xDB;
+        }
+        for (col = 0; col < 3; col++) {
+            SetTile((TILE *)((u8 *)D_800A7924 + col * 0x10 + entry * 0x30));
+            SetSemiTrans((u8 *)D_800A7924 + col * 0x10 + entry * 0x30, 1);
+            *(s16 *)(entry * 0x30 + col * 0x10 + (u8 *)D_800A7924 + 8) = 0xD;
+            *(s16 *)(entry * 0x30 + col * 0x10 + (u8 *)D_800A7924 + 0xA) =
+                (s8)D_800A2FD0[entry] + 0xD3;
+            *(u16 *)(entry * 0x30 + col * 0x10 + (u8 *)D_800A7932) = 6;
+        }
+        prim = (u8 *)D_800A7924;
+        *(u8 *)(prim + entry * 0x30 + 4) = 0;
+        *(u8 *)(prim + entry * 0x30 + 5) = 0xFF;
+        *(u8 *)(prim + entry * 0x30 + 6) = 0;
+        *(u8 *)(prim + 0x10 + entry * 0x30 + 4) = 0xFF;
+        *(u8 *)(prim + 0x10 + entry * 0x30 + 5) = 0;
+        *(u8 *)(prim + 0x10 + entry * 0x30 + 6) = 0;
+        prim2 = (u8 *)D_800A7944;
+        *(u8 *)(prim2 + entry * 0x30 + 4) = 0;
+        *(u8 *)(prim2 + entry * 0x30 + 5) = 0;
+        *(u8 *)(prim2 + entry * 0x30 + 6) = 0;
+        *(s16 *)(prim2 + entry * 0x30 + 8) = 0xC;
+        *(s16 *)(prim2 + entry * 0x30 + 0xA) = (s8)D_800A2FD0[entry] + 0xD2;
+        *(s16 *)(prim2 + entry * 0x30 + 0xC) = 0x2A;
+        *(s16 *)(prim2 + entry * 0x30 + 0xE) = 8;
+    }
+    SetPolyFT4((POLY_FT4 *)D_800A789C);
+    SetSemiTrans((u8 *)D_800A789C, 1);
+    SetShadeTex((u8 *)D_800A789C, 0);
+    D_800A78B2[0] = GetTPage(tex->tpage, 3, tex->tpx, tex->tpy);
+    D_800A78A8[0] = tex->u + 0x60;
+    D_800A78A9[0] = tex->v + 0xF;
+    D_800A78B0[0] = tex->u + 0x6F;
+    D_800A78B1[0] = tex->v + 0xF;
+    D_800A78B8[0] = tex->u + 0x60;
+    D_800A78B9[0] = tex->v;
+    D_800A78C0[0] = tex->u + 0x6F;
+    D_800A78C1[0] = tex->v;
+    SetTile(D_800A7984);
+    D_800A7990[0] = 0x140;
+    D_800A798C[0] = 0;
+    D_800A798E[0] = 0;
+    D_800A7992[0] = 0xF0;
+    D_800A798B[0] |= 2;
+    SetPolyF4(D_800A7564);
+    for (entry = 0; entry < 2; entry++) {
+        for (col = 0; col < 0x18; col++) {
+            SetPolyFT4(
+                (POLY_FT4 *)((u8 *)D_800B0B7C + entry * 0x3C0 + col * 0x28));
+            SetShadeTex((u8 *)D_800B0B7C + entry * 0x3C0 + col * 0x28, 0);
+            *(u16 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B92) =
+                GetTPage(((u16 *)D_80090F32)[0], 0, ((u16 *)D_80090F32)[-6],
+                         ((u16 *)D_80090F32)[-5]);
+            *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 4) =
+                D_800991E8[col * 3];
+            *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 5) =
+                D_800991E9[col * 3];
+            *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 6) =
+                D_800991EA[col * 3];
+        }
+    }
+}
 extern u8 D_800A2FD0[];
 extern u8 D_80098BD0[];
+
+#else
+INCLUDE_ASM("asm/nonmatchings/scene", func_8004A510);
+#endif
 
 #ifdef NON_MATCHING
 /* Retry 2026-10-05: 324 bytes versus retail 328; 68 differing instruction words
@@ -2075,7 +2510,781 @@ void func_8004B128(u8 *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004B1C0);
 
+#ifdef NON_MATCHING
+/* func_8004BDD0 draft (2026-10-09). WALL at ~520 scored rows (64 missing / 82
+ * extra / 42 changed / ~378 register-rename rows over 1627 instructions);
+ * draft is 18 instructions long. All loops, calls, addressing modes, widths
+ * and constants are decoded and structurally correct. Root cause: gcc 2.7.2
+ * global register allocation across block 1's six poly sections and block 2's
+ * 16-way (s8)y fanout lands one s-register off versus retail, cascading
+ * through every later section (retail: prim s0 / idx s1 / row240 s2 / tex s3 /
+ * col s4 / F4-base s6 / poly-base s7). Pins ($16/$17/$18/$20/$23) align the
+ * block-1 head exactly but a tex pin MISCOMPILES the col4 GetTPage tpx read
+ * (reads 0x80091052 via a hoisted s6 base instead of 0x80091022) and
+ * un-pinned allocation shifts tex/col by one. Also open: gcc hoists
+ * loop-invariant lui bases (D_800A7FE4, D_800A85B0, TIM-field bases) where
+ * retail rematerialises per use - multi-spelling aliases fixed the constants
+ * and col4/col5 uv reads; 2g/2h/2i bases still hoist. asm volatile ori pins
+ * defeat the 0x11C/0xCC/0x7C/0x4C/0x140 constant CSE-hoists.
+ */
+void __maspsx_include_asm_hack_D_8008D4CC(void) {
+    __asm__(".section .rodata # maspsx-keep \n"
+            "dlabel D_8008D4CC # maspsx-keep\n"
+            "    .word 0x003200DC # maspsx-keep\n"
+            "    .word 0x003200EB # maspsx-keep\n"
+            "    .word 0x0020013F # maspsx-keep\n"
+            "    .word 0x003B013F # maspsx-keep\n"
+            "    .word 0x0080013F # maspsx-keep\n"
+            "    .word 0x0087013F # maspsx-keep\n"
+            "dlabel D_8008D4E4 # maspsx-keep\n"
+            "    .word 0x00050000 # maspsx-keep\n"
+            "    .word 0x00050037 # maspsx-keep\n"
+            "    .word 0xFFFB0000 # maspsx-keep\n"
+            "    .word 0xFFFB0037 # maspsx-keep\n"
+            "    .section .text # maspsx-keep\n");
+}
+
+typedef struct {
+    u16 tpx;
+    u16 tpy;
+    u16 clutX;
+    u16 clutY;
+    u16 u;
+    u16 v;
+    u16 u2;
+    u16 v2;
+    u16 u3;
+    u16 v3;
+    u16 tpage;
+} SceneTexInfo;
+
+typedef struct {
+    s16 a[3];
+} SceneRotTable;
+typedef struct {
+    s16 a[12];
+} SceneQuadTable;
+typedef struct {
+    s16 a[8];
+} ScenePairTable;
+typedef struct {
+    s16 a[4];
+} SceneTailTable;
+
+extern SceneTexInfo D_80090FCE[];
+extern SceneTexInfo D_80090FCEalt[];
+extern SceneTexInfo D_80091014;
+extern SceneRotTable D_800A300C[];
+extern SceneQuadTable D_8008D4CC;
+extern ScenePairTable D_8008D4E4;
+extern SceneTailTable D_800A3014[];
+extern u8 D_800A2FD4[4];
+extern u8 D_800A2FD8[];
+extern u8 D_800A2FDC[];
+extern u16 D_800A3494;
+extern u16 D_80090F28[];
+extern u16 D_80090F32gt[] asm("D_80090F32");
+extern u16 D_80090F36[];
+extern u16 D_80090F38[];
+extern u16 D_80090F3A[];
+extern u16 D_80090F3C[];
+extern u16 D_80090F40[];
+extern u16 D_80090FDE[];
+extern u16 D_80090FE0[];
+extern u16 D_80090FE2[];
+extern u16 D_80090FE4[];
+extern u16 D_80090FE8[];
+extern u8 D_80090F2E[];
+extern u8 D_80090F30[];
+extern u16 D_80091016[];
+extern u16 D_80091018[];
+extern u16 D_8009101A[];
+extern u16 D_8009101C[];
+extern u16 D_8009101E[];
+extern u16 D_80091020[];
+extern u16 D_80091024[];
+extern u16 D_80091026[];
+extern u16 D_80091028[];
+extern u16 D_8009102A[];
+extern u16 D_8009102C[];
+extern u16 D_8009102E[];
+extern u8 D_800A7994[];
+extern u8 D_800A7995[];
+extern u8 D_800A799C[];
+extern u8 D_800A799D[];
+extern u8 D_800A799E[];
+extern u8 D_800A79A0[];
+extern u8 D_800A79A1[];
+extern u8 D_800A79A2[];
+extern u8 D_800A79A4[];
+extern u8 D_800A79A5[];
+extern u8 D_800A79A8[];
+extern u8 D_800A79A9[];
+extern u32 D_800A79AC[];
+extern u32 D_800A79B0[];
+extern u32 D_800A79B4[];
+extern u32 D_800A79B8[];
+extern u8 D_800A7F14[];
+extern u8 D_800A7F18[];
+extern u8 D_800A7F19[];
+extern u8 D_800A7F1A[];
+extern u8 D_800A7F1C[];
+extern u8 D_800A7F1D[];
+extern u8 D_800A7F20[];
+extern u8 D_800A7F21[];
+extern u16 D_800A7F22[];
+extern u8 D_800A7F24[];
+extern u8 D_800A7F25[];
+extern u8 D_800A7F28[];
+extern u8 D_800A7F29[];
+extern s32 D_800A7FD8[];
+extern s32 D_800A7FDC[];
+extern s32 D_800A7FE0[];
+extern u8 D_800A7FE4[];
+extern u8 D_800A80F4[];
+extern u8 D_800A8184[];
+extern u8 D_800A8188[];
+extern u8 D_800A8189[];
+extern u8 D_800A818A[];
+extern s16 D_800A818C[];
+extern s16 D_800A818E[];
+extern s16 D_800A8190[];
+extern s16 D_800A8192[];
+extern s16 D_800A8194[];
+extern s16 D_800A8196[];
+extern s16 D_800A8198[];
+extern s16 D_800A819A[];
+extern u8 D_800A81A0[];
+extern u8 D_800A81A1[];
+extern u8 D_800A81A2[];
+extern s16 D_800A81A4[];
+extern s16 D_800A81A6[];
+extern s16 D_800A81A8[];
+extern s16 D_800A81AA[];
+extern s16 D_800A81AC[];
+extern s16 D_800A81AE[];
+extern s16 D_800A81B0[];
+extern s16 D_800A81B2[];
+extern u8 D_800A81B4[];
+extern u8 D_800A8214[];
+extern s16 D_800A821C[];
+extern s16 D_800A821E[];
+extern u8 D_800A8220[];
+extern u8 D_800A8221[];
+extern u8 D_800A8222[];
+extern s16 D_800A8224[];
+extern s16 D_800A8226[];
+extern u8 D_800A8228[];
+extern u8 D_800A8229[];
+extern u8 D_800A822A[];
+extern s16 D_800A822C[];
+extern s16 D_800A822E[];
+extern u8 D_800A8230[];
+extern u8 D_800A8231[];
+extern s16 D_800A8234[];
+extern s16 D_800A8236[];
+extern u8 D_800A8238[];
+extern u8 D_800A8239[];
+extern u8 D_800A82B4[];
+extern s16 D_800A82BC[];
+extern s16 D_800A82BE[];
+extern u8 D_800A82C0[];
+extern u8 D_800A82C1[];
+extern u16 D_800A82C2[];
+extern s16 D_800A82C4[];
+extern s16 D_800A82C6[];
+extern u8 D_800A82C8[];
+extern u8 D_800A82C9[];
+extern u16 D_800A82CA[];
+extern s16 D_800A82CC[];
+extern s16 D_800A82CE[];
+extern u8 D_800A82D0[];
+extern u8 D_800A82D1[];
+extern s16 D_800A82D4[];
+extern s16 D_800A82D6[];
+extern u8 D_800A82D8[];
+extern u8 D_800A82D9[];
+extern s16 D_800A8334[];
+extern s16 D_800A8336[];
+extern s16 D_800A833C[];
+extern s16 D_800A833E[];
+extern s16 D_800A8344[];
+extern s16 D_800A8346[];
+extern s16 D_800A834C[];
+extern s16 D_800A834E[];
+extern u8 D_800A8354[];
+extern u8 D_800A8362[];
+extern u8 D_800A836A[];
+extern u8 D_800A83DA[];
+extern u8 D_800A83E2[];
+extern u8 D_800A8402[];
+extern u8 D_800A840A[];
+extern u8 D_800A841C[];
+extern u8 D_800A842A[];
+extern u8 D_800A8432[];
+extern u8 D_800A8534[];
+extern u8 D_800A853E[];
+extern u8 D_800A854A[];
+extern u8 D_800A85AC[];
+extern u8 D_800A85AE[];
+extern u8 D_800A85B0[];
+extern u8 D_800A85B4[];
+extern u8 D_800A85B6[];
+extern u8 D_800A85BC[];
+extern u8 D_800A85BE[];
+extern u8 D_800A85C4[];
+extern u8 D_800A85C6[];
+extern s16 D_800A89AC[];
+extern s16 D_800A89AE[];
+extern s16 D_800A89B4[];
+extern s16 D_800A89B6[];
+extern s16 D_800A89BC[];
+extern s16 D_800A89BE[];
+extern s16 D_800A89C4[];
+extern s16 D_800A89C6[];
+
+asm(".globl D_80090FCEalt\nD_80090FCEalt = D_80090FCE\n");
+asm(".globl D_800A7FE4w1\nD_800A7FE4w1 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w2\nD_800A7FE4w2 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w3\nD_800A7FE4w3 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w4\nD_800A7FE4w4 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w5\nD_800A7FE4w5 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w6\nD_800A7FE4w6 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w7\nD_800A7FE4w7 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w8\nD_800A7FE4w8 = D_800A7FE4\n");
+asm(".globl D_800A7FE4w9\nD_800A7FE4w9 = D_800A7FE4\n");
+asm(".globl D_800A7FE4wA\nD_800A7FE4wA = D_800A7FE4\n");
+asm(".globl D_800A7FE4wB\nD_800A7FE4wB = D_800A7FE4\n");
+extern u8 D_800A7FE4w1[];
+extern u8 D_800A7FE4w2[];
+extern u8 D_800A7FE4w3[];
+extern u8 D_800A7FE4w4[];
+extern u8 D_800A7FE4w5[];
+extern u8 D_800A7FE4w6[];
+extern u8 D_800A7FE4w7[];
+extern u8 D_800A7FE4w8[];
+extern u8 D_800A7FE4w9[];
+extern u8 D_800A7FE4wA[];
+extern u8 D_800A7FE4wB[];
+extern s32 D_800A3A2CSmall[];
+asm(".globl D_80090F3Cw1\nD_80090F3Cw1 = D_80090F3C\n");
+asm(".globl D_80090F3Cw2\nD_80090F3Cw2 = D_80090F3C\n");
+asm(".globl D_80090F3Cw3\nD_80090F3Cw3 = D_80090F3C\n");
+asm(".globl D_80090F3Cw4\nD_80090F3Cw4 = D_80090F3C\n");
+asm(".globl D_80090F3Cw5\nD_80090F3Cw5 = D_80090F3C\n");
+asm(".globl D_80090F3Cw6\nD_80090F3Cw6 = D_80090F3C\n");
+asm(".globl D_80090F3Cw7\nD_80090F3Cw7 = D_80090F3C\n");
+asm(".globl D_80090F3Cw8\nD_80090F3Cw8 = D_80090F3C\n");
+asm(".globl D_8009102Aw1\nD_8009102Aw1 = D_8009102A\n");
+asm(".globl D_8009102Aw2\nD_8009102Aw2 = D_8009102A\n");
+asm(".globl D_8009102Aw3\nD_8009102Aw3 = D_8009102A\n");
+asm(".globl D_8009102Aw4\nD_8009102Aw4 = D_8009102A\n");
+asm(".globl D_8009102Cw1\nD_8009102Cw1 = D_8009102C\n");
+asm(".globl D_8009102Cw2\nD_8009102Cw2 = D_8009102C\n");
+asm(".globl D_8009102Cw3\nD_8009102Cw3 = D_8009102C\n");
+asm(".globl D_8009102Cw4\nD_8009102Cw4 = D_8009102C\n");
+extern u16 D_80090F3Cw1[];
+extern u16 D_80090F3Cw2[];
+extern u16 D_80090F3Cw3[];
+extern u16 D_80090F3Cw4[];
+extern u16 D_80090F3Cw5[];
+extern u16 D_80090F3Cw6[];
+extern u16 D_80090F3Cw7[];
+extern u16 D_80090F3Cw8[];
+extern u16 D_8009102Aw1[];
+extern u16 D_8009102Aw2[];
+extern u16 D_8009102Aw3[];
+extern u16 D_8009102Aw4[];
+extern u16 D_8009102Cw1[];
+extern u16 D_8009102Cw2[];
+extern u16 D_8009102Cw3[];
+extern u16 D_8009102Cw4[];
+extern s32 D_800A3A34Small[];
+
+void func_8004BDD0(void) {
+    SceneTexInfo *tex;
+    register u8 *primBase asm("$23");
+    register u8 *prim asm("$16");
+    register s32 idx asm("$17");
+    register s32 rowOff asm("$18");
+    SceneRotTable rot;
+    SceneQuadTable quads;
+    ScenePairTable corners;
+    SceneTailTable tail;
+    u8 *prim2;
+    u8 *p0;
+    u8 *p1;
+    u8 *p2;
+    u8 *p3;
+    u8 *p4;
+    u8 *p5;
+    u8 *f4base;
+    s16 *pts;
+    u16 *primC;
+    u8 *primB;
+    u16 u;
+    u16 v;
+    u16 u2;
+    u16 v2;
+    u16 u3;
+    u16 v3;
+    s8 i;
+    s8 col;
+    s8 j;
+    s8 row;
+    s32 matA;
+    s32 matB;
+    s32 yv;
+    s32 xl;
+    s32 xa;
+    s32 xb;
+
+    rot = D_800A300C[0];
+    quads = D_8008D4CC;
+    corners = D_8008D4E4;
+    tail = D_800A3014[0];
+    D_800A2FD4[0] = -(D_800A2EA4[0] != 0) & 0xD8;
+    for (i = 0; i < D_800A3424; i++) {
+        primBase = D_800A8354;
+        tex = D_80090FCEalt;
+        rowOff = i * 0xF0;
+        for (col = 0; col < 6; col++) {
+            idx = col * 0x28 + rowOff;
+            prim = primBase + idx;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+            *(u16 *)(D_800A8362 + idx) = GetClut(tex->clutX, tex->clutY);
+            *(u16 *)(D_800A836A + idx) =
+                GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
+            prim2 = idx + primBase;
+            prim2[0xC] = tex->u;
+            prim2[0xD] = tex->v;
+            prim2[0x14] = tex->u + 0x50;
+            prim2[0x15] = tex->v;
+            prim2[0x1C] = tex->u;
+            prim2[0x1D] = tex->v + 0x33;
+            prim2[0x24] = tex->u + 0x50;
+            prim2[0x25] = tex->v + 0x33;
+        }
+        p0 = i * 0xF0 + primBase;
+        asm volatile("ori %0, $0, 0x11C" : "=r"(xa));
+        *(s16 *)(p0 + 8) = xa;
+        asm volatile("ori %0, $0, 0x16C" : "=r"(xb));
+        *(s16 *)(p0 + 0x10) = xb;
+        *(s16 *)(p0 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p0 + 0x18) = xa;
+        *(s16 *)(p0 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p0 + 0x20) = xb;
+        *(s16 *)(p0 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p0 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
+        p1 = i * 0xF0 + (primBase + 0x28);
+        asm volatile("ori %0, $0, 0xCC" : "=r"(xa));
+        *(s16 *)(p1 + 8) = xa;
+        asm volatile("ori %0, $0, 0x11C" : "=r"(xb));
+        *(s16 *)(p1 + 0x10) = xb;
+        *(s16 *)(p1 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p1 + 0x18) = xa;
+        *(s16 *)(p1 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p1 + 0x20) = xb;
+        *(s16 *)(p1 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p1 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
+        p2 = i * 0xF0 + (primBase + 0x50);
+        asm volatile("ori %0, $0, 0x7C" : "=r"(xa));
+        *(s16 *)(p2 + 8) = xa;
+        asm volatile("ori %0, $0, 0xCC" : "=r"(xb));
+        *(s16 *)(p2 + 0x10) = xb;
+        *(s16 *)(p2 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p2 + 0x18) = xa;
+        *(s16 *)(p2 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p2 + 0x20) = xb;
+        *(s16 *)(p2 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p2 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
+        tex = &D_80090FCE[1];
+        *(u16 *)(D_800A83DA + i * 0xF0) = GetClut(D_80090FE0[0], D_80090FE2[0]);
+        *(u16 *)(D_800A83E2 + i * 0xF0) =
+            GetTPage(D_80090FE8[0], 0, tex->tpx, D_80090FDE[0]);
+        p3 = i * 0xF0 + (primBase + 0x78);
+        p3[0xC] = tex->u;
+        p3[0xD] = tex->v;
+        p3[0x14] = tex->u + 0x7C;
+        p3[0x15] = tex->v;
+        p3[0x1C] = tex->u;
+        p3[0x1D] = tex->v + 0x3B;
+        p3[0x24] = tex->u + 0x7C;
+        *(s16 *)(p3 + 8) = 0;
+        p3[0x25] = tex->v + 0x3B;
+        asm volatile("ori %0, $0, 0x7C" : "=r"(xa));
+        *(s16 *)(p3 + 0x10) = xa;
+        *(s16 *)(p3 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p3 + 0x18) = 0;
+        *(s16 *)(p3 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p3 + 0x20) = xa;
+        *(s16 *)(p3 + 0x1A) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p3 + 0x22) = (s8)D_800A2FD4[i] + 0x3B;
+        tex += 5;
+        *(u16 *)(D_800A8402 + i * 0xF0) = GetClut(D_80091026[0], D_80091028[0]);
+        *(u16 *)(D_800A840A + i * 0xF0) =
+            GetTPage(D_8009102E[0], 0, tex->tpx, D_80091024[0]);
+        p4 = i * 0xF0 + (primBase + 0xA0);
+        p4[0xC] = D_8009102Aw1[0];
+        p4[0xD] = D_8009102Cw1[0] + 0x4B;
+        p4[0x14] = D_8009102Aw2[0];
+        p4[0x15] = D_8009102Cw2[0];
+        p4[0x1C] = D_8009102Aw3[0] + 0xB1;
+        p4[0x1D] = D_8009102Cw3[0] + 0x4B;
+        p4[0x24] = D_8009102Aw4[0] + 0xB1;
+        *(s16 *)(p4 + 8) = 0;
+        p4[0x25] = D_8009102Cw4[0];
+        asm volatile("ori %0, $0, 0x4C" : "=r"(xa));
+        *(s16 *)(p4 + 0x10) = xa;
+        *(s16 *)(p4 + 0xA) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p4 + 0x18) = 0;
+        *(s16 *)(p4 + 0x12) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p4 + 0x20) = xa;
+        *(s16 *)(p4 + 0x1A) = (s8)D_800A2FD4[i] + 0xEC;
+        *(s16 *)(p4 + 0x22) = (s8)D_800A2FD4[i] + 0xEC;
+        *(u16 *)(D_800A842A + i * 0xF0) = GetClut(D_80090F38[0], D_80090F3A[0]);
+        tex -= 17;
+        *(u16 *)(D_800A8432 + i * 0xF0) =
+            GetTPage(D_80090F40[0], 0, tex->tpx, D_80090F36[0]);
+        p5 = D_800A841C + i * 0xF0;
+        p5[0xC] = D_80090F3Cw1[0];
+        p5[0xD] = D_80090F3Cw2[1];
+        p5[0x14] = D_80090F3Cw3[0] + 0xF4;
+        p5[0x15] = D_80090F3Cw4[1];
+        p5[0x1C] = D_80090F3Cw5[0];
+        p5[0x1D] = D_80090F3Cw6[1] + 0x12;
+        p5[0x24] = D_80090F3Cw7[0] + 0xF4;
+        asm volatile("ori %0, $0, 0x4C" : "=r"(xl));
+        *(s16 *)(p5 + 8) = xl;
+        p5[0x25] = D_80090F3Cw8[1] + 0x12;
+        asm volatile("ori %0, $0, 0x140" : "=r"(xa));
+        *(s16 *)(p5 + 0x10) = xa;
+        *(s16 *)(p5 + 0xA) = (s8)D_800A2FD4[i] + 0x9A;
+        *(s16 *)(p5 + 0x18) = xl;
+        *(s16 *)(p5 + 0x12) = (s8)D_800A2FD4[i] + 0x9A;
+        *(s16 *)(p5 + 0x20) = xa;
+        *(s16 *)(p5 + 0x1A) = (s8)D_800A2FD4[i] + 0xAC;
+        *(s16 *)(p5 + 0x22) = (s8)D_800A2FD4[i] + 0xAC;
+        f4base = D_800A80F4;
+        for (j = 0; j < 3; j++) {
+            prim = j * 0x18 + f4base + i * 0x48;
+            SetPolyF4((POLY_F4 *)prim);
+            prim2 = i * 0x48 + j * 0x18 + f4base;
+            prim2[4] = 8;
+            prim2[5] = 8;
+            prim2[6] = 8;
+            pts = quads.a;
+            *(s16 *)(prim2 + 8) = pts[j * 4];
+            *(s16 *)(prim2 + 0xA) = pts[j * 4 + 1] + (s8)D_800A2FD4[i];
+            *(s16 *)(prim2 + 0xC) = pts[j * 4 + 2];
+            *(s16 *)(prim2 + 0xE) = pts[j * 4 + 3] + (s8)D_800A2FD4[i];
+            *(s16 *)(prim2 + 0x10) =
+                *(u16 *)(D_800A2FDC + j * 2) - (s8)D_800A2FD8[j];
+            *(s16 *)(prim2 + 0x12) = (s8)D_800A2FD4[i] + 0x9E;
+            *(s16 *)(prim2 + 0x14) =
+                *(u16 *)(D_800A2FDC + j * 2) + (s8)D_800A2FD8[j];
+            *(s16 *)(prim2 + 0x16) = (s8)D_800A2FD4[i] + 0x9E;
+        }
+    }
+    if (D_800A2EA4[0] == 0) {
+        tex = &D_80090FCE[4];
+        for (i = 0; i < 4; i++) {
+            prim = i * 0x28 + D_800A8214;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+            *(u16 *)(D_800A8222 + i * 0x28) = GetClut(tex->clutX, tex->clutY);
+            *(u16 *)(D_800A822A + i * 0x28) =
+                GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
+            prim[0xC] = tex->u;
+            prim[0xD] = tex->v;
+            prim[0x14] = tex->u + 0x30;
+            prim[0x15] = tex->v;
+            prim[0x1C] = tex->u;
+            prim[0x1D] = tex->v + 0x40;
+            prim[0x24] = tex->u + 0x30;
+            prim[0x25] = tex->v + 0x40;
+        }
+        prim = D_800A8214;
+        *(u16 *)(prim + 0xE) = GetClut(D_80091018[0], D_8009101A[0]);
+        *(u16 *)(prim + 0x16) =
+            GetTPage(D_80091020[0], 0, tex->tpx, D_80091016[0]);
+        asm volatile("" : : "r"(prim));
+        D_800A821C[0] = 0x7C;
+        D_800A822C[0] = 0x7C;
+        D_800A8224[0] = 0xBC;
+        D_800A8234[0] = 0xBC;
+        *(s16 *)(prim + 0x38) = 0x6C;
+        *(s16 *)(prim + 0x48) = 0x6C;
+        *(s16 *)(prim + 0x30) = 0x3C;
+        *(s16 *)(prim + 0x40) = 0x3C;
+        *(s16 *)(prim + 0x58) = 0xE0;
+        *(s16 *)(prim + 0x60) = 0x110;
+        *(s16 *)(prim + 0x68) = 0xE0;
+        *(s16 *)(prim + 0x70) = 0x110;
+        *(s16 *)(prim + 0x80) = 0x110;
+        *(s16 *)(prim + 0x88) = 0x140;
+        *(s16 *)(prim + 0x90) = 0x110;
+        *(s16 *)(prim + 0x98) = 0x140;
+        u = D_8009101C[0];
+        v = D_8009101E[0];
+        D_800A8220[0] = u;
+        D_800A8221[0] = v;
+        D_800A8229[0] = v;
+        D_800A8228[0] = u + 0x40;
+        D_800A8230[0] = u;
+        D_800A8231[0] = v + 0x40;
+        D_800A8238[0] = u + 0x40;
+        D_800A8239[0] = v + 0x40;
+        D_800A821E[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A8226[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A822E[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A8236[0] = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(prim + 0x32) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(prim + 0x3A) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(prim + 0x42) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(prim + 0x4A) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(prim + 0x5A) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(prim + 0x62) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(prim + 0x6A) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(prim + 0x72) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(prim + 0x82) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(prim + 0x8A) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(prim + 0x92) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(prim + 0x9A) = (s8)D_800A2FD4[0] + 0xEC;
+        for (i = 0; i < 4; i++) {
+            prim = i * 0x28 + D_800A82B4;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+        }
+        tex = &D_80091014;
+        primC = D_800A82C2;
+        primC[0] = GetClut(D_80091014.clutX, D_80091014.clutY);
+        D_800A82CA[0] = GetTPage(D_80091014.tpage, 0, tex->tpx, D_80091014.tpy);
+        D_800A82C4[0] = 0xC4;
+        D_800A82D4[0] = 0xC4;
+        u2 = D_8009101C[0];
+        primB = (u8 *)primC + 0x1A;
+        tex++;
+        v2 = D_8009101E[0];
+        D_800A82BC[0] = 0xBC;
+        D_800A82CC[0] = 0xBC;
+        D_800A82C0[0] = u2;
+        D_800A82C1[0] = v2;
+        D_800A82C9[0] = v2;
+        D_800A82C8[0] = u2 + 1;
+        D_800A82D0[0] = u2;
+        D_800A82D1[0] = v2 + 0x40;
+        D_800A82D8[0] = u2 + 1;
+        D_800A82D9[0] = v2 + 0x40;
+        D_800A82BE[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A82C6[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A82CE[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A82D6[0] = (s8)D_800A2FD4[0] + 0xEC;
+        for (col = 0; col < 3; col++) {
+            *(u16 *)(D_800A82C2 + (col + 1) * 0x28) =
+                GetClut(tex->clutX, tex->clutY);
+            *(u16 *)(D_800A82CA + (col + 1) * 0x28) =
+                GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
+            prim = primB + col * 0x28;
+            prim[0xC] = tex->u + 0x71;
+            prim[0xD] = tex->v + 0x10;
+            prim[0x14] = tex->u + 0x71;
+            prim[0x15] = tex->v;
+            prim[0x1C] = tex->u + 0xB1;
+            prim[0x1D] = tex->v + 0x10;
+            prim[0x24] = tex->u + 0xB1;
+            *(s16 *)(prim + 8) = col * 0x10 + 0xC0;
+            prim[0x25] = tex->v;
+            *(s16 *)(prim + 0x10) = col * 0x10 + 0xD0;
+            *(s16 *)(prim + 0xA) = (s8)D_800A2FD4[0] + 0xAC;
+            *(s16 *)(prim + 0x18) = col * 0x10 + 0xC0;
+            *(s16 *)(prim + 0x12) = (s8)D_800A2FD4[0] + 0xAC;
+            *(s16 *)(prim + 0x20) = col * 0x10 + 0xD0;
+            *(s16 *)(prim + 0x1A) = (s8)D_800A2FD4[0] + 0xEC;
+            *(s16 *)(prim + 0x22) = (s8)D_800A2FD4[0] + 0xEC;
+        }
+        D_800A8334[0] = 0x6C;
+        D_800A833C[0] = 0x7C;
+        D_800A8344[0] = 0x6C;
+        D_800A834C[0] = 0x7C;
+        D_800A8336[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A833E[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A8346[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A834E[0] = (s8)D_800A2FD4[0] + 0xEC;
+        for (i = 0; i < 4; i++) {
+            prim = i * 0x18 + D_800A81B4;
+            SetPolyF4((POLY_F4 *)prim);
+            prim[4] = 0xFF;
+            prim[5] = 0;
+            prim[6] = 0;
+        }
+        tex = D_80090FCE;
+        for (i = 35; i >= 0; i--) {
+            prim = i * 0x2C + D_800A7994;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetShadeTex(prim, 1);
+            *(u16 *)(D_800A799E + i * 0x2C) = GetClut(tex->clutX, tex->clutY);
+            *(u8 *)(D_800A7995 + i * 0x2C) = 2;
+            *(u32 *)(D_800A79AC + i * 0x2C) = (u32)(D_800A85AC + i * 0x20);
+            *(u32 *)(D_800A79B0 + i * 0x2C) = (u32)(D_800A85AC + 8 + i * 0x20);
+            *(u32 *)(D_800A79B4 + i * 0x2C) =
+                (u32)(D_800A85AC + 0x18 + i * 0x20);
+            *(u32 *)(D_800A79B8 + i * 0x2C) =
+                (u32)(D_800A85AC + 0x10 + i * 0x20);
+            *(u16 *)(D_800A79A2 + i * 0x2C) =
+                GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
+            *(u8 *)(D_800A799C + i * 0x2C) = tex->u + 0x4F;
+            *(u8 *)(D_800A799D + i * 0x2C) = tex->v + 0x2F;
+            *(u8 *)(D_800A79A0 + i * 0x2C) = tex->u + 0x12;
+            *(u8 *)(D_800A79A1 + i * 0x2C) = tex->v + 0x2F;
+            *(u8 *)(D_800A79A4 + i * 0x2C) = tex->u + 0x4F;
+            *(u8 *)(D_800A79A5 + i * 0x2C) = tex->v;
+            *(u8 *)(D_800A79A8 + i * 0x2C) = tex->u + 0x12;
+            *(u8 *)(D_800A79A9 + i * 0x2C) = tex->v;
+        }
+        for (i = 0; i < 0x20; i++) {
+            *(s16 *)(D_800A7FE4 + i * 4) =
+                MathMultiplyFixed16(
+                    0x3C0000, (s32)((u8 *)D_800A3A2CAbsolute2[0] + i * 128)) >>
+                16;
+            *(s16 *)(D_800A7FE4w1 + i * 4 + 2) =
+                MathMultiplyFixed16(
+                    0x3C0000, (s32)((u8 *)D_800A3A34Absolute2[0] + i * 128)) >>
+                16;
+            *(s16 *)(D_800A7FE4w2 + (i + 0x20) * 4) =
+                MathMultiplyFixed16(
+                    0x320000, (s32)((u8 *)D_800A3A2CAbsolute[0] + i * 128)) >>
+                16;
+            *(s16 *)(D_800A7FE4w3 + (i + 0x20) * 4 + 2) =
+                MathMultiplyFixed16(
+                    0x320000, (s32)((u8 *)D_800A3A34Absolute[0] + i * 128)) >>
+                16;
+        }
+        for (i = 0; i < 0x24; i++) {
+            for (j = 0; j < 4; j++) {
+                *(s16 *)(D_800A85B0 + i * 32 + j * 8) = 0x64;
+            }
+        }
+        for (i = 0; i < 0x20; i++) {
+            *(s16 *)(D_800A85AC + i * 32) =
+                *(u16 *)(D_800A7FE4 + (i + 1) % 32 * 4);
+            *(s16 *)(D_800A85AE + i * 32) =
+                *(u16 *)(D_800A7FE4w4 + (i + 1) % 32 * 4 + 2);
+            *(s16 *)(D_800A85B4 + i * 32) = *(u16 *)(D_800A7FE4w5 + i * 4);
+            *(s16 *)(D_800A85B6 + i * 32) = *(u16 *)(D_800A7FE4w6 + i * 4 + 2);
+            *(s16 *)(D_800A85BC + i * 32) =
+                *(u16 *)(D_800A7FE4w7 + ((i + 1) % 32 + 0x20) * 4);
+            *(s16 *)(D_800A85BE + i * 32) =
+                *(u16 *)(D_800A7FE4w8 + ((i + 1) % 32 + 0x20) * 4 + 2);
+            *(s16 *)(D_800A85C4 + i * 32) =
+                *(u16 *)(D_800A7FE4w9 + (i + 0x20) * 4);
+            *(s16 *)(D_800A85C6 + i * 32) =
+                *(u16 *)(D_800A7FE4wA + (i + 0x20) * 4 + 2);
+        }
+        D_800A89AC[0] = -0xA;
+        D_800A89AE[0] = 0xA;
+        D_800A89B4[0] = 0xA;
+        D_800A89B6[0] = 0xA;
+        D_800A89BC[0] = -0xA;
+        D_800A89BE[0] = -0xA;
+        D_800A89C4[0] = 0xA;
+        D_800A89C6[0] = -0xA;
+        SetShadeTex(D_800A7F14, 0);
+        D_800A7F18[0] = 0x30;
+        D_800A7F19[0] = 0x30;
+        D_800A7F1A[0] = 0x30;
+        tex = &D_80090FCE[-12];
+        D_800A7F22[0] = GetTPage(D_80090F32gt, 0, tex->tpx, D_80090F28[0]);
+        tex += 12;
+        asm volatile("" : : "r"(tex));
+        u3 = D_80090F2E[0];
+        v3 = D_80090F30[0];
+        D_800A7F1C[0] = u3 + 0x60;
+        D_800A7F1D[0] = v3 + 0xF;
+        D_800A7F20[0] = u3 + 0x6F;
+        D_800A7F21[0] = v3 + 0xF;
+        D_800A7F24[0] = u3 + 0x60;
+        D_800A7F25[0] = v3;
+        D_800A7F28[0] = u3 + 0x6F;
+        D_800A7F29[0] = v3;
+        for (row = 0, i = 0x21; row < 3; row++, i++) {
+            matA = *(s32 *)((u8 *)D_800A3A2CSmall[0] + rot.a[row] * 4);
+            matB = *(s32 *)((u8 *)D_800A3A34Small[0] + rot.a[row] * 4);
+            for (j = 0; j < 4; j++) {
+                *(s16 *)(D_800A85AC + i * 32 + j * 8) =
+                    (MathMultiplyFixed16(corners.a[j * 2] << 16, matA) >> 16) -
+                    (MathMultiplyFixed16(corners.a[j * 2 + 1] << 16, matB) >>
+                     16);
+                *(s16 *)(D_800A85AE + i * 32 + j * 8) =
+                    (MathMultiplyFixed16(corners.a[j * 2] << 16, matB) >> 16) +
+                    (MathMultiplyFixed16(corners.a[j * 2 + 1] << 16, matA) >>
+                     16);
+            }
+            *(u8 *)(D_800A799C + i * 0x2C) = tex->u + 0x12;
+            *(u8 *)(D_800A799D + i * 0x2C) = tex->v + 0x2F;
+            *(u8 *)(D_800A79A0 + i * 0x2C) = tex->u + 0x12;
+            *(u8 *)(D_800A79A1 + i * 0x2C) = tex->v;
+            *(u8 *)(D_800A79A4 + i * 0x2C) = tex->u + 0x4F;
+            *(u8 *)(D_800A79A5 + i * 0x2C) = tex->v + 0x2F;
+            *(u8 *)(D_800A79A8 + i * 0x2C) = tex->u + 0x4F;
+            *(u8 *)(D_800A79A9 + i * 0x2C) = tex->v;
+        }
+        D_800A3494 = 0x300;
+        for (i = 0; i < 3; i++) {
+            prim = i * 0x28 + D_800A8534;
+            SetPolyFT4((POLY_FT4 *)prim);
+            SetSemiTrans(prim, 1);
+            prim[7] = prim[7] & 0xFE;
+            *(u16 *)(D_800A854A + i * 0x28) = GetTPage(2, 2, 0x300, 0);
+            prim[0xC] = 0xFD;
+            prim[0xD] = 0;
+            prim[0x14] = 0xFE;
+            prim[0x15] = 0;
+            prim[0x1C] = 0xFD;
+            prim[0x1D] = 1;
+            prim[0x24] = 0xFE;
+            prim[0x25] = 1;
+            yv = D_800A2FD4[0];
+            yv = (s8)yv;
+            yv = yv + 0x9E;
+            *(s16 *)(prim + 0x12) = yv;
+            *(u16 *)(D_800A853E + i * 0x28) = yv;
+        }
+        for (i = 0; i < 2; i++) {
+            SetPolyF4((POLY_F4 *)(D_800A8184 + i * 0x18));
+        }
+        D_800A8188[0] = 8;
+        D_800A8189[0] = 8;
+        D_800A818A[0] = 8;
+        D_800A81A0[0] = 0x10;
+        D_800A81A1[0] = 0x10;
+        D_800A81A2[0] = 0x10;
+        D_800A81A8[0] = 0x140;
+        D_800A81B0[0] = 0x140;
+        D_800A818C[0] = 0;
+        D_800A818E[0] = 0xEC;
+        D_800A8190[0] = 0x1F;
+        D_800A8192[0] = 0xEC;
+        D_800A8194[0] = 0;
+        D_800A8196[0] = 0xF0;
+        D_800A8198[0] = 0x1F;
+        D_800A819A[0] = 0xF0;
+        D_800A81A4[0] = 0x1F;
+        D_800A81A6[0] = 0xEC;
+        D_800A81AA[0] = 0xEC;
+        D_800A81AC[0] = 0x1F;
+        D_800A81AE[0] = 0xF0;
+        D_800A81B2[0] = 0xF0;
+        D_800A7FD8[0] = 0;
+        D_800A7FDC[0] = 0x64;
+        D_800A7FE0[0] = 0x64;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004BDD0);
+#endif
+
 INCLUDE_RODATA("asm/nonmatchings/scene", D_8008D4F4);
 
 extern s32 D_800A2E94[];
@@ -2492,7 +3701,149 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004EBE4);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004F158);
 
+#ifdef NON_MATCHING
+typedef struct {
+    u16 tpx;
+    u16 tpy;
+    u16 clutX;
+    u16 clutY;
+    u8 u;
+    u8 unk9;
+    u16 v;
+    u16 tpage;
+} TrackTexture;
+extern TrackTexture D_80090F26[];
+extern void SetPolyFT4(POLY_FT4 *);
+extern POLY_FT4 D_800A8A84[];
+extern u8 D_800A8A88[];
+extern u8 D_800A8A89[];
+extern u8 D_800A8A8A[];
+extern u8 D_800A8A90[];
+extern u8 D_800A8A91[];
+extern u8 D_800A8A98[];
+extern u8 D_800A8A99[];
+extern u8 D_800A8AA0[];
+extern u8 D_800A8AA1[];
+extern u8 D_800A8AA8[];
+extern u8 D_800A8AA9[];
+extern u16 D_800A8A9A[];
+extern u8 *D_800A8A74[];
+extern u8 *D_800A8AB0[];
+extern u8 *D_800A8AB0nm[] asm("D_800A8AB0.NON_MATCHING");
+extern u8 D_800A8AB4[];
+extern u8 D_800A8AB6[];
+extern s32 D_800A2CE0[];
+extern s8 D_800992D0[];
+extern u8 D_80099230[];
+extern u8 D_80099231[];
+extern u8 D_800A3614;
+extern u8 D_800A380C;
+extern u8 D_800A3924;
+extern u8 D_800A35A8;
+extern s16 D_800A34C4;
+extern s32 D_801F3FF8[];
+
+void func_8004F880(void) {
+    TrackTexture *tim;
+    u8 *car;
+    s8 *p;
+    s8 *pb;
+    s32 *q;
+    s32 uvBase;
+    s32 distBase;
+    s32 stride;
+    s32 idx;
+    s32 x;
+    s32 lim;
+    s32 inf;
+    s8 m;
+    s32 w;
+    s8 i;
+    s8 j;
+    s8 k;
+    s32 pad[2];
+
+    (void)&pad;
+    tim = D_80090F26;
+    D_800A3614 = 0;
+    D_800A380C = 0;
+    D_800A3924 = 0;
+    D_800A35A8 = 0;
+    D_800A8AB0[0] = HeapAlloc(0xC0);
+    for (i = 0; i < 4; i++) {
+        lim = 0x7FFF;
+        pb = D_800992D0;
+        stride = i * 0x30;
+        *(u8 *)(stride + (s32)D_800A8AB0[0]) = 0x7F;
+        uvBase = stride + (s32)D_800A8AB0[0];
+        p = D_800A2CE0[0] + pb;
+        *(u16 *)(uvBase + 4) = lim;
+        *(u16 *)(uvBase + 2) = lim;
+        j = 0;
+        if (j < p[0]) {
+        innerJ:
+            inf = 0x7FFFFFFF;
+            *(u16 *)(stride + (s32)D_800A8AB0[0] + 6 + j * 2) = lim;
+            distBase = j * 4 + (stride + (s32)D_800A8AB0nm[0]);
+            *(s32 *)(distBase + 0x20) = inf;
+            *(s32 *)(distBase + 0x10) = inf;
+            j++;
+            if (j < p[0]) {
+                goto innerJ;
+            }
+        }
+    }
+    for (k = 0; k < 4; k++) {
+        D_800A8A74[k] = D_800A8AB0[0] + k * 0x30;
+    }
+    x = D_801F3FF8[0];
+    D_800A34C4 = x * 4;
+    p = D_800992D0;
+    idx = D_800A2CE0[0];
+    if (D_800992D0[idx] > 0) {
+        m = 0;
+        q = &D_800BE974[0];
+        w = (x << 18) >> 16;
+    loopM:
+        *(u16 *)(D_800A8AB4 + m * 4) =
+            0x12C - D_80099230[idx * 2] -
+            *(s32 *)((u8 *)D_800BE980[0] + (m * q[0] / *(idx + p)) * 0x90 +
+                     0x14) /
+                w -
+            4;
+        *(u16 *)(D_800A8AB6 + m * 4) =
+            D_80099231[idx * 2] +
+            *(s32 *)((u8 *)D_800BE980[0] + (m * q[0] / *(idx + p)) * 0x90 +
+                     0x18) /
+                w +
+            0xE;
+        m++;
+        if (m < *(idx + p)) {
+            goto loopM;
+        }
+    }
+    SetPolyFT4(D_800A8A84);
+    SetShadeTex(D_800A8A84, 0);
+    D_800A8A88[0] = 0x80;
+    D_800A8A89[0] = 0x80;
+    D_800A8A8A[0] = 0xC0;
+    D_800A8A90[0] = tim->u + 0x60;
+    D_800A8A91[0] = tim->v;
+    D_800A8A98[0] = tim->u + 0x6F;
+    D_800A8A99[0] = tim->v;
+    D_800A8AA0[0] = tim->u + 0x60;
+    D_800A8AA1[0] = (u8)tim->v + 0xF;
+    D_800A8AA8[0] = tim->u + 0x6F;
+    D_800A8AA9[0] = (u8)tim->v + 0xF;
+    D_800A8A9A[0] = GetTPage(tim->tpage, 0, tim->tpx, tim->tpy);
+    car = D_800A3554[0];
+    *(u16 *)(car + 0x2A4) = *(u16 *)(car + 0x2A0) + 8;
+    *(u16 *)(car + 0x2AA) = *(u16 *)(car + 0x2A6) + 8;
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004F880);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004FCF4);
 
@@ -2504,6 +3855,7 @@ void func_8004FF3C(void) {
     *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(D_800A3554[0] + 0x1D6);
 }
 
+extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
 extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
 extern u8 gTextColorNm asm("gTextColor.NON_MATCHING");
 extern void func_80050028Args(char *, s16, s16, s8);
@@ -2523,8 +3875,226 @@ void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s8 arg3) {
     gTextColorNm = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80050028);
+extern u8 D_800A34C8[3];
+extern u8 D_800A8AC8[];
+extern u8 D_800A8AC9[];
+extern u8 D_800A8ACA[];
+extern u8 D_800A36FC;
+extern u8 D_800A3700;
+extern u8 D_80098D18[];
+extern POLY_FT4 D_800A8AC4[];
+extern POLY_FT4 D_800A8AC4nm[] asm("D_800A8AC4.NON_MATCHING");
+extern u8 D_800A8ADA[];
 
+#ifdef NON_MATCHING
+void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
+    POLY_FT4 *prim;
+    u8 *p;
+    u8 *cp;
+    u8 *glyph;
+    u16 w;
+    u8 i;
+    s32 lineH;
+    s32 newX;
+    s32 rightX;
+    u8 v3;
+    s32 tc;
+    u8 color;
+    s32 ySum;
+    s16 *x3p;
+    u8 *cp2;
+    s16 *x0p;
+
+    i = 0;
+    if (mode == 1) {
+        lineH = (u32)(*(s16 *)&D_80098D18[0] * 3) >> 2;
+    } else {
+        lineH = *(u16 *)&D_80098D18[0];
+    }
+    if (mode >= 2) {
+        u8 sr;
+        u8 sg;
+        u8 sb;
+
+        do {
+            asm("" : "=r"(cp) : "0"(D_800A8AC8));
+            sr = cp[0];
+            sg = cp[1];
+            sb = cp[2];
+            D_800A34C8[0] = sr;
+            D_800A34C8[1] = sg;
+            D_800A34C8[2] = sb;
+            if (mode == 2) {
+                color = D_800A36FC;
+            } else {
+                color = D_800A3700;
+            }
+            cp[0] = color;
+            cp[1] = color;
+            cp[2] = color;
+        } while (0);
+        prim = D_800A8AC4nm;
+        SetSemiTrans(prim, 1);
+        p = (u8 *)&prim->tpage;
+        if (text[i] != 0) {
+            lineH = y + lineH;
+            do {
+                glyph = &D_80098BD0[text[i] * 10];
+                *(u16 *)p =
+                    GetTPage(0, 1, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+                w = *(u16 *)(glyph + 6);
+                *(u8 *)(p - 0xA) = glyph[4];
+                *(u8 *)(heap + 0x1C) = glyph[5];
+                *(u8 *)(p - 0x2) = glyph[4] + w;
+                *(u8 *)(heap + 0x24) = glyph[5];
+                *(u8 *)(p + 0x6) = glyph[4];
+                *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
+                *(u8 *)(p + 0xE) = glyph[4] + w;
+                tc = gTextColorS;
+                v3 = glyph[5] + glyph[8];
+                *(u8 *)(p + 0xF) = v3;
+                if (tc != 0) {
+                    newX = x + ((tc - (s16)w) >> 1);
+                    x = x + tc;
+                    rightX = w + newX;
+                    *(s16 *)(p - 0xE) = newX;
+                    *(s16 *)(p - 0xC) = y;
+                    *(s16 *)(p - 0x6) = rightX;
+                    *(s16 *)(p - 0x4) = y;
+                    *(s16 *)(p + 0x2) = newX;
+                    *(s16 *)(p + 0x4) = lineH;
+                    x3p = (s16 *)(p + 0xA);
+                    *x3p = rightX;
+                } else {
+                    rightX = x + w;
+                    *(s16 *)(p - 0xE) = x;
+                    *(s16 *)(p + 0x2) = x;
+                    x = rightX;
+                    *(s16 *)(p - 0xC) = y;
+                    *(s16 *)(p - 0x6) = rightX;
+                    *(s16 *)(p - 0x4) = y;
+                    *(s16 *)(p + 0x4) = lineH;
+                    *(s16 *)(p + 0xA) = rightX;
+                }
+                *(s16 *)(p + 0xC) = lineH;
+                func_80017D80((u8 *)D_800A8AC4);
+                i++;
+            } while (text[i] != 0);
+        }
+        D_800A8AC8[0] = D_800A34C8[0];
+        D_800A8AC9[0] = D_800A34C8[1];
+        D_800A8ACA[0] = D_800A34C8[2];
+        SetSemiTrans(D_800A8AC8 - 4, 0);
+        return;
+    }
+    if (mode == 1) {
+        if (text[i] != 0) {
+            p = D_800A8ADA;
+            do {
+                glyph = &D_80098BD0[text[i] * 10];
+                *(u16 *)p =
+                    GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+                *(u8 *)(p - 0xA) = glyph[4];
+                *(u8 *)(heap + 0x1C) = glyph[5];
+                *(u8 *)(p - 0x2) = glyph[4] + glyph[6];
+                *(u8 *)(heap + 0x24) = glyph[5];
+                *(u8 *)(p + 0x6) = glyph[4];
+                *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
+                *(u8 *)(p + 0xE) = glyph[4] + glyph[6];
+                *(u8 *)(p + 0xF) = glyph[5] + glyph[8];
+                rightX = x + ((*(s16 *)(glyph + 6) * 3) >> 2);
+                ySum = y + lineH;
+                x0p = (s16 *)(p - 0xE);
+                *x0p = x;
+                *(s16 *)(p - 0xC) = y;
+                *(s16 *)(p - 0x4) = y;
+                *(s16 *)(p + 0x2) = x;
+                *(s16 *)(p + 0x4) = ySum;
+                *(s16 *)(p + 0xC) = ySum;
+                x = rightX;
+                *(s16 *)(p - 0x6) = rightX;
+                *(s16 *)(p + 0xA) = rightX;
+                func_80017D80(p - 0x16);
+                i++;
+            } while (text[i] != 0);
+        }
+        return;
+    }
+    if (gTextColorS != 0) {
+        if (text[i] != 0) {
+            do {
+                glyph = &D_80098BD0[text[i] * 10];
+                *(u16 *)D_800A8ADA =
+                    GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+                w = *(u16 *)(glyph + 6);
+                *(u8 *)(D_800A8ADA - 0xA) = glyph[4];
+                *(u8 *)(D_800A8ADA - 0x9) = glyph[5];
+                *(u8 *)(D_800A8ADA - 0x2) = glyph[4] + w;
+                cp2 = D_800A8ADA;
+                *(u8 *)(D_800A8ADA - 0x1) = glyph[5];
+                *(u8 *)(D_800A8ADA + 0x6) = glyph[4];
+                *(u8 *)(D_800A8ADA + 0x7) = glyph[5] + glyph[8];
+                *(u8 *)(D_800A8ADA + 0xE) = glyph[4] + w;
+                *(u8 *)(D_800A8ADA + 0xF) = glyph[5] + glyph[8];
+                newX = x + ((gTextColorS - (s16)w) >> 1);
+                x = x + gTextColorS;
+                rightX = w + newX;
+                ySum = y + lineH;
+                *(s16 *)(D_800A8ADA - 0xC) = y;
+                *(s16 *)(D_800A8ADA - 0x4) = y;
+                *(s16 *)(cp2 - 0xE) = newX;
+                *(s16 *)(D_800A8ADA + 0x2) = newX;
+                *(s16 *)(D_800A8ADA - 0x6) = rightX;
+                *(s16 *)(D_800A8ADA + 0x4) = ySum;
+                *(s16 *)(D_800A8ADA + 0xA) = rightX;
+                *(s16 *)(D_800A8ADA + 0xC) = ySum;
+                func_80017D80(D_800A8ADA - 0x16);
+                i++;
+            } while (text[i] != 0);
+        }
+        return;
+    }
+    if (text[i] != 0) {
+        if (i) {
+            lineH = y + lineH;
+            p = D_800A8ADA;
+        } else {
+            lineH = y + lineH;
+            p = D_800A8ADA;
+        }
+        do {
+            glyph = &D_80098BD0[text[i] * 10];
+            *(u16 *)p =
+                GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+            w = *(u16 *)(glyph + 6);
+            *(u8 *)(p - 0xA) = glyph[4];
+            *(u8 *)(heap + 0x1C) = glyph[5];
+            *(u8 *)(p - 0x2) = glyph[4] + w;
+            *(u8 *)(heap + 0x24) = glyph[5];
+            *(u8 *)(p + 0x6) = glyph[4];
+            *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
+            *(u8 *)(p + 0xE) = glyph[4] + w;
+            v3 = glyph[5] + glyph[8];
+            rightX = x + w;
+            *(s16 *)(p - 0xE) = x;
+            *(s16 *)(p + 0x2) = x;
+            x = rightX;
+            *(s16 *)(p - 0xC) = y;
+            *(s16 *)(p - 0x6) = rightX;
+            *(s16 *)(p - 0x4) = y;
+            *(s16 *)(p + 0x4) = lineH;
+            *(s16 *)(p + 0xA) = rightX;
+            *(s16 *)(p + 0xC) = lineH;
+            *(u8 *)(p + 0xF) = v3;
+            func_80017D80(p - 0x16);
+            i++;
+        } while (text[i] != 0);
+    }
+}
+
+#else
+INCLUDE_ASM("asm/nonmatchings/scene", func_80050028);
+#endif
 INCLUDE_ASM("asm/nonmatchings/scene", func_80050670);
 
 void SetPolyFT4(POLY_FT4 *);
@@ -2567,7 +4137,109 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8005098C);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80050D1C);
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_800511E4);
+extern u8 D_800A34D4, D_800A39F8, D_800A3764, D_800A38B0, D_800A372C,
+    D_800A38B8, D_800A35D4, D_800A38E0, D_800A3A94;
+extern s16 D_800A3910, D_800A35A4;
+extern u8 D_800A8AFC[], D_800A8B14[], D_800A8B2C[];
+extern POLY_FT4 D_800A8B44[], D_800A8B6C[];
+typedef struct TextureInfo {
+    u16 tpx;
+    u16 tpy;
+    u16 clutX;
+    u16 clutY;
+    u16 u;
+    u16 v;
+    u16 u2;
+    u16 v2;
+    u16 u3;
+    u16 v3;
+} TextureInfo;
+extern TextureInfo D_80090F96[];
+extern u8 D_800A8B50[], D_800A8B51[], D_800A8B58[], D_800A8B59[];
+extern u8 D_800A8B60[], D_800A8B61[], D_800A8B68[], D_800A8B69[];
+extern u8 D_800A8B78[], D_800A8B79[], D_800A8B80[], D_800A8B81[];
+extern u8 D_800A8B88[], D_800A8B89[], D_800A8B90[], D_800A8B91[];
+extern u16 D_800A8B52[], D_800A8B7A[], D_800A8B5A[], D_800A8B82[];
+extern s16 D_800A8AEC[], D_800A8AEE[], D_800A8AF0[], D_800A8AF2[];
+extern s16 D_800A8AF4[], D_800A8AF6[], D_800A8AF8[], D_800A8AFA[];
+
+void func_800511E4(void) {
+    u16 x;
+    u16 y;
+
+    D_800A34D4 = 0x50;
+    D_800A3910 = -1;
+    D_800A39F8 = 0;
+    D_800A3764 = 0;
+    D_800A38B0 = 0;
+    D_800A372C = 0;
+    D_800A38B8 = 0;
+    D_800A35D4 = 0;
+    D_800A38E0 = 1;
+    D_800A3A94 = 1;
+    D_800A35A4 = 0;
+    SetPolyF4(D_800A8AFC);
+    SetPolyF4(D_800A8B14);
+    SetPolyF4(D_800A8B2C);
+    SetPolyFT4(D_800A8B44);
+    SetPolyFT4(D_800A8B6C);
+    SetShadeTex(D_800A8B44, 1);
+    SetShadeTex(D_800A8B6C, 1);
+    D_800A8B5A[0] = GetTPage(0, 0, D_80090F96[0].tpx, D_80090F96[0].tpy);
+    D_800A8B82[0] = GetTPage(0, 0, D_80090F96[0].tpx, D_80090F96[0].tpy);
+    D_800A8B52[0] = GetClut(D_80090F96[0].clutX, D_80090F96[0].clutY);
+    D_800A8B7A[0] = GetClut(D_80090F96[0].clutX, D_80090F96[0].clutY);
+    x = D_80090F96[0].u;
+    y = D_80090F96[0].v;
+    D_800A8B50[0] = x;
+    D_800A8B51[0] = y;
+    D_800A8B59[0] = y;
+    D_800A8B58[0] = x + 0x20;
+    D_800A8B60[0] = x;
+    D_800A8B61[0] = y + 0x18;
+    D_800A8B68[0] = x + 0x20;
+    D_800A8B69[0] = y + 0x18;
+    D_800A8B78[0] = x;
+    D_800A8B79[0] = y;
+    D_800A8B80[0] = x + 0x20;
+    D_800A8B81[0] = y;
+    D_800A8B88[0] = x;
+    D_800A8B89[0] = y + 0x18;
+    D_800A8B90[0] = x + 0x20;
+    D_800A8B91[0] = y + 0x18;
+    D_800A8AEC[0] =
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[2] + 0x600)) >>
+         0x10) +
+        0x122;
+    D_800A8AEE[0] =
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[4] + 0x600)) >>
+         0x10) +
+        0x3C;
+    D_800A8AF0[0] =
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[2] + 0x600)) >>
+         0x10) +
+        0x122;
+    D_800A8AF2[0] =
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[4] + 0x600)) >>
+         0x10) +
+        0x3C;
+    D_800A8AF4[0] =
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[2] + 0xA00)) >>
+         0x10) +
+        0x122;
+    D_800A8AF6[0] =
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[4] + 0xA00)) >>
+         0x10) +
+        0x3C;
+    D_800A8AF8[0] =
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[2] + 0xA00)) >>
+         0x10) +
+        0x122;
+    D_800A8AFA[0] =
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[4] + 0xA00)) >>
+         0x10) +
+        0x3C;
+}
 
 extern s8 D_800A34CC;
 extern s8 D_800A34CD;
@@ -2607,26 +4279,26 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8005157C);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80051874);
 
-extern u8 D_800A34E4;
+extern s8 D_800A34E4;
 extern s32 D_800A34F4;
 extern u8 D_80090F7A[];
 
 void func_800524A0(u8 *arg0, s8 arg1) {
     u8 *table;
     u8 *entry;
-    s32 mode;
     u16 w;
     u32 v;
+    s32 m2;
 
     arg0 += arg1 * 0x28 + 0x2AC;
-    mode = *(s16 *)(arg0 + 0x26);
+    m2 = *(s16 *)(arg0 + 0x26);
     arg0[0x24] = 0;
     arg0[0x20] = 0;
     D_800A34E4 = 0;
-    if (mode != -1) {
+    if (m2 != -1) {
         table = D_80090F7A;
         w = *(u16 *)(arg0 + 0x22);
-        entry = (u8 *)D_800A34F4 + (mode * 12 - mode) * 8;
+        entry = (u8 *)D_800A34F4 + (m2 * 12 - m2) * 8;
         if (w == 2) {
             table += 0xE;
         }
@@ -2649,7 +4321,281 @@ void func_800524A0(u8 *arg0, s8 arg1) {
     }
 }
 
+extern s16 D_800A34E8;
+extern s32 D_800BE980[];
+extern s32 D_800AE844[];
+extern s32 D_800A2EC0Absolute[];
+extern u8 D_80090F5E[], D_80090F6C[], D_80090F88[];
+
+#ifdef NON_MATCHING
+void func_800525A8(u8 *arg0, s8 arg1) {
+    s16 coords[3][4];
+    VECTOR vec;
+    MATRIX m;
+    SVECTOR rot;
+    VECTOR out;
+    long flag;
+    u8 *entry;
+    s32 diff;
+    u8 *e;
+    s32 m2;
+    u16 w;
+    u8 *tex;
+    u8 *tex2;
+    u8 *new_var;
+    u8 *q;
+    u8 *p;
+    u32 v;
+    s8 side1;
+    s8 side2;
+    s32 xoff;
+    s32 *ref;
+    s8 i;
+    s8 j;
+    SceneTexture *tim;
+    u8 u;
+    u8 uv;
+    u8 *node;
+
+    s32 d;
+    s32 w2;
+    s32 n;
+
+    diff = *(u16 *)(arg0 + 0x104) - *(u16 *)(arg0 + 0x114);
+    entry = arg0 + (arg1 * 0x28 + 0x2AC);
+    if (*(u16 *)(arg0 + 0x362) == 0 || *(u16 *)(arg0 + 0x364) == 0 ||
+        *(u16 *)(arg0 + 0x366) == 0 || *(u16 *)(arg0 + 0x368) == 0) {
+        for (i = 0; i < 4; i++) {
+            if (arg0[i * 0x28 + 0x2CC] != 0) {
+                e = arg0 + (i * 0x28 + 0x2AC);
+                m2 = *(s16 *)(e + 0x26);
+                e[0x24] = 0;
+                e[0x20] = 0;
+                D_800A34E4 = 0;
+                if (m2 != -1) {
+                    d = (s32)D_80090F7A;
+                    p = (u8 *)d + 0xA;
+                    asm("" : "=r"(q) : "0"((u8 *)d));
+                    tex = (u8 *)D_800A34F4 + (m2 * 12 - m2) * 8;
+                    w = *(u16 *)(e + 0x22);
+                    if (w == 2) {
+                        p = q + 0x18;
+                        q += 0xE;
+                    }
+                    *(s16 *)(tex + 0x12) =
+                        GetClut(*(u16 *)(p - 6), *(u16 *)(p - 4));
+                    *(s16 *)(tex + 0x16) = GetTPage(*(u16 *)(p + 2), 0,
+                                                    *(u16 *)q, *(u16 *)(p - 8));
+                    v = p[-2] + 0x3F;
+                    tex[0x14] = v;
+                    tex[0x10] = v;
+                    v = p[-2];
+                    tex[0x1C] = v;
+                    tex[0x18] = v;
+                    v = p[0];
+                    tex[0x19] = v;
+                    tex[0x11] = v;
+                    v = p[0] + 0x1F;
+                    tex[0x1D] = v;
+                    tex[0x15] = v;
+                }
+            }
+        }
+        return;
+    }
+    if (arg1 == 0) {
+        if (entry[0x20] == 0 && *(s16 *)(arg0 + 0x20E) != 0 &&
+            D_800A34E4 == 0) {
+            if (*(s16 *)(arg0 + 0x20E) > 0) {
+                D_800A34E4 = 1;
+            }
+            if (*(s16 *)(arg0 + 0x20E) < 0) {
+                D_800A34E4 = -1;
+            }
+        } else {
+            D_800A34E4 = 0;
+        }
+    }
+    switch (arg1) {
+    case 2:
+        d = (s16)diff;
+        if (d < 0) {
+            d = -d;
+        }
+        side2 = 1;
+        if (d < 0x40) {
+            arg0[0x31C] = 0;
+            return;
+        }
+        side1 = 1;
+        break;
+    case 3:
+        d = (s16)diff;
+        if (d < 0) {
+            d = -d;
+        }
+        side1 = 1;
+        if (d < 0x40) {
+            arg0[0x344] = 0;
+            return;
+        }
+        side2 = -1;
+        break;
+    case 0:
+        if (D_800A34E4 < 0) {
+            return;
+        }
+        side1 = -1;
+        side2 = 1;
+        break;
+    case 1:
+        if (D_800A34E4 > 0) {
+            return;
+        }
+        side2 = -1;
+        side1 = -1;
+        break;
+    default:
+        return;
+    }
+    rot.vx = 0;
+    rot.vy = diff * 4;
+    rot.vz = 0;
+    RotMatrix(&rot, &m);
+    SetRotMatrix(&m);
+    i = 0;
+    xoff = side1 * 220;
+    ref = D_800AE844;
+loop2:
+    if (i == 0) {
+        rot.vx = 0x28;
+    } else {
+        rot.vx = -0x28;
+    }
+    rot.vy = 0;
+    rot.vz = 0;
+    RotTrans(&rot, &out, &flag);
+    vec.vx = xoff + out.vz;
+    vec.vy = side2 * 120 + out.vx;
+    vec.vz = 0;
+    func_8001ED84((s32 *)&vec);
+    coords[0][i] = ((*(s32 *)(arg0 + 0) + vec.vx) >> 2) - ref[0];
+    coords[1][i] = ((*(s32 *)(arg0 + 4) + vec.vy) >> 2) - ref[1];
+    coords[2][i] = ((*(s32 *)(arg0 + 8) + vec.vz) >> 2) - ref[2];
+    i++;
+    if (i < 2) {
+        goto loop2;
+    }
+    if (entry[0x20] == 0) {
+        *(u16 *)(entry + 0x10) = coords[0][0];
+        *(u16 *)(entry + 0x12) = coords[1][0];
+        *(u16 *)(entry + 0x14) = coords[2][0];
+        *(u16 *)(entry + 0x16) = coords[0][1];
+        *(u16 *)(entry + 0x18) = coords[1][1];
+        *(u16 *)(entry + 0x1A) = coords[2][1];
+        entry[0x20] = 1;
+    } else {
+        tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
+        *(u16 *)(tex2 + 0x44) = *(u16 *)(entry + 0x10);
+        *(u16 *)(tex2 + 0x46) = *(u16 *)(entry + 0x12);
+        *(u16 *)(tex2 + 0x48) = *(u16 *)(entry + 0x14);
+        w = coords[0][0];
+        *(u16 *)(entry + 0x10) = w;
+        *(u16 *)(tex2 + 0x34) = w;
+        w = coords[1][0];
+        *(u16 *)(entry + 0x12) = w;
+        *(u16 *)(tex2 + 0x36) = w;
+        w = coords[2][0];
+        *(u16 *)(entry + 0x14) = w;
+        *(u16 *)(tex2 + 0x38) = w;
+        *(u16 *)(tex2 + 0x4C) = *(u16 *)(entry + 0x16);
+        *(u16 *)(tex2 + 0x4E) = *(u16 *)(entry + 0x18);
+        *(u16 *)(tex2 + 0x50) = *(u16 *)(entry + 0x1A);
+        w = coords[0][1];
+        *(u16 *)(entry + 0x16) = w;
+        *(u16 *)(tex2 + 0x3C) = w;
+        w = coords[1][1];
+        *(u16 *)(entry + 0x18) = w;
+        *(u16 *)(tex2 + 0x3E) = w;
+        w = coords[2][1];
+        *(u16 *)(entry + 0x1A) = w;
+        *(u16 *)(tex2 + 0x40) = w;
+        if (*(s16 *)tex2 != -1) {
+            node = *(u8 **)((u8 *)D_800BE980[0] + *(s16 *)tex2 * 0x90 + 0x74);
+            if (*(u8 **)(node + 0x54) == 0) {
+                *(u8 **)((u8 *)D_800BE980[0] + *(s16 *)tex2 * 0x90 + 0x74) = 0;
+            } else {
+                while (*(u8 **)(*(u8 **)(node + 0x54) + 0x54) != 0) {
+                    node = *(u8 **)(node + 0x54);
+                }
+                *(u8 **)(node + 0x54) = 0;
+            }
+        }
+        tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
+        n = *(u16 *)(arg0 + 0x1E0);
+        new_var = (u8 *)D_800A34F4;
+        *(u16 *)(tex2 + 0) = n;
+        *(u8 **)(tex2 + 0x54) =
+            *(u8 **)((u8 *)D_800BE980[0] + (s16)n * 0x90 + 0x74);
+        *(u8 **)((u8 *)D_800BE980[0] + (s16)n * 0x90 + 0x74) = tex2;
+        if (*(u16 *)(entry + 0x22) == 2) {
+            if (entry[0x24] != 0) {
+                tim = (SceneTexture *)D_80090F6C;
+            } else {
+                tim = (SceneTexture *)D_80090F88;
+                entry[0x24] = 1;
+            }
+        } else {
+            if (entry[0x24] != 0) {
+                tim = (SceneTexture *)D_80090F5E;
+            } else {
+                tim = (SceneTexture *)D_80090F7A;
+                entry[0x24] = 1;
+            }
+        }
+        tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
+        *(s16 *)(tex2 + 0x12) = GetClut(tim->clutX, tim->clutY);
+        *(s16 *)(tex2 + 0x16) = GetTPage(tim->tpage, 0, tim->tpx, tim->tpy);
+        u = tim->u;
+        tex2[0x14] = u;
+        tex2[0x10] = u;
+        u = tim->u + 0x3F;
+        tex2[0x1C] = u;
+        tex2[0x18] = u;
+        uv = tim->v + 0x1F;
+        tex2[0x19] = uv;
+        tex2[0x11] = uv;
+        uv = tim->v;
+        tex2[0x1D] = uv;
+        tex2[0x15] = uv;
+        asm("" : "=r"(w) : "0"((u16)D_800A34E8));
+        w2 = (s16)w;
+        tex2 = new_var + (w2 * 12 - w2) * 8;
+        *(u16 *)(entry + 0x26) = w;
+        n = (s16)(w + 1);
+        *(s32 *)(tex2 + 4) = D_800A2EC0Absolute[0];
+        *(s32 *)(arg0 + arg1 * 0x28 + 0x2B8) -=
+            (0x12C - *(s16 *)(arg0 + arg1 * 0x28 + 0x2B4)) >> 3;
+        D_800A34E8 = n % 100;
+    }
+    switch (arg1) {
+    case 2:
+        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x362);
+        break;
+    case 3:
+        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x364);
+        break;
+    case 0:
+        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x366);
+        break;
+    case 1:
+        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x368);
+        break;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_800525A8);
+#endif
 
 extern s16 D_800A34E8;
 extern s8 D_800A34EC;
@@ -3606,9 +5552,9 @@ void func_80056C84(s32 arg0, s32 arg1) {
     extern u8 D_800A3074;
     extern u8 D_800A3076;
     extern u8 D_800A3077;
+    s32 m2;
     s32 clearCount;
     u8 *clearPtr;
-    s32 mode;
     s32 tmp;
     s32 idx;
 
@@ -3620,7 +5566,7 @@ void func_80056C84(s32 arg0, s32 arg1) {
         clearPtr--;
     } while (clearCount >= 0);
 
-    mode = 8;
+    m2 = 8;
     switch (arg0 & 0xFF) {
     case 2:
         tmp = D_800A3644NM;
@@ -3634,16 +5580,16 @@ void func_80056C84(s32 arg0, s32 arg1) {
     case 4:
         switch (D_800A306E) {
         case 0:
-            mode = 1;
+            m2 = 1;
             break;
         case 1:
-            mode = 0;
+            m2 = 0;
             break;
         case 2:
-            mode = 2;
+            m2 = 2;
             break;
         }
-        D_800A3988[1] = mode;
+        D_800A3988[1] = m2;
         if (D_800A306E == 1) {
             if (D_800A3644NM != 0) {
                 D_800A3071 = 0;
@@ -3752,17 +5698,17 @@ extern u8 D_800A39E4Small;
 void func_80057008(s32 arg0) {
     extern void func_8006D8E8(s32);
     extern void func_8006C5E4(s32);
+    s32 m2;
     extern void func_8006BD68(void);
     extern u8 D_800A3928;
-    s32 mode;
 
     if (D_800A3808a[0] == 2 || !(arg0 & 0xFF)) {
         func_8006D8E8(0);
-        mode = D_800A3059;
+        m2 = D_800A3059;
         D_800A3928 = 1;
-        if (mode == 1) {
+        if (m2 == 1) {
             func_8006C5E4(1);
-            if (D_800A3059 == mode) {
+            if (D_800A3059 == m2) {
                 D_800A39E4Small = 0x24;
                 D_800A3928 = 2;
                 return;
@@ -4327,7 +6273,307 @@ void func_80058D14(u16 *src, u16 *dst, s32 arg2) {
 void func_80058D8C(void) {
 }
 
+extern u8 D_800B9990[];
+extern u8 *D_800A34FC;
+extern u16 *D_800A35F0;
+extern RECT D_800A3710[2];
+extern RECT D_800A3710Small asm("D_800A3710");
+extern s32 D_800A39C8store[] asm("D_800A39C8");
+extern s32 D_800A39C8draw[] asm("D_800A39C8");
+extern DISPENV D_800BDE18put[] asm("D_800BDE18");
+extern s32 D_800A3904[];
+extern u8 D_800A3A48;
+extern u8 D_800A3950;
+extern u8 D_800A3724;
+extern u8 D_800A2F9C[];
+extern DRAWENV D_800BDDA8[];
+extern DISPENV D_800BDE18[];
+extern s32 D_800A3638;
+extern s32 D_800A381C;
+extern s32 D_800A36B4w6c[] asm("D_800A36B4");
+extern void SsStart2(void);
+extern void func_8005957C(void);
+extern void func_80066A24(void);
+extern s32 func_8006F9C4(s32, s32, s32);
+extern void func_80041AF0Scene(s32);
+extern s32 RandomScaledGetScene(void);
+asm(".globl func_80041AF0Scene\nfunc_80041AF0Scene = func_80041AF0");
+asm(".globl RandomScaledGetScene\nRandomScaledGetScene = RandomScaledGet");
+
+#ifdef NON_MATCHING
+void func_80058D94(void) {
+    extern s32 FileSeekScene(s32, s32, s32) asm("FileSeek");
+    extern void FileCloseScene(s32) asm("FileClose");
+    extern void TextureLoadTim(void *);
+    extern s32 D_800A3090[];
+    RECT rect;
+    s32 pad[6];
+    s32 *volatile offsets;
+    u32 frame;
+    s32 done;
+    s32 fade;
+    s32 prevPads;
+    u8 *texBuf;
+    u8 toggle;
+    u8 *fileBuf;
+    u8 *buf;
+    u8 *prim;
+    s32 xa;
+    s32 xb;
+    s32 sector;
+    s32 size;
+    u8 counter;
+    s32 bank;
+    u8 *ot;
+    u8 *envByte;
+    s16 *xy;
+    s32 height;
+    u16 tpage;
+    s32 pads;
+    s32 mask;
+    s32 cond;
+    s32 moveX;
+    u16 *src;
+    u16 *dst;
+    u8 *end;
+    u16 bits;
+    u32 pixel;
+    u8 value;
+    s32 shift;
+    u8 j;
+
+    (void)&pad;
+    if (D_800A3638 == 0) {
+        sector = (s32)FileOpen(0, D_800A3090);
+        size = (FileSeekScene(sector, 0, 2) + 0x7FF) >> 11 << 11;
+        buf = HeapAlloc(size);
+        FileSeekScene(sector, 0, 0);
+        FileRead(buf, 1, size, sector);
+        FileCloseScene(sector);
+        offsets = (s32 *)(buf + 4);
+        fileBuf = buf;
+    } else {
+        fileBuf = (u8 *)D_800A3638;
+        offsets = (s32 *)D_800A381C;
+    }
+    D_800A37EC = (s32)(fileBuf + offsets[0]);
+    texBuf = HeapAlloc(0x25800);
+    TextureLoadTim((void *)D_800A37EC);
+    D_800A3710[0] = *(RECT *)&D_800A39B0[0];
+    D_800A35F0 = (u16 *)D_800A36B4w6c[0];
+    DrawSync(0);
+    TextureLoadTim(fileBuf + offsets[1]);
+    DrawSync(0);
+    TextureLoadTim(fileBuf + offsets[2]);
+    DrawSync(0);
+    D_800A34FC = D_800B9990;
+    frame = 0;
+    SetPolyFT4((POLY_FT4 *)D_800B9990);
+    SetShadeTex(D_800A34FC, 0);
+    *(u8 *)(D_800A34FC + 4) = 0x80;
+    *(u8 *)(D_800A34FC + 5) = 0x80;
+    *(u8 *)(D_800A34FC + 6) = 0x80;
+    SetSemiTrans(D_800A34FC, 0);
+    tpage = GetTPage(2, 0, 0x100, 0x100);
+    prim = D_800A34FC;
+    *(u8 *)((u8 *)D_800A78D4 + row * 0x28 + 0xC) = 0x40;
+    *(u16 *)(prim + 0x16) = tpage;
+    *(u8 *)(D_800A34FC + 0xD) = 0x24;
+    *(u8 *)(D_800A34FC + 0x14) = 0xA0;
+    *(u8 *)(D_800A34FC + 0x15) = 0x24;
+    *(u8 *)(D_800A34FC + 0x1C) = 0x40;
+    *(u8 *)(D_800A34FC + 0x1D) = 0x39;
+    *(u8 *)(D_800A34FC + 0x24) = 0xA0;
+    *(u8 *)(D_800A34FC + 0x25) = 0x39;
+    xy = (s16 *)D_800A34FC;
+    cond = (u32)(D_800A2EB0Absolute[0] + 3) < 2;
+    xy[4] = (xa = 0x73);
+    xb = 0xD3;
+    xy[5] = 0xBC;
+    xy[9] = 0xBC;
+    xy[8] = xb;
+    xy[12] = xa;
+    xy[13] = 0xD1;
+    xy[16] = xb;
+    xy[17] = 0xD1;
+    if (cond == 0) {
+        SsStart2();
+        frame = func_8006F9C4(1, 0, 1);
+        if ((frame & 0xFF) != 0 || (D_800A3904[0] & 0x800) <= 0) {
+            frame = func_8006F9C4(2, 1, 1);
+        }
+        SsEnd();
+    }
+    fade = frame & 0xFF;
+    if (fade == 0) {
+        SetDispMask(0);
+    }
+    height = 0xF0;
+    SetDefDrawEnv(D_800BDD4C, 0, 0, 0x140, height);
+    SetDefDispEnv(D_800BDE04, 0x140, 0, 0x140, height);
+    SetDefDrawEnv(D_800BDDA8, 0x140, 0, 0x140, height);
+    SetDefDispEnv(D_800BDE18, 0, 0, 0x140, height);
+    envByte = D_800BDD64;
+    D_800BDD62[0] = 0;
+    D_800BDDBE[0] = 0;
+    D_800BDDC0[0] = 1;
+    envByte[0] = 1;
+    D_800BDD65[0] = 0;
+    D_800BDD66[0] = 0;
+    D_800BDD67[0] = 0;
+    D_800BDDC1[0] = 0;
+    D_800BDDC2[0] = 0;
+    D_800BDDC3[0] = 0;
+    PutDrawEnv((DRAWENV *)(envByte + 0x44));
+    PutDispEnv(D_800BDE18put);
+    fade = -(fade != 0) & 0x1F;
+    dst = (u16 *)texBuf;
+    src = D_800A35F0;
+    end = (u8 *)dst + 0x257FE;
+    do {
+        bits = *src;
+        pixel = 0;
+        shift = 0;
+        j = 0;
+        do {
+            value = (u8)(fade + (bits & 0x1F));
+            if (value >= 0x20) {
+                value = 0x1F;
+            }
+            pixel |= value << shift;
+            shift += 5;
+            j++;
+            bits >>= 5;
+        } while ((j & 0xFF) < 3);
+        *dst = pixel;
+        dst = (u16 *)((u8 *)dst + 2);
+        src = (u16 *)((u8 *)src + 2);
+    } while (end >= (u8 *)dst);
+    LoadImage(D_800A3710, (u_long *)texBuf);
+    frame = 1;
+    D_800A2F9C[0] = frame;
+    func_8003CAE8(5);
+    SsSetMVol(0x7F, 0x7F);
+    D_800A3724 = frame;
+    SetDispMask(1);
+    done = 0;
+    toggle = 0;
+    prevPads = 0;
+    D_800A305C = 0;
+    frame = -(D_800A2EB0Absolute[0] == -2) & 0xB4;
+    do {
+        RandomScaledGetScene();
+        bank = D_800A305C == 0;
+        ot = gOrderingTables + (bank << 12);
+        D_800A305C = bank;
+        gOrderingTableBankAbsolute[0] = bank;
+        D_800A39C8store[0] = (s32)ot;
+        ClearOTagR((OT_TYPE *)ot, 4);
+        if ((fade << 24) != 0) {
+            fade = fade - 1;
+            src = D_800A35F0;
+            dst = (u16 *)texBuf;
+            end = (u8 *)dst + 0x257FE;
+            do {
+                bits = *src;
+                pixel = 0;
+                shift = 0;
+                j = 0;
+                do {
+                    value = (u8)(fade + (bits & 0x1F));
+                    if (value >= 0x20) {
+                        value = 0x1F;
+                    }
+                    pixel |= value << shift;
+                    shift += 5;
+                    j++;
+                    bits >>= 5;
+                } while ((j & 0xFF) < 3);
+                *dst = pixel;
+                dst = (u16 *)((u8 *)dst + 2);
+                src = (u16 *)((u8 *)src + 2);
+            } while (end >= (u8 *)dst);
+        } else {
+            frame++;
+            if (frame >= 0xB5) {
+                counter = D_800A3724 - 1;
+                D_800A3724 = counter;
+                if (counter == 0) {
+                    D_800A3724 = 0x3C;
+                    toggle = toggle ^ 1;
+                }
+                if (toggle != 0) {
+                    AddPrim((void *)D_800A39C8[0], D_800A34FC);
+                }
+            }
+        }
+        DrawSync(0);
+        VSync(0);
+        PutDispEnv(&D_800BDE04[D_800A305C]);
+        PutDrawEnv(&D_800BDD4C[D_800A305C]);
+        D_800A3710Small.x = -(D_800A305C != 0) & 0x140;
+        LoadImage(D_800A3710, (u_long *)texBuf);
+        if ((fade << 24) != 0) {
+            continue;
+        }
+        DrawOTag((OT_TYPE *)(D_800A39C8draw[0] + 0xC));
+        func_80041AF0Scene(0);
+        pads = func_80041B7C(0);
+        if (frame >= 0xB5) {
+            mask = ~prevPads;
+            if (D_800A2EB0Absolute[0] == -2) {
+                mask = mask & 0x9F0;
+            } else {
+                mask = mask & 0x800;
+            }
+            if ((pads & mask) != 0) {
+                done = 1;
+            }
+            if ((done & 0xFF) != 0) {
+                if (D_800A3A48 != 0xFF) {
+                    D_800A39E4Small = D_800A3A48;
+                    D_800A3A48 = 0xFF;
+                } else {
+                    D_800A39E4Small = 0;
+                }
+                prevPads = pads;
+            } else {
+                if (frame >= 0x709) {
+                    done = 1;
+                    D_800A39E4Small = 0xFE;
+                }
+                prevPads = pads;
+            }
+        } else {
+            prevPads = pads;
+        }
+    } while ((done & 0xFF) == 0);
+    if (D_800A39E4Small == 0xFE) {
+        func_8005957C();
+    } else if (D_800A39E4Small == 0) {
+        D_800A3950 = 0xF9;
+    }
+    rect.x = 0x200;
+    rect.y = 0x124;
+    rect.w = 0x60;
+    rect.h = 0x15;
+    moveX = 0x73;
+    if (D_800A305C == 0) {
+        moveX = 0x1B3;
+    }
+    MoveImage(&rect, moveX, 0xBC);
+    DrawSync(0);
+    HeapFree(fileBuf);
+    D_800A3638 = 0;
+    HeapFree(texBuf);
+    if (D_800A39E4Small == 0xFE) {
+        func_80066A24();
+    }
+    HeapResetInitFlag();
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_80058D94);
+#endif
 
 #ifdef NON_MATCHING
 /*
