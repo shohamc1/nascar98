@@ -5764,10 +5764,6 @@ void func_80057A9C(void) {
     ((u8 *)D_800A37B4Absolute)[8] = 0;
 }
 
-/* Wall: needs a gp store to D_800A3548 (untracked sdata label, no
- * linker alias). Declaring it shifts every sdata label +0x10 and the
- * full build MISMATCHes. Also needs lui for D_800A39E8, which is
- * scalar-declared (gp) for the TU. */
 extern void func_80012E28(void);
 extern void *HeapAlloc(u32);
 extern s32 D_800A3548;
@@ -5781,30 +5777,21 @@ extern s32 D_800A3544;
 extern s32 D_800A38EC;
 extern s32 D_800A397CAbsolute[];
 extern void func_8005E47C(void);
-/* w9f unguard retry: D_800A3548 tracked extern works now (gp sw/lw match,
- * size 0x118 exact) but the s-reg map is rotated: ours saves an extra s4
- * and runs poly->s0/cursor->s2 vs retail s1/s0; retail pins the 0x80
- * shade byte in s3 across both loops, ours rematerializes the literal.
- * Candidate fix: a local holding 0x80 stored through both loops. Re-guarded. */
-#ifdef NON_MATCHING
 void func_80057AE4(void) {
     POLY_FT4 *poly;
     POLY_F4 *shade;
-    u8 *color;
     u32 count;
     s32 base;
 
     func_80012E28();
-    poly = HeapAlloc(0x4290);
-    D_800A3548 = (s32)poly;
-    color = (u8 *)poly + 6;
+    D_800A3548 = (s32)HeapAlloc(0x4290);
+    poly = (POLY_FT4 *)D_800A3548;
     for (count = 0; count < 0x1AA; count++) {
         SetPolyFT4(poly);
         SetShadeTex(poly, 0);
-        color[-2] = 0x80;
-        color[-1] = 0x80;
-        color[0] = 0x80;
-        color += 0x28;
+        poly->r0 = 0x80;
+        poly->g0 = 0x80;
+        poly->b0 = 0x80;
         poly++;
     }
     base = D_800A3548;
@@ -5813,26 +5800,21 @@ void func_80057AE4(void) {
     D_800A3A18 = base + 0x3E80;
     D_800A39A8 = base + 0x4268;
     D_800A39CC = base + 0x4268;
-    shade = HeapAlloc(0x4B0);
-    color = (u8 *)shade + 6;
-    D_800A3780 = (s32)shade;
+    D_800A3780 = (s32)HeapAlloc(0x4B0);
+    shade = (POLY_F4 *)D_800A3780;
     D_800A35B8 = (s32)shade;
     D_800A3544 = (s32)shade + 0x3C0;
     D_800A38EC = (s32)shade + 0x3C0;
     for (count = 0; count < 0x32; count++) {
         SetPolyF4(shade);
+        shade->r0 = 0x80;
+        shade->g0 = 0x80;
+        shade->b0 = 0x80;
         SetSemiTrans(shade, 0);
-        color[-2] = 0x80;
-        color[-1] = 0x80;
-        color[0] = 0x80;
-        color += 0x18;
         shade++;
     }
     func_8005E47C();
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80057AE4);
-#endif
 
 extern s32 D_800A3548;
 extern s32 D_800A3780;
