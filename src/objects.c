@@ -5972,37 +5972,17 @@ typedef struct {
     s32 words[10];
 } Primitive40;
 
-typedef struct {
-    s32 words[4];
-} Primitive10;
-
 extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
 extern s32 D_800A36D0Absolute[];
 void func_80034B90(u8 *prim) {
-    s32 cursorVal;
-    u8 *entry;
-    u8 *dst;
-    u8 *end;
-    s32 tailA;
-    s32 tailB;
+    POLY_FT4 *entry;
+    u32 cursor;
 
-    end = prim + 0x20;
-    cursorVal = gPrimitiveCursor[0];
-    asm("");
-    entry = (u8 *)cursorVal;
-    dst = entry;
-    asm volatile("" : : "r"(cursorVal));
-    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
-    do {
-        *(Primitive10 *)dst = *(Primitive10 *)prim;
-        prim += 0x10;
-        dst += 0x10;
-    } while (prim != end);
-    tailA = *(s32 *)prim;
-    tailB = *(s32 *)(prim + 4);
-    *(s32 *)dst = tailA;
-    *(s32 *)(dst + 4) = tailB;
+    cursor = gPrimitiveCursor[0];
+    ((s32 *)D_800A36D0Absolute)[-67] = cursor + sizeof(POLY_FT4);
+    entry = (POLY_FT4 *)cursor;
+    *entry = *(POLY_FT4 *)prim;
     AddPrim((u8 *)D_800A39C8[0] + 0xFF8, entry);
 }
 
