@@ -3993,34 +3993,19 @@ finish:
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006C700);
 #endif
 
-#ifdef NON_MATCHING
-/* Wave-32 (2026-10-06): 8 bytes off, all in 4 prologue words. gcc always
- * homes arg2 to s0 as the early entry pair with the a3 copy deferred into the
- * jal delay; retail is the inverse. 30+ source shapes failed; root cause mapped
- * via cc1 -da dumps (notes in /tmp/n98-w32d/notes.md). addu operand order fixed
- * via the s0 pin + hand asm below. */
 extern s32 func_8005AEC8(u32, void *);
-s32 func_8006C94C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s16 *arg4) {
-    register s32 sum asm("s0");
-    s32 cur = arg3;
-    s32 val;
+s32 func_8006C94C(u8 arg0, u8 arg1, u8 arg2, s8 *arg3, s16 *arg4) {
     s32 ret;
 
-    func_8005A7B8S32(arg0 & 0xFF, arg1 & 0xFF);
-    val = arg2 & 0xFF;
-    if (*(s8 *)cur == 0) {
-        cur = 0;
+    func_8005A7B8(arg0, arg1);
+    if (*arg3 == 0) {
         *arg4 = func_8005AFF0(0x20);
-        return cur;
+        return 0;
     }
-    ret = func_8005AEC8(val, (void *)cur);
-    asm("addu %0,%1,%2" : "=r"(sum) : "r"(cur), "r"(val));
-    *arg4 = func_8005AFF0(*(s8 *)sum);
+    ret = func_8005AEC8(arg2, arg3);
+    *arg4 = func_8005AFF0(arg3[arg2]);
     return ret;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006C94C);
-#endif
 
 extern u8 *D_800A377C[];
 void func_8006C9DC(void) {
