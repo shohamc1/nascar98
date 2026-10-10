@@ -1837,35 +1837,30 @@ void func_80045F70(void) {
 
 #endif
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 208 bytes versus retail 212; 16 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The existing object/count API clears the conflicting local prototype.
- */
 extern s8 D_800A343C;
 extern s8 *D_800A3444[];
 extern s32 D_800BE980[];
 
 void func_80046184(s8 *arg0) {
-    extern void func_80032DEC(u8 *, s32);
     s8 *base;
     s8 *entry;
     s8 *tail;
-    s32 count;
-    s32 *descriptorBase;
-    s32 n;
+    s8 count;
+    s8 n;
     s8 i;
     s32 id;
     u16 flag;
     u8 *p;
+    s32 *descriptors;
 
-    descriptorBase = &D_800BE980[0];
     count = D_800A343C;
     base = D_800A3444[arg0[0x20B]];
     for (n = 1, i = 1, tail = base + 4; i < count; i++) {
-        entry = base + i * 0x58;
+        entry = (s8 *)(i * 0x58 + (s32)base);
         id = *(s16 *)entry;
-        p = (u8 *)*descriptorBase + id * 0x90;
+        descriptors = D_800BE980;
+        p = (u8 *)(id * 0x90 + descriptors[0]);
+        descriptors = 0;
         flag = *(u16 *)(p + 0xE);
         if (flag != 0) {
             *(s32 *)(tail + 0x28) = (s32)(entry + 4);
@@ -1873,11 +1868,8 @@ void func_80046184(s8 *arg0) {
             n++;
         }
     }
-    func_80032DEC((s32)(base + 4), (s8)n);
+    func_80032DEC((s32)(base + 4), n);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80046184);
-#endif
 
 typedef struct {
     u16 tpx;
