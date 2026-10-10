@@ -4624,79 +4624,45 @@ extern void func_8006E628(u32 arg0, u32 arg1, u32 arg2);
 
 void func_8006DD28(u32 arg0, u32 arg1) {
     s32 i;
-    s32 j;
     s32 m;
     u32 n;
     s32 pos;
-    s32 end;
-    s32 bright;
-    s32 lt;
-    s32 p;
-    u8 color;
     extern u8 D_800A307C[];
     extern u8 D_800A36E4[];
 
     m = (u8)arg0;
     n = (u8)arg1;
     func_8006E628(m, n, D_800A307C[m]);
-    i = 0;
-    j = 2;
     pos = (m << 3) + m;
-    end = pos + 6;
-    bright = 0xFF;
-    lt = n < 5;
-    p = pos;
-    do {
-        if (i == j) {
-            asm volatile(
-                "lui $at, %%hi(D_800AEE3C)\n\taddu $at, $at, %0\n\tsb $zero, %%lo(D_800AEE3C)($at)"
-                :
-                : "r"(end));
-            asm volatile(
-                "lui $at, %%hi(D_800AEE3D)\n\taddu $at, $at, %0\n\tsb %1, %%lo(D_800AEE3D)($at)"
-                :
-                : "r"(end), "r"(bright));
-        } else if (!lt) {
+    for (i = 0; i < 3; i++) {
+        if (i == 2) {
+            s32 idx;
+
+            idx = pos + i * 3;
+            D_800AEE3C[idx] = 0;
+            D_800AEE3D[idx] = 0xFF;
+        } else if (n >= 5) {
             if (i == 0) {
-                asm volatile(
-                    "lui $at, %%hi(D_800AEE3E)\n\taddu $at, $at, %1\n\tlbu %0, %%lo(D_800AEE3E)($at)"
-                    : "=r"(color)
-                    : "r"(pos));
-                asm volatile(
-                    "lui $at, %%hi(D_800AEE3D)\n\taddu $at, $at, %0\n\tsb $zero, %%lo(D_800AEE3D)($at)"
-                    :
-                    : "r"(pos));
-                asm volatile(
-                    "lui $at, %%hi(D_800AEE3C)\n\taddu $at, $at, %1\n\tsb %0, %%lo(D_800AEE3C)($at)"
-                    :
-                    : "r"(color), "r"(pos));
+                s32 idx;
+
+                idx = pos + i * 3;
+                D_800AEE3D[idx] = 0;
+                D_800AEE3C[idx] = D_800AEE3E[idx];
             } else {
-                asm volatile(
-                    "lui $at, %%hi(D_800AEE3E)\n\taddu $at, $at, %1\n\tlbu %0, %%lo(D_800AEE3E)($at)"
-                    : "=r"(color)
-                    : "r"(p));
-                asm volatile(
-                    "lui $at, %%hi(D_800AEE3D)\n\taddu $at, $at, %0\n\tsb %1, %%lo(D_800AEE3D)($at)"
-                    :
-                    : "r"(p), "r"(bright));
-                asm volatile(
-                    "lui $at, %%hi(D_800AEE3C)\n\taddu $at, $at, %1\n\tsb %0, %%lo(D_800AEE3C)($at)"
-                    :
-                    : "r"(color), "r"(p));
+                s32 idx;
+
+                idx = pos + i * 3;
+                D_800AEE3D[idx] = 0xFF;
+                D_800AEE3C[idx] = D_800AEE3E[idx];
             }
         } else {
-            asm volatile(
-                "lui $at, %%hi(D_800AEE3C)\n\taddu $at, $at, %0\n\tsb $zero, %%lo(D_800AEE3C)($at)"
-                :
-                : "r"(p));
-            asm volatile(
-                "lui $at, %%hi(D_800AEE3D)\n\taddu $at, $at, %0\n\tsb %1, %%lo(D_800AEE3D)($at)"
-                :
-                : "r"(p), "r"(bright));
+            s32 idx;
+
+            idx = pos + i * 3;
+            D_800AEE3C[idx] = 0;
+            D_800AEE3D[idx] = 0xFF;
         }
-        i++;
-        p += 3;
-    } while (i < 3);
+    }
     D_800A36E4[(u8)arg0] = 1;
 }
 
