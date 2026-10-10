@@ -2871,31 +2871,18 @@ extern s32 D_800A2E54;
 extern s16 D_800A2E58;
 extern s32 D_800A2E5C;
 extern s32 D_800A3A04;
-extern s32 D_800A2E50nm asm("D_800A2E50.NON_MATCHING");
+extern s32 D_800A2E50;
 
 void func_8002A954(void) {
-    s16 revLimit;
-    s32 speedScale;
-    s32 scaleVal;
-    register u8 tempByte asm("a1");
-    s32 e54val;
-    s32 isLow;
-
-    revLimit = 0x3A98 / (D_800A331D[0] - 0x46);
-    speedScale = 0x28A0000 / (D_800A331F[0] - 0x14);
-    scaleVal = D_800A331C[0] + 0xC8;
-    tempByte = D_800A3320[0];
     D_800A2E44 = 0x5D;
     D_800A2E48 = 0x1A;
-    D_800A2E50nm = (D_800A331D[0] - 0x32) * 0x50;
-    e54val = (0x70 - D_800A331F[0]) * 0x10000;
-    D_800A2E54 = e54val;
-    isLow = (u32)D_800A331F[0] < 0x65;
-    D_800A2E20[0] = tempByte;
-    D_800A2E4C = scaleVal / 3;
-    D_800A2E58 = revLimit;
-    D_800A2E5C = speedScale;
-    if (!isLow) {
+    D_800A2E50 = (D_800A331D[0] - 0x32) * 0x50;
+    D_800A2E20[0] = D_800A3320[0];
+    D_800A2E54 = (0x70 - D_800A331F[0]) * 0x10000;
+    D_800A2E4C = (D_800A331C[0] + 0xC8) / 3;
+    D_800A2E58 = 0x3A98 / (D_800A331D[0] - 0x46);
+    D_800A2E5C = 0x28A0000 / (D_800A331F[0] - 0x14);
+    if (D_800A331F[0] > 0x64) {
         D_800A2E54 = 0xC0000 - (D_800A331F[0] - 0x64) * 0x10000 / 5;
     }
     D_800A2E30 = 0x10CC;
