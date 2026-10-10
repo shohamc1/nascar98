@@ -3372,16 +3372,14 @@ extern void func_8001E17C();
 extern void func_800323F0(s32, s32);
 extern void func_80032494(u8 *);
 void func_8002DC2C(void) {
-    u8 *rec;
+    u8 *entry;
     s32 cursor;
-    s32 n;
-    s32 i;
-    s32 j;
-    s32 row;
-    s32 sumv;
-    s32 val;
-    register s32 minusOne asm("$2");
-    s32 arg0v;
+    s32 sel;
+    s32 slot;
+    s32 page;
+    s32 first;
+    s32 ratio;
+    s32 none;
 
     D_800A353C_a[0] = MathFixedDivide(6, 0xF);
     D_800A3758_a[0] = MathFixedDivide(1, 2);
@@ -3391,38 +3389,29 @@ void func_8002DC2C(void) {
     func_8001E17C(6);
     D_800A2F30_nm[0] = 0;
     cursor = 0;
-    j = 0;
-    row = 0;
-    do {
-        n = -(j == 0);
-        i = 0;
-        do {
-            sumv = row + i;
-            rec = (u8 *)(sumv << 4);
-            rec = (u8 *)((u32)rec + (u32)sumv);
-            rec = (u8 *)((u32)rec << 2);
-            rec = (u8 *)((u32)rec + (u32)D_800AE88C);
-            D_800A3574_a[0] = rec;
-            func_800323F0(cursor, n);
+    for (page = 0, first = 0; page < 1; page++, first += 5) {
+        sel = (page == 0) ? -1 : 0;
+        for (slot = 0; slot < 4; slot++) {
+            entry = D_800AE88C + (first + slot) * 0x44;
+            D_800A3574_a[0] = entry;
+            func_800323F0(cursor, sel);
             cursor++;
-            func_80032494(rec);
-            minusOne = -1;
-            if (n != minusOne) {
-                n++;
+            func_80032494(entry);
+            /* A second store makes `none` multi-set, so loop.c keeps the
+               constant in the loop (retail reloads -1 each pass). */
+            none = -1;
+            if (sel != none) {
+                sel++;
             }
-            i++;
-        } while (i < 4);
-        j++;
-        row += 5;
-    } while (j <= 0);
-    val = MathFixedDivide(3, 2);
-    asm volatile("ori %0, $zero, 4" : "=r"(arg0v));
-    rec = D_800AE99C_nm;
-    D_800A353C_b[-1] = val;
-    D_800A3758_c[-2] = val;
-    D_800A3574_b[1] = rec;
-    func_800323F0(arg0v, -1);
-    func_80032494(rec);
+            none = 0;
+        }
+    }
+    ratio = MathFixedDivide(3, 2);
+    D_800A353C_b[-1] = ratio;
+    D_800A3758_c[-2] = ratio;
+    D_800A3574_b[1] = D_800AE99C_nm;
+    func_800323F0(4, -1);
+    func_80032494(D_800AE99C_nm);
     func_8001DFC8();
 }
 
