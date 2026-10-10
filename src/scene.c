@@ -3693,7 +3693,6 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004EBE4);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004F158);
 
-#ifdef NON_MATCHING
 typedef struct {
     u16 tpx;
     u16 tpy;
@@ -3740,6 +3739,8 @@ void func_8004F880(void) {
     u8 *car;
     s8 *p;
     s8 *pb;
+    s8 *pj;
+    s32 pm;
     s32 *q;
     s32 uvBase;
     s32 distBase;
@@ -3748,11 +3749,9 @@ void func_8004F880(void) {
     s32 x;
     s32 lim;
     s32 inf;
-    s8 m;
     s32 w;
     s8 i;
     s8 j;
-    s8 k;
     s32 pad[2];
 
     (void)&pad;
@@ -3765,14 +3764,18 @@ void func_8004F880(void) {
     for (i = 0; i < 4; i++) {
         lim = 0x7FFF;
         pb = D_800992D0;
-        stride = i * 0x30;
-        *(u8 *)(stride + (s32)D_800A8AB0[0]) = 0x7F;
-        uvBase = stride + (s32)D_800A8AB0[0];
-        p = D_800A2CE0[0] + pb;
+        do {
+            stride = i * 0x30;
+            *(u8 *)(stride + (s32)D_800A8AB0[0]) = 0x7F;
+            uvBase = stride + (s32)D_800A8AB0[0];
+            p = (s8 *)D_800A2CE0[0];
+        } while (0);
+        p = (s8 *)((s32)p + (s32)pb);
         *(u16 *)(uvBase + 4) = lim;
         *(u16 *)(uvBase + 2) = lim;
         j = 0;
         if (j < p[0]) {
+            pj = p;
         innerJ:
             inf = 0x7FFFFFFF;
             *(u16 *)(stride + (s32)D_800A8AB0[0] + 6 + j * 2) = lim;
@@ -3780,37 +3783,39 @@ void func_8004F880(void) {
             *(s32 *)(distBase + 0x20) = inf;
             *(s32 *)(distBase + 0x10) = inf;
             j++;
-            if (j < p[0]) {
+            if (j < pj[0]) {
                 goto innerJ;
             }
         }
     }
-    for (k = 0; k < 4; k++) {
-        D_800A8A74[k] = D_800A8AB0[0] + k * 0x30;
+    for (i = 0; i < 4; i++) {
+        D_800A8A74[i] = D_800A8AB0[0] + i * 0x30;
     }
     x = D_801F3FF8[0];
     D_800A34C4 = x * 4;
-    p = D_800992D0;
     idx = D_800A2CE0[0];
+    p = D_800992D0;
     if (D_800992D0[idx] > 0) {
-        m = 0;
+        i = 0;
         q = &D_800BE974[0];
+        pm = (s32)p;
         w = (x << 18) >> 16;
     loopM:
-        *(u16 *)(D_800A8AB4 + m * 4) =
+        *(u16 *)(D_800A8AB4 + i * 4) =
             0x12C - D_80099230[idx * 2] -
-            *(s32 *)((u8 *)D_800BE980[0] + (m * q[0] / *(idx + p)) * 0x90 +
-                     0x14) /
+            *(s32 *)((u8 *)D_800BE980[0] +
+                     (i * q[0] / *(s8 *)(idx + pm)) * 0x90 + 0x14) /
                 w -
             4;
-        *(u16 *)(D_800A8AB6 + m * 4) =
+        uvBase = q[0];
+        *(u16 *)(D_800A8AB6 + i * 4) =
             D_80099231[idx * 2] +
-            *(s32 *)((u8 *)D_800BE980[0] + (m * q[0] / *(idx + p)) * 0x90 +
-                     0x18) /
+            *(s32 *)((u8 *)D_800BE980[0] +
+                     (i * uvBase / *(s8 *)(idx + pm)) * 0x90 + 0x18) /
                 w +
             0xE;
-        m++;
-        if (m < *(idx + p)) {
+        i++;
+        if (i < *(s8 *)(idx + pm)) {
             goto loopM;
         }
     }
@@ -3832,10 +3837,6 @@ void func_8004F880(void) {
     *(u16 *)(car + 0x2A4) = *(u16 *)(car + 0x2A0) + 8;
     *(u16 *)(car + 0x2AA) = *(u16 *)(car + 0x2A6) + 8;
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004F880);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004FCF4);
 
