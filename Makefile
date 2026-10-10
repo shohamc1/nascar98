@@ -283,11 +283,12 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=SpuTransferCountT=D_800A26FC \
             --defsym=SpuTransferBlocksT=D_800A2700
 
-# SDK C matches with R3000 scheduling. Game flags stay above. The SDK
-# compiler adds tools/gcc-sdk.patch: Sony's library compiler never fills
-# the epilogue delay slot (0 of 483 SDK returns, 7 of 857 game returns).
+# SDK C matches with R3000 scheduling. Game flags stay above. The Psy-Q
+# libraries came from GNU C 2.6.3, not the game's 2.7.2: see "SDK compiler"
+# in kb/psx/toolchain.md. tools/cc1-263.sh runs it (Docker off x86 Linux).
 build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
-build/src/psxsdk.c.o: CC1 := tools/cc/$(CC_VER)-sdk/cc1
+build/src/psxsdk.c.o: CC1 := tools/cc1-263.sh
+build/src/psxsdk.c.o: tools/cc1-263.sh
 
 # Splat writes asm/ and the linker script, and the file lists below need
 # them, so a fresh tree splits before Make reads the lists.
@@ -378,9 +379,9 @@ tools:
 	  | tar xz -C tools/cc/$$v; done
 	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
 	  || sh tools/build_cc.sh
-	cat tools/gcc-nascar98.patch tools/gcc-sdk.patch \
-	  | cmp -s - tools/cc/2.7.2-psx-nascar98-sdk/nascar98.patch \
-	  || sh tools/build_cc.sh sdk
+	mkdir -p tools/cc/2.6.3-psx && \
+	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-2.6.3-psx.tar.gz \
+	  | tar xz -C tools/cc/2.6.3-psx
 
 clean:
 	rm -rf build

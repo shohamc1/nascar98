@@ -1,6 +1,5 @@
 #!/bin/sh
 # Build the measured NASCAR 98 scheduling profile, not a retail compiler.
-# With "sdk", also apply tools/gcc-sdk.patch for the Psy-Q library code.
 set -eu
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -8,10 +7,6 @@ trap 'rm -rf "$work"' EXIT
 revision=b74211c9d959e9724802f3177c8229cd67202c87
 dest="$repo/tools/cc/2.7.2-psx-nascar98"
 patches="$repo/tools/gcc-nascar98.patch"
-if [ "${1:-}" = sdk ]; then
-    dest="$repo/tools/cc/2.7.2-psx-nascar98-sdk"
-    patches="$patches $repo/tools/gcc-sdk.patch"
-fi
 
 git -C "$work" init -q
 git -C "$work" fetch -q --depth=1 https://github.com/decompals/old-gcc.git "$revision"

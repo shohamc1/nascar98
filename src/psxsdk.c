@@ -6686,8 +6686,7 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn2);
 
-#ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
+#if 1
 extern u8 D_800B9DC6[];
 extern u8 D_800B9DD4[];
 extern u8 D_800B9DD5[];
@@ -6720,13 +6719,15 @@ u16 note2pitch(void) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch);
 #endif
 
-#ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
+#if 1
 extern u8 D_800B9DCB[];
 extern u8 D_800B9DD0[];
 extern u8 D_800B9950Raw[] asm("D_800B9950");
 extern u16 D_800A20BC[];
-s32 note2pitch2(u16 arg0, u16 arg1) {
+s32 note2pitch2(arg0, arg1)
+u16 arg0;
+u16 arg1;
+{
     s32 pos;
     s16 new_var;
     s16 var_a3;
@@ -6736,7 +6737,7 @@ s32 note2pitch2(u16 arg0, u16 arg1) {
     var_a3 =
         (arg1 +
          ((u8 *)*(u32 *)
-              D_800B9950Raw)[(D_800B9DD0[0] + D_800B9DCB[0] * 0x10) * 0x20 +
+              D_800B9950Raw)[(D_800B9DD0[0] + (D_800B9DCB[0] << 4)) * 0x20 +
                              5]) /
         8;
     var_a2 = 0;
@@ -6747,7 +6748,7 @@ s32 note2pitch2(u16 arg0, u16 arg1) {
     new_var =
         arg0 + 60 -
         ((u8 *)*(u32 *)
-             D_800B9950Raw)[(D_800B9DD0[0] + D_800B9DCB[0] * 0x10) * 0x20 + 4] +
+             D_800B9950Raw)[(D_800B9DD0[0] + (D_800B9DCB[0] << 4)) * 0x20 + 4] +
         var_a2;
     octave = new_var / 12;
     pos = (new_var % 12) * 16;
@@ -6763,7 +6764,7 @@ s32 note2pitch2(u16 arg0, u16 arg1) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch2);
 #endif
 
-#ifdef NON_MATCHING
+#if 1
 /* Complete C draft; code generation still differs from retail. */
 void SePitchBend(u8 voice, s16 arg1) {
     extern u8 D_800AD3CC[];
@@ -6774,7 +6775,7 @@ void SePitchBend(u8 voice, s16 arg1) {
     extern u8 D_800B9DD0[];
     extern u16 D_800B9DDE[];
     extern u32 D_800B9950[];
-    extern u16 D_800AD228[];
+    extern u16 D_800AD224[];
     extern s32 note2pitch2();
     s32 tone;
     u16 note;
@@ -6784,9 +6785,9 @@ void SePitchBend(u8 voice, s16 arg1) {
     pos = voice * 8;
     if (voice >= 0 && voice < 24) {
         D_800B9DCB[0] = D_800AD3CC[(s32)voice * 52];
-        D_800B9DDE[0] = voice;
         D_800B9DD0[0] = D_800AD3D0[(s32)voice * 52];
-        tone = D_800B9DD0[0] + D_800B9DCB[0] * 16;
+        D_800B9DDE[0] = voice;
+        tone = D_800B9DCB[5] + D_800B9DCB[0] * 16;
         if (arg1 >= 0) {
             note =
                 D_800AD3C8[(s32)voice * 26] +
@@ -6802,7 +6803,7 @@ void SePitchBend(u8 voice, s16 arg1) {
                      0x7F) +
                     0x7F;
         }
-        D_800AD228[pos + 2] = note2pitch2(note, pbend);
+        D_800AD224[pos + 2] = note2pitch2(note, pbend);
         D_800AD3A4[voice] |= 4;
     }
 }
@@ -7352,14 +7353,16 @@ extern u8 D_800AD3BE[];
 extern u8 D_800AD3CC[];
 extern u32 D_800B9950[];
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-08): 39 diff lines, all register swaps cascading from two
- * roots: (1) the raw voll/volr stack loads land in s1/s0 instead of s0/s1, and
- * (2) the (s16) conversion temps pick a0/v1 backwards. volr==voll fixes the
- * temps but swaps the raws; voll==volr the reverse. Also missing: retail's
- * voice copy (move v1,s0) after SpuVmAlloc, the vag sll/sra interleave, and
- * the tail store-cluster order. cc1 -dl greg dump analyzed (span-based
- * ranking); permuter standalone wins do not transfer to the TU context. */
+#if 1
+/* Matches (0 words) under GNU C 2.6.3-psx only; the 2.7.2 build still
+ * differs. Retail's codegen needs these spellings:
+ * - the (s16)vag test is also the SpuVmAlloc argument, so the sll/sra pair
+ *   has a second use and combine can't fold it into the beqz;
+ * - (u8)voice in the compare and in the *52 index makes the `move v1,s0`
+ *   copy (combine reduces the zero-extend to a copy that has two uses);
+ * - D_800B9DD0 + D_800B9DCB * 16 in that operand order;
+ * - the post-alloc stores run D3CA, D3D2, D3CC, D3CE, D3BC, D3D0, D3C8,
+ *   D3D7, D3BE so sched1 hoists the DCB/DDC/DD0 reloads like retail. */
 /* SPDX-License-Identifier: MIT */
 s32 SsUtKeyOn(s16 vabId, s16 prog, s16 tone, s16 note, u16 fine, s16 voll,
               s16 volr) {
@@ -7386,7 +7389,7 @@ s32 SsUtKeyOn(s16 vabId, s16 prog, s16 tone, s16 note, u16 fine, s16 voll,
     D_800B9DC6[0] = note;
     D_800B9DC7[0] = fine;
     D_800B9DD0[0] = tone;
-    if (volr == voll) {
+    if (voll == volr) {
         D_800B9DC9[0] = 0x40;
         D_800B9DC8[0] = voll;
     } else if (volr < voll) {
@@ -7401,10 +7404,9 @@ s32 SsUtKeyOn(s16 vabId, s16 prog, s16 tone, s16 note, u16 fine, s16 voll,
     D_800B9DCF[0] = progAttr[4];
     D_800B9DC4[0] = progAttr[0];
     toneAttr =
-        (u8 *)((D_800B9DCB[0] * 16 + D_800B9DD0[0]) * 32 + (s32)D_800B9950[0]);
+        (u8 *)((D_800B9DD0[0] + D_800B9DCB[0] * 16) * 32 + (s32)D_800B9950[0]);
     D_800B9DD3[0] = toneAttr[0];
     vag = *(u16 *)(toneAttr + 0x16);
-    asm("" : "=r"(vag) : "0"(vag));
     D_800B9DDC[0] = vag;
     D_800B9DD1[0] = toneAttr[2];
     D_800B9DD2[0] = toneAttr[3];
@@ -7417,21 +7419,21 @@ s32 SsUtKeyOn(s16 vabId, s16 prog, s16 tone, s16 note, u16 fine, s16 voll,
         keyOnGuard[0] = 0;
         return -1;
     }
-    voice = (u8)SpuVmAlloc();
-    if (voice == D_800B9C80[0]) {
+    voice = (u8)SpuVmAlloc((s16)vag);
+    if ((u8)voice == D_800B9C80[0]) {
         keyOnGuard[0] = 0;
         return -1;
     }
     D_800B9DDE[0] = voice;
-    D_800AD3CA[voice][0] = 0x21;
-    *(s16 *)(D_800AD3D2 + voice * 52) = vabId;
-    *(s16 *)(D_800AD3CE + voice * 52) = prog;
-    *(s16 *)(D_800AD3CC + voice * 52) = D_800B9DC9[2];
-    *(s16 *)(D_800AD3BC + voice * 52) = *(u16 *)&D_800B9DDA[1];
-    *(s16 *)(D_800AD3C8 + voice * 52) = note;
-    *(u8 *)(D_800AD3D7 + voice * 52) = 1;
-    *(s16 *)(D_800AD3BE + voice * 52) = 0;
-    *(s16 *)(D_800AD3D0 + voice * 52) = D_800B9DCF[1];
+    D_800AD3CA[(u8)voice][0] = 0x21;
+    *(s16 *)(D_800AD3D2 + (u8)voice * 52) = vabId;
+    *(s16 *)(D_800AD3CC + (u8)voice * 52) = D_800B9DC9[2];
+    *(s16 *)(D_800AD3CE + (u8)voice * 52) = prog;
+    *(s16 *)(D_800AD3BC + (u8)voice * 52) = *(u16 *)&D_800B9DDA[1];
+    *(s16 *)(D_800AD3D0 + (u8)voice * 52) = D_800B9DCF[1];
+    *(s16 *)(D_800AD3C8 + (u8)voice * 52) = note;
+    *(u8 *)(D_800AD3D7 + (u8)voice * 52) = 1;
+    *(s16 *)(D_800AD3BE + (u8)voice * 52) = 0;
     SpuVmDoAllocate();
     if (((s16 *)D_800B9DDE)[-1] == 0xFF) {
         vmNoiseOn(voice);
@@ -7551,7 +7553,7 @@ s16 SsUtPitchBend(s16 voice, s16 vabId, s16 prog, s16 note, s16 pbend) {
     return -((SpuVmPBVoice(voice, 0x21, vabId, prog, pbend) << 16) == 0);
 }
 
-#ifdef NON_MATCHING
+#if 1
 /* Complete C draft; code generation still differs from retail. */
 short SsUtChangePitch(voice, vabId, prog, old_note, old_fine, new_note,
                       new_fine)
@@ -7564,7 +7566,7 @@ u16 new_note;
 u16 new_fine;
 {
     extern s32 note2pitch2();
-    extern u16 gSpuRegisterBuffer[] asm("D_800AD228");
+    extern u16 gSpuRegisterBuffer[] asm("D_800AD224");
     if (voice >= 0 && voice < 24) {
         if (((s16 *)D_800AD3D2)[voice * 26] == vabId) {
             if (((s16 *)D_800AD3CE)[voice * 26] == prog) {
@@ -8913,28 +8915,35 @@ void _SpuCallback(s32 arg0) {
     InterruptCallback(9, arg0);
 }
 
-#ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
-
+#if 1
+/* Matches under GNU C 2.6.3 only (the retail libspu compiler). Each case
+ * needs its own base pointer, a u16 copy of the low half, and a pointer
+ * local for the D_800A229C read. See sdk-263 notes in the knowledge base. */
 void SpuSetKey(long on_off, unsigned long voice_bit) {
-    u32 temp_a1;
-    volatile u16 *base;
-    u16 new_var;
-    u32 temp_a3;
-    temp_a1 = voice_bit & 0xFFFFFF;
-    temp_a3 = temp_a1 >> 16;
-    new_var = temp_a1;
-    base = D_800A26AC[0];
+    extern s32 D_800A229C[];
+    u32 bits;
+    volatile u16 *regsOn;
+    volatile u16 *regsOff;
+    u16 lo;
+    u32 hi;
+    s32 *keyStat;
+    bits = voice_bit & 0xFFFFFF;
+    hi = bits >> 16;
+    lo = bits;
     switch (on_off) {
     case 1:
-        base[0xC4] = new_var;
-        base[0xC5] = temp_a3;
-        D_800A229CInit[0] |= temp_a1;
+        regsOn = D_800A26AC[0];
+        regsOn[0xC4] = lo;
+        regsOn[0xC5] = hi;
+        keyStat = (s32 *)D_800A229C;
+        D_800A229CInit[0] = *keyStat | bits;
         break;
     case 0:
-        base[0xC6] = temp_a1;
-        base[0xC7] = temp_a3;
-        D_800A229CInit[0] &= ~temp_a1;
+        regsOff = D_800A26AC[0];
+        regsOff[0xC6] = lo;
+        regsOff[0xC7] = hi;
+        keyStat = (s32 *)D_800A229C;
+        D_800A229CInit[0] = *keyStat & ~bits;
         break;
     }
 }

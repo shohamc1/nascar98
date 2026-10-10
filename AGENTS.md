@@ -194,3 +194,10 @@ evidence in the knowledge base.
 best settings. Override them on the command line to experiment
 (`make check CC_VER=2.8.1-psx`). Change the defaults only when a setting
 matches more functions without losing any.
+
+`src/psxsdk.c` is the exception: the Psy-Q libraries came from GNU C
+2.6.3, so `tools/cc1-263.sh` compiles that file, not `CC_VER`. The binary
+is Linux i386; the script runs it directly on x86 Linux and in Docker
+(`--platform linux/386`) everywhere else. `make tools` downloads it. Tune
+SDK C against 2.6.3. Spellings tuned for 2.7.2 often don't carry over; see
+"SDK compiler" in `kb/psx/toolchain.md`.
