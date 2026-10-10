@@ -7412,16 +7412,9 @@ void func_8003AAEC(s32 car) {
 extern void func_80025594(u8 *);
 
 void func_8003ABC0(u8 *object) {
-    u16 timer;
-    u16 mode;
-
-    timer = *(u16 *)(object + 0x1BC);
-    mode = *(u16 *)(object + 0x3A4);
+    *(u16 *)(object + 0x1BC) += 1;
     *(u32 *)(object + 0x90) = 0;
-    timer = timer + 1;
-    *(u16 *)(object + 0x1BC) = timer;
-    if ((mode & 0xF) == 0) {
-        asm("" : : : "memory");
+    if ((*(u16 *)(object + 0x3A4) & 0xF) == 0) {
         if (*(s16 *)(object + 0x1BC) >= 0x65) {
             *(u16 *)(object + 0x1BC) = 0;
             ObjectSetCallbackIfAllowed((Batch0CallbackObject *)object,
