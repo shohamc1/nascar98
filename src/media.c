@@ -4015,35 +4015,25 @@ s32 func_80072BB0(s32 *size) {
     return D_800A351C[0] - difference;
 }
 
-u32 func_80072BDC(void *arg0) {
-    register u32 word asm("a0");
-    u32 swapped;
-    u32 swapped2;
-    u32 size;
-    u32 check;
+#define SWAP32(w)                                                              \
+    (((w) >> 24) | (((w) >> 8) & 0xFF00) | (((w) & 0xFF00) << 8) | ((w) << 24))
 
-    word = *(u32 *)arg0;
-    swapped = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) |
-              (word << 24);
-    check = (swapped & 0xFFFFFF00) == 0x61643200;
+u32 func_80072BDC(u32 *header) {
+    u32 swapped;
+    u32 size;
+    u32 isAd2;
+
+    swapped = SWAP32(header[0]);
+    isAd2 = (swapped & 0xFFFFFF00) == 0x61643200;
     if ((swapped & 0xFFFF0000) == 0x61640000) {
-        word = *((u32 *)arg0 + 1);
-        swapped2 = (word >> 24) | ((word >> 8) & 0xFF00) |
-                   ((word & 0xFF00) << 8) | (word << 24);
-        size = swapped2 - 0x10;
+        size = SWAP32(header[1]) - 0x10;
     } else {
-        word = *((u32 *)arg0 + 1);
-        swapped2 = (word >> 24) | ((word >> 8) & 0xFF00) |
-                   ((word & 0xFF00) << 8) | (word << 24);
-        size = swapped2 - 0xC;
+        size = SWAP32(header[1]) - 0xC;
     }
-    if (check != 0) {
+    if (isAd2) {
         size >>= 1;
-        return size;
     }
-    if (swapped2) {
-        return size;
-    }
+    return size;
 }
 
 INCLUDE_ASM("asm/nonmatchings/media", func_80072CA8);
