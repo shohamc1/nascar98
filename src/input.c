@@ -1454,7 +1454,79 @@ void func_80041DEC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/input", func_80041F54);
 
-INCLUDE_ASM("asm/nonmatchings/input", func_800420D8);
+void func_800420D8(u32 *input, u32 flags, u16 *output) {
+    u8 *mode;
+    register u8 *current asm("t5");
+    u8 *settingPtr;
+    u32 data;
+    u32 fields;
+    u32 raw;
+    u32 a;
+    u32 b;
+    u32 c;
+    u16 setting;
+    u32 state;
+    u32 outputState;
+    s8 modeValue;
+
+    asm volatile("" : "=r"(current) : "0"((u8 *)input));
+    settingPtr = current;
+    mode = (u8 *)D_800A3A24;
+    settingPtr += 2;
+    do {
+        setting = *(u16 *)settingPtr;
+        data = *(u32 *)current;
+        fields = *(u32 *)(settingPtr + 2);
+        state = ~(((setting & 0xFF) << 8) | (setting >> 8));
+        outputState = state;
+        *mode = (data & 0xF000) >> 12;
+        if ((data & 0xFF) == 0xFF) {
+            *mode = 0;
+        }
+        modeValue = *(s8 *)mode;
+        raw = modeValue;
+        if (raw == 2) {
+            c = (fields & 0xFF00) >> 8;
+            a = (fields >> 16) & 0xFF;
+            b = fields & 0xFF;
+            if ((s32)(fields >> 24) >= 0x81) {
+                outputState |= 4;
+            }
+            if (outputState & 0x1000) {
+                outputState |= 8;
+            }
+            if (outputState & 0x4000) {
+                outputState |= 2;
+            }
+            if (outputState & 0x2000) {
+                outputState |= 0x40;
+            }
+            if (outputState & 0x8000) {
+                outputState |= 0x80;
+            }
+        } else if (raw == 4) {
+            c = 0;
+            a = 0;
+            b = 0;
+        } else {
+            c = 0;
+            a = 0;
+            b = 0;
+            outputState = 0;
+        }
+        output[0] = outputState;
+        output[1] = ((((b & 0xFC) << 8) | ((a & 0xF0) << 2)) |
+                     (((s32)(c & 0xF0)) >> 2)) |
+                    (flags & 3);
+        state = 0xC;
+        settingPtr += state;
+        current += 0xC;
+        input = (u32 *)current;
+        output = (u16 *)((u8 *)output + 4);
+        mode += 1;
+        flags >>= 2;
+    } while ((s32)(u32)mode < (s32)(u32)D_800A3A26);
+}
 
 void func_80042218(u16 *src, s32 *acc, u32 *dst) {
     s32 i;

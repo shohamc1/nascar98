@@ -3231,14 +3231,66 @@ void func_80070F40(u_char intr, u_char *result) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_800710D8);
+extern s32 D_800A3504;
+extern s32 D_800A3508;
+extern s32 D_800A350C;
+s32 func_800710D8(void) {
+    s32 *stream;
+    register s32 *base asm("a0");
+    u32 index;
+    s32 *record;
+    s32 *reset;
+    s32 *last;
+    s32 *lastRecord;
+    s32 status;
+
+    stream = D_800A3500;
+    status = stream[0x43C / 4];
+    if (status != 0) {
+        return status;
+    }
+    index = stream[0x434 / 4];
+    if (index < (u32)stream[0x438 / 4]) {
+        record = (s32 *)(D_800A3504 + index * 0x38);
+        stream[0x430 / 4] = (s32)record;
+        if (stream[0x42C / 4] == 0) {
+            stream[0x42C / 4] = (s32)record;
+        }
+        base = D_800A3500;
+        record = (s32 *)base[0x430 / 4];
+        record[0] = (u32)(record[0x10 / 4] + 0x7FF) >> 11;
+        reset = (s32 *)base[0x430 / 4];
+        reset[1] = 0;
+        reset = (s32 *)base[0x430 / 4];
+        reset[2] = 0;
+        reset = (s32 *)base[0x430 / 4];
+        reset[0x28 / 4] = 0;
+        if (base[0x434 / 4] == 0) {
+            base[0x444 / 4] = 0;
+            base[0x440 / 4] = 0;
+            base[0x448 / 4] = 0;
+            base[0x44C / 4] = 0;
+        }
+        last = D_800A3500;
+        last[0x434 / 4] += 1;
+        lastRecord = (s32 *)last[0x430 / 4];
+        lastRecord[0x34 / 4] = 0;
+        lastRecord = (s32 *)last[0x430 / 4];
+        lastRecord[0x2C / 4] = D_800A3508;
+        lastRecord = (s32 *)last[0x430 / 4];
+        lastRecord[0x30 / 4] = D_800A350C;
+        last[0x43C / 4] = 0;
+    } else {
+        stream[0x43C / 4] = 2;
+    }
+    return D_800A3500[0x43C / 4];
+}
 
 INCLUDE_ASM("asm/nonmatchings/media", func_800711F0);
 
-#ifdef NON_MATCHING
 /* All registers match after separating stream phases and reloading the
- * global stream before the tail update. The fast-path store still fills
- * the jump delay slot, omitting one retail nop (four bytes short). */
+ * global stream before the tail update. An empty compiler barrier keeps the
+ * fast-path store out of the jump delay slot. */
 extern s32 *D_800A3500;
 extern void func_800711F0(void);
 void func_800718D4(s32 arg) {
@@ -3264,6 +3316,7 @@ void func_800718D4(s32 arg) {
     if (arg < remaining) {
         do {
             stream[0x444 / 4] = stream[0x444 / 4] + arg;
+            asm volatile("");
         } while (0);
     } else {
         arg -= remaining;
@@ -3290,10 +3343,6 @@ void func_800718D4(s32 arg) {
         }
     }
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/media", func_800718D4);
-#endif
 
 extern s32 *D_800A3500;
 s32 func_800719D4(void) {

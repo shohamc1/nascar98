@@ -1623,11 +1623,6 @@ INCLUDE_ASM("asm/nonmatchings/objects", func_80024B08);
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80024E90);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: The resource length is correctly the first query result.
- * The remaining close wall is when that result moves into s0 relative to the
- * second call's argument setup; preserved header-size staging fixes the
- * cursor tail. */
 extern s32 D_800A3A54Small;
 extern s32 D_800A2E14[];
 extern s32 D_800A3810;
@@ -1646,14 +1641,16 @@ void func_80025370(s32 arg0) {
     int headerSize;
     s32 cursor;
     s32 row0;
-    s32 row1;
+    register s32 row1 asm("$16");
+    register s32 row1Shift asm("$3");
     handle = FileOpenCall(arg0, D_800A2E14);
     if (handle == 0) {
         SystemShowFatalError(D_8008CFC0);
     }
     total = FileSeekCall(handle, 0, 2);
+    asm volatile("" : : "r"(total));
     FileSeekCall(handle, 0, 0);
-    D_800A3A54Small = (0x1F4000 - total) | 0x80000000;
+    D_800A3A54Small = (RAM_RESOURCE_BOUNDARY - total) | RAM_CACHED_BASE;
     FileRead(D_800A3A54Small, 1, total, handle);
     cursor = *((volatile s32 *)(&D_800A3A54Small));
     D_800A3A54Small = cursor + 4;
@@ -1664,12 +1661,10 @@ void func_80025370(s32 arg0) {
     row1 = *((s32 *)(cursor + 4));
     D_800A3838 = cursor + headerSize;
     D_800A3810 = (cursor + headerSize) + (row0 << 4);
-    D_800A356C = D_800A3810 + (row1 << 3);
+    row1Shift = row1 << 3;
+    D_800A356C = D_800A3810 + row1Shift;
     FileCloseCall(handle);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_80025370);
-#endif
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008CFC0);
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008CFE0);
 

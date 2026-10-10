@@ -1934,31 +1934,31 @@ extern s32 D_800A2EA8[];
 extern s32 D_800BE974[];
 extern s32 D_800A2F88;
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 256 bytes versus retail 260; 22 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Separating the final random-adjustment result from the saved pace improves register usage.
- */
+extern s32 D_800A2EA8[];
+extern s32 D_800BE974[];
+extern s32 D_800A2F88;
+extern s32 RandomScaledGet(s32 scale);
+
 void func_8003EDA0(u8 *object) {
     s32 pace;
     s32 dist;
     s32 value;
+    register s32 delta asm("v1");
+    u8 adjustment;
 
     dist = D_800BE974[0] * D_800A2EA8[0] / D_800A2F88;
     value = (D_800A2EA8[0] + dist) / (dist + 1) + 1;
     *(s32 *)(object + 0x29C) = value;
     *(s16 *)(object + 0x282) = value;
     if (dist != 0) {
+        adjustment = 2;
         pace = *(s32 *)(object + 0x29C);
         if (RandomScaledGet(5) < 0)
-            value = pace - 2 - RandomScaledGet(5);
+            delta = (pace - adjustment) - RandomScaledGet(5);
         else
-            value = pace - 2 + RandomScaledGet(5);
-        *(s32 *)(object + 0x29C) = value;
+            delta = (pace - adjustment) + RandomScaledGet(5);
+        *(s32 *)(object + 0x29C) = delta;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003EDA0);
-#endif
 
 extern u8 D_800A2F95;

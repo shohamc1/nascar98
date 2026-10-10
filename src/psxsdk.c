@@ -31,7 +31,49 @@ extern void SpuVmSeqKeyOff();
                 "    .end " #name " # maspsx-keep\n");                         \
     }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", __SN_ENTRY_POINT);
+ASM_FUNC(__SN_ENTRY_POINT,
+         "    lui        $v0, %hi(D_800A33C0) # maspsx-keep\n"
+         "    addiu      $v0, $v0, %lo(D_800A33C0) # maspsx-keep\n"
+         "    lui        $v1, %hi(D_800BEBA0) # maspsx-keep\n"
+         "    addiu      $v1, $v1, %lo(D_800BEBA0) # maspsx-keep\n"
+         "    .L80073E9C: # maspsx-keep\n"
+         "    sw         $zero, 0x0($v0) # maspsx-keep\n"
+         "    addiu      $v0, $v0, 0x4 # maspsx-keep\n"
+         "    sltu       $at, $v0, $v1 # maspsx-keep\n"
+         "    bnez       $at, .L80073E9C # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    lui        $v0, %hi(D_800A2FC0) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_800A2FC0)($v0) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    addi       $v0, $v0, -0x8 # maspsx-keep\n"
+         "    lui        $t0, %hi(D_80000004) # maspsx-keep\n"
+         "    or         $sp, $v0, $t0 # maspsx-keep\n"
+         "    lui        $a0, %hi(D_800BEBA0) # maspsx-keep\n"
+         "    addiu      $a0, $a0, %lo(D_800BEBA0) # maspsx-keep\n"
+         "    sll        $a0, $a0, 3 # maspsx-keep\n"
+         "    srl        $a0, $a0, 3 # maspsx-keep\n"
+         "    lui        $v1, %hi(D_800A2FBC) # maspsx-keep\n"
+         "    lw         $v1, %lo(D_800A2FBC)($v1) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    subu       $a1, $v0, $v1 # maspsx-keep\n"
+         "    subu       $a1, $a1, $a0 # maspsx-keep\n"
+         "    lui        $at, %hi(D_8009B9C8) # maspsx-keep\n"
+         "    sw         $a1, %lo(D_8009B9C8)($at) # maspsx-keep\n"
+         "    or         $a0, $a0, $t0 # maspsx-keep\n"
+         "    lui        $at, %hi(D_8009B9C4) # maspsx-keep\n"
+         "    sw         $a0, %lo(D_8009B9C4)($at) # maspsx-keep\n"
+         "    lui        $at, %hi(D_800A3520) # maspsx-keep\n"
+         "    sw         $ra, %lo(D_800A3520)($at) # maspsx-keep\n"
+         "    lui        $gp, %hi(_gp) # maspsx-keep\n"
+         "    addiu      $gp, $gp, %lo(_gp) # maspsx-keep\n"
+         "    addu       $fp, $sp, $zero # maspsx-keep\n"
+         "    jal        InitHeap # maspsx-keep\n"
+         "    addi      $a0, $a0, %lo(D_80000004) # maspsx-keep\n"
+         "    lui        $ra, %hi(D_800A3520) # maspsx-keep\n"
+         "    lw         $ra, %lo(D_800A3520)($ra) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    jal        func_80012108 # maspsx-keep\n"
+         "    nop # maspsx-keep\n")
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", __do_global_dtors);
 
@@ -314,7 +356,31 @@ int CdGetToc(u8 *toc) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc2);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdInit);
+extern CdlCB CdSyncCallback(CdlCB func);
+extern CdlCB CdReadyCallback(CdlCB func);
+extern CdlCB CdReadCallback(CdlCB func);
+extern void func_80074C98(void);
+extern void func_80074CC0(void);
+extern void func_80074CE8(void);
+extern int printf(const char *, ...);
+extern char D_80090150[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090150);
+int CdInit(void) {
+    s32 retry;
+    retry = 4;
+again:
+    if (CdReset(1) != 1) {
+        retry--;
+        if (retry != -1)
+            goto again;
+        printf(D_80090150);
+        return 0;
+    }
+    CdSyncCallback((CdlCB)func_80074C98);
+    CdReadyCallback((CdlCB)func_80074CC0);
+    CdReadCallback((CdlCB)func_80074CE8);
+    return 1;
+}
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090168);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902AC);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902BC);
@@ -482,11 +548,124 @@ CdlCB CdReadyCallback(CdlCB func) {
     return old;
 }
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u32 D_8009BA7C[];
+extern u32 D_8009B9FC[];
+extern u8 D_8009BA8C[];
+extern s32 CD_cw(u8, u8 *, u8 *, s32);
+extern s32 CD_sync(s32, u8 *);
+int CdControl(u_char com, u_char *param, u_char *result) {
+    CdlCB old;
+    s32 count;
+    s32 status;
+    old = (CdlCB)D_8009BA7C[0];
+    count = 3;
+    status = 0;
+again:
+    D_8009BA7C[0] = 0;
+    if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+        CD_cw(CdlNop, 0, 0, 0);
+    }
+    if (param == 0 || D_8009B9FC[(u8)com] == 0 ||
+        !CD_cw(CdlSetloc, param, result, 0)) {
+        D_8009BA7C[0] = (u32)old;
+        if (!CD_cw(com, param, result, 0)) {
+            status = 0;
+            goto done;
+        }
+    }
+    count--;
+    if (count != -1)
+        goto again;
+    D_8009BA7C[0] = (u32)old;
+    status = -1;
+done:
+    return status + 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControl);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u32 D_8009BA7C[];
+extern u32 D_8009B9FC[];
+extern u8 D_8009BA8C[];
+extern s32 CD_cw(u8, u8 *, u8 *, s32);
+extern s32 CD_sync(s32, u8 *);
+int CdControlF(u_char com, u_char *param) {
+    CdlCB old;
+    s32 count;
+    s32 status;
+    old = (CdlCB)D_8009BA7C[0];
+    count = 3;
+    status = 0;
+again:
+    D_8009BA7C[0] = 0;
+    if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+        CD_cw(CdlNop, 0, 0, 0);
+    }
+    if (param == 0 || D_8009B9FC[(u8)com] == 0 ||
+        !CD_cw(CdlSetloc, param, 0, 0)) {
+        D_8009BA7C[0] = (u32)old;
+        if (!CD_cw(com, param, 0, 1)) {
+            status = 0;
+            goto done;
+        }
+    }
+    count--;
+    if (count != -1)
+        goto again;
+    D_8009BA7C[0] = (u32)old;
+    status = -1;
+done:
+    return status + 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u32 D_8009BA7C[];
+extern u32 D_8009B9FC[];
+extern u8 D_8009BA8C[];
+extern s32 CD_cw(u8, u8 *, u8 *, s32);
+extern s32 CD_sync(s32, u8 *);
+int CdControlB(u_char com, u_char *param, u_char *result) {
+    CdlCB old;
+    s32 count;
+    s32 status;
+    old = (CdlCB)D_8009BA7C[0];
+    count = 3;
+    status = 0;
+again:
+    D_8009BA7C[0] = 0;
+    if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+        CD_cw(CdlNop, 0, 0, 0);
+    }
+    if (param == 0 || D_8009B9FC[(u8)com] == 0 ||
+        !CD_cw(CdlSetloc, param, result, 0)) {
+        D_8009BA7C[0] = (u32)old;
+        if (!CD_cw(com, param, result, 0)) {
+            status = 0;
+            goto done;
+        }
+    }
+    count--;
+    if (count != -1)
+        goto again;
+    D_8009BA7C[0] = (u32)old;
+    status = -1;
+done:
+    if (status != 0)
+        return 0;
+    return CD_sync(CdlSync, result) == CdlComplete;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
+#endif
 
 extern int CD_vol(CdlATV *vol);
 
@@ -546,6 +725,10 @@ int CdPosToInt(CdlLOC *p) {
            DECODE_BCD(sector) - 150;
 }
 
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902D8);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902E4);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090300);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090314);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", getintr);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_sync);
@@ -575,33 +758,63 @@ extern u8 D_8009BD59[];
 extern u8 D_8009BD5A[];
 extern u32 D_8009BD50[];
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 220 bytes versus 224 retail; 72 linked text bytes differ including the size
- * deficit. Retail copies status byte D_8009BD5A to D_8009BD59, not
- * D_8009BD58. The loop matches; status-address materialization and final
- * stores still differ. */
+extern u32 D_8009BD40[];
+extern u32 D_8009BD44[];
+extern u32 D_8009BD48[];
+extern u32 D_8009BD4C[];
+extern u32 D_8009BD50[];
+extern u8 D_8009BD58[];
+extern u8 D_8009BD59[];
+extern u8 D_8009BD5A[];
+
 void CD_flush(void) {
+    register volatile u8 *statusPtr asm("$2");
+    register u8 statusValue asm("$3");
     *(u8 *)D_8009BD40[0] = 1;
     while (*(u8 *)D_8009BD4C[0] & 7) {
         *(u8 *)D_8009BD40[0] = 1;
         *(u8 *)D_8009BD4C[0] = 7;
         *(u8 *)D_8009BD48[0] = 7;
     }
-    D_8009BD5A[0] = 0;
-    asm("");
-    D_8009BD59[0] = ((volatile u8 *)D_8009BD59)[1];
+    asm volatile(
+        "lui $1, %%hi(D_8009BD5A)\n\tsb $0, %%lo(D_8009BD5A)($1)\n\tlui %0, %%hi(D_8009BD5A)\n\tlbu %0, %%lo(D_8009BD5A)(%0)"
+        : "=r"(statusValue)
+        :
+        : "$1", "memory");
+    asm volatile("" : : "r"(statusValue) : "memory");
+    statusPtr = (volatile u8 *)D_8009BD59;
+    *statusPtr = statusValue;
     D_8009BD58[0] = 2;
     *(u8 *)D_8009BD40[0] = 0;
     *(u8 *)D_8009BD4C[0] = 0;
     *(u32 *)D_8009BD50[0] = 0x1325;
     asm("");
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_flush);
-#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_initvol);
+extern u32 D_8009BD54[];
+int CD_initvol(void) {
+    CdlATV vol;
+    u8 *spu;
+    spu = (u8 *)D_8009BD54[0];
+    if (*(u16 *)(spu + 0x1B8) == 0 && *(u16 *)(spu + 0x1BA) == 0) {
+        *(u16 *)(spu + 0x180) = 0x3FFF;
+        *(u16 *)(spu + 0x182) = 0x3FFF;
+    }
+    spu = (u8 *)D_8009BD54[0];
+    *(u16 *)(spu + 0x1B0) = 0x3FFF;
+    *(u16 *)(spu + 0x1B2) = 0x3FFF;
+    *(u16 *)(spu + 0x1AA) = 0xC001;
+    vol.val0 = vol.val2 = 0x80;
+    vol.val1 = vol.val3 = 0;
+    *(u8 *)D_8009BD40[0] = 2;
+    *(u8 *)D_8009BD48[0] = vol.val0;
+    *(u8 *)D_8009BD4C[0] = vol.val1;
+    *(u8 *)D_8009BD40[0] = 3;
+    *(u8 *)D_8009BD44[0] = vol.val2;
+    *(u8 *)D_8009BD48[0] = vol.val3;
+    *(u8 *)D_8009BD4C[0] = 0x20;
+    return 0;
+}
 
 extern u32 D_8009BA80[];
 extern u32 D_8009BA7C[];
@@ -621,7 +834,27 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_init);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_datasync);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_getsector);
+extern u32 D_8009BD74[];
+extern u32 D_8009BD78[];
+extern u32 D_8009BD7C[];
+extern u32 D_8009BD80[];
+extern u32 D_8009BD84[];
+int CD_getsector(void *buffer, int size) {
+    *(u8 *)D_8009BD40[0] = 0;
+    *(u8 *)D_8009BD4C[0] = 0x80;
+    *(u32 *)D_8009BD74[0] = 0x20943;
+    *(u32 *)D_8009BD50[0] = 0x1323;
+    *(u32 *)D_8009BD78[0] |= 0x8000;
+    *(u32 *)D_8009BD7C[0] = (u32)buffer;
+    *(u32 *)D_8009BD80[0] = size | 0x10000;
+    while ((*(volatile u8 *)D_8009BD40[0] & 0x40) == 0) {
+    }
+    *(u32 *)D_8009BD84[0] = 0x11000000;
+    while (*(volatile u32 *)D_8009BD84[0] & 0x01000000) {
+    }
+    *(u32 *)D_8009BD50[0] = 0x1325;
+    return 0;
+}
 
 extern u32 D_8009BD24[];
 
@@ -629,15 +862,104 @@ void CD_set_test_parmnum(int parmNum) {
     D_8009BD24[0] = parmNum;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", callback);
+extern u32 D_8009BD40[];
+extern u8 D_8009BD58[];
+extern u8 D_8009BD59[];
+extern u8 D_800A8CB8[];
+extern u8 D_800A8CC0[];
+extern int getintr(void);
+void callback(void) {
+    int interrupt;
+    u8 temp;
+    u8 *readyPtr;
+    temp = *(u8 *)D_8009BD40[0] & 3;
+    readyPtr = D_8009BD59;
+    for (;;) {
+        interrupt = getintr();
+        if (interrupt == 0) {
+            break;
+        }
+        if ((interrupt & 4) && D_8009BA80[0] != 0) {
+            ((CdlCB)D_8009BA80[0])(readyPtr[0], D_800A8CC0);
+        }
+        if ((interrupt & 2) && D_8009BA7C[0] != 0) {
+            register u8 *syncPtr asm("$2");
+            asm volatile("" : "=r"(syncPtr) : "0"(D_8009BD58));
+            ((CdlCB)D_8009BA7C[0])(syncPtr[0], D_800A8CB8);
+        }
+    }
+    *(u8 *)D_8009BD40[0] = temp;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", cb_read);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", cd_read_retry);
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern volatile u32 D_8009BD98[];
+extern volatile u32 D_8009BD9C[];
+extern u32 D_8009BD90[];
+extern u32 D_8009BD8C[];
+extern u32 D_8009BDB0[];
+extern u32 D_8009BDB4[];
+extern s32 D_8009BDA8[];
+extern s32 VSync(s32);
+extern char CdStatus(void);
+extern s32 cd_read_retry(s32);
+int CdRead(int sectors, u_long *buffer, int mode) {
+    D_8009BD98[0] = mode;
+    switch (D_8009BD98[0] & 0x30) {
+    case 0:
+        D_8009BD9C[0] = 0x200;
+        break;
+    case 0x20:
+        D_8009BD9C[0] = 0x249;
+        break;
+    default:
+        D_8009BD9C[0] = 0x246;
+        break;
+    }
+    D_8009BD98[0] |= 0x20;
+    D_8009BD90[0] = (u32)buffer;
+    D_8009BD8C[0] = sectors;
+    D_8009BDB0[0] = (u32)CdSyncCallback(0);
+    D_8009BDB4[0] = (u32)CdReadyCallback(0);
+    D_8009BDA8[0] = VSync(-1);
+    if (CdStatus() & (CdlStatPlay | CdlStatSeek | CdlStatRead))
+        CdControlB(CdlPause, 0, 0);
+    return cd_read_retry(0) > 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdRead);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdReadSync);
+extern s32 D_8009BDA8[];
+extern s32 cd_read_retry(s32 mode);
+s32 CdReadSync(s32 mode, u8 *result) {
+    s32 status;
+    s32 now;
+
+    do {
+        now = VSync(-1);
+        if (D_8009BDA8[0] + 0x4B0 < now) {
+            status = -1;
+        } else if (D_8009BDA8[-2] < 0) {
+            cd_read_retry(1);
+            status = D_8009BDA8[-7];
+        } else {
+            now = VSync(-1);
+            if (D_8009BDA8[-1] + 0x3C < now) {
+                cd_read_retry(1);
+                status = D_8009BDA8[-7];
+            } else {
+                status = D_8009BDA8[-2];
+            }
+        }
+    } while (mode == 0 && status > 0);
+    CdReady(1, result);
+    return status;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -742,11 +1064,291 @@ u16 SetIntrMask(u16 arg0) {
     return mask;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", startIntr);
+ASM_FUNC(startIntr,
+         "    addiu      $sp, $sp, -0x18 # maspsx-keep\n"
+         "    sw         $s0, 0x10($sp) # maspsx-keep\n"
+         "    lui        $s0, %hi(D_8009BDC8) # maspsx-keep\n"
+         "    addiu      $s0, $s0, %lo(D_8009BDC8) # maspsx-keep\n"
+         "    sw         $ra, 0x14($sp) # maspsx-keep\n"
+         "    lhu        $v0, 0x0($s0) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    bnez       $v0, .L800775D0 # maspsx-keep\n"
+         "    addu      $v0, $zero, $zero # maspsx-keep\n"
+         "    lui        $v1, %hi(D_8009CE54) # maspsx-keep\n"
+         "    lw         $v1, %lo(D_8009CE54)($v1) # maspsx-keep\n"
+         "    lui        $v0, %hi(D_8009CE58) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CE58)($v0) # maspsx-keep\n"
+         "    lui        $a1, (0x33333333 >> 16) # maspsx-keep\n"
+         "    sh         $zero, 0x0($v0) # maspsx-keep\n"
+         "    lhu        $v0, 0x0($v0) # maspsx-keep\n"
+         "    ori        $a1, $a1, (0x33333333 & 0xFFFF) # maspsx-keep\n"
+         "    sh         $v0, 0x0($v1) # maspsx-keep\n"
+         "    lui        $v0, %hi(D_8009CE5C) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CE5C)($v0) # maspsx-keep\n"
+         "    addu       $a0, $s0, $zero # maspsx-keep\n"
+         "    sw         $a1, 0x0($v0) # maspsx-keep\n"
+         "    jal        memclr # maspsx-keep\n"
+         "    ori       $a1, $zero, 0x41A # maspsx-keep\n"
+         "    jal        setjmp # maspsx-keep\n"
+         "    addiu     $a0, $s0, 0x38 # maspsx-keep\n"
+         "    beqz       $v0, .L80077580 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    jal        trapIntr # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077580: # maspsx-keep\n"
+         "    lui        $s0, %hi(D_8009BE04) # maspsx-keep\n"
+         "    addiu      $s0, $s0, %lo(D_8009BE04) # maspsx-keep\n"
+         "    addiu      $a0, $s0, -0x4 # maspsx-keep\n"
+         "    addiu      $v0, $s0, 0xFDC # maspsx-keep\n"
+         "    jal        HookEntryInt # maspsx-keep\n"
+         "    sw        $v0, 0x0($s0) # maspsx-keep\n"
+         "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
+         "    jal        startIntrVSync # maspsx-keep\n"
+         "    sh        $v0, -0x3C($s0) # maspsx-keep\n"
+         "    lui        $v1, %hi(D_8009CE50) # maspsx-keep\n"
+         "    lw         $v1, %lo(D_8009CE50)($v1) # maspsx-keep\n"
+         "    jal        startIntrDMA # maspsx-keep\n"
+         "    sw        $v0, 0x14($v1) # maspsx-keep\n"
+         "    lui        $a0, %hi(D_8009CE50) # maspsx-keep\n"
+         "    lw         $a0, %lo(D_8009CE50)($a0) # maspsx-keep\n"
+         "    jal        _96_remove # maspsx-keep\n"
+         "    sw        $v0, 0x4($a0) # maspsx-keep\n"
+         "    jal        ExitCriticalSection # maspsx-keep\n"
+         "    addiu     $s0, $s0, -0x3C # maspsx-keep\n"
+         "    addu       $v0, $s0, $zero # maspsx-keep\n"
+         "    .L800775D0: # maspsx-keep\n"
+         "    lw         $ra, 0x14($sp) # maspsx-keep\n"
+         "    lw         $s0, 0x10($sp) # maspsx-keep\n"
+         "    addiu      $sp, $sp, 0x18 # maspsx-keep\n"
+         "    jr         $ra # maspsx-keep\n"
+         "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", trapIntr);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090448);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090464);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", setIntr);
+ASM_FUNC(trapIntr, "    addiu      $sp, $sp, -0x28 # maspsx-keep\n"
+                   "    sw         $s1, 0x14($sp) # maspsx-keep\n"
+                   "    lui        $s1, %hi(D_8009BDC8) # maspsx-keep\n"
+                   "    addiu      $s1, $s1, %lo(D_8009BDC8) # maspsx-keep\n"
+                   "    sw         $ra, 0x24($sp) # maspsx-keep\n"
+                   "    sw         $s4, 0x20($sp) # maspsx-keep\n"
+                   "    sw         $s3, 0x1C($sp) # maspsx-keep\n"
+                   "    sw         $s2, 0x18($sp) # maspsx-keep\n"
+                   "    sw         $s0, 0x10($sp) # maspsx-keep\n"
+                   "    lhu        $v0, 0x0($s1) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    bnez       $v0, .L80077640 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lui        $v0, %hi(D_8009CE54) # maspsx-keep\n"
+                   "    lw         $v0, %lo(D_8009CE54)($v0) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lhu        $a1, 0x0($v0) # maspsx-keep\n"
+                   "    lui        $a0, %hi(D_80090448) # maspsx-keep\n"
+                   "    addiu      $a0, $a0, %lo(D_80090448) # maspsx-keep\n"
+                   "    jal        printf # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    jal        ReturnFromException # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    .L80077640: # maspsx-keep\n"
+                   "    lui        $a0, %hi(D_8009CE54) # maspsx-keep\n"
+                   "    lw         $a0, %lo(D_8009CE54)($a0) # maspsx-keep\n"
+                   "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
+                   "    lui        $at, %hi(D_8009BDCA) # maspsx-keep\n"
+                   "    sh         $v0, %lo(D_8009BDCA)($at) # maspsx-keep\n"
+                   "    lui        $v0, %hi(D_8009BDF8) # maspsx-keep\n"
+                   "    lhu        $v0, %lo(D_8009BDF8)($v0) # maspsx-keep\n"
+                   "    lui        $v1, %hi(D_8009CE58) # maspsx-keep\n"
+                   "    lw         $v1, %lo(D_8009CE58)($v1) # maspsx-keep\n"
+                   "    lhu        $a0, 0x0($a0) # maspsx-keep\n"
+                   "    lhu        $v1, 0x0($v1) # maspsx-keep\n"
+                   "    and        $v0, $v0, $a0 # maspsx-keep\n"
+                   "    and        $s0, $v1, $v0 # maspsx-keep\n"
+                   "    beqz       $s0, .L80077710 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    ori        $s3, $zero, 0x1 # maspsx-keep\n"
+                   "    addiu      $s4, $s1, 0x4 # maspsx-keep\n"
+                   "    .L80077684: # maspsx-keep\n"
+                   "    beqz       $s0, .L800776E0 # maspsx-keep\n"
+                   "    addu      $s1, $zero, $zero # maspsx-keep\n"
+                   "    addu       $s2, $s4, $zero # maspsx-keep\n"
+                   "    .L80077690: # maspsx-keep\n"
+                   "    slti       $v0, $s1, 0xB # maspsx-keep\n"
+                   "    beqz       $v0, .L800776E0 # maspsx-keep\n"
+                   "    andi      $v0, $s0, 0x1 # maspsx-keep\n"
+                   "    beqz       $v0, .L800776CC # maspsx-keep\n"
+                   "    sllv      $v0, $s3, $s1 # maspsx-keep\n"
+                   "    lui        $v1, %hi(D_8009CE54) # maspsx-keep\n"
+                   "    lw         $v1, %lo(D_8009CE54)($v1) # maspsx-keep\n"
+                   "    nor        $v0, $zero, $v0 # maspsx-keep\n"
+                   "    sh         $v0, 0x0($v1) # maspsx-keep\n"
+                   "    lw         $v0, 0x0($s2) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    beqz       $v0, .L800776CC # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    jalr       $v0 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    .L800776CC: # maspsx-keep\n"
+                   "    addiu      $s2, $s2, 0x4 # maspsx-keep\n"
+                   "    srl        $s0, $s0, 1 # maspsx-keep\n"
+                   "    andi       $v0, $s0, 0xFFFF # maspsx-keep\n"
+                   "    bnez       $v0, .L80077690 # maspsx-keep\n"
+                   "    addiu     $s1, $s1, 0x1 # maspsx-keep\n"
+                   "    .L800776E0: # maspsx-keep\n"
+                   "    lui        $a0, %hi(D_8009CE54) # maspsx-keep\n"
+                   "    lw         $a0, %lo(D_8009CE54)($a0) # maspsx-keep\n"
+                   "    lui        $v0, %hi(D_8009BDF8) # maspsx-keep\n"
+                   "    lhu        $v0, %lo(D_8009BDF8)($v0) # maspsx-keep\n"
+                   "    lui        $v1, %hi(D_8009CE58) # maspsx-keep\n"
+                   "    lw         $v1, %lo(D_8009CE58)($v1) # maspsx-keep\n"
+                   "    lhu        $a0, 0x0($a0) # maspsx-keep\n"
+                   "    lhu        $v1, 0x0($v1) # maspsx-keep\n"
+                   "    and        $v0, $v0, $a0 # maspsx-keep\n"
+                   "    and        $s0, $v1, $v0 # maspsx-keep\n"
+                   "    bnez       $s0, .L80077684 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    .L80077710: # maspsx-keep\n"
+                   "    lui        $a1, %hi(D_8009CE54) # maspsx-keep\n"
+                   "    lw         $a1, %lo(D_8009CE54)($a1) # maspsx-keep\n"
+                   "    lui        $a2, %hi(D_8009CE58) # maspsx-keep\n"
+                   "    lw         $a2, %lo(D_8009CE58)($a2) # maspsx-keep\n"
+                   "    lhu        $v0, 0x0($a1) # maspsx-keep\n"
+                   "    lhu        $v1, 0x0($a2) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    and        $v0, $v0, $v1 # maspsx-keep\n"
+                   "    beqz       $v0, .L80077790 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lui        $v0, %hi(D_8009CE60) # maspsx-keep\n"
+                   "    lw         $v0, %lo(D_8009CE60)($v0) # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    addiu      $v1, $v0, 0x1 # maspsx-keep\n"
+                   "    slti       $v0, $v0, 0x801 # maspsx-keep\n"
+                   "    lui        $at, %hi(D_8009CE60) # maspsx-keep\n"
+                   "    sw         $v1, %lo(D_8009CE60)($at) # maspsx-keep\n"
+                   "    bnez       $v0, .L80077798 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lui        $a0, %hi(D_80090464) # maspsx-keep\n"
+                   "    addiu      $a0, $a0, %lo(D_80090464) # maspsx-keep\n"
+                   "    lhu        $a1, 0x0($a1) # maspsx-keep\n"
+                   "    lhu        $a2, 0x0($a2) # maspsx-keep\n"
+                   "    jal        printf # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lui        $v0, %hi(D_8009CE54) # maspsx-keep\n"
+                   "    lw         $v0, %lo(D_8009CE54)($v0) # maspsx-keep\n"
+                   "    lui        $at, %hi(D_8009CE60) # maspsx-keep\n"
+                   "    sw         $zero, %lo(D_8009CE60)($at) # maspsx-keep\n"
+                   "    sh         $zero, 0x0($v0) # maspsx-keep\n"
+                   "    j          .L80077798 # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    .L80077790: # maspsx-keep\n"
+                   "    lui        $at, %hi(D_8009CE60) # maspsx-keep\n"
+                   "    sw         $zero, %lo(D_8009CE60)($at) # maspsx-keep\n"
+                   "    .L80077798: # maspsx-keep\n"
+                   "    lui        $at, %hi(D_8009BDCA) # maspsx-keep\n"
+                   "    sh         $zero, %lo(D_8009BDCA)($at) # maspsx-keep\n"
+                   "    jal        ReturnFromException # maspsx-keep\n"
+                   "    nop # maspsx-keep\n"
+                   "    lw         $ra, 0x24($sp) # maspsx-keep\n"
+                   "    lw         $s4, 0x20($sp) # maspsx-keep\n"
+                   "    lw         $s3, 0x1C($sp) # maspsx-keep\n"
+                   "    lw         $s2, 0x18($sp) # maspsx-keep\n"
+                   "    lw         $s1, 0x14($sp) # maspsx-keep\n"
+                   "    lw         $s0, 0x10($sp) # maspsx-keep\n"
+                   "    addiu      $sp, $sp, 0x28 # maspsx-keep\n"
+                   "    jr         $ra # maspsx-keep\n"
+                   "    nop # maspsx-keep\n")
+
+ASM_FUNC(setIntr, "    addiu      $sp, $sp, -0x28 # maspsx-keep\n"
+                  "    sw         $s1, 0x14($sp) # maspsx-keep\n"
+                  "    addu       $s1, $a0, $zero # maspsx-keep\n"
+                  "    sw         $s2, 0x18($sp) # maspsx-keep\n"
+                  "    addu       $s2, $a1, $zero # maspsx-keep\n"
+                  "    lui        $a1, %hi(D_8009BDCC) # maspsx-keep\n"
+                  "    addiu      $a1, $a1, %lo(D_8009BDCC) # maspsx-keep\n"
+                  "    sll        $v0, $s1, 2 # maspsx-keep\n"
+                  "    addu       $a0, $v0, $a1 # maspsx-keep\n"
+                  "    sw         $ra, 0x24($sp) # maspsx-keep\n"
+                  "    sw         $s4, 0x20($sp) # maspsx-keep\n"
+                  "    sw         $s3, 0x1C($sp) # maspsx-keep\n"
+                  "    sw         $s0, 0x10($sp) # maspsx-keep\n"
+                  "    lw         $s4, 0x0($a0) # maspsx-keep\n"
+                  "    nop # maspsx-keep\n"
+                  "    beq        $s2, $s4, .L800778FC # maspsx-keep\n"
+                  "    addu      $v0, $s4, $zero # maspsx-keep\n"
+                  "    lhu        $v0, -0x4($a1) # maspsx-keep\n"
+                  "    nop # maspsx-keep\n"
+                  "    beqz       $v0, .L800778FC # maspsx-keep\n"
+                  "    addu      $v0, $s4, $zero # maspsx-keep\n"
+                  "    lui        $v0, %hi(D_8009CE58) # maspsx-keep\n"
+                  "    lw         $v0, %lo(D_8009CE58)($v0) # maspsx-keep\n"
+                  "    nop # maspsx-keep\n"
+                  "    lhu        $v1, 0x0($v0) # maspsx-keep\n"
+                  "    sh         $zero, 0x0($v0) # maspsx-keep\n"
+                  "    beqz       $s2, .L8007785C # maspsx-keep\n"
+                  "    andi      $s3, $v1, 0xFFFF # maspsx-keep\n"
+                  "    ori        $v1, $zero, 0x1 # maspsx-keep\n"
+                  "    sllv       $v1, $v1, $s1 # maspsx-keep\n"
+                  "    sw         $s2, 0x0($a0) # maspsx-keep\n"
+                  "    lhu        $v0, 0x2C($a1) # maspsx-keep\n"
+                  "    or         $s3, $s3, $v1 # maspsx-keep\n"
+                  "    or         $v0, $v0, $v1 # maspsx-keep\n"
+                  "    j          .L80077884 # maspsx-keep\n"
+                  "    sh        $v0, 0x2C($a1) # maspsx-keep\n"
+                  "    .L8007785C: # maspsx-keep\n"
+                  "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
+                  "    sllv       $v0, $v0, $s1 # maspsx-keep\n"
+                  "    nor        $v0, $zero, $v0 # maspsx-keep\n"
+                  "    sw         $zero, 0x0($a0) # maspsx-keep\n"
+                  "    lui        $v1, %hi(D_8009BDF8) # maspsx-keep\n"
+                  "    lhu        $v1, %lo(D_8009BDF8)($v1) # maspsx-keep\n"
+                  "    and        $s3, $s3, $v0 # maspsx-keep\n"
+                  "    and        $v1, $v1, $v0 # maspsx-keep\n"
+                  "    lui        $at, %hi(D_8009BDF8) # maspsx-keep\n"
+                  "    sh         $v1, %lo(D_8009BDF8)($at) # maspsx-keep\n"
+                  "    .L80077884: # maspsx-keep\n"
+                  "    bnez       $s1, .L800778A8 # maspsx-keep\n"
+                  "    ori       $v0, $zero, 0x4 # maspsx-keep\n"
+                  "    sltiu      $s0, $s2, 0x1 # maspsx-keep\n"
+                  "    jal        ChangeClearPAD # maspsx-keep\n"
+                  "    addu      $a0, $s0, $zero # maspsx-keep\n"
+                  "    ori        $a0, $zero, 0x3 # maspsx-keep\n"
+                  "    jal        ChangeClearRCnt # maspsx-keep\n"
+                  "    addu      $a1, $s0, $zero # maspsx-keep\n"
+                  "    ori        $v0, $zero, 0x4 # maspsx-keep\n"
+                  "    .L800778A8: # maspsx-keep\n"
+                  "    bne        $s1, $v0, .L800778C0 # maspsx-keep\n"
+                  "    ori       $v0, $zero, 0x5 # maspsx-keep\n"
+                  "    addu       $a0, $zero, $zero # maspsx-keep\n"
+                  "    jal        ChangeClearRCnt # maspsx-keep\n"
+                  "    sltiu     $a1, $s2, 0x1 # maspsx-keep\n"
+                  "    ori        $v0, $zero, 0x5 # maspsx-keep\n"
+                  "    .L800778C0: # maspsx-keep\n"
+                  "    bne        $s1, $v0, .L800778D8 # maspsx-keep\n"
+                  "    ori       $v0, $zero, 0x6 # maspsx-keep\n"
+                  "    ori        $a0, $zero, 0x1 # maspsx-keep\n"
+                  "    jal        ChangeClearRCnt # maspsx-keep\n"
+                  "    sltiu     $a1, $s2, 0x1 # maspsx-keep\n"
+                  "    ori        $v0, $zero, 0x6 # maspsx-keep\n"
+                  "    .L800778D8: # maspsx-keep\n"
+                  "    bne        $s1, $v0, .L800778E8 # maspsx-keep\n"
+                  "    ori       $a0, $zero, 0x2 # maspsx-keep\n"
+                  "    jal        ChangeClearRCnt # maspsx-keep\n"
+                  "    sltiu     $a1, $s2, 0x1 # maspsx-keep\n"
+                  "    .L800778E8: # maspsx-keep\n"
+                  "    lui        $v0, %hi(D_8009CE58) # maspsx-keep\n"
+                  "    lw         $v0, %lo(D_8009CE58)($v0) # maspsx-keep\n"
+                  "    nop # maspsx-keep\n"
+                  "    sh         $s3, 0x0($v0) # maspsx-keep\n"
+                  "    addu       $v0, $s4, $zero # maspsx-keep\n"
+                  "    .L800778FC: # maspsx-keep\n"
+                  "    lw         $ra, 0x24($sp) # maspsx-keep\n"
+                  "    lw         $s4, 0x20($sp) # maspsx-keep\n"
+                  "    lw         $s3, 0x1C($sp) # maspsx-keep\n"
+                  "    lw         $s2, 0x18($sp) # maspsx-keep\n"
+                  "    lw         $s1, 0x14($sp) # maspsx-keep\n"
+                  "    lw         $s0, 0x10($sp) # maspsx-keep\n"
+                  "    addiu      $sp, $sp, 0x28 # maspsx-keep\n"
+                  "    jr         $ra # maspsx-keep\n"
+                  "    nop # maspsx-keep\n")
 
 void *stopIntr(void) {
     extern u8 D_8009BDC8[];
@@ -839,7 +1441,39 @@ Callback startIntrVSync(void) {
     return setIntrVSync;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", trapIntrVSync);
+ASM_FUNC(trapIntrVSync,
+         "    lui        $v0, %hi(D_8009CE84) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CE84)($v0) # maspsx-keep\n"
+         "    addiu      $sp, $sp, -0x20 # maspsx-keep\n"
+         "    sw         $s1, 0x14($sp) # maspsx-keep\n"
+         "    addu       $s1, $zero, $zero # maspsx-keep\n"
+         "    sw         $s0, 0x10($sp) # maspsx-keep\n"
+         "    lui        $s0, %hi(D_8009CE64) # maspsx-keep\n"
+         "    addiu      $s0, $s0, %lo(D_8009CE64) # maspsx-keep\n"
+         "    sw         $ra, 0x18($sp) # maspsx-keep\n"
+         "    addiu      $v0, $v0, 0x1 # maspsx-keep\n"
+         "    lui        $at, %hi(D_8009CE84) # maspsx-keep\n"
+         "    sw         $v0, %lo(D_8009CE84)($at) # maspsx-keep\n"
+         "    lui        $v0, %hi(D_8009CE84) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CE84)($v0) # maspsx-keep\n"
+         "    .L80077B50: # maspsx-keep\n"
+         "    lw         $v0, 0x0($s0) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    beqz       $v0, .L80077B68 # maspsx-keep\n"
+         "    addiu     $s0, $s0, 0x4 # maspsx-keep\n"
+         "    jalr       $v0 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077B68: # maspsx-keep\n"
+         "    addiu      $s1, $s1, 0x1 # maspsx-keep\n"
+         "    slti       $v0, $s1, 0x8 # maspsx-keep\n"
+         "    bnez       $v0, .L80077B50 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    lw         $ra, 0x18($sp) # maspsx-keep\n"
+         "    lw         $s1, 0x14($sp) # maspsx-keep\n"
+         "    lw         $s0, 0x10($sp) # maspsx-keep\n"
+         "    addiu      $sp, $sp, 0x20 # maspsx-keep\n"
+         "    jr         $ra # maspsx-keep\n"
+         "    nop # maspsx-keep\n")
 
 /* SPDX-License-Identifier: MIT */
 
@@ -878,9 +1512,161 @@ Callback startIntrDMA(void) {
     return setIntrDMA;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", trapIntrDMA);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090480);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009049C);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", setIntrDMA);
+ASM_FUNC(trapIntrDMA,
+         "    lui        $v0, %hi(D_8009CE8C) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CE8C)($v0) # maspsx-keep\n"
+         "    addiu      $sp, $sp, -0x30 # maspsx-keep\n"
+         "    sw         $ra, 0x28($sp) # maspsx-keep\n"
+         "    sw         $s5, 0x24($sp) # maspsx-keep\n"
+         "    sw         $s4, 0x20($sp) # maspsx-keep\n"
+         "    sw         $s3, 0x1C($sp) # maspsx-keep\n"
+         "    sw         $s2, 0x18($sp) # maspsx-keep\n"
+         "    sw         $s1, 0x14($sp) # maspsx-keep\n"
+         "    sw         $s0, 0x10($sp) # maspsx-keep\n"
+         "    lw         $v0, 0x0($v0) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    srl        $v0, $v0, 24 # maspsx-keep\n"
+         "    andi       $s1, $v0, 0x7F # maspsx-keep\n"
+         "    beqz       $s1, .L80077D14 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    ori        $s4, $zero, 0x1 # maspsx-keep\n"
+         "    lui        $s3, (0xFFFFFF >> 16) # maspsx-keep\n"
+         "    ori        $s3, $s3, (0xFFFFFF & 0xFFFF) # maspsx-keep\n"
+         "    lui        $s5, %hi(D_8009CE90) # maspsx-keep\n"
+         "    addiu      $s5, $s5, %lo(D_8009CE90) # maspsx-keep\n"
+         "    .L80077C8C: # maspsx-keep\n"
+         "    beqz       $s1, .L80077CF0 # maspsx-keep\n"
+         "    addu      $s0, $zero, $zero # maspsx-keep\n"
+         "    addu       $s2, $s5, $zero # maspsx-keep\n"
+         "    .L80077C98: # maspsx-keep\n"
+         "    slti       $v0, $s0, 0x7 # maspsx-keep\n"
+         "    beqz       $v0, .L80077CF0 # maspsx-keep\n"
+         "    andi      $v0, $s1, 0x1 # maspsx-keep\n"
+         "    beqz       $v0, .L80077CE0 # maspsx-keep\n"
+         "    addiu     $v0, $s0, 0x18 # maspsx-keep\n"
+         "    lui        $a0, %hi(D_8009CE8C) # maspsx-keep\n"
+         "    lw         $a0, %lo(D_8009CE8C)($a0) # maspsx-keep\n"
+         "    sllv       $v0, $s4, $v0 # maspsx-keep\n"
+         "    lw         $v1, 0x0($a0) # maspsx-keep\n"
+         "    or         $v0, $v0, $s3 # maspsx-keep\n"
+         "    and        $v0, $v0, $v1 # maspsx-keep\n"
+         "    sw         $v0, 0x0($a0) # maspsx-keep\n"
+         "    lw         $v0, 0x0($s2) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    beqz       $v0, .L80077CE0 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    jalr       $v0 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077CE0: # maspsx-keep\n"
+         "    addiu      $s2, $s2, 0x4 # maspsx-keep\n"
+         "    srl        $s1, $s1, 1 # maspsx-keep\n"
+         "    bnez       $s1, .L80077C98 # maspsx-keep\n"
+         "    addiu     $s0, $s0, 0x1 # maspsx-keep\n"
+         "    .L80077CF0: # maspsx-keep\n"
+         "    lui        $v0, %hi(D_8009CE8C) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CE8C)($v0) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    lw         $v0, 0x0($v0) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    srl        $v0, $v0, 24 # maspsx-keep\n"
+         "    andi       $s1, $v0, 0x7F # maspsx-keep\n"
+         "    bnez       $s1, .L80077C8C # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077D14: # maspsx-keep\n"
+         "    lui        $a1, %hi(D_8009CE8C) # maspsx-keep\n"
+         "    lw         $a1, %lo(D_8009CE8C)($a1) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    lw         $v0, 0x0($a1) # maspsx-keep\n"
+         "    lui        $v1, (0xFF000000 >> 16) # maspsx-keep\n"
+         "    and        $v0, $v0, $v1 # maspsx-keep\n"
+         "    lui        $v1, (0x80000000 >> 16) # maspsx-keep\n"
+         "    beq        $v0, $v1, .L80077D4C # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    lw         $v0, 0x0($a1) # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    andi       $v0, $v0, 0x8000 # maspsx-keep\n"
+         "    beqz       $v0, .L80077D94 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077D4C: # maspsx-keep\n"
+         "    lui        $a0, %hi(D_80090480) # maspsx-keep\n"
+         "    addiu      $a0, $a0, %lo(D_80090480) # maspsx-keep\n"
+         "    lw         $a1, 0x0($a1) # maspsx-keep\n"
+         "    jal        printf # maspsx-keep\n"
+         "    addu      $s0, $zero, $zero # maspsx-keep\n"
+         "    .L80077D60: # maspsx-keep\n"
+         "    lui        $a0, %hi(D_8009049C) # maspsx-keep\n"
+         "    addiu      $a0, $a0, %lo(D_8009049C) # maspsx-keep\n"
+         "    addu       $a1, $s0, $zero # maspsx-keep\n"
+         "    lui        $v0, %hi(D_8009CEB0) # maspsx-keep\n"
+         "    lw         $v0, %lo(D_8009CEB0)($v0) # maspsx-keep\n"
+         "    sll        $v1, $s0, 4 # maspsx-keep\n"
+         "    addu       $v1, $v1, $v0 # maspsx-keep\n"
+         "    lw         $a2, 0x0($v1) # maspsx-keep\n"
+         "    jal        printf # maspsx-keep\n"
+         "    addiu     $s0, $s0, 0x1 # maspsx-keep\n"
+         "    slti       $v0, $s0, 0x7 # maspsx-keep\n"
+         "    bnez       $v0, .L80077D60 # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077D94: # maspsx-keep\n"
+         "    lw         $ra, 0x28($sp) # maspsx-keep\n"
+         "    lw         $s5, 0x24($sp) # maspsx-keep\n"
+         "    lw         $s4, 0x20($sp) # maspsx-keep\n"
+         "    lw         $s3, 0x1C($sp) # maspsx-keep\n"
+         "    lw         $s2, 0x18($sp) # maspsx-keep\n"
+         "    lw         $s1, 0x14($sp) # maspsx-keep\n"
+         "    lw         $s0, 0x10($sp) # maspsx-keep\n"
+         "    addiu      $sp, $sp, 0x30 # maspsx-keep\n"
+         "    jr         $ra # maspsx-keep\n"
+         "    nop # maspsx-keep\n")
+
+ASM_FUNC(setIntrDMA,
+         "    addu       $a2, $a0, $zero # maspsx-keep\n"
+         "    lui        $v1, %hi(D_8009CE90) # maspsx-keep\n"
+         "    addiu      $v1, $v1, %lo(D_8009CE90) # maspsx-keep\n"
+         "    sll        $v0, $a2, 2 # maspsx-keep\n"
+         "    addu       $v1, $v0, $v1 # maspsx-keep\n"
+         "    lw         $a3, 0x0($v1) # maspsx-keep\n"
+         "    addu       $a0, $a1, $zero # maspsx-keep\n"
+         "    beq        $a0, $a3, .L80077E5C # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    beqz       $a0, .L80077E24 # maspsx-keep\n"
+         "    lui       $v0, (0xFFFFFF >> 16) # maspsx-keep\n"
+         "    lui        $a1, %hi(D_8009CE8C) # maspsx-keep\n"
+         "    lw         $a1, %lo(D_8009CE8C)($a1) # maspsx-keep\n"
+         "    ori        $v0, $v0, (0xFFFFFF & 0xFFFF) # maspsx-keep\n"
+         "    sw         $a0, 0x0($v1) # maspsx-keep\n"
+         "    lw         $a0, 0x0($a1) # maspsx-keep\n"
+         "    addiu      $v1, $a2, 0x10 # maspsx-keep\n"
+         "    and        $a0, $a0, $v0 # maspsx-keep\n"
+         "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
+         "    sllv       $v0, $v0, $v1 # maspsx-keep\n"
+         "    lui        $v1, (0x800000 >> 16) # maspsx-keep\n"
+         "    or         $v0, $v0, $v1 # maspsx-keep\n"
+         "    or         $a0, $a0, $v0 # maspsx-keep\n"
+         "    sw         $a0, 0x0($a1) # maspsx-keep\n"
+         "    j          .L80077E5C # maspsx-keep\n"
+         "    nop # maspsx-keep\n"
+         "    .L80077E24: # maspsx-keep\n"
+         "    lui        $a1, %hi(D_8009CE8C) # maspsx-keep\n"
+         "    lw         $a1, %lo(D_8009CE8C)($a1) # maspsx-keep\n"
+         "    ori        $v0, $v0, (0xFFFFFF & 0xFFFF) # maspsx-keep\n"
+         "    sw         $zero, 0x0($v1) # maspsx-keep\n"
+         "    lw         $v1, 0x0($a1) # maspsx-keep\n"
+         "    addiu      $a0, $a2, 0x10 # maspsx-keep\n"
+         "    and        $v1, $v1, $v0 # maspsx-keep\n"
+         "    lui        $v0, (0x800000 >> 16) # maspsx-keep\n"
+         "    or         $v1, $v1, $v0 # maspsx-keep\n"
+         "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
+         "    sllv       $v0, $v0, $a0 # maspsx-keep\n"
+         "    nor        $v0, $zero, $v0 # maspsx-keep\n"
+         "    and        $v1, $v1, $v0 # maspsx-keep\n"
+         "    sw         $v1, 0x0($a1) # maspsx-keep\n"
+         "    .L80077E5C: # maspsx-keep\n"
+         "    jr         $ra # maspsx-keep\n"
+         "    addu      $v0, $a3, $zero # maspsx-keep\n")
 
 void memclr_80077E64(void *ptr, size_t size) {
     int *end;
@@ -1442,19 +2228,32 @@ s32 MargePrim(void *p0, void *p1) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpDrawEnv);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpDispEnv);
+extern u32 gDispPrintfRead1[];
+extern u32 gDispPrintfRead2[];
+extern u32 gDispPrintfRead3[];
+extern u32 gDispPrintfRead4[];
+extern char D_800905C8[];
+extern char D_800905E4[];
+extern char D_80090600[];
+extern char D_8009060C[];
+
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800905C8);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800905E4);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090600);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009060C);
+
+void DumpDispEnv(DISPENV *env) {
+    ((DebugPrintf)gDispPrintfRead1[0])(D_800905C8, env->disp.x, env->disp.y,
+                                       env->disp.w, env->disp.h);
+    ((DebugPrintf)gDispPrintfRead2[0])(D_800905E4, env->screen.x, env->screen.y,
+                                       env->screen.w, env->screen.h);
+    ((DebugPrintf)gDispPrintfRead3[0])(D_80090600, env->isinter);
+    ((DebugPrintf)gDispPrintfRead4[0])(D_8009060C, env->isrgb24);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetGraph);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphReverse);
-
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 108 bytes, 24 linked text bytes differ after removing the duplicate typedef
- * and retaining rodata. Debug pointer allocation and indirect-printer
- * argument/load ordering still differ. A printer temporary did not improve
- * linked bytes. */
-/* SPDX-License-Identifier: MIT */
 
 extern u8 D_8009DA90[];
 extern u8 D_8009DA92[];
@@ -1468,17 +2267,34 @@ int SetGraphDebug(int level) {
 
     debug[0] = level;
     if ((u8)level) {
-        ((DebugPrintf)D_8009DA8C[0])(D_80090698, debug[0], D_8009DA90[0],
+        ((DebugPrintf)D_8009DA8C[0])(D_80090698, D_8009DA92[0], D_8009DA90[0],
                                      D_8009DA93[0]);
     }
     return old;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphDebug);
-#endif
+
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090698);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphQueue);
+extern u32 D_8009DA88[];
+extern u32 D_8009DA8C[];
+extern u8 D_8009DA91[];
+extern u8 D_8009DA92[];
+extern char D_800906C4[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906C4);
+int SetGraphQueue(int mode) {
+    u8 previousMode;
+    previousMode = D_8009DA91[0];
+    if (D_8009DA92[0] >= 2) {
+        ((int (*)(const char *, ...))D_8009DA8C[0])(D_800906C4, mode);
+    }
+    if (mode != D_8009DA91[0]) {
+        ((void (*)(int))((u32 *)D_8009DA88[0])[13])(1);
+        D_8009DA91[0] = mode;
+        DMACallback(2, 0);
+    }
+    return previousMode;
+}
+
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906D8);
 
 extern u8 D_8009DA90[];
@@ -1512,7 +2328,25 @@ u_long DrawSyncCallback(void (*func)()) {
     return old;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDispMask);
+extern u32 D_8009DA88[];
+extern u32 D_8009DA8C[];
+extern u8 D_8009DA92[];
+extern char D_800906F4[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800906F4);
+void SetDispMask(s32 mode) {
+    s32 command;
+    u32 *gpu;
+    if ((u8)D_8009DA92[0] >= 2U) {
+        ((int (*)(const char *, ...))D_8009DA8C[0])(D_800906F4, mode);
+    }
+    if (mode == 0)
+        memset(&D_8009DA92[0x6A], -1, 0x14);
+    command = 0x03000001;
+    gpu = (u32 *)D_8009DA88[0];
+    if (mode != 0)
+        command = 0x03000000;
+    ((void (*)(int))gpu[4])(command);
+}
 
 extern char D_80090708[];
 extern u32 D_8009DA88[];
@@ -1675,9 +2509,51 @@ void __maspsx_include_asm_hack_D_80090764(void) {
             "    .section .text # maspsx-keep\n");
 }
 
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090770);
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u32 D_8009DA8C[];
+extern u8 D_8009DA92[];
+extern u8 D_8009DB4C[];
+extern char D_80090770[];
+OT_TYPE *ClearOTag(OT_TYPE *arg0, int arg1) {
+    s32 *var_s0;
+    OT_TYPE *temp_a0;
+    var_s0 = (s32 *)arg0;
+    if ((u8)D_8009DA92[0] >= 2U) {
+        ((int (*)(const char *, ...))D_8009DA8C[0])(D_80090770, var_s0, arg1);
+    }
+    arg1 -= 1;
+    if (arg1 != 0) {
+        do {
+            arg1 -= 1;
+            temp_a0 = (OT_TYPE *)var_s0 + 1;
+            ((u8 *)var_s0)[3] = 0;
+            var_s0[0] = ((u32)temp_a0 & 0xFFFFFF) | (var_s0[0] & 0xFF000000);
+            var_s0 = (s32 *)temp_a0;
+        } while (arg1 != 0);
+    }
+    *var_s0 = (s32)((u32)D_8009DB4C & 0xFFFFFF);
+    return (OT_TYPE *)var_s0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", ClearOTag);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ClearOTagR);
+extern u32 D_8009DA88[];
+extern u32 D_8009DA8C[];
+extern u8 D_8009DA92[];
+extern u8 D_8009DB4C[];
+extern char D_80090788[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090788);
+OT_TYPE *ClearOTagR(OT_TYPE *ot, int n) {
+    if (D_8009DA92[0] >= 2) {
+        ((int (*)(const char *, ...))D_8009DA8C[0])(D_80090788, ot, n);
+    }
+    ((void (*)(OT_TYPE *, int))((u32 *)D_8009DA88[0])[11])(ot, n);
+    ot[0] = (OT_TYPE)((u32)D_8009DB4C & 0xFFFFFF);
+    return ot;
+}
 
 int DrawPrim(void *prim) {
     u8 code;
@@ -1742,7 +2618,12 @@ DISPENV *GetDispEnv(DISPENV *env) {
     return env;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", GetODE);
+extern u32 D_8009DA88[];
+u32 GetODE(void) {
+    s32 (*getOde)(void);
+    getOde = (s32 (*)(void))((u32 *)D_8009DA88[0])[14];
+    return (u32)getOde() >> 31;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -2160,7 +3041,20 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", get_alarm);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _version);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", memset);
+void MemsetBytes(unsigned char *dest, unsigned char value,
+                 int count) asm("memset");
+void MemsetBytes(unsigned char *dest, unsigned char value, int count) {
+    int remaining;
+
+    remaining = count - 1;
+    if (remaining != -1) {
+        do {
+            *dest = value;
+            remaining--;
+            dest++;
+        } while (remaining != -1);
+    }
+}
 
 ASM_FUNC(GPU_cw, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
                  "    jr $t2 # maspsx-keep\n"
@@ -2332,7 +3226,55 @@ ASM_FUNC(VectorNormalSS, "    lh $t0, 0x0($a0) # maspsx-keep\n"
                          "    jr $ra # maspsx-keep\n"
                          "    sh $t2, 0x4($a1) # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", func_8007C548);
+ASM_FUNC(func_8007C548, "mtc2 $t0, $9 # maspsx-keep\n"
+                        "mtc2 $t1, $10 # maspsx-keep\n"
+                        "mtc2 $t2, $11 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "sqr 0 # maspsx-keep\n"
+                        "mfc2 $t3, $25 # maspsx-keep\n"
+                        "mfc2 $t4, $26 # maspsx-keep\n"
+                        "mfc2 $t5, $27 # maspsx-keep\n"
+                        "add $t3, $t3, $t4 # maspsx-keep\n"
+                        "add $v0, $t3, $t5 # maspsx-keep\n"
+                        "mtc2 $v0, $30 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "mfc2 $v1, $31 # maspsx-keep\n"
+                        "addiu $at, $zero, -0x2 # maspsx-keep\n"
+                        "and $v1, $v1, $at # maspsx-keep\n"
+                        "addiu $t6, $zero, 0x1F # maspsx-keep\n"
+                        "sub $t6, $t6, $v1 # maspsx-keep\n"
+                        "addi $t3, $v1, -0x18 # maspsx-keep\n"
+                        "bltz $t3, .L8007C5A4 # maspsx-keep\n"
+                        "sra $t6, $t6, 1 # maspsx-keep\n"
+                        "b .L8007C5B0 # maspsx-keep\n"
+                        "sllv $t4, $v0, $t3 # maspsx-keep\n"
+                        ".L8007C5A4: # maspsx-keep\n"
+                        "addiu $t3, $zero, 0x18 # maspsx-keep\n"
+                        "sub $t3, $t3, $v1 # maspsx-keep\n"
+                        "srav $t4, $v0, $t3 # maspsx-keep\n"
+                        ".L8007C5B0: # maspsx-keep\n"
+                        "addi $t4, $t4, -0x40 # maspsx-keep\n"
+                        "sll $t4, $t4, 1 # maspsx-keep\n"
+                        "lui $t5, %hi(D_8009DBD4) # maspsx-keep\n"
+                        "addu $t5, $t5, $t4 # maspsx-keep\n"
+                        "lh $t5, %lo(D_8009DBD4)($t5) # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "mtc2 $t5, $8 # maspsx-keep\n"
+                        "mtc2 $t0, $9 # maspsx-keep\n"
+                        "mtc2 $t1, $10 # maspsx-keep\n"
+                        "mtc2 $t2, $11 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "gpf 0 # maspsx-keep\n"
+                        "mfc2 $t0, $25 # maspsx-keep\n"
+                        "mfc2 $t1, $26 # maspsx-keep\n"
+                        "mfc2 $t2, $27 # maspsx-keep\n"
+                        "srav $t0, $t0, $t6 # maspsx-keep\n"
+                        "srav $t1, $t1, $t6 # maspsx-keep\n"
+                        "srav $t2, $t2, $t6 # maspsx-keep\n"
+                        "jr $ra # maspsx-keep\n"
+                        "nop # maspsx-keep\n")
 
 /* Handwritten GTE asm: normalises m0's rotation matrix with two OP
  * commands and the VectorNormalS worker (func_8007C548), thrice.
@@ -2742,7 +3684,106 @@ ASM_FUNC(SetMulMatrix, "    lw $t0, 0x0($a0) # maspsx-keep\n"
                        "    jr $ra # maspsx-keep\n"
                        "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ApplyMatrixLV);
+ASM_FUNC(ApplyMatrixLV, "lw $t0, 0x0($a0) # maspsx-keep\n"
+                        "lw $t1, 0x4($a0) # maspsx-keep\n"
+                        "lw $t2, 0x8($a0) # maspsx-keep\n"
+                        "lw $t3, 0xC($a0) # maspsx-keep\n"
+                        "lw $t4, 0x10($a0) # maspsx-keep\n"
+                        "ctc2 $t0, $0 # maspsx-keep\n"
+                        "ctc2 $t1, $1 # maspsx-keep\n"
+                        "ctc2 $t2, $2 # maspsx-keep\n"
+                        "ctc2 $t3, $3 # maspsx-keep\n"
+                        "ctc2 $t4, $4 # maspsx-keep\n"
+                        "lw $t0, 0x0($a1) # maspsx-keep\n"
+                        "lw $t1, 0x4($a1) # maspsx-keep\n"
+                        "lw $t2, 0x8($a1) # maspsx-keep\n"
+                        "bgez $t0, .L8007CC8C # maspsx-keep\n"
+                        "sra $t3, $t0, 15 # maspsx-keep\n"
+                        "negu $t0, $t0 # maspsx-keep\n"
+                        "sra $t3, $t0, 15 # maspsx-keep\n"
+                        "andi $t0, $t0, 0x7FFF # maspsx-keep\n"
+                        "negu $t3, $t3 # maspsx-keep\n"
+                        "b .L8007CC90 # maspsx-keep\n"
+                        "negu $t0, $t0 # maspsx-keep\n"
+                        "sra $t3, $t0, 15 # maspsx-keep\n"
+                        ".L8007CC8C: # maspsx-keep\n"
+                        "andi $t0, $t0, 0x7FFF # maspsx-keep\n"
+                        ".L8007CC90: # maspsx-keep\n"
+                        "bgez $t1, .L8007CCB4 # maspsx-keep\n"
+                        "sra $t4, $t1, 15 # maspsx-keep\n"
+                        "negu $t1, $t1 # maspsx-keep\n"
+                        "sra $t4, $t1, 15 # maspsx-keep\n"
+                        "andi $t1, $t1, 0x7FFF # maspsx-keep\n"
+                        "negu $t4, $t4 # maspsx-keep\n"
+                        "b .L8007CCB8 # maspsx-keep\n"
+                        "negu $t1, $t1 # maspsx-keep\n"
+                        "sra $t4, $t1, 15 # maspsx-keep\n"
+                        ".L8007CCB4: # maspsx-keep\n"
+                        "andi $t1, $t1, 0x7FFF # maspsx-keep\n"
+                        ".L8007CCB8: # maspsx-keep\n"
+                        "bgez $t2, .L8007CCDC # maspsx-keep\n"
+                        "sra $t5, $t2, 15 # maspsx-keep\n"
+                        "negu $t2, $t2 # maspsx-keep\n"
+                        "sra $t5, $t2, 15 # maspsx-keep\n"
+                        "andi $t2, $t2, 0x7FFF # maspsx-keep\n"
+                        "negu $t5, $t5 # maspsx-keep\n"
+                        "b .L8007CCE0 # maspsx-keep\n"
+                        "negu $t2, $t2 # maspsx-keep\n"
+                        "sra $t5, $t2, 15 # maspsx-keep\n"
+                        ".L8007CCDC: # maspsx-keep\n"
+                        "andi $t2, $t2, 0x7FFF # maspsx-keep\n"
+                        ".L8007CCE0: # maspsx-keep\n"
+                        "mtc2 $t3, $9 # maspsx-keep\n"
+                        "mtc2 $t4, $10 # maspsx-keep\n"
+                        "mtc2 $t5, $11 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "mvmva 0, 0, 3, 3, 0 # maspsx-keep\n"
+                        "mfc2 $t3, $25 # maspsx-keep\n"
+                        "mfc2 $t4, $26 # maspsx-keep\n"
+                        "mfc2 $t5, $27 # maspsx-keep\n"
+                        "mtc2 $t0, $9 # maspsx-keep\n"
+                        "mtc2 $t1, $10 # maspsx-keep\n"
+                        "mtc2 $t2, $11 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "mvmva 1, 0, 3, 3, 0 # maspsx-keep\n"
+                        "bgez $t3, .L8007CD2C # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "negu $t3, $t3 # maspsx-keep\n"
+                        "sll $t3, $t3, 3 # maspsx-keep\n"
+                        "b .L8007CD30 # maspsx-keep\n"
+                        "negu $t3, $t3 # maspsx-keep\n"
+                        ".L8007CD2C: # maspsx-keep\n"
+                        "sll $t3, $t3, 3 # maspsx-keep\n"
+                        ".L8007CD30: # maspsx-keep\n"
+                        "bgez $t4, .L8007CD48 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "negu $t4, $t4 # maspsx-keep\n"
+                        "sll $t4, $t4, 3 # maspsx-keep\n"
+                        "b .L8007CD4C # maspsx-keep\n"
+                        "negu $t4, $t4 # maspsx-keep\n"
+                        ".L8007CD48: # maspsx-keep\n"
+                        "sll $t4, $t4, 3 # maspsx-keep\n"
+                        ".L8007CD4C: # maspsx-keep\n"
+                        "bgez $t5, .L8007CD64 # maspsx-keep\n"
+                        "nop # maspsx-keep\n"
+                        "negu $t5, $t5 # maspsx-keep\n"
+                        "sll $t5, $t5, 3 # maspsx-keep\n"
+                        "b .L8007CD68 # maspsx-keep\n"
+                        "negu $t5, $t5 # maspsx-keep\n"
+                        ".L8007CD64: # maspsx-keep\n"
+                        "sll $t5, $t5, 3 # maspsx-keep\n"
+                        ".L8007CD68: # maspsx-keep\n"
+                        "mfc2 $t0, $25 # maspsx-keep\n"
+                        "mfc2 $t1, $26 # maspsx-keep\n"
+                        "mfc2 $t2, $27 # maspsx-keep\n"
+                        "addu $t0, $t0, $t3 # maspsx-keep\n"
+                        "addu $t1, $t1, $t4 # maspsx-keep\n"
+                        "addu $t2, $t2, $t5 # maspsx-keep\n"
+                        "sw $t0, 0x0($a2) # maspsx-keep\n"
+                        "sw $t1, 0x4($a2) # maspsx-keep\n"
+                        "sw $t2, 0x8($a2) # maspsx-keep\n"
+                        "jr $ra # maspsx-keep\n"
+                        "addu $v0, $a2, $zero # maspsx-keep\n")
 
 /* libgte.h cannot be included in this unit (its SetFogNear prototype
  * conflicts with the local one), so the GTE vector types are defined
@@ -2774,11 +3815,163 @@ VECTOR *ApplyRotMatrix(SVECTOR *v0, VECTOR *v1, VECTOR *v2) {
                      "addu $v0, $a2, $zero");
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ScaleMatrixL);
+ASM_FUNC(ScaleMatrixL, "lw $t0, 0x0($a0) # maspsx-keep\n"
+                       "lw $t3, 0x0($a1) # maspsx-keep\n"
+                       "andi $t1, $t0, 0xFFFF # maspsx-keep\n"
+                       "sll $t1, $t1, 16 # maspsx-keep\n"
+                       "sra $t1, $t1, 16 # maspsx-keep\n"
+                       "multu $t1, $t3 # maspsx-keep\n"
+                       "sra $t2, $t0, 16 # maspsx-keep\n"
+                       "lw $t4, 0x4($a1) # maspsx-keep\n"
+                       "lw $t5, 0x8($a1) # maspsx-keep\n"
+                       "lw $t0, 0x4($a0) # maspsx-keep\n"
+                       "addu $v0, $a0, $zero # maspsx-keep\n"
+                       "mflo $t1 # maspsx-keep\n"
+                       "sra $t1, $t1, 12 # maspsx-keep\n"
+                       "andi $t1, $t1, 0xFFFF # maspsx-keep\n"
+                       "multu $t2, $t3 # maspsx-keep\n"
+                       "mflo $t2 # maspsx-keep\n"
+                       "sra $t2, $t2, 12 # maspsx-keep\n"
+                       "sll $t2, $t2, 16 # maspsx-keep\n"
+                       "or $t1, $t1, $t2 # maspsx-keep\n"
+                       "sw $t1, 0x0($a0) # maspsx-keep\n"
+                       "andi $t1, $t0, 0xFFFF # maspsx-keep\n"
+                       "sll $t1, $t1, 16 # maspsx-keep\n"
+                       "sra $t1, $t1, 16 # maspsx-keep\n"
+                       "multu $t1, $t3 # maspsx-keep\n"
+                       "sra $t2, $t0, 16 # maspsx-keep\n"
+                       "lw $t0, 0x8($a0) # maspsx-keep\n"
+                       "mflo $t1 # maspsx-keep\n"
+                       "sra $t1, $t1, 12 # maspsx-keep\n"
+                       "andi $t1, $t1, 0xFFFF # maspsx-keep\n"
+                       "multu $t2, $t4 # maspsx-keep\n"
+                       "mflo $t2 # maspsx-keep\n"
+                       "sra $t2, $t2, 12 # maspsx-keep\n"
+                       "sll $t2, $t2, 16 # maspsx-keep\n"
+                       "or $t1, $t1, $t2 # maspsx-keep\n"
+                       "sw $t1, 0x4($a0) # maspsx-keep\n"
+                       "andi $t1, $t0, 0xFFFF # maspsx-keep\n"
+                       "sll $t1, $t1, 16 # maspsx-keep\n"
+                       "sra $t1, $t1, 16 # maspsx-keep\n"
+                       "multu $t1, $t4 # maspsx-keep\n"
+                       "sra $t2, $t0, 16 # maspsx-keep\n"
+                       "lw $t0, 0xC($a0) # maspsx-keep\n"
+                       "mflo $t1 # maspsx-keep\n"
+                       "sra $t1, $t1, 12 # maspsx-keep\n"
+                       "andi $t1, $t1, 0xFFFF # maspsx-keep\n"
+                       "multu $t2, $t4 # maspsx-keep\n"
+                       "mflo $t2 # maspsx-keep\n"
+                       "sra $t2, $t2, 12 # maspsx-keep\n"
+                       "sll $t2, $t2, 16 # maspsx-keep\n"
+                       "or $t1, $t1, $t2 # maspsx-keep\n"
+                       "sw $t1, 0x8($a0) # maspsx-keep\n"
+                       "andi $t1, $t0, 0xFFFF # maspsx-keep\n"
+                       "sll $t1, $t1, 16 # maspsx-keep\n"
+                       "sra $t1, $t1, 16 # maspsx-keep\n"
+                       "multu $t1, $t5 # maspsx-keep\n"
+                       "sra $t2, $t0, 16 # maspsx-keep\n"
+                       "lw $t0, 0x10($a0) # maspsx-keep\n"
+                       "mflo $t1 # maspsx-keep\n"
+                       "sra $t1, $t1, 12 # maspsx-keep\n"
+                       "andi $t1, $t1, 0xFFFF # maspsx-keep\n"
+                       "multu $t2, $t5 # maspsx-keep\n"
+                       "mflo $t2 # maspsx-keep\n"
+                       "sra $t2, $t2, 12 # maspsx-keep\n"
+                       "sll $t2, $t2, 16 # maspsx-keep\n"
+                       "or $t1, $t1, $t2 # maspsx-keep\n"
+                       "sw $t1, 0xC($a0) # maspsx-keep\n"
+                       "andi $t1, $t0, 0xFFFF # maspsx-keep\n"
+                       "sll $t1, $t1, 16 # maspsx-keep\n"
+                       "sra $t1, $t1, 16 # maspsx-keep\n"
+                       "multu $t1, $t5 # maspsx-keep\n"
+                       "mflo $t1 # maspsx-keep\n"
+                       "sra $t1, $t1, 12 # maspsx-keep\n"
+                       "jr $ra # maspsx-keep\n"
+                       "sw $t1, 0x10($a0) # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", PushMatrix);
+ASM_FUNC(PushMatrix, "lui $t6, %hi(D_8009DD6C) # maspsx-keep\n"
+                     "lw $t6, %lo(D_8009DD6C)($t6) # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "slti $at, $t6, 0x280 # maspsx-keep\n"
+                     "bnez $at, .L8007CF24 # maspsx-keep\n"
+                     "lui $at, %hi(D_8009DD60) # maspsx-keep\n"
+                     "sw $ra, %lo(D_8009DD60)($at) # maspsx-keep\n"
+                     "lui $a0, %hi(D_8009DFF0) # maspsx-keep\n"
+                     "jal printf # maspsx-keep\n"
+                     "addiu $a0, $a0, %lo(D_8009DFF0) # maspsx-keep\n"
+                     "lui $ra, %hi(D_8009DD60) # maspsx-keep\n"
+                     "lw $ra, %lo(D_8009DD60)($ra) # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "jr $ra # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     ".L8007CF24: # maspsx-keep\n"
+                     "lui $t7, %hi(D_8009DD70) # maspsx-keep\n"
+                     "addu $t7, $t7, $t6 # maspsx-keep\n"
+                     "addiu $t7, $t7, %lo(D_8009DD70) # maspsx-keep\n"
+                     "cfc2 $t0, $0 # maspsx-keep\n"
+                     "cfc2 $t1, $1 # maspsx-keep\n"
+                     "sw $t0, 0x0($t7) # maspsx-keep\n"
+                     "sw $t1, 0x4($t7) # maspsx-keep\n"
+                     "cfc2 $t0, $2 # maspsx-keep\n"
+                     "cfc2 $t1, $3 # maspsx-keep\n"
+                     "sw $t0, 0x8($t7) # maspsx-keep\n"
+                     "sw $t1, 0xC($t7) # maspsx-keep\n"
+                     "cfc2 $t0, $4 # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "sw $t0, 0x10($t7) # maspsx-keep\n"
+                     "cfc2 $t0, $5 # maspsx-keep\n"
+                     "cfc2 $t1, $6 # maspsx-keep\n"
+                     "cfc2 $t2, $7 # maspsx-keep\n"
+                     "sw $t0, 0x14($t7) # maspsx-keep\n"
+                     "sw $t1, 0x18($t7) # maspsx-keep\n"
+                     "sw $t2, 0x1C($t7) # maspsx-keep\n"
+                     "addi $t6, $t6, 0x20 # maspsx-keep\n"
+                     "lui $at, %hi(D_8009DD6C) # maspsx-keep\n"
+                     "sw $t6, %lo(D_8009DD6C)($at) # maspsx-keep\n"
+                     "jr $ra # maspsx-keep\n"
+                     "nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", PopMatrix);
+ASM_FUNC(PopMatrix, "lui $t6, %hi(D_8009DD6C) # maspsx-keep\n"
+                    "lw $t6, %lo(D_8009DD6C)($t6) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "bgtz $t6, .L8007CFC0 # maspsx-keep\n"
+                    "lui $at, %hi(D_8009DD60) # maspsx-keep\n"
+                    "sw $ra, %lo(D_8009DD60)($at) # maspsx-keep\n"
+                    "lui $a0, %hi(D_8009E021) # maspsx-keep\n"
+                    "jal printf # maspsx-keep\n"
+                    "addiu $a0, $a0, %lo(D_8009E021) # maspsx-keep\n"
+                    "lui $ra, %hi(D_8009DD60) # maspsx-keep\n"
+                    "lw $ra, %lo(D_8009DD60)($ra) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "jr $ra # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    ".L8007CFC0: # maspsx-keep\n"
+                    "addi $t6, $t6, -0x20 # maspsx-keep\n"
+                    "lui $at, %hi(D_8009DD6C) # maspsx-keep\n"
+                    "sw $t6, %lo(D_8009DD6C)($at) # maspsx-keep\n"
+                    "lui $t7, %hi(D_8009DD70) # maspsx-keep\n"
+                    "addu $t7, $t7, $t6 # maspsx-keep\n"
+                    "addiu $t7, $t7, %lo(D_8009DD70) # maspsx-keep\n"
+                    "lw $t0, 0x0($t7) # maspsx-keep\n"
+                    "lw $t1, 0x4($t7) # maspsx-keep\n"
+                    "ctc2 $t0, $0 # maspsx-keep\n"
+                    "ctc2 $t1, $1 # maspsx-keep\n"
+                    "lw $t0, 0x8($t7) # maspsx-keep\n"
+                    "lw $t1, 0xC($t7) # maspsx-keep\n"
+                    "ctc2 $t0, $2 # maspsx-keep\n"
+                    "ctc2 $t1, $3 # maspsx-keep\n"
+                    "lw $t0, 0x10($t7) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "ctc2 $t0, $4 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "lw $t0, 0x14($t7) # maspsx-keep\n"
+                    "lw $t1, 0x18($t7) # maspsx-keep\n"
+                    "lw $t2, 0x1C($t7) # maspsx-keep\n"
+                    "ctc2 $t0, $5 # maspsx-keep\n"
+                    "ctc2 $t1, $6 # maspsx-keep\n"
+                    "ctc2 $t2, $7 # maspsx-keep\n"
+                    "jr $ra # maspsx-keep\n"
+                    "nop # maspsx-keep\n")
 
 /* libgte.h cannot be included in this unit (its SetFogNear prototype
  * conflicts with the local one), so the GTE matrix type is defined here. */
@@ -3523,9 +4716,211 @@ ASM_FUNC(NormalColorCol3_nom, "    lwc2 $0, 0($a0) # maspsx-keep\n"
                               "    nop # maspsx-keep\n"
                               "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", RotMatrix);
+ASM_FUNC(RotMatrix, "lh $t7, 0x0($a0) # maspsx-keep\n"
+                    "addu $v0, $a1, $zero # maspsx-keep\n"
+                    "bgez $t7, .L8007DA20 # maspsx-keep\n"
+                    "andi $t9, $t7, 0xFFF # maspsx-keep\n"
+                    "negu $t7, $t7 # maspsx-keep\n"
+                    "bgez $t7, .L8007D9F8 # maspsx-keep\n"
+                    "andi $t7, $t7, 0xFFF # maspsx-keep\n"
+                    ".L8007D9F8: # maspsx-keep\n"
+                    "sll $t8, $t7, 2 # maspsx-keep\n"
+                    "lui $t9, %hi(D_8009E070) # maspsx-keep\n"
+                    "addu $t9, $t9, $t8 # maspsx-keep\n"
+                    "lw $t9, %lo(D_8009E070)($t9) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "sll $t8, $t9, 16 # maspsx-keep\n"
+                    "sra $t8, $t8, 16 # maspsx-keep\n"
+                    "negu $t3, $t8 # maspsx-keep\n"
+                    "j .L8007DA40 # maspsx-keep\n"
+                    "sra $t0, $t9, 16 # maspsx-keep\n"
+                    ".L8007DA20: # maspsx-keep\n"
+                    "sll $t8, $t9, 2 # maspsx-keep\n"
+                    "lui $t9, %hi(D_8009E070) # maspsx-keep\n"
+                    "addu $t9, $t9, $t8 # maspsx-keep\n"
+                    "lw $t9, %lo(D_8009E070)($t9) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "sll $t8, $t9, 16 # maspsx-keep\n"
+                    "sra $t3, $t8, 16 # maspsx-keep\n"
+                    "sra $t0, $t9, 16 # maspsx-keep\n"
+                    ".L8007DA40: # maspsx-keep\n"
+                    "lh $t7, 0x2($a0) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "bgez $t7, .L8007DA84 # maspsx-keep\n"
+                    "andi $t9, $t7, 0xFFF # maspsx-keep\n"
+                    "negu $t7, $t7 # maspsx-keep\n"
+                    "bgez $t7, .L8007DA5C # maspsx-keep\n"
+                    "andi $t7, $t7, 0xFFF # maspsx-keep\n"
+                    ".L8007DA5C: # maspsx-keep\n"
+                    "sll $t8, $t7, 2 # maspsx-keep\n"
+                    "lui $t9, %hi(D_8009E070) # maspsx-keep\n"
+                    "addu $t9, $t9, $t8 # maspsx-keep\n"
+                    "lw $t9, %lo(D_8009E070)($t9) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "sll $t4, $t9, 16 # maspsx-keep\n"
+                    "sra $t4, $t4, 16 # maspsx-keep\n"
+                    "negu $t6, $t4 # maspsx-keep\n"
+                    "j .L8007DAA8 # maspsx-keep\n"
+                    "sra $t1, $t9, 16 # maspsx-keep\n"
+                    ".L8007DA84: # maspsx-keep\n"
+                    "sll $t8, $t9, 2 # maspsx-keep\n"
+                    "lui $t9, %hi(D_8009E070) # maspsx-keep\n"
+                    "addu $t9, $t9, $t8 # maspsx-keep\n"
+                    "lw $t9, %lo(D_8009E070)($t9) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "sll $t6, $t9, 16 # maspsx-keep\n"
+                    "sra $t6, $t6, 16 # maspsx-keep\n"
+                    "negu $t4, $t6 # maspsx-keep\n"
+                    "sra $t1, $t9, 16 # maspsx-keep\n"
+                    ".L8007DAA8: # maspsx-keep\n"
+                    "multu $t1, $t3 # maspsx-keep\n"
+                    "lh $t7, 0x4($a0) # maspsx-keep\n"
+                    "sh $t6, 0x4($a1) # maspsx-keep\n"
+                    "mflo $t8 # maspsx-keep\n"
+                    "negu $t9, $t8 # maspsx-keep\n"
+                    "sra $t6, $t9, 12 # maspsx-keep\n"
+                    "multu $t1, $t0 # maspsx-keep\n"
+                    "sh $t6, 0xA($a1) # maspsx-keep\n"
+                    "bgez $t7, .L8007DB10 # maspsx-keep\n"
+                    "andi $t9, $t7, 0xFFF # maspsx-keep\n"
+                    "mflo $t8 # maspsx-keep\n"
+                    "sra $t6, $t8, 12 # maspsx-keep\n"
+                    "sh $t6, 0x10($a1) # maspsx-keep\n"
+                    "negu $t7, $t7 # maspsx-keep\n"
+                    "bgez $t7, .L8007DAE8 # maspsx-keep\n"
+                    "andi $t7, $t7, 0xFFF # maspsx-keep\n"
+                    ".L8007DAE8: # maspsx-keep\n"
+                    "sll $t8, $t7, 2 # maspsx-keep\n"
+                    "lui $t9, %hi(D_8009E070) # maspsx-keep\n"
+                    "addu $t9, $t9, $t8 # maspsx-keep\n"
+                    "lw $t9, %lo(D_8009E070)($t9) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "sll $t8, $t9, 16 # maspsx-keep\n"
+                    "sra $t8, $t8, 16 # maspsx-keep\n"
+                    "negu $t5, $t8 # maspsx-keep\n"
+                    "j .L8007DB3C # maspsx-keep\n"
+                    "sra $t2, $t9, 16 # maspsx-keep\n"
+                    ".L8007DB10: # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t6, $t7, 12 # maspsx-keep\n"
+                    "sh $t6, 0x10($a1) # maspsx-keep\n"
+                    "sll $t8, $t9, 2 # maspsx-keep\n"
+                    "lui $t9, %hi(D_8009E070) # maspsx-keep\n"
+                    "addu $t9, $t9, $t8 # maspsx-keep\n"
+                    "lw $t9, %lo(D_8009E070)($t9) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "sll $t8, $t9, 16 # maspsx-keep\n"
+                    "sra $t5, $t8, 16 # maspsx-keep\n"
+                    "sra $t2, $t9, 16 # maspsx-keep\n"
+                    ".L8007DB3C: # maspsx-keep\n"
+                    "multu $t2, $t1 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t6, $t7, 12 # maspsx-keep\n"
+                    "sh $t6, 0x0($a1) # maspsx-keep\n"
+                    "multu $t5, $t1 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "negu $t6, $t7 # maspsx-keep\n"
+                    "sra $t7, $t6, 12 # maspsx-keep\n"
+                    "multu $t2, $t4 # maspsx-keep\n"
+                    "sh $t7, 0x2($a1) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t8, $t7, 12 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "multu $t8, $t3 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t6, $t7, 12 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "multu $t5, $t0 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t9, $t7, 12 # maspsx-keep\n"
+                    "subu $t7, $t9, $t6 # maspsx-keep\n"
+                    "multu $t8, $t0 # maspsx-keep\n"
+                    "sh $t7, 0x6($a1) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t6 # maspsx-keep\n"
+                    "sra $t7, $t6, 12 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "multu $t5, $t3 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t6 # maspsx-keep\n"
+                    "sra $t9, $t6, 12 # maspsx-keep\n"
+                    "addu $t6, $t9, $t7 # maspsx-keep\n"
+                    "multu $t5, $t4 # maspsx-keep\n"
+                    "sh $t6, 0xC($a1) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t8, $t7, 12 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "multu $t8, $t3 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t6, $t7, 12 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "multu $t2, $t0 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t7 # maspsx-keep\n"
+                    "sra $t9, $t7, 12 # maspsx-keep\n"
+                    "addu $t7, $t9, $t6 # maspsx-keep\n"
+                    "multu $t8, $t0 # maspsx-keep\n"
+                    "sh $t7, 0x8($a1) # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t6 # maspsx-keep\n"
+                    "sra $t7, $t6, 12 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "multu $t2, $t3 # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "mflo $t6 # maspsx-keep\n"
+                    "sra $t9, $t6, 12 # maspsx-keep\n"
+                    "subu $t6, $t9, $t7 # maspsx-keep\n"
+                    "sh $t6, 0xE($a1) # maspsx-keep\n"
+                    "jr $ra # maspsx-keep\n"
+                    "nop # maspsx-keep\n"
+                    "nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _patch_gte);
+ASM_FUNC(_patch_gte, "lui $at, %hi(D_800A3524) # maspsx-keep\n"
+                     "sw $ra, %lo(D_800A3524)($at) # maspsx-keep\n"
+                     "jal EnterCriticalSection # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "addiu $t2, $zero, 0xB0 # maspsx-keep\n"
+                     "jalr $t2 # maspsx-keep\n"
+                     "addiu $t1, $zero, 0x56 # maspsx-keep\n"
+                     "lui $t2, %hi(D_8007DCD4) # maspsx-keep\n"
+                     "lui $t1, %hi(FlushCache) # maspsx-keep\n"
+                     "lw $v0, 0x18($v0) # maspsx-keep\n"
+                     "addiu $t2, $t2, %lo(D_8007DCD4) # maspsx-keep\n"
+                     "addiu $t1, $t1, %lo(FlushCache) # maspsx-keep\n"
+                     ".L8007DC9C: # maspsx-keep\n"
+                     "lw $v1, 0x0($t2) # maspsx-keep\n"
+                     "addiu $t2, $t2, 0x4 # maspsx-keep\n"
+                     "addiu $v0, $v0, 0x4 # maspsx-keep\n"
+                     "bne $t2, $t1, .L8007DC9C # maspsx-keep\n"
+                     "sw $v1, -0x4($v0) # maspsx-keep\n"
+                     "jal FlushCache # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "jal ExitCriticalSection # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "lui $ra, %hi(D_800A3524) # maspsx-keep\n"
+                     "lw $ra, %lo(D_800A3524)($ra) # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "jr $ra # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     ".globl D_8007DCD4 # maspsx-keep\n"
+                     "D_8007DCD4: # maspsx-keep\n"
+                     "nop # maspsx-keep\n"
+                     "nop # maspsx-keep\n")
 
 ASM_FUNC(func_8007DCDC, "    addiu $k0, $zero, 0x100 # maspsx-keep\n"
                         "    lw $k0, 0x8($k0) # maspsx-keep\n"
@@ -3732,7 +5127,7 @@ void _SsGetSeqData(s16 access, s16 sequence) {
 }
 
 /* SPDX-License-Identifier: MIT */
-void SpuVmKeyOn(s16, s16, u8, s32, s32, s32);
+void SpuVmKeyOn(s16, s16, s16, s32, s32, s32);
 void SpuVmKeyOff(s16, s16, u8, s32);
 void _SsNoteOn(s16 access, s16 sequence, s32 note, s32 velocity) {
     struct SeqStruct *score;
@@ -3870,15 +5265,129 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
 #else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSetControlChange);
 #endif
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContModulation);
+typedef struct {
+    u8 tones;
+    u8 bytes[15];
+} ProgramAttrBuffer;
+typedef struct {
+    u8 bytes[32];
+} ToneAttrBuffer;
+s16 SsUtGetProgAtr(s16, s16, u8 *);
+void SsUtGetVagAtr(s16, s16, s16, u8 *);
+void SsUtSetVagAtr(s16, s16, s16, u8 *);
+void _SsContModulation(s16 access, s16 sequence, s32 value) {
+    struct SeqStruct *score;
+    ProgramAttrBuffer progAtr;
+    ToneAttrBuffer toneAtr;
+    s32 tone;
+    s32 row;
+    s32 offset;
+    u8 channel;
+    row = (s32)D_800BDE3C[access];
+    offset = sequence * 0xAC;
+    score = (struct SeqStruct *)(offset + row);
+    channel = score->channel;
+    SsUtGetProgAtr(score->unk4C, score->programs[channel], (u8 *)&progAtr);
+    for (tone = 0; tone < progAtr.tones; tone++) {
+        SsUtGetVagAtr(score->unk4C, score->programs[channel], tone,
+                      (u8 *)&toneAtr);
+        toneAtr.bytes[8] = value;
+        SsUtSetVagAtr(score->unk4C, score->programs[channel], tone,
+                      (u8 *)&toneAtr);
+    }
+    score->deltaValue = _SsReadDeltaValue(access, sequence);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContPortaTime);
+void _SsContPortaTime(s16 access, s16 sequence, s32 value) {
+    struct SeqStruct *score;
+    ProgramAttrBuffer progAtr;
+    ToneAttrBuffer toneAtr;
+    s32 tone;
+    s32 row;
+    s32 offset;
+    u8 channel;
+    row = (s32)D_800BDE3C[access];
+    offset = sequence * 0xAC;
+    score = (struct SeqStruct *)(offset + row);
+    channel = score->channel;
+    SsUtGetProgAtr(score->unk4C, score->programs[channel], (u8 *)&progAtr);
+    for (tone = 0; tone < progAtr.tones; tone++) {
+        SsUtGetVagAtr(score->unk4C, score->programs[channel], tone,
+                      (u8 *)&toneAtr);
+        toneAtr.bytes[11] = value;
+        SsUtSetVagAtr(score->unk4C, score->programs[channel], tone,
+                      (u8 *)&toneAtr);
+    }
+    score->deltaValue = _SsReadDeltaValue(access, sequence);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContPortamento);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContResetAll);
+void _SsContResetAll(s16 access, s16 sequence) {
+    struct SeqStruct *score;
+    s32 row;
+    s32 offset;
+    u8 *bytes;
+    register s32 channel0 asm("v0");
+    register s32 channel1 asm("v1");
+    row = (s32)D_800BDE3C[access];
+    offset = sequence * 0xAC;
+    score = (struct SeqStruct *)(offset + row);
+    bytes = (u8 *)score;
+    func_80082B70();
+    func_80082670();
+    channel0 = *(volatile u8 *)(bytes + 0x12);
+    channel1 = *(volatile u8 *)(bytes + 0x12);
+    asm("addu %0, %1, %0" : "=r"(channel0) : "r"(bytes), "0"(channel0));
+    *(u8 *)(channel0 + 0x2C) = (u8)channel1;
+    score->unk13 = 0;
+    score->unk14 = 0;
+    *(u16 *)(bytes + *(volatile u8 *)(bytes + 0x12) * 2 + 0x4E) = 0x7F;
+    channel0 = *(volatile u8 *)(bytes + 0x12);
+    asm("addu %0, %1, %0" : "=r"(channel0) : "r"(bytes), "0"(channel0));
+    *(u8 *)(channel0 + 0x17) = 0x40;
+    score->deltaValue = _SsReadDeltaValue(access, sequence);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContNrpn1);
+void _SsContNrpn1(s16 access, s16 sequence, u8 value) {
+    extern s32 D_800BDF0C[][16];
+    struct SeqStruct *score;
+    s32 row;
+    s32 offset;
+    s32 (*callback)(s16, s16, s32);
+    u8 status;
+
+    row = (s32)D_800BDE3C[access];
+    offset = sequence * 0xAC;
+    score = (struct SeqStruct *)(offset + row);
+    if (score->unk27 != 1) {
+        goto check_status;
+    }
+    if (score->unk10 != 0) {
+        goto check_status;
+    }
+    score->unk28 = value;
+    score->unk10 = 1;
+    goto after_status;
+check_status:
+    status = score->unk16;
+    if (status == 0x1E) {
+        goto after_status;
+    }
+    if (status == 0x14) {
+        goto after_status;
+    }
+    score->unk15 = value;
+    score->unk2A++;
+after_status:
+    if (score->unk16 == 0x28) {
+        callback = (s32 (*)(s16, s16, s32))D_800BDF0C[access][sequence];
+        if (callback != 0) {
+            callback(access, sequence, value & 0xFF);
+        }
+    }
+    score->deltaValue = _SsReadDeltaValue(access, sequence);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContNrpn2);
 
@@ -3912,7 +5421,150 @@ void _SsContRpn2(s16 access, s16 sequence, u8 value) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContDataEntry);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSndSetVabAttr);
+typedef struct {
+    u16 unk0, unk2, unk4, unk6, unk8;
+    s16 unkA, unkC, unkE, unk10;
+} SsAdsr;
+typedef struct {
+    u8 prior;
+    u8 mode;
+    u8 vol;
+    u8 pan;
+    u8 center;
+    u8 shift;
+    u8 min;
+    u8 max;
+    u8 vibW;
+    u8 vibT;
+    u8 porW;
+    u8 porT;
+    u8 pbmin;
+    u8 pbmax;
+    u8 reserved1;
+    u8 reserved2;
+    u16 adsr1;
+    u16 adsr2;
+    s16 prog;
+    s16 vag;
+    s16 reserved[4];
+} SdkVagAttr;
+void SsUtGetVagAtr(s16, s16, s16, u8 *);
+void SsUtSetVagAtr(s16, s16, s16, u8 *);
+void SsUtSetReverbType(short);
+void SsUtSetReverbDepth(short, short);
+void SsUtSetReverbFeedback(short);
+void SsUtSetReverbDelay(short);
+void func_80082B50(void);
+void func_80082B70(void);
+void _SsSndSetVabAttr(s16 vabId, s16 progNum, s16 toneNum, SdkVagAttr vagAtr,
+                      SsAdsr adsrBuffer, s16 idx, u8 attr) {
+    s16 temp;
+    SsUtGetVagAtr(vabId, progNum, toneNum, (u8 *)&vagAtr);
+    switch (idx) {
+    case 0:
+        vagAtr.prior = attr;
+        SsUtSetVagAtr(vabId, progNum, toneNum, (u8 *)&vagAtr);
+        break;
+    case 1:
+        vagAtr.mode = attr;
+        SsUtSetVagAtr(vabId, progNum, toneNum, (u8 *)&vagAtr);
+        if (attr == 0) {
+            func_80082B70();
+        } else if (attr == 1) {
+        } else if (attr == 2) {
+        } else if (attr == 3) {
+        } else if (attr == 4) {
+            func_80082B50();
+        }
+        break;
+    case 2:
+        vagAtr.min = attr;
+        SsUtSetVagAtr(vabId, progNum, toneNum, (u8 *)&vagAtr);
+        break;
+    case 3:
+        vagAtr.max = attr;
+        SsUtSetVagAtr(vabId, progNum, toneNum, (u8 *)&vagAtr);
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+        temp = idx - 4;
+        _SsUtResolveADSR(vagAtr.adsr1, vagAtr.adsr2, &adsrBuffer);
+        __asm__(".rdata\n.long 0\n.text");
+        switch (temp) {
+        case 0:
+            adsrBuffer.unkA = 0;
+            adsrBuffer.unk0 = attr;
+            break;
+        case 1:
+            adsrBuffer.unkA = 1;
+            adsrBuffer.unk0 = attr;
+            break;
+        case 2:
+            adsrBuffer.unk2 = attr;
+            break;
+        case 3:
+            adsrBuffer.unk4 = attr;
+            break;
+        case 4:
+            adsrBuffer.unkC = 0;
+            adsrBuffer.unk6 = attr;
+            break;
+        case 5:
+            adsrBuffer.unkC = 1;
+            adsrBuffer.unk6 = attr;
+            break;
+        case 6:
+            adsrBuffer.unkE = 0;
+            adsrBuffer.unk8 = attr;
+            break;
+        case 7:
+            adsrBuffer.unkE = 1;
+            adsrBuffer.unk8 = attr;
+            break;
+        case 8:
+            if (attr > 0 && attr < 0x40)
+                adsrBuffer.unk10 = 0;
+            else if (attr >= 0x40 && attr < 0x80)
+                adsrBuffer.unk10 = 1;
+            break;
+        case 9:
+            vagAtr.vibT = attr;
+            break;
+        case 10:
+            vagAtr.porW = attr;
+            break;
+        }
+        _SsUtBuildADSR(&adsrBuffer, &vagAtr.adsr1, &vagAtr.adsr2);
+        SsUtSetVagAtr(vabId, progNum, toneNum, (u8 *)&vagAtr);
+        break;
+    case 15:
+        SsUtSetReverbType(attr);
+        break;
+    case 16:
+        SsUtSetReverbDepth(attr, attr);
+        break;
+    case 17:
+        SsUtSetReverbFeedback(attr);
+        break;
+    case 18:
+    case 19:
+        SsUtSetReverbDelay(attr);
+        break;
+    case 20:
+    case 21:
+    case 22:
+        break;
+    }
+}
 
 /* SPDX-License-Identifier: MIT */
 void SpuVmPitchBend(s32, s16, u8, u8);
@@ -3964,17 +5616,6 @@ s32 _SsReadDeltaValue(s16 access, s16 sequence) {
 
 /* Resolved ADSR envelope of a VagAtr: five rates/levels and four mode
  * flags, split out of the two packed adsr1/adsr2 words. */
-typedef struct {
-    u16 unk0;
-    u16 unk2;
-    u16 unk4;
-    u16 unk6;
-    u16 unk8;
-    s16 unkA;
-    s16 unkC;
-    s16 unkE;
-    s16 unk10;
-} SsAdsr;
 
 void _SsUtResolveADSR(u16 adsr1, u16 adsr2, SsAdsr *adsr) {
     u32 temp;
@@ -4215,9 +5856,22 @@ void SsStart2(void) {
     _SsStart(0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsTrapIntrVSync);
+void _SsTrapIntrVSync(void) {
+    if (D_800A20AC[0] != 0)
+        ((Callback)D_800A20AC[0])();
+    ((Callback)D_800A20A8[0])();
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSeqCalledTbyT_1per2);
+extern s32 D_800A20B4Read[];
+extern s32 D_800A20B4Write[];
+void _SsSeqCalledTbyT_1per2(void) {
+    if (D_800A20B4Read[0] == 0) {
+        D_800A20B4Write[0] = 1;
+        return;
+    }
+    D_800A20B4Write[0] = 0;
+    ((Callback)D_800A20A8[0])();
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSeqCalledTbyT);
 
@@ -4317,11 +5971,45 @@ void SsSetTickMode(long tickMode) {
 }
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B38);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsEnd);
+extern u8 D_800A20B0Read[];
+extern u8 D_800A20B0Write[];
+extern s32 D_800A20ACRead[];
+extern s32 D_800A20ACWrite[];
+extern u8 D_800A20B2Read[];
+extern u8 D_800A20B2Write[];
+void SsEnd(void) {
+    if (D_800A20A4[0] == 0) {
+        D_800A20B1[0] = 0;
+        EnterCriticalSection();
+        if (D_800A20B0Read[0] != 0) {
+            VSyncCallback(0);
+            D_800A20B0Write[0] = 0;
+        } else if (D_800A20B2Read[0] == 0) {
+            InterruptCallback(0, (Callback)D_800A20ACRead[0]);
+            D_800A20ACWrite[0] = 0;
+        } else {
+            InterruptCallback(6, 0);
+        }
+        ExitCriticalSection();
+        D_800A20B2Write[0] = 0xFF;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSetTableSize);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSndSetPauseMode);
+extern long SpuVmGetSeqVol(short, short *, short *);
+void _SsSndSetPauseMode(short access, short sequence) {
+    struct SeqStruct *score;
+    s32 row;
+    s32 offset;
+    row = (s32)D_800BDE3C[access];
+    offset = sequence * 0xAC;
+    score = (struct SeqStruct *)(offset + row);
+    SpuVmGetSeqVol(access | (sequence << 8), &score->unk78, &score->unk7A);
+    D_800BDE3C[access][sequence].unk90 &= ~1;
+    D_800BDE3C[access][sequence].unk90 &= ~8;
+    D_800BDE3C[access][sequence].unk90 |= 2;
+}
 
 extern void _SsSndSetPauseMode(short, short);
 
@@ -4371,7 +6059,19 @@ void SsSepPlay(short sep_access_num, short seq_num, char play_mode,
     Snd_SetPlayMode(sep_access_num, seq_num, play_mode, l_count);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSndSetReplayMode);
+void _SsSndSetReplayMode(short access, short sequence) {
+    s32 status;
+    status = D_800BDE3C[access][sequence].unk90;
+    if ((status & 0x204) != 0) {
+        return;
+    }
+    if ((status & 0x100) != 0) {
+        return;
+    }
+    D_800BDE3C[access][sequence].unk90 &= ~2;
+    D_800BDE3C[access][sequence].unk90 |= 8;
+    D_800BDE3C[access][sequence].unk90 |= 1;
+}
 
 extern void _SsSndSetReplayMode(short, short);
 
@@ -4491,19 +6191,78 @@ void SsVabClose(s16 vabid) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpen);
+extern s32 D_800BE930[];
+extern s32 SsVabTransBody(s32, s16);
+s32 SsVabOpen(u8 *addr) {
+    s32 result;
+    s16 vabid;
+    result = SsVabOpenHead(addr, -1);
+    vabid = result;
+    if (vabid != -1) {
+        result = SsVabTransBody(D_800BE930[vabid], vabid);
+    }
+    return (s16)result;
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpenHead);
+extern s32 SsVabOpenHeadWithMode(u8 *, s32, s32, s32);
+s32 SsVabOpenHead(addr, vabid)
+u8 *addr;
+s16 vabid;
+{
+    return (s16)SsVabOpenHeadWithMode(addr, vabid, 0, 0);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpenHeadSticky);
+s32 SsVabOpenHeadSticky(u_char *addr, u_long vabid, u_long sbaddr) {
+    return (s16)SsVabOpenHeadWithMode(addr, (s16)vabid, 1, sbaddr);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabFakeHead);
+extern s32 SsVabOpenHeadWithMode(u8 *, s32, s32, s32);
+s32 SsVabFakeHead(addr, vabid, sbaddr)
+u8 *addr;
+s16 vabid;
+s32 sbaddr;
+{
+    return (s16)SsVabOpenHeadWithMode(addr, vabid, 1, sbaddr);
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpenHeadWithMode);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabTransBody);
+extern s32 D_800BE8AC[];
+extern s32 SpuSetTransferStartAddr(s32);
+extern void _spu_setInTransfer(s32);
+s32 SsVabTransBody(s32 addr, s16 vabId) {
+    register s32 data asm("s3") = addr;
+    register s32 id asm("s2");
+    register s32 normalized asm("v0");
+    register s32 index asm("s1");
+    register s32 transfer asm("s0");
+    if ((u16)vabId >= 0x11) {
+        goto fail;
+    }
+    asm("sll %0, %2, 16\n\tsra %1, %0, 16"
+        : "=r"(normalized), "=r"(id)
+        : "r"(vabId));
+    index = id * 4;
+    if (D_800B9DE4[id] != 2) {
+        goto fail;
+    }
+    transfer = *(s32 *)((u8 *)D_800BE8F0 + index);
+    SpuSetTransferMode(0);
+    SpuSetTransferStartAddr(transfer);
+    SpuWrite((u8 *)data, *(s32 *)((u8 *)D_800BE8AC + index));
+    D_800B9DE4[id] = 1;
+    return id;
+fail:
+    _spu_setInTransfer(0);
+    return -1;
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabTransCompleted);
+extern s32 SpuIsTransferCompleted(s32);
+s32 SsVabTransCompleted(immediateFlag)
+s16 immediateFlag;
+{
+    return (s16)SpuIsTransferCompleted(immediateFlag);
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -4519,9 +6278,68 @@ void SpuVmDamperOn(void) {
     D_800AFD98[0] = 2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetProgAtr);
+extern u8 D_800B9DE4[];
+extern s32 SpuVmVSetUp(s16, s16);
+extern volatile u32 gProgramAttrsRead[];
+s16 SsUtGetProgAtr(s16 vabId, s16 progNum, u8 *progatrptr) {
+    u32 offset;
+    if (D_800B9DE4[vabId] == 1) {
+        SpuVmVSetUp(vabId, progNum);
+        offset = progNum * 16;
+        progatrptr[0] = *((u8 *)(offset + gProgramAttrsRead[0]));
+        progatrptr[1] = ((u8 *)gProgramAttrsRead[0])[offset + 1];
+        progatrptr[2] = ((u8 *)gProgramAttrsRead[0])[offset + 2];
+        progatrptr[3] = ((u8 *)gProgramAttrsRead[0])[offset + 3];
+        progatrptr[4] = ((u8 *)gProgramAttrsRead[0])[offset + 4];
+        *(u16 *)&progatrptr[6] =
+            *(u16 *)&((u8 *)gProgramAttrsRead[0])[offset + 6];
+        return 0;
+    }
+    return -1;
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmVSetUp);
+typedef struct SpuVmProgEntry {
+    u32 word0;
+    u32 word4;
+    u8 reserved1;
+    u8 padding[7];
+} SpuVmProgEntry;
+extern u8 D_800B9DE4VSetUp[];
+extern s16 D_800B60A0VSetUp[];
+extern s32 D_800AFA98VSetUp[];
+extern s32 D_800AFAD8VSetUp[];
+extern s32 D_800AFD9CVSetUp[];
+extern u8 D_800B9DC5VSetUp[];
+extern u8 D_800B9DCAVSetUp[];
+extern s32 D_800B9950VSetUp[];
+extern s32 D_800B9930VSetUp[];
+extern s32 D_800B9928VSetUp[];
+extern u8 D_800B9DCBVSetUp[];
+s32 SpuVmVSetUp(s16 vabId, s16 prog) {
+    s32 programIndex;
+    u16 id;
+    register s32 vabVh asm("v1");
+    register s32 vabPg asm("a0");
+    s32 vabTn;
+    SpuVmProgEntry *programs;
+    id = vabId;
+    if (id >= 16 || D_800B9DE4VSetUp[vabId] != 1 ||
+        prog >= D_800B60A0VSetUp[0]) {
+        return -1;
+    }
+    vabVh = D_800AFAD8VSetUp[vabId];
+    vabPg = D_800AFA98VSetUp[vabId];
+    vabTn = D_800AFD9CVSetUp[vabId];
+    D_800B9DC5VSetUp[0] = vabId;
+    D_800B9DCAVSetUp[0] = prog;
+    D_800B9950VSetUp[0] = vabTn;
+    D_800B9930VSetUp[0] = vabVh;
+    D_800B9928VSetUp[0] = vabPg;
+    programs = (SpuVmProgEntry *)vabPg;
+    programIndex = prog;
+    D_800B9DCBVSetUp[0] = programs[programIndex].reserved1;
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetVagAtr);
 
@@ -4592,21 +6410,403 @@ void SsUtSetReverbDelay(short delay) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetVagAtr);
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+u8 SpuVmAllocDraft(s32) asm("SpuVmAlloc");
+u8 SpuVmAllocDraft(s32 arg0) {
+    struct SpuVoice {
+        s16 unk0;
+        s16 unk2;
+        s16 unk04;
+        u16 unk6;
+        s16 unk8;
+        char unka;
+        char unkb;
+        s16 note;
+        s16 unke;
+        s16 unk10;
+        s16 prog;
+        s16 tone;
+        s16 vabId;
+        s16 unk18;
+        u8 pad[1];
+        u8 unk1b;
+        s16 auto_vol;
+        s16 unk1e;
+        s16 unk20;
+        s16 unk22;
+        s16 start_vol;
+        s16 end_vol;
+        s16 auto_pan;
+        s16 unk2a;
+        s16 unk2c;
+        s16 unk2e;
+        s16 start_pan;
+        s16 end_pan;
+    };
+    extern u8 D_800AD3BC[];
+    extern u8 D_800B9C80[];
+    extern u8 D_800B9DD3[];
+    struct SpuVoice *voices;
+    u8 var_t2;
+    u16 var_t0;
+    u16 var_t3;
+    u8 cur_voice;
+    u8 channel;
+    u8 var_t1;
+    u16 prior;
+
+    voices = (struct SpuVoice *)D_800AD3BC;
+
+    channel = 99;
+    var_t3 = -1;
+    var_t2 = 0;
+    var_t0 = 0;
+    prior = D_800B9DD3[0];
+    var_t1 = 99;
+    for (cur_voice = 0; cur_voice < D_800B9C80[0]; cur_voice++) {
+        if (voices[cur_voice].unk1b == 0 && voices[cur_voice].unk6 == 0) {
+            channel = cur_voice;
+            break;
+        }
+        if (voices[cur_voice].unk18 < prior) {
+            prior = voices[cur_voice].unk18;
+            var_t1 = cur_voice;
+            var_t3 = voices[cur_voice].unk6;
+            var_t0 = voices[cur_voice].unk2;
+            var_t2 = 1;
+        } else if (voices[cur_voice].unk18 == prior) {
+            var_t2 += 1;
+            if (voices[cur_voice].unk6 < var_t3) {
+                var_t0 = voices[cur_voice].unk2;
+                var_t3 = voices[cur_voice].unk6;
+                var_t1 = cur_voice;
+            } else if (voices[cur_voice].unk6 == var_t3) {
+                if (var_t0 < voices[cur_voice].unk2) {
+                    var_t0 = voices[cur_voice].unk2;
+                    var_t1 = cur_voice;
+                }
+            }
+        }
+    }
+    if (channel == 99) {
+        if (var_t2 == 0) {
+            channel = D_800B9C80[0];
+        } else {
+            channel = var_t1;
+        }
+    }
+    if (channel < D_800B9C80[0]) {
+        for (cur_voice = 0; cur_voice < D_800B9C80[0]; cur_voice++) {
+            voices[cur_voice].unk2++;
+        }
+        voices[channel].unk2 = 0;
+        voices[channel].unk18 = D_800B9DD3[0];
+        if (voices[channel].unk1b == 2) {
+            SpuSetNoiseVoice(0, 0xFFFFFF);
+        }
+    }
+    return channel;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmAlloc);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+void SpuVmKeyOnNow(u8 vagCount, u16 arg2) {
+    struct SpuVoice {
+        s16 unk0;
+        s16 unk2;
+        s16 unk04;
+        u16 unk6;
+        s16 unk8;
+        char unka;
+        char unkb;
+        s16 note;
+        s16 unke;
+        s16 unk10;
+        s16 prog;
+        s16 tone;
+        s16 vabId;
+        s16 unk18;
+        u8 pad[1];
+        u8 unk1b;
+        s16 tail[12];
+    };
+    extern s32 D_800B9930[];
+    extern u8 D_800B9DC8[];
+    extern u8 D_800B9DCE[];
+    extern u8 D_800B9DD1[];
+    extern u8 D_800B9DD2[];
+    extern u8 D_800B9DCF[];
+    extern u8 D_800B9DC9[];
+    extern u8 D_800B9DD8[];
+    extern s16 D_800B9DDA[];
+    extern s16 D_800B9DDE[];
+    extern struct SeqStruct *D_800BDE3C[];
+    extern u16 D_800AD9A8[];
+    extern u16 D_800AD9AC[];
+    extern u16 D_800AD96C[];
+    extern u16 D_800AD970[];
+    extern u16 D_800BEB98[];
+    extern u16 D_800BEB9C[];
+    extern u8 D_800AD3A4[];
+    extern u8 D_800AD3BC[];
+    extern u16 D_800AD228[];
+    extern s32 note2pitch2();
+    struct SeqStruct *score;
+    struct SpuVoice *voices;
+    s32 pos;
+    u16 bitsUpper;
+    u16 bitsLower;
+    u32 voll;
+    u32 volr;
+    u32 voll_t;
+    u32 volr_t;
+    s32 mvol_scaled;
+
+    voices = (struct SpuVoice *)D_800AD3BC;
+    pos = D_800B9DDE[0] * 8;
+    mvol_scaled = (*(u8 *)((s32)D_800B9930[0] + 0x18)) * 0x3FFF;
+    voll_t = ((D_800B9DC8[0] * mvol_scaled) / 0x7F) / 0x7F;
+    voll_t = ((voll_t * D_800B9DCE[0] * D_800B9DD1[0]) / 0x7F) / 0x7F;
+    volr_t = voll_t;
+    score = D_800BDE3C[D_800B9DDA[0] & 0xFF] + ((D_800B9DDA[0] & 0xFF00) >> 8);
+    if (D_800B9DDA[0] != 0x21) {
+        voll_t = (voll_t * score->leftVolume) / 0x7F;
+        volr_t = (volr_t * score->rightVolume) / 0x7F;
+    }
+    if (D_800B9DD2[0] < 0x40) {
+        voll = voll_t;
+        volr = (volr_t * D_800B9DD2[0]) / 0x3F;
+    } else {
+        voll = (voll_t * (0x7F - D_800B9DD2[0])) / 0x3F;
+        volr = volr_t;
+    }
+    if (D_800B9DCF[0] < 0x40) {
+        volr = (volr * D_800B9DCF[0]) / 0x3F;
+    } else {
+        voll = (voll * (0x7F - D_800B9DCF[0])) / 0x3F;
+    }
+    if (D_800B9DC9[0] < 0x40) {
+        volr = (volr * D_800B9DC9[0]) / 0x3F;
+    } else {
+        voll = (voll * (0x7F - D_800B9DC9[0])) / 0x3F;
+    }
+    if (D_800B9DD8[0] == 1) {
+        if (voll < volr) {
+            voll = volr;
+        } else {
+            volr = voll;
+        }
+    }
+    voll = (voll * voll) / 0x3FFF;
+    volr = (volr * volr) / 0x3FFF;
+    D_800AD228[pos + 2] = arg2;
+    D_800AD228[pos + 0] = voll;
+    D_800AD228[pos + 1] = volr;
+    D_800AD3A4[D_800B9DDE[0]] |= 7;
+    voices[D_800B9DDE[0]].unk04 = arg2;
+    voices[D_800B9DDE[0]].unk1b = 1;
+    if (D_800B9DDE[0] < 0x10) {
+        bitsLower = 1 << D_800B9DDE[0];
+        bitsUpper = 0;
+    } else {
+        bitsLower = 0;
+        bitsUpper = 1 << (D_800B9DDE[0] - 0x10);
+    }
+    if (D_800B9DD8[0] & 4) {
+        D_800AD9A8[0] |= bitsLower;
+        D_800AD9AC[0] |= bitsUpper;
+    } else {
+        D_800AD9A8[0] &= ~bitsLower;
+        D_800AD9AC[0] &= ~bitsUpper;
+    }
+    D_800BEB98[0] |= bitsLower;
+    D_800BEB9C[0] |= bitsUpper;
+    D_800AD96C[0] &= ~D_800BEB98[0];
+    D_800AD970[0] &= ~D_800BEB9C[0];
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOnNow);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+void SpuVmDoAllocate(void) {
+    extern s16 D_800B9DDE[];
+    extern u8 D_800B9DCB[];
+    extern u8 D_800B9DD0[];
+    extern u16 D_800B9DDC[];
+    extern s32 D_800B9928[];
+    extern s32 D_800B9950[];
+    extern s32 D_800AD8A0[];
+    extern u8 D_800AD3A4[];
+    extern s16 D_800AD3C2[];
+    extern u16 D_800AD228[];
+    extern u16 D_800AFD98[];
+    s32 i;
+    s32 toneIndex;
+    s32 progIndex;
+    s32 offset;
+
+    offset = D_800B9DDE[0] * 8;
+    toneIndex = D_800B9DD0[0] + D_800B9DCB[0] * 16;
+    D_800B9DDE[1] = offset;
+    D_800B9DDE[2] = toneIndex;
+    D_800AD3C2[D_800B9DDE[0] * 26] = 0x7FFF;
+    for (i = 0; i < 0x10; i++) {
+        D_800AD8A0[i] &= ~(1 << D_800B9DDE[0]);
+    }
+    if ((D_800B9DDC[0] & 1) > 0) {
+        progIndex = (D_800B9DDC[0] - 1) / 2;
+        D_800AD228[offset + 3] =
+            *(u16 *)((s32)D_800B9928[0] + progIndex * 16 + 0xC);
+        D_800AD3A4[D_800B9DDE[0]] |= 8;
+    } else {
+        progIndex = (D_800B9DDC[0] - 1) / 2;
+        D_800AD228[offset + 3] =
+            *(u16 *)((s32)D_800B9928[0] + progIndex * 16 + 0xE);
+        D_800AD3A4[D_800B9DDE[0]] |= 8;
+    }
+    D_800AD228[offset + 4] =
+        *(u16 *)((s32)D_800B9950[0] + toneIndex * 32 + 0x10);
+    D_800AD228[offset + 5] =
+        *(u16 *)((s32)D_800B9950[0] + toneIndex * 32 + 0x12) + D_800AFD98[0];
+    D_800AD3A4[D_800B9DDE[0]] |= 0x30;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmDoAllocate);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn2);
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u8 D_800B9DC6[];
+extern u8 D_800B9DD4[];
+extern u8 D_800B9DD5[];
+extern u16 D_800A20BC[];
+u16 note2pitch(void) {
+    s16 new_var;
+    s16 octave;
+    s16 pos;
+    u16 var_a2;
+    u16 var_v1;
+    new_var = (D_800B9DC6[0] + 60) - D_800B9DD4[0];
+    octave = new_var / 12;
+    pos = new_var % 12;
+    var_a2 = D_800B9DD5[0] / 8;
+    if (var_a2 > 15) {
+        var_a2 = 15;
+    }
+    var_v1 = D_800A20BC[(pos * 16) + var_a2];
+    do {
+        octave -= 5;
+        if (octave > 0) {
+            var_v1 <<= octave;
+        } else if (octave < 0) {
+            var_v1 >>= -octave;
+        }
+    } while (0);
+    return var_v1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u8 D_800B9DCB[];
+extern u8 D_800B9DD0[];
+extern u8 D_800B9950Raw[] asm("D_800B9950");
+extern u16 D_800A20BC[];
+s32 note2pitch2(u16 arg0, u16 arg1) {
+    s32 pos;
+    s16 new_var;
+    s16 var_a3;
+    s16 var_a2;
+    s16 octave;
+    u16 var_v1;
+    var_a3 =
+        (arg1 +
+         ((u8 *)*(u32 *)
+              D_800B9950Raw)[(D_800B9DD0[0] + D_800B9DCB[0] * 0x10) * 0x20 +
+                             5]) /
+        8;
+    var_a2 = 0;
+    if (var_a3 >= 16) {
+        var_a2 = 1;
+        var_a3 -= 16;
+    }
+    new_var =
+        arg0 + 60 -
+        ((u8 *)*(u32 *)
+             D_800B9950Raw)[(D_800B9DD0[0] + D_800B9DCB[0] * 0x10) * 0x20 + 4] +
+        var_a2;
+    octave = new_var / 12;
+    pos = (new_var % 12) * 16;
+    var_v1 = D_800A20BC[pos + var_a3];
+    octave -= 5;
+    if (octave > 0)
+        var_v1 <<= octave;
+    else if (octave < 0)
+        var_v1 >>= -octave;
+    return var_v1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch2);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+void SePitchBend(u8 voice, s16 arg1) {
+    extern u8 D_800AD3CC[];
+    extern u8 D_800AD3D0[];
+    extern u16 D_800AD3C8[];
+    extern u8 D_800AD3A4[];
+    extern u8 D_800B9DCB[];
+    extern u8 D_800B9DD0[];
+    extern u16 D_800B9DDE[];
+    extern u32 D_800B9950[];
+    extern u16 D_800AD228[];
+    extern s32 note2pitch2();
+    s32 tone;
+    u16 note;
+    u16 pbend;
+    s32 pos;
+
+    pos = voice * 8;
+    if (voice >= 0 && voice < 24) {
+        D_800B9DCB[0] = D_800AD3CC[(s32)voice * 52];
+        D_800B9DDE[0] = voice;
+        D_800B9DD0[0] = D_800AD3D0[(s32)voice * 52];
+        tone = D_800B9DD0[0] + D_800B9DCB[0] * 16;
+        if (arg1 >= 0) {
+            note =
+                D_800AD3C8[(s32)voice * 26] +
+                (arg1 * *(u8 *)((s32)D_800B9950[0] + tone * 32 + 0xD)) / 0x7F;
+            pbend =
+                (arg1 * *(u8 *)((s32)D_800B9950[0] + tone * 32 + 0xD)) % 0x7F;
+        } else {
+            note = (D_800AD3C8[(s32)voice * 26] +
+                    (arg1 * *(u8 *)((s32)D_800B9950[0] + tone * 32 + 0xC)) /
+                        0x7F) -
+                   1;
+            pbend = ((arg1 * *(u8 *)((s32)D_800B9950[0] + tone * 32 + 0xC)) /
+                     0x7F) +
+                    0x7F;
+        }
+        D_800AD228[pos + 2] = note2pitch2(note, pbend);
+        D_800AD3A4[voice] |= 4;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SePitchBend);
+#endif
 
 void SsUtVibrateOn(void) {
 }
@@ -4696,13 +6896,164 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetAutoPan);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmInit);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmNoiseOnWithAdsr);
+extern u8 D_800B9DD3[];
+extern u8 D_800B9C80[];
+typedef struct SpuVmVoiceSlot {
+    u16 voice;
+    s32 padding[2];
+} SpuVmVoiceSlot;
+extern SpuVmVoiceSlot D_800B9DDERead;
+extern SpuVmVoiceSlot D_800B9DDEWrite;
+extern s32 SpuVmAlloc();
+extern s32 vmNoiseOn2(s32, s32, s32, s32, s32);
+void SpuVmNoiseOnWithAdsr(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s32 voice;
+    D_800B9DD3[0] = 0x7F;
+    voice = SpuVmAlloc(0xFF);
+    voice &= 0xFF;
+    D_800B9DDEWrite.voice = voice;
+    if (voice < D_800B9C80[0]) {
+        vmNoiseOn2(*(u8 *)&D_800B9DDERead.voice, arg0 & 0xFFFF, arg1 & 0xFFFF,
+                   arg2 & 0xFFFF, arg3 & 0xFFFF);
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmNoiseOff);
+extern u8 D_800B9C80Start[];
+extern u8 D_800B9C80Loop[];
+extern u8 D_800AD3D7Read[];
+extern u8 D_800AD3D7Write[];
+extern u8 D_800AD3C0Write[];
+typedef struct SpuPointerStorage {
+    u32 pointer;
+    s32 padding[2];
+} SpuPointerStorage;
+extern SpuPointerStorage D_800A20B8Read;
+void SpuVmNoiseOff(void) {
+    s32 status;
+    s16 i;
+    s32 index;
+    u16 *spu;
+    i = 0;
+    if (D_800B9C80Start[0] == 0) {
+        return;
+    }
+    status = 2;
+again:
+    if (D_800AD3D7Read[(s32)i * 52] == status) {
+        index = (u8)i * 52;
+        D_800AD3D7Write[index] = 0;
+        spu = (u16 *)D_800A20B8Read.pointer;
+        *(u16 *)(D_800AD3C0Write + index) = 0;
+        spu[0x194 / 2] = 0;
+        spu[0x196 / 2] = 0;
+    }
+    i++;
+    if (i < D_800B9C80Loop[0]) {
+        goto again;
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmNoiseOn);
+extern u8 D_800B9DD3[];
+extern u8 D_800B9C80[];
+extern SpuVmVoiceSlot D_800B9DDERead;
+extern SpuVmVoiceSlot D_800B9DDEWrite;
+extern s32 SpuVmAlloc();
+extern s32 vmNoiseOn2(s32, s32, s32, s32, s32);
+void SpuVmNoiseOn(s32 arg0, s32 arg1) {
+    s32 voice;
+    D_800B9DD3[0] = 0x7F;
+    voice = SpuVmAlloc(0xFF);
+    voice &= 0xFF;
+    D_800B9DDEWrite.voice = voice;
+    if (voice < D_800B9C80[0]) {
+        vmNoiseOn2(*(u8 *)&D_800B9DDERead.voice, arg0 & 0xFFFF, arg1 & 0xFFFF,
+                   0x80FF, 0x5FC8);
+    }
+}
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+s16 SpuVmPBVoiceDraft(s16, s16, s16, s16, u16) asm("SpuVmPBVoice");
+s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
+                      u16 amount) {
+    struct SpuVoice {
+        s16 unk0;
+        s16 unk2;
+        s16 unk04;
+        u16 unk6;
+        s16 unk8;
+        char unka;
+        char unkb;
+        s16 note;
+        s16 unke;
+        s16 unk10;
+        s16 prog;
+        s16 tone;
+        s16 vabId;
+        s16 unk18;
+        u8 pad[1];
+        u8 unk1b;
+        s16 tail[12];
+    };
+    extern u8 D_800AD3BC[];
+    extern u8 D_800B9DCB[];
+    extern u16 D_800B9DDE[];
+    extern u8 D_800B9DD0[];
+    extern u16 D_800AD228[];
+    extern u8 D_800AD3A4[];
+    extern s32 D_800B9950[];
+    extern s32 note2pitch2();
+    struct SpuVoice *voiceData;
+    s16 temp_t1;
+    u16 temp_v1;
+    u16 pbend;
+    u16 temp_a1;
+    u16 note;
+
+    voiceData = (struct SpuVoice *)D_800AD3BC;
+    temp_t1 = amount - 0x40;
+    if (voiceData[voice].unke == seq_sep_no &&
+        voiceData[voice].vabId == vabId && voiceData[voice].prog == program) {
+        temp_a1 = voiceData[voice].note;
+        temp_v1 = voiceData[voice].tone + (D_800B9DCB[0] * 0x10);
+        if (temp_t1 > 0) {
+            do {
+                note = voiceData[voice].note +
+                       ((temp_t1 *
+                         *(u8 *)((s32)D_800B9950[0] + temp_v1 * 32 + 0xD)) /
+                        0x3F);
+            } while (0);
+            pbend =
+                ((temp_t1 * *(u8 *)((s32)D_800B9950[0] + temp_v1 * 32 + 0xD)) %
+                 0x3F) *
+                2;
+        } else {
+            note = temp_a1;
+            if (temp_t1 < 0) {
+                note = ((temp_t1 *
+                         *(u8 *)((s32)D_800B9950[0] + temp_v1 * 32 + 0xC)) /
+                        0x40);
+                note = (temp_a1 + note) - 1;
+                pbend = (((temp_t1 *
+                           *(u8 *)((s32)D_800B9950[0] + temp_v1 * 32 + 0xC)) %
+                          0x40) *
+                         2) +
+                        0x7F;
+            } else {
+                pbend = 0;
+            }
+        }
+        D_800B9DD0[0] = voiceData[voice].tone;
+        D_800B9DDE[0] = voice;
+        D_800AD228[voice * 8 + 2] = note2pitch2(note, pbend);
+        D_800AD3A4[voice] |= 4;
+        return 1;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPBVoice);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPitchBend);
 
@@ -4710,9 +7061,84 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmFlush);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOn);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOff);
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+s32 SpuVmKeyOffDraft(s16, s16, s16, u16) asm("SpuVmKeyOff");
+s32 SpuVmKeyOffDraft(s16 arg0, s16 vabId, s16 prog, u16 note) {
+    extern u8 D_800B9C80[];
+    extern u16 D_800B9DDE[];
+    extern s32 D_800A20B8[];
+    extern u16 D_800BEB98[];
+    extern u16 D_800BEB9C[];
+    extern u16 D_800AD96C[];
+    extern u16 D_800AD970[];
+    extern u8 D_800AD3BC[];
+    extern u8 D_800AD3C0[];
+    extern u8 D_800AD3C8[];
+    extern u8 D_800AD3CA[];
+    extern u8 D_800AD3CE[];
+    extern u8 D_800AD3D2[];
+    extern u8 D_800AD3D7[];
+    u16 bitsUpper;
+    u16 bitsLower;
+    u8 voice;
+    s32 count;
+    u16 tempVoice;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeKeyOn);
+    count = 0;
+    for (voice = 0; voice < D_800B9C80[0]; voice++) {
+        if (*(s16 *)(D_800AD3C8 + voice * 52) == note &&
+            *(s16 *)(D_800AD3CE + voice * 52) == prog &&
+            *(s16 *)(D_800AD3CA + voice * 52) == arg0 &&
+            *(s16 *)(D_800AD3D2 + voice * 52) == vabId) {
+            if (*(s16 *)(D_800AD3BC + voice * 52) == 0xFF) {
+                D_800AD3D7[voice * 52] = 0;
+                *(s16 *)(D_800AD3C0 + voice * 52) = 0;
+                ((u16 *)D_800A20B8[0])[202] = 0;
+                ((u16 *)D_800A20B8[0])[203] = 0;
+            } else {
+                D_800B9DDE[0] = voice;
+                tempVoice = D_800B9DDE[0];
+                if (tempVoice < 0x10) {
+                    bitsLower = 1 << tempVoice;
+                    bitsUpper = 0;
+                } else {
+                    bitsLower = 0;
+                    bitsUpper = 1 << (tempVoice - 0x10);
+                }
+                D_800AD3D7[tempVoice * 52] = 0;
+                *(s16 *)(D_800AD3C0 + tempVoice * 52) = 0;
+                *(s16 *)(D_800AD3BC + tempVoice * 52) = 0;
+                D_800BEB98[0] |= bitsLower;
+                D_800BEB9C[0] |= bitsUpper;
+                D_800AD96C[0] &= ~D_800BEB98[0];
+                D_800AD970[0] &= ~D_800BEB9C[0];
+            }
+            count++;
+        }
+    }
+    return count;
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOff);
+#endif
+
+void SpuVmSeKeyOn(s16 vabId, s16 prog, u16 note, s32 arg3, u16 voll, u16 volr) {
+    u16 pan;
+    u16 volume;
+
+    if (voll == volr) {
+        pan = 0x40;
+        volume = voll;
+    } else if (volr < voll) {
+        volume = voll;
+        pan = (volr * 0x40) / voll;
+    } else {
+        volume = volr;
+        pan = 0x7F - ((voll * 0x40) / volr);
+    }
+    SpuVmKeyOn(0x21, vabId, prog, note, volume, pan);
+}
 
 extern void SpuVmKeyOff();
 
@@ -4793,9 +7219,54 @@ s16 SpuVmGetSeqRVol(s16 seq_access) {
     return *(s16 *)&score[(seq_access & 0xFF00) >> 8].rightVolume;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeqKeyOff);
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+void SpuVmSeqKeyOff(arg0) s32 arg0;
+{
+    extern u8 D_800B9C80[];
+    extern u16 D_800B9DDE[];
+    extern s16 D_800AD3CASeq[][26] asm("D_800AD3CA");
+    extern u8 D_800AD3D7[];
+    extern u8 D_800AD3BC[];
+    extern u8 D_800AD3C0[];
+    extern u16 D_800BEB98[];
+    extern u16 D_800BEB9C[];
+    extern u16 D_800AD96C[];
+    extern u16 D_800AD970[];
+    u8 voice;
+    u16 bitsUpper;
+    u16 bitsLower;
+    u16 temp2;
 
-extern s32 SpuVmVSetUp();
+    if (D_800B9C80[0] == 0) {
+        return;
+    }
+    for (voice = 0; voice < D_800B9C80[0]; voice++) {
+        if (D_800AD3CASeq[voice][0] == (s16)arg0) {
+            D_800B9DDE[0] = voice;
+            temp2 = D_800B9DDE[0];
+            if (temp2 < 0x10) {
+                bitsLower = 1 << temp2;
+                bitsUpper = 0;
+            } else {
+                bitsLower = 0;
+                bitsUpper = 1 << (temp2 - 0x10);
+            }
+            D_800AD3D7[temp2 * 52] = 0;
+            *(s16 *)(D_800AD3C0 + temp2 * 52) = 0;
+            *(s16 *)(D_800AD3BC + temp2 * 52) = 0;
+            D_800BEB98[0] |= bitsLower;
+            D_800AD96C[0] &= ~D_800BEB98[0];
+            D_800BEB9C[0] |= bitsUpper;
+            D_800AD970[0] &= ~D_800BEB9C[0];
+        }
+    }
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeqKeyOff);
+#endif
+
+extern s32 SpuVmVSetUp(s16, s16);
 extern u32 D_800B9928[];
 
 s32 SpuVmSetProgVol(vabId, prog, vol)
@@ -4810,7 +7281,7 @@ s32 vol;
     return ((u8 *)D_800B9928[0])[prog * 16 + 1];
 }
 
-extern s32 SpuVmVSetUp();
+extern s32 SpuVmVSetUp(s16, s16);
 extern u32 D_800B9928[];
 
 s32 SpuVmGetProgVol(vabId, prog)
@@ -5069,11 +7540,74 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOnV);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOffV);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtPitchBend);
+extern s16 D_800B9DDA[];
+extern s32 SpuVmVSetUp(s16, s16);
+extern s32 SpuVmPBVoice(s16, s16, s16, s16, u16);
+s16 SsUtPitchBend(s16 voice, s16 vabId, s16 prog, s16 note, s16 pbend) {
+    SpuVmVSetUp(vabId, prog);
+    D_800B9DDA[0] = 0x21;
+    return -((SpuVmPBVoice(voice, 0x21, vabId, prog, pbend) << 16) == 0);
+}
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+short SsUtChangePitch(voice, vabId, prog, old_note, old_fine, new_note,
+                      new_fine)
+short voice;
+short vabId;
+short prog;
+short old_note;
+short old_fine;
+u16 new_note;
+u16 new_fine;
+{
+    extern s32 note2pitch2();
+    extern u16 gSpuRegisterBuffer[] asm("D_800AD228");
+    if (voice >= 0 && voice < 24) {
+        if (((s16 *)D_800AD3D2)[voice * 26] == vabId) {
+            if (((s16 *)D_800AD3CE)[voice * 26] == prog) {
+                if (((s16 *)D_800AD3C8)[voice * 26] == old_note) {
+                    SpuVmVSetUp(((s16 *)D_800AD3D2)[voice * 26],
+                                ((s16 *)D_800AD3CE)[voice * 26]);
+                    D_800B9DDA[0] = 0x21;
+                    D_800B9DDE[0] = voice;
+                    D_800B9DD0[0] = D_800AD3D0[voice * 52];
+                    gSpuRegisterBuffer[voice * 8 + 2] =
+                        note2pitch2(new_note, new_fine);
+                    D_800AD3A4[voice] |= 4;
+                    return 0;
+                }
+            }
+        }
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtChangePitch);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtChangeADSR);
+extern u16 gSpuRegisterBuffer[];
+extern u8 D_800AD3A4[];
+s16 SsUtChangeADSR(s16 voice, s16 vabId, s16 prog, s16 oldNote, u16 adsr1,
+                   u16 adsr2) {
+    s32 voiceOffset;
+    s32 attrOffset;
+    if ((u16)voice < 0x18) {
+        voiceOffset = voice * 26;
+        if (((s16 *)D_800AD3D2)[voiceOffset] == vabId) {
+            if (((s16 *)D_800AD3CE)[voiceOffset] == prog) {
+                if (((s16 *)D_800AD3C8)[voiceOffset] == oldNote) {
+                    attrOffset = voice * 8;
+                    gSpuRegisterBuffer[attrOffset + 4] = adsr1;
+                    gSpuRegisterBuffer[attrOffset + 5] = adsr2;
+                    D_800AD3A4[voice] |= 0x30;
+                    return 0;
+                }
+            }
+        }
+    }
+    return -1;
+}
 
 extern s32 D_800A20B8[];
 
@@ -5086,7 +7620,15 @@ s32 SsUtGetDetVVol(s32 vab, s16 *vl, s16 *vr) {
     return -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetDetVVol);
+short SsUtSetDetVVol(short vc, short vl, short vr) {
+    if ((u16)vc < 24) {
+        *(s16 *)&D_800AD224[vc * 16 + 2] = vr;
+        D_800AD3A4[vc] |= 3;
+        *(s16 *)&D_800AD224[vc * 16] = vl;
+        return 0;
+    }
+    return -1;
+}
 
 extern s32 D_800A20B8[];
 
@@ -5154,27 +7696,444 @@ s32 SsUtAutoPan(s32 seq_access, s32 pan1, s32 pan2, s32 mSec) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAllKeyOff);
 
+extern void _SpuInit(s32 mode);
+
 void func_80087CC0(void) {
     _SpuInit(0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SpuInit);
+extern void _spu_init(s32);
+extern void SpuStart(void);
+extern void _spu_FsetRXX(s32, u32, s32);
+extern s16 gSpuVoiceCenterNotes[];
+extern s32 D_800A2710Init[];
+extern s32 D_800A2248Init[];
+extern s32 D_800A224CInit[];
+extern s32 D_800A2258Init[];
+extern s16 D_800A225CInit[];
+extern s16 D_800A225EInit[];
+extern s32 D_800A2260Init[];
+extern s32 D_800A2264Init[];
+extern s32 D_800A2250Init[];
+extern s32 D_800A2244Init[];
+extern s32 D_800A26C4Init[];
+extern s32 D_800A229CInit[];
+void _SpuInit(s32 arg0) {
+    s32 i;
+    u32 centerNote;
+    ResetCallback();
+    _spu_init(arg0);
+    if (arg0 == 0) {
+        centerNote = 0xC000;
+        i = 23;
+        do {
+            gSpuVoiceCenterNotes[i] = centerNote;
+            i--;
+        } while (i >= 0);
+    }
+    SpuStart();
+    D_800A2248Init[0] = 0;
+    D_800A224CInit[0] = 0;
+    D_800A2258Init[0] = 0;
+    D_800A225CInit[0] = 0;
+    D_800A225EInit[0] = 0;
+    D_800A2260Init[0] = 0;
+    D_800A2264Init[0] = 0;
+    D_800A2250Init[0] = D_800A2710Init[0];
+    _spu_FsetRXX(0xD1, D_800A2710Init[0], 0);
+    D_800A2244Init[0] = 0;
+    D_800A26C4Init[0] = 0;
+    D_800A229CInit[0] = 0;
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuStart);
+typedef struct SpuStartedStorage {
+    s32 started;
+    s32 padding[2];
+} SpuStartedStorage;
+extern SpuStartedStorage D_800A26A0Read;
+extern SpuStartedStorage D_800A26A0Write;
+extern s32 D_800A2240[];
+extern s32 D_800A2298[];
+extern void _SpuDataCallback(void (*)());
+extern void _spu_FiDMA(void);
+void SpuStart(void) {
+    s32 event;
+    if (D_800A26A0Read.started == 0) {
+        D_800A26A0Write.started = 1;
+        EnterCriticalSection();
+        D_800A2240[0] = 0;
+        _SpuDataCallback(&_spu_FiDMA);
+        event = OpenEvent(0xF0000009, 0x20, 0x2000, 0);
+        D_800A2298[0] = event;
+        EnableEvent(event);
+        ExitCriticalSection();
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_reset);
+extern u16 *D_800A26AC[];
+s32 _spu_reset(void) {
+    volatile s32 i;
+    volatile s32 j;
+    u16 value;
+    value = *(volatile u16 *)((u8 *)D_800A26AC[0] + 0x1AA);
+    *(volatile u16 *)((u8 *)D_800A26AC[0] + 0x1AA) = value & 0x7FCF;
+    j = 13;
+    i = 0;
+    while (i < 0xF0) {
+        j = j * 3;
+        i = i + 1;
+        (void)i;
+    }
+    value &= 0xFFCF;
+    *(volatile u16 *)((u8 *)D_800A26AC[0] + 0x1AA) = value;
+    return 0;
+}
 
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B48);
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+s32 SpuInitHardwareDraft(s32) asm("_spu_init");
+typedef struct SpuInitRegs {
+    volatile u16 voice[24][8];
+    volatile u16 main_vol[2];
+    volatile u16 rev_vol[2];
+    volatile u16 key_on[2];
+    volatile u16 key_off[2];
+    volatile u16 chan_fm[2];
+    volatile u16 noise_mode[2];
+    volatile u16 rev_mode[2];
+    volatile u16 reserved[5];
+    volatile u16 trans_addr;
+    volatile u16 trans_data;
+    volatile u16 spucnt;
+    volatile u16 data_trans;
+    volatile u16 spustat;
+    volatile u16 cd_vol[2];
+    volatile u16 ex_vol[2];
+} SpuInitRegs;
+extern volatile SpuInitRegs *D_800A26ACInitRegs[];
+extern s32 *D_800A26BCInitPtr[];
+extern s32 D_800A26A4Init[];
+extern s32 D_800A26C4Init[];
+extern s32 D_800A26C8Init[];
+extern s16 D_800A26A8Init[];
+extern s32 D_800A26CCInit[];
+extern s32 D_800A26D0Init[];
+extern s32 D_800A26D4Init[];
+extern s32 D_800A26D8Init[];
+extern u16 D_800A26E8Init[];
+extern char D_80090B38Init[];
+extern char D_80090B48Init[];
+extern s32 D_800A26F8Init[];
+extern s32 D_800A26A0Init[];
+extern s32 D_800A26C0Init[];
+extern s32 D_800A26B0Init[];
+extern s32 D_800A26B4Init[];
+
+extern s32 _spu_mem_mode_plus;
+extern s32 _spu_mem_mode;
+extern s32 _spu_mem_mode_unit;
+extern s32 _spu_mem_mode_unitM;
+extern s32 _spu_tsa;
+extern s32 _spu_inTransfer;
+extern s32 _spu_transferCallback;
+extern s32 _spu_IRQCallback;
+
+extern s32 printf(const char *, ...);
+s32 SpuInitHardwareDraft(s32 arg0) {
+    volatile s32 sp0;
+    volatile s32 sp4;
+    s32 channel;
+    *D_800A26BCInitPtr[0] |= 0xB0000;
+    D_800A26ACInitRegs[0]->main_vol[0] = 0;
+    D_800A26ACInitRegs[0]->main_vol[1] = 0;
+    D_800A26ACInitRegs[0]->spucnt = 0;
+    D_800A26C4Init[0] = 0;
+    D_800A26C8Init[0] = 0;
+    D_800A26A8Init[0] = 0;
+    sp4 = 0xD;
+    for (sp0 = 0; sp0 < 0xF0; sp0++) {
+        sp4 *= 3;
+    }
+    D_800A26ACInitRegs[0]->main_vol[0] = 0;
+    D_800A26ACInitRegs[0]->main_vol[1] = 0;
+    D_800A26A4Init[0] = 0;
+    while (D_800A26ACInitRegs[0]->spustat & 0x7FF) {
+        D_800A26A4Init[0]++;
+        if (D_800A26A4Init[0] > 5000) {
+            printf(D_80090B38Init, D_80090B48Init);
+            break;
+        }
+    }
+    D_800A26CCInit[0] = 2;
+    D_800A26D0Init[0] = 3;
+    D_800A26D4Init[0] = 8;
+    D_800A26D8Init[0] = 7;
+    D_800A26ACInitRegs[0]->data_trans = 4;
+    D_800A26ACInitRegs[0]->rev_vol[0] = 0;
+    D_800A26ACInitRegs[0]->rev_vol[1] = 0;
+    D_800A26ACInitRegs[0]->key_off[0] = 0xFFFF;
+    D_800A26ACInitRegs[0]->key_off[1] = 0xFFFF;
+    D_800A26ACInitRegs[0]->rev_mode[0] = 0;
+    D_800A26ACInitRegs[0]->rev_mode[1] = 0;
+    if (arg0 == 0) {
+        D_800A26ACInitRegs[0]->chan_fm[0] = 0;
+        D_800A26ACInitRegs[0]->chan_fm[1] = 0;
+        D_800A26ACInitRegs[0]->noise_mode[0] = 0;
+        D_800A26ACInitRegs[0]->noise_mode[1] = 0;
+        D_800A26ACInitRegs[0]->cd_vol[0] = 0;
+        D_800A26ACInitRegs[0]->cd_vol[1] = 0;
+        D_800A26ACInitRegs[0]->ex_vol[0] = 0;
+        D_800A26ACInitRegs[0]->ex_vol[1] = 0;
+        D_800A26A8Init[0] = 0x200;
+        _spu_writeByIO((u8 *)D_800A26E8Init, 0x10);
+        for (channel = 0; channel < 24; channel++) {
+            D_800A26ACInitRegs[0]->voice[channel][0] = 0;
+            D_800A26ACInitRegs[0]->voice[channel][1] = 0;
+            D_800A26ACInitRegs[0]->voice[channel][2] = 0x3FFF;
+            D_800A26ACInitRegs[0]->voice[channel][3] = 0x200;
+            D_800A26ACInitRegs[0]->voice[channel][4] = 0;
+            D_800A26ACInitRegs[0]->voice[channel][5] = 0;
+        }
+        D_800A26ACInitRegs[0]->key_on[0] |= 0xFFFF;
+        D_800A26ACInitRegs[0]->key_on[1] |= 0xFF;
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        D_800A26ACInitRegs[0]->key_off[0] |= 0xFFFF;
+        D_800A26ACInitRegs[0]->key_off[1] |= 0xFF;
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+    }
+    _spu_inTransfer = 1;
+    D_800A26ACInitRegs[0]->spucnt = 0xC000;
+    _spu_transferCallback = 0;
+    _spu_IRQCallback = 0;
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_init);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_writeByIO);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_FiDMA);
+extern s32 D_800A26F8FiDMA[];
+extern u16 *D_800A26ACFiDMA[];
+extern SpuIRQCallbackProc D_800A26E0FiDMARead[];
+extern SpuIRQCallbackProc D_800A26E0FiDMAWrite[];
+void _spu_FiDMA(void) {
+    volatile s32 sp0;
+    volatile s32 sp4;
+    s32 i;
+    volatile u16 *spu;
+    if (D_800A26F8FiDMA[0] == 0) {
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
+    }
+    spu = D_800A26ACFiDMA[0];
+    spu[0xD5] &= 0xFFCF;
+    i = 0;
+    while (spu[0xD5] & 0x30) {
+        if (++i > 0xF00) {
+            break;
+        }
+    }
+    if (D_800A26E0FiDMARead[0] != 0) {
+        D_800A26E0FiDMAWrite[0]();
+        return;
+    }
+    DeliverEvent(0xF0000009, 0x20);
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_r_);
+typedef struct SpuRxxPrefix {
+    u8 pad[0x1A6];
+    u16 transferAddress;
+    u16 transferFifo;
+    u16 control;
+} SpuRxxPrefix;
+typedef union SpuRxxUnion {
+    volatile SpuRxxPrefix rxx;
+} SpuRxxUnion;
+extern SpuRxxUnion *gSpuRegisters[];
+extern s32 *D_800A26C0r[];
+extern s32 *D_800A26B0r[];
+extern s32 *D_800A26B4r[];
+extern s32 *D_800A26B8r[];
+extern s32 D_800A26F8r[];
+void _spu_r_(s32 arg0, u16 arg1, s32 arg2) {
+    volatile s32 sp0;
+    volatile s32 sp4;
+    gSpuRegisters[0]->rxx.transferAddress = arg1;
+    sp4 = 0xD;
+    for (sp0 = 0; sp0 < 0xF0; sp0++) {
+        sp4 *= 3;
+    }
+    sp4 = 0xD;
+    for (sp0 = 0; sp0 < 0xF0; sp0++) {
+        sp4 *= 3;
+    }
+    gSpuRegisters[0]->rxx.control |= 0x30;
+    sp4 = 0xD;
+    for (sp0 = 0; sp0 < 0xF0; sp0++) {
+        sp4 *= 3;
+    }
+    sp4 = 0xD;
+    for (sp0 = 0; sp0 < 0xF0; sp0++) {
+        sp4 *= 3;
+    }
+    *D_800A26C0r[0] = (*D_800A26C0r[0] & 0xF0FFFFFF) | 0x22000000;
+    *D_800A26B0r[0] = arg0;
+    *D_800A26B4r[0] = (arg2 << 16) | 0x10;
+    D_800A26F8r[0] = 1;
+    *D_800A26B8r[0] = 0x01000200;
+}
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+typedef struct SpuTRegs2 {
+    u8 pad[0x1A6];
+    volatile u16 trans_addr;
+    u8 pad2[2];
+    volatile u16 spucnt;
+} SpuTRegs2;
+typedef union SpuTRegsUnion2 {
+    SpuTRegs2 rxx;
+} SpuTRegsUnion2;
+extern volatile SpuTRegsUnion2 *SpuRXXT[];
+extern u16 SpuTsaT[];
+extern s32 SpuMemModePlusT[];
+extern s32 SpuTransferDirT[];
+extern volatile s32 *SpuTransferAddrT[];
+extern volatile s32 *SpuTransferSizeT[];
+extern volatile s32 *SpuTransferCtrlT[];
+extern volatile s32 *SpuDelayCtrlT[];
+extern s32 SpuTransferCountT[];
+extern s32 SpuTransferBlocksT[];
+s32 _spu_t(s32 arg0, ...) {
+    s32 var_a2;
+    s32 i;
+    va_list args;
+    u32 count;
+    u16 ck2;
+    u16 cnt;
+    va_start(args, arg0);
+    switch (arg0) {
+    case 2:
+        count = va_arg(args, u32);
+        SpuTsaT[0] = count >> SpuMemModePlusT[0];
+        SpuRXXT[0]->rxx.trans_addr = SpuTsaT[0];
+        break;
+    case 1:
+        SpuTransferDirT[0] = 0;
+        i = 0;
+        while (SpuRXXT[0]->rxx.trans_addr != SpuTsaT[0]) {
+            if (++i > 0xF00)
+                return -2;
+        }
+        cnt = SpuRXXT[0]->rxx.spucnt;
+        cnt &= ~0x30;
+        cnt |= 0x20;
+        SpuRXXT[0]->rxx.spucnt = cnt;
+        break;
+    case 0:
+        SpuTransferDirT[0] = 1;
+        i = 0;
+        while (SpuRXXT[0]->rxx.trans_addr != SpuTsaT[0]) {
+            if (++i > 0xF00)
+                return -2;
+        }
+        cnt = SpuRXXT[0]->rxx.spucnt;
+        cnt &= ~0x30;
+        cnt |= 0x30;
+        SpuRXXT[0]->rxx.spucnt = cnt;
+        break;
+    case 3:
+        if (SpuTransferDirT[0] == 1)
+            ck2 = 0x30;
+        else
+            ck2 = 0x20;
+        i = 0;
+        while ((SpuRXXT[0]->rxx.spucnt & 0x30) != ck2) {
+            if (++i > 0xF00)
+                return -2;
+        }
+        if (SpuTransferDirT[0] == 1)
+            var_a2 = 0x22000000;
+        else
+            var_a2 = 0x20000000;
+        *SpuDelayCtrlT[0] = (*SpuDelayCtrlT[0] & 0xF0FFFFFF) | var_a2;
+        count = va_arg(args, u32);
+        SpuTransferCountT[0] = count;
+        count = va_arg(args, u32);
+        SpuTransferBlocksT[0] = count / 64;
+        SpuTransferBlocksT[0] += ((count % 64) ? 1 : 0);
+        *SpuTransferAddrT[0] = SpuTransferCountT[0];
+        *SpuTransferSizeT[0] = (SpuTransferBlocksT[0] << 16) | 0x10;
+        if (SpuTransferDirT[0] == 1)
+            var_a2 = 0x01000200;
+        else
+            var_a2 = 0x01000201;
+        *SpuTransferCtrlT[0] = var_a2;
+        break;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_t);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_write);
+extern long D_800A26C4[];
+extern u16 D_800A26A8[];
+extern s32 D_800A26D0[];
+extern s32 _spu_t(s32, ...);
+extern s32 _spu_writeByIO(u8 *, u32);
+s32 _spu_write(u8 *addr, u32 size) {
+    if (D_800A26C4[0] == 0) {
+        _spu_t(2, D_800A26A8[0] << D_800A26D0[0]);
+        _spu_t(1);
+        _spu_t(3, addr, size);
+    } else {
+        _spu_writeByIO(addr, size);
+    }
+    return size;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -5248,7 +8207,27 @@ void _SpuDataCallback(void (*arg0)()) {
     DMACallback(4, arg0);
 }
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern SpuStartedStorage D_800A26A0Read;
+extern SpuIRQCallbackProc D_800A26E0[];
+extern SpuIRQCallbackProc D_800A26E4[];
+extern s32 D_800A2298[];
+void SpuQuit(void) {
+    if (D_800A26A0Read.started == 1) {
+        D_800A26A0Read.started = 0;
+        EnterCriticalSection();
+        D_800A26E0[0] = 0;
+        D_800A26E4[0] = 0;
+        _SpuDataCallback(0);
+        CloseEvent(D_800A2298[0]);
+        DisableEvent(D_800A2298[0]);
+        ExitCriticalSection();
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuQuit);
+#endif
 
 s32 SpuSetMute(s32 onOff) {
     switch (onOff) {
@@ -5281,20 +8260,358 @@ s32 SpuInitMalloc(s32 num, s32 *table) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuMalloc);
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+typedef struct {
+    u32 addr;
+    u32 size;
+} SpuMallocCandidateItem;
+extern s32 D_800A224CMalloc[];
+extern s32 D_800A2250Malloc[];
+extern s32 D_800A26D0Malloc[];
+extern s32 D_800A26D8Malloc[];
+extern s32 D_800A2704Malloc[];
+extern s32 D_800A2708Malloc[];
+extern void *D_800A270CMalloc[];
+extern void _spu_gcSPU(void);
+s32 SpuMalloc(s32 arg0) {
+    s32 temp_a0;
+    s32 temp_a0_2;
+    s32 temp_a1;
+    s32 temp_s0;
+    s32 temp_s0_2;
+    s32 temp_v1;
+    s32 temp_v1_2;
+    s32 var_a0;
+    s32 var_s0;
+    s32 var_s2;
+    s32 var_s3;
+    s32 var_v0;
+    u32 temp_s1;
+    u32 temp_t0;
+    void *temp_a2;
+    void *temp_v0;
+    void *temp_v1_3;
+    void *temp_v1_4;
+    void *var_a0_2;
 
+    var_s0 = 0;
+    var_s2 = -1;
+    if (D_800A224CMalloc[0] == 0) {
+        var_s3 = 0;
+    } else {
+        var_s3 = (0x10000 - D_800A2250Malloc[0]) << D_800A26D0Malloc[0];
+    }
+    var_a0 = arg0;
+    if (arg0 & ~D_800A26D8Malloc[0]) {
+        var_a0 = arg0 + D_800A26D8Malloc[0];
+    }
+    temp_s1 = (var_a0 >> D_800A26D0Malloc[0]) << D_800A26D0Malloc[0];
+    if (*(s32 *)D_800A270CMalloc[0] & 0x40000000) {
+        var_s2 = 0;
+    } else {
+        _spu_gcSPU();
+        if (D_800A2704Malloc[0] > 0) {
+            var_a0_2 = (0 * 8) + D_800A270CMalloc[0];
+        loop_9:
+            temp_v1 = *(s32 *)((u8 *)var_a0_2 + 0x0);
+            if ((temp_v1 & 0x40000000) ||
+                ((temp_v1 & 0x80000000) &&
+                 ((u32) * (s32 *)((u8 *)var_a0_2 + 0x4) >= temp_s1))) {
+                var_s2 = var_s0;
+            } else {
+                var_s0 += 1;
+                var_a0_2 += 8;
+                if (var_s0 < D_800A2704Malloc[0]) {
+                    goto loop_9;
+                }
+            }
+        }
+    }
+    var_v0 = -1;
+    temp_s0 = var_s2 * 8;
+    if (var_s2 != -1) {
+        temp_a2 = temp_s0 + D_800A270CMalloc[0];
+        temp_v1_2 = *(s32 *)((u8 *)temp_a2 + 0x0);
+        if (temp_v1_2 & 0x40000000) {
+            var_v0 = -1;
+            if (var_s2 < D_800A2704Malloc[0]) {
+                var_v0 = -1;
+                if ((u32)(*(s32 *)((u8 *)temp_a2 + 0x4) - var_s3) >= temp_s1) {
+                    temp_a0 = var_s2 + 1;
+                    temp_v1_3 = (temp_a0 * 8) + D_800A270CMalloc[0];
+                    *(s32 *)((u8 *)temp_v1_3 + 0x0) =
+                        (s32)(((*(s32 *)((u8 *)temp_a2 + 0x0) & 0x0FFFFFFF) +
+                               temp_s1) |
+                              0x40000000);
+                    *(s32 *)((u8 *)temp_v1_3 + 0x4) =
+                        (s32)(*(s32 *)((u8 *)temp_a2 + 0x4) - temp_s1);
+                    D_800A2708Malloc[0] = temp_a0;
+                    *(s32 *)((u8 *)temp_a2 + 0x4) = temp_s1;
+                    *(s32 *)((u8 *)temp_a2 + 0x0) =
+                        (s32)(*(s32 *)((u8 *)temp_a2 + 0x0) & 0x0FFFFFFF);
+                    _spu_gcSPU();
+                    return *(s32 *)((u8 *)D_800A270CMalloc[0] + temp_s0);
+                }
+            }
+            /* Duplicate return node #23. Try simplifying control flow for better match */
+            return var_v0;
+        }
+        temp_t0 = *(s32 *)((u8 *)temp_a2 + 0x4);
+        temp_s0_2 = var_s2 * 8;
+        if ((temp_s1 < temp_t0) &&
+            (D_800A2708Malloc[0] < D_800A2704Malloc[0])) {
+            temp_v0 = (D_800A2708Malloc[0] * 8) + D_800A270CMalloc[0];
+            temp_a1 = *(s32 *)((u8 *)temp_v0 + 0x0);
+            temp_a0_2 = *(s32 *)((u8 *)temp_v0 + 0x4);
+            *(s32 *)((u8 *)temp_v0 + 0x0) =
+                (s32)((temp_s1 + temp_v1_2) | 0x80000000);
+            *(s32 *)((u8 *)temp_v0 + 0x4) = (s32)(temp_t0 - temp_s1);
+            D_800A2708Malloc[0] += 1;
+            *(s32 *)((u8 *)temp_v0 + 0x8) = temp_a1;
+            *(s32 *)((u8 *)temp_v0 + 0xC) = temp_a0_2;
+        }
+        temp_v1_4 = temp_s0_2 + D_800A270CMalloc[0];
+        *(s32 *)((u8 *)temp_v1_4 + 0x4) = temp_s1;
+        *(s32 *)((u8 *)temp_v1_4 + 0x0) =
+            (s32)(*(s32 *)((u8 *)temp_v1_4 + 0x0) & 0x0FFFFFFF);
+        _spu_gcSPU();
+        var_v0 = *(s32 *)((u8 *)D_800A270CMalloc[0] + temp_s0_2);
+        /* Duplicate return node #23. Try simplifying control flow for better match */
+        return var_v0;
+    }
+    return var_v0;
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuMalloc);
+#endif
+
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern s32 D_800A2708GC[];
+extern void *D_800A270CGC[];
+void _spu_gcSPU(void) {
+    s32 *var_v1;
+    s32 temp_a1_2;
+    s32 temp_a3;
+    s32 temp_v1;
+    s32 temp_v1_2;
+    s32 temp_v1_3;
+    s32 temp_v1_4;
+    s32 temp_v1_5;
+    s32 var_a2;
+    s32 var_a2_2;
+    s32 var_t1;
+    s32 var_t1_2;
+    s32 var_t1_3;
+    s32 var_t1_4;
+    s32 var_t1_5;
+    void *temp_a1;
+    void *temp_v0;
+    void *var_a0;
+    void *var_a0_2;
+    void *var_a0_3;
+    void *var_a3;
+    void *var_t2;
+    void *var_v1_2;
+
+    var_t1 = 0;
+    if (D_800A2708GC[0] >= 0) {
+        var_a3 = D_800A270CGC[0];
+        do {
+            var_a2 = var_t1 + 1;
+            if (*(s32 *)((u8 *)var_a3 + 0x0) & 0x80000000) {
+                var_v1 = (s32 *)((u8 *)D_800A270CGC[0] + (var_a2 * 8));
+            loop_4:
+                if (*var_v1 == 0x2FFFFFFF) {
+                    var_a2 += 1;
+                    var_v1 = (s32 *)((u8 *)var_v1 + 8);
+                    goto loop_4;
+                }
+                temp_a1 = (var_a2 * 8) + D_800A270CGC[0];
+                temp_v1 = *(s32 *)((u8 *)temp_a1 + 0x0);
+                if ((temp_v1 & 0x80000000) &&
+                    ((temp_v1 & 0x0FFFFFFF) ==
+                     ((*(s32 *)((u8 *)var_a3 + 0x0) & 0x0FFFFFFF) +
+                      *(s32 *)((u8 *)var_a3 + 0x4)))) {
+                    *(s32 *)((u8 *)temp_a1 + 0x0) = 0x2FFFFFFF;
+                    *(s32 *)((u8 *)var_a3 + 0x4) =
+                        (s32)(*(s32 *)((u8 *)var_a3 + 0x4) +
+                              *(s32 *)((u8 *)temp_a1 + 0x4));
+                } else {
+                    goto block_9;
+                }
+            } else {
+            block_9:
+                var_a3 += 8;
+                var_t1 += 1;
+            }
+        } while (D_800A2708GC[0] >= var_t1);
+    }
+    var_t1_2 = 0;
+    if (D_800A2708GC[0] >= 0) {
+        var_v1_2 = D_800A270CGC[0];
+        do {
+            var_t1_2 += 1;
+            if (*(s32 *)((u8 *)var_v1_2 + 0x4) == 0) {
+                *(s32 *)((u8 *)var_v1_2 + 0x0) = 0x2FFFFFFF;
+            }
+            var_v1_2 += 8;
+        } while (D_800A2708GC[0] >= var_t1_2);
+    }
+    var_t1_3 = 0;
+    if (D_800A2708GC[0] >= 0) {
+        var_t2 = D_800A270CGC[0];
+    loop_19:
+        if (!(*(s32 *)((u8 *)var_t2 + 0x0) & 0x40000000)) {
+            var_a2_2 = var_t1_3 + 1;
+            if (D_800A2708GC[0] >= var_a2_2) {
+                var_a0 = (var_a2_2 * 8) + D_800A270CGC[0];
+            loop_22:
+                temp_a1_2 = *(s32 *)((u8 *)var_a0 + 0x0);
+                if (!(temp_a1_2 & 0x40000000)) {
+                    temp_a3 = *(s32 *)((u8 *)var_t2 + 0x0);
+                    var_a2_2 += 1;
+                    if ((u32)(temp_a1_2 & 0x0FFFFFFF) <
+                        (u32)(temp_a3 & 0x0FFFFFFF)) {
+                        *(s32 *)((u8 *)var_t2 + 0x0) = temp_a1_2;
+                        temp_v1_2 = *(s32 *)((u8 *)var_t2 + 0x4);
+                        *(s32 *)((u8 *)var_t2 + 0x4) =
+                            (s32) * (s32 *)((u8 *)var_a0 + 0x4);
+                        *(s32 *)((u8 *)var_a0 + 0x0) = temp_a3;
+                        *(s32 *)((u8 *)var_a0 + 0x4) = temp_v1_2;
+                    }
+                    var_a0 += 8;
+                    if (D_800A2708GC[0] >= var_a2_2) {
+                        goto loop_22;
+                    }
+                }
+            }
+            var_t1_3 += 1;
+            var_t2 += 8;
+            if (D_800A2708GC[0] >= var_t1_3) {
+                goto loop_19;
+            }
+        }
+    }
+    var_t1_4 = 0;
+    if (D_800A2708GC[0] >= 0) {
+        var_a0_2 = D_800A270CGC[0];
+    loop_29:
+        temp_v1_3 = *(s32 *)((u8 *)var_a0_2 + 0x0);
+        if (!(temp_v1_3 & 0x40000000)) {
+            if (temp_v1_3 == 0x2FFFFFFF) {
+                temp_v0 = (D_800A2708GC[0] * 8) + D_800A270CGC[0];
+                *(s32 *)((u8 *)var_a0_2 + 0x0) =
+                    (s32) * (s32 *)((u8 *)temp_v0 + 0x0);
+                D_800A2708GC[0] = var_t1_4;
+                *(s32 *)((u8 *)var_a0_2 + 0x4) =
+                    (s32) * (s32 *)((u8 *)temp_v0 + 0x4);
+            } else {
+                var_t1_4 += 1;
+                var_a0_2 += 8;
+                if (D_800A2708GC[0] >= var_t1_4) {
+                    goto loop_29;
+                }
+            }
+        }
+    }
+    var_t1_5 = D_800A2708GC[0] - 1;
+    if (var_t1_5 >= 0) {
+        var_a0_3 = (var_t1_5 * 8) + D_800A270CGC[0];
+    loop_35:
+        temp_v1_4 = *(s32 *)((u8 *)var_a0_3 + 0x0);
+        if (temp_v1_4 & 0x80000000) {
+            temp_v1_5 = D_800A2708GC[0];
+            *(s32 *)((u8 *)var_a0_3 + 0x0) =
+                (s32)((temp_v1_4 & 0x0FFFFFFF) | 0x40000000);
+            D_800A2708GC[0] = var_t1_5;
+            var_t1_5 -= 1;
+            *(s32 *)((u8 *)var_a0_3 + 0x4) =
+                (s32)(*(s32 *)((u8 *)var_a0_3 + 0x4) +
+                      *(s32 *)((u8 *)D_800A270CGC[0] + (temp_v1_5 * 8) + 4));
+            var_a0_3 -= 8;
+            if (var_t1_5 >= 0) {
+                goto loop_35;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_gcSPU);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuFree);
 
-void _SpuSetAnyVoice(s32, u32, s32, s32);
+s32 _SpuSetAnyVoice(s32, u32, s32, s32);
 void SpuSetNoiseVoice(s32 a, s32 b) {
     _SpuSetAnyVoice(a, b, 0xCA, 0xCB);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SpuSetAnyVoice);
+extern u16 *D_800A26AC[];
+s32 _SpuSetAnyVoice(s32 on_off, u32 bits, s32 addr1, s32 addr2) {
+    s32 var_t0;
+    volatile u16 *spu;
+    spu = D_800A26AC[0];
+    var_t0 = ((spu[addr2] & 0xFF) << 16) | spu[addr1];
+    switch (on_off) {
+    case 1:
+        var_t0 |= bits & 0xFFFFFF;
+        spu[addr1] |= bits;
+        spu[addr2] |= ((bits >> 16) & 0xFF);
+        break;
+    case 0:
+        var_t0 &= ~(bits & 0xFFFFFF);
+        spu[addr1] &= ~bits;
+        spu[addr2] &= ~((bits >> 16) & 0xFF);
+        break;
+    }
+    return var_t0 & 0xFFFFFF;
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetReverb);
+typedef struct SpuReverbPrefix {
+    u8 pad[0x1AA];
+    u16 spucnt;
+} SpuReverbPrefix;
+typedef union SpuReverbUnion {
+    volatile SpuReverbPrefix rxx;
+} SpuReverbUnion;
+extern SpuReverbUnion *D_800A26ACReverbA[];
+extern SpuReverbUnion *D_800A26ACReverbB[];
+extern s32 D_800A2248ReverbRead[];
+extern s32 D_800A2248ReverbWrite[];
+extern s32 D_800A224CReverb[];
+extern s32 D_800A2250Reverb[];
+s32 SpuSetReverb(s32 arg0) {
+    register s32 value asm("$3");
+    register SpuReverbUnion *spu asm("$2");
+    switch (arg0) {
+    case 0:
+        spu = D_800A26ACReverbA[0];
+        value = spu->rxx.spucnt;
+        D_800A2248ReverbWrite[0] = 0;
+        value &= 0xFF7F;
+        spu->rxx.spucnt = value;
+        break;
+    case 1:
+        if (D_800A224CReverb[0] != arg0 &&
+            _SpuIsInAllocateArea_(D_800A2250Reverb[0]) != 0) {
+            spu = D_800A26ACReverbB[0];
+            value = spu->rxx.spucnt;
+            D_800A2248ReverbWrite[0] = 0;
+            value &= 0xFF7F;
+            spu->rxx.spucnt = value;
+        } else {
+            spu = D_800A26ACReverbB[0];
+            value = spu->rxx.spucnt;
+            D_800A2248ReverbWrite[0] = arg0;
+            value |= 0x80;
+            spu->rxx.spucnt = value;
+        }
+        break;
+    }
+    return D_800A2248ReverbRead[0];
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -5355,20 +8672,219 @@ s32 _SpuIsInAllocateArea_(u32 arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetReverbModeParam);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_setReverbAttr);
+typedef struct SpuReverbParams {
+    u32 mask;
+    u16 value[32];
+} SpuReverbParams;
+extern volatile u16 *D_800A26ACReverbAttr2[];
+void _spu_setReverbAttr(SpuReverbParams *params) {
+    s32 mask;
+    s32 allFields;
+    mask = params->mask;
+    allFields = (mask == 0);
+    if ((allFields != 0) || (mask & 0x00000001U))
+        D_800A26ACReverbAttr2[0][0xE0] = params->value[0];
+    if ((allFields != 0) || (mask & 0x00000002U))
+        D_800A26ACReverbAttr2[0][0xE1] = params->value[1];
+    if ((allFields != 0) || (mask & 0x00000004U))
+        D_800A26ACReverbAttr2[0][0xE2] = params->value[2];
+    if ((allFields != 0) || (mask & 0x00000008U))
+        D_800A26ACReverbAttr2[0][0xE3] = params->value[3];
+    if ((allFields != 0) || (mask & 0x00000010U))
+        D_800A26ACReverbAttr2[0][0xE4] = params->value[4];
+    if ((allFields != 0) || (mask & 0x00000020U))
+        D_800A26ACReverbAttr2[0][0xE5] = params->value[5];
+    if ((allFields != 0) || (mask & 0x00000040U))
+        D_800A26ACReverbAttr2[0][0xE6] = params->value[6];
+    if ((allFields != 0) || (mask & 0x00000080U))
+        D_800A26ACReverbAttr2[0][0xE7] = params->value[7];
+    if ((allFields != 0) || (mask & 0x00000100U))
+        D_800A26ACReverbAttr2[0][0xE8] = params->value[8];
+    if ((allFields != 0) || (mask & 0x00000200U))
+        D_800A26ACReverbAttr2[0][0xE9] = params->value[9];
+    if ((allFields != 0) || (mask & 0x00000400U))
+        D_800A26ACReverbAttr2[0][0xEA] = params->value[10];
+    if ((allFields != 0) || (mask & 0x00000800U))
+        D_800A26ACReverbAttr2[0][0xEB] = params->value[11];
+    if ((allFields != 0) || (mask & 0x00001000U))
+        D_800A26ACReverbAttr2[0][0xEC] = params->value[12];
+    if ((allFields != 0) || (mask & 0x00002000U))
+        D_800A26ACReverbAttr2[0][0xED] = params->value[13];
+    if ((allFields != 0) || (mask & 0x00004000U))
+        D_800A26ACReverbAttr2[0][0xEE] = params->value[14];
+    if ((allFields != 0) || (mask & 0x00008000U))
+        D_800A26ACReverbAttr2[0][0xEF] = params->value[15];
+    if ((allFields != 0) || (mask & 0x00010000U))
+        D_800A26ACReverbAttr2[0][0xF0] = params->value[16];
+    if ((allFields != 0) || (mask & 0x00020000U))
+        D_800A26ACReverbAttr2[0][0xF1] = params->value[17];
+    if ((allFields != 0) || (mask & 0x00040000U))
+        D_800A26ACReverbAttr2[0][0xF2] = params->value[18];
+    if ((allFields != 0) || (mask & 0x00080000U))
+        D_800A26ACReverbAttr2[0][0xF3] = params->value[19];
+    if ((allFields != 0) || (mask & 0x00100000U))
+        D_800A26ACReverbAttr2[0][0xF4] = params->value[20];
+    if ((allFields != 0) || (mask & 0x00200000U))
+        D_800A26ACReverbAttr2[0][0xF5] = params->value[21];
+    if ((allFields != 0) || (mask & 0x00400000U))
+        D_800A26ACReverbAttr2[0][0xF6] = params->value[22];
+    if ((allFields != 0) || (mask & 0x00800000U))
+        D_800A26ACReverbAttr2[0][0xF7] = params->value[23];
+    if ((allFields != 0) || (mask & 0x01000000U))
+        D_800A26ACReverbAttr2[0][0xF8] = params->value[24];
+    if ((allFields != 0) || (mask & 0x02000000U))
+        D_800A26ACReverbAttr2[0][0xF9] = params->value[25];
+    if ((allFields != 0) || (mask & 0x04000000U))
+        D_800A26ACReverbAttr2[0][0xFA] = params->value[26];
+    if ((allFields != 0) || (mask & 0x08000000U))
+        D_800A26ACReverbAttr2[0][0xFB] = params->value[27];
+    if ((allFields != 0) || (mask & 0x10000000U))
+        D_800A26ACReverbAttr2[0][0xFC] = params->value[28];
+    if ((allFields != 0) || (mask & 0x20000000U))
+        D_800A26ACReverbAttr2[0][0xFD] = params->value[29];
+    if ((allFields != 0) || (mask & 0x40000000U))
+        D_800A26ACReverbAttr2[0][0xFE] = params->value[30];
+    if ((allFields != 0) || (mask & 0x80000000U))
+        D_800A26ACReverbAttr2[0][0xFF] = params->value[31];
+}
 
 void SpuSetReverbVoice(s32 a, s32 b) {
     _SpuSetAnyVoice(a, b, 0xCC, 0xCD);
 }
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern s32 D_800A2710Clear[];
+extern s32 D_800A2298Clear[];
+extern u8 D_800A22A0Clear[];
+extern s32 D_800A26C4ClearRead[];
+extern s32 D_800A26C4ClearWrite[];
+extern s32 D_800A26D0Clear0[];
+extern s32 D_800A26D0Clear1[];
+extern s32 D_800A26D0Clear2[];
+extern s32 D_800A26E0ClearCheck[];
+extern s32 D_800A26E0ClearSave[];
+extern s32 D_800A26E0ClearWrite[];
+extern s32 D_800A26E0ClearRestore[];
+long SpuClearReverbWorkArea(long arg0) {
+    volatile s32 sp10;
+    s32 temp_a0;
+    s32 *temp_s1;
+    s32 *new_var;
+    s32 temp_s4;
+    s32 var_s2;
+    s32 var_s3;
+    s32 var_s5;
+    s32 var_v0;
+    u32 var_s0;
+    u32 var_s1;
+    sp10 = 0;
+    var_s5 = 0;
+    if ((u32)arg0 >= 10)
+        return -1;
+    new_var = D_800A2710Clear;
+    temp_s1 = new_var + arg0;
+    if (_SpuIsInAllocateArea_(*temp_s1) != 0)
+        return -1;
+    if (arg0 == 0) {
+        var_s1 = 0x10 << D_800A26D0Clear0[0];
+        var_s2 = 0xFFF0 << D_800A26D0Clear1[0];
+    } else {
+        temp_a0 = *temp_s1;
+        var_s1 = (0x10000 - temp_a0) << D_800A26D0Clear2[0];
+        var_s2 = temp_a0 << D_800A26D0Clear2[0];
+    }
+    temp_s4 = D_800A26C4ClearRead[0];
+    if (temp_s4 == 1) {
+        D_800A26C4ClearWrite[0] = 0;
+        var_s5 = 1;
+    }
+    var_s3 = 1;
+    if (D_800A26E0ClearCheck[0] != 0) {
+        sp10 = D_800A26E0ClearSave[0];
+        D_800A26E0ClearWrite[0] = 0;
+    }
+    var_v0 = var_s1 < 0x401;
+    do {
+        var_s0 = var_s1;
+        if (var_v0 == 0) {
+            var_s0 = 0x400;
+        } else {
+            var_s3 = 0;
+        }
+        _spu_t(2, (u32)var_s2);
+        _spu_t(1);
+        _spu_t(3, D_800A22A0Clear, var_s0);
+        var_s1 -= 0x400;
+        var_s2 += 0x400;
+        WaitEvent(D_800A2298Clear[0]);
+        var_v0 = var_s1 < 0x401;
+    } while (var_s3 != 0);
+    if (var_s5 != 0)
+        D_800A26C4ClearWrite[0] = temp_s4;
+    if (sp10 != 0)
+        D_800A26E0ClearRestore[0] = sp10;
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuClearReverbWorkArea);
+#endif
 
 ASM_FUNC(WaitEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
                     "    jr $t2 # maspsx-keep\n"
                     "    addiu $t1, $zero, 0xA # maspsx-keep\n"
                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetIRQ);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B80);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090BA0);
+typedef struct SpuIRQPrefix {
+    u8 pad[0x1AA];
+    u16 control;
+} SpuIRQPrefix;
+typedef union SpuIRQUnion {
+    volatile SpuIRQPrefix rxx;
+} SpuIRQUnion;
+extern SpuIRQUnion *D_800A26ACIRQ[];
+extern char D_80090B80[];
+extern char D_80090BA0[];
+extern s32 printf(const char *, ...);
+s32 SpuSetIRQ(s32 arg0) {
+    register s32 value asm("$3");
+    register SpuIRQUnion *spu asm("$2");
+    u32 i;
+    if (arg0 == 0 || arg0 == 3) {
+        spu = D_800A26ACIRQ[0];
+        value = spu->rxx.control;
+        value &= 0xFFBF;
+        spu->rxx.control = value;
+        i = 0;
+        while (spu->rxx.control & 0x40) {
+            i++;
+            if (i > 0xF00) {
+                printf(D_80090B80);
+                return -1;
+            }
+            spu = D_800A26ACIRQ[0];
+        }
+        value = 1;
+    }
+    if (arg0 == 1 || arg0 == 3) {
+        spu = D_800A26ACIRQ[0];
+        value = spu->rxx.control;
+        value |= 0x40;
+        spu->rxx.control = value;
+        i = 0;
+        while ((spu->rxx.control & 0x40) == 0) {
+            i++;
+            if (i > 0xF00) {
+                printf(D_80090BA0);
+                return -1;
+            }
+            spu = D_800A26ACIRQ[0];
+        }
+    }
+    return arg0;
+}
 
 u32 _spu_FsetRXXa(s32, u32);
 s32 SpuSetIRQAddr(u32 addr) {
@@ -5395,7 +8911,34 @@ void _SpuCallback(s32 arg0) {
     InterruptCallback(9, arg0);
 }
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+
+void SpuSetKey(long on_off, unsigned long voice_bit) {
+    u32 temp_a1;
+    volatile u16 *base;
+    u16 new_var;
+    u32 temp_a3;
+    temp_a1 = voice_bit & 0xFFFFFF;
+    temp_a3 = temp_a1 >> 16;
+    new_var = temp_a1;
+    base = D_800A26AC[0];
+    switch (on_off) {
+    case 1:
+        base[0xC4] = new_var;
+        base[0xC5] = temp_a3;
+        D_800A229CInit[0] |= temp_a1;
+        break;
+    case 0:
+        base[0xC6] = temp_a1;
+        base[0xC7] = temp_a3;
+        D_800A229CInit[0] &= ~temp_a1;
+        break;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetKey);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -5405,7 +8948,360 @@ void SpuSetVoiceAttr(SpuVoiceAttr *arg) {
     _SpuSetVoiceAttr(arg, 0, 23, 0);
 }
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern volatile u16 *D_800A26ACVA[];
+extern s16 _spu_note2pitch(u32, s32, u32, s32);
+s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s32 sp10;
+    s32 sp14;
+    s16 temp_a0;
+    s16 temp_a0_2;
+    s16 temp_v1_10;
+    s16 temp_v1_9;
+    s32 temp_s1;
+    s32 temp_s2;
+    s32 temp_s3;
+    s32 temp_s7;
+    s32 temp_v1;
+    s32 temp_v1_5;
+    s32 temp_v1_7;
+    s32 var_a1;
+    s32 var_a1_2;
+    s32 var_a1_3;
+    s32 var_a1_4;
+    s32 var_a1_5;
+    s32 var_a1_6;
+    s32 var_s4;
+    s32 var_s7;
+    s32 var_v0;
+    s32 var_v0_2;
+    s32 var_v0_3;
+    s32 var_v0_4;
+    s32 var_v0_5;
+    u16 temp_a1;
+    u16 temp_a3;
+    u16 var_a2;
+    u16 var_a2_2;
+    u16 var_a2_3;
+    u16 var_a2_4;
+    u16 var_a2_5;
+    u16 var_s5;
+    u16 var_s6;
+    void *temp_v1_2;
+    void *temp_v1_3;
+    void *temp_v1_4;
+    void *temp_v1_6;
+    void *temp_v1_8;
+
+    var_a1 = arg1;
+    var_s7 = arg2;
+    var_s6 = 0;
+    temp_s1 = (*(u32 *)((u8 *)arg0 + 0x4));
+    var_s5 = 0;
+    temp_s2 = temp_s1 == 0;
+    if (var_a1 < 0) {
+        var_a1 = 0;
+    }
+    if (var_a1 < 0x18) {
+        if (var_s7 >= 0x18) {
+            var_s7 = 0x17;
+        }
+        if ((var_s7 < 0) || (temp_s7 = var_s7 + 1, ((var_s7 < var_a1) != 0))) {
+            goto block_7;
+        }
+        var_s4 = var_a1;
+        if (var_s4 < temp_s7) {
+            do {
+                if ((1 << var_s4) & (*(u32 *)((u8 *)arg0 + 0x0))) {
+                    temp_s3 = var_s4 * 8;
+                    if ((temp_s2 != 0) || (temp_s1 & 0x10)) {
+                        *(u16 *)((u8 *)D_800A26ACVA[0] + (var_s4 * 0x10) + 4) =
+                            (u16)(*(u16 *)((u8 *)arg0 + 0x14));
+                    }
+                    if ((temp_s2 != 0) || (temp_s1 & 0x40)) {
+                        gSpuVoiceCenterNotes[var_s4] =
+                            (*(u16 *)((u8 *)arg0 + 0x18));
+                    }
+                    var_v0 = var_s4 * 2;
+                    if ((temp_s2 != 0) ||
+                        (var_v0 = var_s4 * 2, ((temp_s1 & 0x20) != 0))) {
+                        temp_a1 = *(s16 *)((u8 *)gSpuVoiceCenterNotes + var_v0);
+                        temp_a3 = (*(u16 *)((u8 *)arg0 + 0x16));
+                        *(u16 *)((u8 *)D_800A26ACVA[0] + (temp_s3 * 2) + 4) =
+                            _spu_note2pitch(temp_a1 >> 8, temp_a1 & 0xFF,
+                                            temp_a3 >> 8, temp_a3 & 0xFF);
+                    }
+                    if ((temp_s2 != 0) || (temp_s1 & 0x80)) {
+                        _spu_FsetRXXa(temp_s3 | 3,
+                                      (*(u32 *)((u8 *)arg0 + 0x1c)));
+                    }
+                    if (temp_s2 == 0) {
+                        if (temp_s1 & 0x800) {
+                            var_a1_2 = 0;
+                            if (temp_s1 & 0x100) {
+                                goto block_25;
+                            }
+                            goto block_29;
+                        }
+                    } else {
+                    block_25:
+                        temp_v1 = (*(s32 *)((u8 *)arg0 + 0x24));
+                        if (temp_v1 != 1) {
+                            var_a1_2 = 0;
+                            if (temp_v1 == 5) {
+                                var_a1_2 = 0x80;
+                            }
+                        } else {
+                            var_a1_2 = 0;
+                        }
+                    block_29:
+                        var_a2 = 0x7F;
+                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x30)) < 0x80U) {
+                            var_a2 = (*(u16 *)((u8 *)arg0 + 0x30));
+                        }
+                        temp_v1_2 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
+                        *(u16 *)((u8 *)temp_v1_2 + 0x8) =
+                            (u16)((*(u16 *)((u8 *)temp_v1_2 + 0x8) & 0xFF) |
+                                  ((var_a2 | var_a1_2) << 8));
+                    }
+                    if ((temp_s2 != 0) || (temp_s1 & 0x1000)) {
+                        var_a2_2 = 0xF;
+                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x32)) < 0x10U) {
+                            var_a2_2 = (*(u16 *)((u8 *)arg0 + 0x32));
+                        }
+                        temp_v1_3 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
+                        *(u16 *)((u8 *)temp_v1_3 + 0x8) =
+                            (u16)((*(u16 *)((u8 *)temp_v1_3 + 0x8) & 0xFF0F) |
+                                  (var_a2_2 * 0x10));
+                    }
+                    if ((temp_s2 != 0) || (temp_s1 & 0x8000)) {
+                        var_a2_3 = 0xF;
+                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x38)) < 0x10U) {
+                            var_a2_3 = (*(u16 *)((u8 *)arg0 + 0x38));
+                        }
+                        temp_v1_4 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
+                        *(u16 *)((u8 *)temp_v1_4 + 0x8) =
+                            (u16)(var_a2_3 |
+                                  (*(u16 *)((u8 *)temp_v1_4 + 0x8) & 0xFFF0));
+                    }
+                    if (temp_s2 == 0) {
+                        if (temp_s1 & 0x2000) {
+                            var_a1_3 = 0;
+                            if (temp_s1 & 0x200) {
+                                goto block_45;
+                            }
+                            goto block_54;
+                        }
+                    } else {
+                    block_45:
+                        temp_v1_5 = (*(s32 *)((u8 *)arg0 + 0x28));
+                        if (temp_v1_5 != 3) {
+                            if (temp_v1_5 < 4) {
+                                var_a1_3 = 0;
+                                if (temp_v1_5 != 1) {
+                                    var_a1_3 = 0x100;
+                                }
+                            } else if (temp_v1_5 != 5) {
+                                var_a1_3 = 0x300;
+                                if (temp_v1_5 != 7) {
+                                    var_a1_3 = 0x100;
+                                }
+                            } else {
+                                var_a1_3 = 0x200;
+                            }
+                        } else {
+                            var_a1_3 = 0x100;
+                        }
+                    block_54:
+                        var_a2_4 = 0x7F;
+                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x34)) < 0x80U) {
+                            var_a2_4 = (*(u16 *)((u8 *)arg0 + 0x34));
+                        }
+                        temp_v1_6 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
+                        *(u16 *)((u8 *)temp_v1_6 + 0xA) =
+                            (u16)((*(u16 *)((u8 *)temp_v1_6 + 0xA) & 0x3F) |
+                                  ((var_a2_4 | var_a1_3) << 6));
+                    }
+                    if (temp_s2 == 0) {
+                        if (temp_s1 & 0x4000) {
+                            var_a1_4 = 0;
+                            if (temp_s1 & 0x400) {
+                                goto block_60;
+                            }
+                            goto block_64;
+                        }
+                    } else {
+                    block_60:
+                        temp_v1_7 = (*(s32 *)((u8 *)arg0 + 0x2c));
+                        if (temp_v1_7 != 3) {
+                            var_a1_4 = 0;
+                            if (temp_v1_7 == 7) {
+                                var_a1_4 = 0x20;
+                            }
+                        } else {
+                            var_a1_4 = 0;
+                        }
+                    block_64:
+                        var_a2_5 = 0x1F;
+                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x36)) < 0x20U) {
+                            var_a2_5 = (*(u16 *)((u8 *)arg0 + 0x36));
+                        }
+                        temp_v1_8 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
+                        *(u16 *)((u8 *)temp_v1_8 + 0xA) =
+                            (u16)((*(u16 *)((u8 *)temp_v1_8 + 0xA) & 0xFFC0) |
+                                  (var_a2_5 | var_a1_4));
+                    }
+                    var_v0_2 = temp_s3 * 2;
+                    if ((temp_s2 != 0) ||
+                        (var_v0_2 = temp_s3 * 2, ((temp_s1 & 0x20000) != 0))) {
+                        *(u16 *)((u8 *)D_800A26ACVA[0] + var_v0_2 + 8) =
+                            (u16)(*(u16 *)((u8 *)arg0 + 0x3a));
+                    }
+                    var_v0_3 = temp_s3 * 2;
+                    if ((temp_s2 != 0) ||
+                        (var_v0_3 = temp_s3 * 2, ((temp_s1 & 0x40000) != 0))) {
+                        *(u16 *)((u8 *)D_800A26ACVA[0] + var_v0_3 + 0xA) =
+                            (u16)(*(u16 *)((u8 *)arg0 + 0x3c));
+                    }
+                    if ((temp_s2 != 0) || (temp_s1 & 0x10000)) {
+                        _spu_FsetRXXa(temp_s3 | 7,
+                                      (*(u32 *)((u8 *)arg0 + 0x20)));
+                    }
+                    if (temp_s2 == 0) {
+                        if (temp_s1 & 1) {
+                            if (temp_s1 & 4) {
+                                goto block_79;
+                            }
+                            goto block_88;
+                            goto block_89;
+                        }
+                    } else {
+                    block_79:
+                        temp_v1_9 = (*(u16 *)((u8 *)arg0 + 0xc));
+                        switch (temp_v1_9) { /* switch 1 */
+                        case 1:              /* switch 1 */
+                            var_a1_5 = 0x8000;
+                            break;
+                        case 2: /* switch 1 */
+                            var_a1_5 = 0x9000;
+                            break;
+                        case 3: /* switch 1 */
+                            var_a1_5 = 0xA000;
+                            break;
+                        case 4: /* switch 1 */
+                            var_a1_5 = 0xB000;
+                            break;
+                        case 5: /* switch 1 */
+                            var_a1_5 = 0xC000;
+                            break;
+                        case 6: /* switch 1 */
+                            var_a1_5 = 0xD000;
+                            break;
+                        case 7: /* switch 1 */
+                            var_a1_5 = 0xE000;
+                            break;
+                        default: /* switch 1 */
+                        block_88:
+                            var_s6 = (*(u16 *)((u8 *)arg0 + 0x8));
+                            var_a1_5 = 0;
+                            break;
+                        }
+                    block_89:
+                        var_v0_4 = var_s6 & 0x7FFF;
+                        if (var_a1_5 != 0) {
+                            temp_a0 = (s16)(*(u16 *)((u8 *)arg0 + 0x8));
+                            if (temp_a0 >= 0x80) {
+                                var_s6 = 0x7F;
+                            } else {
+                                var_s6 = (u16)temp_a0;
+                                if (temp_a0 < 0) {
+                                    var_s6 = 0;
+                                }
+                            }
+                            var_v0_4 = var_s6 & 0x7FFF;
+                        }
+                        *((temp_s3 * 2) + (u8 *)D_800A26ACVA[0]) =
+                            var_v0_4 | var_a1_5;
+                    }
+                    if (temp_s2 == 0) {
+                        if (temp_s1 & 2) {
+                            if (temp_s1 & 8) {
+                                goto block_99;
+                            }
+                            goto block_108;
+                            goto block_109;
+                        }
+                    } else {
+                    block_99:
+                        temp_v1_10 = (*(u16 *)((u8 *)arg0 + 0xe));
+                        switch (temp_v1_10) { /* switch 2 */
+                        case 1:               /* switch 2 */
+                            var_a1_6 = 0x8000;
+                            break;
+                        case 2: /* switch 2 */
+                            var_a1_6 = 0x9000;
+                            break;
+                        case 3: /* switch 2 */
+                            var_a1_6 = 0xA000;
+                            break;
+                        case 4: /* switch 2 */
+                            var_a1_6 = 0xB000;
+                            break;
+                        case 5: /* switch 2 */
+                            var_a1_6 = 0xC000;
+                            break;
+                        case 6: /* switch 2 */
+                            var_a1_6 = 0xD000;
+                            break;
+                        case 7: /* switch 2 */
+                            var_a1_6 = 0xE000;
+                            break;
+                        default: /* switch 2 */
+                        block_108:
+                            var_s5 = (*(u16 *)((u8 *)arg0 + 0xa));
+                            var_a1_6 = 0;
+                            break;
+                        }
+                    block_109:
+                        var_v0_5 = var_s5 & 0x7FFF;
+                        if (var_a1_6 != 0) {
+                            temp_a0_2 = (s16)(*(u16 *)((u8 *)arg0 + 0xa));
+                            if (temp_a0_2 >= 0x80) {
+                                var_s5 = 0x7F;
+                            } else {
+                                var_s5 = (u16)temp_a0_2;
+                                if (temp_a0_2 < 0) {
+                                    var_s5 = 0;
+                                }
+                            }
+                            var_v0_5 = var_s5 & 0x7FFF;
+                        }
+                        *(u16 *)((u8 *)D_800A26ACVA[0] + (temp_s3 * 2) + 2) =
+                            (s16)(var_v0_5 | var_a1_6);
+                    }
+                }
+                var_s4 += 1;
+            } while (var_s4 < temp_s7);
+        }
+        if (arg3 == 0) {
+            sp14 = 1;
+            sp10 = 0;
+        loop_120:
+            if (sp10 < 2) {
+                sp14 *= 0xD;
+                sp10 += 1;
+                goto loop_120;
+            }
+        }
+        return 0;
+    }
+block_7:
+    return -3;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SpuSetVoiceAttr);
+#endif
 
 s32 SpuGetKeyStatus(s32 voice_bit) {
     extern u16 *D_800A26AC[];
@@ -5483,9 +9379,48 @@ long SpuSetTransferMode(long mode) {
     return transMode;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuIsTransferCompleted);
+extern long D_800A2244[];
+extern s32 D_800A26DC[];
+extern s32 D_800A2298[];
+extern s32 TestEvent(s32);
+s32 SpuIsTransferCompleted(s32 immediateFlag) {
+    s32 status;
+    if (D_800A2244[0] == 1 || D_800A26DC[0] == 1) {
+        return 1;
+    }
+    status = TestEvent(D_800A2298[0]);
+    if (immediateFlag == 1) {
+        if (status == 0) {
+            do {
+                status = TestEvent(D_800A2298[0]);
+            } while (status == 0);
+        }
+        status = 1;
+        goto saveStatus;
+    }
+    if (status != 1) {
+        return status;
+    }
+saveStatus:
+    D_800A26DC[0] = status;
+    return status;
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetTransferCallback);
+typedef struct SpuCallbackStorage {
+    SpuIRQCallbackProc callback;
+    SpuIRQCallbackProc pending;
+    s32 padding;
+} SpuCallbackStorage;
+extern SpuCallbackStorage D_800A26E0Read;
+extern SpuCallbackStorage D_800A26E0Write;
+SpuIRQCallbackProc SpuSetTransferCallback(SpuIRQCallbackProc func) {
+    SpuIRQCallbackProc previous;
+    previous = D_800A26E0Read.callback;
+    if (func != previous) {
+        D_800A26E0Write.callback = func;
+    }
+    return previous;
+}
 
 extern s32 D_800A26DC[];
 void _spu_setInTransfer(s32 arg0) {
@@ -5501,13 +9436,284 @@ s32 _spu_getInTransfer(void) {
     return D_800A26DC[0] == 0;
 }
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+void SpuSetCommonAttrDraft(SpuCommonAttr *) asm("SpuSetCommonAttr");
+extern volatile u16 *D_800A26ACCommon2[];
+void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
+    s32 mask;
+    s32 isDefault;
+    u16 volLeft;
+    u16 volRight;
+    s32 modeLeft;
+    s32 modeRight;
+    s32 modeCode;
+    s32 value;
+    s32 tmp;
+    mask = arg0->mask;
+    isDefault = (mask == 0);
+    volLeft = 0;
+    volRight = 0;
+    modeLeft = 0;
+    modeRight = 0;
+    if (isDefault || (mask & 1)) {
+        if (!isDefault && !(mask & 4)) {
+            volLeft = arg0->mvol.left;
+            modeLeft = 0;
+        } else {
+            modeCode = arg0->mvolmode.left;
+            switch (modeCode) {
+            case 1:
+                modeLeft = 0x8000;
+                break;
+            case 2:
+                modeLeft = 0x9000;
+                break;
+            case 3:
+                modeLeft = 0xA000;
+                break;
+            case 4:
+                modeLeft = 0xB000;
+                break;
+            case 5:
+                modeLeft = 0xC000;
+                break;
+            case 6:
+                modeLeft = 0xD000;
+                break;
+            case 7:
+                modeLeft = 0xE000;
+                break;
+            default:
+                volLeft = arg0->mvol.left;
+                modeLeft = 0;
+                break;
+            }
+        }
+        value = volLeft & 0x7FFF;
+        if (modeLeft != 0) {
+            tmp = (s16)arg0->mvol.left;
+            if (tmp >= 0x80)
+                volLeft = 0x7F;
+            else if (tmp < 0)
+                volLeft = 0;
+            else
+                volLeft = tmp;
+            value = volLeft & 0x7FFF;
+        }
+        D_800A26ACCommon2[0][0x180 / 2] = (value | modeLeft);
+    }
+    if (isDefault || (mask & 2)) {
+        if (!isDefault && !(mask & 8)) {
+            volRight = arg0->mvol.right;
+            modeRight = 0;
+        } else {
+            modeCode = arg0->mvolmode.right;
+            switch (modeCode) {
+            case 1:
+                modeRight = 0x8000;
+                break;
+            case 2:
+                modeRight = 0x9000;
+                break;
+            case 3:
+                modeRight = 0xA000;
+                break;
+            case 4:
+                modeRight = 0xB000;
+                break;
+            case 5:
+                modeRight = 0xC000;
+                break;
+            case 6:
+                modeRight = 0xD000;
+                break;
+            case 7:
+                modeRight = 0xE000;
+                break;
+            default:
+                volRight = arg0->mvol.right;
+                modeRight = 0;
+                break;
+            }
+        }
+        value = volRight & 0x7FFF;
+        if (modeRight != 0) {
+            tmp = (s16)arg0->mvol.right;
+            if (tmp >= 0x80)
+                volRight = 0x7F;
+            else if (tmp < 0)
+                volRight = 0;
+            else
+                volRight = tmp;
+            value = volRight & 0x7FFF;
+        }
+        D_800A26ACCommon2[0][0x182 / 2] = (value | modeRight);
+    }
+    if (isDefault || (mask & 0x40))
+        D_800A26ACCommon2[0][0x1B0 / 2] = arg0->cd.volume.left;
+    if (isDefault || (mask & 0x80))
+        D_800A26ACCommon2[0][0x1B2 / 2] = arg0->cd.volume.right;
+    if (isDefault || (mask & 0x100)) {
+        value = D_800A26ACCommon2[0][0x1AA / 2];
+        if (arg0->cd.reverb == 0)
+            value &= 0xFFFB;
+        else
+            value |= 4;
+        D_800A26ACCommon2[0][0x1AA / 2] = value;
+    }
+    if (isDefault || (mask & 0x200)) {
+        value = D_800A26ACCommon2[0][0x1AA / 2];
+        if (arg0->cd.mix == 0)
+            value &= 0xFFFE;
+        else
+            value |= 1;
+        D_800A26ACCommon2[0][0x1AA / 2] = value;
+    }
+    if (isDefault || (mask & 0x400))
+        D_800A26ACCommon2[0][0x1B4 / 2] = arg0->ext.volume.left;
+    if (isDefault || (mask & 0x800))
+        D_800A26ACCommon2[0][0x1B6 / 2] = arg0->ext.volume.right;
+    if (isDefault || (mask & 0x1000)) {
+        value = D_800A26ACCommon2[0][0x1AA / 2];
+        if (arg0->ext.reverb == 0)
+            value &= 0xFFF7;
+        else
+            value |= 8;
+        D_800A26ACCommon2[0][0x1AA / 2] = value;
+    }
+    if (isDefault || (mask & 0x2000)) {
+        value = D_800A26ACCommon2[0][0x1AA / 2];
+        if (arg0->ext.mix == 0)
+            value &= 0xFFFD;
+        else
+            value |= 2;
+        D_800A26ACCommon2[0][0x1AA / 2] = value;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetCommonAttr);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+extern u16 D_800A2A08[];
+s32 _spu_note2pitch(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s16 temp_a0;
+    s32 temp_v0;
+    s32 temp_v0_2;
+    s32 temp_v0_3;
+    s32 var_a1;
+    s32 var_v0;
+    s32 var_v1_2;
+    u16 var_v1;
+    var_v0 = (arg3 & 0xFFFF) + (arg1 & 0xFFFF);
+    if (var_v0 < 0)
+        var_v0 += 7;
+    temp_v0 = var_v0 >> 3;
+    var_a1 = temp_v0;
+    var_v1_2 = 0;
+    if (temp_v0 >= 0x10) {
+        do {
+            temp_v0_2 = var_a1 - 0x10;
+            var_a1 = temp_v0_2;
+            var_v1_2 += 1;
+        } while ((s16)temp_v0_2 >= 0x10);
+    }
+    if (var_a1 & 0x8000)
+        var_a1 = 0;
+    temp_v0_3 = (arg2 + 0x3C) - arg0;
+    var_v1 = D_800A2A08[(((s32)(((var_v1_2 + temp_v0_3) % 12) << 16) >> 12) +
+                         (s16)var_a1)];
+    temp_a0 = ((var_v1_2 + temp_v0_3) / 12) - 5;
+    if (temp_a0 > 0)
+        var_v1 <<= temp_a0;
+    else if (temp_a0 < 0)
+        var_v1 = (u16)((s32)(var_v1 & 0xFFFF) >> -temp_a0);
+    return var_v1 & 0xFFFF;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_note2pitch);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+
+s32 _spu_pitch2note(s32 arg0, s32 arg1, s32 arg2) {
+    s32 temp_a0;
+    s32 temp_a1;
+    s32 temp_a1_2;
+    s32 temp_lo;
+    s32 temp_v0;
+    s32 temp_v1;
+    s32 var_a3;
+    s32 var_v0;
+    s32 var_v1;
+
+    var_a3 = 0;
+    var_v1 = 0;
+    do {
+        if (((s32)(arg2 & 0xFFFF) >> var_v1) & 1) {
+            var_a3 = var_v1;
+        }
+        var_v1 += 1;
+    } while (var_v1 < 0x10);
+    temp_v0 = 1 << var_a3;
+    temp_a1_2 = (1 << (var_a3 + 1)) - temp_v0;
+    temp_a0 = (arg2 & 0xFFFF) - temp_v0;
+    temp_lo = (s32)(temp_a0 * 0xC) / temp_a1_2;
+    temp_v1 =
+        (arg1 & 0xFFFF) +
+        ((s32)((temp_a0 - ((temp_a1_2 * temp_lo) / 12)) * 0x600) / temp_a1_2);
+    var_v0 = temp_v1;
+    if (temp_v1 < 0) {
+        var_v0 = temp_v1 + 0x7F;
+    }
+    temp_a1 =
+        (arg0 & 0xFFFF) + ((var_a3 - 0xC) * 0xC) + temp_lo + (temp_v1 >= 0x80);
+    if ((temp_a1 >= 0) && (temp_a1 < 0x80)) {
+        return (temp_a1 << 8) | (temp_v1 - ((var_v0 >> 7) << 7));
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_pitch2note);
+#endif
 
+#ifdef NON_MATCHING
+/* Complete C draft; code generation still differs from retail. */
+
+s32 SpuRGetAllKeysStatus(s32 min, s32 max, s8 *status) {
+    s32 voice;
+    u16 volume;
+    if (min < 0)
+        min = 0;
+    if (min >= 24)
+        return -3;
+    if (max >= 24)
+        max = 23;
+    if (max < 0 || max < min)
+        return -3;
+    max++;
+    for (voice = min; voice < max; voice++) {
+        volume = *(volatile u16 *)&D_800A26AC[0][(8 * voice) + 6];
+        if ((1 << voice) & D_800A229CInit[0]) {
+            if (volume != 0)
+                status[voice] = 1;
+            else
+                status[voice] = 3;
+        } else {
+            if (volume != 0)
+                status[voice] = 2;
+            else
+                status[voice] = 0;
+        }
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuRGetAllKeysStatus);
+#endif
 
 void SpuGetAllKeysStatus(s8 *status) {
     extern u16 *D_800A26AC[];
@@ -5681,11 +9887,16 @@ ASM_FUNC(_new_card, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
                     "    addiu $t1, $zero, 0x50 # maspsx-keep\n"
                     "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _card_clear);
+extern long _new_card(void);
+extern long _card_write(long chan, long size, void *data);
+long _card_clear(long chan) {
+    _new_card();
+    return _card_write(chan, 0x3F, 0);
+}
 
 extern void MDEC_reset(s32 mode);
-extern void MDEC_in(u_long *buf, s32 size);
-extern void MDEC_out(u_long *buf, s32 size);
+extern void MDEC_in(u32 *buf, u32 size);
+extern void MDEC_out(u32 *buf, u32 size);
 extern s32 MDEC_in_sync(void);
 extern s32 MDEC_out_sync(void);
 
@@ -5793,11 +10004,65 @@ s32 DecDCToutCallback(void (*func)(void)) {
     return (s32)DMACallback(1, func);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MDEC_reset);
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090D1C);
+extern volatile u32 *D_800A2CD8[];
+extern volatile u32 *D_800A2CB8[];
+extern u32 D_800A2CAC[];
+extern char D_80090D1C[];
+void MDEC_reset(s32 mode) {
+    switch (mode) {
+    case 0:
+        *D_800A2CD8[0] = 0x80000000;
+        *(u32 *)D_800A2CAC[0] = 0;
+        *D_800A2CB8[0] = 0;
+        *D_800A2CD8[0] = 0x60000000;
+        MDEC_in(gMdecQuantTablePacket, 0x20);
+        MDEC_in(gMdecIdctPacket, 0x20);
+        break;
+    case 1:
+        *D_800A2CD8[0] = 0x80000000;
+        *(u32 *)D_800A2CAC[0] = 0;
+        *D_800A2CB8[0] = 0;
+        *(volatile u32 *)D_800A2CB8[0];
+        *D_800A2CD8[0] = 0x60000000;
+        break;
+    default:
+        printf(D_80090D1C, mode);
+        break;
+    }
+}
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MDEC_in);
+extern volatile u32 *D_800A2CDC[];
+extern volatile u32 *D_800A2CB8[];
+extern u32 D_800A2CA4[];
+extern u32 D_800A2CA8[];
+extern u32 D_800A2CD4[];
+extern u32 D_800A2CAC[];
+void MDEC_in(u32 *buf, u32 size) {
+    u32 len;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", MDEC_out);
+    MDEC_in_sync();
+    *D_800A2CDC[0] |= 0x88;
+    len = (size >> 5) << 16;
+    *(u32 *)D_800A2CA4[0] = (u32)(buf + 1);
+    *(u32 *)D_800A2CA8[0] = len | 0x20;
+    *(u32 *)D_800A2CD4[0] = *buf;
+    *(u32 *)D_800A2CAC[0] = 0x01000201;
+}
+
+extern u32 D_800A2CB0[];
+extern u32 D_800A2CB4[];
+void MDEC_out(u32 *buf, u32 size) {
+    u32 len;
+
+    MDEC_out_sync();
+    *D_800A2CDC[0] |= 0x88;
+    len = (size >> 5) << 16;
+    *D_800A2CB8[0] = 0;
+    *(u32 *)D_800A2CB0[0] = (u32)buf;
+    *(u32 *)D_800A2CB4[0] = len | 0x20;
+    *D_800A2CB8[0] = 0x01000200;
+}
 
 extern void timeout(char *name);
 extern volatile u32 *D_800A2CD8[];
