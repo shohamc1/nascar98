@@ -1381,8 +1381,7 @@ extern void func_800414E0(void *, s32, s32);
 
 void func_8003D25C(u8 *object) {
     s32 i;
-    s32 j;
-    register s32 value asm("a0");
+    s32 value;
     s32 count;
     s32 diff;
     u8 flag;
@@ -1431,17 +1430,19 @@ void func_8003D25C(u8 *object) {
                 *(u16 *)(object + i * 2 + 0x26C) =
                     *(u16 *)(object + i * 2 + 0x26C) - 1;
             } else if (count == 0x46) {
-                register s32 t asm("v0");
-                t = value - 2;
-                *(s16 *)(object + i * 2 + 0x26C) = t;
+                diff = value - 2;
+                *(s16 *)(object + i * 2 + 0x26C) = diff;
             } else if (count == 0x28) {
-                *(s16 *)(object + i * 2 + 0x26C) = value - 2;
+                diff = value - 2;
+                *(s16 *)(object + i * 2 + 0x26C) = diff;
                 func_8002D3EC(object);
                 *(u8 *)(object + i + 0x3A6) = 1;
             }
-            if (*(s16 *)(object + i * 2 + 0x26C) > 0) {
-                flag = 0;
-            }
+            do {
+                if (*(s16 *)(object + i * 2 + 0x26C) > 0) {
+                    flag = 0;
+                }
+            } while (0);
         }
         if (flag != 0) {
             if (*(u8 *)(object + 0x26A) & 0x40) {
@@ -1451,16 +1452,11 @@ void func_8003D25C(u8 *object) {
                 *(u8 *)(object + 0x26A) =
                     (*(u8 *)(object + 0x26A) | 0x40) & 0xEF;
             }
-            j = 3;
+            i = 3;
             do {
-                asm(""
-                    :
-                    :
-                    : "$2", "$4", "$5", "$6", "$7", "$8", "$9", "$10", "$11",
-                      "$12", "$13", "$14", "$15", "$16", "$17", "$24", "$25");
-                *(s16 *)(object + j * 0x28 + 0x2B0) = 0;
-                j--;
-            } while (j >= 0);
+                *(s16 *)(object + i * 0x28 + 0x2B0) = 0;
+                i--;
+            } while (i >= 0);
         } else {
             if (*(s16 *)(object + 0x274) < 4) {
                 *(s16 *)(object + 0x274) = *(s16 *)(object + 0x274) + 1;
