@@ -3509,12 +3509,7 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004DF38);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004E294);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 260 bytes versus retail 264; 42 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Rebased indexing and local lifetime probes do not resolve the compiler's loop-invariant pointer hoist, missing empty frame and loop access ordering.
- */
-extern s32 D_800A2CE0;
+extern s32 D_800A2CE0[];
 extern s8 D_800992D0[];
 extern s32 D_800A8A2C[];
 extern s32 D_800A8A30[];
@@ -3527,30 +3522,37 @@ void func_8004E700(void) {
     s32 idx;
     s32 *q;
     s8 *p;
+    s32 pm;
+    s32 base;
+    s32 inf;
     s8 i;
-    s32 a1;
 
-    idx = D_800A2CE0;
+    idx = D_800A2CE0[0];
     D_800A34A8 = 0;
     D_800A3498 = 0;
     D_800A34A4 = 0;
     D_800A349C = 0x3C;
-    if (D_800992D0[idx] > 0) {
+    p = D_800992D0;
+    i = 0;
+    if (p[idx] > 0) {
         q = &D_800BE974[0];
-        p = &D_800992D0[idx];
-        i = 0;
+        pm = (s32)p;
+        inf = 0x7FFFFFFF;
+    loop:
+        base = *q;
+        /* The do-while (0) doubles the refs of the loop locals, which swaps
+         * the a0/a1/a2 and t0/t1 allocation to retail's. */
         do {
-            a1 = *q;
-            D_800A8A30[i * 2] = 0x7FFFFFFF;
-            D_800A8A2C[i * 2] = a1 + a1 * (i + 1) / p[0];
+            D_800A8A2C[i * 2] = base + base * (i + 1) / *(s8 *)(idx + pm);
+            D_800A8A30[i * 2] = inf;
             i++;
-        } while (i < p[0]);
+            if (i < *(s8 *)(idx + pm)) {
+                goto loop;
+            }
+        } while (0);
     }
     D_800A34A0 = D_800BE974[0] * 2 + 1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004E700);
-#endif
 
 extern s8 D_800A349C;
 extern u8 D_800A34AC;
