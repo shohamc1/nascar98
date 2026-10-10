@@ -6405,32 +6405,21 @@ void func_8006709C(u8 arg0) {
 INCLUDE_ASM("asm/nonmatchings/menu", func_8006709C);
 #endif
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Best current draft is size-exact (276 bytes), six differing bytes from
- * two pairs of independent address initializers scheduled in reverse
- * order. SDK POLY_FT4 fields remove split IVs, separate bounds fix
- * register roles, 16 bytes of unused frame storage restore the measured
- * 0x30 frame, and direct loop-limit expressions improve scheduling. Ten-
- * minute permuter and full-TU candidate checks recorded.
- */
 void func_80067228(void) {
     extern u16 *D_800A387C;
     extern u16 *D_800A36BC;
-    extern u16 *D_800A39C8p[] asm("D_800A39C8.NON_MATCHING");
     extern u8 *D_8009A400[];
     u16 *baseA;
     u16 *baseB;
     u16 *baseB2;
     POLY_FT4 *quad;
-    u16 *end;
-    u16 *endSecond;
+    POLY_FT4 *quad2;
     s32 i;
     s32 len;
-    volatile u32 framePad[4];
+    u32 unused[4]; /* retail reserves 16 bytes of locals nothing touches */
 
     baseA = D_800A387C;
-    baseB = D_800A39C8p[0];
+    baseB = (u16 *)D_800A39C8Ptr[0];
     len = strlen(D_8009A400[0]);
     baseB2 = baseB + 0x2000;
     i = 0;
@@ -6442,7 +6431,7 @@ void func_80067228(void) {
             quad->y1 = 0xF1;
             quad->y2 = 0xF1;
             quad->y3 = 0xF1;
-            if (&quad->y3 < baseB + 0x2011) {
+            if (quad < (POLY_FT4 *)baseB2) {
                 quad++;
             } else {
                 quad--;
@@ -6453,25 +6442,22 @@ void func_80067228(void) {
     baseA = D_800A36BC;
     len = strlen(D_8009A400[10]);
     if (len > 0) {
-        quad = (POLY_FT4 *)baseA;
+        quad2 = (POLY_FT4 *)baseA;
         i = 0;
         do {
-            quad->y0 -= 0x1B;
-            quad->y1 -= 0x1B;
-            quad->y2 -= 0x1B;
-            quad->y3 -= 0x1B;
-            if (&quad->y3 < baseB2 + 0x11) {
-                quad++;
+            quad2->y0 -= 0x1B;
+            quad2->y1 -= 0x1B;
+            quad2->y2 -= 0x1B;
+            quad2->y3 -= 0x1B;
+            if (quad2 < (POLY_FT4 *)baseB2) {
+                quad2++;
             } else {
-                quad--;
+                quad2--;
             }
             i++;
         } while (i < len);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80067228);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_8006733C);
 
