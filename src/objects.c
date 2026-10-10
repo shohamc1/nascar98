@@ -5731,86 +5731,53 @@ extern s32 D_800A2F38[];
 extern u32 D_800B022C[];
 
 void func_80034834(void) {
-    s32 pad[2];
-    u8 *p;
-    u8 *cursor;
-    s32 i;
-    register u32 *it asm("s3");
+    u8 *prim;
     u8 *ot;
-    u8 *e;
-    u32 *vec0;
-    u32 *vec1;
-    u32 *vec2;
-    register s32 e4 asm("v1");
-    s32 e8;
-    s32 eC;
-    s32 e10;
-    s32 e14;
-    u32 *col;
-    register s32 c0 asm("v1");
-    register s32 c1 asm("a0");
+    s32 i;
+    u8 *obj;
+    s32 t0;
+    s32 t1;
+    s32 t2;
+    s32 t3;
+    s32 t4;
 
-    (void)&pad;
     ot = (u8 *)D_800A39C8[0] + 0x80;
-    cursor = (u8 *)gPrimitiveCursor[0];
-    i = 0;
-    if (D_800A2F38[0] > 0) {
-        it = D_800B022C;
-        p = cursor + 0x18;
-        do {
-            e = (u8 *)it[0];
-            if (e != 0) {
-                if ((*(u8 *)(e + 0x13) & 0x80) == 0) {
-                    vec0 = *(u32 **)(e + 0x18);
-                    vec1 = *(u32 **)(e + 0x1C);
-                    vec2 = *(u32 **)(e + 0x20);
-                    gte_ldv3(vec0, vec1, vec2);
-                    asm volatile("lw %0, 0x4(%2)\n\t"
-                                 "lw %1, 0x8(%2)"
-                                 : "=r"(e4), "=r"(e8)
-                                 : "r"(e));
-                    gte_op(rtpt);
-                    eC = *(s32 *)(e + 0xC);
-                    e10 = *(s32 *)(e + 0x10);
-                    e14 = *(s32 *)(e + 0x14);
-                    asm volatile("sw %0, -0xC(%1)\n\t"
-                                 "addiu $4, %2, 0x8\n\t"
-                                 "sw %3, -0x14(%1)\n\t"
-                                 "addiu $3, %2, 0x10\n\t"
-                                 "sw %4, -0x4(%1)\n\t"
-                                 "addiu $2, %2, 0x20\n\t"
-                                 "swc2 $12, 0x0($4)\n\t"
-                                 "swc2 $13, 0x0($3)\n\t"
-                                 "swc2 $14, 0x0($2)"
-                                 :
-                                 : "r"(e8), "r"(p), "r"(cursor), "r"(e4),
-                                   "r"(eC)
-                                 : "memory");
-                    col = *(u32 **)(e + 0x24);
-                    c0 = *(s32 *)((u8 *)col + 0);
-                    c1 = *(s32 *)((u8 *)col + 4);
-                    asm volatile("sw %0, 0x4(%1)"
-                                 :
-                                 : "r"(e10), "r"(p)
-                                 : "memory");
-                    asm volatile("sw %0, 0xC(%1)"
-                                 :
-                                 : "r"(e14), "r"(p)
-                                 : "memory");
-                    gte_mtc2(c0, 0);
-                    gte_mtc2(c1, 1);
-                    gte_rtps();
-                    GraphicsAddTaggedPrimitive((u32 *)(ot + 0xC0),
-                                               (u32 *)cursor, 0x09000000);
-                    gte_stsxy2(p);
-                    p += 0x28;
-                    cursor += 0x28;
-                }
-            }
-            it++;
-        } while (++i < D_800A2F38[0]);
+    prim = (u8 *)gPrimitiveCursor[0];
+    for (i = 0; i < D_800A2F38[0]; i++) {
+        obj = (u8 *)D_800B022C[i];
+        if (obj != 0 && (*(u8 *)(obj + 0x13) & 0x80) == 0) {
+            gte_ldv3(*(u32 **)(obj + 0x18), *(u32 **)(obj + 0x1C),
+                     *(u32 **)(obj + 0x20));
+            /*
+             * t0 to t2 are reused for the normal vector load below: that
+             * gives each value two live ranges, so global allocation
+             * (not local) picks their registers, as in retail.
+             */
+            t0 = *(s32 *)(obj + 0x4);
+            t1 = *(s32 *)(obj + 0x8);
+            gte_op(rtpt);
+            t2 = *(s32 *)(obj + 0xC);
+            t3 = *(s32 *)(obj + 0x10);
+            t4 = *(s32 *)(obj + 0x14);
+            *(s32 *)(prim + 0x4) = t0;
+            *(s32 *)(prim + 0xC) = t1;
+            *(s32 *)(prim + 0x14) = t2;
+            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
+            t2 = *(s32 *)(obj + 0x24);
+            t0 = *(s32 *)(t2 + 0);
+            t1 = *(s32 *)(t2 + 4);
+            *(s32 *)(prim + 0x1C) = t3;
+            *(s32 *)(prim + 0x24) = t4;
+            gte_mtc2(t0, 0);
+            gte_mtc2(t1, 1);
+            gte_rtps();
+            GraphicsAddTaggedPrimitive((u32 *)(ot + 0xC0), (u32 *)prim,
+                                       0x09000000);
+            gte_stsxy(prim + 0x18);
+            prim += 0x28;
+        }
     }
-    gPrimitiveCursor[0] = (u32)cursor;
+    gPrimitiveCursor[0] = (u32)prim;
 }
 
 #ifdef NON_MATCHING
