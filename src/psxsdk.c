@@ -9597,49 +9597,45 @@ u16 fine;
     return pitch;
 }
 
-#ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
-
-s32 _spu_pitch2note(s32 arg0, s32 arg1, s32 arg2) {
-    s32 temp_a0;
-    s32 temp_a1;
-    s32 temp_a1_2;
-    s32 temp_lo;
-    s32 temp_v0;
-    s32 temp_v1;
-    s32 var_a3;
-    s32 var_v0;
-    s32 var_v1;
-
-    var_a3 = 0;
-    var_v1 = 0;
-    do {
-        if (((s32)(arg2 & 0xFFFF) >> var_v1) & 1) {
-            var_a3 = var_v1;
+/* The inverse of _spu_note2pitch. The highest set bit of the pitch gives the
+ * octave. The offset above 1 << hi, scaled by 12, gives the semitone, and the
+ * remainder, scaled by 128, adds to the fine value. The result is
+ * (note << 8) | fine, or -1 when the note is outside 0 to 127. */
+s32 _spu_pitch2note(note, fine, pitch)
+u16 note;
+u16 fine;
+u16 pitch;
+{
+    s32 i;
+    s32 hi;
+    s32 range;
+    s32 off;
+    s32 semis;
+    s32 rem;
+    s32 fineSum;
+    s32 key;
+    s32 fineOut;
+    hi = 0;
+    for (i = 0; i < 16; i++) {
+        if ((pitch >> i) & 1) {
+            hi = i;
         }
-        var_v1 += 1;
-    } while (var_v1 < 0x10);
-    temp_v0 = 1 << var_a3;
-    temp_a1_2 = (1 << (var_a3 + 1)) - temp_v0;
-    temp_a0 = (arg2 & 0xFFFF) - temp_v0;
-    temp_lo = (s32)(temp_a0 * 0xC) / temp_a1_2;
-    temp_v1 =
-        (arg1 & 0xFFFF) +
-        ((s32)((temp_a0 - ((temp_a1_2 * temp_lo) / 12)) * 0x600) / temp_a1_2);
-    var_v0 = temp_v1;
-    if (temp_v1 < 0) {
-        var_v0 = temp_v1 + 0x7F;
     }
-    temp_a1 =
-        (arg0 & 0xFFFF) + ((var_a3 - 0xC) * 0xC) + temp_lo + (temp_v1 >= 0x80);
-    if ((temp_a1 >= 0) && (temp_a1 < 0x80)) {
-        return (temp_a1 << 8) | (temp_v1 - ((var_v0 >> 7) << 7));
+    range = (1 << (hi + 1)) - (1 << hi);
+    off = pitch - (1 << hi);
+    semis = (off * 12) / range;
+    rem = off - (range * semis) / 12;
+    key = note + (hi - 12) * 12 + semis;
+    fineSum = fine + (rem * 0x600) / range;
+    fineOut = fineSum % 128;
+    key += fineSum >= 128;
+    if (key >= 0) {
+        if (key < 128) {
+            return (key << 8) | fineOut;
+        }
     }
     return -1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_pitch2note);
-#endif
 
 #ifdef NON_MATCHING
 /* Complete C draft; code generation still differs from retail. */
