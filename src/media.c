@@ -3947,24 +3947,21 @@ s32 func_80072A5C(void) {
 }
 
 extern volatile s32 *D_800A351C;
-extern long long __divdi3(long long dividend, long long divisor);
 s32 func_80072A70(void) {
-    register u32 val asm("v1");
-    register u32 pct asm("v0");
+    u32 val;
     long long q;
     s32 mode;
 
     val = D_800A351C[0x7B24 / 4];
-    pct = 100;
-    q = (long long)val * pct;
-    q = __divdi3(q, 0x100);
-    mode = D_800A351C[0x7B74 / 4];
+    q = (long long)val * 100 / 0x100;
+    /* Retail reloads the pointer after the libcall; gcc treats it as const. */
+    mode = (*(volatile s32 *volatile *)&D_800A351C)[0x7B74 / 4];
     if (mode != 0) {
         if (mode == 1) {
-            q = __divdi3(q, 0x1388);
+            q /= 0x1388;
         }
     } else {
-        q = __divdi3(q, 0x176A);
+        q /= 0x176A;
     }
     return (s32)q;
 }
