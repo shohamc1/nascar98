@@ -2727,52 +2727,58 @@ void func_800697B4(void) {
     D_800A3378Small = 0;
 }
 
-extern u8 D_8009AD40[];
+extern s8 *D_8009AD58[];
 extern s16 func_8005A84C(void);
 
-#ifdef NON_MATCHING
-/* Fresh GCC 2.7.2 wall: 660 bytes versus 676 retail, diff score 4863. Keep the duplicate unk1A store, signed index uses, early heading pointer load, and while-loop form. Retail frame is 0x90; this draft frame is 0x50. Register allocation and loop/exit scheduling still differ; no artificial padding added. */
 void func_800697EC(u8 mode) {
     UnkTextObj *obj;
     UnkTextObj *prev;
-    UnkPacket0C *pkt;
-    s8 **table;
+    /* One packet pointer per section, so each is a block-local pseudo. */
+    UnkPacket0C *titlePkt;
+    UnkPacket0C *rowPkt;
     s8 *buf;
     s8 *p;
-    s32 i;
+    /* u16, so `i + 1` stays a copy (no biv) and the test below is a shift. */
+    u16 i;
     s32 x;
     s32 w;
+    s32 title;
     s32 width;
+    /* Packet bytes held in locals: retail sets the first at the loop top and
+     * hoists the second, and that pins the schedule. */
+    s32 pktType;
+    s32 pktMode;
     s32 j;
     s8 c;
+    /* Unused, but retail's frame has 0x40 bytes of locals. */
+    char unused[0x40];
 
     j = 0;
     do {
-        obj = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        prev = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (j == 0) {
-            D_800A3900Obj = obj;
+            D_800A3900Obj = prev;
         } else {
-            D_800A3900Obj->unk1C = obj;
+            D_800A3900Obj->unk1C = prev;
         }
-        obj->unk1A = 0x3FD;
+        prev->unk1A = 0x3FD;
         j += 1;
     } while (j < 2);
 
     prev = func_8005BF8C(0, 0x2A);
     D_800A360C = prev;
     func_8005A7B8S32(2, 3);
-    table = (s8 **)D_8009AD40 + 2;
-    w = func_8005B0E4(0x140, (s32)table[mode]);
+    w = func_8005B0E4(0x140, (s32)D_8009AD58[mode]);
     prev->unk6 = w;
     prev->unkA = w;
     prev->unk1A = 0x32;
-    w = (s32)table[mode];
-    pkt = prev->unk20;
-    pkt->unk1 = 2;
-    pkt->unk2 = 3;
-    pkt->unk8 = w;
-    pkt->unk3 = 0;
-    pkt->unk4 = 0x32;
+    title = (s32)D_8009AD58[mode];
+    titlePkt = prev->unk20;
+    titlePkt->unk1 = 2;
+    titlePkt->unk2 = 3;
+    titlePkt->unk8 = title;
+    titlePkt->unk3 = 0;
+    titlePkt->unk4 = 0x32;
     prev->unk1A = 0x32;
     if (mode == 0) {
         buf = (s8 *)D_800A3370;
@@ -2781,9 +2787,10 @@ void func_800697EC(u8 mode) {
     }
     func_8005A7B8S32(2, 4);
     width = func_8005A84C();
-    x = 0;
     i = 0;
+    x = 0;
     while (1) {
+        pktType = 2;
         p = buf + (s16)i;
         c = *p;
         if (c == '%') {
@@ -2795,27 +2802,28 @@ void func_800697EC(u8 mode) {
         } else {
             obj = func_8005BF8C(0, x);
             if (*p == '*') {
-                p = buf + (s16)i + 1;
+                p = buf + ((s16)i + 1);
                 obj->unk2 = 0xF0;
                 obj->unk3 = 0x40;
                 obj->unk4 = 0x40;
             }
+            pktMode = 4;
             w = func_8005B0E4(0x140, (s32)p);
-            pkt = obj->unk20;
+            rowPkt = obj->unk20;
             obj->unk12 = w;
             obj->unk6 = w;
             obj->unkA = w;
             obj->unk1A = 0;
-            pkt->unk1 = 2;
-            pkt->unk2 = 4;
-            pkt->unk8 = (s32)p;
-            pkt->unk3 = 0;
-            pkt->unk4 = 0;
+            rowPkt->unk1 = pktType;
+            rowPkt->unk2 = pktMode;
+            rowPkt->unk8 = (s32)p;
+            rowPkt->unk3 = 0;
+            rowPkt->unk4 = 0;
             obj->unk1A = 0;
-            if ((s16)i != 0) {
-                prev->unk1C = obj;
-            } else {
+            if ((i << 16) == 0) {
                 D_800A3858 = obj;
+            } else {
+                prev->unk1C = obj;
             }
             prev = obj;
         }
@@ -2829,9 +2837,6 @@ void func_800697EC(u8 mode) {
     }
     func_8005DEDC(0x3E8);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_800697EC);
-#endif
 
 s32 func_80069A90(s32 arg0) {
     switch (arg0 & 0xFF) {
