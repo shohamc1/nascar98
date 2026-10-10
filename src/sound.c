@@ -1828,18 +1828,15 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     func_8003FDE8((s8)arg2, (u8)vol2, (u8)vol1);
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 312 bytes versus retail 288; 29 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * Using the established two-signed-byte sound API clears declaration errors.
- */
 extern u8 D_800A2F9D;
 extern s32 D_800A2EA4[];
+extern u8 *D_800A3554nm[] asm("D_800A3554.NON_MATCHING");
 extern void func_8003FC0C(s32, s32, s32);
 extern void func_8003F564(s8, s8);
 
 void func_800409A0(u8 *object) {
     s32 id;
+    u8 *player;
 
     if (D_800A2F9D == 0) {
         return;
@@ -1853,10 +1850,12 @@ void func_800409A0(u8 *object) {
         id, (s8)(*(s16 *)(object + 0x92) * 8 / *(s16 *)(object + 0x9A) + 0x2C),
         0);
     if (*(s8 *)(object + 0x3B8) == 0) {
-        if (object == D_800A3554[0]) {
+        /* A second name for the player table keeps cse from sharing the
+         * address register across the call; the local reads it once. */
+        player = D_800A3554nm[0];
+        if (object == player) {
             func_8003F564(0x14, 2);
-        } else if (object == *(u8 **)(D_800A3554[0] + 0x3E0) &&
-                   D_800A2EA4[0] == 2) {
+        } else if (object == *(u8 **)(player + 0x3E0) && D_800A2EA4[0] == 2) {
             func_8003F564(0x15, 2);
         }
     }
@@ -1869,9 +1868,6 @@ void func_800409A0(u8 *object) {
         *(u8 *)(object + 0x3B8) = 0x18;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/sound", func_800409A0);
-#endif
 
 void func_80040AC0(u8 *object) {
     object[0x3B9] = 0;
