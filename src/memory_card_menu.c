@@ -3012,26 +3012,21 @@ s32 func_80069EB8(void) {
     return 0;
 }
 
-#ifdef NON_MATCHING
-/* Fresh GCC 2.7.2 wall: 352 bytes versus 336 retail, diff score 2730. A single result home improves the exit shape, but slot fallback lowering and saved registers still differ. Preserve both CardCheckStatus calls, repeated global reads, and every status store. */
 s32 func_80069F30(void) {
-    s32 slot;
+    u8 slot;
     u8 status;
-    s32 result;
 
-    result = 0;
-    slot = D_800A337C;
     D_800A3808 = 0;
-    if ((slot & 0xFF) == 0xFF) {
+    if (D_800A337C == 0xFF) {
         slot = 0;
     } else {
-        slot = slot;
+        slot = D_800A337C;
     }
     status = CardCheckStatus(slot, 0);
     D_800A3938 = status;
     if (status == 1) {
         D_800A3808 = 1;
-        goto done;
+        return 0;
     }
     if (status == 2) {
         if (D_800A337C == 0xFF) {
@@ -3041,14 +3036,14 @@ s32 func_80069F30(void) {
         switch (D_800A3938) {
         case 1:
             D_800A3808 = 1;
-            goto done;
+            return 0;
+        case 2:
+            D_800A3808 = 2;
+            return 0;
         case 0:
         case 3:
             D_800A337C = 1;
             break;
-        case 2:
-            D_800A3808 = 2;
-            goto done;
         }
     } else {
         D_800A337C = slot;
@@ -3057,23 +3052,18 @@ s32 func_80069F30(void) {
     D_800A3938 = status;
     if (status == 2) {
         D_800A3808 = 2;
-        goto done;
+        return 0;
     }
     if (status == 1) {
         D_800A3808 = 3;
-        goto done;
+        return 0;
     }
-    if (status != 3) {
-        result = 1;
-        goto done;
+    if (status == 3) {
+        D_800A3808 = 0xD;
+        return 0;
     }
-    D_800A3808 = 0xD;
-done:
-    return result;
+    return 1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_80069F30);
-#endif
 
 extern u8 D_800A3938;
 extern u8 D_800A3808;
