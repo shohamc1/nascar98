@@ -1390,90 +1390,70 @@ again:
     }
 }
 
-/* w9e draft: decision tree matches retail exactly (incl. switch-style
- * beq arms for 0x2A/0x2B/0x2C/0x2D/0x29 and the dead 0x29 arm); only
- * preset (ours t1, retail a0) and the raw entry index (ours a0, retail
- * t1) are swapped. gcc refuses to move arg0 out of a0 unless the param
- * itself is assigned, and assigning it rehomes arg1 as well. Round 5
- * (preset declared first) segfaulted cc1. */
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 388 bytes versus retail 392; 25 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * An old-style C89 definition allows the existing two-argument callers to compile while preserving the parked draft's third incoming argument.
- */
 extern u8 D_800A3880;
 extern s16 D_800B9E24[];
 extern u8 D_800B9E26[];
 extern s16 D_800B9E2A[];
 extern s32 SsUtPitchBend(s16, s16, s8, s16, s8);
 
-void func_8003FA84(arg0, arg1, arg2) s32 arg0;
-s32 arg1;
-s8 arg2;
+void func_8003FA84(id, pitch) s8 id;
+s8 pitch;
 {
-    s32 voice;
-    s16 preset;
-    u8 t;
+    s16 va;
+    s32 type;
     s32 v;
+    s32 note;
 
-    voice = arg0;
-    preset = D_800B9E24[(s8)voice * 6];
-    if (preset == -1) {
+    va = D_800B9E24[(s8)id * 6];
+    if (va == -1) {
         return;
     }
-    t = D_800B9E26[(s8)voice * 12];
+    type = D_800B9E26[(s8)id * 12];
     if (D_800A3880 != 0) {
-        arg2 = ((s8)voice == 1) ? 0xF : 0;
+        note = ((s8)id == 1) ? 0xF : 0;
     } else {
-        v = (s8)t;
+        v = (s8)type;
         if (v >= 0x40) {
-            arg2 = 0xA;
+            note = 0xA;
         } else if (v >= 0x20) {
             if (v >= 0x2C) {
                 switch (v) {
                 case 0x2C:
-                    arg2 = 0x24;
+                    note = 0x24;
                     break;
                 case 0x2D:
-                    arg2 = 0x26;
+                    note = 0x26;
                     break;
                 case 0x29:
-                    arg2 = 0x29;
+                    note = 0x29;
                     break;
                 default:
                     break;
                 }
-                arg2 -= 0x20;
-            } else if (v < 0x2A) {
-                arg2 = t - 0x20;
-            } else {
+                note -= 0x20;
+            } else if (v >= 0x2A) {
                 switch (v) {
                 case 0x2A:
-                    arg2 = 0x12;
+                    note = 0x12;
                     break;
                 case 0x2B:
-                    arg2 = 0x13;
+                    note = 0x13;
                     break;
                 default:
                     break;
                 }
+            } else {
+                note = type - 0x20;
             }
-        } else if ((u32)(t - 0xC) < 4) {
-            arg2 = 0x1A - t;
+        } else if ((u32)(type - 0xC) < 4) {
+            note = 0x1A - type;
         } else {
-            arg2 = 0xF;
+            note = 0xF;
         }
     }
-    SsUtPitchBend(preset, gVabId, arg2, D_800B9E2A[(s8)voice * 6], (s8)arg1);
+    SsUtPitchBend(va, gVabId, (s8)note, D_800B9E2A[(s8)id * 6], (s8)pitch);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/sound", func_8003FA84);
-#endif
 
-extern u8 D_800A3880;
-extern s16 D_800B9E24[];
-extern u8 D_800B9E26[];
-extern s16 D_800B9E2A[];
 extern s16 D_800B9E2C[];
 extern s16 D_800B9E2E[];
 extern s8 SsUtChangePitch(s16, s16, s8, s16, s32, s32, s32);
