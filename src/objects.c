@@ -4073,11 +4073,6 @@ void func_80030D80(RaceObject *object, s32 *query) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: Shared absolute-table declarations are reconciled and
- * mixed gp/address-argument access is measured. Parameter-copy order,
- * halfword/mflo scheduling, stack temporaries and a remaining size surplus
- * still differ. */
 extern s32 D_800A2F2C;
 extern s32 D_800A2F2CAbsolute[];
 extern s32 D_800A384CAbsolute[];
@@ -4094,17 +4089,17 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
     s16 *tableB;
     s32 offset;
     s32 value;
-    s32 result;
     s16 result16;
 
-    offset = ((*(s16 *)(object + 0x116) + *(s16 *)(object + 0x118) + 0x1000) &
-              0xFFF) *
-             2;
-    tableA = (s16 *)((u8 *)D_800A384CAbsolute[0] + offset);
-    tableB = (s16 *)((u8 *)D_800A3854Absolute[0] + offset);
-    pointArray[0] += ((*tableA * arg2 - *tableB * arg3) >> 16) * 4;
+    offset =
+        (*(s16 *)(object + 0x116) + *(s16 *)(object + 0x118) + 0x1000) & 0xFFF;
+    tableA = (s16 *)D_800A384CAbsolute[0];
+    tableB = (s16 *)D_800A3854Absolute[0];
+    pointArray[0] +=
+        ((tableA[offset] * arg2 - tableB[offset] * arg3) >> 16) * 4;
+    pointArray[1] +=
+        ((tableB[offset] * arg2 + tableA[offset] * arg3) >> 16) * 4;
     pointArray[2] = 0;
-    pointArray[1] += ((*tableB * arg2 + *tableA * arg3) >> 16) * 4;
     if (*(s16 *)(object + 0x1EC) == 0) {
         if (D_800A2F2C > 0) {
             D_800A2F2C = D_800A2F2C - 1;
@@ -4112,9 +4107,7 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
     }
     *(s16 *)(object + 0x1E0) = func_80024E90(pointArray[0], pointArray[1],
                                              D_800A2F2CAbsolute, &outX, &outZ);
-    *(s32 *)(object + 0xDC) = D_800B6094[0];
-    *(s32 *)(object + 0xE0) = D_800B6094[1];
-    *(s32 *)(object + 0xE4) = D_800B6094[2];
+    *(Vec3 *)(object + 0xDC) = *(Vec3 *)D_800B6094;
     result16 = *(s16 *)(object + 0x1E0);
     if (result16 == -1) {
         *(u8 *)(object + 0xF5) = 1;
@@ -4126,12 +4119,10 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
         point[1] = pointArray[1] / 4 - D_800AE848[0];
         func_80030D80((RaceObject *)object, point);
         pointArray[2] = (point[2] + D_800AE84C[0]) * 4;
-        if (D_800A3A80 == 0) {
+        if (D_800A3A80 == 0 || (*(u8 *)((u8 *)D_800A3A80 + 0x13) & 8) == 0) {
             value = 5;
-        } else if ((*(u8 *)((u8 *)D_800A3A80 + 0x13) & 8) != 0) {
-            value = 2;
         } else {
-            value = 5;
+            value = 2;
         }
         *(s16 *)(object + 0x360) = value;
         if (D_800A3A80 == 0) {
@@ -4149,9 +4140,6 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
     }
     return *(u16 *)(object + 0x360);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_80030F24);
-#endif
 
 void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
     s32 length;
