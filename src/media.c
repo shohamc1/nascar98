@@ -3781,20 +3781,22 @@ void func_800722D0(void) {
                 D_800A351C[0x7B3C / 4] = D_800A351C[0x7B3C / 4] + 0x300;
             }
         } else {
+            u8 *buf;
+
             fallback = (s32)((u8 *)D_800A351C + 0x7810);
-            asm("addu %0,%1,$0" : "=r"(src) : "r"(fallback));
             D_800A351C[0x7B58 / 4] = 0;
             D_800A351C[0x7B4C / 4] = 0;
             D_800A351C[0x7B48 / 4] = 1;
-            D_800A351C[0x7B50 / 4] = (s32)src;
+            D_800A351C[0x7B50 / 4] = fallback;
+            buf = (u8 *)fallback;
             D_800A351C[0x7B54 / 4] = 0;
             for (i = 0; i < 0x300; i += 0x10) {
-                src[i + 1] = 2;
+                buf[i + 1] = 2;
             }
             if ((D_800A351C[0x7B44 / 4] & 3) == 0) {
-                src[1] = 6;
+                buf[1] = 6;
             } else if (((D_800A351C[0x7B44 / 4] + 1) & 3) == 0) {
-                src[0x2F1] = 3;
+                buf[0x2F1] = 3;
             }
             D_800A351C[0x7B2C / 4 + (D_800A351C[0x7B44 / 4] & 3)] = 0;
             {
@@ -3805,7 +3807,7 @@ void func_800722D0(void) {
                 base += (idx & 3) * 0x300;
                 SpuSetTransferMode(0);
                 SpuSetTransferStartAddr(base);
-                SpuWrite(src, 0x300);
+                SpuWrite(buf, 0x300);
             }
         }
     }
