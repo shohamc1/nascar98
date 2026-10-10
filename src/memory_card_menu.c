@@ -4646,60 +4646,42 @@ void func_8006DE68(u32 arg0, u32 mode) {
     }
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 208 bytes versus 228 retail. Corrected invalid modes 3..255 to return 2, as
- * the retail dispatch does; the previous draft incorrectly returned 1.
- * Explicit nested case-2 paths and a wide result remain shorter because GCC
- * merges the duplicate load tails. Semantically incorrect smaller-score
- * drafts are not retained as the best source. */
-u8 func_8006DF98(void *arg0, s32 arg1, s32 arg2, s32 arg3) {
+/* A mode above 2 falls off the end of the switch, as in retail: the return
+ * value is whatever the dispatch left in v0 (2). The narrow `u8 arg3`
+ * parameter makes gcc keep a raw copy of a3 for the mode 0 and 1 tests. */
+u8 func_8006DF98(void *arg0, s32 arg1, s32 arg2, u8 arg3) {
     u8 mode;
-    s32 extra;
-    s32 result;
 
     mode = arg1;
-    extra = arg3;
-    result = 1;
     switch (mode) {
     case 0:
         if ((u8)arg2 != 2) {
-            result = ((u8 *)arg0)[0x3C6];
-        } else if ((u8)extra == 0 || (u8)extra == (u8)arg2) {
-            result = ((u8 *)arg0)[0x3C7];
+            return ((u8 *)arg0)[0x3C6];
+        } else if (arg3 == 0 || arg3 == (u8)arg2) {
+            return ((u8 *)arg0)[0x3C7];
         } else {
-            result = ((u8 *)arg0)[0x3C6];
+            return ((u8 *)arg0)[0x3C6];
         }
-        break;
     case 1:
         if ((u8)arg2 != 2) {
-            result = ((u8 *)arg0)[0x3C6];
-        } else if ((u8)extra != 0 && (u8)extra != (u8)arg2) {
-            result = ((u8 *)arg0)[0x3C7];
+            return ((u8 *)arg0)[0x3C6];
+        } else if (arg3 != 0 && arg3 != (u8)arg2) {
+            return ((u8 *)arg0)[0x3C7];
         } else {
-            result = ((u8 *)arg0)[0x3C6];
+            return ((u8 *)arg0)[0x3C6];
         }
-        break;
     case 2:
         if ((u8)arg2 == mode) {
-            if ((u8)(extra - 2) < 2) {
-                result = (u8) ~((u8 *)arg0)[0x3C5];
+            if ((u8)(arg3 - 2) < 2) {
+                return (u8) ~((u8 *)arg0)[0x3C5];
             } else {
-                result = ((u8 *)arg0)[0x3C5];
+                return ((u8 *)arg0)[0x3C5];
             }
         } else {
-            result = ((u8 *)arg0)[0x3C5];
+            return ((u8 *)arg0)[0x3C5];
         }
-        break;
-    default:
-        result = 2;
-        break;
     }
-    return result;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006DF98);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006E07C);
 
