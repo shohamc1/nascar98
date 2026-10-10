@@ -1265,20 +1265,19 @@ u32 func_80041BAC(s32 arg0) {
     return result;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 216 bytes versus retail 236; 17 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * A byte view of the already-declared pointer-array symbol clears the TU conflict without changing public data declarations.
- */
 extern u8 D_8008CA06[];
 extern u32 D_8008CA08[];
 extern void *D_800A3A24[];
 
+/* Retail keeps an empty 8-byte frame; `framePad` reproduces it. The `u16 mode`
+ * keeps the nor result and the or-accumulator in separate registers, and the
+ * 0x3C8 store sits in both arms so jump2 cross-jumps only the final sb. */
 u16 func_80041BFC(u8 *arg0) {
     s32 bank;
     u32 data;
     u16 pad;
-    s32 mode;
+    u16 mode;
+    volatile s32 framePad[2];
 
     bank = *(s8 *)(arg0 + 0x20B);
     if (bank < 0) {
@@ -1289,12 +1288,13 @@ u16 func_80041BFC(u8 *arg0) {
         arg0[0x3C6] = data >> 8;
         arg0[0x3C7] = data >> 0x10;
         arg0[0x3C5] = data;
+        arg0[0x3C8] = data >> 0x18;
     } else {
         arg0[0x3C6] = data >> 8;
         arg0[0x3C5] = data >> 0x10;
         arg0[0x3C7] = data;
+        arg0[0x3C8] = data >> 0x18;
     }
-    arg0[0x3C8] = data >> 0x18;
     pad = *(u16 *)(D_8008CA06 + *(s8 *)(arg0 + 0x20B) * 8);
     mode = ~(((pad & 0xFF) << 8) | (pad >> 8));
     if (mode & 0x1000) {
@@ -1309,11 +1309,8 @@ u16 func_80041BFC(u8 *arg0) {
     if (mode & 0x8000) {
         mode |= 0x80;
     }
-    return mode & 0xFFFF;
+    return mode;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/input", func_80041BFC);
-#endif
 
 extern s32 gPadBuffers[];
 void InitPAD(void *, s32, void *, s32);
