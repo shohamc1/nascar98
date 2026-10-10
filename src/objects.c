@@ -4081,7 +4081,7 @@ extern s32 D_800AE844[];
 extern s32 D_800AE848[];
 extern s32 D_800AE84C[];
 extern s32 D_800B6094[];
-u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3) {
+u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     s32 point[3];
     s32 outX;
     s32 outZ;
@@ -4354,11 +4354,8 @@ void func_80031874(u8 *quad, s32 *normal) {
     normal[2] = normal[2] * 0x10;
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: A two-argument alias matches the actual final
- * VectorNormal call interface; SDK assembly ignores a2. Absolute rotation-
- * table loads are restored, but arithmetic scheduling and the normal-output
- * tail remain longer than retail. */
+/* VectorNormal reads two arguments here; a third one changes the load order
+ * before its call. The three-axis copies at the end are Vector3 assignments. */
 extern s32 D_800A2F2C;
 extern void VectorNormal2(s32 *, s32 *) asm("VectorNormal");
 void func_800319D4(u8 *object, s32 arg1) {
@@ -4438,11 +4435,11 @@ void func_800319D4(u8 *object, s32 arg1) {
     cross[0] >>= 6;
     cross[1] >>= 6;
     cross[2] >>= 6;
-    VectorNormal(cross, normalOut, cross[2]);
+    VectorNormal2(cross, normalOut);
     normalOut[0] = normalOut[0] * 16;
     normalOut[1] = normalOut[1] * 16;
     normalOut[2] = normalOut[2] * 16;
-    VectorNormal(corners[0], vecA, normalOut[2]);
+    VectorNormal2(corners[0], vecA);
     VectorNormal2(corners[1], cross);
     vecA[0] = vecA[0] * 16;
     vecA[1] = vecA[1] * 16;
@@ -4450,19 +4447,10 @@ void func_800319D4(u8 *object, s32 arg1) {
     cross[0] = cross[0] * 16;
     cross[1] = cross[1] * 16;
     cross[2] = cross[2] * 16;
-    *(s32 *)(object + 0x3C) = vecA[0];
-    *(s32 *)(object + 0x40) = vecA[1];
-    *(s32 *)(object + 0x44) = vecA[2];
-    *(s32 *)(object + 0x48) = cross[0];
-    *(s32 *)(object + 0x4C) = cross[1];
-    *(s32 *)(object + 0x50) = cross[2];
-    *(s32 *)(object + 0x54) = normalOut[0];
-    *(s32 *)(object + 0x58) = normalOut[1];
-    *(s32 *)(object + 0x5C) = normalOut[2];
+    *(Vector3 *)(object + 0x3C) = *(Vector3 *)vecA;
+    *(Vector3 *)(object + 0x48) = *(Vector3 *)cross;
+    *(Vector3 *)(object + 0x54) = *(Vector3 *)normalOut;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_800319D4);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80031D74);
 
