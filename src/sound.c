@@ -2147,18 +2147,17 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         arg2 = 6;
         break;
     case 0x21:
-        arg3 = 0;
         if (D_800A2EB0Absolute[0] != 0) {
             return;
         }
-        goto setSeven;
-    case 0x22:
         arg3 = 0;
+        arg2 = 7;
+        break;
+    case 0x22:
         if (D_800A2EB0Absolute[0] == 1) {
             return;
         }
-    setSeven:
-        asm("");
+        arg3 = 0;
         arg2 = 7;
         break;
     case 0x28:
