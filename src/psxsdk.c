@@ -549,7 +549,6 @@ CdlCB CdReadyCallback(CdlCB func) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
@@ -588,7 +587,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControl);
 #endif
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
@@ -627,7 +625,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 #endif
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
@@ -888,7 +885,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", cb_read);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", cd_read_retry);
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern volatile u32 D_8009BD98[];
 extern volatile u32 D_8009BD9C[];
 extern u32 D_8009BD90[];
@@ -2502,7 +2498,6 @@ void __maspsx_include_asm_hack_D_80090764(void) {
 
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090770);
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern u32 D_8009DA8C[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DB4C[];
@@ -6376,7 +6371,6 @@ void SsUtSetReverbDelay(short delay) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetVagAtr);
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 u8 SpuVmAllocDraft(s32) asm("SpuVmAlloc");
 u8 SpuVmAllocDraft(s32 arg0) {
     struct SpuVoice {
@@ -6587,7 +6581,6 @@ u16 pitch;
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 void SpuVmDoAllocate(void) {
     extern s16 D_800B9DDE[];
     extern u8 D_800B9DCB[];
@@ -6638,7 +6631,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn2);
 
-#if 1
 extern u8 D_800B9DC6[];
 extern u8 D_800B9DD4[];
 extern u8 D_800B9DD5[];
@@ -6667,11 +6659,7 @@ u16 note2pitch(void) {
     } while (0);
     return var_v1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch);
-#endif
 
-#if 1
 extern u8 D_800B9DCB[];
 extern u8 D_800B9DD0[];
 extern u8 D_800B9950Raw[] asm("D_800B9950");
@@ -6712,12 +6700,7 @@ u16 arg1;
         var_v1 >>= -octave;
     return var_v1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", note2pitch2);
-#endif
 
-#if 1
-/* Complete C draft; code generation still differs from retail. */
 void SePitchBend(u8 voice, s16 arg1) {
     extern u8 D_800AD3CC[];
     extern u8 D_800AD3D0[];
@@ -6759,9 +6742,6 @@ void SePitchBend(u8 voice, s16 arg1) {
         D_800AD3A4[voice] |= 4;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SePitchBend);
-#endif
 
 void SsUtVibrateOn(void) {
 }
@@ -6926,8 +6906,6 @@ void SpuVmNoiseOn(s32 arg0, s32 arg1) {
     }
 }
 
-#if 1
-/* Complete C draft; code generation still differs from retail. */
 s16 SpuVmPBVoiceDraft(s16, s16, s16, s16, u16) asm("SpuVmPBVoice");
 s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
                       u16 amount) {
@@ -7012,9 +6990,6 @@ s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
     }
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPBVoice);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPitchBend);
 
@@ -7023,7 +6998,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmFlush);
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOn);
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 s32 SpuVmKeyOffDraft(s16, s16, s16, u16) asm("SpuVmKeyOff");
 s32 SpuVmKeyOffDraft(s16 arg0, s16 vabId, s16 prog, u16 note) {
     extern u8 D_800B9C80[];
@@ -7181,7 +7155,6 @@ s16 SpuVmGetSeqRVol(s16 seq_access) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 void SpuVmSeqKeyOff(arg0) s32 arg0;
 {
     extern u8 D_800B9C80[];
@@ -7311,9 +7284,7 @@ extern u8 D_800AD3BE[];
 extern u8 D_800AD3CC[];
 extern u32 D_800B9950[];
 
-#if 1
-/* Matches (0 words) under GNU C 2.6.3-psx only; the 2.7.2 build still
- * differs. Retail's codegen needs these spellings:
+/* Retail's codegen needs these spellings:
  * - the (s16)vag test is also the SpuVmAlloc argument, so the sll/sra pair
  *   has a second use and combine can't fold it into the beqz;
  * - (u8)voice in the compare and in the *52 index makes the `move v1,s0`
@@ -7401,9 +7372,6 @@ s32 SsUtKeyOn(s16 vabId, s16 prog, s16 tone, s16 note, u16 fine, s16 voll,
     keyOnGuard[0] = 0;
     return voice;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOn);
-#endif
 
 extern s32 D_800B2090[];
 extern s32 gOrderingTables[];
@@ -7506,8 +7474,6 @@ s16 SsUtPitchBend(s16 voice, s16 vabId, s16 prog, s16 note, s16 pbend) {
     return -((SpuVmPBVoice(voice, 0x21, vabId, prog, pbend) << 16) == 0);
 }
 
-#if 1
-/* Complete C draft; code generation still differs from retail. */
 short SsUtChangePitch(voice, vabId, prog, old_note, old_fine, new_note,
                       new_fine)
 short voice;
@@ -7539,9 +7505,6 @@ u16 new_fine;
     }
     return -1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtChangePitch);
-#endif
 
 extern u16 gSpuRegisterBuffer[];
 extern u8 D_800AD3A4[];
@@ -7589,11 +7552,6 @@ short SsUtSetDetVVol(short vc, short vl, short vr) {
 
 extern s32 D_800A20B8[];
 
-#if 1
-/* Two bytes of register allocation short: retail's two mfhi both land in
- * $v1, but this gcc fuses mult+mfhi into one smulsi3_highpart insn, so
- * both highpart pseudos conflict with each other and with the vm pointer
- * in $v1; they can only reach $t2/$a2 (SsUtSetReverbDepth class). */
 s32 SsUtGetVVol(s32 vc, s16 *voll, s16 *volr) {
     s16 mvolL;
     s16 mvolR;
@@ -7607,9 +7565,6 @@ s32 SsUtGetVVol(s32 vc, s16 *voll, s16 *volr) {
     }
     return -1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetVVol);
-#endif
 
 short SsUtSetVVol(short vc, short voll, short volr) {
     s16 mvolL;
@@ -7743,7 +7698,6 @@ s32 _spu_reset(void) {
 
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B48);
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 s32 SpuInitHardwareDraft(s32) asm("_spu_init");
 typedef struct SpuInitRegs {
     volatile u16 voice[24][8];
@@ -7978,7 +7932,6 @@ void _spu_r_(s32 arg0, u16 arg1, s32 arg2) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 typedef struct SpuTRegs2 {
     u8 pad[0x1A6];
     volatile u16 trans_addr;
@@ -8160,7 +8113,6 @@ void _SpuDataCallback(void (*arg0)()) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern SpuStartedStorage D_800A26A0Read;
 extern SpuIRQCallbackProc D_800A26E0[];
 extern SpuIRQCallbackProc D_800A26E4[];
@@ -8213,7 +8165,6 @@ s32 SpuInitMalloc(s32 num, s32 *table) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 typedef struct {
     u32 addr;
     u32 size;
@@ -8339,7 +8290,6 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuMalloc);
 #endif
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern s32 D_800A2708GC[];
 extern void *D_800A270CGC[];
 void _spu_gcSPU(void) {
@@ -8705,7 +8655,6 @@ void SpuSetReverbVoice(s32 a, s32 b) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern s32 D_800A2710Clear[];
 extern s32 D_800A2298Clear[];
 extern u8 D_800A22A0Clear[];
@@ -8863,10 +8812,8 @@ void _SpuCallback(s32 arg0) {
     InterruptCallback(9, arg0);
 }
 
-#if 1
-/* Matches under GNU C 2.6.3 only (the retail libspu compiler). Each case
- * needs its own base pointer, a u16 copy of the low half, and a pointer
- * local for the D_800A229C read. See sdk-263 notes in the knowledge base. */
+/* Each case needs its own base pointer, a u16 copy of the low half, and a
+ * pointer local for the D_800A229C read. */
 void SpuSetKey(long on_off, unsigned long voice_bit) {
     extern s32 D_800A229C[];
     u32 bits;
@@ -8895,9 +8842,6 @@ void SpuSetKey(long on_off, unsigned long voice_bit) {
         break;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetKey);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -8908,7 +8852,6 @@ void SpuSetVoiceAttr(SpuVoiceAttr *arg) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 extern volatile u16 *D_800A26ACVA[];
 extern u16 _spu_note2pitch();
 s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -9396,7 +9339,6 @@ s32 _spu_getInTransfer(void) {
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 void SpuSetCommonAttrDraft(SpuCommonAttr *) asm("SpuSetCommonAttr");
 extern volatile u16 *D_800A26ACCommon2[];
 void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
@@ -9633,7 +9575,6 @@ u16 pitch;
 }
 
 #ifdef NON_MATCHING
-/* Complete C draft; code generation still differs from retail. */
 
 s32 SpuRGetAllKeysStatus(s32 min, s32 max, s8 *status) {
     s32 voice;
