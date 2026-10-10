@@ -5494,14 +5494,6 @@ void GraphicsInitDoubleBuffer(s32 mode) {
     PutDispEnv(D_800BDE04);
 }
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Current faithful draft is 416 bytes versus 444 retail. Corrected wrong
- * ordering-table scalar to D_800A38C4 and removed three duplicate
- * centering calls absent in retail. GCC merges the two remaining branch-
- * specific centering paths and caches their string slot in s0. Splitting
- * returns and empty barriers did not prevent merging.
- */
 void func_80064E6C(void) {
     extern u8 *D_800A369C;
     extern u8 D_800A3698;
@@ -5512,6 +5504,10 @@ void func_80064E6C(void) {
     extern u8 *D_8009A3F0[];
     extern u8 *D_8009A400[];
     extern u8 *D_8009A418[];
+    /* The post-call string reads go through the neighbouring symbols so
+     * cse can't share one address register with the pre-call reads. */
+    extern u8 *D_8009A3EC[];
+    extern u8 *D_8009A414[];
     extern s32 D_800A2EB0Absolute[];
     extern u8 D_800A3778;
     extern u8 D_800A35DC;
@@ -5520,8 +5516,6 @@ void func_80064E6C(void) {
     extern void func_80065F80(void);
     extern void func_80066080(s32);
     u8 **base;
-    s16 centered;
-    s32 text;
 
     ClearOTagR(D_800A38C4, 4);
     GraphicsInitDoubleBuffer(1);
@@ -5533,13 +5527,14 @@ void func_80064E6C(void) {
     func_8005A9F4((s32)*base, (s16)func_8005B0E4(0x140, (s32)*base), 0xC8, 0, 0,
                   0, 0, 0);
     if (D_800A2EB0Absolute[0] == 0) {
-        centered = func_8005B0E4(0x140, (s32)D_8009A3F0[0]);
-        text = (s32)D_8009A3F0[0];
+        func_8005A9F4((s32)D_8009A3EC[1],
+                      (s16)func_8005B0E4(0x140, (s32)D_8009A3F0[0]), 0xC8, 0, 0,
+                      0, 0, 0);
     } else {
-        centered = func_8005B0E4(0x140, (s32)D_8009A418[0]);
-        text = (s32)D_8009A418[0];
+        func_8005A9F4((s32)D_8009A414[1],
+                      (s16)func_8005B0E4(0x140, (s32)D_8009A418[0]), 0xC8, 0, 0,
+                      0, 0, 0);
     }
-    func_8005A9F4(text, centered, 0xC8, 0, 0, 0, 0, 0);
     ClearOTagR(D_800A38C4, 4);
     D_800A367C = (s32)(D_800A369C + D_800A3698 * 0x28);
     if (D_800A3644[0] != 0 && D_800A3073[0] == 0) {
@@ -5557,9 +5552,6 @@ void func_80064E6C(void) {
     }
     D_800A3884 = 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80064E6C);
-#endif
 
 extern s32 D_800A367C;
 s32 func_80065028(void) {
