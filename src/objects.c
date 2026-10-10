@@ -6041,21 +6041,6 @@ void func_800356A8(s32 arg0) {
     D_800A2F3C[0] = 0x46;
 }
 
-#ifdef NON_MATCHING
-/*
- * WALL (w9d): clean except the LINE_F4 tail's first li. Retail emits
- * `li v1,0xc8` immediately after the line pointer addu, keeps 0xC8 in
- * v1 across the y/r/g/b constant stores (li v0,0x23 / 0x46 / 0x28 /
- * 0x6a / 0x2), and sinks both x stores (sh v1,8 / sh v1,0x10) to just
- * before AddPrim. Every C spelling tried puts the x stores early in v0
- * (x-first: li v0 then sh v0,8/0x10 at once), or materializes 0xC8 late
- * (y-first, lx-local, chained x0=x2=0xC8 all start with li v0,0x23).
- * Suspect scheduler v0/v1 lifetime choice. The rest is byte-exact:
- * the /2 then /64 rounding chain, the FT4 loop (y++ at body top, clamp
- * y>=8 resets off then y, nx = x + 0x40 computed into v0 then
- * move s0,v0, off IV += 0x28 after the x update), `c`/`nx` locals are
- * load-bearing for the s4/s5 register pair.
- */
 extern s32 D_800A2F44;
 extern u8 *D_800A3850;
 extern u8 *D_800A390C;
@@ -6068,7 +6053,6 @@ void func_80035720(u_long *ot) {
     s32 i;
     s32 c;
     s32 nx;
-    s32 lx;
     POLY_FT4 *prim;
     LINE_F4 *line;
     s32 bank;
@@ -6102,86 +6086,9 @@ void func_80035720(u_long *ot) {
     }
     bank = gOrderingTableBankAbsolute[0];
     line = (LINE_F4 *)(D_800A390C + bank * 24);
-    lx = 0xC8;
-    line->y0 = 0x23;
-    line->y1 = 0x23;
-    line->y2 = 0x46;
-    line->y3 = 0x46;
-    line->x0 = lx;
-    line->x1 = 0;
-    line->x2 = lx;
-    line->x3 = 0;
-    line->r0 = 0x28;
-    line->g0 = 0x6A;
-    line->b0 = 2;
+    setXY4(line, 0xC8, 0x23, 0, 0x23, 0xC8, 0x46, 0, 0x46);
+    setRGB0(line, 0x28, 0x6A, 2);
     AddPrim(ot + 0x3FF, line);
-}
-#endif
-
-extern s32 D_800A2F44;
-extern u8 *D_800A3850;
-extern u8 *D_800A390C;
-
-void func_80035720(u_long *ot) {
-    s32 value;
-    s32 x;
-    s32 y;
-    s32 off;
-    s32 i;
-    s32 c;
-    s32 nx;
-    s32 lx;
-    s32 bc;
-    u_long *arg;
-    POLY_FT4 *prim;
-    LINE_F4 *line;
-    s32 bank;
-
-    value = D_800A2F44;
-    x = (0x200 - value) / 2;
-    y = x / 64;
-    x = y * 64 - x;
-    i = 0;
-    c = 0x23;
-    off = y * 40;
-    for (; i < 5; i++) {
-        if (y >= 8) {
-            off = 0;
-            y = 0;
-        }
-        prim = (POLY_FT4 *)(D_800A3850 + off);
-        y++;
-        prim->x0 = x;
-        prim->x2 = x;
-        nx = x + 0x40;
-        x = nx;
-        off += 0x28;
-        prim->y0 = 0;
-        prim->x1 = nx;
-        prim->y1 = 0;
-        prim->y2 = c;
-        prim->x3 = nx;
-        prim->y3 = c;
-        AddPrim(ot + 0x3FF, prim);
-    }
-    bank = gOrderingTableBankAbsolute[0];
-    arg = ot + 0x3FF;
-    line = (LINE_F4 *)(D_800A390C + bank * 24);
-    lx = 0xC8;
-    asm volatile("" : : "r"(lx));
-    line->y0 = 0x23;
-    line->y1 = 0x23;
-    line->y2 = 0x46;
-    line->y3 = 0x46;
-    line->r0 = 0x28;
-    line->g0 = 0x6A;
-    bc = 2;
-    line->x0 = lx;
-    line->x1 = 0;
-    line->x2 = lx;
-    line->x3 = 0;
-    line->b0 = bc;
-    AddPrim(arg, line);
 }
 
 extern u8 D_800A2DE1[];
