@@ -697,21 +697,13 @@ void CdDataSync(int mode) {
 }
 
 CdlLOC *CdIntToPos(int i, CdlLOC *p) {
-    s32 n = i;
-    CdlLOC *out;
-    s32 minuteBcd;
-
-    asm volatile(
-        "lui\t$3,0x1b4e\n\tori\t$3,$3,0x81b5\n\taddiu\t%0,%0,0x96\n\tmult\t%0,$3\n\taddu\t%1,%3,$0"
-        : "=r"(n), "=r"(out)
-        : "0"(n), "r"(p));
-    asm volatile(
-        "lui\t$7,0x6666\n\tori\t$7,$7,0x6667\n\tsra\t$3,%1,31\n\tmfhi\t$6\n\tsra\t$6,$6,0x3\n\tsubu\t$6,$6,$3\n\tsll\t%0,$6,0x2\n\taddu\t%0,%0,$6\n\tsll\t$3,%0,0x4\n\tsubu\t$3,$3,%0\n\tsubu\t%1,%1,$3\n\tmult\t%1,$7\n\tmfhi\t$8\n\tlui\t$3,0x8888\n\tori\t$3,$3,0x8889\n\tmult\t$6,$3\n\tsra\t$3,$6,31\n\tmfhi\t$9\n\taddu\t$9,$9,$6\n\tsra\t$9,$9,0x5\n\tsubu\t$9,$9,$3\n\tsll\t$3,$9,0x4\n\tsubu\t$3,$3,$9\n\tsll\t$3,$3,0x2\n\tsubu\t$6,$6,$3\n\tmult\t$6,$7\n\tsra\t$8,$8,0x2\n\tsra\t$3,%1,31\n\tsubu\t$8,$8,$3\n\tsll\t$3,$8,0x2\n\taddu\t$3,$3,$8\n\tsll\t$3,$3,0x1\n\tmfhi\t%0\n\tsubu\t%1,%1,$3\n\tsra\t$3,$6,31\n\tmult\t$9,$7\n\tsll\t$7,$8,0x4\n\taddu\t$7,$7,%1\n\tsra\t%0,%0,0x2\n\tsubu\t%0,%0,$3\n\tsll\t%1,%0,0x4\n\tsll\t$3,%0,0x2\n\taddu\t$3,$3,%0\n\tsll\t$3,$3,0x1\n\tsubu\t$6,$6,$3\n\taddu\t%1,%1,$6\n\tsb\t%1,0x1(%3)\n\tsra\t%1,$9,31\n\tsb\t$7,0x2(%3)\n\tmfhi\t$3\n\tsra\t$3,$3,0x2\n\tsubu\t$3,$3,%1\n\tsll\t%0,$3,0x4\n\tsll\t%1,$3,0x2\n\taddu\t%1,%1,$3\n\tsll\t%1,%1,0x1\n\tsubu\t$9,$9,%1\n\taddu\t%0,%0,$9"
-        : "=r"(minuteBcd), "=r"(n)
-        : "1"(n), "r"(out)
-        : "v1", "a2", "a3", "t0", "t1");
-    out->minute = minuteBcd;
-    return out;
+    i += 150;
+    p->sector = (i % 75) / 10 * 16 + (i % 75) % 10;
+    i /= 75;
+    p->second = (i % 60) / 10 * 16 + (i % 60) % 10;
+    i /= 60;
+    p->minute = i / 10 * 16 + i % 10;
+    return p;
 }
 
 int CdPosToInt(CdlLOC *p) {
@@ -1913,10 +1905,9 @@ int FntPrint(const char *fmt, ...) {
                 }
                 count = 0;
                 do {
-                    asm volatile("\n\tmultu %0, %1" : : "r"(value), "r"(magic));
                     buf--;
                     count++;
-                    asm volatile("\n\tmfhi %0\n\tsrl %0, %0, 3" : "=r"(quot));
+                    quot = value / 10;
                     *buf = value - quot * 10 + '0';
                     value = quot;
                 } while (count == 0 || value != 0);
@@ -5707,9 +5698,7 @@ void SsSetMarkCallback(s16 arg0, s16 arg1, s32 arg2) {
     s32 *row;
 
     shifted = arg0 << 16;
-    asm("" : "=r"(shifted) : "0"(shifted));
     rows = D_800BDF0C;
-    asm("" : "=r"(rows) : "0"(rows));
     row = (s32 *)((shifted >> 10) + (s32)rows);
     row[arg1] = arg2;
 }
@@ -6372,36 +6361,10 @@ void SsUtSetReverbFeedback(short feedback) {
 }
 
 void SsUtSetReverbDepth(short ldepth, short rdepth) {
-    s32 magic = 0x81020409;
-    register s32 n1 asm("a2") = (ldepth << 15) - ldepth;
-    register s32 hi1 asm("v0");
-    register s32 n2 asm("a3");
-    register s32 d1 asm("v0");
-    register s32 hi2 asm("v0");
-    s32 d2;
-    register SpuReverbAttr *attr asm("a0");
-
-    asm("mult %2, %3\n\tsll $5, $5, 16\n\tsra $5, $5, 16\n\tmfhi %0\n\tsll %1, $5, 15\n\tsubu %1, %1, $5"
-        : "=r"(hi1), "=r"(n2)
-        : "r"(n1), "r"(magic));
-    asm("mult %1, %2" : "=r"(hi2) : "r"(n2), "r"(magic));
-    asm volatile(
-        "addiu $29, $29, -24\n\tlui %0, %%hi(D_800AE27C)\n\taddiu %0, %0, %%lo(D_800AE27C)\n\tsw $31, 16($29)"
-        : "=r"(attr));
-    magic = 6;
-    d1 = hi1 + n1;
-    d1 >>= 6;
-    n1 >>= 31;
-    d1 -= n1;
-    attr->mask = magic;
-    D_800AE27C[0].depth.left = d1;
-    asm("mfhi %0" : "=r"(hi2) : "0"(hi2));
-    d2 = hi2 + n2;
-    d2 >>= 6;
-    n2 >>= 31;
-    d2 -= n2;
-    D_800AE27C[0].depth.right = d2;
-    asm("jal SpuSetReverbModeParam\n\tlw $31, 16($29)\n\taddiu $29, $29, 24");
+    D_800AE27C[0].mask = 6;
+    D_800AE27C[0].depth.left = ldepth * 0x7FFF / 0x7F;
+    D_800AE27C[0].depth.right = rdepth * 0x7FFF / 0x7F;
+    SpuSetReverbModeParam(D_800AE27C);
 }
 
 void SsUtSetReverbDelay(short delay) {
@@ -6974,7 +6937,7 @@ void SpuVmNoiseOn(s32 arg0, s32 arg1) {
     }
 }
 
-#ifdef NON_MATCHING
+#if 1
 /* Complete C draft; code generation still differs from retail. */
 s16 SpuVmPBVoiceDraft(s16, s16, s16, s16, u16) asm("SpuVmPBVoice");
 s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
@@ -7002,7 +6965,12 @@ s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
     extern u8 D_800B9DCB[];
     extern u16 D_800B9DDE[];
     extern u8 D_800B9DD0[];
-    extern u16 D_800AD228[];
+    extern u16 D_800AD224[];
+    extern u8 D_800AD3C8[];
+    extern u8 D_800AD3CA[];
+    extern u8 D_800AD3CE[];
+    extern u8 D_800AD3D0[];
+    extern u8 D_800AD3D2[];
     extern u8 D_800AD3A4[];
     extern s32 D_800B9950[];
     extern s32 note2pitch2();
@@ -7015,13 +6983,14 @@ s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
 
     voiceData = (struct SpuVoice *)D_800AD3BC;
     temp_t1 = amount - 0x40;
-    if (voiceData[voice].unke == seq_sep_no &&
-        voiceData[voice].vabId == vabId && voiceData[voice].prog == program) {
-        temp_a1 = voiceData[voice].note;
-        temp_v1 = voiceData[voice].tone + (D_800B9DCB[0] * 0x10);
+    if (*(s16 *)(D_800AD3CA + voice * 52) == seq_sep_no &&
+        *(s16 *)(D_800AD3D2 + voice * 52) == vabId &&
+        *(s16 *)(D_800AD3CE + voice * 52) == program) {
+        temp_a1 = *(u16 *)(D_800AD3C8 + voice * 52);
+        temp_v1 = *(u16 *)(D_800AD3D0 + voice * 52) + (D_800B9DCB[0] * 0x10);
         if (temp_t1 > 0) {
             do {
-                note = voiceData[voice].note +
+                note = *(u16 *)(D_800AD3C8 + voice * 52) +
                        ((temp_t1 *
                          *(u8 *)((s32)D_800B9950[0] + temp_v1 * 32 + 0xD)) /
                         0x3F);
@@ -7046,9 +7015,9 @@ s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
                 pbend = 0;
             }
         }
-        D_800B9DD0[0] = voiceData[voice].tone;
+        D_800B9DD0[0] = D_800AD3D0[voice * 52];
         D_800B9DDE[0] = voice;
-        D_800AD228[voice * 8 + 2] = note2pitch2(note, pbend);
+        D_800AD224[voice * 8 + 2] = note2pitch2(note, pbend);
         D_800AD3A4[voice] |= 4;
         return 1;
     }
@@ -7636,25 +7605,20 @@ short SsUtSetDetVVol(short vc, short vl, short vr) {
 
 extern s32 D_800A20B8[];
 
-#ifdef NON_MATCHING
+#if 1
 /* Two bytes of register allocation short: retail's two mfhi both land in
  * $v1, but this gcc fuses mult+mfhi into one smulsi3_highpart insn, so
  * both highpart pseudos conflict with each other and with the vm pointer
  * in $v1; they can only reach $t2/$a2 (SsUtSetReverbDepth class). */
 s32 SsUtGetVVol(s32 vc, s16 *voll, s16 *volr) {
-    s16 mvol;
-    s16 mvol2;
-    s32 volL;
-    s32 volR;
+    s16 mvolL;
+    s16 mvolR;
 
     if ((u16)vc < 24) {
-        mvol = *(s16 *)&((u8 *)D_800A20B8[0])[(s16)vc * 16];
-        volL = mvol / 129;
-        mvol = *(s16 *)&((u8 *)D_800A20B8[0])[(s16)vc * 16 + 2];
-        mvol2 = mvol;
-        volR = mvol2 / (mvol = 129);
-        *voll = volL;
-        *volr = volR;
+        mvolL = *(s16 *)&((u8 *)D_800A20B8[0])[(s16)vc * 16];
+        mvolR = *(s16 *)&((u8 *)D_800A20B8[0])[(s16)vc * 16 + 2];
+        *voll = mvolL / 129;
+        *volr = mvolR / 129;
         return 0;
     }
     return -1;
