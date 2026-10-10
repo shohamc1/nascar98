@@ -1381,8 +1381,8 @@ extern u32 D_8008CA44[];
 extern u32 D_8008CA48[];
 
 void func_80041DEC(void) {
-    u32 word;
-    register u32 nibble asm("v1");
+    u32 padWord;
+    u32 padType;
     u8 *node;
     s32 i;
     u32 pad0;
@@ -1391,41 +1391,51 @@ void func_80041DEC(void) {
     u32 pad3;
     s32 *p;
     s32 *cursor;
-    u32 conn;
+    u32 noPad;
 
-    word = gPadBuffers[0];
-    conn = 0xFF;
-    nibble = word & 0xF000;
-    if ((word & 0xFF) == conn) {
-        nibble = 0;
-    } else {
-        nibble = nibble >> 12;
-    }
-    D_800A3A24Small = nibble;
-    word = D_800B9E00[0];
-    nibble = word & 0xF000;
-    if ((word & 0xFF) == conn) {
-        nibble = 0;
-    } else {
-        nibble = nibble >> 12;
-    }
+    /* The do-while (0) wraps raise padType's ref count so it outranks node. */
+    padWord = gPadBuffers[0];
+    noPad = 0xFF;
+    do {
+        padType = padWord & 0xF000;
+        if ((padWord & 0xFF) == noPad) {
+            padType = 0;
+        } else {
+            padType = padType >> 12;
+        }
+    } while (0);
+    D_800A3A24Small = padType;
+    padWord = D_800B9E00[0];
+    do {
+        padType = padWord & 0xF000;
+        if ((padWord & 0xFF) == noPad) {
+            padType = 0;
+        } else {
+            padType = padType >> 12;
+        }
+    } while (0);
     node = D_800A3878nm[0];
-    D_800A3A25[0] = nibble;
+    D_800A3A25[0] = padType;
     D_800A3A26[0] = 0;
     D_800A3A27[0] = 0;
-    i = 7;
     if (node != 0) {
         do {
             if (*(s16 *)(node + 0x1EC) == 0) {
                 node[0x3C4] = ((u8 *)D_800A3A24)[*(s8 *)(node + 0x20B)];
             }
             node = *(u8 **)(node + 0x3E0);
-            i = 7;
         } while (node != 0);
     }
     i = 7;
-    cursor = gPadBuffers;
-    asm("" : "=r"(cursor) : "0"(cursor));
+    /* Keeps the cursor address in a register: the dead if splits the block so
+       combine can't fold it into the load, and the wrap raises the ref count
+       above 2 so local-alloc doesn't substitute the symbol either. */
+    do {
+        cursor = gPadBuffers;
+    } while (0);
+    if (node != 0) {
+        pad3 = 0;
+    }
     pad0 = cursor[0];
     pad1 = D_800B9DF8[0];
     pad2 = D_800B9E00[0];
@@ -1448,7 +1458,10 @@ void func_80041DEC(void) {
     D_8008CA38[0] = pad3;
     D_8008CA10[0] = pad3;
     for (i = 7; i >= 0; i--) {
-        p[i] = 0;
+        /* The wrap raises p's ref count so it takes t0 and i takes t1. */
+        do {
+            p[i] = 0;
+        } while (0);
     }
 }
 
