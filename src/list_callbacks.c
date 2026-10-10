@@ -892,35 +892,27 @@ INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D220);
 
 INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D638);
 
-extern u8 D_800A3C6C[];
+extern POLY_FT4 D_800A3C6C[];
 extern s32 gOrderingTableBankAbsolute[];
-extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
-extern s32 D_800A36D0Absolute[];
-void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7) {
-    typedef struct {
-        s32 words[4];
-    } Primitive16;
+extern u32 gPrimitiveCursor[];
+extern u32 D_800A35C0[];
+void func_8001D778(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
+                   s32 semiTrans) {
     POLY_FT4 *prim;
-    u8 *src;
-    u8 *end;
-    u8 *dst;
     POLY_FT4 *entry;
-    u32 cursorVal;
-    s32 tailA;
-    s32 tailB;
+    u32 cursor;
 
-    prim = (POLY_FT4 *)(D_800A3C6C + gOrderingTableBankAbsolute[0] * 0x28);
+    prim = &D_800A3C6C[gOrderingTableBankAbsolute[0]];
     SetPolyFT4(prim);
-    prim->y0 = arg1;
-    prim->y1 = arg1;
-    prim->x0 = arg0;
-    prim->x1 = arg0 + arg2;
-    prim->x2 = arg0;
-    prim->y2 = arg1 + arg3;
-    prim->x3 = arg0 + arg2;
-    prim->y3 = arg1 + arg3;
+    prim->y0 = y;
+    prim->y1 = y;
+    prim->x0 = x;
+    prim->x1 = x + w;
+    prim->x2 = x;
+    prim->y2 = y + h;
+    prim->x3 = x + w;
+    prim->y3 = y + h;
     prim->tpage = GetTPage(2, 0, 0x300, 0);
     prim->u0 = 0;
     prim->v0 = 0;
@@ -930,29 +922,17 @@ void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
     prim->v2 = 1;
     prim->u3 = 1;
     prim->v3 = 1;
-    if ((arg7 << 0x18) != 0) {
+    if ((semiTrans << 0x18) != 0) {
         SetSemiTrans(prim, 1);
     }
-    prim->r0 = arg4;
-    prim->g0 = arg5;
-    prim->b0 = arg6;
-    src = (u8 *)prim;
-    end = src + 0x20;
-    cursorVal = gPrimitiveCursor[0];
-    asm("");
-    entry = (POLY_FT4 *)cursorVal;
-    asm volatile("" : : "r"(cursorVal));
-    dst = (u8 *)entry;
-    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
-    do {
-        *(Primitive16 *)dst = *(Primitive16 *)src;
-        src += 0x10;
-        dst += 0x10;
-    } while (src != end);
-    tailA = *(s32 *)src;
-    tailB = *(s32 *)(src + 4);
-    *(s32 *)dst = tailA;
-    *(s32 *)(dst + 4) = tailB;
+    prim->r0 = r;
+    prim->g0 = g;
+    prim->b0 = b;
+    cursor = gPrimitiveCursor[0];
+    /* Store through the neighbour label: keeps the second lui. */
+    D_800A35C0[1] = cursor + sizeof(POLY_FT4);
+    entry = (POLY_FT4 *)cursor;
+    *entry = *prim;
     AddPrim((u8 *)D_800A39C8[0], entry);
 }
 
