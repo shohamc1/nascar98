@@ -6006,68 +6006,55 @@ void func_800663B0(void) {
     asm("addu $gp, %0, $zero" : : "r"(oldGp));
 }
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Best valid full-TU draft is size-exact (484 bytes), 72 differing bytes.
- * Corrected byte versus word OT scaling and signed cursor comparison. SDK
- * POLY_F4 assignment reproduces grouped six-word copy, removing 16 bytes.
- * Retail branch ordering fixed. Remaining selector instruction shape,
- * saved-register assignment and scheduling wall; best valid permutation
- * (1065) revalidated in full TU.
- */
 void *func_8006654C(void *queue, s32 arg1) {
     extern s32 D_800A39C8[];
     extern u8 *func_80057D50(s32);
-    s32 *slots[2];
-    s32 *p;
-    s32 *start;
+    s32 *templates[2];
     s32 cursor;
-    s32 c;
-    s32 d;
-    s32 y;
-    s32 scale;
-    s32 *orderTableSlot;
-    s32 n;
+    s32 topY;
+    s32 sel;
+    s32 depth;
+    s32 bottomY;
+    s32 offset;
+    s32 row;
     s32 i;
     s32 x;
     s32 *src;
+    s32 *orderTable;
     s32 *dst;
     cursor = (s32)queue;
-    y = arg1;
-    c = 0x18;
-    d = 8;
-    start = slots;
-    p = start;
-    do {
+    depth = arg1;
+    for (i = 0; i < 2; i++) {
         if (cursor == 0) {
-            *p = (s32)func_80057D50(0);
+            templates[i] = (s32 *)func_80057D50(0);
         } else {
-            *p = cursor;
+            templates[i] = (s32 *)cursor;
             cursor += 0x18;
         }
-        SetPolyF4((u_long *)(*p));
-        do {
-            SetSemiTrans((u_long *)(*p), 1);
-        } while (0);
-        if (p != start) {
-            ((u8 *)(*p))[4] = c;
-            ((u8 *)(*p))[5] = c;
-            ((u8 *)(*p))[6] = c;
+        SetPolyF4((u_long *)templates[i]);
+        SetSemiTrans((u_long *)templates[i], 1);
+        if (i != 0) {
+            ((u8 *)templates[i])[4] = 0x18;
+            ((u8 *)templates[i])[5] = 0x18;
+            ((u8 *)templates[i])[6] = 0x18;
         } else {
-            ((u8 *)slots[0])[4] = d;
-            ((u8 *)slots[0])[5] = d;
-            ((u8 *)slots[0])[6] = d;
+            ((u8 *)templates[0])[4] = 8;
+            ((u8 *)templates[0])[5] = 8;
+            ((u8 *)templates[0])[6] = 8;
         }
-        p += 1;
-    } while (((s32)p) < ((s32)(start + 2)));
-    n = 0;
-    c = 0;
-    scale = y << 2;
+    }
+    row = 0;
+    topY = 0;
+    offset = depth << 2;
     do {
-        d = (n & 1) == 0;
-        i = 0;
+        if (row & 1) {
+            sel = 0;
+        } else {
+            sel = 1;
+        }
         x = 0;
-        y = c + 0x20;
+        i = 0;
+        bottomY = topY + 0x20;
         do {
             if (cursor == 0) {
                 dst = (s32 *)func_80057D50(0);
@@ -6075,29 +6062,26 @@ void *func_8006654C(void *queue, s32 arg1) {
                 dst = (s32 *)cursor;
                 cursor += 0x18;
             }
-            src = slots[d];
-            d ^= 1;
+            src = templates[sel];
+            sel ^= 1;
             *((POLY_F4 *)dst) = *((POLY_F4 *)src);
             ((u16 *)dst)[4] = x;
             ((u16 *)dst)[8] = x;
+            ((u16 *)dst)[5] = topY;
+            ((u16 *)dst)[6] = x + 0x20;
+            ((u16 *)dst)[7] = topY;
+            ((u16 *)dst)[9] = bottomY;
+            ((u16 *)dst)[10] = x + 0x20;
+            ((u16 *)dst)[11] = bottomY;
             x += 0x20;
-            ((u16 *)dst)[5] = c;
-            ((u16 *)dst)[6] = x;
-            ((u16 *)dst)[7] = c;
-            ((u16 *)dst)[9] = y;
-            ((u16 *)dst)[10] = x;
-            ((u16 *)dst)[11] = y;
-            AddPrim(((u8 *)(orderTableSlot = D_800A39C8)[0]) + scale, dst);
+            AddPrim(((u8 *)(orderTable = D_800A39C8)[0]) + offset, dst);
             i += 1;
         } while (i < 0xA);
-        n += 1;
-        c += 0x20;
-    } while (n < 7);
+        row += 1;
+        topY += 0x20;
+    } while (row < 7);
     return (void *)cursor;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_8006654C);
-#endif
 
 extern u8 *D_800A39C8Ptr[] asm("D_800A39C8");
 extern u8 D_800A305B[];
