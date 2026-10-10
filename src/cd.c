@@ -1205,10 +1205,13 @@ void func_8003CA18(s32 arg0, s32 arg1) {
     FileRead(arg0, 1, value, D_800A45A8);
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-05: 348 bytes versus retail 352; 30 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The 0x58 frame and overlapping TOC symbols are retained.
+/* The retail layout needs four shapes that look odd in C:
+ * - filter is a 4-byte array and result a dead 0x30-byte array, so locals land
+ *   at 0x10 (vol), 0x18 (filter) and 0x20 (result) in a 0x58 frame.
+ * - The remainder is spelled out, so only the final subtract targets remainder.
+ * - arg0 = remainder is a real copy: arg0 stays live in s0 into the negate.
+ * - remainder = 0 then -= arg0 makes cse forget remainder == arg0, so the
+ *   negate reads s0. The store sits in both arms; cross-jumping merges them.
  */
 extern s32 CdGetToc(void *);
 extern CdlLOC D_800BDEBC[];
@@ -1218,26 +1221,29 @@ extern u8 D_800A2F9CAbsolute[];
 
 void func_8003CAE8(s32 arg0) {
     CdlATV vol;
+    u8 filter[4];
+    volatile u_char result[0x30];
     CdlLOC *lastPos;
     s32 remainder;
-    volatile u_char result[0x30];
     CdlLOC *pos;
-    u8 filter;
 
     if (CdGetToc(D_800BDEBC) < 2) {
         return;
     }
-    filter = 5;
-    if (CdControl(0xE, &filter, 0) == 0) {
+    filter[0] = 5;
+    if (CdControl(0xE, filter, 0) == 0) {
         return;
     }
     CdSetDebug(0);
-    arg0 %= 6;
-    remainder = arg0;
+    remainder = arg0 - arg0 / 6 * 6;
+    arg0 = remainder;
     if (arg0 < 0) {
-        remainder = -remainder;
+        remainder = 0;
+        remainder -= arg0;
+        D_800A2F70 = remainder + 2;
+    } else {
+        D_800A2F70 = remainder + 2;
     }
-    D_800A2F70 = remainder + 2;
     pos = &D_800BDEC4[0];
     CdIntToPos(0x19649, pos);
     lastPos = pos + 5;
@@ -1250,15 +1256,12 @@ void func_8003CAE8(s32 arg0) {
     if (D_800A2F9CAbsolute[0] != 0) {
         CdControlB(3, 0, 0);
     }
-    vol.val0 = 0x7F;
-    vol.val1 = 0x7F;
-    vol.val2 = 0x7F;
     vol.val3 = 0x7F;
+    vol.val2 = 0x7F;
+    vol.val1 = 0x7F;
+    vol.val0 = 0x7F;
     CdMix(&vol);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003CAE8);
-#endif
 
 extern s32 D_800A2EC8[];
 extern s32 D_800A2F70;
