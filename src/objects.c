@@ -3505,20 +3505,17 @@ extern u8 *D_800A3878;
 extern u8 D_800A2ED8;
 
 void func_8002EEFC(u8 *arg0) {
-    s32 pad[2];
     s32 refX;
     s32 refY;
     s32 refZ;
     s32 level;
-    s32 b;
-    s32 v;
+    s32 lod;
     u8 *node;
-    s32 dx;
-    s32 coord;
-    s32 dySq;
-    s32 dzSq;
+    s32 dist;
+    s32 delta;
+    s32 ySq;
+    s32 zSq;
 
-    (void)&pad;
     refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
     refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
     refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
@@ -3528,61 +3525,45 @@ void func_8002EEFC(u8 *arg0) {
     }
     level = 4;
     do {
-        if (node != arg0) {
-            goto dist;
-        }
-        if (*(s16 *)(node + 0x1EC) != 0) {
-            goto dist;
-        }
-        if (D_800A2ED8 != 0) {
-            goto dist;
-        }
-        if (*(s8 *)(node + 0x20C) != 0) {
-            goto dist;
-        }
-        v = *(u32 *)(node + 0x370);
-    setLevel:
-        *(u8 *)(node + 0x374) = level;
-        *(u32 *)(node + 0x36C) = v + 0x110;
-        goto nextNode;
-    dist:
-        coord = *(s32 *)(node + 0x0);
-        dx = coord - refX;
-        dx = dx * dx;
-        coord = *(s32 *)(node + 0x4);
-        coord = coord - refY;
-        dySq = coord * coord;
-        coord = *(s32 *)(node + 0x8);
-        coord = coord - refZ;
-        dzSq = coord * coord;
-        dx = dx + dySq;
-        dx = MathSqrt(dx + dzSq);
-        if (dx < 0x7D0) {
-            *(u8 *)(node + 0x374) = 0;
-        } else if (dx < 0x1770) {
-            *(u8 *)(node + 0x374) = 1;
-        } else if ((coord = dx < 0x2EE0) != 0) {
-            *(u8 *)(node + 0x374) = 2;
+        if (node == arg0 && *(s16 *)(node + 0x1EC) == 0 && D_800A2ED8 == 0 &&
+            *(s8 *)(node + 0x20C) == 0) {
+            *(u8 *)(node + 0x374) = level;
+            *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + 0x110;
         } else {
-            *(u8 *)(node + 0x374) = 3;
-        }
-        if (D_800A2ED8 != 0) {
-            coord = *(s8 *)(node + 0x374);
-            asm volatile("" : "=r"(dySq) : "0"(coord));
-            if (coord < 3) {
-                coord = dySq + 1;
-                *(s8 *)(node + 0x374) = coord;
+            delta = *(s32 *)(node + 0x0);
+            dist = delta - refX;
+            dist = dist * dist;
+            delta = *(s32 *)(node + 0x4);
+            delta = delta - refY;
+            ySq = delta * delta;
+            delta = *(s32 *)(node + 0x8);
+            delta = delta - refZ;
+            zSq = delta * delta;
+            dist = dist + ySq;
+            dist = MathSqrt(dist + zSq);
+            if (dist < 0x7D0) {
+                *(u8 *)(node + 0x374) = 0;
+            } else if (dist < 0x1770) {
+                *(u8 *)(node + 0x374) = 1;
+            } else if (dist < 0x2EE0) {
+                *(u8 *)(node + 0x374) = 2;
+            } else {
+                *(u8 *)(node + 0x374) = 3;
             }
+            if (D_800A2ED8 != 0) {
+                if (*(s8 *)(node + 0x374) < 3) {
+                    (*(s8 *)(node + 0x374))++;
+                }
+            }
+            if (*(s8 *)(node + 0x200) == level) {
+                *(u8 *)(node + 0x374) = 0;
+            }
+            if (node == arg0) {
+                *(u8 *)(node + 0x374) = 0;
+            }
+            lod = *(s8 *)(node + 0x374);
+            *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + (lod * 0x44);
         }
-        if (*(s8 *)(node + 0x200) == level) {
-            *(u8 *)(node + 0x374) = 0;
-        }
-        if (node == arg0) {
-            *(u8 *)(node + 0x374) = 0;
-        }
-        b = *(s8 *)(node + 0x374);
-        *(u32 *)(node + 0x36C) = *(u32 *)(node + 0x370) + (b * 0x44);
-    nextNode:
         node = *(u8 **)(node + 0x3E0);
     } while (node != NULL);
 }
