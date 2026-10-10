@@ -2473,8 +2473,6 @@ UnkTextObj *func_8005B314(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
 UnkTextObj *func_8005BF8C(s32, s32);
 s32 func_8005B0E4(s16, s32);
 
-#ifdef NON_MATCHING
-/* Fresh GCC 2.7.2 wall: 1252 bytes versus 1264 retail, diff score 6103. A shared tail cursor and the permuter-derived column constant lifetime improve allocation. Frame, control-flow, and long-lived register assignments remain; no valid matching candidate was found. */
 void func_80068CE4(void) {
     extern char *strcpy(char *, const char *);
     extern char *D_8009A498[];
@@ -2486,15 +2484,23 @@ void func_80068CE4(void) {
     extern u8 D_800B9BB4[];
     UnkTextObj *obj;
     UnkTextObj *tail;
-    UnkPacket0C *pkt;
+    /* One packet pointer per section: a single shared pointer takes one
+     * register, retail uses a different one in each section. */
+    UnkPacket0C *titlePkt;
+    UnkPacket0C *subPkt;
+    UnkPacket0C *rowPkt;
+    UnkPacket0C *hdrPkt;
+    UnkPacket0C *cellPkt;
     u8 *record;
     char buf[0x40];
     s32 value;
     s32 flag;
     s32 w;
+    s32 label;
+    s32 titleW;
+    s32 titleX;
     s32 x;
     s32 y;
-    int firstNumberColumn;
     s32 i;
     s32 j;
     for (i = 0; i < 2; i++) {
@@ -2511,39 +2517,39 @@ void func_80068CE4(void) {
     D_800A360C = tail;
     func_8005A7B8S32(2, 3);
     strcpy(buf, D_800B9B54);
-    y = 0x39;
     strcat(buf, D_8009A498[0]);
-    w = func_8005A8E0((s32)buf);
-    pkt = tail->unk20;
-    x = (0x140 - w) / 2;
-    tail->unk6 = x;
-    tail->unkA = x;
+    /* After the call, so the li lands in the call's delay slot. */
+    y = 0x39;
+    titleW = func_8005A8E0((s32)buf);
+    titleX = (0x140 - titleW) / 2;
+    tail->unk6 = titleX;
+    tail->unkA = titleX;
     tail->unk1A = 0x32;
-    pkt->unk1 = 2;
-    pkt->unk2 = 3;
-    pkt->unk8 = (s32)D_800B9B54;
-    pkt->unk3 = 0;
-    pkt->unk4 = 0x32;
+    titlePkt = tail->unk20;
+    titlePkt->unk1 = 2;
+    titlePkt->unk2 = 3;
+    titlePkt->unk8 = (s32)D_800B9B54;
+    titlePkt->unk3 = 0;
+    titlePkt->unk4 = 0x32;
     tail->unk1A = 0x32;
-    obj = func_8005BF8C(tail->unk6 + func_8005A8E0((s32)D_800B9B54), 0x2A);
+    titleW = func_8005A8E0((s32)D_800B9B54);
+    obj = func_8005BF8C(tail->unk6 + titleW, 0x2A);
     obj->unk1A = 0x32;
     value = (s32)D_8009A498[0];
-    pkt = obj->unk20;
-    pkt->unk1 = 2;
-    pkt->unk2 = 3;
-    pkt->unk8 = value;
-    pkt->unk3 = 0;
-    pkt->unk4 = 0x32;
+    subPkt = obj->unk20;
+    subPkt->unk1 = 2;
+    subPkt->unk2 = 3;
+    subPkt->unk8 = value;
+    subPkt->unk3 = 0;
+    subPkt->unk4 = 0x32;
     obj->unk1A = 0x32;
     tail->unk1C = obj;
     tail = obj;
     for (i = 0; i < 5; i++) {
         for (j = 0; j < 2; j++) {
-            obj = func_8005BF8C((j == 0) ? (0x40) : (0xF0), y);
+            obj = func_8005BF8C((j != 0) ? (0xF0) : (0x40), y);
             obj->unk1A = 0x32;
-            if (j == 0) {
-                value = (s32)D_8009A498[i + 1];
-            } else {
+            if (j != 0) {
                 switch (i) {
                 case 0:
                     value = D_800B9B6E[0];
@@ -2567,14 +2573,17 @@ void func_80068CE4(void) {
                 }
 
                 obj->unk0 = 5;
+            } else {
+                value = (s32)D_8009A498[i + 1];
             }
+
             w = obj->unk1A;
-            pkt = obj->unk20;
-            pkt->unk1 = 2;
-            pkt->unk2 = 3;
-            pkt->unk8 = value;
-            pkt->unk3 = j;
-            pkt->unk4 = w;
+            rowPkt = obj->unk20;
+            rowPkt->unk1 = 2;
+            rowPkt->unk2 = 3;
+            rowPkt->unk8 = value;
+            rowPkt->unk3 = j;
+            rowPkt->unk4 = w;
             obj->unk1A = w;
             tail->unk1C = obj;
             tail = obj;
@@ -2585,25 +2594,29 @@ void func_80068CE4(void) {
 
     for (i = 0; i < 4; i++) {
         x = D_8009B1C4[i];
-        if (i == 2) {
+        switch (i) {
+        case 1:
+            x += 4;
+            break;
+
+        case 2:
             x += 8;
-        } else {
-            firstNumberColumn = 1;
-            if (i == firstNumberColumn) {
-                x += 4;
-            } else if (i == 3) {
-                x += 0xA;
-            }
+            break;
+
+        case 3:
+            x += 0xA;
+            break;
         }
+
         obj = func_8005BF8C(x, 0x89);
         obj->unk1A = 0x32;
-        value = (s32)D_8009A4B0[i];
-        pkt = obj->unk20;
-        pkt->unk1 = 2;
-        pkt->unk2 = 3;
-        pkt->unk8 = value;
-        pkt->unk3 = ((u32)(i - firstNumberColumn)) < 2;
-        pkt->unk4 = 0x32;
+        label = (s32)D_8009A4B0[i];
+        hdrPkt = obj->unk20;
+        hdrPkt->unk1 = 2;
+        hdrPkt->unk2 = 3;
+        hdrPkt->unk8 = label;
+        hdrPkt->unk3 = ((u32)(i - 1)) < 2;
+        hdrPkt->unk4 = 0x32;
         obj->unk1A = 0x32;
         tail->unk1C = obj;
         tail = obj;
@@ -2620,12 +2633,15 @@ void func_80068CE4(void) {
                 tail->unk1C = obj;
             }
             obj->unk1A = 0;
-            if (j > 0) {
-                if (j < 3) {
-                    obj->unk0 = 5;
-                } else if (j == 3) {
-                    obj->unk0 = 6;
-                }
+            switch (j) {
+            case 1:
+            case 2:
+                obj->unk0 = 5;
+                break;
+
+            case 3:
+                obj->unk0 = 6;
+                break;
             }
             flag = 0;
             switch (j) {
@@ -2635,12 +2651,12 @@ void func_80068CE4(void) {
 
             case 1:
                 value = *((s16 *)(record + 4));
-                flag = firstNumberColumn;
+                flag = 1;
                 break;
 
             case 2:
                 value = *((s16 *)(record + 6));
-                flag = firstNumberColumn;
+                flag = 1;
                 break;
 
             case 3:
@@ -2648,12 +2664,12 @@ void func_80068CE4(void) {
                 break;
             }
 
-            pkt = obj->unk20;
-            pkt->unk1 = 2;
-            pkt->unk2 = 3;
-            pkt->unk8 = value;
-            pkt->unk3 = flag;
-            pkt->unk4 = 0;
+            cellPkt = obj->unk20;
+            cellPkt->unk1 = 2;
+            cellPkt->unk2 = 3;
+            cellPkt->unk8 = value;
+            cellPkt->unk3 = flag;
+            cellPkt->unk4 = 0;
             obj->unk1A = 0;
             tail = obj;
         }
@@ -2667,9 +2683,13 @@ void func_80068CE4(void) {
     func_8005DEDC(0x3E8);
 }
 
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_80068CE4);
-#endif
+/* The original toolchain padded this odd-length jump table with one zero
+ * word; the C switch regenerates the table, this restores the pad. */
+void __maspsx_include_asm_hack_jtblpad_80068CE4() {
+    __asm__(".section .rodata # maspsx-keep \n"
+            "    .word 0 # maspsx-keep\n"
+            "    .section .text # maspsx-keep\n");
+}
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_800691D4);
 
