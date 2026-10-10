@@ -7613,38 +7613,46 @@ void func_8003C1CC(void) {
     }
 }
 
-#ifdef NON_MATCHING
 extern u8 *D_800A3554[];
 extern s32 D_800AE1EC[];
 extern u8 D_800BE70C[];
-extern s32 D_800B0B1C[];
 extern u8 D_800B9DA4[];
+/* A second name keeps cse from sharing one la across the reads. */
+extern u8 *D_800A3554nm[] asm("D_800A3554.NON_MATCHING");
 
+/*
+ * The search and rebuild loops are goto loops on purpose: without loop notes
+ * count's refs aren't weighted, so i outranks it in global-alloc (a1, a2).
+ * i is set a third time by count + 1, which keeps sched1 from sinking it.
+ */
 void func_8003C3FC(void) {
     s32 *words;
     u8 *bytes;
     s32 *p;
+    s32 *out;
+    s32 *wp;
+    u8 *bp;
     u8 *obj;
     s32 limit;
     s32 count;
     s32 i;
 
     bytes = D_800BE70C;
-    func_8002F454();
-    obj = D_800A3554[0];
-    limit = *(s32 *)(obj + 0x25C);
     words = D_800AE1EC;
-    asm("" : : "r"(words));
+    func_8002F454();
+    limit = *(s32 *)(D_800A3554[0] + 0x25C);
     count = 0;
     p = words;
 head:
-    if ((u32)*p < (u32)limit) {
-        count += 1;
-        if (count < 0x17) {
-            p += 1;
-            goto head;
-        }
+    if ((u32)*p >= (u32)limit) {
+        goto done;
     }
+    count += 1;
+    p += 1;
+    if (count < 0x17) {
+        goto head;
+    }
+done:
     if (count < 0x17) {
         i = 0x17;
         do {
@@ -7653,20 +7661,23 @@ head:
             i -= 1;
         } while (count < i);
     }
-    obj = D_800A3554[0];
-    bytes[count] = *(u8 *)(obj + 0x376);
-    obj = D_800A3554[0];
+    bytes[count] = *(u8 *)(D_800A3554[0] + 0x376);
+    obj = D_800A3554nm[0];
     words[count] = *(s32 *)(obj + 0x25C);
-    *(u8 *)(obj + 0x204) = count + 1;
-    for (i = 0; i < 0x18; i += 1) {
-        D_800B9DA4[bytes[i]] = i;
-        D_800B0B1C[i] = words[i];
+    i = count + 1;
+    *(u8 *)(obj + 0x204) = i;
+    out = (s32 *)D_800B0B1C;
+    wp = words;
+    bp = bytes;
+    count = 0;
+loop:
+    D_800B9DA4[*bp] = count;
+    *out = *wp;
+    bp += 1;
+    wp += 1;
+    out += 1;
+    count += 1;
+    if (count < 0x18) {
+        goto loop;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8003C3FC);
-#endif
-
-extern u8 *D_800A3554[];
-extern u8 D_800BE70C[], D_800B9DA4[];
-extern s32 D_800AE1EC[];
