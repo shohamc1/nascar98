@@ -2956,6 +2956,7 @@ s32 _addque2(Callback func, s32 *arg, s32 size, s32 arg2) {
     s32 spinMask;
     s32 debugFlag;
     s32 dmaStat;
+    s32 status;
     register s32 idxv asm("v1");
 
     set_alarm();
@@ -2985,7 +2986,8 @@ s32 _addque2(Callback func, s32 *arg, s32 size, s32 arg2) {
         }
     }
     do {
-    } while ((*(volatile s32 *)D_8009DB64[0] & spinMask) == 0);
+        status = *(volatile s32 *)D_8009DB64[0];
+    } while ((status & spinMask) == 0);
     func(arg, arg2);
     *(volatile Callback *)&D_8009DB84[0] = func;
     D_8009DB88[0] = (s32)arg;
