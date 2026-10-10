@@ -5886,13 +5886,6 @@ INCLUDE_ASM("asm/nonmatchings/menu", func_8006594C);
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_80065C3C);
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * 252 bytes versus 256 retail. li a0,0x140 fills the centering-call delay
- * slot instead of preceding the byte store, removing the retail nop. Store
- * barrier, split return, comma argument and single-pass-store variants did
- * not improve. Ten-minute scheduling permutation found no improvement.
- */
 extern void func_8005A818(u8 arg0, u8 arg1, u8 arg2);
 extern s32 func_8005B0E4(s16 arg0, s32 arg1);
 extern void func_8005A9F4(s32 arg0, s16 arg1, s16 arg2, u8 arg3, u8 arg4,
@@ -5914,7 +5907,7 @@ void func_80065F80(void) {
     func_8005A818(0x80, 0x80, 0xC0);
     entry = D_8009A3FC;
     D_800A38D8 = (u8 *)D_800A367C;
-    D_800A35B4 = strlen((char *)entry[0]);
+    *(volatile u8 *)&D_800A35B4 = strlen((char *)entry[0]);
     func_8005A9F4((s32)entry[0], func_8005B0E4(0x140, (s32)entry[0]), 0x7F, 0,
                   0, 0, 0, 0);
     ClearOTagR(D_800A38C4, 4);
@@ -5933,9 +5926,6 @@ void func_80065F80(void) {
     }
     D_800A3884 = 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80065F80);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_80066080);
 
