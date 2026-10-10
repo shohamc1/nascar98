@@ -3819,39 +3819,34 @@ void func_8006C5E4(s32 arg0) {
 extern u8 *D_800A3908[];
 extern u8 *D_800A377C[];
 extern char D_800B0A2C[];
-void func_8006C668(s32 arg0, s32 arg1) {
-    register s32 start asm("v1");
+extern u8 D_800A358C;
+extern u8 D_800A3968;
+
+/* Declared inline: func_8006C700 expands it twice, while func_8006C2D0
+ * still calls the out-of-line copy. */
+inline void func_8006C668(s32 start, s32 arg1) {
+    s8 first = start;
     s32 index;
-    s32 t;
+    s32 limit;
     u8 *node;
     u8 *entry;
-    char *tbl;
-    s32 off;
-    register s32 conv asm("v0");
     u8 *s;
     u8 *sentinel;
 
-    t = arg1 < 6;
-    do {
-    } while (0);
-    start = arg0;
-    if (!t) {
-        arg1 = (s8)arg0 + 6;
+    if (arg1 < 6) {
+        limit = arg1;
+    } else {
+        limit = first + 6;
     }
     node = D_800A3908[0];
-    conv = start << 24;
-    index = conv >> 24;
-    if (arg1 >= index) {
-        off = index * 0x10;
-        tbl = (char *)D_800B0A2C;
-        tbl = (char *)((u32)off + (u32)tbl);
+    index = first;
+    if (limit >= index) {
         do {
             entry = *(u8 **)(node + 0x20);
-            index = index + 1;
-            *(u32 *)(entry + 8) = (u32)tbl;
+            *(u32 *)(entry + 8) = (u32)(D_800B0A2C + index * 0x10);
+            index++;
             node = *(u8 **)(node + 0x1C);
-            tbl = tbl + 0x10;
-        } while (arg1 >= index);
+        } while (limit >= index);
     }
     s = D_800A377C[0];
     if (node != s) {
@@ -3864,26 +3859,13 @@ void func_8006C668(s32 arg0, s32 arg1) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Draft preserves the two short-circuit tests and scoped sentinel copies.
- * Remaining walls are the raw-start copies, backward-arm temporaries and
- * result register; four bytes are still missing. */
-extern u8 *D_800A377C[];
-extern u8 *D_800A3908[];
-extern u8 D_800A358C;
-extern u8 D_800A3968;
-extern char D_800B0A2C[];
 s32 func_8006C700(s32 arg0, s32 arg1) {
     s32 result;
     s32 target;
     s32 gear;
     u8 *node;
-    u8 *walker;
-    u8 *sentinel;
     s32 old;
     s32 start;
-    s32 limit;
-    s32 i;
     s32 tmp;
 
     if ((arg1 & 0xFF) != 0) {
@@ -3920,66 +3902,30 @@ s32 func_8006C700(s32 arg0, s32 arg1) {
             old = D_800A358C;
             D_800A358C = old + 1;
             start = old - 5;
-            if (target < 6) {
-                limit = target;
-            } else {
-                limit = (s8)start + 6;
-            }
-            walker = D_800A3908[0];
-            i = (s8)start;
-            if (limit >= i) {
-                do {
-                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) =
-                        (u32)(D_800B0A2C + i * 0x10);
-                    i++;
-                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
-                } while (limit >= i);
-            }
-            if (walker != D_800A377C[0]) {
-                sentinel = D_800A377C[0];
-                do {
-                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) = 0;
-                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
-                } while (walker != sentinel);
-            }
+            func_8006C668(start, target);
         } else {
             result = 0;
         }
     } else if (gear > 0) {
-        old = D_800A358C;
-        tmp = *(u16 *)(node + 8);
+        s32 oldBack;
+        s32 tmpBack;
+
+        oldBack = D_800A358C;
+        tmpBack = *(u16 *)(node + 8);
         gear = gear - 1;
-        old = old - 1;
-        tmp = tmp - 9;
-        D_800A358C = old;
-        *(u16 *)(node + 8) = tmp;
+        oldBack = oldBack - 1;
+        tmpBack = tmpBack - 9;
+        D_800A358C = oldBack;
+        *(u16 *)(node + 8) = tmpBack;
     } else {
-        old = D_800A358C;
-        if (old != 0) {
-            D_800A358C = old - 1;
-            start = old - 1;
-            if (target < 6) {
-                limit = target;
-            } else {
-                limit = (s8)start + 6;
-            }
-            walker = D_800A3908[0];
-            i = (s8)start;
-            if (limit >= i) {
-                do {
-                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) =
-                        (u32)(D_800B0A2C + i * 0x10);
-                    i++;
-                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
-                } while (limit >= i);
-            }
-            if (walker != D_800A377C[0]) {
-                sentinel = D_800A377C[0];
-                do {
-                    *(u32 *)(*(u32 *)(walker + 0x20) + 8) = 0;
-                    walker = (u8 *)(*(u32 *)(walker + 0x1C));
-                } while (walker != sentinel);
-            }
+        s32 oldTop;
+        u8 newTop;
+
+        oldTop = D_800A358C;
+        if (oldTop != 0) {
+            newTop = oldTop - 1;
+            D_800A358C = newTop;
+            func_8006C668(oldTop - 1, target);
         } else {
             result = 0;
         }
@@ -3988,10 +3934,6 @@ finish:
     *(s8 *)(D_800A377C[0] + 5) = gear;
     return result;
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006C700);
-#endif
 
 extern s32 func_8005AEC8(u32, void *);
 s32 func_8006C94C(u8 arg0, u8 arg1, u8 arg2, s8 *arg3, s16 *arg4) {
