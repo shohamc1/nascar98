@@ -4130,43 +4130,39 @@ void func_8006D0F0(void) {
 }
 
 extern u8 D_800A358C;
-extern char D_800B0A2C[];
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 224 bytes, 170 linked function bytes differ. Explicitly retaining the
- * stable loop base after strlen removes the old 8-byte size excess. Saved-
- * register allocation, the loop-entry ordering and branch shape remain
- * different. The final store still recomputes its address after the loop. */
+
+/* The same 16-byte name slots as D_800B0A2C, typed with a 16-byte stride so
+ * that gcc hoists the slot address out of the loop. */
+typedef struct {
+    s8 s[16];
+} Nm;
+extern Nm D_800B0A2CNm[] asm("D_800B0A2C");
+
+/* Trims trailing spaces off the current name slot. Returns 0 when the slot
+ * holds nothing but spaces. */
 s32 func_8006D178(void) {
-    s32 i;
-    s8 *entry;
-    s8 c;
+    u8 i;
     u8 found;
 
     found = 0;
-    i = strlen(&D_800B0A2C[D_800A358C * 0x10]);
-    entry = (s8 *)&D_800B0A2C[D_800A358C * 0x10];
-    while ((s8)i >= 0 && found == 0) {
-        c = entry[(s8)i];
-        switch (c) {
+    i = strlen((char *)D_800B0A2CNm[D_800A358C].s);
+    while ((s8)i >= 0 && (found & 0xFF) == 0) {
+        switch (D_800B0A2CNm[D_800A358C].s[(s8)i]) {
+        default:
+            found = 1;
+            break;
         case 0:
         case ' ':
             i--;
             break;
-        default:
-            found = 1;
-            break;
         }
     }
-    if (found == 0) {
-        return 0;
+    if (found) {
+        (D_800B0A2CNm + D_800A358C)->s[(s8)i + 1] = 0;
+        return 1;
     }
-    ((s8 *)&D_800B0A2C[D_800A358C * 0x10])[(s8)i + 1] = 0;
-    return 1;
+    return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006D178);
-#endif
 
 extern u8 D_800B9B73[];
 extern u8 D_800B9B74[];
