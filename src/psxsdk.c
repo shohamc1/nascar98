@@ -7422,31 +7422,28 @@ extern u8 D_800AD3D0[];
 extern u8 D_800AD3D2[];
 extern u8 D_800AD3D7[];
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-08): 2 insns: the D_800AD3CE field-2 load lands in a1
- * (the freed vabId param register) instead of sharing v1 with the field-1
- * load temp, and the following bne reads it. All capture variants (mask2,
- * onBits, onBits2, seq, orTemp, fresh local, pinned local) and neighbour
- * address spellings give the same 2 lines; without a capture the entry
- * t-registers rotate by one. gcc never shares v1 between the two load
- * temps here (live ranges overlap in the pre-sched RTL).
- * Recipes that did match: ANSI s16 prototype params; guard load via
- * D_800B2090[0], set/tails via ((s32 *)gOrderingTables)[-1]; store-then-
- * reload of D_800B9DDE needs asm("":::"memory") plus a ((u16 *)D_800B9DDC)[1]
- * read spelling; the four bit-mask stores need four distinct address
- * spellings; or-results go through orTemp locals so the or keeps retail's
- * operand order. */
+/* Matches (0 words) under GNU C 2.6.3-psx only. Retail's codegen needs these
+ * spellings:
+ * - The voice masks reuse the vabId and prog parameters (s32, narrowed with
+ *   (s16) in the compares). Their copy pseudos prefer a1 and a2 and conflict
+ *   with the constant 1 held in t1. Separate mask locals leave the constant
+ *   preferring a0 (a mask merges its preference into it through
+ *   expand_preferences), which pushes the vc * 52 index to t0 (20 rows) or,
+ *   when the second chain load is captured, puts that load in a1 (2 rows).
+ * - D_800B9DDE is stored through its own name and reloaded through the
+ *   neighbour spelling D_800B9DDC + 2. cse can't forward the store and the
+ *   two accesses don't share a la. Distinct symbols alone let sched1 hoist the
+ *   reload above the store; the empty do-while leaves loop notes that stop
+ *   that (no asm barrier needed).
+ * - orTemp and orTemp2 keep the or operand order, and the four mask stores
+ *   use four distinct address spellings. */
 /* SPDX-License-Identifier: MIT */
-/* The onBits assignment inside the compare chain is load-bearing: without it
- * gcc puts the D_800B9DCE field load in mask1's register instead of a temp. */
-s32 SsUtKeyOff(s16 vc, s16 vabId, s16 prog, s16 tone, s16 note) {
-    u16 v;
-    s32 mask2;
-    s32 mask1;
-    s32 onBits;
-    s32 onBits2;
-    s32 orTemp;
-    s32 orTemp2;
+s32 SsUtKeyOff(s16 vc, s32 vabId, s32 prog, s16 tone, s16 note) {
+    u16 voice;
+    s32 keyOnLow;
+    s32 keyOnHigh;
+    s32 newLow;
+    s32 newHigh;
     s32 seq;
 
     if (D_800B2090[0] == 1) {
@@ -7454,8 +7451,8 @@ s32 SsUtKeyOff(s16 vc, s16 vabId, s16 prog, s16 tone, s16 note) {
     }
     ((s32 *)gOrderingTables)[-1] = 1;
     if ((u16)vc < 0x18) {
-        if (*(s16 *)(D_800AD3D2 + vc * 52) == vabId &&
-            (mask2 = *(s16 *)(D_800AD3CE + vc * 52)) == prog &&
+        if (*(s16 *)(D_800AD3D2 + vc * 52) == (s16)vabId &&
+            *(s16 *)(D_800AD3CE + vc * 52) == (s16)prog &&
             *(s16 *)(D_800AD3D0 + vc * 52) == tone &&
             *(s16 *)(D_800AD3C8 + vc * 52) == note) {
             if (*(s16 *)(D_800AD3BC + vc * 52) == 0xFF) {
@@ -7466,26 +7463,27 @@ s32 SsUtKeyOff(s16 vc, s16 vabId, s16 prog, s16 tone, s16 note) {
                 *(s16 *)(seq + 0x196) = 0;
             } else {
                 D_800B9DDE[0] = vc;
-                asm("" : : : "memory");
-                v = ((u16 *)D_800B9DDC)[1];
-                if (v < 0x10) {
-                    mask1 = 1 << v;
-                    mask2 = 0;
+                do {
+                } while (0);
+                voice = ((u16 *)D_800B9DDC)[1];
+                if (voice < 0x10) {
+                    prog = 1 << voice;
+                    vabId = 0;
                 } else {
-                    mask1 = 0;
-                    mask2 = 1 << (v - 0x10);
+                    prog = 0;
+                    vabId = 1 << (voice - 0x10);
                 }
-                D_800AD3D7[v * 52] = 0;
-                onBits = D_800BEB98[0];
-                onBits2 = D_800BEB9C[0];
-                *(s16 *)(D_800AD3C0 + v * 52) = 0;
-                *(s16 *)(D_800AD3BC + v * 52) = 0;
-                orTemp = mask1 | onBits;
-                ((u16 *)D_800BEB9C)[-2] = orTemp;
-                ((u16 *)D_800AD970)[-2] = D_800AD96C[0] & ~orTemp;
-                orTemp2 = mask2 | onBits2;
-                ((u16 *)D_800BEB98)[2] = orTemp2;
-                ((u16 *)D_800AD96C)[2] = D_800AD970[0] & ~orTemp2;
+                D_800AD3D7[voice * 52] = 0;
+                keyOnLow = D_800BEB98[0];
+                keyOnHigh = D_800BEB9C[0];
+                *(s16 *)(D_800AD3C0 + voice * 52) = 0;
+                *(s16 *)(D_800AD3BC + voice * 52) = 0;
+                newLow = prog | keyOnLow;
+                ((u16 *)D_800BEB9C)[-2] = newLow;
+                ((u16 *)D_800AD970)[-2] = D_800AD96C[0] & ~newLow;
+                newHigh = vabId | keyOnHigh;
+                ((u16 *)D_800BEB98)[2] = newHigh;
+                ((u16 *)D_800AD96C)[2] = D_800AD970[0] & ~newHigh;
             }
             D_800B2090[0] = 0;
             return 0;
@@ -7494,9 +7492,6 @@ s32 SsUtKeyOff(s16 vc, s16 vabId, s16 prog, s16 tone, s16 note) {
     ((s32 *)gOrderingTables)[-1] = 0;
     return -1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOff);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOnV);
 
