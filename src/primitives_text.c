@@ -151,35 +151,16 @@ s32 RandomScaledGet(s32 scale);
 /* Primitives and text. */
 
 void func_80017D80(u8 *arg0) {
-    typedef struct {
-        s32 words[4];
-    } Primitive16;
     extern u32 gPrimitiveCursor[];
     extern s32 D_800A39C8[];
     extern s32 D_800A36D0Absolute[];
-    s32 cursorVal;
-    u8 *entry;
-    u8 *dst;
-    u8 *end;
-    s32 tailA;
-    s32 tailB;
+    POLY_FT4 *entry;
+    u32 cursor;
 
-    end = arg0 + 0x20;
-    cursorVal = gPrimitiveCursor[0];
-    asm("");
-    entry = (u8 *)cursorVal;
-    dst = entry;
-    asm volatile("" : : "r"(cursorVal));
-    ((s32 *)D_800A36D0Absolute)[-67] = (s32)entry + 0x28;
-    do {
-        *(Primitive16 *)dst = *(Primitive16 *)arg0;
-        arg0 += 0x10;
-        dst += 0x10;
-    } while (arg0 != end);
-    tailA = *(s32 *)arg0;
-    tailB = *(s32 *)(arg0 + 4);
-    *(s32 *)dst = tailA;
-    *(s32 *)(dst + 4) = tailB;
+    cursor = gPrimitiveCursor[0];
+    ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
+    entry = (POLY_FT4 *)cursor;
+    *entry = *(POLY_FT4 *)arg0;
     AddPrim((u8 *)D_800A39C8[0], entry);
 }
 
