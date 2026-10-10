@@ -1209,9 +1209,9 @@ void func_8003C1CC(void);
 void func_8003C528(void);
 void CdDisableDebug(void);
 void *FileOpen(s32 fileId, void *mode);
-void FileClose(void);
+void FileClose(s32 handle);
 s32 func_8003C8B4(void);
-s32 FileSeek(s32 *handle);
+s32 FileSeek(s32 handle, s32 offset, s32 whence);
 void func_8003C8C8(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
@@ -6093,55 +6093,27 @@ void func_80058030(void) {
     PutDrawEnv(&D_800BDD4C[D_800A305C]);
 }
 
-#if 0
-/* Wall: sector/size land in s0/s2, retail has s2/s0. Decl order
- * (sector,size) and (size,sector) both swap; blocks-as-local also swaps.
- * D_800A3090 must be reached as D_800A2EB0Absolute + 120 (declaring the
- * untracked sdata label drifts data labels). asm-differ -m compares the
- * LINKED exe, so run a relink before trusting a unit diff here. */
-extern s32 FileOpen(s32, s32);
-extern s32 FileSeek(s32, s32, s32);
-extern s32 FileRead(s32, s32, s32, s32);
-extern s32 FileClose(s32);
-extern s32 D_800A2EB0Absolute[];
-s32 func_80058094Old(s32 arg0, s32 *arg1, s32 data) {
-    s32 size;
-    s32 sector;
-
-    sector = FileOpen(arg0, D_800A2EB0Absolute + 120);
-    size = (FileSeek(sector, 0, 2) + 0x7FF) >> 11 << 11;
-    if (data == 0) {
-        data = (s32)HeapAlloc(size);
-    }
-    FileSeek(sector, 0, 0);
-    FileRead(data, 1, size, sector);
-    FileClose(sector);
-    *arg1 = data + 4;
-    return data;
-}
-#endif
-extern s32 FileSeekArgs(void *, s32, s32);
-extern void FileCloseArgs(s32);
-asm(".globl FileSeekArgs\nFileSeekArgs = FileSeek");
-asm(".globl FileCloseArgs\nFileCloseArgs = FileClose");
-void *func_80058094(s32 arg0, void **arg1, s32 arg2) {
-    extern void *FileOpen(s32, void *);
-    extern void FileRead(s32, s32, s32, s32);
+/* Load a file into buf, or into a fresh heap block when buf is 0, and
+ * return the buffer. The loop notes from do/while (0) double the weight of
+ * the HeapAlloc references, which ranks size ahead of sector for the saved
+ * registers, as in retail. */
+void *func_80058094(s32 fileId, void **outTable, s32 buf) {
     extern s32 D_800A3090[];
     s32 size;
     s32 sector;
 
-    sector = (s32)FileOpen(arg0, D_800A3090);
-    size = (FileSeekArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
-    if (arg2 == 0) {
-        arg2 = (s32)HeapAlloc(size);
+    sector = (s32)FileOpen(fileId, D_800A3090);
+    size = (FileSeek(sector, 0, 2) + 0x7FF) >> 11 << 11;
+    if (buf == 0) {
+        do {
+            buf = (s32)HeapAlloc(size);
+        } while (0);
     }
-    asm("" : : "r"(size), "r"(arg2));
-    FileSeekArgs((void *)sector, 0, 0);
-    FileRead(arg2, 1, size, sector);
-    FileCloseArgs(sector);
-    *arg1 = (void *)(arg2 + 4);
-    return (void *)arg2;
+    FileSeek(sector, 0, 0);
+    FileRead(buf, 1, size, sector);
+    FileClose(sector);
+    *outTable = (void *)(buf + 4);
+    return (void *)buf;
 }
 
 extern void func_8006DD28(u32 arg0, u32 arg1);
