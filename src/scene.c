@@ -2015,8 +2015,6 @@ void func_800474A0(void) {
     s32 scratchW2;
     s32 vyVal;
     s32 multTmp;
-    s32 multTmp2;
-    s32 rot2base;
     u8 *car;
     u8 *row;
     s32 place;
@@ -2164,11 +2162,10 @@ loopPrep:
                 multTmp = D_800A3480 * 4;
                 rot[0] =
                     D_80099254[(s16)loopIdx * 3] - sp98v + D_800A345C * multTmp;
-                multTmp2 = D_800A345C * (0x40 - D_800A3480 * 2);
+                scratchW2 = D_800A345C * (0x40 - D_800A3480 * 2);
                 rot[1] = D_80099256[(s16)loopIdx * 3];
-                rot2base = D_80099258[(s16)loopIdx * 3];
                 D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
-                rot[2] = rot2base - multTmp2;
+                rot[2] = D_80099258[(s16)loopIdx * 3] - scratchW2;
                 rv1 = (u8 *)D_800A2FF0Absolute;
                 asm("" : "=r"(rv1) : "0"(rv1));
                 RotMatrix((SVECTOR *)(rv1 - 4), (MATRIX *)D_800A7530);
