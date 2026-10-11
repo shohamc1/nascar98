@@ -3954,17 +3954,22 @@ finish:
 }
 
 extern s32 func_8005AEC8(u32, void *);
+/* Expand the cursor helper here and in its caller with the same byte types. */
+#define CARD_MENU_CURSOR_BODY(finish, font, size, index, text, cursor, result) \
+    {                                                                          \
+        func_8005A7B8(font, size);                                             \
+        if (*text == 0) {                                                      \
+            *cursor = func_8005AFF0(0x20);                                     \
+            finish(0);                                                         \
+        } else {                                                               \
+            result = func_8005AEC8(index, text);                               \
+            *cursor = func_8005AFF0(text[index]);                              \
+            finish(result);                                                    \
+        }                                                                      \
+    }
 s32 func_8006C94C(u8 arg0, u8 arg1, u8 arg2, s8 *arg3, s16 *arg4) {
     s32 ret;
-
-    func_8005A7B8(arg0, arg1);
-    if (*arg3 == 0) {
-        *arg4 = func_8005AFF0(0x20);
-        return 0;
-    }
-    ret = func_8005AEC8(arg2, arg3);
-    *arg4 = func_8005AFF0(arg3[arg2]);
-    return ret;
+    CARD_MENU_CURSOR_BODY(return, arg0, arg1, arg2, arg3, arg4, ret);
 }
 
 extern u8 *D_800A377C[];
@@ -3972,53 +3977,44 @@ void func_8006C9DC(void) {
     *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 264 bytes, 43 linked function bytes differ. Corrected
- * func_8005AEC8/func_8005AFF0 declarations activate the draft. Separating the
- * length/status lifetimes shrinks the function incorrectly; removing the old
- * empty barrier gives the lowest equal-size linked-byte count. Early value
- * copies, the cursor decrement register, and address temporary still differ. */
 extern u8 D_800A358C;
 extern char D_800B0A2C[];
 extern s32 func_8005AEC8(u32, void *);
 extern s16 func_8005AFF0(s8);
+
+/* Keep the raw decrement and the byte index in separate values. */
 void func_8006C9F8(void) {
     u8 *obj;
     u8 *ptr;
     s8 *entry;
     s32 status;
     s32 val;
+    s32 length;
+    u8 index;
 
     obj = *(u8 **)(D_800A377C[0] + 0x1C);
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
     *(s16 *)(obj + 0x1A) = 1;
-    val = strlen((char *)entry);
-    *(u8 *)(obj + 5) = val;
-    if ((s8)val >= 0xF) {
+    length = strlen((char *)entry);
+    *(u8 *)(obj + 5) = length;
+    if ((s8)length >= 0xF) {
         *(u8 *)(obj + 5) = 0xE;
     }
     val = *(u8 *)(obj + 5) - 1;
     *(u8 *)(obj + 5) = val;
+    index = val;
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
-    func_8005A7B8S32(2, 2);
-    status = val;
-    status &= 0xFF;
-    if (*entry == 0) {
-        *(s16 *)(obj + 0x16) = func_8005AFF0(0x20);
-        status = 0;
-    } else {
-        val = func_8005AEC8(status, entry);
-        *(s16 *)(obj + 0x16) = func_8005AFF0(*(s8 *)(entry + status));
-        status = val;
+    {
+        s8 *text = entry;
+        s16 *cursor = (s16 *)(obj + 0x16);
+        s32 result;
+        CARD_MENU_CURSOR_BODY(status =, 2, 2, index, text, cursor, result);
     }
     ptr = *(u8 **)D_800A377C;
     *(s16 *)(obj + 6) = status + 0xA;
     *(s16 *)(obj + 8) = *(u16 *)(ptr + 8) + 9;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006C9F8);
-#endif
+#undef CARD_MENU_CURSOR_BODY
 
 void func_8006CB00(void) {
     s32 value;

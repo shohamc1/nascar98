@@ -608,8 +608,8 @@ int CdControlF(u_char com, u_char *param) {
     s32 status;
 
     count = 3;
-    old = (CdlCB)D_8009BA7C[0];
     asm("" : "=r"(count) : "0"(count));
+    old = (CdlCB)D_8009BA7C[0];
     c = com & 0xff;
     {
         u32 *base;
@@ -997,18 +997,14 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", VSync);
 extern s32 D_8009CE84[];
 extern char D_80090404[];
 
-/* PARKED 2026-10-11 (w4a): 3768 -> 333. Moving the do-while(0) barrier from
- * after the count store to the top of the function keeps the CE84 load from
- * riding above the sll and drops 4 prologue rows; the remaining 5 rows are the
- * ra save (ours first insn, retail sunk into the beqz delay slot) and the
- * still-empty slot. dbr refuses li v1,-1 for the slot; giving v1 a second use
- * near the branch or un-volatiling count are the untried leads. */
+/* PARKED 2026-10-11: GNU C 2.6.3, 156/156 bytes, 22 bytes differ.
+ * Removing the entry loop note improves 26 to 22. The frame save and
+ * counter initialisation still precede the first branch in the wrong order;
+ * retail saves ra in that branch's delay slot. */
 #ifdef NON_MATCHING
 void v_wait(int mode, int time) {
     volatile int count;
 
-    do {
-    } while (0);
     count = time << 15;
     if (D_8009CE84[0] < mode) {
         asm("");
@@ -5189,26 +5185,25 @@ void _SsSetProgramChange(s16 access, s16 sequence, u8 program) {
 }
 
 #ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 692 bytes versus 792 retail; 632 linked text bytes differ including the
- * size deficit. Extra empty controller cases now correctly go to default, not
- * bank select. Channel lifetime, call-argument narrowing, save set, and
- * branch-tail shape remain different. Earlier claims of a matching jump table
- * were not reproduced. */
+/* WALL (2026-10-11): 756 bytes versus 792 retail. Controller 101 calls
+ * _SsContRpn2. Parameter copies and branch tails remain different. */
 /* SPDX-License-Identifier: MIT */
-void SpuVmSetVol(s16, s16, u8, s16, u8);
-s32 SpuVmSetProgVol(s16, u8, u8);
+void SpuVmSetVol();
+s32 SpuVmSetProgVol(s16, s16, s32);
 void _SsContDataEntry(s16, s16, u8);
 void _SsContPortamento(s16, s16, u8);
 void _SsContNrpn1(s16, s16, u8);
 void _SsContNrpn2(s16, s16, u8);
 void _SsContRpn1(s16, s16, u8);
+void _SsContRpn2(s16, s16, u8);
 void _SsContResetAll(s16, s16);
 
 void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     struct SeqStruct *score;
-    u8 value;
-    u8 ch;
+    s32 value;
+    s32 ch;
+    s32 accessValue;
+    s32 sequenceValue;
 
     score = (struct SeqStruct *)((s32)D_800BDE3C[access] + sequence * 0xAC);
     value = *score->readPos++;
@@ -5221,20 +5216,29 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
         _SsContDataEntry(access, sequence, value);
         return;
     case 7:
-        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch],
-                    value, score->panpot[ch]);
+        sequenceValue = sequence;
+        accessValue = access;
+        SpuVmSetVol((sequenceValue << 8) | accessValue, score->unk4C,
+                    score->programs[ch], value, score->panpot[ch]);
         score->vol[ch] = value;
-        break;
+        score->deltaValue = _SsReadDeltaValue(accessValue, sequenceValue);
+        return;
     case 10:
-        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch],
-                    score->vol[ch], value);
+        sequenceValue = sequence;
+        accessValue = access;
+        SpuVmSetVol((sequenceValue << 8) | accessValue, score->unk4C,
+                    score->programs[ch], score->vol[ch], value);
         score->panpot[ch] = value;
-        break;
+        score->deltaValue = _SsReadDeltaValue(accessValue, sequenceValue);
+        return;
     case 11:
+        sequenceValue = sequence;
+        accessValue = access;
         SpuVmSetProgVol(score->unk4C, score->programs[ch], value);
-        SpuVmSetVol((sequence << 8) | access, score->unk4C, score->programs[ch],
-                    score->vol[ch], score->panpot[ch]);
-        break;
+        SpuVmSetVol((sequenceValue << 8) | accessValue, score->unk4C,
+                    score->programs[ch], score->vol[ch], score->panpot[ch]);
+        score->deltaValue = _SsReadDeltaValue(accessValue, sequenceValue);
+        return;
     case 64:
         if (value < 0x40) {
             func_80082670();
@@ -5257,6 +5261,9 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     case 100:
         _SsContRpn1(access, sequence, value);
         return;
+    case 101:
+        _SsContRpn2(access, sequence, value);
+        return;
     case 121:
         _SsContResetAll(access, sequence);
         return;
@@ -5274,7 +5281,6 @@ void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
     case 95:
     case 96:
     case 97:
-    case 101:
     case 120:
     default:
         break;
@@ -5651,23 +5657,11 @@ void _SsUtResolveADSR(u16 adsr1, u16 adsr2, SsAdsr *adsr) {
     adsr->unk8 = adsr2 & 0x1F;
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-08): score 295 (11 rows, all in the join block after the
- * branch). The head matches exactly: loads 0xC/0x10/0xA in retail order,
- * mode in t1, the word2 copy `move t0,t1` inside the unkA load gap, and
- * `and t2` in the beqz delay slot. The t0 pin on word2 is required: every
- * unpinned spelling lets cse unify mode/word2 (ori t0,t0, no copy). What
- * resists: the join's first or-chain gives the unk0 term v0 and the unk2
- * term a0 (retail is inverted), the `sh 0(a1)` store sits before the unk6/
- * unk8 loads instead of after, and the adsr2 accumulator ties to the pinned
- * t0 (or t0,t0,v0) instead of to the unk6 term (or v0,t0,v0 + or t0,v0,v1).
- * Pins on other locals, value locals (load-sinking refolds them), statement
- * reorders, if/else and ternary shapes, opaque asm copies, and a 10-minute
- * permuter run (265 best) did not close it. */
 void _SsUtBuildADSR(SsAdsr *adsr, u16 *adsr1, u16 *adsr2) {
-    register s32 word2 asm("t0");
+    u16 word2;
     s32 mode;
     s32 am;
+    u16 word1;
 
     mode = -(adsr->unkC != 0) & ~0x7FFF;
     am = -(adsr->unkA != 0) & ~0x7FFF;
@@ -5675,13 +5669,12 @@ void _SsUtBuildADSR(SsAdsr *adsr, u16 *adsr1, u16 *adsr2) {
     if (adsr->unk10 != 0) {
         word2 = mode | 0x4000;
     }
-    *adsr1 = am | ((adsr->unk0 << 8) & 0x7F00) | ((adsr->unk2 << 4) & 0xF0) |
-             (adsr->unk4 & 0xF);
-    *adsr2 = word2 | ((adsr->unk6 << 6) & 0x1FC0) | (adsr->unk8 & 0x1F);
+    word1 = am | ((adsr->unk0 << 8) & 0x7F00) | ((adsr->unk2 << 4) & 0xF0) |
+            (adsr->unk4 & 0xF);
+    word2 = word2 | ((adsr->unk6 << 6) & 0x1FC0) | (adsr->unk8 & 0x1F);
+    *adsr1 = word1;
+    *adsr2 = word2;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsUtBuildADSR);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 void _SsSndNextSep(s16 access, s16 sequence) {
@@ -6609,6 +6602,7 @@ u16 pitch;
 }
 
 #ifdef NON_MATCHING
+/* Retry 2026-10-11: 536/532 bytes; slot offsets and signed division corrected. */
 void SpuVmDoAllocate(void) {
     extern s16 D_800B9DDE[];
     extern u8 D_800B9DCB[];
@@ -6635,20 +6629,22 @@ void SpuVmDoAllocate(void) {
         D_800AD8A0[i] &= ~(1 << D_800B9DDE[0]);
     }
     if ((D_800B9DDC[0] & 1) > 0) {
-        progIndex = (D_800B9DDC[0] - 1) / 2;
-        D_800AD228[offset + 3] =
+        progIndex = ((s16)D_800B9DDC[0] - 1) / 2;
+        D_800AD228[D_800B9DDE[1] + 1] =
             *(u16 *)((s32)D_800B9928[0] + progIndex * 16 + 0xC);
-        D_800AD3A4[D_800B9DDE[0]] |= 8;
     } else {
-        progIndex = (D_800B9DDC[0] - 1) / 2;
-        D_800AD228[offset + 3] =
+        progIndex = ((s16)D_800B9DDC[0] - 1) / 2;
+        D_800AD228[D_800B9DDE[1] + 1] =
             *(u16 *)((s32)D_800B9928[0] + progIndex * 16 + 0xE);
-        D_800AD3A4[D_800B9DDE[0]] |= 8;
     }
-    D_800AD228[offset + 4] =
-        *(u16 *)((s32)D_800B9950[0] + toneIndex * 32 + 0x10);
-    D_800AD228[offset + 5] =
-        *(u16 *)((s32)D_800B9950[0] + toneIndex * 32 + 0x12) + D_800AFD98[0];
+    D_800AD3A4[D_800B9DDE[0]] |= 8;
+    D_800AD228[D_800B9DDE[1] + 2] =
+        *(u16 *)((s32)D_800B9950[0] +
+                 (D_800B9DCB[0] * 16 + D_800B9DD0[0]) * 32 + 0x10);
+    D_800AD228[D_800B9DDE[1] + 3] =
+        *(u16 *)((s32)D_800B9950[0] +
+                 (D_800B9DCB[0] * 16 + D_800B9DD0[0]) * 32 + 0x12) +
+        D_800AFD98[0];
     D_800AD3A4[D_800B9DDE[0]] |= 0x30;
 }
 #else
@@ -7173,10 +7169,12 @@ s32 SpuVmSetSeqVol(s16 seq_access, u16 volL, u16 volR, s16 applyNow) {
         for (i = 0; i < D_800B9C80[0]; i++) {
             if (D_800AD3CA[i][0] == (u16)seq_access) {
                 chanL = D_800AD224;
-                chanR = chanL + 2;
-                *(s16 *)(chanL + ((i << 19) >> 15)) = mvolL;
-                *(s16 *)(chanR + ((i << 19) >> 15)) = mvolR;
-                D_800AD3A4[i] |= 3;
+                do {
+                    chanR = chanL + 2;
+                    *(s16 *)(chanL + ((i << 19) >> 15)) = mvolL;
+                    *(s16 *)(chanR + ((i << 19) >> 15)) = mvolR;
+                    D_800AD3A4[i] |= 3;
+                } while (0);
             }
         }
     }
@@ -7808,7 +7806,7 @@ typedef struct SpuInitRegs {
     volatile u16 ex_vol[2];
 } SpuInitRegs;
 extern volatile SpuInitRegs *D_800A26ACInitRegs[];
-extern s32 *D_800A26BCInitPtr[];
+extern volatile s32 *D_800A26BCInitPtr[];
 extern s32 D_800A26A4Init[];
 extern s32 D_800A26C4Init[];
 extern s32 D_800A26C8Init[];
@@ -7831,19 +7829,23 @@ extern s32 _spu_mem_mode;
 extern s32 _spu_mem_mode_unit;
 extern s32 _spu_mem_mode_unitM;
 extern s32 _spu_tsa;
-extern s32 _spu_inTransfer;
-extern s32 _spu_transferCallback;
-extern s32 _spu_IRQCallback;
+extern s32 _spu_inTransfer[];
+extern s32 _spu_transferCallback[];
+extern s32 _spu_IRQCallback[];
 
 extern s32 printf(const char *, ...);
 s32 SpuInitHardwareDraft(s32 arg0) {
     volatile s32 sp0;
-    volatile s32 sp4;
+    volatile u32 sp4;
     s32 channel;
+    extern u16 *D_800A26ACFiDMA[];
     *D_800A26BCInitPtr[0] |= 0xB0000;
-    D_800A26ACInitRegs[0]->main_vol[0] = 0;
-    D_800A26ACInitRegs[0]->main_vol[1] = 0;
-    D_800A26ACInitRegs[0]->spucnt = 0;
+    {
+        volatile SpuInitRegs *regs = D_800A26ACInitRegs[0];
+        regs->main_vol[0] = 0;
+        regs->main_vol[1] = 0;
+        regs->spucnt = 0;
+    }
     D_800A26C4Init[0] = 0;
     D_800A26C8Init[0] = 0;
     D_800A26A8Init[0] = 0;
@@ -7851,8 +7853,11 @@ s32 SpuInitHardwareDraft(s32 arg0) {
     for (sp0 = 0; sp0 < 0xF0; sp0++) {
         sp4 *= 3;
     }
-    D_800A26ACInitRegs[0]->main_vol[0] = 0;
-    D_800A26ACInitRegs[0]->main_vol[1] = 0;
+    {
+        volatile SpuInitRegs *regs = D_800A26ACInitRegs[0];
+        regs->main_vol[0] = 0;
+        regs->main_vol[1] = 0;
+    }
     D_800A26A4Init[0] = 0;
     while (D_800A26ACInitRegs[0]->spustat & 0x7FF) {
         D_800A26A4Init[0]++;
@@ -7865,34 +7870,53 @@ s32 SpuInitHardwareDraft(s32 arg0) {
     D_800A26D0Init[0] = 3;
     D_800A26D4Init[0] = 8;
     D_800A26D8Init[0] = 7;
-    D_800A26ACInitRegs[0]->data_trans = 4;
-    D_800A26ACInitRegs[0]->rev_vol[0] = 0;
-    D_800A26ACInitRegs[0]->rev_vol[1] = 0;
-    D_800A26ACInitRegs[0]->key_off[0] = 0xFFFF;
-    D_800A26ACInitRegs[0]->key_off[1] = 0xFFFF;
-    D_800A26ACInitRegs[0]->rev_mode[0] = 0;
-    D_800A26ACInitRegs[0]->rev_mode[1] = 0;
+    {
+        volatile SpuInitRegs *regs = D_800A26ACInitRegs[0];
+        regs->data_trans = 4;
+        regs->rev_vol[0] = 0;
+        regs->rev_vol[1] = 0;
+        regs->key_off[0] = 0xFFFF;
+        regs->key_off[1] = 0xFFFF;
+        regs->rev_mode[0] = 0;
+        regs->rev_mode[1] = 0;
+    }
     if (arg0 == 0) {
-        D_800A26ACInitRegs[0]->chan_fm[0] = 0;
-        D_800A26ACInitRegs[0]->chan_fm[1] = 0;
-        D_800A26ACInitRegs[0]->noise_mode[0] = 0;
-        D_800A26ACInitRegs[0]->noise_mode[1] = 0;
-        D_800A26ACInitRegs[0]->cd_vol[0] = 0;
-        D_800A26ACInitRegs[0]->cd_vol[1] = 0;
-        D_800A26ACInitRegs[0]->ex_vol[0] = 0;
-        D_800A26ACInitRegs[0]->ex_vol[1] = 0;
+        {
+            volatile SpuInitRegs *regs =
+                (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
+            regs->chan_fm[0] = 0;
+            regs->chan_fm[1] = 0;
+            regs->noise_mode[0] = 0;
+            regs->noise_mode[1] = 0;
+            regs->cd_vol[0] = 0;
+            regs->cd_vol[1] = 0;
+            regs->ex_vol[0] = 0;
+            regs->ex_vol[1] = 0;
+        }
         D_800A26A8Init[0] = 0x200;
         _spu_writeByIO((u8 *)D_800A26E8Init, 0x10);
         for (channel = 0; channel < 24; channel++) {
-            D_800A26ACInitRegs[0]->voice[channel][0] = 0;
-            D_800A26ACInitRegs[0]->voice[channel][1] = 0;
-            D_800A26ACInitRegs[0]->voice[channel][2] = 0x3FFF;
-            D_800A26ACInitRegs[0]->voice[channel][3] = 0x200;
-            D_800A26ACInitRegs[0]->voice[channel][4] = 0;
-            D_800A26ACInitRegs[0]->voice[channel][5] = 0;
+            {
+                volatile SpuInitRegs *regs =
+                    (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
+                regs->voice[channel][0] = 0;
+                regs->voice[channel][1] = 0;
+                regs->voice[channel][2] = 0x3FFF;
+                regs->voice[channel][3] = 0x200;
+                regs->voice[channel][4] = 0;
+                regs->voice[channel][5] = 0;
+            }
         }
-        D_800A26ACInitRegs[0]->key_on[0] |= 0xFFFF;
-        D_800A26ACInitRegs[0]->key_on[1] |= 0xFF;
+        {
+            volatile SpuInitRegs *regs =
+                (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
+            regs->key_on[0] |= 0xFFFF;
+            regs->key_on[1] |= 0xFF;
+        }
+        sp4 = 0xD;
+        for (sp0 = 0; sp0 < 0xF0; sp0++) {
+            sp4 *= 3;
+        }
         sp4 = 0xD;
         for (sp0 = 0; sp0 < 0xF0; sp0++) {
             sp4 *= 3;
@@ -7905,12 +7929,12 @@ s32 SpuInitHardwareDraft(s32 arg0) {
         for (sp0 = 0; sp0 < 0xF0; sp0++) {
             sp4 *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        {
+            volatile SpuInitRegs *regs =
+                (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
+            regs->key_off[0] |= 0xFFFF;
+            regs->key_off[1] |= 0xFF;
         }
-        D_800A26ACInitRegs[0]->key_off[0] |= 0xFFFF;
-        D_800A26ACInitRegs[0]->key_off[1] |= 0xFF;
         sp4 = 0xD;
         for (sp0 = 0; sp0 < 0xF0; sp0++) {
             sp4 *= 3;
@@ -7928,10 +7952,13 @@ s32 SpuInitHardwareDraft(s32 arg0) {
             sp4 *= 3;
         }
     }
-    _spu_inTransfer = 1;
-    D_800A26ACInitRegs[0]->spucnt = 0xC000;
-    _spu_transferCallback = 0;
-    _spu_IRQCallback = 0;
+    _spu_inTransfer[0] = 1;
+    {
+        volatile SpuInitRegs *regs = (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
+        regs->spucnt = 0xC000;
+    }
+    _spu_transferCallback[0] = 0;
+    _spu_IRQCallback[0] = 0;
     return 0;
 }
 #else
@@ -8268,12 +8295,11 @@ extern s32 D_800A2704Malloc[];
 extern s32 D_800A2708Malloc[];
 extern void *D_800A270CMalloc[];
 extern void _spu_gcSPU(void);
+/* Retry 2026-10-11: 704/712 bytes; keep the assembly fallback. */
 s32 SpuMalloc(s32 arg0) {
     s32 temp_a0;
     s32 temp_a0_2;
     s32 temp_a1;
-    s32 temp_s0;
-    s32 temp_s0_2;
     s32 temp_v1;
     s32 temp_v1_2;
     s32 var_a0;
@@ -8281,7 +8307,6 @@ s32 SpuMalloc(s32 arg0) {
     s32 var_s2;
     s32 var_s3;
     s32 var_v0;
-    u32 temp_s1;
     u32 temp_t0;
     void *temp_a2;
     void *temp_v0;
@@ -8300,18 +8325,18 @@ s32 SpuMalloc(s32 arg0) {
     if (arg0 & ~D_800A26D8Malloc[0]) {
         var_a0 = arg0 + D_800A26D8Malloc[0];
     }
-    temp_s1 = (var_a0 >> D_800A26D0Malloc[0]) << D_800A26D0Malloc[0];
+    arg0 = (var_a0 >> D_800A26D0Malloc[0]) << D_800A26D0Malloc[0];
     if (*(s32 *)D_800A270CMalloc[0] & 0x40000000) {
         var_s2 = 0;
     } else {
         _spu_gcSPU();
-        if (D_800A2704Malloc[0] > 0) {
-            var_a0_2 = (0 * 8) + D_800A270CMalloc[0];
+        if (var_s0 < D_800A2704Malloc[0]) {
+            var_a0_2 = (var_s0 * 8) + D_800A270CMalloc[0];
         loop_9:
             temp_v1 = *(s32 *)((u8 *)var_a0_2 + 0x0);
             if ((temp_v1 & 0x40000000) ||
                 ((temp_v1 & 0x80000000) &&
-                 ((u32) * (s32 *)((u8 *)var_a0_2 + 0x4) >= temp_s1))) {
+                 ((u32) * (s32 *)((u8 *)var_a0_2 + 0x4) >= arg0))) {
                 var_s2 = var_s0;
             } else {
                 var_s0 += 1;
@@ -8323,54 +8348,53 @@ s32 SpuMalloc(s32 arg0) {
         }
     }
     var_v0 = -1;
-    temp_s0 = var_s2 * 8;
+    var_s0 = var_s2 * 8;
     if (var_s2 != -1) {
-        temp_a2 = temp_s0 + D_800A270CMalloc[0];
+        temp_a2 = var_s0 + D_800A270CMalloc[0];
         temp_v1_2 = *(s32 *)((u8 *)temp_a2 + 0x0);
         if (temp_v1_2 & 0x40000000) {
             var_v0 = -1;
             if (var_s2 < D_800A2704Malloc[0]) {
                 var_v0 = -1;
-                if ((u32)(*(s32 *)((u8 *)temp_a2 + 0x4) - var_s3) >= temp_s1) {
+                if ((u32)(*(s32 *)((u8 *)temp_a2 + 0x4) - var_s3) >= arg0) {
                     temp_a0 = var_s2 + 1;
                     temp_v1_3 = (temp_a0 * 8) + D_800A270CMalloc[0];
                     *(s32 *)((u8 *)temp_v1_3 + 0x0) =
                         (s32)(((*(s32 *)((u8 *)temp_a2 + 0x0) & 0x0FFFFFFF) +
-                               temp_s1) |
+                               arg0) |
                               0x40000000);
                     *(s32 *)((u8 *)temp_v1_3 + 0x4) =
-                        (s32)(*(s32 *)((u8 *)temp_a2 + 0x4) - temp_s1);
+                        (s32)(*(s32 *)((u8 *)temp_a2 + 0x4) - arg0);
                     D_800A2708Malloc[0] = temp_a0;
-                    *(s32 *)((u8 *)temp_a2 + 0x4) = temp_s1;
+                    *(s32 *)((u8 *)temp_a2 + 0x4) = arg0;
                     *(s32 *)((u8 *)temp_a2 + 0x0) =
                         (s32)(*(s32 *)((u8 *)temp_a2 + 0x0) & 0x0FFFFFFF);
                     _spu_gcSPU();
-                    return *(s32 *)((u8 *)D_800A270CMalloc[0] + temp_s0);
+                    return *(s32 *)((u8 *)D_800A270CMalloc[0] + var_s0);
                 }
             }
             /* Duplicate return node #23. Try simplifying control flow for better match */
             return var_v0;
         }
         temp_t0 = *(s32 *)((u8 *)temp_a2 + 0x4);
-        temp_s0_2 = var_s2 * 8;
-        if ((temp_s1 < temp_t0) &&
-            (D_800A2708Malloc[0] < D_800A2704Malloc[0])) {
+        var_s0 = var_s2 * 8;
+        if ((arg0 < temp_t0) && (D_800A2708Malloc[0] < D_800A2704Malloc[0])) {
             temp_v0 = (D_800A2708Malloc[0] * 8) + D_800A270CMalloc[0];
             temp_a1 = *(s32 *)((u8 *)temp_v0 + 0x0);
             temp_a0_2 = *(s32 *)((u8 *)temp_v0 + 0x4);
             *(s32 *)((u8 *)temp_v0 + 0x0) =
-                (s32)((temp_s1 + temp_v1_2) | 0x80000000);
-            *(s32 *)((u8 *)temp_v0 + 0x4) = (s32)(temp_t0 - temp_s1);
+                (s32)(((u32)arg0 + temp_v1_2) | 0x80000000);
+            *(s32 *)((u8 *)temp_v0 + 0x4) = (s32)(temp_t0 - arg0);
             D_800A2708Malloc[0] += 1;
             *(s32 *)((u8 *)temp_v0 + 0x8) = temp_a1;
             *(s32 *)((u8 *)temp_v0 + 0xC) = temp_a0_2;
         }
-        temp_v1_4 = temp_s0_2 + D_800A270CMalloc[0];
-        *(s32 *)((u8 *)temp_v1_4 + 0x4) = temp_s1;
+        temp_v1_4 = var_s0 + D_800A270CMalloc[0];
+        *(s32 *)((u8 *)temp_v1_4 + 0x4) = arg0;
         *(s32 *)((u8 *)temp_v1_4 + 0x0) =
             (s32)(*(s32 *)((u8 *)temp_v1_4 + 0x0) & 0x0FFFFFFF);
         _spu_gcSPU();
-        var_v0 = *(s32 *)((u8 *)D_800A270CMalloc[0] + temp_s0_2);
+        var_v0 = *(s32 *)((u8 *)D_800A270CMalloc[0] + var_s0);
         /* Duplicate return node #23. Try simplifying control flow for better match */
         return var_v0;
     }
@@ -8383,7 +8407,9 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuMalloc);
 #ifdef NON_MATCHING
 extern s32 D_800A2708GC[];
 extern void *D_800A270CGC[];
+/* Retry 2026-10-11: 800/768 bytes; reload the table for each pass. */
 void _spu_gcSPU(void) {
+    void *table;
     s32 *var_v1;
     s32 temp_a1_2;
     s32 temp_a3;
@@ -8410,18 +8436,19 @@ void _spu_gcSPU(void) {
 
     var_t1 = 0;
     if (D_800A2708GC[0] >= 0) {
-        var_a3 = D_800A270CGC[0];
+        table = D_800A270CGC[0];
+        var_a3 = table;
         do {
             var_a2 = var_t1 + 1;
             if (*(s32 *)((u8 *)var_a3 + 0x0) & 0x80000000) {
-                var_v1 = (s32 *)((u8 *)D_800A270CGC[0] + (var_a2 * 8));
+                var_v1 = (s32 *)((u8 *)table + (var_a2 * 8));
             loop_4:
                 if (*var_v1 == 0x2FFFFFFF) {
                     var_a2 += 1;
                     var_v1 = (s32 *)((u8 *)var_v1 + 8);
                     goto loop_4;
                 }
-                temp_a1 = (var_a2 * 8) + D_800A270CGC[0];
+                temp_a1 = (var_a2 * 8) + table;
                 temp_v1 = *(s32 *)((u8 *)temp_a1 + 0x0);
                 if ((temp_v1 & 0x80000000) &&
                     ((temp_v1 & 0x0FFFFFFF) ==
@@ -8443,7 +8470,8 @@ void _spu_gcSPU(void) {
     }
     var_t1_2 = 0;
     if (D_800A2708GC[0] >= 0) {
-        var_v1_2 = D_800A270CGC[0];
+        table = D_800A270CGC[0];
+        var_v1_2 = table;
         do {
             var_t1_2 += 1;
             if (*(s32 *)((u8 *)var_v1_2 + 0x4) == 0) {
@@ -8454,12 +8482,13 @@ void _spu_gcSPU(void) {
     }
     var_t1_3 = 0;
     if (D_800A2708GC[0] >= 0) {
-        var_t2 = D_800A270CGC[0];
+        table = D_800A270CGC[0];
+        var_t2 = table;
     loop_19:
         if (!(*(s32 *)((u8 *)var_t2 + 0x0) & 0x40000000)) {
             var_a2_2 = var_t1_3 + 1;
             if (D_800A2708GC[0] >= var_a2_2) {
-                var_a0 = (var_a2_2 * 8) + D_800A270CGC[0];
+                var_a0 = (var_a2_2 * 8) + table;
             loop_22:
                 temp_a1_2 = *(s32 *)((u8 *)var_a0 + 0x0);
                 if (!(temp_a1_2 & 0x40000000)) {
@@ -8489,12 +8518,13 @@ void _spu_gcSPU(void) {
     }
     var_t1_4 = 0;
     if (D_800A2708GC[0] >= 0) {
-        var_a0_2 = D_800A270CGC[0];
+        table = D_800A270CGC[0];
+        var_a0_2 = table;
     loop_29:
         temp_v1_3 = *(s32 *)((u8 *)var_a0_2 + 0x0);
         if (!(temp_v1_3 & 0x40000000)) {
             if (temp_v1_3 == 0x2FFFFFFF) {
-                temp_v0 = (D_800A2708GC[0] * 8) + D_800A270CGC[0];
+                temp_v0 = (D_800A2708GC[0] * 8) + table;
                 *(s32 *)((u8 *)var_a0_2 + 0x0) =
                     (s32) * (s32 *)((u8 *)temp_v0 + 0x0);
                 D_800A2708GC[0] = var_t1_4;
@@ -8511,7 +8541,8 @@ void _spu_gcSPU(void) {
     }
     var_t1_5 = D_800A2708GC[0] - 1;
     if (var_t1_5 >= 0) {
-        var_a0_3 = (var_t1_5 * 8) + D_800A270CGC[0];
+        table = D_800A270CGC[0];
+        var_a0_3 = (var_t1_5 * 8) + table;
     loop_35:
         temp_v1_4 = *(s32 *)((u8 *)var_a0_3 + 0x0);
         if (temp_v1_4 & 0x80000000) {
@@ -8522,7 +8553,7 @@ void _spu_gcSPU(void) {
             var_t1_5 -= 1;
             *(s32 *)((u8 *)var_a0_3 + 0x4) =
                 (s32)(*(s32 *)((u8 *)var_a0_3 + 0x4) +
-                      *(s32 *)((u8 *)D_800A270CGC[0] + (temp_v1_5 * 8) + 4));
+                      *(s32 *)((u8 *)table + (temp_v1_5 * 8) + 4));
             var_a0_3 -= 8;
             if (var_t1_5 >= 0) {
                 goto loop_35;
@@ -8947,8 +8978,9 @@ void SpuSetVoiceAttr(SpuVoiceAttr *arg) {
 extern volatile u16 *D_800A26ACVA[];
 extern u16 _spu_note2pitch();
 s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
-    s32 sp10;
-    s32 sp14;
+    /* Keep the SPU delay loop when optimization is enabled. */
+    volatile s32 sp10;
+    volatile s32 sp14;
     s16 temp_a0;
     s16 temp_a0_2;
     s16 temp_v1_10;
@@ -8956,7 +8988,6 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 temp_s1;
     s32 temp_s2;
     s32 temp_s3;
-    s32 temp_s7;
     s32 temp_v1;
     s32 temp_v1_5;
     s32 temp_v1_7;
@@ -9001,11 +9032,12 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
         if (var_s7 >= 0x18) {
             var_s7 = 0x17;
         }
-        if ((var_s7 < 0) || (temp_s7 = var_s7 + 1, ((var_s7 < var_a1) != 0))) {
+        if ((var_s7 < 0) || (var_s7 < var_a1)) {
             goto block_7;
         }
+        var_s7++;
         var_s4 = var_a1;
-        if (var_s4 < temp_s7) {
+        if (var_s4 < var_s7) {
             do {
                 if ((1 << var_s4) & (*(u32 *)((u8 *)arg0 + 0x0))) {
                     temp_s3 = var_s4 * 8;
@@ -9215,7 +9247,7 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
                             }
                             var_v0_4 = var_s6 & 0x7FFF;
                         }
-                        *((temp_s3 * 2) + (u8 *)D_800A26ACVA[0]) =
+                        *(u16 *)((temp_s3 * 2) + (u8 *)D_800A26ACVA[0]) =
                             var_v0_4 | var_a1_5;
                     }
                     if (temp_s2 == 0) {
@@ -9276,7 +9308,7 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
                     }
                 }
                 var_s4 += 1;
-            } while (var_s4 < temp_s7);
+            } while (var_s4 < var_s7);
         }
         if (arg3 == 0) {
             sp14 = 1;
@@ -9442,6 +9474,7 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     s32 modeRight;
     s32 modeCode;
     s32 value;
+    volatile u16 *control;
     s32 tmp;
     mask = arg0->mask;
     isDefault = (mask == 0);
@@ -9450,11 +9483,8 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     modeLeft = 0;
     modeRight = 0;
     if (isDefault || (mask & 1)) {
-        if (!isDefault && !(mask & 4)) {
-            volLeft = arg0->mvol.left;
-            modeLeft = 0;
-        } else {
-            modeCode = arg0->mvolmode.left;
+        if (isDefault || (mask & 4)) {
+            modeCode = (s16)arg0->mvolmode.left;
             switch (modeCode) {
             case 1:
                 modeLeft = 0x8000;
@@ -9477,31 +9507,33 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
             case 7:
                 modeLeft = 0xE000;
                 break;
+            case 0:
             default:
                 volLeft = arg0->mvol.left;
                 modeLeft = 0;
                 break;
             }
+        } else {
+            volLeft = arg0->mvol.left;
+            modeLeft = 0;
         }
         value = volLeft & 0x7FFF;
         if (modeLeft != 0) {
             tmp = (s16)arg0->mvol.left;
             if (tmp >= 0x80)
                 volLeft = 0x7F;
-            else if (tmp < 0)
-                volLeft = 0;
-            else
+            else {
                 volLeft = tmp;
+                if (tmp < 0)
+                    volLeft = 0;
+            }
             value = volLeft & 0x7FFF;
         }
         D_800A26ACCommon2[0][0x180 / 2] = (value | modeLeft);
     }
     if (isDefault || (mask & 2)) {
-        if (!isDefault && !(mask & 8)) {
-            volRight = arg0->mvol.right;
-            modeRight = 0;
-        } else {
-            modeCode = arg0->mvolmode.right;
+        if (isDefault || (mask & 8)) {
+            modeCode = (s16)arg0->mvolmode.right;
             switch (modeCode) {
             case 1:
                 modeRight = 0x8000;
@@ -9524,21 +9556,26 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
             case 7:
                 modeRight = 0xE000;
                 break;
+            case 0:
             default:
                 volRight = arg0->mvol.right;
                 modeRight = 0;
                 break;
             }
+        } else {
+            volRight = arg0->mvol.right;
+            modeRight = 0;
         }
         value = volRight & 0x7FFF;
         if (modeRight != 0) {
             tmp = (s16)arg0->mvol.right;
             if (tmp >= 0x80)
                 volRight = 0x7F;
-            else if (tmp < 0)
-                volRight = 0;
-            else
+            else {
                 volRight = tmp;
+                if (tmp < 0)
+                    volRight = 0;
+            }
             value = volRight & 0x7FFF;
         }
         D_800A26ACCommon2[0][0x182 / 2] = (value | modeRight);
@@ -9548,40 +9585,56 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     if (isDefault || (mask & 0x80))
         D_800A26ACCommon2[0][0x1B2 / 2] = arg0->cd.volume.right;
     if (isDefault || (mask & 0x100)) {
-        value = D_800A26ACCommon2[0][0x1AA / 2];
-        if (arg0->cd.reverb == 0)
+        if (arg0->cd.reverb == 0) {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value &= 0xFFFB;
-        else
+        } else {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value |= 4;
-        D_800A26ACCommon2[0][0x1AA / 2] = value;
+        }
+        control[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x200)) {
-        value = D_800A26ACCommon2[0][0x1AA / 2];
-        if (arg0->cd.mix == 0)
+        if (arg0->cd.mix == 0) {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value &= 0xFFFE;
-        else
+        } else {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value |= 1;
-        D_800A26ACCommon2[0][0x1AA / 2] = value;
+        }
+        control[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x400))
         D_800A26ACCommon2[0][0x1B4 / 2] = arg0->ext.volume.left;
     if (isDefault || (mask & 0x800))
         D_800A26ACCommon2[0][0x1B6 / 2] = arg0->ext.volume.right;
     if (isDefault || (mask & 0x1000)) {
-        value = D_800A26ACCommon2[0][0x1AA / 2];
-        if (arg0->ext.reverb == 0)
+        if (arg0->ext.reverb == 0) {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value &= 0xFFF7;
-        else
+        } else {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value |= 8;
-        D_800A26ACCommon2[0][0x1AA / 2] = value;
+        }
+        control[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x2000)) {
-        value = D_800A26ACCommon2[0][0x1AA / 2];
-        if (arg0->ext.mix == 0)
+        if (arg0->ext.mix == 0) {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value &= 0xFFFD;
-        else
+        } else {
+            control = D_800A26ACCommon2[0];
+            value = control[0x1AA / 2];
             value |= 2;
-        D_800A26ACCommon2[0][0x1AA / 2] = value;
+        }
+        control[0x1AA / 2] = value;
     }
 }
 #else

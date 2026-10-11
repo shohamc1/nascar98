@@ -2130,6 +2130,11 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_80048EFC);
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004A0C4);
 
 #ifdef NON_MATCHING
+/* Retry 2026-10-11: fix the 14-byte texture stride, remove the counter
+ * pins, and keep the final page table in one call-preserved pointer.
+ * Current active-TU text is 0xaf0 bytes; retail is 0xad0. The glyph loop
+ * still hoists its string slot, and the remaining loops differ in register
+ * allocation and instruction order. Keep the assembly fallback. */
 typedef struct {
     u16 tpx;
     u16 tpy;
@@ -2137,10 +2142,6 @@ typedef struct {
     u16 clutY;
     u16 u;
     u16 v;
-    u16 u2;
-    u16 v2;
-    u16 u3;
-    u16 v3;
     u16 tpage;
 } HudTexture;
 
@@ -2225,9 +2226,11 @@ void func_8004A510(void) {
     u8 *glyph;
     s8 entry;
     s8 col;
-    register s8 line asm("$23");
-    register s8 j asm("$19");
+    s8 line;
+    s8 j;
     s8 row;
+    u16 *page;
+    s32 line24;
 
     D_800A3680[0] = 0;
     D_800A3490 = 0;
@@ -2239,13 +2242,17 @@ void func_8004A510(void) {
         }
         D_800A3484 = D_800A3485 + strlen((char *)D_8009AE2C[0]);
         for (col = 0; col < 3; col += 2) {
+            line = 0;
             heap = (u8 *)HeapAlloc(D_800A3484 * 0x28);
             D_800A78C4[(s8)(entry + col)] = (s8 *)heap;
-            for (line = 0; line < 7; line++) {
+            for (; line < 7; line++) {
                 j = 0;
-                if (((s8 **)D_8009AE14)[line][0] != 0) {
+                line24 = line << 24;
+                if (((s8 **)D_8009AE14)[line24 >> 24][0] != 0) {
                     do {
-                        glyph = &D_80098BD0[((s8 **)D_8009AE14)[line][j] * 10];
+                        glyph =
+                            &D_80098BD0[((s8 **)D_8009AE14)[line24 >> 24][j] *
+                                        10];
                         SetPolyFT4((POLY_FT4 *)heap);
                         *(s16 *)(heap + 0xE) = GetClut(0x390, 0x3C);
                         *(u8 *)(heap + 4) = 0x80;
@@ -2263,7 +2270,7 @@ void func_8004A510(void) {
                         *(u8 *)(heap + 0x25) = glyph[5] + glyph[8];
                         j++;
                         heap += 0x28;
-                    } while (((s8 **)D_8009AE14)[line][j] != 0);
+                    } while (((s8 **)D_8009AE14)[line24 >> 24][j] != 0);
                 }
             }
         }
@@ -2407,6 +2414,8 @@ void func_8004A510(void) {
     D_800A798E[0] = 0;
     D_800A7992[0] = 0xF0;
     D_800A798B[0] |= 2;
+    page = (u16 *)D_80090F32;
+    asm("" : "=r"(page) : "0"(page));
     SetPolyF4(D_800A7564);
     for (entry = 0; entry < 2; entry++) {
         for (col = 0; col < 0x18; col++) {
@@ -2414,8 +2423,7 @@ void func_8004A510(void) {
                 (POLY_FT4 *)((u8 *)D_800B0B7C + entry * 0x3C0 + col * 0x28));
             SetShadeTex((u8 *)D_800B0B7C + entry * 0x3C0 + col * 0x28, 0);
             *(u16 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B92) =
-                GetTPage(((u16 *)D_80090F32)[0], 0, ((u16 *)D_80090F32)[-6],
-                         ((u16 *)D_80090F32)[-5]);
+                GetTPage(page[0], 0, page[-6], page[-5]);
             *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 4) =
                 D_800991E8[col * 3];
             *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 5) =
@@ -2433,38 +2441,24 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004A510);
 #endif
 
 #ifdef NON_MATCHING
-/* Harvest 2026-10-11 (sandbox w2h): the recorded "cc1 crash" was missing
- * declarations — the externs for D_800A2FD0/D_8009AE14/D_80098BD0 all live
- * inside func_8004A510's NON_MATCHING block, so block-scope externs were
- * added at the top of this function. Best state: 81 insns vs retail 82
- * (size_delta -4). The three levers that fixed the recorded wall:
- * entry-copy anchor asm volatile("" : "=r"(cursor) : "0"(arg2)); (retail's
- * addu $t3,$a2,$zero), a separate cursor walked in place of arg2 (retail
- * advances t3 in the loop), and the glyph-pointer spelling
- * glyph = (s16 *)&D_80098BD0[t * 10]; with glyph[3]/glyph[4] loads — which
- * puts the per-iteration lui/addiu &D_80098BD0 INSIDE the loop (a bare
- * D_80098BD0[t*10+6] subscript gets constant-hoisted to the prologue by
- * cross-block constant CSE, even in a goto loop). Store cursor is now a
- * single a3 with retail's -0x1A..0 offsets. Remaining diff: retail keeps
- * i<<24 in t4 from the outer head (inner re-derives with one sra); ours
- * recomputes sll+sra inside the inner loop (+1 insn, shared-pseudo split
- * across the guard branch that CSE cannot cross); the D_800A2FD0[arg0]
- * byte is folded to one lb here while retail emits lbu + sll/sra (-2);
- * retail has 2 scheduler nops we lack. goto-loop (no notes) blocks LICM's
- * address hoist; a do-while LICM instead copies the outer slot address
- * (move t2,a3) — retail's partial sharing sits between the two regimes.
- * Permuter 8 min from this base: best 405->305 in its unit, all finds
- * (short w, glyph[4] merge, while((i+1)<=7), if(j) goto) verified worse
- * in the real TU and rejected.
- */
+/* Retry 2026-10-11: the missing block-scope declarations caused cc1 to
+ * fail. The pointer copy anchor keeps cursor separate from arg2.
+ * Single-pass blocks change register priority. The 10-minute permuter gave
+ * the table birth block
+ * and the direct second glyph-height load. Active-TU text is 0x148 bytes,
+ * equal to retail; 29 instruction words still differ. Keep the fallback. */
 
 void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
+    extern u8 D_800A2FD0[];
+    extern u8 D_8009AE14[];
+    extern u8 D_80098BD0[];
     s16 *out;
     u16 *xy0;
     u16 *cursor;
     s8 i;
     s8 j;
     s32 x;
+    u8 *table;
     s32 w;
     s32 t;
     s32 v0;
@@ -2475,9 +2469,12 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     s8 **a914;
     s16 *glyph;
 
-    asm volatile("" : "=r"(cursor) : "0"(arg2));
+    do {
+        asm volatile("" : "=r"(cursor) : "0"(arg2));
+        table = D_8009AE14;
+    } while (0);
     i = 0;
-    a914 = (s8 **)D_8009AE14;
+    a914 = (s8 **)table;
     do {
         j = 0;
         i24 = i << 24;
@@ -2488,20 +2485,21 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
         if ((*(s8 **)((i24 >> 22) + (char *)a914))[0] != 0) {
             out = (s16 *)((u8 *)cursor + 0x22);
         inner:
-            t = (*(s8 **)((i24 >> 22) + (char *)a914))[j];
-            glyph = (s16 *)&D_80098BD0[t * 10];
-            v0 = glyph[3];
-            out[-13] = x;
-            out[-12] = w;
-            out[-8] = w;
-            out[-5] = x;
-            sum = x + ((v0 * 3) >> 2);
-            out[-9] = sum;
-            v1 = glyph[4];
-            out[-1] = sum;
-            out[-4] = w + ((v1 * 3) >> 2);
-            v1 = glyph[4];
-            out[0] = w + ((v1 * 3) >> 2);
+            do {
+                t = (*(s8 **)((i24 >> 22) + (char *)a914))[j];
+                glyph = (s16 *)&D_80098BD0[t * 10];
+                v0 = glyph[3];
+                out[-13] = x;
+                out[-12] = w;
+                out[-8] = w;
+                out[-5] = x;
+                sum = x + ((v0 * 3) >> 2);
+                out[-9] = sum;
+                v1 = glyph[4];
+                out[-1] = sum;
+                out[-4] = w + ((v1 * 3) >> 2);
+                out[0] = w + ((glyph[4] * 3) >> 2);
+            } while (0);
             x = sum;
             j++;
             cursor += 0x14;
@@ -2538,22 +2536,10 @@ void func_8004B128(u8 *arg0) {
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004B1C0);
 
 #ifdef NON_MATCHING
-/* func_8004BDD0 draft (2026-10-09). WALL at ~520 scored rows (64 missing / 82
- * extra / 42 changed / ~378 register-rename rows over 1627 instructions);
- * draft is 18 instructions long. All loops, calls, addressing modes, widths
- * and constants are decoded and structurally correct. Root cause: gcc 2.7.2
- * global register allocation across block 1's six poly sections and block 2's
- * 16-way (s8)y fanout lands one s-register off versus retail, cascading
- * through every later section (retail: prim s0 / idx s1 / row240 s2 / tex s3 /
- * col s4 / F4-base s6 / poly-base s7). Pins ($16/$17/$18/$20/$23) align the
- * block-1 head exactly but a tex pin MISCOMPILES the col4 GetTPage tpx read
- * (reads 0x80091052 via a hoisted s6 base instead of 0x80091022) and
- * un-pinned allocation shifts tex/col by one. Also open: gcc hoists
- * loop-invariant lui bases (D_800A7FE4, D_800A85B0, TIM-field bases) where
- * retail rematerialises per use - multi-spelling aliases fixed the constants
- * and col4/col5 uv reads; 2g/2h/2i bases still hoist. asm volatile ori pins
- * defeat the 0x11C/0xCC/0x7C/0x4C/0x140 constant CSE-hoists.
- */
+/* func_8004BDD0 remains parked. The texture record is 14 bytes.
+ * Fixed-point calls load table values; GetTPage loads its mode value.
+ * The remaining wall includes an extra stack slot, base CSE, and
+ * register allocation across the polygon and rotation loops. */
 void __maspsx_include_asm_hack_D_8008D4CC(void) {
     __asm__(".section .rodata # maspsx-keep \n"
             "dlabel D_8008D4CC # maspsx-keep\n"
@@ -2578,10 +2564,6 @@ typedef struct {
     u16 clutY;
     u16 u;
     u16 v;
-    u16 u2;
-    u16 v2;
-    u16 u3;
-    u16 v3;
     u16 tpage;
 } SceneTexInfo;
 
@@ -2830,10 +2812,10 @@ extern s32 D_800A3A34Small[];
 
 void func_8004BDD0(void) {
     SceneTexInfo *tex;
-    register u8 *primBase asm("$23");
-    register u8 *prim asm("$16");
-    register s32 idx asm("$17");
-    register s32 rowOff asm("$18");
+    u8 *primBase;
+    u8 *prim;
+    s32 idx;
+    s32 rowOff;
     SceneRotTable rot;
     SceneQuadTable quads;
     ScenePairTable corners;
@@ -2876,10 +2858,11 @@ void func_8004BDD0(void) {
         tex = D_80090FCEalt;
         rowOff = i * 0xF0;
         for (col = 0; col < 6; col++) {
-            idx = col * 0x28 + rowOff;
-            prim = primBase + idx;
+            idx = col * 0x28;
+            prim = primBase + idx + rowOff;
             SetPolyFT4((POLY_FT4 *)prim);
             SetShadeTex(prim, 1);
+            idx += rowOff;
             *(u16 *)(D_800A8362 + idx) = GetClut(tex->clutX, tex->clutY);
             *(u16 *)(D_800A836A + idx) =
                 GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
@@ -2894,9 +2877,9 @@ void func_8004BDD0(void) {
             prim2[0x25] = tex->v + 0x33;
         }
         p0 = i * 0xF0 + primBase;
-        asm volatile("ori %0, $0, 0x11C" : "=r"(xa));
+        xa = 0x11C;
         *(s16 *)(p0 + 8) = xa;
-        asm volatile("ori %0, $0, 0x16C" : "=r"(xb));
+        xb = 0x16C;
         *(s16 *)(p0 + 0x10) = xb;
         *(s16 *)(p0 + 0xA) = (s8)D_800A2FD4[i];
         *(s16 *)(p0 + 0x18) = xa;
@@ -2905,9 +2888,9 @@ void func_8004BDD0(void) {
         *(s16 *)(p0 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
         *(s16 *)(p0 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
         p1 = i * 0xF0 + (primBase + 0x28);
-        asm volatile("ori %0, $0, 0xCC" : "=r"(xa));
+        xa = 0xCC;
         *(s16 *)(p1 + 8) = xa;
-        asm volatile("ori %0, $0, 0x11C" : "=r"(xb));
+        xb = 0x11C;
         *(s16 *)(p1 + 0x10) = xb;
         *(s16 *)(p1 + 0xA) = (s8)D_800A2FD4[i];
         *(s16 *)(p1 + 0x18) = xa;
@@ -2916,9 +2899,9 @@ void func_8004BDD0(void) {
         *(s16 *)(p1 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
         *(s16 *)(p1 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
         p2 = i * 0xF0 + (primBase + 0x50);
-        asm volatile("ori %0, $0, 0x7C" : "=r"(xa));
+        xa = 0x7C;
         *(s16 *)(p2 + 8) = xa;
-        asm volatile("ori %0, $0, 0xCC" : "=r"(xb));
+        xb = 0xCC;
         *(s16 *)(p2 + 0x10) = xb;
         *(s16 *)(p2 + 0xA) = (s8)D_800A2FD4[i];
         *(s16 *)(p2 + 0x18) = xa;
@@ -2940,7 +2923,7 @@ void func_8004BDD0(void) {
         p3[0x24] = tex->u + 0x7C;
         *(s16 *)(p3 + 8) = 0;
         p3[0x25] = tex->v + 0x3B;
-        asm volatile("ori %0, $0, 0x7C" : "=r"(xa));
+        xa = 0x7C;
         *(s16 *)(p3 + 0x10) = xa;
         *(s16 *)(p3 + 0xA) = (s8)D_800A2FD4[i];
         *(s16 *)(p3 + 0x18) = 0;
@@ -2962,7 +2945,7 @@ void func_8004BDD0(void) {
         p4[0x24] = D_8009102Aw4[0] + 0xB1;
         *(s16 *)(p4 + 8) = 0;
         p4[0x25] = D_8009102Cw4[0];
-        asm volatile("ori %0, $0, 0x4C" : "=r"(xa));
+        xa = 0x4C;
         *(s16 *)(p4 + 0x10) = xa;
         *(s16 *)(p4 + 0xA) = (s8)D_800A2FD4[i] + 0x3B;
         *(s16 *)(p4 + 0x18) = 0;
@@ -2982,10 +2965,10 @@ void func_8004BDD0(void) {
         p5[0x1C] = D_80090F3Cw5[0];
         p5[0x1D] = D_80090F3Cw6[1] + 0x12;
         p5[0x24] = D_80090F3Cw7[0] + 0xF4;
-        asm volatile("ori %0, $0, 0x4C" : "=r"(xl));
+        xl = 0x4C;
         *(s16 *)(p5 + 8) = xl;
         p5[0x25] = D_80090F3Cw8[1] + 0x12;
-        asm volatile("ori %0, $0, 0x140" : "=r"(xa));
+        xa = 0x140;
         *(s16 *)(p5 + 0x10) = xa;
         *(s16 *)(p5 + 0xA) = (s8)D_800A2FD4[i] + 0x9A;
         *(s16 *)(p5 + 0x18) = xl;
@@ -3036,7 +3019,6 @@ void func_8004BDD0(void) {
         *(u16 *)(prim + 0xE) = GetClut(D_80091018[0], D_8009101A[0]);
         *(u16 *)(prim + 0x16) =
             GetTPage(D_80091020[0], 0, tex->tpx, D_80091016[0]);
-        asm volatile("" : : "r"(prim));
         D_800A821C[0] = 0x7C;
         D_800A822C[0] = 0x7C;
         D_800A8224[0] = 0xBC;
@@ -3173,19 +3155,23 @@ void func_8004BDD0(void) {
         for (i = 0; i < 0x20; i++) {
             *(s16 *)(D_800A7FE4 + i * 4) =
                 MathMultiplyFixed16(
-                    0x3C0000, (s32)((u8 *)D_800A3A2CAbsolute2[0] + i * 128)) >>
+                    0x3C0000,
+                    *(s32 *)((u8 *)D_800A3A2CAbsolute2[0] + i * 128)) >>
                 16;
             *(s16 *)(D_800A7FE4w1 + i * 4 + 2) =
                 MathMultiplyFixed16(
-                    0x3C0000, (s32)((u8 *)D_800A3A34Absolute2[0] + i * 128)) >>
+                    0x3C0000,
+                    *(s32 *)((u8 *)D_800A3A34Absolute2[0] + i * 128)) >>
                 16;
             *(s16 *)(D_800A7FE4w2 + (i + 0x20) * 4) =
                 MathMultiplyFixed16(
-                    0x320000, (s32)((u8 *)D_800A3A2CAbsolute[0] + i * 128)) >>
+                    0x320000,
+                    *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + i * 128)) >>
                 16;
             *(s16 *)(D_800A7FE4w3 + (i + 0x20) * 4 + 2) =
                 MathMultiplyFixed16(
-                    0x320000, (s32)((u8 *)D_800A3A34Absolute[0] + i * 128)) >>
+                    0x320000,
+                    *(s32 *)((u8 *)D_800A3A34Absolute[0] + i * 128)) >>
                 16;
         }
         for (i = 0; i < 0x24; i++) {
@@ -3222,9 +3208,8 @@ void func_8004BDD0(void) {
         D_800A7F19[0] = 0x30;
         D_800A7F1A[0] = 0x30;
         tex = &D_80090FCE[-12];
-        D_800A7F22[0] = GetTPage(D_80090F32gt, 0, tex->tpx, D_80090F28[0]);
+        D_800A7F22[0] = GetTPage(D_80090F32gt[0], 0, tex->tpx, D_80090F28[0]);
         tex += 12;
-        asm volatile("" : : "r"(tex));
         u3 = D_80090F2E[0];
         v3 = D_80090F30[0];
         D_800A7F1C[0] = u3 + 0x60;
@@ -3920,11 +3905,12 @@ extern u8 D_800A8ADA[];
 
 #ifdef NON_MATCHING
 void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
+    extern u8 D_80098BD0[];
     POLY_FT4 *prim;
     u8 *p;
     u8 *cp;
     u8 *glyph;
-    s32 w;
+    u16 w;
     u8 i;
     s32 lineH;
     s32 newX;
@@ -4368,7 +4354,9 @@ extern u8 D_80090F5E[], D_80090F6C[], D_80090F88[];
  * order, and the dead branch never expands, so the slot is silent.
  * `SVECTOR padRot;` between m and rot + the `if (0)` RotMatrix below
  * reproduces the hole and shifts every prologue/epilogue/rot/out/flag
- * offset back onto retail. Remaining (86 rows): a0/a1 swaps in the coords
+ * offset back onto retail. Retry 2026-10-11 keeps the permuter pointer
+ * assignment at the trail-node store: 151 differing bytes, size 0x870.
+ * Remaining (83 words): a0/a1 swaps in the coords
  * loop, the E8->v1 / F4->a0 assignment swap, the 413d8 nop-vs-move s3,a1
  * slot, and the tail interleave (mfhi t1 vs t0, subu a3 vs v0). */
 void func_800525A8(u8 *arg0, s8 arg1) {
@@ -4583,7 +4571,7 @@ loop2:
         tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
         n = *(u16 *)(arg0 + 0x1E0);
         new_var = (u8 *)D_800A34F4;
-        *(u16 *)(tex2 + 0) = n;
+        *(u16 *)(new_var4 = tex2) = n;
         *(u8 **)(tex2 + 0x54) =
             *(u8 **)((u8 *)D_800BE980[0] + (s16)n * 0x90 + 0x74);
         *(u8 **)((u8 *)D_800BE980[0] + (s16)n * 0x90 + 0x74) = tex2;
@@ -6293,7 +6281,6 @@ extern s32 RandomScaledGetScene(void);
 asm(".globl func_80041AF0Scene\nfunc_80041AF0Scene = func_80041AF0");
 asm(".globl RandomScaledGetScene\nRandomScaledGetScene = RandomScaledGet");
 
-#ifdef NON_MATCHING
 void func_80058D94(void) {
     extern s32 FileSeekScene(s32, s32, s32) asm("FileSeek");
     extern void FileCloseScene(s32) asm("FileClose");
@@ -6514,11 +6501,10 @@ void func_80058D94(void) {
         func_80041AF0Scene(0);
         pads = func_80041B7C(0);
         if (frame >= 0xB5) {
-            mask = ~prevPads;
             if (D_800A2EB0Absolute[0] == -2) {
-                mask = mask & 0x9F0;
+                mask = ~prevPads & 0x9F0;
             } else {
-                mask = mask & 0x800;
+                mask = ~prevPads & 0x800;
             }
             if ((pads & mask) != 0) {
                 done = 1;
@@ -6541,7 +6527,8 @@ void func_80058D94(void) {
         } else {
             prevPads = pads;
         }
-        asm("" : "=r"(done) : "0"(done));
+        /* Keep the loop flag live across the pad-state update. */
+        asm("" : "=r"(done) : "0"(done), "r"(done));
     } while ((done & 0xFF) == 0);
     if (D_800A39E4Small == 0xFE) {
         func_8005957C();
@@ -6566,10 +6553,6 @@ void func_80058D94(void) {
     }
     HeapResetInitFlag();
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80058D94);
-#endif
 
 #ifdef NON_MATCHING
 /*

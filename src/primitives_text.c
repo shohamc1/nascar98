@@ -539,10 +539,8 @@ void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
 
 #ifdef NON_MATCHING
 
-/* permuter output-15305-1 */
-inline u8 *inline_fn(u8 *arg0) {
-    return arg0 + 0x18;
-}
+/* A macro prevents extra out-of-line text before this function. */
+#define PRIMITIVE_X2_ADDR(prim) ((prim) + 0x18)
 
 void func_80018C88(void) {
     extern u8 D_800AEB94[];
@@ -740,7 +738,7 @@ void func_80018C88(void) {
                 ta = 0x14;
                 asm volatile("" : "=r"(ta) : "0"(ta));
                 *((u8 *)(prim + 0x1C)) = tf;
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 tb = 0x43;
                 asm volatile("" : "=r"(tb) : "0"(tb));
                 *((u8 *)(prim + 0x14)) = te;
@@ -779,7 +777,7 @@ void func_80018C88(void) {
                 ta = 0x14;
                 asm volatile("" : "=r"(ta) : "0"(ta));
                 *((u8 *)(prim + 0x1C)) = tf;
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 tb = 0x43;
                 asm volatile("" : "=r"(tb) : "0"(tb));
                 *((u8 *)(prim + 0x14)) = te;
@@ -818,7 +816,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0x25)) = tg;
                 ta = 0x29;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)inline_fn(prim)) = 0x29;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = 0x29;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -854,7 +852,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colA;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colA;
                 *((s16 *)(prim + 0x22)) = yv + 9;
@@ -887,7 +885,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colC;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)inline_fn(prim)) = colB;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colC;
                 *((s16 *)(prim + 0x22)) = yv + 9;
@@ -917,7 +915,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colC;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)inline_fn(prim)) = colB;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colC;
                 *((s16 *)(prim + 0x22)) = yv + 9;
@@ -947,7 +945,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colC;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)inline_fn(prim)) = colB;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colC;
                 *((s16 *)(prim + 0x22)) = yv + 9;
@@ -979,7 +977,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colA;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 *((s16 *)(prim + 0x1A)) = yv + 0xE;
                 *((s16 *)(prim + 0x20)) = colA;
                 *((s16 *)(prim + 0x22)) = yv + 0xE;
@@ -1119,7 +1117,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0x25)) = tg;
                 ta = 0x28;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1154,7 +1152,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0x1C)) = tf;
                 ta = 0x79;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1186,7 +1184,7 @@ void func_80018C88(void) {
                 asm volatile("" : "=r"(th) : "0"(th));
                 ta = 0x79;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1220,7 +1218,7 @@ void func_80018C88(void) {
                 asm volatile("" : "=r"(th) : "0"(th));
                 ta = 0x79;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)inline_fn(prim)) = ta;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1423,6 +1421,7 @@ void func_80018C88(void) {
         off3 += 40;
     } while (k < 20);
 }
+#undef PRIMITIVE_X2_ADDR
 #else
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_80018C88);
 #endif

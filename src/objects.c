@@ -3887,9 +3887,8 @@ INCLUDE_ASM("asm/nonmatchings/objects", func_80030204);
 
 extern s32 D_800A3A80;
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: The duplicate points declaration is removed. The full
- * interpolation function is length-correct; point/pair register allocation
- * and quotient-result temporary choices remain different. */
+/* Retry 2026-10-11: 768 bytes, 33 bytes differ. Point/pair allocation and
+ * quotient temporaries remain different. Keep the assembly fallback. */
 s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
     SVECTOR **points;
     SVECTOR *pairB;
@@ -3923,12 +3922,15 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
             pointA = pointB;
             pointB = point;
         }
-        if (sampleY < pointA->vy)
+        if (sampleY < pointA->vy) {
             continue;
-        if (sampleY >= pointB->vy)
+        }
+        if (sampleY >= pointB->vy) {
             continue;
-        if (pointA->vy == pointB->vy)
+        }
+        if (pointA->vy == pointB->vy) {
             continue;
+        }
         if (pairA == 0) {
             pairA = pointA;
             pairB = pointB;
@@ -3963,10 +3965,12 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
             pairB = pointB;
             pointB = point;
         }
-        if (sampleX < (left - 5))
+        if (sampleX < (left - 5)) {
             return 0;
-        if ((right + 5) < sampleX)
+        }
+        if ((right + 5) < sampleX) {
             return 0;
+        }
         z0 = pairA->vz;
         z1 = pairB->vz;
         y0 = pairA->vy;
@@ -3975,11 +3979,12 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
             leftHeight = z0;
         } else {
             heightSpan = y1 - y0;
-            leftHeight = z0 + (((z1 - z0) * (sampleY - y0)) / heightSpan);
+            leftHeight = sampleY;
+            leftHeight = z0 + (((z1 - z0) * (leftHeight - y0)) / heightSpan);
         }
-        z0 = pointA->vz;
         z1 = pointB->vz;
         y0 = pointA->vy;
+        z0 = pointA->vz;
         y1 = pointB->vy;
         if (y1 == y0) {
             result = z0;

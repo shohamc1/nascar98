@@ -2307,6 +2307,7 @@ extern s32 D_8009A298[];
 extern s16 func_8005A84C(void);
 extern void func_80060008(u8);
 #ifdef NON_MATCHING
+/* Keep coordinate calculations wide until the s16 stores. */
 /* Permuter find (real-TU verified 10181 -> 8274): reuse pr5 as the
  * &D_8009AEAE[0] temp inside the obj8 GetTPage call, so its address
  * pseudo is born through an existing call-crossing pointer instead of a
@@ -2362,10 +2363,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     s32 i;
     s32 j;
     s32 yBase;
-    s16 h;
+    s32 h;
     s16 x;
-    s16 x4;
-    s16 x6;
+    s32 x4;
+    s32 x6;
     s32 value;
     u8 *entry;
     s32 *strP;
@@ -3517,9 +3518,6 @@ void func_80060F54(s32 arg0, s32 volume) {
 typedef struct {
     s8 tab[7];
 } RowList;
-typedef struct {
-    s8 tab[7];
-} RowList;
 extern s8 D_800A3348[];
 extern s32 *D_800A37D8[];
 extern u8 *D_800A3A1C[];
@@ -4545,10 +4543,10 @@ void func_80062910(s32 arg0) {
     asm("" : "=r"(idx) : "0"(idx));
     a = ((s8 *)D_800A3A24)[idx];
     if (a != 0) {
-        f = ((s8 *)D_800A3350)[a];
+        fontId = ((s8 *)D_800A3350)[a];
         new_var = D_8009B00C;
         base = new_var;
-        c = *(base + 7 * f + ((s8 *)D_800A307C)[idx]);
+        c = *(base + 7 * fontId + ((s8 *)D_800A307C)[idx]);
     } else {
         c = D_800A3088[idx];
     }
@@ -4596,9 +4594,9 @@ void func_80062910(s32 arg0) {
             tab = D_8009A4E0;
             cc = ((s8 *)D_800A307C)[(u8)arg0];
             prim2 = *(u8 **)(node + 0x20);
-            node = 392 * f + tab;
-            node = node + 56 * cc;
-            *(s32 *)(prim2 + 8) = *(s32 *)(node + (7 * i + j) * 4);
+            base = 392 * f + tab;
+            base = base + 56 * cc;
+            *(s32 *)(prim2 + 8) = *(s32 *)(base + (7 * i + j) * 4);
         }
     }
 }
@@ -5270,6 +5268,7 @@ extern u8 *D_800A3958[];
 void func_800645A4(s32 arg0, s32 arg1) {
     u8 *node;
     u8 *prim;
+    u8 *prim2;
     u8 *str;
     u32 idx;
     s32 y;
@@ -5278,14 +5277,19 @@ void func_800645A4(s32 arg0, s32 arg1) {
     s32 i;
     s32 x;
     s32 h;
+    u32 q;
 
     node = D_800A3744[arg0 & 0xFF];
     idx = arg1 & 0xFF;
     prim = *(u8 **)(node + 0x20);
     *(s16 *)(prim + 0xE) = GetClut(0x100, 0x1E7 - idx);
-    y = ((idx / 12) & 0xFF) * 0x48 + 0x140;
-    *(s16 *)(prim + 0x16) =
-        GetTPage(1, 0, ((idx % 12) << 5 & 0x1F80) + 0x140, y);
+    q = idx / 12;
+    y = (q & 0xFF) * 0x48;
+    /* Keep the scaled row in the same register before its base add. */
+    asm("" : "=r"(y) : "0"(y));
+    y += 0x140;
+    q = idx - q * 12;
+    *(s16 *)(prim + 0x16) = GetTPage(1, 0, (q << 5 & 0x1F80) + 0x140, y);
     prim[0xC] = (idx & 3) << 6;
     prim[0xD] = y;
     prim[0x14] = ((idx & 3) << 6) + 0x3F;
@@ -5301,12 +5305,12 @@ void func_800645A4(s32 arg0, s32 arg1) {
     x = *(s16 *)(node + 8);
     offset = *(s32 *)(D_800A3A5C + idx * 4);
     for (i = 0; i < 6; i++) {
-        prim = *(u8 **)(node + 0x20);
+        prim2 = *(u8 **)(node + 0x20);
         if (i == 0) {
-            *(u8 **)(prim + 8) = D_8009AC1C[idx];
+            *(u8 **)(prim2 + 8) = D_8009AC1C[idx];
         } else {
             str = (u8 *)(D_800A3358 + offset);
-            *(u8 **)(prim + 8) = str;
+            *(u8 **)(prim2 + 8) = str;
             while (*str != 0) {
                 str++;
                 offset++;
@@ -5318,11 +5322,11 @@ void func_800645A4(s32 arg0, s32 arg1) {
             x = h + 0x32;
         } else {
             if (i == 1 || (u32)(i - 4) < 2) {
-                advance = func_8005B138(*(u8 **)(prim + 8)) * h;
+                y = func_8005B138(*(u8 **)(prim2 + 8)) * h;
             } else {
-                advance = h;
+                y = h;
             }
-            x += advance;
+            x += y;
         }
         if (i == 3) {
             x += 5;
@@ -5622,7 +5626,8 @@ s32 func_80065040(void) {
  *    func_80018588 buffer into func_8005A9F4.
  * 3. asm("" : "=r"(match) : "r"(match)) after match = slots slows the
  *    cursor/match CSE.
- * Remaining versus retail: frame 0xa0 vs 0xa8, cursor/match still one
+ * Dead address-taken pad restores retail frame 0xa8 (1596 -> 1585
+ * differing text bytes, size 0x7e0). cursor/match still one
  * addiu plus a derived copy where retail has two addiu, and ours reads
  * D_800BE70C/D_800A36E0/D_800A3644 through cached t-reg bases with
  * 0-offset loads where retail uses %hi/%lo displacements off the index.
@@ -5647,6 +5652,7 @@ extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
 void func_80065058(u8 id, s32 shift) {
     u8 entry[0x40];
     u8 slots[2];
+    u8 pad[8];
     u8 *cursor;
     u8 *match;
     u8 *prim;
@@ -5666,6 +5672,10 @@ void func_80065058(u8 id, s32 shift) {
     s32 g2;
     s32 b2;
 
+    /* Keep the unused address-taken local in the retail frame. */
+    if (0) {
+        func_80018588(0, -1, pad);
+    }
     yOffset = -((shift & 0xFF) != 0) & -0x140;
     cursor = slots;
     match = slots;

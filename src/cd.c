@@ -1678,7 +1678,11 @@ INCLUDE_ASM("asm/nonmatchings/cd", func_8003DBA8);
  * output-2565-1: hoist `x = D_800BE974R[0];` before each half's start lh
  * and `value += x` in all four arms — 2565 in-unit but 6055/6835 in the
  * real TU (half2-only and half1-only bisects both worse); NOT transferred.
- * The priority cascade above remains the best lead. */
+ * The priority cascade above remains the best lead.
+ * 2026-10-11: computing the RandomScaledGet sum in x before the pace sum
+ * reduces the full-TU linked diff from 372 to 371 bytes at 776 bytes.
+ * Eight later shapes did not improve it. Both narrowing flag and declaring
+ * ahead as s16 add 16 bytes. The assembly fallback remains active. */
 extern u8 D_800A372C[];
 extern s32 D_800A2CE0[];
 extern s32 D_800A2EA8[];
@@ -1771,10 +1775,13 @@ s32 func_8003E78C(u8 *object) {
     *(s16 *)(object + 0x288) = 1;
     ahead = *(s16 *)(object + 0x282);
     pace = *(s32 *)(object + 0x29C);
-    if (RandomScaledGet(5) < 0)
-        *(s32 *)(object + 0x29C) = (pace - 2) + (ahead - RandomScaledGet(5));
-    else
-        *(s32 *)(object + 0x29C) = (pace - 2) + (ahead + RandomScaledGet(5));
+    if (RandomScaledGet(5) < 0) {
+        x = ahead - RandomScaledGet(5);
+        *(s32 *)(object + 0x29C) = pace - 2 + x;
+    } else {
+        x = ahead + RandomScaledGet(5);
+        *(s32 *)(object + 0x29C) = pace - 2 + x;
+    }
     return 1;
 }
 #else
