@@ -60,6 +60,15 @@ ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
             --defsym=D_800A2F9CAbsolute=D_800A2F9C \
+            --defsym=D_800A3678Absolute=D_800A3678 \
+            --defsym=D_800A3654Absolute=D_800A3654 \
+            --defsym=D_800A367CAbsolute=D_800A367C \
+            --defsym=D_800A39C8Absolute=D_800A39C8 \
+            --defsym=gPrimitiveCursorAbsolute=gPrimitiveCursor \
+            --defsym=D_800A3570Absolute=D_800A3570 \
+            --defsym=D_800A2F94Absolute=D_800A2F94 \
+            --defsym=D_800A3A04Absolute=D_800A3A04 \
+            --defsym=D_800A3A38Absolute=D_800A3A38 \
             --defsym=D_800A3848Absolute=D_800A3848 \
             --defsym=D_800A3574Absolute=D_800A3574 \
             --defsym=D_800A3A2CAbsolute2=D_800A3A2C \

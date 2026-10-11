@@ -3497,6 +3497,7 @@ void func_80060F10(s32 a, s32 b, s16 c) {
 }
 
 extern u8 D_800A2F9DAbsolute[];
+extern u8 D_800A2F94Lui asm("D_800A2F94Absolute");
 void func_80060F54(s32 arg0, s32 volume) {
     u8 *node;
     u8 x;
@@ -3507,7 +3508,7 @@ void func_80060F54(s32 arg0, s32 volume) {
     *(u16 *)(node + 0x16) = x;
     if (volume != 0) {
         x = arg0;
-        D_800A2F9DAbsolute[-9] = (x * 127) / 100;
+        D_800A2F94Lui = (x * 127) / 100;
         func_8003FDE8(1, 0x7F, 0x7F);
     } else {
         CdSetMixVolume(x);

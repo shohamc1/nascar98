@@ -3358,6 +3358,7 @@ extern s32 D_800A3630_w42b asm("D_800A3630.NON_MATCHING");
 extern s32 D_800A2EC8Small;
 extern s32 D_800A2ED4_w42 asm("D_800A2ED4.NON_MATCHING");
 
+extern s32 D_800A3A38Lui asm("D_800A3A38Absolute");
 void func_8002DA80(void) {
     void **p;
     u8 *q;
@@ -3377,8 +3378,8 @@ void func_8002DA80(void) {
     D_800A39A4Absolute[0] = 0;
     HeapFree(D_800BE980_w42[0]);
     D_800BE97C[1] = 0;
-    HeapFree((void *)D_800A3A3CAbsolute[-1]);
-    D_800A3A38p[0] = 0;
+    HeapFree((void *)D_800A3A38Lui);
+    D_800A3A38Lui = 0;
     HeapFree(D_800A3A8C_w42[0]);
     D_800A3A8CAbsolute[0] = 0;
     p = D_800B60A4_w42;
@@ -5681,6 +5682,8 @@ extern u32 D_800B022C[];
 extern MATRIX D_800A4588[];
 extern MATRIX D_800A4568[];
 
+extern u32 D_800A3570Lui asm("D_800A3570Absolute");
+extern u32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
 s32 func_800346D0(s32 threshold) {
     s32 i;
     u32 ret;
@@ -5694,10 +5697,9 @@ s32 func_800346D0(s32 threshold) {
     for (i = 0; i < D_800A2F38[0]; i++) {
         D_800A3640[0] = D_800AFE2C[i];
         ret = func_800342D8(&D_800B022C[i], gPrimitiveCursor[0]);
-        ((u32 *)D_800A36D0Absolute)[-67] = ret;
-        if (threshold < (s32)(((ret & 0xFFFFFFF) -
-                               (((u32 *)D_800A3668Absolute)[-62] & 0xFFFFFFF)) /
-                              40)) {
+        gPrimitiveCursorLui = ret;
+        if (threshold <
+            (s32)(((ret & 0xFFFFFFF) - (D_800A3570Lui & 0xFFFFFFF)) / 40)) {
             D_800A2F38[0] = i;
         }
     }

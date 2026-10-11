@@ -150,6 +150,7 @@ s32 RandomScaledGet(s32 scale);
 
 /* Primitives and text. */
 
+extern s32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
 void func_80017D80(u8 *arg0) {
     extern u32 gPrimitiveCursor[];
     extern s32 D_800A39C8[];
@@ -158,7 +159,7 @@ void func_80017D80(u8 *arg0) {
     u32 cursor;
 
     cursor = gPrimitiveCursor[0];
-    ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
+    gPrimitiveCursorLui = cursor + 0x28;
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)arg0;
     AddPrim((u8 *)D_800A39C8[0], entry);
@@ -1452,7 +1453,7 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
 
     flag = D_800A2EC8[0];
     cursor = gPrimitiveCursor[0];
-    ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
+    gPrimitiveCursorLui = cursor + 0x28;
     poly = (POLY_FT4 *)cursor;
     if (flag == 0 || D_800A397CAbsolute[0] != 2) {
         switch (kind) {
@@ -1593,6 +1594,8 @@ extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 extern s32 D_800A2EC0Absolute[];
 
+extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 void func_8001C34C(void) {
     s32 mode;
     s32 value;
@@ -1631,12 +1634,12 @@ void func_8001C34C(void) {
         func_8001AEDC(D_800A3554small, -0xA);
         func_80048EFC(D_800A3554small, -0x6E);
         prim = *(s32 *)(D_800A3554small + 0x3E0);
-        D_800A2EB0Absolute[-111] = D_800A2E24Absolute[-76] + 1;
-        D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
+        gOrderingTableBankLui = gOrderingTableBankLui + 1;
+        D_800A39C8Lui = D_800A39C8Lui + 0x1004;
         func_8001AEDC(prim, -0x14);
         func_80048EFC(*(s32 *)(D_800A3554small + 0x3E0), -0x7D);
-        D_800A2EC0Absolute[-115] = D_800A2EACAbsolute[-110] - 1;
-        D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+        gOrderingTableBankLui = gOrderingTableBankLui - 1;
+        D_800A39C8Lui = D_800A39C8Lui - 0x1004;
         return;
     }
     func_8001AEDC(D_800A3554small, 0);

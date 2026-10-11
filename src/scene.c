@@ -6510,10 +6510,11 @@ void func_80057160(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/scene", func_800571EC);
 
 extern s32 D_800A3668Absolute[];
+extern s32 D_800A3654Lui asm("D_800A3654Absolute");
 void func_80057A9C(void) {
     ((s32 *)D_800A3668Absolute)[4] = (s32)HeapAlloc(0x1AB8);
     ((u8 *)D_800A3668Absolute)[-0x7C] = 0;
-    ((s32 *)D_800A3668Absolute)[-5] = (s32)HeapAlloc(0x834);
+    D_800A3654Lui = (s32)HeapAlloc(0x834);
     ((u8 *)D_800A37B4Absolute)[8] = 0;
 }
 
@@ -6573,6 +6574,7 @@ extern s32 D_800A3548;
 extern s32 D_800A3780;
 extern s32 D_800A37EC;
 
+extern s32 D_800A3678Lui asm("D_800A3678Absolute");
 void func_80057BFC(void) {
     extern void func_800697B4(void);
     extern void func_8005E3DC(void);
@@ -6595,14 +6597,14 @@ void func_80057BFC(void) {
         HeapFree((void *)D_800A37EC);
     }
     D_800A37EC = 0;
-    if (D_800A36D0Absolute[-22] != 0) {
-        HeapFree((void *)D_800A36D0Absolute[-22]);
+    if (D_800A3678Lui != 0) {
+        HeapFree((void *)D_800A3678Lui);
     }
-    D_800A36C0Absolute[-18] = 0;
-    if (D_800A36D4Absolute[-32] != 0) {
-        HeapFree((void *)D_800A36D4Absolute[-32]);
+    D_800A3678Lui = 0;
+    if (D_800A3654Lui != 0) {
+        HeapFree((void *)D_800A3654Lui);
     }
-    D_800A36E8Absolute[-37] = 0;
+    D_800A3654Lui = 0;
     func_80014A68();
     func_80063A20();
 }
@@ -6665,6 +6667,8 @@ extern u32 gPrimitiveCursor[];
 extern s32 D_800A36D0Absolute[];
 extern s32 D_800A3668Absolute[];
 
+extern s32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
+extern s32 D_800A367CLui asm("D_800A367CAbsolute");
 u8 *func_80057CCC(s32 arg0) {
     u8 *prim;
 
@@ -6677,12 +6681,12 @@ u8 *func_80057CCC(s32 arg0) {
     }
     if (D_800A39E4Small == 0x80) {
         prim = (u8 *)D_800A3668Absolute[5];
-        D_800A36D0Absolute[-21] = (s32)prim + 0x28;
+        D_800A367CLui = (s32)prim + 0x28;
         return prim;
     }
     prim = (u8 *)gPrimitiveCursor[0];
     D_800A3964 += 1;
-    D_800A36D0Absolute[-67] = (s32)prim + 0x28;
+    gPrimitiveCursorLui = (s32)prim + 0x28;
     return prim;
 }
 
@@ -6706,12 +6710,12 @@ u8 *func_80057D50(s32 arg0) {
     }
     if (D_800A39E4Small == 0x80) {
         prim = (u8 *)D_800A3668Absolute[5];
-        D_800A36D0Absolute[-21] = (s32)prim + 0x28;
+        D_800A367CLui = (s32)prim + 0x28;
         return prim;
     }
     prim = (u8 *)gPrimitiveCursor[0];
     D_800A3650 += 1;
-    D_800A36D0Absolute[-67] = (s32)prim + 0x28;
+    gPrimitiveCursorLui = (s32)prim + 0x28;
     return prim;
 }
 

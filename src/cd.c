@@ -1382,6 +1382,7 @@ extern s32 D_800A3A3CAbsolute[];
 extern s32 D_800A2F84nm asm("D_800A2F84.NON_MATCHING");
 extern void func_800414E0(void *, s32, s32);
 
+extern s32 D_800A3A04Lui asm("D_800A3A04Absolute");
 void func_8003D25C(u8 *object) {
     s32 i;
     s32 value;
@@ -1391,7 +1392,7 @@ void func_8003D25C(u8 *object) {
 
     D_800A3A04nm[0] = 3;
     func_80029CB4(object);
-    D_800A3A3CAbsolute[-14] = 0xD;
+    D_800A3A04Lui = 0xD;
     flag = 1;
     if (*(u8 *)(object + 0x26A) & 0x10) {
         i = *(u8 *)(object + 0x26A) & 0x40;
