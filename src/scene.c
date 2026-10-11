@@ -1993,7 +1993,7 @@ extern s16 D_800A2FF0Absolute[];
 void func_800474A0(void) {
     u32 *padScratch = (u32 *)(SCRATCHPAD_BASE + 0x120);
     u32 *unkScratch = (u32 *)(SCRATCHPAD_BASE + 0x240);
-    s32 angleRaw;
+    register s32 angleRaw asm("$7");
     s32 absA3;
     s16 loopIdx;
     s32 angA3;
@@ -2015,6 +2015,8 @@ void func_800474A0(void) {
     s32 scratchW2;
     s32 vyVal;
     s32 multTmp;
+    s32 multTmp2;
+    s32 rot2base;
     u8 *car;
     u8 *row;
     s32 place;
@@ -2027,6 +2029,7 @@ void func_800474A0(void) {
     u8 *prim;
     u8 *primNext;
     s32 otBaseW;
+    register s32 *verts asm("$4");
     s32 primCount;
     u8 *rv;
     s32 angC;
@@ -2159,10 +2162,11 @@ loopPrep:
                 multTmp = D_800A3480 * 4;
                 rot[0] =
                     D_80099254[(s16)loopIdx * 3] - sp98v + D_800A345C * multTmp;
+                multTmp2 = D_800A345C * (0x40 - D_800A3480 * 2);
                 rot[1] = D_80099256[(s16)loopIdx * 3];
+                rot2base = D_80099258[(s16)loopIdx * 3];
                 D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
-                rot[2] = D_80099258[(s16)loopIdx * 3] -
-                         D_800A345C * (0x40 - D_800A3480 * 2);
+                rot[2] = rot2base - multTmp2;
                 rv = (u8 *)D_800A2FF0Absolute;
                 asm("" : "=r"(rv) : "0"(rv));
                 RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
@@ -2347,7 +2351,7 @@ loopPrep:
             otBaseW = D_800A39C8[0];
             primNext = prim + 0x10;
             do {
-                s32 **verts = (s32 **)(node + 0x18);
+                verts = (s32 **)(node + 0x18);
                 gte_ldv3(verts[0], verts[1], verts[2]);
                 gte_rtpt();
                 gte_avsz3();

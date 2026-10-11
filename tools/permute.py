@@ -57,7 +57,7 @@ def main() -> None:
     cpp = cc.split("|")[0].removeprefix("set -o pipefail;").split()
     cpp = [a for a in cpp if a != str(src)]
     source = subprocess.run(
-        cpp + ["-P", "-DPERMUTER", str(variant)],
+        cpp + ["-P", str(variant)],
         capture_output=True, text=True, check=True,
     ).stdout
     source, _ = permuter_import.prune_source(source, True, args.func)
