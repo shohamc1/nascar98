@@ -725,6 +725,7 @@ SoundReloadVab = 0x8003F1B0; // type:func
 GraphicsSetGeomOffsetForMode = 0x8001EA90; // type:func
 GraphicsInitDoubleBuffer = 0x80064CD8; // type:func
 GraphicsInitDoubleBufferSwapped = 0x80057E24; // type:func
+HudInitPrims = 0x8004BDD0; // type:func
 HudDrawStandings = 0x8004D73C; // type:func
 gStandingsPlaceX = 0x800A2FE4; // x of the standings position column
 gStandingsNameX = 0x800A2FE5; // x of the standings driver-name column
