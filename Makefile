@@ -107,6 +107,8 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2EA4Absolute=D_800A2EA4 \
             --defsym=D_800A2EC8Small=D_800A2EC8 \
             --defsym=D_800A2EC8Absolute=D_800A2EC8 \
+            --defsym=D_800A2FF0Small=D_800A2FF0 \
+            --defsym=D_800A2FF0Absolute=D_800A2FF0 \
             --defsym=D_800A3A54Small=D_800A3A54 \
             --defsym=D_800A3A54Absolute=D_800A3A54 \
             --defsym=gOrderingTableBankSmall=gOrderingTableBank \

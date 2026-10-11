@@ -1971,7 +1971,388 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004658C);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80046BD4);
 
+#ifdef NON_MATCHING
+extern u8 D_800A2FE8;
+extern s8 D_800A3480;
+extern s8 D_800A345C;
+extern s8 D_800A3460;
+extern u16 D_800A3464;
+extern u16 D_800A3468;
+extern u8 D_800A346C;
+extern u8 D_800A3470;
+extern u8 D_800A3474;
+extern u16 D_80099254[];
+extern u16 D_80099256[];
+extern u16 D_80099258[];
+extern u8 D_800A45F0[];
+extern u8 D_800A46A0[];
+extern u8 D_800A46A2[];
+extern u8 D_800A46A4[];
+extern MATRIX D_800A7530[];
+extern s32 D_800A2EC8Absolute[];
+extern s16 D_800A2FF0;
+extern s16 D_800A2FF0Absolute[];
+
+void func_800474A0(void) {
+    u32 *padScratch = (u32 *)(SCRATCHPAD_BASE + 0x120);
+    u32 *unkScratch = (u32 *)(SCRATCHPAD_BASE + 0x240);
+    s32 angleRaw;
+    s32 absA3;
+    s16 loopIdx;
+    s32 angA3;
+    s16 segIdx;
+    s32 s5v;
+    s32 fpVal;
+    s16 s4Off;
+    s16 s2v;
+    s32 s1v;
+    s16 vtxIdx;
+    s32 sp98v;
+    u16 rot[3];
+    MATRIX mat1;
+    MATRIX mat2;
+    SVECTOR vec;
+    VECTOR out;
+    s32 gteFlag;
+    s32 t;
+    s32 scratchW;
+    s32 scratchW2;
+    s32 vyVal;
+    s32 multTmp;
+    u8 *car;
+    u8 *row;
+    s32 place;
+    s32 c8val;
+    s32 count;
+    u8 *rec;
+    MATRIX *transPtr;
+    u8 *prim;
+    u8 *primNext;
+    s32 otBaseW;
+
+    if (D_800A2FE8 == 0) {
+        return;
+    }
+    angleRaw = D_800A3480;
+    *(u32 *)(SCRATCHPAD_BASE + 0x000) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x024) = 1;
+    padScratch[0] = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x144) = 1;
+    unkScratch[0] = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x268) = 6;
+    *(u32 *)(SCRATCHPAD_BASE + 0x26C) = 7;
+    *(u32 *)(SCRATCHPAD_BASE + 0x270) = 8;
+    *(u32 *)(SCRATCHPAD_BASE + 0x010) = 8;
+    *(u32 *)(SCRATCHPAD_BASE + 0x274) = 9;
+    *(u32 *)(SCRATCHPAD_BASE + 0x264) = 2;
+    *(u32 *)(SCRATCHPAD_BASE + 0x028) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x004) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x124) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x148) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x244) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x008) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x02C) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x128) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x14C) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x248) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x00C) = 2;
+    *(u32 *)(SCRATCHPAD_BASE + 0x030) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x12C) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x150) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x24C) = 2;
+    *(u32 *)(SCRATCHPAD_BASE + 0x034) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x130) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x154) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x250) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x014) = 0x10;
+    *(u32 *)(SCRATCHPAD_BASE + 0x038) = 5;
+    *(u32 *)(SCRATCHPAD_BASE + 0x134) = 3;
+    c8val = D_800A2EC8Absolute[0];
+    *(u32 *)(SCRATCHPAD_BASE + 0x254) = 4;
+    *(u32 *)(SCRATCHPAD_BASE + 0x278) = 0xA;
+    *(u32 *)(SCRATCHPAD_BASE + 0x27C) = 0xB;
+    *(u32 *)(SCRATCHPAD_BASE + 0x280) = 0xC;
+    *(u32 *)(SCRATCHPAD_BASE + 0x158) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x018) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x03C) = 5;
+    *(u32 *)(SCRATCHPAD_BASE + 0x138) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x15C) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x258) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x01C) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x040) = 5;
+    *(u32 *)(SCRATCHPAD_BASE + 0x13C) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x160) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x25C) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x020) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x044) = 5;
+    *(u32 *)(SCRATCHPAD_BASE + 0x140) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x164) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x260) = 2;
+    *(u32 *)(SCRATCHPAD_BASE + 0x284) = 0xD;
+    absA3 = angleRaw;
+    if (angleRaw < 0) {
+        absA3 = -absA3;
+    }
+    if (c8val != 0) {
+        D_800A3468 = 0;
+        D_800A3474 = 0;
+        D_800A3460 = 0;
+        D_800A3470 = 0;
+        loopIdx = 0;
+    } else {
+        if (D_800A345C < 0xA) {
+            car = D_800A3554[0];
+            place = *(s16 *)(car + 0x10C);
+            if (place != 0) {
+                row = car + place * 24;
+                if (*(s16 *)(car + 0x108) < *(s32 *)(row + 0x130) + 0x3E8) {
+                    D_800A346C = 1;
+                    goto afterCounter;
+                }
+            }
+            if (place < 3 && *(s16 *)(car + 0x108) >= 0x2EE1) {
+                D_800A346C = 1;
+            }
+        }
+    afterCounter:
+        if (D_800A346C != 0) {
+            count = D_800A345C + 1;
+            D_800A345C = count;
+        } else {
+            if (D_800A345C != 0) {
+                count = D_800A345C - 1;
+            } else {
+                count = 0;
+            }
+            D_800A345C = count;
+        }
+        if ((s8)count >= 0xA) {
+            D_800A346C = 0;
+        }
+        if ((func_80041B7C(0) & 0x10) != 0 && D_800A345C == 0) {
+            D_800A3470 = 1;
+        } else {
+            D_800A3468 = 0;
+            D_800A3474 = 0;
+            D_800A3460 = 0;
+            D_800A3470 = 0;
+        }
+        if (D_800A3470 != 0) {
+            if (D_800A3460 < 0xA) {
+                D_800A3460 = D_800A3460 + 1;
+                loopIdx = 0;
+                goto loopPrep;
+            }
+            D_800A3460 = 0xA;
+        } else {
+            D_800A3460 = 0;
+        }
+        loopIdx = 0;
+    }
+loopPrep:
+    sp98v = (absA3 << 16) >> 17;
+    angA3 = (absA3 << 16) >> 16;
+    do {
+        if (loopIdx != 0) {
+            if (D_800A345C != 0) {
+                multTmp = D_800A3480 * 4;
+                rot[0] =
+                    D_80099254[(s16)loopIdx * 3] - sp98v + D_800A345C * multTmp;
+                rot[1] = D_80099256[(s16)loopIdx * 3];
+                D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
+                rot[2] = D_80099258[(s16)loopIdx * 3] -
+                         D_800A345C * (0x40 - D_800A3480 * 2);
+                RotMatrix((SVECTOR *)&D_800A2FF0Absolute[-2],
+                          (MATRIX *)D_800A7530);
+                goto afterRot;
+            }
+        } else {
+            if (D_800A3460 != 0) {
+                rot[0] = D_80099254[0] - D_800A3460 * 64;
+                rot[1] = D_80099256[0] + D_800A3460 * 32;
+                rot[2] = (D_80099258[0] + (D_800A3460 << 5)) & 0xFFF;
+                if (D_800A3460 == 0xA) {
+                    if (D_800A2EC8Absolute[0] == 0) {
+                        if (D_800A3474 != 0) {
+                            D_800A3468 = D_800A3468 - 0x20;
+                            if ((D_800A3468 << 16) == 0) {
+                                D_800A3474 = 0;
+                            }
+                        } else {
+                            D_800A3468 = D_800A3468 + 0x20;
+                            if ((D_800A3468 << 16 >> 16) == 0x100) {
+                                D_800A3474 = 1;
+                            }
+                        }
+                    }
+                    rot[2] = rot[2] - D_800A3468;
+                }
+                D_800A2FF0 = 0;
+                RotMatrix((SVECTOR *)&D_800A2FF0Absolute[-2],
+                          (MATRIX *)D_800A7530);
+                goto afterRot;
+            }
+        }
+        rot[0] = D_80099254[(s16)loopIdx * 3] - sp98v;
+        rot[1] = D_80099256[(s16)loopIdx * 3];
+        D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
+        rot[2] = D_80099258[(s16)loopIdx * 3];
+        RotMatrix((SVECTOR *)&D_800A2FF0Absolute[-2], (MATRIX *)D_800A7530);
+    afterRot:
+        if (loopIdx != 0) {
+            if (D_800A3480 < 0) {
+                goto doSub;
+            }
+        } else if (D_800A3480 > 0) {
+            goto doSub;
+        } else {
+            goto vecSetup;
+        }
+        goto vecSetup;
+    doSub:
+        rot[0] = rot[0] - sp98v;
+    vecSetup:
+        vec.vx = 0x1000 - rot[0];
+        vec.vy = c8val = 0x1000 - rot[1];
+        vec.vz = 0x1000 - rot[2];
+        segIdx = 0;
+        RotMatrix(&vec, &mat1);
+        s5v = (s16)loopIdx;
+        t = s5v * 2;
+        fpVal = t - 1;
+        t = t + s5v;
+        s4Off = ((t << 6) - t) << 5;
+        do {
+            s2v = D_800A3464;
+            if (s5v != 0) {
+                if (D_800A345C != 0) {
+                    if (D_800A345C < 3) {
+                        D_800A3464 = s2v - D_800A345C * 160;
+                    } else {
+                        D_800A3464 = 0x80;
+                    }
+                }
+            } else {
+                if (D_800A3460 != 0) {
+                    D_800A3464 = s2v - D_800A3460 * 36;
+                }
+            }
+            scratchW = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4);
+            vec.vx = 0x1000 - (s16)D_800A3464 * scratchW * (scratchW & 1);
+            scratchW2 = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4);
+            vyVal = 0;
+            if ((scratchW2 & 1) == 0) {
+                vyVal = ((s16)D_800A3464 >> 3) * scratchW2 * fpVal;
+            }
+            vec.vy = vyVal;
+            if (s5v == 0 && (s16)segIdx != 0 && D_800A3460 == 0xA) {
+                vec.vz = D_800A3468 << 16 >> 17;
+            } else {
+                vec.vz = 0;
+            }
+            RotMatrix(&vec, &mat2);
+            MulMatrix2(&mat1, &mat2);
+            SetRotMatrix(&mat2);
+            if ((s16)segIdx != 0) {
+                mat1.t[0] =
+                    *(s16 *)((u8 *)D_800A46A0 + padScratch[(s16)segIdx] * 20 +
+                             unkScratch[(s16)segIdx] * 336 + s4Off);
+                mat1.t[1] =
+                    *(s16 *)((u8 *)D_800A46A2 + padScratch[(s16)segIdx] * 20 +
+                             unkScratch[(s16)segIdx] * 336 + s4Off);
+                mat1.t[2] =
+                    *(s16 *)((u8 *)D_800A46A4 + padScratch[(s16)segIdx] * 20 +
+                             unkScratch[(s16)segIdx] * 336 + s4Off);
+            } else {
+                mat1.t[2] = 0;
+                mat1.t[1] = 0;
+                mat1.t[0] = 0;
+            }
+            SetTransMatrix(&mat1);
+            D_800A3464 = s2v;
+            if ((s16)segIdx != 0 || (s5v == 0 && D_800A3460 != 0)) {
+                vtxIdx = 0;
+                s1v = (s16)segIdx;
+                do {
+                    rec = s4Off + D_800A45F0 + s1v * 336 +
+                          ((s16)vtxIdx * 20 + 0xB0);
+                    vec.vx = *(u32 *)(rec + 8);
+                    vec.vy = *(u32 *)(rec + 0xC);
+                    vec.vz = *(u32 *)(rec + 0x10);
+                    RotTrans(&vec, &out, &gteFlag);
+                    *(u16 *)rec = out.vx;
+                    *(u16 *)(rec + 2) = out.vy;
+                    *(u16 *)(rec + 4) = out.vz;
+                    vtxIdx += 1;
+                } while (vtxIdx < 8);
+            } else {
+                vtxIdx = 0;
+                s1v = (s16)segIdx;
+                do {
+                    rec = s4Off + D_800A45F0 + s1v * 336 +
+                          ((s16)vtxIdx * 20 + 0xB0);
+                    vec.vx = *(u32 *)(rec + 8);
+                    vec.vy = *(u32 *)(rec + 0xC);
+                    if ((u16)(vtxIdx - 2) < 2 || (u16)(vtxIdx - 6) < 2) {
+                        vec.vz = *(u32 *)(rec + 0x10) + angA3 * 3 - 0x1E;
+                    } else {
+                        vec.vz = *(u32 *)(rec + 0x10);
+                    }
+                    RotTrans(&vec, &out, &gteFlag);
+                    *(u16 *)rec = out.vx;
+                    *(u16 *)(rec + 2) = out.vy;
+                    *(u16 *)(rec + 4) = out.vz;
+                    vtxIdx += 1;
+                } while (vtxIdx < 8);
+            }
+            segIdx += 1;
+        } while (segIdx < 0x12);
+        SetRotMatrix((MATRIX *)D_800A7530);
+        if (loopIdx == 0 && D_800A3460 != 0) {
+            transPtr = &mat1;
+            mat1.t[0] = D_800A3460 * 4;
+            mat1.t[1] = D_800A3460 * 8 + 0x64;
+            mat1.t[2] = D_800A3460 * 16;
+        } else {
+            transPtr = (MATRIX *)D_800A7530;
+        }
+        SetTransMatrix(transPtr);
+        if (loopIdx != 0 && D_800A345C >= 5) {
+            ;
+        } else {
+            prim = (u8 *)gPrimitiveCursor[0];
+            t = (s16)loopIdx * 3;
+            rec = D_800A45F0 + (((t << 6) - t) << 5);
+            segIdx = 0x48;
+            otBaseW = D_800A39C8[0];
+            primNext = prim + 0x10;
+            do {
+                s32 *vertA = *(s32 **)(rec + 0x18);
+                s32 *vertB = *(s32 **)(rec + 0x1C);
+                s32 *vertC = *(s32 **)(rec + 0x20);
+                gte_ldv3(vertA, vertB, vertC);
+                gte_rtpt();
+                gte_avsz3();
+                *(u32 *)(primNext - 0xC) = *(u32 *)(rec + 4);
+                gte_stsxy3(prim + 8, prim + 0xC, prim + 0x14);
+                gte_ldv0(*(s32 **)(rec + 0x24));
+                gte_rtps();
+                gte_stsxy(primNext);
+                GraphicsAddTaggedPrimitive(
+                    (u32 *)(otBaseW + *(s8 *)(rec + 1) * 4), (u32 *)prim,
+                    0x05000000);
+                rec = *(u8 **)(rec + 0x28);
+                prim += 0x18;
+                primNext += 0x18;
+            } while (--segIdx > 0);
+            gPrimitiveCursor[0] = (u32)prim;
+        }
+        loopIdx += 1;
+    } while (loopIdx < 2);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_800474A0);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80048118);
 
