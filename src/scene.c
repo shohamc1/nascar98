@@ -2031,7 +2031,9 @@ void func_800474A0(void) {
     s32 otBaseW;
     register s32 *verts asm("$4");
     s32 primCount;
-    u8 *rv;
+    register u8 *rv1 asm("$10");
+    u8 *rv2;
+    u8 *rv3;
     s32 angC;
 
     if (D_800A2FE8 == 0) {
@@ -2167,9 +2169,9 @@ loopPrep:
                 rot2base = D_80099258[(s16)loopIdx * 3];
                 D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
                 rot[2] = rot2base - multTmp2;
-                rv = (u8 *)D_800A2FF0Absolute;
-                asm("" : "=r"(rv) : "0"(rv));
-                RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
+                rv1 = (u8 *)D_800A2FF0Absolute;
+                asm("" : "=r"(rv1) : "0"(rv1));
+                RotMatrix((SVECTOR *)(rv1 - 4), (MATRIX *)D_800A7530);
                 goto afterRot;
             }
         } else {
@@ -2194,9 +2196,9 @@ loopPrep:
                     rot[2] = rot[2] - D_800A3468;
                 }
                 D_800A2FF0 = 0;
-                rv = (u8 *)D_800A2FF0Absolute;
-                asm("" : "=r"(rv) : "0"(rv));
-                RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
+                rv2 = (u8 *)D_800A2FF0Absolute;
+                asm("" : "=r"(rv2) : "0"(rv2));
+                RotMatrix((SVECTOR *)(rv2 - 4), (MATRIX *)D_800A7530);
                 goto afterRot;
             }
         }
@@ -2205,9 +2207,9 @@ loopPrep:
         angC = D_800A3480;
         D_800A2FF0 = angC - angC * 16;
         rot[2] = D_80099258[(s16)loopIdx * 3];
-        rv = (u8 *)D_800A2FF0Absolute;
-        asm("" : "=r"(rv) : "0"(rv));
-        RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
+        rv3 = (u8 *)D_800A2FF0Absolute;
+        asm("" : "=r"(rv3) : "0"(rv3));
+        RotMatrix((SVECTOR *)(rv3 - 4), (MATRIX *)D_800A7530);
     afterRot:
         if (loopIdx != 0) {
             if (D_800A3480 < 0) {
