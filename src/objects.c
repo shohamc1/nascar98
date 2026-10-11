@@ -3241,7 +3241,82 @@ void func_8002D3EC(u8 *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002D4CC);
 
+#ifdef NON_MATCHING
+/* 2026-10-11 parked at 1893 (fresh pure-C draft from Ghidra's retail decompile).
+ * Semantics fully decoded: 0x500 pool entry (D_800A2E84 counter), func_8002D3A8-
+ * style negative-index table setup, callback dispatch on arg0 (a0-only
+ * func_8002DA30 call confirmed from retail), per-type tables via off = arg1*16.
+ * Residual: retail folds each D_800A2E94 access into its own lui+%lo pair
+ * (three single-use addresses) and materialises D_800A2EB4's read/write
+ * separately; this gcc cse-shares the (symbol,0) address pseudo instead, and
+ * allocates arg0 to s1 where retail has off (s1/s2 swap). Neighbor-symbol
+ * spellings would need new symbol_addrs entries (image-shift risk). */
+void func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    extern s32 D_800A2E88;
+    extern s32 D_800A2E94[];
+    extern s32 D_800A2EB4[];
+    extern s32 D_800BE72C[];
+    extern s32 D_800BE730[];
+    extern s16 D_800BE738[];
+    extern void func_8002A2F8(u8 *);
+    extern void func_800373B4(u8 *);
+    extern void func_80029E34(void);
+    extern void func_80025594(u8 *);
+    extern void func_8002D4CC();
+    u8 *entry;
+    u8 *data;
+    s32 index;
+    s32 off;
+    s32 b;
+    s32 w;
+
+    index = D_800A2E84++;
+    entry = (u8 *)D_800A3984[0] + index * 0x500;
+    if (arg3 < 0) {
+        arg3 = -arg3;
+        data = D_800AE88C + arg3 * 0x44;
+    } else {
+        data = D_800AE88C;
+    }
+    *(u8 **)(entry + 0x370) = data;
+    *(u8 **)(entry + 0x36C) = data;
+    entry[0x374] = 0;
+    entry[0x200] = arg3;
+    func_8002DA30((s32 *)entry);
+    *(s16 *)(entry + 0x1EC) = arg0;
+    if (arg0 == 0) {
+        *(u32 *)(entry + 0x350) = (u32)func_8002A2F8;
+        D_800A2EB4[0] = D_800A2EB4[0] + 1;
+    } else if (arg0 == 1) {
+        *(u32 *)(entry + 0x350) = (u32)func_800373B4;
+    } else {
+        *(u32 *)(entry + 0x350) = (u32)func_80029E34;
+    }
+    *(u32 *)(entry + 0x354) = (u32)func_80025594;
+    off = arg1 * 16;
+    *(u32 *)(entry + 0) = *(u32 *)((u8 *)D_800BE72C + off);
+    *(u32 *)(entry + 4) = *(u32 *)((u8 *)D_800BE730 + off);
+    *(u32 *)(entry + 8) = 0;
+    if (arg0 == 0) {
+        b = D_800A2E88;
+        D_800A2E88 = b + 1;
+        entry[0x20B] = b;
+    }
+    func_8002D4CC(entry);
+    func_80028754(entry, 5);
+    func_80022FB8(entry, *(s16 *)((u8 *)D_800BE738 + off));
+    w = D_800A2E94[0];
+    b = arg1 + 1;
+    entry[0x204] = b;
+    entry[0x205] = b;
+    entry[0x3C9] = b;
+    *(s16 *)(entry + 0x28A) = arg2;
+    *(s16 *)(entry + 0x1DE) = w;
+    D_800A2E94[0] = D_800A2E94[0] + 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002D874);
+#endif
 
 void func_8002DA30(s32 *arg0) {
     arg0[0x3C / 4] = 0x10000;

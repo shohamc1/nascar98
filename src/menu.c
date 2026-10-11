@@ -5263,6 +5263,10 @@ void func_800641EC(void) {
 INCLUDE_ASM("asm/nonmatchings/menu", func_80064208);
 
 #ifdef NON_MATCHING
+/* 2026-10-11 parked at 60 (was 450; size matches). Permuter + manual: the
+ * (idx&3)<<6+0x3F value now flows through a chained assignment into prim[0x14]
+ * (prim[0x14] = (q = ...)), which fixed the store order. Residual is pure
+ * register renames on the two address chains (a2/v0/v1 vs v0/v1/a2). */
 extern u8 *D_800A3744[];
 extern u8 *D_800A3958[];
 void func_800645A4(s32 arg0, s32 arg1) {
@@ -5289,12 +5293,13 @@ void func_800645A4(s32 arg0, s32 arg1) {
     asm("" : "=r"(y) : "0"(y));
     y += 0x140;
     q = idx - q * 12;
-    *(s16 *)(prim + 0x16) = GetTPage(1, 0, (q << 5 & 0x1F80) + 0x140, y);
+    q <<= 5;
+    asm("" : "=r"(y) : "0"(y));
+    *(s16 *)(prim + 0x16) = GetTPage(1, 0, (q & 0x1F80) + 0x140, y);
     prim[0xC] = (idx & 3) << 6;
     prim[0xD] = y;
-    prim[0x14] = ((idx & 3) << 6) + 0x3F;
+    prim[0x14] = (q = ((idx & 3) << 6) + 0x3F);
     prim[0x15] = y;
-    asm("" : "=r"(y) : "0"(y));
     prim[0x1C] = (idx & 3) << 6;
     prim[0x1D] = y + 0x47;
     prim[0x24] = ((idx & 3) << 6) + 0x3F;

@@ -2426,7 +2426,54 @@ void func_80048700(void) {
     *(s32 *)(D_800A347C + 0xC) = -1;
 }
 
+#ifdef NON_MATCHING
+/* 2026-10-11 parked at 5230 (0x158 vs 0x148). Structure, calls, table load,
+ * copies and all three multiply blocks decode cleanly; Ghidra's retail
+ * decompile supplied the call shapes (func_80031264 takes a0 only). Residual:
+ * retail shares one D_800A347C base pseudo across the first store and the
+ * next call's argument (store sinks into the call's delay slot); this gcc's
+ * cse never reuses a gp-load across a store-through-pointer (probed), so the
+ * draft emits an extra base load (+4 bytes) and the final-block register
+ * ties follow from it. */
+void func_8004875C(void) {
+    extern s32 D_800BE980[];
+    extern void func_80031264(u8 * object);
+    extern void func_80037130(u8 * object);
+    extern s32 MathMultiplyFixed16(s32, s32);
+    extern s32 D_800A2EC0Absolute[];
+    u8 *src;
+    u8 *dst;
+    u16 val;
+
+    val = *(u16 *)((u8 *)D_800BE980[0] + *(s16 *)(D_800A3728 + 0x1E0) * 0x90 +
+                   0x10);
+    *(u16 *)(D_800A3728 + 0x114) = val;
+    *(u16 *)(D_800A3728 + 0x104) = val;
+    *(u16 *)(D_800A3728 + 0x116) = *(u16 *)(D_800A3728 + 0x114) * 4;
+    func_80031264(D_800A3728);
+    func_80037130(D_800A3728);
+    src = D_800A3728;
+    dst = D_800A347C;
+    *(u32 *)(dst + 0) = *(u32 *)(src + 0);
+    *(u32 *)(dst + 4) = *(u32 *)(src + 4);
+    *(u32 *)(dst + 8) = *(u32 *)(src + 8);
+    *(u16 *)(dst + 0x104) = *(u16 *)(dst + 0x114) = *(u16 *)(src + 0x114);
+    *(u16 *)(dst + 0x116) = *(u16 *)(src + 0x116);
+    func_80037130(dst);
+    func_80031264(D_800A347C);
+    *(s32 *)(D_800A347C + 0) +=
+        MathMultiplyFixed16(*(s32 *)(D_800A347C + 0x3C), 0x3200000) >> 16;
+    *(s32 *)(D_800A347C + 4) +=
+        MathMultiplyFixed16(*(s32 *)(D_800A347C + 0x40), 0x3200000) >> 16;
+    *(s32 *)(D_800A347C + 8) +=
+        MathMultiplyFixed16(*(s32 *)(D_800A347C + 0x44), 0x3200000) >> 16;
+    *(u8 *)(D_800A347C + 0x401) = 1;
+    *(s32 *)(D_800A347C + 0xC) = D_800A2EC0Absolute[0];
+    *(s32 *)(D_800A347C + 0x10) = 0x7FFFFFFF;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004875C);
+#endif
 
 extern u8 *D_800A347C;
 extern void *D_800A3728;

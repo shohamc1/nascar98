@@ -1462,7 +1462,90 @@ void func_80041DEC(void) {
     }
 }
 
+/* 2026-10-11 parked at 2025 (0x184 bytes, size matches). Full semantics decoded
+ * from Ghidra's retail decompile: pads the 8-word output, copies arg0[1]/arg0[4],
+ * then a 2-entry walk over the D_800A3A24 remap bytes (bound D_800A3A26) reading
+ * {u32 word, u16 swapped mask, u32 thresholds} per 12-byte entry and shuffling
+ * analog button bits by the type nibble. Residual: zero-loop counter lands in
+ * a2 (retail v1); the three threshold byte extractions emit bare srl where
+ * retail keeps andi/and+srl with srl (six mask spellings tried); branch-tree
+ * layout in the type dispatch. */
+#ifdef NON_MATCHING
+void func_80041F54(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
+    s32 *w;
+    u16 *h;
+    s8 *d;
+    u32 *dst;
+    u16 hs;
+    u16 swap;
+    u32 word;
+    s32 w2;
+    s32 i;
+    s32 type;
+    s32 b1;
+    s32 b2;
+    s32 b3;
+
+    w = arg0;
+    for (i = 7; i >= 0; i--) {
+        arg1[i] = 0;
+    }
+    arg1[1] = w[1];
+    arg1[3] = w[4];
+    h = (u16 *)arg0 + 1;
+    d = (s8 *)D_800A3A24;
+    dst = arg1;
+    while (d < (s8 *)D_800A3A26) {
+        hs = *h;
+        word = *w;
+        w2 = *(u32 *)(h + 1);
+        swap = ~(((hs & 0xFF) << 8) | (hs >> 8));
+        *d = (word & 0xF000) >> 12;
+        if ((word & 0xFF) == 0xFF) {
+            *d = 0;
+        }
+        type = *d;
+        if (type == 2) {
+            hs = w2 & 0xFF00;
+            b1 = hs >> 8;
+            b2 = (w2 & 0xFF0000) >> 16;
+            b3 = (w2 & 0xFF000000) >> 24;
+            if (b3 > 0x80) {
+                swap |= 4;
+            }
+            if (b1 > 0x40) {
+                swap |= 0x40;
+            }
+            if (b2 > 0x40) {
+                swap |= 0x80;
+            }
+        } else if (type < 5) {
+            if (type != 4) {
+                swap = 0;
+            }
+        } else if (type == 5) {
+            if ((swap & 8) != 0) {
+                swap = (swap & 0xFFF7) | 0x10;
+            } else if ((swap & 4) != 0) {
+                swap = (swap & 0xFFFB) | 0x80;
+            } else if ((swap & 0x10) != 0) {
+                swap = (swap & 0xFFEF) | 8;
+            } else if ((swap & 0x80) != 0) {
+                swap = (swap & 0xFF7F) | 2;
+            } else if ((swap & 2) != 0) {
+                swap = (swap & 0xFFFD) | 4;
+            }
+        }
+        *dst = swap;
+        h += 6;
+        w += 3;
+        d += 1;
+        dst += 2;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/input", func_80041F54);
+#endif
 
 void func_800420D8(u32 *input, u32 flags, u16 *output) {
     u8 *mode;
