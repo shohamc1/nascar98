@@ -2307,62 +2307,112 @@ extern s32 D_8009A298[];
 extern s16 func_8005A84C(void);
 extern void func_80060008(u8);
 #ifdef NON_MATCHING
+/* Permuter find (real-TU verified 10181 -> 8274): reuse pr5 as the
+ * &D_8009AEAE[0] temp inside the obj8 GetTPage call, so its address
+ * pseudo is born through an existing call-crossing pointer instead of a
+ * fresh short-lived one. Frame grew 0x58 -> 0x60 and the s8/s7 saves now
+ * lead the prologue like retail; the obj2 loop still allocates one
+ * register away from retail (ours c2/k2 in s3/s6, obj2 in s1; retail
+ * w2 in s6, obj2 in s0).
+ */
 void func_8005ED74(u8 arg0, u8 arg1) {
+    extern s32 func_8005A8EI(s32) asm("func_8005A8E0");
+    u8 ix1;
+    u8 ix11;
+    u8 ix2;
+    u8 ix3;
+    u8 ix4;
+    u8 ix5;
+    u8 ix6;
+    u8 ix7;
+    u8 ix8;
+    u8 ix9;
+    u8 ixB10;
+    u8 *obj1;
+    u8 *obj10;
+    u8 *obj11;
+    u8 *obj2;
+    u8 *obj3;
+    u8 *obj4;
+    u8 *obj5;
+    u8 *obj6;
+    u8 *obj7;
+    u8 *obj8;
+    u8 *objB8;
+    u8 *objB9;
+    u8 *objC10;
+    u8 *objC9;
+    u8 *pq3;
+    u8 *pr1;
+    u8 *pr2;
+    u8 *pr3;
+    u8 *pr4;
+    u8 *pr5;
+    u8 *pr6;
+    u8 *pr7;
+    u8 *pr8;
+    u8 *prC8;
+    u8 *prC9;
+    u8 *prD10;
+    u8 *prD7;
+    s16 w2, c2, k2, g2, b2;
+    s32 half;
+    s16 w1, g1, z1;
+    u8 *prim2;
     s32 i;
-    register s32 j asm("$21");
-    register s16 yBase asm("$23");
+    s32 j;
+    s32 yBase;
     s16 h;
-    register s16 x asm("$18");
+    s16 x;
+    s16 x4;
+    s16 x6;
     s32 value;
-    register u8 *entry asm("$20");
+    u8 *entry;
     s32 *strP;
     u8 **list;
-    register u8 *cur asm("$16");
-    register u8 *prim asm("$17");
-    register u8 *prim2 asm("$19");
 
     h = 0;
     yBase = 0x5C;
     i = 0;
     list = D_800B996C;
-outerLoop:
-    {
-        s16 y1;
-        register u8 **listSlot asm("$22");
-        x = yBase;
+    do {
+        s32 y1;
+        u8 **listSlot;
         j = 0;
         listSlot = list;
-    stripLoop:
-        {
-            u8 index;
-            index = D_800A35EC++;
-            cur = D_800A3678 + index * 36;
-            *(s16 *)(cur + 0x16) = 0x78;
-            *(s16 *)(cur + 0x12) = 0;
-            *(s16 *)(cur + 0x14) = 0;
-            *(s32 *)(cur + 0x1C) = 0;
-            cur[4] = 0;
-            cur[3] = 0;
-            cur[2] = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0) = 1;
-            *(s16 *)(cur + 0xA) = h;
-            *(s16 *)(cur + 6) = h;
-            *(s16 *)(cur + 0xC) = x;
-            *(s16 *)(cur + 8) = x;
-            *(s16 *)(cur + 0x18) = 0xF;
-            *(s16 *)(cur + 0xE) = 0;
-            *(s16 *)(cur + 0x10) = 0;
-            prim = func_80057CCC(1);
-            SetPolyFT4((POLY_FT4 *)prim);
-            SetShadeTex(prim, 0);
-            prim[4] = 0x80;
-            prim[5] = 0x80;
-            prim[6] = 0x80;
-            SetSemiTrans(prim, 0);
-            asm("" : "=r"(entry) : "0"(cur));
-            *(u8 **)(entry + 0x20) = prim;
-            *(s16 *)(entry + 0x1A) = 0x3FC;
+        w1 = 0x78;
+        g1 = 0xF;
+        z1 = 0x3FC;
+        do {
+            ix1 = D_800A35EC;
+            D_800A35EC = ix1 + 1;
+            obj1 = D_800A3678 + ix1 * 36;
+            *(s16 *)(obj1 + 0x16) = w1;
+            *(s16 *)(obj1 + 0x12) = 0;
+            *(s16 *)(obj1 + 0x14) = 0;
+            *(s32 *)(obj1 + 0x1C) = 0;
+            obj1[4] = 0;
+            obj1[3] = 0;
+            obj1[2] = 0;
+            *(s16 *)(obj1 + 0x1A) = 0;
+            *(s16 *)(obj1 + 0) = 1;
+            *(s16 *)(obj1 + 0xA) = h;
+            *(s16 *)(obj1 + 6) = h;
+            *(s16 *)(obj1 + 0xC) = yBase + j * 0xF;
+            *(s16 *)(obj1 + 8) = yBase + j * 0xF;
+            *(s16 *)(obj1 + 0x18) = g1;
+            *(s16 *)(obj1 + 0xE) = 0;
+            *(s16 *)(obj1 + 0x10) = 0;
+            pr1 = func_80057CCC(1);
+            SetPolyFT4((POLY_FT4 *)pr1);
+            SetShadeTex(pr1, 0);
+            pr1[4] = 0x80;
+            pr1[5] = 0x80;
+            pr1[6] = 0x80;
+            SetSemiTrans(pr1, 0);
+            entry = obj1;
+            *(u8 **)(entry + 0x20) = pr1;
+            *(s16 *)(entry + 0x1A) = z1;
             if (j == 0) {
                 *listSlot = entry;
             } else {
@@ -2407,105 +2457,103 @@ outerLoop:
                 prim2[0x25] = v;
             }
             j++;
-            x += 0xF;
-            if (j < 2) {
-                goto stripLoop;
-            }
-        }
+        } while (j < 2);
         j = 0;
+        w2 = 0x78;
+        asm("" : "=r"(w2) : "0"(w2));
+        c2 = 0x20;
+        k2 = 2;
+        g2 = 0x1E;
+        b2 = 0x40;
         do {
-            u8 index;
             j++;
-            index = D_800A35EC++;
-            cur = D_800A3678 + index * 36;
-            cur[4] = 0;
-            *(s16 *)(cur + 0x18) = 0x1E;
-            *(s16 *)(cur + 0x12) = 0;
-            *(s16 *)(cur + 0x14) = 0;
-            *(s32 *)(cur + 0x1C) = 0;
-            cur[3] = 0;
-            cur[2] = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0) = 2;
-            *(s16 *)(cur + 6) = 0;
-            *(s16 *)(cur + 0xA) = 0;
-            *(s16 *)(cur + 8) = yBase;
-            *(s16 *)(cur + 0xC) = yBase;
-            *(s16 *)(cur + 0xE) = 0;
-            *(s16 *)(cur + 0x10) = 0;
-            *(s16 *)(cur + 0x16) = 0x78;
-            cur[2] = 0x20;
-            cur[3] = 0x20;
-            cur[4] = 0x40;
-            prim = func_80057D50(1);
-            *(u8 **)(cur + 0x20) = prim;
-            SetPolyF4(prim);
-            SetSemiTrans(prim, 1);
+            ix2 = D_800A35EC;
+            D_800A35EC = ix2 + 1;
+            obj2 = D_800A3678 + ix2 * 36;
+            obj2[4] = 0;
+            *(s16 *)(obj2 + 0x18) = g2;
+            *(s16 *)(obj2 + 0x12) = 0;
+            *(s16 *)(obj2 + 0x14) = 0;
+            *(s32 *)(obj2 + 0x1C) = 0;
+            obj2[3] = 0;
+            obj2[2] = 0;
+            *(s16 *)(obj2 + 0x1A) = 0;
+            *(s16 *)(obj2 + 0) = k2;
+            *(s16 *)(obj2 + 6) = 0;
+            *(s16 *)(obj2 + 0xA) = 0;
+            *(s16 *)(obj2 + 8) = yBase;
+            *(s16 *)(obj2 + 0xC) = yBase;
+            *(s16 *)(obj2 + 0xE) = 0;
+            *(s16 *)(obj2 + 0x10) = 0;
+            *(s16 *)(obj2 + 0x16) = w2;
+            obj2[2] = c2;
+            obj2[3] = c2;
+            obj2[4] = b2;
+            pr2 = func_80057D50(1);
+            *(u8 **)(obj2 + 0x20) = pr2;
+            SetPolyF4(pr2);
+            SetSemiTrans(pr2, 1);
             y1 = yBase + 0x1E;
-            prim[4] = 0x20;
-            prim[5] = 0x20;
-            prim[6] = 0x40;
-            *(s16 *)(prim + 8) = 0;
-            *(s16 *)(prim + 0xA) = yBase;
-            *(s16 *)(prim + 0xC) = 0x78;
-            *(s16 *)(prim + 0xE) = yBase;
-            *(s16 *)(prim + 0x10) = 0;
-            *(s16 *)(prim + 0x12) = y1;
-            *(s16 *)(prim + 0x14) = 0x78;
-            *(s16 *)(prim + 0x16) = y1;
-            *(s16 *)(cur + 0x1A) = 0x3FD;
-            *(s16 *)(cur + 0xE) = 2;
-            *(s16 *)(cur + 6) = -0xF5;
-            *(s16 *)(cur + 0xE) = 2;
-            *(u8 **)(entry + 0x1C) = cur;
-            asm("" : "=r"(entry) : "0"(cur));
+            pr2[4] = c2;
+            pr2[5] = c2;
+            pr2[6] = b2;
+            *(s16 *)(pr2 + 8) = 0;
+            *(s16 *)(pr2 + 0xA) = yBase;
+            *(s16 *)(pr2 + 0xC) = w2;
+            *(s16 *)(pr2 + 0xE) = yBase;
+            *(s16 *)(pr2 + 0x10) = 0;
+            *(s16 *)(pr2 + 0x12) = y1;
+            *(s16 *)(pr2 + 0x14) = w2;
+            *(s16 *)(pr2 + 0x16) = y1;
+            *(s16 *)(obj2 + 0x1A) = 0x3FD;
+            *(s16 *)(obj2 + 0xE) = k2;
+            *(s16 *)(obj2 + 6) = -0xF5;
+            *(s16 *)(obj2 + 0xE) = k2;
+            *(u8 **)(entry + 0x1C) = obj2;
+            entry = obj2;
         } while (j < 2);
         list++;
         yBase = y1;
         i++;
-        if (i < 4) {
-            goto outerLoop;
-        }
-    }
+    } while (i < 4);
     {
         s32 n;
         s32 m;
-        s32 bOff;
         n = 0;
         i = 0;
-        do {
+    textouter_L:
+        {
             s16 yLoad;
             u8 *node;
             node = D_800B996C[i];
             m = 0;
             yLoad = *(s16 *)(node + 0xC);
             yBase = yLoad + 3;
-            strP = &D_8009A268[n];
-            bOff = n * 4;
             do {
-                u8 index;
                 u8 primIdx;
                 u8 *textPrim;
                 u8 *primLoad;
                 func_8005A7B8(2, 2);
-                value = func_8005A8E0(*strP);
+                value = (s16)func_8005A8EI(D_8009A268[n]);
                 switch (m) {
+                case 0:
+                    h = (0x78 - value) / 2;
+                    break;
                 case 1:
                     h = 8;
                     break;
-                case 0:
-                    h = (0x78 - (s16)value) / 2;
-                    break;
                 case 2:
-                    h = 0x70 - (s16)value;
+                    h = 0x70 - value;
                     break;
                 }
-                index = D_800A35EC++;
-                entry = D_800A3678 + index * 36;
-                entry[4] = 0;
-                entry[3] = 0;
-                entry[2] = 0;
+                ix3 = D_800A35EC;
+                D_800A35EC = ix3 + 1;
+                obj3 = D_800A3678 + ix3 * 36;
+                obj3[4] = 0;
+                obj3[3] = 0;
+                obj3[2] = 0;
                 primIdx = D_800A37BC;
+                entry = obj3;
                 *(s16 *)(entry + 0x12) = 0;
                 *(s16 *)(entry + 0x14) = 0;
                 *(s32 *)(entry + 0x1C) = 0;
@@ -2524,7 +2572,7 @@ outerLoop:
                 textPrim[0] = 0;
                 textPrim[3] = 0;
                 *(s32 *)(textPrim + 4) = 0;
-                *(u8 **)((u8 *)D_800BB9F4 + bOff) = entry;
+                D_800BB9F4[n] = entry;
                 *(s16 *)(entry + 0xE) = 2;
                 *(s16 *)(entry + 0x16) = value;
                 *(s16 *)(entry + 6) = *(u16 *)(entry + 0xA) - 0xF5;
@@ -2532,60 +2580,60 @@ outerLoop:
                 primLoad = *(u8 **)(entry + 0x20);
                 primLoad[1] = 2;
                 primLoad[2] = 2;
-                *(s32 *)(primLoad + 8) = *strP;
+                *(s32 *)(primLoad + 8) = D_8009A268[n];
                 n++;
-                bOff += 4;
-                strP++;
                 if (m == 0) {
                     yBase += 0x10;
                 }
                 m++;
             } while (m < 3);
             i++;
-        } while (i < 4);
+            if (i < 4) {
+                goto textouter_L;
+            }
+        }
     }
     {
-        u8 *cur;
-        u8 *prim;
-        u8 *prim2;
+        u8 *obj3;
+        u8 *pr3;
+        u8 *pq3;
         yBase = *(s16 *)(D_800B996C[0] + 0xC) + 0xD;
         h = 8;
         i = 0;
-    statsLoop:
-        {
-            u8 index;
+        do {
             u8 **slot;
             u16 w;
             u16 hh;
             u32 scale;
             u32 level;
-            index = D_800A35EC++;
-            cur = D_800A3678 + index * 36;
-            *(s16 *)(cur + 0) = 1;
-            *(s16 *)(cur + 0x16) = 0x68;
-            *(s16 *)(cur + 0x12) = 0;
-            *(s16 *)(cur + 0x14) = 0;
-            *(s32 *)(cur + 0x1C) = 0;
-            cur[4] = 0;
-            cur[3] = 0;
-            cur[2] = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0xA) = h;
-            *(s16 *)(cur + 6) = h;
-            *(s16 *)(cur + 0xC) = yBase;
-            *(s16 *)(cur + 8) = yBase;
-            *(s16 *)(cur + 0x18) = 5;
-            *(s16 *)(cur + 0xE) = 0;
-            *(s16 *)(cur + 0x10) = 0;
-            prim = func_80057CCC(1);
-            SetPolyFT4((POLY_FT4 *)prim);
-            SetShadeTex(prim, 0);
-            prim[4] = 0x80;
-            prim[5] = 0x80;
-            prim[6] = 0x80;
-            SetSemiTrans(prim, 0);
-            asm("" : "=r"(entry) : "0"(cur));
-            *(u8 **)(entry + 0x20) = prim;
+            ix4 = D_800A35EC;
+            D_800A35EC = ix4 + 1;
+            obj4 = D_800A3678 + ix4 * 36;
+            *(s16 *)(obj4 + 0) = 1;
+            *(s16 *)(obj4 + 0x16) = 0x68;
+            *(s16 *)(obj4 + 0x12) = 0;
+            *(s16 *)(obj4 + 0x14) = 0;
+            *(s32 *)(obj4 + 0x1C) = 0;
+            obj4[4] = 0;
+            obj4[3] = 0;
+            obj4[2] = 0;
+            *(s16 *)(obj4 + 0x1A) = 0;
+            *(s16 *)(obj4 + 0xA) = h;
+            *(s16 *)(obj4 + 6) = h;
+            *(s16 *)(obj4 + 0xC) = yBase;
+            *(s16 *)(obj4 + 8) = yBase;
+            *(s16 *)(obj4 + 0x18) = 5;
+            *(s16 *)(obj4 + 0xE) = 0;
+            *(s16 *)(obj4 + 0x10) = 0;
+            pr4 = func_80057CCC(1);
+            SetPolyFT4((POLY_FT4 *)pr4);
+            SetShadeTex(pr4, 0);
+            pr4[4] = 0x80;
+            pr4[5] = 0x80;
+            pr4[6] = 0x80;
+            SetSemiTrans(pr4, 0);
+            entry = obj4;
+            *(u8 **)(entry + 0x20) = pr4;
             *(s16 *)(entry + 0x1A) = 0x3F2;
             slot = &D_800B9980[i];
             *slot = entry;
@@ -2614,89 +2662,87 @@ outerLoop:
             if (scale == 0) {
                 scale = 1;
             }
-            x = yBase + 1;
+            x4 = yBase + 1;
             {
                 s16 y2;
-                index = D_800A35EC++;
-                cur = D_800A3678 + index * 36;
-                *(s16 *)(cur + 0) = 2;
-                *(s16 *)(cur + 6) = 9;
-                *(s16 *)(cur + 0xA) = 9;
-                cur[2] = 0;
-                *(s16 *)(cur + 0x18) = 3;
-                cur[4] = 0;
-                cur[2] = 0x40;
-                *(s16 *)(cur + 0x12) = 0;
-                *(s16 *)(cur + 0x14) = 0;
-                *(s32 *)(cur + 0x1C) = 0;
-                cur[3] = 0;
-                *(s16 *)(cur + 0x1A) = 0;
-                *(s16 *)(cur + 8) = x;
-                *(s16 *)(cur + 0xC) = x;
-                *(s16 *)(cur + 0xE) = 0;
-                *(s16 *)(cur + 0x10) = 0;
-                *(s16 *)(cur + 0x16) = scale;
-                cur[3] = 0x60;
-                cur[4] = 0x80;
-                prim = func_80057D50(1);
-                *(u8 **)(cur + 0x20) = prim;
-                SetPolyF4(prim);
-                SetSemiTrans(prim, 1);
-                prim[4] = 0x40;
-                prim[6] = 0x80;
-                *(s16 *)(prim + 8) = 9;
+                ix5 = D_800A35EC;
+                D_800A35EC = ix5 + 1;
+                obj5 = D_800A3678 + ix5 * 36;
+                *(s16 *)(obj5 + 0) = 2;
+                *(s16 *)(obj5 + 6) = 9;
+                *(s16 *)(obj5 + 0xA) = 9;
+                obj5[2] = 0;
+                *(s16 *)(obj5 + 0x18) = 3;
+                obj5[4] = 0;
+                obj5[2] = 0x40;
+                *(s16 *)(obj5 + 0x12) = 0;
+                *(s16 *)(obj5 + 0x14) = 0;
+                *(s32 *)(obj5 + 0x1C) = 0;
+                obj5[3] = 0;
+                *(s16 *)(obj5 + 0x1A) = 0;
+                *(s16 *)(obj5 + 8) = x4;
+                *(s16 *)(obj5 + 0xC) = x4;
+                *(s16 *)(obj5 + 0xE) = 0;
+                *(s16 *)(obj5 + 0x10) = 0;
+                *(s16 *)(obj5 + 0x16) = scale;
+                obj5[3] = 0x60;
+                obj5[4] = 0x80;
+                pr5 = func_80057D50(1);
+                *(u8 **)(obj5 + 0x20) = pr5;
+                SetPolyF4(pr5);
+                SetSemiTrans(pr5, 1);
+                pr5[4] = 0x40;
+                pr5[6] = 0x80;
+                *(s16 *)(pr5 + 8) = 9;
                 y2 = scale + 9;
-                *(s16 *)(prim + 0x12) = yBase + 4;
-                *(s16 *)(prim + 0x16) = yBase + 4;
-                prim[5] = 0x60;
-                *(s16 *)(prim + 0xA) = x;
-                *(s16 *)(prim + 0xC) = y2;
-                *(s16 *)(prim + 0xE) = x;
-                *(s16 *)(prim + 0x10) = 9;
-                *(s16 *)(prim + 0x14) = y2;
-                *(s16 *)(cur + 0x1A) = 0x3E8;
+                *(s16 *)(pr5 + 0x12) = yBase + 4;
+                *(s16 *)(pr5 + 0x16) = yBase + 4;
+                pr5[5] = 0x60;
+                *(s16 *)(pr5 + 0xA) = x4;
+                *(s16 *)(pr5 + 0xC) = y2;
+                *(s16 *)(pr5 + 0xE) = x4;
+                *(s16 *)(pr5 + 0x10) = 9;
+                *(s16 *)(pr5 + 0x14) = y2;
+                *(s16 *)(obj5 + 0x1A) = 0x3E8;
                 i++;
-                *(u8 **)(*slot + 0x1C) = cur;
-                *(s16 *)(cur + 6) = -0xF5;
-                *(s16 *)(cur + 0xE) = 2;
+                *(u8 **)(*slot + 0x1C) = obj5;
+                *(s16 *)(obj5 + 6) = -0xF5;
+                *(s16 *)(obj5 + 0xE) = 2;
             }
             yBase += 0x1E;
-            if (i < 4) {
-                goto statsLoop;
-            }
-        }
+        } while (i < 4);
     }
     {
-        u8 index;
         u16 w;
         u16 hh;
-        index = D_800A35EC++;
-        cur = D_800A3678 + index * 36;
-        *(s16 *)(cur + 0xC) = 0x2A;
-        *(s16 *)(cur + 8) = 0x2A;
-        *(s16 *)(cur + 0x16) = 0x78;
-        *(s16 *)(cur + 0x12) = 0;
-        *(s16 *)(cur + 0x14) = 0;
-        *(s32 *)(cur + 0x1C) = 0;
-        cur[4] = 0;
-        cur[3] = 0;
-        cur[2] = 0;
-        *(s16 *)(cur + 0x1A) = 0;
-        *(s16 *)(cur + 0) = 1;
-        *(s16 *)(cur + 0xA) = 0;
-        *(s16 *)(cur + 6) = 0;
-        *(s16 *)(cur + 0x18) = 0x30;
-        *(s16 *)(cur + 0xE) = 0;
-        *(s16 *)(cur + 0x10) = 0;
-        prim = func_80057CCC(1);
-        SetPolyFT4((POLY_FT4 *)prim);
-        SetShadeTex(prim, 0);
-        prim[4] = 0x80;
-        prim[5] = 0x80;
-        prim[6] = 0x80;
-        SetSemiTrans(prim, 0);
-        asm("" : "=r"(entry) : "0"(cur));
-        *(u8 **)(entry + 0x20) = prim;
+        ix6 = D_800A35EC;
+        D_800A35EC = ix6 + 1;
+        obj6 = D_800A3678 + ix6 * 36;
+        *(s16 *)(obj6 + 0xC) = 0x2A;
+        *(s16 *)(obj6 + 8) = 0x2A;
+        *(s16 *)(obj6 + 0x16) = 0x78;
+        *(s16 *)(obj6 + 0x12) = 0;
+        *(s16 *)(obj6 + 0x14) = 0;
+        *(s32 *)(obj6 + 0x1C) = 0;
+        obj6[4] = 0;
+        obj6[3] = 0;
+        obj6[2] = 0;
+        *(s16 *)(obj6 + 0x1A) = 0;
+        *(s16 *)(obj6 + 0) = 1;
+        *(s16 *)(obj6 + 0xA) = 0;
+        *(s16 *)(obj6 + 6) = 0;
+        *(s16 *)(obj6 + 0x18) = 0x30;
+        *(s16 *)(obj6 + 0xE) = 0;
+        *(s16 *)(obj6 + 0x10) = 0;
+        pr6 = func_80057CCC(1);
+        SetPolyFT4((POLY_FT4 *)pr6);
+        SetShadeTex(pr6, 0);
+        pr6[4] = 0x80;
+        pr6[5] = 0x80;
+        pr6[6] = 0x80;
+        SetSemiTrans(pr6, 0);
+        entry = obj6;
+        *(u8 **)(entry + 0x20) = pr6;
         *(s16 *)(entry + 0x1A) = 0x3FC;
         prim2 = *(u8 **)(entry + 0x20);
         *(s16 *)(entry + 0xE) = 2;
@@ -2722,88 +2768,87 @@ outerLoop:
     *(s16 *)(D_800A39ACPtr + 6) = -0x7D;
     *(s16 *)(D_800A39ACPtr + 0xE) = 2;
     do {
-        u8 index;
         j++;
-        index = D_800A35EC++;
-        cur = D_800A3678 + index * 36;
-        cur[4] = 0;
-        *(s16 *)(cur + 0x18) = 0x30;
-        *(s16 *)(cur + 0x12) = 0;
-        *(s16 *)(cur + 0x14) = 0;
-        *(s32 *)(cur + 0x1C) = 0;
-        cur[3] = 0;
-        cur[2] = 0;
-        *(s16 *)(cur + 0x1A) = 0;
-        *(s16 *)(cur + 0) = 2;
-        *(s16 *)(cur + 6) = 0;
-        *(s16 *)(cur + 0xA) = 0;
-        *(s16 *)(cur + 8) = yBase;
-        *(s16 *)(cur + 0xC) = yBase;
-        *(s16 *)(cur + 0xE) = 0;
-        *(s16 *)(cur + 0x10) = 0;
-        *(s16 *)(cur + 0x16) = h;
-        cur[2] = 0x20;
-        cur[3] = 0x20;
-        cur[4] = 0x40;
-        prim = func_80057D50(1);
-        *(u8 **)(cur + 0x20) = prim;
-        SetPolyF4(prim);
-        SetSemiTrans(prim, 1);
-        *(s16 *)(prim + 0x12) = 0x5A;
-        *(s16 *)(prim + 0x16) = 0x5A;
-        prim[4] = 0x20;
-        prim[5] = 0x20;
-        prim[6] = 0x40;
-        *(s16 *)(prim + 8) = 0;
-        *(s16 *)(prim + 0xA) = yBase;
-        *(s16 *)(prim + 0xC) = h;
-        *(s16 *)(prim + 0xE) = yBase;
-        *(s16 *)(prim + 0x10) = 0;
-        *(s16 *)(prim + 0x14) = h;
-        *(s16 *)(cur + 0x1A) = 0x3FD;
-        *(s16 *)(cur + 0xE) = 2;
-        *(s16 *)(cur + 6) = -0x7D;
-        *(s16 *)(cur + 0xE) = 2;
-        *(u8 **)(entry + 0x1C) = cur;
-        asm("" : "=r"(entry) : "0"(cur));
+        ix7 = D_800A35EC;
+        D_800A35EC = ix7 + 1;
+        obj7 = D_800A3678 + ix7 * 36;
+        obj7[4] = 0;
+        *(s16 *)(obj7 + 0x18) = 0x30;
+        *(s16 *)(obj7 + 0x12) = 0;
+        *(s16 *)(obj7 + 0x14) = 0;
+        *(s32 *)(obj7 + 0x1C) = 0;
+        obj7[3] = 0;
+        obj7[2] = 0;
+        *(s16 *)(obj7 + 0x1A) = 0;
+        *(s16 *)(obj7 + 0) = 2;
+        *(s16 *)(obj7 + 6) = 0;
+        *(s16 *)(obj7 + 0xA) = 0;
+        *(s16 *)(obj7 + 8) = yBase;
+        *(s16 *)(obj7 + 0xC) = yBase;
+        *(s16 *)(obj7 + 0xE) = 0;
+        *(s16 *)(obj7 + 0x10) = 0;
+        *(s16 *)(obj7 + 0x16) = h;
+        obj7[2] = 0x20;
+        obj7[3] = 0x20;
+        obj7[4] = 0x40;
+        pr7 = func_80057D50(1);
+        *(u8 **)(obj7 + 0x20) = pr7;
+        SetPolyF4(pr7);
+        SetSemiTrans(pr7, 1);
+        *(s16 *)(pr7 + 0x12) = 0x5A;
+        *(s16 *)(pr7 + 0x16) = 0x5A;
+        pr7[4] = 0x20;
+        pr7[5] = 0x20;
+        pr7[6] = 0x40;
+        *(s16 *)(pr7 + 8) = 0;
+        *(s16 *)(pr7 + 0xA) = yBase;
+        *(s16 *)(pr7 + 0xC) = h;
+        *(s16 *)(pr7 + 0xE) = yBase;
+        *(s16 *)(pr7 + 0x10) = 0;
+        *(s16 *)(pr7 + 0x14) = h;
+        *(s16 *)(obj7 + 0x1A) = 0x3FD;
+        *(s16 *)(obj7 + 0xE) = 2;
+        *(s16 *)(obj7 + 6) = -0x7D;
+        *(s16 *)(obj7 + 0xE) = 2;
+        *(u8 **)(entry + 0x1C) = obj7;
+        entry = obj7;
     } while (j < 2);
     yBase = 0x2F;
     i = 0;
-hiliLoop:
-    {
+    do {
         s32 iOff;
-        u8 index;
         u8 **slot;
-        u8 *prim4;
+        u8 *prD7;
         u16 w;
         u16 hh;
-        index = D_800A35EC++;
-        cur = D_800A3678 + index * 36;
-        *(s16 *)(cur + 0) = 1;
-        *(s16 *)(cur + 0xA) = 0x41;
-        *(s16 *)(cur + 6) = 0x41;
-        *(s16 *)(cur + 0x16) = 0x32;
-        *(s16 *)(cur + 0x12) = 0;
-        *(s16 *)(cur + 0x14) = 0;
-        *(s32 *)(cur + 0x1C) = 0;
-        cur[4] = 0;
-        cur[3] = 0;
-        cur[2] = 0;
-        *(s16 *)(cur + 0x1A) = 0;
-        *(s16 *)(cur + 0xC) = yBase;
-        *(s16 *)(cur + 8) = yBase;
-        *(s16 *)(cur + 0x18) = 7;
-        *(s16 *)(cur + 0xE) = 0;
-        *(s16 *)(cur + 0x10) = 0;
-        prim = func_80057CCC(1);
-        SetPolyFT4((POLY_FT4 *)prim);
-        SetShadeTex(prim, 0);
-        prim[4] = 0x80;
-        prim[5] = 0x80;
-        prim[6] = 0x80;
-        SetSemiTrans(prim, 0);
-        asm("" : "=r"(entry) : "0"(cur));
-        *(u8 **)(entry + 0x20) = prim;
+        ix8 = D_800A35EC;
+        D_800A35EC = ix8 + 1;
+        obj8 = D_800A3678 + ix8 * 36;
+        *(s16 *)(obj8 + 0) = 1;
+        *(s16 *)(obj8 + 0xA) = 0x41;
+        *(s16 *)(obj8 + 6) = 0x41;
+        *(s16 *)(obj8 + 0x16) = 0x32;
+        *(s16 *)(obj8 + 0x12) = 0;
+        *(s16 *)(obj8 + 0x14) = 0;
+        *(s32 *)(obj8 + 0x1C) = 0;
+        obj8[4] = 0;
+        obj8[3] = 0;
+        obj8[2] = 0;
+        *(s16 *)(obj8 + 0x1A) = 0;
+        *(s16 *)(obj8 + 0xC) = yBase;
+        *(s16 *)(obj8 + 8) = yBase;
+        *(s16 *)(obj8 + 0x18) = 7;
+        *(s16 *)(obj8 + 0xE) = 0;
+        *(s16 *)(obj8 + 0x10) = 0;
+        pr8 = func_80057CCC(1);
+        SetPolyFT4((POLY_FT4 *)pr8);
+        SetShadeTex(pr8, 0);
+        pr8[4] = 0x80;
+        pr8[5] = 0x80;
+        pr8[6] = 0x80;
+        SetSemiTrans(pr8, 0);
+        entry = obj8;
+        *(u8 **)(entry + 0x20) = pr8;
         *(s16 *)(entry + 0x1A) = 1;
         iOff = i * 4;
         slot = (u8 **)((u8 *)D_800B60B8 + iOff);
@@ -2813,11 +2858,11 @@ hiliLoop:
         *(s16 *)(entry + 6) = -0x7D;
         w = *(u16 *)(entry + 0x16);
         hh = *(u16 *)(entry + 0x18);
-        x = yBase + 1;
+        x6 = yBase + 1;
         *(s16 *)(prim2 + 0xE) =
             GetClut(D_8009AEB2[0], *(u16 *)((u8 *)D_8009AEB2 + 2));
         *(s16 *)(prim2 + 0x16) =
-            GetTPage(D_8009AEBA[0], 3, *(u16 *)&D_8009AEAE[0],
+            GetTPage(D_8009AEBA[0], 3, *(u16 *)(pr5 = &D_8009AEAE[0]),
                      *(u16 *)((u8 *)D_8009AEB2 - 2));
         prim2[0xC] = D_8009AEB6[0];
         prim2[0xD] = *(u8 *)((u8 *)D_8009AEB2 + 6);
@@ -2828,144 +2873,143 @@ hiliLoop:
         prim2[0x24] = *(u8 *)((u8 *)D_8009AEBA - 4) + w;
         prim2[0x25] = *(u8 *)&D_8009AEB6[2] + hh;
         {
-            u8 *cur2;
-            u8 *prim3;
+            u8 *objB8;
+            u8 *prC8;
             s16 y2;
-            index = D_800A35EC++;
-            cur2 = D_800A3678 + index * 36;
-            *(s16 *)(cur2 + 0) = 2;
-            *(s16 *)(cur2 + 6) = 0x42;
-            *(s16 *)(cur2 + 0x12) = 0;
-            *(s16 *)(cur2 + 0x14) = 0;
-            *(s32 *)(cur2 + 0x1C) = 0;
-            cur2[4] = 0;
-            cur2[3] = 0;
-            cur2[2] = 0;
-            *(s16 *)(cur2 + 0x1A) = 0;
-            *(s16 *)(cur2 + 0xA) = 0x42;
-            *(s16 *)(cur2 + 8) = x;
-            *(s16 *)(cur2 + 0xC) = x;
-            *(s16 *)(cur2 + 0xE) = 0;
-            *(s16 *)(cur2 + 0x10) = 0;
-            *(s16 *)(cur2 + 0x18) = 5;
-            *(s16 *)(cur2 + 0x16) = 0x30;
-            cur2[2] = 0x40;
-            cur2[3] = 0x60;
-            cur2[4] = 0x80;
-            prim3 = func_80057D50(1);
-            *(u8 **)(cur2 + 0x20) = prim3;
-            SetPolyF4(prim3);
-            SetSemiTrans(prim3, 0);
-            prim3[6] = 0x80;
-            *(s16 *)(prim3 + 8) = 0x42;
+            ix9 = D_800A35EC;
+            D_800A35EC = ix9 + 1;
+            objB9 = D_800A3678 + ix9 * 36;
+            *(s16 *)(objB9 + 0) = 2;
+            *(s16 *)(objB9 + 6) = 0x42;
+            *(s16 *)(objB9 + 0x12) = 0;
+            *(s16 *)(objB9 + 0x14) = 0;
+            *(s32 *)(objB9 + 0x1C) = 0;
+            objB9[4] = 0;
+            objB9[3] = 0;
+            objB9[2] = 0;
+            *(s16 *)(objB9 + 0x1A) = 0;
+            *(s16 *)(objB9 + 0xA) = 0x42;
+            *(s16 *)(objB9 + 8) = x6;
+            *(s16 *)(objB9 + 0xC) = x6;
+            *(s16 *)(objB9 + 0xE) = 0;
+            *(s16 *)(objB9 + 0x10) = 0;
+            *(s16 *)(objB9 + 0x18) = 5;
+            *(s16 *)(objB9 + 0x16) = 0x30;
+            objB9[2] = 0x40;
+            objB9[3] = 0x60;
+            objB9[4] = 0x80;
+            prC9 = func_80057D50(1);
+            *(u8 **)(objB9 + 0x20) = prC9;
+            SetPolyF4(prC9);
+            SetSemiTrans(prC9, 0);
+            prC9[6] = 0x80;
+            *(s16 *)(prC9 + 8) = 0x42;
             y2 = yBase + 6;
-            prim3[4] = 0x40;
-            prim3[5] = 0x60;
-            *(s16 *)(prim3 + 0xA) = x;
-            *(s16 *)(prim3 + 0xC) = 0x72;
-            *(s16 *)(prim3 + 0xE) = x;
-            *(s16 *)(prim3 + 0x10) = 0x42;
-            *(s16 *)(prim3 + 0x12) = y2;
-            *(s16 *)(prim3 + 0x14) = 0x72;
-            *(s16 *)(prim3 + 0x16) = y2;
-            *(u8 **)(*slot + 0x1C) = cur2;
-            *(s16 *)(cur2 + 6) = -0x7D;
-            *(s16 *)(cur2 + 0xE) = 2;
-            *(s16 *)(cur2 + 0x1A) = 0;
-            asm("" : "=r"(entry) : "0"(cur2));
+            prC9[4] = 0x40;
+            prC9[5] = 0x60;
+            *(s16 *)(prC9 + 0xA) = x6;
+            *(s16 *)(prC9 + 0xC) = 0x72;
+            *(s16 *)(prC9 + 0xE) = x6;
+            *(s16 *)(prC9 + 0x10) = 0x42;
+            *(s16 *)(prC9 + 0x12) = y2;
+            *(s16 *)(prC9 + 0x14) = 0x72;
+            *(s16 *)(prC9 + 0x16) = y2;
+            *(u8 **)(*slot + 0x1C) = objB9;
+            *(s16 *)(objB9 + 6) = -0x7D;
+            *(s16 *)(objB9 + 0xE) = 2;
+            *(s16 *)(objB9 + 0x1A) = 0;
+            entry = objB9;
         }
         func_8005A7B8(2, 2);
         strP = (s32 *)((u8 *)D_8009A298 + iOff);
-        value = func_8005A8E0(*strP);
+        value = (s16)func_8005A8EI(*strP);
         {
-            u8 index2;
             u8 primIdx;
-            u8 *cur3;
+            u8 *objC9;
             u8 *textPrim;
-            index2 = D_800A35EC++;
-            cur3 = D_800A3678 + index2 * 36;
-            cur3[4] = 0;
-            cur3[3] = 0;
-            cur3[2] = 0;
+            ixB10 = D_800A35EC;
+            D_800A35EC = ixB10 + 1;
+            objC10 = D_800A3678 + ixB10 * 36;
+            objC10[4] = 0;
+            objC10[3] = 0;
+            objC10[2] = 0;
             primIdx = D_800A37BC;
-            h = 0x3E - (s16)value;
-            *(s16 *)(cur3 + 0x12) = 0;
-            *(s16 *)(cur3 + 0x14) = 0;
-            *(s32 *)(cur3 + 0x1C) = 0;
-            *(s16 *)(cur3 + 0x1A) = 0;
-            *(s16 *)(cur3 + 0) = 0;
-            *(s16 *)(cur3 + 0xA) = h;
-            *(s16 *)(cur3 + 6) = h;
-            *(s16 *)(cur3 + 0xC) = yBase;
-            *(s16 *)(cur3 + 8) = yBase;
-            *(s16 *)(cur3 + 0xE) = 0;
-            *(s16 *)(cur3 + 0x10) = 0;
-            *(s16 *)(cur3 + 0x1A) = 0;
+            h = 0x3E - value;
+            *(s16 *)(objC10 + 0x12) = 0;
+            *(s16 *)(objC10 + 0x14) = 0;
+            *(s32 *)(objC10 + 0x1C) = 0;
+            *(s16 *)(objC10 + 0x1A) = 0;
+            *(s16 *)(objC10 + 0) = 0;
+            *(s16 *)(objC10 + 0xA) = h;
+            *(s16 *)(objC10 + 6) = h;
+            *(s16 *)(objC10 + 0xC) = yBase;
+            *(s16 *)(objC10 + 8) = yBase;
+            *(s16 *)(objC10 + 0xE) = 0;
+            *(s16 *)(objC10 + 0x10) = 0;
+            *(s16 *)(objC10 + 0x1A) = 0;
             D_800A37BC = primIdx + 1;
             textPrim = (u8 *)D_800A3654 + primIdx * 12;
-            *(u8 **)(cur3 + 0x20) = textPrim;
+            *(u8 **)(objC10 + 0x20) = textPrim;
             textPrim[0] = 0;
             textPrim[3] = 0;
             *(s32 *)(textPrim + 4) = 0;
-            *(u8 **)((u8 *)D_800AE168 + iOff) = cur3;
-            *(s16 *)(cur3 + 0xE) = 2;
-            *(s16 *)(cur3 + 0x16) = value;
-            *(s16 *)(cur3 + 6) = *(u16 *)(cur3 + 0xA) - 0xAD;
-            *(s16 *)(cur3 + 0x18) = func_8005A84C();
-            prim4 = *(u8 **)(cur3 + 0x20);
-            prim4[1] = 2;
-            prim4[2] = 2;
-            asm("" : "=r"(entry) : "0"(cur3));
+            *(u8 **)((u8 *)D_800AE168 + iOff) = objC10;
+            *(s16 *)(objC10 + 0xE) = 2;
+            *(s16 *)(objC10 + 0x16) = value;
+            *(s16 *)(objC10 + 6) = *(u16 *)(objC10 + 0xA) - 0xAD;
+            *(s16 *)(objC10 + 0x18) = func_8005A84C();
+            prD10 = *(u8 **)(objC10 + 0x20);
+            prD10[1] = 2;
+            prD10[2] = 2;
+            entry = objC10;
         }
         i++;
-        *(s32 *)(prim4 + 8) = *strP;
+        *(s32 *)(prD10 + 8) = *strP;
         yBase += 0xA;
-        if (i < 4) {
-            goto hiliLoop;
-        }
-    }
+    } while (i < 4);
     if (arg1 != 0) {
-        u8 index;
         u8 primIdx;
-        u8 *cur;
+        u8 *obj10;
         u8 *textPrim;
         u8 *primLoad;
-        index = D_800A35EC++;
-        cur = D_800A3678 + index * 36;
-        cur[4] = 0;
-        cur[3] = 0;
-        cur[2] = 0;
+        ix11 = D_800A35EC;
+        D_800A35EC = ix11 + 1;
+        obj11 = D_800A3678 + ix11 * 36;
+        obj11[4] = 0;
+        obj11[3] = 0;
+        obj11[2] = 0;
         primIdx = D_800A37BC;
-        *(s16 *)(cur + 0xA) = 5;
-        *(s16 *)(cur + 0x12) = 0;
-        *(s16 *)(cur + 0x14) = 0;
-        *(s32 *)(cur + 0x1C) = 0;
-        *(s16 *)(cur + 0x1A) = 0;
-        *(s16 *)(cur + 0) = 0;
-        *(s16 *)(cur + 6) = 5;
-        *(s16 *)(cur + 0xC) = 0x20;
-        *(s16 *)(cur + 8) = 0x20;
-        *(s16 *)(cur + 0xE) = 0;
-        *(s16 *)(cur + 0x10) = 0;
-        *(s16 *)(cur + 0x1A) = 0;
+        *(s16 *)(obj11 + 0xA) = 5;
+        *(s16 *)(obj11 + 0x12) = 0;
+        *(s16 *)(obj11 + 0x14) = 0;
+        *(s32 *)(obj11 + 0x1C) = 0;
+        *(s16 *)(obj11 + 0x1A) = 0;
+        *(s16 *)(obj11 + 0) = 0;
+        *(s16 *)(obj11 + 6) = 5;
+        *(s16 *)(obj11 + 0xC) = 0x20;
+        *(s16 *)(obj11 + 8) = 0x20;
+        *(s16 *)(obj11 + 0xE) = 0;
+        *(s16 *)(obj11 + 0x10) = 0;
+        *(s16 *)(obj11 + 0x1A) = 0;
         D_800A37BC = primIdx + 1;
         textPrim = (u8 *)D_800A3654 + primIdx * 12;
-        *(u8 **)(cur + 0x20) = textPrim;
+        *(u8 **)(obj11 + 0x20) = textPrim;
         textPrim[0] = 0;
         textPrim[3] = 0;
         *(s32 *)(textPrim + 4) = 0;
-        *(s16 *)(cur + 0xE) = 2;
-        *(s16 *)(cur + 0x16) = value;
-        *(s16 *)(cur + 6) = *(u16 *)(cur + 0xA) - 0xAD;
-        *(s16 *)(cur + 0x18) = func_8005A84C();
-        primLoad = *(u8 **)(cur + 0x20);
+        *(s16 *)(obj11 + 0xE) = 2;
+        *(s16 *)(obj11 + 0x16) = value;
+        *(s16 *)(obj11 + 6) = *(u16 *)(obj11 + 0xA) - 0xAD;
+        *(s16 *)(obj11 + 0x18) = func_8005A84C();
+        primLoad = *(u8 **)(obj11 + 0x20);
         primLoad[1] = 2;
         primLoad[2] = 2;
         *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
-        *(u8 **)(entry + 0x1C) = cur;
+        *(u8 **)(entry + 0x1C) = obj11;
     }
     func_80060008(arg0);
 }
+
 #else
 INCLUDE_ASM("asm/nonmatchings/menu", func_8005ED74);
 #endif
@@ -3065,7 +3109,6 @@ void func_80060008(u8 arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_800602E8);
 
-#ifdef NON_MATCHING
 extern u8 *D_800A38A8;
 extern u8 *D_800A3A68Store asm("D_800A3A68");
 extern s32 D_8009A2B0[];
@@ -3094,6 +3137,7 @@ void func_800606D4(void) {
     u8 primIdx2;
     s32 i;
     s32 *p;
+    s32 two;
     s32 *table;
     {
         u8 index;
@@ -3308,9 +3352,9 @@ void func_800606D4(void) {
         prim2[0x24] = (*((u8 *)(((u8 *)D_8009AEAE) - 6))) + w;
         prim2[0x25] = (*((u8 *)(((u8 *)D_8009AEAE) - 4))) + h;
         index = D_800A35EC;
-        new_var = (u8 *)D_800A3654;
-        D_800A35EC = index + 1;
         frame = D_800A3678 + (index * 36);
+        *((u8 **)(row + 0x1C)) = cur;
+        D_800A35EC = index + 1;
         *((s16 *)(frame + 0x12)) = 0;
         *((s16 *)(frame + 0x14)) = 0;
         *((s32 *)(frame + 0x1C)) = 0;
@@ -3319,17 +3363,19 @@ void func_800606D4(void) {
         frame[2] = 0;
         *((s16 *)(frame + 0x1A)) = 0;
         *((s16 *)(frame + 0)) = 0;
-        *((u8 **)(row + 0x1C)) = cur;
         *((s16 *)(frame + 0xA)) = 0;
         *((s16 *)(frame + 6)) = 0;
         *((s16 *)(frame + 0xC)) = 0xB1;
         *((s16 *)(frame + 8)) = 0xB1;
         *((s16 *)(frame + 0xE)) = 0;
         primIndex = D_800A37BC;
+        asm volatile("" : : "r"(cur));
         cur = frame;
-        tile = new_var;
+        asm volatile("" : : "r"(cur), "r"(primIndex));
+        tile = (u8 *)D_800A3654;
         *((s16 *)(cur + 0x10)) = 0;
         *((s16 *)(cur + 0x1A)) = 0;
+        asm volatile("" : : "r"(primIndex));
         D_800A37BC = primIndex + 1;
         tile += primIndex * 12;
         *((u8 **)(cur + 0x20)) = tile;
@@ -3337,12 +3383,15 @@ void func_800606D4(void) {
         tile[3] = 0;
         *((s32 *)(tile + 4)) = 0;
         tile2 = *((u8 **)(cur + 0x20));
+        width = 0xCA;
+        two = 2;
         D_800A3A68Store = cur;
         *((s16 *)(cur + 0x1A)) = 0;
         tile2[1] = 2;
         tile2[2] = 2;
+        do {
+        } while (0);
         *((s32 *)(tile2 + 8)) = D_8009A2B0[0];
-        width = 0xCA;
         table = D_8009A2BC;
         asm("" : "=r"(p) : "0"(table));
         p = table;
@@ -3393,19 +3442,17 @@ void func_800606D4(void) {
         *((s16 *)(cur + 0x16)) = value;
         *((s16 *)(cur + 0x18)) = func_8005A84C();
         cell = *((u8 **)(cur + 0x20));
-        *((s16 *)(cur + 0xE)) = 2;
+        *((s16 *)(cur + 0xE)) = two;
         *new_var2 = 0;
-        cell[1] = 2;
-        cell[2] = 2;
+        cell[1] = two;
+        cell[2] = two;
         *((s32 *)(cell + 8)) = *p;
         p++;
         *((u8 **)(entry + 0x1C)) = cur;
         entry = cur;
-    } while (p < (table + 2));
+    } while ((s32)p < (s32)(table + 2));
+    asm("" : : "r"(two), "r"(two));
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_800606D4);
-#endif
 
 typedef struct PanelChild {
     u8 pad0[8];
@@ -3470,6 +3517,9 @@ void func_80060F54(s32 arg0, s32 volume) {
 typedef struct {
     s8 tab[7];
 } RowList;
+typedef struct {
+    s8 tab[7];
+} RowList;
 extern s8 D_800A3348[];
 extern s32 *D_800A37D8[];
 extern u8 *D_800A3A1C[];
@@ -3477,7 +3527,7 @@ extern u8 *D_800A3888[];
 extern u8 *D_800A3A84[];
 extern u8 *D_800A37FC[];
 extern void *D_800A37F8;
-extern s32 D_8009AC00[];
+extern s32 D_8009AC00[3];
 extern s32 D_8009AC08[];
 extern s32 D_8009AC10[];
 extern s32 D_8009A314[];
@@ -3489,6 +3539,7 @@ extern void func_80062910(s32);
 struct UnkObject24;
 extern void func_80067EA4(struct UnkObject24 *, u8, u8, s32, u8, s32);
 extern void ListSetFieldsAndEnable(u8 *, s16, s16, s16);
+extern u8 D_800A3644[9];
 void func_80060FD8(void) {
     u8 *cur;
     u8 *prev;
@@ -4472,12 +4523,11 @@ void func_80062910(s32 arg0) {
     s32 sel;
     s8 i;
     s8 j;
-    u8 *p;
     s32 idx;
     s32 cc;
     u8 *prim2;
     u8 *tab;
-    s32 pad[2];
+    u8 *new_var;
 
     node = (u8 *)D_800A37D8[arg0 & 0xFF];
     while (*(u16 *)node != 1) {
@@ -4496,7 +4546,8 @@ void func_80062910(s32 arg0) {
     a = ((s8 *)D_800A3A24)[idx];
     if (a != 0) {
         f = ((s8 *)D_800A3350)[a];
-        base = D_8009B00C;
+        new_var = D_8009B00C;
+        base = new_var;
         c = *(base + 7 * f + ((s8 *)D_800A307C)[idx]);
     } else {
         c = D_800A3088[idx];
@@ -4532,25 +4583,24 @@ void func_80062910(s32 arg0) {
     node = *(u8 **)(node + 0x1C);
     *(s32 *)(*(u8 **)(node + 0x20) + 8) = ((s8 *)D_800A307C)[arg0 & 0xFF] + 1;
     sel = ((s8 *)D_800A3A24)[arg0 & 0xFF];
-    fontId = ((s8 *)D_800A3A24)[arg0 & 0xFF];
+    c = ((s8 *)D_800A3A24)[arg0 & 0xFF];
     if (sel == 0) {
-        fontId = D_800A308C[arg0 & 0xFF];
+        c = D_800A308C[arg0 & 0xFF];
     }
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 7; j++) {
             node = *(u8 **)(node + 0x1C);
             do {
             } while (0);
-            f = ((s8 *)D_800A3350)[(s8)fontId];
+            f = ((s8 *)D_800A3350)[(s8)c];
             tab = D_8009A4E0;
             cc = ((s8 *)D_800A307C)[(u8)arg0];
             prim2 = *(u8 **)(node + 0x20);
-            p = 392 * f + tab;
-            p = p + 56 * cc;
-            *(s32 *)(prim2 + 8) = *(s32 *)(p + (7 * i + j) * 4);
+            node = 392 * f + tab;
+            node = node + 56 * cc;
+            *(s32 *)(prim2 + 8) = *(s32 *)(node + (7 * i + j) * 4);
         }
     }
-    (void)&pad;
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/menu", func_80062910);
@@ -5127,15 +5177,9 @@ void func_80063E7C(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Best current full-TU result is size-exact, 9 differing bytes. Corrected
- * one-argument func_8003271C call (callee overwrites a1 immediately). SDK
- * scratchpad constant and a permuter-derived single-pass block improve
- * allocation. RTL maps parameter pseudos 72/73/74 to s2/s1/s3 in baseline,
- * while retail wants s3/s2/s1. Best standalone permuter score 40 validated
- * and simplified.
- */
+/* The empty asm input of arg1 (and where it sits) stretches arg1's live
+ * range so global allocation ranks the three parameters arg2, arg1, arg0,
+ * handing them s1, s2, s3 like retail. */
 extern u8 *D_800A35E4[];
 void func_8003271C(s32 arg0);
 void func_8001775C(void *arg0, s32 arg1, s32 arg2, s32 arg3);
@@ -5176,6 +5220,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
             }
             func_8001775C(obj, 0, 0xFA, 0x44C);
             if (!(arg0 & 0xFF) || (arg2 & 0xFF) || D_800A39E4[0] == 0xE) {
+                asm("" : : "r"(arg1));
                 t = *(s16 *)(obj + 0x20E);
                 v1 = t + 0xFEC;
                 if (v1 < 0) {
@@ -5191,9 +5236,6 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
         }
     } while (0);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80064000);
-#endif
 
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void TextureLoadTim(void *arg0);
@@ -5248,6 +5290,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
     prim[0xD] = y;
     prim[0x14] = ((idx & 3) << 6) + 0x3F;
     prim[0x15] = y;
+    asm("" : "=r"(y) : "0"(y));
     prim[0x1C] = (idx & 3) << 6;
     prim[0x1D] = y + 0x47;
     prim[0x24] = ((idx & 3) << 6) + 0x3F;
@@ -5569,12 +5612,20 @@ s32 func_80065040(void) {
 }
 
 #ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Baseline 2020 bytes versus 2016 retail; frame 0xA0 versus 0xA8. Explicit
- * s16 text-x narrowing changes nothing. Reusing color-phase locals yields
- * 2044 bytes; reusing shift parameter yields 1952 bytes. Slot/parameter
- * homes, spilling and cached global bases remain structurally different.
- * Baseline retained; all experimental sources retained.
+/* 2026-10-11 harvest, real-TU asm-differ 13003 -> 10555:
+ * 1. yOffset lost its volatile: one memory home, one value. Volatile
+ *    forced a load per read and broke the allocator cascade.
+ * 2. Permuter 7760: (a) case 3 duplicates its height/red/green/blue/
+ *    x1off arm under if (x0)/else (duplicated-arm barrier);
+ *    (b) leftX = 0x17 hoisted before the D_8009A3EC[0] call with
+ *    x = leftX in the loop; (c) b2 = (s32)entry routes the
+ *    func_80018588 buffer into func_8005A9F4.
+ * 3. asm("" : "=r"(match) : "r"(match)) after match = slots slows the
+ *    cursor/match CSE.
+ * Remaining versus retail: frame 0xa0 vs 0xa8, cursor/match still one
+ * addiu plus a derived copy where retail has two addiu, and ours reads
+ * D_800BE70C/D_800A36E0/D_800A3644 through cached t-reg bases with
+ * 0-offset loads where retail uses %hi/%lo displacements off the index.
  */
 extern u8 D_800A3950[];
 extern u8 D_800A305B[];
@@ -5599,7 +5650,7 @@ void func_80065058(u8 id, s32 shift) {
     u8 *cursor;
     u8 *match;
     u8 *prim;
-    volatile s32 yOffset;
+    s32 yOffset;
     s16 leftX;
     s32 i;
     s32 x0;
@@ -5618,6 +5669,7 @@ void func_80065058(u8 id, s32 shift) {
     yOffset = -((shift & 0xFF) != 0) & -0x140;
     cursor = slots;
     match = slots;
+    asm("" : "=r"(match) : "r"(match));
     for (i = 0; i < 2; i++) {
         *cursor = 0xFF;
         if (D_800BE70C[id * 2 + i] == D_800A36E0[0]) {
@@ -5670,11 +5722,19 @@ void func_80065058(u8 id, s32 shift) {
             break;
         case 3:
             if (slots[0] != 0xFF) {
-                height = 0x12;
-                red = 0x78;
-                green = 0x78;
-                blue = 0xEC;
-                x1off = 0x8E;
+                if (x0) {
+                    height = 0x12;
+                    red = 0x78;
+                    green = 0x78;
+                    blue = 0xEC;
+                    x1off = 0x8E;
+                } else {
+                    height = 0x12;
+                    red = 0x78;
+                    green = 0x78;
+                    blue = 0xEC;
+                    x1off = 0x8E;
+                }
                 if (slots[0] == 1) {
                     x0 += 0x8E;
                 }
@@ -5767,11 +5827,12 @@ void func_80065058(u8 id, s32 shift) {
         D_8009A3EC[0][4] = id + 0x31;
         D_8009A3EC[0][5] = 0;
     }
+    leftX = 0x17;
     func_8005A9F4((s32)D_8009A3EC[0], 0xFC, 0x4D, 0, 0, 0, 0, 0);
     for (i = 0; i < 2; i++) {
         x = 0xA5;
         if (i == 0) {
-            x = 0x17;
+            x = leftX;
         }
         color = D_800BE70C[id * 2 + i];
         if (color == D_800A36E0[0]) {
@@ -5794,7 +5855,8 @@ void func_80065058(u8 id, s32 shift) {
             func_8005A9F4((s32)D_8009A42C[0], x + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
             func_80018588((void *)D_800AEB34[color], -1, entry);
-            func_8005A9F4((s32)entry, x + 0x45, 0x7E, 0, 0, 0, 0, 7);
+            b2 = (s32)entry;
+            func_8005A9F4(b2, x + 0x45, 0x7E, 0, 0, 0, 0, 7);
         }
         if (D_800A2EB0Absolute[0] == 0 && id == 0 && i == 0) {
             func_8005A9F4((s32)D_8009A3EC[13], x + 0x59, 0x61, 0, 0, 0, 0, 0);
@@ -6218,17 +6280,16 @@ void func_80066B08(void) {
     D_800A335C = 0;
 }
 
-#ifdef NON_MATCHING
-/* Fresh attempt, 2026-10-05:
- * Declaration-complete baseline is size-exact (396 bytes), 100 differing
- * bytes. GCC caches gPrimitiveCursor address across setup calls, changing
- * prologue/initialization schedule. Separate lifetime gives 400 bytes;
- * distinct absolute alias gives 392 bytes. Baseline retained.
+/* Matched 2026-10-11: the two D_800A365C/D_800A39F4 setup pairs come before
+ * the i/height/flag/off14/off5C init block, and the second read goes through
+ * a second unknown-size array alias of gPrimitiveCursor so gcc emits a fresh
+ * lui/lw per read instead of caching the address across the setup calls.
  */
 void func_80066B70(void) {
     extern s32 D_800A2EB0Absolute[];
     extern s32 D_800A365C;
     extern s32 D_800A39F4;
+    extern u32 gPrimitiveCursor2[] asm("gPrimitiveCursor");
     s32 i;
     s32 height;
     s32 flag;
@@ -6236,15 +6297,15 @@ void func_80066B70(void) {
     s32 off5C;
     u8 *env;
 
+    D_800A365C = gPrimitiveCursor[0];
+    func_80050028(D_8009A400[0], 0x8C, 0xD6, 1);
+    D_800A39F4 = gPrimitiveCursor2[0];
+    func_80050028(D_8009A400[10], 0x82, 0xF1, 1);
     i = 0;
     height = 0xF0;
     flag = 8;
     off14 = 0;
     off5C = 0;
-    D_800A365C = gPrimitiveCursor[0];
-    func_80050028(D_8009A400[0], 0x8C, 0xD6, 1);
-    D_800A39F4 = gPrimitiveCursor[0];
-    func_80050028(D_8009A400[10], 0x82, 0xF1, 1);
     for (i = 0; i < 2; i++) {
         env = (u8 *)D_800BDD4C + off5C;
         SetDefDrawEnv((DRAWENV *)env, (0 - (i != 0)) & 0x140, 0, 0x140, height);
@@ -6270,9 +6331,6 @@ void func_80066B70(void) {
     D_800BDDC0[0] = 1;
     D_800BDD64[0] = 1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80066B70);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_80066CFC);
 

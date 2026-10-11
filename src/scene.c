@@ -2211,6 +2211,7 @@ extern u8 D_800A757Ca[];
 
 void func_8004A510(void) {
     HudTexture *tex;
+    u8 *prim;
     u8 *prim2;
     u8 *p0;
     u8 *p1;
@@ -2432,13 +2433,35 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004A510);
 #endif
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 324 bytes versus retail 328; 68 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The draft used an undefined temporary table alias.
+/* Harvest 2026-10-11 (sandbox w2h): the recorded "cc1 crash" was missing
+ * declarations — the externs for D_800A2FD0/D_8009AE14/D_80098BD0 all live
+ * inside func_8004A510's NON_MATCHING block, so block-scope externs were
+ * added at the top of this function. Best state: 81 insns vs retail 82
+ * (size_delta -4). The three levers that fixed the recorded wall:
+ * entry-copy anchor asm volatile("" : "=r"(cursor) : "0"(arg2)); (retail's
+ * addu $t3,$a2,$zero), a separate cursor walked in place of arg2 (retail
+ * advances t3 in the loop), and the glyph-pointer spelling
+ * glyph = (s16 *)&D_80098BD0[t * 10]; with glyph[3]/glyph[4] loads — which
+ * puts the per-iteration lui/addiu &D_80098BD0 INSIDE the loop (a bare
+ * D_80098BD0[t*10+6] subscript gets constant-hoisted to the prologue by
+ * cross-block constant CSE, even in a goto loop). Store cursor is now a
+ * single a3 with retail's -0x1A..0 offsets. Remaining diff: retail keeps
+ * i<<24 in t4 from the outer head (inner re-derives with one sra); ours
+ * recomputes sll+sra inside the inner loop (+1 insn, shared-pseudo split
+ * across the guard branch that CSE cannot cross); the D_800A2FD0[arg0]
+ * byte is folded to one lb here while retail emits lbu + sll/sra (-2);
+ * retail has 2 scheduler nops we lack. goto-loop (no notes) blocks LICM's
+ * address hoist; a do-while LICM instead copies the outer slot address
+ * (move t2,a3) — retail's partial sharing sits between the two regimes.
+ * Permuter 8 min from this base: best 405->305 in its unit, all finds
+ * (short w, glyph[4] merge, while((i+1)<=7), if(j) goto) verified worse
+ * in the real TU and rejected.
  */
 
 void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     s16 *out;
+    u16 *xy0;
+    u16 *cursor;
     s8 i;
     s8 j;
     s32 x;
@@ -2447,33 +2470,45 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     s32 v0;
     s32 v1;
     s32 sum;
+    s32 i24;
+    s32 padByte;
+    s8 **a914;
+    s16 *glyph;
 
+    asm volatile("" : "=r"(cursor) : "0"(arg2));
     i = 0;
+    a914 = (s8 **)D_8009AE14;
     do {
         j = 0;
-        x = arg1[i * 2];
-        w = arg1[i * 2 + 1] + (s8)D_800A2FD0[arg0];
-        if (((s8 **)D_8009AE14)[i][0] != 0) {
-            out = (s16 *)((u8 *)arg2 + 0x22);
-            do {
-                t = ((s8 **)D_8009AE14)[i][j];
-                v0 = *(s16 *)&D_80098BD0[t * 10 + 6];
-                out[-13] = x;
-                out[-12] = w;
-                out[-8] = w;
-                out[-5] = x;
-                sum = x + ((v0 * 3) >> 2);
-                out[-9] = sum;
-                v1 = *(s16 *)&D_80098BD0[t * 10 + 8];
-                out[-1] = sum;
-                out[-4] = w + ((v1 * 3) >> 2);
-                v1 = *(s16 *)&D_80098BD0[t * 10 + 8];
-                out[0] = w + ((v1 * 3) >> 2);
-                x = sum;
-                j++;
-                arg2 += 0x14;
-                out += 0x14;
-            } while (((s8 **)D_8009AE14)[i][j] != 0);
+        i24 = i << 24;
+        asm("" : "=r"(padByte) : "0"(D_800A2FD0[arg0]));
+        xy0 = (u16 *)((i24 >> 22) + (char *)arg1);
+        x = xy0[0];
+        w = xy0[1] + ((padByte << 24) >> 24);
+        if ((*(s8 **)((i24 >> 22) + (char *)a914))[0] != 0) {
+            out = (s16 *)((u8 *)cursor + 0x22);
+        inner:
+            t = (*(s8 **)((i24 >> 22) + (char *)a914))[j];
+            glyph = (s16 *)&D_80098BD0[t * 10];
+            v0 = glyph[3];
+            out[-13] = x;
+            out[-12] = w;
+            out[-8] = w;
+            out[-5] = x;
+            sum = x + ((v0 * 3) >> 2);
+            out[-9] = sum;
+            v1 = glyph[4];
+            out[-1] = sum;
+            out[-4] = w + ((v1 * 3) >> 2);
+            v1 = glyph[4];
+            out[0] = w + ((v1 * 3) >> 2);
+            x = sum;
+            j++;
+            cursor += 0x14;
+            out += 0x14;
+            if ((*(s8 **)((i24 >> 22) + (char *)a914))[j] != 0) {
+                goto inner;
+            }
         }
         i++;
     } while (i < 7);
@@ -3333,7 +3368,8 @@ typedef struct CarLink {
 } CarLink;
 
 extern s32 sprintfRow(char *, char *, ...) asm("sprintf");
-extern void func_80050028Row(char *, s32, s32, s32) asm("func_80050028");
+extern void func_80050028Row(char *, s32, s32, s32);
+asm(".globl func_80050028Row\nfunc_80050028Row = func_80050028");
 extern void func_8004FF90Row(s16, s32, s32, s32) asm("func_8004FF90");
 extern void func_80050670Row(s32, s32, s32, s32, s32) asm("func_80050670");
 
@@ -3564,7 +3600,8 @@ extern s32 D_800A34C0;
 extern u8 *D_800A3554[];
 extern u8 *D_8009AE4C[];
 extern void func_8004EA34(void);
-extern void func_80050028Lbl(char *, s16, s16, s8) asm("func_80050028");
+extern void func_80050028Lbl(char *, s16, s16, s8);
+asm(".globl func_80050028Lbl\nfunc_80050028Lbl = func_80050028");
 
 void func_8004E808(void) {
     if (D_800A349C < 0x3C) {
@@ -3887,7 +3924,7 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
     u8 *p;
     u8 *cp;
     u8 *glyph;
-    u16 w;
+    s32 w;
     u8 i;
     s32 lineH;
     s32 newX;
@@ -3930,18 +3967,18 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
         } while (0);
         prim = D_800A8AC4nm;
         SetSemiTrans(prim, 1);
-        p = (u8 *)&prim->tpage;
+        p = (u8 *)prim + 0x16;
         if (text[i] != 0) {
             lineH = y + lineH;
             do {
                 glyph = &D_80098BD0[text[i] * 10];
-                *(u16 *)p =
-                    GetTPage(0, 1, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+                tc = GetTPage(0, 1, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+                *(u16 *)p = tc;
                 w = *(u16 *)(glyph + 6);
                 *(u8 *)(p - 0xA) = glyph[4];
-                *(u8 *)(heap + 0x1C) = glyph[5];
+                *(u8 *)(p - 0x9) = glyph[5];
                 *(u8 *)(p - 0x2) = glyph[4] + w;
-                *(u8 *)(heap + 0x24) = glyph[5];
+                *(u8 *)(p - 0x1) = glyph[5];
                 *(u8 *)(p + 0x6) = glyph[4];
                 *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
                 *(u8 *)(p + 0xE) = glyph[4] + w;
@@ -3990,9 +4027,9 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
                 *(u16 *)p =
                     GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
                 *(u8 *)(p - 0xA) = glyph[4];
-                *(u8 *)(heap + 0x1C) = glyph[5];
+                *(u8 *)(p - 0x9) = glyph[5];
                 *(u8 *)(p - 0x2) = glyph[4] + glyph[6];
-                *(u8 *)(heap + 0x24) = glyph[5];
+                *(u8 *)(p - 0x1) = glyph[5];
                 *(u8 *)(p + 0x6) = glyph[4];
                 *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
                 *(u8 *)(p + 0xE) = glyph[4] + glyph[6];
@@ -4063,9 +4100,9 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
                 GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
             w = *(u16 *)(glyph + 6);
             *(u8 *)(p - 0xA) = glyph[4];
-            *(u8 *)(heap + 0x1C) = glyph[5];
+            *(u8 *)(p - 0x9) = glyph[5];
             *(u8 *)(p - 0x2) = glyph[4] + w;
-            *(u8 *)(heap + 0x24) = glyph[5];
+            *(u8 *)(p - 0x1) = glyph[5];
             *(u8 *)(p + 0x6) = glyph[4];
             *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
             *(u8 *)(p + 0xE) = glyph[4] + w;
@@ -4323,10 +4360,25 @@ extern s32 D_800A2EC0Absolute[];
 extern u8 D_80090F5E[], D_80090F6C[], D_80090F88[];
 
 #ifdef NON_MATCHING
+/* 2026-10-11 w3f: frame hole decoded and fixed. Retail's frame is 0xa0 with
+ * 8 dead bytes between `m` (0x38) and `rot` (0x60); the draft was 0x98 with
+ * rot at 0x58. An unused local is dropped entirely, but an ADDRESS-TAKEN
+ * local whose only reference sits inside `if (0)` keeps its stack slot:
+ * parse sets TREE_ADDRESSABLE, expand_decl allocates the slot in decl
+ * order, and the dead branch never expands, so the slot is silent.
+ * `SVECTOR padRot;` between m and rot + the `if (0)` RotMatrix below
+ * reproduces the hole and shifts every prologue/epilogue/rot/out/flag
+ * offset back onto retail. Remaining (86 rows): a0/a1 swaps in the coords
+ * loop, the E8->v1 / F4->a0 assignment swap, the 413d8 nop-vs-move s3,a1
+ * slot, and the tail interleave (mfhi t1 vs t0, subu a3 vs v0). */
 void func_800525A8(u8 *arg0, s8 arg1) {
+    s32 new_var2;
     s16 coords[3][4];
     VECTOR vec;
     MATRIX m;
+    SVECTOR padRot;
+    s32 xoff;
+    s32 d;
     SVECTOR rot;
     VECTOR out;
     long flag;
@@ -4340,10 +4392,11 @@ void func_800525A8(u8 *arg0, s8 arg1) {
     u8 *new_var;
     u8 *q;
     u8 *p;
+    u16 *new_var3;
     u32 v;
     s8 side1;
     s8 side2;
-    s32 xoff;
+    u8 *new_var4;
     s32 *ref;
     s8 i;
     s8 j;
@@ -4352,7 +4405,6 @@ void func_800525A8(u8 *arg0, s8 arg1) {
     u8 uv;
     u8 *node;
 
-    s32 d;
     s32 w2;
     s32 n;
 
@@ -4458,6 +4510,9 @@ void func_800525A8(u8 *arg0, s8 arg1) {
     rot.vz = 0;
     RotMatrix(&rot, &m);
     SetRotMatrix(&m);
+    if (0) {
+        RotMatrix(&padRot, &m);
+    }
     i = 0;
     xoff = side1 * 220;
     ref = D_800AE844;
@@ -4495,7 +4550,7 @@ loop2:
         *(u16 *)(tex2 + 0x46) = *(u16 *)(entry + 0x12);
         *(u16 *)(tex2 + 0x48) = *(u16 *)(entry + 0x14);
         w = coords[0][0];
-        *(u16 *)(entry + 0x10) = w;
+        *(new_var3 = (u16 *)(entry + 0x10)) = w;
         *(u16 *)(tex2 + 0x34) = w;
         w = coords[1][0];
         *(u16 *)(entry + 0x12) = w;
@@ -4512,8 +4567,7 @@ loop2:
         w = coords[1][1];
         *(u16 *)(entry + 0x18) = w;
         *(u16 *)(tex2 + 0x3E) = w;
-        w = coords[2][1];
-        *(u16 *)(entry + 0x1A) = w;
+        w = (*(u16 *)(entry + 0x1A) = coords[2][1]);
         *(u16 *)(tex2 + 0x40) = w;
         if (*(s16 *)tex2 != -1) {
             node = *(u8 **)((u8 *)D_800BE980[0] + *(s16 *)tex2 * 0x90 + 0x74);
@@ -4548,7 +4602,8 @@ loop2:
                 entry[0x24] = 1;
             }
         }
-        tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
+        tex2 =
+            (new_var4 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8);
         *(s16 *)(tex2 + 0x12) = GetClut(tim->clutX, tim->clutY);
         *(s16 *)(tex2 + 0x16) = GetTPage(tim->tpage, 0, tim->tpx, tim->tpy);
         u = tim->u;
@@ -4556,7 +4611,7 @@ loop2:
         tex2[0x10] = u;
         u = tim->u + 0x3F;
         tex2[0x1C] = u;
-        tex2[0x18] = u;
+        tex2[(new_var2 = 0x18)] = u;
         uv = tim->v + 0x1F;
         tex2[0x19] = uv;
         tex2[0x11] = uv;
@@ -4569,8 +4624,8 @@ loop2:
         *(u16 *)(entry + 0x26) = w;
         n = (s16)(w + 1);
         *(s32 *)(tex2 + 4) = D_800A2EC0Absolute[0];
-        *(s32 *)(arg0 + arg1 * 0x28 + 0x2B8) -=
-            (0x12C - *(s16 *)(arg0 + arg1 * 0x28 + 0x2B4)) >> 3;
+        new_var4 = (arg0 + arg1 * 0x28) + 0x2B4;
+        *(s32 *)(arg0 + arg1 * 0x28 + 0x2B8) -= (0x12C - *(s16 *)new_var4) >> 3;
         D_800A34E8 = n % 100;
     }
     switch (arg1) {
@@ -6244,13 +6299,13 @@ void func_80058D94(void) {
     extern void FileCloseScene(s32) asm("FileClose");
     extern void TextureLoadTim(void *);
     extern s32 D_800A3090[];
+    s32 done;
+    s32 prevPads;
     RECT rect;
     s32 pad[6];
     s32 *volatile offsets;
     u32 frame;
-    s32 done;
     s32 fade;
-    s32 prevPads;
     u8 *texBuf;
     u8 toggle;
     u8 *fileBuf;
@@ -6314,9 +6369,10 @@ void func_80058D94(void) {
     SetSemiTrans(D_800A34FC, 0);
     tpage = GetTPage(2, 0, 0x100, 0x100);
     prim = D_800A34FC;
-    *(u8 *)((u8 *)D_800A78D4 + row * 0x28 + 0xC) = 0x40;
+    *(u8 *)(D_800A34FC + 0xC) = 0x40;
+    envByte = D_800A34FC + 0xD;
     *(u16 *)(prim + 0x16) = tpage;
-    *(u8 *)(D_800A34FC + 0xD) = 0x24;
+    envByte[0] = 0x24;
     *(u8 *)(D_800A34FC + 0x14) = 0xA0;
     *(u8 *)(D_800A34FC + 0x15) = 0x24;
     *(u8 *)(D_800A34FC + 0x1C) = 0x40;
@@ -6485,6 +6541,7 @@ void func_80058D94(void) {
         } else {
             prevPads = pads;
         }
+        asm("" : "=r"(done) : "0"(done));
     } while ((done & 0xFF) == 0);
     if (D_800A39E4Small == 0xFE) {
         func_8005957C();
@@ -6509,6 +6566,7 @@ void func_80058D94(void) {
     }
     HeapResetInitFlag();
 }
+
 #else
 INCLUDE_ASM("asm/nonmatchings/scene", func_80058D94);
 #endif

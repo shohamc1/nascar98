@@ -548,29 +548,37 @@ CdlCB CdReadyCallback(CdlCB func) {
     return old;
 }
 
-#ifdef NON_MATCHING
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
 extern s32 CD_cw(u8, u8 *, u8 *, s32);
 extern s32 CD_sync(s32, u8 *);
+#ifdef NON_MATCHING
 int CdControl(u_char com, u_char *param, u_char *result) {
-    CdlCB old;
     s32 count;
+    s32 c;
+    CdlCB old;
+    u32 *flag;
     s32 status;
-    old = (CdlCB)D_8009BA7C[0];
+
     count = 3;
+    old = (CdlCB)D_8009BA7C[0];
+    asm("" : "=r"(count) : "0"(count));
+    c = com & 0xff;
+    {
+        u32 *base;
+        base = D_8009B9FC;
+        flag = base + c;
+    }
     status = 0;
 again:
     D_8009BA7C[0] = 0;
-    if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+    if (c != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
         CD_cw(CdlNop, 0, 0, 0);
     }
-    if (param == 0 || D_8009B9FC[(u8)com] == 0 ||
-        !CD_cw(CdlSetloc, param, result, 0)) {
+    if (param == 0 || *flag == 0 || !CD_cw(CdlSetloc, param, result, 0)) {
         D_8009BA7C[0] = (u32)old;
         if (!CD_cw(com, param, result, 0)) {
-            status = 0;
             goto done;
         }
     }
@@ -586,29 +594,37 @@ done:
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControl);
 #endif
 
-#ifdef NON_MATCHING
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
 extern s32 CD_cw(u8, u8 *, u8 *, s32);
 extern s32 CD_sync(s32, u8 *);
+#ifdef NON_MATCHING
 int CdControlF(u_char com, u_char *param) {
-    CdlCB old;
     s32 count;
+    s32 c;
+    CdlCB old;
+    u32 *flag;
     s32 status;
-    old = (CdlCB)D_8009BA7C[0];
+
     count = 3;
+    old = (CdlCB)D_8009BA7C[0];
+    asm("" : "=r"(count) : "0"(count));
+    c = com & 0xff;
+    {
+        u32 *base;
+        base = D_8009B9FC;
+        flag = base + c;
+    }
     status = 0;
 again:
     D_8009BA7C[0] = 0;
-    if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+    if (c != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
         CD_cw(CdlNop, 0, 0, 0);
     }
-    if (param == 0 || D_8009B9FC[(u8)com] == 0 ||
-        !CD_cw(CdlSetloc, param, 0, 0)) {
+    if (param == 0 || *flag == 0 || !CD_cw(CdlSetloc, param, 0, 0)) {
         D_8009BA7C[0] = (u32)old;
         if (!CD_cw(com, param, 0, 1)) {
-            status = 0;
             goto done;
         }
     }
@@ -624,26 +640,34 @@ done:
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
 #endif
 
-#ifdef NON_MATCHING
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
 extern s32 CD_cw(u8, u8 *, u8 *, s32);
 extern s32 CD_sync(s32, u8 *);
 int CdControlB(u_char com, u_char *param, u_char *result) {
-    CdlCB old;
     s32 count;
+    s32 c;
+    CdlCB old;
+    u32 *flag;
     s32 status;
-    old = (CdlCB)D_8009BA7C[0];
+
     count = 3;
+    old = (CdlCB)D_8009BA7C[0];
+    asm("" : "=r"(count) : "0"(count));
+    c = com & 0xff;
+    {
+        u32 *base;
+        base = D_8009B9FC;
+        flag = base + c;
+    }
     status = 0;
 again:
     D_8009BA7C[0] = 0;
-    if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+    if (c != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
         CD_cw(CdlNop, 0, 0, 0);
     }
-    if (param == 0 || D_8009B9FC[(u8)com] == 0 ||
-        !CD_cw(CdlSetloc, param, result, 0)) {
+    if (param == 0 || *flag == 0 || !CD_cw(CdlSetloc, param, result, 0)) {
         D_8009BA7C[0] = (u32)old;
         if (!CD_cw(com, param, result, 0)) {
             status = 0;
@@ -660,9 +684,6 @@ done:
         return 0;
     return CD_sync(CdlSync, result) == CdlComplete;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlB);
-#endif
 
 extern int CD_vol(CdlATV *vol);
 
@@ -884,9 +905,8 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", cb_read);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", cd_read_retry);
 
-#ifdef NON_MATCHING
 extern volatile u32 D_8009BD98[];
-extern volatile u32 D_8009BD9C[];
+extern u32 D_8009BD9C[];
 extern u32 D_8009BD90[];
 extern u32 D_8009BD8C[];
 extern u32 D_8009BDB0[];
@@ -900,27 +920,37 @@ int CdRead(int sectors, u_long *buffer, int mode) {
     switch (D_8009BD98[0] & 0x30) {
     case 0:
         D_8009BD9C[0] = 0x200;
+        asm volatile("" : : : "memory");
         break;
     case 0x20:
         D_8009BD9C[0] = 0x249;
+        asm volatile("" : : : "memory");
         break;
-    default:
-        D_8009BD9C[0] = 0x246;
+    default: {
+        volatile u32 *p;
+        p = D_8009BD9C;
+        p[0] = 0x246;
         break;
     }
+    }
     D_8009BD98[0] |= 0x20;
-    D_8009BD90[0] = (u32)buffer;
-    D_8009BD8C[0] = sectors;
-    D_8009BDB0[0] = (u32)CdSyncCallback(0);
-    D_8009BDB4[0] = (u32)CdReadyCallback(0);
-    D_8009BDA8[0] = VSync(-1);
+    {
+        u32 z1;
+        u32 z2;
+        s32 vm1;
+        asm volatile("" : "=r"(z1) : "0"(0));
+        D_8009BD90[0] = (u32)buffer;
+        D_8009BD8C[0] = sectors;
+        D_8009BDB0[0] = (u32)CdSyncCallback(z1);
+        asm volatile("" : "=r"(z2) : "0"(0));
+        D_8009BDB4[0] = (u32)CdReadyCallback(z2);
+        asm volatile("" : "=r"(vm1) : "0"(-1));
+        D_8009BDA8[0] = VSync(vm1);
+    }
     if (CdStatus() & (CdlStatPlay | CdlStatSeek | CdlStatRead))
         CdControlB(CdlPause, 0, 0);
     return cd_read_retry(0) > 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdRead);
-#endif
 
 extern s32 D_8009BDA8[];
 extern s32 cd_read_retry(s32 mode);
@@ -967,14 +997,18 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", VSync);
 extern s32 D_8009CE84[];
 extern char D_80090404[];
 
+/* PARKED 2026-10-11 (w4a): 3768 -> 333. Moving the do-while(0) barrier from
+ * after the count store to the top of the function keeps the CE84 load from
+ * riding above the sll and drops 4 prologue rows; the remaining 5 rows are the
+ * ra save (ours first insn, retail sunk into the beqz delay slot) and the
+ * still-empty slot. dbr refuses li v1,-1 for the slot; giving v1 a second use
+ * near the branch or un-volatiling count are the untried leads. */
 #ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 156 bytes, 22 linked text bytes differ. Moving the existing empty barrier
- * inside the condition slightly improves the prologue. Remaining differences
- * concern initial load/store ordering and the ra save delay slot. */
 void v_wait(int mode, int time) {
     volatile int count;
 
+    do {
+    } while (0);
     count = time << 15;
     if (D_8009CE84[0] < mode) {
         asm("");
@@ -2497,34 +2531,31 @@ void __maspsx_include_asm_hack_D_80090764(void) {
 }
 
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090770);
-#ifdef NON_MATCHING
 extern u32 D_8009DA8C[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DB4C[];
 extern char D_80090770[];
 OT_TYPE *ClearOTag(OT_TYPE *arg0, int arg1) {
-    s32 *var_s0;
     OT_TYPE *temp_a0;
-    var_s0 = (s32 *)arg0;
+    u32 masked;
     if ((u8)D_8009DA92[0] >= 2U) {
-        ((int (*)(const char *, ...))D_8009DA8C[0])(D_80090770, var_s0, arg1);
+        temp_a0 = (OT_TYPE *)D_80090770;
+        ((int (*)(const char *, ...))D_8009DA8C[0])(temp_a0, arg0, arg1);
     }
     arg1 -= 1;
     if (arg1 != 0) {
         do {
             arg1 -= 1;
-            temp_a0 = (OT_TYPE *)var_s0 + 1;
-            ((u8 *)var_s0)[3] = 0;
-            var_s0[0] = ((u32)temp_a0 & 0xFFFFFF) | (var_s0[0] & 0xFF000000);
-            var_s0 = (s32 *)temp_a0;
+            temp_a0 = (OT_TYPE *)arg0 + 1;
+            ((u8 *)arg0)[3] = 0;
+            masked = (u32)temp_a0 & 0xFFFFFF;
+            arg0[0] = (arg0[0] & 0xFF000000) | masked;
+            arg0 = temp_a0;
         } while (arg1 != 0);
     }
-    *var_s0 = (s32)((u32)D_8009DB4C & 0xFFFFFF);
-    return (OT_TYPE *)var_s0;
+    *arg0 = (s32)((u32)D_8009DB4C & 0xFFFFFF);
+    return arg0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ClearOTag);
-#endif
 
 extern u32 D_8009DA88[];
 extern u32 D_8009DA8C[];
@@ -5739,18 +5770,12 @@ extern u8 D_800A20B2[];
 extern void _SsTrapIntrVSync(void);
 extern void _SsSeqCalledTbyT_1per2(void);
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-05):
- * 616 bytes, 234 linked text bytes differ. Direct rcntTarget assignment
- * restores size but does not recover the shared D_800A20A4 base or retail
- * quotient/branch-tail allocation. A permuter candidate using an
- * uninitialized base pointer was rejected. */
-
 s32 _SsStart(s32 arg0) {
     s32 wait;
     s32 mode;
     s32 rcntSpec;
     s32 rcntTarget;
+    s32 b2;
     Callback callback;
 
     wait = 1000;
@@ -5783,24 +5808,28 @@ s32 _SsStart(s32 arg0) {
         rcntTarget = 0x44E8;
         break;
     default: {
-        u8 *env;
-        u32 div;
-        s32 ticks;
+        register u8 *env asm("a0");
+        register s32 ticks asm("v1");
+        register s32 quot asm("v0");
+        register s32 envD asm("v1");
 
         env = (u8 *)D_800A20A4;
-        if (*(s32 *)&env[0] == 0) {
-            ticks = *(s32 *)&env[-4];
-            if (ticks < 0x46) {
-                rcntTarget = 0x204CC0 / ticks;
-                asm("");
-                env[0xD] += 1;
-            } else {
-                rcntTarget = 0x409980 / ticks;
-            }
-            break;
+        __asm__("" : "=r"(env) : "0"(env));
+        if (*(s32 *)env != 0) {
+            return;
         }
+        ticks = *(s32 *)(env - 4);
+        if (ticks < 0x46) {
+            quot = 0x204CC0 / ticks;
+            envD = env[0xD];
+            envD = envD + 1;
+            env[0xD] = envD;
+        } else {
+            quot = 0x409980 / ticks;
+        }
+        rcntTarget = quot;
+        break;
     }
-        return;
     }
     if (D_800A20B0[0] != 0) {
         EnterCriticalSection();
@@ -5809,22 +5838,21 @@ s32 _SsStart(s32 arg0) {
         EnterCriticalSection();
         ResetRCnt(rcntSpec);
         SetRCnt(rcntSpec, rcntTarget & 0xFFFF, 0x1000);
-        if (D_800A20B2[0] == 0) {
+        b2 = ((u8 *)D_800A20B1)[1];
+        if (b2 == 0) {
             D_800A20AC[0] = InterruptCallback(0, NULL);
+            b2 = D_800A20B2[0];
             callback = _SsTrapIntrVSync;
         } else if (D_800A20B1[0] == 0) {
             callback = D_800A20A8[0];
         } else {
             callback = _SsSeqCalledTbyT_1per2;
         }
-        InterruptCallback(D_800A20B2[0], callback);
+        InterruptCallback(b2, callback);
     }
     ExitCriticalSection();
     return;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsStart);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -7000,40 +7028,63 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOn);
 #ifdef NON_MATCHING
 s32 SpuVmKeyOffDraft(s16, s16, s16, u16) asm("SpuVmKeyOff");
 s32 SpuVmKeyOffDraft(s16 arg0, s16 vabId, s16 prog, u16 note) {
+    struct Voice {
+        s16 unk0;
+        s16 unk2;
+        s16 unk4;
+        u8 pad6[6];
+        s16 note;
+        s16 seq;
+        s16 unk10;
+        s16 prog;
+        s16 unk14;
+        s16 vabId;
+        u8 pad18[3];
+        u8 unk1b;
+        u8 pad1c[24];
+    };
+    extern struct Voice D_800AD3BC[];
     extern u8 D_800B9C80[];
     extern u16 D_800B9DDE[];
-    extern s32 D_800A20B8[];
-    extern u16 D_800BEB98[];
-    extern u16 D_800BEB9C[];
+    extern u16 D_800B9DDA[];
+    extern u8 D_800A20B8[];
+    extern u8 D_800BEB98[];
+    extern u8 D_800BEB9C[];
     extern u16 D_800AD96C[];
     extern u16 D_800AD970[];
-    extern u8 D_800AD3BC[];
-    extern u8 D_800AD3C0[];
-    extern u8 D_800AD3C8[];
-    extern u8 D_800AD3CA[];
-    extern u8 D_800AD3CE[];
-    extern u8 D_800AD3D2[];
-    extern u8 D_800AD3D7[];
-    u16 bitsUpper;
+    extern u8 D_800BE998[];
+    extern u8 D_800BEBA0[];
+    extern u8 D_800AD8E4[];
+    extern u8 D_800AD974[];
+    u16 okon1;
+    u16 okon2;
     u16 bitsLower;
+    u16 bitsUpper;
     u8 voice;
+    u16 maskLow;
+    u16 maskUp;
     s32 count;
     u16 tempVoice;
+    u16 *spu;
 
+    voice = 0;
     count = 0;
-    for (voice = 0; voice < D_800B9C80[0]; voice++) {
-        if (*(s16 *)(D_800AD3C8 + voice * 52) == note &&
-            *(s16 *)(D_800AD3CE + voice * 52) == prog &&
-            *(s16 *)(D_800AD3CA + voice * 52) == arg0 &&
-            *(s16 *)(D_800AD3D2 + voice * 52) == vabId) {
-            if (*(s16 *)(D_800AD3BC + voice * 52) == 0xFF) {
-                D_800AD3D7[voice * 52] = 0;
-                *(s16 *)(D_800AD3C0 + voice * 52) = 0;
-                ((u16 *)D_800A20B8[0])[202] = 0;
-                ((u16 *)D_800A20B8[0])[203] = 0;
+    for (; voice < D_800B9C80[0]; voice++) {
+        if ((((D_800AD3BC[voice].note == note) &&
+              (D_800AD3BC[voice].prog == prog)) &&
+             (D_800AD3BC[voice].seq == arg0)) &&
+            (D_800AD3BC[voice].vabId == vabId)) {
+            if (D_800AD3BC[voice].unk0 == 0xFF) {
+                D_800AD3BC[voice].unk1b = 0;
+                D_800AD3BC[voice].unk4 = 0;
+                spu = *(u16 **)D_800A20B8;
+                spu[202] = 0;
+                spu[203] = 0;
             } else {
                 D_800B9DDE[0] = voice;
-                tempVoice = D_800B9DDE[0];
+                do {
+                } while (0);
+                tempVoice = *(u16 *)((s32)D_800B9DDA + 4);
                 if (tempVoice < 0x10) {
                     bitsLower = 1 << tempVoice;
                     bitsUpper = 0;
@@ -7041,13 +7092,18 @@ s32 SpuVmKeyOffDraft(s16 arg0, s16 vabId, s16 prog, u16 note) {
                     bitsLower = 0;
                     bitsUpper = 1 << (tempVoice - 0x10);
                 }
-                D_800AD3D7[tempVoice * 52] = 0;
-                *(s16 *)(D_800AD3C0 + tempVoice * 52) = 0;
-                *(s16 *)(D_800AD3BC + tempVoice * 52) = 0;
-                D_800BEB98[0] |= bitsLower;
-                D_800BEB9C[0] |= bitsUpper;
-                D_800AD96C[0] &= ~D_800BEB98[0];
-                D_800AD970[0] &= ~D_800BEB9C[0];
+                D_800AD3BC[tempVoice].unk1b = 0;
+                D_800AD3BC[tempVoice].unk4 = 0;
+                D_800AD3BC[tempVoice].unk0 = 0;
+                maskLow = *(u16 *)D_800BEB98 | bitsLower;
+                *(u16 *)(D_800BE998 + 512) = maskLow;
+                maskUp = *(u16 *)(D_800BEBA0 + -4) | bitsUpper;
+                *(u16 *)D_800BEB9C = maskUp;
+                okon1 = D_800AD96C[0] & ~*(u16 *)(D_800BE998 + 512);
+                ((u16 *)D_800AD8E4)[68] =
+                    D_800AD96C[0] & ~*(u16 *)(D_800BE998 + 512);
+                okon2 = D_800AD970[0] & ~*(u16 *)D_800BEB9C;
+                ((u16 *)D_800AD974)[-2] = okon2;
             }
             count++;
         }
@@ -7096,7 +7152,11 @@ s32 SpuVmSetSeqVol(s16 seq_access, u16 volL, u16 volR, s16 applyNow) {
     s32 mvolL;
     s32 mvolR;
     s16 i;
+    s32 pad[2];
+    u8 *chanL;
+    u8 *chanR;
 
+    (void)&pad;
     score = D_800BDE3C[seq_access & 0xFF];
     D_800B9DDA[0] = seq_access;
     score[(u16)seq_access >> 8].leftVolume = volL;
@@ -7112,8 +7172,10 @@ s32 SpuVmSetSeqVol(s16 seq_access, u16 volL, u16 volR, s16 applyNow) {
     if (applyNow == 1) {
         for (i = 0; i < D_800B9C80[0]; i++) {
             if (D_800AD3CA[i][0] == (u16)seq_access) {
-                *(s16 *)&D_800AD224[i * 16] = mvolL;
-                *(s16 *)&D_800AD224[i * 16 + 2] = mvolR;
+                chanL = D_800AD224;
+                chanR = chanL + 2;
+                *(s16 *)(chanL + ((i << 19) >> 15)) = mvolL;
+                *(s16 *)(chanR + ((i << 19) >> 15)) = mvolR;
                 D_800AD3A4[i] |= 3;
             }
         }
@@ -7157,42 +7219,70 @@ s16 SpuVmGetSeqRVol(s16 seq_access) {
 #ifdef NON_MATCHING
 void SpuVmSeqKeyOff(arg0) s32 arg0;
 {
+    struct Voice {
+        s16 unk0;
+        s16 unk2;
+        s16 unk4;
+        u8 pad6[6];
+        s16 note;
+        s16 seq;
+        s16 unk10;
+        s16 prog;
+        s16 unk14;
+        s16 vabId;
+        u8 pad18[3];
+        u8 unk1b;
+        u8 pad1c[24];
+    };
+    extern struct Voice D_800AD3BC[];
     extern u8 D_800B9C80[];
     extern u16 D_800B9DDE[];
-    extern s16 D_800AD3CASeq[][26] asm("D_800AD3CA");
-    extern u8 D_800AD3D7[];
-    extern u8 D_800AD3BC[];
-    extern u8 D_800AD3C0[];
-    extern u16 D_800BEB98[];
-    extern u16 D_800BEB9C[];
+    extern u8 D_800BEB98[];
+    extern u8 D_800BEB9C[];
+    extern u8 D_800BE998[];
+    extern u8 D_800BEBA0[];
+    extern u8 D_800AD8E4[];
+    extern u8 D_800AD974[];
     extern u16 D_800AD96C[];
     extern u16 D_800AD970[];
-    u8 voice;
-    u16 bitsUpper;
+    extern u8 D_800AD3D7[];
+    extern u8 D_800AD3C0[];
+    extern s16 D_800AD3CASeq[][26] asm("D_800AD3CA");
     u16 bitsLower;
-    u16 temp2;
+    u16 bitsUpper;
+    u8 voice;
+    u16 maskLow;
+    u16 maskUp;
+    u16 tempVoice;
 
-    if (D_800B9C80[0] == 0) {
-        return;
-    }
     for (voice = 0; voice < D_800B9C80[0]; voice++) {
         if (D_800AD3CASeq[voice][0] == (s16)arg0) {
             D_800B9DDE[0] = voice;
-            temp2 = D_800B9DDE[0];
-            if (temp2 < 0x10) {
-                bitsLower = 1 << temp2;
+            do {
+            } while (0);
+            tempVoice = *(u16 *)((s32)D_800B9DDA + 4);
+            if (tempVoice < 0x10) {
+                bitsLower = 1 << tempVoice;
                 bitsUpper = 0;
             } else {
                 bitsLower = 0;
-                bitsUpper = 1 << (temp2 - 0x10);
+                bitsUpper = 1 << (tempVoice - 0x10);
             }
-            D_800AD3D7[temp2 * 52] = 0;
-            *(s16 *)(D_800AD3C0 + temp2 * 52) = 0;
-            *(s16 *)(D_800AD3BC + temp2 * 52) = 0;
-            D_800BEB98[0] |= bitsLower;
-            D_800AD96C[0] &= ~D_800BEB98[0];
-            D_800BEB9C[0] |= bitsUpper;
-            D_800AD970[0] &= ~D_800BEB9C[0];
+            D_800AD3BC[tempVoice].unk1b = 0;
+            D_800AD3BC[tempVoice].unk4 = 0;
+            D_800AD3BC[tempVoice].unk0 = 0;
+            maskLow = *(u16 *)D_800BEB98 | bitsLower;
+            *(u16 *)(D_800BE998 + 512) = maskLow;
+            maskUp = *(u16 *)(D_800BEBA0 + -4) | bitsUpper;
+            *(u16 *)D_800BEB9C = maskUp;
+            {
+                u16 next0;
+                u16 next1;
+                next0 = ((u16 *)D_800AD96C)[0] & ~*(u16 *)(D_800BE998 + 512);
+                ((u16 *)D_800AD8E4)[68] = next0;
+                next1 = ((u16 *)D_800AD974)[-2] & ~*(u16 *)D_800BEB9C;
+                *(u16 *)D_800AD970 = next1;
+            }
         }
     }
 }
@@ -8112,26 +8202,27 @@ void _SpuDataCallback(void (*arg0)()) {
     DMACallback(4, arg0);
 }
 
-#ifdef NON_MATCHING
 extern SpuStartedStorage D_800A26A0Read;
+extern SpuStartedStorage D_800A26A0Write;
 extern SpuIRQCallbackProc D_800A26E0[];
 extern SpuIRQCallbackProc D_800A26E4[];
 extern s32 D_800A2298[];
+extern s32 D_800A2298Clear[];
 void SpuQuit(void) {
+    SpuIRQCallbackProc callback;
     if (D_800A26A0Read.started == 1) {
-        D_800A26A0Read.started = 0;
+        D_800A26A0Write.started = 0;
         EnterCriticalSection();
+        callback = 0;
+        asm("" : "=r"(callback) : "0"(callback));
         D_800A26E0[0] = 0;
         D_800A26E4[0] = 0;
-        _SpuDataCallback(0);
+        _SpuDataCallback(callback);
         CloseEvent(D_800A2298[0]);
-        DisableEvent(D_800A2298[0]);
+        DisableEvent(D_800A2298Clear[0]);
         ExitCriticalSection();
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuQuit);
-#endif
 
 s32 SpuSetMute(s32 onOff) {
     switch (onOff) {
@@ -8654,14 +8745,12 @@ void SpuSetReverbVoice(s32 a, s32 b) {
     _SpuSetAnyVoice(a, b, 0xCC, 0xCD);
 }
 
-#ifdef NON_MATCHING
 extern s32 D_800A2710Clear[];
 extern s32 D_800A2298Clear[];
 extern u8 D_800A22A0Clear[];
 extern s32 D_800A26C4ClearRead[];
 extern s32 D_800A26C4ClearWrite[];
 extern s32 D_800A26D0Clear0[];
-extern s32 D_800A26D0Clear1[];
 extern s32 D_800A26D0Clear2[];
 extern s32 D_800A26E0ClearCheck[];
 extern s32 D_800A26E0ClearSave[];
@@ -8676,7 +8765,6 @@ long SpuClearReverbWorkArea(long arg0) {
     s32 var_s2;
     s32 var_s3;
     s32 var_s5;
-    s32 var_v0;
     u32 var_s0;
     u32 var_s1;
     sp10 = 0;
@@ -8689,7 +8777,7 @@ long SpuClearReverbWorkArea(long arg0) {
         return -1;
     if (arg0 == 0) {
         var_s1 = 0x10 << D_800A26D0Clear0[0];
-        var_s2 = 0xFFF0 << D_800A26D0Clear1[0];
+        var_s2 = 0xFFF0 << D_800A26D0Clear0[0];
     } else {
         temp_a0 = *temp_s1;
         var_s1 = (0x10000 - temp_a0) << D_800A26D0Clear2[0];
@@ -8700,15 +8788,19 @@ long SpuClearReverbWorkArea(long arg0) {
         D_800A26C4ClearWrite[0] = 0;
         var_s5 = 1;
     }
-    var_s3 = 1;
     if (D_800A26E0ClearCheck[0] != 0) {
+        do {
+            var_s3 = 1;
+        } while (0);
         sp10 = D_800A26E0ClearSave[0];
+        do {
+        } while (0);
         D_800A26E0ClearWrite[0] = 0;
     }
-    var_v0 = var_s1 < 0x401;
+    asm("" : "=r"(var_s1) : "0"(var_s1));
     do {
         var_s0 = var_s1;
-        if (var_v0 == 0) {
+        if (var_s1 >= 0x401) {
             var_s0 = 0x400;
         } else {
             var_s3 = 0;
@@ -8716,20 +8808,20 @@ long SpuClearReverbWorkArea(long arg0) {
         _spu_t(2, (u32)var_s2);
         _spu_t(1);
         _spu_t(3, D_800A22A0Clear, var_s0);
+        temp_a0 = D_800A2298Clear[0];
+        asm volatile("" : : "r"(temp_a0));
         var_s1 -= 0x400;
         var_s2 += 0x400;
-        WaitEvent(D_800A2298Clear[0]);
-        var_v0 = var_s1 < 0x401;
+        WaitEvent(temp_a0);
     } while (var_s3 != 0);
+    asm("" : "=r"(var_s0) : "0"(var_s0));
+    asm("" : "=r"(var_s0) : "0"(var_s0));
     if (var_s5 != 0)
         D_800A26C4ClearWrite[0] = temp_s4;
     if (sp10 != 0)
         D_800A26E0ClearRestore[0] = sp10;
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuClearReverbWorkArea);
-#endif
 
 ASM_FUNC(WaitEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
                     "    jr $t2 # maspsx-keep\n"
@@ -9575,9 +9667,16 @@ u16 pitch;
 }
 
 #ifdef NON_MATCHING
+extern s32 D_800A229C[];
 
 s32 SpuRGetAllKeysStatus(s32 min, s32 max, s8 *status) {
     s32 voice;
+    s32 one;
+    s32 three;
+    s32 two;
+    s32 mask2;
+    s32 mask3;
+    s32 new_var;
     u16 volume;
     if (min < 0)
         min = 0;
@@ -9588,16 +9687,23 @@ s32 SpuRGetAllKeysStatus(s32 min, s32 max, s8 *status) {
     if (max < 0 || max < min)
         return -3;
     max++;
+    new_var = D_800A229C[0];
     for (voice = min; voice < max; voice++) {
         volume = *(volatile u16 *)&D_800A26AC[0][(8 * voice) + 6];
-        if ((1 << voice) & D_800A229CInit[0]) {
+        one = 1;
+        asm("" : "=r"(one) : "0"(one));
+        three = 3;
+        two = 2;
+        mask3 = one << voice;
+        mask2 = mask3 & new_var;
+        if (mask2 != 0) {
             if (volume != 0)
-                status[voice] = 1;
+                status[voice] = one;
             else
-                status[voice] = 3;
+                status[voice] = three;
         } else {
             if (volume != 0)
-                status[voice] = 2;
+                status[voice] = two;
             else
                 status[voice] = 0;
         }

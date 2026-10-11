@@ -331,12 +331,10 @@ void func_8001E050(s32 fileName) {
     FileClose(handle);
 }
 
-#ifdef NON_MATCHING
-/* Wave-33 (2026-10-06): 11 bytes off (4 instructions, register-coalesce of the
- * count sign-extension temp). The old positional-cc1-ICE wall is DEAD at this
- * TU position (block-scope externs + TU shift; ~50 compiles, zero ICEs).
- * gcc-source analysis (reorg.c) says retail's delay-slot fill is unreachable
- * from plain C. Candidate name: GraphicsSelectImageBank. */
+/* GraphicsSelectImageBank: fixes up the selected image bank's relocation
+ * entries, then reloads it if the swap flag is set. The empty asm after
+ * i = 0 pins the counter's allocation to a1 (the retail delay-slot move)
+ * without blocking the branch delay-slot fill. */
 void func_8001E17C(s32 index) {
     extern s32 D_800B9F44[];
     extern void *D_800A368C;
@@ -344,51 +342,41 @@ void func_8001E17C(s32 index) {
     extern u16 D_800A3754;
     extern u16 D_800A3738;
     extern void GraphicsLoadImageWithXOffset(s32);
-    volatile s32 pad[2];
-    register u8 *reg4 asm("$4");
-    register u8 *headReg asm("$7");
-    register s32 iReg asm("$5");
-    register u32 baseReg asm("$6");
-    register s32 limitReg asm("$8");
-    register s32 count asm("$3");
-    register u16 wReg asm("$2");
+    u8 *image;
+    s32 i;
+    u8 *head;
+    u16 w;
     u16 h;
+    s32 count;
+    s32 limit;
+    u32 base;
+    volatile s32 pad[2];
 
-    reg4 = (u8 *)D_800B9F44[index];
-    D_800A368C = reg4;
-    wReg = *(u16 *)reg4;
-    h = *(u16 *)(reg4 + 2);
-    headReg = reg4 + 4;
-    D_800A37E4 = headReg;
-    D_800A3754 = wReg;
-    count = (s16)wReg;
+    image = (u8 *)D_800B9F44[index];
+    D_800A368C = image;
+    w = *(u16 *)image;
+    h = *(u16 *)(image + 2);
+    head = image + 4;
+    D_800A37E4 = head;
+    D_800A3754 = w;
+    count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (Unk16 *)(headReg + count * 8);
-    asm volatile(".set\tnoreorder\n"
-                 "\tblez\t%0, 9f\n"
-                 "\tmove\t%1, $0\n"
-                 "\tmove\t%2, %3\n"
-                 "\tmove\t%4, %0\n"
-                 "\tmove\t%3, %5\n"
-                 "\t.set\treorder"
-                 :
-                 : "r"(count), "r"(iReg), "r"(baseReg), "r"(reg4),
-                   "r"(limitReg), "r"(headReg)
-                 : "memory");
-    do {
-        ((u32 *)reg4)[0] += baseReg;
-        ((u32 *)reg4)[1] += baseReg;
-        iReg += 1;
-        reg4 = (u8 *)((u32 *)reg4 + 2);
-    } while (iReg < limitReg);
-    asm volatile("9:");
+    D_800A36CC = (Unk16 *)(head + count * 8);
+    i = 0;
+    if (count > 0) {
+        asm volatile("" : : "r"(i));
+        base = (u32)image;
+        limit = count;
+        do {
+            ((u32 *)head)[i + i] += base;
+            ((u32 *)head)[i + i + 1] += base;
+            i++;
+        } while (i < limit);
+    }
     if (D_800A2EDAnm[0] != 0) {
         GraphicsLoadImageWithXOffset(0);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/images", func_8001E17C);
-#endif
 
 void func_8001E230(s32 arg0, s32 arg1) {
     extern s32 FileOpen(s32, void *);

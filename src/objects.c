@@ -2643,15 +2643,11 @@ void func_80029E34(void) {
 void func_80029E3C(void) {
 }
 
-#ifdef NON_MATCHING
-/* Wave-34 (2026-10-06): 19 bytes off (7-word window at 0x80029E54-E6C):
- * retail materialises addu a2,zero,zero between lw s0 and the s-reg saves;
- * gcc prints it 7 slots later or in the jal delay. Root cause mapped via
- * -da dumps: s-reg saves insert post-reg-alloc right after the first insn,
- * sched2 hoists only lui/lw above them, and call-arg setups carry a
- * 0x7f000001 sched-group pin hugging the call; no pure-C89 opacity emits
- * zero instructions, so nothing can land in that window. Full mechanism
- * and future leads in the wave-34e notes. */
+/* The volatile asm births the zero passed to func_8001F2C4 early, and being
+ * volatile it holds move a2,zero in retail's slot. The reads of the three
+ * words copied down (and their order) set sched1's load order and the
+ * local-alloc reference counts; the second asm is a zero-byte anchor that
+ * keeps the v0/v1 handout on the 0x18/0x1C pair like retail. */
 extern s32 D_800A38AC[];
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001F728(s32 arg0);
@@ -2665,12 +2661,19 @@ void func_80029E44(void) {
     s32 zero;
     s32 x;
     s32 y;
+    s32 valA;
+    s32 valC;
+    s32 valB;
     ptr = (u8 *)D_800A38AC[0];
-    asm("addu %0,$0,$0" : "=r"(zero));
+    asm volatile("" : "=r"(zero) : "0"(0));
     sourceRow = (s32 *)(ptr + 0x18);
-    *((s32 *)(ptr + 0x3C)) = *sourceRow;
-    *((s32 *)(ptr + 0x40)) = *((s32 *)(ptr + 0x1C));
-    *((s32 *)(ptr + 0x44)) = *((s32 *)(ptr + 0x20));
+    valA = *((s32 *)(ptr + 0x20));
+    valB = *sourceRow;
+    valC = *((s32 *)(ptr + 0x1C));
+    asm("" : : "r"(valB), "r"(valB), "r"(valC));
+    *((s32 *)(ptr + 0x3C)) = valB;
+    *((s32 *)(ptr + 0x40)) = valC;
+    *((s32 *)(ptr + 0x44)) = valA;
     asm("");
     *((s32 *)(ptr + 0x48)) = *((s32 *)(ptr + 0x24));
     *((s32 *)(ptr + 0x4C)) = *((s32 *)(ptr + 0x28));
@@ -2691,9 +2694,6 @@ void func_80029E44(void) {
     func_8001F728((s32)rowB);
     func_8001F728((s32)ptr);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_80029E44);
-#endif
 
 extern u8 D_800A3A24w15f[] asm("D_800A3A24.NON_MATCHING");
 extern u8 D_800A2EE0w15f[] asm("D_800A2EE0.NON_MATCHING");

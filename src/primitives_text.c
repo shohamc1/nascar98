@@ -538,6 +538,12 @@ void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
 }
 
 #ifdef NON_MATCHING
+
+/* permuter output-15305-1 */
+inline u8 *inline_fn(u8 *arg0) {
+    return arg0 + 0x18;
+}
+
 void func_80018C88(void) {
     extern u8 D_800AEB94[];
     extern u8 D_800AE29C[];
@@ -546,6 +552,7 @@ void func_80018C88(void) {
     u8 *prim;
     u8 *f4;
     u16 *table;
+    s32 idx;
     u16 tv;
     s32 uv;
     s32 yv;
@@ -554,6 +561,7 @@ void func_80018C88(void) {
     s32 ta;
     s32 tb;
     s32 tc;
+    int new_var;
     s32 td;
     s32 te;
     s32 tf;
@@ -568,18 +576,18 @@ void func_80018C88(void) {
     s32 colB;
     s32 colC;
     s32 vTop1;
+    u8 *new_var2;
     s32 vBot1;
     s32 vTop2;
     s32 vBot2;
     s32 glyphW;
     s32 vBase;
-    s32 i;
+    s32 texX;
     s32 uWide1;
     s32 uWide2;
-    s32 texX;
     s32 off;
     s32 off3;
-
+    s32 i;
     glyphW = 25;
     vBase = 32;
     i = 0;
@@ -589,20 +597,30 @@ void func_80018C88(void) {
     off = 0;
     do {
         prim = D_800AEB94 + off;
+        idx = i * 4;
         SetPolyFT4((POLY_FT4 *)prim);
         SetShadeTex(prim, 1);
         *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEA);
         *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
         switch (i) {
         case 0:
+
         case 1:
+
         case 2:
+
         case 3:
+
         case 4:
+
         case 5:
+
         case 6:
+
         case 7:
+
         case 8:
+
         case 9:
             vv = 0x30;
             asm volatile("" : "=r"(vv) : "0"(vv));
@@ -612,10 +630,11 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x25)) = vBase + 0x30;
             uv = i * glyphW;
             *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0x14)) = uv + glyphW - 1;
+            *((u8 *)(prim + 0x14)) = (uv + glyphW) - 1;
             *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x24)) = uv + glyphW - 1;
+            *((u8 *)(prim + 0x24)) = (uv + glyphW) - 1;
             break;
+
         case 10:
             *((u8 *)(prim + 0xC)) = 0;
             *((u8 *)(prim + 0xD)) = 0;
@@ -628,9 +647,13 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x24)) = uWide1;
             *((u8 *)(prim + 0x25)) = ww;
             break;
+
         case 11:
+
         case 12:
+
         case 13:
+
         case 14:
             uv = texX * 2;
             vv = 0x18;
@@ -646,6 +669,7 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x24)) = uv + 0x25;
             *((u8 *)(prim + 0x25)) = ww;
             break;
+
         case 15:
             vv = 0x50;
             asm volatile("" : "=r"(vv) : "0"(vv));
@@ -661,11 +685,11 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x25)) = ww;
             break;
         }
+
         texX += 19;
         i++;
         off += 40;
     } while (i < 17);
-
     uMid = 0xCD;
     yShift = 0;
     j = 0;
@@ -682,6 +706,7 @@ void func_80018C88(void) {
             prim = &D_800AE29C[k * 40];
             prim = colOff + prim;
             SetPolyFT4((POLY_FT4 *)prim);
+            new_var2 = (u8 *)(prim + 0x1D);
             SetShadeTex(prim, 1);
             *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEC);
             *((u16 *)(prim + 0x16)) = GetTPage(0, 0, 0x340, 0);
@@ -715,7 +740,7 @@ void func_80018C88(void) {
                 ta = 0x14;
                 asm volatile("" : "=r"(ta) : "0"(ta));
                 *((u8 *)(prim + 0x1C)) = tf;
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 tb = 0x43;
                 asm volatile("" : "=r"(tb) : "0"(tb));
                 *((u8 *)(prim + 0x14)) = te;
@@ -728,6 +753,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0x22)) = yv + 0x30;
                 SetSemiTrans(prim, 1);
                 break;
+
             case 1:
                 ta = 0x40;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -753,7 +779,7 @@ void func_80018C88(void) {
                 ta = 0x14;
                 asm volatile("" : "=r"(ta) : "0"(ta));
                 *((u8 *)(prim + 0x1C)) = tf;
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 tb = 0x43;
                 asm volatile("" : "=r"(tb) : "0"(tb));
                 *((u8 *)(prim + 0x14)) = te;
@@ -765,6 +791,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0x20)) = tb;
                 *((s16 *)(prim + 0x22)) = yv + 0x30;
                 break;
+
             case 2:
                 ta = 0xDD;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -791,7 +818,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0x25)) = tg;
                 ta = 0x29;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = 0x29;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -800,6 +827,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0x20)) = th;
                 *((s16 *)(prim + 0x22)) = yv + 6;
                 break;
+
             case 3:
                 ta = 0xA0;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -826,11 +854,12 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colA;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colA;
                 *((s16 *)(prim + 0x22)) = yv + 9;
                 break;
+
             case 4:
                 ta = 0xA0;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -847,9 +876,10 @@ void func_80018C88(void) {
                 tf = 0xA0;
                 asm volatile("" : "=r"(tf) : "0"(tf));
                 *((u8 *)(prim + 0x1C)) = tf;
-                tg = 0x9C;
+                new_var = 0x9C;
+                tg = new_var;
                 asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
+                *new_var2 = tg;
                 *((u8 *)(prim + 0x25)) = tg;
                 *((u8 *)(prim + 0x14)) = te;
                 *((u8 *)(prim + 0x24)) = te;
@@ -857,11 +887,12 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colC;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x18)) = colB;
+                *((s16 *)inline_fn(prim)) = colB;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colC;
                 *((s16 *)(prim + 0x22)) = yv + 9;
                 break;
+
             case 5:
                 ta = 0xCD;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -886,11 +917,12 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colC;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x18)) = colB;
+                *((s16 *)inline_fn(prim)) = colB;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colC;
                 *((s16 *)(prim + 0x22)) = yv + 9;
                 break;
+
             case 6:
                 ta = 0xCD;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -915,11 +947,12 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colC;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x18)) = colB;
+                *((s16 *)inline_fn(prim)) = colB;
                 *((s16 *)(prim + 0x1A)) = yv + 9;
                 *((s16 *)(prim + 0x20)) = colC;
                 *((s16 *)(prim + 0x22)) = yv + 9;
                 break;
+
             case 7:
                 ta = 0xA0;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -946,11 +979,12 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = colA;
                 *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 *((s16 *)(prim + 0x1A)) = yv + 0xE;
                 *((s16 *)(prim + 0x20)) = colA;
                 *((s16 *)(prim + 0x22)) = yv + 0xE;
                 break;
+
             case 9:
                 SetPolyF4((POLY_F4 *)f4);
                 ta = 0x14;
@@ -972,6 +1006,7 @@ void func_80018C88(void) {
                 *((u8 *)(f4 + 5)) = te;
                 *((u8 *)(f4 + 6)) = te;
                 break;
+
             case 10:
                 SetPolyF4((POLY_F4 *)f4);
                 ta = 0x100;
@@ -991,6 +1026,7 @@ void func_80018C88(void) {
                 *((u8 *)(f4 + 5)) = te;
                 *((u8 *)(f4 + 6)) = te;
                 break;
+
             case 11:
                 SetPolyF4((POLY_F4 *)f4);
                 ta = 0x100;
@@ -1010,6 +1046,7 @@ void func_80018C88(void) {
                 *((u8 *)(f4 + 5)) = te;
                 *((u8 *)(f4 + 6)) = te;
                 break;
+
             case 12:
                 SetPolyF4((POLY_F4 *)f4);
                 ta = 0x100;
@@ -1029,6 +1066,7 @@ void func_80018C88(void) {
                 *((u8 *)(f4 + 5)) = te;
                 *((u8 *)(f4 + 6)) = te;
                 break;
+
             case 13:
                 SetPolyF4((POLY_F4 *)f4);
                 ta = 0x1E;
@@ -1054,6 +1092,7 @@ void func_80018C88(void) {
                 *((u8 *)(f4 + 5)) = te;
                 *((u8 *)(f4 + 6)) = ta;
                 break;
+
             case 14:
                 ta = 0xD7;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -1080,7 +1119,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0x25)) = tg;
                 ta = 0x28;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1089,6 +1128,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0x20)) = th;
                 *((s16 *)(prim + 0x22)) = yv + 6;
                 break;
+
             case 8:
                 ta = 0xA0;
                 asm volatile("" : "=r"(ta) : "0"(ta));
@@ -1114,7 +1154,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0x1C)) = tf;
                 ta = 0x79;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1123,6 +1163,7 @@ void func_80018C88(void) {
                 *((s16 *)(prim + 0x20)) = th;
                 *((s16 *)(prim + 0x22)) = yv + 0xD;
                 break;
+
             case 15:
                 *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xE5);
                 *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
@@ -1145,7 +1186,7 @@ void func_80018C88(void) {
                 asm volatile("" : "=r"(th) : "0"(th));
                 ta = 0x79;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1156,6 +1197,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0xC)) = 0;
                 *((u8 *)(prim + 0x1C)) = 0;
                 break;
+
             case 16:
                 *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xE5);
                 *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
@@ -1178,7 +1220,7 @@ void func_80018C88(void) {
                 asm volatile("" : "=r"(th) : "0"(th));
                 ta = 0x79;
                 asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x18)) = ta;
+                *((s16 *)inline_fn(prim)) = ta;
                 *((s16 *)(prim + 0x8)) = tc;
                 *((s16 *)(prim + 0xA)) = yv;
                 *((s16 *)(prim + 0x10)) = th;
@@ -1189,6 +1231,7 @@ void func_80018C88(void) {
                 *((u8 *)(prim + 0xC)) = 0;
                 *((u8 *)(prim + 0x1C)) = 0;
                 break;
+
             case 17:
                 SetPolyF4((POLY_F4 *)f4);
                 ta = 0x55;
@@ -1213,13 +1256,13 @@ void func_80018C88(void) {
                 *((u8 *)(f4 + 6)) = te;
                 break;
             }
+
             k++;
         } while (k < 18);
         colOff += 0x2D0;
         yShift += 0x64;
         j++;
     } while (j < 2);
-
     k = 0;
     table = D_80090FC4;
     vBot2 = 0x164;
@@ -1255,6 +1298,7 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x24)) = tb;
             *((u8 *)(prim + 0x25)) = tc;
             break;
+
         case 1:
             tv = GetTPage(1, 0, 0x380, 0);
             ta = 0x58;
@@ -1277,9 +1321,13 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x24)) = tb;
             *((u8 *)(prim + 0x25)) = tc;
             break;
+
         case 2:
+
         case 3:
+
         case 4:
+
         case 5:
             *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x300, 0);
             ta = vTop1 + 0x188;
@@ -1295,7 +1343,9 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x24)) = tb;
             *((u8 *)(prim + 0x25)) = vBot1;
             break;
+
         case 6:
+
         case 7:
             *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x380, 0);
             ta = vTop2 + 0x1A0;
@@ -1311,45 +1361,60 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x24)) = tb;
             *((u8 *)(prim + 0x25)) = vBot2;
             break;
+
         case 8:
+
         case 9:
+
         case 10:
+
         case 11:
+
         case 12:
+
         case 13:
             *((u16 *)(prim + 0xE)) = GetClut(table[0], table[1]);
             *((u16 *)(prim + 0x16)) =
                 GetTPage(table[4], 0, table[-2], table[-1]);
-            uv = table[2] + (k - 8) * 16;
+            uv = table[2] + ((k - 8) * 16);
+            vv = table[3];
             *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0xD)) = table[3] + 0x18;
+            *((u8 *)(prim + 0xD)) = vv + 0x18;
             *((u8 *)(prim + 0x14)) = uv + 0xF;
-            *((u8 *)(prim + 0x15)) = table[3] + 0x18;
+            *((u8 *)(prim + 0x15)) = vv + 0x18;
             *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x1D)) = table[3] + 0x30;
+            *((u8 *)(prim + 0x1D)) = vv + 0x30;
             *((u8 *)(prim + 0x24)) = uv + 0xF;
-            *((u8 *)(prim + 0x25)) = table[3] + 0x30;
+            *((u8 *)(prim + 0x25)) = vv + 0x30;
             break;
+
         case 14:
+
         case 15:
+
         case 16:
+
         case 17:
+
         case 18:
+
         case 19:
             *((u16 *)(prim + 0xE)) = GetClut(table[0], table[1]);
             *((u16 *)(prim + 0x16)) =
                 GetTPage(table[4], 0, table[-2], table[-1]);
-            uv = table[2] + (k - 14) * 16;
+            uv = table[2] + ((k - 14) * 16);
+            vv = table[3];
             *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0xD)) = table[3];
+            *((u8 *)(prim + 0xD)) = vv;
             *((u8 *)(prim + 0x14)) = uv + 0xF;
-            *((u8 *)(prim + 0x15)) = table[3];
+            *((u8 *)(prim + 0x15)) = vv;
             *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x1D)) = table[3] + 0x18;
+            *((u8 *)(prim + 0x1D)) = vv + 0x18;
             *((u8 *)(prim + 0x24)) = uv + 0xF;
-            *((u8 *)(prim + 0x25)) = table[3] + 0x18;
+            *((u8 *)(prim + 0x25)) = vv + 0x18;
             break;
         }
+
         vBot2 += 0xC;
         vTop2 += 0xC;
         vBot1 += 0xC;

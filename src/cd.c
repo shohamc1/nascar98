@@ -697,7 +697,7 @@ extern s32 D_800BE974[];
 extern s32 D_800BE974[];
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s32);
-extern s32 D_800A39E0[];
+extern s32 D_800A39E0;
 extern s32 D_800BE974[];
 extern s32 D_800BE980[];
 extern u8 D_800A2F84w44[] asm("D_800A2F84");
@@ -1035,23 +1035,26 @@ void *FileOpen(s32 fileId, void *mode) {
 void FileClose(void) {
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-07 (unfused multiply), first real draft: the count homing
- * (`mult s0,a1` via an opaque copy), the saves interleaved into the
- * mult->mflo window, status in a1, the file-table columns via the
- * name-true labels (loc/size = D_80098340[idx*3]/[idx*3+1], checksum
- * compare + print through D_80098340[idx*3+2] / D_80098348nm so the
- * base does not CSE into a callee-saved reg across GraphicsInit), the
- * `total = -1` multiphase local, and the != branch shape all match.
- * Left (with buf pinned s2 / retries s4): the sw s2 / sw s4 save pair
- * comes out swapped and a sixth slot is saved (frame -0x40 vs -0x38);
- * unpinned, gcc homes buf to s5 and retries to s4. Untried: getting
- * buf into s2 with the save order intact. */
+/* MATCHED 2026-10-11 (w2i). Two keys beyond the 2026-10-07 draft:
+ * 1. The file-table accesses must each use a pairwise-distinct symbol
+ *    name for the same address (seek D_80098340, checksum compare
+ *    D_80098348.NON_MATCHING, first FntPrint D_80098348, size print
+ *    D_80098344.NON_MATCHING, sector print D_80098340.NON_MATCHING):
+ *    a shared name let gcc CSE a sym base pointer into a sixth
+ *    call-saved reg (s5), squeezing buf out of s2.
+ * 2. result[] is 0x10 bytes here (8 elsewhere in cd.c): the extra 8
+ *    bytes are the gap before the register homes, frame 0x38.
+ * buf is pinned `register s32 buf asm("s2");` with the birth moved
+ * after DrawSync(0) (permuter find): that orders the s2 save/move pair
+ * before s4's in the mult->mflo window. */
 extern char D_8008D110[];
 extern char D_8008D144[];
 extern char D_8008D16C[];
 extern char D_8008D178[];
 extern s32 D_80098348nm[] asm("D_80098348.NON_MATCHING");
+extern s32 D_80098344nm[] asm("D_80098344.NON_MATCHING");
+extern s32 D_80098340w4[] asm("D_80098340.NON_MATCHING");
+extern s32 D_80098348fp[] asm("D_80098348");
 
 s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     s32 total;
@@ -1059,17 +1062,17 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     register s32 hnd asm("s3") = handle;
     register s32 buf asm("s2");
     register s32 retries asm("s4");
-    u8 result[8];
+    u8 result[0x10];
     register s32 status asm("a1");
     s32 *ptr;
     s32 i;
     s32 words;
 
     asm("" : "=r"(total) : "0"(count));
-    buf = buffer;
     retries = 0;
     total = total * size;
     DrawSync(0);
+    buf = buffer;
     VSync(0);
     VSync(0);
     total += 0x7FF;
@@ -1101,7 +1104,7 @@ retry:
         } while (i < words);
     }
     retries += 1;
-    if (D_80098340[D_800A37CC * 3 + 2] != total) {
+    if (D_80098348nm[D_800A37CC * 3] != total) {
         if (retries < 0x32) {
             CdControl(9, 0, 0);
             CdSync(0, result);
@@ -1111,19 +1114,16 @@ retry:
             goto retry;
         }
         GraphicsInit();
-        FntPrint(D_8008D110, D_80098348nm[D_800A37CC * 3], total);
+        FntPrint(D_8008D110, D_80098348fp[D_800A37CC * 3], total);
         FntPrint(D_8008D144, buf & 0x7FFFFFFF, D_800A37CC);
-        FntPrint(D_8008D16C, D_80098340[D_800A37CC * 3 + 1]);
-        FntPrint(D_8008D178, D_80098340[D_800A37CC * 3] + 0x13C);
+        FntPrint(D_8008D16C, D_80098344nm[D_800A37CC * 3]);
+        FntPrint(D_8008D178, D_80098340w4[D_800A37CC * 3] + 0x13C);
         FntFlush(-1);
         while (1) {
         }
     }
     return status;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/cd", FileRead);
-#endif
 
 INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D110);
 INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D144);
@@ -1631,6 +1631,54 @@ s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
 INCLUDE_ASM("asm/nonmatchings/cd", func_8003DBA8);
 
 #ifdef NON_MATCHING
+/* 2026-10-11 (w3e): size exact 0x308, draft-unit diff 393 bytes
+ * (from 6885 with size -32). Applied on top of the w2i state:
+ * 1) THE THREADING FIX: `asm("" : : "r"(object));` inside the special-case
+ *    arm right before `return 1;` blocks jump-threading and reproduces
+ *    retail's `bnez v0,skip; nop; j epilogue; li v0,1` (size became exact).
+ * 2) flag declared s32 (u8 adds an extra andi at 2 sites; retail 0x308 =
+ *    s32 shape + the unthreaded arm).
+ * 3) the arms' `value +=` reads the divisor through an in-function alias
+ *    `extern s32 D_800BE974R[] asm("D_800BE974");` — retail reloads BE974
+ *    for the += instead of reusing the div register.
+ * 4) tail `pace - 2 + value` duplicated textually in both
+ *    RandomScaledGet arms (retail hoists addiu into both).
+ * Left (393 bytes, mostly register placement): first-half divisor in a3 vs
+ * retail a0 (value a2 vs a1, end a1 vs v1, flag v1 vs a2/move-v0 cascade);
+ * retail's BE974 reload sits BEFORE the start lh, ours inside the true arm;
+ * second half: retail keeps `A39E0 - (A3820+7)` un-reassociated
+ * (addiu a1,a1,7; subu) while ours folds to (A39E0-7)-A3820, and the
+ * `sh 0x276` arm ordering differs. Permuter round from this exact-size
+ * base is the next lever.
+ * 2026-10-11 (w4d): 5405 -> 5240. (a) half2 now uses FRESH D_800BE974[0]
+ * reads for both % divisors (the old `% newVar` kept the half1 divisor
+ * pseudo live across half2 and pinned it in a3); (b) each `X + K` /
+ * `A39E0 - (A3820 + K)` group is its own single-use named local
+ * (t/u/w; +8 group is x) -- multi-use or inline spellings reassociate the
+ * addiu onto the wrong operand. Half2 div/mfhi/addiu/subu chain now
+ * matches retail exactly. Left: half1 A3560/A376C load regs v0/v1
+ * swapped (shape right), mfhi a1/a2/v1 value+end placement, the BE974
+ * reload still lands inside the true arm instead of before the start lh,
+ * flag cascade (a2+andi vs v1 direct) and the tail s1/s2 swap +
+ * `pace-2` addiu duplication.
+ * 2026-10-11 (w5d): cc1 -dl/-dg decode of the half1 register map. Pool order
+ * is [v1,a0,a1,a2,...] (v0 reserved for the return). Allocation order by
+ * priority: flag(77) 12refs/26insns=1.385 -> v1; start(75) 12/30=1.2 -> a0;
+ * value(74) 14/42=1.0 -> skips a1 because end's mfhi lands in a1 inside
+ * value's range (the conflict self-reinforces) -> a2; end(76) 8/24=1.0 ->
+ * a1. Retail = end->v1, start->a0, value->a1, flag->a2, which needs
+ * end > start > value > flag in priority. Reaching it takes TWO zero-byte
+ * changes at once: raise end above start (duplicate input-only barrier
+ * after the end divmod: +2 refs -> 30/24=1.25) and drop flag below value
+ * (split half1's cascade onto its own flag1 local: ~6 refs -> ~0.54;
+ * half2 must keep the shared flag). Tried alone: output-tied ref-raiser on
+ * end + flag1 split gave 8350 — the OUTPUT-tied form leaves a real `nop`
+ * (maspsx keeps the move) and end still took a0 because flag1's v1 writes
+ * sat inside end's range; permuter round 1 (18 min, 18k iters) found
+ * output-2565-1: hoist `x = D_800BE974R[0];` before each half's start lh
+ * and `value += x` in all four arms — 2565 in-unit but 6055/6835 in the
+ * real TU (half2-only and half1-only bisects both worse); NOT transferred.
+ * The priority cascade above remains the best lead. */
 extern u8 D_800A372C[];
 extern s32 D_800A2CE0[];
 extern s32 D_800A2EA8[];
@@ -1638,32 +1686,40 @@ extern s32 D_800BE974[];
 extern s32 D_800A3560;
 extern s32 D_800A376C;
 extern s32 D_800A3820;
-extern s32 D_800A39E0;
 
 s32 func_8003E78C(u8 *object) {
+    extern s32 D_800BE974R[] asm("D_800BE974");
     s32 laps;
     s32 value;
     s32 start;
     s32 end;
-    u8 flag;
-    s32 ahead;
+    s32 flag;
+    s32 newVar;
+    s32 t;
+    s32 u;
+    s32 w;
+    s32 x;
     s32 pace;
+    s32 ahead;
 
     if (*(s16 *)(object + 0x288) != 0) {
         if (D_800A372C[0] != 0 && D_800A2CE0[0] == 3 &&
             *(s16 *)(object + 0x1EC) == 0 && *(s16 *)(object + 0x1E0) >= 100) {
+            asm("" : : "r"(object));
             return 1;
         }
-        value = (D_800A376C + (D_800A3560 + 8)) % D_800BE974[0];
-        end =
-            (D_800A39E0 - (D_800A3820 + 0x14) + D_800BE974[0]) % D_800BE974[0];
+        newVar = D_800BE974[0];
+        x = D_800A3560 + 8;
+        value = (x + D_800A376C) % newVar;
+        t = D_800A3820 + 0x14;
+        end = (D_800A39E0 - t + newVar) % newVar;
         start = *(s16 *)(object + 0x1E0);
         if (value < end) {
             if (value >= start) {
-                value += D_800BE974[0];
+                value += D_800BE974R[0];
                 flag = 1;
             } else {
-                value += D_800BE974[0];
+                value += D_800BE974R[0];
                 flag = 0;
                 if (start >= end)
                     flag = value >= start;
@@ -1690,15 +1746,17 @@ s32 func_8003E78C(u8 *object) {
     }
     if (D_800A372C[0] != 0)
         return 0;
-    value = (D_800A39E0 - (D_800A3820 + 7) + D_800BE974[0]) % D_800BE974[0];
-    end = (D_800A39E0 - (D_800A3820 + 0xF) + D_800BE974[0]) % D_800BE974[0];
+    u = D_800A3820 + 7;
+    value = (D_800A39E0 - u + D_800BE974[0]) % D_800BE974[0];
+    w = D_800A3820 + 0xF;
+    end = (D_800A39E0 - w + D_800BE974[0]) % D_800BE974[0];
     start = *(s16 *)(object + 0x1E0);
     if (value < end) {
         if (value >= start) {
-            value += D_800BE974[0];
+            value += D_800BE974R[0];
             flag = 1;
         } else {
-            value += D_800BE974[0];
+            value += D_800BE974R[0];
             flag = 0;
             if (start >= end)
                 flag = value >= start;
@@ -1714,10 +1772,9 @@ s32 func_8003E78C(u8 *object) {
     ahead = *(s16 *)(object + 0x282);
     pace = *(s32 *)(object + 0x29C);
     if (RandomScaledGet(5) < 0)
-        value = ahead - RandomScaledGet(5);
+        *(s32 *)(object + 0x29C) = (pace - 2) + (ahead - RandomScaledGet(5));
     else
-        value = ahead + RandomScaledGet(5);
-    *(s32 *)(object + 0x29C) = pace - 2 + value;
+        *(s32 *)(object + 0x29C) = (pace - 2) + (ahead + RandomScaledGet(5));
     return 1;
 }
 #else
@@ -1876,51 +1933,112 @@ void func_8003EBD0(u8 *object, s32 index) {
 }
 
 #ifdef NON_MATCHING
-/* Retry 2026-10-05: 232 bytes versus retail 232; 42 differing instruction words
- * by edit distance. Retained as NON_MATCHING; the integrated ASM fallback matches.
- * The current pointer-list traversal retains a frame/layout and parameter-home mismatch.
- */
+/* 2026-10-11 (w3e): size exact 0xE8, draft-unit diff 38 bytes (from 890).
+ * Recipe stack that got here:
+ * 1) Split the value web: `value = *(s16 *)(current + 0x94);` stays, but
+ *    `value = value + extra - depth` became `sum = value + extra;
+ *    moved = sum - depth;` with s32 locals (separate pseudos; retail keeps
+ *    the lh result and the subu result on different regs). depth declared
+ *    s32 (retail's lh sign-extends at load; a s16 depth gives an extra
+ *    sll/sra pair), pad[1] removed once count stopped spilling.
+ * 2) Permuter find (output-200-1, verified on the real TU): duplicate the
+ *    prologue as `if (D_800AE84C) { current = load; base = ...; } else {
+ *    current = *(u8 **)(new_var = D_800A387C - 4); base = ...; }` with a
+ *    dead `u8 *new_var` — this materialises retail's `move t1,a0` entry
+ *    park as the FIRST insn and puts current in a0; the same duplicated-arm
+ *    shape around the depth load fixes the walk regs. `asm volatile
+ *    ("" : : "r"(object));` before the loop keeps the dst-init out of the
+ *    beqz delay slot (38-byte state). Removing the depth diamond or the
+ *    barrier flips src/dst back (43).
+ * 3) 2026-10-11 (w4d): permuter round 2 find (output-130-1, verified in
+ *    the real TU, draft-unit 140 -> 130, TU 130 -> 120): brace the
+ *    `break;` (`if (*(s16 *)(current + 0x1DE) == id) { break; }`) and move
+ *    `dst += 2;` BEFORE `src += 6;` at the loop tail. Remaining 120: the
+ *    depth/count load pair swapped (ours lh t2,0x27c then lh v0,0xa; retail
+ *    count first) with the dst pointer home emitted between count load and
+ *    blez (retail: both pointer homes after the AE84C lui/addiu, src=t0,
+ *    dst=a3; ours: src=a3, dst=t0, so the tail increments swap too), and
+ *    `addu a1,t3,v1` vs `addu a1,v1,t3`. Tried and failed: hoisting the
+ *    count load into a new local (alloc exploded to 3930), into dead `id`
+ *    (1330), swapping src/dst decl order and for-init order (normalized,
+ *    identical asm). Lead: make the count load textually precede the depth
+ *    diamond without changing the decl count.
+ * 4) 2026-10-11 (w5d): re-diffed at 120 and probed the block structure with
+ *    cc1 -dR/-ds. Sched1 input: [asm barrier][AE84C diamond (REAL branch,
+ *    folded to one lh later)][block: count-lh, dst-init, i-init, blez,
+ *    AE84C-mat, src-init][loop]. Final [depth,count,home,blez] = folded
+ *    diamond + that block. gcc picks row=a1,i=a2,src=a3,dst=t0 by
+ *    priority; retail = row,i,dst(a3),src(t0) — only the last two
+ *    swapped. Tried and failed (all >= 120): `if (count > 0) { diamond;
+ *    inits; do{}while; }` (3705, diamond falls below the guard, size +8);
+ *    count into for-init comma `i=0, id=*(s16 *)(object+0xA); i<id`
+ *    (1350, tail reload lost); dst decl-first and dst-first for-init
+ *    (identical asm — pseudo order follows first USE, not decl);
+ *    output-tied ref-raiser `asm("" : "=r"(dst) : "0"(dst));` at body
+ *    start (290: src DID fall to t0, but dst took a1 and row/i cycled to
+ *    a2/a3 — the copy changed the loop schedule and row's live_length);
+ *    input-only src barrier after the loop (3495, src range explodes past
+ *    the tail). Remaining leads: permuter round 3 from 120; make dst
+ *    out-prioritize src by one ref WITHOUT touching row/i; a spelling
+ *    that puts the count load before the diamond without killing the
+ *    tail reload (named count local and && chains both break it). */
+
 extern u8 D_800A387C[];
 extern s32 D_800AE84C[];
 
 void func_8003ECB8(u8 *object) {
-    volatile s32 pad[1];
     u8 *current;
     u8 *base;
     s32 id;
-    s16 depth;
+    s32 depth;
     s32 i;
     s32 value;
+    s32 sum;
+    s32 moved;
     s32 extra;
     u16 u16v;
     u8 *row;
+    u8 *new_var;
     u8 *src;
     u8 *dst;
 
-    current = *(u8 **)(D_800A387C - 4);
-    base = D_800BE97C[0];
+    if (D_800AE84C) {
+        current = *(u8 **)(D_800A387C - 4);
+        base = D_800BE97C[0];
+    } else {
+        current = *(u8 **)(new_var = D_800A387C - 4);
+        base = D_800BE97C[0];
+    }
     if (current != 0) {
         id = *(s16 *)(object + 0xC) - 1;
         for (; current != 0; current = *(u8 **)(current + 0x3E0)) {
-            if (*(s16 *)(current + 0x1DE) == id)
+            if (*(s16 *)(current + 0x1DE) == id) {
                 break;
+            }
         }
         if (current != 0 && *(s16 *)(current + 0x1EC) != 1 &&
             *(u8 *)(current + 0x268) != 0) {
-            depth = *(s16 *)(current + 0x27C);
+            asm volatile("" : : "r"(object));
+            if (D_800AE84C) {
+                depth = *(s16 *)(current + 0x27C);
+            } else {
+                depth = *(s16 *)(current + 0x27C);
+            }
             for (src = object, dst = object, i = 0; i < *(s16 *)(object + 0xA);
                  i++) {
-                value = *(s16 *)(src + 0x94);
+                current = src;
+                value = *(s16 *)(current + 0x94);
                 extra = *(s32 *)(object + 0x218);
                 u16v = *(u16 *)(dst + 0x10);
-                row = base + (u16v << 3);
-                value = value + extra - depth;
-                if (value < 0) {
-                    value += 3;
+                row = (u16v << 3) + base;
+                sum = value + extra;
+                moved = sum - depth;
+                if (moved < 0) {
+                    moved += 3;
                 }
-                *(s16 *)(row + 4) = (value >> 2) - D_800AE84C[0];
-                src += 6;
+                *(s16 *)(row + 4) = (moved >> 2) - D_800AE84C[0];
                 dst += 2;
+                src += 6;
             }
         }
     }

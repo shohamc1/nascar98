@@ -1240,6 +1240,8 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     s32 w3;
     s32 i;
     s32 off;
+    volatile s32 framePad[2];
+    u8 **new_var;
 
     obj = *(u8 **)(arg0 + 0x36C);
     poly = (u8 *)D_800A2D60;
@@ -1257,7 +1259,8 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     } else {
         clutOld = clutCur;
     }
-    clutNew = GetClut((arg1 % 16) * 16 + 0x300, 0x3F - arg1 / 16);
+    r1 = 0x3F - (arg1 / 16);
+    clutNew = GetClut((arg1 % 16) * 16 + 0x300, r1);
     if (arg1 < 0xC) {
         tpage = GetTPage(0, 0, (arg1 % 4) * 64 + 0x300, 0);
         scroll = (arg1 / 4) * 64;
@@ -1278,7 +1281,8 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         *(s32 *)(poly + 0x24) = w2;
         *(s32 *)(poly + 0x30) = w3;
         color = *(s32 *)(src - 0x14);
-        cba = *(u16 *)(poly + 0xE);
+        r1 = *(u16 *)(poly + 0xE);
+        cba = r1;
         b0 = color & 0xFF;
         color >>= 8;
         b1 = color & 0xFF;
@@ -1307,10 +1311,11 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     }
     if (*(s16 *)(obj + 0x2C) > 0) {
         ot = (s32 *)(gOrderingTableBankAbsolute[0] * 0x30 + (s32)arg0 + 0x440);
+        new_var = polys;
         i = 0;
         off = 0;
         do {
-            ot[i] = polys[*(s16 *)(*(u8 **)(obj + 0x40) + off + 0x10)];
+            ot[i] = new_var[*(s16 *)(*(u8 **)(obj + 0x40) + off + 0x10)];
             off += 0x18;
             i++;
         } while (i < *(s16 *)(obj + 0x2C));
