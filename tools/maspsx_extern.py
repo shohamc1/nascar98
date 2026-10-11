@@ -21,6 +21,22 @@ from maspsx import MaspsxProcessor  # noqa: E402
 
 _preprocess_lines = MaspsxProcessor.preprocess_lines
 
+# .sdata starts at _gp; the last $gp-reached .sbss symbol is D_800A3A94.
+SMALL_START, SMALL_END = 0x800A2CE0, 0x800A3A98
+_ADDRS = {}
+for _line in (Path(__file__).parent.parent / "config/symbol_addrs.txt").read_text().splitlines():
+    _m = re.match(r"\s*(\w+)\s*=\s*(0x[0-9A-Fa-f]+)", _line)
+    if _m:
+        _ADDRS[_m.group(1)] = int(_m.group(2), 16)
+
+
+def may_be_small(name):
+    if re.search(r"Absolute\d*$", name):
+        return False  # lui aliases (Makefile defsyms) are never $gp
+    m = re.match(r"D_([0-9A-F]{8})$", name)
+    addr = int(m.group(1), 16) if m else _ADDRS.get(name)
+    return addr is None or SMALL_START <= addr < SMALL_END
+
 
 def preprocess_lines(self):
     _preprocess_lines(self)
@@ -37,6 +53,11 @@ def preprocess_lines(self):
         if line.strip():
             prev = line
         match = re.match(r"\.extern\s+([^,\s]+)\s*,\s*([0-9]+)", line)
+        if match and not may_be_small(match.group(1)):
+            # Outside .sdata/.sbss: never $gp. Drop the size so GNU as
+            # uses lui, as ASPSX did for an `extern` defined elsewhere.
+            self.lines[i] = ""
+            continue
         if match and 0 < int(match.group(2)) <= self.sdata_limit:
             self.sdata_entries.setdefault(match.group(1), int(match.group(2)))
 

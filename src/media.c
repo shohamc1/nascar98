@@ -773,6 +773,7 @@ extern void FileRead();
 extern s32 D_800A2EC8[];
 extern s32 D_800A2F70;
 extern u8 D_800A2F9CAbsolute[];
+extern u8 D_800A2F9CLui asm("D_800A2F9CAbsolute");
 extern u8 D_800AE24C[];
 extern s32 CdGetToc(void *);
 extern s32 D_800A2F74;
@@ -1204,6 +1205,7 @@ extern u8 D_800A3065NM asm("D_800A3065.NON_MATCHING");
 extern u8 D_800A3718NM asm("D_800A3718.NON_MATCHING");
 extern u8 D_800A36E0NM asm("D_800A36E0.NON_MATCHING");
 extern u8 D_800A2F9CAbsolute[];
+extern u8 D_800A2F9CLui asm("D_800A2F9CAbsolute");
 extern u8 D_800A3694;
 extern void func_8003CAE8(s32);
 extern void CdSetMixVolume(s32);
@@ -2365,9 +2367,9 @@ void func_8006EEE0(s32 arg0) {
 void func_8006F128(s32 arg0) {
     s32 pad[6];
 
-    if (D_800A2F9CAbsolute[0] != 0) {
+    if (D_800A2F9CLui != 0) {
         func_8003CCE0(0);
-        ((u8 *)D_800A2F9DAbsolute)[-1] = 0;
+        D_800A2F9CLui = 0;
     }
     func_8006F9C4((arg0 & 0xFF) + 0x3A, 0, 0);
     func_800596F4();
@@ -2375,15 +2377,16 @@ void func_8006F128(s32 arg0) {
 }
 
 extern u8 D_800A2F9CAbsolute[];
+extern u8 D_800A2F9CLui asm("D_800A2F9CAbsolute");
 extern u8 D_800A2F9DAbsolute[];
 extern u8 D_800A3694AbsoluteU8[] asm("D_800A3694Absolute");
 extern void func_8003CCE0(s32);
 extern s32 func_8006F9C4(s32, s32, s32);
 extern void func_800596F4(void);
 void func_8006F194(s32 arg) {
-    if (D_800A2F9CAbsolute[0] != 0) {
+    if (D_800A2F9CLui != 0) {
         func_8003CCE0(0);
-        ((u8 *)D_800A2F9DAbsolute)[-1] = 0;
+        D_800A2F9CLui = 0;
     }
     func_8006F9C4((arg & 0xFF) + 0xC, 0, 0);
     func_800596F4();

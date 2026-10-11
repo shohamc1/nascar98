@@ -1839,7 +1839,7 @@ void func_80045F70(void) {
 
 extern s8 D_800A343C;
 extern s8 *D_800A3444[];
-extern s32 D_800BE980[];
+extern s32 D_800BE980v asm("D_800BE980");
 
 void func_80046184(s8 *arg0) {
     s8 *base;
@@ -1851,16 +1851,13 @@ void func_80046184(s8 *arg0) {
     s32 id;
     u16 flag;
     u8 *p;
-    s32 *descriptors;
 
     count = D_800A343C;
     base = D_800A3444[arg0[0x20B]];
     for (n = 1, i = 1, tail = base + 4; i < count; i++) {
         entry = (s8 *)(i * 0x58 + (s32)base);
         id = *(s16 *)entry;
-        descriptors = D_800BE980;
-        p = (u8 *)(id * 0x90 + descriptors[0]);
-        descriptors = 0;
+        p = (u8 *)(id * 0x90 + D_800BE980v);
         flag = *(u16 *)(p + 0xE);
         if (flag != 0) {
             *(s32 *)(tail + 0x28) = (s32)(entry + 4);
@@ -2003,10 +2000,9 @@ void func_800474A0(void) {
     s16 segIdx;
     s32 s5v;
     s32 fpVal;
-    s16 s4Off;
+    s32 s4Off;
     s16 s2v;
     s32 s1v;
-    s16 vtxIdx;
     s32 sp98v;
     u16 rot[3];
     MATRIX mat1;
@@ -2023,12 +2019,17 @@ void func_800474A0(void) {
     u8 *row;
     s32 place;
     s32 c8val;
-    s32 count;
+    s8 count;
+    s8 fade;
     u8 *rec;
+    u8 *node;
     MATRIX *transPtr;
     u8 *prim;
     u8 *primNext;
     s32 otBaseW;
+    s32 primCount;
+    u8 *rv;
+    s32 angC;
 
     if (D_800A2FE8 == 0) {
         return;
@@ -2067,7 +2068,9 @@ void func_800474A0(void) {
     *(u32 *)(SCRATCHPAD_BASE + 0x014) = 0x10;
     *(u32 *)(SCRATCHPAD_BASE + 0x038) = 5;
     *(u32 *)(SCRATCHPAD_BASE + 0x134) = 3;
-    c8val = D_800A2EC8Absolute[0];
+    do {
+        c8val = D_800A2EC8Absolute[0];
+    } while (0);
     *(u32 *)(SCRATCHPAD_BASE + 0x254) = 4;
     *(u32 *)(SCRATCHPAD_BASE + 0x278) = 0xA;
     *(u32 *)(SCRATCHPAD_BASE + 0x27C) = 0xB;
@@ -2116,17 +2119,14 @@ void func_800474A0(void) {
         }
     afterCounter:
         if (D_800A346C != 0) {
-            count = D_800A345C + 1;
-            D_800A345C = count;
+            count = ++D_800A345C;
+        } else if (D_800A345C != 0) {
+            count = --D_800A345C;
         } else {
-            if (D_800A345C != 0) {
-                count = D_800A345C - 1;
-            } else {
-                count = 0;
-            }
+            count = 0;
             D_800A345C = count;
         }
-        if ((s8)count >= 0xA) {
+        if (count >= 0xA) {
             D_800A346C = 0;
         }
         if ((func_80041B7C(0) & 0x10) != 0 && D_800A345C == 0) {
@@ -2143,10 +2143,11 @@ void func_800474A0(void) {
                 loopIdx = 0;
                 goto loopPrep;
             }
-            D_800A3460 = 0xA;
+            fade = 0xA;
         } else {
-            D_800A3460 = 0;
+            fade = 0;
         }
+        ((s8 *)&D_800A345C)[4] = fade;
         loopIdx = 0;
     }
 loopPrep:
@@ -2162,8 +2163,9 @@ loopPrep:
                 D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
                 rot[2] = D_80099258[(s16)loopIdx * 3] -
                          D_800A345C * (0x40 - D_800A3480 * 2);
-                RotMatrix((SVECTOR *)&D_800A2FF0Absolute[-2],
-                          (MATRIX *)D_800A7530);
+                rv = (u8 *)D_800A2FF0Absolute;
+                asm("" : "=r"(rv) : "0"(rv));
+                RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
                 goto afterRot;
             }
         } else {
@@ -2188,16 +2190,20 @@ loopPrep:
                     rot[2] = rot[2] - D_800A3468;
                 }
                 D_800A2FF0 = 0;
-                RotMatrix((SVECTOR *)&D_800A2FF0Absolute[-2],
-                          (MATRIX *)D_800A7530);
+                rv = (u8 *)D_800A2FF0Absolute;
+                asm("" : "=r"(rv) : "0"(rv));
+                RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
                 goto afterRot;
             }
         }
         rot[0] = D_80099254[(s16)loopIdx * 3] - sp98v;
         rot[1] = D_80099256[(s16)loopIdx * 3];
-        D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
+        angC = D_800A3480;
+        D_800A2FF0 = angC - angC * 16;
         rot[2] = D_80099258[(s16)loopIdx * 3];
-        RotMatrix((SVECTOR *)&D_800A2FF0Absolute[-2], (MATRIX *)D_800A7530);
+        rv = (u8 *)D_800A2FF0Absolute;
+        asm("" : "=r"(rv) : "0"(rv));
+        RotMatrix((SVECTOR *)(rv - 4), (MATRIX *)D_800A7530);
     afterRot:
         if (loopIdx != 0) {
             if (D_800A3480 < 0) {
@@ -2213,10 +2219,10 @@ loopPrep:
         rot[0] = rot[0] - sp98v;
     vecSetup:
         vec.vx = 0x1000 - rot[0];
-        vec.vy = c8val = 0x1000 - rot[1];
+        vec.vy = 0x1000 - rot[1];
         vec.vz = 0x1000 - rot[2];
-        segIdx = 0;
         RotMatrix(&vec, &mat1);
+        segIdx = 0;
         s5v = (s16)loopIdx;
         t = s5v * 2;
         fpVal = t - 1;
@@ -2237,12 +2243,16 @@ loopPrep:
                     D_800A3464 = s2v - D_800A3460 * 36;
                 }
             }
-            scratchW = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4);
-            vec.vx = 0x1000 - (s16)D_800A3464 * scratchW * (scratchW & 1);
+            vec.vx =
+                0x1000 -
+                (s16)D_800A3464 *
+                    (scratchW = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4)) *
+                    (scratchW & 1);
             scratchW2 = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4);
-            vyVal = 0;
             if ((scratchW2 & 1) == 0) {
                 vyVal = ((s16)D_800A3464 >> 3) * scratchW2 * fpVal;
+            } else {
+                vyVal = 0;
             }
             vec.vy = vyVal;
             if (s5v == 0 && (s16)segIdx != 0 && D_800A3460 == 0xA) {
@@ -2254,15 +2264,18 @@ loopPrep:
             MulMatrix2(&mat1, &mat2);
             SetRotMatrix(&mat2);
             if ((s16)segIdx != 0) {
-                mat1.t[0] =
-                    *(s16 *)((u8 *)D_800A46A0 + padScratch[(s16)segIdx] * 20 +
-                             unkScratch[(s16)segIdx] * 336 + s4Off);
-                mat1.t[1] =
-                    *(s16 *)((u8 *)D_800A46A2 + padScratch[(s16)segIdx] * 20 +
-                             unkScratch[(s16)segIdx] * 336 + s4Off);
-                mat1.t[2] =
-                    *(s16 *)((u8 *)D_800A46A4 + padScratch[(s16)segIdx] * 20 +
-                             unkScratch[(s16)segIdx] * 336 + s4Off);
+                mat1.t[0] = ((
+                    s16 *)D_800A46A0)[(padScratch[(s16)segIdx] * 20 +
+                                       unkScratch[(s16)segIdx] * 336 + s4Off) /
+                                      2];
+                mat1.t[1] = ((
+                    s16 *)D_800A46A2)[(padScratch[(s16)segIdx] * 20 +
+                                       unkScratch[(s16)segIdx] * 336 + s4Off) /
+                                      2];
+                mat1.t[2] = ((
+                    s16 *)D_800A46A4)[(padScratch[(s16)segIdx] * 20 +
+                                       unkScratch[(s16)segIdx] * 336 + s4Off) /
+                                      2];
             } else {
                 mat1.t[2] = 0;
                 mat1.t[1] = 0;
@@ -2271,29 +2284,34 @@ loopPrep:
             SetTransMatrix(&mat1);
             D_800A3464 = s2v;
             if ((s16)segIdx != 0 || (s5v == 0 && D_800A3460 != 0)) {
-                vtxIdx = 0;
+                s2v = 0;
                 s1v = (s16)segIdx;
+            vtxLoopA:
                 do {
-                    rec = s4Off + D_800A45F0 + s1v * 336 +
-                          ((s16)vtxIdx * 20 + 0xB0);
+                    rec =
+                        s4Off + D_800A45F0 + s1v * 336 + ((s16)s2v * 20 + 0xB0);
                     vec.vx = *(u32 *)(rec + 8);
                     vec.vy = *(u32 *)(rec + 0xC);
                     vec.vz = *(u32 *)(rec + 0x10);
                     RotTrans(&vec, &out, &gteFlag);
                     *(u16 *)rec = out.vx;
                     *(u16 *)(rec + 2) = out.vy;
-                    *(u16 *)(rec + 4) = out.vz;
-                    vtxIdx += 1;
-                } while (vtxIdx < 8);
+                } while (0);
+                *(u16 *)(rec + 4) = out.vz;
+                s2v += 1;
+                if (s2v < 8) {
+                    goto vtxLoopA;
+                }
             } else {
-                vtxIdx = 0;
+                s2v = 0;
                 s1v = (s16)segIdx;
+            vtxLoopB:
                 do {
-                    rec = s4Off + D_800A45F0 + s1v * 336 +
-                          ((s16)vtxIdx * 20 + 0xB0);
+                    rec =
+                        s4Off + D_800A45F0 + s1v * 336 + ((s16)s2v * 20 + 0xB0);
                     vec.vx = *(u32 *)(rec + 8);
                     vec.vy = *(u32 *)(rec + 0xC);
-                    if ((u16)(vtxIdx - 2) < 2 || (u16)(vtxIdx - 6) < 2) {
+                    if ((u16)(s2v - 2) < 2 || (u16)(s2v - 6) < 2) {
                         vec.vz = *(u32 *)(rec + 0x10) + angA3 * 3 - 0x1E;
                     } else {
                         vec.vz = *(u32 *)(rec + 0x10);
@@ -2301,9 +2319,12 @@ loopPrep:
                     RotTrans(&vec, &out, &gteFlag);
                     *(u16 *)rec = out.vx;
                     *(u16 *)(rec + 2) = out.vy;
-                    *(u16 *)(rec + 4) = out.vz;
-                    vtxIdx += 1;
-                } while (vtxIdx < 8);
+                } while (0);
+                *(u16 *)(rec + 4) = out.vz;
+                s2v += 1;
+                if (s2v < 8) {
+                    goto vtxLoopB;
+                }
             }
             segIdx += 1;
         } while (segIdx < 0x12);
@@ -2321,30 +2342,28 @@ loopPrep:
             ;
         } else {
             prim = (u8 *)gPrimitiveCursor[0];
-            t = (s16)loopIdx * 3;
-            rec = D_800A45F0 + (((t << 6) - t) << 5);
-            segIdx = 0x48;
+            node = D_800A45F0 + (s16)loopIdx * 6048;
+            primCount = 0x48;
             otBaseW = D_800A39C8[0];
             primNext = prim + 0x10;
             do {
-                s32 *vertA = *(s32 **)(rec + 0x18);
-                s32 *vertB = *(s32 **)(rec + 0x1C);
-                s32 *vertC = *(s32 **)(rec + 0x20);
-                gte_ldv3(vertA, vertB, vertC);
+                s32 **verts = (s32 **)(node + 0x18);
+                gte_ldv3(verts[0], verts[1], verts[2]);
                 gte_rtpt();
                 gte_avsz3();
-                *(u32 *)(primNext - 0xC) = *(u32 *)(rec + 4);
+                *(u32 *)(primNext - 0xC) = *(u32 *)(node + 4);
                 gte_stsxy3(prim + 8, prim + 0xC, prim + 0x14);
-                gte_ldv0(*(s32 **)(rec + 0x24));
+                gte_ldv0(verts[3]);
                 gte_rtps();
                 gte_stsxy(primNext);
                 GraphicsAddTaggedPrimitive(
-                    (u32 *)(otBaseW + *(s8 *)(rec + 1) * 4), (u32 *)prim,
+                    (u32 *)(otBaseW + *(s8 *)(node + 1) * 4), (u32 *)prim,
                     0x05000000);
-                rec = *(u8 **)(rec + 0x28);
-                prim += 0x18;
+                node = *(u8 **)(node + 0x28);
+                primCount--;
                 primNext += 0x18;
-            } while (--segIdx > 0);
+                prim += 0x18;
+            } while (primCount > 0);
             gPrimitiveCursor[0] = (u32)prim;
         }
         loopIdx += 1;
@@ -4716,32 +4735,31 @@ void func_80051874(void) {
     s32 shade;
     s32 t2;
     u8 switched;
-    u16 *base;
     s32 gradA;
     s32 gradB;
     s32 yBase;
     s32 yStep;
     s32 shade2;
-    volatile s8 d4;
     s32 m;
+    s32 m1;
+    s32 t1;
+    s32 m2;
+    s32 t3;
     s32 new_var;
-    u16 new_var2;
-    s32 fadeT1;
-    s32 fadeT2;
+    s32 deltaA;
+    s32 deltaB;
+    s32 deltaC;
+    s32 gm;
     s32 si;
-    s32 delta;
     s16 buf[8];
     s8 i;
     u16 c;
-    s32 pad[2];
 
-    (void)&pad;
     switched = 0;
     if (D_800A34DC != 0) {
         if (D_800A34D8 >= 0x259) {
-            fadeT1 = 0x500 - D_800A34D8;
-            fadeVal = fadeT1;
-            idx = (fadeT1 + 0x200) & 0x3FF;
+            fadeVal = 0x500 - D_800A34D8;
+            idx = (s16)(fadeVal + 0x200) & 0x3FF;
             shade = 0x140000;
             D_800A8B30[0] = 0x10;
             D_800A8B31[0] = 0x10;
@@ -4754,26 +4772,25 @@ void func_80051874(void) {
             D_800A8B1A[0] = D_800A34D1;
             switched = 1;
         } else {
-            idx = (D_800A34D8 + 0x200) & 0x3FF;
+            idx = (s16)(D_800A34D8 + 0x200) & 0x3FF;
             shade = 0xFFEC0000;
         }
-        d4 = D_800A34D4;
-        yBase = d4 + 0x122;
+        yBase = (s8)D_800A34D4 + 0x122;
         yStep = 0x3C;
-        delta = 0x280 - D_800A34D8;
-        if (delta < 0) {
-            delta = D_800A34D8 - 0x280;
+        deltaA = 0x280 - D_800A34D8;
+        if (deltaA >= 0) {
+            gm = *(s32 *)(D_800A3A34wC[0] + (deltaA << 4));
+        } else {
+            gm = *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x280) << 4));
         }
-        gradA = MathMultiplyFixed16(*(s32 *)(D_800A3A34wC[0] + (delta << 4)),
-                                    0x80000) +
-                0x2D0000;
-        delta = 0x280 - D_800A34D8;
-        if (delta < 0) {
-            delta = D_800A34D8 - 0x280;
+        gradA = MathMultiplyFixed16(gm, 0x80000) + 0x2D0000;
+        deltaB = 0x280 - D_800A34D8;
+        if (deltaB >= 0) {
+            gm = *(s32 *)(D_800A3A34wC[0] + (deltaB << 4));
+        } else {
+            gm = *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x280) << 4));
         }
-        gradB = MathMultiplyFixed16(*(s32 *)(D_800A3A34wC[0] + (delta << 4)),
-                                    0x40000) +
-                0x140000;
+        gradB = MathMultiplyFixed16(gm, 0x40000) + 0x140000;
         if (switched != 0) {
             D_800A34D8 -= 8;
         } else {
@@ -4785,9 +4802,8 @@ void func_80051874(void) {
         }
     } else {
         if (D_800A34D8 < 0x1A8) {
-            fadeT2 = 0x300 - D_800A34D8;
-            fadeVal = fadeT2;
-            idx = (fadeT2 + 0x200) & 0x3FF;
+            fadeVal = 0x300 - D_800A34D8;
+            idx = (s16)(fadeVal + 0x200) & 0x3FF;
             shade = 0xFFEC0000;
             D_800A8B30[0] = 0;
             D_800A8B31[0] = 0;
@@ -4800,11 +4816,10 @@ void func_80051874(void) {
             D_800A8B1A[0] = D_800A34CE;
             switched = 1;
         } else {
-            idx = (D_800A34D8 + 0x200) & 0x3FF;
+            idx = (s16)(D_800A34D8 + 0x200) & 0x3FF;
             shade = 0x140000;
         }
-        d4 = D_800A34D4;
-        yBase = d4 + 0x122;
+        yBase = (s8)D_800A34D4 + 0x122;
         yStep = 0x3C;
         gradA = MathMultiplyFixed16(
                     *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x180) << 4)),
@@ -4826,13 +4841,13 @@ void func_80051874(void) {
     }
     entryA = *(s32 *)(D_800A3A2CwC[0] + (D_800A34D8 << 2));
     entryB = *(s32 *)(D_800A3A34wC[0] + (D_800A34D8 << 2));
-    delta = D_800A34D8 - 0x200;
-    if (delta < 0) {
-        delta = D_800A34D8 - 0x80;
+    deltaC = D_800A34D8 - 0x200;
+    if (deltaC >= 0) {
+        deltaC = 0x380 - D_800A34D8;
     } else {
-        delta = 0x380 - D_800A34D8;
+        deltaC = D_800A34D8 - 0x80;
     }
-    shade2 = MathMultiplyFixed16(shade, MathFixedDivide(delta, 0x180));
+    shade2 = MathMultiplyFixed16(shade, MathFixedDivide(deltaC, 0x180));
     if (D_800A2F00wC[0] == 0) {
         m = MathMultiplyFixed16(gradA, entryA);
         D_800A8B4C[0] = yBase + (m >> 16);
@@ -4842,20 +4857,18 @@ void func_80051874(void) {
         D_800A8B4C[4] = yBase + (m >> 16);
         m = MathMultiplyFixed16(gradB, entryB);
         D_800A8B4C[5] = yStep + (m >> 16);
-        m = MathMultiplyFixed16(
-            *(s32 *)(D_800A3A34wC[0] + (new_var2 = idx << 2)), shade2);
+        m = MathMultiplyFixed16(*(s32 *)(D_800A3A34wC[0] + (idx << 2)), shade2);
         t2 = m >> 16;
-        m = MathMultiplyFixed16(*(s32 *)(D_800A3A2CwC[0] + new_var2), shade2);
+        m = MathMultiplyFixed16(*(s32 *)(D_800A3A2CwC[0] + (idx << 2)), shade2);
         shade2 = m >> 16;
         if (switched != 0) {
-            d4 = D_800A34D4;
-            c = D_800A8AEC[D_800A34DC * 4] + D_800A34D4;
+            c = D_800A8AEC[D_800A34DC * 4] + (s8)D_800A34D4;
             D_800A8B74[0] = c;
             D_800A8B5C[0] = c;
             c = D_800A8AEE[D_800A34DC * 4];
             D_800A8B76[0] = c;
             D_800A8B5E[0] = c;
-            c = D_800A8AF0[D_800A34DC * 4] + D_800A34D4;
+            c = D_800A8AF0[D_800A34DC * 4] + (s8)D_800A34D4;
             D_800A8B7C[0] = c;
             D_800A8B64[0] = c;
             c = D_800A8AF2[D_800A34DC * 4];
@@ -4903,20 +4916,18 @@ void func_80051874(void) {
         D_800A8B04[2] = yBase + (m >> 16);
         m = MathMultiplyFixed16(gradB, entryB);
         D_800A8B04[3] = yStep + (m >> 16);
-        m = MathMultiplyFixed16(
-            *(s32 *)(D_800A3A34wC[0] + (new_var2 = idx << 2)), shade2);
+        m = MathMultiplyFixed16(*(s32 *)(D_800A3A34wC[0] + (idx << 2)), shade2);
         t2 = m >> 16;
-        m = MathMultiplyFixed16(*(s32 *)(D_800A3A2CwC[0] + new_var2), shade2);
+        m = MathMultiplyFixed16(*(s32 *)(D_800A3A2CwC[0] + (idx << 2)), shade2);
         shade2 = m >> 16;
         if (switched != 0) {
-            d4 = D_800A34D4;
-            c = D_800A8AEC[D_800A34DC * 4] + D_800A34D4;
+            c = D_800A8AEC[D_800A34DC * 4] + (s8)D_800A34D4;
             D_800A8B1C[0] = c;
             D_800A8B0C[0] = c;
             c = D_800A8AEE[D_800A34DC * 4];
             D_800A8B1E[0] = c;
             D_800A8B0E[0] = c;
-            c = D_800A8AF0[D_800A34DC * 4] + D_800A34D4;
+            c = D_800A8AF0[D_800A34DC * 4] + (s8)D_800A34D4;
             D_800A8B20[0] = c;
             D_800A8B10[0] = c;
             c = D_800A8AF2[D_800A34DC * 4];
@@ -4960,15 +4971,17 @@ void func_80051874(void) {
     D_800993A4[0] = gradB;
     D_80099394[0] = gradB;
     D_80099384[0] = gradB;
-    for (i = 0; i < 4; i++) {
-        m = MathMultiplyFixed16(entryA, D_8009937C[D_800A34DC * 8 + (s8)i * 2]);
-        t2 =
-            MathMultiplyFixed16(entryB, D_80099380[D_800A34DC * 8 + (s8)i * 2]);
-        buf[(s8)i * 2] = yBase + ((m - t2) >> 16);
-        m = MathMultiplyFixed16(entryB, D_8009937C[D_800A34DC * 8 + (s8)i * 2]);
-        t2 =
-            MathMultiplyFixed16(entryA, D_80099380[D_800A34DC * 8 + (s8)i * 2]);
-        buf[(s8)i * 2 + 1] = yStep + ((m + t2) >> 16);
+    i = 0;
+gradLoop:
+    m1 = MathMultiplyFixed16(entryA, D_8009937C[D_800A34DC * 8 + (s8)i * 2]);
+    t1 = MathMultiplyFixed16(entryB, D_80099380[D_800A34DC * 8 + (s8)i * 2]);
+    buf[(s8)i * 2] = yBase + ((m1 - t1) >> 16);
+    m2 = MathMultiplyFixed16(entryB, D_8009937C[D_800A34DC * 8 + (s8)i * 2]);
+    t3 = MathMultiplyFixed16(entryA, D_80099380[D_800A34DC * 8 + (s8)i * 2]);
+    buf[(s8)i * 2 + 1] = yStep + ((m2 + t3) >> 16);
+    i++;
+    if (i < 4) {
+        goto gradLoop;
     }
     D_800A8B34[0] = buf[0];
     D_800A8B36[0] = buf[1];

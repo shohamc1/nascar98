@@ -4531,6 +4531,7 @@ void func_800319D4(u8 *object, s32 arg1) {
     *(Vector3 *)(object + 0x48) = *(Vector3 *)cross;
     *(Vector3 *)(object + 0x54) = *(Vector3 *)normalOut;
 }
+extern s32 D_800A3574Lui asm("D_800A3574Absolute");
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80031D74);
 
@@ -4556,9 +4557,9 @@ void func_80032328(s32 arg0) {
     value = FileSeekCall32328(handle, 0, 2);
     FileSeekCall32328(handle, 0, 0);
     FileReadCall32328(STACK_BLOCK_801C0000, value, 1, handle);
-    func_80031D74(D_800A3574[0], STACK_BLOCK_801C0000, -1);
+    func_80031D74(D_800A3574Lui, STACK_BLOCK_801C0000, -1);
     D_800A2D4C[0] = 1;
-    func_80025454(((s32 *)D_800A36D0Absolute)[-87]);
+    func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;
     FileCloseCall32328(handle);
 }
@@ -4578,9 +4579,9 @@ extern s32 D_800A36D0Absolute[];
 void func_80025454(s32);
 void func_80031D74(s32, s32, s32);
 void func_800323F0(s32 index, s32 arg1) {
-    func_80031D74(D_800A3574[0], *(s32 **)(D_800B9F44 + index), arg1);
+    func_80031D74(D_800A3574Lui, *(s32 **)(D_800B9F44 + index), arg1);
     D_800A2D4C[0] = 1;
-    func_80025454(((s32 *)D_800A36D0Absolute)[-87]);
+    func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;
 }
 

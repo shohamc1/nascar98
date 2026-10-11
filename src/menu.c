@@ -6369,10 +6369,7 @@ void func_8006709C(u8 arg0) {
     /* Retail reaches every D_800A3848 access with its own lui, so each
      * store goes through a neighbour symbol: a shared la base would put
      * the stores in jump delay slots. */
-    extern s32 D_800A3848[];
-    extern s32 D_800A3844[];
-    extern s32 D_800A3840[];
-    extern s32 D_800A383C[];
+    extern s32 D_800A3848Lui asm("D_800A3848Absolute");
     extern u8 D_800A3644[];
     extern u16 *D_800A3898;
     extern u16 *D_800A389C[];
@@ -6382,14 +6379,14 @@ void func_8006709C(u8 arg0) {
     u16 *limit;
 
     arg = arg0;
-    cur = D_800A3848[0] - ((s8)arg0 << 1);
-    D_800A3844[1] = cur;
+    cur = D_800A3848Lui - ((s8)arg0 << 1);
+    D_800A3848Lui = cur;
     if (cur < 0xA0) {
-        D_800A3840[2] = 0xA0;
+        D_800A3848Lui = 0xA0;
         return;
     }
     if (cur >= 0x1EB) {
-        D_800A383C[3] = 0x1EA;
+        D_800A3848Lui = 0x1EA;
         return;
     }
     if (D_800A3644[0] != 0) {

@@ -181,9 +181,9 @@ extern s32 D_800A2D08;
 extern s32 D_800A3708;
 extern s32 D_800A370C;
 extern s32 D_800B9D54[];
-extern s32 D_800B9D58[];
-extern s32 D_800B9D5C[];
-extern s32 D_800B9D60[];
+extern s32 D_800B9D58;
+extern s32 D_800B9D5C;
+extern s32 D_800B9D60;
 
 extern void func_8001D220(s32, s32, s32, s32);
 
@@ -191,9 +191,9 @@ void func_80012C30(void) {
     func_8001D220(D_800A370C - D_800A3708, 0xF0, 0x14, 0);
     func_8001D220(D_800A2D00, 0xF0, 0x14, 3);
     func_8001D220(D_800B9D54[0], 0xF0, 0x23, 0);
-    func_8001D220(D_800B9D5C[-1] + D_800B9D54[0], 0xF0, 0x23, 2);
-    func_8001D220(D_800B9D60[0] + D_800B9D58[0] + D_800B9D54[0], 0xF0, 0x23, 3);
-    func_8001D220(D_800B9D5C[0], 0xF0, 0x23, 1);
+    func_8001D220(D_800B9D58 + D_800B9D54[0], 0xF0, 0x23, 2);
+    func_8001D220(D_800B9D60 + D_800B9D58 + D_800B9D54[0], 0xF0, 0x23, 3);
+    func_8001D220(D_800B9D5C, 0xF0, 0x23, 1);
     D_800A2CFC = 0;
     D_800A2D00 = 0;
     D_800A2D04 = 0;
@@ -1342,6 +1342,7 @@ void func_80016724(s32 value, s32 *next, s32 size) {
 
 extern s32 gOrderingTableBankAbsolute[];
 extern s32 D_800A2CF8[];
+extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 extern s32 D_800A2D5C;
 void func_80016744(u32 arg0) {
     s32 bank;
@@ -1354,7 +1355,7 @@ void func_80016744(u32 arg0) {
     s32 size;
     s32 extra;
 
-    bank = gOrderingTableBankAbsolute[0];
+    bank = gOrderingTableBankLui;
     entries = (bank << 2) + arg0;
     oldEntry = *(s32 *)(entries + 0x420);
     if (oldEntry != 0) {
@@ -1369,7 +1370,7 @@ void func_80016744(u32 arg0) {
         *(s32 *)(entries + 0x420) = 0;
         D_800A2D5C = size + hw;
     }
-    *(s8 *)(arg0 + ((s32 *)D_800A2CF8)[-1] + 0x41C) = -1;
+    *(s8 *)(arg0 + gOrderingTableBankLui + 0x41C) = -1;
 }
 
 INCLUDE_ASM("asm/nonmatchings/game", func_800167BC);
