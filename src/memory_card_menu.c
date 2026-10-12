@@ -3661,7 +3661,124 @@ void func_8006BA68(void) {
     } while (i < 0x11);
 }
 
+#ifdef NON_MATCHING
+/* Loads the settings record at D_800B9B73 into the menu globals (the
+ * inverse of func_8006BD68 below) and spreads the 17 four-character rows
+ * into D_800BBA24, keeping the selected row in D_800A3860. */
+/* Loads the settings record at D_800B9B73 into the menu globals (the
+ * inverse of func_8006BD68 below) and spreads the 17 four-character rows
+ * into D_800BBA24, keeping the selected row in D_800A3860. */
+void func_8006BB1C(void) {
+    u8 *rec;
+    u8 *row;
+    u8 *table;
+    u8 *src;
+    u8 *dst;
+    register u8 flags asm("v1");
+    register u32 v73 asm("a0");
+    u32 v74;
+    u32 v82;
+    s32 level;
+    register s32 vol asm("a1");
+    u8 value;
+    s32 gear;
+    s32 entry;
+    s32 k;
+    s32 i;
+    extern u8 D_800B9B73[];
+    extern u8 D_800B9B74[];
+    extern u8 D_800B9B75[];
+    extern u8 D_800B9B76[];
+    extern u8 D_800B9B77[];
+    extern u8 D_800B9B78[];
+    extern u8 D_800B9B79[];
+    extern u8 D_800B9B7F[];
+    extern u8 D_800B9B80[];
+    extern u8 D_800B9B81[];
+    extern u8 D_800B9B82[];
+    extern u8 D_800BBA24[];
+    extern u8 D_800A306C[];
+    extern u8 D_800A306E[];
+    extern u8 D_800A306F[];
+    extern u8 D_800A3070[];
+    extern u8 D_800A3071[];
+    extern u8 D_800A3071NM[] asm("D_800A3071.NON_MATCHING");
+    extern u8 D_800A3072[];
+    extern u8 D_800A308C[];
+    extern u8 D_800A307C[];
+    extern s32 D_800A37D0[];
+    extern u8 D_800A2F94R[] asm("D_800A2F94.NON_MATCHING");
+    extern u8 D_800A2F95R[] asm("D_800A2F95.NON_MATCHING");
+    extern u8 D_800A305BSel[] asm("D_800A305B.NON_MATCHING");
+
+    v73 = D_800B9B73[0];
+    flags = D_800B9B75[0];
+    v74 = D_800B9B74[0];
+    v82 = D_800B9B82[0];
+    D_800A36E0[0] = v73;
+    level = flags & 3;
+    D_800A305B[0] = v74;
+    D_800A306F[0] = (flags >> 2) & 1;
+    D_800A3069[0] = (flags >> 3) & 1;
+    D_800A3068[0] = (flags >> 4) & 1;
+    D_800A306C[0] = (flags >> 6) & 1;
+    D_800A306E[0] = level;
+    D_800A3070[0] = flags >> 7;
+    D_800A3071[0] = v82 & 1;
+    if ((v82 & 1) != 0 && level != 1) {
+        D_800A3071NM[0] = 0;
+    }
+
+    vol = D_800B9B77[0];
+    D_800A3694w15[0] = D_800B9B76[0];
+    gear = D_800A306C[0];
+    D_800A3072[0] = (v82 >> 1) & 1;
+    D_800A3696w15[0] = vol;
+    D_800A2F94R[0] = (vol * 0x7F) / 100;
+    if (gear != 0) {
+        D_800A2F95R[0] = 0;
+    } else {
+        D_800A2F95R[0] = 1;
+    }
+
+    D_800A3078[0] = D_800B9B78[0];
+    for (i = 0; i < 6; i++) {
+        D_800A331C[i] = D_800B9B79[i];
+    }
+
+    if (D_800B9B7F[0] == D_800A3A24w18c[0]) {
+        D_800A308C[0] = D_800A3A24w18c[0];
+        D_800A307C[0] = D_800B9B80[0];
+    } else {
+        D_800A307C[0] = 0;
+    }
+
+    rec = D_800B9B81;
+    value = rec[0];
+    entry = 0;
+    table = D_800BBA24;
+    row = rec + 0x33;
+    D_800A37D0[0] = value;
+    for (; entry < 0x11; entry++) {
+        k = 0;
+        src = row;
+        dst = table;
+        do {
+            *dst = *src;
+            if (entry == D_800A305BSel[0]) {
+                D_800A3860S8[k] = *src;
+            }
+            src += 1;
+            dst += 1;
+            k += 1;
+        } while (k < 4);
+        table += 4;
+        row += 0xC;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006BB1C);
+#endif
 
 extern char *strcpy(char *, const char *);
 
