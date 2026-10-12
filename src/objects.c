@@ -3905,7 +3905,111 @@ void func_8002F86C(void *arg0, s32 arg1) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002F910);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002FFB8);
+extern u32 D_800A2EEC;
+extern u32 D_800A2F28;
+extern u32 gPrimitiveCursor2[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursor3[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursor4[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursor5[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursor6[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursor7[] asm("gPrimitiveCursor");
+extern s32 D_800A39C8b[] asm("D_800A39C8");
+extern s32 D_800A39C8c[] asm("D_800A39C8");
+extern s32 D_800A39C8d[] asm("D_800A39C8");
+extern s32 D_800A39C8e[] asm("D_800A39C8");
+extern void SetPolyF4(u8 *prim);
+extern void SetSemiTrans(void *p, s32 abe);
+extern void AddPrim(void *ot, void *p);
+void func_8002FFB8(s32 arg0) {
+    u8 *prim;
+    s32 cursorVal;
+    s32 grey;
+    s32 red;
+    s32 green;
+
+    grey = 100;
+    red = 0x96;
+    green = 0x8C;
+    if (D_800A2EEC != 0) {
+        D_800A2F28 = arg0;
+        if (arg0 != 0) {
+            if (arg0 == 1) {
+                cursorVal = gPrimitiveCursor[0];
+                asm("" : "=r"(prim) : "0"(cursorVal));
+                gPrimitiveCursor2[0] = (u32)prim + 0x28;
+                SetPolyF4(prim);
+                prim[4] = grey;
+                prim[5] = grey;
+                prim[6] = grey;
+                *(s16 *)(prim + 8) = 0;
+                *(s16 *)(prim + 0xA) = 0;
+                *(s16 *)(prim + 0xC) = 0x140;
+                *(s16 *)(prim + 0xE) = 0;
+                *(s16 *)(prim + 0x10) = 0;
+                *(s16 *)(prim + 0x12) = 0xF0;
+                *(s16 *)(prim + 0x14) = 0x140;
+                *(s16 *)(prim + 0x16) = 0xF0;
+                SetSemiTrans(prim, 1);
+                AddPrim((void *)(D_800A39C8b[0] + 0xC), prim);
+                cursorVal = gPrimitiveCursor3[0];
+                asm("" : "=r"(prim) : "0"(cursorVal));
+                gPrimitiveCursor4[0] = (u32)prim + 0x28;
+                SetPolyF4(prim);
+                prim[4] = grey;
+                prim[5] = grey;
+                prim[6] = grey;
+                *(s16 *)(prim + 8) = 0;
+                *(s16 *)(prim + 0xA) = 0;
+                *(s16 *)(prim + 0xC) = 0x140;
+                *(s16 *)(prim + 0xE) = 0;
+                *(s16 *)(prim + 0x10) = 0;
+                *(s16 *)(prim + 0x12) = 0xF0;
+                *(s16 *)(prim + 0x14) = 0x140;
+                *(s16 *)(prim + 0x16) = 0xF0;
+                SetSemiTrans(prim, 1);
+                AddPrim((void *)(D_800A39C8c[0] + 0x190), prim);
+                grey = 0x50;
+                cursorVal = gPrimitiveCursor5[0];
+                asm("" : "=r"(prim) : "0"(cursorVal));
+                gPrimitiveCursor6[0] = (u32)prim + 0x28;
+                SetPolyF4(prim);
+                prim[4] = grey;
+                prim[5] = grey;
+                prim[6] = grey;
+                *(s16 *)(prim + 8) = 0;
+                *(s16 *)(prim + 0xA) = 0;
+                *(s16 *)(prim + 0xC) = 0x140;
+                *(s16 *)(prim + 0xE) = 0;
+                *(s16 *)(prim + 0x10) = 0;
+                *(s16 *)(prim + 0x12) = 0xF0;
+                *(s16 *)(prim + 0x14) = 0x140;
+                *(s16 *)(prim + 0x16) = 0xF0;
+                SetSemiTrans(prim, 1);
+                AddPrim((void *)(D_800A39C8d[0] + 0x320), prim);
+            } else {
+                SetFarColor(red, green, grey);
+                SetFogFar(0x7D0, grey);
+                cursorVal = gPrimitiveCursor7[0];
+                asm("" : "=r"(prim) : "0"(cursorVal));
+                gPrimitiveCursor6[0] = (u32)prim + 0x28;
+                SetPolyF4(prim);
+                prim[4] = red;
+                prim[5] = green;
+                prim[6] = grey;
+                *(s16 *)(prim + 8) = 0;
+                *(s16 *)(prim + 0xA) = 0;
+                *(s16 *)(prim + 0xC) = 0x140;
+                *(s16 *)(prim + 0xE) = 0;
+                *(s16 *)(prim + 0x10) = 0;
+                *(s16 *)(prim + 0x12) = 0xF0;
+                *(s16 *)(prim + 0x14) = 0x140;
+                *(s16 *)(prim + 0x16) = 0xF0;
+                SetSemiTrans(prim, 1);
+                AddPrim((void *)(D_800A39C8e[0] + 0xAF0), prim);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80030204);
 
