@@ -4691,7 +4691,82 @@ again:
     }
 }
 
+#if 1
+/* permuter output-0-1 under test */
+extern u8 *D_800A3908[];
+extern u8 *D_800A377C[];
+extern u8 *D_800A3908[];
+extern u8 *D_800A377C[];
+extern u8 *D_800A377C[];
+extern u8 *D_800A377C[];
+extern u8 D_800A3808;
+extern u8 *D_800A3908[];
+extern u8 D_800A3808;
+extern u8 D_800A337C;
+extern s32 D_8009AB80[];
+extern s32 D_8009AB00[];
+extern u8 *D_800A377C[];
+extern u8 D_800A3770;
+extern void *D_800A3A24[];
+void func_8006D8E8(s32 arg0) {
+    u8 *obj;
+    u8 *field20;
+    u8 *end;
+    u8 menuId;
+    s32 val;
+    s32 val2;
+    obj = D_800A3908[0];
+    menuId = D_800A3808;
+    field20 = *((u8 **)(obj + 0x20));
+    if (menuId == 0x1C) {
+        if (D_800A337C != 0) {
+            menuId = 0x1D;
+        } else {
+            menuId = 0x1C;
+        }
+    } else if (menuId == 0x1E) {
+        if (D_800A337C != 0) {
+            menuId = 0x1F;
+        } else {
+            menuId = 0x1E;
+        }
+    } else if (menuId == 0xD) {
+        if (D_800A337C != 0) {
+            menuId = 0x1A;
+        } else {
+            menuId = 0x19;
+        }
+    }
+    if (((s8 *)D_800A3A24)[0] == 2) {
+        *((s32 *)(field20 + 8)) = D_8009AB80[menuId];
+    } else {
+        *((s32 *)(field20 + 8)) = D_8009AB00[menuId];
+    }
+    if ((arg0 & 0xFF) == 0) {
+        obj = *((u8 **)(obj + 0x1C));
+        if (obj != D_800A377C[0]) {
+            end = D_800A377C[0];
+            do {
+                val = *((s16 *)(obj + 0x1A));
+                if (val > 0) {
+                    *((s16 *)(obj + 0x1A)) = -(*((s16 *)(obj + 0x1A)));
+                }
+                obj = *((u8 **)(obj + 0x1C));
+            } while (obj != end);
+        }
+        val2 = *((s16 *)(D_800A377C[0] + 0x1A));
+        if (val2 > 0) {
+            val2 = -val2;
+        } else if (val2 == 0) {
+            val2 = -0xFF;
+        }
+        *((s16 *)(D_800A377C[0] + 0x1A)) = val2;
+    }
+    D_800A3770 = 1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006D8E8);
+#endif
 
 extern u8 *D_8009AB00nm[] asm("D_8009AB00.NON_MATCHING");
 extern u8 *D_8009AB80nm[] asm("D_8009AB80.NON_MATCHING");
