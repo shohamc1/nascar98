@@ -2862,77 +2862,110 @@ extern u8 D_80098BD0[];
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004A510);
 #endif
 
+
 #ifdef NON_MATCHING
-/* Retry 2026-10-11: the missing block-scope declarations caused cc1 to
- * fail. The pointer copy anchor keeps cursor separate from arg2.
- * Single-pass blocks change register priority. The 10-minute permuter gave
- * the table birth block
- * and the direct second glyph-height load. Active-TU text is 0x148 bytes,
- * equal to retail; 29 instruction words still differ. Keep the fallback. */
+/* 2026-10-12: permuter output-85-1 (round 2 from the 90 state; rounds went
+ * 1060 -> 210 -> 85). Remaining: the `addu v0,v0,t6` commutative order
+ * (ours t6-first; textual swaps canonicalize away; inlining the
+ * D_8009AE14 symbol costs +4) and `lhu t0,0(v1)` (the x load) two insns
+ * early where retail fills the D_800A2FD0 lbu delay. */
+void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2)
+{
+  extern u8 D_800A2FD0[];
+  extern u8 D_8009AE14[];
+  extern u8 D_80098BD0[];
+  s16 *out;
+  u16 *xy0;
+  u16 *cursor;
+  s8 i;
+  s8 j;
+  s32 x;
+  u8 *table;
+  s32 w;
+  s32 t;
+  s32 v0;
+  s32 v1;
+  s32 sum;
+  s32 i24;
+  s32 padByte;
+  s8 **a914;
+  s16 *glyph;
+  s32 arg0e;
+  do
+  {
+    asm volatile("" : "=r"(cursor) : "0"(arg2));
+    table = D_8009AE14;
+  }
+  while (0);
+  i = 0;
+  arg0e = (s8) arg0;
+  a914 = (s8 **) table;
+  do
+  {
+    j = 0;
+    i24 = i << 24;
+    asm("" : "=r"(padByte) : "0"(D_800A2FD0[arg0e]));
+    xy0 = (u16 *) ((i24 >> 22) + ((char *) arg1));
+    x = xy0[0];
+    w = xy0[1] + ((padByte << 24) >> 24);
+    if ((*((s8 **) (((char *) a914) + (i24 >> 22))))[0] != 0)
+    {
+      out = (s16 *) (((u8 *) cursor) + 0x22);
+      inner:
+      do
+      {
+        t = (*((s8 **) (a914 + (i24 >> 22))))[j];
+        glyph = (s16 *) (&D_80098BD0[t * 10]);
+        v0 = glyph[3];
+        out[-13] = x;
+        out[-12] = w;
+        out[-8] = w;
+        out[-5] = x;
+        sum = x + ((v0 * 3) >> 2);
+        out[-9] = sum;
+        v1 = glyph[4];
+        out[-1] = sum;
+        out[-4] = w + ((v1 * 3) >> 2);
+        out[0] = w + ((glyph[4] * 3) >> 2);
+      }
+      while (0);
 
-void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
-    extern u8 D_800A2FD0[];
-    extern u8 D_8009AE14[];
-    extern u8 D_80098BD0[];
-    s16 *out;
-    u16 *xy0;
-    u16 *cursor;
-    s8 i;
-    s8 j;
-    s32 x;
-    u8 *table;
-    s32 w;
-    s32 t;
-    s32 v0;
-    s32 v1;
-    s32 sum;
-    s32 i24;
-    s32 padByte;
-    s8 **a914;
-    s16 *glyph;
-
-    do {
-        asm volatile("" : "=r"(cursor) : "0"(arg2));
-        table = D_8009AE14;
-    } while (0);
-    i = 0;
-    a914 = (s8 **)table;
-    do {
-        j = 0;
-        i24 = i << 24;
-        asm("" : "=r"(padByte) : "0"(D_800A2FD0[arg0]));
-        xy0 = (u16 *)((i24 >> 22) + (char *)arg1);
-        x = xy0[0];
-        w = xy0[1] + ((padByte << 24) >> 24);
-        if ((*(s8 **)((i24 >> 22) + (char *)a914))[0] != 0) {
-            out = (s16 *)((u8 *)cursor + 0x22);
-        inner:
-            do {
-                t = (*(s8 **)((i24 >> 22) + (char *)a914))[j];
-                glyph = (s16 *)&D_80098BD0[t * 10];
-                v0 = glyph[3];
-                out[-13] = x;
-                out[-12] = w;
-                out[-8] = w;
-                out[-5] = x;
-                sum = x + ((v0 * 3) >> 2);
-                out[-9] = sum;
-                v1 = glyph[4];
-                out[-1] = sum;
-                out[-4] = w + ((v1 * 3) >> 2);
-                out[0] = w + ((glyph[4] * 3) >> 2);
-            } while (0);
-            x = sum;
-            j++;
-            cursor += 0x14;
-            out += 0x14;
-            if ((*(s8 **)((i24 >> 22) + (char *)a914))[j] != 0) {
-                goto inner;
-            }
-        }
-        i++;
-    } while (i < 7);
+      j++;
+      cursor += 0x14;
+      x = sum;
+      out += 0x14;
+      if ((*((s8 **) (a914 + (i24 >> 22))))[j] != 0)
+      {
+        goto inner;
+      }
+    }
+    i++;
+  }
+  while (i < 7);
 }
+
+asm(".globl func_80050028Row\nfunc_80050028Row = func_80050028");;
+asm(".globl func_80050028Lbl\nfunc_80050028Lbl = func_80050028");;
+asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");;
+asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");;
+asm(".globl D_800A3814w45S\nD_800A3814w45S = D_800A3814");;
+asm(".globl D_800A3075w45S\nD_800A3075w45S = D_800A3075");;
+asm(".globl func_80041AF0Scene\nfunc_80041AF0Scene = func_80041AF0");;
+asm(".globl RandomScaledGetScene\nRandomScaledGetScene = RandomScaledGet");;
+asm(".globl FileSeekArgs\nFileSeekArgs = FileSeek");;
+asm(".globl FileSeekArgsV\nFileSeekArgsV = FileSeek");;
+asm(".globl FileCloseArgs\nFileCloseArgs = FileClose");;
+asm(".globl func_80050028Row\nfunc_80050028Row = func_80050028");;
+asm(".globl func_80050028Lbl\nfunc_80050028Lbl = func_80050028");;
+asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");;
+asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");;
+asm(".globl D_800A3814w45S\nD_800A3814w45S = D_800A3814");;
+asm(".globl D_800A3075w45S\nD_800A3075w45S = D_800A3075");;
+asm(".globl func_80041AF0Scene\nfunc_80041AF0Scene = func_80041AF0");;
+asm(".globl RandomScaledGetScene\nRandomScaledGetScene = RandomScaledGet");;
+asm(".globl FileSeekArgs\nFileSeekArgs = FileSeek");;
+asm(".globl FileSeekArgsV\nFileSeekArgsV = FileSeek");;
+asm(".globl FileCloseArgs\nFileCloseArgs = FileClose");;
 #else
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004AFE0);
 #endif
