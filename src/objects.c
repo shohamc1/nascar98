@@ -3915,6 +3915,8 @@ extern s32 D_800A3A80;
  * quotient temporaries remain different. Keep the assembly fallback. */
 s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
     SVECTOR **points;
+    s32 vyA;
+    s32 vyB;
     SVECTOR *pairB;
     SVECTOR *pairA;
     SVECTOR *pointA;
@@ -3941,7 +3943,9 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
     for (i = 4; i > 0; i--) {
         pointA = points[i & 3];
         pointB = points[i - 1];
-        if (pointB->vy < pointA->vy) {
+        vyB = pointB->vy;
+        vyA = pointA->vy;
+        if (vyB < vyA) {
             point = pointA;
             pointA = pointB;
             pointB = point;
