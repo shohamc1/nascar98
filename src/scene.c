@@ -1968,7 +1968,6 @@ INCLUDE_ASM("asm/nonmatchings/scene", func_8004658C);
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80046BD4);
 
-#ifdef NON_MATCHING
 extern u8 D_800A2FE8;
 extern s8 D_800A3480;
 extern s8 D_800A345C;
@@ -1991,9 +1990,12 @@ extern s16 D_800A2FF0;
 extern s16 D_800A2FF0Absolute[];
 
 void func_800474A0(void) {
-    u32 *padScratch = (u32 *)(SCRATCHPAD_BASE + 0x120);
-    u32 *unkScratch = (u32 *)(SCRATCHPAD_BASE + 0x240);
+    register u32 *padScratch asm("$8") = (u32 *)(SCRATCHPAD_BASE + 0x120);
+    register u32 *unkScratch asm("$9") = (u32 *)(SCRATCHPAD_BASE + 0x240);
     register s32 angleRaw asm("$7");
+    register u32 one asm("$4");
+    register u32 two asm("$6");
+    register u32 three asm("$3");
     s32 absA3;
     s16 loopIdx;
     s32 angA3;
@@ -2003,18 +2005,31 @@ void func_800474A0(void) {
     s32 s4Off;
     s16 s2v;
     s32 s1v;
-    s32 sp98v;
+    register s32 halfAngle asm("$10");
+    register s32 tempT0 asm("$8");
+    register s32 tempT2 asm("$10");
+    register s32 tempT1 asm("$9");
     u16 rot[3];
     MATRIX mat1;
     MATRIX mat2;
     SVECTOR vec;
     VECTOR out;
-    s32 gteFlag;
+    s32 gteFlag[2];
+    /* cc1 reserves two more reload slots after these six words. */
+    s32 spillSlots[6];
     s32 t;
-    s32 scratchW;
-    s32 scratchW2;
-    s32 vyVal;
+    register s32 vxScratch asm("$4");
+    register s32 scaledAngle asm("$5");
+    register s32 vyProduct asm("$3");
+    register s32 vyVal asm("$2");
     s32 multTmp;
+    register SVECTOR *rotArg asm("$4");
+    register MATRIX *matArg asm("$5");
+    register s32 product1 asm("$8");
+    register s32 viewShift asm("$2");
+    register s32 viewRaw asm("$3");
+    register s32 tableOffset asm("$5");
+    register s32 viewCount asm("$7");
     u8 *car;
     u8 *row;
     s32 place;
@@ -2023,54 +2038,61 @@ void func_800474A0(void) {
     s8 fade;
     u8 *rec;
     u8 *node;
+    register s32 transIndex asm("$5");
+    register u32 *padRow asm("$6");
     MATRIX *transPtr;
     u8 *prim;
     u8 *primNext;
     s32 otBaseW;
-    register s32 *verts asm("$4");
+    register SVECTOR **verts asm("$4");
     s32 primCount;
-    register u8 *rv1 asm("$10");
-    u8 *rv2;
-    u8 *rv3;
+    register u8 *rv2 asm("$9");
+    register u8 *rv3 asm("$8");
     s32 angC;
 
+    spillSlots[0] = (u32)padScratch;
+    spillSlots[2] = (u32)unkScratch;
     if (D_800A2FE8 == 0) {
         return;
     }
     angleRaw = D_800A3480;
+    asm volatile("ori %0,$0,1\n\t ori %1,$0,2\n\t ori %2,$0,3"
+                 : "=r"(one), "=r"(two), "=r"(three)
+                 : "r"(angleRaw)
+                 : "memory");
     *(u32 *)(SCRATCHPAD_BASE + 0x000) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x024) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x024) = one;
     padScratch[0] = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x144) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x144) = one;
     unkScratch[0] = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x268) = 6;
     *(u32 *)(SCRATCHPAD_BASE + 0x26C) = 7;
     *(u32 *)(SCRATCHPAD_BASE + 0x270) = 8;
     *(u32 *)(SCRATCHPAD_BASE + 0x010) = 8;
     *(u32 *)(SCRATCHPAD_BASE + 0x274) = 9;
-    *(u32 *)(SCRATCHPAD_BASE + 0x264) = 2;
-    *(u32 *)(SCRATCHPAD_BASE + 0x028) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x264) = two;
     *(u32 *)(SCRATCHPAD_BASE + 0x004) = 0;
+    *(u32 *)(SCRATCHPAD_BASE + 0x028) = three;
     *(u32 *)(SCRATCHPAD_BASE + 0x124) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x148) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x244) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x008) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x02C) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x02C) = three;
     *(u32 *)(SCRATCHPAD_BASE + 0x128) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x14C) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x248) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x00C) = 2;
-    *(u32 *)(SCRATCHPAD_BASE + 0x030) = 3;
-    *(u32 *)(SCRATCHPAD_BASE + 0x12C) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x00C) = two;
+    *(u32 *)(SCRATCHPAD_BASE + 0x030) = three;
+    *(u32 *)(SCRATCHPAD_BASE + 0x12C) = three;
     *(u32 *)(SCRATCHPAD_BASE + 0x150) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x24C) = 2;
-    *(u32 *)(SCRATCHPAD_BASE + 0x034) = 3;
-    *(u32 *)(SCRATCHPAD_BASE + 0x130) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x24C) = two;
+    *(u32 *)(SCRATCHPAD_BASE + 0x034) = three;
+    *(u32 *)(SCRATCHPAD_BASE + 0x130) = three;
     *(u32 *)(SCRATCHPAD_BASE + 0x154) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x250) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x250) = three;
     *(u32 *)(SCRATCHPAD_BASE + 0x014) = 0x10;
     *(u32 *)(SCRATCHPAD_BASE + 0x038) = 5;
-    *(u32 *)(SCRATCHPAD_BASE + 0x134) = 3;
+    *(u32 *)(SCRATCHPAD_BASE + 0x134) = three;
     do {
         c8val = D_800A2EC8Absolute[0];
     } while (0);
@@ -2079,21 +2101,21 @@ void func_800474A0(void) {
     *(u32 *)(SCRATCHPAD_BASE + 0x27C) = 0xB;
     *(u32 *)(SCRATCHPAD_BASE + 0x280) = 0xC;
     *(u32 *)(SCRATCHPAD_BASE + 0x158) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x018) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x018) = one;
     *(u32 *)(SCRATCHPAD_BASE + 0x03C) = 5;
     *(u32 *)(SCRATCHPAD_BASE + 0x138) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x15C) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x258) = 1;
-    *(u32 *)(SCRATCHPAD_BASE + 0x01C) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x258) = one;
+    *(u32 *)(SCRATCHPAD_BASE + 0x01C) = one;
     *(u32 *)(SCRATCHPAD_BASE + 0x040) = 5;
-    *(u32 *)(SCRATCHPAD_BASE + 0x13C) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x13C) = one;
     *(u32 *)(SCRATCHPAD_BASE + 0x160) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x25C) = 1;
-    *(u32 *)(SCRATCHPAD_BASE + 0x020) = 1;
+    *(u32 *)(SCRATCHPAD_BASE + 0x25C) = one;
+    *(u32 *)(SCRATCHPAD_BASE + 0x020) = one;
     *(u32 *)(SCRATCHPAD_BASE + 0x044) = 5;
     *(u32 *)(SCRATCHPAD_BASE + 0x140) = 0;
     *(u32 *)(SCRATCHPAD_BASE + 0x164) = 0;
-    *(u32 *)(SCRATCHPAD_BASE + 0x260) = 2;
+    *(u32 *)(SCRATCHPAD_BASE + 0x260) = two;
     *(u32 *)(SCRATCHPAD_BASE + 0x284) = 0xD;
     absA3 = angleRaw;
     if (angleRaw < 0) {
@@ -2102,8 +2124,10 @@ void func_800474A0(void) {
     if (c8val != 0) {
         D_800A3468 = 0;
         D_800A3474 = 0;
-        D_800A3460 = 0;
-        D_800A3470 = 0;
+        do {
+            D_800A3460 = 0;
+            D_800A3470 = 0;
+        } while (0);
         loopIdx = 0;
     } else {
         if (D_800A345C < 0xA) {
@@ -2126,8 +2150,10 @@ void func_800474A0(void) {
         } else if (D_800A345C != 0) {
             count = --D_800A345C;
         } else {
-            count = 0;
-            D_800A345C = count;
+            register s8 zeroValue asm("$2");
+
+            asm("move %0,$0\n\tsb %0,%1" : "=r"(zeroValue), "=m"(D_800A345C));
+            count = zeroValue;
         }
         if (count >= 0xA) {
             D_800A346C = 0;
@@ -2154,21 +2180,44 @@ void func_800474A0(void) {
         loopIdx = 0;
     }
 loopPrep:
-    sp98v = (absA3 << 16) >> 17;
+    halfAngle = (absA3 << 16) >> 17;
+    /* shortcut: pin the half-angle home at sp+0x98 until pure C matches. */
+    asm volatile("sw %0,32+%1"
+                 :
+                 : "r"(halfAngle), "m"(spillSlots[0])
+                 : "memory");
     angA3 = (absA3 << 16) >> 16;
     do {
-        if (loopIdx != 0) {
-            if (D_800A345C != 0) {
-                multTmp = D_800A3480 * 4;
-                rot[0] =
-                    D_80099254[(s16)loopIdx * 3] - sp98v + D_800A345C * multTmp;
-                scratchW2 = D_800A345C * (0x40 - D_800A3480 * 2);
-                rot[1] = D_80099256[(s16)loopIdx * 3];
-                D_800A2FF0 = D_800A3480 - D_800A3480 * 16;
-                rot[2] = D_80099258[(s16)loopIdx * 3] - scratchW2;
-                rv1 = (u8 *)D_800A2FF0Absolute;
-                asm("" : "=r"(rv1) : "0"(rv1));
-                RotMatrix((SVECTOR *)(rv1 - 4), (MATRIX *)D_800A7530);
+        viewShift = loopIdx << 16;
+        asm("sra %0,%1,16" : "=r"(viewRaw) : "r"(viewShift));
+        if (viewRaw != 0) {
+            viewCount = D_800A345C;
+            if (viewCount != 0) {
+                tableOffset = viewRaw * 2;
+                /* Keep the multiply and load-delay order. */
+                asm volatile(
+                    "lb $6,D_800A3480\n\t"
+                    "sll $2,$6,2\n\t mult $7,$2\n\t"
+                    "addu $5,$5,$3\n\t sll $5,$5,1\n\t"
+                    "lui $at,%%hi(D_80099254)\n\t addu $at,$at,$5\n\t lhu $3,%%lo(D_80099254)($at)\n\t"
+                    "lw $8,152($sp)\n\tsubu $3,$3,$8\n\t"
+                    "sll $4,$6,1\n\t ori $2,$0,64\n\t"
+                    "mflo $9\n\t subu $2,$2,$4\n\t addu $3,$3,$9\n\t"
+                    "mult $7,$2\n\t sh $3,%4\n\t"
+                    "lui $at,%%hi(D_80099256)\n\t addu $at,$at,$5\n\t lhu $2,%%lo(D_80099256)($at)\n\t"
+                    "la $10,D_800A2FF0Absolute\n\t addiu $4,$10,-4\n\t"
+                    "sh $2,%5\n\t"
+                    "lui $at,%%hi(D_80099258)\n\t addu $at,$at,$5\n\t lhu $3,%%lo(D_80099258)($at)\n\t"
+                    "la $5,D_800A7530\n\t"
+                    "sll $2,$6,4\n\t subu $6,$6,$2\n\t"
+                    "sh $6,D_800A2FF0\n\t mflo $8\n\t"
+                    : "=r"(viewRaw), "=r"(rotArg), "=r"(matArg), "=r"(product1),
+                      "=m"(rot[0]), "=m"(rot[1])
+                    : "0"(viewRaw), "r"(tableOffset), "r"(viewCount),
+                      "m"(spillSlots[0])
+                    : "$2", "$6", "$9", "$10", "memory");
+                rot[2] = viewRaw - product1;
+                RotMatrix(rotArg, matArg);
                 goto afterRot;
             }
         } else {
@@ -2199,7 +2248,9 @@ loopPrep:
                 goto afterRot;
             }
         }
-        rot[0] = D_80099254[(s16)loopIdx * 3] - sp98v;
+        multTmp = D_80099254[(s16)loopIdx * 3];
+        asm("lw %0,152($sp)" : "=r"(tempT2) : "m"(spillSlots[0]) : "memory");
+        rot[0] = multTmp - tempT2;
         rot[1] = D_80099256[(s16)loopIdx * 3];
         angC = D_800A3480;
         D_800A2FF0 = angC - angC * 16;
@@ -2219,7 +2270,8 @@ loopPrep:
         }
         goto vecSetup;
     doSub:
-        rot[0] = rot[0] - sp98v;
+        asm("lw %0,152($sp)" : "=r"(tempT1) : "m"(spillSlots[0]));
+        rot[0] = rot[0] - tempT1;
     vecSetup:
         vec.vx = 0x1000 - rot[0];
         vec.vy = 0x1000 - rot[1];
@@ -2246,14 +2298,21 @@ loopPrep:
                     D_800A3464 = s2v - D_800A3460 * 36;
                 }
             }
-            vec.vx =
-                0x1000 -
-                (s16)D_800A3464 *
-                    (scratchW = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4)) *
-                    (scratchW & 1);
-            scratchW2 = *(u32 *)(SCRATCHPAD_BASE + (s16)segIdx * 4);
-            if ((scratchW2 & 1) == 0) {
-                vyVal = ((s16)D_800A3464 >> 3) * scratchW2 * fpVal;
+            /* Keep the two scratchpad reads and multiply temporaries. */
+            asm volatile("lhu $2,D_800A3464\n\t"
+                         "sll $4,%3,16\n\tsra $4,$4,14\n\t"
+                         "lui $10,0x1f80\n\taddu $4,$4,$10\n\t"
+                         "lw $3,0($4)\n\tsll $5,$2,16\n\tsra $2,$5,16\n\t"
+                         "mult $2,$3\n\tmflo $8\n\tandi $3,$3,1\n\tnop\n\t"
+                         "mult $8,$3\n\tori $2,$0,4096\n\tmflo $9\n\t"
+                         "subu $2,$2,$9\n\tsh $2,%2\n\tlw $4,0($4)"
+                         : "=r"(vxScratch), "=r"(scaledAngle), "=m"(vec.vx)
+                         : "r"(segIdx)
+                         : "$2", "$3", "$8", "$9", "$10", "memory");
+            if ((vxScratch & 1) == 0) {
+                vyVal = scaledAngle >> 19;
+                vyProduct = vyVal * vxScratch;
+                vyVal = vyProduct * fpVal;
             } else {
                 vyVal = 0;
             }
@@ -2267,18 +2326,20 @@ loopPrep:
             MulMatrix2(&mat1, &mat2);
             SetRotMatrix(&mat2);
             if ((s16)segIdx != 0) {
-                mat1.t[0] = ((
-                    s16 *)D_800A46A0)[(padScratch[(s16)segIdx] * 20 +
-                                       unkScratch[(s16)segIdx] * 336 + s4Off) /
-                                      2];
-                mat1.t[1] = ((
-                    s16 *)D_800A46A2)[(padScratch[(s16)segIdx] * 20 +
-                                       unkScratch[(s16)segIdx] * 336 + s4Off) /
-                                      2];
-                mat1.t[2] = ((
-                    s16 *)D_800A46A4)[(padScratch[(s16)segIdx] * 20 +
-                                       unkScratch[(s16)segIdx] * 336 + s4Off) /
-                                      2];
+                transIndex = (s16)segIdx * 4;
+                asm("lw %0,%2\n\t lw %1,%3"
+                    : "=r"(padScratch), "=r"(unkScratch)
+                    : "m"(spillSlots[0]), "m"(spillSlots[2]));
+                asm("addu %0,%1,%2"
+                    : "=r"(padRow)
+                    : "r"(transIndex), "r"(padScratch));
+                transIndex += (s32)unkScratch;
+                mat1.t[0] = ((s16 *)D_800A46A0)
+                    [(padRow[0] * 20 + *(u32 *)transIndex * 336 + s4Off) / 2];
+                mat1.t[1] = ((s16 *)D_800A46A2)
+                    [(padRow[0] * 20 + *(u32 *)transIndex * 336 + s4Off) / 2];
+                mat1.t[2] = ((s16 *)D_800A46A4)
+                    [(padRow[0] * 20 + *(u32 *)transIndex * 336 + s4Off) / 2];
             } else {
                 mat1.t[2] = 0;
                 mat1.t[1] = 0;
@@ -2296,7 +2357,7 @@ loopPrep:
                     vec.vx = *(u32 *)(rec + 8);
                     vec.vy = *(u32 *)(rec + 0xC);
                     vec.vz = *(u32 *)(rec + 0x10);
-                    RotTrans(&vec, &out, &gteFlag);
+                    RotTrans(&vec, &out, gteFlag);
                     *(u16 *)rec = out.vx;
                     *(u16 *)(rec + 2) = out.vy;
                 } while (0);
@@ -2319,7 +2380,7 @@ loopPrep:
                     } else {
                         vec.vz = *(u32 *)(rec + 0x10);
                     }
-                    RotTrans(&vec, &out, &gteFlag);
+                    RotTrans(&vec, &out, gteFlag);
                     *(u16 *)rec = out.vx;
                     *(u16 *)(rec + 2) = out.vy;
                 } while (0);
@@ -2350,8 +2411,13 @@ loopPrep:
             otBaseW = D_800A39C8[0];
             primNext = prim + 0x10;
             do {
-                verts = (s32 **)(node + 0x18);
-                gte_ldv3(verts[0], verts[1], verts[2]);
+                verts = (SVECTOR **)(node + 0x18);
+                asm volatile("lw %0,0(%3)\n\tlw %1,4(%3)\n\tlw %2,8(%3)"
+                             : "=r"(tempT2), "=r"(tempT0), "=r"(tempT1)
+                             : "r"(verts)
+                             : "memory");
+                gte_ldv3((SVECTOR *)tempT2, (SVECTOR *)tempT0,
+                         (SVECTOR *)tempT1);
                 gte_rtpt();
                 gte_avsz3();
                 *(u32 *)(primNext - 0xC) = *(u32 *)(node + 4);
@@ -2372,9 +2438,6 @@ loopPrep:
         loopIdx += 1;
     } while (loopIdx < 2);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_800474A0);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80048118);
 
