@@ -37,3 +37,9 @@
 -#define BRANCH_COST \
 -  ((mips_cpu == PROCESSOR_R4000 || mips_cpu == PROCESSOR_R6000) ? 2 : 1)
 +#define BRANCH_COST 1
+@@ -2965 +2964,4 @@
+-    (COST) = 0; /* Anti or output dependence.  */
++    (COST) = 0; /* Anti or output dependence.  */			\
++  else if (get_attr_type (INSN) == TYPE_HILO				\
++	   && get_attr_type (DEP_INSN) == TYPE_IMUL)			\
++    (COST) = 12; /* Measured PSX schedule: mflo/mfhi after mult.  */

@@ -60,6 +60,19 @@ def preprocess_lines(self):
             continue
         if match and 0 < int(match.group(2)) <= self.sdata_limit:
             self.sdata_entries.setdefault(match.group(1), int(match.group(2)))
+    # ASPSX loads and stores small data through $gp, but its `la` always
+    # expands to lui/addiu (retail has no `addiu rX,$gp,...`). GNU as -G8
+    # would use $gp for `la` of a small extern, so expand it here.
+    lines = []
+    for line in self.lines:
+        match = re.match(r"(\s*)la\s+(\$\w+),\s*(([A-Za-z_.][\w.]*)([+-]\d+)?)\s*$", line)
+        if match and match.group(4) in self.sdata_entries:
+            ind, reg, operand = match.group(1), match.group(2), match.group(3)
+            lines.append(f"{ind}lui\t{reg},%hi({operand})")
+            lines.append(f"{ind}addiu\t{reg},{reg},%lo({operand})")
+        else:
+            lines.append(line)
+    self.lines = lines
 
 
 MaspsxProcessor.preprocess_lines = preprocess_lines

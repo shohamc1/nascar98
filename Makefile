@@ -41,7 +41,8 @@ OBJCOPY := $(CROSS)objcopy
 
 # Compiler and assembler versions, decided by matching. See AGENTS.md.
 # 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-nascar98.patch: load
-# latency 4, high-part multiply latency 12, and an unfused R4000 multiply.
+# latency 4, high-part multiply latency 12, a 12-cycle mult-to-mflo/mfhi
+# edge, and an unfused R4000 multiply.
 # See "High-part multiply scheduling" in kb/psx/toolchain.md.
 CC_VER    ?= 2.7.2-psx-nascar98
 ASPSX_VER ?= 2.34
@@ -118,8 +119,6 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2EA4Absolute=D_800A2EA4 \
             --defsym=D_800A2EC8Small=D_800A2EC8 \
             --defsym=D_800A2EC8Absolute=D_800A2EC8 \
-            --defsym=D_800A2FF0Small=D_800A2FF0 \
-            --defsym=D_800A2FF0Absolute=D_800A2FF0 \
             --defsym=D_800A3A54Small=D_800A3A54 \
             --defsym=D_800A3A54Absolute=D_800A3A54 \
             --defsym=gOrderingTableBankSmall=gOrderingTableBank \
@@ -373,6 +372,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=gOrderingTableBank.NON_MATCHING=gOrderingTableBank \
             --defsym=func_800A2CE0=D_800A2CE0 \
             --defsym=D_800A3384=D_800A3380+4 \
+            --defsym=D_800A2FEC=D_800A2FE8+4 \
             --defsym=D_800A338C=D_800A3388+4
 
 # SDK C matches with R3000 scheduling. Game flags stay above. The Psy-Q
