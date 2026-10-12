@@ -2141,7 +2141,78 @@ void func_8005E5BC(s32 unused, s32 x, s16 y, s32 flag) {
     *(s32 *)(entry + 0x20) = fieldValue;
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_8005E644);
+extern u8 D_8009AF84[];
+extern s32 D_800A3814[];
+extern s32 D_800A3814B[] asm("D_800A3814");
+extern s32 D_800A3814C[] asm("D_800A3814");
+extern Df50Fields *D_800A3788;
+extern u8 D_800A35EC;
+extern u8 D_800A37BC;
+extern u8 *D_800A3678;
+extern s32 D_800A3654;
+extern s32 D_800A37D0[];
+extern char D_800BA058[], D_800A333C[];
+extern char D_800BA058B[] asm("D_800BA058");
+extern char D_800BA058C[] asm("D_800BA058");
+extern u8 *func_80012EA8(s32, u8 *);
+extern char *strcat(char *, char *);
+void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    u8 count;
+    u8 *entry;
+    u8 count2;
+    u8 *subBase;
+    u8 *sub;
+    u8 *local;
+    s32 value;
+    u8 *entry2;
+
+    count = D_800A35EC;
+    D_800A35EC = count + 1;
+    entry = D_800A3678 + count * 36;
+    entry[4] = 0;
+    entry[3] = 0;
+    entry[2] = 0;
+    count2 = D_800A37BC;
+    *(s16 *)(entry + 0xA) = arg1;
+    *(s16 *)(entry + 6) = arg1;
+    subBase = (u8 *)D_800A3654;
+    *(s16 *)(entry + 0x12) = 0;
+    *(s16 *)(entry + 0x14) = 0;
+    *(s32 *)(entry + 0x1C) = 0;
+    *(s16 *)(entry + 0x1A) = 0;
+    *(s16 *)(entry + 0) = 0;
+    *(s16 *)(entry + 0xC) = 0xC8;
+    *(s16 *)(entry + 8) = 0xC8;
+    *(s16 *)(entry + 0xE) = 0;
+    *(s16 *)(entry + 0x10) = 0;
+    *(s16 *)(entry + 0x1A) = 0;
+    D_800A37BC = count2 + 1;
+    sub = subBase + count2 * 12;
+    *(u8 **)(entry + 0x20) = sub;
+    sub[0] = 0;
+    sub[3] = 0;
+    *(s32 *)(sub + 4) = 0;
+    local = *(u8 **)(entry + 0x20);
+    D_800A3788 = (Df50Fields *)entry;
+    local[1] = 2;
+    local[2] = 2;
+    local[3] = 1;
+    value = *(s16 *)&D_8009AF84[(arg0 & 0xFF) * 2] * D_800A37D0[0] / 100;
+    D_800A3814[0] = value;
+    if (value < 3) {
+        D_800A3814B[0] = 3;
+    }
+    func_80012EA8(D_800A3814C[0], D_800BA058);
+    strcat(D_800BA058B, D_800A333C);
+    entry2 = (u8 *)D_800A3788;
+    *(char **)(local + 8) = D_800BA058C;
+    *(u16 *)(entry2 + 6) = *(u16 *)(entry2 + 6) + 0x71;
+    *(s16 *)(entry2 + 0xA) = 0x71;
+    if ((arg3 & 0xFF) != 0) {
+        *(s16 *)(entry2 + 0xA) = 0xEE;
+    }
+    *(s16 *)((u8 *)D_800A3788 + 0xE) = arg2;
+}
 
 void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_8009A31C[];
