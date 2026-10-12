@@ -184,6 +184,79 @@ def make_command(target: str, touched: str, tool: str) -> str:
     return next(line for line in out.splitlines() if tool in line)
 
 
+def header_deps(src: pathlib.Path, recipe: str) -> list[pathlib.Path]:
+    """Every header src reaches through #include, searched as cpp does.
+
+    The Makefile tracks no header dependencies (only the .c, the linker
+    script, and fixed_addrs.h), so an edited header leaves a stale object
+    that `make` happily reuses. The -I paths come from the compile recipe.
+    """
+    dirs = [pathlib.Path(t[2:]) for t in recipe.split() if t.startswith("-I")]
+    re_quoted = re.compile(r'^\s*#\s*include\s*"([^"]+)"', re.M)
+    re_angle = re.compile(r'^\s*#\s*include\s*<([^>]+)>', re.M)
+
+    def resolve(name: str, includer: pathlib.Path, quoted: bool):
+        roots = ([includer.parent] if quoted else []) + dirs
+        for root in roots:
+            cand = root / name
+            if cand.is_file():
+                return cand.resolve()
+        return None
+
+    deps, todo, seen = [], [src.resolve()], set()
+    while todo:
+        path = todo.pop()
+        if path in seen or not path.is_file():
+            continue
+        seen.add(path)
+        if path != src.resolve():
+            deps.append(path)
+        text = path.read_text(errors="replace")
+        for match in re_quoted.finditer(text):
+            hit = resolve(match[1], path, True)
+            if hit:
+                todo.append(hit)
+        for match in re_angle.finditer(text):
+            hit = resolve(match[1], path, False)
+            if hit:
+                todo.append(hit)
+    return deps
+
+
+def asm_deps(obj: pathlib.Path) -> list[pathlib.Path]:
+    """The .s files the object's INCLUDE_ASM stubs pulled in, from the
+    build's own .asmproc.d depfile (make never includes it)."""
+    dep = obj.parent / (obj.name[:-len(".c.o")] + ".asmproc.d")
+    if not dep.is_file():
+        return []
+    tokens = dep.read_text().replace("\\\n", " ").split()
+    return [pathlib.Path(t) for t in tokens[1:] if t.endswith(".s")]
+
+
+def invalidate_stale_objects() -> list[str]:
+    """Remove build/src/<tu>.c.o files older than their inputs, so the
+    next diff/permute/near cannot measure a stale build. Returns the
+    removed objects; prints one line per removal."""
+    removed = []
+    for src in sorted(pathlib.Path("src").rglob("*.c")):
+        obj = pathlib.Path(f"build/{src}.o")
+        if not obj.is_file():
+            continue
+        obj_time = obj.stat().st_mtime
+        deps = [src, *asm_deps(obj)]
+        try:
+            deps += header_deps(src, make_command(obj, src, "cc1"))
+        except (subprocess.CalledProcessError, StopIteration):
+            pass  # no recipe readable; the source mtime check still applies
+        for dep in deps:
+            if dep.is_file() and dep.stat().st_mtime > obj_time:
+                obj.unlink()
+                print(f"stale object: {obj} older than {dep} — removed")
+                removed.append(str(obj))
+                break
+    return removed
+
+
 def score_draft(src: pathlib.Path, name: str, line: int, cmds: dict,
                 targets: dict) -> tuple:
     """Build the EXE with one draft on; return (rank key, row)."""
@@ -241,6 +314,8 @@ def score_draft(src: pathlib.Path, name: str, line: int, cmds: dict,
 
 
 def near(args: argparse.Namespace) -> None:
+    if invalidate_stale_objects():
+        subprocess.run(["make", EXE], check=True)
     syms = subprocess.run(["mipsel-linux-gnu-nm", "-S", ELF],
                           capture_output=True, text=True, check=True).stdout
     targets = {

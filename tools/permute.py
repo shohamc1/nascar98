@@ -22,7 +22,7 @@ import signal
 import subprocess
 import sys
 
-from funcs import make_command, parked_drafts
+from funcs import invalidate_stale_objects, make_command, parked_drafts
 
 PERMUTER = pathlib.Path("tools/decomp-permuter")
 sys.path.insert(0, str(PERMUTER))
@@ -35,6 +35,9 @@ def main() -> None:
     parser.add_argument("--minutes", type=float, default=10,
                         help="stop the permuter after this long")
     args, permuter_args = parser.parse_known_args()
+
+    if invalidate_stale_objects():
+        subprocess.run(["make", "build/SLUS_005.21"], check=True)
 
     found = [
         (src, line)
