@@ -37,9 +37,38 @@
 -#define BRANCH_COST \
 -  ((mips_cpu == PROCESSOR_R4000 || mips_cpu == PROCESSOR_R6000) ? 2 : 1)
 +#define BRANCH_COST 1
-@@ -2965 +2964,4 @@
+@@ -2962,0 +2962 @@
++extern int mips_store_to_lb_p ();
+@@ -2965 +2965,7 @@
 -    (COST) = 0; /* Anti or output dependence.  */
 +    (COST) = 0; /* Anti or output dependence.  */			\
 +  else if (get_attr_type (INSN) == TYPE_HILO				\
 +	   && get_attr_type (DEP_INSN) == TYPE_IMUL)			\
-+    (COST) = 12; /* Measured PSX schedule: mflo/mfhi after mult.  */
++    (COST) = 12; /* Measured PSX schedule: mflo/mfhi after mult.  */	\
++  else if (! reload_completed						\
++	   && mips_store_to_lb_p (INSN, DEP_INSN))			\
++    (COST) = 3; /* Measured PSX schedule: lb after a store.  */
+--- a/config/mips/mips.c
++++ b/config/mips/mips.c
+@@ -5629,0 +5630,21 @@
++
++
++/* Nonzero if INSN is a sign-extending byte load (lb) that depends on the
++   store DEP_INSN.  Used by ADJUST_COST for the measured PSX schedule.  */
++
++int
++mips_store_to_lb_p (insn, dep_insn)
++     rtx insn, dep_insn;
++{
++  rtx pat = PATTERN (insn), src;
++
++  if (GET_CODE (pat) != SET)
++    return 0;
++  src = SET_SRC (pat);
++  if (GET_CODE (src) != SIGN_EXTEND
++      || GET_CODE (XEXP (src, 0)) != MEM
++      || GET_MODE (XEXP (src, 0)) != QImode)
++    return 0;
++  return recog_memoized (dep_insn) >= 0
++	 && get_attr_type (dep_insn) == TYPE_STORE;
++}

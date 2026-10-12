@@ -1101,86 +1101,9 @@ void CameraUpdateForCar(RaceObject *cam, RaceObject *car, s32 mode) {
                 count = 0x1E;
                 car->cameraMode = 1;
             }
-            {
-                /* Pairs keep the asm within GCC's ten-operand limit. */
-                s64 scratchV, scratchA, scratchB;
-                s64 scratchHigh;
-                s64 product;
-                /* shortcut: Pin the /30 schedule until pure C matches. */
-                asm volatile(".set\tnoreorder\n\t"
-                             ".set noat\n\t"
-                             "mult %5, %8\n\t"
-                             "mflo %M2\n\t"
-                             "lui %M1, 0x8888\n\t"
-                             "ori %M1, %M1, 0x8889\n\t"
-                             "mult %M2, %M1\n\t"
-                             "mfhi %L2\n\t"
-                             "nop\n\t"
-                             "nop\n\t"
-                             "mult %6, %8\n\t"
-                             "mflo %L1\n\t"
-                             "nop\n\t"
-                             "nop\n\t"
-                             "mult %L1, %M1\n\t"
-                             "lb %L3, 0x20B(%9)\n\t"
-                             "nop\n\t"
-                             "sll %M3, %L3, 1\n\t"
-                             "addu %M3, %M3, %L3\n\t"
-                             "sll %M3, %M3, 2\n\t"
-                             "addu %L3, %L2, %M2\n\t"
-                             "lui $1, %%hi(D_800B9954)\n\t"
-                             "addu $1, $1, %M3\n\t"
-                             "lw %L2, %%lo(D_800B9954)($1)\n\t"
-                             "sra %L3, %L3, 4\n\t"
-                             "mfhi %L0\n\t"
-                             "sra %M2, %M2, 31\n\t"
-                             "subu %L3, %L3, %M2\n\t"
-                             "mult %7, %8\n\t"
-                             "subu %L2, %L2, %L3\n\t"
-                             "lui $1, %%hi(D_800B9954)\n\t"
-                             "addu $1, $1, %M3\n\t"
-                             "sw %L2, %%lo(D_800B9954)($1)\n\t"
-                             "lb %L3, 0x20B(%9)\n\t"
-                             "nop\n\t"
-                             "sll %L2, %L3, 1\n\t"
-                             "addu %L2, %L2, %L3\n\t"
-                             "sll %L2, %L2, 2\n\t"
-                             "lui $1, %%hi(D_800B9958)\n\t"
-                             "addu $1, $1, %L2\n\t"
-                             "lw %M3, %%lo(D_800B9958)($1)\n\t"
-                             "addu %L3, %L0, %L1\n\t"
-                             "mflo %M2\n\t"
-                             "sra %L3, %L3, 4\n\t"
-                             "sra %L1, %L1, 31\n\t"
-                             "mult %M2, %M1\n\t"
-                             "subu %L3, %L3, %L1\n\t"
-                             "subu %M3, %M3, %L3\n\t"
-                             "lui $1, %%hi(D_800B9958)\n\t"
-                             "addu $1, $1, %L2\n\t"
-                             "sw %M3, %%lo(D_800B9958)($1)\n\t"
-                             "lb %L3, 0x20B(%9)\n\t"
-                             "nop\n\t"
-                             "sll %L2, %L3, 1\n\t"
-                             "addu %L2, %L2, %L3\n\t"
-                             "sll %L2, %L2, 2\n\t"
-                             "lui $1, %%hi(D_800B995C)\n\t"
-                             "addu $1, $1, %L2\n\t"
-                             "lw %M3, %%lo(D_800B995C)($1)\n\t"
-                             "mfhi %L0\n\t"
-                             "addu %L3, %L0, %M2\n\t"
-                             "sra %L3, %L3, 4\n\t"
-                             "sra %M2, %M2, 31\n\t"
-                             "subu %L3, %L3, %M2\n\t"
-                             "subu %M3, %M3, %L3\n\t"
-                             "lui $1, %%hi(D_800B995C)\n\t"
-                             "addu $1, $1, %L2\n\t"
-                             "sw %M3, %%lo(D_800B995C)($1)\n\t"
-                             ".set at\n\t"
-                             : "=&r"(scratchHigh), "=&r"(scratchB),
-                               "=&r"(scratchA), "=&r"(scratchV), "=x"(product)
-                             : "r"(dx), "r"(dy), "r"(dz), "r"(count), "r"(car)
-                             : "memory");
-            }
+            D_800B9954nm[car->slot].x -= dx * count / 30;
+            D_800B9954nm[car->slot].y -= dy * count / 30;
+            D_800B9954nm[car->slot].z -= dz * count / 30;
             car->cameraAngle = car->heading;
         }
         cam->pos.x = D_800B9954nm[car->slot].x;
