@@ -5117,7 +5117,62 @@ void func_80063AE0(s32 arg0, s32 arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80063C34);
+void func_80063C34(s32 arg0, s32 arg1) {
+    RECT rect;
+    void *work;
+    void *small;
+    s32 y1;
+    s32 x1;
+    s32 x3;
+    s32 y3;
+
+    if (arg0 >= 2 && arg1 >= 2) {
+        work = HeapAlloc(0x2000);
+        small = HeapAlloc(0x20);
+        if (work != NULL && small != NULL) {
+            x1 = (arg0 % 4) * 0x40 + 0x300;
+            y1 = (arg0 / 4) * 0x40 + 0x40;
+            rect.x = x1;
+            rect.y = y1;
+            rect.h = 0x40;
+            rect.w = 0x40;
+            StoreImage(&rect, (u_long *)work);
+            rect.x = (arg0 % 16) * 0x10 + 0x300;
+            rect.y = 0x3F - arg0 / 16;
+            rect.h = 1;
+            rect.w = 0x10;
+            StoreImage(&rect, (u_long *)small);
+            DrawSync(0);
+            x3 = (arg1 % 4) * 0x40 + 0x300; /* anchor: dropping this dead
+             * store changes y3's register */
+            y3 = (arg1 / 4) * 0x40 + 0x40;
+            rect.x = (arg1 % 4) * 0x40 + 0x300;
+            rect.y = y3;
+            rect.h = 0x40;
+            rect.w = 0x40;
+            MoveImage(&rect, x1, y1);
+            rect.x = (arg1 % 16) * 0x10 + 0x300;
+            rect.y = 0x3F - arg1 / 16;
+            rect.h = 1;
+            rect.w = 0x10;
+            MoveImage(&rect, (arg0 % 16) * 0x10 + 0x300, 0x3F - arg0 / 16);
+            DrawSync(0);
+            rect.x = (arg1 % 4) * 0x40 + 0x300;
+            rect.y = y3;
+            rect.h = 0x40;
+            rect.w = 0x40;
+            LoadImage(&rect, (u_long *)work);
+            rect.x = (arg1 % 16) * 0x10 + 0x300;
+            rect.y = 0x3F - arg1 / 16;
+            rect.h = 1;
+            rect.w = 0x10;
+            LoadImage(&rect, (u_long *)small);
+            DrawSync(0);
+            HeapFree(work);
+            HeapFree(small);
+        }
+    }
+}
 
 extern s32 D_800A2E84Absolute[];
 extern u8 *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
