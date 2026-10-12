@@ -1549,7 +1549,7 @@ INCLUDE_ASM("asm/nonmatchings/input", func_80041F54);
 
 void func_800420D8(u32 *input, u32 flags, u16 *output) {
     u8 *mode;
-    register u8 *current asm("t5");
+    u8 *current;
     u8 *settingPtr;
     u32 data;
     u32 fields;

@@ -179,12 +179,12 @@ void func_80017E08(void) {
     s32 x0a;
     s32 x0b;
     s32 x1b;
-    register s32 offsetB asm("$22");
+    s32 offsetB;
     register s32 cB asm("$8");
-    register s32 y2 asm("$23");
+    s32 y2;
     s32 y0;
     register s32 yv asm("$5");
-    register s32 xv asm("$2");
+    s32 xv;
     u16 *table;
     u16 tv;
     s32 xbase;
@@ -326,7 +326,73 @@ void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Parked 2026-10-12: opcodes and order match retail, including the opening
+ * mult chain and the mult-to-mfhi window; only the s-register assignment
+ * differs (10 rows: retail has the seconds value in s0, the ':' constant in
+ * s1 and the text pointer in s2; ours has the text pointer in s0). The
+ * `seconds = scale;` copy in the loop is a permuter find (55 against 230). */
+extern void func_80050028Text(s8 *, s16, s16, s8);
+void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
+    s8 text[24];
+    s32 minutes;
+    s32 seconds;
+    s32 hundredths;
+    s32 len;
+    s16 *base;
+    s16 *width;
+    s8 *p;
+    s32 pen;
+
+    minutes = time / 1200;
+    seconds = time / 20 - minutes * 60;
+    hundredths = (time % 20) * 5;
+    text[0] = 0;
+    len = 0;
+    if (minutes < 10) {
+        len = 1;
+        text[0] = '0';
+        text[1] = 0;
+    }
+    func_80012EA8(minutes, (u8 *)text + len);
+    text[2] = ':';
+    text[3] = 0;
+    len = 3;
+    if (seconds < 10) {
+        len = 4;
+        text[3] = '0';
+        text[4] = 0;
+    }
+    func_80012EA8(seconds, (u8 *)text + len);
+    text[5] = ':';
+    text[6] = 0;
+    len = 6;
+    if (hundredths < 10) {
+        len = 7;
+        text[6] = '0';
+        text[7] = 0;
+    }
+    func_80012EA8(hundredths, (u8 *)text + len);
+    if (scale == 3) {
+        func_80050028Text(text, (s16)x, (s16)y, 0);
+        return;
+    }
+    pen = x;
+    p = text;
+    if (text[0] != 0) {
+        base = D_800A2D88;
+        width = base + scale;
+        do {
+            seconds = scale;
+            func_800180C0(*p, pen, y, seconds);
+            pen += *width;
+            p++;
+        } while (*p != 0);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_800183C0);
+#endif
 
 extern u8 D_8008CC9C[];
 extern u8 D_8008CCA8[];
@@ -447,7 +513,49 @@ void func_80018848(void *arg0, s32 arg1, s32 arg2) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_800188B0);
+void func_800188B0(s32 pos, u8 mode, s32 x, s32 y, s32 scale) {
+    s8 text[24];
+    s32 value;
+    s32 indent;
+    s32 i;
+
+    if (pos < 0) {
+        pos = 0;
+    }
+    if (mode == 1) {
+        value = ((pos >> 16) * 0x150) / 550;
+    } else {
+        value = ((pos >> 16) * 0xD2) / 550;
+    }
+    text[0] = (indent = 0);
+    if (value < 100) {
+        indent = 1;
+        text[0] = 32;
+        text[1] = 0;
+    }
+    if (value < 10) {
+        /* Both arms are identical on purpose: the test adds references to
+         * x and scale, which gives retail's s1/s2 allocation. */
+        if (scale || x) {
+            text[indent] = 32;
+            indent += 1;
+            text[indent] = 0;
+        } else {
+            text[indent] = 32;
+            indent += 1;
+            text[indent] = 0;
+        }
+    }
+    func_80012EA8(value, text + indent);
+    if (text[0] != 0) {
+        i = 0;
+        do {
+            func_800180C0(text[i], x, y, scale);
+            x += D_800A2D88[scale];
+            i++;
+        } while (text[i] != 0);
+    }
+}
 
 extern void func_800180C0(s8, s32, s32, s32);
 extern s16 D_800A2D88[];

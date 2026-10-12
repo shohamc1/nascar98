@@ -1058,8 +1058,8 @@ extern s32 D_80098348fp[] asm("D_80098348");
 
 s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     s32 total;
-    register s32 sectors asm("s1");
-    register s32 hnd asm("s3") = handle;
+    s32 sectors;
+    s32 hnd = handle;
     register s32 buf asm("s2");
     register s32 retries asm("s4");
     u8 result[0x10];
@@ -2068,7 +2068,7 @@ void func_8003EDA0(u8 *object) {
     s32 pace;
     s32 dist;
     s32 value;
-    register s32 delta asm("v1");
+    s32 delta;
     u8 adjustment;
 
     dist = D_800BE974[0] * D_800A2EA8[0] / D_800A2F88;

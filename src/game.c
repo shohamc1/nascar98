@@ -449,7 +449,7 @@ s32 func_80014398(s32 arg0) {
     s32 adjust;
     s32 scale;
     register s32 prod asm("v0");
-    register s32 magic asm("a3");
+    s32 magic;
     s32 sign;
     s32 magic3;
     s32 hi3;

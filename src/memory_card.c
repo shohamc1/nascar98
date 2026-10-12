@@ -2271,7 +2271,42 @@ s16 func_8005A84C(void) {
     return *(s16 *)(D_800A35AC + 8);
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005A8E0);
+s16 func_8005A8E0(s32 text) {
+    s32 total;
+    s32 idx;
+    s32 glyphCount;
+    s32 limit;
+    u8 ch;
+    s32 i;
+
+    glyphCount = *(u16 *)D_800A35A0;
+    i = 0;
+    total = 0;
+    if (*(u8 *)text != 0) {
+        limit = glyphCount + 0x20;
+        do {
+            ch = ((u8 *)text)[i];
+            idx = 0;
+            if (ch >= 0x20) {
+                if (ch < limit) {
+                    idx = ch - 0x20;
+                }
+            }
+            if (D_800A3534 == 2) {
+                total += *(s16 *)(D_800A35AC + idx * 10 + 6) * 3 / 4;
+            } else if (D_800A3534 == 4) {
+                total += *(s16 *)(D_800A35AC + idx * 10 + 6) * 9 / 10;
+            } else {
+                total += *(u16 *)(D_800A35AC + idx * 10 + 6);
+            }
+            if (D_800A3534 < 2) {
+                total -= 1;
+            }
+            i++;
+        } while (((u8 *)text)[i] != 0);
+    }
+    return total;
+}
 
 INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005A9F4);
 

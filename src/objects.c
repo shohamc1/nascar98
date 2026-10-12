@@ -532,7 +532,32 @@ void func_8001FD44(RaceObject *car) {
     D_800A3680[0] = 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8001FDD0);
+void func_8001FDD0(RaceObject *cam, RaceObject *car) {
+    u32 dist3;
+    u32 dist2;
+    s32 cosPitch;
+    s32 sinPitch;
+    s32 cosYaw;
+
+    func_8001EC38((s32 *)cam);
+    car->toCamera.x = car->pos.x - cam->pos.x;
+    car->toCamera.y = car->pos.y - cam->pos.y;
+    car->toCamera.z = car->pos.z - cam->pos.z;
+    func_8001ED84((s32 *)&car->toCamera);
+    dist3 = MathSqrt(car->toCamera.x * car->toCamera.x +
+                     car->toCamera.y * car->toCamera.y +
+                     car->toCamera.z * car->toCamera.z);
+    dist2 = MathSqrt(car->toCamera.x * car->toCamera.x +
+                     car->toCamera.y * car->toCamera.y);
+    cosPitch = MathFixedDivide(dist2, dist3);
+    sinPitch = MathFixedDivide(car->toCamera.z, dist3);
+    cosYaw = MathFixedDivide(car->toCamera.x, dist2);
+    func_8001F684(cosYaw, MathFixedDivide(car->toCamera.y, dist2), cosPitch,
+                  sinPitch);
+    func_8001F728((s32)&cam->rot[0]);
+    func_8001F728((s32)&cam->rot[1]);
+    func_8001F728((s32)&cam->rot[2]);
+}
 
 s16 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
@@ -4163,10 +4188,6 @@ typedef struct {
     s32 z;
 } Vector3;
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-10: right size (1552 bytes) and 2 words off. gcc 2.7.2
- * sched2 puts `lw v0,0x3c(sp)` before the first `mult s7,t1`; retail puts it
- * after. See the func_80031264 row in kb/psx/matching.md. */
 extern s32 D_800A2F2C;
 extern s32 D_800A397C[];
 void func_800319D4(u8 *, s32);
@@ -4317,9 +4338,6 @@ void func_80031264(u8 *object) {
     MatrixCombineState();
     func_8001F8C0((s32 *)object);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_80031264);
-#endif
 
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
@@ -6053,7 +6071,80 @@ void func_8003587C(s32 arg0) {
     ((s32 *)D_800A2E24Absolute)[70] = 0x82;
 }
 
+#ifdef NON_MATCHING
+/* Parked 2026-10-12: the opening mult chain, the MathSqrt and MathFixedDivide
+ * calls and the block order match retail (12 rows, 8 bytes short). Left: the
+ * `li v0,0x200` constants and the angle register in the four quadrant arms.
+ * `new_var = 0x200;` is a permuter find (315 against 855). The old note about
+ * a mult-window wall no longer applies to this shape. */
+extern s32 D_800A38A4;
+extern u8 D_800A2F48;
+s32 func_800358EC(s32 *vec) {
+    s32 len;
+    s32 x;
+    s32 y;
+    s32 ax;
+    s32 ay;
+    s32 angle;
+    int new_var;
+
+    len = MathSqrt(vec[0] * vec[0] + vec[1] * vec[1]);
+    D_800A38A4 = len;
+    D_800A2F48 = 0;
+    if (len < 5) {
+        D_800A2F48 = 1;
+        return 0;
+    }
+    if (vec[0] >= len) {
+        len = vec[0] + 1;
+    }
+    if (vec[1] >= len) {
+        len = vec[1] + 1;
+    }
+    x = MathFixedDivide(vec[0], len);
+    y = MathFixedDivide(vec[1], len);
+    if (y > 0x10000) {
+        y = 0xFFFF;
+    } else if (-y > 0x10000) {
+        y = -0x10001;
+    }
+    new_var = 0x200;
+    if (x >= 0 && y >= 0) {
+        if (x >= y) {
+            angle = ((u8 *)D_800A3668Absolute[0])[y >> 4];
+        } else {
+            angle = 0x100 - ((u8 *)D_800A3668Absolute[0])[x >> 4];
+        }
+    } else if (x < 0 && y >= 0) {
+        ax = -x;
+        if (ax >= y) {
+            angle = 0x200 - ((u8 *)D_800A3668Absolute[0])[y >> 4];
+        } else {
+            angle = ((u8 *)D_800A3668Absolute[0])[ax >> 4] + 0x100;
+        }
+    } else if (x >= 0 && y < 0) {
+        ay = -y;
+        if (x >= ay) {
+            angle = 0x200 - ((u8 *)D_800A3668Absolute[0])[ay >> 4];
+        } else {
+            angle = ((u8 *)D_800A3668Absolute[0])[x >> 4] + 0x100;
+        }
+        angle += 0x200;
+    } else {
+        ax = -x;
+        ay = -y;
+        if (ax >= ay) {
+            angle = ((u8 *)D_800A3668Absolute[0])[ay >> 4] + 0x200;
+        } else {
+            angle = 0x100 - ((u8 *)D_800A3668Absolute[0])[ax >> 4];
+            angle += new_var;
+        }
+    }
+    return angle & 0x3FF;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/objects", func_800358EC);
+#endif
 
 extern u16 D_80090F24[];
 extern u16 D_80091004[];

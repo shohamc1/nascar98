@@ -5290,12 +5290,9 @@ void func_800645A4(s32 arg0, s32 arg1) {
     *(s16 *)(prim + 0xE) = GetClut(0x100, 0x1E7 - idx);
     q = idx / 12;
     y = (q & 0xFF) * 0x48;
-    /* Keep the scaled row in the same register before its base add. */
-    asm("" : "=r"(y) : "0"(y));
     y += 0x140;
     q = idx - q * 12;
     q <<= 5;
-    asm("" : "=r"(y) : "0"(y));
     *(s16 *)(prim + 0x16) = GetTPage(1, 0, (q & 0x1F80) + 0x140, y);
     prim[0xC] = (idx & 3) << 6;
     prim[0xD] = y;
