@@ -3753,7 +3753,111 @@ void func_8006BD68(void) {
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006BF74);
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006C2D0);
+extern char *D_8009A31CStr[] asm("D_8009A31C.NON_MATCHING");
+extern s32 D_8009A4D8[];
+extern u8 D_800A3770;
+extern u8 *D_800A3908[];
+extern u8 *D_800A377C[];
+extern char D_800B0A2C[];
+extern u8 D_800A358C;
+extern u8 D_800A3968;
+extern char *strcpy(char *, const char *);
+void func_8006C668(s32 start, s32 arg1);
+
+/* Card-menu mode switch (D_800A39E4 == 0x28) or cursor step: arg0 nonzero
+ * steps the cursor, scrolling the row window when it reaches the edge. */
+void func_8006C2D0(s32 arg0) {
+    s32 i;
+    register u8 *node asm("a0");
+    u8 *entry;
+    u8 *s;
+    u8 *sentinel;
+    u8 *head;
+    u8 *cursor;
+    s32 row;
+    s32 row16;
+    s32 gear;
+    s32 mode;
+
+    if (D_800A39E4[0] == 0x28) {
+        node = D_800A3908[0];
+        for (i = 0; i < 2; i++) {
+            entry = *(u8 **)(node + 0x20);
+            *(u32 *)(entry + 8) = D_8009A4D8[i];
+            if (*(s16 *)(node + 0x1A) < 0) {
+                *(s16 *)(node + 0x1A) = -*(s16 *)(node + 0x1A);
+            }
+            node = *(u8 **)(node + 0x1C);
+        }
+        s = D_800A377C[0];
+        if (node != s) {
+            sentinel = s;
+            do {
+                if (*(s16 *)(node + 0x1A) > 0) {
+                    *(s16 *)(node + 0x1A) = -*(s16 *)(node + 0x1A);
+                }
+                node = *(u8 **)(node + 0x1C);
+            } while (node != sentinel);
+            s = D_800A377C[0];
+        }
+        *(u8 *)(s + 5) = 0;
+        D_800A358C = 0;
+    } else {
+        if ((arg0 & 0xFF) != 0) {
+            if (D_800A3968 < 0xF) {
+                strcpy(D_800A3968 * 0x10 + D_800B0A2C,
+                       D_8009A31CStr[D_800A305B[0]]);
+                for (i = D_800A3968 + 1; i < 0xF; i++) {
+                    row16 = i * 0x10;
+                    *(u8 *)(row16 + D_800B0A2C) = 0;
+                }
+            }
+            row = D_800A3968;
+        } else {
+            row = D_800A3968 - 1;
+        }
+        D_800A358C = row;
+    }
+
+    if (D_800A358C >= 0xF) {
+        D_800A358C = 0xE;
+    }
+    if ((arg0 & 0xFF) != 0 && D_800A39E4[0] != 0x28) {
+        if (D_800A358C >= 7) {
+            *(u8 *)(D_800A377C[0] + 5) = 6;
+        } else {
+            *(u8 *)(D_800A377C[0] + 5) = D_800A358C;
+        }
+        if (D_800A358C < 6) {
+            func_8006C668(0, D_800A358C);
+        } else {
+            func_8006C668((s8)(D_800A358C - 6), D_800A358C);
+        }
+    } else {
+        *(u8 *)(D_800A377C[0] + 5) = 0;
+        D_800A358C = 0;
+        if (D_800A39E4[0] != 0x28) {
+            func_8006C668(0, D_800A3968 - 1);
+        }
+    }
+
+    cursor = D_800A377C[0];
+    gear = *(s8 *)(cursor + 5);
+    mode = D_800A39E4[0];
+    *(s16 *)(cursor + 8) = gear * 9 + 0x54;
+    if (mode != 0x28) {
+        head = D_800A3908[0];
+        if (head != cursor) {
+            do {
+                if (*(s16 *)(head + 0x1A) < 0) {
+                    *(s16 *)(head + 0x1A) = -*(s16 *)(head + 0x1A);
+                }
+                head = *(u8 **)(head + 0x1C);
+            } while (head != cursor);
+        }
+    }
+    D_800A3770 = 0;
+}
 
 typedef struct ColorNode {
     u8 unk0[5];
