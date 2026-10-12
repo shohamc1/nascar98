@@ -70,11 +70,24 @@ These are the paths you work with:
    Treat the output as notes. Skip this step for a parked draft.
 3. Replace the function's `INCLUDE_ASM` line in its `src/` file with your C.
 4. Diff it: `.venv/bin/python tools/asm-differ/diff.py --no-pager --format plain -m FUNC`.
+   `.venv/bin/python tools/diagnose.py FUNC` does that diff for you and
+   prints one verdict — MATCH, SIZE_DELTA, GP_LAYOUT_SHIFT,
+   REGISTER_PERMUTATION, INSTRUCTION_ORDER, or STRUCTURAL — with
+   evidence and the next lever. Fix SIZE_DELTA and GP_LAYOUT_SHIFT (a
+   size change somewhere moved `_gp`) before reading any other row; the
+   rows below those verdicts are noise. It also warns when the function
+   is parked, since that diff is the retail stub against itself.
    When a diff line resists the obvious C, find its symptom in
    `kb/psx/matching.md` before you try your own ideas.
 5. Run `make format`, then `make check`. On `MATCH`, run `make expected`
    so objdiff compares against the new state. `make check` fails on any
    cpp or cc1 error, not just on a byte difference.
+
+`diagnose.py`, `funcs.py near`, and `permute.py` start by removing any
+stale `build/src/<tu>.c.o` — one older than its source, its headers, or
+the `.s` files its INCLUDE_ASM stubs include. `make` tracks none of
+those (and its whole-second mtimes miss same-second edits), so a diff
+run by hand right after an edit can read a stale object.
 
 To see progress, run `make report`. It prints matched code, functions, and
 initialised data (`.data` and `.sdata`; `.bss` has no bytes to match), and
