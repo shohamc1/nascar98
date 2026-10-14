@@ -2876,7 +2876,24 @@ s32 get_ofs(s32 x, s32 y) {
     return offsetY | offsetX;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", get_tw);
+/* SPDX-License-Identifier: MIT */
+
+u32 get_tw(RECT *tw) {
+    /* Keep these values together to preserve the SDK stack layout. */
+    struct {
+        u32 xOffset, yOffset, widthMask, heightMask;
+    } window;
+
+    if (tw != 0) {
+        window.xOffset = (tw->x & 0xFF) >> 3;
+        window.widthMask = (-tw->w & 0xFF) >> 3;
+        window.yOffset = (tw->y & 0xFF) >> 3;
+        window.heightMask = (-tw->h & 0xFF) >> 3;
+        return (window.yOffset << 15) | 0xE2000000 | (window.xOffset << 10) |
+               (window.heightMask << 5) | window.widthMask;
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", get_dx);
 
