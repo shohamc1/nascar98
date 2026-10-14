@@ -5577,7 +5577,1814 @@ void func_80053C00(s32 arg0, s32 arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80053D40);
+__asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
+        "D_800A3059.MainLoop = D_800A3059\n"
+        "D_800A305A.MainLoop = D_800A305A\n"
+        "D_800A305B.MainLoop = D_800A305B\n"
+        "D_800A305C.MainLoop = D_800A305C\n"
+        "D_800A3064.MainLoop = D_800A3064\n"
+        "D_800A3065.MainLoop = D_800A3065\n"
+        "D_800A3076.MainLoop = D_800A3076\n"
+        "D_800A358C.MainLoop = D_800A358C\n"
+        "D_800A35F0.MainLoop = D_800A35F0\n"
+        "D_800A3608.MainLoop = D_800A3608\n"
+        "D_800A3644.MainLoop = D_800A3644\n"
+        "D_800A3690.MainLoop = D_800A3690\n"
+        "D_800A36E0.MainLoop = D_800A36E0\n"
+        "D_800A3710.MainLoop = D_800A3710\n"
+        "D_800A3724.MainLoop = D_800A3724\n"
+        "D_800A3808.MainLoop = D_800A3808\n"
+        "D_800A3928.MainLoop = D_800A3928\n"
+        "D_800A3950.MainLoop = D_800A3950\n"
+        "D_800A3968.MainLoop = D_800A3968\n"
+        "D_800A3980.MainLoop = D_800A3980\n"
+        "D_800A39E4.MainLoop = D_800A39E4\n"
+        "D_800B9B84.MainLoop = D_800B9B84\n"
+        "D_800A3684.MainLoopSmall = D_800A3684\n"
+        "D_800A3988.MainLoopSmall = D_800A3988\n"
+        "D_800AE178.MainLoop1 = D_800AE178\n"
+        "D_800AE178.MainLoop2 = D_800AE178\n"
+        "D_800A3A58.MainLoop3 = D_800A3A58\n"
+        "D_800A36E1.MainLoop4 = D_800A36E1\n"
+        "D_800A3981.MainLoop5 = D_800A3981\n"
+        "D_800A3685.MainLoop6 = D_800A3685\n"
+        "D_800A3685.MainLoop7 = D_800A3685\n"
+        "gOrderingTables.MainLoop8 = gOrderingTables\n"
+        "gOrderingTableBank.MainLoop9 = gOrderingTableBank\n"
+        "D_800A39C8.MainLoop10 = D_800A39C8\n"
+        "D_800A39C8.MainLoop11 = D_800A39C8\n"
+        "D_800A3685.MainLoop12 = D_800A3685\n"
+        "D_800A37D8.MainLoop13 = D_800A37D8\n"
+        "D_800A37DC.MainLoop14 = D_800A37DC\n"
+        "D_800A3684.MainLoop15 = D_800A3684\n"
+        "D_800A3A24.MainLoop16 = D_800A3A24\n"
+        "D_800A3684.MainLoop17 = D_800A3684\n"
+        "D_800A3A24.MainLoop18 = D_800A3A24\n"
+        "D_800A307C.MainLoop19 = D_800A307C\n"
+        "D_800A3A24.MainLoop20 = D_800A3A24\n"
+        "D_800A3888.MainLoop21 = D_800A3888\n"
+        "D_800A3684.MainLoop22 = D_800A3684\n"
+        "D_800A307C.MainLoop23 = D_800A307C\n"
+        "D_800A3A24.MainLoop24 = D_800A3A24\n"
+        "D_800A3888.MainLoop25 = D_800A3888\n"
+        "D_800A3684.MainLoop26 = D_800A3684\n"
+        "D_800A36E4.MainLoop27 = D_800A36E4\n"
+        "D_800A3685.MainLoop28 = D_800A3685\n"
+        "D_800A37F8.MainLoop29 = D_800A37F8\n"
+        "D_800A3684.MainLoop30 = D_800A3684\n"
+        "D_800A3A24.MainLoop31 = D_800A3A24\n"
+        "D_800A307C.MainLoop32 = D_800A307C\n"
+        "D_800A3A24.MainLoop33 = D_800A3A24\n"
+        "D_800A3808.MainLoop51 = D_800A3808\n"
+        "D_800A3770.MainLoop57 = D_800A3770\n"
+        "D_800A3770.MainLoop58 = D_800A3770\n"
+        "D_800A38E8.MainLoop59 = D_800A38E8\n"
+        "D_800A3988.MainLoop60 = D_800A3988\n"
+        "D_800A3988.MainLoop61 = D_800A3988\n"
+        "D_800A3770.MainLoop62 = D_800A3770\n"
+        "D_800A3770.MainLoop63 = D_800A3770\n"
+        "D_800A38E8.MainLoop64 = D_800A38E8\n"
+        "D_800A3988.MainLoop65 = D_800A3988\n"
+        "D_800A3988.MainLoop66 = D_800A3988\n"
+        "D_800A3684.MainLoop67 = D_800A3684\n"
+        "D_800A3A24.MainLoop68 = D_800A3A24\n"
+        "D_800A3684.MainLoop69 = D_800A3684\n"
+        "D_800A3080.MainLoop70 = D_800A3080\n"
+        "D_800A3A24.MainLoop71 = D_800A3A24\n"
+        "D_800A307C.MainLoop72 = D_800A307C\n"
+        "D_800A3684.MainLoop73 = D_800A3684\n"
+        "D_800A3A24.MainLoop74 = D_800A3A24\n"
+        "D_800A3684.MainLoop75 = D_800A3684\n"
+        "D_800A307C.MainLoop76 = D_800A307C\n"
+        "D_800A3080.MainLoop77 = D_800A3080\n"
+        "D_800A3A24.MainLoop78 = D_800A3A24\n"
+        "D_800A3A25.MainLoop79 = D_800A3A25\n"
+        "D_800A3059.MainLoopPostUp = D_800A3059\n"
+        "D_800A3059.MainLoopPostDown = D_800A3059\n");
+
+s32 ListHasClearFlagsMainLoop(u8 *node) asm("ListHasClearFlags");
+void ListSetFieldsAndEnableMainLoop(u8 *, s32, s32,
+                                    s32) asm("ListSetFieldsAndEnable");
+void func_80014A40MainLoop(s32 arg0) asm("func_80014A40");
+void func_8003CC48MainLoop(void) asm("func_8003CC48");
+void func_8003CCE0MainLoop(s32 arg0) asm("func_8003CCE0");
+s32 func_8003F4FCMainLoop(s32 arg0) asm("func_8003F4FC");
+/* All loop sound arguments fit s8. Pins already hold their extended values. */
+void func_8003F564MainLoop(s32, s32) asm("func_8003F564");
+void func_8003F914MainLoop(s32) asm("func_8003F914");
+s32 func_80041B7CMainLoop(s32) asm("func_80041B7C");
+s32 func_8004229CMainLoop(s32 arg0) asm("func_8004229C");
+void func_80044FF8MainLoop(s32 arg0, s32 arg1) asm("func_80044FF8");
+void func_80055C78MainLoop() asm("func_80055C78");
+s32 func_80056B0CMainLoop(s32 arg0, s32 arg1) asm("func_80056B0C");
+s32 func_80056B5CMainLoop(s32 arg0, s32 arg1, s32 arg2) asm("func_80056B5C");
+void func_80056C84MainLoop(s32 arg0, s32 arg1) asm("func_80056C84");
+void func_80056F04MainLoop(s32 arg0) asm("func_80056F04");
+void func_80057008MainLoop(s32 arg0) asm("func_80057008");
+void func_80057160MainLoop(s32 arg0) asm("func_80057160");
+void func_80057DD4MainLoop(void) asm("func_80057DD4");
+void func_80057DE8MainLoop(void) asm("func_80057DE8");
+void func_80057DFCMainLoop(void) asm("func_80057DFC");
+void func_80057E10MainLoop(void) asm("func_80057E10");
+void func_80058000MainLoop(s32 index, s32 *out) asm("func_80058000");
+void func_80058030MainLoop(void) asm("func_80058030");
+void func_800596F4MainLoop(void) asm("func_800596F4");
+void func_800598C4MainLoop(void) asm("func_800598C4");
+void func_800599E4MainLoop(void) asm("func_800599E4");
+/* Intensity is masked to u8 in the pulse block before these calls. */
+void func_8005A804MainLoop(s32, s32, s32) asm("func_8005A804");
+void func_8005B2F0MainLoop(void) asm("func_8005B2F0");
+void func_8005B300MainLoop(void) asm("func_8005B300");
+void func_8005E4A4MainLoop(u8 *table) asm("func_8005E4A4");
+void func_80060E94MainLoop(s32 arg0) asm("func_80060E94");
+void func_80060F10MainLoop(s32 a, s32 b, s16 c) asm("func_80060F10");
+void func_80060F54MainLoop(s32 arg0, s32 volume) asm("func_80060F54");
+void func_80062874MainLoop(s32 arg0, s32 arg1) asm("func_80062874");
+void func_80062F04MainLoop() asm("func_80062F04");
+void func_80063180MainLoop(s32 enabled) asm("func_80063180");
+void func_80063770MainLoop(u8 index) asm("func_80063770");
+void func_80063AE0MainLoop(s32, s32) asm("func_80063AE0");
+void func_80068AC4MainLoop(s32 arg0, s32 arg1, s32 arg2) asm("func_80068AC4");
+void func_80069AFCMainLoop(s32 arg0) asm("func_80069AFC");
+s32 func_80069EB8MainLoop(void) asm("func_80069EB8");
+s32 func_8006A080MainLoop(void) asm("func_8006A080");
+u8 func_8006AD0CMainLoop(u8 value) asm("func_8006AD0C");
+void func_8006C598MainLoop(s32 low, s32 high, s32 color) asm("func_8006C598");
+void func_8006C5E4MainLoop(s32 arg0) asm("func_8006C5E4");
+void func_8006C9DCMainLoop(void) asm("func_8006C9DC");
+void func_8006CE64MainLoop(void) asm("func_8006CE64");
+void func_8006CF38MainLoop(void) asm("func_8006CF38");
+s32 func_8006D0C0MainLoop(void) asm("func_8006D0C0");
+void func_8006D0F0MainLoop(void) asm("func_8006D0F0");
+s32 func_8006D258MainLoop(void) asm("func_8006D258");
+void func_8006DA40MainLoop(void) asm("func_8006DA40");
+void func_8006DE68MainLoop(u32 arg0, u32 mode) asm("func_8006DE68");
+void func_80041AF0MainLoop(s32) asm("func_80041AF0");
+void ClearOTagRMainLoop(u32 *, s32) asm("ClearOTagR");
+void DrawOTagMainLoop(u32 *) asm("DrawOTag");
+s32 DrawSyncMainLoop(s32) asm("DrawSync");
+s32 LoadImageMainLoop(s16 *, u32 *) asm("LoadImage");
+s32 RandomScaledGetMainLoop(s32 scale) asm("RandomScaledGet");
+void SetDispMaskMainLoop(s32) asm("SetDispMask");
+s32 VSyncMainLoop(s32) asm("VSync");
+void func_80053C00MainLoop(s32, s32) asm("func_80053C00");
+u8 func_800571ECMainLoop(u8, u8 *, s32) asm("func_800571EC");
+void func_8005DAD4MainLoop(void) asm("func_8005DAD4");
+void func_8005DFA0MainLoop(void) asm("func_8005DFA0");
+void func_8005ED74MainLoop() asm("func_8005ED74");
+void func_800606D4MainLoop(void) asm("func_800606D4");
+void func_80060FD8MainLoop(void) asm("func_80060FD8");
+void func_80063C34MainLoop(u8, u8) asm("func_80063C34");
+void func_80064208MainLoop(void) asm("func_80064208");
+void func_80068220MainLoop(s32) asm("func_80068220");
+void func_80068CE4MainLoop(void) asm("func_80068CE4");
+void func_800691D4MainLoop(void) asm("func_800691D4");
+void func_800697ECMainLoop(s32) asm("func_800697EC");
+void func_80069C60MainLoop(u8) asm("func_80069C60");
+s32 func_80069F30MainLoop(void) asm("func_80069F30");
+s32 func_8006A15CMainLoop(s32) asm("func_8006A15C");
+void func_8006A7C8MainLoop(s32) asm("func_8006A7C8");
+void func_8006BF74MainLoop(void) asm("func_8006BF74");
+s32 func_8006C700MainLoop(s32, s32) asm("func_8006C700");
+void func_8006C9F8MainLoop(void) asm("func_8006C9F8");
+void func_8006CB80MainLoop(s32) asm("func_8006CB80");
+s32 func_8006D178MainLoop(void) asm("func_8006D178");
+void func_8006D8E8MainLoop(s32) asm("func_8006D8E8");
+void func_8006E07CMainLoop(u32, u32, u32) asm("func_8006E07C");
+void func_8006E628MainLoop(u32, u32, u32) asm("func_8006E628");
+void func_8005833CMainLoop(u8) asm("func_8005833C");
+void func_8005C124MainLoop(u8, u8) asm("func_8005C124");
+extern s8 D_800A2F9CMainLoop[] asm("D_800A2F9C.MainLoop");
+extern u8 D_800A3059MainLoop asm("D_800A3059.MainLoop");
+extern u8 D_800A305AMainLoop asm("D_800A305A.MainLoop");
+extern u8 D_800A305BMainLoop asm("D_800A305B.MainLoop");
+extern s32 D_800A305CMainLoop asm("D_800A305C.MainLoop");
+extern u8 D_800A3064MainLoop asm("D_800A3064.MainLoop");
+extern u8 D_800A3065MainLoop asm("D_800A3065.MainLoop");
+extern u8 D_800A3076MainLoop asm("D_800A3076.MainLoop");
+extern u8 D_800A358CMainLoop[] asm("D_800A358C.MainLoop");
+extern u32 *D_800A35F0MainLoop asm("D_800A35F0.MainLoop");
+extern u8 D_800A3608MainLoop asm("D_800A3608.MainLoop");
+extern u8 D_800A3644MainLoop asm("D_800A3644.MainLoop");
+extern u16 D_800A3690MainLoop[] asm("D_800A3690.MainLoop");
+extern u8 D_800A36E0MainLoop asm("D_800A36E0.MainLoop");
+extern s16 D_800A3710MainLoop asm("D_800A3710.MainLoop");
+extern u8 D_800A3724MainLoop asm("D_800A3724.MainLoop");
+extern u8 D_800A3808MainLoop[] asm("D_800A3808.MainLoop");
+extern u8 D_800A3928MainLoop asm("D_800A3928.MainLoop");
+extern u8 D_800A3950MainLoop asm("D_800A3950.MainLoop");
+extern u8 D_800A3968MainLoop[] asm("D_800A3968.MainLoop");
+extern s8 D_800A3980MainLoop asm("D_800A3980.MainLoop");
+extern u8 D_800A39E4MainLoop asm("D_800A39E4.MainLoop");
+extern s16 D_800B9B84MainLoop[] asm("D_800B9B84.MainLoop");
+extern u8 D_800A3684MainLoopSmall asm("D_800A3684.MainLoopSmall");
+extern u8 D_800A3988MainLoopSmall asm("D_800A3988.MainLoopSmall");
+extern u8 *D_800AE178MainLoopSite1[] asm("D_800AE178.MainLoop1");
+extern u8 *D_800AE178MainLoopSite2[] asm("D_800AE178.MainLoop2");
+extern u8 D_800A3A58MainLoopSite3[] asm("D_800A3A58.MainLoop3");
+extern u8 D_800A36E1MainLoopSite4[] asm("D_800A36E1.MainLoop4");
+extern s8 D_800A3981MainLoopSite5[] asm("D_800A3981.MainLoop5");
+extern u8 D_800A3685MainLoopSite6[] asm("D_800A3685.MainLoop6");
+extern u8 D_800A3685MainLoopSite7[] asm("D_800A3685.MainLoop7");
+extern u8 gOrderingTablesMainLoopSite8[] asm("gOrderingTables.MainLoop8");
+extern s32
+    gOrderingTableBankMainLoopSite9[] asm("gOrderingTableBank.MainLoop9");
+extern u32 *D_800A39C8MainLoopSite10[] asm("D_800A39C8.MainLoop10");
+extern u32 *D_800A39C8MainLoopSite11[] asm("D_800A39C8.MainLoop11");
+extern u8 D_800A3685MainLoopSite12[] asm("D_800A3685.MainLoop12");
+extern u8 *D_800A37D8MainLoopSite13[] asm("D_800A37D8.MainLoop13");
+extern u8 *D_800A37DCMainLoopSite14[] asm("D_800A37DC.MainLoop14");
+extern u8 D_800A3684MainLoopSite15[] asm("D_800A3684.MainLoop15");
+extern s8 D_800A3A24MainLoopSite16[] asm("D_800A3A24.MainLoop16");
+extern u8 D_800A3684MainLoopSite17[] asm("D_800A3684.MainLoop17");
+extern s8 D_800A3A24MainLoopSite18[] asm("D_800A3A24.MainLoop18");
+extern s8 D_800A307CMainLoopSite19[] asm("D_800A307C.MainLoop19");
+extern s8 D_800A3A24MainLoopSite20[] asm("D_800A3A24.MainLoop20");
+extern u8 *D_800A3888MainLoopSite21[] asm("D_800A3888.MainLoop21");
+extern u8 D_800A3684MainLoopSite22[] asm("D_800A3684.MainLoop22");
+extern s8 D_800A307CMainLoopSite23[] asm("D_800A307C.MainLoop23");
+extern s8 D_800A3A24MainLoopSite24[] asm("D_800A3A24.MainLoop24");
+extern u8 *D_800A3888MainLoopSite25[] asm("D_800A3888.MainLoop25");
+extern u8 D_800A3684MainLoopSite26[] asm("D_800A3684.MainLoop26");
+extern u8 D_800A36E4MainLoopSite27[] asm("D_800A36E4.MainLoop27");
+extern u8 D_800A3685MainLoopSite28[] asm("D_800A3685.MainLoop28");
+extern u8 *D_800A37F8MainLoopSite29[] asm("D_800A37F8.MainLoop29");
+extern u8 D_800A3684MainLoopSite30[] asm("D_800A3684.MainLoop30");
+extern s8 D_800A3A24MainLoopSite31[] asm("D_800A3A24.MainLoop31");
+extern s8 D_800A307CMainLoopSite32[] asm("D_800A307C.MainLoop32");
+extern s8 D_800A3A24MainLoopSite33[] asm("D_800A3A24.MainLoop33");
+extern u8 D_800A3808MainLoopSite51[] asm("D_800A3808.MainLoop51");
+extern u8 D_800A3770MainLoopSite57[] asm("D_800A3770.MainLoop57");
+extern u8 D_800A3770MainLoopSite58[] asm("D_800A3770.MainLoop58");
+extern u8 D_800A38E8MainLoopSite59[] asm("D_800A38E8.MainLoop59");
+extern u8 D_800A3988MainLoopSite60[] asm("D_800A3988.MainLoop60");
+extern u8 D_800A3988MainLoopSite61[] asm("D_800A3988.MainLoop61");
+extern u8 D_800A3770MainLoopSite62[] asm("D_800A3770.MainLoop62");
+extern u8 D_800A3770MainLoopSite63[] asm("D_800A3770.MainLoop63");
+extern u8 D_800A38E8MainLoopSite64[] asm("D_800A38E8.MainLoop64");
+extern u8 D_800A3988MainLoopSite65[] asm("D_800A3988.MainLoop65");
+extern u8 D_800A3988MainLoopSite66[] asm("D_800A3988.MainLoop66");
+extern u8 D_800A3684MainLoopSite67[] asm("D_800A3684.MainLoop67");
+extern s8 D_800A3A24MainLoopSite68[] asm("D_800A3A24.MainLoop68");
+extern u8 D_800A3684MainLoopSite69[] asm("D_800A3684.MainLoop69");
+extern s8 D_800A3080MainLoopSite70[] asm("D_800A3080.MainLoop70");
+extern s8 D_800A3A24MainLoopSite71[] asm("D_800A3A24.MainLoop71");
+extern s8 D_800A307CMainLoopSite72[] asm("D_800A307C.MainLoop72");
+extern u8 D_800A3684MainLoopSite73[] asm("D_800A3684.MainLoop73");
+extern s8 D_800A3A24MainLoopSite74[] asm("D_800A3A24.MainLoop74");
+extern u8 D_800A3684MainLoopSite75[] asm("D_800A3684.MainLoop75");
+extern s8 D_800A307CMainLoopSite76[] asm("D_800A307C.MainLoop76");
+extern s8 D_800A3080MainLoopSite77[] asm("D_800A3080.MainLoop77");
+extern s8 D_800A3A24MainLoopSite78[] asm("D_800A3A24.MainLoop78");
+extern s8 D_800A3A25MainLoopSite79[] asm("D_800A3A25.MainLoop79");
+extern u8 D_800A3059MainLoopPostUp asm("D_800A3059.MainLoopPostUp");
+extern u8 D_800A3059MainLoopPostDown asm("D_800A3059.MainLoopPostDown");
+
+void func_80053D40(void) {
+    s32 newPad[2];
+    s32 oldPad[2];
+    u8 playerUnlockSteps[2];
+    register s32 one asm("s3");
+    register s32 two asm("s5");
+    register s32 mode13 asm("s6");
+    u8 exitLoop;
+    u8 displayPhase;
+    s32 idleFrames;
+    s32 animationStartX;
+    s32 animationEndX;
+    s32 animationStepX;
+    s32 animationReverseStepX;
+    s32 *previousPadCursor;
+    register s32 *currentPadCursor asm("s2");
+    s32 argument0;
+    s32 menuPhase;
+    register s32 animateX asm("a0");
+    register s32 animateY asm("a1");
+    register s32 animateStep asm("a2");
+    register u8 **animationNodeSlot asm("v0");
+    s32 padBits;
+    register s32 previousPadInverse asm("a3");
+    s32 nextIdleFrames;
+    s32 cardMenuCode;
+    s32 nextBufferIndex;
+    s32 padBits0;
+    s32 playerPadBits;
+    s32 sequenceValue;
+    s32 unlockPhase;
+    s32 itemUp;
+    s32 itemDown;
+    s32 cardOperation;
+    s32 menuDirection;
+    s32 activePlayer;
+    register s32 index asm("s0");
+    register s32 player asm("s2");
+    register s32 screenResult asm("s4");
+    register s32 unlockStep asm("s7");
+    s32 unlockDirectionBits;
+    s32 dialogScreen;
+    register s32 actionSound asm("a1");
+    register s32 returnChannel asm("a0");
+    u32 *orderingTable;
+    u8 *screenTable;
+    register u8 *sequenceCursor asm("s1");
+    register u8 *selectionCursor asm("s2");
+    register s32 screenResultByte asm("s1");
+    u8 pulseTick;
+    u8 transitionPhase;
+    u8 nextItemUp;
+    u8 nextItemDown;
+    u8 nextScreen;
+    u8 pulsePhase;
+    u8 selection;
+    u8 currentSelection;
+    u8 sequencePhase;
+    u8 itemCursorUp;
+    u8 itemCursorDown;
+    u8 secondPlayerEnabled;
+    u8 menuCode;
+    register s32 wrappedItemUp asm("v0");
+
+    playerUnlockSteps[0] = 0;
+    playerUnlockSteps[1] = 0;
+    func_8005B2F0MainLoop();
+    func_8005DAD4MainLoop();
+    func_8005DFA0MainLoop();
+    idleFrames = 0;
+    if ((u8)D_800A305BMainLoop < 0x11U) {
+        screenTable = D_800AE178MainLoopSite1[D_800A305BMainLoop];
+    } else {
+        screenTable = *D_800AE178MainLoopSite2;
+    }
+    activePlayer = 0;
+    func_8005E4A4MainLoop(screenTable);
+    asm("" : "=r"(activePlayer) : "0"(activePlayer));
+    one = 1;
+    two = 2;
+    asm("" : : "r"(one), "r"(two));
+    D_800A3608MainLoop = 0;
+    exitLoop = 0;
+    do {
+        {
+            register s32 randomScale asm("a0");
+            /* The original call retains the incoming a0 and ignores the result. */
+            asm("" : "=r"(randomScale));
+            RandomScaledGetMainLoop(randomScale);
+        }
+        func_80057DE8MainLoop();
+        func_80057E10MainLoop();
+        func_8005B300MainLoop();
+        argument0 = D_800A39E4MainLoop;
+        asm("" : "=r"(argument0) : "0"(argument0));
+        if (argument0 == 0xFC) {
+            func_80041AF0MainLoop(0);
+            func_8006DA40MainLoop();
+            D_800A3928MainLoop = 0;
+        } else if (argument0 == 9) {
+            if (*D_800A3A58MainLoopSite3 == 0) {
+                func_800599E4MainLoop();
+                if (func_80069F30MainLoop() & 0xFF) {
+                    func_8006A7C8MainLoop(0);
+                }
+                func_800598C4MainLoop();
+            }
+            func_80068220MainLoop((s32)D_800A305BMainLoop);
+        } else if (argument0 == 0xA) {
+            func_80068CE4MainLoop();
+        } else if (argument0 == 0xC) {
+            func_800691D4MainLoop();
+        } else if (argument0 == 0xE) {
+            func_80064208MainLoop();
+        } else if ((u32)(D_800A39E4MainLoop - 0x10) < 2U) {
+            func_800697ECMainLoop(argument0 - 0x10);
+        } else {
+            func_80056C84MainLoop(argument0, activePlayer);
+            func_8005C124MainLoop(D_800A39E4MainLoop, D_800A3059MainLoop);
+        }
+        func_80069C60MainLoop(D_800A39E4MainLoop);
+        func_80056F04MainLoop((s32)D_800A39E4MainLoop);
+        switch (D_800A39E4MainLoop) {
+        case 0:
+            idleFrames = 0;
+            goto initializePads;
+        case 7:
+            secondPlayerEnabled = 0;
+            argument0 = activePlayer & 0xFF;
+            if (((D_800A3950MainLoop == 0xFB) || (D_800A3950MainLoop == 3)) &&
+                (D_800A3644MainLoop != 0)) {
+                secondPlayerEnabled = 1;
+            }
+            func_8005ED74MainLoop(argument0, secondPlayerEnabled);
+            /* End the old register lifetime before setting the pad index. */
+            asm volatile("" : "=r"(index));
+            asm volatile("" : : : "memory");
+            index = 0;
+            if (D_800A3950MainLoop == 0xFB) {
+            case 1:
+                index = 0;
+                func_8006BF74MainLoop();
+                currentPadCursor = &newPad[0];
+            } else {
+                goto resetPadArray;
+            }
+            break;
+        case 2:
+        case 8:
+            index = 0;
+            D_800A3980MainLoop = func_8006AD0CMainLoop(D_800A36E0MainLoop);
+            D_800A3981MainLoopSite5[0] =
+                func_8006AD0CMainLoop(D_800A36E1MainLoopSite4[0]);
+            currentPadCursor = &newPad[0];
+            break;
+        case 5:
+            index = 0;
+            func_800606D4MainLoop();
+            func_80063180MainLoop((s32)D_800A3076MainLoop);
+            currentPadCursor = &newPad[0];
+            break;
+        case 13:
+            func_80060FD8MainLoop();
+            /* End the old register lifetime before setting the pad index. */
+            asm volatile("" : "=r"(index));
+            asm volatile("" : : : "memory");
+            D_800A3684MainLoopSmall = 0;
+            index = 0;
+            if (D_800A3644MainLoop != 0) {
+                *D_800A3685MainLoopSite6 = 0;
+            } else {
+                *D_800A3685MainLoopSite7 = two;
+            }
+            goto resetPadArray;
+        case 3:
+        case 6:
+            func_8005833CMainLoop(D_800A305BMainLoop);
+        default:
+        initializePads:
+            index = 0;
+        resetPadArray:
+            /* Keep pointer setup in the common reset path. */
+            asm volatile("" : "=r"(currentPadCursor));
+            currentPadCursor = &newPad[0];
+            break;
+        }
+        previousPadCursor = &oldPad[0];
+        asm("" : "=r"(currentPadCursor) : "0"(currentPadCursor));
+    readInitialPads:
+        func_80058000MainLoop(index & 0xFF, previousPadCursor);
+        *currentPadCursor = 0;
+        currentPadCursor++;
+        index += 1;
+        previousPadCursor++;
+        if (index < 2) {
+            goto readInitialPads;
+        }
+        screenResult = 0;
+        D_800A305CMainLoop = 0;
+        unlockStep = 0;
+        if (D_800A39E4MainLoop == 0xC) {
+            displayPhase = 0;
+        } else {
+            displayPhase = 0xFF;
+            SetDispMaskMainLoop(1);
+        }
+        asm(""
+            : "=r"(screenResult), "=r"(unlockStep)
+            : "0"(screenResult), "1"(unlockStep));
+        if (!(screenResult & 0xFF)) {
+            mode13 = 13;
+            asm("" : : "r"(mode13));
+            do {
+                func_8003CC48MainLoop();
+                nextIdleFrames = idleFrames + 1;
+                idleFrames = nextIdleFrames;
+                if ((D_800A39E4MainLoop == 0) && (nextIdleFrames >= 0x709)) {
+                    screenResult = 1;
+                    D_800A39E4MainLoop = 0xFD;
+                }
+                pulseTick = D_800A3724MainLoop - 1;
+                D_800A3724MainLoop = pulseTick;
+                if (!(pulseTick & 0xFF)) {
+                    pulsePhase = D_800A305AMainLoop + 1;
+                    D_800A305AMainLoop = pulsePhase;
+                    if ((u32)(pulsePhase & 0xFF) >= 0x15U) {
+                        D_800A305AMainLoop = 0;
+                    }
+                    {
+                        register s32 pulseValue asm("v1");
+                        register s32 magnitude asm("v0");
+                        register s32 intensity asm("a0");
+                        pulseValue = D_800A305AMainLoop;
+                        /* Intensity is 64 + 8 * abs(pulseValue - 10), modulo 256. */
+                        asm(".set\tnoreorder\n\tnop\n\taddiu\t%0,%2,-10\n\tbgez\t%0,1f\n\tsll\t%0,%0,3\n\tori\t%0,$zero,10\n\tsubu\t%0,%0,%2\n\tsll\t%0,%0,3\n1:\n\taddiu\t%0,%0,64\n\tandi\t%1,%0,255"
+                            : "=&r"(magnitude), "=r"(intensity)
+                            : "r"(pulseValue));
+                        func_8005A804MainLoop(intensity, intensity, 0x19U);
+                    }
+                    D_800A3724MainLoop = 3;
+                }
+                nextBufferIndex = D_800A305CMainLoop == 0;
+                orderingTable =
+                    (nextBufferIndex << 0xC) + gOrderingTablesMainLoopSite8;
+                D_800A305CMainLoop = nextBufferIndex;
+                gOrderingTableBankMainLoopSite9[0] = nextBufferIndex;
+                D_800A39C8MainLoopSite10[0] = orderingTable;
+                ClearOTagRMainLoop(orderingTable, 0x400);
+                func_80014A40MainLoop((s32)(u8)D_800A305CMainLoop);
+                func_80057DFCMainLoop();
+                func_80057DD4MainLoop();
+                func_80053C00MainLoop((s32)(u8)D_800A305CMainLoop,
+                                      activePlayer & 0xFF);
+                DrawSyncMainLoop(0);
+                VSyncMainLoop(0);
+                func_80058030MainLoop();
+                if (displayPhase == one) {
+                    SetDispMaskMainLoop(1);
+                    displayPhase = 2;
+                }
+                D_800A3710MainLoop = -(D_800A305CMainLoop != 0) & 0x140;
+                LoadImageMainLoop(&D_800A3710MainLoop, D_800A35F0MainLoop);
+                DrawOTagMainLoop(
+                    (u32 *)((u8 *)D_800A39C8MainLoopSite11[0] + 0xFFC));
+                if (displayPhase == 0) {
+                    displayPhase = 1;
+                }
+                func_80041AF0MainLoop(0);
+                if (newPad[0] != 0) {
+                    idleFrames = 0;
+                }
+                if (D_800A39E4MainLoop == 5) {
+                    padBits0 = func_80041B7CMainLoop(0);
+                    newPad[0] = padBits0;
+                    if ((padBits0 & 0x20) && (D_800A3076MainLoop == 0)) {
+                        unlockPhase = unlockStep & 0xFF;
+                        if (padBits0 & 0xF000) {
+                            if (unlockPhase == one) {
+                                goto sequenceOne;
+                            }
+                            if (unlockPhase < 2) {
+                                unlockDirectionBits = padBits0 & 0x1000;
+                                if (unlockPhase == 0) {
+                                    goto advanceUnlockStep;
+                                }
+                                goto sequenceDone;
+                            }
+                            if (unlockPhase == two) {
+                                goto sequenceTwo;
+                            }
+                            if (unlockPhase == 3) {
+                                goto sequenceLast;
+                            }
+                            goto sequenceDone;
+                        sequenceOne:
+                            unlockDirectionBits = padBits0 & 0x8000;
+                            goto advanceUnlockStep;
+                        sequenceTwo:
+                            unlockDirectionBits = padBits0 & 0x4000;
+                        advanceUnlockStep:
+                            if (unlockDirectionBits != 0) {
+                                unlockStep++;
+                            }
+                            goto sequenceDone;
+                        sequenceLast:
+                            if (padBits0 & 0x2000) {
+                                D_800A3076MainLoop = one;
+                                func_80063180MainLoop(1);
+                                func_8003F564MainLoop(0, 8);
+                                goto resetUnlockStep;
+                            }
+                        sequenceDone:;
+                        }
+                    } else {
+                    resetUnlockStep:
+                        unlockStep = 0;
+                    }
+                } else if ((D_800A39E4MainLoop == two) &&
+                           (D_800A3059MainLoop == one)) {
+                    index = 0;
+                    sequenceCursor = &playerUnlockSteps[0];
+                    asm("" : "=r"(sequenceCursor) : "0"(sequenceCursor));
+                    selectionCursor = &D_800A36E0MainLoop;
+                    asm("" : "=r"(selectionCursor) : "0"(selectionCursor));
+                readPlayerUnlockSequence:
+                    if ((index != one) || (D_800A3644MainLoop != 0)) {
+                        selection = *selectionCursor;
+                        if ((selection == 5) || (selection == two)) {
+                            playerPadBits = func_80041B7CMainLoop(index);
+                            (&newPad[0])[index] = playerPadBits;
+                            if (playerPadBits & 0x40) {
+                                if (playerPadBits & 0x5000) {
+                                    sequencePhase = *sequenceCursor;
+                                    sequenceValue = sequencePhase & 0xFF;
+                                    if (sequenceValue == 0) {
+                                        goto playerSequenceFirst;
+                                    }
+                                    if (sequenceValue == one) {
+                                        goto playerSequenceSecond;
+                                    }
+                                    sequenceCursor++;
+                                    goto playerSequenceNext;
+                                playerSequenceFirst:
+                                    if (playerPadBits & 0x1000) {
+                                        *sequenceCursor = sequencePhase + 1;
+                                    }
+                                    goto advancePlayerUnlockSequence;
+                                playerSequenceSecond:
+                                    if (!(playerPadBits & 0x4000)) {
+                                        goto advancePlayerUnlockSequence;
+                                    }
+                                    currentSelection = *selectionCursor;
+                                    if (currentSelection == two) {
+                                        func_80063C34MainLoop(2, 0x19);
+                                        func_80063AE0MainLoop(index, 2);
+                                        D_800A3065MainLoop ^= 1;
+                                        *sequenceCursor = 0;
+                                        goto advancePlayerUnlockSequence;
+                                    }
+                                    if (currentSelection == 5) {
+                                        func_80063C34MainLoop(5, 0x18);
+                                        func_80063AE0MainLoop(index, 5);
+                                        D_800A3064MainLoop ^= 1;
+                                    }
+                                    goto resetPlayerUnlockSequence;
+                                } else {
+                                    goto advancePlayerUnlockSequence;
+                                }
+                            } else {
+                            resetPlayerUnlockSequence:
+                                *sequenceCursor = 0;
+                                goto advancePlayerUnlockSequence;
+                            }
+                        } else {
+                        advancePlayerUnlockSequence:
+                            sequenceCursor += 1;
+                        }
+                    playerSequenceNext:
+                        index += 1;
+                        selectionCursor += 1;
+                        if (index < 2) {
+                            goto readPlayerUnlockSequence;
+                        }
+                    }
+                }
+                if ((D_800A39E4MainLoop == mode13) &&
+                    (D_800A3684MainLoopSmall == two) &&
+                    (ListHasClearFlagsMainLoop(*D_800A37D8MainLoopSite13) !=
+                     0) &&
+                    ((D_800A3644MainLoop == 0) ||
+                     ((*D_800A3685MainLoopSite12 == two) &&
+                      (ListHasClearFlagsMainLoop(*D_800A37DCMainLoopSite14) !=
+                       0)))) {
+                    screenResult = 1;
+                } else {
+                    player = 0;
+                    asm("" : "=r"(player) : "0"(player));
+                    index = player & 0xFF;
+                    do {
+                        if ((index == 0) || (D_800A3644MainLoop != 0)) {
+                            (&newPad[0])[index] = func_80041B7CMainLoop(index);
+                            if ((D_800A39E4MainLoop == 7) &&
+                                (activePlayer == one)) {
+                                if (index != 0) {
+                                    newPad[0] = newPad[1];
+                                    oldPad[0] = oldPad[1];
+                                    goto handlePlayerInput;
+                                }
+                                goto nextPlayer;
+                            }
+                            if (player & 0xFF) {
+                                if (D_800A39E4MainLoop != two) {
+                                    if (D_800A39E4MainLoop == mode13) {
+                                        goto handlePlayerInput;
+                                    }
+                                    goto nextPlayer;
+                                }
+                                goto handlePlayerSelection;
+                            }
+                        handlePlayerInput:
+                        handlePlayerSelection:
+                            if (D_800A39E4MainLoop == mode13) {
+                                index = player & 0xFF;
+                                if (newPad[index] &
+                                    ((u16)~oldPad[index] & 0x800)) {
+                                    transitionPhase =
+                                        D_800A3684MainLoopSite15[index];
+                                    if (transitionPhase == 0) {
+                                        func_8003F564MainLoop(0, 3);
+                                        if (func_8004229CMainLoop((
+                                                s32)(u8)D_800A3A24MainLoopSite16
+                                                                      [index]) &
+                                            0xFF) {
+                                            func_80062874MainLoop(index, 1);
+                                            D_800A3684MainLoopSite17[index] =
+                                                one;
+                                            func_8006DE68MainLoop(
+                                                (u32)index,
+                                                (u32)(u8)
+                                                    D_800A3A24MainLoopSite18
+                                                        [index]);
+                                            func_80062F04MainLoop(
+                                                index,
+                                                D_800A3A24MainLoopSite20[index],
+                                                D_800A307CMainLoopSite19
+                                                    [index]);
+                                            animationStartX = -0x140;
+                                            animationNodeSlot =
+                                                D_800A3888MainLoopSite21;
+                                            asm(""
+                                                : "=r"(animationNodeSlot)
+                                                : "0"(animationNodeSlot));
+                                            animationNodeSlot =
+                                                (u8 **)((index * 4) +
+                                                        (u32)animationNodeSlot);
+                                            if (index != 0) {
+                                                animationStartX = 0x140;
+                                            }
+                                            animationStepX = 4;
+                                            if (index != 0) {
+                                                animationStepX = -4;
+                                            }
+                                            ListSetFieldsAndEnableMainLoop(
+                                                *animationNodeSlot,
+                                                animationStartX, 0,
+                                                animationStepX);
+                                        } else {
+                                            func_80062874MainLoop(index, 0);
+                                            D_800A3684MainLoopSite22[index] =
+                                                two;
+                                            goto updateSelectionPanel;
+                                        }
+                                    } else if (transitionPhase == one) {
+                                        func_8003F564MainLoop(0, 3);
+                                        func_8006E628MainLoop(
+                                            (u32)index,
+                                            (u32)(u8)
+                                                D_800A3A24MainLoopSite24[index],
+                                            (u32)(u8)D_800A307CMainLoopSite23
+                                                [index]);
+                                        func_80062874MainLoop(index, 0);
+                                        animationEndX = 0x140;
+                                        animationNodeSlot =
+                                            D_800A3888MainLoopSite25;
+                                        asm(""
+                                            : "=r"(animationNodeSlot)
+                                            : "0"(animationNodeSlot));
+                                        animationNodeSlot =
+                                            (u8 **)((index * 4) +
+                                                    (u32)animationNodeSlot);
+                                        if (index != 0) {
+                                            animationEndX = -0x140;
+                                        }
+                                        animationReverseStepX = -4;
+                                        if (index != 0) {
+                                            animationReverseStepX = 4;
+                                        }
+                                        ListSetFieldsAndEnableMainLoop(
+                                            *animationNodeSlot, 0,
+                                            animationEndX,
+                                            animationReverseStepX);
+                                        D_800A3684MainLoopSite26[index] = two;
+                                        D_800A36E4MainLoopSite27[index] = one;
+                                    updateSelectionPanel:
+                                        if ((D_800A3684MainLoopSmall != 0) &&
+                                            (*D_800A3685MainLoopSite28 != 0)) {
+                                            ListSetFieldsAndEnableMainLoop(
+                                                *D_800A37F8MainLoopSite29, 0,
+                                                0x140, 4);
+                                        }
+                                    }
+                                } else if ((func_8004229CMainLoop((
+                                                s32)(u8)D_800A3A24MainLoopSite31
+                                                                      [index]) &
+                                            0xFF) &&
+                                           (D_800A3684MainLoopSite30[index] ==
+                                            one)) {
+                                    func_8006E07CMainLoop(
+                                        (u32)index,
+                                        (u32)(u8)
+                                            D_800A3A24MainLoopSite33[index],
+                                        (u32)(u8)
+                                            D_800A307CMainLoopSite32[index]);
+                                }
+                            }
+                            {
+                                register s32 previousPadZero asm("a2");
+                                register s32 currentPadZero asm("a1");
+                                /* Read both pads before forming the pressed-edge mask. */
+                                asm("lw\t%0,%3\n\tlw\t%1,%4\n\tnor\t%2,$zero,%0"
+                                    : "=r"(previousPadZero),
+                                      "=r"(currentPadZero),
+                                      "=r"(previousPadInverse)
+                                    : "m"(oldPad[0]), "m"(newPad[0]));
+                                if (currentPadZero &
+                                    ((u16)previousPadInverse & 0x40)) {
+                                    register s32 confirmPivot asm("v0");
+                                    register s32 confirmMode asm("v1");
+                                    screenResult = func_80056B5CMainLoop(
+                                        (s32)D_800A3059MainLoop,
+                                        (s32)D_800A39E4MainLoop,
+                                        (s32)D_800A3950MainLoop);
+                                    if (screenResult & 0xFF) {
+
+                                        if ((u32)(D_800A39E4MainLoop - 0x10) >=
+                                            2U) {
+                                            func_8003F564MainLoop(0, 3);
+                                        }
+                                    } else {
+                                        confirmPivot = 0x24;
+                                        asm("" : : "r"(confirmPivot));
+                                        confirmMode = D_800A39E4MainLoop;
+                                        asm("" : : "r"(confirmMode));
+                                        if (confirmMode == confirmPivot) {
+                                            goto confirmMode24;
+                                        }
+                                        if (confirmMode < 0x25) {
+                                            if (confirmMode == 0x21) {
+                                                goto confirmMode21;
+                                            }
+                                            if (confirmMode < 0x22) {
+                                                if (confirmMode == one) {
+                                                    goto confirmMode1;
+                                                }
+                                                if (confirmMode == 5) {
+                                                    goto confirmMode5;
+                                                }
+                                                goto finishInput;
+                                            }
+                                            if (confirmMode == 0x22) {
+                                                goto confirmMode22;
+                                            }
+                                            if (confirmMode == 0x23) {
+                                                goto confirmMode23;
+                                            }
+                                            goto finishInput;
+                                        }
+                                        if (confirmMode == 0x27) {
+                                            goto confirmMode25;
+                                        }
+                                        if (confirmMode < 0x28) {
+                                            if (confirmMode == 0x25) {
+                                                goto confirmMode25;
+                                            }
+                                            if (confirmMode == 0x26) {
+                                                goto confirmMode26;
+                                            }
+                                            goto finishInput;
+                                        }
+                                        if (confirmMode == 0x28) {
+                                            goto confirmMode28;
+                                        }
+                                        if (confirmMode != 0xFC) {
+                                            goto finishInput;
+                                        }
+                                    confirmModeFC:
+                                        {
+                                            register s32 exitPhase asm("v0");
+                                            register s32 exitChannel asm("a0");
+                                            register s32 exitTone asm("a1");
+                                            exitPhase = D_800A3928MainLoop;
+                                            asm("" : : "r"(exitPhase));
+                                            if (exitPhase == 0) {
+                                                goto confirmExitStatus;
+                                            }
+                                            exitChannel = 0;
+                                            if (exitPhase == one) {
+                                                goto confirmExitSound;
+                                            }
+                                            goto finishInput;
+                                        confirmExitStatus:
+                                            exitPhase = D_800A3808MainLoop[0];
+                                            asm(""
+                                                : "=r"(exitPhase)
+                                                : "0"(exitPhase));
+                                            exitChannel = 0;
+                                            if (exitPhase != mode13) {
+                                                goto confirmExitSound;
+                                            }
+                                            exitTone = 4;
+                                            goto confirmExit;
+                                        confirmExitSound:
+                                            exitTone = 3;
+                                        confirmExit:
+                                            asm(""
+                                                :
+                                                : "r"(exitChannel),
+                                                  "r"(exitTone));
+                                            screenResult = 1;
+                                            func_8003F564MainLoop(exitChannel,
+                                                                  exitTone);
+                                            goto finishInput;
+                                        }
+                                    confirmMode1:
+                                        func_8003F564MainLoop(0, 3);
+                                        if ((D_800A3059MainLoop == two &&
+                                             D_800A3950MainLoop != 0) ||
+                                            D_800A3059MainLoop == one) {
+                                            func_800599E4MainLoop();
+                                            if ((func_8006A080MainLoop() &
+                                                 0xFF) == two) {
+                                                D_800A39E4MainLoop = 0x28;
+                                                func_8006C5E4MainLoop(5);
+                                                menuCode = 1;
+                                            } else {
+                                                menuCode =
+                                                    func_8006A15CMainLoop(0xFF);
+                                            }
+                                            func_80057008MainLoop(menuCode &
+                                                                  0xFF);
+                                            func_800598C4MainLoop();
+                                            func_80057160MainLoop(1);
+                                        } else if (D_800A3059MainLoop == 6) {
+                                            if (D_800B9B84MainLoop[0] == 0) {
+                                                screenResult = 1;
+                                                goto finishInput;
+                                            }
+                                            func_8006C5E4MainLoop(2);
+                                            D_800A3808MainLoop[0] = 0x15;
+                                            func_8006D8E8MainLoop(0);
+                                            animateX = -0x78;
+                                            animateY = 0;
+                                            animateStep = 2;
+                                            asm(""
+                                                : "=r"(animateX),
+                                                  "=r"(animateY),
+                                                  "=r"(animateStep)
+                                                : "0"(animateX), "1"(animateY),
+                                                  "2"(animateStep));
+                                            dialogScreen = 0x25;
+                                            goto showConfirmDialog;
+                                        } else if (D_800A3059MainLoop == 0 &&
+                                                   D_800A3950MainLoop != 0) {
+                                            func_8006C5E4MainLoop(4);
+                                            D_800A3808MainLoop[0] = 0x18;
+                                            func_8006D8E8MainLoop(0);
+                                            animateX = -0x78;
+                                            animateY = 0;
+                                            animateStep = 2;
+                                            asm(""
+                                                : "=r"(animateX),
+                                                  "=r"(animateY),
+                                                  "=r"(animateStep)
+                                                : "0"(animateX), "1"(animateY),
+                                                  "2"(animateStep));
+                                            dialogScreen = 0x27;
+                                        showConfirmDialog:
+                                            D_800A39E4MainLoop = dialogScreen;
+                                            func_8006C598MainLoop(animateX,
+                                                                  animateY,
+                                                                  animateStep);
+                                            func_80063770MainLoop(0);
+                                        }
+                                        goto finishInput;
+                                    confirmMode5:
+                                        if ((u32)(D_800A3059MainLoop - 2) <
+                                            2U) {
+                                            func_8003F564MainLoop(0, 3);
+                                            if (D_800A3059MainLoop == 3) {
+                                                func_80044FF8MainLoop(0, 1);
+                                                func_8003CCE0MainLoop(0);
+                                                D_800A2F9CMainLoop[0] = 0;
+                                            }
+                                            func_80060E94MainLoop(
+                                                D_800A3059MainLoop - 2);
+                                            func_80060F54MainLoop(
+                                                (s16)D_800A3690MainLoop
+                                                    [D_800A3059MainLoop],
+                                                D_800A3059MainLoop - 2);
+                                            func_80060F10MainLoop(-0x78, 0, 2);
+                                            D_800A39E4MainLoop = 0x21;
+                                            func_80069AFCMainLoop(0x21);
+                                        }
+                                        goto finishInput;
+                                    confirmMode21:
+                                        func_8003F564MainLoop(0, 3);
+                                        func_80060F10MainLoop(0, -0x78, -2);
+                                        D_800A39E4MainLoop = 5;
+                                        func_80069AFCMainLoop(5);
+                                        if (D_800A3059MainLoop == 3) {
+                                            func_80044FF8MainLoop(2, 1);
+                                            func_800596F4MainLoop();
+                                        }
+                                        goto finishInput;
+                                    confirmMode28:
+                                        func_8003F564MainLoop(0, 3);
+                                        func_800599E4MainLoop();
+                                        cardMenuCode = func_8006A15CMainLoop(
+                                            D_800A358CMainLoop[0]);
+                                        D_800A39E4MainLoop = one;
+                                        func_80057008MainLoop(cardMenuCode &
+                                                              0xFF);
+                                        func_800598C4MainLoop();
+                                        func_80057160MainLoop(0);
+                                        goto finishInput;
+                                    confirmMode22:
+                                        func_8003F564MainLoop(0, 3);
+                                        D_800A39E4MainLoop = 0x23;
+                                        func_8006CF38MainLoop();
+                                        func_8006C9F8MainLoop();
+                                        D_800A3808MainLoop[0] = 0;
+                                        func_80069AFCMainLoop(
+                                            D_800A39E4MainLoop);
+                                        goto finishInput;
+                                    confirmMode23:
+                                        {
+                                            register s32 scanPhase asm("v0");
+                                            scanPhase = D_800A3928MainLoop;
+                                            asm("" : : "r"(scanPhase));
+                                            returnChannel = 0;
+                                            if (scanPhase == 0) {
+                                                goto confirmScan;
+                                            }
+                                            actionSound = 3;
+                                            if (scanPhase == one) {
+                                                goto returnMainMenu;
+                                            }
+                                            goto finishInput;
+                                        confirmScan:
+                                            {
+                                                func_8003F564MainLoop(0, 3);
+                                                if (func_8006D178MainLoop() ==
+                                                    0) {
+                                                    func_8003F914MainLoop(0);
+                                                } else {
+                                                    func_8006C9DCMainLoop();
+                                                    if (D_800A3808MainLoop[0] ==
+                                                        0) {
+                                                        if (func_8006D0C0MainLoop() ==
+                                                            one) {
+                                                            goto refreshCardMenu;
+                                                        }
+                                                        if (D_800A3808MainLoop
+                                                                [0] == 0) {
+                                                            goto updateCardStatus;
+                                                        }
+                                                    }
+                                                    if (D_800A3808MainLoop[0] ==
+                                                        0x10) {
+                                                    updateCardStatus:
+                                                        func_800599E4MainLoop();
+                                                        if (!(func_80069F30MainLoop() &
+                                                              0xFF)) {
+                                                            func_8006D8E8MainLoop(
+                                                                0);
+                                                            if (D_800A3808MainLoop
+                                                                    [0] !=
+                                                                mode13) {
+                                                                D_800A3928MainLoop =
+                                                                    one;
+                                                            }
+                                                        }
+                                                        func_800598C4MainLoop();
+                                                        if (D_800A3808MainLoop
+                                                                [0] == mode13) {
+                                                            goto finishInput;
+                                                        }
+                                                    }
+                                                    if (D_800A3808MainLoop[0] ==
+                                                        mode13) {
+                                                        func_8003F914MainLoop(
+                                                            0);
+                                                        goto playBackSound;
+                                                    }
+                                                    goto checkCardMenuReady;
+                                                }
+                                            }
+                                            goto finishInput;
+                                        }
+                                    confirmMode24:
+                                        func_8003F564MainLoop(0, 3);
+                                        menuPhase = D_800A3928MainLoop;
+                                        asm(""
+                                            : "=r"(menuPhase)
+                                            : "0"(menuPhase));
+                                        if (menuPhase == one) {
+                                            goto confirmStageOne;
+                                        }
+                                        if (menuPhase < 2) {
+                                            if (menuPhase == 0) {
+                                                goto confirmStageZero;
+                                            }
+                                            goto finishInput;
+                                        }
+                                        if (menuPhase == two) {
+                                            goto confirmStageTwo;
+                                        }
+                                        goto finishInput;
+                                    confirmStageZero:
+                                        D_800A3808MainLoop[0] = 0x17;
+                                        cardOperation = 0;
+                                        goto startCardOperation;
+                                    confirmStageOne:
+                                        if (func_8006D258MainLoop() == one) {
+                                            D_800A3808MainLoop[0] = 0x12;
+                                        }
+                                        D_800A3928MainLoop = two;
+                                    refreshCardMenu:
+                                        func_8006D8E8MainLoop(0);
+                                        goto finishInput;
+                                    confirmStageTwo:
+                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        if (D_800A3968MainLoop[0] != 0) {
+                                            D_800A3950MainLoop = 0x24;
+                                        }
+                                        goto finishMainMenuReturn;
+                                    confirmMode25:
+                                        func_8003F564MainLoop(0, 3);
+                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        screenResult = 1;
+                                        D_800A39E4MainLoop = screenResult;
+                                        goto finishInput;
+                                    confirmMode26:
+                                        func_8003F564MainLoop(0, 3);
+                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        D_800A39E4MainLoop = 7;
+                                        func_8005833CMainLoop(
+                                            D_800A305BMainLoop);
+                                        screenResult = 0xFF;
+                                        goto finishInput;
+                                    }
+                                    goto finishInput;
+                                }
+                                if (currentPadZero &
+                                    ((u16)previousPadInverse & 0x10)) {
+                                    if (D_800A39E4MainLoop == 7) {
+
+                                        if (D_800A3950MainLoop == 0xFB) {
+                                            func_8003F564MainLoop(0, 4);
+                                            D_800A39E4MainLoop = 0x26;
+                                            D_800A3808MainLoopSite51[0] = 0x16;
+                                            func_8006D8E8MainLoop(0);
+                                            func_8006C5E4MainLoop(3);
+                                            func_8006C598MainLoop(-0x78, 0, 2);
+                                        }
+                                    } else {
+                                        screenResult = func_80056B0CMainLoop(
+                                            (s32)D_800A39E4MainLoop,
+                                            (s32)D_800A3950MainLoop);
+                                        if (screenResult & 0xFF) {
+                                            func_8003F564MainLoop(0, 4);
+
+                                        } else {
+                                            goto storePadStates;
+                                        }
+                                    }
+                                    goto finishInput;
+                                }
+                                if (currentPadZero &
+                                    ((u16)previousPadInverse & 0x80)) {
+                                    register s32 cancelPivot asm("v0");
+                                    register s32 cancelMode asm("v1");
+                                    cancelPivot = 0x25;
+                                    asm("" : : "r"(cancelPivot));
+                                    cancelMode = D_800A39E4MainLoop;
+                                    asm("" : : "r"(cancelMode));
+                                    switch (cancelMode) {
+                                    case 0xFC:
+                                        if (D_800A3808MainLoop[0] != two &&
+                                            D_800A3928MainLoop == 0) {
+                                            register s32 cardStatus asm("v0");
+                                            func_8003F564MainLoop(0, 3);
+                                            func_800599E4MainLoop();
+                                            func_80069F30MainLoop();
+                                            cardStatus =
+                                                func_80069EB8MainLoop() & 0xFF;
+                                            if (cardStatus == 0) {
+                                                cardStatus = 4;
+                                            } else {
+                                                cardStatus = 0x13;
+                                            }
+                                            asm("" : : "r"(cardStatus));
+                                            D_800A3808MainLoop[0] = cardStatus;
+                                            func_800598C4MainLoop();
+                                            cardOperation = 1;
+                                        startCardOperation:
+                                            func_8006D8E8MainLoop(
+                                                cardOperation);
+                                            D_800A3928MainLoop = one;
+                                        }
+                                        break;
+                                    case 0x23:
+                                        if (D_800A3928MainLoop == 0) {
+                                            if (D_800A3808MainLoop[0] ==
+                                                    mode13 ||
+                                                (u32)(D_800A3808MainLoop[0] -
+                                                      0x19) < 2U) {
+                                                func_8003F564MainLoop(0, 3);
+                                                func_800599E4MainLoop();
+                                                if (!(func_80069EB8MainLoop() &
+                                                      0xFF)) {
+                                                    D_800A3808MainLoop[0] = 4;
+                                                    func_8006D8E8MainLoop(0);
+                                                    D_800A3928MainLoop = one;
+                                                    func_80069AFCMainLoop(0xA);
+                                                } else {
+                                                    func_800598C4MainLoop();
+                                                checkCardMenuReady:
+                                                    if (D_800A3808MainLoop[0] ==
+                                                        0) {
+                                                        func_8006D0F0MainLoop();
+                                                        func_8006D8E8MainLoop(
+                                                            0);
+                                                        D_800A3928MainLoop =
+                                                            one;
+                                                        func_80069AFCMainLoop(
+                                                            0xA);
+                                                    }
+                                                }
+                                            } else {
+                                                goto playBackSound;
+                                            }
+                                        }
+                                        break;
+                                    case 0x24:
+                                    playBackSound:
+                                        returnChannel = 0;
+                                        actionSound = 4;
+                                    returnMainMenu:
+                                        asm(""
+                                            :
+                                            : "r"(returnChannel),
+                                              "r"(actionSound));
+                                        func_8003F564MainLoop(returnChannel,
+                                                              actionSound);
+                                        func_8006C598MainLoop(0, -0x78, -2);
+                                    finishMainMenuReturn:
+                                        D_800A39E4MainLoop = one;
+                                        func_80069AFCMainLoop(1);
+                                        break;
+                                    case 0x22:
+                                    case 0x28:
+                                        goto playBackSound;
+                                    case 0x25:
+                                    case 0x27:
+                                        func_8003F564MainLoop(0, 4);
+                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        D_800A39E4MainLoop = one;
+                                        break;
+                                    case 0x26:
+                                        func_8003F564MainLoop(0, 4);
+                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        D_800A39E4MainLoop = 7;
+                                        break;
+                                    }
+                                    goto finishInput;
+                                }
+                                /* End the old register lifetime before setting the pad index. */
+                                asm volatile("" : "=r"(index));
+                                index = player & 0xFF;
+                                padBits = newPad[index];
+                                if (padBits &
+                                    ((u16)previousPadInverse & 0x20)) {
+
+                                    if (D_800A39E4MainLoop == 0x23) {
+                                        func_8006CE64MainLoop();
+                                    }
+                                    goto finishInput;
+                                }
+                                if (padBits & 0x1000) {
+                                    register s32 padEdgeUp asm("v0");
+                                    register s32 blockedModeUp asm("v0");
+                                    register s32 cardModeUp asm("v0");
+                                    register s32 rawModeUp asm("a0");
+                                    register s32 modeUp asm("v1");
+                                    blockedModeUp = 0x21;
+                                    asm(""
+                                        : "=r"(blockedModeUp)
+                                        : "0"(blockedModeUp));
+                                    /* Retain the raw mode byte and its comparison value. */
+                                    asm volatile(
+                                        "lbu\t%0,D_800A39E4.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
+                                        : "=r"(rawModeUp), "=r"(modeUp)
+                                        : "m"(D_800A39E4MainLoop));
+                                    if ((modeUp != blockedModeUp) &&
+                                        (modeUp != 0xFC) &&
+                                        ((u32)(rawModeUp - 0x25) >= 2U) &&
+                                        (modeUp != mode13) &&
+                                        (modeUp != 0x27) && (modeUp != 0xE)) {
+                                        if (((u32)(rawModeUp - 9) < 2U) ||
+                                            (modeUp == 0xC) ||
+                                            ((u32)(rawModeUp - 0x10) < 2U)) {
+                                            asm("" : : "r"(rawModeUp));
+                                            func_80068AC4MainLoop(newPad[0],
+                                                                  oldPad[0], 1);
+
+                                            goto finishInput;
+                                        }
+                                        cardModeUp = 0x23;
+                                        asm(""
+                                            : "=r"(cardModeUp)
+                                            : "0"(cardModeUp), "r"(rawModeUp));
+                                        if (modeUp == cardModeUp) {
+                                            if (D_800A3928MainLoop == one) {
+                                                goto nextPlayer;
+                                            }
+                                            if (D_800A3770MainLoopSite57[0] !=
+                                                0) {
+                                                goto nextPlayer;
+                                            }
+                                            menuDirection = 1;
+                                            goto moveCardCursor;
+                                        }
+                                        padEdgeUp = previousPadInverse & 0x1000;
+                                        asm(""
+                                            : "=r"(padEdgeUp)
+                                            : "0"(padEdgeUp));
+                                        if (currentPadZero & padEdgeUp) {
+                                            if ((modeUp == 0x22) ||
+                                                (modeUp == 0x24) ||
+                                                (modeUp == 0x28)) {
+                                                if (D_800A3770MainLoopSite58
+                                                        [0] == 0) {
+                                                    if (func_8006C700MainLoop(
+                                                            0,
+                                                            D_800A39E4MainLoop ==
+                                                                0x22) &
+                                                        0xFF) {
+                                                        func_8003F564MainLoop(
+                                                            0, 0);
+
+                                                    } else {
+                                                        goto storePadStates;
+                                                    }
+                                                    goto finishInput;
+                                                }
+                                            } else {
+                                                func_8003F564MainLoop(0, 0);
+                                                wrappedItemUp =
+                                                    D_800A3059MainLoop;
+                                                if (wrappedItemUp == 0) {
+                                                    wrappedItemUp =
+                                                        D_800A38E8MainLoopSite59
+                                                            [0] -
+                                                        1;
+                                                } else {
+                                                    wrappedItemUp -= 1;
+                                                }
+                                                asm("" : : "r"(wrappedItemUp));
+                                                D_800A3059MainLoop =
+                                                    wrappedItemUp;
+                                                asm volatile(
+                                                    ""
+                                                    :
+                                                    : "m"(D_800A3059MainLoop)
+                                                    : "memory");
+                                                if (D_800A39E4MainLoop == two) {
+
+                                                    if (D_800A3988MainLoopSmall ==
+                                                        0) {
+                                                        if ((u32)(D_800A3059MainLoopPostUp -
+                                                                  4) < 2U) {
+                                                            D_800A3059MainLoopPostUp =
+                                                                3;
+
+                                                        } else {
+                                                            goto storePadStates;
+                                                        }
+                                                    }
+                                                    goto finishInput;
+                                                }
+                                                if ((D_800A39E4MainLoop ==
+                                                     one) &&
+                                                    (D_800A3950MainLoop == 0)) {
+
+                                                    if ((u32)(D_800A3059MainLoopPostUp -
+                                                              2) < 4U) {
+                                                        D_800A3059MainLoopPostUp =
+                                                            one;
+
+                                                    } else {
+                                                        goto finishInput;
+                                                    }
+                                                } else {
+                                                    if (D_800A39E4MainLoop ==
+                                                        3) {
+
+                                                        if (D_800A3644MainLoop !=
+                                                            0) {
+                                                            itemUp =
+                                                                D_800A3059MainLoopPostUp &
+                                                                0xFF;
+                                                            if (itemUp == 3) {
+                                                                D_800A3059MainLoopPostUp -=
+                                                                    2;
+
+                                                            } else if (itemUp ==
+                                                                       two) {
+                                                                D_800A3059MainLoopPostUp -=
+                                                                    1;
+
+                                                            } else {
+                                                                goto storePadStates;
+                                                            }
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A39E4MainLoop ==
+                                                        4) {
+                                                        itemCursorUp =
+                                                            D_800A3059MainLoopPostUp;
+
+                                                        if (D_800A3988MainLoopSite60
+                                                                [itemCursorUp &
+                                                                 0xFF] &
+                                                            0x80) {
+                                                            do {
+                                                                nextItemUp =
+                                                                    itemCursorUp -
+                                                                    1;
+                                                                D_800A3059MainLoopPostUp =
+                                                                    nextItemUp;
+                                                                itemCursorUp =
+                                                                    nextItemUp;
+                                                            } while (
+                                                                D_800A3988MainLoopSite61
+                                                                    [nextItemUp &
+                                                                     0xFF] &
+                                                                0x80);
+                                                        }
+                                                        goto finishInput;
+                                                    }
+
+                                                    if (D_800A39E4MainLoop ==
+                                                        5) {
+
+                                                        if (D_800A3059MainLoopPostUp ==
+                                                            5) {
+
+                                                            if (D_800A3076MainLoop ==
+                                                                0) {
+                                                                D_800A3059MainLoopPostUp -=
+                                                                    1;
+                                                            }
+                                                            goto finishInput;
+                                                        }
+                                                    } else {
+                                                        goto finishInput;
+                                                    }
+                                                }
+                                                goto updatePreviousPad;
+                                            }
+                                        } else {
+                                            goto storePadStates;
+                                        }
+                                        goto nextPlayer;
+                                    }
+                                    goto nextPlayer;
+                                }
+                                if (padBits & 0x4000) {
+                                    register s32 padEdgeDown asm("v0");
+                                    register s32 blockedModeDown asm("v0");
+                                    register s32 cardModeDown asm("v0");
+                                    register s32 rawModeDown asm("a0");
+                                    register s32 modeDown asm("v1");
+                                    blockedModeDown = 0x21;
+                                    asm(""
+                                        : "=r"(blockedModeDown)
+                                        : "0"(blockedModeDown));
+                                    /* Retain the raw mode byte and its comparison value. */
+                                    asm volatile(
+                                        "lbu\t%0,D_800A39E4.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
+                                        : "=r"(rawModeDown), "=r"(modeDown)
+                                        : "m"(D_800A39E4MainLoop));
+                                    if ((modeDown != blockedModeDown) &&
+                                        (modeDown != 0xFC) &&
+                                        ((u32)(rawModeDown - 0x25) >= 2U) &&
+                                        (modeDown != mode13) &&
+                                        (modeDown != 0x27) &&
+                                        (modeDown != 0xE)) {
+                                        if (((u32)(rawModeDown - 9) < 2U) ||
+                                            (modeDown == 0xC) ||
+                                            ((u32)(rawModeDown - 0x10) < 2U)) {
+                                            asm("" : : "r"(rawModeDown));
+                                            func_80068AC4MainLoop(newPad[0],
+                                                                  oldPad[0], 0);
+
+                                            goto finishInput;
+                                        }
+                                        cardModeDown = 0x23;
+                                        asm(""
+                                            : "=r"(cardModeDown)
+                                            : "0"(cardModeDown),
+                                              "r"(rawModeDown));
+                                        if (modeDown == cardModeDown) {
+                                            if (D_800A3928MainLoop == one) {
+                                                goto nextPlayer;
+                                            }
+                                            if (D_800A3770MainLoopSite62[0] !=
+                                                0) {
+                                                goto nextPlayer;
+                                            }
+                                            menuDirection = 0;
+                                        moveCardCursor:
+                                            player += 1;
+                                            func_8006CB80MainLoop(
+                                                menuDirection);
+                                            oldPad[0] = newPad[0];
+                                        } else {
+                                            padEdgeDown =
+                                                previousPadInverse & 0x4000;
+                                            asm(""
+                                                : "=r"(padEdgeDown)
+                                                : "0"(padEdgeDown));
+                                            if (currentPadZero & padEdgeDown) {
+                                                if ((modeDown == 0x22) ||
+                                                    (modeDown == 0x24) ||
+                                                    (modeDown == 0x28)) {
+                                                    if (D_800A3770MainLoopSite63
+                                                            [0] == 0) {
+                                                        if (func_8006C700MainLoop(
+                                                                1,
+                                                                D_800A39E4MainLoop ==
+                                                                    0x22) &
+                                                            0xFF) {
+                                                            func_8003F564MainLoop(
+                                                                0, 1);
+
+                                                        } else {
+                                                            goto storePadStates;
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                } else {
+                                                    func_8003F564MainLoop(0, 1);
+                                                    if ((D_800A3059MainLoop &
+                                                         0xFF) ==
+                                                        (D_800A38E8MainLoopSite64
+                                                             [0] -
+                                                         1)) {
+                                                        D_800A3059MainLoop = 0;
+                                                    } else {
+                                                        D_800A3059MainLoop += 1;
+                                                    }
+                                                    if (D_800A39E4MainLoop ==
+                                                        two) {
+
+                                                        if (D_800A3988MainLoopSmall ==
+                                                            0) {
+
+                                                            if (D_800A3059MainLoopPostDown ==
+                                                                4) {
+                                                                /* Keep the two skip paths separate until the store. */
+                                                                asm volatile(
+                                                                    ""
+                                                                    :
+                                                                    :
+                                                                    : "memory");
+                                                                goto skipLockedItems;
+                                                            }
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if ((D_800A39E4MainLoop ==
+                                                         one) &&
+                                                        (D_800A3950MainLoop ==
+                                                         0)) {
+                                                        if ((u32)(D_800A3059MainLoopPostDown -
+                                                                  2) < 4U) {
+                                                        skipLockedItems:
+                                                            D_800A3059MainLoopPostDown =
+                                                                6;
+
+                                                        } else {
+                                                            goto storePadStates;
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A39E4MainLoop ==
+                                                        3) {
+
+                                                        if (D_800A3644MainLoop !=
+                                                            0) {
+                                                            itemDown =
+                                                                D_800A3059MainLoopPostDown &
+                                                                0xFF;
+                                                            if (itemDown ==
+                                                                two) {
+                                                                D_800A3059MainLoopPostDown +=
+                                                                    2;
+
+                                                            } else if (
+                                                                itemDown ==
+                                                                D_800A39E4MainLoop) {
+                                                                D_800A3059MainLoopPostDown +=
+                                                                    1;
+
+                                                            } else {
+                                                                goto storePadStates;
+                                                            }
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A39E4MainLoop ==
+                                                        4) {
+                                                        itemCursorDown =
+                                                            D_800A3059MainLoopPostDown;
+
+                                                        if (D_800A3988MainLoopSite65
+                                                                [itemCursorDown &
+                                                                 0xFF] &
+                                                            0x80) {
+                                                            do {
+                                                                nextItemDown =
+                                                                    itemCursorDown +
+                                                                    1;
+                                                                D_800A3059MainLoopPostDown =
+                                                                    nextItemDown;
+                                                                itemCursorDown =
+                                                                    nextItemDown;
+                                                            } while (
+                                                                D_800A3988MainLoopSite66
+                                                                    [nextItemDown &
+                                                                     0xFF] &
+                                                                0x80);
+                                                        }
+                                                        goto finishInput;
+                                                    }
+
+                                                    if (D_800A39E4MainLoop !=
+                                                        5) {
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A3059MainLoopPostDown !=
+                                                        D_800A39E4MainLoop) {
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A3076MainLoop !=
+                                                        0) {
+                                                        goto finishInput;
+                                                    }
+                                                    D_800A3059MainLoopPostDown =
+                                                        0;
+                                                    goto updatePreviousPad;
+                                                }
+                                            } else {
+                                                goto storePadStates;
+                                            }
+                                            goto nextPlayer;
+                                        }
+                                    } else {
+                                        goto nextPlayer;
+                                    }
+                                } else {
+                                    if (padBits & 0x8000) {
+                                        if (D_800A39E4MainLoop == mode13 &&
+                                            (padBits &
+                                             ((u16)~oldPad[index] & 0x8000))) {
+                                            if (!(func_8004229CMainLoop(
+                                                      (u8)D_800A3A24MainLoopSite68
+                                                          [index]) &
+                                                  0xFF) ||
+                                                D_800A3684MainLoopSite67
+                                                        [index] != one) {
+                                                if (D_800A3684MainLoopSite69
+                                                        [index] == 0) {
+                                                    func_8003F564MainLoop(0, 2);
+                                                    {
+                                                        register s32
+                                                            variantCount asm(
+                                                                "a0");
+                                                        register s32
+                                                            variantValue asm(
+                                                                "v0");
+                                                        register s32
+                                                            countMinusOne asm(
+                                                                "v1");
+                                                        register s32
+                                                            variantRemainder asm(
+                                                                "v1");
+                                                        variantCount =
+                                                            D_800A3080MainLoopSite70
+                                                                [D_800A3A24MainLoopSite71
+                                                                     [index]];
+                                                        asm(""
+                                                            :
+                                                            : "r"(
+                                                                variantCount));
+                                                        variantValue =
+                                                            D_800A307CMainLoopSite72
+                                                                [index];
+                                                        countMinusOne =
+                                                            variantCount - 1;
+                                                        asm(""
+                                                            :
+                                                            : "r"(variantValue),
+                                                              "r"(countMinusOne));
+                                                        variantValue +=
+                                                            countMinusOne;
+                                                        asm(""
+                                                            :
+                                                            : "r"(
+                                                                variantValue));
+                                                        variantRemainder =
+                                                            variantValue %
+                                                            variantCount;
+                                                        asm(""
+                                                            :
+                                                            : "r"(
+                                                                variantRemainder));
+                                                        D_800A307CMainLoopSite72
+                                                            [index] =
+                                                                variantRemainder;
+                                                    }
+                                                }
+                                            }
+                                        } else if (D_800A39E4MainLoop == two &&
+                                                   D_800A3059MainLoop == one) {
+                                            func_80055C78MainLoop(
+                                                2, 1, 1, newPad[player & 0xFF],
+                                                oldPad[player & 0xFF],
+                                                player & 0xFF);
+                                        } else {
+                                            func_80055C78MainLoop(
+                                                D_800A39E4MainLoop,
+                                                D_800A3059MainLoop, 1,
+                                                newPad[0], oldPad[0],
+                                                activePlayer);
+                                        }
+                                    } else if (padBits & 0x2000) {
+                                        if (D_800A39E4MainLoop == mode13 &&
+                                            (padBits &
+                                             ((u16)~oldPad[index] & 0x2000))) {
+                                            if (!(func_8004229CMainLoop(
+                                                      (u8)D_800A3A24MainLoopSite74
+                                                          [index]) &
+                                                  0xFF) ||
+                                                D_800A3684MainLoopSite73
+                                                        [index] != one) {
+                                                if (D_800A3684MainLoopSite75
+                                                        [index] == 0) {
+                                                    func_8003F564MainLoop(0, 2);
+                                                    D_800A307CMainLoopSite76[index] =
+                                                        (D_800A307CMainLoopSite76
+                                                             [index] +
+                                                         1) %
+                                                        D_800A3080MainLoopSite77
+                                                            [D_800A3A24MainLoopSite78
+                                                                 [index]];
+                                                }
+                                            }
+                                        } else if (D_800A39E4MainLoop == two &&
+                                                   D_800A3059MainLoop == one) {
+                                            func_80055C78MainLoop(
+                                                2, 1, 0, newPad[player & 0xFF],
+                                                oldPad[player & 0xFF],
+                                                player & 0xFF);
+                                        } else {
+                                            func_80055C78MainLoop(
+                                                D_800A39E4MainLoop,
+                                                D_800A3059MainLoop, 0,
+                                                newPad[0], oldPad[0],
+                                                activePlayer);
+                                        }
+                                    }
+                                storePadStates:
+                                finishInput:
+
+                                updatePreviousPad:
+                                    oldPad[player & 0xFF] =
+                                        newPad[player & 0xFF];
+                                    goto nextPlayer;
+                                }
+                            }
+                        } else {
+                        nextPlayer:
+                            player += 1;
+                        }
+                        index = (u8)player;
+                    } while ((u32)(player & 0xFF) < 2U);
+                }
+            } while (!(screenResult & 0xFF));
+        }
+        DrawSyncMainLoop(0);
+        if (D_800A39E4MainLoop == 7) {
+            func_80057DE8MainLoop();
+        }
+        screenResultByte = screenResult & 0xFF;
+        if (D_800A39E4MainLoop != 0xFD) {
+            nextScreen = func_800571ECMainLoop(
+                D_800A39E4MainLoop, &D_800A3950MainLoop, screenResultByte);
+            D_800A39E4MainLoop = nextScreen;
+            if ((nextScreen & 0xFF) == 7) {
+                activePlayer = 0;
+            }
+            if ((D_800A3950MainLoop == 7) && !(activePlayer & 0xFF) &&
+                (D_800A3644MainLoop != 0) && (*D_800A3A25MainLoopSite79 != 0) &&
+                (screenResultByte != 0xFF)) {
+                activePlayer = 1;
+                D_800A3950MainLoop = nextScreen;
+                D_800A39E4MainLoop = 7;
+                D_800A3059MainLoop = 0;
+            }
+        }
+        if ((D_800A39E4MainLoop == 0xFF) || (D_800A39E4MainLoop == 0xFD) ||
+            (D_800A39E4MainLoop == 0xF8)) {
+            exitLoop = 1;
+        }
+    } while (exitLoop == 0);
+    VSyncMainLoop(0);
+    VSyncMainLoop(0);
+    do {
+
+    } while (func_8003F4FCMainLoop(0) & 0xFF);
+}
 
 void func_80055AA4(u8 arg0, s32 arg1) {
     extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");

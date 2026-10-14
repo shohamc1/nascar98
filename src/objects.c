@@ -2102,7 +2102,992 @@ s32 func_800270F4(void *arg0, s32 arg1) {
     return result >> 2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80027174);
+typedef struct {
+    s16 x, y, z, pad;
+} ContactPoint;
+typedef struct TrackContact {
+    u8 unk0[19];
+    u8 flags;
+    u8 unk14[2];
+    s16 heading;
+    ContactPoint *point0;
+    ContactPoint *point1;
+    ContactPoint *point2;
+    ContactPoint *point3;
+    struct TrackContact *next;
+} TrackContact;
+typedef struct ContactCorner {
+    u8 unk0[4];
+    s32 x;
+    s32 y;
+    u8 unkC[12];
+} ContactCorner;
+typedef struct ContactShape {
+    u8 unk0[28];
+    s16 frontExtent;
+    s16 rearExtent;
+    u8 unk20[2];
+    s16 halfWidth;
+    u8 unk24[28];
+    ContactCorner *corners;
+} ContactShape;
+typedef struct ContactCar {
+    s32 x;
+    s32 y;
+    s32 z;
+    u8 unkC[12];
+    s32 axisXX;
+    s32 axisXY;
+    u8 unk20[4];
+    s32 axisYX;
+    s32 axisYY;
+    u8 unk2C[4];
+    s32 axisZX;
+    s32 axisZY;
+    u8 unk38[88];
+    s32 speed;
+    u8 unk94[28];
+    s32 velocityX;
+    s32 velocityY;
+    u8 unkB8[12];
+    s32 frontVelocityX;
+    s32 frontVelocityY;
+    u8 unkCC[4];
+    s32 rearVelocityX;
+    s32 rearVelocityY;
+    u8 unkD8[29];
+    u8 collisionPending;
+    u8 unkF6[12];
+    s16 unk102;
+    u8 unk104[16];
+    s16 heading;
+    u8 unk116[202];
+    s16 trackIndex;
+    u8 unk1E2[10];
+    s16 unk1EC;
+    u8 unk1EE[6];
+    s32 oldTrackIndex;
+    s32 regionIndex;
+    u8 unk1FC[4];
+    s8 mode;
+    u8 unk201[13];
+    s16 unk20E;
+    u8 unk210[8];
+    s32 lateralSpeed;
+    u8 unk21C[148];
+    s16 frontLeftEffect;
+    u8 unk2B2[38];
+    s16 frontRightEffect;
+    u8 unk2DA[38];
+    s16 rearLeftEffect;
+    u8 unk302[38];
+    s16 rearRightEffect;
+    u8 unk32A[42];
+    void (*callback)(u8 *);
+    u8 unk358[10];
+    u16 frontRightContact;
+    u16 frontLeftContact;
+    u16 rearRightContact;
+    u16 rearLeftContact;
+    u8 unk36A[6];
+    ContactShape *shape;
+} ContactCar;
+typedef struct ContactRegion {
+    u16 minX;
+    u16 minY;
+    u16 maxX;
+    u16 maxY;
+    u8 unk8[8];
+} ContactRegion;
+typedef struct ContactTrack {
+    u8 unk0[40];
+    TrackContact *contacts;
+    u8 unk2C[100];
+} ContactTrack;
+extern char D_8008CFE0[];
+extern void func_800432C0(void *, s32);
+extern void func_80043B68(void *, s32);
+extern s32 *gContactCosTable asm("D_800A3A2CAbsolute2");
+extern s32 *gContactSinTable asm("D_800A3A34Absolute2");
+
+/* Resolves the nearest track-edge contact and applies wheel impulses. */
+s32 CarHandleWallCollision(void *object) {
+    ContactCar *car;
+    /* Keep the coordinates and effect vector in their retail stack slots. */
+    struct {
+        s32 reserved0[4];
+        s32 point[3];
+        s32 reserved1[9];
+        s32 effect[3];
+        s32 reserved2;
+    } workspace;
+    register ContactCorner *corners asm("$3");
+    register ContactCorner *corners2 asm("$3");
+    ContactPoint *wallPoint;
+    register ContactRegion *region asm("$16");
+    register TrackContact *nearestContact asm("$17");
+    register TrackContact *contact asm("$19");
+    register s32 heading asm("$5");
+    register s32 impulse asm("$22");
+    s32 trackIndex;
+    register s32 effectValue asm("$3");
+    register s32 effectValue2 asm("$3");
+    register s32 *forwardSinEntry asm("$5");
+    register s32 *normalSinEntry asm("$5");
+    register s32 *forwardCosEntry asm("$3");
+    register s32 *normalCosEntry asm("$3");
+    register s32 positiveDelta asm("$4");
+    s32 firstProjection;
+    register s32 shiftedPoint asm("$5");
+    register s32 angleLoss asm("$3");
+    s32 coefficient;
+    register s32 yVelocity asm("$3");
+    register s32 halfProduct asm("$2");
+    register s32 halfSign asm("$5");
+    register s32 frontCoefficient asm("$2");
+    register s32 carHeading asm("$2");
+    register s32 tailSpeed asm("$6");
+    register s32 tailSpeed2 asm("$2");
+    register s32 basisValue asm("$4");
+    register s32 shapeExtent asm("$2");
+    register ContactRegion *regionBase asm("$3");
+    register s32 *sinSubtract asm("$4");
+    register ContactTrack *track asm("$4");
+    register s32 rowOffset asm("$2");
+    register s32 originX asm("$3");
+    register s32 originY asm("$2");
+    register s32 speedQuarter asm("$4");
+    register ContactCar *callbackCar asm("$4");
+    s32 impulseX;
+    register s32 normalAddress asm("$3");
+    register s32 rearNormalAddress asm("$5");
+    s32 secondProjection;
+    register ContactShape *shape asm("$3");
+    register s32 shapeWidth asm("$3");
+    register s32 projectedVelocity asm("$2");
+    register s32 *cosTable asm("$6");
+    register s32 *sinTable asm("$5");
+    register s32 *rearCosTable asm("$7");
+    register s32 *rearSinTable asm("$6");
+    register void (*nextCallback)(u8 *) asm("$4");
+    register s32 value0 asm("$16");
+    register s32 value1 asm("$17");
+    register s32 value4 asm("$20");
+    register s32 value5 asm("$21");
+    register s32 regionCount asm("$23");
+    s32 sumX;
+    register s32 reverseHeading3 asm("$2");
+    register s32 reverseHeading4 asm("$2");
+    register s32 reverseHeading5 asm("$2");
+    register s32 reverseHeading6 asm("$2");
+    s32 meanY;
+    register s32 dx asm("$2");
+    register s32 absDx asm("$2");
+    s32 dy;
+    register s32 previousSpeed asm("$2");
+    s32 nextSpeed;
+    register s32 reverseHeading asm("$2");
+    register s32 reverseHeading2 asm("$2");
+    register s32 headingDelta asm("$3");
+    register s32 normalAngleSum asm("$3");
+    s32 speedLimit;
+    register s32 normalImpulse asm("$4");
+    register s32 normalImpulse2 asm("$4");
+    register s32 normalImpulse3 asm("$4");
+    register s32 normalImpulse4 asm("$4");
+    register s32 normalImpulse5 asm("$4");
+    register s32 currentY asm("$5");
+    register s32 absDy asm("$5");
+    register s32 angleDifference asm("$5");
+    register s32 effectWheel asm("$5");
+    register s32 effectWheel2 asm("$5");
+    s32 centerX;
+    register s32 squareX asm("$4");
+    register s32 remainingRegions asm("$19");
+    register s32 roundedDistance2 asm("$2");
+    s32 leftFrontEffect;
+    s32 leftRearEffect;
+    register s32 normalHeading2 asm("$2");
+    s32 roundedX;
+    s32 roundedY;
+    register s32 normalHeading3 asm("$2");
+    register s32 lightImpact asm("$2");
+    register s32 normalHeading4 asm("$2");
+    register s32 currentX asm("$2");
+    register s32 roundedHeadingDelta asm("$2");
+    register s32 roundedNormalAngle asm("$2");
+    register s32 roundedDistance asm("$2");
+    s32 rightFrontEffect;
+    s32 rightRearEffect;
+    register s32 normalHeading asm("$2");
+    register s32 regionResult asm("$3");
+    register s32 impactSpeed asm("$3");
+    register u32 distance asm("$4");
+    register s32 quarterY asm("$3");
+    s32 *regionHome;
+
+    car = (ContactCar *)object;
+    value4 = 0x0FFFFFFF;
+    trackIndex = car->trackIndex;
+    nearestContact = NULL;
+    if (trackIndex == -1) {
+        trackIndex = car->oldTrackIndex;
+        if (trackIndex == -1) {
+            return 0;
+        }
+    }
+    {
+        /* All four contact flags can retain the incoming impulse register. */
+        asm("" : "=r"(impulse));
+        track = FAR_VAR(ContactTrack *, gFarTrack);
+        rowOffset = trackIndex * 0x90;
+        rowOffset = (s32)track + rowOffset;
+        contact = *(TrackContact **)(rowOffset + 0x28);
+        if (contact == NULL) {
+            contact = track->contacts;
+        }
+        currentX = car->x;
+        if (currentX < 0) {
+            currentX += 3;
+        }
+        currentY = car->y;
+        currentX >>= 2;
+        originX = FAR_VAR(s32, gFarOffsetX);
+        value5 = currentX - originX;
+        if (currentY < 0) {
+            currentY += 3;
+        }
+        originY = FAR_VAR(s32, gFarOffsetY);
+        quarterY = currentY >> 2;
+        value0 = quarterY - originY;
+        if (contact != NULL) {
+            do {
+
+                sumX = contact->point0->x + contact->point1->x +
+                       contact->point2->x + contact->point3->x;
+                centerX = sumX >> 2;
+                if (sumX < 0) {
+                    centerX = (s32)(sumX + 3) >> 2;
+                }
+                workspace.point[0] = centerX;
+                meanY = (s32)(contact->point0->y + contact->point1->y +
+                              contact->point2->y + contact->point3->y) /
+                        4;
+                absDy = meanY - value0;
+                workspace.point[1] = meanY;
+                if (absDy < 0) {
+                    absDy = value0 - meanY;
+                }
+                dx = centerX - value5;
+                if (dx < 0) {
+                    absDx = value5 - centerX;
+                    squareX = absDx * absDx;
+                } else {
+                    squareX = dx * dx;
+                }
+                dy = workspace.point[1] - value0;
+                if (dy < 0) {
+                    distance = MathSqrt(squareX +
+                                        absDy * (value0 - workspace.point[1]));
+                } else {
+                    distance = MathSqrt(squareX + absDy * dy);
+                }
+                if ((nearestContact == NULL) || ((s32)distance < value4)) {
+                    value4 = (s32)distance;
+                    nearestContact = contact;
+                }
+                contact = contact->next;
+            } while (contact != NULL);
+        }
+        contact = nearestContact;
+        if (nearestContact == NULL) {
+            SystemShowFatalError(D_8008CFE0);
+        }
+        wallPoint = contact->point0;
+        workspace.point[0] =
+            ((wallPoint->x + FAR_VAR(s32, gFarOffsetX)) * 4) - car->x;
+        workspace.point[1] =
+            ((wallPoint->y + FAR_VAR(s32, gFarOffsetY)) * 4) - car->y;
+        headingDelta = contact->heading;
+        asm volatile("" : "=r"(headingDelta) : "0"(headingDelta) : "memory");
+        carHeading = car->heading;
+        headingDelta -= carHeading;
+        positiveDelta = headingDelta + 0x400;
+        roundedHeadingDelta = positiveDelta;
+        if (positiveDelta < 0) {
+            roundedHeadingDelta = headingDelta + 0x7FF;
+        }
+        value0 = roundedHeadingDelta >> 0xA;
+        roundedHeadingDelta = value0 << 0xA;
+        value0 = positiveDelta - roundedHeadingDelta;
+        if ((u32)(value0 - 0x101) < 0x1FFU) {
+            if (value0 < 0x200) {
+                value0 += 0x200;
+            } else {
+                value0 -= 0x200;
+            }
+        }
+        angleDifference = value0;
+        if (value0 >= 0x201) {
+            projectedVelocity = 0x400;
+            asm("" : "=r"(projectedVelocity) : "0"(projectedVelocity));
+            angleDifference = projectedVelocity - value0;
+        }
+        carHeading = car->heading;
+        asm("" : "=r"(carHeading) : "0"(carHeading));
+        normalAngleSum = value0 + carHeading;
+        roundedNormalAngle = normalAngleSum;
+        if (normalAngleSum < 0) {
+            roundedNormalAngle = normalAngleSum + 0x3FF;
+        }
+        value0 = roundedNormalAngle >> 0xA;
+        roundedNormalAngle = value0 << 0xA;
+        value0 = normalAngleSum - roundedNormalAngle;
+        projectedVelocity = 0x400 - value0;
+        value0 = projectedVelocity & 0x3FF;
+        asm volatile("" : "=r"(value0) : "0"(value0) : "memory");
+        if (angleDifference < 0x8C) {
+            previousSpeed = car->speed;
+            car->unk20E = 0;
+            angleLoss = angleDifference << 17;
+            speedQuarter = previousSpeed >> 4;
+            angleLoss += speedQuarter;
+            nextSpeed = previousSpeed - angleLoss;
+            car->speed = nextSpeed;
+            if (nextSpeed < 0) {
+                car->speed = 0;
+            }
+            if ((car->frontRightContact == 0) || (car->rearRightContact == 0)) {
+                value0 = value0 << 2;
+                firstProjection = MathMultiplyFixed16(
+                    *(s32 *)(value0 + (s32)gContactSinTable),
+                    workspace.point[0] << 16);
+                value0 += (s32)gContactCosTable;
+                coefficient = *(s32 *)value0;
+                shiftedPoint = workspace.point[1] << 16;
+                value0 = firstProjection;
+                secondProjection =
+                    MathMultiplyFixed16(coefficient, shiftedPoint);
+                shape = car->shape;
+                value0 += secondProjection;
+                value1 = value0 >> 16;
+                shapeWidth = shape->halfWidth;
+                roundedDistance = value1;
+                if (value1 < 0) {
+                    roundedDistance = value1 + 3;
+                }
+                value1 = shapeWidth + (roundedDistance >> 2);
+                car->x -= MathMultiplyFixed16(car->axisXY, value1);
+                car->y -= MathMultiplyFixed16(car->axisYY, value1);
+                car->z -= MathMultiplyFixed16(car->axisZY, value1);
+                corners = car->shape->corners;
+                workspace.effect[0] = corners->x;
+                workspace.effect[1] = corners->y;
+                workspace.effect[2] = 0x4B;
+                func_8001EEC4((s32 *)car);
+                func_8001F1D4(&workspace.effect[0]);
+                workspace.effect[0] += car->x;
+                workspace.effect[1] += car->y;
+                workspace.effect[2] += car->z;
+                value1 = workspace.effect[0] + RandomScaledGet(0x19);
+                value0 = workspace.effect[1] + RandomScaledGet(0x19);
+                func_8003644C(0, value1, value0,
+                              workspace.effect[2] + RandomScaledGet(0x32));
+                value1 = workspace.effect[0] + RandomScaledGet(0x19);
+                value0 = workspace.effect[1] + RandomScaledGet(0x19);
+                func_8003644C(1, value1, value0,
+                              workspace.effect[2] + RandomScaledGet(0x32));
+                if (car->lateralSpeed < -0x64) {
+                    if (RandomScaledGet(8) < 0) {
+                        rightFrontEffect = -RandomScaledGet(8);
+                    } else {
+                        rightFrontEffect = RandomScaledGet(8);
+                    }
+                    car->frontRightEffect = rightFrontEffect + 0xA;
+                    if (RandomScaledGet(8) < 0) {
+                        rightRearEffect = -RandomScaledGet(8);
+                    } else {
+                        rightRearEffect = RandomScaledGet(8);
+                    }
+                    car->rearRightEffect = rightRearEffect + 0xA;
+                }
+                car->lateralSpeed = 0;
+                if (contact->flags & 2) {
+                    normalHeading = contact->heading + 0x300;
+                } else {
+                    normalHeading = contact->heading + 0x100;
+                }
+                value1 = normalHeading & 0x3FF;
+                asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+                if (car->frontRightContact == 0) {
+                    s32 impulseX;
+                    register s32 normalCoefficient asm("$2");
+
+                    reverseHeading = (0x400 - value1) & 0x3FF;
+                    cosTable = gContactCosTable;
+                    sinTable = gContactSinTable;
+                    /* Keep the projected-velocity loads in retail order. */
+                    normalImpulse =
+                        *(volatile s32 *)(cosTable + reverseHeading);
+                    normalAddress = *(volatile s32 *)&car->velocityX;
+                    normalImpulse *= normalAddress;
+                    normalAddress =
+                        *(volatile s32 *)(sinTable + reverseHeading);
+                    projectedVelocity = *(volatile s32 *)&car->velocityY;
+                    normalAddress *= projectedVelocity;
+                    projectedVelocity = (normalImpulse - normalAddress) >> 16;
+                    projectedVelocity = -projectedVelocity;
+                    normalAddress = projectedVelocity << 1;
+                    normalImpulse = normalAddress + projectedVelocity;
+                    normalAddress = value1 << 2;
+                    if (normalImpulse < 0) {
+                        normalImpulse += 3;
+                    }
+                    normalCoefficient = normalAddress + (s32)cosTable;
+                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
+                    normalCoefficient = *(volatile s32 *)normalCoefficient;
+                    impulse = normalImpulse >> 2;
+                    impulseX = normalCoefficient * impulse;
+                    normalAddress += (s32)sinTable;
+                    car->frontVelocityX += impulseX;
+                    car->frontVelocityY += *(s32 *)normalAddress * impulse;
+                    if (impulse >= 0xB0) {
+                        if (RandomScaledGet((0x1F4 - impulse) / 100) == 0) {
+                            func_800432C0(car, 0);
+                        }
+                    }
+                    if (impulse >= 0x65) {
+                        func_800432C0(car, 5);
+                    }
+                    if (impulse >= 0x33) {
+                        func_80043B68(car, 0);
+                    }
+                }
+                if (car->rearRightContact == 0) {
+                    s32 impulseX;
+                    register s32 normalCoefficient asm("$2");
+
+                    reverseHeading2 = 0x400;
+                    asm volatile(""
+                                 : "=r"(reverseHeading2)
+                                 : "0"(reverseHeading2)
+                                 : "memory");
+                    reverseHeading2 = (reverseHeading2 - value1) & 0x3FF;
+                    cosTable = gContactCosTable;
+                    sinTable = gContactSinTable;
+                    normalImpulse2 =
+                        *(volatile s32 *)(cosTable + reverseHeading2);
+                    normalAddress = *(volatile s32 *)&car->velocityX;
+                    normalImpulse2 *= normalAddress;
+                    normalAddress =
+                        *(volatile s32 *)(sinTable + reverseHeading2);
+                    projectedVelocity = *(volatile s32 *)&car->velocityY;
+                    normalAddress *= projectedVelocity;
+                    projectedVelocity = (normalImpulse2 - normalAddress) >> 16;
+                    projectedVelocity = -projectedVelocity;
+                    normalAddress = projectedVelocity << 1;
+                    normalImpulse2 = normalAddress + projectedVelocity;
+                    normalAddress = value1 << 2;
+                    if (normalImpulse2 < 0) {
+                        normalImpulse2 += 3;
+                    }
+                    normalCoefficient = normalAddress + (s32)cosTable;
+                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
+                    normalCoefficient = *(volatile s32 *)normalCoefficient;
+                    impulse = normalImpulse2 >> 2;
+                    impulseX = normalCoefficient * impulse;
+                    normalAddress += (s32)sinTable;
+                    car->rearVelocityX += impulseX;
+                    car->rearVelocityY += *(s32 *)normalAddress * impulse;
+                    if (impulse >= 0xB0) {
+                        if (RandomScaledGet((0x1F4 - impulse) / 100) == 0) {
+                            func_800432C0(car, 2);
+                        }
+                    }
+                    if (impulse >= 0x79) {
+                        func_800432C0(car, 7);
+                    }
+                    if (impulse >= 0x33) {
+                        callbackCar = car;
+                        asm("" : "=r"(callbackCar) : "0"(callbackCar));
+                        effectWheel = 2;
+                        goto sideEffect;
+                    }
+                }
+            } else if ((car->frontLeftContact == 0) ||
+                       (car->rearLeftContact == 0)) {
+                value0 = value0 << 2;
+                firstProjection = MathMultiplyFixed16(
+                    *(s32 *)(value0 + (s32)gContactSinTable),
+                    workspace.point[0] << 16);
+                value0 += (s32)gContactCosTable;
+                coefficient = *(s32 *)value0;
+                shiftedPoint = workspace.point[1] << 16;
+                value0 = firstProjection;
+                secondProjection =
+                    MathMultiplyFixed16(coefficient, shiftedPoint);
+                shape = car->shape;
+                value0 += secondProjection;
+                value1 = value0 >> 16;
+                shapeWidth = shape->halfWidth;
+                roundedDistance2 = value1;
+                if (value1 < 0) {
+                    roundedDistance2 = value1 + 3;
+                }
+                value1 = shapeWidth + (roundedDistance2 >> 2);
+                car->x += MathMultiplyFixed16(car->axisXY, value1);
+                car->y += MathMultiplyFixed16(car->axisYY, value1);
+                car->z += MathMultiplyFixed16(car->axisZY, value1);
+                if (car->lateralSpeed >= 0x65) {
+                    if (RandomScaledGet(8) < 0) {
+                        leftFrontEffect = -RandomScaledGet(8);
+                    } else {
+                        leftFrontEffect = RandomScaledGet(8);
+                    }
+                    car->frontLeftEffect = leftFrontEffect + 0xA;
+                    if (RandomScaledGet(8) < 0) {
+                        leftRearEffect = -RandomScaledGet(8);
+                    } else {
+                        leftRearEffect = RandomScaledGet(8);
+                    }
+                    car->rearLeftEffect = leftRearEffect + 0xA;
+                }
+                car->lateralSpeed = 0;
+                corners2 = car->shape->corners;
+                workspace.effect[0] = corners2[1].x;
+                workspace.effect[1] = corners2[1].y;
+                workspace.effect[2] = 0x4B;
+                func_8001EEC4((s32 *)car);
+                func_8001F1D4(&workspace.effect[0]);
+                workspace.effect[0] += car->x;
+                workspace.effect[1] += car->y;
+                workspace.effect[2] += car->z;
+                value1 = workspace.effect[0] + RandomScaledGet(0x19);
+                value0 = workspace.effect[1] + RandomScaledGet(0x19);
+                func_8003644C(0, value1, value0,
+                              workspace.effect[2] + RandomScaledGet(0x32));
+                value1 = workspace.effect[0] + RandomScaledGet(0x19);
+                value0 = workspace.effect[1] + RandomScaledGet(0x19);
+                func_8003644C(1, value1, value0,
+                              workspace.effect[2] + RandomScaledGet(0x32));
+                if (contact->flags & 2) {
+                    normalHeading2 = contact->heading + 0x300;
+                } else {
+                    normalHeading2 = contact->heading + 0x100;
+                }
+                value1 = normalHeading2 & 0x3FF;
+                asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+                if (car->frontLeftContact == 0) {
+                    s32 impulseX;
+                    register s32 normalCoefficient asm("$2");
+
+                    reverseHeading3 = (0x400 - value1) & 0x3FF;
+                    cosTable = gContactCosTable;
+                    sinTable = gContactSinTable;
+                    normalImpulse3 =
+                        *(volatile s32 *)(cosTable + reverseHeading3);
+                    normalAddress = *(volatile s32 *)&car->velocityX;
+                    normalImpulse3 *= normalAddress;
+                    normalAddress =
+                        *(volatile s32 *)(sinTable + reverseHeading3);
+                    projectedVelocity = *(volatile s32 *)&car->velocityY;
+                    normalAddress *= projectedVelocity;
+                    projectedVelocity = (normalImpulse3 - normalAddress) >> 16;
+                    projectedVelocity = -projectedVelocity;
+                    normalAddress = projectedVelocity << 1;
+                    normalImpulse3 = normalAddress + projectedVelocity;
+                    normalAddress = value1 << 2;
+                    if (normalImpulse3 < 0) {
+                        normalImpulse3 += 3;
+                    }
+                    normalCoefficient = normalAddress + (s32)cosTable;
+                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
+                    normalCoefficient = *(volatile s32 *)normalCoefficient;
+                    impulse = normalImpulse3 >> 2;
+                    impulseX = normalCoefficient * impulse;
+                    normalAddress += (s32)sinTable;
+                    car->frontVelocityX += impulseX;
+                    car->frontVelocityY += *(s32 *)normalAddress * impulse;
+                    if (impulse >= 0xB0) {
+                        if (RandomScaledGet((0x1F4 - impulse) / 100) == 0) {
+                            func_800432C0(car, 1);
+                        }
+                    }
+                    if (impulse >= 0x65) {
+                        func_800432C0(car, 6);
+                    }
+                    if (impulse >= 0x33) {
+                        func_80043B68(car, 1);
+                    }
+                }
+                if (car->rearLeftContact == 0) {
+                    s32 impulseX;
+                    register s32 normalCoefficient asm("$2");
+
+                    reverseHeading4 = 0x400;
+                    asm volatile(""
+                                 : "=r"(reverseHeading4)
+                                 : "0"(reverseHeading4)
+                                 : "memory");
+                    reverseHeading4 = (reverseHeading4 - value1) & 0x3FF;
+                    cosTable = gContactCosTable;
+                    sinTable = gContactSinTable;
+                    normalImpulse4 =
+                        *(volatile s32 *)(cosTable + reverseHeading4);
+                    normalAddress = *(volatile s32 *)&car->velocityX;
+                    normalImpulse4 *= normalAddress;
+                    normalAddress =
+                        *(volatile s32 *)(sinTable + reverseHeading4);
+                    projectedVelocity = *(volatile s32 *)&car->velocityY;
+                    normalAddress *= projectedVelocity;
+                    projectedVelocity = (normalImpulse4 - normalAddress) >> 16;
+                    projectedVelocity = -projectedVelocity;
+                    normalAddress = projectedVelocity << 1;
+                    normalImpulse4 = normalAddress + projectedVelocity;
+                    normalAddress = value1 << 2;
+                    if (normalImpulse4 < 0) {
+                        normalImpulse4 += 3;
+                    }
+                    normalCoefficient = normalAddress + (s32)cosTable;
+                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
+                    normalCoefficient = *(volatile s32 *)normalCoefficient;
+                    impulse = normalImpulse4 >> 2;
+                    impulseX = normalCoefficient * impulse;
+                    normalAddress += (s32)sinTable;
+                    car->rearVelocityX += impulseX;
+                    car->rearVelocityY += *(s32 *)normalAddress * impulse;
+                    if (impulse >= 0xB0) {
+                        if (RandomScaledGet((0x1F4 - impulse) / 100) == 0) {
+                            func_800432C0(car, 3);
+                        }
+                    }
+                    if (impulse >= 0x79) {
+                        func_800432C0(car, 7);
+                    }
+                    if (impulse >= 0x33) {
+                        callbackCar = car;
+                        asm("" : "=r"(callbackCar) : "0"(callbackCar));
+                        effectWheel = 3;
+                    sideEffect:
+                        func_80043B68(callbackCar, effectWheel);
+                    }
+                }
+            }
+            value5 = car->x;
+            value4 = car->y;
+            regionHome = &car->regionIndex;
+            asm("" : "=r"(regionHome) : "0"(regionHome));
+            car->collisionPending = 0;
+            regionCount = D_800A2E08;
+            roundedX = value5;
+            if (value5 < 0) {
+                roundedX = value5 + 3;
+            }
+            value5 = roundedX >> 2;
+            roundedY = value4;
+            if (value4 < 0) {
+                roundedY = value4 + 3;
+            }
+            value1 = car->regionIndex;
+            value4 = roundedY >> 2;
+            if (value1 == -1) {
+                value1 = 0;
+            }
+            remainingRegions = regionCount;
+            regionBase = (ContactRegion *)D_800A3838;
+            rowOffset = value1 << 4;
+            asm("" : "=r"(rowOffset) : "0"(rowOffset));
+            region = (ContactRegion *)((s32)regionBase + rowOffset);
+            if (remainingRegions > 0) {
+            findRegion:
+                if (value1 >= regionCount) {
+                    value1 = 0;
+                    region = ((ContactRegion *)D_800A3838);
+                }
+                if ((value5 >= (s32)region->minX) &&
+                    ((s32)region->maxX >= value5) &&
+                    (value4 >= (s32)region->minY) &&
+                    ((s32)region->maxY >= value4) &&
+                    (func_800246C0(value5, value4, (u8 *)region) & 0xFF)) {
+                    *regionHome = value1;
+                    if (value1 == regionCount) {
+                        value1 = 0;
+                    }
+                    regionResult = value1;
+                } else {
+                    remainingRegions -= 1;
+                    value1 += 1;
+                    region++;
+                    if (remainingRegions <= 0) {
+                        goto noRegion;
+                    }
+                    goto findRegion;
+                }
+            } else {
+            noRegion:
+                *regionHome = -1;
+                regionResult = -1;
+            }
+            if (regionResult == -1) {
+                return 0;
+            }
+            nextCallback = func_80025720;
+            car->unk102 = 0;
+            if (((car->unk1EC != 1) || (nextCallback != func_80025730)) &&
+                (car->callback != func_80025730) && (car->mode != 4)) {
+                car->callback = nextCallback;
+            }
+            speedLimit = car->speed;
+            if (speedLimit < (impulse << 0x10)) {
+                impulse = speedLimit >> 0x10;
+            }
+            heading = car->heading;
+            forwardCosEntry = (s32 *)((heading << 2) + (s32)gContactCosTable);
+            asm("" : "=r"(forwardCosEntry) : "0"(forwardCosEntry));
+            sinSubtract = gContactSinTable;
+            forwardSinEntry = (s32 *)((heading << 2) + (s32)sinSubtract);
+            asm("" : "=r"(forwardSinEntry) : "0"(forwardSinEntry));
+            car->frontVelocityX -= *forwardCosEntry * impulse;
+            car->frontVelocityY -= *forwardSinEntry * impulse;
+            car->rearVelocityX -= *forwardCosEntry * impulse;
+            car->rearVelocityY -= *forwardSinEntry * impulse;
+            goto done;
+        }
+        if ((car->frontRightContact == 0) || (car->frontLeftContact == 0)) {
+            value0 = value0 << 2;
+            firstProjection =
+                MathMultiplyFixed16(*(s32 *)(value0 + (s32)gContactSinTable),
+                                    workspace.point[0] << 16);
+            value0 += (s32)gContactCosTable;
+            coefficient = *(s32 *)value0;
+            shiftedPoint = workspace.point[1] << 16;
+            value0 = firstProjection;
+            secondProjection = MathMultiplyFixed16(coefficient, shiftedPoint);
+            shape = car->shape;
+            value0 += secondProjection;
+            value1 = value0 >> 16;
+            basisValue = car->axisXX;
+            shapeExtent = shape->frontExtent;
+            value0 = (u32)value0 >> 31;
+            value0 = value1 + value0;
+            value0 >>= 1;
+            value1 = shapeExtent - value0;
+            car->x += MathMultiplyFixed16(basisValue, value1);
+            car->y += MathMultiplyFixed16(car->axisYX, value1);
+            car->z += MathMultiplyFixed16(car->axisZX, value1);
+            if (contact->flags & 2) {
+                normalHeading3 = contact->heading + 0x300;
+            } else {
+                normalHeading3 = contact->heading + 0x100;
+            }
+            value1 = normalHeading3 & 0x3FF;
+            asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+            reverseHeading5 = 0x400;
+            asm volatile(""
+                         : "=r"(reverseHeading5)
+                         : "0"(reverseHeading5)
+                         : "memory");
+            reverseHeading5 = (reverseHeading5 - value1) & 0x3FF;
+            cosTable = gContactCosTable;
+            sinTable = gContactSinTable;
+            normalImpulse = *(volatile s32 *)(cosTable + reverseHeading5);
+            normalAddress = *(volatile s32 *)&car->velocityX;
+            normalImpulse *= normalAddress;
+            normalAddress = *(volatile s32 *)(sinTable + reverseHeading5);
+            projectedVelocity = *(volatile s32 *)&car->velocityY;
+            normalAddress *= projectedVelocity;
+            projectedVelocity = (normalImpulse - normalAddress) >> 16;
+            projectedVelocity = -projectedVelocity;
+            normalAddress = projectedVelocity << 1;
+            impactSpeed = normalAddress + projectedVelocity;
+            if (impactSpeed < 0) {
+                impactSpeed += 3;
+            }
+            impactSpeed >>= 2;
+            projectedVelocity = impactSpeed << 1;
+            impactSpeed = projectedVelocity + impactSpeed;
+            if (impactSpeed < 0) {
+                impactSpeed += 3;
+            }
+            impulse = impactSpeed >> 2;
+            if (car->frontRightContact == 0) {
+                normalAddress = value1 << 2;
+                frontCoefficient = normalAddress + (s32)cosTable;
+                asm("" : "=r"(frontCoefficient) : "0"(frontCoefficient));
+                frontCoefficient = *(volatile s32 *)frontCoefficient;
+                car->frontVelocityX += frontCoefficient * impulse;
+                car->frontVelocityY +=
+                    *(s32 *)(normalAddress + (s32)sinTable) * impulse;
+            }
+            if (car->frontLeftContact == 0) {
+                car->frontVelocityX += gContactCosTable[value1] * impulse;
+                car->frontVelocityY += gContactSinTable[value1] * impulse;
+            }
+            frontCoefficient = (s32)gContactCosTable;
+            normalAddress = value1 << 2;
+            frontCoefficient = normalAddress + frontCoefficient;
+            frontCoefficient = *(volatile s32 *)frontCoefficient;
+            impulseX = frontCoefficient * impulse;
+            sinSubtract = gContactSinTable;
+            normalAddress += (s32)sinSubtract;
+            car->rearVelocityX += impulseX;
+            car->rearVelocityY += *(s32 *)normalAddress * impulse;
+            impulse = ((s16 *)&car->speed)[1];
+            if (impulse >= 0x173) {
+                nextCallback = func_80025730;
+                if (car->unk1EC != 1 && car->callback != nextCallback &&
+                    car->mode != 4) {
+                    car->callback = nextCallback;
+                }
+            }
+            if (car->frontRightContact == 0) {
+                if (impulse >= 0xC9) {
+                    if (RandomScaledGet((0x1F4 - impulse) / 50) == 0) {
+                        func_800432C0(car, 0);
+                    }
+                    func_800432C0(car, 5);
+                }
+                if (impulse >= 0x65) {
+                    func_80043B68(car, 0);
+                }
+            }
+            if (car->frontLeftContact == 0) {
+                if (impulse >= 0xC9) {
+                    if (RandomScaledGet((0x1F4 - impulse) / 50) == 0) {
+                        func_800432C0(car, 1);
+                    }
+                    func_800432C0(car, 6);
+                    asm("" : "=r"(impulse) : "0"(impulse));
+                    lightImpact = impulse < 0x65;
+                } else {
+                    lightImpact = impulse < 0x65;
+                }
+                if (lightImpact == 0) {
+                    callbackCar = car;
+                    asm("" : "=r"(callbackCar) : "0"(callbackCar));
+                    effectWheel2 = 1;
+                    goto longitudinalEffect;
+                }
+            }
+        } else if ((car->rearRightContact == 0) ||
+                   (car->rearLeftContact == 0)) {
+            value0 = value0 << 2;
+            firstProjection =
+                MathMultiplyFixed16(*(s32 *)(value0 + (s32)gContactSinTable),
+                                    workspace.point[0] << 16);
+            value0 += (s32)gContactCosTable;
+            coefficient = *(s32 *)value0;
+            shiftedPoint = workspace.point[1] << 16;
+            value0 = firstProjection;
+            secondProjection = MathMultiplyFixed16(coefficient, shiftedPoint);
+            shape = car->shape;
+            value0 += secondProjection;
+            value1 = value0 >> 16;
+            basisValue = car->axisXX;
+            shapeExtent = shape->rearExtent;
+            value0 = (u32)value0 >> 31;
+            value0 = value1 + value0;
+            value0 >>= 1;
+            value1 = shapeExtent + value0;
+            car->x += MathMultiplyFixed16(basisValue, value1);
+            car->y += MathMultiplyFixed16(car->axisYX, value1);
+            car->z += MathMultiplyFixed16(car->axisZX, value1);
+            if (contact->flags & 2) {
+                normalHeading4 = contact->heading + 0x300;
+            } else {
+                normalHeading4 = contact->heading + 0x100;
+            }
+            value1 = normalHeading4 & 0x3FF;
+            asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+            reverseHeading6 = 0x400;
+            asm volatile(""
+                         : "=r"(reverseHeading6)
+                         : "0"(reverseHeading6)
+                         : "memory");
+            reverseHeading6 = (reverseHeading6 - value1) & 0x3FF;
+            rearCosTable = gContactCosTable;
+            rearSinTable = gContactSinTable;
+            normalImpulse5 = *(volatile s32 *)(rearCosTable + reverseHeading6);
+            normalAddress = *(volatile s32 *)&car->velocityX;
+            normalImpulse5 *= normalAddress;
+            normalAddress = *(volatile s32 *)(rearSinTable + reverseHeading6);
+            projectedVelocity = *(volatile s32 *)&car->velocityY;
+            normalAddress *= projectedVelocity;
+            projectedVelocity = (normalImpulse5 - normalAddress) >> 16;
+            projectedVelocity = -projectedVelocity;
+            normalAddress = projectedVelocity << 1;
+            normalImpulse5 = normalAddress + projectedVelocity;
+            rearNormalAddress = value1 << 2;
+            if (normalImpulse5 < 0) {
+                normalImpulse5 += 3;
+            }
+            normalCosEntry = (s32 *)(rearNormalAddress + (s32)rearCosTable);
+            asm("" : "=r"(normalCosEntry) : "0"(normalCosEntry));
+            impulse = normalImpulse5 >> 2;
+            normalSinEntry = (s32 *)(rearNormalAddress + (s32)rearSinTable);
+            car->rearVelocityX += *normalCosEntry * impulse;
+            car->rearVelocityY += *normalSinEntry * impulse;
+            car->frontVelocityX += (s32)(*normalCosEntry * impulse) / 2;
+            halfProduct = *normalSinEntry * impulse;
+            tailSpeed = car->speed;
+            value0 = tailSpeed >> 0x14;
+            yVelocity = car->frontVelocityY;
+            halfSign = (u32)halfProduct >> 31;
+            halfProduct = (halfProduct + halfSign) >> 1;
+            yVelocity += halfProduct;
+            car->frontVelocityY = yVelocity;
+            if (RandomScaledGet(5) < 0) {
+                effectValue = value0 - RandomScaledGet(5);
+            } else {
+                effectValue = value0 + RandomScaledGet(5);
+            }
+            car->rearLeftEffect = effectValue;
+            tailSpeed2 = car->speed;
+            value0 = tailSpeed2 >> 0x14;
+            if (RandomScaledGet(5) < 0) {
+                effectValue2 = value0 - RandomScaledGet(5);
+            } else {
+                effectValue2 = value0 + RandomScaledGet(5);
+            }
+            car->rearRightEffect = effectValue2;
+            if (car->rearRightContact == 0) {
+                value1 = impulse < 0xC9;
+                value0 = impulse < 0x65;
+                if (value1 == 0) {
+                    func_800432C0(car, 2);
+                    func_800432C0(car, 7);
+                    asm("" : "=r"(impulse) : "0"(impulse));
+                    value0 = impulse < 0x65;
+                }
+                if (value0 == 0) {
+                    callbackCar = car;
+                    asm(""
+                        : "=r"(callbackCar), "=r"(value0)
+                        : "0"(callbackCar), "1"(value0));
+                    func_80043B68(callbackCar, 0);
+                }
+                /* Retail checks the rear-right contact again here. */
+                if (car->rearRightContact == 0) {
+                    if (value1 == 0) {
+                        func_800432C0(car, 3);
+                        func_800432C0(car, 7);
+                    }
+                    if (value0 == 0) {
+                        callbackCar = car;
+                        asm("" : "=r"(callbackCar) : "0"(callbackCar));
+                        effectWheel2 = 3;
+                    longitudinalEffect:
+                        func_80043B68(callbackCar, effectWheel2);
+                    }
+                }
+            }
+        }
+        car->collisionPending = 0;
+    done:
+        asm volatile("" : : "r"(impulse));
+        return 1;
+    }
+}
 
 s32 MathGetAngleDelta(s32 arg0, s32 arg1) {
     s32 value0;
@@ -2401,7 +3386,7 @@ void func_800297D0(u8 *arg0) {
     extern void func_80031264(void);
     extern void func_800294A8(void *);
     extern void func_800414E0(void *, s32, s32);
-    extern void func_80027174(void *);
+    extern s32 CarHandleWallCollision(void *);
     extern s32 D_800A2EC8NM[] asm("D_800A2EC8.NON_MATCHING");
 
     func_80031264();
@@ -2423,7 +3408,7 @@ void func_800297D0(u8 *arg0) {
             *(s32 *)(arg0 + 0x90) = *(s32 *)(arg0 + 0x90) / 2;
             *(u16 *)(arg0 + 0x104) = (*(u16 *)(arg0 + 0x104) + 0x200) & 0x3FF;
         }
-        func_80027174(arg0);
+        CarHandleWallCollision(arg0);
         *(u8 *)(arg0 + 0xF5) = 0;
         *(u8 *)(arg0 + 0x375) = 0;
     }
@@ -3042,7 +4027,1024 @@ void func_8002BC88(u8 *arg0) {
     *(s32 *)(arg0 + 0x98) = val;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002BD48);
+typedef struct {
+    u8 unk0[0x44];
+    s32 dragScale;
+    u8 unk48[0x40];
+    s32 driveScale;
+    u8 unk8C[0x4];
+    s32 speed;
+    u8 unk94[0x4];
+    s32 maxSpeed;
+    u8 unk9C[0x14];
+    s32 velocityX;
+    s32 velocityY;
+    u8 unkB8[0xC];
+    s32 frontVelocityX;
+    s32 frontVelocityY;
+    u8 unkCC[0x4];
+    s32 rearVelocityX;
+    s32 rearVelocityY;
+    u8 unkD8[0x1C];
+    u8 unkF4;
+    u8 unkF5[0x4];
+    u8 sliding;
+    u8 unkFA[0xA];
+    s16 movementHeading;
+    u8 unk106[0x6];
+    s16 unk10C;
+    s16 unk10E;
+    u8 unk110[0x4];
+    s16 heading;
+    u16 fineHeading;
+    u8 unk118[0xED];
+    s8 assistRank;
+    u8 unk206[0x8];
+    u16 steering;
+    u8 unk210[0x1C];
+    s32 speedBoost;
+    u8 unk230[0x8];
+    s32 flags;
+    u8 unk23C[0x50];
+    s32 unk28C;
+    u8 unk290[0x16];
+    s16 unk2A6;
+    u8 unk2A8[0x4];
+    s16 unk2AC;
+    u8 unk2AE[0x26];
+    s16 unk2D4;
+    u8 unk2D6[0x7E];
+    void (*callback)(u8 *);
+    u8 unk358[0x64];
+    s32 driveInput;
+    u8 unk3C0[0x24];
+    u8 *raceNode;
+    u8 unk3E8[0x28];
+    u8 reverseSpeed;
+} CarDynamics;
+extern u8 D_800A2EE4Physics[] asm("D_800A2EE4.NON_MATCHING");
+extern s32 D_800A3598Physics[] asm("D_800A3598.NON_MATCHING");
+extern s32 D_800A453CPhysics[] asm("D_800A453C.NON_MATCHING");
+extern s32 D_800A2E24Absolute[];
+extern s32 func_8002AAF0(u8 *, VECTOR *, s32);
+extern void func_8002AF94(u8 *);
+extern void func_8002B9AC(u8 *, s32 *, s32 *);
+extern void func_8002D27C(u8 *);
+extern s32 func_800358EC(s32 *);
+extern s32 func_8003702C(u8 *, u8 *);
+
+#define CAR_OFFSET(field) ((u32) & ((CarDynamics *)0)->field)
+typedef char CheckVectorSize[(sizeof(VECTOR) == 16) ? 1 : -1];
+typedef char CheckCarDrag[(CAR_OFFSET(dragScale) == 0x44) ? 1 : -1];
+typedef char CheckCarDrive[(CAR_OFFSET(driveScale) == 0x88) ? 1 : -1];
+typedef char CheckCarSpeed[(CAR_OFFSET(speed) == 0x90) ? 1 : -1];
+typedef char CheckCarMaxSpeed[(CAR_OFFSET(maxSpeed) == 0x98) ? 1 : -1];
+typedef char CheckCarVelocityX[(CAR_OFFSET(velocityX) == 0xB0) ? 1 : -1];
+typedef char CheckCarFrontX[(CAR_OFFSET(frontVelocityX) == 0xC4) ? 1 : -1];
+typedef char CheckCarRearX[(CAR_OFFSET(rearVelocityX) == 0xD0) ? 1 : -1];
+typedef char CheckCarFlag[(CAR_OFFSET(unkF4) == 0xF4) ? 1 : -1];
+typedef char CheckCarSlide[(CAR_OFFSET(sliding) == 0xF9) ? 1 : -1];
+typedef char CheckCarMovement[(CAR_OFFSET(movementHeading) == 0x104) ? 1 : -1];
+typedef char CheckCarHeading[(CAR_OFFSET(heading) == 0x114) ? 1 : -1];
+typedef char CheckCarFineHeading[(CAR_OFFSET(fineHeading) == 0x116) ? 1 : -1];
+typedef char CheckCarRank[(CAR_OFFSET(assistRank) == 0x205) ? 1 : -1];
+typedef char CheckCarSteering[(CAR_OFFSET(steering) == 0x20E) ? 1 : -1];
+typedef char CheckCarSpeedBoost[(CAR_OFFSET(speedBoost) == 0x22C) ? 1 : -1];
+typedef char CheckCarFlags[(CAR_OFFSET(flags) == 0x238) ? 1 : -1];
+typedef char CheckCarLoad[(CAR_OFFSET(unk28C) == 0x28C) ? 1 : -1];
+typedef char CheckCarGrip[(CAR_OFFSET(unk2A6) == 0x2A6) ? 1 : -1];
+typedef char CheckCarFrontGrip[(CAR_OFFSET(unk2AC) == 0x2AC) ? 1 : -1];
+typedef char CheckCarRearGrip[(CAR_OFFSET(unk2D4) == 0x2D4) ? 1 : -1];
+typedef char CheckCarCallback[(CAR_OFFSET(callback) == 0x354) ? 1 : -1];
+typedef char CheckCarDriveInput[(CAR_OFFSET(driveInput) == 0x3BC) ? 1 : -1];
+typedef char CheckCarRaceNode[(CAR_OFFSET(raceNode) == 0x3E4) ? 1 : -1];
+typedef char CheckCarReverseSpeed[(CAR_OFFSET(reverseSpeed) == 0x410) ? 1 : -1];
+#undef CAR_OFFSET
+
+void func_8002BD48(u8 *carBytes) {
+    register CarDynamics *car asm("s2");
+    struct {
+        VECTOR force;
+        VECTOR axleVelocity;
+        VECTOR frontVelocity;
+        VECTOR rearVelocity;
+        VECTOR unused[5];
+        s32 frontGrip;
+        s32 rearGrip;
+        VECTOR velocity;
+        s32 frontForward;
+        s32 unusedBC;
+        s32 rearForward;
+        s32 unusedC4;
+        s32 frontSide;
+        s32 unusedCC;
+        s32 yawDivisor;
+        s32 unusedD4;
+        s32 drag;
+        s32 unusedDC;
+    } local;
+    register s32 tableOffset asm("s1");
+    register s32 steeringRaw asm("a0");
+    register s32 steeringHalf asm("v1");
+    s64 multiplyState;
+    s64 yawMultiplyState;
+    s64 velocityMultiplyState;
+    s64 heightMultiplyState;
+    s64 slideMultiplyState;
+    register s32 initialDriverLoad asm("a0");
+    register s32 initialDivisor asm("a1");
+    register s32 slideYawDivisor asm("v0");
+    register s32 forwardSpeed asm("s1");
+    s32 averageGrip;
+    s32 fixedValue;
+    register s32 gripBase asm("v1");
+    register s32 assist asm("v0");
+    register s32 initialYaw asm("t0");
+    register s32 rearHeading asm("s0");
+    register s32 limitedRearHeading asm("s0");
+    register s32 speedHigh asm("s1");
+    s32 rearDriveHeading;
+    register s32 *cosRow asm("a1");
+    register s32 *sinRow asm("v0");
+    s32 velocityX;
+    register s32 speedCap asm("a0");
+    register s32 frontLongitudinalSpeed asm("a1");
+    register s32 rearLongitudinalSpeed asm("a1");
+    register s32 rearDragValue asm("t1");
+    register s32 baseSpeed asm("s0");
+    register s32 frontDrag asm("s0");
+    register s32 frontInverseHeading asm("s0");
+    s32 frontXLocal;
+    s32 frontYLocal;
+    register s32 limitedFrontHeading asm("s0");
+    s32 limitedFrontXProduct;
+    s32 limitedFrontYProduct;
+    register s32 rearIndex asm("s0");
+    s32 rearYProduct;
+    register s32 rearFourthProduct asm("v0");
+    register s32 frontGripValue asm("a0");
+    register s32 rearGripValue asm("a1");
+    register s32 ratioHigh asm("t1");
+    register s32 rearPositiveGrip asm("a0");
+    register s32 firstCos asm("a0");
+    register s32 frontXValue asm("a1");
+    s32 rearXProduct;
+    s32 rearYProductAfter;
+    register s32 rearDrag asm("s0");
+    register s32 rearInverseHeading asm("s0");
+    s32 rearXLocal;
+    s32 rearYLocal;
+    s32 limitedRearXProduct;
+    s32 limitedRearYProduct;
+    register s32 frontOffset asm("s0");
+    s32 frontYProduct;
+    register s32 frontYBefore asm("s0");
+    register s32 firstRandomRange asm("s0");
+    register s32 frontHeading asm("s0");
+    s32 frontXProduct;
+    s32 frontYProductAfter;
+    register s32 frontXProductBefore asm("s1");
+    register s32 frontXBefore asm("s1");
+    register s32 rearXProductBefore asm("s1");
+    register s32 rearXBefore asm("s1");
+    register s32 gripCos asm("s4");
+    register s32 sideState asm("s7");
+    s32 leaderDistance;
+    s32 reverseSpeed;
+    register s32 forwardSpeedFixed asm("v0");
+    register s32 driveThreshold asm("v0");
+    register s32 driveInputValue asm("v1");
+    s32 limitedFrontX;
+    s32 limitedRearX;
+    register s32 tableIndex asm("v0");
+    s32 dragScale;
+    s32 rearLateralSpeed;
+    register s32 turnTorque asm("v1");
+    register s32 torqueReturn asm("v0");
+    register s32 distanceAdjusted asm("a0");
+    register s32 frontDriveScale asm("a0");
+    register s32 rearDriveScale asm("a0");
+    register s32 frontDriveDisabled asm("v0");
+    register s32 frictionLimit asm("v0");
+    register s32 headingValue asm("v0");
+    register s32 cosBase asm("v1");
+    register s32 frontDragValue asm("t0");
+    s32 longitudinalDifference;
+    register s32 yawDenominator asm("a0");
+    s32 frontSin;
+    s32 rearSin;
+    s32 yawForce;
+    register s32 deltaMagnitude asm("s0");
+    register s32 angleDelta asm("s6");
+    register s32 gripAngle asm("s0");
+    register s32 secondRandomRange asm("s0");
+    s32 frontDriveHeading;
+    register s32 turnDelta asm("s0");
+    register s32 frontFriction asm("s1");
+    s32 frontDriveMagnitude;
+    register s32 frontDragLimit asm("s1");
+    register s32 rearFriction asm("s1");
+    register s32 rearDriveMagnitude asm("s1");
+    register s32 rearDragLimit asm("s1");
+    register s32 turnMultiplier asm("s1");
+    register s32 driveForce asm("s3");
+    register s32 speedLimit asm("s5");
+    register s32 turnLimit asm("s6");
+    s32 dragTerm;
+    s32 *sinAnchor;
+    register s32 thirdTableAddress asm("v1");
+    s32 frontGripMagnitude;
+    s32 rearGripMagnitude;
+    s32 newFineHeading;
+    register s32 assistRankMinusOne asm("v1");
+    s32 turnScale;
+    register s32 forwardSpeedLocal asm("v1");
+    register s32 assistScale asm("v0");
+    register s32 assistBoost asm("t1");
+    u32 velocitySumX;
+    u32 velocitySumY;
+    u8 *leader;
+    register u8 *node asm("v0");
+    asm("" : "=r"(car) : "0"(carBytes));
+    initialYaw = D_800A2E5C;
+    local.yawDivisor = initialYaw;
+    func_8002D27C(carBytes);
+    /* Compute the base speed and the signed division of the load term.
+     * baseSpeed = base + speedBoost - (unk10E << 17)
+     *             - (((unk2A6 + 1) * 75 << 16) / 15). */
+    asm volatile("lh $v1,0x2A6(%5)\n\t"
+                 "lui %2,0x8888\n\t"
+                 "ori %2,%2,0x8889\n\t"
+                 "addiu $v1,$v1,1\n\t"
+                 "sll %1,$v1,2\n\t"
+                 "addu %1,%1,$v1\n\t"
+                 "sll $v1,%1,4\n\t"
+                 "subu $v1,$v1,%1\n\t"
+                 "sll $v1,$v1,16\n\t"
+                 "mult $v1,%2\n\t"
+                 "lui %0,%%hi(D_800A2E24)\n\t"
+                 "lw %0,%%lo(D_800A2E24)(%0)\n\t"
+                 "lw $a2,0x22C(%5)\n\t"
+                 "lh %1,0x10E(%5)\n\t"
+                 "li %3,16000\n\t"
+                 "lw %2,0x28C(%5)\n\t"
+                 "addu %0,%0,$a2\n\t"
+                 "sll %1,%1,17\n\t"
+                 "subu %0,%0,%1\n\t"
+                 "mfhi $t1\n\t"
+                 "addu %1,$t1,$v1\n\t"
+                 "sra %1,%1,3\n\t"
+                 "sra $v1,$v1,31\n\t"
+                 "subu %1,%1,$v1"
+                 : "=&r"(baseSpeed), "=&r"(tableIndex),
+                   "=&r"(initialDriverLoad), "=&r"(initialDivisor),
+                   "=x"(heightMultiplyState)
+                 : "r"(car)
+                 : "v1", "a2", "t1", "accum", "memory");
+    baseSpeed -= tableIndex;
+    assist = MathFixedDivide(initialDriverLoad, initialDivisor);
+    gripBase = D_800A2E40;
+    /* Scale the speed reduction. Keep its multiply result in LO until the
+     * assist flag is loaded. */
+    asm volatile("mult %1,%0\n\t"
+                 "srl %1,%0,31\n\t"
+                 "addu %0,%0,%1\n\t"
+                 "sra %0,%0,1\n\t"
+                 "sll %0,%0,16\n\t"
+                 "lui %1,%%hi(D_800A2EE4)\n\t"
+                 "lbu %1,%%lo(D_800A2EE4)(%1)\n\t"
+                 "mflo %3\n\t"
+                 "subu %0,%3,%0\n\t"
+                 "subu %2,%2,%0"
+                 : "=r"(gripBase), "=r"(assist), "=r"(baseSpeed),
+                   "=r"(initialYaw), "=x"(multiplyState)
+                 : "0"(gripBase), "1"(assist), "2"(baseSpeed)
+                 : "accum");
+    speedLimit = baseSpeed >> 16;
+    car->maxSpeed = baseSpeed;
+    if (assist != 0) {
+        assistRankMinusOne = car->assistRank;
+        if (assistRankMinusOne == 2) {
+            assistRankMinusOne--;
+            node = car->raceNode;
+            goto nextCar;
+        findCar:
+            node = *((u8 **)(leader + 0x3E4));
+
+        nextCar:
+            leader = *((u8 **)(node + 8));
+
+            if ((*((s16 *)(leader + 0x1EC))) != 0) {
+                goto findCar;
+            }
+            leaderDistance = func_8003702C(leader, (u8 *)car);
+            asm("" : "=r"(distanceAdjusted) : "0"(leaderDistance));
+            if (((u32)(distanceAdjusted + 2)) < 0xAU) {
+                distanceAdjusted -= 3;
+                if (distanceAdjusted <= 0) {
+                    distanceAdjusted = 0;
+                }
+                assistRankMinusOne = car->assistRank - 1;
+                asm("" : "=r"(assistRankMinusOne) : "0"(assistRankMinusOne));
+                assistScale = assistRankMinusOne * 20;
+                asm("" : "=r"(assistScale) : "0"(assistScale));
+                assistBoost = assistScale * distanceAdjusted;
+                asm("" : "=r"(assistBoost) : "0"(assistBoost));
+                speedLimit += assistBoost;
+            } else {
+                assistRankMinusOne = car->assistRank - 1;
+                goto addAssistBoost;
+            }
+        } else {
+            assistRankMinusOne--;
+        addAssistBoost:
+            speedLimit = speedLimit + assistRankMinusOne * 0x64;
+        }
+    }
+    dragScale = car->dragScale;
+    dragTerm = dragScale * 2;
+    if (dragScale <= 0) {
+        dragTerm = dragScale * 6;
+    }
+    local.drag = -dragTerm;
+    steeringRaw = car->steering;
+    steeringHalf = ((s16)steeringRaw) / 2;
+    asm("negu %0,%1" : "=r"(sideState) : "r"(steeringHalf));
+    tableIndex = ((car->heading - sideState) + 1024) & 1023;
+    gripBase = 1024;
+    steeringRaw = gFarCosTable.unk[0];
+    gripBase -= tableIndex;
+    asm("andi %0,%1,1023" : "=r"(frontOffset) : "r"(gripBase));
+    frontOffset <<= 2;
+    steeringRaw = frontOffset + steeringRaw;
+    frontXProductBefore =
+        MathMultiplyFixed16(*((s32 *)steeringRaw), car->frontVelocityX);
+    frontXBefore =
+        frontXProductBefore -
+        MathMultiplyFixed16(*((s32 *)(frontOffset + gFarSinTable.unk[0])),
+                            car->frontVelocityY);
+    local.frontForward = frontXBefore;
+    local.axleVelocity.vx = frontXBefore;
+    thirdTableAddress = frontOffset + gFarSinTable.unk[0];
+    asm("" : : "r"(thirdTableAddress));
+    frontYProduct =
+        MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->frontVelocityX);
+    frontYBefore =
+        frontYProduct +
+        MathMultiplyFixed16(*((s32 *)(frontOffset + gFarCosTable.unk[0])),
+                            car->frontVelocityY);
+    local.frontSide = frontYBefore;
+    local.axleVelocity.vy = frontYBefore;
+    if (MathGetAngleDelta(car->heading, car->movementHeading) < 0) {
+        deltaMagnitude = -MathGetAngleDelta(car->heading, car->movementHeading);
+    } else {
+        deltaMagnitude = MathGetAngleDelta(car->heading, car->movementHeading);
+    }
+    turnScale = ((s32)car->speed) / ((s32)D_800A2E54);
+    angleDelta = deltaMagnitude;
+    if (turnScale < 0xF) {
+        turnScale = 0xF;
+    }
+    gripAngle = deltaMagnitude * turnScale;
+    if (gripAngle >= 0xFF) {
+        gripAngle = 0xFE;
+    }
+    func_8002B9AC((u8 *)car, &local.frontGrip, &local.rearGrip);
+    averageGrip = (local.frontGrip + local.rearGrip) / 2;
+    if (D_800A3598Physics[0] != 1) {
+        yawForce = func_8002AAF0((u8 *)car, &local.force, averageGrip);
+    } else {
+        yawForce = 0;
+    }
+    tableIndex = gripAngle << 2;
+    tableIndex += gFarCosTable.unk[0];
+    asm("" : : "r"(tableIndex));
+    gripCos = *((s32 *)tableIndex);
+    if (MathMultiplyFixed16(local.frontGrip, gripCos) < 0) {
+        frontGripMagnitude = -MathMultiplyFixed16(local.frontGrip, gripCos);
+    } else {
+        frontGripMagnitude = MathMultiplyFixed16(local.frontGrip, gripCos);
+    }
+    local.frontGrip = frontGripMagnitude;
+    if (MathMultiplyFixed16(local.rearGrip, gripCos) < 0) {
+        rearGripMagnitude = -MathMultiplyFixed16(local.rearGrip, gripCos);
+    } else {
+        rearGripMagnitude = MathMultiplyFixed16(local.rearGrip, gripCos);
+    }
+    local.rearGrip = rearGripMagnitude;
+    car->sliding = 0;
+    if (((((car->unkF4 != 0) && (car->callback != func_80025730)) &&
+          (car->flags & 0x40)) &&
+         (car->unk10C == 0))) {
+        driveInputValue = car->driveInput;
+        asm("li %0,0xC000" : "=r"(driveThreshold) : "r"(driveInputValue));
+        if (driveInputValue <= driveThreshold) {
+            goto noSliding;
+        }
+        speedHigh = *((s16 *)(((u8 *)car) + 0x92));
+        if (speedHigh < 0x96) {
+            /* Scale front and rear grip by (speedHigh + 50), then divide
+             * the two signed products by 200 and 400. */
+            asm volatile("lw $v1,%6\n\t"
+                         "addiu %2,%5,50\n\t"
+                         "mult $v1,%2\n\t"
+                         "lw $a1,%7\n\t"
+                         "mflo $v1\n\t"
+                         "nop\n\t"
+                         "nop\n\t"
+                         "mult $a1,%2\n\t"
+                         "mflo $a1\n\t"
+                         "lui %2,0x51EB\n\t"
+                         "ori %2,%2,0x851F\n\t"
+                         "mult $v1,%2\n\t"
+                         "mfhi $a3\n\t"
+                         "nop\n\t"
+                         "nop\n\t"
+                         "mult $a1,%2\n\t"
+                         "addiu %0,%5,1\n\t"
+                         "addu %1,%0,$zero\n\t"
+                         "sra $v1,$v1,31\n\t"
+                         "sra %2,$a3,6\n\t"
+                         "subu %2,%2,$v1\n\t"
+                         "sra $a1,$a1,31\n\t"
+                         "sw %2,%3\n\t"
+                         "mfhi $a2\n\t"
+                         "sra %2,$a2,7\n\t"
+                         "subu %2,%2,$a1"
+                         : "=&r"(firstRandomRange), "=&r"(steeringRaw),
+                           "=&r"(tableIndex), "=m"(local.frontGrip),
+                           "=x"(slideMultiplyState)
+                         : "r"(speedHigh), "m"(local.frontGrip),
+                           "m"(local.rearGrip)
+                         : "v1", "a1", "a2", "a3", "accum", "memory");
+            local.rearGrip = tableIndex;
+            if (RandomScaledGet(steeringRaw) < 0) {
+                if ((-RandomScaledGet(firstRandomRange)) >= 0xB) {
+                    secondRandomRange = speedHigh + 1;
+                } else {
+                    goto firstSlideEvent;
+                }
+            } else {
+                if (RandomScaledGet(firstRandomRange) < 0xB) {
+                firstSlideEvent:
+                    func_80029994((u8 *)car, 0);
+                }
+                secondRandomRange = speedHigh + 1;
+            }
+            if (RandomScaledGet(secondRandomRange) < 0) {
+                if ((-RandomScaledGet(secondRandomRange)) >= 0xB) {
+                } else {
+                    goto secondSlideEvent;
+                }
+            } else if (RandomScaledGet(secondRandomRange) < 0xB) {
+            secondSlideEvent:
+                func_80029994((u8 *)car, 1);
+            }
+            slideYawDivisor = D_800A2E5C;
+            asm("" : "=r"(slideYawDivisor) : "0"(slideYawDivisor));
+            car->sliding = 1;
+            local.yawDivisor = slideYawDivisor / 2;
+        }
+    }
+noSliding:
+    frontFriction = 0;
+    if (local.axleVelocity.vy > 0) {
+        frontFriction = -local.axleVelocity.vy;
+        if (local.axleVelocity.vy >= local.frontGrip) {
+            frontFriction = -local.frontGrip;
+        }
+    } else if (local.axleVelocity.vy < 0) {
+        frictionLimit = local.frontGrip;
+        asm("addu %0,%1,$zero" : "=&r"(frontFriction) : "r"(frictionLimit));
+        if ((-frontFriction) < local.axleVelocity.vy) {
+            frontFriction = -local.axleVelocity.vy;
+        }
+    }
+    frontLongitudinalSpeed = local.axleVelocity.vx;
+    asm volatile("" : : "r"(frontLongitudinalSpeed));
+    frontDragValue = local.drag;
+    asm("" : : "r"(frontDragValue));
+    frontLongitudinalSpeed += frontDragValue;
+    local.axleVelocity.vx = frontLongitudinalSpeed;
+    local.axleVelocity.vy += frontFriction;
+    sinAnchor = gFarSinTable.unk;
+    headingValue = car->heading;
+    cosBase = gFarCosTable.unk[0];
+    headingValue = (headingValue - sideState) + 1024;
+    asm("andi %0,%1,1023" : "=r"(frontHeading) : "r"(headingValue));
+    tableOffset = frontHeading << 2;
+    cosBase = tableOffset + cosBase;
+    asm("" : : "r"(cosBase));
+    frontXProduct =
+        MathMultiplyFixed16(*((s32 *)cosBase), local.axleVelocity.vx);
+    car->frontVelocityX =
+        (s32)(frontXProduct -
+              MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+                                  local.axleVelocity.vy));
+    thirdTableAddress = tableOffset + sinAnchor[0];
+    asm("" : : "r"(thirdTableAddress));
+    frontYProductAfter =
+        MathMultiplyFixed16(*((s32 *)thirdTableAddress), local.axleVelocity.vx);
+    car->frontVelocityY =
+        (s32)(frontYProductAfter +
+              MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                                  local.axleVelocity.vy));
+    do {
+        local.force.vy = 0;
+        local.force.vx = 0;
+        frontDriveDisabled = car->unk2AC;
+        asm volatile("" : "=r"(driveForce) : "r"(frontDriveDisabled));
+        driveForce = 0;
+        if ((frontDriveDisabled != 0) || (car->unk2D4 != 0)) {
+            local.rearGrip = 0;
+        } else {
+            driveForce = MathMultiplyFixed16(car->driveScale, car->driveInput);
+        }
+    } while (0);
+    if (car->flags & 0x40) {
+        if (D_800A2EB8[0] == 0) {
+            frontDriveHeading = ((car->heading - sideState) + 0x400) & 0x3FF;
+            frontDriveMagnitude = MathMultiplyFixed16(driveForce, gripCos);
+        } else {
+            MathMultiplyFixed16(
+                driveForce,
+                ((s32 *)gFarCosTable
+                     .unk[0])[((car->heading - car->movementHeading) + 0x400) &
+                              0x3FF]);
+            MathMultiplyFixed16(
+                driveForce,
+                ((s32 *)gFarCosTable
+                     .unk[0])[((car->heading - car->movementHeading) + 0x400) &
+                              0x3FF]);
+            frontDriveMagnitude = driveForce;
+            frontDriveHeading = ((car->heading - sideState) + 0x400) & 0x3FF;
+        }
+        local.force.vx = MathMultiplyFixed16(
+            frontDriveMagnitude,
+            ((s32 *)gFarCosTable.unk[0])[frontDriveHeading]);
+        frontSin = ((s32 *)gFarSinTable.unk[0])[frontDriveHeading];
+        frontDriveScale = frontDriveMagnitude;
+        goto addFrontForce;
+    }
+    frontDragLimit = 0x10000;
+    if (local.axleVelocity.vx > 0) {
+        if (local.axleVelocity.vx < frontDragLimit) {
+            frontDragLimit = local.axleVelocity.vx;
+        }
+        frontDrag = -frontDragLimit;
+        local.force.vx = MathMultiplyFixed16(
+            frontDrag, ((s32 *)gFarCosTable.unk[0])[car->heading]);
+        frontSin = ((s32 *)gFarSinTable.unk[0])[car->heading];
+        asm("addu %0,%1,$zero"
+            : "=r"(frontDriveScale)
+            : "r"(frontDrag), "r"(frontSin));
+    addFrontForce:
+        local.force.vy = MathMultiplyFixed16(frontDriveScale, frontSin);
+    }
+    /* Add the front force, then form the inverse axle angle and table row.
+     * The address pins retain the retail load order around the car stores. */
+    asm volatile("lw $v0,0xC4(%4)\n\t"
+                 "lw $v1,%5\n\t"
+                 "lw %0,0xC8(%4)\n\t"
+                 "li $t1,1024\n\t"
+                 "addu $v0,$v0,$v1\n\t"
+                 "sw $v0,0xC4(%4)\n\t"
+                 "lh $v0,0x114(%4)\n\t"
+                 "lw %1,0xC4(%4)\n\t"
+                 "lw $a2,%6\n\t"
+                 "lui $v1,%%hi(D_800A3A2C)\n\t"
+                 "lw $v1,%%lo(D_800A3A2C)($v1)\n\t"
+                 "subu $v0,$v0,%7\n\t"
+                 "addiu $v0,$v0,1024\n\t"
+                 "andi $v0,$v0,1023\n\t"
+                 "subu $v0,$t1,$v0\n\t"
+                 "andi %2,$v0,1023\n\t"
+                 "addu %0,%0,$a2\n\t"
+                 "sll %3,%2,2\n\t"
+                 "addu $v1,%3,$v1\n\t"
+                 "sw %0,0xC8(%4)\n\t"
+                 "lw %0,0($v1)"
+                 : "=&r"(firstCos), "=&r"(frontXValue),
+                   "=&r"(frontInverseHeading), "=&r"(tableOffset)
+                 : "r"(car), "m"(local.force.vx), "m"(local.force.vy),
+                   "r"(sideState)
+                 : "v0", "v1", "a2", "t1", "memory");
+    frontXLocal = MathMultiplyFixed16(firstCos, frontXValue);
+    local.axleVelocity.vx =
+        frontXLocal -
+        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+                            car->frontVelocityY);
+    thirdTableAddress = tableOffset + gFarSinTable.unk[0];
+    asm("" : : "r"(thirdTableAddress));
+    frontYLocal =
+        MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->frontVelocityX);
+    local.axleVelocity.vy =
+        frontYLocal +
+        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                            car->frontVelocityY);
+    forwardSpeed = ((s16 *)(&local.axleVelocity.vx))[1];
+    if (speedLimit < forwardSpeed) {
+        limitedFrontX = MathMultiplyFixed16(
+            MathFixedDivide(speedLimit, forwardSpeed), local.axleVelocity.vx);
+        local.axleVelocity.vx = limitedFrontX;
+        gripBase = car->heading;
+        steeringRaw = gFarCosTable.unk[0];
+        gripBase = (gripBase - sideState) + 1024;
+        asm("andi %0,%1,1023" : "=r"(limitedFrontHeading) : "r"(gripBase));
+        tableOffset = limitedFrontHeading << 2;
+        asm("addu %0,%1,%0"
+            : "=r"(steeringRaw)
+            : "r"(tableOffset), "0"(steeringRaw));
+        limitedFrontXProduct =
+            MathMultiplyFixed16(*((s32 *)steeringRaw), limitedFrontX);
+        fixedValue =
+            MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+                                local.axleVelocity.vy);
+        gripBase = gFarSinTable.unk[0];
+        asm("" : : "r"(gripBase));
+        car->frontVelocityX = limitedFrontXProduct - fixedValue;
+        frontXValue = local.axleVelocity.vx;
+        asm("addu %0,%1,%0"
+            : "=r"(gripBase)
+            : "r"(tableOffset), "0"(gripBase), "r"(frontXValue));
+        limitedFrontYProduct =
+            MathMultiplyFixed16(*((s32 *)gripBase), frontXValue);
+        car->frontVelocityY =
+            (s32)(limitedFrontYProduct +
+                  MathMultiplyFixed16(
+                      *((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                      local.axleVelocity.vy));
+    }
+    headingValue = car->heading;
+    frontXValue = car->rearVelocityX;
+    asm volatile("" : : "r"(headingValue), "r"(frontXValue));
+    cosBase = gFarCosTable.unk[0];
+    initialYaw = 1024;
+    asm("" : "=r"(initialYaw) : "0"(initialYaw));
+    headingValue = initialYaw - headingValue;
+    asm("andi %0,%1,1023" : "=r"(rearIndex) : "r"(headingValue));
+    rearIndex <<= 2;
+    cosBase = rearIndex + cosBase;
+    asm("" : : "r"(cosBase));
+    rearXProductBefore = MathMultiplyFixed16(*((s32 *)cosBase), frontXValue);
+    rearXBefore =
+        rearXProductBefore -
+        MathMultiplyFixed16(*((s32 *)(rearIndex + gFarSinTable.unk[0])),
+                            car->rearVelocityY);
+    local.rearForward = rearXBefore;
+    local.axleVelocity.vx = rearXBefore;
+    thirdTableAddress = rearIndex + gFarSinTable.unk[0];
+    asm("" : : "r"(thirdTableAddress));
+    rearYProduct =
+        MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->rearVelocityX);
+    rearFourthProduct = MathMultiplyFixed16(
+        *((s32 *)(rearIndex + gFarCosTable.unk[0])), car->rearVelocityY);
+    asm("addu %0,%1,%2"
+        : "=&r"(sideState)
+        : "r"(rearYProduct), "r"(rearFourthProduct));
+    local.axleVelocity.vy = sideState;
+    rearGripValue = local.rearGrip;
+    frontGripValue = local.frontGrip;
+    asm("" : : "r"(rearGripValue), "r"(frontGripValue));
+    if (rearGripValue < frontGripValue) {
+        /* Scale yaw by the grip difference, with a limit of 2000.
+         * yawForce = yawForce * min((frontGrip - rearGrip) / 170, 2000)
+         *            / 1000. The retail block keeps the product in LO. */
+        asm volatile("lui %0,0x6060\n\t"
+                     "ori %0,%0,0x6061\n\t"
+                     "subu %1,%6,%7\n\t"
+                     "mult %1,%0\n\t"
+                     "sra %1,%1,31\n\t"
+                     "mfhi %2\n\t"
+                     "sra %0,%2,6\n\t"
+                     "subu %0,%0,%1\n\t"
+                     "slti %1,%0,2001\n\t"
+                     "bnez %1,1f\n\t"
+                     "mult %4,%0\n\t"
+                     "li %0,2000\n\t"
+                     "mult %4,%0\n"
+                     "1:\n\t"
+                     "mflo %1\n\t"
+                     "lui %0,0x1062\n\t"
+                     "ori %0,%0,0x4DD3\n\t"
+                     "mult %1,%0\n\t"
+                     "sra %1,%1,31\n\t"
+                     "mfhi %3\n\t"
+                     "sra %0,%3,6\n\t"
+                     "subu %4,%0,%1"
+                     : "=r"(gripBase), "=r"(tableIndex), "=r"(ratioHigh),
+                       "=r"(initialYaw), "=r"(yawForce), "=x"(yawMultiplyState)
+                     : "r"(frontGripValue), "r"(rearGripValue), "4"(yawForce)
+                     : "accum", "memory");
+    }
+    rearFriction = 0;
+    rearLateralSpeed = *((volatile s32 *)&local.axleVelocity.vy) + yawForce;
+    local.axleVelocity.vy = rearLateralSpeed;
+    if (rearLateralSpeed > 0) {
+        rearPositiveGrip = *((volatile s32 *)&local.rearGrip);
+        asm("" : : "r"(rearPositiveGrip));
+        rearFriction = -rearLateralSpeed;
+        if (rearLateralSpeed >= rearPositiveGrip) {
+            rearFriction = -rearPositiveGrip;
+        }
+    } else if (rearLateralSpeed < 0) {
+        frictionLimit = *((volatile s32 *)&local.rearGrip);
+        asm("addu %0,%1,$zero" : "=&r"(rearFriction) : "r"(frictionLimit));
+        if ((-rearFriction) < rearLateralSpeed) {
+            rearFriction = -rearLateralSpeed;
+        }
+    }
+    if (local.axleVelocity.vx < 0) {
+        local.axleVelocity.vx = MathMultiplyFixed16(
+            local.axleVelocity.vx, MathFixedDivide(0x1F, 0x20));
+    }
+    rearLongitudinalSpeed = local.axleVelocity.vx;
+    asm volatile("" : : "r"(rearLongitudinalSpeed));
+    rearDragValue = local.drag;
+    asm("" : : "r"(rearDragValue));
+    rearLongitudinalSpeed += rearDragValue;
+    local.axleVelocity.vx = rearLongitudinalSpeed;
+    local.axleVelocity.vy += rearFriction;
+    rearHeading = car->heading;
+    tableOffset = rearHeading << 2;
+    rearXProduct = MathMultiplyFixed16(
+        *((s32 *)(tableOffset + gFarCosTable.unk[0])), local.axleVelocity.vx);
+    fixedValue = MathMultiplyFixed16(
+        *((s32 *)(tableOffset + gFarSinTable.unk[0])), local.axleVelocity.vy);
+    gripBase = gFarSinTable.unk[0];
+    asm("" : : "r"(gripBase));
+    car->rearVelocityX = rearXProduct - fixedValue;
+    frontXValue = local.axleVelocity.vx;
+    asm("addu %0,%1,%0"
+        : "=r"(gripBase)
+        : "r"(tableOffset), "0"(gripBase), "r"(frontXValue));
+    rearYProductAfter = MathMultiplyFixed16(*((s32 *)gripBase), frontXValue);
+    car->rearVelocityY =
+        (s32)(rearYProductAfter +
+              MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                                  local.axleVelocity.vy));
+    *((Vec3 *)D_800A453CPhysics) = *((Vec3 *)(&local.force));
+    local.force.vy = 0;
+    local.force.vx = 0;
+    if (car->flags & 0x40) {
+        if (D_800A2EB8[0] == 0) {
+            if (MathGetAngleDelta(car->heading, car->movementHeading) < 0) {
+                register s32 deadDeltaReturn asm("v0");
+                deadDeltaReturn =
+                    MathGetAngleDelta(car->heading, car->movementHeading);
+                /* End the previous s0 lifetime before the negative result. */
+                asm volatile("" : "=r"(deltaMagnitude));
+                deltaMagnitude = -deadDeltaReturn;
+            } else {
+                deltaMagnitude =
+                    MathGetAngleDelta(car->heading, car->movementHeading);
+            }
+            asm("" : : "r"(deltaMagnitude));
+            rearDriveHeading = car->movementHeading;
+            rearDriveMagnitude = MathMultiplyFixed16(driveForce, gripCos);
+        } else {
+            MathMultiplyFixed16(
+                driveForce,
+                ((s32 *)gFarCosTable
+                     .unk[0])[((car->heading - car->movementHeading) + 0x400) &
+                              0x3FF]);
+            MathMultiplyFixed16(
+                driveForce,
+                ((s32 *)gFarCosTable
+                     .unk[0])[((car->heading - car->movementHeading) + 0x400) &
+                              0x3FF]);
+            rearDriveMagnitude = driveForce;
+            rearDriveHeading = car->heading;
+        }
+        asm("" : : "r"(rearDriveMagnitude));
+        local.force.vx = MathMultiplyFixed16(
+            rearDriveMagnitude, ((s32 *)gFarCosTable.unk[0])[rearDriveHeading]);
+        rearSin = ((s32 *)gFarSinTable.unk[0])[rearDriveHeading];
+        rearDriveScale = rearDriveMagnitude;
+        goto addRearForce;
+    }
+    rearDragLimit = 0x10000;
+    if (local.axleVelocity.vx > 0) {
+        if (local.axleVelocity.vx < rearDragLimit) {
+            rearDragLimit = local.axleVelocity.vx;
+        }
+        rearDrag = -rearDragLimit;
+        local.force.vx = MathMultiplyFixed16(
+            rearDrag, ((s32 *)gFarCosTable.unk[0])[car->heading]);
+        rearSin = ((s32 *)gFarSinTable.unk[0])[car->heading];
+        asm("addu %0,%1,$zero"
+            : "=r"(rearDriveScale)
+            : "r"(rearDrag), "r"(rearSin));
+    addRearForce:
+        local.force.vy = MathMultiplyFixed16(rearDriveScale, rearSin);
+    }
+    /* Add the rear force and select the inverse heading row. */
+    asm volatile("lw $v0,0xD0(%4)\n\t"
+                 "lw $v1,%5\n\t"
+                 "lw %0,0xD4(%4)\n\t"
+                 "lh $a2,0x114(%4)\n\t"
+                 "addu $v0,$v0,$v1\n\t"
+                 "sw $v0,0xD0(%4)\n\t"
+                 "lw %1,0xD0(%4)\n\t"
+                 "lw $a3,%6\n\t"
+                 "li $v0,1024\n\t"
+                 "lui $v1,%%hi(D_800A3A2C)\n\t"
+                 "lw $v1,%%lo(D_800A3A2C)($v1)\n\t"
+                 "subu $v0,$v0,$a2\n\t"
+                 "andi %2,$v0,1023\n\t"
+                 "sll %3,%2,2\n\t"
+                 "addu %0,%0,$a3\n\t"
+                 "addu $v1,%3,$v1\n\t"
+                 "sw %0,0xD4(%4)\n\t"
+                 "lw %0,0($v1)"
+                 : "=&r"(firstCos), "=&r"(frontXValue),
+                   "=&r"(rearInverseHeading), "=&r"(tableOffset)
+                 : "r"(car), "m"(local.force.vx), "m"(local.force.vy)
+                 : "v0", "v1", "a2", "a3", "memory");
+    rearXLocal = MathMultiplyFixed16(firstCos, frontXValue);
+    local.axleVelocity.vx =
+        rearXLocal -
+        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+                            car->rearVelocityY);
+    thirdTableAddress = tableOffset + gFarSinTable.unk[0];
+    asm("" : : "r"(thirdTableAddress));
+    rearYLocal =
+        MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->rearVelocityX);
+    local.axleVelocity.vy =
+        rearYLocal +
+        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                            car->rearVelocityY);
+    forwardSpeed = ((s16 *)(&local.axleVelocity.vx))[1];
+    if (speedLimit < forwardSpeed) {
+        limitedRearX = MathMultiplyFixed16(
+            MathFixedDivide(speedLimit, forwardSpeed), local.axleVelocity.vx);
+        local.axleVelocity.vx = limitedRearX;
+        limitedRearHeading = car->heading;
+        tableOffset = limitedRearHeading << 2;
+        limitedRearXProduct = MathMultiplyFixed16(
+            *((s32 *)(tableOffset + gFarCosTable.unk[0])), limitedRearX);
+        fixedValue =
+            MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+                                local.axleVelocity.vy);
+        asm("lui %0,%%hi(D_800A3A34)\n\tlw %0,%%lo(D_800A3A34)(%0)"
+            : "=r"(gripBase));
+        car->rearVelocityX = limitedRearXProduct - fixedValue;
+        frontXValue = local.axleVelocity.vx;
+        asm("addu %0,%1,%0"
+            : "=r"(gripBase)
+            : "r"(tableOffset), "0"(gripBase), "r"(frontXValue));
+        limitedRearYProduct =
+            MathMultiplyFixed16(*((s32 *)gripBase), frontXValue);
+        car->rearVelocityY =
+            (s32)(limitedRearYProduct +
+                  MathMultiplyFixed16(
+                      *((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                      local.axleVelocity.vy));
+    }
+    /* Save the axle velocities before the heading update. */
+    asm volatile("lw %1,0xC4(%5)\n\t"
+                 "lw $t0,%6\n\t"
+                 "lw $t1,%7\n\t"
+                 "sw %1,%2\n\t"
+                 "lw %1,0xC8(%5)\n\t"
+                 "nop\n\t"
+                 "sw %1,%3\n\t"
+                 "lw %1,0xD0(%5)\n\t"
+                 "nop\n\t"
+                 "sw %1,%4\n\t"
+                 "lw %1,0xD4(%5)\n\t"
+                 "subu %0,$t0,$t1"
+                 : "=&r"(steeringRaw), "=&r"(tableIndex),
+                   "=m"(local.frontVelocity.vx), "=m"(local.frontVelocity.vy),
+                   "=m"(local.rearVelocity.vx)
+                 : "r"(car), "m"(local.frontForward), "m"(local.rearForward)
+                 : "t0", "t1", "memory");
+    longitudinalDifference = steeringRaw;
+    local.rearVelocity.vy = tableIndex;
+    if (longitudinalDifference < 0) {
+        longitudinalDifference += 0x3F;
+    }
+    turnMultiplier = longitudinalDifference >> 6;
+    if (turnMultiplier <= 0xFFFF) {
+        turnMultiplier = 0x10000;
+    }
+    initialYaw = local.frontSide;
+    asm("" : : "r"(initialYaw));
+    torqueReturn = MathMultiplyFixed16(initialYaw - sideState, turnMultiplier);
+    yawDenominator = local.yawDivisor;
+    asm volatile(""
+                 : "=r"(turnTorque)
+                 : "r"(torqueReturn), "r"(yawDenominator));
+    turnTorque = torqueReturn;
+    if (yawDenominator < 0) {
+        yawDenominator += 3;
+    }
+    tableIndex = angleDelta << 2;
+    asm("" : : "r"(tableIndex));
+    turnLimit = tableIndex + 16;
+    tableIndex = yawDenominator >> 2;
+    asm("" : : "r"(tableIndex), "r"(turnTorque));
+    turnDelta = turnTorque / tableIndex;
+    if (turnLimit >= 0x41) {
+        turnLimit = 0x40;
+    }
+    if (turnDelta >= 0) {
+        if (turnLimit < turnDelta) {
+            goto clampTurn;
+        }
+    } else if (turnLimit < (-turnDelta)) {
+    clampTurn:
+        if (turnDelta > 0) {
+            turnDelta = turnLimit;
+        } else {
+            turnDelta = -turnLimit;
+        }
+    }
+    newFineHeading = ((car->fineHeading + turnDelta) + 0x1000) & 0xFFF;
+    asm("" : "=r"(newFineHeading) : "0"(newFineHeading));
+    car->fineHeading = (u16)newFineHeading;
+    if (newFineHeading < 0) {
+        newFineHeading += 3;
+    }
+    car->heading = (s16)(newFineHeading >> 2);
+    func_8002AF94((u8 *)car);
+    velocitySumX = ((s32)local.frontVelocity.vx) + ((s32)local.rearVelocity.vx);
+    car->velocityX =
+        (s32)(((s32)(velocitySumX + (velocitySumX >> 0x1F))) >> 0x11);
+    velocityX = *((volatile s32 *)(((u8 *)car) + 0xB0));
+    velocitySumY = local.frontVelocity.vy + local.rearVelocity.vy;
+    car->velocityY =
+        (s32)(((s32)(velocitySumY + (velocitySumY >> 0x1F))) >> 0x11);
+    if (((velocityX >= 0) ? (velocityX < 3) : ((-velocityX) < 3)) &&
+        ((car->velocityY >= 0) ? (car->velocityY < 3)
+                               : ((-car->velocityY) < 3))) {
+        car->velocityY = 0;
+        car->velocityX = 0;
+    }
+    car->movementHeading = func_800358EC((s32 *)(((u8 *)car) + 0xB0));
+    gripBase = car->heading;
+    tableIndex = 1024;
+    asm volatile("" : : "r"(gripBase), "r"(tableIndex));
+    cosRow = (s32 *)gFarCosTable.unk[0];
+    tableIndex = (tableIndex - gripBase) & 1023;
+    tableIndex <<= 2;
+    asm("addu %0,%1,%0" : "=r"(cosRow) : "r"(tableIndex), "0"(cosRow));
+    /* Project world velocity onto the car's forward and side axes.
+     * The forward value is shifted after the four integer products. */
+    asm volatile("lw $a0,0(%2)\n\t"
+                 "lw %0,0xB0(%7)\n\t"
+                 "nop\n\t"
+                 "mult $a0,%0\n\t"
+                 "lui %0,%%hi(D_800A3A34)\n\t"
+                 "lw %0,%%lo(D_800A3A34)(%0)\n\t"
+                 "nop\n\t"
+                 "addu %1,%1,%0\n\t"
+                 "lw $a0,0(%1)\n\t"
+                 "lw %0,0xB4(%7)\n\t"
+                 "mflo $a2\n\t"
+                 "nop\n\t"
+                 "nop\n\t"
+                 "mult $a0,%0\n\t"
+                 "mflo %0\n\t"
+                 "subu %0,$a2,%0\n\t"
+                 "sra %0,%0,16\n\t"
+                 "sw %0,%3\n\t"
+                 "lw $a0,0(%1)\n\t"
+                 "lw %1,0xB0(%7)\n\t"
+                 "nop\n\t"
+                 "mult $a0,%1\n\t"
+                 "lw $a0,0(%2)\n\t"
+                 "lw %1,0xB4(%7)\n\t"
+                 "mflo $a2\n\t"
+                 "nop\n\t"
+                 "nop\n\t"
+                 "mult $a0,%1\n\t"
+                 "mflo $a3\n\t"
+                 "addu %1,$a2,$a3\n\t"
+                 "sra %1,%1,16"
+                 : "=&r"(forwardSpeedLocal), "=r"(sinRow), "=r"(cosRow),
+                   "=m"(local.velocity.vx), "=x"(velocityMultiplyState)
+                 : "2"(cosRow), "1"(tableIndex), "r"(car)
+                 : "a0", "a2", "a3", "accum", "memory");
+    local.velocity.vy = (s32)sinRow;
+    if (forwardSpeedLocal < 0) {
+        reverseSpeed = -forwardSpeedLocal;
+        car->reverseSpeed = (s8)reverseSpeed;
+        forwardSpeedLocal = 0;
+        if (((u32)(reverseSpeed & 0xFF)) >= 0x65U) {
+            car->reverseSpeed = 0x64;
+        }
+    } else {
+        car->reverseSpeed = 0;
+    }
+    speedCap = car->maxSpeed;
+    forwardSpeedFixed = forwardSpeedLocal << 0x10;
+    asm("" : : "r"(speedCap), "r"(forwardSpeedFixed));
+    car->speed = forwardSpeedFixed;
+    if (speedCap < forwardSpeedFixed) {
+        car->speed = speedCap;
+    }
+}
 
 s32 func_8002CF1C(void) {
     return 2000;
@@ -7029,7 +9031,1719 @@ s32 func_80037204(u8 *obj) {
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800373B4);
+INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0F8);
+
+typedef struct {
+    u8 *cars[6];
+} AiNearbyCars373B4;
+extern const AiNearbyCars373B4 D_8008D0F8;
+extern s32 D_800A2E4C373B4[];
+extern s32 D_800A2E90373B4[];
+extern s32 D_800A2E94373B4[];
+extern s32 D_800A2EA4373B4[];
+extern s32 D_800A2EAC373B4[];
+extern s32 D_800A2EB0373B4[];
+extern u8 D_800A2EDC373B4[];
+extern u8 D_800A2EE0373B4[];
+extern u8 D_800A2F48373B4[];
+extern s32 D_800A2F50373B4;
+extern s32 D_800A2F54373B4;
+extern u8 D_800A2F58373B4;
+extern s32 D_800A2F5C373B4;
+extern s32 D_800A2F84373B4[];
+extern u8 D_800A3071373B4[];
+extern u8 D_800A3320373B4[];
+extern u8 *D_800A3554373B4[];
+extern s8 D_800A3564373B4[];
+extern s32 D_800A3598373B4[];
+extern u8 *D_800A35E0373B4[];
+extern u8 D_800A3670373B4[];
+extern s32 D_800A36A4373B4;
+extern u8 *D_800A3728373B4[];
+extern u8 D_800A372C373B4[];
+extern s8 D_800A3764373B4[];
+extern u8 *D_800A37C0373B4[];
+extern u8 *D_800A3878373B4[];
+extern s16 D_800A3910373B4[];
+extern u8 *D_800A3960373B4[];
+extern s32 *D_800A3A2C373B4[];
+extern s32 *D_800A3A34373B4[];
+extern u8 *D_800A3A64373B4[];
+extern u8 *D_800AE154373B4[];
+extern s32 D_800B1EA8373B4[];
+extern s32 D_800BE974373B4[];
+extern u8 *D_800BE980373B4[];
+extern s32 func_800A2CE0373B4[];
+extern s32 MathFixedDivide373B4(s32, s32) asm("MathFixedDivide");
+extern s32 MathMultiplyFixed16373B4(s32, s32) asm("MathMultiplyFixed16");
+extern void ObjectSetCallbackIfAllowed373B4(u8 *, void (*)(void)) asm(
+    "ObjectSetCallbackIfAllowed");
+extern s32 RandomScaledGet373B4(s32) asm("RandomScaledGet");
+extern void func_8001FAC0373B4(u8 *, s32) asm("func_8001FAC0");
+extern void func_8001FB28373B4(u8 *, s16) asm("func_8001FB28");
+extern void func_80029CB4373B4(u8 *) asm("func_80029CB4");
+extern void func_8002A1D0373B4(u8 *) asm("func_8002A1D0");
+extern void func_8002BC88373B4(u8 *) asm("func_8002BC88");
+extern void func_8002D16C373B4(u8 *) asm("func_8002D16C");
+extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
+extern void func_80036900373B4(u8 *, s32) asm("func_80036900");
+extern s32 func_8003702C373B4(u8 *, u8 *) asm("func_8003702C");
+extern s32 func_80037204373B4(u8 *) asm("func_80037204");
+extern s32 func_800395BC373B4(u8 *, s32) asm("func_800395BC");
+extern void func_8003DBA8373B4(u8 *) asm("func_8003DBA8");
+extern u8 func_8003E78C373B4(u8 *) asm("func_8003E78C");
+extern void func_80044114373B4(u8 *) asm("func_80044114");
+extern s8 func_80045480373B4(u8 *, s32) asm("func_80045480");
+extern void func_800488A4373B4(u8 *) asm("func_800488A4");
+extern void func_80025594373B4(void) asm("func_80025594");
+extern void func_80025730373B4(void) asm("func_80025730");
+extern void func_8003AA20373B4(void) asm("func_8003AA20");
+__asm__(
+    ".globl D_800A2E4C373B4\nD_800A2E4C373B4 = D_800A2E4C\n.globl D_800A2E90373B4\nD_800A2E90373B4 = D_800A2E90\n.globl D_800A2E94373B4\nD_800A2E94373B4 = D_800A2E94\n.globl D_800A2EA4373B4\nD_800A2EA4373B4 = D_800A2EA4\n.globl D_800A2EAC373B4\nD_800A2EAC373B4 = D_800A2EAC\n.globl D_800A2EB0373B4\nD_800A2EB0373B4 = D_800A2EB0\n.globl D_800A2EDC373B4\nD_800A2EDC373B4 = D_800A2EDC\n.globl D_800A2EE0373B4\nD_800A2EE0373B4 = D_800A2EE0\n.globl D_800A2F48373B4\nD_800A2F48373B4 = D_800A2F48\n.globl D_800A2F50373B4\nD_800A2F50373B4 = D_800A2F50\n.globl D_800A2F54373B4\nD_800A2F54373B4 = D_800A2F54\n.globl D_800A2F58373B4\nD_800A2F58373B4 = D_800A2F58\n.globl D_800A2F5C373B4\nD_800A2F5C373B4 = D_800A2F5C\n.globl D_800A2F84373B4\nD_800A2F84373B4 = D_800A2F84\n.globl D_800A3071373B4\nD_800A3071373B4 = D_800A3071\n.globl D_800A3320373B4\nD_800A3320373B4 = D_800A3320\n.globl D_800A3554373B4\nD_800A3554373B4 = D_800A3554\n.globl D_800A3564373B4\nD_800A3564373B4 = D_800A3564\n.globl D_800A3598373B4\nD_800A3598373B4 = D_800A3598\n.globl D_800A35E0373B4\nD_800A35E0373B4 = D_800A35E0\n.globl D_800A3670373B4\nD_800A3670373B4 = D_800A3670\n.globl D_800A36A4373B4\nD_800A36A4373B4 = D_800A36A4\n.globl D_800A3728373B4\nD_800A3728373B4 = D_800A3728\n.globl D_800A372C373B4\nD_800A372C373B4 = D_800A372C\n.globl D_800A3764373B4\nD_800A3764373B4 = D_800A3764\n.globl D_800A37C0373B4\nD_800A37C0373B4 = D_800A37C0\n.globl D_800A3878373B4\nD_800A3878373B4 = D_800A3878\n.globl D_800A3910373B4\nD_800A3910373B4 = D_800A3910\n.globl D_800A3960373B4\nD_800A3960373B4 = D_800A3960\n.globl D_800A3A2C373B4\nD_800A3A2C373B4 = D_800A3A2C\n.globl D_800A3A34373B4\nD_800A3A34373B4 = D_800A3A34\n.globl D_800A3A64373B4\nD_800A3A64373B4 = D_800A3A64\n.globl D_800AE154373B4\nD_800AE154373B4 = D_800AE154\n.globl D_800B1EA8373B4\nD_800B1EA8373B4 = D_800B1EA8\n.globl D_800BE974373B4\nD_800BE974373B4 = D_800BE974\n.globl D_800BE980373B4\nD_800BE980373B4 = D_800BE980\n.globl func_800A2CE0373B4\nfunc_800A2CE0373B4 = func_800A2CE0\n");
+
+/* Update AI route speed, pace following, nearby lanes, and steering. */
+void func_800373B4(u8 *object) {
+    register u8 *car asm("$18");
+    register u8 *middleOther asm("$4");
+    register u32 middleOne asm("$9");
+    register s32 middleFlag asm("$2");
+    register s32 middleRandomLimit asm("$4");
+
+    register s32 collisionCarX asm("$7");
+    register s32 collisionCarY asm("$8");
+    register s32 collisionArgument0 asm("$4");
+    register s32 collisionArgument1 asm("$5");
+    register s32 collisionNeighborY asm("$6");
+    register s32 collisionTableBase asm("$3");
+    register s32 collisionTableOffset asm("$16");
+    register s32 collisionReturn asm("$2");
+    register s32 collisionWidthCopy asm("$4");
+    register s32 collisionNeighborOrder asm("$3");
+    register s32 collisionCarOrder asm("$2");
+
+    register u32 active asm("$2");
+    register s32 paceMatch asm("$19");
+    register s32 paceCarGap asm("$6");
+    register s32 paceDistance asm("$16");
+    register s32 paceBase asm("$9");
+    register u32 trackCenterFlag asm("$9");
+    register u32 peerFollowFlag asm("$2");
+    register s32 pressureTimerValue asm("$2");
+    register s32 standingTest asm("$2");
+    register s32 paceTimer asm("$2");
+    register s32 timerBase asm("$6");
+    register s32 tireAge2 asm("$3");
+    register s32 counterScale asm("$3");
+    register s32 speedResult asm("$2");
+    register u8 *playerCar asm("$2");
+    register s32 slowDelta asm("$3");
+    register u32 routeRaceMode asm("$2");
+    register u32 routeLeftFlag asm("$3");
+    register s32 routeDenominator asm("$5");
+    s64 multiplierState;
+    register s32 routeSelection asm("$7");
+    struct {
+        s32 delta[3];
+        s32 reserved1C;
+        AiNearbyCars373B4 nearby;
+        s32 targetX;
+        s32 reserved3C;
+        s32 targetY;
+        s32 reserved44;
+        s32 heading;
+        s32 reserved4C;
+        u8 allowRight;
+        u8 reserved51[7];
+        u8 allowLeft;
+        u8 reserved59[7];
+        s32 paceSpeed;
+        s32 reserved64;
+        u8 useTrackCenter;
+        u8 reserved69[7];
+        u8 useSameSegment;
+        u8 reserved71[7];
+        /* Stack-layout pin: retail reserves these compiler stack words
+         * through sp+0x9F, before the saved s0 home at sp+0xA0. */
+        s32 reserved78[10];
+    } workspace;
+
+    void (*tempV118)(u8 *, s32);
+    register s32 tempA22 asm("$6");
+    register s32 tempV114 asm("$3");
+    register s32 tailMinusOne asm("$2");
+    register s32 tailSegment asm("$4");
+    register s32 tailRouteLength asm("$7");
+    register s32 tailTargetValue asm("$9");
+    register u8 *tailCarArg asm("$4");
+    register s32 tailPositionZ asm("$5");
+
+    register s32 varV04 asm("$2");
+    register s32 tempA012 asm("$4");
+    register s32 tempA02 asm("$4");
+    register s32 tempS0 asm("$16");
+    register s32 tempS03 asm("$16");
+    register s32 lateralSinProduct asm("$16");
+    register s32 longitudinalGap asm("$16");
+    register s32 deltaX asm("$20");
+    register s32 reverseAngle asm("$21");
+    register s32 deltaY asm("$22");
+    register s32 lateralGap asm("$2");
+    register s32 tempV018 asm("$2");
+    register s32 tempV020 asm("$2");
+    register s32 tempV021 asm("$2");
+    register s32 tempV03 asm("$2");
+    register s32 tempV04 asm("$2");
+    register s32 tempV112 asm("$3");
+    register s32 tempV113 asm("$3");
+    register s32 tempV115 asm("$3");
+    register s32 tempV116 asm("$3");
+    register s32 tempV117 asm("$3");
+    register s32 tempV16 asm("$3");
+    register s32 tempV17 asm("$3");
+    register s32 varA0 asm("$4");
+    register s32 varA02 asm("$4");
+    register s32 varA1 asm("$5");
+    register s32 varA12 asm("$5");
+    register s32 varA13 asm("$5");
+    register s32 varA14 asm("$5");
+    register s32 varA15 asm("$5");
+    register s32 varA16 asm("$5");
+    register s32 varA17 asm("$5");
+    register s32 varA18 asm("$5");
+    register s32 varA19 asm("$5");
+    s32 nearbyLaneMask;
+    register s32 overlapIndex asm("$19");
+    register s32 blockedLaneMask asm("$21");
+    register s32 paceGap asm("$22");
+    register s32 nearbyCount asm("$23");
+    register s32 varV0 asm("$2");
+    register s32 varV011 asm("$2");
+    register s32 overlapOffset asm("$2");
+    register s32 varV016 asm("$2");
+    register s32 varV017 asm("$2");
+    register s32 varV02 asm("$2");
+    register s32 varV03 asm("$2");
+    register s32 varV06 asm("$2");
+    register s32 varV07 asm("$2");
+    register s32 varV1 asm("$3");
+    register s32 varV13 asm("$3");
+    register s32 varV14 asm("$3");
+    register s32 varV15 asm("$3");
+    register s32 varV17 asm("$3");
+    register s32 tempA07 asm("$4");
+    register s8 tempV0 asm("$2");
+    register s32 tempV010 asm("$2");
+    register s32 tempV011 asm("$2");
+    register s8 tempV014 asm("$2");
+    register s8 tempV017 asm("$2");
+    register s32 tempV09 asm("$2");
+    register s32 tempV13 asm("$3");
+    register s32 tempV18 asm("$3");
+    register s32 tempV19 asm("$3");
+    register s32 desiredLane asm("$19");
+    register s32 varV012 asm("$2");
+    register u16 tempA13 asm("$5");
+    u8 **tempA1;
+    register u8 *aheadOfFollowingCar asm("$16");
+    register u8 *followingCar asm("$17");
+    register u8 *paceLeader asm("$17");
+    register u8 *forwardNeighbor asm("$17");
+    register u8 *backwardNeighbor asm("$17");
+    register u8 *blockingCar asm("$17");
+    register u8 *paceAheadCar asm("$17");
+    register u8 tempA06 asm("$4");
+    register u8 tempV015 asm("$2");
+    register u8 tempV016 asm("$2");
+    register u8 followAllowed asm("$20");
+    register s32 varV08 asm("$2");
+    register s32 varV09 asm("$2");
+    register u8 varV12 asm("$3");
+    register s32 varV16 asm("$3");
+    register void *tempA03 asm("$4");
+    register void *tempA08 asm("$4");
+    register void *tempA09 asm("$4");
+    register u8 *overlappingCar asm("$17");
+    register void *tempV02 asm("$2");
+
+    car = object;
+    asm("" : "=r"(car) : "0"(car) : "memory");
+    workspace.nearby = D_8008D0F8;
+    asm volatile("lbu\t%0,0xF4(%1)" : "=r"(active) : "r"(car) : "memory");
+    asm volatile("addu\t%0,$0,$0\n\taddu\t%1,$0,$0\n\taddu\t%2,$0,$0"
+                 : "=r"(nearbyCount), "=r"(blockedLaneMask),
+                   "=r"(nearbyLaneMask)
+                 :
+                 : "memory");
+    workspace.useTrackCenter = 0;
+    workspace.useSameSegment = 0;
+    if (active != 0) {
+        if ((*(s16 *)((u8 *)car + 0x1EC)) == 0) {
+            if ((*(void (**)(u8 *, s32))(car + 0x354)) == func_80025730373B4) {
+                (*(void (**)(u8 *))(car + 0x350))(car);
+                return;
+            }
+            func_8002D16C373B4(car);
+            goto block_5;
+        }
+    block_5:
+        if ((*(u8 *)((u8 *)car + 0x268)) != 0) {
+            func_8003DBA8373B4(car);
+            (*(s16 *)((u8 *)car + 0x288)) = 1;
+            return;
+        }
+        D_800A2F54373B4 = 0;
+        if (func_8003E78C373B4(car) & 0xFF) {
+            if (D_800A2EAC373B4[0] == 0) {
+                D_800A2F54373B4 = 1;
+                goto block_10;
+            }
+            goto block_11;
+        }
+    block_10:
+        if (D_800A2EAC373B4[0] != 0) {
+        block_11:
+            if ((*(u16 *)((u8 *)car + 0x360)) == 4) {
+                tempV0 = func_80045480373B4(car, 0);
+                if (tempV0 == 1) {
+                    D_800A2F54373B4 = (s32)tempV0;
+                }
+            }
+        }
+        /* Route index, target coordinates, and lane permission bits. */
+        asm volatile(".set noat\n\t"
+                     ".set\tnoreorder\n\t"
+                     "lw\t$7,D_800A2F54373B4\n\t"
+                     "lh\t$2,0x1E0(%9)\n\t"
+                     "sll\t$5,$7,2\n\t"
+                     "lui\t$1,%%hi(D_800B1EA8)\n\t"
+                     "addu\t$1,$1,$5\n\t"
+                     "lw\t$3,%%lo(D_800B1EA8)($1)\n\t"
+                     "addiu\t$2,$2,2\n\t"
+                     "div\t$0,$2,$3\n\t"
+                     "bnez\t$3,1f\n\t"
+                     "sll\t$0,$0,0\n\t"
+                     "break\t0x1C00\n\t"
+                     "1:\n\t"
+                     "addiu\t$1,$0,-1\n\t"
+                     "bne\t$3,$1,2f\n\t"
+                     "lui\t$1,0x8000\n\t"
+                     "bne\t$2,$1,2f\n\t"
+                     "sll\t$0,$0,0\n\t"
+                     "break\t0x1800\n\t"
+                     "2:\n\t"
+                     "mfhi\t$6\n\t"
+                     "lui\t$2,%%hi(D_800AE154)\n\t"
+                     "addiu\t$2,$2,%%lo(D_800AE154)\n\t"
+                     "addu\t$5,$5,$2\n\t"
+                     "lw\t$4,0($5)\n\t"
+                     "sll\t$3,$6,1\n\t"
+                     "addu\t$3,$3,$6\n\t"
+                     "sll\t$3,$3,2\n\t"
+                     "addu\t$4,$3,$4\n\t"
+                     "lw\t$9,0($4)\n\t"
+                     "sll\t$0,$0,0\n\t"
+                     "sw\t$9,%0\n\t"
+                     "lw\t$9,4($4)\n\t"
+                     "sll\t$0,$0,0\n\t"
+                     "sw\t$9,%1\n\t"
+                     "lh\t$2,8($4)\n\t"
+                     "lhu\t$4,10($4)\n\t"
+                     "sll\t$2,$2,16\n\t"
+                     "sw\t$4,%2\n\t"
+                     "sw\t$2,0x84(%9)\n\t"
+                     "lw\t$2,0($5)\n\t"
+                     "sll\t$0,$0,0\n\t"
+                     "addu\t$3,$3,$2\n\t"
+                     "lw\t$3,8($3)\n\t"
+                     "lw\t$9,%2\n\t"
+                     "srl\t$2,$3,30\n\t"
+                     "xori\t$2,$2,1\n\t"
+                     "andi\t$2,$2,1\n\t"
+                     "sb\t$2,%3\n\t"
+                     "lbu\t$2,D_800A2F58373B4\n\t"
+                     "ori\t$5,$0,0x198\n\t"
+                     "andi\t$9,$9,0x3FFF\n\t"
+                     "sw\t$9,%2\n\t"
+                     "srl\t$3,$3,31\n\t"
+                     "xori\t$3,$3,1\n\t"
+                     ".set at\n\t"
+                     : "=m"(workspace.targetX), "=m"(workspace.targetY),
+                       "=m"(workspace.heading), "=m"(workspace.allowRight),
+                       "=r"(routeRaceMode), "=r"(routeLeftFlag),
+                       "=r"(routeDenominator), "=r"(routeSelection),
+                       "=x"(multiplierState)
+                     : "r"(car)
+                     : "$1", "$4", "$6", "$9", "accum", "memory");
+        workspace.allowLeft = routeLeftFlag;
+        if (routeRaceMode != 0) {
+            if (D_800A2EB0373B4[0] == 1) {
+                (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
+                    (*(s32 *)((u8 *)car + 0x84)),
+                    MathFixedDivide373B4(D_800A2F50373B4 + 0x28,
+                                         routeDenominator));
+                func_8002A1D0373B4(car);
+                func_8002BC88373B4(car);
+                tempA02 = (*(s32 *)((u8 *)car + 0x98));
+                if ((tempA02 >> 0x10) < (*(s16 *)((u8 *)car + 0x86))) {
+                    (*(s32 *)((u8 *)car + 0x84)) = tempA02;
+                }
+                if (((*(s32 *)((u8 *)car + 0x98)) >> 0x10) <
+                    (*(s16 *)((u8 *)car + 0x92))) {
+                    (*(s32 *)((u8 *)car + 0x90)) = (*(s32 *)((u8 *)car + 0x98));
+                }
+            } else {
+                varA0 = 2;
+                if (D_800A36A4373B4 >= 0x29) {
+                    varA1 = 3;
+                } else {
+                    varA0 = D_800A2F50373B4;
+                    varA1 = 0x1A7;
+                }
+                (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
+                    (*(s32 *)((u8 *)car + 0x84)),
+                    MathFixedDivide373B4(varA0, varA1));
+            }
+            playerCar = D_800A35E0373B4[0];
+            (*(s32 *)((u8 *)car + 0x22C)) = 0;
+            if (car != playerCar) {
+                tempV02 = (*(u8 **)((u8 *)car + 0x3E4));
+                if (tempV02 != NULL) {
+                    tempA03 = (*(u8 **)((u8 *)tempV02 + 8));
+                    if ((*(s16 *)((u8 *)car + 0x1E0)) ==
+                        (*(s16 *)((u8 *)tempA03 + 0x1E0))) {
+                        slowDelta = -0x40000;
+                        tempV03 = (*(s32 *)((u8 *)tempA03 + 0x90));
+                        tempV03 += slowDelta;
+                        (*(s32 *)((u8 *)car + 0x90)) = tempV03;
+                        (*(s32 *)((u8 *)car + 0x84)) = tempV03;
+                    }
+                }
+            }
+            if ((D_800A2EB0373B4[0] != 1) && (func_800A2CE0373B4[0] == 5)) {
+                (*(s32 *)((u8 *)car + 0x84)) =
+                    MathMultiplyFixed16373B4((*(s32 *)((u8 *)car + 0x84)),
+                                             MathFixedDivide373B4(0x41, 0x64));
+            }
+        } else {
+            if (((*(s16 *)((u8 *)D_800A35E0373B4[0] + 0x1EC)) == 0) &&
+                ((*(s16 *)((u8 *)D_800A35E0373B4[0] + 0x284)) >=
+                 (*(s16 *)((u8 *)car + 0x284))) &&
+                (routeSelection != 1) &&
+                (tempV04 = D_800A2F5C373B4 + 1, D_800A2F5C373B4 = tempV04,
+                 (tempV04 >= 0))) {
+                /* Tire-age penalty and driver aggression. */
+                asm volatile(".set noat\n\t"
+                             ".set\tnoreorder\n\t"
+                             "lh\t$6,0xFA(%3)\n\t"
+                             "sll\t$0,$0,0\n\t"
+                             "slti\t$2,$6,16\n\t"
+                             "beqz\t$2,3f\n\t"
+                             "sll\t$2,$6,2\n\t"
+                             "lw\t$3,D_800A2F50373B4\n\t"
+                             "lui\t$4,%%hi(D_800A3320)\n\t"
+                             "lbu\t$4,%%lo(D_800A3320)($4)\n\t"
+                             "j\t4f\n\t"
+                             "sll\t$3,$3,3\n\t"
+                             "3:\n\t"
+                             "lw\t$3,D_800A2F50373B4\n\t"
+                             "sll\t$2,$6,1\n\t"
+                             "addu\t$2,$2,$6\n\t"
+                             "lui\t$4,%%hi(D_800A3320)\n\t"
+                             "lbu\t$4,%%lo(D_800A3320)($4)\n\t"
+                             "sll\t$2,$2,2\n\t"
+                             "sll\t$3,$3,3\n\t"
+                             "4:\n\t"
+                             "subu\t$3,$3,$2\n\t"
+                             ".set at\n\t"
+                             : "=r"(varV0), "=r"(varV1), "=r"(varA0)
+                             : "r"(car)
+                             : "$6", "memory");
+                varV0 = 0x96 - varA0;
+                varV0 <<= 1;
+                asm("addu\t%0,%1,%2" : "=r"(varV0) : "r"(varV1), "r"(varV0));
+                asm volatile("" : : "r"(varV0));
+                speedResult = MathMultiplyFixed16373B4(
+                    *(s32 *)(car + 0x84),
+                    MathFixedDivide373B4(varV0, routeDenominator << 3));
+                counterScale = D_800A2E94373B4[0];
+                *(s32 *)(car + 0x84) = speedResult;
+                *(s32 *)(car + 0x22C) = 0x1E0000;
+                D_800A2F5C373B4 = counterScale * 0x190;
+            } else {
+                paceTimer = D_800A2F5C373B4;
+                if (paceTimer > 0) {
+                    timerBase = D_800A2F50373B4;
+                    tireAge2 = *(s16 *)(car + 0xFA);
+                    varA0 = D_800A3320373B4[0];
+                    routeDenominator <<= 3;
+                    paceTimer -= 1;
+                    D_800A2F5C373B4 = paceTimer;
+                    asm volatile("" : : "r"(paceTimer));
+                    varV0 = 0x66;
+                    timerBase <<= 3;
+                    tireAge2 <<= 2;
+                    timerBase -= tireAge2;
+                    varV0 -= varA0;
+                    varA0 = varV0 * 3;
+                    *(s32 *)(car + 0x84) = MathMultiplyFixed16373B4(
+                        *(s32 *)(car + 0x84),
+                        MathFixedDivide373B4(timerBase + varA0,
+                                             routeDenominator));
+                    varV02 = 0x140000;
+                } else {
+                    if (paceTimer >= 0) {
+                        D_800A2F5C373B4 = -(D_800A2E94373B4[0] * 0x258);
+                    }
+                    tempV13 = (*(s8 *)((u8 *)D_800A3878373B4[0] + 0x204));
+                    if (tempV13 >= 0x15) {
+                        varV03 = (*(s16 *)((u8 *)car + 0xFA)) * 0x10;
+                    } else {
+                        asm("slti\t%0,%1,0xD"
+                            : "=r"(standingTest)
+                            : "r"(tempV13));
+                        if (standingTest == 0) {
+                            varV03 = (*(s16 *)((u8 *)car + 0xFA)) * 0xA;
+                        } else {
+                            varV03 = (*(s16 *)((u8 *)car + 0xFA)) * 4;
+                        }
+                    }
+                    (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
+                        (*(s32 *)((u8 *)car + 0x84)),
+                        MathFixedDivide373B4((D_800A2F50373B4 * 8) - varV03,
+                                             routeDenominator << 3));
+                    varV02 = 0xA0000;
+                }
+                (*(s32 *)((u8 *)car + 0x22C)) = varV02;
+            }
+            if (D_800A2F5C373B4 < -(D_800A2E94373B4[0] * 0xC8)) {
+                (*(u8 *)((u8 *)car + 0x3FC)) = 0U;
+                tempV04 = D_800A2F5C373B4;
+                (*(s32 *)((u8 *)car + 0x22C)) = 0;
+                tempV04 += 1;
+                D_800A2F5C373B4 = tempV04;
+                (*(s32 *)((u8 *)car + 0x84)) =
+                    MathMultiplyFixed16373B4((*(s32 *)((u8 *)car + 0x84)),
+                                             MathFixedDivide373B4(0x60, 0x64));
+            }
+            if ((*(u8 *)((u8 *)car + 0x3FC)) != 0) {
+                if (D_800A2EA4373B4[0] == 0) {
+                    (*(s32 *)((u8 *)car + 0x84)) =
+                        (s32)((*(s32 *)((u8 *)car + 0x84)) +
+                              (*(s32 *)((u8 *)D_800A3554373B4[0] + 0x22C)));
+                } else {
+                    (*(s32 *)((u8 *)car + 0x84)) =
+                        (s32)((*(s32 *)((u8 *)car + 0x84)) + 0xC0000);
+                }
+                (*(u8 *)((u8 *)car + 0x3FC)) =
+                    (u8)((*(u8 *)((u8 *)car + 0x3FC)) - 1);
+            }
+        }
+        (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
+            (*(s32 *)((u8 *)car + 0x84)),
+            MathFixedDivide373B4(D_800A2E4C373B4[0], 0x64));
+        if ((*(u16 *)((u8 *)car + 0x3A4)) & 0x1000) {
+            (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
+                (*(s32 *)((u8 *)car + 0x84)), MathFixedDivide373B4(1, 2));
+        }
+        if ((*(s32 *)((u8 *)car + 0x84)) <= 0x31FFFF) {
+            (*(s32 *)((u8 *)car + 0x84)) = 0x320000;
+        }
+        if (D_800A372C373B4[0] != 0) {
+            D_800A2F5C373B4 = -(D_800A2E94373B4[0] * 0x190);
+            if (D_800A2F54373B4 == 0) {
+                asm("ori\t%0,$0,1" : "=r"(trackCenterFlag));
+                workspace.useTrackCenter = trackCenterFlag;
+            }
+            if (*(u16 *)(car + 0x3A4) & 0xF) {
+                *(s32 *)(car + 0x84) = 0;
+            } else {
+                paceMatch = 0;
+                if (car == D_800A3A64373B4[0]) {
+                    *(s32 *)(car + 0x84) = 0xAC0000;
+                } else {
+                    paceLeader = *(u8 **)(*(u8 **)(car + 0x3F0) + 8);
+                    asm("lh\t%0,0x288(%1)"
+                        : "=r"(varV04)
+                        : "r"(paceLeader)
+                        : "$20");
+                    followAllowed = 0;
+                    goto paceLevelCheck;
+                paceNextCar:
+                    paceLeader = *(u8 **)(*(u8 **)(paceLeader + 0x3F0) + 8);
+                    varV04 = *(s16 *)(paceLeader + 0x288);
+                paceLevelCheck:
+                    if (varV04 != 0)
+                        goto paceNextCar;
+                    if (*(u16 *)(paceLeader + 0x3A4) & 0xF)
+                        goto paceNextCar;
+                    if (*(void (**)(void))(paceLeader + 0x354) !=
+                        func_80025594373B4)
+                        goto paceNextCar;
+                    tempS0 = func_8003702C373B4(paceLeader, car);
+                    paceGap = tempS0;
+                    paceCarGap = func_8003702C373B4(D_800A3A64373B4[0], car);
+                    asm volatile("" : : "r"(paceGap));
+                    /* Select the leader or pace car and retain their gap.
+                     * The C distance calls preserve both saved flags. */
+                    asm volatile(".set noat\n\t"
+                                 ".set\tnoreorder\n\t"
+                                 "andi\t$2,%6,0xFFFF\n\t"
+                                 "sltiu\t$2,$2,11\n\t"
+                                 "beqz\t$2,10f\n\t"
+                                 "sll\t$2,%7,16\n\t"
+                                 "lb\t$4,0x408(%5)\n\t"
+                                 "lb\t$5,0x408(%4)\n\t"
+                                 "sll\t$0,$0,0\n\t"
+                                 "slt\t$2,$4,$5\n\t"
+                                 "beqz\t$2,10f\n\t"
+                                 "sll\t$2,%7,16\n\t"
+                                 "lb\t$3,0x3FE(%5)\n\t"
+                                 "lb\t$2,0x3FE(%4)\n\t"
+                                 "sll\t$0,$0,0\n\t"
+                                 "bne\t$3,$2,10f\n\t"
+                                 "sll\t$2,%7,16\n\t"
+                                 "addiu\t$2,%6,-1\n\t"
+                                 "andi\t$2,$2,0xFFFF\n\t"
+                                 "sltiu\t$2,$2,2\n\t"
+                                 "beqz\t$2,11f\n\t"
+                                 "addiu\t$2,$4,1\n\t"
+                                 "bne\t$5,$2,11f\n\t"
+                                 "sll\t$0,$0,0\n\t"
+                                 "ori\t%2,$0,1\n\t"
+                                 "11:\n\t"
+                                 "lw\t$9,0x84(%5)\n\t"
+                                 "ori\t%1,$0,1\n\t"
+                                 "j\t14f\n\t"
+                                 "sw\t$9,%0\n\t"
+                                 "10:\n\t"
+                                 "sra\t$3,$2,16\n\t"
+                                 "bltz\t$3,.LpaceChoice373B4\n\t"
+                                 "andi\t$2,%1,0xFF\n\t"
+                                 "lb\t$4,0x408(%4)\n\t"
+                                 "sll\t$0,$0,0\n\t"
+                                 "addiu\t$2,$4,10\n\t"
+                                 "slt\t$2,$2,$3\n\t"
+                                 "bnez\t$2,.LpaceChoice373B4\n\t"
+                                 "andi\t$2,%1,0xFF\n\t"
+                                 "lui\t$2,%%hi(D_800A37C0)\n\t"
+                                 "lw\t$2,%%lo(D_800A37C0)($2)\n\t"
+                                 "subu\t$3,%7,$4\n\t"
+                                 "bne\t%4,$2,12f\n\t"
+                                 "addu\t%3,$3,$0\n\t"
+                                 "addiu\t$2,$3,-1\n\t"
+                                 "andi\t$2,$2,0xFFFF\n\t"
+                                 "sltiu\t$2,$2,2\n\t"
+                                 "beqz\t$2,13f\n\t"
+                                 "lui\t$9,0xAC\n\t"
+                                 "ori\t%2,$0,1\n\t"
+                                 "12:\n\t"
+                                 "lui\t$9,0xAC\n\t"
+                                 "13:\n\t"
+                                 "sw\t$9,%0\n\t"
+                                 "ori\t%1,$0,1\n\t"
+                                 "14:\n\t"
+                                 ".set at\n\t"
+                                 ".set\treorder\n\t"
+                                 : "=m"(workspace.paceSpeed), "=r"(paceMatch),
+                                   "=r"(followAllowed), "=r"(paceGap)
+                                 : "r"(car), "r"(paceLeader), "r"(tempS0),
+                                   "r"(paceCarGap), "1"(paceMatch),
+                                   "2"(followAllowed)
+                                 : "$2", "$3", "$4", "$5", "$9", "memory");
+                    asm("andi %0,%1,0xFF\n.LpaceChoice373B4:"
+                        : "=r"(varV06)
+                        : "r"(paceMatch));
+                    if (varV06 != 0) {
+                        asm volatile("" : : : "memory");
+                        if (D_800A3670373B4[0] != 0) {
+                            asm volatile("" : : : "memory");
+                            *(u8 *)(car + 0x401) = followAllowed;
+                        } else {
+                            peerFollowFlag = *(u8 *)(paceLeader + 0x401);
+                            varV12 = 0;
+                            if (peerFollowFlag != 0) {
+                                varV12 = followAllowed;
+                                asm("");
+                            }
+                            *(u8 *)(car + 0x401) = varV12;
+                        }
+                        asm("sll\t$2,%1,16\n\tsra\t%0,$2,16"
+                            : "=r"(paceDistance)
+                            : "r"(paceGap)
+                            : "$2");
+                        if (paceDistance >= 2) {
+                            varV0 = MathFixedDivide373B4(paceDistance - 1, 9);
+                            varA0 = *(s32 *)(car + 0x84);
+                            paceBase = workspace.paceSpeed;
+                            varA1 = varV0;
+                            varV0 = MathMultiplyFixed16373B4(varA0 - paceBase,
+                                                             varA1);
+                            paceBase = workspace.paceSpeed;
+                            varV0 = paceBase + varV0;
+                            *(s32 *)(car + 0x84) = varV0;
+                        } else {
+                            speedResult = MathMultiplyFixed16373B4(
+                                workspace.paceSpeed,
+                                MathFixedDivide373B4(9, 10));
+                            varA02 = 5;
+                            *(s32 *)(car + 0x84) = speedResult;
+                            if (paceDistance != 0)
+                                varA02 = 9;
+                            *(s32 *)(car + 0x90) = MathMultiplyFixed16373B4(
+                                *(s32 *)(paceLeader + 0x90),
+                                MathFixedDivide373B4(varA02, 10));
+                        }
+                    }
+                }
+            }
+        }
+        if ((D_800A2EDC373B4[0] != 0) &&
+            (tempA13 = (*(u16 *)((u8 *)car + 0x3A4)), ((tempA13 & 0xF) != 0))) {
+            tempA06 = (*(u8 *)((u8 *)car + 0x3B7));
+            if (tempA06 != 0) {
+                if (((*(void (**)(u8 *, s32))(car + 0x354)) ==
+                     func_80025594373B4) &&
+                    (tempA06 == 0x64) && ((*(s16 *)((u8 *)car + 0x1EC)) != 0)) {
+                    if (tempA13 & 3) {
+                        (*(s16 *)((u8 *)car + 0x102)) = 0;
+                    } else {
+                        (*(s16 *)((u8 *)car + 0x102)) = 1;
+                    }
+                    asm volatile("" : : "r"(tempA13));
+                    ObjectSetCallbackIfAllowed373B4(car, func_8003AA20373B4);
+                }
+                (*(u8 *)((u8 *)car + 0x3B7)) =
+                    (u8)((*(u8 *)((u8 *)car + 0x3B7)) - 1);
+                goto block_120;
+            }
+            if (D_800A2EE0373B4[0] != 0) {
+                func_80044114373B4(car);
+                goto block_120;
+            }
+            if ((D_800A3071373B4[0] != 0) && (D_800A3910373B4[0] == 0) &&
+                (D_800A3960373B4[0] == NULL) && (D_800A2EB0373B4[0] == 0)) {
+                func_800488A4373B4(car);
+                D_800A3764373B4[0] = 1;
+                goto block_120;
+            }
+            if (car != D_800A3728373B4[0]) {
+                if (!(func_80037204373B4(car) & 0xFF)) {
+                    D_800A3564373B4[0] = 1;
+                    goto block_120;
+                }
+            } else {
+            block_120:
+                (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
+                    (*(s32 *)((u8 *)car + 0x84)),
+                    MathFixedDivide373B4((s32)(*(u8 *)((u8 *)car + 0x3B7)),
+                                         0x64));
+                goto block_121;
+            }
+        } else {
+        block_121:
+            if ((D_800A2E90373B4[0] != 0) && (D_800A2EB0373B4[0] != 1)) {
+                if (D_800A2F54373B4 != 1) {
+                    asm("lbu %0,%1"
+                        : "=r"(trackCenterFlag)
+                        : "m"(workspace.allowRight));
+                    asm("addu %0,%1,$0" : "=r"(varV07) : "r"(trackCenterFlag));
+                    if (varV07 == 0) {
+                        blockedLaneMask |= 1;
+                    }
+                    asm("lbu %0,%1"
+                        : "=r"(trackCenterFlag)
+                        : "m"(workspace.allowLeft)
+                        : "$17");
+                    asm("addu %0,%1,$0" : "=r"(varV07) : "r"(trackCenterFlag));
+                    forwardNeighbor = car;
+                    if (varV07 == 0) {
+                        blockedLaneMask |= 4;
+                    }
+                loop_128:
+                    /* Keep the capped link walk and filter order. */
+                    asm volatile(".set\tnoreorder\n"
+                                 ".LnearbyForward80037EF4:\n"
+                                 "lw         $v0, 0x3F0(%0)\n"
+                                 "nop\n"
+                                 "lw         %0, 0x8($v0)\n"
+                                 "nop\n"
+                                 "lbu        $v0, 0x268(%0)\n"
+                                 "nop\n"
+                                 "beqz       $v0, .LnearbyForward80037F44\n"
+                                 "addu      %1, $zero, $zero\n"
+                                 "addu       $v0, %1, $zero\n"
+                                 ".LnearbyForward80037F18:\n"
+                                 "slti       $v0, $v0, 0x3\n"
+                                 "beqz       $v0, .LnearbyForward80037F44\n"
+                                 "addiu     %1, %1, 0x1\n"
+                                 "lw         $v0, 0x3F0(%0)\n"
+                                 "nop\n"
+                                 "lw         %0, 0x8($v0)\n"
+                                 "nop\n"
+                                 "lbu        $v0, 0x268(%0)\n"
+                                 "nop\n"
+                                 "bnez       $v0, .LnearbyForward80037F18\n"
+                                 "addu      $v0, %1, $zero\n"
+                                 ".LnearbyForward80037F44:\n"
+                                 ".set\tnoreorder\n"
+                                 : "=r"(forwardNeighbor), "=r"(varV13)
+                                 : "0"(forwardNeighbor)
+                                 : "$2", "memory");
+                    if (func_8003702C373B4(forwardNeighbor, car) < 0) {
+                        varA12 = -func_8003702C373B4(forwardNeighbor, car);
+                    } else {
+                        varA12 = func_8003702C373B4(forwardNeighbor, car);
+                    }
+                    asm("slti %0,%1,2" : "=r"(varV07) : "r"(varA12));
+                    if (varV07 != 0) {
+                        tempV16 = 1;
+                        asm("lb %0,0x206(%1)"
+                            : "=r"(varV07)
+                            : "r"(forwardNeighbor)
+                            : "memory");
+                        varV07 += 1;
+                        asm("sllv %0,%0,%2"
+                            : "=r"(tempV16)
+                            : "0"(tempV16), "r"(varV07));
+                        blockedLaneMask |= tempV16;
+                        nearbyLaneMask |= tempV16;
+                        if (nearbyCount < 6) {
+                            workspace.nearby.cars[nearbyCount] =
+                                forwardNeighbor;
+                            nearbyCount += 1;
+                            goto loop_128;
+                        }
+                    }
+                    backwardNeighbor = car;
+                loop_139:
+                    /* Keep the capped link walk and filter order. */
+                    asm volatile(".set\tnoreorder\n"
+                                 ".LnearbyBackward80037FBC:\n"
+                                 "lw         $v0, 0x3F4(%0)\n"
+                                 "nop\n"
+                                 "lw         %0, 0x8($v0)\n"
+                                 "nop\n"
+                                 "lbu        $v0, 0x268(%0)\n"
+                                 "j          .LnearbyBackward80037FF8\n"
+                                 "addu      %1, $zero, $zero\n"
+                                 ".LnearbyBackward80037FD8:\n"
+                                 "slti       $v0, $v0, 0x2\n"
+                                 "beqz       $v0, .LnearbyBackward80038014\n"
+                                 "addiu     %1, %1, 0x1\n"
+                                 "lw         $v0, 0x3F4(%0)\n"
+                                 "nop\n"
+                                 "lw         %0, 0x8($v0)\n"
+                                 "nop\n"
+                                 "lbu        $v0, 0x268(%0)\n"
+                                 ".LnearbyBackward80037FF8:\n"
+                                 "nop\n"
+                                 "bnez       $v0, .LnearbyBackward80037FD8\n"
+                                 "addu      $v0, %1, $zero\n"
+                                 "lh         $v0, 0x1EC(%0)\n"
+                                 "nop\n"
+                                 "beqz       $v0, .LnearbyBackward80037FD8\n"
+                                 "addu      $v0, %1, $zero\n"
+                                 ".LnearbyBackward80038014:\n"
+                                 ".set\tnoreorder\n"
+                                 : "=r"(backwardNeighbor), "=r"(varV14)
+                                 : "0"(backwardNeighbor)
+                                 : "$2", "memory");
+                    if (func_8003702C373B4(backwardNeighbor, car) < 0) {
+                        varA13 = -func_8003702C373B4(backwardNeighbor, car);
+                    } else {
+                        varA13 = func_8003702C373B4(backwardNeighbor, car);
+                    }
+                    asm("slti %0,%1,2" : "=r"(varV08) : "r"(varA13));
+                    if (varV08 != 0) {
+                        tempV17 = 1;
+                        asm("lb %0,0x206(%1)"
+                            : "=r"(varV08)
+                            : "r"(backwardNeighbor)
+                            : "memory");
+                        varV08 += 1;
+                        asm("sllv %0,%0,%2"
+                            : "=r"(tempV17)
+                            : "0"(tempV17), "r"(varV08));
+                        blockedLaneMask |= tempV17;
+                        nearbyLaneMask |= tempV17;
+                        if (nearbyCount < 6) {
+                            workspace.nearby.cars[nearbyCount] =
+                                backwardNeighbor;
+                            nearbyCount += 1;
+                            goto loop_139;
+                        }
+                    }
+
+                    if ((blockedLaneMask & 2) ||
+                        ((desiredLane = 0, (D_800A2F58373B4 != 0)) &&
+                         (D_800A3598373B4[0] == 0))) {
+                        tempA07 = (*(s8 *)(car + 0x206));
+                        varV09 = 1;
+                        tempV18 = tempA07 + 1;
+                        asm("sllv %0,%0,%2"
+                            : "=r"(varV09)
+                            : "0"(varV09), "r"(tempV18));
+                        varV09 = blockedLaneMask & varV09;
+                        desiredLane = tempA07;
+                        if (varV09 != 0) {
+                            /* Skip up to three unavailable cars ahead. */
+                            asm volatile(".set\tnoreorder\n\t"
+                                         "lw\t$2,0x3F0(%2)\n\t"
+                                         "sll\t$0,$0,0\n\t"
+                                         "lw\t%0,8($2)\n\t"
+                                         "sll\t$0,$0,0\n\t"
+                                         "lbu\t$2,0x268(%0)\n\t"
+                                         "j\t32f\n\t"
+                                         "addu\t%1,$0,$0\n\t"
+                                         "31:\n\t"
+                                         "slti\t$2,$2,3\n\t"
+                                         "beqz\t$2,33f\n\t"
+                                         "addiu\t%1,%1,1\n\t"
+                                         "lw\t$2,0x3F0(%0)\n\t"
+                                         "sll\t$0,$0,0\n\t"
+                                         "lw\t%0,8($2)\n\t"
+                                         "sll\t$0,$0,0\n\t"
+                                         "lbu\t$2,0x268(%0)\n\t"
+                                         "32:\n\t"
+                                         "sll\t$0,$0,0\n\t"
+                                         "bnez\t$2,31b\n\t"
+                                         "addu\t$2,%1,$0\n\t"
+                                         "lh\t$2,0x1EC(%0)\n\t"
+                                         "sll\t$0,$0,0\n\t"
+                                         "beqz\t$2,31b\n\t"
+                                         "addu\t$2,%1,$0\n\t"
+                                         "33:\n\t"
+                                         ".set\treorder\n\t"
+                                         : "=r"(blockingCar), "=r"(varV15)
+                                         : "r"(car)
+                                         : "$2", "memory");
+                            asm("lh $2,0x92(%1)\n\tlh $3,0x92(%2)\n\tsll $0,$0,0\n\tsubu %0,$2,$3"
+                                : "=r"(tempS0)
+                                : "r"(car), "r"(blockingCar)
+                                : "$2", "$3", "memory");
+                            if (tempS0 >= 0x10) {
+                                if (func_8003702C373B4(blockingCar, car) < 0) {
+                                    varA14 =
+                                        -func_8003702C373B4(blockingCar, car);
+                                } else {
+                                    varA14 =
+                                        func_8003702C373B4(blockingCar, car);
+                                }
+                                /* Change the lane only when its mask permits it.
+                                     * Cars already in an outer lane follow a slower leader. */
+                                asm volatile(".set\tnoreorder\n\t"
+                                             "slti\t$2,%6,2\n\t"
+                                             "beqz\t$2,38f\n\t"
+                                             "ori\t$2,$0,7\n\t"
+                                             "beq\t%3,$2,36f\n\t"
+                                             "sll\t$0,$0,0\n\t"
+                                             "lb\t$3,0x206(%1)\n\t"
+                                             "sll\t$0,$0,0\n\t"
+                                             "beqz\t$3,35f\n\t"
+                                             "sll\t$0,$0,0\n\t"
+                                             "bgtz\t$3,34f\n\t"
+                                             "ori\t$2,$0,1\n\t"
+                                             "addiu\t$2,$0,-1\n\t"
+                                             "beq\t$3,$2,37f\n\t"
+                                             "slti\t$2,%4,100\n\t"
+                                             "j\t38f\n\t"
+                                             "sll\t$0,$0,0\n\t"
+                                             "34:\n\t"
+                                             "beq\t$3,$2,37f\n\t"
+                                             "slti\t$2,%4,100\n\t"
+                                             "j\t38f\n\t"
+                                             "sll\t$0,$0,0\n\t"
+                                             "35:\n\t"
+                                             "andi\t$2,%3,1\n\t"
+                                             "bnez\t$2,38f\n\t"
+                                             "ori\t%0,$0,1\n\t"
+                                             "j\t38f\n\t"
+                                             "addiu\t%0,$0,-1\n\t"
+                                             "36:\n\t"
+                                             "slti\t$2,%4,100\n\t"
+                                             "37:\n\t"
+                                             "beqz\t$2,38f\n\t"
+                                             "lui\t$3,0xFFFF\n\t"
+                                             "lw\t$2,0x90(%2)\n\t"
+                                             "sll\t$0,$0,0\n\t"
+                                             "addu\t$2,$2,$3\n\t"
+                                             "sw\t$2,0x90(%1)\n\t"
+                                             "38:\n\t"
+                                             ".set\treorder\n\t"
+                                             : "=r"(desiredLane)
+                                             : "r"(car), "r"(blockingCar),
+                                               "r"(blockedLaneMask),
+                                               "r"(tempS0), "0"(desiredLane),
+                                               "r"(varA14)
+                                             : "$2", "$3", "memory");
+                            }
+                        }
+                    }
+                    tempA08 = (*(u8 **)((u8 *)car + 0x3F4));
+                    if (tempA08 != NULL) {
+                        followingCar = (*(u8 **)((u8 *)tempA08 + 8));
+                        followAllowed = 1;
+                        if ((*(s16 *)((u8 *)followingCar + 0x1EC)) == 0) {
+                            if (func_8003702C373B4(followingCar, car) < 0) {
+                                varA15 = -func_8003702C373B4(followingCar, car);
+                            } else {
+                                varA15 = func_8003702C373B4(followingCar, car);
+                            }
+                            asm("addiu %0,%1,-2\n\tsltiu %0,%0,4"
+                                : "=r"(varV011)
+                                : "r"(varA15));
+                            if (varV011 == 0)
+                                goto pressureNotAllowed;
+                            asm("lw %0,0x90(%2)\n\tlw %1,0x90(%3)"
+                                : "=r"(tempV112), "=r"(varV011)
+                                : "r"(followingCar), "r"(car)
+                                : "memory");
+                            if (varV011 >= tempV112)
+                                goto pressureNotAllowed;
+                            tempA09 = *(u8 **)(car + 0x3F0);
+                            if (tempA09 != NULL) {
+                                aheadOfFollowingCar =
+                                    (*(u8 **)((u8 *)tempA09 + 8));
+                                if (func_8003702C373B4(aheadOfFollowingCar,
+                                                       car) < 0) {
+                                    varA16 = -func_8003702C373B4(
+                                        aheadOfFollowingCar, car);
+                                } else {
+                                    varA16 = func_8003702C373B4(
+                                        aheadOfFollowingCar, car);
+                                }
+                                asm("slti %0,%1,2"
+                                    : "=r"(varV011)
+                                    : "r"(varA16));
+                                if (varV011 == 0)
+                                    goto pressureAllowed;
+                            }
+                        pressureNotAllowed:
+                            followAllowed = 0;
+                        pressureAllowed:
+                            varV011 = followAllowed & 0xFF;
+                            if ((varV011 != 0) &&
+                                ((*(s32 *)((u8 *)car + 0x90)) > 0x01720000)) {
+                                pressureTimerValue = *(s8 *)(car + 0x205);
+                                if (pressureTimerValue != 0)
+                                    goto pressureTimerCheck;
+                                {
+                                    /* Move one lane toward the faster following car,
+                                     * then clamp to either outer lane. */
+                                    asm volatile(".set\tnoreorder\n\t"
+                                                 "lb\t$3,0x203(%1)\n\t"
+                                                 "lb\t$4,0x203(%2)\n\t"
+                                                 "sll\t$0,$0,0\n\t"
+                                                 "slt\t$2,$3,$4\n\t"
+                                                 "beqz\t$2,41f\n\t"
+                                                 "slt\t$2,$4,$3\n\t"
+                                                 "lbu\t$2,0x206(%1)\n\t"
+                                                 "sll\t$0,$0,0\n\t"
+                                                 "addiu\t$2,$2,-1\n\t"
+                                                 "sb\t$2,0x206(%1)\n\t"
+                                                 "sll\t$2,$2,24\n\t"
+                                                 "sra\t$2,$2,24\n\t"
+                                                 "slti\t$2,$2,-1\n\t"
+                                                 "beqz\t$2,42f\n\t"
+                                                 "addiu\t$2,$0,-1\n\t"
+                                                 "j\t42f\n\t"
+                                                 "sb\t$2,0x206(%1)\n\t"
+                                                 "41:\n\t"
+                                                 "beqz\t$2,42f\n\t"
+                                                 "sll\t$0,$0,0\n\t"
+                                                 "lbu\t$2,0x206(%1)\n\t"
+                                                 "sll\t$0,$0,0\n\t"
+                                                 "addiu\t$2,$2,1\n\t"
+                                                 "sb\t$2,0x206(%1)\n\t"
+                                                 "sll\t$2,$2,24\n\t"
+                                                 "sra\t$2,$2,24\n\t"
+                                                 "slti\t$2,$2,2\n\t"
+                                                 "bnez\t$2,42f\n\t"
+                                                 "ori\t$2,$0,1\n\t"
+                                                 "sb\t$2,0x206(%1)\n\t"
+                                                 "42:\n\t"
+                                                 "lhu\t$2,0x248(%1)\n\t"
+                                                 "lb\t%0,0x206(%1)\n\t"
+                                                 "sb\t$2,0x205(%1)\n\t"
+                                                 ".set\treorder\n\t"
+                                                 : "=r"(desiredLane)
+                                                 : "r"(car), "r"(followingCar)
+                                                 : "$2", "$3", "$4", "memory");
+                                }
+                            }
+                            asm volatile("" : : "r"(followAllowed));
+                            pressureTimerValue = *(s8 *)(car + 0x205);
+                        pressureTimerCheck:
+                            tempV19 = pressureTimerValue;
+                            if (pressureTimerValue > 0) {
+                                tempV018 = tempV19 - 1;
+                                *(s8 *)(car + 0x205) = tempV018;
+                            }
+                        }
+                    }
+                    if ((*(u16 *)((u8 *)car + 0x3A4)) & 0x1000) {
+                        desiredLane = 2;
+                        if (D_800A2F84373B4[0] != 0) {
+                            desiredLane = -2;
+                        }
+                        asm("ori %0,$zero,1" : "=r"(middleOne));
+                        workspace.useTrackCenter = middleOne;
+                    } else {
+                        asm volatile(
+                            "lui %0,%%hi(D_800A3960)\n\tlw %0,%%lo(D_800A3960)(%0)"
+                            : "=r"(middleOther)
+                            :
+                            : "memory");
+                        if ((middleOther != NULL) &&
+                            (*(s16 *)(middleOther + 0x1EC) != 0)) {
+                            if (func_8003702C373B4(middleOther, car) < 0) {
+                                asm volatile(
+                                    "lui %0,%%hi(D_800A3960)\n\tlw %0,%%lo(D_800A3960)(%0)"
+                                    : "=r"(middleOther)
+                                    :
+                                    : "memory");
+                                if (-func_8003702C373B4(middleOther, car) < 5) {
+                                    goto block_212;
+                                }
+                            } else {
+                                asm volatile(
+                                    "lui %0,%%hi(D_800A3960)\n\tlw %0,%%lo(D_800A3960)(%0)"
+                                    : "=r"(middleOther)
+                                    :
+                                    : "memory");
+                                if (func_8003702C373B4(middleOther, car) < 5) {
+                                block_212:
+                                    if (desiredLane == 0) {
+                                        if (D_800A2F84373B4[0] != 0) {
+                                            asm volatile(
+                                                "lbu $9,%1\n\tnop\n\taddu %0,$9,$zero"
+                                                : "=r"(middleFlag)
+                                                : "m"(workspace.allowRight)
+                                                : "$9", "memory");
+                                            if (middleFlag == 0) {
+                                                desiredLane = 1;
+                                            }
+                                        } else {
+                                            asm volatile(
+                                                "lbu $9,%1\n\tnop\n\taddu %0,$9,$zero"
+                                                : "=r"(middleFlag)
+                                                : "m"(workspace.allowLeft)
+                                                : "$9", "memory");
+                                            if (middleFlag == 0) {
+                                                desiredLane = -1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (D_800A372C373B4[0] != 0) {
+                        tempV09 = (*(s8 *)((u8 *)D_800A3728373B4[0] + 0x203));
+                        if (tempV09 >= 0) {
+                            if (tempV09 < 4) {
+                                goto block_223;
+                            }
+                            goto block_229;
+                        }
+                        if (-tempV09 < 4) {
+                        block_223:
+                            asm volatile(
+                                "lui %0,%%hi(D_800A3728)\n\tlw %0,%%lo(D_800A3728)(%0)"
+                                : "=r"(middleOther)
+                                :
+                                : "memory");
+                            func_8003702C373B4(middleOther, car);
+                            asm volatile(
+                                "lui %0,%%hi(D_800A3728)\n\tlw %0,%%lo(D_800A3728)(%0)"
+                                : "=r"(middleOther)
+                                :
+                                : "memory");
+                            if (func_8003702C373B4(middleOther, car) < 5) {
+                                tempV010 =
+                                    (*(s8 *)((u8 *)D_800A3728373B4[0] + 0x203));
+                                if (tempV010 != 0) {
+                                    desiredLane = -1;
+                                    if (tempV010 > 0) {
+                                        desiredLane = 1;
+                                    }
+                                } else {
+                                    desiredLane = (*(s8 *)((u8 *)car + 0x3FE));
+                                }
+                                asm("ori %0,$zero,1" : "=r"(middleOne));
+                                workspace.useSameSegment = middleOne;
+                            } else {
+                                goto block_229;
+                            }
+                        } else {
+                        block_229:
+                            if ((*(u8 *)((u8 *)car + 0x401)) != 0) {
+                                tempV011 = (*(s8 *)((u8 *)car + 0x400));
+                                varV16 = tempV011;
+                                if (tempV011 == 0) {
+                                    varV16 = 0;
+                                    if ((*(s8 *)((u8 *)car + 0x3FF)) == 0) {
+                                        varV16 =
+                                            (u8)(*(s8 *)((u8 *)car + 0x3FE));
+                                    }
+                                    asm volatile(
+                                        "lb %0,0x409(%2)\n\tori %1,$zero,10"
+                                        : "=r"(varV012), "=r"(middleRandomLimit)
+                                        : "r"(car)
+                                        : "memory");
+                                    (*(s8 *)((u8 *)car + 0x3FF)) = (s8)varV16;
+                                    tempS03 = varV012 - 5;
+                                    if (RandomScaledGet373B4(
+                                            middleRandomLimit) < 0) {
+                                        varV012 =
+                                            tempS03 - RandomScaledGet373B4(0xA);
+                                    } else {
+                                        varV012 =
+                                            tempS03 + RandomScaledGet373B4(0xA);
+                                    }
+                                } else {
+                                    varV012 = varV16 - 1;
+                                }
+                                (*(s8 *)((u8 *)car + 0x400)) = varV012;
+                            }
+                            desiredLane = (*(s8 *)((u8 *)car + 0x3FF));
+                        }
+                    }
+                    asm volatile(
+                        ".set\tnoreorder\n"
+                        ".set\tnoat\n"
+                        ".LmiddleCenter800385C4:\n"
+                        "lbu        $v0, %5\n"
+                        "nop\n"
+                        "beqz       $v0, .LmiddleCenter80038668\n"
+                        "nop\n"
+                        "lbu        $v0, %6\n"
+                        "ori        $t1, $zero, 0x1\n"
+                        "sb         $t1, %2\n"
+                        "sb         $t1, %3\n"
+                        "lh         $a0, 0x1E0(%4)\n"
+                        "lui        $v1, %%hi(D_800BE974)\n"
+                        "lw         $v1, %%lo(D_800BE974)($v1)\n"
+                        "bnez       $v0, .LmiddleCenter8003860C\n"
+                        "addiu     $v0, $a0, 0x2\n"
+                        "lh         $v0, 0x1EC(%4)\n"
+                        "nop\n"
+                        "bnez       $v0, .LmiddleCenter8003860C\n"
+                        "addiu     $v0, $a0, 0x2\n"
+                        "addiu      $v0, $a0, 0x3\n"
+                        ".LmiddleCenter8003860C:\n"
+                        "div        $0,$v0,$v1\n"
+                        "bnez       $v1, .LmiddleCenter8003861C\n"
+                        "nop\n"
+                        "break      7168\n"
+                        ".LmiddleCenter8003861C:\n"
+                        "addiu      $at, $zero, -0x1\n"
+                        "bne        $v1, $at, .LmiddleCenter80038634\n"
+                        "lui       $at, (0x80000000 >> 16)\n"
+                        "bne        $v0, $at, .LmiddleCenter80038634\n"
+                        "nop\n"
+                        "break      6144\n"
+                        ".LmiddleCenter80038634:\n"
+                        "mfhi       $a2\n"
+                        "lui        $v1, %%hi(D_800BE980)\n"
+                        "lw         $v1, %%lo(D_800BE980)($v1)\n"
+                        "sll        $v0, $a2, 3\n"
+                        "addu       $v0, $v0, $a2\n"
+                        "sll        $v0, $v0, 4\n"
+                        "addu       $v0, $v0, $v1\n"
+                        "lw         $t1, 0x14($v0)\n"
+                        "nop\n"
+                        "sw         $t1, %0\n"
+                        "lw         $v0, 0x18($v0)\n"
+                        "nop\n"
+                        "sw         $v0, %1\n"
+                        ".LmiddleCenter80038668:\n"
+                        ".set\tat\n"
+                        ".set\tnoreorder\n"
+                        : "=m"(workspace.targetX), "=m"(workspace.targetY),
+                          "=m"(workspace.allowLeft), "=m"(workspace.allowRight)
+                        : "r"(car), "m"(workspace.useTrackCenter),
+                          "m"(workspace.useSameSegment), "m"(workspace)
+                        : "$1", "$2", "$3", "$4", "$6", "$9", "hi", "lo",
+                          "memory");
+                    asm volatile(".set\tnoreorder\n"
+                                 ".LmiddlePropagate80038668:\n"
+                                 "beqz       %0, .LmiddlePropagate800386B0\n"
+                                 "nop\n"
+                                 "bgez       %0, .LmiddlePropagate8003868C\n"
+                                 "nop\n"
+                                 "lbu        $t1, %5\n"
+                                 "nop\n"
+                                 "addu       $v0, $t1, $zero\n"
+                                 "beqz       $v0, .LmiddlePropagate800386B0\n"
+                                 "nop\n"
+                                 ".LmiddlePropagate8003868C:\n"
+                                 "blez       %0, .LmiddlePropagate800386A8\n"
+                                 "nop\n"
+                                 "lbu        $t1, %6\n"
+                                 "nop\n"
+                                 "addu       $v0, $t1, $zero\n"
+                                 "beqz       $v0, .LmiddlePropagate800386B0\n"
+                                 "nop\n"
+                                 ".LmiddlePropagate800386A8:\n"
+                                 "j          .LmiddlePropagate800386B4\n"
+                                 "sb        %0, 0x206(%2)\n"
+                                 ".LmiddlePropagate800386B0:\n"
+                                 "sb         $zero, 0x206(%2)\n"
+                                 ".LmiddlePropagate800386B4:\n"
+                                 "lb         $v0, 0x206(%2)\n"
+                                 "nop\n"
+                                 "bgez       $v0, .LmiddlePropagate80038720\n"
+                                 "nop\n"
+                                 "lbu        $t1, %5\n"
+                                 "nop\n"
+                                 "addu       $v0, $t1, $zero\n"
+                                 "bnez       $v0, .LmiddlePropagate8003871C\n"
+                                 "andi      $v0, %3, 0x2\n"
+                                 "beqz       $v0, .LmiddlePropagate8003871C\n"
+                                 "sb        $zero, 0x206(%2)\n"
+                                 "blez       %4, .LmiddlePropagate8003871C\n"
+                                 "addu      %0, $zero, $zero\n"
+                                 "ori        $a1, $zero, 0x1\n"
+                                 "addiu      $a0, $sp, 0x10\n"
+                                 ".LmiddlePropagate800386F0:\n"
+                                 "lw         $v1, 0x10($a0)\n"
+                                 "nop\n"
+                                 "lb         $v0, 0x206($v1)\n"
+                                 "nop\n"
+                                 "bnez       $v0, .LmiddlePropagate8003870C\n"
+                                 "nop\n"
+                                 "sb         $a1, 0x206($v1)\n"
+                                 ".LmiddlePropagate8003870C:\n"
+                                 "addiu      %0, %0, 0x1\n"
+                                 "slt        $v0, %0, %4\n"
+                                 "bnez       $v0, .LmiddlePropagate800386F0\n"
+                                 "addiu     $a0, $a0, 0x4\n"
+                                 ".LmiddlePropagate8003871C:\n"
+                                 "lb         $v0, 0x206(%2)\n"
+                                 ".LmiddlePropagate80038720:\n"
+                                 "nop\n"
+                                 "blez       $v0, .LmiddlePropagate80038784\n"
+                                 "nop\n"
+                                 "lbu        $t1, %6\n"
+                                 "nop\n"
+                                 "addu       $v0, $t1, $zero\n"
+                                 "bnez       $v0, .LmiddlePropagate80038784\n"
+                                 "andi      $v0, %3, 0x2\n"
+                                 "beqz       $v0, .LmiddlePropagate80038784\n"
+                                 "sb        $zero, 0x206(%2)\n"
+                                 "blez       %4, .LmiddlePropagate80038784\n"
+                                 "addu      %0, $zero, $zero\n"
+                                 "addiu      $a1, $zero, -0x1\n"
+                                 "addiu      $a0, $sp, 0x10\n"
+                                 ".LmiddlePropagate80038758:\n"
+                                 "lw         $v1, 0x10($a0)\n"
+                                 "nop\n"
+                                 "lb         $v0, 0x206($v1)\n"
+                                 "nop\n"
+                                 "bnez       $v0, .LmiddlePropagate80038774\n"
+                                 "nop\n"
+                                 "sb         $a1, 0x206($v1)\n"
+                                 ".LmiddlePropagate80038774:\n"
+                                 "addiu      %0, %0, 0x1\n"
+                                 "slt        $v0, %0, %4\n"
+                                 "bnez       $v0, .LmiddlePropagate80038758\n"
+                                 "addiu     $a0, $a0, 0x4\n"
+                                 ".LmiddlePropagate80038784:\n"
+                                 ".set\tnoreorder\n"
+                                 : "=r"(desiredLane)
+                                 : "0"(desiredLane), "r"(car),
+                                   "r"(nearbyLaneMask), "r"(nearbyCount),
+                                   "m"(workspace.allowRight),
+                                   "m"(workspace.allowLeft), "m"(workspace)
+                                 : "$2", "$3", "$4", "$5", "$9", "memory");
+                    overlapIndex = 0;
+                    if (nearbyCount > 0) {
+                    loop_270:
+                        asm volatile(
+                            "addu %0,$sp,%0\n\t"
+                            "lw %1,0x20(%0)\n\t"
+                            "lw %2,0(%9)\n\t"
+                            "lw %3,4(%9)\n\t"
+                            "lh %4,0x114(%9)\n\t"
+                            "lui %5,%%hi(D_800A3A2C373B4)\n\t"
+                            "lw %5,%%lo(D_800A3A2C373B4)(%5)\n\t"
+                            "li %0,0x3FF\n\t"
+                            "lw %6,0(%1)\n\t"
+                            "lw %7,4(%1)"
+                            : "=r"(overlapOffset), "=r"(overlappingCar),
+                              "=r"(collisionCarX), "=r"(collisionCarY),
+                              "=r"(collisionArgument0),
+                              "=r"(collisionTableBase),
+                              "=r"(collisionArgument1), "=r"(collisionNeighborY)
+                            : "0"(overlapIndex * 4), "r"(car)
+                            : "memory");
+                        reverseAngle = overlapOffset - collisionArgument0;
+                        collisionTableOffset = reverseAngle << 2;
+                        collisionTableBase =
+                            collisionTableOffset + collisionTableBase;
+                        collisionArgument0 = *(s32 *)collisionTableBase;
+                        deltaX = collisionCarX - collisionArgument1;
+                        collisionArgument1 = deltaX << 16;
+                        deltaY = collisionCarY - collisionNeighborY;
+                        collisionReturn = MathMultiplyFixed16373B4(
+                            collisionArgument0, collisionArgument1);
+                        asm volatile("lui %0,%%hi(D_800A3A34373B4)\n\t"
+                                     "lw %0,%%lo(D_800A3A34373B4)(%0)\n\t"
+                                     "addu %3,%3,%0\n\t"
+                                     "lw %1,0(%3)\n\t"
+                                     "sll %2,%5,16"
+                                     : "=r"(collisionTableBase),
+                                       "=r"(collisionArgument0),
+                                       "=r"(collisionArgument1),
+                                       "=r"(collisionTableOffset)
+                                     : "3"(collisionTableOffset), "r"(deltaY)
+                                     : "memory");
+                        lateralSinProduct = collisionReturn;
+                        collisionReturn = MathMultiplyFixed16373B4(
+                            collisionArgument0, collisionArgument1);
+                        lateralSinProduct -= collisionReturn;
+                        lateralGap = lateralSinProduct >> 16;
+                        tempV112 = (*(s16 *)(*(u8 **)(car + 0x36C) + 0x1E)) * 2;
+                        collisionWidthCopy = tempV112;
+                        if (lateralGap >= 0) {
+                            if (lateralGap >= tempV112) {
+                                overlapIndex += 1;
+                                goto block_290;
+                            }
+                            goto block_274;
+                        }
+                        if (-lateralGap < collisionWidthCopy) {
+                        block_274:
+                            collisionTableOffset = reverseAngle << 2;
+                            collisionArgument0 =
+                                D_800A3A34373B4[0][reverseAngle];
+                            collisionArgument1 = deltaX << 16;
+                            collisionReturn = MathMultiplyFixed16373B4(
+                                collisionArgument0, collisionArgument1);
+                            asm volatile("lui %0,%%hi(D_800A3A2C373B4)\n\t"
+                                         "lw %0,%%lo(D_800A3A2C373B4)(%0)\n\t"
+                                         "addu %3,%3,%0\n\t"
+                                         "lw %1,0(%3)\n\t"
+                                         "sll %2,%5,16"
+                                         : "=r"(collisionTableBase),
+                                           "=r"(collisionArgument0),
+                                           "=r"(collisionArgument1),
+                                           "=r"(collisionTableOffset)
+                                         : "3"(collisionTableOffset),
+                                           "r"(deltaY)
+                                         : "memory");
+                            longitudinalGap = collisionReturn;
+                            collisionReturn = MathMultiplyFixed16373B4(
+                                collisionArgument0, collisionArgument1);
+                            longitudinalGap += collisionReturn;
+                            longitudinalGap >>= 16;
+                            tempV113 =
+                                (*(s16 *)(*(u8 **)(car + 0x36C) + 0x22)) * 2;
+                            collisionWidthCopy = tempV113;
+                            if (longitudinalGap >= 0) {
+                                asm("slt %0,%1,%2"
+                                    : "=r"(lateralGap)
+                                    : "r"(longitudinalGap), "r"(tempV113));
+                                if (lateralGap == 0) {
+                                    overlapIndex += 1;
+                                    goto block_290;
+                                }
+                                goto block_278;
+                            }
+                            if (-longitudinalGap < collisionWidthCopy) {
+                            block_278:
+                                if (longitudinalGap < 0) {
+                                    tempV014 =
+                                        (u8)(*(s8 *)((u8 *)car + 0x206)) - 1;
+                                    (*(s8 *)((u8 *)car + 0x206)) = tempV014;
+                                    if ((s8)tempV014 < -1) {
+                                        (*(s8 *)((u8 *)car + 0x206)) = -1;
+                                    }
+                                    tempV015 = (*(s8 *)((u8 *)overlappingCar +
+                                                        0x206)) +
+                                               1;
+                                    (*(s8 *)((u8 *)overlappingCar + 0x206)) =
+                                        tempV015;
+                                    if ((s8)tempV015 >= 2) {
+                                        (*(s8 *)((u8 *)overlappingCar +
+                                                 0x206)) = 1U;
+                                    }
+                                } else {
+                                    tempV016 = (*(s8 *)((u8 *)overlappingCar +
+                                                        0x206)) -
+                                               1;
+                                    (*(s8 *)((u8 *)overlappingCar + 0x206)) =
+                                        tempV016;
+                                    if ((s8)tempV016 < -1) {
+                                        (*(s8 *)((u8 *)overlappingCar +
+                                                 0x206)) = -1U;
+                                    }
+                                    tempV017 =
+                                        (u8)(*(s8 *)((u8 *)car + 0x206)) + 1;
+                                    (*(s8 *)((u8 *)car + 0x206)) = tempV017;
+                                    if ((s8)tempV017 >= 2) {
+                                        (*(s8 *)((u8 *)car + 0x206)) = 1;
+                                    }
+                                }
+                                asm volatile(
+                                    "lh %0,0x248(%2)\n\tlh %1,0x248(%3)"
+                                    : "=r"(collisionNeighborOrder),
+                                      "=r"(collisionCarOrder)
+                                    : "r"(overlappingCar), "r"(car)
+                                    : "memory");
+                                if (collisionCarOrder <
+                                    collisionNeighborOrder) {
+                                    goto collisionSlowCar;
+                                }
+                                *(s32 *)(overlappingCar + 0x90) -= 0x10000;
+                                goto collisionDone;
+                            } else {
+                                goto block_289;
+                            }
+                        } else {
+                        block_289:
+                            overlapIndex += 1;
+                        block_290:
+                            if (overlapIndex >= nearbyCount) {
+
+                            } else {
+                                goto loop_270;
+                            }
+                        }
+                    }
+                } else {
+                    goto block_293;
+                }
+            } else if (D_800A2F54373B4 == 1) {
+            block_293:
+                /* Clear the lane and find an active car ahead, with a cap of three. */
+                asm volatile(".set\tnoreorder\n\t"
+                             "lw\t$2,0x3F0(%2)\n\t"
+                             "sb\t$0,0x206(%2)\n\t"
+                             "lw\t%0,8($2)\n\t"
+                             "sll\t$0,$0,0\n\t"
+                             "lbu\t$2,0x268(%0)\n\t"
+                             "j\t52f\n\t"
+                             "addu\t%1,$0,$0\n\t"
+                             "51:\n\t"
+                             "slti\t$2,$2,3\n\t"
+                             "beqz\t$2,53f\n\t"
+                             "addiu\t%1,%1,1\n\t"
+                             "lw\t$2,0x3F0(%0)\n\t"
+                             "sll\t$0,$0,0\n\t"
+                             "lw\t%0,8($2)\n\t"
+                             "sll\t$0,$0,0\n\t"
+                             "lbu\t$2,0x268(%0)\n\t"
+                             "52:\n\t"
+                             "sll\t$0,$0,0\n\t"
+                             "bnez\t$2,51b\n\t"
+                             "addu\t$2,%1,$0\n\t"
+                             "lh\t$2,0x1EC(%0)\n\t"
+                             "sll\t$0,$0,0\n\t"
+                             "beqz\t$2,51b\n\t"
+                             "addu\t$2,%1,$0\n\t"
+                             "53:\n\t"
+                             ".set\treorder\n\t"
+                             : "=r"(paceAheadCar), "=r"(varV17)
+                             : "r"(car)
+                             : "$2", "memory");
+                if (func_8003702C373B4(paceAheadCar, car) < 0) {
+                    varA17 = -func_8003702C373B4(paceAheadCar, car);
+                    goto collisionPaceResume;
+                collisionSlowCar:
+                    *(s32 *)(car + 0x90) -= 0x10000;
+                    goto collisionDone;
+                } else {
+                    varA17 = func_8003702C373B4(paceAheadCar, car);
+                }
+            collisionPaceResume:
+                asm("slti %0,%1,2" : "=r"(tempV018) : "r"(varA17));
+                if (tempV018 != 0) {
+                    tempA012 = (*(s32 *)((u8 *)paceAheadCar + 0x90));
+                    if (tempA012 > 0x640000) {
+                        tempV018 = tempA012 + 0xFFFB0000;
+                        (*(s32 *)((u8 *)car + 0x90)) = tempV018;
+                        (*(s32 *)((u8 *)car + 0x84)) = tempV018;
+                    }
+                }
+            }
+        collisionDone:
+            asm volatile(".set\tnoreorder\n"
+                         "lw         $t1, %1\n"
+                         "lui        $v1, %%hi(D_800A3A2C)\n"
+                         "lw         $v1, %%lo(D_800A3A2C)($v1)\n"
+                         "addiu      $v0, $t1, 0x300\n"
+                         "andi       $v0, $v0, 0x3FF\n"
+                         "sw         $v0, %1\n"
+                         "sll        $a0, $v0, 2\n"
+                         "addu       $v1, $a0, $v1\n"
+                         "lw         $v1, 0x0($v1)\n"
+                         "lb         $a1, 0x206(%6)\n"
+                         "sll        $v0, $v1, 5\n"
+                         "subu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "lui        $v1, %%hi(D_800A3A34)\n"
+                         "lw         $v1, %%lo(D_800A3A34)($v1)\n"
+                         "sra        $v0, $v0, 16\n"
+                         "negu       $a1, $a1\n"
+                         "mult       $v0, $a1\n"
+                         "addu       $a0, $a0, $v1\n"
+                         "lw         $v1, 0x0($a0)\n"
+                         "nop\n"
+                         "sll        $v0, $v1, 5\n"
+                         "subu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "mflo       $a2\n"
+                         "sll        $v0, $v0, 2\n"
+                         "sra        $v0, $v0, 16\n"
+                         "mult       $v0, $a1\n"
+                         "lw         $t1, %2\n"
+                         "lh         $v1, 0x24E(%6)\n"
+                         "addu       $t1, $t1, $a2\n"
+                         "sw         $t1, %2\n"
+                         "lw         $t1, %9\n"
+                         "addiu      $v0, $zero, -0x1\n"
+                         "mflo       $a3\n"
+                         "addu       $t1, $t1, $a3\n"
+                         ".set\tnoreorder\n"
+                         : "=r"(tempV114), "=m"(workspace.heading),
+                           "=m"(workspace.targetX), "=r"(tailTargetValue),
+                           "=r"(tailMinusOne), "=x"(multiplierState)
+                         : "r"(car), "m"(workspace.heading),
+                           "m"(workspace.targetX), "m"(workspace.targetY)
+                         : "$4", "$5", "$6", "$7", "accum", "memory");
+            workspace.targetY = tailTargetValue;
+            if (tempV114 != tailMinusOne) {
+                tempA22 = (*(s16 *)((u8 *)car + 0x1E0));
+                tailRouteLength = D_800BE974373B4[0];
+                tailSegment = tempV114;
+                varA18 = tempA22 - tailSegment;
+                tempV115 = tailRouteLength >> 1;
+                if (varA18 >= 0) {
+                    varV016 = varA18 < tempV115;
+                } else {
+                    varV016 = -varA18 < tempV115;
+                }
+                if (varV016 == 0) {
+                    tempV116 = tailSegment + tailRouteLength;
+                    if (tailSegment < tempA22) {
+                        tempV020 = tempV116 - tempA22;
+                        varA18 = tempV020;
+                        if (tempV020 >= 0) {
+                            varV017 = tempA22 - tempV116;
+                            goto block_315;
+                        }
+                    } else {
+                        tempV117 = tempA22 + tailRouteLength;
+                        tempV021 = tempV117 - tailSegment;
+                        varA18 = tempV021;
+                        if (tempV021 < 0) {
+                            varV017 = tailSegment - tempV117;
+                        block_315:
+                            varA18 = varV017;
+                        }
+                    }
+                }
+                if ((varA18 > 0) || (tailTargetValue = *(s32 *)(car + 0x250),
+                                     workspace.targetX = tailTargetValue,
+                                     tailTargetValue = *(s32 *)(car + 0x254),
+                                     workspace.targetY = tailTargetValue,
+                                     (func_800395BC373B4(car, 1) == 0))) {
+                    (*(s16 *)((u8 *)car + 0x24E)) = -1;
+                }
+            } else if (func_800395BC373B4(car, 0) != 0) {
+                tailTargetValue = *(s32 *)(car + 0x250);
+                workspace.targetX = tailTargetValue;
+                tailTargetValue = *(s32 *)(car + 0x254);
+                workspace.targetY = tailTargetValue;
+            }
+            asm volatile(".set\tnoreorder\n"
+                         "lw         $v0, 0x0(%4)\n"
+                         "lw         $t1, %2\n"
+                         "nop\n"
+                         "subu       $v0, $t1, $v0\n"
+                         "sw         $v0, %0\n"
+                         "lw         $v0, 0x4(%4)\n"
+                         "lw         $t1, %3\n"
+                         "nop\n"
+                         "subu       $v0, $t1, $v0\n"
+                         "sw         $v0, %1\n"
+                         ".set\tnoreorder\n"
+                         : "=m"(workspace.delta[0]), "=m"(workspace.delta[1])
+                         : "m"(workspace.targetX), "m"(workspace.targetY),
+                           "r"(car)
+                         : "$2", "$9", "memory");
+            workspace.delta[2] = -(*(s32 *)((u8 *)car + 0x8));
+            varA19 = func_800358EC373B4(&workspace.delta[0]);
+            if (D_800A2F48373B4[0] != 0) {
+                varA19 = (s32)(*(s16 *)((u8 *)car + 0x114));
+                (*(u8 *)((u8 *)car + 0x201)) = 1;
+            } else {
+                (*(u8 *)((u8 *)car + 0x201)) = 0;
+            }
+            tempV118 = (*(void (**)(u8 *, s32))(car + 0x354));
+            if (tempV118 == func_80025594373B4) {
+                func_80036900373B4(car, varA19);
+                (*(s16 *)((u8 *)car + 0x104)) =
+                    (u16)(*(s16 *)((u8 *)car + 0x114));
+            } else {
+                tempV118(car, varA19);
+            }
+            (*(s16 *)((u8 *)car + 0x116)) =
+                (s16)((*(s16 *)((u8 *)car + 0x114)) * 4);
+            func_8001FAC0373B4(car, (*(s16 *)((u8 *)car + 0x114)) * 4);
+            func_8001FB28373B4(car, (s16)(*(s16 *)((u8 *)car + 0x104)));
+            /* Keep the three low-product windows and position stores. */
+            asm volatile(".set\tnoreorder\n"
+                         "lh         $v1, 0x92(%3)\n"
+                         "lw         $v0, 0x60(%3)\n"
+                         "nop\n"
+                         "mult       $v0, $v1\n"
+                         "lh         $v1, 0x92(%3)\n"
+                         "lw         $v0, 0x6C(%3)\n"
+                         "mflo       $a1\n"
+                         "nop\n"
+                         "nop\n"
+                         "mult       $v0, $v1\n"
+                         "lh         $v1, 0x92(%3)\n"
+                         "lw         $v0, 0x78(%3)\n"
+                         "mflo       $a0\n"
+                         "nop\n"
+                         "nop\n"
+                         "mult       $v0, $v1\n"
+                         "sra        $v0, $a1, 16\n"
+                         "sw         $v0, 0xB0(%3)\n"
+                         "lw         $a2, 0xB0(%3)\n"
+                         "sra        $v0, $a0, 16\n"
+                         "sw         $v0, 0xB4(%3)\n"
+                         "lw         $a3, 0xB4(%3)\n"
+                         "lw         $a1, 0x8(%3)\n"
+                         "mflo       $v1\n"
+                         "sra        $v0, $v1, 16\n"
+                         "sw         $v0, 0xB8(%3)\n"
+                         "lw         $v0, 0x0(%3)\n"
+                         "lw         $v1, 0x4(%3)\n"
+                         "lw         $t0, 0xB8(%3)\n"
+                         "addu       $a0, %3, $zero\n"
+                         "addu       $v0, $v0, $a2\n"
+                         "addu       $v1, $v1, $a3\n"
+                         "addu       $a1, $a1, $t0\n"
+                         "sw         $v0, 0x0($a0)\n"
+                         "sw         $v1, 0x4($a0)\n"
+                         ".set\tnoreorder\n"
+                         : "=r"(tailCarArg), "=r"(tailPositionZ),
+                           "=x"(multiplierState)
+                         : "r"(car)
+                         : "$2", "$3", "$6", "$7", "$8", "accum", "memory");
+            *(s32 *)(tailCarArg + 8) = tailPositionZ;
+            func_80029CB4373B4(tailCarArg);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80038D78);
 

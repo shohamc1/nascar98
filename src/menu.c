@@ -3586,10 +3586,17 @@ void func_80060F54(s32 arg0, s32 volume) {
     }
 }
 
-#ifdef NON_MATCHING
+typedef union {
+    s32 value;
+    s64 home;
+} MenuWordHome;
+typedef union {
+    s8 value;
+    s64 home;
+} MenuCounterHome;
 typedef struct {
     s8 tab[7];
-} RowList;
+} MenuRowList;
 extern s8 D_800A3348[];
 extern s32 *D_800A37D8[];
 extern u8 *D_800A3A1C[];
@@ -3602,6 +3609,10 @@ extern s32 D_8009AC08[];
 extern s32 D_8009AC10[];
 extern s32 D_8009A314[];
 extern u16 D_8009AEA2[];
+extern u16 D_8009AEA0[];
+extern u16 D_8009AEA4[];
+extern u16 D_8009AEAC[];
+extern u8 D_8009AEA8[];
 extern u16 D_8009AEA6[];
 extern u8 D_8009AEAA[];
 extern u16 D_8009AEB2[];
@@ -3610,938 +3621,1891 @@ struct UnkObject24;
 extern void func_80067EA4(struct UnkObject24 *, u8, u8, s32, u8, s32);
 extern void ListSetFieldsAndEnable(u8 *, s16, s16, s16);
 extern u8 D_800A3644[9];
+
 void func_80060FD8(void) {
-    u8 *cur;
-    u8 *prev;
-    u8 index;
-    u8 primIndex;
-    RowList row;
-    s8 i;
-    s8 j;
-    s8 k;
-    s8 m;
-    s8 n;
-    s8 r;
-    s8 q;
-    s32 color;
-    s32 shade;
-    s32 value;
-    s32 ybase;
-    u16 w;
-    u16 h;
-    u16 a;
-    u16 b;
-    u16 uv2;
-    u16 wide;
-    u16 high;
+    /* These are the observed fifth and sixth stack argument homes. */
+    struct {
+        s32 fifth;
+        s32 sixth;
+    } labelArgs;
+    register u8 *currentNode asm("$22");
+    register u8 *previousNode asm("$21");
+    MenuRowList rowList;
+    MenuCounterHome panelIndex;
+    register s8 backgroundIndex asm("$23");
+    register s8 borderIndex asm("$23");
+    register s8 textIndex asm("$23");
+    register s32 panelState asm("$18");
+    register s8 rowSide asm("$23");
+    register s8 rowItem asm("$18");
+    MenuWordHome packetWidth;
+    MenuWordHome packetHeight;
+    MenuWordHome textureRow;
+    MenuWordHome colorHome;
+    MenuWordHome stripPanel;
+    MenuWordHome sideOffset;
+    MenuWordHome markerPanel;
+    MenuWordHome triangleOffset;
+    MenuWordHome shadeHome;
+    register s32 backgroundShade asm("$6");
+    register s32 textCenterX asm("$17");
+    register s32 initialShade asm("$3");
+    register u32 panelMode asm("$4");
+    register s32 textLeftX asm("$19");
+    s64 callAccumulator;
+    register s32 panelTableBase asm("$12");
+    register s32 previousPanelByte asm("$12");
+    register s32 nextPanel asm("$2");
 
     {
-        u8 *object;
-        u8 *cell;
-        u8 *prim2;
-        index = D_800A35EC;
-        row = *(RowList *)D_800A3348;
-        D_800A35EC = index + 1;
-        object = D_800A3678 + index * 36;
-        object[4] = 0;
-        object[3] = 0;
-        object[2] = 0;
-        cur = object;
-        primIndex = D_800A37BC;
-        *(s16 *)(cur + 0x12) = 0;
-        *(s16 *)(cur + 0x14) = 0;
-        *(s32 *)(cur + 0x1C) = 0;
-        *(s16 *)(cur + 0x1A) = 0;
-        *(s16 *)(cur + 0) = 0;
-        *(s16 *)(cur + 0xA) = 0;
-        *(s16 *)(cur + 6) = 0;
-        *(s16 *)(cur + 8) = 0;
-        *(s16 *)(cur + 0xC) = 0;
-        *(s16 *)(cur + 0xE) = 0;
-        *(s16 *)(cur + 0x10) = 0;
-        *(s16 *)(cur + 0x1A) = 0;
-        D_800A37BC = primIndex + 1;
-        cell = (u8 *)D_800A3654 + primIndex * 12;
-        *(u8 **)(cur + 0x20) = cell;
-        cell[0] = 0;
-        cell[3] = 0;
-        *(s32 *)(cell + 4) = 0;
-        prim2 = *(u8 **)(cur + 0x20);
-        *(s16 *)(cur + 0x1A) = 1;
-        *(s16 *)(cur + 0x14) = 0xDA;
-        prim2[2] = 2;
-        prim2[1] = 2;
-        *(s32 *)(prim2 + 8) = D_8009AC00[0];
-        func_8005A7B8(2, 2);
-        *(s16 *)(cur + 0x12) = func_8005B0E4(0x140, *(s32 *)(prim2 + 8));
-        D_800A37F8 = cur;
+        register u32 initialIndex asm("$4");
+        register u8 *cell asm("$16");
+        register s32 centered asm("$2");
+        initialIndex = D_800A35EC;
+        rowList = *(MenuRowList *)D_800A3348;
+        /* These slots reproduce observed compiler spill homes.
+         * They do not imply original source struct types. */
+        asm volatile(""
+                     : "=m"(panelIndex.value), "=m"(packetWidth.value),
+                       "=m"(packetHeight.value), "=m"(textureRow.value),
+                       "=m"(colorHome.value));
+        asm volatile(""
+                     : "=m"(stripPanel.value), "=m"(sideOffset.value),
+                       "=m"(markerPanel.value), "=m"(triangleOffset.value),
+                       "=m"(shadeHome.value));
+        /* Keep the allocation and pool loads in their retail order. */
+        asm volatile(".set\tnoreorder\n"
+                     "lw         $v1, D_800A3678\n"
+                     "addiu      $v0, $a0, 0x1\n"
+                     "sb         $v0, D_800A35EC\n"
+                     "sll        $v0, $a0, 3\n"
+                     "addu       $v0, $v0, $a0\n"
+                     "sll        $v0, $v0, 2\n"
+                     "addu       $v1, $v1, $v0\n"
+                     "sb         $zero, 0x4($v1)\n"
+                     "sb         $zero, 0x3($v1)\n"
+                     "sb         $zero, 0x2($v1)\n"
+                     "lbu        $a0, D_800A37BC\n"
+                     "addu       %0, $v1, $zero\n"
+                     "lw         $v1, D_800A3654\n"
+                     "sh         $zero, 0x12(%0)\n"
+                     "sh         $zero, 0x14(%0)\n"
+                     "sw         $zero, 0x1C(%0)\n"
+                     "sh         $zero, 0x1A(%0)\n"
+                     "sh         $zero, 0x0(%0)\n"
+                     "sh         $zero, 0xA(%0)\n"
+                     "sh         $zero, 0x6(%0)\n"
+                     "sh         $zero, 0xC(%0)\n"
+                     "sh         $zero, 0x8(%0)\n"
+                     "sh         $zero, 0xE(%0)\n"
+                     "sh         $zero, 0x10(%0)\n"
+                     "sh         $zero, 0x1A(%0)\n"
+                     "addiu      $v0, $a0, 0x1\n"
+                     "sb         $v0, D_800A37BC\n"
+                     "sll        $v0, $a0, 1\n"
+                     "addu       $v0, $v0, $a0\n"
+                     "sll        $v0, $v0, 2\n"
+                     "addu       $v1, $v1, $v0\n"
+                     "sw         $v1, 0x20(%0)\n"
+                     "sb         $zero, 0x0($v1)\n"
+                     "sb         $zero, 0x3($v1)\n"
+                     "sw         $zero, 0x4($v1)\n"
+                     "lw         %1, 0x20(%0)\n"
+                     "ori        $v0, $zero, 0x1\n"
+                     "sh         $v0, 0x1A(%0)\n"
+                     "ori        $v0, $zero, 0xDA\n"
+                     "sh         $v0, 0x14(%0)\n"
+                     "ori        $v0, $zero, 0x2\n"
+                     "sb         $v0, 0x2(%1)\n"
+                     "sb         $v0, 0x1(%1)\n"
+                     "lui        $v0, %%hi(D_8009AC00)\n"
+                     "lw         $v0, %%lo(D_8009AC00)($v0)\n"
+                     "ori        $a1, $zero, 0x2\n"
+                     "ori        $a0, $zero, 0x2\n"
+                     "jal        func_8005A7B8\n"
+                     "sw        $v0, 0x8(%1)\n"
+                     ".set\tnoreorder\n"
+                     ".set\treorder\n"
+                     : "=r"(currentNode), "=r"(cell)
+                     : "r"(initialIndex)
+                     : "$2", "$3", "$4", "$5", "$31", "memory");
+        centered = func_8005B0E4(0x140, *(s32 *)(cell + 8));
+        asm volatile("lui $a0,%%hi(D_800A3644)\n"
+                     "lbu $a0,%%lo(D_800A3644)($a0)\n"
+                     "sh $v0,0x12($s6)\n"
+                     "sw $s6,D_800A37F8\n"
+                     "bnez $a0,1f\n"
+                     "ori $v1,$zero,0x3c\n"
+                     "ori $v1,$zero,0x55\n"
+                     "1:\n"
+                     ".set\treorder\n"
+                     : "=r"(panelMode), "=r"(initialShade)
+                     : "r"(centered), "r"(currentNode)
+                     : "memory");
     }
-    value = D_800A3644[0] != 0 ? 0x3C : 0x55;
-    color = value << 24;
-    for (i = 0; i < D_800A3644[0] + 1; i++) {
+    {
+        register s32 condition asm("$2");
+        asm volatile("addiu $v0,$a0,1\n"
+                     ".set\treorder\n"
+                     : "=r"(condition)
+                     : "r"(panelMode));
+        panelIndex.value = 0;
+        if (condition == 0) {
+            goto panelsDone;
+        }
+    }
+    asm volatile("sll $v1,$v1,24\n"
+                 "sw $v1,%0\n"
+                 ".set\treorder\n"
+                 : "=m"(colorHome.value), "=r"(initialShade)
+                 : "1"(initialShade));
+panelLoop:
+    {
         {
-            u8 *object;
-            u8 *prim;
-            j = 0;
-            shade = 0x20;
+            register u8 *node asm("$16");
+            register u8 *primitive asm("$17");
+            register s32 panelNumber asm("$18");
+            register s32 panelByteOffset asm("$19");
+            register s32 packetMode asm("$2");
+            register s32 loopCondition asm("$2");
+            asm volatile("" : : "m"(colorHome.value));
+            asm volatile(".set\tnoreorder\n"
+                         "lbu $t3,%4\n"
+                         "addu $s7,$zero,$zero\n"
+                         "ori $a2,$zero,0x20\n"
+                         "sll $v0,$t3,24\n"
+                         "sra $s2,$v0,24\n"
+                         "sll $s3,$s2,2\n"
+                         ".set\treorder\n"
+                         : "=r"(backgroundIndex), "=r"(backgroundShade),
+                           "=r"(panelNumber), "=r"(panelByteOffset)
+                         : "m"(panelIndex.value)
+                         : "$2", "$11");
             do {
-                object = D_800A3678 + D_800A35EC++ * 36;
-                *(s16 *)(object + 0) = 2;
-                object[4] = 0;
-                *(s16 *)(object + 0x16) = 0x140;
-                *(s16 *)(object + 0x12) = 0;
-                *(s16 *)(object + 0x14) = 0;
-                *(s32 *)(object + 0x1C) = 0;
-                object[3] = 0;
-                object[2] = 0;
-                *(s16 *)(object + 0x1A) = 0;
-                *(s16 *)(object + 6) = 0;
-                *(s16 *)(object + 0xA) = 0;
-                *(s16 *)(object + 8) = 0;
-                *(s16 *)(object + 0xC) = 0;
-                *(s16 *)(object + 0xE) = 0;
-                *(s16 *)(object + 0x10) = 0;
-                *(s16 *)(object + 0x18) = 0x4A;
-                object[2] = shade;
-                object[3] = shade;
-                object[4] = 0x40;
-                prim = func_80057D50(1);
-                *(u8 **)(object + 0x20) = prim;
-                SetPolyF4(prim);
-                SetSemiTrans(prim, 1);
-                cur = object;
-                prim[6] = 0x40;
-                *(s16 *)(prim + 0xC) = 0x140;
-                *(s16 *)(prim + 0x12) = 0x4A;
-                *(s16 *)(prim + 8) = 0;
-                *(s16 *)(prim + 0xA) = 0;
-                *(s16 *)(prim + 0xE) = 0;
-                *(s16 *)(prim + 0x10) = 0;
-                *(s16 *)(prim + 0x14) = 0x140;
-                *(s16 *)(prim + 0x16) = 0x4A;
-                prim[4] = shade;
-                prim[5] = shade;
-                *(s16 *)(cur + 0x1A) = 3;
-                *(s16 *)(cur + 0x12) = -0xA0;
-                *(s16 *)(cur + 0x14) = i * 76 + 3;
-                if (j == 0) {
-                    D_800A37D8[i] = (s32 *)cur;
-                } else {
-                    *(u8 **)(prev + 0x1C) = cur;
-                }
-                j++;
-                prev = cur;
-            } while (j < 2);
+                asm volatile(".set\tnoreorder\n"
+                             "lbu        $v1, D_800A35EC\n"
+                             "lw         $s0, D_800A3678\n"
+                             "ori        $a0, $zero, 0x1\n"
+                             "addiu      $v0, $v1, 0x1\n"
+                             "sb         $v0, D_800A35EC\n"
+                             "sll        $v0, $v1, 3\n"
+                             "addu       $v0, $v0, $v1\n"
+                             "sll        $v0, $v0, 2\n"
+                             "addu       $s0, $s0, $v0\n"
+                             "ori        $t4, $zero, 0x2\n"
+                             "ori        $t3, $zero, 0x140\n"
+                             "sh         $t4, 0x0($s0)\n"
+                             "ori        $t4, $zero, 0x4A\n"
+                             "sb         $zero, 0x4($s0)\n"
+                             "sh         $t3, 0x16($s0)\n"
+                             "ori        $t3, $zero, 0x40\n"
+                             "sh         $zero, 0x12($s0)\n"
+                             "sh         $zero, 0x14($s0)\n"
+                             "sw         $zero, 0x1C($s0)\n"
+                             "sb         $zero, 0x3($s0)\n"
+                             "sb         $zero, 0x2($s0)\n"
+                             "sh         $zero, 0x1A($s0)\n"
+                             "sh         $zero, 0x6($s0)\n"
+                             "sh         $zero, 0xA($s0)\n"
+                             "sh         $zero, 0x8($s0)\n"
+                             "sh         $zero, 0xC($s0)\n"
+                             "sh         $zero, 0xE($s0)\n"
+                             "sh         $zero, 0x10($s0)\n"
+                             "sh         $t4, 0x18($s0)\n"
+                             "sb         $a2, 0x2($s0)\n"
+                             "sb         $a2, 0x3($s0)\n"
+                             "sb         $t3, 0x4($s0)\n"
+                             "jal        func_80057D50\n"
+                             "sw        $a2, 0x68($sp)\n"
+                             "addu       $s1, $v0, $zero\n"
+                             "addu $a0,$s1,$zero\n"
+                             "jal SetPolyF4\n"
+                             "sw $s1,0x20($s0)\n"
+                             ".set\tnoreorder\n"
+                             ".set\treorder\n"
+                             : "=r"(node), "=r"(primitive),
+                               "=m"(shadeHome.value)
+                             : "r"(backgroundShade)
+                             : "$2", "$3", "$4", "$11", "$12", "$31", "memory");
+                SetSemiTrans(primitive, 1);
+                asm volatile(".set\tnoreorder\n"
+                             "lw         $a2, 0x68($sp)\n"
+                             "addu       $s6, $s0, $zero\n"
+                             "ori        $t4, $zero, 0x40\n"
+                             "ori        $t3, $zero, 0x140\n"
+                             "sb         $t4, 0x6($s1)\n"
+                             "ori        $t4, $zero, 0x4A\n"
+                             "sh         $t3, 0xC($s1)\n"
+                             "sh         $t4, 0x12($s1)\n"
+                             "ori        $v0, $zero, 0x3\n"
+                             "sh         $zero, 0x8($s1)\n"
+                             "sh         $zero, 0xA($s1)\n"
+                             "sh         $zero, 0xE($s1)\n"
+                             "sh         $zero, 0x10($s1)\n"
+                             "sh         $t3, 0x14($s1)\n"
+                             "sh         $t4, 0x16($s1)\n"
+                             "sb         $a2, 0x4($s1)\n"
+                             "sb         $a2, 0x5($s1)\n"
+                             ".set\tnoreorder\n"
+                             ".set\treorder\n"
+                             : "=r"(currentNode), "=r"(backgroundShade),
+                               "=r"(packetMode)
+                             : "r"(node), "r"(primitive), "m"(shadeHome.value)
+                             : "$11", "$12", "memory");
+                asm volatile("sh $v0,0x1a($s6)\n"
+                             "addiu $v0,$zero,-0xa0\n"
+                             "sh $v0,0x12($s6)\n"
+                             "addu $v0,$s3,$s2\n"
+                             "sll $v0,$v0,2\n"
+                             "subu $v0,$v0,$s2\n"
+                             "sll $v0,$v0,2\n"
+                             "addiu $v0,$v0,3\n"
+                             "sh $v0,0x14($s6)\n"
+                             ".set\treorder\n"
+                             :
+                             : "r"(packetMode), "r"(currentNode),
+                               "r"(panelNumber), "r"(panelByteOffset)
+                             : "$2", "memory");
+                asm volatile(".set\tnoreorder\n"
+                             "sll $v0,$s7,24\n"
+                             "bnez $v0,1f\n"
+                             "nop\n"
+                             "lui $t3,%%hi(D_800A37D8)\n"
+                             "addiu $t3,$t3,%%lo(D_800A37D8)\n"
+                             "addu $v0,$s3,$t3\n"
+                             "j 2f\n"
+                             "sw $s6,0($v0)\n"
+                             "1: sw $s6,0x1c($s5)\n"
+                             "2:\n"
+                             ".set\treorder\n"
+                             :
+                             : "r"(backgroundIndex), "r"(panelByteOffset),
+                               "r"(currentNode), "r"(previousNode)
+                             : "$2", "$11", "memory");
+                asm volatile("addiu $v0,$s7,1\n"
+                             "addu $s7,$v0,$zero\n"
+                             "sll $v0,$v0,24\n"
+                             "sra $v0,$v0,24\n"
+                             "slti $v0,$v0,2\n"
+                             ".set\treorder\n"
+                             : "=r"(backgroundIndex), "=r"(loopCondition)
+                             : "0"(backgroundIndex));
+                previousNode = currentNode;
+            } while (loopCondition != 0);
         }
         {
-            s32 xbase;
-            s32 tone;
-            u8 *object;
-            u8 *prim;
-            xbase = i * 76;
-            tone = 0x40;
-            k = 0;
+            register s32 borderYBase asm("$19");
+            register s32 tone asm("$17");
+            register s32 loopCondition asm("$2");
+
+            asm volatile(".set\tnoreorder\n"
+                         "lbu        $t4, 0x20($sp)\n"
+                         "addu       $s7, $zero, $zero\n"
+                         "ori        $s1, $zero, 0x40\n"
+                         "sll        $v1, $t4, 24\n"
+                         "sra        $v1, $v1, 24\n"
+                         "sll        $v0, $v1, 2\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "subu       $v0, $v0, $v1\n"
+                         "sll        $s3, $v0, 2\n"
+                         ".set\treorder\n"
+                         : "=r"(borderIndex), "=r"(tone), "=r"(borderYBase)
+                         : "m"(panelIndex.value)
+                         : "$2", "$3", "$12");
             do {
-                switch (k) {
-                case 0:
-                case 3:
-                    ybase = -0xA1;
-                    w = 0x142;
-                    h = 2;
-                    if (k == 0) {
-                        value = xbase + 1;
-                    } else {
-                        value = xbase + 0x4D;
-                    }
-                    break;
-                case 1:
-                case 2:
-                    w = 2;
-                    value = xbase + 2;
-                    ybase = 0xA0;
-                    h = 3;
-                    if (k == 1) {
-                        ybase = -0xA2;
-                    }
-                    break;
-                }
-                object = D_800A3678 + D_800A35EC++ * 36;
-                *(s16 *)(object + 0x12) = 0;
-                *(s16 *)(object + 0x14) = 0;
-                *(s32 *)(object + 0x1C) = 0;
-                object[4] = 0;
-                object[3] = 0;
-                object[2] = 0;
-                *(s16 *)(object + 0x1A) = 0;
-                *(s16 *)(object + 0) = 2;
-                *(s16 *)(object + 6) = 0;
-                *(s16 *)(object + 0xA) = 0;
-                *(s16 *)(object + 8) = 0;
-                *(s16 *)(object + 0xC) = 0;
-                *(s16 *)(object + 0xE) = 0;
-                *(s16 *)(object + 0x10) = 0;
-                *(s16 *)(object + 0x16) = w;
-                object[2] = tone;
-                object[3] = tone;
-                object[4] = tone;
-                *(s16 *)(object + 0x18) = h;
-                prim = func_80057D50(1);
-                *(u8 **)(object + 0x20) = prim;
-                SetPolyF4(prim);
-                SetSemiTrans(prim, 0);
-                cur = object;
-                prim[4] = tone;
-                prim[5] = tone;
-                prim[6] = tone;
-                *(s16 *)(prim + 8) = 0;
-                *(s16 *)(prim + 0xA) = 0;
-                *(s16 *)(prim + 0xE) = 0;
-                *(s16 *)(prim + 0x10) = 0;
-                *(s16 *)(prim + 0xC) = w;
-                *(s16 *)(prim + 0x14) = w;
-                *(s16 *)(prim + 0x12) = h;
-                *(s16 *)(prim + 0x16) = h;
-                *(s16 *)(cur + 0x1A) = 3;
-                *(s16 *)(cur + 0x12) = ybase;
-                *(s16 *)(cur + 0x14) = value;
-                *(u8 **)(prev + 0x1C) = cur;
-                k++;
-                prev = cur;
-            } while (k < 4);
+                /* Border allocation and placement retain their saved-register path. */
+                asm volatile(
+                    ".set\tnoreorder\n"
+                    "sll        $v0, $s7, 24\n"
+                    "sra        $v1, $v0, 24\n"
+                    "slti       $v0, $v1, 0x3\n"
+                    "beqz       $v0, 1f\n"
+                    "ori       $t3, $zero, 0x3\n"
+                    "bgtz       $v1, 4f\n"
+                    "ori       $t3, $zero, 0x4C\n"
+                    "beqz       $v1, 2f\n"
+                    "ori       $t4, $zero, 0x142\n"
+                    "j          9f\n"
+                    "nop\n"
+                    "1:\n"
+                    "bne        $v1, $t3, 9f\n"
+                    "ori       $t4, $zero, 0x142\n"
+                    "2:\n"
+                    "ori        $t3, $zero, 0x2\n"
+                    "addiu      $fp, $zero, -0xA1\n"
+                    "sll        $v0, $s7, 24\n"
+                    "sw         $t4, 0x28($sp)\n"
+                    "bnez       $v0, 3f\n"
+                    "sw        $t3, 0x30($sp)\n"
+                    "j          9f\n"
+                    "addiu     $s4, $s3, 0x1\n"
+                    "3:\n"
+                    "j          9f\n"
+                    "addiu     $s4, $s3, 0x4D\n"
+                    "4:\n"
+                    "ori        $t4, $zero, 0x2\n"
+                    "addiu      $s4, $s3, 0x2\n"
+                    "ori        $fp, $zero, 0xA0\n"
+                    "sw         $t4, 0x28($sp)\n"
+                    "ori        $t4, $zero, 0x1\n"
+                    "bne        $v1, $t4, 9f\n"
+                    "sw        $t3, 0x30($sp)\n"
+                    "addiu      $fp, $zero, -0xA2\n"
+                    "9:\n"
+                    "lbu        $v1, D_800A35EC\n"
+                    "lw         $a1, D_800A3678\n"
+                    "addiu      $v0, $v1, 0x1\n"
+                    "sb         $v0, D_800A35EC\n"
+                    "sll        $v0, $v1, 3\n"
+                    "addu       $v0, $v0, $v1\n"
+                    "sll        $v0, $v0, 2\n"
+                    "addu       $s2, $a1, $v0\n"
+                    "ori        $t3, $zero, 0x2\n"
+                    "sh         $zero, 0x12($s2)\n"
+                    "sh         $zero, 0x14($s2)\n"
+                    "sw         $zero, 0x1C($s2)\n"
+                    "sb         $zero, 0x4($s2)\n"
+                    "sb         $zero, 0x3($s2)\n"
+                    "sb         $zero, 0x2($s2)\n"
+                    "sh         $zero, 0x1A($s2)\n"
+                    "sh         $t3, 0x0($s2)\n"
+                    "sh         $zero, 0x6($s2)\n"
+                    "sh         $zero, 0xA($s2)\n"
+                    "sh         $zero, 0x8($s2)\n"
+                    "sh         $zero, 0xC($s2)\n"
+                    "sh         $zero, 0xE($s2)\n"
+                    "sh         $zero, 0x10($s2)\n"
+                    "lhu        $t4, 0x28($sp)\n"
+                    "nop\n"
+                    "sh         $t4, 0x16($s2)\n"
+                    "lhu        $t3, 0x30($sp)\n"
+                    "ori        $a0, $zero, 0x1\n"
+                    "sb         $s1, 0x2($s2)\n"
+                    "sb         $s1, 0x3($s2)\n"
+                    "sb         $s1, 0x4($s2)\n"
+                    "jal        func_80057D50\n"
+                    "sh        $t3, 0x18($s2)\n"
+                    "addu       $s0, $v0, $zero\n"
+                    "addu       $a0, $s0, $zero\n"
+                    "jal        SetPolyF4\n"
+                    "sw        $s0, 0x20($s2)\n"
+                    "addu       $a0, $s0, $zero\n"
+                    "jal        SetSemiTrans\n"
+                    "addu      $a1, $zero, $zero\n"
+                    "sb         $s1, 0x4($s0)\n"
+                    "sb         $s1, 0x5($s0)\n"
+                    "sb         $s1, 0x6($s0)\n"
+                    "sh         $zero, 0x8($s0)\n"
+                    "sh         $zero, 0xA($s0)\n"
+                    "lhu        $v1, 0x28($sp)\n"
+                    "sh         $zero, 0xE($s0)\n"
+                    "sh         $zero, 0x10($s0)\n"
+                    "sh         $v1, 0xC($s0)\n"
+                    "lhu        $v0, 0x30($sp)\n"
+                    "addu       $s6, $s2, $zero\n"
+                    "sh         $v1, 0x14($s0)\n"
+                    "sh         $v0, 0x12($s0)\n"
+                    "sh         $v0, 0x16($s0)\n"
+                    "ori        $t4, $zero, 0x3\n"
+                    "sh         $t4, 0x1A($s6)\n"
+                    "sh $fp,0x12($s6)\n"
+                    "sh $s4,0x14($s6)\n"
+                    "sw $s6,0x1c($s5)\n"
+                    ".set\treorder\n"
+                    : "=r"(currentNode), "=m"(packetWidth.value),
+                      "=m"(packetHeight.value), "=r"(panelState)
+                    : "r"(borderIndex), "r"(borderYBase), "r"(tone),
+                      "r"(previousNode)
+                    /* These three verified leaf callees preserve the other GPRs and HI/LO. */
+                    : "$2", "$3", "$4", "$5", "$11", "$12", "$16", "$20", "$30",
+                      "$31", "memory");
+                asm volatile("addiu $v0,$s7,1\n"
+                             "addu $s7,$v0,$zero\n"
+                             "sll $v0,$v0,24\n"
+                             "sra $v0,$v0,24\n"
+                             "slti $v0,$v0,4\n"
+                             ".set\treorder\n"
+                             : "=r"(borderIndex), "=r"(loopCondition)
+                             : "0"(borderIndex)
+                             : "memory");
+                previousNode = currentNode;
+            } while (loopCondition != 0);
         }
         {
-            u8 *object;
-            u8 *prim;
-            index = D_800A35EC++;
-            object = D_800A3678 + index * 36;
-            *(s16 *)(object + 0x12) = 0;
-            *(s16 *)(object + 0x14) = 0;
-            *(s32 *)(object + 0x1C) = 0;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            *(s16 *)(object + 0x1A) = 0;
-            *(s16 *)(object + 0) = 1;
-            *(s16 *)(object + 0xA) = 0;
-            *(s16 *)(object + 6) = 0;
-            *(s16 *)(object + 0xC) = 0;
-            *(s16 *)(object + 8) = 0;
-            *(s16 *)(object + 0x16) = 0x74;
-            *(s16 *)(object + 0x18) = 0x50;
-            *(s16 *)(object + 0xE) = 0;
-            *(s16 *)(object + 0x10) = 0;
-            prim = func_80057CCC(1);
-            SetPolyFT4(prim);
-            SetShadeTex(prim, 0);
-            prim[4] = 0x80;
-            prim[5] = 0x80;
-            prim[6] = 0x80;
-            SetSemiTrans(prim, 0);
-            cur = object;
-            *(u8 **)(cur + 0x20) = prim;
-            *(s16 *)(cur + 0x1A) = 2;
-            *(s16 *)(cur + 0x12) = -0x3A;
-            *(s16 *)(cur + 0x14) = i * 76;
-            *(u8 **)(prev + 0x1C) = cur;
-            D_800A3A1C[i] = cur;
+            register s32 textWord asm("$5");
+            /* Header texture and two black quads share allocation registers. */
+            asm volatile(".set\tnoreorder\n"
+                         "ori        $a1, $zero, 0x74\n"
+                         "lbu        $v1, D_800A35EC\n"
+                         "lw         $s1, D_800A3678\n"
+                         "ori        $a0, $zero, 0x1\n"
+                         "addiu      $v0, $v1, 0x1\n"
+                         "sb         $v0, D_800A35EC\n"
+                         "sll        $v0, $v1, 3\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $s1, $s1, $v0\n"
+                         "ori        $t3, $zero, 0x1\n"
+                         "ori        $v0, $zero, 0x50\n"
+                         "sh         $zero, 0x12($s1)\n"
+                         "sh         $zero, 0x14($s1)\n"
+                         "sw         $zero, 0x1C($s1)\n"
+                         "sb         $zero, 0x4($s1)\n"
+                         "sb         $zero, 0x3($s1)\n"
+                         "sb         $zero, 0x2($s1)\n"
+                         "sh         $zero, 0x1A($s1)\n"
+                         "sh         $t3, 0x0($s1)\n"
+                         "sh         $zero, 0xA($s1)\n"
+                         "sh         $zero, 0x6($s1)\n"
+                         "sh         $zero, 0xC($s1)\n"
+                         "sh         $zero, 0x8($s1)\n"
+                         "sh         $a1, 0x16($s1)\n"
+                         "sh         $v0, 0x18($s1)\n"
+                         "sh         $zero, 0xE($s1)\n"
+                         "jal        func_80057CCC\n"
+                         "sh        $zero, 0x10($s1)\n"
+                         "addu       $s0, $v0, $zero\n"
+                         "jal        SetPolyFT4\n"
+                         "addu      $a0, $s0, $zero\n"
+                         "addu       $a0, $s0, $zero\n"
+                         "jal        SetShadeTex\n"
+                         "addu      $a1, $zero, $zero\n"
+                         "addu       $a0, $s0, $zero\n"
+                         "addu       $a1, $zero, $zero\n"
+                         "ori        $v0, $zero, 0x80\n"
+                         "sb         $v0, 0x4($s0)\n"
+                         "sb         $v0, 0x5($s0)\n"
+                         "jal        SetSemiTrans\n"
+                         "sb        $v0, 0x6($s0)\n"
+                         "addu       $s6, $s1, $zero\n"
+                         "ori        $t4, $zero, 0x2\n"
+                         "addiu      $v0, $zero, -0x3A\n"
+                         "sw         $s0, 0x20($s1)\n"
+                         "sh         $t4, 0x1A($s1)\n"
+                         "sh         $v0, 0x12($s6)\n"
+                         "lbu        $t3, %6\n"
+                         "lbu        $v1, D_800A35EC\n"
+                         "sll        $s5, $t3, 24\n"
+                         "sra        $s5, $s5, 24\n"
+                         "sll        $v0, $s5, 2\n"
+                         "addu       $s4, $v0, $s5\n"
+                         "sll        $s4, $s4, 2\n"
+                         "subu       $s4, $s4, $s5\n"
+                         "sll        $s4, $s4, 2\n"
+                         "sh         $s4, 0x14($s6)\n"
+                         "sw         $s6, 0x1C($s2)\n"
+                         "lw         $s2, D_800A3678\n"
+                         "ori        $a0, $zero, 0x1\n"
+                         "ori        $s3, $zero, 0x4\n"
+                         "lui        $at, %%hi(D_800A3A1C)\n"
+                         "addu       $at, $at, $v0\n"
+                         "sw         $s6, %%lo(D_800A3A1C)($at)\n"
+                         "addiu      $v0, $v1, 0x1\n"
+                         "sb         $v0, D_800A35EC\n"
+                         "sll        $v0, $v1, 3\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $s2, $s2, $v0\n"
+                         "ori        $t3, $zero, 0x1\n"
+                         "sh         $zero, 0x12($s2)\n"
+                         "sh         $zero, 0x14($s2)\n"
+                         "sw         $zero, 0x1C($s2)\n"
+                         "sb         $zero, 0x4($s2)\n"
+                         "sb         $zero, 0x3($s2)\n"
+                         "sb         $zero, 0x2($s2)\n"
+                         "sh         $zero, 0x1A($s2)\n"
+                         "sh         $t4, 0x0($s2)\n"
+                         "sh         $zero, 0x6($s2)\n"
+                         "sh         $zero, 0xA($s2)\n"
+                         "sh         $zero, 0x8($s2)\n"
+                         "sh         $zero, 0xC($s2)\n"
+                         "sh         $zero, 0xE($s2)\n"
+                         "sh         $zero, 0x10($s2)\n"
+                         "sh         $s3, 0x16($s2)\n"
+                         "sh         $t3, 0x18($s2)\n"
+                         "sb         $zero, 0x2($s2)\n"
+                         "sb         $zero, 0x3($s2)\n"
+                         "jal        func_80057D50\n"
+                         "sb        $zero, 0x4($s2)\n"
+                         "addu       $s0, $v0, $zero\n"
+                         "addu       $a0, $s0, $zero\n"
+                         "jal        SetPolyF4\n"
+                         "sw        $s0, 0x20($s2)\n"
+                         "addu       $a0, $s0, $zero\n"
+                         "jal        SetSemiTrans\n"
+                         "ori       $a1, $zero, 0x1\n"
+                         "sb         $zero, 0x4($s0)\n"
+                         "sb         $zero, 0x5($s0)\n"
+                         "sb         $zero, 0x6($s0)\n"
+                         "lbu        $v1, D_800A35EC\n"
+                         "addu       $s7, $zero, $zero\n"
+                         "addu       $s6, $s2, $zero\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "ori        $t3, $zero, 0x1\n"
+                         "sh         $zero, 0x8($s0)\n"
+                         "sh         $zero, 0xA($s0)\n"
+                         "sh         $s3, 0xC($s0)\n"
+                         "sh         $zero, 0xE($s0)\n"
+                         "sh         $zero, 0x10($s0)\n"
+                         "sh         $t4, 0x12($s0)\n"
+                         "sh         $s3, 0x14($s0)\n"
+                         "sh         $t3, 0x16($s0)\n"
+                         "lw         $s0, D_800A3678\n"
+                         "ori        $a0, $zero, 0x1\n"
+                         "addiu      $v0, $zero, -0x2\n"
+                         "sh         $v0, 0x12($s6)\n"
+                         "addiu      $v0, $s4, 0x35\n"
+                         "sh         $t4, 0x1A($s6)\n"
+                         "sh         $v0, 0x14($s6)\n"
+                         "sw         $s6, 0x1C($s1)\n"
+                         "addiu      $v0, $v1, 0x1\n"
+                         "sb         $v0, D_800A35EC\n"
+                         "sll        $v0, $v1, 3\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $s0, $s0, $v0\n"
+                         "ori        $t3, $zero, 0x2\n"
+                         "ori        $t4, $zero, 0x140\n"
+                         "sh         $zero, 0x12($s0)\n"
+                         "sh         $zero, 0x14($s0)\n"
+                         "sw         $zero, 0x1C($s0)\n"
+                         "sb         $zero, 0x4($s0)\n"
+                         "sb         $zero, 0x3($s0)\n"
+                         "sb         $zero, 0x2($s0)\n"
+                         "sh         $zero, 0x1A($s0)\n"
+                         "sh         $t3, 0x0($s0)\n"
+                         "sh         $zero, 0x6($s0)\n"
+                         "sh         $zero, 0xA($s0)\n"
+                         "sh         $zero, 0x8($s0)\n"
+                         "sh         $zero, 0xC($s0)\n"
+                         "sh         $zero, 0xE($s0)\n"
+                         "sh         $zero, 0x10($s0)\n"
+                         "ori        $t3, $zero, 0x4A\n"
+                         "sh         $t4, 0x16($s0)\n"
+                         "sh         $t3, 0x18($s0)\n"
+                         "sb         $zero, 0x2($s0)\n"
+                         "sb         $zero, 0x3($s0)\n"
+                         "jal        func_80057D50\n"
+                         "sb        $zero, 0x4($s0)\n"
+                         "addu       $s1, $v0, $zero\n"
+                         "addu       $a0, $s1, $zero\n"
+                         "jal        SetPolyF4\n"
+                         "sw        $s1, 0x20($s0)\n"
+                         "addu       $a0, $s1, $zero\n"
+                         "jal        SetSemiTrans\n"
+                         "ori       $a1, $zero, 0x1\n"
+                         "addu       $s6, $s0, $zero\n"
+                         "ori        $a0, $zero, 0x2\n"
+                         "ori        $a1, $zero, 0x2\n"
+                         "ori        $t4, $zero, 0x140\n"
+                         "ori        $t3, $zero, 0x4A\n"
+                         "sh         $t4, 0xC($s1)\n"
+                         "sh         $t3, 0x12($s1)\n"
+                         "addiu      $v0, $zero, -0xA0\n"
+                         "addiu      $s4, $s4, 0x3\n"
+                         "sb         $zero, 0x4($s1)\n"
+                         "sb         $zero, 0x5($s1)\n"
+                         "sb         $zero, 0x6($s1)\n"
+                         "sh         $zero, 0x8($s1)\n"
+                         "sh         $zero, 0xA($s1)\n"
+                         "sh         $zero, 0xE($s1)\n"
+                         "sh         $zero, 0x10($s1)\n"
+                         "sh         $t4, 0x14($s1)\n"
+                         "sh         $t3, 0x16($s1)\n"
+                         "sh         $zero, 0x1A($s6)\n"
+                         "sh         $v0, 0x12($s6)\n"
+                         "sh         $s4, 0x14($s6)\n"
+                         "jal        func_8005A7B8\n"
+                         "sw        $s6, 0x1C($s2)\n"
+                         "lui        $a1, %%hi(D_8009A314)\n"
+                         "lw         $a1, %%lo(D_8009A314)($a1)\n"
+                         "addu       $s2, $s5, $zero\n"
+                         "addu       $s5, $s6, $zero\n"
+                         ".set\treorder\n"
+                         : "=r"(currentNode), "=r"(previousNode),
+                           "=r"(panelState), "=r"(textIndex), "=r"(textWord)
+                         : "2"(panelState), "m"(panelIndex.value)
+                         : "$2", "$3", "$4", "$11", "$12", "$16", "$17", "$19",
+                           "$20", "$31", "memory");
+            textCenterX = func_8005B0E4(0x140, textWord) - 0xA0;
         }
-        {
-            u8 *object;
-            u8 *prim;
-            index = D_800A35EC++;
-            object = D_800A3678 + index * 36;
-            *(s16 *)(object + 0x12) = 0;
-            *(s16 *)(object + 0x14) = 0;
-            *(s32 *)(object + 0x1C) = 0;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            *(s16 *)(object + 0x1A) = 0;
-            *(s16 *)(object + 0) = 2;
-            *(s16 *)(object + 6) = 0;
-            *(s16 *)(object + 0xA) = 0;
-            *(s16 *)(object + 8) = 0;
-            *(s16 *)(object + 0xC) = 0;
-            *(s16 *)(object + 0xE) = 0;
-            *(s16 *)(object + 0x10) = 0;
-            *(s16 *)(object + 0x16) = 4;
-            *(s16 *)(object + 0x18) = 1;
-            object[2] = 0;
-            object[3] = 0;
-            object[4] = 0;
-            prim = func_80057D50(1);
-            *(u8 **)(object + 0x20) = prim;
-            SetPolyF4(prim);
-            SetSemiTrans(prim, 1);
-            cur = object;
-            prim[4] = 0;
-            prim[5] = 0;
-            prim[6] = 0;
-            *(s16 *)(prim + 8) = 0;
-            *(s16 *)(prim + 0xA) = 0;
-            *(s16 *)(prim + 0xC) = 4;
-            *(s16 *)(prim + 0xE) = 0;
-            *(s16 *)(prim + 0x10) = 0;
-            *(s16 *)(prim + 0x12) = 1;
-            *(s16 *)(prim + 0x14) = 4;
-            *(s16 *)(prim + 0x16) = 1;
-            *(s16 *)(cur + 0x12) = -2;
-            *(s16 *)(cur + 0x1A) = 1;
-            *(s16 *)(cur + 0x14) = i * 76 + 0x35;
-            *(u8 **)(prev + 0x1C) = cur;
-        }
-        {
-            u8 *object;
-            u8 *prim;
-            index = D_800A35EC++;
-            object = D_800A3678 + index * 36;
-            *(s16 *)(object + 0x12) = 0;
-            *(s16 *)(object + 0x14) = 0;
-            *(s32 *)(object + 0x1C) = 0;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            *(s16 *)(object + 0x1A) = 0;
-            *(s16 *)(object + 0) = 2;
-            *(s16 *)(object + 6) = 0;
-            *(s16 *)(object + 0xA) = 0;
-            *(s16 *)(object + 8) = 0;
-            *(s16 *)(object + 0xC) = 0;
-            *(s16 *)(object + 0xE) = 0;
-            *(s16 *)(object + 0x10) = 0;
-            *(s16 *)(object + 0x16) = 0x140;
-            *(s16 *)(object + 0x18) = 0x4A;
-            object[2] = 0;
-            object[3] = 0;
-            object[4] = 0;
-            prim = func_80057D50(1);
-            *(u8 **)(object + 0x20) = prim;
-            SetPolyF4(prim);
-            SetSemiTrans(prim, 1);
-            cur = object;
-            *(s16 *)(prim + 0xC) = 0x140;
-            *(s16 *)(prim + 0x12) = 0x4A;
-            prim[4] = 0;
-            prim[5] = 0;
-            prim[6] = 0;
-            *(s16 *)(prim + 8) = 0;
-            *(s16 *)(prim + 0xA) = 0;
-            *(s16 *)(prim + 0xE) = 0;
-            *(s16 *)(prim + 0x10) = 0;
-            *(s16 *)(prim + 0x14) = 0x140;
-            *(s16 *)(prim + 0x16) = 0x4A;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0x12) = -0xA0;
-            *(s16 *)(cur + 0x14) = i * 76 + 3;
-            *(u8 **)(prev + 0x1C) = cur;
-        }
-        func_8005A7B8(2, 2);
-        value = func_8005B0E4(0x140, D_8009A314[0]) - 0xA0;
-        ybase = value - 5;
-        m = 0;
+        asm volatile("" : "=r"(textCenterX) : "0"(textCenterX));
+        textLeftX = textCenterX - 5;
     loopC:
         {
-            u8 *object;
-            u8 *cell;
-            u8 *prim2;
-            object = D_800A3678 + D_800A35EC++ * 36;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            cur = object;
-            primIndex = D_800A37BC;
-            *(s16 *)(cur + 0x12) = 0;
-            *(s16 *)(cur + 0x14) = 0;
-            *(s32 *)(cur + 0x1C) = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0) = 0;
-            *(s16 *)(cur + 0xA) = 0;
-            *(s16 *)(cur + 6) = 0;
-            *(s16 *)(cur + 8) = 0;
-            *(s16 *)(cur + 0xC) = 0;
-            *(s16 *)(cur + 0xE) = 0;
-            *(s16 *)(cur + 0x10) = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            D_800A37BC = primIndex + 1;
-            cell = (u8 *)D_800A3654 + primIndex * 12;
-            *(u8 **)(cur + 0x20) = cell;
-            cell[0] = 0;
-            cell[3] = 0;
-            *(s32 *)(cell + 4) = 0;
-            prim2 = *(u8 **)(cur + 0x20);
-            *(s16 *)(cur + 0x14) = i * 76 + 5;
-            *(s16 *)(cur + 0x1A) = 1;
-            *(s16 *)(cur + 0x12) = ybase;
-            prim2[2] = 2;
-            prim2[1] = 2;
-            prim2[3] = 0;
-            if (m != 0) {
-                *(s16 *)(cur + 0x12) = func_8005A8E0(D_8009A314[0]) + value;
-                *(s16 *)(cur + 0) = 5;
-                *(s32 *)(prim2 + 8) = 1;
-            } else {
-                *(s16 *)(cur + 0x12) = ybase;
-                *(s32 *)(prim2 + 8) = D_8009A314[0];
+            register u8 *cell asm("$16");
+            /* Text object and cell pools must be loaded independently. */
+            asm volatile(".set\tnoreorder\n"
+                         "lbu        $a0, D_800A35EC\n"
+                         "lw         $v1, D_800A3678\n"
+                         "addiu      $v0, $a0, 0x1\n"
+                         "sb         $v0, D_800A35EC\n"
+                         "sll        $v0, $a0, 3\n"
+                         "addu       $v0, $v0, $a0\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $v1, $v1, $v0\n"
+                         "sb         $zero, 0x4($v1)\n"
+                         "sb         $zero, 0x3($v1)\n"
+                         "sb         $zero, 0x2($v1)\n"
+                         "lbu        $a0, D_800A37BC\n"
+                         "addu       $s6, $v1, $zero\n"
+                         "lw         $v1, D_800A3654\n"
+                         "sh         $zero, 0x12($s6)\n"
+                         "sh         $zero, 0x14($s6)\n"
+                         "sw         $zero, 0x1C($s6)\n"
+                         "sh         $zero, 0x1A($s6)\n"
+                         "sh         $zero, 0x0($s6)\n"
+                         "sh         $zero, 0xA($s6)\n"
+                         "sh         $zero, 0x6($s6)\n"
+                         "sh         $zero, 0xC($s6)\n"
+                         "sh         $zero, 0x8($s6)\n"
+                         "sh         $zero, 0xE($s6)\n"
+                         "sh         $zero, 0x10($s6)\n"
+                         "sh         $zero, 0x1A($s6)\n"
+                         "addiu      $v0, $a0, 0x1\n"
+                         "sb         $v0, D_800A37BC\n"
+                         "sll        $v0, $a0, 1\n"
+                         "addu       $v0, $v0, $a0\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $v1, $v1, $v0\n"
+                         "sw         $v1, 0x20($s6)\n"
+                         "sb         $zero, 0x0($v1)\n"
+                         "sb         $zero, 0x3($v1)\n"
+                         "sw         $zero, 0x4($v1)\n"
+                         "lw         $s0, 0x20($s6)\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "sll        $v0, $s2, 2\n"
+                         "addu       $v0, $v0, $s2\n"
+                         "sll        $v0, $v0, 2\n"
+                         "subu       $v0, $v0, $s2\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addiu      $v0, $v0, 0x5\n"
+                         "sh         $v0, 0x14($s6)\n"
+                         "ori        $v0, $zero, 0x2\n"
+                         "sh         $t4, 0x1A($s6)\n"
+                         "sh         $s3, 0x12($s6)\n"
+                         "sb         $v0, 0x2($s0)\n"
+                         "sb         $v0, 0x1($s0)\n"
+                         ".set\treorder\n"
+                         : "=r"(currentNode), "=r"(cell)
+                         : "r"(panelState), "r"(textLeftX)
+                         : "$2", "$3", "$4", "$12", "memory");
+            /* Each text arm retains its own word store and call delay. */
+            asm volatile(".set\tnoreorder\n"
+                         "sll        $v0, $s7, 24\n"
+                         "beqz       $v0, 1f\n"
+                         "sb        $zero, 0x3($s0)\n"
+                         "lui        $a0, %%hi(D_8009A314)\n"
+                         "lw         $a0, %%lo(D_8009A314)($a0)\n"
+                         "jal        func_8005A8E0\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $s1\n"
+                         "sh         $v0, 0x12($s6)\n"
+                         "ori        $v0, $zero, 0x5\n"
+                         "sh         $v0, 0x0($s6)\n"
+                         "ori        $t3, $zero, 0x1\n"
+                         "j          2f\n"
+                         "sw        $t3, 0x8($s0)\n"
+                         "1:\n"
+                         "sh         $s3, 0x12($s6)\n"
+                         "lui        $v0, %%hi(D_8009A314)\n"
+                         "lw         $v0, %%lo(D_8009A314)($v0)\n"
+                         "nop\n"
+                         "sw         $v0, 0x8($s0)\n"
+                         "2:\n"
+                         "sw         $s6, 0x1C($s5)\n"
+                         ".set\treorder\n"
+                         : "=x"(callAccumulator)
+                         : "r"(textIndex), "r"(cell), "r"(currentNode),
+                           "r"(textCenterX), "r"(textLeftX), "r"(previousNode)
+                         : "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9",
+                           "$10", "$11", "$31", "memory");
+            {
+                register s32 loopCondition asm("$2");
+                asm volatile("addiu $v0,$s7,1\n"
+                             "addu $s7,$v0,$zero\n"
+                             "sll $v0,$v0,24\n"
+                             "sra $v0,$v0,24\n"
+                             "slti $v0,$v0,2\n"
+                             ".set\treorder\n"
+                             : "=r"(textIndex), "=r"(loopCondition)
+                             : "0"(textIndex));
+                previousNode = currentNode;
+                if (loopCondition != 0) {
+                    goto loopC;
+                }
             }
-            *(u8 **)(prev + 0x1C) = cur;
-            m = m + 1;
-            prev = cur;
         }
-        if (m < 2) {
-            goto loopC;
-        }
+
         {
-            u8 *object;
-            u8 *cell;
-            u8 *prim2;
-            n = 0;
+            register s32 rowPanelIndex asm("$5");
+            register s32 panelTimes20 asm("$10");
+            register s32 rowX asm("$9");
+            register s32 rowY asm("$8");
+            register s32 rowMode asm("$6");
+            register s32 rowAlign asm("$7");
+            register s32 rowCondition asm("$3");
+            register s32 sideCondition asm("$2");
+            /* The copied row list starts at the verified local home sp+0x18. */
+            asm volatile(".set\tnoreorder\n"
+                         "lbu        $t4, %3\n"
+                         "addu       $s7, $zero, $zero\n"
+                         "sll        $v0, $t4, 24\n"
+                         "sra        $a1, $v0, 24\n"
+                         "sll        $v0, $a1, 2\n"
+                         "addu       $v0, $v0, $a1\n"
+                         "sll        $t2, $v0, 2\n"
+                         ".set\treorder\n"
+                         : "=r"(rowSide), "=r"(rowPanelIndex),
+                           "=r"(panelTimes20)
+                         : "m"(panelIndex.value)
+                         : "$2", "$12");
             do {
-                q = 0;
+                asm volatile(".set\tnoreorder\n"
+                             "addu       $s2, $zero, $zero\n"
+                             "sll        $a0, $s7, 24\n"
+                             "sra        $a0, $a0, 24\n"
+                             "sll        $v0, $a0, 1\n"
+                             "addiu      $v0, $v0, -0x1\n"
+                             "sll        $v1, $v0, 6\n"
+                             "subu       $t1, $v1, $v0\n"
+                             "subu       $v0, $t2, $a1\n"
+                             "sll        $t0, $v0, 2\n"
+                             "ori        $a2, $zero, 0x2\n"
+                             "sltiu      $a0, $a0, 0x1\n"
+                             "addu       $a3, $a0, $zero\n"
+                             ".set\treorder\n"
+                             : "=r"(rowItem), "=r"(rowX), "=r"(rowY),
+                               "=r"(rowMode), "=r"(rowAlign)
+                             : "r"(rowSide), "r"(rowPanelIndex),
+                               "r"(panelTimes20)
+                             : "$2", "$3", "$4");
                 do {
-                    object = D_800A3678 + D_800A35EC++ * 36;
-                    object[4] = 0;
-                    object[3] = 0;
-                    object[2] = 0;
-                    cur = object;
-                    primIndex = D_800A37BC;
-                    *(s16 *)(cur + 0x12) = 0;
-                    *(s16 *)(cur + 0x14) = 0;
-                    *(s32 *)(cur + 0x1C) = 0;
-                    *(s16 *)(cur + 0x1A) = 0;
-                    *(s16 *)(cur + 0) = 0;
-                    *(s16 *)(cur + 0xA) = 0;
-                    *(s16 *)(cur + 6) = 0;
-                    *(s16 *)(cur + 8) = 0;
-                    *(s16 *)(cur + 0xC) = 0;
-                    *(s16 *)(cur + 0xE) = 0;
-                    *(s16 *)(cur + 0x10) = 0;
-                    *(s16 *)(cur + 0x1A) = 0;
-                    D_800A37BC = primIndex + 1;
-                    cell = (u8 *)D_800A3654 + primIndex * 12;
-                    *(u8 **)(cur + 0x20) = cell;
-                    cell[0] = 0;
-                    cell[3] = 0;
-                    *(s32 *)(cell + 4) = 0;
-                    prim2 = *(u8 **)(cur + 0x20);
-                    *(s16 *)(cur + 0x1A) = 1;
-                    *(s16 *)(cur + 0x12) = (n * 2 - 1) * 63;
-                    *(s16 *)(cur + 0x14) = row.tab[q] + i * 76;
-                    prim2[2] = 2;
-                    prim2[3] = n == 0;
-                    prim2[1] = 2;
-                    *(u8 **)(prev + 0x1C) = cur;
-                    q++;
-                    prev = cur;
-                } while (q < 7);
-                n++;
-            } while (n < 2);
+                    /* Allocate one text cell, place it, then test the row counter. */
+                    asm volatile(
+                        ".set\tnoreorder\n"
+                        "lbu        $a0, D_800A35EC\n"
+                        "lw         $v1, D_800A3678\n"
+                        "addiu      $v0, $a0, 0x1\n"
+                        "sb         $v0, D_800A35EC\n"
+                        "sll        $v0, $a0, 3\n"
+                        "addu       $v0, $v0, $a0\n"
+                        "sll        $v0, $v0, 2\n"
+                        "addu       $v1, $v1, $v0\n"
+                        "sb         $zero, 0x4($v1)\n"
+                        "sb         $zero, 0x3($v1)\n"
+                        "sb         $zero, 0x2($v1)\n"
+                        "lbu        $a0, D_800A37BC\n"
+                        "addu       $s6, $v1, $zero\n"
+                        "lw         $v1, D_800A3654\n"
+                        "sh         $zero, 0x12($s6)\n"
+                        "sh         $zero, 0x14($s6)\n"
+                        "sw         $zero, 0x1C($s6)\n"
+                        "sh         $zero, 0x1A($s6)\n"
+                        "sh         $zero, 0x0($s6)\n"
+                        "sh         $zero, 0xA($s6)\n"
+                        "sh         $zero, 0x6($s6)\n"
+                        "sh         $zero, 0xC($s6)\n"
+                        "sh         $zero, 0x8($s6)\n"
+                        "sh         $zero, 0xE($s6)\n"
+                        "sh         $zero, 0x10($s6)\n"
+                        "sh         $zero, 0x1A($s6)\n"
+                        "addiu      $v0, $a0, 0x1\n"
+                        "sb         $v0, D_800A37BC\n"
+                        "sll        $v0, $a0, 1\n"
+                        "addu       $v0, $v0, $a0\n"
+                        "sll        $v0, $v0, 2\n"
+                        "addu       $v1, $v1, $v0\n"
+                        "sw         $v1, 0x20($s6)\n"
+                        "sb         $zero, 0x0($v1)\n"
+                        "sb         $zero, 0x3($v1)\n"
+                        "sw         $zero, 0x4($v1)\n"
+                        "ori        $t3, $zero, 0x1\n"
+                        "sll        $v0, $s2, 24\n"
+                        "sra        $v0, $v0, 24\n"
+                        "addu       $v0, $sp, $v0\n"
+                        "sh         $t3, 0x1A($s6)\n"
+                        "sh         $t1, 0x12($s6)\n"
+                        "lbu        $v0, 0x18($v0)\n"
+                        "addiu      $v1, $s2, 0x1\n"
+                        "addu       $s2, $v1, $zero\n"
+                        "lw         $s0, 0x20($s6)\n"
+                        "sll        $v1, $v1, 24\n"
+                        "sra        $v1, $v1, 24\n"
+                        "slti       $v1, $v1, 0x7\n"
+                        "sll        $v0, $v0, 24\n"
+                        "sra        $v0, $v0, 24\n"
+                        "addu       $v0, $v0, $t0\n"
+                        "sh         $v0, 0x14($s6)\n"
+                        "sb         $a2, 0x2($s0)\n"
+                        "sb         $a3, 0x3($s0)\n"
+                        "sb         $a2, 0x1($s0)\n"
+                        "sw         $s6, 0x1C($s5)\n"
+                        ".set\treorder\n"
+                        : "=r"(currentNode), "=r"(rowItem), "=r"(rowCondition)
+                        : "1"(rowItem), "r"(rowX), "r"(rowY), "r"(rowMode),
+                          "r"(rowAlign), "r"(previousNode), "m"(rowList)
+                        : "$2", "$4", "$11", "$16", "memory");
+                    previousNode = currentNode;
+                } while (rowCondition != 0);
+                asm volatile(".set\tnoreorder\n"
+                             "addiu      $v0, $s7, 0x1\n"
+                             "addu       $s7, $v0, $zero\n"
+                             "sll        $v0, $v0, 24\n"
+                             "sra        $v0, $v0, 24\n"
+                             "slti       $v0, $v0, 0x2\n"
+                             ".set\treorder\n"
+                             : "=r"(rowSide), "=r"(sideCondition)
+                             : "0"(rowSide));
+            } while (sideCondition != 0);
         }
         {
-            u8 *node;
-            node = (u8 *)D_800A37D8[i];
-            if (node == NULL) {
-                goto walkDone;
-            }
-        walkAgain:
-            node[5] = 1;
-            *(s16 *)(node + 0xA) = 0xA0;
-            *(s16 *)(node + 8) = color >> 24;
-            *(s16 *)(node + 0xE) = (s8)(2 - i * 4);
-            *(s16 *)(node + 0xC) = color >> 24;
-            *(s16 *)(node + 6) =
-                i * 320 + (i * 2 - 1) * (*(s16 *)(node + 0x12) + 0xA2);
-            node = *(u8 **)(node + 0x1C);
-            if (node != NULL) {
-                goto walkAgain;
-            }
+            /* Set the animation fields while walking the panel's node chain. */
+            asm volatile(".set\tnoreorder\n"
+                         "lbu        $t4, %2\n"
+                         "lui        $t3, %%hi(D_800A37D8)\n"
+                         "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                         "sll        $v0, $t4, 24\n"
+                         "sra        $a0, $v0, 24\n"
+                         "sll        $v1, $a0, 2\n"
+                         "addu       $v0, $v1, $t3\n"
+                         "lw         $s5, 0x0($v0)\n"
+                         "ori        $t4, $zero, 0x2\n"
+                         "beqz       $s5, 2f\n"
+                         "subu      $a1, $t4, $v1\n"
+                         "addu       $v0, $v1, $a0\n"
+                         "sll        $a3, $v0, 6\n"
+                         "sll        $v0, $a0, 1\n"
+                         "addiu      $a2, $v0, -0x1\n"
+                         "sll        $a0, $a1, 24\n"
+                         "ori        $a1, $zero, 0xA0\n"
+                         "1:\n"
+                         "lh         $v0, 0x12($s5)\n"
+                         "nop\n"
+                         "addiu      $v0, $v0, 0xA2\n"
+                         "mult       $a2, $v0\n"
+                         "lw         $t3, %3\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "sb         $t4, 0x5($s5)\n"
+                         "sh         $a1, 0xA($s5)\n"
+                         "sra        $v1, $t3, 24\n"
+                         "sra        $v0, $a0, 24\n"
+                         "sh         $v1, 0x8($s5)\n"
+                         "sh         $v0, 0xE($s5)\n"
+                         "sh         $v1, 0xC($s5)\n"
+                         "mflo       $t3\n"
+                         "addu       $v0, $a3, $t3\n"
+                         "sh         $v0, 0x6($s5)\n"
+                         "lw         $s5, 0x1C($s5)\n"
+                         "nop\n"
+                         "bnez       $s5, 1b\n"
+                         "nop\n"
+                         "2:\n"
+                         ".set\treorder\n"
+                         : "=r"(previousNode), "=x"(callAccumulator)
+                         : "m"(panelIndex.value), "m"(colorHome.value)
+                         : "$2", "$3", "$4", "$5", "$6", "$7", "$11", "$12",
+                           "memory");
         }
     walkDone:
-        func_80062910((u8)i);
         {
-            s32 xoff;
-            s32 colorS;
-            u8 *object;
-            u8 *prim;
-            u8 *prim2;
-            colorS = color >> 24;
-            xoff = 0;
-            r = 0;
-        loopE:
-            {
-                switch (r) {
-                case 1:
-                    a = 6;
-                    b = 1;
-                    break;
-                case 0:
-                    a = 1;
-                    b = 0;
-                    break;
-                case 2:
-                    a = 2;
-                    b = 3;
-                    break;
-                }
-                object = D_800A3678 + D_800A35EC++ * 36;
-                *(s16 *)(object + 0x12) = 0;
-                *(s16 *)(object + 0x14) = 0;
-                *(s32 *)(object + 0x1C) = 0;
-                object[4] = 0;
-                object[3] = 0;
-                object[2] = 0;
-                *(s16 *)(object + 0x1A) = 0;
-                *(s16 *)(object + 0) = 1;
-                *(s16 *)(object + 0xA) = 0;
-                *(s16 *)(object + 6) = 0;
-                *(s16 *)(object + 0xC) = colorS;
-                *(s16 *)(object + 8) = colorS;
-                *(s16 *)(object + 0x16) = 0x68;
-                *(s16 *)(object + 0x18) = a;
-                *(s16 *)(object + 0xE) = 0;
-                *(s16 *)(object + 0x10) = 0;
-                prim = func_80057CCC(1);
-                SetPolyFT4(prim);
-                SetShadeTex(prim, 0);
-                prim[4] = 0x80;
-                prim[5] = 0x80;
-                prim[6] = 0x80;
-                SetSemiTrans(prim, 0);
-                cur = object;
-                *(u8 **)(cur + 0x20) = prim;
-                *(s16 *)(cur + 0x1A) = 2;
-                if (r == 0) {
-                    D_800A3888[i] = cur;
-                } else {
-                    *(u8 **)(prev + 0x1C) = cur;
-                }
-                if (i != 0) {
-                    *(s16 *)(cur + 6) = 0x140;
-                } else {
-                    *(s16 *)(cur + 6) = -0x140;
-                }
-                prim2 = *(u8 **)(cur + 0x20);
-                *(s16 *)(cur + 0x12) = 0x78;
-                *(s16 *)(cur + 0x14) =
-                    *((u16 *)((u8 *)D_800A37D8[i] + 0x14)) + (xoff + 0x3A);
-                if (r == 1) {
-                    wide = *(u16 *)(cur + 0x16);
-                    *(s16 *)(prim2 + 0xE) =
-                        GetClut(((u16 *)D_8009AEA2)[1], D_8009AEA6[0]);
-                    *(s16 *)(prim2 + 0x16) = GetTPage(
-                        *((u16 *)((u8 *)D_8009AEA6 + 6)), 3,
-                        *((u16 *)(((u8 *)D_8009AEA2) - 2)), D_8009AEA2[0]);
-                    prim2[0xC] = *((u8 *)((u8 *)D_8009AEAA - 2));
-                    prim2[0xD] = D_8009AEAA[0] + b;
-                    prim2[0x14] = *((u8 *)((u8 *)D_8009AEAA - 2)) + wide;
-                    prim2[0x15] = D_8009AEAA[0] + b;
-                    prim2[0x1C] = *((u8 *)((u8 *)D_8009AEAA - 2));
-                    prim2[0x1D] = D_8009AEAA[0] + b + 1;
-                    prim2[0x24] = *((u8 *)((u8 *)D_8009AEAA - 2)) + wide;
-                    uv2 = D_8009AEAA[0] + b + 1;
-                } else {
-                    wide = *(u16 *)(cur + 0x16);
-                    high = *(u16 *)(cur + 0x18);
-                    *(s16 *)(prim2 + 0xE) =
-                        GetClut(((u16 *)D_8009AEA2)[1], D_8009AEA6[0]);
-                    *(s16 *)(prim2 + 0x16) = GetTPage(
-                        *((u16 *)((u8 *)D_8009AEA6 + 6)), 3,
-                        *((u16 *)(((u8 *)D_8009AEA2) - 2)), D_8009AEA2[0]);
-                    prim2[0xC] = *((u8 *)((u8 *)D_8009AEAA - 2));
-                    prim2[0xD] = D_8009AEAA[0] + b;
-                    prim2[0x14] = *((u8 *)((u8 *)D_8009AEAA - 2)) + wide;
-                    prim2[0x15] = D_8009AEAA[0] + b;
-                    prim2[0x1C] = *((u8 *)((u8 *)D_8009AEAA - 2));
-                    prim2[0x1D] = D_8009AEAA[0] + b + high;
-                    prim2[0x24] = *((u8 *)((u8 *)D_8009AEAA - 2)) + wide;
-                    uv2 = D_8009AEAA[0] + b + high;
-                }
-                prim2[0x25] = uv2;
-                prev = cur;
-                r++;
-                xoff += *(s16 *)(cur + 0x18);
-            }
-            if (r < 3) {
-                goto loopE;
-            }
+            register s32 textureOffset asm("$20");
+            textureOffset = 0;
+            func_80062910((u8)panelIndex.value);
+            /* Keep the texture cases, leaf calls, UV reloads, and links. */
+            asm volatile(".set\tnoreorder\n"
+                         "lw         $t4, %7\n"
+                         "lbu        $t3, %8\n"
+                         "addu       $s7, $zero, $zero\n"
+                         "sra        $fp, $t4, 24\n"
+                         "sll        $v0, $t3, 24\n"
+                         "sra        $v0, $v0, 24\n"
+                         "sll        $s3, $v0, 2\n"
+                         "sw         $v0, %4\n"
+                         ".LtextureStage80061A8C:\n"
+                         "sll        $v0, $s7, 24\n"
+                         "sra        $v1, $v0, 24\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "beq        $v1, $t4, .LtextureStage80061AD8\n"
+                         "slti      $v0, $v1, 0x2\n"
+                         "beqz       $v0, .LtextureStage80061AB8\n"
+                         "nop\n"
+                         "beqz       $v1, .LtextureStage80061ACC\n"
+                         "ori       $t4, $zero, 0x2\n"
+                         "j          .LtextureStage80061AF0\n"
+                         "nop\n"
+                         ".LtextureStage80061AB8:\n"
+                         "ori        $t3, $zero, 0x2\n"
+                         "beq        $v1, $t3, .LtextureStage80061AE8\n"
+                         "ori       $t4, $zero, 0x3\n"
+                         "j          .LtextureStage80061AF0\n"
+                         "nop\n"
+                         ".LtextureStage80061ACC:\n"
+                         "sw         $t4, %2\n"
+                         "j          .LtextureStage80061AF0\n"
+                         "sw        $zero, %3\n"
+                         ".LtextureStage80061AD8:\n"
+                         "ori        $t3, $zero, 0x6\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "j          .LtextureStage80061AEC\n"
+                         "sw        $t3, %2\n"
+                         ".LtextureStage80061AE8:\n"
+                         "sw         $t3, %2\n"
+                         ".LtextureStage80061AEC:\n"
+                         "sw         $t4, %3\n"
+                         ".LtextureStage80061AF0:\n"
+                         "lbu        $v1, D_800A35EC\n"
+                         "lw         $s0, D_800A3678\n"
+                         "addiu      $v0, $v1, 0x1\n"
+                         "sb         $v0, D_800A35EC\n"
+                         "sll        $v0, $v1, 3\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $s0, $s0, $v0\n"
+                         "ori        $t3, $zero, 0x1\n"
+                         "ori        $t4, $zero, 0x68\n"
+                         "sh         $zero, 0x12($s0)\n"
+                         "sh         $zero, 0x14($s0)\n"
+                         "sw         $zero, 0x1C($s0)\n"
+                         "sb         $zero, 0x4($s0)\n"
+                         "sb         $zero, 0x3($s0)\n"
+                         "sb         $zero, 0x2($s0)\n"
+                         "sh         $zero, 0x1A($s0)\n"
+                         "sh         $t3, 0x0($s0)\n"
+                         "sh         $zero, 0xA($s0)\n"
+                         "sh         $zero, 0x6($s0)\n"
+                         "sh         $fp, 0xC($s0)\n"
+                         "sh         $fp, 0x8($s0)\n"
+                         "sh         $t4, 0x16($s0)\n"
+                         "lhu        $t3, %2\n"
+                         "ori        $a0, $zero, 0x1\n"
+                         "sh         $zero, 0xE($s0)\n"
+                         "sh         $zero, 0x10($s0)\n"
+                         "jal        func_80057CCC\n"
+                         "sh        $t3, 0x18($s0)\n"
+                         "addu       $s1, $v0, $zero\n"
+                         "jal        SetPolyFT4\n"
+                         "addu      $a0, $s1, $zero\n"
+                         "addu       $a0, $s1, $zero\n"
+                         "jal        SetShadeTex\n"
+                         "addu      $a1, $zero, $zero\n"
+                         "addu       $a0, $s1, $zero\n"
+                         "addu       $a1, $zero, $zero\n"
+                         "ori        $v0, $zero, 0x80\n"
+                         "sb         $v0, 0x4($s1)\n"
+                         "sb         $v0, 0x5($s1)\n"
+                         "jal        SetSemiTrans\n"
+                         "sb        $v0, 0x6($s1)\n"
+                         "addu       $s6, $s0, $zero\n"
+                         "ori        $t4, $zero, 0x2\n"
+                         "sll        $v0, $s7, 24\n"
+                         "sw         $s1, 0x20($s6)\n"
+                         "bnez       $v0, .LtextureStage80061BC4\n"
+                         "sh        $t4, 0x1A($s6)\n"
+                         "lui        $at, %%hi(D_800A3888)\n"
+                         "addu       $at, $at, $s3\n"
+                         "sw         $s6, %%lo(D_800A3888)($at)\n"
+                         "j          .LtextureStage80061BC8\n"
+                         "nop\n"
+                         ".LtextureStage80061BC4:\n"
+                         "sw         $s6, 0x1C($s5)\n"
+                         ".LtextureStage80061BC8:\n"
+                         "lw         $t3, %4\n"
+                         "nop\n"
+                         "beqz       $t3, .LtextureStage80061BE0\n"
+                         "ori       $t4, $zero, 0x140\n"
+                         "j          .LtextureStage80061BE8\n"
+                         "sh        $t4, 0x6($s6)\n"
+                         ".LtextureStage80061BE0:\n"
+                         "addiu      $v0, $zero, -0x140\n"
+                         "sh         $v0, 0x6($s6)\n"
+                         ".LtextureStage80061BE8:\n"
+                         "lui        $t3, %%hi(D_800A37D8)\n"
+                         "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                         "addu       $v0, $s3, $t3\n"
+                         "lw         $v0, 0x0($v0)\n"
+                         "lw         $s2, 0x20($s6)\n"
+                         "lhu        $v1, 0x14($v0)\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "ori        $v0, $zero, 0x78\n"
+                         "sh         $v0, 0x12($s6)\n"
+                         "addiu      $v0, %6, 0x3A\n"
+                         "addu       $v1, $v1, $v0\n"
+                         "sll        $v0, $s7, 24\n"
+                         "sra        $v0, $v0, 24\n"
+                         "bne        $v0, $t4, .LtextureStage80061D0C\n"
+                         "sh        $v1, 0x14($s6)\n"
+                         "lui        $a0, %%hi(D_8009AEA4)\n"
+                         "lhu        $a0, %%lo(D_8009AEA4)($a0)\n"
+                         "lui        $a1, %%hi(D_8009AEA6)\n"
+                         "lhu        $a1, %%lo(D_8009AEA6)($a1)\n"
+                         "lhu        $s0, 0x16($s6)\n"
+                         "jal        GetClut\n"
+                         "nop\n"
+                         "sh         $v0, 0xE($s2)\n"
+                         "lui        $a0, %%hi(D_8009AEAC)\n"
+                         "lhu        $a0, %%lo(D_8009AEAC)($a0)\n"
+                         "lui        $a2, %%hi(D_8009AEA0)\n"
+                         "lhu        $a2, %%lo(D_8009AEA0)($a2)\n"
+                         "lui        $a3, %%hi(D_8009AEA2)\n"
+                         "lhu        $a3, %%lo(D_8009AEA2)($a3)\n"
+                         "jal        GetTPage\n"
+                         "ori       $a1, $zero, 0x3\n"
+                         "sh         $v0, 0x16($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "sb         $v0, 0xC($s2)\n"
+                         "lhu        $v1, %3\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sb         $v0, 0xD($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $s0\n"
+                         "sb         $v0, 0x14($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sb         $v0, 0x15($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "sb         $v0, 0x1C($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "addiu      $v0, $v0, 0x1\n"
+                         "sb         $v0, 0x1D($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $s0\n"
+                         "sb         $v0, 0x24($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "j          .LtextureStage80061DF4\n"
+                         "addiu     $v0, $v0, 0x1\n"
+                         ".LtextureStage80061D0C:\n"
+                         "lui        $a0, %%hi(D_8009AEA4)\n"
+                         "lhu        $a0, %%lo(D_8009AEA4)($a0)\n"
+                         "lui        $a1, %%hi(D_8009AEA6)\n"
+                         "lhu        $a1, %%lo(D_8009AEA6)($a1)\n"
+                         "lhu        $s0, 0x16($s6)\n"
+                         "lhu        $s1, 0x18($s6)\n"
+                         "jal        GetClut\n"
+                         "nop\n"
+                         "sh         $v0, 0xE($s2)\n"
+                         "lui        $a0, %%hi(D_8009AEAC)\n"
+                         "lhu        $a0, %%lo(D_8009AEAC)($a0)\n"
+                         "lui        $a2, %%hi(D_8009AEA0)\n"
+                         "lhu        $a2, %%lo(D_8009AEA0)($a2)\n"
+                         "lui        $a3, %%hi(D_8009AEA2)\n"
+                         "lhu        $a3, %%lo(D_8009AEA2)($a3)\n"
+                         "jal        GetTPage\n"
+                         "ori       $a1, $zero, 0x3\n"
+                         "sh         $v0, 0x16($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "sb         $v0, 0xC($s2)\n"
+                         "lhu        $v1, %3\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sb         $v0, 0xD($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $s0\n"
+                         "sb         $v0, 0x14($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sb         $v0, 0x15($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "sb         $v0, 0x1C($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "addu       $v0, $v0, $s1\n"
+                         "sb         $v0, 0x1D($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEA8)\n"
+                         "lbu        $v0, %%lo(D_8009AEA8)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $s0\n"
+                         "sb         $v0, 0x24($s2)\n"
+                         "lui        $v0, %%hi(D_8009AEAA)\n"
+                         "lbu        $v0, %%lo(D_8009AEAA)($v0)\n"
+                         "nop\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "addu       $v0, $v0, $s1\n"
+                         ".LtextureStage80061DF4:\n"
+                         "sb         $v0, 0x25($s2)\n"
+                         "lh         $v1, 0x18($s6)\n"
+                         "addu       $s5, $s6, $zero\n"
+                         "addiu      $v0, $s7, 0x1\n"
+                         "addu       $s7, $v0, $zero\n"
+                         "sll        $v0, $v0, 24\n"
+                         "sra        $v0, $v0, 24\n"
+                         "slti       $v0, $v0, 0x3\n"
+                         "bnez       $v0, .LtextureStage80061A8C\n"
+                         "addu      %6, %6, $v1\n"
+                         "lw         $t3, %7\n"
+                         "lbu        $t4, %8\n"
+                         "addu       $s7, $zero, $zero\n"
+                         "lui        $s3, %%hi(D_8009AEB2)\n"
+                         "addiu      $s3, $s3, %%lo(D_8009AEB2)\n"
+                         "sra        %6, $t3, 24\n"
+                         "sll        $v0, $t4, 24\n"
+                         "sra        $fp, $v0, 24\n"
+                         "sll        $t3, $fp, 2\n"
+                         "sw         $t3, %5\n"
+                         ".LtextureStage80061E44:\n"
+                         "lbu        $v1, D_800A35EC\n"
+                         "lw         $s0, D_800A3678\n"
+                         "ori        $a0, $zero, 0x1\n"
+                         "addiu      $v0, $v1, 0x1\n"
+                         "sb         $v0, D_800A35EC\n"
+                         "sll        $v0, $v1, 3\n"
+                         "addu       $v0, $v0, $v1\n"
+                         "sll        $v0, $v0, 2\n"
+                         "addu       $s0, $s0, $v0\n"
+                         "ori        $t4, $zero, 0x1\n"
+                         "ori        $t3, $zero, 0xE\n"
+                         "sh         $t4, 0x0($s0)\n"
+                         "ori        $t4, $zero, 0x32\n"
+                         "sh         $zero, 0x12($s0)\n"
+                         "sh         $zero, 0x14($s0)\n"
+                         "sw         $zero, 0x1C($s0)\n"
+                         "sb         $zero, 0x4($s0)\n"
+                         "sb         $zero, 0x3($s0)\n"
+                         "sb         $zero, 0x2($s0)\n"
+                         "sh         $zero, 0x1A($s0)\n"
+                         "sh         $zero, 0xA($s0)\n"
+                         "sh         $zero, 0x6($s0)\n"
+                         "sh         %6, 0xC($s0)\n"
+                         "sh         %6, 0x8($s0)\n"
+                         "sh         $t3, 0x16($s0)\n"
+                         "sh         $t4, 0x18($s0)\n"
+                         "sh         $zero, 0xE($s0)\n"
+                         "jal        func_80057CCC\n"
+                         "sh        $zero, 0x10($s0)\n"
+                         "addu       $s1, $v0, $zero\n"
+                         "jal        SetPolyFT4\n"
+                         "addu      $a0, $s1, $zero\n"
+                         "addu       $a0, $s1, $zero\n"
+                         "jal        SetShadeTex\n"
+                         "addu      $a1, $zero, $zero\n"
+                         "addu       $a0, $s1, $zero\n"
+                         "addu       $a1, $zero, $zero\n"
+                         "ori        $v0, $zero, 0x80\n"
+                         "sb         $v0, 0x4($s1)\n"
+                         "sb         $v0, 0x5($s1)\n"
+                         "jal        SetSemiTrans\n"
+                         "sb        $v0, 0x6($s1)\n"
+                         "addu       $s6, $s0, $zero\n"
+                         "ori        $t3, $zero, 0x2\n"
+                         "sw         $s1, 0x20($s6)\n"
+                         "beqz       $fp, .LtextureStage80061F0C\n"
+                         "sh        $t3, 0x1A($s6)\n"
+                         "ori        $t4, $zero, 0x140\n"
+                         "j          .LtextureStage80061F14\n"
+                         "sh        $t4, 0x6($s6)\n"
+                         ".LtextureStage80061F0C:\n"
+                         "addiu      $v0, $zero, -0x140\n"
+                         "sh         $v0, 0x6($s6)\n"
+                         ".LtextureStage80061F14:\n"
+                         "sll        $v0, $s7, 24\n"
+                         "sra        $v0, $v0, 19\n"
+                         "addiu      $v0, $v0, 0xFA\n"
+                         "sh         $v0, 0x12($s6)\n"
+                         "lw         $t3, %5\n"
+                         "lui        $t4, %%hi(D_800A37D8)\n"
+                         "addiu      $t4, $t4, %%lo(D_800A37D8)\n"
+                         "addu       $v0, $t3, $t4\n"
+                         "lw         $v0, 0x0($v0)\n"
+                         "nop\n"
+                         "lhu        $v0, 0x14($v0)\n"
+                         "nop\n"
+                         "addiu      $v0, $v0, 0x7\n"
+                         "sh         $v0, 0x14($s6)\n"
+                         "lhu        $a0, 0x0($s3)\n"
+                         "lhu        $a1, 0x2($s3)\n"
+                         "lw         $s2, 0x20($s6)\n"
+                         "jal        GetClut\n"
+                         "nop\n"
+                         "sh         $v0, 0xE($s2)\n"
+                         "lhu        $a0, 0x8($s3)\n"
+                         "lhu        $a2, -0x4($s3)\n"
+                         "lhu        $a3, -0x2($s3)\n"
+                         "jal        GetTPage\n"
+                         "addu      $a1, $zero, $zero\n"
+                         "sh         $v0, 0x16($s2)\n"
+                         "lhu        $v0, 0x4($s3)\n"
+                         "nop\n"
+                         "sb         $v0, 0xC($s2)\n"
+                         "lbu        $v0, 0x6($s3)\n"
+                         "nop\n"
+                         "addiu      $v0, $v0, 0x6\n"
+                         "sb         $v0, 0xD($s2)\n"
+                         "lhu        $v0, 0x4($s3)\n"
+                         "nop\n"
+                         "sb         $v0, 0x14($s2)\n"
+                         "lhu        $v0, 0x6($s3)\n"
+                         "nop\n"
+                         "sb         $v0, 0x15($s2)\n"
+                         "lbu        $v0, 0x4($s3)\n"
+                         "nop\n"
+                         "addiu      $v0, $v0, 0x32\n"
+                         "sb         $v0, 0x1C($s2)\n"
+                         "lbu        $v0, 0x6($s3)\n"
+                         "nop\n"
+                         "addiu      $v0, $v0, 0x6\n"
+                         "sb         $v0, 0x1D($s2)\n"
+                         "lbu        $v0, 0x4($s3)\n"
+                         "nop\n"
+                         "addiu      $v0, $v0, 0x32\n"
+                         "sb         $v0, 0x24($s2)\n"
+                         "lhu        $v1, 0x6($s3)\n"
+                         "addiu      $v0, $s7, 0x1\n"
+                         "addu       $s7, $v0, $zero\n"
+                         "sll        $v0, $v0, 24\n"
+                         "sra        $v0, $v0, 24\n"
+                         "slti       $v0, $v0, 0x2\n"
+                         "sb         $v1, 0x25($s2)\n"
+                         "sw         $s6, 0x1C($s5)\n"
+                         "bnez       $v0, .LtextureStage80061E44\n"
+                         "addu      $s5, $s6, $zero\n"
+                         ".set\treorder\n"
+                         : "=r"(currentNode), "=r"(previousNode),
+                           "=m"(packetHeight.value), "=m"(textureRow.value),
+                           "=m"(stripPanel.value), "=m"(sideOffset.value),
+                           "=r"(textureOffset)
+                         : "m"(colorHome.value), "m"(panelIndex.value),
+                           "r"(textureOffset)
+                         : "$1", "$2", "$3", "$4", "$5", "$6", "$7", "$11",
+                           "$12", "$16", "$17", "$18", "$19", "$23", "$30",
+                           "$31", "memory");
         }
         {
-            s32 colorS;
-            u8 *object;
-            u8 *prim;
-            u8 *prim2;
-            colorS = color >> 24;
-            r = 0;
-        loopF:
-            {
-                object = D_800A3678 + D_800A35EC++ * 36;
-                *(s16 *)(object + 0) = 1;
-                *(s16 *)(object + 0x12) = 0;
-                *(s16 *)(object + 0x14) = 0;
-                *(s32 *)(object + 0x1C) = 0;
-                object[4] = 0;
-                object[3] = 0;
-                object[2] = 0;
-                *(s16 *)(object + 0x1A) = 0;
-                *(s16 *)(object + 0xA) = 0;
-                *(s16 *)(object + 6) = 0;
-                *(s16 *)(object + 0xC) = colorS;
-                *(s16 *)(object + 8) = colorS;
-                *(s16 *)(object + 0x16) = 0xE;
-                *(s16 *)(object + 0x18) = 0x32;
-                *(s16 *)(object + 0xE) = 0;
-                *(s16 *)(object + 0x10) = 0;
-                prim = func_80057CCC(1);
-                SetPolyFT4(prim);
-                SetShadeTex(prim, 0);
-                prim[4] = 0x80;
-                prim[5] = 0x80;
-                prim[6] = 0x80;
-                SetSemiTrans(prim, 0);
-                cur = object;
-                *(u8 **)(cur + 0x20) = prim;
-                *(s16 *)(cur + 0x1A) = 2;
-                if (i != 0) {
-                    *(s16 *)(cur + 6) = 0x140;
-                } else {
-                    *(s16 *)(cur + 6) = -0x140;
-                }
-                *(s16 *)(cur + 0x12) = (r << 5) + 0xFA;
-                *(s16 *)(cur + 0x14) =
-                    *((u16 *)((u8 *)D_800A37D8[i] + 0x14)) + 7;
-                prim2 = *(u8 **)(cur + 0x20);
-                *(s16 *)(prim2 + 0xE) = GetClut(D_8009AEB2[0], D_8009AEB2[1]);
-                *(s16 *)(prim2 + 0x16) =
-                    GetTPage(D_8009AEB2[4], 0, D_8009AEB2[-2], D_8009AEB2[-1]);
-                prim2[0xC] = D_8009AEB2[2];
-                prim2[0xD] = *(u8 *)&D_8009AEB2[3] + 6;
-                prim2[0x14] = D_8009AEB2[2];
-                prim2[0x15] = *(u16 *)&D_8009AEB2[3];
-                prim2[0x1C] = *(u8 *)&D_8009AEB2[2] + 0x32;
-                prim2[0x1D] = *(u8 *)&D_8009AEB2[3] + 6;
-                prim2[0x24] = *(u8 *)&D_8009AEB2[2] + 0x32;
-                prim2[0x25] = *(u16 *)&D_8009AEB2[3];
-                r++;
-                *(u8 **)(prev + 0x1C) = cur;
-                prev = cur;
-            }
-            if (r < 2) {
-                goto loopF;
-            }
+            /* The leaf setter reads its fifth and sixth arguments here. */
+            asm volatile(
+                ".set\tnoreorder\n"
+                "lbu        $a0, D_800A35EC\n"
+                "lw         $v1, D_800A3678\n"
+                "addiu      $v0, $a0, 0x1\n"
+                "sb         $v0, D_800A35EC\n"
+                "sll        $v0, $a0, 3\n"
+                "addu       $v0, $v0, $a0\n"
+                "sll        $v0, $v0, 2\n"
+                "addu       $v1, $v1, $v0\n"
+                "sb         $zero, 0x4($v1)\n"
+                "sb         $zero, 0x3($v1)\n"
+                "sb         $zero, 0x2($v1)\n"
+                "lbu        $a0, D_800A37BC\n"
+                "addu       $s6, $v1, $zero\n"
+                "sh         $zero, 0x12($s6)\n"
+                "sh         $zero, 0x14($s6)\n"
+                "sw         $zero, 0x1C($s6)\n"
+                "sh         $zero, 0x1A($s6)\n"
+                "sh         $zero, 0x0($s6)\n"
+                "sh         $zero, 0xA($s6)\n"
+                "sh         $zero, 0x6($s6)\n"
+                "lw         $t3, %4\n"
+                "lw         $v1, D_800A3654\n"
+                "sh         $zero, 0xE($s6)\n"
+                "sh         $zero, 0x10($s6)\n"
+                "sh         $zero, 0x1A($s6)\n"
+                "sra        $v0, $t3, 24\n"
+                "sh         $v0, 0xC($s6)\n"
+                "sh         $v0, 0x8($s6)\n"
+                "addiu      $v0, $a0, 0x1\n"
+                "sb         $v0, D_800A37BC\n"
+                "sll        $v0, $a0, 1\n"
+                "addu       $v0, $v0, $a0\n"
+                "sll        $v0, $v0, 2\n"
+                "addu       $v1, $v1, $v0\n"
+                "sw         $v1, 0x20($s6)\n"
+                "sb         $zero, 0x0($v1)\n"
+                "sb         $zero, 0x3($v1)\n"
+                "sw         $zero, 0x4($v1)\n"
+                "lbu        $t4, %5\n"
+                "nop\n"
+                "sll        $v0, $t4, 24\n"
+                "beqz       $v0, .LlabelStage800620BC\n"
+                "ori       $t3, $zero, 0x140\n"
+                "j          .LlabelStage800620C4\n"
+                "sh        $t3, 0x6($s6)\n"
+                ".LlabelStage800620BC:\n"
+                "addiu      $v0, $zero, -0x140\n"
+                "sh         $v0, 0x6($s6)\n"
+                ".LlabelStage800620C4:\n"
+                "ori        $v0, $zero, 0x8\n"
+                "sh         $v0, 0x12($s6)\n"
+                "lbu        $t4, %5\n"
+                "lui        $t3, %%hi(D_800A37D8)\n"
+                "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                "sll        $v1, $t4, 24\n"
+                "sra        $v1, $v1, 24\n"
+                "sll        $s0, $v1, 2\n"
+                "addu       $t0, $s0, $t3\n"
+                "lw         $v0, 0x0($t0)\n"
+                "addu       $a0, $s6, $zero\n"
+                "lhu        $v0, 0x14($v0)\n"
+                "ori        $a1, $zero, 0x2\n"
+                "ori        $a2, $zero, 0x2\n"
+                "addu       $s7, $zero, $zero\n"
+                "addiu      $v0, $v0, 0x5\n"
+                "sh         $v0, 0x14($s6)\n"
+                "lui        $a3, %%hi(D_8009AC08)\n"
+                "lw         $a3, %%lo(D_8009AC08)($a3)\n"
+                "lw         $t4, %4\n"
+                "addu       $s3, $v1, $zero\n"
+                "addu       $s1, $t0, $zero\n"
+                "ori        $t3, $zero, 0x1\n"
+                "sw         $zero, %2\n"
+                "sw         $t3, %3\n"
+                "jal        func_80067EA4\n"
+                "sra       $s2, $t4, 24\n"
+                "sw         $s6, 0x1C($s5)\n"
+                "addu       $s5, $s6, $zero\n"
+                "lui        $at, %%hi(D_800A3A84)\n"
+                "addu       $at, $at, $s0\n"
+                "sw         $s5, %%lo(D_800A3A84)($at)\n"
+                ".LlabelStage80062144:\n"
+                "lbu        $a0, D_800A35EC\n"
+                "lw         $v1, D_800A3678\n"
+                "addiu      $v0, $a0, 0x1\n"
+                "sb         $v0, D_800A35EC\n"
+                "sll        $v0, $a0, 3\n"
+                "addu       $v0, $v0, $a0\n"
+                "sll        $v0, $v0, 2\n"
+                "addu       $v1, $v1, $v0\n"
+                "sb         $zero, 0x4($v1)\n"
+                "sb         $zero, 0x3($v1)\n"
+                "sb         $zero, 0x2($v1)\n"
+                "lbu        $a0, D_800A37BC\n"
+                "addu       $s6, $v1, $zero\n"
+                "lw         $v1, D_800A3654\n"
+                "sh         $zero, 0x12($s6)\n"
+                "sh         $zero, 0x14($s6)\n"
+                "sw         $zero, 0x1C($s6)\n"
+                "sh         $zero, 0x1A($s6)\n"
+                "sh         $zero, 0x0($s6)\n"
+                "sh         $zero, 0xA($s6)\n"
+                "sh         $zero, 0x6($s6)\n"
+                "sh         $s2, 0xC($s6)\n"
+                "sh         $s2, 0x8($s6)\n"
+                "sh         $zero, 0xE($s6)\n"
+                "sh         $zero, 0x10($s6)\n"
+                "sh         $zero, 0x1A($s6)\n"
+                "addiu      $v0, $a0, 0x1\n"
+                "sb         $v0, D_800A37BC\n"
+                "sll        $v0, $a0, 1\n"
+                "addu       $v0, $v0, $a0\n"
+                "sll        $v0, $v0, 2\n"
+                "addu       $v1, $v1, $v0\n"
+                "sw         $v1, 0x20($s6)\n"
+                "sb         $zero, 0x0($v1)\n"
+                "sb         $zero, 0x3($v1)\n"
+                "beqz       $s3, .LlabelStage800621E4\n"
+                "sw        $zero, 0x4($v1)\n"
+                "ori        $t4, $zero, 0x140\n"
+                "j          .LlabelStage800621EC\n"
+                "sh        $t4, 0x6($s6)\n"
+                ".LlabelStage800621E4:\n"
+                "addiu      $v0, $zero, -0x140\n"
+                "sh         $v0, 0x6($s6)\n"
+                ".LlabelStage800621EC:\n"
+                "sll        $v0, $s7, 24\n"
+                "sra        $v1, $v0, 24\n"
+                "beqz       $v1, .LlabelStage80062210\n"
+                "ori       $v0, $zero, 0x46\n"
+                "bltz       $v1, .LlabelStage8006222C\n"
+                "slti      $v0, $v1, 0x3\n"
+                "beqz       $v0, .LlabelStage8006222C\n"
+                "sll       $v0, $v1, 5\n"
+                "addiu      $v0, $v0, 0xD5\n"
+                ".LlabelStage80062210:\n"
+                "sh         $v0, 0x12($s6)\n"
+                "lw         $v0, 0x0($s1)\n"
+                "nop\n"
+                "lhu        $v0, 0x14($v0)\n"
+                "nop\n"
+                "addiu      $v0, $v0, 0x3C\n"
+                "sh         $v0, 0x14($s6)\n"
+                ".LlabelStage8006222C:\n"
+                "ori        $t3, $zero, 0x1\n"
+                "sll        $v0, $s7, 24\n"
+                "sra        $v0, $v0, 22\n"
+                "sw         $zero, %2\n"
+                "sw         $t3, %3\n"
+                "lui        $at, %%hi(D_8009AC10)\n"
+                "addu       $at, $at, $v0\n"
+                "lw         $a3, %%lo(D_8009AC10)($at)\n"
+                "addu       $a0, $s6, $zero\n"
+                "ori        $a1, $zero, 0x2\n"
+                "jal        func_80067EA4\n"
+                "ori       $a2, $zero, 0x2\n"
+                "sw         $s6, 0x1C($s5)\n"
+                "addiu      $v0, $s7, 0x1\n"
+                "addu       $s7, $v0, $zero\n"
+                "sll        $v0, $v0, 24\n"
+                "sra        $v0, $v0, 24\n"
+                "slti       $v0, $v0, 0x3\n"
+                "bnez       $v0, .LlabelStage80062144\n"
+                "addu      $s5, $s6, $zero\n"
+                ".set\treorder\n"
+                : "=r"(currentNode), "=r"(previousNode), "=m"(labelArgs.fifth),
+                  "=m"(labelArgs.sixth)
+                : "m"(colorHome.value), "m"(panelIndex.value), "1"(previousNode)
+                : "$1", "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$11", "$12",
+                  "$16", "$17", "$18", "$19", "$23", "$31", "memory");
         }
         {
-            s32 **slot;
-            s32 colorS;
-            u8 *object;
-            u8 *cell;
-            colorS = color >> 24;
-            slot = &D_800A37D8[i];
-            object = D_800A3678 + D_800A35EC++ * 36;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            cur = object;
-            primIndex = D_800A37BC;
-            *(s16 *)(cur + 0x12) = 0;
-            *(s16 *)(cur + 0x14) = 0;
-            *(s32 *)(cur + 0x1C) = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0) = 0;
-            *(s16 *)(cur + 0xA) = 0;
-            *(s16 *)(cur + 6) = 0;
-            *(s16 *)(cur + 0xE) = 0;
-            *(s16 *)(cur + 0x10) = 0;
-            *(s16 *)(cur + 0x1A) = 0;
-            *(s16 *)(cur + 0xC) = colorS;
-            *(s16 *)(cur + 8) = colorS;
-            D_800A37BC = primIndex + 1;
-            cell = (u8 *)D_800A3654 + primIndex * 12;
-            *(u8 **)(cur + 0x20) = cell;
-            cell[0] = 0;
-            cell[3] = 0;
-            *(s32 *)(cell + 4) = 0;
-            if (i != 0) {
-                *(s16 *)(cur + 6) = 0x140;
-            } else {
-                *(s16 *)(cur + 6) = -0x140;
-            }
-            *(s16 *)(cur + 0x12) = 8;
-            *(s16 *)(cur + 0x14) = *((u16 *)((u8 *)*slot + 0x14)) + 5;
-            func_80067EA4((struct UnkObject24 *)cur, 2, 2, D_8009AC08[0], 0, 1);
-            *(u8 **)(prev + 0x1C) = cur;
-            prev = cur;
-            D_800A3A84[i] = cur;
-            r = 0;
+            /* Allocate and place the tall red marker and its two thin rows.
+             * The shared column offset stays inside this block in hardware FP. */
+            asm volatile(
+                ".set\tnoreorder\n"
+                "lbu        $v1, D_800A35EC\n"
+                "lw         $s0, D_800A3678\n"
+                "ori        $a0, $zero, 0x1\n"
+                "addiu      $v0, $v1, 0x1\n"
+                "sb         $v0, D_800A35EC\n"
+                "sll        $v0, $v1, 3\n"
+                "addu       $v0, $v0, $v1\n"
+                "sll        $v0, $v0, 2\n"
+                "addu       $s0, $s0, $v0\n"
+                "ori        $v0, $zero, 0x2\n"
+                "sh         $zero, 0x12($s0)\n"
+                "sh         $zero, 0x14($s0)\n"
+                "sw         $zero, 0x1C($s0)\n"
+                "sb         $zero, 0x4($s0)\n"
+                "sb         $zero, 0x3($s0)\n"
+                "sb         $zero, 0x2($s0)\n"
+                "sh         $zero, 0x1A($s0)\n"
+                "sh         $v0, 0x0($s0)\n"
+                "sh         $zero, 0x6($s0)\n"
+                "sh         $zero, 0xA($s0)\n"
+                "lw         $t4, %5\n"
+                "ori        $s4, $zero, 0x6\n"
+                "ori        $s3, $zero, 0x80\n"
+                "ori        $v0, $zero, 0x8\n"
+                "sh         $zero, 0xE($s0)\n"
+                "sh         $zero, 0x10($s0)\n"
+                "sh         $s4, 0x16($s0)\n"
+                "sh         $v0, 0x18($s0)\n"
+                "sb         $s3, 0x2($s0)\n"
+                "sb         $zero, 0x3($s0)\n"
+                "sb         $zero, 0x4($s0)\n"
+                "sra        $s2, $t4, 24\n"
+                "sh         $s2, 0x8($s0)\n"
+                "jal        func_80057D50\n"
+                "sh        $s2, 0xC($s0)\n"
+                "addu       $s1, $v0, $zero\n"
+                "addu       $a0, $s1, $zero\n"
+                "jal        SetPolyF4\n"
+                "sw        $s1, 0x20($s0)\n"
+                "addu       $a0, $s1, $zero\n"
+                "jal        SetSemiTrans\n"
+                "addu      $a1, $zero, $zero\n"
+                "addu       $s6, $s0, $zero\n"
+                "sh         $s2, 0xA($s1)\n"
+                "sh         $s2, 0xE($s1)\n"
+                "addiu      $s2, $s2, 0x8\n"
+                "sb         $s3, 0x4($s1)\n"
+                "sb         $zero, 0x5($s1)\n"
+                "sb         $zero, 0x6($s1)\n"
+                "sh         $zero, 0x8($s1)\n"
+                "sh         $s4, 0xC($s1)\n"
+                "sh         $zero, 0x10($s1)\n"
+                "sh         $s2, 0x12($s1)\n"
+                "sh         $s4, 0x14($s1)\n"
+                "sh         $s2, 0x16($s1)\n"
+                "sh         $zero, 0x1A($s6)\n"
+                "lbu        $t3, %4\n"
+                "nop\n"
+                "sll        $v0, $t3, 24\n"
+                "beqz       $v0, 1f\n"
+                "ori       $t4, $zero, 0x140\n"
+                "j          2f\n"
+                "sh        $t4, 0x6($s6)\n"
+                "1:\n"
+                "addiu      $v0, $zero, -0x140\n"
+                "sh         $v0, 0x6($s6)\n"
+                "2:\n"
+                "ori        $v0, $zero, 0xA9\n"
+                "sh         $v0, 0x12($s6)\n"
+                "lbu        $t3, %4\n"
+                "lui        $t4, %%hi(D_800A37D8)\n"
+                "addiu      $t4, $t4, %%lo(D_800A37D8)\n"
+                "sll        $v1, $t3, 24\n"
+                "sra        $v1, $v1, 24\n"
+                "sll        $a0, $v1, 2\n"
+                "addu       $v0, $a0, $t4\n"
+                "lw         $v0, 0x0($v0)\n"
+                "addu       $s7, $zero, $zero\n"
+                "lw         $t3, %5\n"
+                "ori        $s4, $zero, 0xB\n"
+                "lhu        $v0, 0x14($v0)\n"
+                "addu       $fp, $a0, $zero\n"
+                "sra        $s2, $t3, 24\n"
+                "addiu      $s3, $s2, 0x1\n"
+                "sw         $v1, %2\n"
+                "addiu      $v0, $v0, 0x3B\n"
+                "sh         $v0, 0x14($s6)\n"
+                "sw         $s6, 0x1C($s5)\n"
+                "addu       $s5, $s6, $zero\n"
+                "lui        $at, %%hi(D_800A37FC)\n"
+                "addu       $at, $at, $fp\n"
+                "sw         $s5, %%lo(D_800A37FC)($at)\n"
+                "3:\n"
+                "lbu        $v1, D_800A35EC\n"
+                "lw         $s0, D_800A3678\n"
+                "ori        $a0, $zero, 0x1\n"
+                "addiu      $v0, $v1, 0x1\n"
+                "sb         $v0, D_800A35EC\n"
+                "sll        $v0, $v1, 3\n"
+                "addu       $v0, $v0, $v1\n"
+                "sll        $v0, $v0, 2\n"
+                "addu       $s0, $s0, $v0\n"
+                "ori        $v0, $zero, 0x2\n"
+                "ori        $t4, $zero, 0x1\n"
+                "sb         $zero, 0x2($s0)\n"
+                "ori        $t3, $zero, 0x80\n"
+                "sh         $zero, 0x12($s0)\n"
+                "sh         $zero, 0x14($s0)\n"
+                "sw         $zero, 0x1C($s0)\n"
+                "sb         $zero, 0x4($s0)\n"
+                "sb         $zero, 0x3($s0)\n"
+                "sh         $zero, 0x1A($s0)\n"
+                "sh         $v0, 0x0($s0)\n"
+                "sh         $zero, 0x6($s0)\n"
+                "sh         $zero, 0xA($s0)\n"
+                "sh         $s2, 0x8($s0)\n"
+                "sh         $s2, 0xC($s0)\n"
+                "sh         $zero, 0xE($s0)\n"
+                "sh         $zero, 0x10($s0)\n"
+                "sh         $s4, 0x16($s0)\n"
+                "sh         $t4, 0x18($s0)\n"
+                "sb         $t3, 0x2($s0)\n"
+                "sb         $zero, 0x3($s0)\n"
+                "jal        func_80057D50\n"
+                "sb        $zero, 0x4($s0)\n"
+                "addu       $s1, $v0, $zero\n"
+                "addu       $a0, $s1, $zero\n"
+                "jal        SetPolyF4\n"
+                "sw        $s1, 0x20($s0)\n"
+                "addu       $a0, $s1, $zero\n"
+                "jal        SetSemiTrans\n"
+                "addu      $a1, $zero, $zero\n"
+                "addu       $s6, $s0, $zero\n"
+                "ori        $t4, $zero, 0x80\n"
+                "sb         $t4, 0x4($s1)\n"
+                "sb         $zero, 0x5($s1)\n"
+                "sb         $zero, 0x6($s1)\n"
+                "sh         $zero, 0x8($s1)\n"
+                "sh         $s2, 0xA($s1)\n"
+                "sh         $s4, 0xC($s1)\n"
+                "sh         $s2, 0xE($s1)\n"
+                "sh         $zero, 0x10($s1)\n"
+                "sh         $s3, 0x12($s1)\n"
+                "sh         $s4, 0x14($s1)\n"
+                "sh         $s3, 0x16($s1)\n"
+                "sh         $zero, 0x1A($s6)\n"
+                "lw         $t3, %2\n"
+                "nop\n"
+                "beqz       $t3, 4f\n"
+                "ori       $t4, $zero, 0x140\n"
+                "j          5f\n"
+                "sh        $t4, 0x6($s6)\n"
+                "4:\n"
+                "addiu      $v0, $zero, -0x140\n"
+                "sh         $v0, 0x6($s6)\n"
+                "5:\n"
+                "sll        $v0, $s7, 24\n"
+                "bnez       $v0, 6f\n"
+                "ori       $v0, $zero, 0xFC\n"
+                "ori        $v0, $zero, 0x11C\n"
+                "6:\n"
+                "sh         $v0, 0x12($s6)\n"
+                "lui        $t3, %%hi(D_800A37D8)\n"
+                "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                "addu       $v0, $fp, $t3\n"
+                "lw         $v0, 0x0($v0)\n"
+                "nop\n"
+                "lhu        $v1, 0x14($v0)\n"
+                "addiu      $v0, $s7, 0x1\n"
+                "addu       $s7, $v0, $zero\n"
+                "sll        $v0, $v0, 24\n"
+                "sra        $v0, $v0, 24\n"
+                "slti       $v0, $v0, 0x2\n"
+                "addiu      $v1, $v1, 0x37\n"
+                "sh         $v1, 0x14($s6)\n"
+                "sw         $s6, 0x1C($s5)\n"
+                "bnez       $v0, 3b\n"
+                "addu      $s5, $s6, $zero\n"
+                ".set\treorder\n"
+                : "=r"(currentNode), "=r"(previousNode), "=m"(markerPanel.value)
+                : "1"(previousNode), "m"(panelIndex.value), "m"(colorHome.value)
+                : "$1", "$2", "$3", "$4", "$5", "$11", "$12", "$16", "$17",
+                  "$18", "$19", "$20", "$23", "$30", "$31", "memory");
+        }
+        {
+            register s32 colorS asm("$19");
+            register s32 panelValue asm("$20");
+            register s32 initialRow asm("$23");
+            register s8 initialColumn asm("$18");
+            register s32 triangleRow asm("$23");
+            register s32 nextRow asm("$2");
+            s8 triangleColumn;
+            s32 rowX;
+            register s32 widthDelta asm("$5");
+            register s32 allocateMode asm("$4");
+            register s32 nodeBlue asm("$12");
+            register u8 *node asm("$16");
+            register u8 *primitive asm("$17");
+            register u8 *panelNode asm("$2");
+            asm volatile(".set\tnoreorder\n"
+                         "lw\t$t4, 0x40($sp)\n"
+                         "lbu\t$t3, 0x20($sp)\n"
+                         "addu\t$s7, $zero, $zero\n"
+                         "sra\t$s3, $t4, 24\n"
+                         "sll\t$v0, $t3, 24\n"
+                         "sra\t$s4, $v0, 24\n"
+                         : "=r"(colorS), "=r"(panelValue), "=r"(initialRow)
+                         : "m"(colorHome.value), "m"(panelIndex.value)
+                         : "$2", "$11", "$12");
+            triangleRow = initialRow;
             do {
-                object = D_800A3678 + D_800A35EC++ * 36;
-                object[4] = 0;
-                object[3] = 0;
-                object[2] = 0;
-                cur = object;
-                primIndex = D_800A37BC;
-                *(s16 *)(cur + 0x12) = 0;
-                *(s16 *)(cur + 0x14) = 0;
-                *(s32 *)(cur + 0x1C) = 0;
-                *(s16 *)(cur + 0x1A) = 0;
-                *(s16 *)(cur + 0) = 0;
-                *(s16 *)(cur + 0xA) = 0;
-                *(s16 *)(cur + 6) = 0;
-                *(s16 *)(cur + 0xC) = colorS;
-                *(s16 *)(cur + 8) = colorS;
-                *(s16 *)(cur + 0xE) = 0;
-                *(s16 *)(cur + 0x10) = 0;
-                *(s16 *)(cur + 0x1A) = 0;
-                D_800A37BC = primIndex + 1;
-                cell = (u8 *)D_800A3654 + primIndex * 12;
-                *(u8 **)(cur + 0x20) = cell;
-                cell[0] = 0;
-                cell[3] = 0;
-                *(s32 *)(cell + 4) = 0;
-                if (i != 0) {
-                    *(s16 *)(cur + 6) = 0x140;
-                } else {
-                    *(s16 *)(cur + 6) = -0x140;
+                rowX = 0xFA;
+                if ((s8)triangleRow == 0) {
+                    rowX = 0x11A;
                 }
-                if (r == 0) {
-                    *(s16 *)(cur + 0x12) = 0x46;
-                } else if (r < 0) {
-                    goto skipG;
-                } else if (r < 3) {
-                    *(s16 *)(cur + 0x12) = (r << 5) + 0xD5;
-                } else {
-                    goto skipG;
-                }
-                *(s16 *)(cur + 0x14) = *((u16 *)((u8 *)*slot + 0x14)) + 0x3C;
-            skipG:
-                func_80067EA4((struct UnkObject24 *)cur, 2, 2, D_8009AC10[r], 0,
-                              1);
-                *(u8 **)(prev + 0x1C) = cur;
-                r++;
-                prev = cur;
-            } while (r < 3);
-        }
-        {
-            s32 colorS;
-            u8 *object;
-            u8 *prim;
-            colorS = color >> 24;
-            object = D_800A3678 + D_800A35EC++ * 36;
-            *(s16 *)(object + 0) = 2;
-            *(s16 *)(object + 0x12) = 0;
-            *(s16 *)(object + 0x14) = 0;
-            *(s32 *)(object + 0x1C) = 0;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            *(s16 *)(object + 0x1A) = 0;
-            *(s16 *)(object + 6) = 0;
-            *(s16 *)(object + 0xA) = 0;
-            *(s16 *)(object + 8) = colorS;
-            *(s16 *)(object + 0xC) = colorS;
-            *(s16 *)(object + 0xE) = 0;
-            *(s16 *)(object + 0x10) = 0;
-            *(s16 *)(object + 0x16) = 6;
-            *(s16 *)(object + 0x18) = 8;
-            object[2] = 0x80;
-            object[3] = 0;
-            object[4] = 0;
-            prim = func_80057D50(1);
-            *(u8 **)(object + 0x20) = prim;
-            SetPolyF4(prim);
-            SetSemiTrans(prim, 0);
-            cur = object;
-            *(s16 *)(prim + 0xA) = colorS;
-            *(s16 *)(prim + 0xE) = colorS;
-            colorS += 8;
-            prim[4] = 0x80;
-            prim[5] = 0;
-            prim[6] = 0;
-            *(s16 *)(prim + 8) = 0;
-            *(s16 *)(prim + 0xC) = 6;
-            *(s16 *)(prim + 0x10) = 0;
-            *(s16 *)(prim + 0x12) = colorS;
-            *(s16 *)(prim + 0x14) = 6;
-            *(s16 *)(prim + 0x16) = colorS;
-            *(s16 *)(cur + 0x1A) = 0;
-            if (i != 0) {
-                *(s16 *)(cur + 6) = 0x140;
-            } else {
-                *(s16 *)(cur + 6) = -0x140;
-            }
-            *(s16 *)(cur + 0x12) = 0xA9;
-            *(s16 *)(cur + 0x14) =
-                *((u16 *)((u8 *)D_800A37D8[i] + 0x14)) + 0x3B;
-            *(u8 **)(prev + 0x1C) = cur;
-            prev = cur;
-            D_800A37FC[i] = cur;
-            {
-                s32 colorP1;
-                colorP1 = colorS + 1;
-                r = 0;
+                initialColumn = 0;
+                asm("" : : "r"(initialColumn));
+                triangleColumn = initialColumn;
+                panelTableBase = panelValue * 4;
+                asm("" : : "r"(panelTableBase));
+                triangleOffset.value = panelTableBase;
                 do {
-                    index = D_800A35EC++;
-                    object = D_800A3678 + index * 36;
-                    object[2] = 0;
-                    *(s16 *)(object + 0x12) = 0;
-                    *(s16 *)(object + 0x14) = 0;
-                    *(s32 *)(object + 0x1C) = 0;
-                    object[4] = 0;
-                    object[3] = 0;
-                    *(s16 *)(object + 0x1A) = 0;
-                    *(s16 *)(object + 0) = 2;
-                    *(s16 *)(object + 6) = 0;
-                    *(s16 *)(object + 0xA) = 0;
-                    *(s16 *)(object + 8) = colorS;
-                    *(s16 *)(object + 0xC) = colorS;
-                    *(s16 *)(object + 0xE) = 0;
-                    *(s16 *)(object + 0x10) = 0;
-                    *(s16 *)(object + 0x16) = 0xB;
-                    *(s16 *)(object + 0x18) = 1;
-                    object[2] = 0x80;
-                    object[3] = 0;
-                    object[4] = 0;
-                    prim = func_80057D50(1);
-                    *(u8 **)(object + 0x20) = prim;
-                    SetPolyF4(prim);
-                    SetSemiTrans(prim, 0);
-                    cur = object;
-                    prim[4] = 0x80;
-                    prim[5] = 0;
-                    prim[6] = 0;
-                    *(s16 *)(prim + 8) = 0;
-                    *(s16 *)(prim + 0xA) = colorS;
-                    *(s16 *)(prim + 0xC) = 0xB;
-                    *(s16 *)(prim + 0xE) = colorS;
-                    *(s16 *)(prim + 0x10) = 0;
-                    *(s16 *)(prim + 0x12) = colorP1;
-                    *(s16 *)(prim + 0x14) = 0xB;
-                    *(s16 *)(prim + 0x16) = colorP1;
-                    *(s16 *)(cur + 0x1A) = 0;
-                    if (i != 0) {
-                        *(s16 *)(cur + 6) = 0x140;
-                    } else {
-                        *(s16 *)(cur + 6) = -0x140;
-                    }
-                    *(s16 *)(cur + 0x12) = r != 0 ? 0xFC : 0x11C;
-                    *(s16 *)(cur + 0x14) =
-                        *((u16 *)((u8 *)D_800A37D8[i] + 0x14)) + 0x37;
-                    *(u8 **)(prev + 0x1C) = cur;
-                    prev = cur;
-                    r++;
-                } while (r < 2);
-            }
+                    widthDelta = triangleColumn != 0 ? 3 : -3;
+                    asm volatile(".set\tnoreorder\n"
+                                 "lbu\t$v1, D_800A35EC\n"
+                                 "lw\t$s0, D_800A3678\n"
+                                 "ori\t$a0, $zero, 0x1\n"
+                                 "addiu\t$v0, $v1, 0x1\n"
+                                 "sb\t$v0, D_800A35EC\n"
+                                 "sll\t$v0, $v1, 3\n"
+                                 "addu\t$v0, $v0, $v1\n"
+                                 "sll\t$v0, $v0, 2\n"
+                                 "addu\t$s0, $s0, $v0\n"
+                                 "ori\t$v0, $zero, 0x8\n"
+                                 "ori\t$t3, $zero, 0x6\n"
+                                 "sb\t$zero, 0x2($s0)\n"
+                                 "ori\t$t4, $zero, 0xFF\n"
+                                 "sb\t$zero, 0x3($s0)\n"
+                                 "sh\t$t3, 0x18($s0)\n"
+                                 "ori\t$t3, $zero, 0x80\n"
+                                 "sb\t$zero, 0x4($s0)\n"
+                                 "sb\t$t4, 0x2($s0)\n"
+                                 "ori\t$t4, $zero, 0x40\n"
+                                 "sh\t$zero, 0x12($s0)\n"
+                                 "sh\t$zero, 0x14($s0)\n"
+                                 "sw\t$zero, 0x1C($s0)\n"
+                                 "sh\t$zero, 0x1A($s0)\n"
+                                 "sh\t$v0, 0x0($s0)\n"
+                                 "sh\t$zero, 0x6($s0)\n"
+                                 "sh\t$zero, 0xA($s0)\n"
+                                 "sh\t$s3, 0x8($s0)\n"
+                                 "sh\t$s3, 0xC($s0)\n"
+                                 "sh\t$zero, 0xE($s0)\n"
+                                 "sh\t$zero, 0x10($s0)\n"
+                                 "sh\t$a1, 0x16($s0)\n"
+                                 "sb\t$t3, 0x3($s0)\n"
+                                 : "=r"(node), "=r"(allocateMode),
+                                   "=r"(nodeBlue)
+                                 : "r"(widthDelta), "r"(colorS)
+                                 : "$2", "$3", "$11", "memory");
+                    node[4] = nodeBlue;
+                    primitive = func_80057D50(allocateMode);
+                    *(u8 **)(node + 0x20) = primitive;
+                    SetPolyF3(primitive);
+                    SetSemiTrans(primitive, 0);
+                    asm volatile("" : "=r"(currentNode) : "0"(node));
+                    asm volatile(
+                        ".set\tnoreorder\nori $t3,$zero,0xFF\nori $t4,$zero,0x80\nsb $t3,4($s1)\nori $t3,$zero,0x40\nsb $t4,5($s1)\nsb $t3,6($s1)"
+                        :
+                        : "r"(primitive)
+                        : "$11", "$12", "memory");
+                    asm volatile(".set\tnoreorder\n"
+                                 "beqz\t$s4, .LTriangleNestedC60_14\n"
+                                 "sh\t$zero, 0x1A($s6)\n"
+                                 "ori\t$t4, $zero, 0x140\n"
+                                 "j\t.LTriangleNestedC60_1c\n"
+                                 "sh\t$t4, 0x6($s6)\n"
+                                 ".LTriangleNestedC60_14:\n"
+                                 "addiu\t$v0, $zero, -0x140\n"
+                                 "sh\t$v0, 0x6($s6)\n"
+                                 ".LTriangleNestedC60_1c:\n"
+                                 :
+                                 : "r"(currentNode), "r"(panelValue)
+                                 : "$2", "$12", "memory");
+                    *(s16 *)(currentNode + 0x12) = rowX;
+                    asm volatile(
+                        ".set\tnoreorder\nlw $t3,%2\nlui $t4,%%hi(D_800A37D8)\naddiu $t4,$t4,%%lo(D_800A37D8)\naddu $v0,$t3,$t4\nlw $v0,0($v0)"
+                        : "=r"(panelNode), "=r"(panelTableBase)
+                        : "m"(triangleOffset.value)
+                        : "$11");
+                    rowX += 0xF;
+                    asm volatile("" : : "r"(rowX) : "memory");
+                    *(s16 *)(currentNode + 0x14) =
+                        *(u16 *)(panelNode + 0x14) + 0x37;
+                    *(u8 **)(previousNode + 0x1C) = currentNode;
+                    previousNode = currentNode;
+                    triangleColumn++;
+                } while (triangleColumn < 2);
+                nextRow = triangleRow + 1;
+                asm("" : : "r"(nextRow));
+                triangleRow = nextRow;
+                asm("" : "=r"(nextRow) : "0"(nextRow));
+            } while ((s8)nextRow < 2);
         }
         {
-            s32 colorS;
-            u8 *object;
-            u8 *prim;
-            colorS = color >> 24;
-            r = 0;
+            register s32 colorS asm("$18");
+            register s32 xpos asm("$20");
+            register s32 blue asm("$19");
+            register s8 initialArrowIndex asm("$23");
+            s8 arrowIndex;
+            register s32 heightDelta asm("$5");
+            register s32 allocateMode asm("$4");
+            register u8 *node asm("$16");
+            register u8 *primitive asm("$17");
+            register s32 red asm("$12");
+            register s32 green asm("$11");
+            asm volatile(".set\tnoreorder\n"
+                         "lbu\t$t3, 0x20($sp)\n"
+                         "nop\t\n"
+                         "sll\t$v0, $t3, 24\n"
+                         "sra\t$v0, $v0, 22\n"
+                         "addu\t$v0, $v0, $t4\n"
+                         "lw\t$v0, 0x0($v0)\n"
+                         "lw\t$t4, 0x40($sp)\n"
+                         "lh\t$v0, 0x14($v0)\n"
+                         "addu\t$s7, $zero, $zero\n"
+                         "ori\t$s3, $zero, 0x40\n"
+                         "sra\t$s2, $t4, 24\n"
+                         "addiu\t$s4, $v0, 0x3A\n"
+                         ".set\treorder\n"
+                         : "=r"(colorS), "=r"(xpos), "=r"(blue),
+                           "=r"(initialArrowIndex), "=r"(panelTableBase)
+                         : "m"(panelIndex.value), "m"(colorHome.value),
+                           "4"(panelTableBase)
+                         : "$2", "$3", "$11", "memory");
+            arrowIndex = initialArrowIndex;
             do {
-                q = 0;
-                do {
-                    index = D_800A35EC++;
-                    object = D_800A3678 + index * 36;
-                    object[2] = 0;
-                    object[3] = 0;
-                    *(s16 *)(object + 0x18) = 6;
-                    object[4] = 0;
-                    object[2] = 0xFF;
-                    *(s16 *)(object + 0x12) = 0;
-                    *(s16 *)(object + 0x14) = 0;
-                    *(s32 *)(object + 0x1C) = 0;
-                    *(s16 *)(object + 0x1A) = 0;
-                    *(s16 *)(object + 0) = 8;
-                    *(s16 *)(object + 6) = 0;
-                    *(s16 *)(object + 0xA) = 0;
-                    *(s16 *)(object + 8) = colorS;
-                    *(s16 *)(object + 0xC) = colorS;
-                    *(s16 *)(object + 0xE) = 0;
-                    *(s16 *)(object + 0x10) = 0;
-                    *(s16 *)(object + 0x16) = value;
-                    object[3] = 0x80;
-                    prim = func_80057D50(1);
-                    *(u8 **)(object + 0x20) = prim;
-                    SetPolyF3(prim);
-                    SetSemiTrans(prim, 0);
-                    cur = object;
-                    prim[4] = 0xFF;
-                    prim[5] = 0x80;
-                    prim[6] = 0x40;
-                    *(s16 *)(cur + 0x1A) = 0;
-                    if (i != 0) {
-                        *(s16 *)(cur + 6) = 0x140;
-                    } else {
-                        *(s16 *)(cur + 6) = -0x140;
-                    }
-                    *(s16 *)(cur + 0x12) = ybase;
-                    ybase += 0xF;
-                    *(s16 *)(cur + 0x14) =
-                        *((u16 *)((u8 *)D_800A37D8[i] + 0x14)) + 0x37;
-                    *(u8 **)(prev + 0x1C) = cur;
-                    prev = cur;
-                    q++;
-                } while (q < 2);
-                r++;
-            } while (r < 2);
-        }
-        {
-            s32 colorS;
-            s32 xpos;
-            u8 *object;
-            u8 *prim;
-            colorS = color >> 24;
-            xpos = ((s16 *)(D_800A37D8[i]))[10] + 0x3A;
-            r = 0;
-            do {
-                value = r != 0 ? 3 : -3;
-                object = D_800A3678 + D_800A35EC++ * 36;
-                object[2] = 0;
-                object[3] = 0;
-                *(s16 *)(object + 0x16) = 6;
-                *(s16 *)(object + 0x12) = 0;
-                *(s16 *)(object + 0x14) = 0;
-                *(s32 *)(object + 0x1C) = 0;
-                object[4] = 0;
-                *(s16 *)(object + 0x1A) = 0;
-                *(s16 *)(object + 0) = 7;
-                *(s16 *)(object + 6) = 0;
-                *(s16 *)(object + 0xA) = 0;
-                *(s16 *)(object + 8) = colorS;
-                *(s16 *)(object + 0xC) = colorS;
-                *(s16 *)(object + 0xE) = 0;
-                *(s16 *)(object + 0x10) = 0;
-                *(s16 *)(object + 0x18) = value;
-                object[2] = 0xFF;
-                object[3] = 0x80;
-                object[4] = 0x40;
-                prim = func_80057D50(1);
-                *(u8 **)(object + 0x20) = prim;
-                SetPolyF3(prim);
-                SetSemiTrans(prim, 0);
-                cur = object;
-                prim[4] = 0xFF;
-                prim[5] = 0x80;
-                prim[6] = 0x40;
-                *(s16 *)(cur + 0x1A) = 0;
-                if (i != 0) {
-                    *(s16 *)(cur + 6) = 0x140;
-                } else {
-                    *(s16 *)(cur + 6) = -0x140;
-                }
-                *(s16 *)(cur + 0x12) = 0xAC;
-                *(s16 *)(cur + 0x14) = xpos;
-                *(u8 **)(prev + 0x1C) = cur;
-                prev = cur;
-                r++;
+                heightDelta = arrowIndex != 0 ? 3 : -3;
+                asm volatile(".set\tnoreorder\n"
+                             "lbu\t$v1, D_800A35EC\n"
+                             "lw\t$s0, D_800A3678\n"
+                             "ori\t$a0, $zero, 0x1\n"
+                             "addiu\t$v0, $v1, 0x1\n"
+                             "sb\t$v0, D_800A35EC\n"
+                             "sll\t$v0, $v1, 3\n"
+                             "addu\t$v0, $v0, $v1\n"
+                             "sll\t$v0, $v0, 2\n"
+                             "addu\t$s0, $s0, $v0\n"
+                             "ori\t$v0, $zero, 0x7\n"
+                             "ori\t$t3, $zero, 0x6\n"
+                             "sb\t$zero, 0x2($s0)\n"
+                             "ori\t$t4, $zero, 0xFF\n"
+                             "sb\t$zero, 0x3($s0)\n"
+                             "sh\t$t3, 0x16($s0)\n"
+                             "ori\t$t3, $zero, 0x80\n"
+                             "sh\t$zero, 0x12($s0)\n"
+                             "sh\t$zero, 0x14($s0)\n"
+                             "sw\t$zero, 0x1C($s0)\n"
+                             "sb\t$zero, 0x4($s0)\n"
+                             "sh\t$zero, 0x1A($s0)\n"
+                             "sh\t$v0, 0x0($s0)\n"
+                             "sh\t$zero, 0x6($s0)\n"
+                             "sh\t$zero, 0xA($s0)\n"
+                             "sh\t$s2, 0x8($s0)\n"
+                             "sh\t$s2, 0xC($s0)\n"
+                             "sh\t$zero, 0xE($s0)\n"
+                             "sh\t$zero, 0x10($s0)\n"
+                             "sh\t$a1, 0x18($s0)\n"
+                             "sb\t$t4, 0x2($s0)\n"
+                             "sb\t$t3, 0x3($s0)\n"
+                             ".set\treorder\n"
+                             : "=r"(node), "=r"(allocateMode)
+                             : "r"(heightDelta), "r"(colorS), "r"(blue)
+                             : "$2", "$3", "$11", "$12", "memory");
+                node[4] = blue;
+                primitive = func_80057D50(allocateMode);
+                *(u8 **)(node + 0x20) = primitive;
+                SetPolyF3(primitive);
+                SetSemiTrans(primitive, 0);
+                asm volatile("" : "=r"(currentNode) : "0"(node));
+                red = 0xFF;
+                green = 0x80;
+                asm("" : : "r"(red), "r"(green));
+                primitive[4] = red;
+                primitive[5] = green;
+                primitive[6] = blue;
+                *(s16 *)(currentNode + 0x1A) = 0;
+                asm volatile(".set\tnoreorder\n"
+                             "lbu\t$t4, 0x20($sp)\n"
+                             "nop\t\n"
+                             "sll\t$v0, $t4, 24\n"
+                             "beqz\t$v0, .LTriangleFinal60_1c\n"
+                             "ori\t$t3, $zero, 0x140\n"
+                             "j\t.LTriangleFinal60_24\n"
+                             "sh\t$t3, 0x6($s6)\n"
+                             ".LTriangleFinal60_1c:\n"
+                             "addiu\t$v0, $zero, -0x140\n"
+                             "sh\t$v0, 0x6($s6)\n"
+                             ".LTriangleFinal60_24:\n"
+                             ".set\treorder\n"
+                             :
+                             : "r"(currentNode), "m"(panelIndex.value)
+                             : "$2", "$11", "$12", "memory");
+                *(s16 *)(currentNode + 0x12) = 0xAC;
+                *(s16 *)(currentNode + 0x14) = xpos;
+                *(u8 **)(previousNode + 0x1C) = currentNode;
+                previousNode = currentNode;
+                arrowIndex++;
                 xpos += 0xC;
-            } while (r < 2);
+            } while (arrowIndex < 2);
         }
     }
+    asm volatile("lbu\t%0,%1\n"
+                 ".set\treorder\n"
+                 : "=r"(previousPanelByte)
+                 : "m"(panelIndex.value));
+    nextPanel = previousPanelByte + 1;
+    asm("" : : "r"(nextPanel));
+    panelIndex.value = nextPanel;
+    if (panelIndex.value < D_800A3644[0] + 1) {
+        goto panelLoop;
+    }
+panelsDone:
     ListSetFieldsAndEnable(D_800A37F8, -0x140, 0, 4);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80060FD8);
-#endif
 
 void func_80062874(s32 arg0, s32 arg1) {
     u8 *node;
