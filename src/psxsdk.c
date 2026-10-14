@@ -7697,7 +7697,7 @@ void func_80087CC0(void) {
     _SpuInit(0);
 }
 
-extern void _spu_init(s32);
+extern s32 _spu_init(s32);
 extern void SpuStart(void);
 extern void _spu_FsetRXX(s32, u32, s32);
 extern s16 gSpuVoiceCenterNotes[];
@@ -7785,29 +7785,28 @@ s32 _spu_reset(void) {
 }
 
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B48);
-#ifdef NON_MATCHING
-s32 SpuInitHardwareDraft(s32) asm("_spu_init");
 typedef struct SpuInitRegs {
     volatile u16 voice[24][8];
-    volatile u16 main_vol[2];
-    volatile u16 rev_vol[2];
-    volatile u16 key_on[2];
-    volatile u16 key_off[2];
-    volatile u16 chan_fm[2];
-    volatile u16 noise_mode[2];
-    volatile u16 rev_mode[2];
+    volatile u16 mainVol[2];
+    volatile u16 reverbVol[2];
+    volatile u16 keyOn[2];
+    volatile u16 keyOff[2];
+    volatile u16 channelFm[2];
+    volatile u16 noiseMode[2];
+    volatile u16 reverbMode[2];
     volatile u16 reserved[5];
-    volatile u16 trans_addr;
-    volatile u16 trans_data;
+    volatile u16 transferAddr;
+    volatile u16 transferData;
     volatile u16 spucnt;
-    volatile u16 data_trans;
+    volatile u16 dataTransfer;
     volatile u16 spustat;
-    volatile u16 cd_vol[2];
-    volatile u16 ex_vol[2];
+    volatile u16 cdVol[2];
+    volatile u16 externalVol[2];
 } SpuInitRegs;
 extern volatile SpuInitRegs *D_800A26ACInitRegs[];
 extern volatile s32 *D_800A26BCInitPtr[];
 extern s32 D_800A26A4Init[];
+extern s32 D_800A26A4[];
 extern s32 D_800A26C4Init[];
 extern s32 D_800A26C8Init[];
 extern s16 D_800A26A8Init[];
@@ -7834,122 +7833,128 @@ extern s32 _spu_transferCallback[];
 extern s32 _spu_IRQCallback[];
 
 extern s32 printf(const char *, ...);
-s32 SpuInitHardwareDraft(s32 arg0) {
-    volatile s32 sp0;
-    volatile u32 sp4;
+s32 _spu_init(s32 hotInit) {
+    volatile s32 delayCount;
+    volatile u32 delayValue;
     s32 channel;
+    volatile SpuInitRegs *regs;
+    volatile u16 *voice;
+    u16 status;
+    s32 count;
     extern u16 *D_800A26ACFiDMA[];
     *D_800A26BCInitPtr[0] |= 0xB0000;
     {
         volatile SpuInitRegs *regs = D_800A26ACInitRegs[0];
-        regs->main_vol[0] = 0;
-        regs->main_vol[1] = 0;
+        regs->mainVol[0] = 0;
+        regs->mainVol[1] = 0;
         regs->spucnt = 0;
     }
     D_800A26C4Init[0] = 0;
     D_800A26C8Init[0] = 0;
     D_800A26A8Init[0] = 0;
-    sp4 = 0xD;
-    for (sp0 = 0; sp0 < 0xF0; sp0++) {
-        sp4 *= 3;
+    delayValue = 0xD;
+    for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+        delayValue *= 3;
     }
     {
-        volatile SpuInitRegs *regs = D_800A26ACInitRegs[0];
-        regs->main_vol[0] = 0;
-        regs->main_vol[1] = 0;
+        volatile SpuInitRegs *initialRegs = D_800A26ACInitRegs[0];
+        initialRegs->mainVol[0] = 0;
+        initialRegs->mainVol[1] = 0;
+        status = initialRegs->spustat;
     }
     D_800A26A4Init[0] = 0;
-    while (D_800A26ACInitRegs[0]->spustat & 0x7FF) {
-        D_800A26A4Init[0]++;
-        if (D_800A26A4Init[0] > 5000) {
+    if (status & 0x7FF) {
+    waitSpu:
+        count = D_800A26A4[0] + 1;
+        D_800A26A4Init[0] = count;
+        if (count > 5000) {
             printf(D_80090B38Init, D_80090B48Init);
-            break;
+        } else if (D_800A26ACInitRegs[0]->spustat & 0x7FF) {
+            goto waitSpu;
         }
     }
+    regs = D_800A26ACInitRegs[0];
     D_800A26CCInit[0] = 2;
     D_800A26D0Init[0] = 3;
     D_800A26D4Init[0] = 8;
     D_800A26D8Init[0] = 7;
     {
-        volatile SpuInitRegs *regs = D_800A26ACInitRegs[0];
-        regs->data_trans = 4;
-        regs->rev_vol[0] = 0;
-        regs->rev_vol[1] = 0;
-        regs->key_off[0] = 0xFFFF;
-        regs->key_off[1] = 0xFFFF;
-        regs->rev_mode[0] = 0;
-        regs->rev_mode[1] = 0;
+        regs->dataTransfer = 4;
+        regs->reverbVol[0] = 0;
+        regs->reverbVol[1] = 0;
+        regs->keyOff[0] = 0xFFFF;
+        regs->keyOff[1] = 0xFFFF;
+        regs->reverbMode[0] = 0;
+        regs->reverbMode[1] = 0;
     }
-    if (arg0 == 0) {
+    if (hotInit == 0) {
         {
-            volatile SpuInitRegs *regs =
-                (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
-            regs->chan_fm[0] = 0;
-            regs->chan_fm[1] = 0;
-            regs->noise_mode[0] = 0;
-            regs->noise_mode[1] = 0;
-            regs->cd_vol[0] = 0;
-            regs->cd_vol[1] = 0;
-            regs->ex_vol[0] = 0;
-            regs->ex_vol[1] = 0;
+            regs->channelFm[0] = 0;
+            regs->channelFm[1] = 0;
+            regs->noiseMode[0] = 0;
+            regs->noiseMode[1] = 0;
+            regs->cdVol[0] = 0;
+            regs->cdVol[1] = 0;
+            regs->externalVol[0] = 0;
+            regs->externalVol[1] = 0;
         }
         D_800A26A8Init[0] = 0x200;
         _spu_writeByIO((u8 *)D_800A26E8Init, 0x10);
-        for (channel = 0; channel < 24; channel++) {
-            {
-                volatile SpuInitRegs *regs =
-                    (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
-                regs->voice[channel][0] = 0;
-                regs->voice[channel][1] = 0;
-                regs->voice[channel][2] = 0x3FFF;
-                regs->voice[channel][3] = 0x200;
-                regs->voice[channel][4] = 0;
-                regs->voice[channel][5] = 0;
-            }
+        channel = 0;
+        regs = (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
+        while (channel < 24) {
+            voice = regs->voice[channel];
+            voice[0] = 0;
+            voice[1] = 0;
+            voice[2] = 0x3FFF;
+            voice[3] = 0x200;
+            voice[4] = 0;
+            voice[5] = 0;
+            channel++;
         }
         {
             volatile SpuInitRegs *regs =
                 (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
-            regs->key_on[0] |= 0xFFFF;
-            regs->key_on[1] |= 0xFF;
+            regs->keyOn[0] |= 0xFFFF;
+            regs->keyOn[1] |= 0xFF;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
         {
             volatile SpuInitRegs *regs =
                 (volatile SpuInitRegs *)D_800A26ACFiDMA[0];
-            regs->key_off[0] |= 0xFFFF;
-            regs->key_off[1] |= 0xFF;
+            regs->keyOff[0] |= 0xFFFF;
+            regs->keyOff[1] |= 0xFF;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
-        sp4 = 0xD;
-        for (sp0 = 0; sp0 < 0xF0; sp0++) {
-            sp4 *= 3;
+        delayValue = 0xD;
+        for (delayCount = 0; delayCount < 0xF0; delayCount++) {
+            delayValue *= 3;
         }
     }
     _spu_inTransfer[0] = 1;
@@ -7961,9 +7966,6 @@ s32 SpuInitHardwareDraft(s32 arg0) {
     _spu_IRQCallback[0] = 0;
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_init);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_writeByIO);
 
