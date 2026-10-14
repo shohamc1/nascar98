@@ -5389,11 +5389,6 @@ void func_800641EC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_80064208);
 
-#ifdef NON_MATCHING
-/* 2026-10-11 parked at 60 (was 450; size matches). Permuter + manual: the
- * (idx&3)<<6+0x3F value now flows through a chained assignment into prim[0x14]
- * (prim[0x14] = (q = ...)), which fixed the store order. Residual is pure
- * register renames on the two address chains (a2/v0/v1 vs v0/v1/a2). */
 extern u8 *D_800A3744[];
 extern u8 *D_800A3958[];
 void func_800645A4(s32 arg0, s32 arg1) {
@@ -5409,24 +5404,33 @@ void func_800645A4(s32 arg0, s32 arg1) {
     s32 x;
     s32 h;
     u32 q;
+    u32 quotient;
+    u32 u;
+    u32 remainder;
 
     node = D_800A3744[arg0 & 0xFF];
     idx = arg1 & 0xFF;
     prim = *(u8 **)(node + 0x20);
     *(s16 *)(prim + 0xE) = GetClut(0x100, 0x1E7 - idx);
-    q = idx / 12;
-    y = (q & 0xFF) * 0x48;
+    quotient = idx / 12;
+    y = (quotient & 0xFF) * 0x48;
     y += 0x140;
-    q = idx - q * 12;
-    q <<= 5;
-    *(s16 *)(prim + 0x16) = GetTPage(1, 0, (q & 0x1F80) + 0x140, y);
-    prim[0xC] = (idx & 3) << 6;
+    remainder = idx - quotient * 12;
+    remainder <<= 5;
+    u = remainder & 0x1F80;
+    u += 0x140;
+    *(s16 *)(prim + 0x16) = GetTPage(1, 0, u, y);
+    /* Keep the mask on idx instead of CSE substituting the original arg1. */
+    asm("andi %0,%1,3" : "=r"(q) : "r"(idx));
+    u = q << 6;
+    prim[0xC] = u;
     prim[0xD] = y;
-    prim[0x14] = (q = ((idx & 3) << 6) + 0x3F);
+    q = u + 0x3F;
+    prim[0x14] = q;
     prim[0x15] = y;
-    prim[0x1C] = (idx & 3) << 6;
+    prim[0x1C] = u;
     prim[0x1D] = y + 0x47;
-    prim[0x24] = ((idx & 3) << 6) + 0x3F;
+    prim[0x24] = q;
     prim[0x25] = y + 0x47;
     node = *(u8 **)(node + 0x1C);
     func_8005A7B8(2, 4);
@@ -5474,9 +5478,6 @@ void func_800645A4(s32 arg0, s32 arg1) {
     }
     *(s16 *)(str + 0x1A) = advance;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_800645A4);
-#endif
 
 typedef struct UnkNode1C {
     u8 unk0[6];

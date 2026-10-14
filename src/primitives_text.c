@@ -326,17 +326,11 @@ void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Parked 2026-10-12: opcodes and order match retail, including the opening
- * mult chain and the mult-to-mfhi window; only the s-register assignment
- * differs (10 rows: retail has the seconds value in s0, the ':' constant in
- * s1 and the text pointer in s2; ours has the text pointer in s0). The
- * `seconds = scale;` copy in the loop is a permuter find (55 against 230). */
 extern void func_80050028Text(s8 *, s16, s16, s8);
 void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
     s8 text[24];
     s32 minutes;
-    s32 seconds;
+    s32 value;
     s32 hundredths;
     s32 len;
     s16 *base;
@@ -345,7 +339,7 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
     s32 pen;
 
     minutes = time / 1200;
-    seconds = time / 20 - minutes * 60;
+    value = time / 20 - minutes * 60;
     hundredths = (time % 20) * 5;
     text[0] = 0;
     len = 0;
@@ -358,12 +352,12 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
     text[2] = ':';
     text[3] = 0;
     len = 3;
-    if (seconds < 10) {
+    if (value < 10) {
         len = 4;
         text[3] = '0';
         text[4] = 0;
     }
-    func_80012EA8(seconds, (u8 *)text + len);
+    func_80012EA8(value, (u8 *)text + len);
     text[5] = ':';
     text[6] = 0;
     len = 6;
@@ -382,17 +376,15 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
     if (text[0] != 0) {
         base = D_800A2D88;
         width = base + scale;
+        /* Reuse the seconds local for the glyph cursor. */
+        value = (s32)p;
         do {
-            seconds = scale;
-            func_800180C0(*p, pen, y, seconds);
+            func_800180C0(*(s8 *)value, pen, y, scale);
             pen += *width;
-            p++;
-        } while (*p != 0);
+            value++;
+        } while (*(s8 *)value != 0);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_800183C0);
-#endif
 
 extern u8 D_8008CC9C[];
 extern u8 D_8008CCA8[];
