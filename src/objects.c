@@ -6016,9 +6016,10 @@ void func_8002FFB8(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/objects", func_80030204);
 
 extern s32 D_800A3A80;
+/* Parked 2026-10-14: 768 bytes, score 50 (was 165), 10 register-only
+ * rows. Endpoint order, swap temporary reuse and height-load order match;
+ * leftHeight/y1 and the right-height z temporaries still rotate. */
 #ifdef NON_MATCHING
-/* Retry 2026-10-11: 768 bytes, 33 bytes differ. Point/pair allocation and
- * quotient temporaries remain different. Keep the assembly fallback. */
 s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
     SVECTOR **points;
     s32 vyA;
@@ -6051,23 +6052,23 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
         pointB = points[i - 1];
         vyB = pointB->vy;
         vyA = pointA->vy;
-        if (vyB < vyA) {
-            point = pointA;
-            pointA = pointB;
-            pointB = point;
+        if (vyA < vyB) {
+            point = pointB;
+            pointB = pointA;
+            pointA = point;
         }
-        if (sampleY < pointA->vy) {
+        if (sampleY < pointB->vy) {
             continue;
         }
-        if (sampleY >= pointB->vy) {
+        if (sampleY >= pointA->vy) {
             continue;
         }
-        if (pointA->vy == pointB->vy) {
+        if (pointB->vy == pointA->vy) {
             continue;
         }
         if (pairA == 0) {
-            pairA = pointA;
-            pairB = pointB;
+            pairA = pointB;
+            pairB = pointA;
             continue;
         }
         x0 = pairA->vx;
@@ -6079,25 +6080,28 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
         } else {
             left = x0 + (((x1 - x0) * (sampleY - y0)) / (y1 - y0));
         }
-        x0 = pointA->vx;
-        x1 = pointB->vx;
-        y0 = pointA->vy;
-        y1 = pointB->vy;
+        x0 = pointB->vx;
+        x1 = pointA->vx;
+        y0 = pointB->vy;
+        y1 = pointA->vy;
         if (y1 == y0) {
             right = x0;
+        } else if (pointA) {
+            /* Identical arms retain the permuter-found endpoint allocation. */
+            right = x0 + (((x1 - x0) * (sampleY - y0)) / (y1 - y0));
         } else {
             right = x0 + (((x1 - x0) * (sampleY - y0)) / (y1 - y0));
         }
         if (right < left) {
-            result = left;
+            y1 = left;
             left = right;
-            right = result;
+            right = y1;
             point = pairA;
-            pairA = pointA;
-            pointA = point;
-            point = pairB;
-            pairB = pointB;
+            pairA = pointB;
             pointB = point;
+            point = pairB;
+            pairB = pointA;
+            pointA = point;
         }
         if (sampleX < (left - 5)) {
             return 0;
@@ -6116,10 +6120,10 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
             leftHeight = sampleY;
             leftHeight = z0 + (((z1 - z0) * (leftHeight - y0)) / heightSpan);
         }
-        z1 = pointB->vz;
-        y0 = pointA->vy;
-        z0 = pointA->vz;
-        y1 = pointB->vy;
+        z0 = pointB->vz;
+        z1 = pointA->vz;
+        y0 = pointB->vy;
+        y1 = pointA->vy;
         if (y1 == y0) {
             result = z0;
         } else {

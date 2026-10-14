@@ -456,7 +456,131 @@ void GraphicsLoadImageWithXOffset(s32 xOffset) {
     LoadImage(&rect, (u_long *)(image + 8));
 }
 
+#ifdef NON_MATCHING
+extern s32 D_800A2DC8;
+extern s32 D_800A33D4;
+extern s32 D_800A33D8;
+extern u8 D_800A3F7C[];
+extern u8 D_800A3F92[];
+extern u8 D_800A3F94[];
+extern u8 D_800A3F95[];
+extern u8 D_800A3F96[];
+extern u8 D_800A3F97[];
+extern u8 D_800A3FEE[];
+extern u8 D_800A3FF0[];
+extern u8 D_800A3FF1[];
+extern u8 D_800A3FF2[];
+extern u8 D_800A3FF3[];
+extern u8 D_800A4034[];
+extern u8 D_800A405C[];
+extern u8 D_800A4072[];
+extern u8 D_800A4074[];
+extern u8 D_800A412A[];
+extern u8 D_800A412C[];
+extern u8 D_800A41E2[];
+extern u8 D_800A41E4[];
+extern u8 D_800A429A[];
+extern u8 D_800A429C[];
+extern u8 D_800A433C[];
+extern u8 D_800A44BC[];
+
+void func_8001E3E0(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s32 sp18;
+    s32 sp20;
+    s32 sp28;
+    DRAWENV *temp_s1;
+    DRAWENV *temp_s2;
+    DISPENV *temp_s4;
+    DRAWENV *var_s4;
+    DRAWENV *var_s5;
+    s32 temp_s0;
+    s32 temp_s0_2;
+    s32 temp_s3;
+    s32 var_fp;
+    s32 var_s3;
+    s32 var_s6;
+
+    temp_s3 = arg3 & 0xFF;
+    sp18 = arg1;
+    D_800A2DC8 = arg0;
+    sp20 = arg0 & -(arg0 != 0x280);
+    if (temp_s3 != 0) {
+        SetDispMask(0);
+        SetGraphDebug(0);
+    }
+    SetGeomOffset(arg0 / 2, (sp18 / 2) + 0xA);
+    SetGeomScreen(arg2);
+    SetDefDrawEnv((DRAWENV *)D_800A3F7C, 0, 0, arg0, sp18);
+    SetDefDispEnv((DISPENV *)D_800A4034, sp20, 0, arg0, sp18);
+    SetDefDrawEnv((DRAWENV *)(D_800A3F7C + 0x5C), sp20, 0, arg0, sp18);
+    temp_s4 = (DISPENV *)(D_800A4034 + 0x14);
+    SetDefDispEnv(temp_s4, 0, 0, arg0, sp18);
+    D_800A3FEE[0] = 0;
+    D_800A3F92[0] = 0;
+    D_800A3FF0[0] = 1;
+    D_800A3F94[0] = 1;
+    D_800A3F95[0] = 0;
+    D_800A3F96[0] = 0;
+    D_800A3F97[0] = 0;
+    D_800A3FF1[0] = 0;
+    D_800A3FF2[0] = 0;
+    D_800A3FF3[0] = 0;
+    D_800A33D4 = FntOpen(0x20, 0x20, 0x190, 0x70, 0x300, 0xFF);
+    D_800A33D8 = FntOpen(0x20, sp20 + 0x20, 0x190, 0x70, 0x300, 0xFF);
+    var_fp = 0;
+    if (temp_s3 != 0) {
+        PutDrawEnv((DRAWENV *)D_800A3F7C);
+        PutDispEnv(temp_s4);
+        var_fp = 0;
+    }
+    sp28 = 0xC8;
+    var_s6 = 0;
+    var_s3 = 0;
+    do {
+        var_s4 = (DRAWENV *)(D_800A405C + var_s3);
+        var_s5 = (DRAWENV *)(D_800A405C + var_s3 + 0x228);
+        SetDefDrawEnv(var_s4, var_s6, 0, arg0, sp18);
+        temp_s2 = (DRAWENV *)(var_s3 + (D_800A405C + 0xB8));
+        *(D_800A4072 + var_s3) = 0;
+        *(D_800A4074 + var_s3) = 0;
+        var_s4->r0 = 0x28;
+        var_s4->g0 = 0x6A;
+        var_s4->b0 = 2;
+        temp_s0 = sp18 / 2;
+        SetDefDrawEnv(temp_s2, var_s6, 0, arg0, temp_s0);
+        temp_s1 = (DRAWENV *)(var_s3 + (D_800A405C + 0x170));
+        *(D_800A412A + var_s3) = 0;
+        *(D_800A412C + var_s3) = 0;
+        temp_s2->r0 = 0x28;
+        temp_s2->g0 = 0x6A;
+        temp_s2->b0 = 2;
+        SetDefDrawEnv(temp_s1, var_s6, temp_s0, arg0, temp_s0);
+        *(D_800A41E2 + var_s3) = 0;
+        *(D_800A41E4 + var_s3) = 0;
+        temp_s1->r0 = 0x28;
+        temp_s1->g0 = 0x6A;
+        temp_s1->b0 = 2;
+        SetDefDrawEnv(var_s5, sp28, 0x13, 0x64, 0x24);
+        temp_s0_2 = var_fp << 6;
+        *(D_800A429A + var_s3) = 0;
+        *(D_800A429C + var_s3) = 0;
+        var_s5->r0 = 0x28;
+        var_s5->g0 = 0x6A;
+        var_s5->b0 = 2;
+        SetDrawEnv((DR_ENV *)(temp_s0_2 + D_800A433C), var_s4);
+        SetDrawEnv((DR_ENV *)(temp_s0_2 + (D_800A433C + 0x80)), temp_s2);
+        SetDrawEnv((DR_ENV *)(temp_s0_2 + (D_800A433C + 0x100)), temp_s1);
+        SetDrawEnv((DR_ENV *)(temp_s0_2 + D_800A44BC), var_s5);
+        var_s3 += 0x5C;
+        var_fp += 1;
+        var_s6 += sp20;
+        sp28 += sp20;
+    } while (var_fp < 2);
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/images", func_8001E3E0);
+#endif
 
 extern s32 D_800A2DC4w15 asm("D_800A2DC4.NON_MATCHING");
 extern s32 D_800A2EC4w15[] asm("D_800A2EC4.NON_MATCHING");
