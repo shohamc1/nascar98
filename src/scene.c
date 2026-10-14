@@ -2547,7 +2547,473 @@ void func_80048C90(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80048EFC);
+/* Draws the race HUD for one car: the tachometer segments, speed bar and
+ * needle, lap and place text, and the driver warning messages. yOffset moves
+ * the whole layout vertically (split screen). The field names are placeholders
+ * until the full Car layout is known. */
+typedef struct HudCar {
+    u8 unk0[0x84];
+    s32 unk84;
+    u8 unk88[0x90 - 0x88];
+    s32 unk90;
+    u8 unk94[0xF4 - 0x94];
+    u8 unkF4;
+    u8 unkF5;
+    u8 unkF6;
+    u8 unkF7;
+    u8 unkF8;
+    u8 unkF9;
+    u8 unkFA[0x108 - 0xFA];
+    s16 unk108;
+    u8 unk10A[0x10C - 0x10A];
+    s16 unk10C;
+    u8 unk10E[0x110 - 0x10E];
+    s16 unk110;
+    u8 unk112[0x114 - 0x112];
+    s16 unk114;
+    u8 unk116[0x1BC - 0x116];
+    s16 unk1BC;
+    u8 unk1BE[0x1D6 - 0x1BE];
+    s16 lap;
+    u8 unk1D8[0x1E0 - 0x1D8];
+    s16 unk1E0;
+    u8 unk1E2[0x204 - 0x1E2];
+    s8 place;
+    u8 unk205[0x209 - 0x205];
+    s8 unk209;
+    u8 unk20A;
+    u8 unk20B;
+    s8 unk20C;
+    u8 unk20D;
+    s16 unk20E;
+    u8 unk210[0x258 - 0x210];
+    s32 unk258;
+    s32 unk25C;
+    u8 unk260[0x268 - 0x260];
+    u8 unk268;
+    u8 unk269[0x28C - 0x269];
+    s32 unk28C;
+    u8 unk290[0x2B8 - 0x290];
+    s32 unk2B8;
+    u8 unk2BC[0x354 - 0x2BC];
+    void (*unk354)(u8 *);
+    u8 unk358[0x3A4 - 0x358];
+    u32 unk3A4;
+    u8 unk3A8[0x3B7 - 0x3A8];
+    u8 unk3B7;
+    u8 unk3B8[0x3FC - 0x3B8];
+    u8 unk3FC;
+    s8 unk3FD;
+    u8 unk3FE[0x401 - 0x3FE];
+    u8 unk401;
+    s16 unk402;
+    u8 unk404[0x40C - 0x404];
+    s32 unk40C;
+    u8 unk410;
+    u8 unk411[0x414 - 0x411];
+    s32 unk414;
+} HudCar;
+
+typedef struct HudLayout {
+    s16 unk0;
+    s16 unk2;
+    u8 unk4[4];
+    s16 unk8;
+    s16 unkA;
+    s16 unkC;
+    s16 unkE;
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    u8 unk1C[0x1C];
+} HudLayout;
+
+typedef struct HudPoint {
+    u16 x;
+    u16 y;
+} HudPoint;
+
+typedef struct HudVertex {
+    s16 x;
+    s16 y;
+} HudVertex;
+
+typedef struct HudNode {
+    u8 unk0[0x10];
+    u16 unk10;
+    u8 unk12[0x90 - 0x12];
+} HudNode;
+
+extern s16 D_800A38E4[];
+extern s32 D_800A39C8Absolute[];
+extern s32 D_800A39C4nm[] asm("D_800A39C4.NON_MATCHING");
+extern s32 D_800A39CCnm[] asm("D_800A39CC.NON_MATCHING");
+extern s32 D_800A2E50[];
+extern s8 *D_800A78C4[];
+extern u8 D_800A372C;
+extern u8 D_800A3490;
+extern u8 D_800A3485;
+extern u8 D_800A3488;
+extern u8 D_800A3484[];
+extern u8 D_800A3680Small asm("D_800A3680.NON_MATCHING");
+extern s32 D_800A2ED0Hud[] asm("D_800A2ED0.NON_MATCHING");
+extern s16 D_800A3910;
+extern u8 D_80099260[][0x38];
+extern HudLayout D_8009927C[];
+extern HudVertex D_8009933C[];
+extern u8 D_800A7568[];
+extern u8 D_800A7569[];
+extern u8 D_800A756A[];
+extern u16 D_800A756C[];
+extern u16 D_800A756E[];
+extern u16 D_800A7570[];
+extern u16 D_800A7572[];
+extern u16 D_800A7574[];
+extern u16 D_800A7576[];
+extern u16 D_800A7578[];
+extern u16 D_800A757A[];
+extern POLY_FT4 D_800A757C[];
+extern POLY_FT4 D_800A770C[];
+extern TILE D_800A7924[];
+extern TILE D_800A7954[];
+extern u8 D_800A78D4[];
+extern u8 D_800A78FC[];
+extern char D_800A2FF4[];
+extern char D_800A2FF8[];
+extern char D_800A2FFC[];
+extern char *D_8009ADD8[];
+extern char *D_8009ADF8[];
+extern char *D_8009ADFC[];
+extern char *D_8009AE00[];
+extern char *D_8009AE0C[];
+extern char *D_8009AE10[];
+extern s32 sprintfHud(char *, char *, ...) asm("sprintf");
+extern void func_8004AFE0(s8, u16 *, u16 *);
+extern void func_800188B0(s32, s32, s32, s32, s32);
+extern void func_80044A1C(s16, s16, s16, s16, u8, u8, u8, u8);
+extern void GraphicsSetColor(u8, u8, u8);
+extern s16 HudTextWidth(u8 *) asm("func_80050940");
+extern void HudDrawText(char *, s32, s16, s32) asm("func_80050028");
+extern void func_80052FC4(s8);
+extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
+
+/* Value that D_800A3480 follows, the field at 0x20E of the car in
+ * D_800A3554. */
+#define HUD_STEER_TARGET (((HudCar *)D_800A3554[0])->unk20E)
+
+/* Centred warning text with a box behind it. */
+#define HUD_MESSAGE(text, ty)                                                  \
+    {                                                                          \
+        s16 w;                                                                 \
+        s32 x;                                                                 \
+        w = HudTextWidth((u8 *)(text)[0]);                                     \
+        x = (0x140 - w) >> 1;                                                  \
+        HudDrawText((text)[0], x, yOffset + (ty), 0);                          \
+        func_80044A1C(x - 0xA, yOffset + (ty) - 1, w + 0x14, 0xD, 0, 0, 0, 1); \
+    }
+
+void HudDrawCar(HudCar *car, s16 yOffset) {
+    char buf[8];
+    HudPoint pts[4];
+    u16 ang;
+    u8 flag;
+    u8 split;
+    s8 level;
+    s8 cur;
+    s8 nv;
+    s16 i;
+    POLY_FT4 *seg;
+    TILE *tiles;
+    u8 *needle;
+    u8 *prim;
+    u8 count;
+    s16 tw;
+    s32 sinV;
+    s32 cosV;
+    s16 idx;
+    s32 scaled;
+    s32 green;
+    u8 red;
+    s32 frac;
+    HudLayout *layout;
+
+    split = 0;
+    flag = 0;
+    if (car->unk20C != 0 || D_800A2EA4[0] != 0) {
+        split = 1;
+    }
+    if (D_800A2ED4[0] == 0) {
+        if (car->unk3FC != 0) {
+            level =
+                (s32)((D_800A2E50[0] - D_800A38E4[0]) * 10) / D_800A2E50[0] + 2;
+        } else {
+            level = 0;
+        }
+        if (level >= 11) {
+            level = 10;
+        }
+        cur = car->unk3FD;
+        if (cur < level) {
+            car->unk3FD = cur + 1;
+        } else if (level < cur) {
+            car->unk3FD = cur - 1;
+        }
+        if (D_800A372C != 0 && car->unk401 != 0) {
+            car->unk402 =
+                car->unk402 <= car->unk108 - 0x64
+                    ? car->unk402 + 0x64
+                    : (car->unk402 >= car->unk108 + 0x64 ? car->unk402 - 0x64
+                                                         : car->unk108);
+            car->unk40C = car->unk90 - 0x10000 >= car->unk40C
+                              ? car->unk40C + 0x10000
+                              : (car->unk40C >= car->unk90 + 0x10000
+                                     ? car->unk40C - 0x10000
+                                     : car->unk90);
+        } else {
+            car->unk402 =
+                car->unk402 <= car->unk108 - 0x3E8
+                    ? car->unk402 + 0x3E8
+                    : (car->unk402 >= car->unk108 + 0x3E8 ? car->unk402 - 0x3E8
+                                                          : car->unk108);
+            car->unk40C = car->unk90 - 0x140000 >= car->unk40C
+                              ? car->unk40C + 0x140000
+                              : (car->unk40C >= car->unk90 + 0x140000
+                                     ? car->unk40C - 0x140000
+                                     : car->unk90);
+        }
+        /* D_800A3480 eases toward the target by 1, 4 or 8 a frame and is then
+         * clamped. The three stores in the first arms name the byte three ways
+         * so that gcc does not cross-jump them into the shared store. */
+        i = ABS(D_800A3480 - HUD_STEER_TARGET);
+        if (i < 5) {
+            if (D_800A3480 < HUD_STEER_TARGET) {
+                nv = D_800A3480 + 1;
+                (&D_800A3460)[0x20] = nv;
+            } else if (HUD_STEER_TARGET < D_800A3480) {
+                nv = D_800A3480 - 1;
+                (&D_800A345C)[0x24] = nv;
+            } else {
+                nv = HUD_STEER_TARGET;
+                D_800A3480 = nv;
+            }
+        } else if (i < 13) {
+            nv =
+                D_800A3480 < HUD_STEER_TARGET ? D_800A3480 + 4 : D_800A3480 - 4;
+            D_800A3480 = nv;
+        } else {
+            nv =
+                D_800A3480 < HUD_STEER_TARGET ? D_800A3480 + 8 : D_800A3480 - 8;
+            D_800A3480 = nv;
+        }
+        if (nv >= 0x35) {
+            D_800A3480 = 0x34;
+        } else if (nv < -0x34) {
+            D_800A3480 = -0x34;
+        }
+    }
+    if (D_800A2EA4[0] == 0) {
+        if (D_800A3680Small != 0) {
+            func_8004AFE0(0, (u16 *)D_80099260[split],
+                          (u16 *)D_800A78C4[gOrderingTableBankAbsolute[0]]);
+            D_800A3490 = 1;
+            D_800A3680Small = 0;
+        } else if (D_800A3490 != 0) {
+            func_8004AFE0(0, (u16 *)D_80099260[split],
+                          (u16 *)D_800A78C4[gOrderingTableBankAbsolute[0]]);
+            D_800A3490 = 0;
+        }
+    }
+    if (D_800A2EACAbsolute[0] == 0 && D_800A2ED0Hud[0] == 0 &&
+        D_800A397C[0] != 2) {
+        if (car->unk209 != 0) {
+            D_800A39C8Absolute[0] = D_800A39C8[0] + 4;
+            if (split) {
+                if (car == (HudCar *)D_800A3554[0]) {
+                    seg = D_800A757C;
+                    needle = D_800A78D4;
+                    tiles = D_800A7924;
+                } else {
+                    seg = D_800A770C;
+                    needle = D_800A78FC;
+                    tiles = D_800A7954;
+                }
+                for (i = 0; i < car->unk3FD; i++) {
+                    seg[i].b0 = 0xFF;
+                    func_80017D80((u8 *)&seg[i]);
+                }
+                for (i = car->unk3FD; i < 10; i++) {
+                    seg[i].b0 = 0x40;
+                    func_80017D80((u8 *)&seg[i]);
+                }
+                tw = car->unk28C / 400;
+                tiles[1].x0 = tw + 0xD;
+                tiles[0].w = tw;
+                tiles[1].w = 0x28 - tw;
+                for (i = 0; i < 3; i++) {
+                    func_80017D80((u8 *)&tiles[i]);
+                }
+                ang = (car->unk402 * 0x1F40) / 13250 + 0x3E8;
+                scaled = (s16)ang << 8;
+                idx = (car->unkF6 != 0 || car->unk10C == car->unk110 ||
+                               ((u8 *)D_800A2F9DAbsolute)[-0x45] != 0
+                           ? scaled / 10000
+                           : scaled / 9000) +
+                      0x200;
+                sinV = ((s32 *)D_800A3A2CAbsolute[0])[idx];
+                cosV = ((s32 *)D_800A3A34Absolute[0])[idx];
+                for (i = 0; i < 4; i++) {
+                    pts[i].x =
+                        ((MathMultiplyFixed16(sinV, D_8009933C[i].x << 16) -
+                          MathMultiplyFixed16(cosV, D_8009933C[i].y << 16)) >>
+                         16) +
+                        0x12C;
+                    pts[i].y =
+                        ((MathMultiplyFixed16(cosV, D_8009933C[i].x << 16) +
+                          MathMultiplyFixed16(sinV, D_8009933C[i].y << 16)) >>
+                         16) +
+                        (yOffset + 0xD6);
+                }
+                if ((s16)ang < 3000) {
+                    D_800A7568[0] = 0;
+                    green = 0x80;
+                } else {
+                    frac = ((s16)((s16)ang % 3000) << 7) / 3000;
+                    red = frac; /* separate byte copy of the quotient */
+                    if ((s16)ang < 6000) {
+                        D_800A7568[0] = red;
+                        green = 0x80;
+                    } else {
+                        D_800A7568[0] = 0x80;
+                        green = 0x80 - frac;
+                    }
+                }
+                D_800A7569[0] = green;
+                D_800A756A[0] = 0;
+                /* Ends the scheduling block: the stores above stay ahead of
+                 * the loads below. The branch itself is removed. */
+                if (i == -1) {
+                    i = 0;
+                }
+                D_800A756C[0] = pts[0].x;
+                D_800A756E[0] = pts[0].y;
+                D_800A7570[0] = pts[1].x;
+                D_800A7572[0] = pts[1].y;
+                D_800A7574[0] = pts[2].x;
+                D_800A7576[0] = pts[2].y;
+                D_800A7578[0] = pts[3].x;
+                D_800A757A[0] = pts[3].y;
+                func_80017D80((u8 *)D_800A756C - 8);
+                func_80017D80(needle);
+                count = D_800A3484[split];
+                prim = (u8 *)D_800A78C4[gOrderingTableBankAbsolute[0]];
+            } else {
+                count = D_800A3485 - D_800A3488;
+                prim = (u8 *)D_800A78C4[gOrderingTableBankAbsolute[0]] +
+                       D_800A3488 * 0x28;
+            }
+            FontSetColor(0x80, 0x80, 0x40);
+            for (i = 0; i < count; i++) {
+                AddPrim((void *)D_800A39C8[0], prim);
+                prim += 0x28;
+            }
+            layout = &D_8009927C[split];
+            if (D_800A2EB0Absolute[0] == 2) {
+                func_8001832C(D_800A2FF4, layout->unk8, layout->unkA + yOffset,
+                              2);
+                sprintfHud(buf, D_800A2FF8, car->lap);
+            } else {
+                func_80018B18(car->place,
+                              layout->unk8 + (D_800A2EA4[0] != 0 ? 5 : 0),
+                              layout->unkA + yOffset, 2);
+                sprintfHud(buf, D_800A2FFC, car->lap, D_800A2EA8[0]);
+            }
+            func_8001832C(buf, layout->unkC, layout->unkE + yOffset, 2);
+            func_80018768((void *)(car->lap != 0 ? car->unk258 : 0x7FFFFFFF),
+                          layout->unk10, layout->unk12 + yOffset, 2);
+            func_80018768((void *)car->unk25C, layout->unk14,
+                          layout->unk16 + yOffset, 2);
+            if (split) {
+                func_800188B0(car->unk40C, car->unkF7, layout->unk0,
+                              layout->unk2 + yOffset, 2);
+                func_80018B18(car->unk10C + 1, layout->unk18,
+                              layout->unk1A + yOffset, 2);
+            } else {
+                D_800A39C8Absolute[0] = D_800A39C8nm[0] + 0x2C;
+                FontSetColor(0x40, 0x40, 0x40);
+                func_80018B18(car->unk10C + 1, layout->unk18,
+                              layout->unk1A + yOffset, 2);
+                D_800A39CCnm[-1] = D_800A39C4nm[1] - 0x2C;
+            }
+            D_800A39C8Absolute[0] = D_800A39C8[0] - 4;
+        }
+        if (D_800A2EC8[0] == 0) {
+            if (D_800A2EDC[0] != 0 && car->unkF4 != 0 &&
+                (car->unk354 != func_80025730 ? (car->unk3A4 & 0x100F) != 0
+                                              : car->unk1BC == 4)) {
+                if (D_800A2EE0[0] != 0) {
+                    if (car->unk3B7 == 0) {
+                        GraphicsSetColor(0xFF, 0x40, 0x40);
+                        HUD_MESSAGE(D_8009ADD8, 0xA5);
+                    }
+                } else if (car->unk90 == 0) {
+                    car->unkF9 = 0;
+                    car->unk90 = 0;
+                    car->unk84 = 0;
+                    car->unk410 = 0;
+                    car->unk414 = -1;
+                    func_80052FC4(0);
+                    func_80041564Hud(car, 0x44);
+                    car->unkF4 = 0;
+                }
+                flag = 1;
+                D_800A3910 = 0x7FFF;
+            }
+            if (D_800A2EA4[0] != 0 && D_800A2EDC[0] != 0 &&
+                D_800A2EE0[0] == 0 && (car->unk3A4 & 0x100F)) {
+                GraphicsSetColor(0xFF, 0x40, 0x40);
+                HUD_MESSAGE(D_8009AE10, 0xD2);
+                return;
+            }
+            if (car->unk268 == 0) {
+                if (car->unk28C == 0) {
+                    GraphicsSetColor(0xFF, 0x40, 0x40);
+                    HUD_MESSAGE(D_8009ADFC, 0xB4);
+                    if (car->unkF4 != 0 && car->unk90 == 0) {
+                        car->unk414 = -1;
+                        func_8003F914((s8)(car->unk20B * 2 + 0xE));
+                        func_80041564Hud(car, 0x44);
+                        car->unkF4 = 0;
+                    }
+                } else if (flag == 0) {
+                    if (car->unk28C < 0x800) {
+                        GraphicsSetColor(0xFF, (car->unk28C >> 4) + 0x40, 0x40);
+                        HUD_MESSAGE(D_8009AE0C, 0xB4);
+                        func_80041564Hud(car, 0x41);
+                    }
+                    if (car->unk2B8 <= 0xCE3FF) {
+                        GraphicsSetColor(
+                            0xFF,
+                            (((car->unk2B8 - 0xA0000) << 7) / 189440) + 0x40,
+                            0x40);
+                        HUD_MESSAGE(D_8009ADF8, 0xC3);
+                        func_80041564Hud(car, 0x48);
+                    }
+                    if (ABS(MathGetAngleDelta(
+                            car->unk114,
+                            ((HudNode *)D_800BE980[0])[car->unk1E0].unk10)) >
+                        0x120) {
+                        GraphicsSetColor(0xFF, 0x40, 0x40);
+                        HUD_MESSAGE(D_8009AE00, 0xD2);
+                        func_80041564Hud(car, 0x25);
+                    }
+                }
+            }
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004A0C4);
 

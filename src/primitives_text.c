@@ -1829,18 +1829,18 @@ void func_8001C34C(void) {
     mode = 2;
     if (D_800A2EA4nm[0] == mode) {
         func_8001AEDC(D_800A3554small, -0xA);
-        func_80048EFC(D_800A3554small, -0x6E);
+        HudDrawCar(D_800A3554small, -0x6E);
         prim = *(s32 *)(D_800A3554small + 0x3E0);
         gOrderingTableBankLui = gOrderingTableBankLui + 1;
         D_800A39C8Lui = D_800A39C8Lui + 0x1004;
         func_8001AEDC(prim, -0x14);
-        func_80048EFC(*(s32 *)(D_800A3554small + 0x3E0), -0x7D);
+        HudDrawCar(*(s32 *)(D_800A3554small + 0x3E0), -0x7D);
         gOrderingTableBankLui = gOrderingTableBankLui - 1;
         D_800A39C8Lui = D_800A39C8Lui - 0x1004;
         return;
     }
     func_8001AEDC(D_800A3554small, 0);
-    func_80048EFC(D_800A3554small, 0);
+    HudDrawCar(D_800A3554small, 0);
     if (*(s8 *)(D_800A3554small + 0x209) == mode) {
         func_8001BA94(0);
     }
