@@ -1629,7 +1629,511 @@ s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003DBA8);
+extern void func_8003D754(u8 *);
+extern s32 func_80029EF8(u8 *);
+extern s32 func_800358EC(s32 *);
+extern void func_80036900(u8 *, s32);
+extern void func_80041564(u8 *, s32);
+extern s32 D_800A2EA8CarState[] asm("D_800A2EA8");
+extern s32 D_800A2EACCarState[] asm("D_800A2EAC");
+extern s32 D_800A2EB0CarState[] asm("D_800A2EB0");
+extern u8 D_800A2EE0CarState[] asm("D_800A2EE0");
+extern s32 D_800A2F4CCarState[] asm("D_800A2F4C");
+extern u8 *D_800A3554CarState[] asm("D_800A3554");
+extern u8 *D_800A3960CarState[] asm("D_800A3960");
+extern s32 D_800A39E0CarState asm("D_800A39E0");
+extern s32 D_800A3A04CarState[] asm("D_800A3A04");
+extern s32 D_800BE974CarState[] asm("D_800BE974");
+extern u8 *D_800BE980CarState[] asm("D_800BE980");
+
+extern u8 *D_800A3960CarStateStore[] asm("D_800A3960");
+extern s32 D_800A3A04CarStateStore[] asm("D_800A3A04");
+void func_8003DBA8(u8 *object) {
+    s32 delta[3];
+    s32 ringResult;
+    s32 ringV1;
+    s32 ringA0;
+    s32 ringA1;
+    register s32 ringA2 asm("a2");
+    register s32 ringA3 asm("a3");
+    s32 sectionCount;
+    s32 centerSection;
+    s32 mask;
+    s32 previousOffset;
+    s32 earlierOffset;
+    s32 trailingOffset;
+    s32 offset;
+    s32 section;
+    u8 *earlier;
+    s32 coordinate;
+    s32 coordinateY;
+    s32 targetX;
+    s32 targetY;
+    s32 trailingX;
+    s32 direction;
+    s32 steerAmount;
+    s32 otherSteerAmount;
+    register s32 trailingSection asm("a1");
+    s32 charge;
+    register s32 angleDelta asm("a1");
+    s32 trailingY;
+    s32 control;
+    s32 i;
+    s32 buttons;
+    s32 earlierSection;
+    s32 angle;
+    s32 turnLimit;
+    s32 j;
+    s8 severity;
+    u16 oldSteerTime;
+    u16 oldOtherSteerTime;
+    u16 brake;
+    u16 oldWait;
+    u16 newBrake;
+    u16 oldDamageTime;
+    u16 steerTime;
+    u16 otherSteerTime;
+    s32 damageTime;
+    s32 state;
+    u8 flags;
+    u8 nextState;
+    u8 *trailing;
+    u8 *entry;
+    u8 *targets;
+    u8 *previous;
+    u8 *damage;
+
+    sectionCount = D_800BE974CarState[0];
+    section = *(s16 *)(object + 0x1E0);
+    if ((sectionCount < section) || (section < 0)) {
+        section = 0;
+    }
+    entry = D_800BE980CarState[0] + (section * 0x90);
+    targets = entry + 0x34;
+    if (*(s16 *)(entry + 0x34) != section) {
+        *(s16 *)(entry + 0x34) = section;
+        *(s16 *)(entry + 0x36) = 0;
+        previousOffset = D_800BE974CarState[0] - 1;
+        earlierOffset = D_800BE974CarState[0] - 2;
+        earlierSection =
+            (s32)(section + earlierOffset) % (s32)D_800BE974CarState[0];
+        previous =
+            D_800BE980CarState[0] +
+            (((s32)(section + previousOffset) % (s32)D_800BE974CarState[0]) *
+             0x90);
+        earlier = D_800BE980CarState[0] + (earlierSection * 0x90);
+        coordinate = *(s32 *)(previous + 0x40);
+        *(s32 *)(entry + 0x40) =
+            (s32)((coordinate - *(s32 *)(earlier + 0x40)) + coordinate);
+        coordinateY = *(s32 *)(previous + 0x44);
+        *(s32 *)(entry + 0x44) =
+            (s32)((coordinateY - *(s32 *)(earlier + 0x44)) + coordinateY);
+        targetX = *(s32 *)(previous + 0x38);
+        *(s32 *)(entry + 0x38) =
+            (s32)((targetX - *(s32 *)(earlier + 0x38)) + targetX);
+        targetY = *(s32 *)(previous + 0x3C);
+        *(s32 *)(entry + 0x3C) =
+            (s32)((targetY - *(s32 *)(earlier + 0x3C)) + targetY);
+        trailingX = *(s32 *)(previous + 0x48);
+        *(s32 *)(entry + 0x48) =
+            (s32)((trailingX - *(s32 *)(earlier + 0x48)) + trailingX);
+        trailingY = *(s32 *)(previous + 0x4C);
+        *(s32 *)(entry + 0x4C) =
+            (s32)((trailingY - *(s32 *)(earlier + 0x4C)) + trailingY);
+    }
+    state = *(u8 *)(object + 0x269);
+    offset = *(s16 *)(object + 0x28A);
+    *(s32 *)(object + 0x84) = 0xAA0000;
+    *(s32 *)(object + 0x22C) = 0;
+    switch (state) {
+    case 0x0:
+        delta[0] = *(s32 *)(entry + 0x38) - *(s32 *)(object + 0x0);
+        delta[1] = *(s32 *)(entry + 0x3C) - *(s32 *)(object + 0x4);
+        delta[2] = 0;
+        *(u16 *)(object + 0x276) = 0xFU;
+        *(u16 *)(object + 0x278) = 0U;
+        *(u16 *)(object + 0x27E) = 0U;
+        if ((*(s16 *)(object + 0x1EC) == 0) &&
+            ((D_800A2EE0CarState[0] != 0) ||
+             !(*(s32 *)(object + 0x3A4) & 0x100F))) {
+            func_8003D754(object);
+        }
+        if (MathGetAngleDelta(*(s16 *)(object + 0x114),
+                              *(u16 *)(D_800BE980CarState[0] +
+                                       *(s16 *)(object + 0x1E0) * 0x90 +
+                                       0x10)) < 0) {
+            if (-MathGetAngleDelta(*(s16 *)(object + 0x114),
+                                   *(u16 *)(D_800BE980CarState[0] +
+                                            *(s16 *)(object + 0x1E0) * 0x90 +
+                                            0x10)) < 0x15) {
+                turnLimit = 4;
+            } else {
+                turnLimit = 0x14;
+            }
+        } else {
+            if (MathGetAngleDelta(*(s16 *)(object + 0x114),
+                                  *(u16 *)(D_800BE980CarState[0] +
+                                           *(s16 *)(object + 0x1E0) * 0x90 +
+                                           0x10)) >= 0x15) {
+                turnLimit = 0x14;
+            } else {
+                turnLimit = 4;
+            }
+        }
+        ringResult = D_800A39E0CarState;
+        D_800A2F4CCarState[0] = turnLimit;
+        asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
+        ringV1 = D_800BE974CarState[0];
+        ringA1 = *(s16 *)(object + 0x1E0);
+        asm(""
+            : "=r"(ringV1), "=r"(ringResult), "=r"(ringA1)
+            : "0"(ringV1), "1"(ringResult), "2"(ringA1));
+        {
+            const s32 section = ringA1;
+            s32 end = ringResult + offset - 4;
+            s32 count;
+            count = ringV1;
+            if (end >= count) {
+                if (section >= count / 2) {
+                    ringResult = 0;
+                } else {
+                    end -= count;
+                    ringResult = !(section < end);
+                }
+            } else {
+                ringResult = !(section < end);
+            }
+        }
+        if ((u8)ringResult) {
+            nextState = 2;
+            if (*(u8 *)(object + 0x26A) != 0) {
+                nextState = 1;
+            }
+            *(u8 *)(object + 0x269) = nextState;
+        }
+        if ((D_800A2EB0CarState[0] == 0) && (*(s8 *)(object + 0x204) == 1) &&
+            (D_800A2EA8CarState[0] >= *(s16 *)(object + 0x1D6))) {
+            func_80041564(D_800A3554CarState[0], 0x23);
+        }
+        goto updateMotion;
+    case 0x1:
+        if ((*(s16 *)(object + 0x1EC) == 0) &&
+            ((D_800A2EE0CarState[0] != 0) ||
+             !(*(s32 *)(object + 0x3A4) & 0x100F))) {
+            func_8003D754(object);
+        }
+        delta[0] = *(s32 *)(targets + 0x14) - *(s32 *)(object + 0);
+        ringResult = *(s32 *)(targets + 0x18);
+        ringV1 = *(s32 *)(object + 4);
+        ringResult -= ringV1;
+        ringV1 = D_800A39E0CarState;
+        delta[2] = 0;
+        delta[1] = ringResult;
+        *(s32 *)(object + 0x84) = 0x6B0000;
+        ringA0 = D_800BE974CarState[0];
+        ringA1 = *(s16 *)(object + 0x1E0);
+        D_800A2F4CCarState[0] = 8;
+        {
+            const s32 section = ringA1;
+            s32 end = ringV1 + offset;
+            const s32 count = ringA0;
+            if (end >= count) {
+                if (section >= count / 2) {
+                    ringResult = 0;
+                } else {
+                    end -= count;
+                    ringResult = !(section < end);
+                }
+            } else {
+                ringResult = !(section < end);
+            }
+        }
+        if ((u8)ringResult) {
+            *(s32 *)(object + 0x84) = 0x3D0000;
+            brake = *(u16 *)(object + 0x27C) + 0x14;
+            *(u16 *)(object + 0x27C) = brake;
+            if ((s16)brake >= 0x15F) {
+                *(u16 *)(object + 0x27C) = 0x15EU;
+            }
+        }
+        {
+            const s32 section = *(s16 *)(object + 0x1E0);
+            s32 end = D_800A39E0CarState + offset + 1;
+            register s32 count asm("v1");
+            count = D_800BE974CarState[0];
+            if (end >= count) {
+                if (section >= count / 2) {
+                    ringResult = 0;
+                } else {
+                    end -= count;
+                    ringResult = !(section < end);
+                }
+            } else {
+                ringResult = !(section < end);
+            }
+        }
+        if ((u8)ringResult) {
+            ringResult = 3;
+            ringV1 = *(s16 *)(object + 0x2A2);
+            *(u8 *)(object + 0x269) = ringResult;
+            *(u16 *)(object + 0x274) = 0;
+            if (ringV1 < 0)
+                ringV1 = -ringV1;
+            ringResult = ringV1 * 10;
+            asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
+            ringV1 = *(s16 *)(object + 0x2A8);
+            *(u16 *)(object + 0x278) = ringResult;
+            if (ringV1 < 0)
+                ringV1 = -ringV1;
+            ringResult = ringV1 * 5;
+            asm("" : "=r"(ringResult) : "0"(ringResult));
+            ringA3 = ringResult * 2;
+            ringResult = *(u16 *)(object + 0x2A0);
+            ringA0 = *(u16 *)(object + 0x2A2);
+            ringV1 = *(u16 *)(object + 0x2A6);
+            ringA1 = *(u16 *)(object + 0x2A8);
+            ringA2 = *(s32 *)(object + 0x28C);
+            *(u16 *)(object + 0x27A) = ringA3;
+            ringResult += ringA0;
+            ringV1 += ringA1;
+            *(u16 *)(object + 0x2A0) = ringResult;
+            *(u16 *)(object + 0x2A6) = ringV1;
+            if (ringA2 == 0) {
+                *(s32 *)(object + 0x28C) = 0x64;
+            }
+            damageTime = 0;
+            if (*(u16 *)(object + 0x3A4) != 0) {
+                i = 0;
+                do {
+                    damage = object + i;
+                    if (*(s8 *)(damage + 0x3A6) == 0) {
+                        damageTime += 0x14;
+                    }
+                    severity = *(s8 *)(damage + 0x3AE);
+                    if (severity != 0) {
+                        damageTime += severity * 3;
+                    }
+                    i += 1;
+                } while (i < 8);
+            }
+            *(u16 *)(object + 0x280) = damageTime;
+        }
+        goto updateMotion;
+    case 0x2:
+        delta[0] = *(s32 *)(entry + 0x40) - *(s32 *)(object + 0x0);
+        delta[1] = *(s32 *)(entry + 0x44) - *(s32 *)(object + 0x4);
+        D_800A2F4CCarState[0] = 4;
+        delta[2] = 0;
+        *(u16 *)(object + 0x276) = 0U;
+        goto updateMotion;
+    case 0x3:
+        ringResult = *(u16 *)(object + 0x27E);
+        ringV1 = D_800A2EACCarState[0];
+        *(s32 *)(object + 0x90) = 0;
+        *(s32 *)(object + 0x84) = 0;
+        *(u16 *)(object + 0x108) = 0;
+        ringResult += 1;
+        *(u16 *)(object + 0x27E) = ringResult;
+        if (ringV1 == 0) {
+            asm("" : : : "v1");
+            if (*(s32 *)(object + 0x3A4) & 0x100F) {
+                if (object == D_800A3960CarState[0]) {
+                    D_800A3960CarStateStore[0] = 0;
+                }
+                if (D_800A2EE0CarState[0] == 0) {
+                    *(u8 *)(object + 0xF4) = 0;
+                    *(s32 *)(object + 0x414) = -1;
+                    func_80041848(object, 0xC);
+                    return;
+                }
+                goto block_74;
+            }
+        block_74:
+            if (*(u8 *)(object + 0x26A) == 0) {
+                if (*(u16 *)(object + 0x3A4) == 0) {
+                    if (*(s16 *)(object + 0x1D6) <
+                        (D_800A2EA8CarState[0] + 1)) {
+                        D_800A3A04CarStateStore[0] = 3;
+                        func_80029CB4(object);
+                        control = *(s16 *)(object + 0x1EC);
+                        D_800A3A04CarState[0] = 0xD;
+                        if (control == 0) {
+                            func_80041564(object, 0x42);
+                        }
+                        oldWait = *(u16 *)(object + 0x276);
+                        *(u16 *)(object + 0x276) = (u16)(oldWait - 1);
+                        if ((oldWait << 0x10) <= 0) {
+                            *(u8 *)(object + 0x269) = 2U;
+                        }
+                        newBrake = *(u16 *)(object + 0x27C) - 0x1E;
+                        *(u16 *)(object + 0x27C) = newBrake;
+                        if ((newBrake << 16) < 0) {
+                            *(u16 *)(object + 0x27C) = 0U;
+                        }
+                    }
+                    goto block_83;
+                }
+                goto block_84;
+            }
+        block_83:
+            if (*(u16 *)(object + 0x3A4) != 0) {
+            block_84:
+                oldDamageTime = *(u16 *)(object + 0x280);
+                *(u16 *)(object + 0x280) = (u16)(oldDamageTime - 1);
+                if ((oldDamageTime << 16) < 0) {
+                    *(u16 *)(object + 0x3A4) = 0;
+                    j = 0;
+                    do {
+                        *(object + j + 0x3A6) = 1;
+                        *(object + j + 0x3AE) = 0;
+                        j++;
+                    } while (j < 8);
+                }
+            } else {
+                flags = *(u8 *)(object + 0x26A);
+                if (flags & 1) {
+                    func_8003D25C(object);
+                } else {
+                    if (flags & 4) {
+                        steerTime = *(u16 *)(object + 0x278);
+                        steerAmount = (s16)steerTime / 10;
+                        oldSteerTime = (*(volatile u16 *)(object + 0x278));
+
+                        *(u16 *)(object + 0x278) = (u16)(oldSteerTime - 1);
+                        *(s16 *)(object + 0x2A2) = (s16)steerAmount;
+                        if ((oldSteerTime << 16) < 0) {
+                            *(s16 *)(object + 0x2A2) = 0;
+                            *(u8 *)(object + 0x26A) =
+                                (u8)(*(u8 *)(object + 0x26A) & 0xFB);
+                        }
+                    }
+                    if (*(u8 *)(object + 0x26A) & 8) {
+                        otherSteerTime = *(u16 *)(object + 0x27A);
+                        otherSteerAmount = (s16)otherSteerTime / 10;
+                        oldOtherSteerTime = (*(volatile u16 *)(object + 0x27A));
+
+                        *(u16 *)(object + 0x27A) = (u16)(oldOtherSteerTime - 1);
+                        *(s16 *)(object + 0x2A8) = (s16)otherSteerAmount;
+                        if ((oldOtherSteerTime << 16) < 0) {
+                            *(s16 *)(object + 0x2A8) = 0;
+                            *(u8 *)(object + 0x26A) =
+                                (u8)(*(u8 *)(object + 0x26A) & 0xF7);
+                        }
+                    }
+                }
+            }
+            if (*(u8 *)(object + 0x26A) & 2) {
+                charge = *(s32 *)(object + 0x28C) + 0x4B;
+                *(s32 *)(object + 0x28C) = charge;
+                buttons = 0;
+                if (charge >= 0x3E81) {
+                    *(s32 *)(object + 0x28C) = 0x3E80;
+                }
+                if (*(s16 *)(object + 0x1EC) == 0) {
+                    buttons = func_80029EF8(object);
+                }
+                if (*(s32 *)(object + 0x28C) == 0x3E80)
+                    goto pulse;
+                if (*(s16 *)(object + 0x1EC) == 0 &&
+                    (*(u8 *)(object + 0x26A) & 1) == 0) {
+                    mask = ~*(s32 *)(object + 0x23C) & 0x40;
+                    if ((buttons & mask) != 0) {
+                    pulse:
+                        *(s32 *)(object + 0x290) = 0x7D000;
+                        *(u8 *)(object + 0x26A) &= 0xDD;
+                    }
+                }
+                *(s32 *)(object + 0x23C) = buttons;
+                return;
+            }
+        }
+        return;
+    case 0xFF:
+        ringV1 = *(s32 *)(object + 0x90);
+        D_800A2F4CCarState[0] = 0xA;
+        if (ringV1 > 0x140000) {
+            trailingOffset = sectionCount - 3;
+            trailingSection =
+                (s32)(*(s16 *)(object + 0x1E0) + trailingOffset) % sectionCount;
+            *(s32 *)(object + 0x84) = 0xA0000;
+            trailing = D_800BE980CarState[0] + (trailingSection * 0x90);
+            if (*(s16 *)(trailing + 0x34) == trailingSection) {
+                delta[0] = *(s32 *)(trailing + 0x38) - *(s32 *)(object + 0x0);
+                delta[1] = *(s32 *)(trailing + 0x3C) - *(s32 *)(object + 0x4);
+                delta[2] = 0;
+                goto updateMotion;
+            }
+        } else {
+            angleDelta = MathGetAngleDelta(
+                *(s16 *)(object + 0x114),
+                *(u16 *)(D_800BE980CarState[0] +
+                         *(s16 *)(object + 0x1E0) * 0x90 + 0x10));
+            if (angleDelta >= 0) {
+                if (angleDelta < 0x14) {
+                    goto block_114;
+                }
+                goto block_115;
+            }
+            if (-angleDelta < 0x14) {
+            block_114:
+                ringV1 = *(u16 *)(D_800BE980CarState[0] +
+                                  *(s16 *)(object + 0x1E0) * 0x90 + 0x10);
+                *(u8 *)(object + 0x269) = 2U;
+                *(s16 *)(object + 0x114) = ringV1;
+            } else {
+            block_115:
+                if (angleDelta > 0) {
+                    angle = (u16) * (s16 *)(object + 0x114) + 0x3EC;
+                } else {
+                    angle = (u16) * (s16 *)(object + 0x114) + 0x14;
+                }
+                *(s16 *)(object + 0x114) = (s16)(angle & 0x3FF);
+            }
+            *(s32 *)(object + 0x90) = 0;
+            *(s16 *)(object + 0x116) = (s16)(*(s16 *)(object + 0x114) * 4);
+            func_80037130(object);
+            func_80029CB4(object);
+            (*(void (**)(u8 *))(object + 0x354))(object);
+            return;
+        }
+        return;
+    default:
+        /* Retail also reaches updateMotion with delta unset for unknown states. */
+        break;
+    }
+updateMotion:
+    ringResult = *(s32 *)(object + 0x90);
+    ringV1 = *(s32 *)(object + 0x84);
+    ringA0 = 0x20000;
+    asm(""
+        : "=r"(ringResult), "=r"(ringV1), "=r"(ringA0)
+        : "0"(ringResult), "1"(ringV1), "2"(ringA0));
+    ringV1 = ringV1 < ringResult;
+    *(s32 *)(object + 0x88) = ringA0;
+    if (ringV1) {
+        func_80028F98(object);
+    }
+    if ((*(u8 *)(object + 0x269) == 1) &&
+        (*(s32 *)(object + 0x90) <= 0xA0000)) {
+        *(s32 *)(object + 0x90) = 0xA0000;
+    }
+    func_800298E0(object);
+    direction = func_800358EC(delta);
+    if (*(s16 *)(object + 0x1EC) == 1) {
+        D_800A2F4CCarState[0] = 0xE;
+    }
+    func_80036900(object, direction);
+    ringV1 = *(u16 *)(object + 0x114);
+    D_800A2F4CCarState[0] = 0x14;
+    *(u16 *)(object + 0x104) = ringV1;
+    func_80037130(object);
+    func_80029CB4(object);
+    (*(void (**)(u8 *))(object + 0x354))(object);
+    if (*(u8 *)(object + 0x269) == 3) {
+        *(s16 *)(object + 0x20E) = 0;
+    }
+}
+
 
 #ifdef NON_MATCHING
 /* 2026-10-11 (w3e): size exact 0x308, draft-unit diff 393 bytes
