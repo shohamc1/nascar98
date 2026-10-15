@@ -7604,7 +7604,106 @@ void func_80067228(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_8006733C);
+void func_8006733C(void) {
+    extern s32 D_8008CA4C[];
+    extern u8 *D_800A39C8Ptr[] asm("D_800A39C8");
+    extern s32 D_800A3848[];
+    extern u8 *D_8009A400[];
+    extern u8 *D_8009A428[];
+    extern DISPENV D_800BDE04[];
+    extern DRAWENV D_800BDD4C[];
+    extern volatile s32 D_800A3930;
+    extern u16 *D_800A387C;
+    extern u16 *D_800A36BC;
+    extern u8 D_800A36A0;
+    extern u8 D_800A3884;
+    extern volatile u8 D_800A3360;
+    extern s32 GetGp(void);
+    extern void func_80058D08(s32);
+    extern void func_80041AF0Arg(s32) asm("func_80041AF0");
+    extern s32 func_80041B7C(s32);
+    extern void func_8006709C();
+    s32 oldGp;
+    s32 input;
+    s8 flag;
+    u16 *baseA;
+    u16 *baseB;
+    u16 *baseB2;
+    POLY_FT4 *quad;
+    POLY_FT4 *quad2;
+    s32 i;
+    s32 len;
+    u32 unused[4]; /* retail reserves 16 bytes of locals nothing touches */
+
+    oldGp = GetGp();
+    func_80058D08(D_8008CA4C[0]);
+    if (DrawSync(1) == 0) {
+        D_800A3930++;
+        func_80041AF0Arg(0);
+        input = func_80041B7C(0);
+        if (input & 0x1000) {
+            flag = 1;
+        } else if (input & 0x4000) {
+            flag = -1;
+        } else {
+            flag = -(D_800A3848[0] < 0x1EA);
+        }
+        if (flag != 0) {
+            if ((D_800A3930 & 1) != 0) {
+                func_8006709C(flag);
+            }
+        }
+        if (*(volatile u8 *)&D_800A3884 == 1) {
+            baseA = D_800A387C;
+            baseB = (u16 *)D_800A39C8Ptr[0];
+            len = strlen(D_8009A400[0]);
+            baseB2 = baseB + 0x2000;
+            i = 0;
+            if (len > 0) {
+                quad = (POLY_FT4 *)baseA;
+                i = 0;
+                do {
+                    quad->y0 = 0xF1;
+                    quad->y1 = 0xF1;
+                    quad->y2 = 0xF1;
+                    quad->y3 = 0xF1;
+                    if (quad < (POLY_FT4 *)baseB2) {
+                        quad++;
+                    } else {
+                        quad--;
+                    }
+                    i++;
+                } while (i < len);
+            }
+            baseA = D_800A36BC;
+            len = strlen(D_8009A428[0]);
+            if (len > 0) {
+                quad2 = (POLY_FT4 *)baseA;
+                i = 0;
+                do {
+                    quad2->y0 -= 0x1B;
+                    quad2->y1 -= 0x1B;
+                    quad2->y2 -= 0x1B;
+                    quad2->y3 -= 0x1B;
+                    if (quad2 < (POLY_FT4 *)baseB2) {
+                        quad2++;
+                    } else {
+                        quad2--;
+                    }
+                    i++;
+                } while (i < len);
+            }
+            D_800A3884 = 2;
+        }
+        PutDispEnv(&D_800BDE04[D_800A36A0]);
+        PutDrawEnv(
+            (DRAWENV *)((s32)D_800BDD4C + (*(volatile u8 *)&D_800A36A0) * 92));
+        DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0xC));
+        D_800A36A0 ^= 1;
+    }
+    D_800A3360 = 1;
+    asm("addu $gp, %0, $zero" : : "r"(oldGp));
+}
 
 INCLUDE_ASM("asm/nonmatchings/menu", func_80067598);
 
