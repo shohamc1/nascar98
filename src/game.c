@@ -398,20 +398,33 @@ void TextureLoadTim(void *arg0) {
     }
 }
 
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA50);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA5C);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA68);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA74);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA80);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA8C);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA98);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAA4);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAB4);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAC0);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CACC);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAE0);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAEC);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CB00);
+static const char sTrackNameSaltBasin[] __attribute__((aligned(4))) =
+    "salt basin";
+static const char sTrackNameWillowLane[] __attribute__((aligned(4))) =
+    "willow lane";
+static const char sTrackNamePineRidge[] __attribute__((aligned(4))) =
+    "pine ridge";
+static const char sTrackNameRanchTower[] __attribute__((aligned(4))) =
+    "ranch tower";
+static const char sTrackNameCedarWoods[] __attribute__((aligned(4))) =
+    "cedar woods";
+static const char sTrackNameMichigan[] __attribute__((aligned(4))) = "Michigan";
+static const char sTrackNameSearsPoint[] __attribute__((aligned(4))) =
+    "Sears Point";
+static const char sTrackNameWatkinsGlen[] __attribute__((aligned(4))) =
+    "Watkins Glen";
+static const char sTrackNameTalladega[] __attribute__((aligned(4))) =
+    "Talladega";
+static const char sTrackNameCharlotte[] __attribute__((aligned(4))) =
+    "Charlotte";
+static const char sTrackNameSurfersParadise[] __attribute__((aligned(4))) =
+    "surfers paradise";
+static const char sTrackNameThunderdome[] __attribute__((aligned(4))) =
+    "thunderdome";
+static const char sTrackLoadingText[] __attribute__((aligned(4))) =
+    "Now Loading ... ";
+static const char sTrackTwoPlayersText[] __attribute__((aligned(4))) =
+    "\nTwo Players";
 
 void TrackLoad(u8 selectTrack) {
     typedef struct {
@@ -468,20 +481,6 @@ void TrackLoad(u8 selectTrack) {
     extern u16 D_80090DD2[];
     extern u16 D_80090DD4[];
     extern u16 D_80090DD6[];
-    extern char D_8008CA50[] __attribute__((aligned(4)));
-    extern char D_8008CA5C[] __attribute__((aligned(4)));
-    extern char D_8008CA68[] __attribute__((aligned(4)));
-    extern char D_8008CA74[] __attribute__((aligned(4)));
-    extern char D_8008CA80[] __attribute__((aligned(4)));
-    extern char D_8008CA8C[] __attribute__((aligned(4)));
-    extern char D_8008CA98[] __attribute__((aligned(4)));
-    extern char D_8008CAA4[] __attribute__((aligned(4)));
-    extern char D_8008CAB4[] __attribute__((aligned(4)));
-    extern char D_8008CAC0[] __attribute__((aligned(4)));
-    extern char D_8008CACC[] __attribute__((aligned(4)));
-    extern char D_8008CAE0[] __attribute__((aligned(4)));
-    extern char D_8008CAEC[] __attribute__((aligned(4)));
-    extern char D_8008CB00[] __attribute__((aligned(4)));
     extern s32 func_80041D60(s32);
     extern void func_80015A74(s32);
     extern void func_8001E050(s32);
@@ -546,49 +545,49 @@ void TrackLoad(u8 selectTrack) {
                 *(NameWords *)trackName = D_800A2D24;
                 break;
             case 1:
-                __builtin_memcpy(trackName, D_8008CA50, 11);
+                __builtin_memcpy(trackName, sTrackNameSaltBasin, 11);
                 break;
             case 2:
-                __builtin_memcpy(trackName, D_8008CA5C, 12);
+                __builtin_memcpy(trackName, sTrackNameWillowLane, 12);
                 break;
             case 3:
-                __builtin_memcpy(trackName, D_8008CA68, 11);
+                __builtin_memcpy(trackName, sTrackNamePineRidge, 11);
                 break;
             case 4:
-                __builtin_memcpy(trackName, D_8008CA74, 12);
+                __builtin_memcpy(trackName, sTrackNameRanchTower, 12);
                 break;
             case 5:
-                __builtin_memcpy(trackName, D_8008CA80, 12);
+                __builtin_memcpy(trackName, sTrackNameCedarWoods, 12);
                 break;
             case 6:
-                __builtin_memcpy(trackName, D_8008CA8C, 9);
+                __builtin_memcpy(trackName, sTrackNameMichigan, 9);
                 break;
             case 7:
-                __builtin_memcpy(trackName, D_8008CA98, 12);
+                __builtin_memcpy(trackName, sTrackNameSearsPoint, 12);
                 break;
             case 8:
-                __builtin_memcpy(trackName, D_8008CAA4, 13);
+                __builtin_memcpy(trackName, sTrackNameWatkinsGlen, 13);
                 break;
             case 9:
                 __builtin_memcpy(trackName, &D_800A2D2C, 7);
                 break;
             case 10:
-                __builtin_memcpy(trackName, D_8008CAB4, 10);
+                __builtin_memcpy(trackName, sTrackNameTalladega, 10);
                 break;
             case 11:
                 *(NameWords *)trackName = D_800A2D34;
                 break;
             case 12:
-                __builtin_memcpy(trackName, D_8008CAC0, 10);
+                __builtin_memcpy(trackName, sTrackNameCharlotte, 10);
                 break;
             case 13:
                 *(NameWords *)trackName = D_800A2D3C;
                 break;
             case 15:
-                __builtin_memcpy(trackName, D_8008CACC, 17);
+                __builtin_memcpy(trackName, sTrackNameSurfersParadise, 17);
                 break;
             case 14:
-                __builtin_memcpy(trackName, D_8008CAE0, 12);
+                __builtin_memcpy(trackName, sTrackNameThunderdome, 12);
                 break;
             }
             buttons = D_800A33C8;
@@ -607,10 +606,10 @@ void TrackLoad(u8 selectTrack) {
             func_8001E7EC(gOrderingTables + (gOrderingTableBank << 12),
                           (s32)trackName, 1);
         } while (1);
-        __builtin_memcpy(loadingText, D_8008CAEC, 17);
+        __builtin_memcpy(loadingText, sTrackLoadingText, 17);
         strcat(loadingText, trackName);
         if (D_800A2EA4[0] == 2) {
-            strcat(loadingText, D_8008CB00);
+            strcat(loadingText, sTrackTwoPlayersText);
         }
         func_8001E7EC(gOrderingTables + (gOrderingTableBank << 12),
                       (s32)loadingText, 1);
