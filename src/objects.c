@@ -1966,7 +1966,6 @@ void func_80023454(void) {
     }
 }
 
-
 extern char D_800A3038[];
 extern s32 D_800A3668Absolute[];
 
@@ -2610,7 +2609,8 @@ extern s32 pairSinTable4[] asm("D_800A3A34");
 extern void func_800432C0(void *, s32);
 extern void func_80043B68(void *, s32);
 extern void func_8003AC18(u8 *, s32, s32, s32);
-extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32, s32) asm("func_80026074");
+extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32,
+                                  s32) asm("func_80026074");
 
 /* Resolves car-to-car contact and applies separation and velocity impulses.
  * Empty asm constraints retain the retail compiler register lifetimes.
@@ -5157,26 +5157,18 @@ void func_8002AF94(u8 *arg0) {
     s32 index;
 
     index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
-    t = MathMultiplyFixed16(((s32 *)trigA)[index],
-                            *(s32 *)(arg0 + 0xC4));
-    t = t - MathMultiplyFixed16(((s32 *)trigB)[index],
-                                *(s32 *)(arg0 + 0xC8));
-                                front.vx = t;
-    t = MathMultiplyFixed16(((s32 *)trigB)[index],
-                            *(s32 *)(arg0 + 0xC4));
-    t = t + MathMultiplyFixed16(((s32 *)trigA)[index],
-                                *(s32 *)(arg0 + 0xC8));
-                                front.vy = t;
-    t = MathMultiplyFixed16(((s32 *)trigA)[index],
-                            *(s32 *)(arg0 + 0xD0));
-    t = t - MathMultiplyFixed16(((s32 *)trigB)[index],
-                                *(s32 *)(arg0 + 0xD4));
-                                rear.vx = t;
-    t = MathMultiplyFixed16(((s32 *)trigB)[index],
-                            *(s32 *)(arg0 + 0xD0));
-    t = t + MathMultiplyFixed16(((s32 *)trigA)[index],
-                                *(s32 *)(arg0 + 0xD4));
-                                rear.vy = t;
+    t = MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xC4));
+    t = t - MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xC8));
+    front.vx = t;
+    t = MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xC4));
+    t = t + MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xC8));
+    front.vy = t;
+    t = MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xD0));
+    t = t - MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xD4));
+    rear.vx = t;
+    t = MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xD0));
+    t = t + MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xD4));
+    rear.vy = t;
     diff = front.vx - rear.vx;
     absDiff = diff;
     if (diff < 0) {
@@ -5332,7 +5324,100 @@ void func_8002B538(u8 *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002B63C);
 
+#ifdef NON_MATCHING
+void func_8002B9AC(u8 *arg0, s32 *arg1, s32 *arg2) {
+    extern s32 func_8002B63C(u8 *, s32, s32);
+    extern s32 MathFixedDivide(s32, s32);
+    extern u8 D_800A2E5B;
+    extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
+    s32 prod;
+    s32 num;
+    s32 cnt;
+    s32 count;
+    s32 flags;
+    s32 ratio;
+
+    D_800A2E5B = 0;
+    prod = func_8002B63C(arg0, *(s16 *)(arg0 + 0x362), 0);
+    prod = prod + func_8002B63C(arg0, *(s16 *)(arg0 + 0x364), 1);
+    prod = MathMultiplyFixed16(*(s32 *)(arg0 + 0x308) + *(s32 *)(arg0 + 0x330),
+                               prod);
+    count = *(s16 *)(arg0 + 0x2A0);
+    flags = *(u16 *)(arg0 + 0x3A4);
+    cnt = count + 1;
+    if (flags & 0x20) {
+        cnt = count - 1;
+    }
+    if (flags & 0x40) {
+        cnt = cnt - 2;
+    }
+    num = cnt * D_800A2E38;
+    if (cnt < -7) {
+        cnt = cnt + 7;
+        num = D_800A2E38 - D_800A2E38 * 8;
+        num = num + cnt * 20;
+    }
+    prod = prod + MathMultiplyFixed16(prod, MathFixedDivide(num, 0x3E8));
+    *arg1 = prod;
+    prod = func_8002B63C(arg0, *(s16 *)(arg0 + 0x366), 2);
+    prod = prod + func_8002B63C(arg0, *(s16 *)(arg0 + 0x368), 3);
+    prod = MathMultiplyFixed16(*(s32 *)(arg0 + 0x2B8) + *(s32 *)(arg0 + 0x2E0),
+                               prod);
+    count = *(s16 *)(arg0 + 0x2A6);
+    flags = *(u16 *)(arg0 + 0x3A4);
+    cnt = count + 1;
+    if (flags & 0x80) {
+        cnt = count - 2;
+    }
+    num = cnt * D_800A2E3C;
+    if (cnt < -7) {
+        cnt = cnt + 7;
+        num = D_800A2E3C - D_800A2E3C * 8;
+        num = num + cnt * 20;
+    }
+    prod = prod + MathMultiplyFixed16(prod, MathFixedDivide(num, 0x3E8));
+    *arg2 = prod;
+    if (D_800A2E5B == 4) {
+        func_80041848(arg0, 3);
+    }
+    if (*(s16 *)(arg0 + 0x2FC) == 0) {
+        if (*(s16 *)(arg0 + 0x324) != 0) {
+            *arg1 = 0;
+        }
+    }
+    *(s16 *)(arg0 + 0x10A) = 0;
+    if (*(s16 *)(arg0 + 0x2AC) != 0) {
+        goto clearRear;
+    }
+    if (*(s16 *)(arg0 + 0x2D4) == 0) {
+        goto afterClear;
+    }
+clearRear:
+    *arg2 = 0;
+    if (*(s32 *)(arg0 + 0x238) & 0x40) {
+        *(u16 *)(arg0 + 0x10A) += 0xFA0;
+    }
+afterClear:
+    if (D_800A2EE4nm[0] != 0) {
+        ratio = MathFixedDivide(
+            (*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
+        *arg1 = MathMultiplyFixed16(*arg1, ratio);
+        ratio = MathFixedDivide(
+            (*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
+        *arg2 = MathMultiplyFixed16(*arg2, ratio);
+    }
+    *(s32 *)(arg0 + 0x240) = *arg1;
+    *(s32 *)(arg0 + 0x244) = *arg2;
+    if (*(s16 *)(arg0 + 0x120) != 0) {
+        *arg1 = *arg1 / 2;
+        *arg2 = 0;
+    }
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002B9AC);
+#endif
+
 
 extern s32 D_800A2E24Absolute[];
 extern s32 D_800A2E40;
