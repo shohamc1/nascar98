@@ -5737,7 +5737,6 @@ void func_800514EC(u8 arg0, u8 arg1, u8 arg2) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8005157C);
 
-#ifdef NON_MATCHING
 extern s16 D_800A34D8;
 extern u8 D_800A34DC;
 extern s32 D_800A2EA4Absolute[];
@@ -5791,7 +5790,7 @@ extern s32 MathFixedDivide(s32 numerator, s32 denominator);
 extern s32 D_800A2DF4Absolute[];
 extern s32 D_800A2DF0Absolute[];
 extern s32 gOrderingTableBankSmall[];
-void func_80051874(void) {
+void SceneSkyFadeDraw(void) {
     extern s32 D_800A2F00wC[] asm("D_800A2F00");
     extern u8 *D_800A3A2CwC[] asm("D_800A3A2C");
     extern u8 *D_800A3A34wC[] asm("D_800A3A34");
@@ -5799,269 +5798,726 @@ void func_80051874(void) {
     extern s32 D_800A2DF0Absolute[];
     extern s32 gOrderingTableBankSmall[];
 
-    u16 fadeVal;
-    s32 entryA;
-    s32 entryB;
-    s32 idx;
-    s32 shade;
-    s32 t2;
-    u8 switched;
-    s32 gradA;
-    s32 gradB;
-    s32 yBase;
-    s32 yStep;
-    s32 shade2;
-    s32 m;
-    s32 m1;
-    s32 t1;
-    s32 m2;
-    s32 t3;
-    s32 new_var;
-    s32 deltaA;
-    s32 deltaB;
-    s32 deltaC;
-    s32 gm;
-    s32 si;
-    s16 buf[8];
-    s8 i;
-    u16 c;
+    extern u8 *D_800A3A34Next[] asm("D_800A3A34.NON_MATCHING");
 
+    /* The homes follow the observed stack offsets. The tail is compiler storage. */
+    struct {
+        s16 buf[8];
+        u16 fadeVal;
+        u8 reserved12[6];
+        s32 entryA;
+        s32 reserved1C;
+        s32 entryB;
+        u8 reserved24[20];
+    } home;
+    typedef char SkyFadeHomesSizeCheck[(sizeof(home) == 0x38) ? 1 : -1];
+    register s32 argument asm("$4");
+    register s32 result asm("$2");
+    register s32 byteValue asm("$3");
+    register s32 factor asm("$5");
+    register s32 idx asm("$16");
+    register s32 shade asm("$17");
+    register u8 switched asm("$19");
+    register s32 gradA asm("$21");
+    register s32 gradB asm("$22");
+    register s32 yBase asm("$23");
+    s32 yStep;
+    s32 m;
+    s32 bank;
+
+    /* shortcut: these pins require the qualified PSX compiler. Replace them
+     * when a pure C form produces the same bytes. */
     switched = 0;
+    /* The two fade directions use mirrored colors and screen offsets. */
     if (D_800A34DC != 0) {
-        if (D_800A34D8 >= 0x259) {
-            fadeVal = 0x500 - D_800A34D8;
-            idx = (s16)(fadeVal + 0x200) & 0x3FF;
-            shade = 0x140000;
-            D_800A8B30[0] = 0x10;
-            D_800A8B31[0] = 0x10;
-            D_800A8B32[0] = 0x10;
-            D_800A8B00[0] = D_800A34CC;
-            D_800A8B01[0] = D_800A34CD;
-            D_800A8B02[0] = D_800A34CE;
-            D_800A8B18[0] = D_800A34CF;
-            D_800A8B19[0] = D_800A34D0;
-            D_800A8B1A[0] = D_800A34D1;
-            switched = 1;
-        } else {
-            idx = (s16)(D_800A34D8 + 0x200) & 0x3FF;
-            shade = 0xFFEC0000;
+        {
+            register u8 *table asm("$3");
+            register s32 level asm("$3");
+
+            result = D_800A34D8;
+            level = result;
+            asm("" : "=r"(level) : "0"(level));
+
+            if (result >= 0x259) {
+                result = 0x500 - level;
+                home.fadeVal = result;
+                asm("" : : "m"(home.fadeVal) : "memory");
+                result += 0x200;
+                idx = result & 0x3FF;
+                shade = 0x140000;
+                D_800A8B30[0] = 0x10;
+                D_800A8B31[0] = 0x10;
+                D_800A8B32[0] = 0x10;
+                D_800A8B00[0] = D_800A34CC;
+                D_800A8B01[0] = D_800A34CD;
+                D_800A8B02[0] = D_800A34CE;
+                D_800A8B18[0] = D_800A34CF;
+                D_800A8B19[0] = D_800A34D0;
+                D_800A8B1A[0] = D_800A34D1;
+                switched = 1;
+            } else {
+                result = level + 0x200;
+                idx = result & 0x3FF;
+                shade = 0xFFEC0000;
+            }
+            result = (u8)D_800A34D4;
+            argument = D_800A34D8;
+            asm("" : "=r"(result) : "0"(result), "r"(argument));
+            result = (s8)result;
+            yBase = result + 0x122;
+            result = 0x280 - argument;
+            yStep = 0x3C;
+            if (result >= 0) {
+                table = D_800A3A34wC[0];
+                asm("" : "=r"(table) : "0"(table));
+            } else {
+                table = D_800A3A34wC[0];
+                asm("" : "=r"(table) : "0"(table));
+                result = argument - 0x280;
+            }
+            result <<= 4;
+            table += result;
+            asm("" : "=r"(table) : "0"(table));
+            argument = *(s32 *)table;
         }
-        yBase = (s8)D_800A34D4 + 0x122;
-        yStep = 0x3C;
-        deltaA = 0x280 - D_800A34D8;
-        if (deltaA >= 0) {
-            gm = *(s32 *)(D_800A3A34wC[0] + (deltaA << 4));
-        } else {
-            gm = *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x280) << 4));
+        result = MathMultiplyFixed16(argument, 0x80000);
+        {
+            register u8 *table asm("$3");
+
+            argument = D_800A34D8;
+            byteValue = 0x2D0000;
+            asm(""
+                : "=r"(byteValue)
+                : "0"(byteValue), "r"(argument), "r"(result));
+            gradA = result + byteValue;
+            result = 0x280 - argument;
+            if (result >= 0) {
+                result <<= 4;
+                table = D_800A3A34wC[0];
+                asm("" : "=r"(table) : "0"(table));
+            } else {
+                table = D_800A3A34wC[0];
+                asm("" : "=r"(table) : "0"(table));
+                result = (argument - 0x280) << 4;
+            }
+            asm("" : "=r"(table) : "0"(table), "r"(result));
+            table += result;
+            asm("" : "=r"(table) : "0"(table));
+            argument = *(s32 *)table;
         }
-        gradA = MathMultiplyFixed16(gm, 0x80000) + 0x2D0000;
-        deltaB = 0x280 - D_800A34D8;
-        if (deltaB >= 0) {
-            gm = *(s32 *)(D_800A3A34wC[0] + (deltaB << 4));
-        } else {
-            gm = *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x280) << 4));
-        }
-        gradB = MathMultiplyFixed16(gm, 0x40000) + 0x140000;
-        if (switched != 0) {
+        result = MathMultiplyFixed16(argument, 0x40000);
+        byteValue = 0x140000;
+        asm("" : "=r"(byteValue) : "0"(byteValue), "r"(result));
+        gradB = result + byteValue;
+        result = switched & 0xFF;
+        asm("" : "=r"(result) : "0"(result));
+        if (result != 0) {
             D_800A34D8 -= 8;
         } else {
             D_800A34D8 -= 0x10;
         }
-        if (D_800A34D8 >= 0x181) {
+        result = D_800A34D8;
+        if (result < 0x181) {
             D_800A34D8 = 0x180;
             D_800A34DC = 0;
         }
     } else {
-        if (D_800A34D8 < 0x1A8) {
-            fadeVal = 0x300 - D_800A34D8;
-            idx = (s16)(fadeVal + 0x200) & 0x3FF;
-            shade = 0xFFEC0000;
-            D_800A8B30[0] = 0;
-            D_800A8B31[0] = 0;
-            D_800A8B32[0] = 0;
-            D_800A8B00[0] = D_800A34CF;
-            D_800A8B01[0] = D_800A34D0;
-            D_800A8B02[0] = D_800A34D1;
-            D_800A8B18[0] = D_800A34CC;
-            D_800A8B19[0] = D_800A34CD;
-            D_800A8B1A[0] = D_800A34CE;
-            switched = 1;
-        } else {
-            idx = (s16)(D_800A34D8 + 0x200) & 0x3FF;
-            shade = 0x140000;
+        {
+            register s32 level asm("v1");
+            u8 topRed, topGreen, topBlue;
+            u8 bottomRed, bottomGreen, bottomBlue;
+            result = D_800A34D8;
+            level = result;
+            asm("" : "=r"(level) : "0"(level));
+            if (result < 0x1A8) {
+                result = 0x300 - level;
+                home.fadeVal = result;
+                result += 0x200;
+                idx = result & 0x3FF;
+                topRed = D_800A34CF;
+                topGreen = D_800A34D0;
+                topBlue = D_800A34D1;
+                bottomRed = D_800A34CC;
+                bottomGreen = D_800A34CD;
+                bottomBlue = D_800A34CE;
+                shade = 0xFFEC0000;
+                D_800A8B30[0] = 0;
+                D_800A8B31[0] = 0;
+                D_800A8B32[0] = 0;
+                D_800A8B00[0] = topRed;
+                D_800A8B01[0] = topGreen;
+                D_800A8B02[0] = topBlue;
+                D_800A8B18[0] = bottomRed;
+                D_800A8B19[0] = bottomGreen;
+                D_800A8B1A[0] = bottomBlue;
+                switched = 1;
+            } else {
+                result = level + 0x200;
+                idx = result & 0x3FF;
+                shade = 0x140000;
+            }
+            result = D_800A34D8;
+            factor = 0x80000;
+            asm("" : "=r"(result), "=r"(factor) : "0"(result), "1"(factor));
+            argument = (s32)D_800A3A34wC[0];
+            byteValue = (u8)D_800A34D4;
+            asm(""
+                : "=r"(argument), "=r"(byteValue)
+                : "0"(argument), "1"(byteValue));
+            result -= 0x180;
+            result <<= 4;
+            result += argument;
+            argument = *(s32 *)result;
+            byteValue = (s8)byteValue;
+            yBase = byteValue + 0x122;
         }
-        yBase = (s8)D_800A34D4 + 0x122;
-        yStep = 0x3C;
-        gradA = MathMultiplyFixed16(
-                    *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x180) << 4)),
-                    0x80000) +
-                0x2D0000;
-        gradB = MathMultiplyFixed16(
-                    *(s32 *)(D_800A3A34wC[0] + ((D_800A34D8 - 0x180) << 4)),
-                    0x40000) +
-                0x140000;
-        if (switched != 0) {
+        result = MathMultiplyFixed16(argument, factor);
+        {
+            asm volatile("" : : : "fp");
+            byteValue = D_800A34D8;
+            argument = (s32)D_800A3A34Next[0];
+            asm(""
+                : "=r"(byteValue), "=r"(argument)
+                : "0"(byteValue), "1"(argument), "r"(result));
+            yStep = 0x3C;
+            asm(""
+                : "=r"(yStep)
+                : "0"(yStep), "r"(byteValue), "r"(argument), "r"(result));
+            byteValue -= 0x180;
+            byteValue <<= 4;
+            byteValue += argument;
+            asm("" : "=r"(byteValue) : "0"(byteValue));
+            argument = *(s32 *)byteValue;
+            factor = 0x40000;
+            byteValue = 0x2D0000;
+            asm(""
+                : "=r"(factor), "=r"(byteValue)
+                : "0"(factor), "1"(byteValue), "r"(argument), "r"(result));
+            gradA = result + byteValue;
+            result = MathMultiplyFixed16(argument, factor);
+        }
+        byteValue = 0x140000;
+        asm("" : "=r"(byteValue) : "0"(byteValue), "r"(result));
+        gradB = result + byteValue;
+        result = switched & 0xFF;
+        asm("" : "=r"(result) : "0"(result));
+        if (result != 0) {
             D_800A34D8 += 8;
         } else {
             D_800A34D8 += 0x10;
         }
-        if (D_800A34D8 >= 0x280) {
+        result = D_800A34D8;
+        if (result >= 0x280) {
             D_800A34D8 = 0x280;
             D_800A34DC = 1;
         }
     }
-    entryA = *(s32 *)(D_800A3A2CwC[0] + (D_800A34D8 << 2));
-    entryB = *(s32 *)(D_800A3A34wC[0] + (D_800A34D8 << 2));
-    deltaC = D_800A34D8 - 0x200;
-    if (deltaC >= 0) {
-        deltaC = 0x380 - D_800A34D8;
+    factor = D_800A34D8;
+    byteValue = (s32)D_800A3A2CwC[0];
+    argument = (s32)D_800A3A34wC[0];
+    asm(""
+        : "=r"(factor), "=r"(byteValue), "=r"(argument)
+        : "0"(factor), "1"(byteValue), "2"(argument));
+    result = factor << 2;
+    byteValue = result + byteValue;
+    asm("" : "=r"(byteValue) : "0"(byteValue));
+    byteValue = *(s32 *)byteValue;
+    result += argument;
+    home.entryA = byteValue;
+    asm("" : "=r"(result) : "0"(result), "m"(home.entryA) : "memory");
+    result = *(s32 *)result;
+    home.entryB = result;
+    asm("" : : "m"(home.entryB), "r"(result) : "memory");
+    result = factor - 0x200;
+    if (result >= 0) {
+        result = 0x380;
+        asm("" : "=r"(result) : "0"(result));
+        argument = result - factor;
     } else {
-        deltaC = D_800A34D8 - 0x80;
+        argument = factor - 0x80;
     }
-    shade2 = MathMultiplyFixed16(shade, MathFixedDivide(deltaC, 0x180));
-    if (D_800A2F00wC[0] == 0) {
-        m = MathMultiplyFixed16(gradA, entryA);
-        D_800A8B4C[0] = yBase + (m >> 16);
-        m = MathMultiplyFixed16(gradA, entryB);
-        D_800A8B4C[1] = yStep + (m >> 16);
-        m = MathMultiplyFixed16(gradB, entryA);
-        D_800A8B4C[4] = yBase + (m >> 16);
-        m = MathMultiplyFixed16(gradB, entryB);
-        D_800A8B4C[5] = yStep + (m >> 16);
-        m = MathMultiplyFixed16(*(s32 *)(D_800A3A34wC[0] + (idx << 2)), shade2);
-        t2 = m >> 16;
-        m = MathMultiplyFixed16(*(s32 *)(D_800A3A2CwC[0] + (idx << 2)), shade2);
-        shade2 = m >> 16;
-        if (switched != 0) {
-            c = D_800A8AEC[D_800A34DC * 4] + (s8)D_800A34D4;
-            D_800A8B74[0] = c;
-            D_800A8B5C[0] = c;
-            c = D_800A8AEE[D_800A34DC * 4];
-            D_800A8B76[0] = c;
-            D_800A8B5E[0] = c;
-            c = D_800A8AF0[D_800A34DC * 4] + (s8)D_800A34D4;
-            D_800A8B7C[0] = c;
-            D_800A8B64[0] = c;
-            c = D_800A8AF2[D_800A34DC * 4];
-            D_800A8B7E[0] = c;
-            D_800A8B66[0] = c;
-            si = (fadeVal << 16) >> 14;
-            m = MathMultiplyFixed16(gradA, *(s32 *)(D_800A3A2CwC[0] + si));
-            D_800A8B84[0] = yBase + (m >> 16) - (s8)t2;
-            m = MathMultiplyFixed16(gradA, *(s32 *)(D_800A3A34wC[0] + si));
-            D_800A8B86[0] = yStep + (m >> 16) + (s8)shade2;
-            m = MathMultiplyFixed16(gradB, *(s32 *)(D_800A3A2CwC[0] + si));
-            D_800A8B8C[0] = yBase + (m >> 16) - (s8)t2;
-            m = MathMultiplyFixed16(gradB, *(s32 *)(D_800A3A34wC[0] + si));
-            D_800A8B8E[0] = yStep + (m >> 16) + (s8)shade2;
-            func_80017D80((u8 *)D_800A8B4C - 8);
-            func_80017D80((u8 *)D_800A8B74 - 8);
-            if (D_800A2EA4Absolute[0] != 0) {
-                D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
-                func_80017D80((u8 *)D_800A8B4C - 8);
-                func_80017D80((u8 *)D_800A8B74 - 8);
-                gOrderingTableBankSmall[0] = gOrderingTableBankAbsolute[0] - 1;
-                D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+    result = MathFixedDivide(argument, 0x180);
+    shade = MathMultiplyFixed16(shade, result);
+    {
+        register s32 t2 asm("$18");
+        register u16 *primitive asm("$20");
+        if (D_800A2F00wC[0] == 0) {
+            result = MathMultiplyFixed16(gradA, home.entryA);
+            argument = gradA;
+            asm("" : "=r"(argument) : "0"(argument), "r"(result) : "memory");
+            factor = home.entryB;
+            primitive = D_800A8B4C;
+            asm(""
+                : "=r"(factor), "=r"(primitive)
+                : "0"(factor), "1"(primitive), "r"(argument), "r"(result));
+            primitive[0] = yBase + (result >> 16);
+            result = MathMultiplyFixed16(argument, factor);
+            factor = home.entryA;
+            argument = gradB;
+            asm(""
+                : "=r"(factor), "=r"(argument)
+                : "0"(factor), "1"(argument), "r"(result)
+                : "memory");
+            primitive[1] = yStep + (result >> 16);
+            result = MathMultiplyFixed16(argument, factor);
+            factor = home.entryB;
+            argument = gradB;
+            asm(""
+                : "=r"(factor), "=r"(argument)
+                : "0"(factor), "1"(argument), "r"(result)
+                : "memory");
+            primitive[4] = yBase + (result >> 16);
+            result = MathMultiplyFixed16(argument, factor);
+            {
+                s32 tableAddress;
+                tableAddress = (s32)D_800A3A34wC[0];
+                result = yStep + (result >> 16);
+                idx <<= 2;
+                primitive[5] = result;
+                /* Preserve the retail operand order of this commutative add. */
+                asm("addu %0,%1,%0"
+                    : "=r"(tableAddress)
+                    : "r"(idx), "0"(tableAddress), "m"(primitive[5]));
+                argument = *(s32 *)tableAddress;
+            }
+            result = MathMultiplyFixed16(argument, shade);
+            {
+                s32 tableAddress;
+                tableAddress = (s32)D_800A3A2CwC[0];
+                idx += tableAddress;
+                argument = *(s32 *)idx;
+                factor = shade;
+            }
+            t2 = result >> 16;
+            m = MathMultiplyFixed16(argument, factor);
+            shade = m >> 16;
+            result = switched & 0xFF;
+            {
+                register s32 xShift asm("$7");
+                xShift = t2 << 24;
+                if (result != 0) {
+                    register u16 *secondPrimitive asm("$19");
+                    {
+                        register s32 paletteOffset asm("a1");
+                        register s32 screenShift asm("a0");
+                        register s32 value asm("v1");
+                        register u32 fade asm("t4");
+                        paletteOffset = D_800A34DC;
+                        screenShift = (u8)D_800A34D4;
+                        asm(""
+                            : "=r"(paletteOffset), "=r"(screenShift)
+                            : "0"(paletteOffset), "1"(screenShift));
+                        paletteOffset <<= 3;
+                        value = *(u16 *)((u8 *)D_800A8AEC + paletteOffset);
+                        secondPrimitive = D_800A8B74;
+                        screenShift <<= 24;
+                        result = (s32)screenShift >> 24;
+                        value += result;
+                        secondPrimitive[0] = value;
+                        D_800A8B5C[0] = value;
+                        result = *(u16 *)((u8 *)D_800A8AEE + paletteOffset);
+                        D_800A8B76[0] = result;
+                        D_800A8B5E[0] = result;
+                        result = *(u16 *)((u8 *)D_800A8AF0 + paletteOffset);
+                        fade = home.fadeVal;
+                        asm(""
+                            : "=r"(screenShift), "=r"(fade)
+                            : "0"(screenShift), "1"(fade));
+                        screenShift >>= 24;
+                        result += screenShift;
+                        D_800A8B7C[0] = result;
+                        D_800A8B64[0] = result;
+                        result = (s32)D_800A3A2CwC[0];
+                        value = *(u16 *)((u8 *)D_800A8AF2 + paletteOffset);
+                        idx = (s32)(fade << 16) >> 14;
+                        asm("" : : "r"(fade));
+                        result = idx + result;
+                        D_800A8B7E[0] = value;
+                        D_800A8B66[0] = value;
+                        factor = *(s32 *)result;
+                    }
+                    result = MathMultiplyFixed16(gradA, factor);
+                    {
+                        register s32 table asm("v1");
+                        asm("" : "=r"(t2) : "0"(t2), "r"(result));
+                        t2 <<= 24;
+                        argument = t2 >> 24;
+                        asm(""
+                            : "=r"(t2), "=r"(argument)
+                            : "0"(t2), "1"(argument));
+                        table = (s32)D_800A3A34wC[0];
+                        result >>= 16;
+                        result = yBase + result;
+                        result -= argument;
+                        D_800A8B84[0] = result;
+                        table = idx + table;
+                        factor = *(s32 *)table;
+                    }
+                    result = MathMultiplyFixed16(gradA, factor);
+                    {
+                        asm("" : "=r"(shade) : "0"(shade), "r"(result));
+                        shade <<= 24;
+                        byteValue = shade >> 24;
+                        asm(""
+                            : "=r"(shade), "=r"(byteValue)
+                            : "0"(shade), "1"(byteValue));
+                        argument = (s32)D_800A3A2CwC[0];
+                        result >>= 16;
+                        result = yStep + result;
+                        byteValue += result;
+                        D_800A8B86[0] = byteValue;
+                        argument = idx + argument;
+                        factor = *(s32 *)argument;
+                    }
+                    m = MathMultiplyFixed16(gradB, factor);
+                    t2 >>= 24;
+                    D_800A8B8C[0] = yBase + (m >> 16) - t2;
+                    idx += (s32)D_800A3A34wC[0];
+                    result = MathMultiplyFixed16(gradB, *(s32 *)idx);
+                    shade >>= 24;
+                    idx = (s32)primitive - 8;
+                    result >>= 16;
+                    asm(""
+                        : "=r"(shade), "=r"(idx), "=r"(result)
+                        : "0"(shade), "1"(idx), "2"(result), "r"(yStep));
+                    result = yStep + result;
+                    shade += result;
+                    D_800A8B8E[0] = shade;
+                    func_80017D80((u8 *)idx);
+                    func_80017D80((u8 *)secondPrimitive - 8);
+                    if (D_800A2EA4Absolute[0] != 0) {
+                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
+                        D_800A3A3CAbsolute[-29] =
+                            D_800A397CAbsolute[19] + 0x1004;
+                        func_80017D80((u8 *)idx);
+                        func_80017D80((u8 *)secondPrimitive - 8);
+                        gOrderingTableBankSmall[0] =
+                            gOrderingTableBankAbsolute[0] - 1;
+                        D_800A3A34Absolute[-27] =
+                            D_800A3A2CAbsolute[-25] - 0x1004;
+                    }
+                } else {
+                    {
+                        register s32 dx asm("t1");
+                        register s32 dy asm("t2");
+                        register s32 yBits asm("t0");
+                        register u32 x0 asm("v0");
+                        register u32 y0 asm("v1");
+                        register u32 x1 asm("a1");
+                        register u32 y1 asm("a2");
+                        dx = xShift >> 24;
+                        yBits = shade << 24;
+                        dy = yBits >> 24;
+                        asm(""
+                            : "=r"(xShift), "=r"(yBits)
+                            : "0"(xShift), "1"(yBits), "r"(dx), "r"(dy));
+                        xShift >>= 24;
+                        yBits >>= 24;
+                        x0 = primitive[0];
+                        y0 = primitive[1];
+                        x1 = primitive[4];
+                        y1 = primitive[5];
+                        asm(""
+                            : "=r"(primitive)
+                            : "0"(primitive), "r"(x0), "r"(y0), "r"(x1),
+                              "r"(y1));
+                        idx = (s32)primitive - 8;
+                        D_800A8B5C[0] = x0 - dx;
+                        D_800A8B5E[0] = y0 + dy;
+                        D_800A8B64[0] = x1 - xShift;
+                        D_800A8B66[0] = y1 + yBits;
+                    }
+                    argument = idx;
+                    func_80017D80((u8 *)argument);
+                    if (D_800A2EA4Absolute[0] != 0) {
+                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
+                        D_800A3A3CAbsolute[-29] =
+                            D_800A397CAbsolute[19] + 0x1004;
+                        func_80017D80((u8 *)idx);
+                        gOrderingTableBankSmall[0] =
+                            gOrderingTableBankAbsolute[0] - 1;
+                        D_800A3A34Absolute[-27] =
+                            D_800A3A2CAbsolute[-25] - 0x1004;
+                    }
+                }
             }
         } else {
-            D_800A8B5C[0] = D_800A8B4C[0] - (s8)t2;
-            D_800A8B5E[0] = D_800A8B4C[1] + (s8)shade2;
-            D_800A8B64[0] = D_800A8B4C[4] - (s8)t2;
-            D_800A8B66[0] = D_800A8B4C[5] + (s8)shade2;
-            func_80017D80((u8 *)D_800A8B4C - 8);
-            if (D_800A2EA4Absolute[0] != 0) {
-                D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
-                func_80017D80((u8 *)D_800A8B4C - 8);
-                gOrderingTableBankSmall[0] = gOrderingTableBankAbsolute[0] - 1;
-                D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+            result = MathMultiplyFixed16(gradA, home.entryA);
+            argument = gradA;
+            asm("" : "=r"(argument) : "0"(argument), "r"(result) : "memory");
+            factor = home.entryB;
+            primitive = D_800A8B04;
+            asm(""
+                : "=r"(factor), "=r"(primitive)
+                : "0"(factor), "1"(primitive), "r"(argument), "r"(result));
+            primitive[0] = yBase + (result >> 16);
+            result = MathMultiplyFixed16(argument, factor);
+            factor = home.entryA;
+            argument = gradB;
+            asm(""
+                : "=r"(factor), "=r"(argument)
+                : "0"(factor), "1"(argument), "r"(result)
+                : "memory");
+            primitive[1] = yStep + (result >> 16);
+            result = MathMultiplyFixed16(argument, factor);
+            factor = home.entryB;
+            argument = gradB;
+            asm(""
+                : "=r"(factor), "=r"(argument)
+                : "0"(factor), "1"(argument), "r"(result)
+                : "memory");
+            primitive[2] = yBase + (result >> 16);
+            result = MathMultiplyFixed16(argument, factor);
+            {
+                s32 tableAddress;
+                tableAddress = (s32)D_800A3A34wC[0];
+                result = yStep + (result >> 16);
+                idx <<= 2;
+                primitive[3] = result;
+                /* Preserve the retail operand order of this commutative add. */
+                asm("addu %0,%1,%0"
+                    : "=r"(tableAddress)
+                    : "r"(idx), "0"(tableAddress), "m"(primitive[3]));
+                argument = *(s32 *)tableAddress;
             }
-        }
-    } else {
-        m = MathMultiplyFixed16(gradA, entryA);
-        D_800A8B04[0] = yBase + (m >> 16);
-        m = MathMultiplyFixed16(gradA, entryB);
-        D_800A8B04[1] = yStep + (m >> 16);
-        m = MathMultiplyFixed16(gradB, entryA);
-        D_800A8B04[2] = yBase + (m >> 16);
-        m = MathMultiplyFixed16(gradB, entryB);
-        D_800A8B04[3] = yStep + (m >> 16);
-        m = MathMultiplyFixed16(*(s32 *)(D_800A3A34wC[0] + (idx << 2)), shade2);
-        t2 = m >> 16;
-        m = MathMultiplyFixed16(*(s32 *)(D_800A3A2CwC[0] + (idx << 2)), shade2);
-        shade2 = m >> 16;
-        if (switched != 0) {
-            c = D_800A8AEC[D_800A34DC * 4] + (s8)D_800A34D4;
-            D_800A8B1C[0] = c;
-            D_800A8B0C[0] = c;
-            c = D_800A8AEE[D_800A34DC * 4];
-            D_800A8B1E[0] = c;
-            D_800A8B0E[0] = c;
-            c = D_800A8AF0[D_800A34DC * 4] + (s8)D_800A34D4;
-            D_800A8B20[0] = c;
-            D_800A8B10[0] = c;
-            c = D_800A8AF2[D_800A34DC * 4];
-            D_800A8B22[0] = c;
-            D_800A8B12[0] = c;
-            si = (fadeVal << 16) >> 14;
-            m = MathMultiplyFixed16(gradA, *(s32 *)(D_800A3A2CwC[0] + si));
-            D_800A8B24[0] = yBase + (m >> 16) - (s8)t2;
-            m = MathMultiplyFixed16(gradA, *(s32 *)(D_800A3A34wC[0] + si));
-            D_800A8B26[0] = yStep + (m >> 16) + (s8)shade2;
-            m = MathMultiplyFixed16(gradB, *(s32 *)(D_800A3A2CwC[0] + si));
-            D_800A8B28[0] = yBase + (m >> 16) - (s8)t2;
-            m = MathMultiplyFixed16(gradB, *(s32 *)(D_800A3A34wC[0] + si));
-            D_800A8B2A[0] = yStep + (m >> 16) + (s8)shade2;
-            func_80017D80((u8 *)D_800A8B04 - 8);
-            func_80017D80((u8 *)D_800A8B1C - 8);
-            if (D_800A2EA4Absolute[0] != 0) {
-                D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
-                func_80017D80((u8 *)D_800A8B04 - 8);
-                func_80017D80((u8 *)D_800A8B1C - 8);
-                gOrderingTableBankSmall[0] = gOrderingTableBankAbsolute[0] - 1;
-                D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+            result = MathMultiplyFixed16(argument, shade);
+            {
+                s32 tableAddress;
+                tableAddress = (s32)D_800A3A2CwC[0];
+                idx += tableAddress;
+                argument = *(s32 *)idx;
+                factor = shade;
             }
-        } else {
-            D_800A8B0C[0] = D_800A8B04[0] - (s8)t2;
-            D_800A8B0E[0] = D_800A8B04[1] + (s8)shade2;
-            D_800A8B10[0] = D_800A8B04[2] - (s8)t2;
-            D_800A8B12[0] = D_800A8B04[3] + (s8)shade2;
-            func_80017D80((u8 *)D_800A8B04 - 8);
-            if (D_800A2EA4Absolute[0] != 0) {
-                D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
-                func_80017D80((u8 *)D_800A8B04 - 8);
-                gOrderingTableBankSmall[0] = gOrderingTableBankAbsolute[0] - 1;
-                D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+            t2 = result >> 16;
+            m = MathMultiplyFixed16(argument, factor);
+            shade = m >> 16;
+            result = switched & 0xFF;
+            {
+                register s32 xShift asm("$7");
+                xShift = t2 << 24;
+                if (result != 0) {
+                    register u16 *secondPrimitive asm("$19");
+                    {
+                        register s32 paletteOffset asm("a1");
+                        register s32 screenShift asm("a0");
+                        register s32 value asm("v1");
+                        register u32 fade asm("t4");
+                        paletteOffset = D_800A34DC;
+                        screenShift = (u8)D_800A34D4;
+                        asm(""
+                            : "=r"(paletteOffset), "=r"(screenShift)
+                            : "0"(paletteOffset), "1"(screenShift));
+                        paletteOffset <<= 3;
+                        value = *(u16 *)((u8 *)D_800A8AEC + paletteOffset);
+                        secondPrimitive = D_800A8B1C;
+                        screenShift <<= 24;
+                        result = (s32)screenShift >> 24;
+                        value += result;
+                        secondPrimitive[0] = value;
+                        D_800A8B0C[0] = value;
+                        result = *(u16 *)((u8 *)D_800A8AEE + paletteOffset);
+                        D_800A8B1E[0] = result;
+                        D_800A8B0E[0] = result;
+                        result = *(u16 *)((u8 *)D_800A8AF0 + paletteOffset);
+                        fade = home.fadeVal;
+                        asm(""
+                            : "=r"(screenShift), "=r"(fade)
+                            : "0"(screenShift), "1"(fade));
+                        screenShift >>= 24;
+                        result += screenShift;
+                        D_800A8B20[0] = result;
+                        D_800A8B10[0] = result;
+                        result = (s32)D_800A3A2CwC[0];
+                        value = *(u16 *)((u8 *)D_800A8AF2 + paletteOffset);
+                        idx = (s32)(fade << 16) >> 14;
+                        asm("" : : "r"(fade));
+                        result = idx + result;
+                        D_800A8B22[0] = value;
+                        D_800A8B12[0] = value;
+                        factor = *(s32 *)result;
+                    }
+                    result = MathMultiplyFixed16(gradA, factor);
+                    {
+                        register s32 table asm("v1");
+                        asm("" : "=r"(t2) : "0"(t2), "r"(result));
+                        t2 <<= 24;
+                        argument = t2 >> 24;
+                        asm(""
+                            : "=r"(t2), "=r"(argument)
+                            : "0"(t2), "1"(argument));
+                        table = (s32)D_800A3A34wC[0];
+                        result >>= 16;
+                        result = yBase + result;
+                        result -= argument;
+                        D_800A8B24[0] = result;
+                        table = idx + table;
+                        factor = *(s32 *)table;
+                    }
+                    result = MathMultiplyFixed16(gradA, factor);
+                    {
+                        asm("" : "=r"(shade) : "0"(shade), "r"(result));
+                        shade <<= 24;
+                        byteValue = shade >> 24;
+                        asm(""
+                            : "=r"(shade), "=r"(byteValue)
+                            : "0"(shade), "1"(byteValue));
+                        argument = (s32)D_800A3A2CwC[0];
+                        result >>= 16;
+                        result = yStep + result;
+                        byteValue += result;
+                        D_800A8B26[0] = byteValue;
+                        argument = idx + argument;
+                        factor = *(s32 *)argument;
+                    }
+                    m = MathMultiplyFixed16(gradB, factor);
+                    t2 >>= 24;
+                    D_800A8B28[0] = yBase + (m >> 16) - t2;
+                    idx += (s32)D_800A3A34wC[0];
+                    result = MathMultiplyFixed16(gradB, *(s32 *)idx);
+                    shade >>= 24;
+                    idx = (s32)primitive - 8;
+                    result >>= 16;
+                    asm(""
+                        : "=r"(shade), "=r"(idx), "=r"(result)
+                        : "0"(shade), "1"(idx), "2"(result), "r"(yStep));
+                    result = yStep + result;
+                    shade += result;
+                    D_800A8B2A[0] = shade;
+                    func_80017D80((u8 *)idx);
+                    func_80017D80((u8 *)secondPrimitive - 8);
+                    if (D_800A2EA4Absolute[0] != 0) {
+                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
+                        D_800A3A3CAbsolute[-29] =
+                            D_800A397CAbsolute[19] + 0x1004;
+                        func_80017D80((u8 *)idx);
+                        func_80017D80((u8 *)secondPrimitive - 8);
+                        gOrderingTableBankSmall[0] =
+                            gOrderingTableBankAbsolute[0] - 1;
+                        D_800A3A34Absolute[-27] =
+                            D_800A3A2CAbsolute[-25] - 0x1004;
+                    }
+                } else {
+                    {
+                        register s32 dx asm("t1");
+                        register s32 dy asm("t2");
+                        register s32 yBits asm("t0");
+                        register u32 x0 asm("v0");
+                        register u32 y0 asm("v1");
+                        register u32 x1 asm("a1");
+                        register u32 y1 asm("a2");
+                        dx = xShift >> 24;
+                        yBits = shade << 24;
+                        dy = yBits >> 24;
+                        asm(""
+                            : "=r"(xShift), "=r"(yBits)
+                            : "0"(xShift), "1"(yBits), "r"(dx), "r"(dy));
+                        xShift >>= 24;
+                        yBits >>= 24;
+                        x0 = primitive[0];
+                        y0 = primitive[1];
+                        x1 = primitive[2];
+                        y1 = primitive[3];
+                        asm(""
+                            : "=r"(primitive)
+                            : "0"(primitive), "r"(x0), "r"(y0), "r"(x1),
+                              "r"(y1));
+                        idx = (s32)primitive - 8;
+                        argument = idx;
+                        D_800A8B0C[0] = x0 - dx;
+                        D_800A8B0E[0] = y0 + dy;
+                        D_800A8B10[0] = x1 - xShift;
+                        D_800A8B12[0] = y1 + yBits;
+                    }
+                    func_80017D80((u8 *)argument);
+                    if (D_800A2EA4Absolute[0] != 0) {
+                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
+                        D_800A3A3CAbsolute[-29] =
+                            D_800A397CAbsolute[19] + 0x1004;
+                        func_80017D80((u8 *)idx);
+                        gOrderingTableBankSmall[0] =
+                            gOrderingTableBankAbsolute[0] - 1;
+                        D_800A3A34Absolute[-27] =
+                            D_800A3A2CAbsolute[-25] - 0x1004;
+                    }
+                }
             }
         }
     }
-    D_800993B4[0] = gradB;
-    D_800993A4[0] = gradB;
-    D_80099394[0] = gradB;
-    D_80099384[0] = gradB;
-    i = 0;
-gradLoop:
-    m1 = MathMultiplyFixed16(entryA, D_8009937C[D_800A34DC * 8 + (s8)i * 2]);
-    t1 = MathMultiplyFixed16(entryB, D_80099380[D_800A34DC * 8 + (s8)i * 2]);
-    buf[(s8)i * 2] = yBase + ((m1 - t1) >> 16);
-    m2 = MathMultiplyFixed16(entryB, D_8009937C[D_800A34DC * 8 + (s8)i * 2]);
-    t3 = MathMultiplyFixed16(entryA, D_80099380[D_800A34DC * 8 + (s8)i * 2]);
-    buf[(s8)i * 2 + 1] = yStep + ((m2 + t3) >> 16);
-    i++;
-    if (i < 4) {
-        goto gradLoop;
+    {
+        /* Rotate the four sky corners around the screen origin. */
+        register s32 loopI asm("s4");
+        register s32 signedI asm("s1");
+        register s32 lookupOffset asm("s2");
+        register s16 *buf asm("s3");
+        register s32 accum asm("s0");
+        register s32 argA asm("a0");
+        register s32 argB asm("a1");
+        register s32 scratch0 asm("v0");
+        register s32 scratch1 asm("v1");
+        register s32 callOut asm("v0");
+        register s32 nextI asm("v1");
+        loopI = 0;
+        D_800993B4[0] = gradB;
+        D_800993A4[0] = gradB;
+        D_80099394[0] = gradB;
+        D_80099384[0] = gradB;
+    gradLoop:
+        scratch0 = D_800A34DC;
+        signedI = (s8)loopI;
+        lookupOffset = signedI << 3;
+        argA = home.entryA;
+        scratch0 <<= 5;
+        scratch0 = lookupOffset + scratch0;
+        argB = *(s32 *)((u8 *)D_8009937C + scratch0);
+        signedI <<= 2;
+        callOut = MathMultiplyFixed16(argA, argB);
+        scratch1 = D_800A34DC;
+        argA = home.entryB;
+        scratch1 <<= 5;
+        scratch1 = lookupOffset + scratch1;
+        argB = *(s32 *)((u8 *)D_80099380 + scratch1);
+        accum = callOut;
+        callOut = MathMultiplyFixed16(argA, argB);
+        buf = (s16 *)((u8 *)home.buf + signedI);
+        asm(""
+            : "=r"(buf), "=r"(accum)
+            : "0"(buf), "1"(accum), "r"(callOut)
+            : "memory");
+        scratch1 = D_800A34DC;
+        accum -= callOut;
+        accum >>= 16;
+        accum = yBase + accum;
+        buf[0] = accum;
+        argA = home.entryB;
+        scratch1 <<= 5;
+        scratch1 = lookupOffset + scratch1;
+        argB = *(s32 *)((u8 *)D_8009937C + scratch1);
+        callOut = MathMultiplyFixed16(argA, argB);
+        scratch1 = D_800A34DC;
+        argA = home.entryA;
+        scratch1 <<= 5;
+        lookupOffset += scratch1;
+        argB = *(s32 *)((u8 *)D_80099380 + lookupOffset);
+        accum = callOut;
+        callOut = MathMultiplyFixed16(argA, argB);
+        nextI = loopI + 1;
+        loopI = nextI;
+        asm("" : "=r"(loopI) : "0"(loopI));
+        accum += callOut;
+        accum >>= 16;
+        accum = yStep + accum;
+        buf[1] = accum;
+        if ((s8)nextI < 4)
+            goto gradLoop;
     }
-    D_800A8B34[0] = buf[0];
-    D_800A8B36[0] = buf[1];
-    D_800A8B38[0] = buf[2];
-    D_800A8B3A[0] = buf[3];
-    D_800A8B3C[0] = buf[4];
-    D_800A8B3E[0] = buf[5];
-    D_800A8B40[0] = buf[6];
-    D_800A8B42[0] = buf[7];
+    D_800A8B34[0] = home.buf[0];
+    D_800A8B36[0] = home.buf[1];
+    D_800A8B38[0] = home.buf[2];
+    D_800A8B3A[0] = home.buf[3];
+    D_800A8B3C[0] = home.buf[4];
+    D_800A8B3E[0] = home.buf[5];
+    D_800A8B40[0] = home.buf[6];
+    D_800A8B42[0] = home.buf[7];
     func_80017D80((u8 *)D_800A8B34 - 8);
     func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
     if (D_800A2EA4Absolute[0] != 0) {
@@ -6069,14 +6525,11 @@ gradLoop:
         D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
         func_80017D80((u8 *)D_800A8B34 - 8);
         func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
-        new_var = gOrderingTableBankAbsolute[0] - 1;
-        gOrderingTableBankSmall[0] = new_var;
+        bank = gOrderingTableBankAbsolute[0] - 1;
+        gOrderingTableBankSmall[0] = bank;
         D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80051874);
-#endif
 
 extern s8 D_800A34E4;
 extern s32 D_800A34F4;
