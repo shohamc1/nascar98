@@ -2397,7 +2397,7 @@ s32 func_80025A38(u8 *arg0) {
     if (func_80025938(arg0, other) == 0) {
         goto part2;
     }
-    if (func_800261F8(arg0, other) != 0) {
+    if (CarHandlePairCollision(arg0, other) != 0) {
         goto collide;
     }
 part2:
@@ -2411,7 +2411,7 @@ part2:
     if (func_80025938(arg0, other) == 0) {
         goto scan;
     }
-    if (func_800261F8(arg0, other) == 0) {
+    if (CarHandlePairCollision(arg0, other) == 0) {
         goto scan;
     }
 collide:
@@ -2451,7 +2451,7 @@ scan:
                 break;
             }
             if (func_80025938(arg0, other) != 0 &&
-                func_800261F8(arg0, other) != 0) {
+                CarHandlePairCollision(arg0, other) != 0) {
                 if (*(s16 *)(arg0 + 0x1EC) == 0) {
                     func_800406D0(arg0, other, 6, 1);
                 }
@@ -2485,7 +2485,7 @@ scan:
                 return 0;
             }
             if (func_80025938(arg0, other) != 0 &&
-                func_800261F8(arg0, other) != 0) {
+                CarHandlePairCollision(arg0, other) != 0) {
                 if (*(s16 *)(arg0 + 0x1EC) == 0) {
                     func_800406D0(arg0, other, 6, 1);
                 }
@@ -2600,8 +2600,756 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800261F8);
+extern s32 D_800A3A34Absolute[];
+extern s32 D_800A3A2CAbsolute2[];
+extern s32 D_800A3A34Absolute2[];
+extern s32 pairCosTable3[] asm("D_800A3A2CSmall");
+extern s32 pairSinTable3[] asm("D_800A3A34Small");
+extern s32 pairCosTable4[] asm("D_800A3A2C");
+extern s32 pairSinTable4[] asm("D_800A3A34");
+extern void func_800432C0(void *, s32);
+extern void func_80043B68(void *, s32);
+extern void func_8003AC18(u8 *, s32, s32, s32);
+extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32, s32) asm("func_80026074");
 
+/* Resolves car-to-car contact and applies separation and velocity impulses.
+ * Empty asm constraints retain the retail compiler register lifetimes.
+ */
+s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
+    Vec3 separation;
+    Vec3 direction;
+    Vec3 velocity;
+    Vec3 original;
+    Vec3 midpoint;
+    register s32 tmp0 asm("v0");
+    register s32 tmp1 asm("v1");
+    register s32 productX asm("a1");
+    register s32 callA0 asm("a0");
+    register s32 callA1 asm("a1");
+    register s32 productY asm("t1");
+    s32 impulseX;
+    s32 impulseY;
+    register s32 impulsePart asm("t0");
+    s32 nextCallback;
+    register s32 effectFlag asm("v0");
+    register s32 beyondFar asm("v0");
+    register s32 scratchA0 asm("a0");
+    s32 carHeading;
+    s32 contactAngle;
+    s32 otherHeading;
+    register s32 responseCode asm("v1");
+    s32 headingDifference;
+    register s32 collisionExtent asm("a0");
+    register s32 scratchA1 asm("a1");
+    s32 otherPositionY;
+    s32 relativeSpeed;
+    register s32 work0 asm("s0");
+    register s32 work1 asm("s1");
+    register s32 work2 asm("s2");
+    register s32 work3 asm("s3");
+    register s32 collisionHalfWidth asm("s7");
+    s32 angleFromHalfTurn;
+    s32 meanSpeedA;
+    s32 meanSpeedB;
+    s32 wrappedHeadingDifference;
+    register s32 work6 asm("s6");
+    s32 result;
+    register s32 responseXInRange asm("v0");
+    register s32 overlapLimit asm("v0");
+    s32 outsideCollisionWidth;
+    s32 newSpeedA;
+    s32 newSpeedB;
+    register s32 responseYInRange asm("v0");
+    s32 roundedHeadingDifference;
+    register s32 scratchV1 asm("v1");
+    u32 speedSumA;
+    u32 speedSumB;
+    register u8 *car asm("s4");
+    register u8 *otherCar asm("s5");
+
+    car = firstCar;
+
+    otherCar = secondCar;
+
+    if (D_8008CA28[0] == 0) {
+        tmp0 = (s32)D_800A3554[0];
+        asm("" : "=r"(tmp0) : "0"(tmp0));
+        if (otherCar == (u8 *)tmp0) {
+            otherCar = car;
+            car = (u8 *)tmp0;
+        }
+    }
+    separation.x = (*(s32 *)(otherCar + 0x0)) - (*(s32 *)(car + 0x0));
+    separation.y = (*(s32 *)(otherCar + 0x4)) - (*(s32 *)(car + 0x4));
+    separation.z = (*(s32 *)(otherCar + 0x8)) - (*(s32 *)(car + 0x8));
+    original = separation;
+    midpoint.x = (s32)((*(s32 *)(otherCar + 0x0)) + (*(s32 *)(car + 0x0))) / 2;
+    midpoint.y = (s32)((*(s32 *)(otherCar + 0x4)) + (*(s32 *)(car + 0x4))) / 2;
+    if ((*(s32 *)(car + 0x354)) == (s32)func_80025730) {
+        contactAngle = (*(s16 *)(car + 0x38A));
+        angleFromHalfTurn = contactAngle - 0x200;
+        if (angleFromHalfTurn >= 0) {
+            if (angleFromHalfTurn < 0x100) {
+                goto block_8;
+            }
+            goto block_9;
+        }
+        if ((0x200 - contactAngle) < 0x100) {
+        block_8:
+            tmp1 = *(s16 *)(car + 0x114);
+            asm("" : "=r"(tmp1) : "0"(tmp1));
+            tmp0 = 0x600 - tmp1;
+            asm("" : "=r"(tmp0) : "0"(tmp0));
+            work6 = tmp0 & 0x3FF;
+
+        } else {
+            goto block_9;
+        }
+    } else {
+    block_9:
+        tmp1 = *(s16 *)(car + 0x114);
+        asm("" : "=r"(tmp1) : "0"(tmp1));
+        tmp0 = 0x3FF;
+        asm("" : "=r"(tmp0) : "0"(tmp0));
+        work6 = tmp0 - tmp1;
+    }
+    tmp0 = D_800A3A2CAbsolute[0];
+    work1 = work6 << 2;
+    callA1 = original.x;
+    tmp0 = work1 + tmp0;
+    callA0 = *(s32 *)tmp0;
+    tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
+    tmp1 = D_800A3A34Absolute[0];
+    callA1 = original.y;
+    tmp1 = work1 + tmp1;
+    callA0 = *(s32 *)tmp1;
+    work0 = tmp0;
+    tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
+    tmp1 = D_800A3A34Absolute2[0];
+    callA1 = original.x;
+    work0 -= tmp0;
+    work0 >>= 16;
+    separation.x = work0;
+    tmp1 = work1 + tmp1;
+    callA0 = *(s32 *)tmp1;
+    tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
+    tmp1 = D_800A3A2CAbsolute2[0];
+    callA1 = original.y;
+    work1 += tmp1;
+    asm("" : "=r"(work1) : "0"(work1));
+    callA0 = *(s32 *)work1;
+    work0 = tmp0;
+    work0 += MathMultiplyFixed16(callA0, callA1 << 16);
+    work0 >>= 16;
+    separation.y = work0;
+    asm("" : "=r"(work6) : "0"(work6));
+    tmp0 = *(s32 *)(car + 0x370);
+    tmp0 = *(s16 *)(tmp0 + 0x1E);
+    tmp1 = separation.x;
+    collisionHalfWidth = tmp0 - 10;
+    tmp0 = collisionHalfWidth << 1;
+    scratchA0 = tmp0;
+    if (tmp1 >= 0) {
+        tmp0 = tmp0 < tmp1;
+    } else {
+        tmp0 = scratchA0 < -tmp1;
+    }
+    outsideCollisionWidth = tmp0;
+    result = 0;
+    if (outsideCollisionWidth == 0) {
+        work3 = MathMultiplyFixed16((*(s32 *)(otherCar + 0x18)), 0xFA0);
+        asm("" : "=r"(work3) : "0"(work3));
+
+        work2 = MathMultiplyFixed16((*(s32 *)(otherCar + 0x24)), 0xFA0);
+        asm("" : "=r"(work2) : "0"(work2));
+
+        tmp0 = MathMultiplyFixed16(*(s32 *)(otherCar + 0x30), 0xFA0);
+        tmp1 = pairCosTable3[0];
+        work1 = work6 << 2;
+        direction.z = tmp0;
+        tmp1 = work1 + tmp1;
+        callA0 = *(s32 *)tmp1;
+        asm("" : "=r"(work3) : "0"(work3), "r"(callA0));
+        work3 <<= 16;
+        tmp0 = MathMultiplyFixed16(callA0, work3);
+        tmp1 = pairSinTable3[0];
+        tmp1 = work1 + tmp1;
+        callA0 = *(s32 *)tmp1;
+        asm("" : "=r"(work2) : "0"(work2), "r"(callA0));
+        work2 <<= 16;
+        callA1 = work2;
+        asm("" : "=r"(tmp0) : "0"(tmp0), "r"(callA0), "r"(callA1));
+        work0 = tmp0;
+        tmp0 = MathMultiplyFixed16(callA0, callA1);
+        tmp1 = pairSinTable4[0];
+        work0 -= tmp0;
+        work0 >>= 16;
+        direction.x = work0;
+        tmp1 = work1 + tmp1;
+        callA0 = *(s32 *)tmp1;
+        tmp0 = MathMultiplyFixed16(callA0, work3);
+        tmp1 = pairCosTable4[0];
+        work1 += tmp1;
+        asm("" : "=r"(work1) : "0"(work1));
+        callA0 = *(s32 *)work1;
+        callA1 = work2;
+        asm("" : "=r"(tmp0) : "0"(tmp0), "r"(callA0), "r"(callA1));
+        work0 = tmp0;
+        work0 += MathMultiplyFixed16(callA0, callA1);
+        work0 >>= 16;
+        direction.y = work0;
+        tmp0 = *(s32 *)(car + 0xB0);
+        productX = *(s32 *)(otherCar + 0xB0);
+        tmp1 = direction.x;
+        scratchA0 = D_800A3668Absolute[0];
+        asm(""
+            : "=r"(tmp0)
+            : "0"(tmp0), "r"(productX), "r"(tmp1), "r"(scratchA0));
+        tmp0 -= productX;
+        productX = tmp0 * tmp0;
+        tmp1 = __builtin_abs(tmp1);
+        scratchA0 += tmp1;
+        asm("" : "=r"(scratchA0) : "0"(scratchA0));
+        work6 = *(u8 *)scratchA0;
+        velocity.x = tmp0;
+        tmp0 = *(s32 *)(car + 0xB4);
+        tmp1 = *(s32 *)(otherCar + 0xB4);
+        asm("" : "=r"(productX) : "0"(productX), "r"(tmp0), "r"(tmp1));
+        tmp0 -= tmp1;
+        productY = tmp0 * tmp0;
+        velocity.y = tmp0;
+        tmp1 = *(s32 *)(otherCar + 0xB8);
+        tmp0 = *(s32 *)(car + 0xB8);
+        tmp0 -= tmp1;
+        velocity.z = tmp0;
+        tmp0 = MathSqrt(productX + productY);
+        relativeSpeed = tmp0;
+        tmp1 = separation.y;
+        scratchA0 = *(s16 *)(car + 0x1EC);
+        tmp0 = 1;
+        asm(""
+            :
+            : "r"(work0), "r"(work1), "r"(work2), "r"(work3), "r"(car),
+              "r"(otherCar), "r"(work6), "r"(collisionHalfWidth),
+              "r"(relativeSpeed));
+        work2 = tmp1;
+        if (tmp1 < 0) {
+            work2 = -work2;
+        }
+        if ((scratchA0 == tmp0) &&
+            ((*(s16 *)(otherCar + 0x1EC)) == scratchA0)) {
+            tmp0 = *(s32 *)(car + 0x370);
+            tmp0 = *(s16 *)(tmp0 + 0x22);
+            scratchV1 = tmp0 - 0x1E;
+        } else {
+            tmp0 = *(s32 *)(car + 0x370);
+            tmp0 = *(s16 *)(tmp0 + 0x22);
+            scratchV1 = tmp0 - 0xF;
+        }
+        (*(s16 *)(car + 0x1CE)) = 0;
+        tmp0 = (u32)work6 < 0xA1;
+        scratchA1 = scratchV1 << 1;
+        if (tmp0 == 0) {
+            tmp0 = scratchA1 + scratchV1;
+            scratchV1 = (u32)tmp0 >> 31;
+            tmp0 = (tmp0 + scratchV1) >> 1;
+            tmp0 = work2 < tmp0;
+            if (tmp0 != 0) {
+                responseCode = 1;
+                if (relativeSpeed >= 0x12D) {
+                    tmp0 = *(s16 *)(car + 0x1EC);
+                    goto block_125;
+                }
+                if (separation.x >= 0) {
+                    (*(s16 *)(car + 0x1CE)) = 2;
+                    tmp0 = collisionHalfWidth << 3;
+                    tmp1 = tmp0 + collisionHalfWidth;
+                    if (tmp1 < 0) {
+                        tmp1 += 3;
+                    }
+                    tmp0 = separation.x;
+                    callA0 = *(s32 *)(car + 0x18);
+                    tmp1 >>= 2;
+                    tmp0 -= tmp1;
+                    tmp1 = (u32)tmp0 >> 31;
+                    tmp0 += tmp1;
+                    work3 = tmp0 >> 1;
+                    (*(s32 *)(car + 0x0)) =
+                        (s32)((*(s32 *)(car + 0x0)) +
+                              MathMultiplyFixed16(callA0, work3));
+                    (*(s32 *)(car + 0x4)) =
+                        (s32)((*(s32 *)(car + 0x4)) +
+                              MathMultiplyFixed16((*(s32 *)(car + 0x24)),
+                                                  work3));
+                    (*(s32 *)(otherCar + 0x0)) =
+                        (s32)((*(s32 *)(otherCar + 0x0)) -
+                              MathMultiplyFixed16((*(s32 *)(car + 0x18)),
+                                                  work3));
+                    (*(s32 *)(otherCar + 0x4)) =
+                        (s32)((*(s32 *)(otherCar + 0x4)) -
+                              MathMultiplyFixed16((*(s32 *)(car + 0x24)),
+                                                  work3));
+                    if (direction.x > 0) {
+                        speedSumA = (*(s32 *)(otherCar + 0x90)) +
+                                    (*(s32 *)(car + 0x90));
+                        meanSpeedA =
+                            (s32)(speedSumA + (speedSumA >> 0x1F)) >> 1;
+                        if ((*(s16 *)(otherCar + 0x1EC)) != 0) {
+                            (*(s32 *)(otherCar + 0x90)) =
+                                (s32)(meanSpeedA + 0xA0000);
+                        }
+                        if ((*(s16 *)(car + 0x1EC)) != 0) {
+                            newSpeedA = meanSpeedA + 0xFFF60000;
+                            goto block_40;
+                        }
+                    } else {
+                        tmp0 = *(s32 *)(otherCar + 0x90);
+                        tmp1 = *(s32 *)(car + 0x90);
+                        scratchA0 = *(s16 *)(otherCar + 0x1EC);
+                        tmp0 += tmp1;
+                        if (tmp0 < 0) {
+                            tmp0 = -tmp0;
+                        }
+                        tmp1 = (u32)tmp0 >> 31;
+                        tmp0 += tmp1;
+                        tmp1 = tmp0 >> 1;
+                        if (scratchA0 != 0) {
+                            (*(s32 *)(otherCar + 0x90)) =
+                                (s32)(tmp1 + 0xFFF60000);
+                        }
+                        if ((*(s16 *)(car + 0x1EC)) != 0) {
+                            newSpeedA = tmp1 + 0xA0000;
+                        block_40:
+                            (*(s32 *)(car + 0x90)) = newSpeedA;
+                        }
+                    }
+                    func_80025DD4(otherCar, car);
+                    work0 = 1;
+                    if (relativeSpeed >= 0x2E) {
+                        if (relativeSpeed >= 0x79) {
+                            func_800432C0(otherCar, 7);
+                            if (RandomScaledGet(0xA) == 0) {
+                                callA1 = 0;
+                                if (separation.y > 0) {
+                                    asm("# positive contact effect");
+                                    callA0 = (s32)car;
+                                } else {
+                                    callA0 = (s32)car;
+                                    asm("# negative contact effect");
+                                    callA1 = 1;
+                                }
+                                func_800432C0((void *)callA0, callA1);
+                            }
+                        }
+                        if (RandomScaledGet(0xA) == 0) {
+                            callA0 = (s32)car;
+                            if (separation.y > 0) {
+                                asm("# positive contact side");
+                                callA1 = 5;
+                            } else {
+                                asm("# negative contact side");
+                                callA1 = 6;
+                            }
+                            func_800432C0((void *)callA0, callA1);
+                        }
+                        asm("" : : : "a0");
+                        func_80043B68(car, 0);
+                        func_80043B68(car, 1);
+                        func_80043B68(otherCar, 2);
+                        func_80043B68(otherCar, 3);
+                        work0 = 1;
+                    }
+                    CollisionApplyImpulse(car, otherCar, velocity, work0,
+                                          work0);
+                    tmp0 = *(s16 *)(car + 0x114);
+                    tmp1 = D_800A3A2CAbsolute[0];
+                    tmp0 += 0x200;
+                    work6 = tmp0 & 0x3FF;
+                    scratchA0 = work6 << 2;
+                    tmp1 = scratchA0 + tmp1;
+                    tmp0 = *(s32 *)tmp1;
+                    impulseX = relativeSpeed * tmp0;
+                    tmp1 = D_800A3A34Absolute[0];
+                    tmp0 = *(s32 *)(car + 0xC4);
+                    scratchA0 += tmp1;
+                    asm("" : "=r"(scratchA0) : "0"(scratchA0));
+                    asm(""
+                        : "=r"(impulsePart)
+                        : "0"(impulseX), "r"(tmp0), "r"(scratchA0));
+                    tmp0 += impulsePart;
+                    *(s32 *)(car + 0xC4) = tmp0;
+                    tmp0 = *(s32 *)scratchA0;
+                    impulseY = relativeSpeed * tmp0;
+                    tmp0 = *(s32 *)(car + 0xC8);
+                    asm("" : "=r"(impulsePart) : "0"(impulseY), "r"(tmp0));
+                    tmp0 += impulsePart;
+                    *(s32 *)(car + 0xC8) = tmp0;
+                    result = 2;
+                    if ((*(s16 *)(otherCar + 0x1EC)) == work0) {
+                        func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                      separation.y);
+                        asm("# collision response 1");
+                        return 2;
+                    }
+                    return result;
+                }
+                (*(s16 *)(car + 0x1CE)) = 3;
+                tmp1 = separation.x;
+                tmp0 = collisionHalfWidth << 3;
+                tmp0 += collisionHalfWidth;
+                tmp1 = -tmp1;
+                if (tmp0 < 0) {
+                    tmp0 += 3;
+                }
+                callA0 = *(s32 *)(car + 0x18);
+                tmp0 >>= 2;
+                tmp0 = tmp1 - tmp0;
+                tmp1 = (u32)tmp0 >> 31;
+                tmp0 += tmp1;
+                work3 = tmp0 >> 1;
+                (*(s32 *)(car + 0x0)) =
+                    (s32)((*(s32 *)(car + 0x0)) -
+                          MathMultiplyFixed16(callA0, work3));
+                (*(s32 *)(car + 0x4)) =
+                    (s32)((*(s32 *)(car + 0x4)) -
+                          MathMultiplyFixed16((*(s32 *)(car + 0x24)), work3));
+                (*(s32 *)(otherCar + 0x0)) =
+                    (s32)((*(s32 *)(otherCar + 0x0)) +
+                          MathMultiplyFixed16((*(s32 *)(car + 0x18)), work3));
+                (*(s32 *)(otherCar + 0x4)) =
+                    (s32)((*(s32 *)(otherCar + 0x4)) +
+                          MathMultiplyFixed16((*(s32 *)(car + 0x24)), work3));
+                if (direction.x > 0) {
+                    speedSumB =
+                        (*(s32 *)(otherCar + 0x90)) + (*(s32 *)(car + 0x90));
+                    meanSpeedB = (s32)(speedSumB + (speedSumB >> 0x1F)) >> 1;
+                    if ((*(s16 *)(otherCar + 0x1EC)) != 0) {
+                        (*(s32 *)(otherCar + 0x90)) =
+                            (s32)(meanSpeedB + 0xA0000);
+                    }
+                    if ((*(s16 *)(car + 0x1EC)) != 0) {
+                        newSpeedB = meanSpeedB + 0xFFF60000;
+                        goto block_69;
+                    }
+                } else {
+                    tmp0 = *(s32 *)(otherCar + 0x90);
+                    tmp1 = *(s32 *)(car + 0x90);
+                    scratchA0 = *(s16 *)(otherCar + 0x1EC);
+                    tmp0 += tmp1;
+                    if (tmp0 < 0) {
+                        tmp0 = -tmp0;
+                    }
+                    tmp1 = (u32)tmp0 >> 31;
+                    tmp0 += tmp1;
+                    tmp1 = tmp0 >> 1;
+                    if (scratchA0 != 0) {
+                        (*(s32 *)(otherCar + 0x90)) = (s32)(tmp1 + 0xFFF60000);
+                    }
+                    if ((*(s16 *)(car + 0x1EC)) != 0) {
+                        newSpeedB = tmp1 + 0xA0000;
+                    block_69:
+                        (*(s32 *)(car + 0x90)) = newSpeedB;
+                    }
+                }
+                func_80025DD4(otherCar, car);
+                if (relativeSpeed < 0x2E) {
+                    effectFlag = 1;
+                    goto effectsDoneNegative;
+                }
+
+                if (relativeSpeed >= 0x79) {
+                    func_800432C0(otherCar, 7);
+                    if (RandomScaledGet(0xA) == 0) {
+                        callA1 = 0;
+                        if (separation.y > 0) {
+                            asm("# positive contact effect");
+                            callA0 = (s32)car;
+                        } else {
+                            callA0 = (s32)car;
+                            asm("# negative contact effect");
+                            callA1 = 1;
+                        }
+                        func_800432C0((void *)callA0, callA1);
+                    }
+                }
+                if (RandomScaledGet(0xA) == 0) {
+                    callA0 = (s32)car;
+                    if (separation.y > 0) {
+                        asm("# positive contact side");
+                        callA1 = 5;
+                    } else {
+                        asm("# negative contact side");
+                        callA1 = 6;
+                    }
+                    func_800432C0((void *)callA0, callA1);
+                }
+                asm("" : : : "a0");
+                func_80043B68(car, 0);
+                func_80043B68(car, 1);
+                func_80043B68(otherCar, 2);
+                func_80043B68(otherCar, 3);
+                effectFlag = 1;
+                asm("" : "=r"(effectFlag) : "0"(effectFlag));
+
+            effectsDoneNegative:
+                CollisionApplyImpulse(car, otherCar, velocity, 0, effectFlag);
+                return 2;
+            }
+            if (work2 < scratchA1) {
+                (*(s16 *)(car + 0x1CE)) = 4;
+                work2 = scratchA1 - work2;
+                work3 = 1;
+                if (separation.y > 0) {
+                    work2 = -work2;
+                }
+                work1 = MathMultiplyFixed16((*(s32 *)(car + 0x1C)), work2);
+
+                (*(s32 *)(car + 0x0)) = (s32)((*(s32 *)(car + 0x0)) + work1);
+                work0 = MathMultiplyFixed16((*(s32 *)(car + 0x28)), work2);
+
+                (*(s32 *)(car + 0x4)) = (s32)((*(s32 *)(car + 0x4)) + work0);
+                (*(s32 *)(otherCar + 0x0)) =
+                    (s32)((*(s32 *)(otherCar + 0x0)) -
+                          MathMultiplyFixed16((*(s32 *)(car + 0x1C)), work2));
+                (*(s32 *)(otherCar + 0x4)) =
+                    (s32)((*(s32 *)(otherCar + 0x4)) -
+                          MathMultiplyFixed16((*(s32 *)(car + 0x28)), work2));
+                func_80025DD4(otherCar, car);
+                nextCallback = (s32)func_80025720;
+                asm("" : "=r"(nextCallback) : "0"(nextCallback));
+                if ((((*(s16 *)(car + 0x1EC)) != work3) ||
+                     (nextCallback != (s32)func_80025730)) &&
+                    ((*(s32 *)(car + 0x354)) != (s32)func_80025730) &&
+                    ((*(s8 *)(car + 0x200)) != 4)) {
+                    (*(s32 *)(car + 0x354)) = nextCallback;
+                }
+                if ((*(s16 *)(car + 0x1EC)) == 0) {
+                    if ((*(s16 *)(otherCar + 0x1EC)) != 0) {
+                        carHeading = (*(s16 *)(car + 0x114));
+                        headingDifference =
+                            carHeading - (*(s16 *)(otherCar + 0x114));
+                        wrappedHeadingDifference = headingDifference + 0x400;
+                        roundedHeadingDifference = wrappedHeadingDifference;
+                        if (wrappedHeadingDifference < 0) {
+                            roundedHeadingDifference =
+                                headingDifference + 0x7FF;
+                        }
+                        if ((u32)((wrappedHeadingDifference -
+                                   ((roundedHeadingDifference >> 0xA) << 0xA)) -
+                                  0x101) < 0x1FFU) {
+                            otherHeading = (carHeading + 0x200) & 0x3FF;
+                        } else {
+                            otherHeading = carHeading;
+                        }
+                        (*(s16 *)(otherCar + 0x114)) = otherHeading;
+                        (*(s16 *)(otherCar + 0x116)) =
+                            (s16)((s32)(otherHeading << 0x10) >> 0xE);
+                    }
+                    responseYInRange = work1 < 0x33;
+                } else {
+                    responseYInRange = work1 < 0x33;
+                }
+                if (responseYInRange == 0) {
+                    work1 = 0x32;
+
+                    goto block_105;
+                }
+                if (work1 < -0x32) {
+                    work1 = -0x32;
+                }
+            block_105:
+                responseXInRange = work0 < 0x33;
+                if (responseXInRange == 0) {
+                    work0 = 0x32;
+
+                } else if (work0 < -0x32) {
+                    work0 = -0x32;
+                }
+                if (separation.x >= -collisionHalfWidth) {
+                    (*(s32 *)(car + 0xC4)) =
+                        (s32)((*(s32 *)(car + 0xC4)) + (work1 << 0x11));
+                    (*(s32 *)(car + 0xC8)) =
+                        (s32)((*(s32 *)(car + 0xC8)) + (work0 << 0x11));
+                }
+                tmp0 = separation.x;
+                tmp0 = collisionHalfWidth < tmp0;
+                if (tmp0 != 0) {
+                    return 1;
+                }
+                tmp1 = *(s32 *)(car + 0xD0);
+                callA0 = *(s32 *)(car + 0xD4);
+                scratchA1 = *(s16 *)(car + 0x1EC);
+                tmp0 = work1 << 16;
+                tmp1 += tmp0;
+                tmp0 = work0 << 16;
+                callA0 += tmp0;
+                *(s32 *)(car + 0xD0) = tmp1;
+                *(s32 *)(car + 0xD4) = callA0;
+                if (scratchA1 != 0) {
+                    goto sideReturnOne;
+                }
+                tmp1 = *(s16 *)(otherCar + 0x1EC);
+                tmp0 = 1;
+                asm("" : "=r"(tmp0) : "0"(tmp0));
+                if (tmp1 == tmp0) {
+                    tmp1 = 0xFFFB0000;
+                    tmp0 = *(s32 *)(otherCar + 0x90);
+                    tmp0 += tmp1;
+                    *(s32 *)(otherCar + 0x90) = tmp0;
+                    asm("# side impulse complete");
+                sideReturnOne:
+                    asm("# side return one");
+                    tmp0 = 1;
+                }
+                return tmp0;
+            }
+            goto block_151;
+        }
+        tmp0 = separation.x;
+        collisionExtent = collisionHalfWidth + scratchV1;
+        if (tmp0 >= 0) {
+            asm("" : "=r"(scratchV1) : "0"(scratchV1));
+            tmp0 = collisionExtent < tmp0;
+            if (tmp0 != 0) {
+                asm("# positive lateral rejection");
+                return 0;
+            }
+            overlapLimit = collisionHalfWidth + scratchV1;
+            goto block_122;
+        }
+        asm("" : "=r"(scratchV1) : "0"(scratchV1));
+        tmp0 = -tmp0;
+        tmp0 = collisionExtent < tmp0;
+        result = 0;
+        if (tmp0 == 0) {
+            overlapLimit = collisionHalfWidth + scratchV1;
+        block_122:
+            if (work2 < overlapLimit) {
+                if (relativeSpeed >= 0x12D) {
+                    tmp0 = *(s16 *)(car + 0x1EC);
+                    responseCode = 5;
+                block_125:
+                    asm("" : "=r"(callA0) : "0"((s32)func_80025730));
+                    asm("" : : "r"(tmp0), "r"(responseCode));
+                    (*(s16 *)(car + 0x1CE)) = responseCode;
+                    if ((tmp0 != 1) && ((*(s32 *)(car + 0x354)) != callA0) &&
+                        ((*(s8 *)(car + 0x200)) != 4)) {
+                        (*(s32 *)(car + 0x354)) = callA0;
+                    }
+                    if (((*(s16 *)(otherCar + 0x1EC)) == 0)) {
+                        tmp0 = *(s32 *)(otherCar + 0x354);
+                        callA0 = (s32)func_80025730;
+                        asm("" : "=r"(callA0) : "0"(callA0));
+                        if ((tmp0 != callA0) &&
+                            ((*(s8 *)(otherCar + 0x200)) != 4)) {
+                            (*(s32 *)(otherCar + 0x354)) = callA0;
+                        }
+                    }
+                    result = 4;
+                    if ((*(s16 *)(car + 0x1EC)) == 0) {
+                        func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                      separation.y);
+                        asm("# collision response 2");
+                        return 4;
+                    }
+                    return result;
+                }
+                (*(s16 *)(car + 0x1CE)) = 6;
+                tmp0 = original.x;
+                tmp1 = tmp0 * tmp0;
+                tmp0 = original.y;
+                productY = tmp0 * tmp0;
+                work3 = MathSqrt(tmp1 + productY);
+                (*(s32 *)(car + 0x0)) =
+                    (s32)(midpoint.x +
+                          ((s32)(MathFixedDivide((*(s32 *)(car + 0x0)) -
+                                                     midpoint.x,
+                                                 work3) *
+                                 0x320) >>
+                           0x10));
+                (*(s32 *)(car + 0x4)) =
+                    (s32)(midpoint.y +
+                          ((s32)(MathFixedDivide((*(s32 *)(car + 0x4)) -
+                                                     midpoint.y,
+                                                 work3) *
+                                 0x320) >>
+                           0x10));
+                (*(s32 *)(otherCar + 0x0)) =
+                    (s32)(midpoint.x +
+                          ((s32)(MathFixedDivide((*(s32 *)(otherCar + 0x0)) -
+                                                     midpoint.x,
+                                                 work3) *
+                                 0x320) >>
+                           0x10));
+                otherPositionY =
+                    midpoint.y +
+                    ((s32)(MathFixedDivide(
+                               (*(s32 *)(otherCar + 0x4)) - midpoint.y, work3) *
+                           0x320) >>
+                     0x10);
+                (*(s32 *)(otherCar + 0x4)) = otherPositionY;
+                func_80025DD4(otherCar, car);
+                tmp1 = separation.x;
+                if (tmp1 >= -collisionHalfWidth) {
+                    CollisionApplyImpulse(car, otherCar, velocity, 1, 0);
+                    if ((separation.x < 0) &&
+                        ((*(s16 *)(otherCar + 0x1EC)) != 0)) {
+                        (*(s32 *)(otherCar + 0x90)) = 0;
+                    }
+                } else {
+                    beyondFar = collisionHalfWidth < tmp1;
+                    asm("" : "=r"(beyondFar) : "0"(beyondFar));
+                    if (beyondFar == 0) {
+                        tmp0 = *(s32 *)(otherCar + 0xB0);
+                        tmp1 = *(s32 *)(otherCar + 0xB4);
+                        scratchA0 = (u32)tmp0 >> 31;
+                        tmp0 = (tmp0 + scratchA0) >> 1;
+                        work1 = tmp0 << 16;
+                        tmp0 = (u32)tmp1 >> 31;
+                        tmp1 += tmp0;
+                        asm("" : "=r"(tmp1) : "0"(tmp1));
+                        tmp1 >>= 1;
+                        work0 = tmp1 << 16;
+                        asm volatile("" : : "r"(work1), "r"(work0));
+                        CollisionApplyImpulse(car, otherCar, velocity, 0, 1);
+                    }
+                }
+                nextCallback = (s32)func_80025614;
+                asm("" : "=r"(nextCallback) : "0"(nextCallback));
+                if ((((*(s16 *)(car + 0x1EC)) != 1) ||
+                     (nextCallback != (s32)func_80025730)) &&
+                    ((*(s32 *)(car + 0x354)) != (s32)func_80025730) &&
+                    ((*(s8 *)(car + 0x200)) != 4)) {
+                    (*(s32 *)(car + 0x354)) = nextCallback;
+                }
+                result = 2;
+                if ((*(s16 *)(car + 0x1EC)) == 0) {
+                    func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                  separation.y);
+                    asm("");
+                    return 2;
+                }
+                return result;
+            }
+            if ((tmp0 = work2 < scratchA1) != 0) {
+                (*(s16 *)(car + 0x1CE)) = 7;
+                result = 3;
+                if ((*(s16 *)(otherCar + 0x1EC)) == 1) {
+                    func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                  separation.y);
+                    asm("");
+                    return 3;
+                }
+                return result;
+            }
+        block_151:
+            result = 0;
+            return result;
+        }
+        return result;
+    }
+    return result;
+}
 s32 func_800270F4(void *arg0, s32 arg1) {
     s32 index;
     s32 product;
