@@ -5144,7 +5144,66 @@ s32 func_8002AEB0(u8 *arg0) {
     return value << 16;
 }
 
+#ifdef NON_MATCHING
+void func_8002AF94(u8 *arg0) {
+    extern u8 *trigA asm("D_800A3A2CAbsolute");
+    extern u8 *trigB asm("D_800A3A34Absolute");
+    u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
+    VECTOR front;
+    VECTOR rear;
+    s32 diff;
+    s32 absDiff;
+    s32 t;
+    s32 index;
+
+    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
+    t = MathMultiplyFixed16(((s32 *)trigA)[index],
+                            *(s32 *)(arg0 + 0xC4));
+    t = t - MathMultiplyFixed16(((s32 *)trigB)[index],
+                                *(s32 *)(arg0 + 0xC8));
+                                front.vx = t;
+    t = MathMultiplyFixed16(((s32 *)trigB)[index],
+                            *(s32 *)(arg0 + 0xC4));
+    t = t + MathMultiplyFixed16(((s32 *)trigA)[index],
+                                *(s32 *)(arg0 + 0xC8));
+                                front.vy = t;
+    t = MathMultiplyFixed16(((s32 *)trigA)[index],
+                            *(s32 *)(arg0 + 0xD0));
+    t = t - MathMultiplyFixed16(((s32 *)trigB)[index],
+                                *(s32 *)(arg0 + 0xD4));
+                                rear.vx = t;
+    t = MathMultiplyFixed16(((s32 *)trigB)[index],
+                            *(s32 *)(arg0 + 0xD0));
+    t = t + MathMultiplyFixed16(((s32 *)trigA)[index],
+                                *(s32 *)(arg0 + 0xD4));
+                                rear.vy = t;
+    diff = front.vx - rear.vx;
+    absDiff = diff;
+    if (diff < 0) {
+        absDiff = -diff;
+    }
+    if (absDiff > 0x50000) {
+        front.vx = front.vx + -diff * 4 / 10;
+        rear.vx = rear.vx + diff * 6 / 10;
+        index = *(s16 *)(arg0 + 0x114);
+        t = MathMultiplyFixed16(((s32 *)trigA)[index], front.vx);
+        *(s32 *)(arg0 + 0xC4) =
+            t - MathMultiplyFixed16(((s32 *)trigB)[index], front.vy);
+        t = MathMultiplyFixed16(((s32 *)trigB)[index], front.vx);
+        *(s32 *)(arg0 + 0xC8) =
+            t + MathMultiplyFixed16(((s32 *)trigA)[index], front.vy);
+        t = MathMultiplyFixed16(((s32 *)trigA)[index], rear.vx);
+        *(s32 *)(arg0 + 0xD0) =
+            t - MathMultiplyFixed16(((s32 *)trigB)[index], rear.vy);
+        t = MathMultiplyFixed16(((s32 *)trigB)[index], rear.vx);
+        *(s32 *)(arg0 + 0xD4) =
+            t + MathMultiplyFixed16(((s32 *)trigA)[index], rear.vy);
+    }
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002AF94);
+#endif
 
 extern s32 D_800A2E44nm asm("D_800A2E44.NON_MATCHING");
 extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
