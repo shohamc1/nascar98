@@ -398,7 +398,562 @@ void TextureLoadTim(void *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800132F8);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA50);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA5C);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA68);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA74);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA80);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA8C);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CA98);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAA4);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAB4);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAC0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CACC);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAE0);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CAEC);
+INCLUDE_RODATA("asm/nonmatchings/game", D_8008CB00);
+
+void TrackLoad(u8 selectTrack) {
+    typedef struct {
+        s32 first;
+        s32 second;
+    } NameWords;
+    typedef struct {
+        s32 first;
+        s16 second;
+        s8 last;
+    } NameShort;
+    extern void *D_800A39C8;
+    extern s32 D_800A2DE4[];
+    extern s32 D_800A2E1C[];
+    extern s8 D_800A2E20[];
+    extern s32 D_800A2E34[];
+    extern s8 D_800A2E5A[];
+    extern s32 D_800A2E60[];
+    extern s32 D_800A2E64[];
+    extern s32 D_800A2E6CLoad asm("D_800A2E6CAbsolute");
+    extern s32 D_800A2E70[];
+    extern s32 D_800A2E74[];
+    extern s32 D_800A2E78[];
+    extern s32 D_800A2E90[];
+    extern s32 D_800A2EA4[];
+    extern s8 D_800A2EE8[];
+    extern s32 D_800A2F50Increment asm("D_800A2F50Absolute2");
+    extern s32 D_800A2F50Load asm("D_800A2F50Absolute");
+    extern s32 D_800A2F84[];
+    extern s32 D_800A2F88[];
+    extern s32 D_800A2F8C[];
+    extern u8 D_800A331E[];
+    extern u8 D_800A3320[];
+    extern s32 D_800A33C8;
+    extern s32 D_800A3560[];
+    extern s32 D_800A3598[];
+    extern s32 D_800A3720;
+    extern s32 D_800A3774[];
+    extern s32 D_800A3820[];
+    extern s32 D_800A394C[];
+    extern s32 D_800A396C[];
+    extern s32 D_800A3A74[];
+    extern s32 D_800BE974[];
+    extern u32 func_800A2CE0;
+    extern NameWords D_800A2D24;
+    extern NameShort D_800A2D2C;
+    extern NameWords D_800A2D34;
+    extern NameWords D_800A2D3C;
+    extern u16 D_80090DC8[];
+    extern u16 D_80090DCA[];
+    extern u16 D_80090DCC[];
+    extern u16 D_80090DCE[];
+    extern u16 D_80090DD0[];
+    extern u16 D_80090DD2[];
+    extern u16 D_80090DD4[];
+    extern u16 D_80090DD6[];
+    extern char D_8008CA50[] __attribute__((aligned(4)));
+    extern char D_8008CA5C[] __attribute__((aligned(4)));
+    extern char D_8008CA68[] __attribute__((aligned(4)));
+    extern char D_8008CA74[] __attribute__((aligned(4)));
+    extern char D_8008CA80[] __attribute__((aligned(4)));
+    extern char D_8008CA8C[] __attribute__((aligned(4)));
+    extern char D_8008CA98[] __attribute__((aligned(4)));
+    extern char D_8008CAA4[] __attribute__((aligned(4)));
+    extern char D_8008CAB4[] __attribute__((aligned(4)));
+    extern char D_8008CAC0[] __attribute__((aligned(4)));
+    extern char D_8008CACC[] __attribute__((aligned(4)));
+    extern char D_8008CAE0[] __attribute__((aligned(4)));
+    extern char D_8008CAEC[] __attribute__((aligned(4)));
+    extern char D_8008CB00[] __attribute__((aligned(4)));
+    extern s32 func_80041D60(s32);
+    extern void func_80015A74(s32);
+    extern void func_8001E050(s32);
+    extern void func_8003CA18(s32, s32);
+    extern void func_800367DC(s32);
+    extern s32 MathFixedDivide(s32, s32);
+    extern void func_8001DF60(s32);
+    extern char *strcat(char *, const char *);
+    char trackName[256];
+    char loadingText[256];
+    s32 track;
+    s32 previousButtons;
+    /* Retail leaves this debug-selector bank uninitialized. */
+    s32 bank;
+    s32 buttons;
+    s32 offset;
+    s32 adjustment;
+    register s32 product asm("a0");
+    s32 base;
+    s32 limit;
+    s32 scaled;
+    s32 setting0;
+    s32 setting1;
+    s32 enabled;
+    register s32 color0 asm("a2");
+    register s32 color1 asm("a1");
+    register s32 color2 asm("a0");
+    s32 setting;
+    s32 parameter0;
+    s32 parameter1;
+
+    track = 0;
+    previousButtons = 0;
+    if (selectTrack != 0) {
+        do {
+            D_800A33C8 = func_80041D60(0);
+        } while (D_800A33C8 != 0);
+        do {
+            bank = bank == 0;
+            gOrderingTableBank = bank * 2;
+            D_800A39C8 = gOrderingTables + (bank << 13);
+            ClearOTagR((u_long *)D_800A39C8, 0x400);
+            ClearOTagR((u_long *)(gOrderingTables + 0x1000 +
+                                  (gOrderingTableBank << 12)),
+                       0x400);
+            D_800A33C8 = func_80041D60(0);
+            if ((D_800A33C8 & 0x8000) && !(previousButtons & 0x8000)) {
+                track = (track + 15) % 16;
+            }
+            if ((D_800A33C8 & 0x1000) && !(previousButtons & 0x1000)) {
+                track = (track + 15) % 16;
+            }
+            if ((D_800A33C8 & 0x2000) && !(previousButtons & 0x2000)) {
+                track = (track + 17) % 16;
+            }
+            if ((D_800A33C8 & 0x4000) && !(previousButtons & 0x4000)) {
+                track = (track + 17) % 16;
+            }
+            previousButtons = D_800A33C8;
+            switch (track) {
+            case 0:
+                *(NameWords *)trackName = D_800A2D24;
+                break;
+            case 1:
+                __builtin_memcpy(trackName, D_8008CA50, 11);
+                break;
+            case 2:
+                __builtin_memcpy(trackName, D_8008CA5C, 12);
+                break;
+            case 3:
+                __builtin_memcpy(trackName, D_8008CA68, 11);
+                break;
+            case 4:
+                __builtin_memcpy(trackName, D_8008CA74, 12);
+                break;
+            case 5:
+                __builtin_memcpy(trackName, D_8008CA80, 12);
+                break;
+            case 6:
+                __builtin_memcpy(trackName, D_8008CA8C, 9);
+                break;
+            case 7:
+                __builtin_memcpy(trackName, D_8008CA98, 12);
+                break;
+            case 8:
+                __builtin_memcpy(trackName, D_8008CAA4, 13);
+                break;
+            case 9:
+                __builtin_memcpy(trackName, &D_800A2D2C, 7);
+                break;
+            case 10:
+                __builtin_memcpy(trackName, D_8008CAB4, 10);
+                break;
+            case 11:
+                *(NameWords *)trackName = D_800A2D34;
+                break;
+            case 12:
+                __builtin_memcpy(trackName, D_8008CAC0, 10);
+                break;
+            case 13:
+                *(NameWords *)trackName = D_800A2D3C;
+                break;
+            case 15:
+                __builtin_memcpy(trackName, D_8008CACC, 17);
+                break;
+            case 14:
+                __builtin_memcpy(trackName, D_8008CAE0, 12);
+                break;
+            }
+            buttons = D_800A33C8;
+            if (buttons & 0x80) {
+                break;
+            }
+            if ((buttons = buttons) & 0x20) {
+                break;
+            }
+            if ((buttons = buttons) & 0x10) {
+                break;
+            }
+            if ((buttons = buttons) & 0x40) {
+                break;
+            }
+            func_8001E7EC(gOrderingTables + (gOrderingTableBank << 12),
+                          (s32)trackName, 1);
+        } while (1);
+        __builtin_memcpy(loadingText, D_8008CAEC, 17);
+        strcat(loadingText, trackName);
+        if (D_800A2EA4[0] == 2) {
+            strcat(loadingText, D_8008CB00);
+        }
+        func_8001E7EC(gOrderingTables + (gOrderingTableBank << 12),
+                      (s32)loadingText, 1);
+    } else {
+        track = func_800A2CE0;
+    }
+    D_800A3598[0] = 1;
+    D_800A2F8C[0] = 0x1194;
+    D_800A2F50Load = 0x1A7;
+    D_800A2E5A[0] = 1;
+    D_800A2E90[0] = 0;
+    D_800A3774[0] = 0;
+    D_800A3820[0] = 0;
+    D_800A3560[0] = 0;
+    D_800A2EE8[0] = 0;
+    D_800A2E20[0] = 0;
+    D_800A2F84[0] = 0;
+    D_800A394C[0] = 0x383838;
+    D_800A3A74[0] = 0x104838;
+    D_800A396C[0] = 0x808080;
+    D_800A2DE4[0] = 0x78;
+    D_800A2E78[0] = ((D_800A331E[0] - 0x64) * 7) + 0x15E;
+    SetBackColor(0, 0, 0);
+    SetFarColor(0xFF, 0xFF, 0xFF);
+    SetFogNear(0x4B0, 0x200);
+    SetFogFar(0x2710, 0x200);
+    offset = track * 8;
+    limit = D_80090DCC[offset];
+    D_800A2E6CLoad = limit;
+    if (limit < 0xFA0) {
+        D_800A2E6CLoad = 0xFA0;
+    }
+    parameter0 = D_80090DCE[offset];
+    parameter1 = D_80090DD0[offset];
+    D_800A2E70[0] = parameter0;
+    D_800A2E34[0] = parameter1;
+    switch (track) {
+    case 1:
+        D_800A3720 = 0xA8;
+        func_80015A74(0x41);
+        func_8001E050(0x42);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x43);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x44);
+        func_800367DC(0x45);
+        func_800367DC(0x46);
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x1B1;
+        D_800A2E1C[0] = 0xA;
+        D_800A2F88[0] = 0x4E20;
+        D_800A2F84[0] = 1;
+        break;
+    case 4:
+        D_800A3720 = 0xA9;
+        func_80015A74(0x47);
+        func_8001E050(0x48);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x49);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x4A);
+        func_800367DC(0x4B);
+        func_800367DC(0x4C);
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x1A7;
+        D_800A2E1C[0] = 0xA;
+        break;
+    case 10:
+        D_800A3720 = 0xAA;
+        func_80015A74(0x4D);
+        func_8001E050(0x4E);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x4F);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x50);
+        func_800367DC(0x51);
+        func_800367DC(0x52);
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x19D;
+        D_800A2E1C[0] = 0xA;
+        D_800A2F84[0] = 1;
+        break;
+    case 7:
+        D_800A3720 = 0xAB;
+        func_80015A74(0x53);
+        func_8001E050(0x54);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x55);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x56);
+        func_800367DC(0x57);
+        func_800367DC(0x58);
+        D_800A2F50Load = 0x198;
+        D_800A2E90[0] = 0x17;
+        D_800A2E1C[0] = 0xA;
+        D_800A2F88[0] = 0x3520;
+        break;
+    case 15:
+        D_800A3720 = 0xAC;
+        func_80015A74(0x59);
+        func_8001E050(0x5A);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x5B);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x5C);
+        func_800367DC(0x5D);
+        func_800367DC(0x5E);
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x17F;
+        D_800A2E1C[0] = 0xA;
+        D_800A2F84[0] = 1;
+        break;
+    case 13:
+        D_800A3720 = 0xAD;
+        func_80015A74(0x5F);
+        func_8001E050(0x60);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x61);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x62);
+        func_800367DC(0x63);
+        func_800367DC(0x64);
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x193;
+        D_800A2E1C[0] = 0xA;
+        break;
+    case 8:
+        D_800A3720 = 0xAE;
+        func_80015A74(0x65);
+        func_8001E050(0x66);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x67);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x68);
+        func_800367DC(0x69);
+        func_800367DC(0x6A);
+        D_800A2E1C[0] = 8;
+        D_800A2F50Load = 0x1C0;
+        D_800A3820[0] = 0x14;
+        D_800A3560[0] = 0x14;
+        D_800A2E90[0] = 0x17;
+        enabled = 1;
+        goto trackFlags;
+    case 5:
+        D_800A3720 = 0xAF;
+        func_80015A74(0x6B);
+        func_8001E050(0x6C);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x6D);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x6E);
+        func_800367DC(0x6F);
+        func_800367DC(0x70);
+        D_800A2E1C[0] = 0xA;
+        D_800A2E20[0] = 1;
+        D_800A2F50Load = 0x193;
+        D_800A3820[0] = 0x14;
+        D_800A3560[0] = 2;
+        D_800A2E90[0] = 0x17;
+        D_800A3774[0] = -0xE;
+        break;
+    case 12:
+        D_800A3720 = 0xB0;
+        func_80015A74(0x71);
+        func_8001E050(0x72);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x73);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x74);
+        func_800367DC(0x75);
+        func_800367DC(0x76);
+        D_800A2F50Load = 0x1B1;
+        D_800A2E90[0] = 0x17;
+        D_800A2E1C[0] = 0xA;
+        D_800A2E20[0] = 1;
+        D_800A2F88[0] = 0x44C0;
+        D_800A3560[0] = 0x14;
+        D_800A2F84[0] = 1;
+        break;
+    case 11:
+        D_800A3720 = 0xB1;
+        func_80015A74(0x77);
+        func_8001E050(0x78);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x79);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x7A);
+        func_800367DC(0x7B);
+        func_800367DC(0x7C);
+        D_800A2E1C[0] = 6;
+        D_800A2E20[0] = 1;
+        D_800A2F50Load = 0x1C0;
+        D_800A2E90[0] = 0x17;
+        D_800A3598[0] = 2;
+        break;
+    case 14:
+        D_800A3720 = 0xB2;
+        func_80015A74(0x7D);
+        func_8001E050(0x7E);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x7F);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x80);
+        func_800367DC(0x81);
+        func_800367DC(0x82);
+        D_800A2E1C[0] = 5;
+        D_800A2E20[0] = 1;
+        D_800A2EE8[0] = 1;
+        D_800A2F50Load = 0x1CA;
+        D_800A2E90[0] = 0x17;
+        D_800A394C[0] = 0x505050;
+        D_800A396C[0] = 0xA0A0A0;
+        D_800A3598[0] = 2;
+        break;
+    case 0:
+        D_800A3720 = 0xB3;
+        func_80015A74(0x83);
+        func_8001E050(0x84);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x85);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x86);
+        func_800367DC(0x87);
+        func_800367DC(0x88);
+        D_800A2EE8[0] = 1;
+        D_800A2F50Load = 0x1B1;
+        D_800A2E90[0] = 0x17;
+        D_800A2E1C[0] = 0xA;
+        D_800A3820[0] = 0xA;
+        D_800A3560[0] = 0xA;
+        D_800A3A74[0] = 0x383838;
+        D_800A3598[0] = 0;
+    default:
+        break;
+    case 6:
+        D_800A3720 = 0xB4;
+        func_80015A74(0x89);
+        func_8001E050(0x8A);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x8B);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x8C);
+        func_800367DC(0x8D);
+        func_800367DC(0x8E);
+        D_800A2E1C[0] = 9;
+        D_800A2E20[0] = 1;
+        D_800A2EE8[0] = 1;
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x193;
+        D_800A3598[0] = 0;
+        break;
+    case 3:
+        D_800A3720 = 0xB5;
+        func_80015A74(0x8F);
+        func_8001E050(0x90);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x91);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x92);
+        func_800367DC(0x93);
+        func_800367DC(0x94);
+        color0 = 0x505850;
+        color1 = 0x383838;
+        color2 = 0x808090;
+        setting = 0xA;
+        enabled = 1;
+        D_800A2E1C[0] = setting;
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x1A7;
+        D_800A3820[0] = -0xA;
+        D_800A2E20[0] = enabled;
+        D_800A2EE8[0] = enabled;
+        D_800A3560[0] = -0x44;
+        D_800A394C[0] = color0;
+        D_800A3A74[0] = color1;
+        D_800A396C[0] = color2;
+        break;
+    case 16:
+        D_800A3720 = 0xB6;
+        func_80015A74(0x95);
+        func_8001E050(0x96);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x97);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x98);
+        func_800367DC(0x99);
+        func_800367DC(0x9A);
+        D_800A2E1C[0] = 8;
+        D_800A2E20[0] = 1;
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x1B6;
+        D_800A2F84[0] = 1;
+        D_800A3820[0] = 0x28;
+        break;
+    case 9:
+        D_800A3720 = 0xB7;
+        func_80015A74(0x9B);
+        func_8001E050(0x9C);
+        func_8003CA18(STACK_BLOCK_801E0000, 0x9D);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0x9E);
+        func_800367DC(0x9F);
+        func_800367DC(0xA0);
+        setting = 8;
+        enabled = 1;
+        D_800A2E1C[0] = setting;
+        D_800A2E90[0] = 0x17;
+        D_800A2F50Load = 0x1C5;
+    trackFlags:
+        D_800A2E20[0] = enabled;
+        D_800A2EE8[0] = enabled;
+        D_800A3598[0] = 2;
+        break;
+    case 2:
+        D_800A3720 = 0xB8;
+        func_80015A74(0xA1);
+        func_8001E050(0xA2);
+        func_8003CA18(STACK_BLOCK_801E0000, 0xA3);
+        TextureLoadTim(STACK_BLOCK_801E0000);
+        func_800367DC(0xA4);
+        func_800367DC(0xA5);
+        func_800367DC(0xA6);
+        setting = 8;
+        enabled = 1;
+        D_800A2E1C[0] = setting;
+        D_800A2E90[0] = 0x17;
+        D_800A2E20[0] = enabled;
+        D_800A2F50Load = 0x1C0;
+        D_800A2EE8[0] = enabled;
+        D_800A3598[0] = 0;
+        break;
+    }
+    offset = track * 8;
+    adjustment =
+        ((D_80090DCA[offset] - D_80090DC8[offset]) * (100 - D_800A3320[0])) /
+        50;
+    base = D_80090DCC[offset - 2];
+    D_800A2E74[0] = D_800A3320[0];
+    D_800A2F50Increment += 20;
+    D_800A2F50Load = adjustment;
+    {
+        s32 quotient;
+        register s32 baseSpeed asm("v1");
+        quotient = MathFixedDivide(base + adjustment, base);
+        baseSpeed = D_80090DCE[offset - 3];
+        product = baseSpeed * quotient;
+    }
+    scaled = D_80090DD2[offset] * D_800BE974[0];
+    setting0 = D_80090DD4[offset];
+    setting1 = D_80090DD6[offset];
+    D_800A2E60[0] = setting0;
+    D_800A2E64[0] = setting1;
+    D_800A2F50Load = product >> 16;
+    D_800A2F88[0] = scaled;
+    func_8001DF60(product);
+    func_800A2CE0 = track;
+}
+
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CB94);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBB4);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBD0);
@@ -607,7 +1162,7 @@ dispatchShared:
     D_8008CA28[0] = 0;
 
 dispatchDone:
-    func_800132F8(0);
+    TrackLoad(0);
 
     v = D_800A2EB0w15[0];
     if (v > 0) {
@@ -842,9 +1397,9 @@ extern void *D_800A39A4;
 extern s32 D_800BE970[];
 extern void *D_800BE97C[];
 extern s32 D_800BE984[];
-extern char D_8008CB94[];
-extern char D_8008CBB4[];
-extern char D_8008CBD0[];
+extern char D_8008CB94[] __attribute__((aligned(4)));
+extern char D_8008CBB4[] __attribute__((aligned(4)));
+extern char D_8008CBD0[] __attribute__((aligned(4)));
 /* Resource loading. */
 
 void func_80014B10(s32 arg0, s32 arg1, s32 arg2) {
@@ -1009,7 +1564,7 @@ void func_80015A74(s32 arg0) {
     extern void func_80014BEC(s32 *, s32);
     extern void FileClose(s32);
     extern void SystemShowFatalError(char *);
-    extern char D_8008CC7C[];
+    extern char D_8008CC7C[] __attribute__((aligned(4)));
     extern u8 D_800A2D48[];
     extern s32 D_800BE970[];
     extern u8 D_800A2D4C[];

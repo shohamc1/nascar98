@@ -61,6 +61,9 @@ ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
             --defsym=D_800A2F9CAbsolute=D_800A2F9C \
+            --defsym=D_800A2E6CAbsolute=D_800A2E6C \
+            --defsym=D_800A2F50Absolute=D_800A2F50 \
+            --defsym=D_800A2F50Absolute2=D_800A2F50 \
             --defsym=D_800A3678Absolute=D_800A3678 \
             --defsym=D_800A3654Absolute=D_800A3654 \
             --defsym=D_800A367CAbsolute=D_800A367C \
