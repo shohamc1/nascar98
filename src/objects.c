@@ -1448,7 +1448,524 @@ void func_80022FB8(u8 *arg0, s32 arg1) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80023074);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80023454);
+extern void func_8003CCE0(s32);
+extern void func_8003FDE8(s8, s32, s32);
+extern void func_80024210(void);
+extern void func_8002F86C(void *, s32);
+extern void func_80044FF8(s32, s32);
+extern s8 D_800A2D0CControl asm("D_800A2D0CAbsolute");
+extern s32 D_800A2DF8Control asm("D_800A2DF8");
+extern s32 D_800A2EA4Control asm("D_800A2EA4Absolute");
+extern s32 D_800A2EACControl asm("D_800A2EACAbsolute");
+extern s32 D_800A2EB0Control asm("D_800A2EB0Absolute");
+extern s32 D_800A2EB4Control asm("D_800A2EB4Absolute");
+extern s32 D_800A2EC4Control asm("D_800A2EC4Absolute");
+extern s32 D_800A2EC8Control asm("D_800A2EC8Absolute");
+extern s32 D_800A2ECCControl asm("D_800A2ECCAbsolute");
+extern s32 D_800A2ED0Control asm("D_800A2ED0Absolute");
+extern s32 D_800A2ED4Control asm("D_800A2ED4Absolute");
+extern u8 D_800A2F95Control asm("D_800A2F95Absolute");
+extern u8 D_800A2F9CControl asm("D_800A2F9CAbsolute");
+extern u8 D_800A2F9DControl asm("D_800A2F9DAbsolute");
+extern s8 D_800A2FC8Control asm("D_800A2FC8Absolute");
+extern u8 D_800A306CControl asm("D_800A306CAbsolute");
+extern u8 D_800A306DControl asm("D_800A306DAbsolute");
+extern u8 *D_800A3554Control asm("D_800A3554Absolute");
+extern s8 D_800A3590Control asm("D_800A3590Absolute");
+extern s8 D_800A3620Control asm("D_800A3620");
+extern s16 D_800A3694Control asm("D_800A3694Absolute");
+extern s16 D_800A3696Control asm("D_800A3696Absolute");
+extern u8 D_800A36FCControl asm("D_800A36FCAbsolute");
+extern u8 D_800A3700Control asm("D_800A3700Absolute");
+extern u8 *D_800A3878Control asm("D_800A3878Absolute");
+extern s32 D_800A397CControl asm("D_800A397C.NON_MATCHING");
+extern s8 D_800A39F0Control asm("D_800A39F0");
+extern s8 D_800A3A94Control asm("D_800A3A94Absolute");
+
+extern s8 D_800A2F94Control asm("D_800A2F94Absolute");
+extern u8 D_800A3614Control asm("D_800A3614Absolute");
+extern u8 D_800A3924Control asm("D_800A3924Absolute");
+extern u8 D_800A380CControl asm("D_800A380CAbsolute");
+extern u8 D_800A35A8Control asm("D_800A35A8Absolute");
+extern s16 D_800A3696ControlPointer[] asm("D_800A3696Absolute2");
+extern s16 D_800A3694ControlPointer[] asm("D_800A3694Absolute2");
+
+void func_80023454(void) {
+    u8 frameGap[0x20];
+    s16 enabledVolume;
+    register s32 selectionDividend asm("$4");
+    register s32 fadeFlag asm("$5");
+    s16 *volume;
+    register s32 volumeValue asm("$3");
+    register s32 volumeResult asm("$2");
+    register s32 activeState asm("$6");
+    s32 buttons;
+    register s32 value asm("$2");
+    s32 buttonBits;
+    register s32 keyMask asm("$2");
+    s32 newButtonMask;
+    s32 waitCount;
+    s32 otherWaitCount;
+    register s32 flagBits asm("$2");
+    s32 heldDirections;
+    register s32 debugFlags asm("$3");
+    s8 menuState;
+    register s8 objectIndex asm("$5");
+    register s8 nextObjectIndex asm("$2");
+    register s32 selection asm("$2");
+    register s32 previousStateOne asm("$4");
+    register s32 nextStateOne asm("$2");
+    register s32 toneChannel asm("$4");
+    register s32 playerCount asm("$5");
+    register s32 parentSelection asm("$2");
+    register s32 selectionIndex asm("$3");
+    register s32 navigationState asm("$5");
+    u8 monoMode;
+    u8 *otherObject;
+    register u8 *object asm("$4");
+
+    /* Keep retail's frame gap and the switch table's 8-byte alignment. */
+    asm(".section .rodata\n\t.align 3\n\t.text" : : "m"(frameGap[0]));
+    if (D_800A397CControl != 2) {
+        buttons = func_80041B7C(D_800A3620Control);
+        if (!(D_800A2ED0Control & 0xC)) {
+            buttonBits = ~D_800A2DF8Control;
+            asm volatile(""
+                         : "=r"(keyMask)
+                         : "0"(buttonBits & 0x1000), "r"(buttons));
+            keyMask = buttons & keyMask;
+            toneChannel = 10;
+            if (keyMask) {
+                func_8003F564(toneChannel, 9);
+                if (D_800A39F0Control == 1 && D_800A2ECCControl == 3 &&
+                    D_800A306DControl == 0 && D_800A2F9CControl != 0) {
+                    func_8003CCE0(0);
+                }
+                selectionDividend = D_800A2ECCControl + 5;
+                asm("" : "=r"(selectionDividend) : "0"(selectionDividend));
+                selectionIndex = selectionDividend / 6;
+                asm("" : "=r"(selectionIndex) : "0"(selectionIndex));
+                selectionIndex = selectionDividend - selectionIndex * 6;
+                navigationState = D_800A39F0Control;
+                previousStateOne = 1;
+                asm("" : : "r"(previousStateOne));
+                D_800A2ECCControl = selectionIndex;
+                if (navigationState == previousStateOne)
+                    goto previousSoundState;
+                if (navigationState >= 2)
+                    goto navigationStateRange;
+                if (navigationState != 0)
+                    goto done;
+                playerCount = D_800A2EB0Control;
+                if (playerCount == 2 && selectionIndex == playerCount) {
+                    D_800A2ECCControl = previousStateOne;
+                }
+                if (D_800A2EA4Control != 0 && D_800A2ECCControl == 3) {
+                    selection = 2;
+                    goto setSelection;
+                }
+                goto done;
+            previousSoundState:
+                if (selectionIndex == navigationState &&
+                    D_800A2F9DControl != 0) {
+                handleSlider:
+                    func_80044FF8(0, 10);
+                    goto done;
+                }
+                if (D_800A2ECCControl == 3 && D_800A306DControl == 0) {
+                startMusic:
+                    func_8003CCE0(1);
+                }
+                goto done;
+            } else {
+                asm volatile(""
+                             : "=r"(keyMask)
+                             : "0"(buttonBits & 0x4000), "r"(buttons));
+                keyMask = buttons & keyMask;
+                if (!keyMask)
+                    goto block_49;
+                func_8003F564(toneChannel, 9);
+                if (D_800A39F0Control == 1 && D_800A2ECCControl == 3 &&
+                    D_800A306DControl == 0 && D_800A2F9CControl != 0) {
+                    func_8003CCE0(0);
+                }
+                selectionDividend = D_800A2ECCControl + 1;
+                asm("" : "=r"(selectionDividend) : "0"(selectionDividend));
+                selectionIndex = selectionDividend / 6;
+                asm("" : "=r"(selectionIndex) : "0"(selectionIndex));
+                selectionIndex = selectionDividend - selectionIndex * 6;
+                /* Release the quotient scratch register before loading one. */
+                asm("" : "=r"(selectionIndex) : "0"(selectionIndex) : "$2");
+                navigationState = D_800A39F0Control;
+                nextStateOne = 1;
+                asm("" : : "r"(nextStateOne));
+                D_800A2ECCControl = selectionIndex;
+                if (navigationState == nextStateOne)
+                    goto nextSoundState;
+                if (navigationState < 2) {
+                    if (navigationState == 0)
+                        goto nextGameState;
+                    goto done;
+                }
+            navigationStateRange:
+                if (navigationState == 2)
+                    goto paritySelection;
+                goto done;
+            nextGameState:
+                playerCount = D_800A2EB0Control;
+                if (playerCount == 2 && selectionIndex == playerCount) {
+                    D_800A2ECCControl = 3;
+                }
+                if (D_800A2EA4Control != 0 && D_800A2ECCControl == 3) {
+                    selection = 4;
+                    goto setSelection;
+                }
+                goto done;
+            nextSoundState:
+                if (selectionIndex == navigationState && D_800A2F9DControl != 0)
+                    goto handleSlider;
+                asm("" : : : "memory");
+                if (D_800A2ECCControl == 3 && D_800A306DControl == 0 &&
+                    D_800A2F9CControl != 0)
+                    goto startMusic;
+                goto done;
+            paritySelection:
+                selection = 4 - (selectionIndex & 1);
+            setSelection:
+                D_800A2ECCControl = selection;
+                goto done;
+            }
+        } else {
+        block_49:
+            buttonBits = D_800A2DF8Control;
+            asm("" : "=r"(keyMask) : "0"(~buttonBits & 0x840));
+            if (buttons & keyMask) {
+                if (buttons & 0x800) {
+                    asm("" : "=r"(keyMask) : "0"(buttonBits & 0x100));
+                    if (!(buttons & keyMask)) {
+                        if ((D_800A39F0Control == 1) &&
+                            (D_800A2ECCControl == D_800A39F0Control)) {
+                            func_80044FF8(2, 0xA);
+                        }
+                        D_800A39F0Control = 0;
+                        D_800A2ECCControl = 0;
+                        goto block_56;
+                    }
+                } else {
+                block_56:
+                    menuState = D_800A39F0Control;
+                    switch (menuState) {
+                    case 0:
+                        switch (D_800A2ECCControl) {
+                        case 0:
+                            D_800A2EC8Control = 0;
+                            D_800A2ED4Control = 0;
+                            if (D_800A2F9DControl == 0) {
+                                SsSetMute(1);
+                            }
+                            func_80041328();
+                            if (D_800A306DControl == 0) {
+                                func_8003CCE0(D_800A2F9CControl);
+                            }
+                            if (*(u8 *)(D_800A3554Control + 0x268) == 0) {
+                                *(s8 *)(D_800A3554Control + 0x20C) =
+                                    (u8) * (u8 *)(D_800A3554Control + 0x20D);
+                            }
+                            if (D_800A2EA4Control == 2) {
+                                otherObject =
+                                    *(u8 **)(D_800A3554Control + 0x3E0);
+                                if (*(u8 *)(otherObject + 0x268) == 0) {
+                                    *(s8 *)(otherObject + 0x20C) =
+                                        (u8) * (u8 *)(otherObject + 0x20D);
+                                }
+                            }
+                            break;
+                        case 1:
+                            func_8003F564(0xA, 0xB);
+                            func_800441C8();
+                            object = D_800A3878Control;
+                            D_800A397CControl = 2;
+                            objectIndex = 0;
+                            if (D_800A2EB4Control > 0) {
+                                activeState = 1;
+                                asm("" : : "r"(activeState));
+                            objectLoop:
+                                value = *(s8 *)(object + 0x20C);
+                                if (value >= 3) {
+                                    value = *(s16 *)(object + 0x114);
+                                    *(s8 *)(object + 0x20C) = activeState;
+                                    *(s32 *)(object + 0x380) = value;
+                                    asm(""
+                                        : "=r"(objectIndex)
+                                        : "0"(objectIndex));
+                                }
+                                nextObjectIndex = objectIndex + 1;
+                                objectIndex = nextObjectIndex;
+                                object = *(u8 **)(object + 0x3E0);
+                                if (nextObjectIndex < D_800A2EB4Control)
+                                    goto objectLoop;
+                            }
+                            break;
+                        case 2:
+                            func_8003F564(10, 11);
+                            value = D_800A2ED0Control;
+                            debugFlags = value & ~128;
+                            value &= 8;
+                            D_800A2ED0Control = debugFlags;
+                            if (value != 0) {
+                                flagBits = -9;
+                                goto clearFlags;
+                            }
+                            flagBits = debugFlags | 8;
+                            D_800A2ED0Control = flagBits;
+                            break;
+                        case 3:
+                            func_8003F564(10, 11);
+                            debugFlags = D_800A2ED0Control;
+                            if (debugFlags & 4) {
+                                flagBits = -5;
+                            clearFlags:
+                                D_800A2ED0Control = debugFlags & flagBits;
+                            } else {
+                                flagBits = debugFlags | 4;
+                                D_800A2ED0Control = flagBits;
+                                D_800A3700Control = 0;
+                                D_800A36FCControl = 0;
+                            }
+                            break;
+                        case 4:
+                            func_8003F564(0xA, 0xB);
+                            D_800A39F0Control = 1;
+                            D_800A2ECCControl = 0;
+                            break;
+                        case 5:
+                            func_8003F564(0xA, 0xB);
+                            D_800A39F0Control = 2;
+                            D_800A2ECCControl = 3;
+                            break;
+                        }
+                        break;
+                    case 1:
+                        if (D_800A2ECCControl == 5) {
+                            func_8003F564(0xA, 0xB);
+                            parentSelection = 4;
+                            goto closeSubmenu;
+                        }
+                        break;
+                    case 2:
+                        func_8003F564(0xA, 0xB);
+                        if (D_800A2ECCControl == 3) {
+                            parentSelection = 5;
+                        closeSubmenu:
+                            D_800A39F0Control = 0;
+                            D_800A2ECCControl = parentSelection;
+                            break;
+                        }
+                        if (D_800A2EB0Control == menuState) {
+                            D_800A2D0CControl = 1;
+                            waitCount = 1;
+                            do {
+                                VSync(0);
+                            } while (waitCount++ < 0x1E);
+                        } else {
+                            otherWaitCount = 1;
+                            do {
+                                VSync(0);
+                            } while (otherWaitCount++ < 0x1E);
+                            if (*(u8 *)(D_800A3554Control + 0x268) != 0) {
+                                *(u8 *)(D_800A3554Control + 0x268) = 0U;
+                                *(u8 *)(D_800A3554Control + 0xF4) = 0;
+                                *(s32 *)(D_800A3554Control + 0x90) = 0;
+                            }
+                            D_800A2EC8Control = 0;
+                            D_800A2ED4Control = 0;
+                            func_80041444(1);
+                            if (D_800A306DControl == 0) {
+                                func_8003CCE0(D_800A2F9CControl);
+                            }
+                            D_800A3A94Control = 0;
+                            if (D_800A2EACControl == 0) {
+                                func_8002F86C(D_800A3554Control, 2);
+                            } else {
+                                D_800A2EACControl = 2;
+                            }
+                            D_800A2EC4Control = 0;
+                        }
+                        break;
+                    }
+                    goto block_104;
+                }
+            } else {
+            block_104:
+                if (D_800A39F0Control == 1) {
+                    if ((D_800A2ECCControl == D_800A39F0Control) &&
+                        (D_800A2F9DControl != 0)) {
+                        func_80044FF8(1, 0xA);
+                    }
+                    asm("" : "=r"(keyMask) : "0"(~D_800A2DF8Control & 0xA000));
+                    if (buttons & keyMask) {
+                        switch (D_800A2ECCControl) {
+                        case 0:
+                            func_8003F564(10, 10);
+                            func_8004142C();
+                            enabledVolume = -(D_800A2F9DControl != 0) & 50;
+                            D_800A3696Control = enabledVolume;
+                            D_800A2F94Control = enabledVolume * 127 / 100;
+                            break;
+                        case 2:
+                            func_8003F564(10, 10);
+                            func_80041414();
+                            if (D_800A2F9CControl == 0) {
+                                D_800A3694Control = 0;
+                            } else {
+                                D_800A3694Control = 50;
+                            }
+                            func_80024210();
+                            break;
+                        case 4:
+                            func_8003F564(10, 10);
+                            D_800A2F95Control = D_800A2F95Control == 0;
+                            monoMode = D_800A306CControl == 0;
+                            D_800A306CControl = monoMode;
+                            if (monoMode & 0xFF) {
+                                SsSetMono();
+                            } else {
+                                SsSetStereo();
+                            }
+                            break;
+                        }
+                    }
+                    heldDirections = buttons & 0xA000;
+                    if (heldDirections != 0) {
+                        switch (D_800A2ECCControl) {
+                        case 1:
+                            if (D_800A2F9DControl != 0) {
+                                volume = D_800A3696ControlPointer;
+                                if (buttons & 0x8000) {
+                                    volumeResult = D_800A3696Control;
+                                    volumeValue = volumeResult;
+                                    if (volumeResult > 0) {
+                                        asm("" : : "r"(volumeValue));
+                                        volumeResult = volumeValue - 1;
+                                        D_800A3696Control = volumeResult;
+                                        *volume = volumeResult;
+                                    } else {
+                                        volumeResult = 0;
+                                        goto setMusicVolume;
+                                    }
+                                } else {
+                                    volumeResult = D_800A3696Control;
+                                    volumeValue = volumeResult;
+                                    asm("" : : "r"(volumeValue));
+                                    volumeResult = volumeResult < 100;
+                                    if (volumeResult != 0) {
+                                        volumeResult = volumeValue + 1;
+                                        D_800A3696Control = volumeResult;
+                                        *volume = volumeResult;
+                                    } else {
+                                        volumeResult = 100;
+                                    setMusicVolume:
+                                        *volume = volumeResult;
+                                    }
+                                }
+                                D_800A2F94Control =
+                                    D_800A3696Control * 127 / 100;
+                                func_8003FDE8(10, 127, 127);
+                            }
+                            break;
+                        case 3:
+                            if (D_800A2F9CControl != 0) {
+                                volume = D_800A3694ControlPointer;
+                                if (buttons & 0x8000) {
+                                    volumeResult = D_800A3694Control;
+                                    volumeValue = volumeResult;
+                                    if (volumeResult > 0) {
+                                        asm("" : : "r"(volumeValue));
+                                        volumeResult = volumeValue - 1;
+                                        D_800A3694Control = volumeResult;
+                                    } else {
+                                        volumeResult = 0;
+                                    }
+                                } else {
+                                    volumeResult = D_800A3694Control;
+                                    volumeValue = volumeResult;
+                                    asm("" : : "r"(volumeValue));
+                                    volumeResult = volumeResult < 100;
+                                    if (volumeResult != 0) {
+                                        volumeResult = volumeValue + 1;
+                                        D_800A3694Control = volumeResult;
+                                    } else {
+                                        volumeResult = 100;
+                                    }
+                                }
+                                *volume = volumeResult;
+                                func_80024210();
+                                func_8003F564(10, 10);
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (D_800A2ED0Control & 4) {
+                    asm("" : "=r"(keyMask) : "0"(~D_800A2DF8Control & 0x10));
+                    if (keyMask & buttons) {
+                        fadeFlag = D_800A36FCControl;
+                        D_800A3924Control = D_800A3614Control;
+                        D_800A3614Control = ((s8)D_800A3614Control + 1) % 3;
+                        if (fadeFlag == 0)
+                            fadeFlag = 128;
+                        D_800A3700Control = fadeFlag;
+                    }
+                    asm("" : "=r"(keyMask) : "0"(~D_800A2DF8Control & 0x80));
+                    if (keyMask & buttons) {
+                        D_800A36FCControl = 128;
+                        D_800A35A8Control = D_800A380CControl;
+                        D_800A380CControl = ((s8)D_800A380CControl + 2) % 3;
+                        if (D_800A3700Control == 0)
+                            D_800A3700Control = 128;
+                    }
+                    asm("" : "=r"(keyMask) : "0"(~D_800A2DF8Control & 0x20));
+                    if (keyMask & buttons) {
+                        D_800A36FCControl = 128;
+                        D_800A35A8Control = D_800A380CControl;
+                        D_800A380CControl = ((s8)D_800A380CControl + 1) % 3;
+                        if (D_800A3700Control == 0)
+                            D_800A3700Control = 128;
+                    }
+                }
+                if (D_800A2ED0Control & 8) {
+                    if (D_800A2EA4Control == 0) {
+                        if (buttons & 0x1000) {
+                            if (D_800A3590Control != 0)
+                                D_800A3590Control -= 2;
+                        }
+                        if ((buttons & 0x4000) && D_800A3590Control < 120) {
+                            D_800A3590Control += 2;
+                        }
+                    }
+                    newButtonMask = ~D_800A2DF8Control;
+                    asm("" : "=r"(keyMask) : "0"(newButtonMask & 4));
+                    if (!(buttons & keyMask))
+                        goto done;
+                    asm("" : "=r"(keyMask) : "0"(newButtonMask & 1));
+                    if (!(buttons & keyMask))
+                        goto done;
+                    asm("" : "=r"(keyMask) : "0"(newButtonMask & 8));
+                    if (!(buttons & keyMask))
+                        goto done;
+                    asm("" : "=r"(keyMask) : "0"(newButtonMask & 2));
+                    if (buttons & keyMask) {
+                        D_800A2FC8Control = 1;
+                        func_8003F564(0xA, 0xB);
+                    }
+                }
+            }
+        }
+    done:
+        D_800A2DF8Control = buttons;
+    }
+}
+
 
 extern char D_800A3038[];
 extern s32 D_800A3668Absolute[];

@@ -378,6 +378,33 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2FEC=D_800A2FE8+4 \
             --defsym=D_800A338C=D_800A3388+4
 
+
+# Addressing aliases for func_80023454.
+LDFLAGS += \
+            --defsym=D_800A2D0CAbsolute=D_800A2D0C \
+            --defsym=D_800A2EB4Absolute=D_800A2EB4 \
+            --defsym=D_800A2EC4Absolute=D_800A2EC4 \
+            --defsym=D_800A2ECCAbsolute=D_800A2ECC \
+            --defsym=D_800A2ED0Absolute=D_800A2ED0 \
+            --defsym=D_800A2ED4Absolute=D_800A2ED4 \
+            --defsym=D_800A2F95Absolute=D_800A2F95 \
+            --defsym=D_800A2FC8Absolute=D_800A2FC8 \
+            --defsym=D_800A306CAbsolute=D_800A306C \
+            --defsym=D_800A306DAbsolute=D_800A306D \
+            --defsym=D_800A3554Absolute=D_800A3554 \
+            --defsym=D_800A3590Absolute=D_800A3590 \
+            --defsym=D_800A35A8Absolute=D_800A35A8 \
+            --defsym=D_800A3614Absolute=D_800A3614 \
+            --defsym=D_800A3694Absolute2=D_800A3694 \
+            --defsym=D_800A3696Absolute=D_800A3696 \
+            --defsym=D_800A3696Absolute2=D_800A3696 \
+            --defsym=D_800A36FCAbsolute=D_800A36FC \
+            --defsym=D_800A3700Absolute=D_800A3700 \
+            --defsym=D_800A380CAbsolute=D_800A380C \
+            --defsym=D_800A3878Absolute=D_800A3878 \
+            --defsym=D_800A3924Absolute=D_800A3924 \
+            --defsym=D_800A3A94Absolute=D_800A3A94
+
 # SDK C matches with R3000 scheduling. Game flags stay above. The Psy-Q
 # libraries came from GNU C 2.6.3, not the game's 2.7.2: see "SDK compiler"
 # in kb/psx/toolchain.md. tools/cc1-263.sh runs it (Docker off x86 Linux).
