@@ -3746,7 +3746,6 @@ void HudDrawDashboard(void) {
                     ".set\tnoreorder\n\tnop\n\tnop\n\trtps\n\t.set\treorder");
                 gte_stsxy(out);
                 argB = (s32)dest;
-                asm("" : "=r"(argB) : "0"(argB));
                 count--;
                 product = *(s8 *)source;
                 source += 0x2C;
@@ -3901,13 +3900,11 @@ void HudDrawDashboard(void) {
 
                         rotatedX = callResult;
                         HudMultiplyVoid(argA, argB);
-                        asm("" : "=r"(returnedValue));
                         callResult = returnedValue;
                         argA = cosine;
                         argB = product;
                         product = callResult;
                         HudMultiplyVoid(argA, argB);
-                        asm("" : "=r"(returnedValue));
                         callResult = returnedValue;
                         argA = *center;
                         screenY = (productX - rotatedX) >> 16;
@@ -5818,8 +5815,8 @@ void SceneSkyFadeDraw(void) {
     register s32 idx asm("$16");
     register s32 shade asm("$17");
     register u8 switched asm("$19");
-    register s32 gradA asm("$21");
-    register s32 gradB asm("$22");
+    s32 gradA;
+    s32 gradB;
     register s32 yBase asm("$23");
     s32 yStep;
     s32 m;
@@ -5831,8 +5828,8 @@ void SceneSkyFadeDraw(void) {
     /* The two fade directions use mirrored colors and screen offsets. */
     if (D_800A34DC != 0) {
         {
-            register u8 *table asm("$3");
-            register s32 level asm("$3");
+            u8 *table;
+            s32 level;
 
             result = D_800A34D8;
             level = result;
@@ -5841,7 +5838,6 @@ void SceneSkyFadeDraw(void) {
             if (result >= 0x259) {
                 result = 0x500 - level;
                 home.fadeVal = result;
-                asm("" : : "m"(home.fadeVal) : "memory");
                 result += 0x200;
                 idx = result & 0x3FF;
                 shade = 0x140000;
@@ -5869,10 +5865,8 @@ void SceneSkyFadeDraw(void) {
             yStep = 0x3C;
             if (result >= 0) {
                 table = D_800A3A34wC[0];
-                asm("" : "=r"(table) : "0"(table));
             } else {
                 table = D_800A3A34wC[0];
-                asm("" : "=r"(table) : "0"(table));
                 result = argument - 0x280;
             }
             result <<= 4;
@@ -5882,22 +5876,17 @@ void SceneSkyFadeDraw(void) {
         }
         result = MathMultiplyFixed16(argument, 0x80000);
         {
-            register u8 *table asm("$3");
+            u8 *table;
 
             argument = D_800A34D8;
             byteValue = 0x2D0000;
-            asm(""
-                : "=r"(byteValue)
-                : "0"(byteValue), "r"(argument), "r"(result));
             gradA = result + byteValue;
             result = 0x280 - argument;
             if (result >= 0) {
                 result <<= 4;
                 table = D_800A3A34wC[0];
-                asm("" : "=r"(table) : "0"(table));
             } else {
                 table = D_800A3A34wC[0];
-                asm("" : "=r"(table) : "0"(table));
                 result = (argument - 0x280) << 4;
             }
             asm("" : "=r"(table) : "0"(table), "r"(result));
@@ -5907,10 +5896,8 @@ void SceneSkyFadeDraw(void) {
         }
         result = MathMultiplyFixed16(argument, 0x40000);
         byteValue = 0x140000;
-        asm("" : "=r"(byteValue) : "0"(byteValue), "r"(result));
         gradB = result + byteValue;
         result = switched & 0xFF;
-        asm("" : "=r"(result) : "0"(result));
         if (result != 0) {
             D_800A34D8 -= 8;
         } else {
@@ -5923,7 +5910,7 @@ void SceneSkyFadeDraw(void) {
         }
     } else {
         {
-            register s32 level asm("v1");
+            s32 level;
             u8 topRed, topGreen, topBlue;
             u8 bottomRed, bottomGreen, bottomBlue;
             result = D_800A34D8;
@@ -5986,7 +5973,6 @@ void SceneSkyFadeDraw(void) {
             byteValue -= 0x180;
             byteValue <<= 4;
             byteValue += argument;
-            asm("" : "=r"(byteValue) : "0"(byteValue));
             argument = *(s32 *)byteValue;
             factor = 0x40000;
             byteValue = 0x2D0000;
@@ -5997,10 +5983,8 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, factor);
         }
         byteValue = 0x140000;
-        asm("" : "=r"(byteValue) : "0"(byteValue), "r"(result));
         gradB = result + byteValue;
         result = switched & 0xFF;
-        asm("" : "=r"(result) : "0"(result));
         if (result != 0) {
             D_800A34D8 += 8;
         } else {
@@ -6015,23 +5999,16 @@ void SceneSkyFadeDraw(void) {
     factor = D_800A34D8;
     byteValue = (s32)D_800A3A2CwC[0];
     argument = (s32)D_800A3A34wC[0];
-    asm(""
-        : "=r"(factor), "=r"(byteValue), "=r"(argument)
-        : "0"(factor), "1"(byteValue), "2"(argument));
     result = factor << 2;
     byteValue = result + byteValue;
-    asm("" : "=r"(byteValue) : "0"(byteValue));
     byteValue = *(s32 *)byteValue;
     result += argument;
     home.entryA = byteValue;
-    asm("" : "=r"(result) : "0"(result), "m"(home.entryA) : "memory");
     result = *(s32 *)result;
     home.entryB = result;
-    asm("" : : "m"(home.entryB), "r"(result) : "memory");
     result = factor - 0x200;
     if (result >= 0) {
         result = 0x380;
-        asm("" : "=r"(result) : "0"(result));
         argument = result - factor;
     } else {
         argument = factor - 0x80;
@@ -6044,7 +6021,6 @@ void SceneSkyFadeDraw(void) {
         if (D_800A2F00wC[0] == 0) {
             result = MathMultiplyFixed16(gradA, home.entryA);
             argument = gradA;
-            asm("" : "=r"(argument) : "0"(argument), "r"(result) : "memory");
             factor = home.entryB;
             primitive = D_800A8B4C;
             asm(""
@@ -6054,18 +6030,10 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, factor);
             factor = home.entryA;
             argument = gradB;
-            asm(""
-                : "=r"(factor), "=r"(argument)
-                : "0"(factor), "1"(argument), "r"(result)
-                : "memory");
             primitive[1] = yStep + (result >> 16);
             result = MathMultiplyFixed16(argument, factor);
             factor = home.entryB;
             argument = gradB;
-            asm(""
-                : "=r"(factor), "=r"(argument)
-                : "0"(factor), "1"(argument), "r"(result)
-                : "memory");
             primitive[4] = yBase + (result >> 16);
             result = MathMultiplyFixed16(argument, factor);
             {
@@ -6096,17 +6064,14 @@ void SceneSkyFadeDraw(void) {
                 register s32 xShift asm("$7");
                 xShift = t2 << 24;
                 if (result != 0) {
-                    register u16 *secondPrimitive asm("$19");
+                    u16 *secondPrimitive;
                     {
                         register s32 paletteOffset asm("a1");
                         register s32 screenShift asm("a0");
-                        register s32 value asm("v1");
+                        s32 value;
                         register u32 fade asm("t4");
                         paletteOffset = D_800A34DC;
                         screenShift = (u8)D_800A34D4;
-                        asm(""
-                            : "=r"(paletteOffset), "=r"(screenShift)
-                            : "0"(paletteOffset), "1"(screenShift));
                         paletteOffset <<= 3;
                         value = *(u16 *)((u8 *)D_800A8AEC + paletteOffset);
                         secondPrimitive = D_800A8B74;
@@ -6155,7 +6120,6 @@ void SceneSkyFadeDraw(void) {
                     }
                     result = MathMultiplyFixed16(gradA, factor);
                     {
-                        asm("" : "=r"(shade) : "0"(shade), "r"(result));
                         shade <<= 24;
                         byteValue = shade >> 24;
                         asm(""
@@ -6177,9 +6141,6 @@ void SceneSkyFadeDraw(void) {
                     shade >>= 24;
                     idx = (s32)primitive - 8;
                     result >>= 16;
-                    asm(""
-                        : "=r"(shade), "=r"(idx), "=r"(result)
-                        : "0"(shade), "1"(idx), "2"(result), "r"(yStep));
                     result = yStep + result;
                     shade += result;
                     D_800A8B8E[0] = shade;
@@ -6199,7 +6160,7 @@ void SceneSkyFadeDraw(void) {
                 } else {
                     {
                         register s32 dx asm("t1");
-                        register s32 dy asm("t2");
+                        s32 dy;
                         register s32 yBits asm("t0");
                         register u32 x0 asm("v0");
                         register u32 y0 asm("v1");
@@ -6217,10 +6178,6 @@ void SceneSkyFadeDraw(void) {
                         y0 = primitive[1];
                         x1 = primitive[4];
                         y1 = primitive[5];
-                        asm(""
-                            : "=r"(primitive)
-                            : "0"(primitive), "r"(x0), "r"(y0), "r"(x1),
-                              "r"(y1));
                         idx = (s32)primitive - 8;
                         D_800A8B5C[0] = x0 - dx;
                         D_800A8B5E[0] = y0 + dy;
@@ -6244,7 +6201,6 @@ void SceneSkyFadeDraw(void) {
         } else {
             result = MathMultiplyFixed16(gradA, home.entryA);
             argument = gradA;
-            asm("" : "=r"(argument) : "0"(argument), "r"(result) : "memory");
             factor = home.entryB;
             primitive = D_800A8B04;
             asm(""
@@ -6254,18 +6210,10 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, factor);
             factor = home.entryA;
             argument = gradB;
-            asm(""
-                : "=r"(factor), "=r"(argument)
-                : "0"(factor), "1"(argument), "r"(result)
-                : "memory");
             primitive[1] = yStep + (result >> 16);
             result = MathMultiplyFixed16(argument, factor);
             factor = home.entryB;
             argument = gradB;
-            asm(""
-                : "=r"(factor), "=r"(argument)
-                : "0"(factor), "1"(argument), "r"(result)
-                : "memory");
             primitive[2] = yBase + (result >> 16);
             result = MathMultiplyFixed16(argument, factor);
             {
@@ -6296,17 +6244,14 @@ void SceneSkyFadeDraw(void) {
                 register s32 xShift asm("$7");
                 xShift = t2 << 24;
                 if (result != 0) {
-                    register u16 *secondPrimitive asm("$19");
+                    u16 *secondPrimitive;
                     {
                         register s32 paletteOffset asm("a1");
                         register s32 screenShift asm("a0");
-                        register s32 value asm("v1");
+                        s32 value;
                         register u32 fade asm("t4");
                         paletteOffset = D_800A34DC;
                         screenShift = (u8)D_800A34D4;
-                        asm(""
-                            : "=r"(paletteOffset), "=r"(screenShift)
-                            : "0"(paletteOffset), "1"(screenShift));
                         paletteOffset <<= 3;
                         value = *(u16 *)((u8 *)D_800A8AEC + paletteOffset);
                         secondPrimitive = D_800A8B1C;
@@ -6355,7 +6300,6 @@ void SceneSkyFadeDraw(void) {
                     }
                     result = MathMultiplyFixed16(gradA, factor);
                     {
-                        asm("" : "=r"(shade) : "0"(shade), "r"(result));
                         shade <<= 24;
                         byteValue = shade >> 24;
                         asm(""
@@ -6377,9 +6321,6 @@ void SceneSkyFadeDraw(void) {
                     shade >>= 24;
                     idx = (s32)primitive - 8;
                     result >>= 16;
-                    asm(""
-                        : "=r"(shade), "=r"(idx), "=r"(result)
-                        : "0"(shade), "1"(idx), "2"(result), "r"(yStep));
                     result = yStep + result;
                     shade += result;
                     D_800A8B2A[0] = shade;
@@ -6399,7 +6340,7 @@ void SceneSkyFadeDraw(void) {
                 } else {
                     {
                         register s32 dx asm("t1");
-                        register s32 dy asm("t2");
+                        s32 dy;
                         register s32 yBits asm("t0");
                         register u32 x0 asm("v0");
                         register u32 y0 asm("v1");
@@ -6417,10 +6358,6 @@ void SceneSkyFadeDraw(void) {
                         y0 = primitive[1];
                         x1 = primitive[2];
                         y1 = primitive[3];
-                        asm(""
-                            : "=r"(primitive)
-                            : "0"(primitive), "r"(x0), "r"(y0), "r"(x1),
-                              "r"(y1));
                         idx = (s32)primitive - 8;
                         argument = idx;
                         D_800A8B0C[0] = x0 - dx;
@@ -6445,17 +6382,17 @@ void SceneSkyFadeDraw(void) {
     }
     {
         /* Rotate the four sky corners around the screen origin. */
-        register s32 loopI asm("s4");
+        s32 loopI;
         register s32 signedI asm("s1");
         register s32 lookupOffset asm("s2");
-        register s16 *buf asm("s3");
+        s16 *buf;
         register s32 accum asm("s0");
-        register s32 argA asm("a0");
-        register s32 argB asm("a1");
+        s32 argA;
+        s32 argB;
         register s32 scratch0 asm("v0");
         register s32 scratch1 asm("v1");
-        register s32 callOut asm("v0");
-        register s32 nextI asm("v1");
+        s32 callOut;
+        s32 nextI;
         loopI = 0;
         D_800993B4[0] = gradB;
         D_800993A4[0] = gradB;

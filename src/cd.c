@@ -1785,9 +1785,6 @@ void func_8003DBA8(u8 *object) {
         asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
         ringV1 = D_800BE974CarState[0];
         ringA1 = *(s16 *)(object + 0x1E0);
-        asm(""
-            : "=r"(ringV1), "=r"(ringResult), "=r"(ringA1)
-            : "0"(ringV1), "1"(ringResult), "2"(ringA1));
         {
             const s32 section = ringA1;
             s32 end = ringResult + offset - 4;
@@ -1886,7 +1883,6 @@ void func_8003DBA8(u8 *object) {
             if (ringV1 < 0)
                 ringV1 = -ringV1;
             ringResult = ringV1 * 5;
-            asm("" : "=r"(ringResult) : "0"(ringResult));
             ringA3 = ringResult * 2;
             ringResult = *(u16 *)(object + 0x2A0);
             ringA0 = *(u16 *)(object + 0x2A2);
@@ -1935,7 +1931,6 @@ void func_8003DBA8(u8 *object) {
         ringResult += 1;
         *(u16 *)(object + 0x27E) = ringResult;
         if (ringV1 == 0) {
-            asm("" : : : "v1");
             if (*(s32 *)(object + 0x3A4) & 0x100F) {
                 if (object == D_800A3960CarState[0]) {
                     D_800A3960CarStateStore[0] = 0;
@@ -2105,9 +2100,6 @@ updateMotion:
     ringResult = *(s32 *)(object + 0x90);
     ringV1 = *(s32 *)(object + 0x84);
     ringA0 = 0x20000;
-    asm(""
-        : "=r"(ringResult), "=r"(ringV1), "=r"(ringA0)
-        : "0"(ringResult), "1"(ringV1), "2"(ringA0));
     ringV1 = ringV1 < ringResult;
     *(s32 *)(object + 0x88) = ringA0;
     if (ringV1) {

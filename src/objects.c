@@ -1494,11 +1494,11 @@ void func_80023454(void) {
     u8 frameGap[0x20];
     s16 enabledVolume;
     register s32 selectionDividend asm("$4");
-    register s32 fadeFlag asm("$5");
+    s32 fadeFlag;
     s16 *volume;
     register s32 volumeValue asm("$3");
-    register s32 volumeResult asm("$2");
-    register s32 activeState asm("$6");
+    s32 volumeResult;
+    s32 activeState;
     s32 buttons;
     register s32 value asm("$2");
     s32 buttonBits;
@@ -1506,23 +1506,23 @@ void func_80023454(void) {
     s32 newButtonMask;
     s32 waitCount;
     s32 otherWaitCount;
-    register s32 flagBits asm("$2");
+    s32 flagBits;
     s32 heldDirections;
-    register s32 debugFlags asm("$3");
+    s32 debugFlags;
     s8 menuState;
-    register s8 objectIndex asm("$5");
-    register s8 nextObjectIndex asm("$2");
-    register s32 selection asm("$2");
+    s8 objectIndex;
+    s8 nextObjectIndex;
+    s32 selection;
     register s32 previousStateOne asm("$4");
-    register s32 nextStateOne asm("$2");
+    s32 nextStateOne;
     register s32 toneChannel asm("$4");
-    register s32 playerCount asm("$5");
-    register s32 parentSelection asm("$2");
+    s32 playerCount;
+    s32 parentSelection;
     register s32 selectionIndex asm("$3");
-    register s32 navigationState asm("$5");
+    s32 navigationState;
     u8 monoMode;
     u8 *otherObject;
-    register u8 *object asm("$4");
+    u8 *object;
 
     /* Keep retail's frame gap and the switch table's 8-byte alignment. */
     asm(".section .rodata\n\t.align 3\n\t.text" : : "m"(frameGap[0]));
@@ -1542,13 +1542,11 @@ void func_80023454(void) {
                     func_8003CCE0(0);
                 }
                 selectionDividend = D_800A2ECCControl + 5;
-                asm("" : "=r"(selectionDividend) : "0"(selectionDividend));
                 selectionIndex = selectionDividend / 6;
                 asm("" : "=r"(selectionIndex) : "0"(selectionIndex));
                 selectionIndex = selectionDividend - selectionIndex * 6;
                 navigationState = D_800A39F0Control;
                 previousStateOne = 1;
-                asm("" : : "r"(previousStateOne));
                 D_800A2ECCControl = selectionIndex;
                 if (navigationState == previousStateOne)
                     goto previousSoundState;
@@ -1590,7 +1588,6 @@ void func_80023454(void) {
                     func_8003CCE0(0);
                 }
                 selectionDividend = D_800A2ECCControl + 1;
-                asm("" : "=r"(selectionDividend) : "0"(selectionDividend));
                 selectionIndex = selectionDividend / 6;
                 asm("" : "=r"(selectionIndex) : "0"(selectionIndex));
                 selectionIndex = selectionDividend - selectionIndex * 6;
@@ -1598,7 +1595,6 @@ void func_80023454(void) {
                 asm("" : "=r"(selectionIndex) : "0"(selectionIndex) : "$2");
                 navigationState = D_800A39F0Control;
                 nextStateOne = 1;
-                asm("" : : "r"(nextStateOne));
                 D_800A2ECCControl = selectionIndex;
                 if (navigationState == nextStateOne)
                     goto nextSoundState;
@@ -1688,16 +1684,12 @@ void func_80023454(void) {
                             objectIndex = 0;
                             if (D_800A2EB4Control > 0) {
                                 activeState = 1;
-                                asm("" : : "r"(activeState));
                             objectLoop:
                                 value = *(s8 *)(object + 0x20C);
                                 if (value >= 3) {
                                     value = *(s16 *)(object + 0x114);
                                     *(s8 *)(object + 0x20C) = activeState;
                                     *(s32 *)(object + 0x380) = value;
-                                    asm(""
-                                        : "=r"(objectIndex)
-                                        : "0"(objectIndex));
                                 }
                                 nextObjectIndex = objectIndex + 1;
                                 objectIndex = nextObjectIndex;
@@ -1845,7 +1837,6 @@ void func_80023454(void) {
                                     volumeResult = D_800A3696Control;
                                     volumeValue = volumeResult;
                                     if (volumeResult > 0) {
-                                        asm("" : : "r"(volumeValue));
                                         volumeResult = volumeValue - 1;
                                         D_800A3696Control = volumeResult;
                                         *volume = volumeResult;
@@ -1856,7 +1847,6 @@ void func_80023454(void) {
                                 } else {
                                     volumeResult = D_800A3696Control;
                                     volumeValue = volumeResult;
-                                    asm("" : : "r"(volumeValue));
                                     volumeResult = volumeResult < 100;
                                     if (volumeResult != 0) {
                                         volumeResult = volumeValue + 1;
@@ -1880,7 +1870,6 @@ void func_80023454(void) {
                                     volumeResult = D_800A3694Control;
                                     volumeValue = volumeResult;
                                     if (volumeResult > 0) {
-                                        asm("" : : "r"(volumeValue));
                                         volumeResult = volumeValue - 1;
                                         D_800A3694Control = volumeResult;
                                     } else {
@@ -1889,7 +1878,6 @@ void func_80023454(void) {
                                 } else {
                                     volumeResult = D_800A3694Control;
                                     volumeValue = volumeResult;
-                                    asm("" : : "r"(volumeValue));
                                     volumeResult = volumeResult < 100;
                                     if (volumeResult != 0) {
                                         volumeResult = volumeValue + 1;
@@ -1965,6 +1953,7 @@ void func_80023454(void) {
         D_800A2DF8Control = buttons;
     }
 }
+
 
 extern char D_800A3038[];
 extern s32 D_800A3668Absolute[];
@@ -2609,8 +2598,7 @@ extern s32 pairSinTable4[] asm("D_800A3A34");
 extern void func_800432C0(void *, s32);
 extern void func_80043B68(void *, s32);
 extern void func_8003AC18(u8 *, s32, s32, s32);
-extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32,
-                                  s32) asm("func_80026074");
+extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32, s32) asm("func_80026074");
 
 /* Resolves car-to-car contact and applies separation and velocity impulses.
  * Empty asm constraints retain the retail compiler register lifetimes.
@@ -2631,41 +2619,41 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     s32 impulseY;
     register s32 impulsePart asm("t0");
     s32 nextCallback;
-    register s32 effectFlag asm("v0");
+    s32 effectFlag;
     register s32 beyondFar asm("v0");
-    register s32 scratchA0 asm("a0");
+    s32 scratchA0;
     s32 carHeading;
     s32 contactAngle;
     s32 otherHeading;
-    register s32 responseCode asm("v1");
+    s32 responseCode;
     s32 headingDifference;
-    register s32 collisionExtent asm("a0");
-    register s32 scratchA1 asm("a1");
+    s32 collisionExtent;
+    s32 scratchA1;
     s32 otherPositionY;
     s32 relativeSpeed;
-    register s32 work0 asm("s0");
+    s32 work0;
     register s32 work1 asm("s1");
     register s32 work2 asm("s2");
     register s32 work3 asm("s3");
-    register s32 collisionHalfWidth asm("s7");
+    s32 collisionHalfWidth;
     s32 angleFromHalfTurn;
     s32 meanSpeedA;
     s32 meanSpeedB;
     s32 wrappedHeadingDifference;
-    register s32 work6 asm("s6");
+    s32 work6;
     s32 result;
-    register s32 responseXInRange asm("v0");
-    register s32 overlapLimit asm("v0");
+    s32 responseXInRange;
+    s32 overlapLimit;
     s32 outsideCollisionWidth;
     s32 newSpeedA;
     s32 newSpeedB;
-    register s32 responseYInRange asm("v0");
+    s32 responseYInRange;
     s32 roundedHeadingDifference;
-    register s32 scratchV1 asm("v1");
+    s32 scratchV1;
     u32 speedSumA;
     u32 speedSumB;
-    register u8 *car asm("s4");
-    register u8 *otherCar asm("s5");
+    u8 *car;
+    u8 *otherCar;
 
     car = firstCar;
 
@@ -2673,7 +2661,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
 
     if (D_8008CA28[0] == 0) {
         tmp0 = (s32)D_800A3554[0];
-        asm("" : "=r"(tmp0) : "0"(tmp0));
         if (otherCar == (u8 *)tmp0) {
             otherCar = car;
             car = (u8 *)tmp0;
@@ -2697,9 +2684,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         if ((0x200 - contactAngle) < 0x100) {
         block_8:
             tmp1 = *(s16 *)(car + 0x114);
-            asm("" : "=r"(tmp1) : "0"(tmp1));
             tmp0 = 0x600 - tmp1;
-            asm("" : "=r"(tmp0) : "0"(tmp0));
             work6 = tmp0 & 0x3FF;
 
         } else {
@@ -2708,9 +2693,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     } else {
     block_9:
         tmp1 = *(s16 *)(car + 0x114);
-        asm("" : "=r"(tmp1) : "0"(tmp1));
         tmp0 = 0x3FF;
-        asm("" : "=r"(tmp0) : "0"(tmp0));
         work6 = tmp0 - tmp1;
     }
     tmp0 = D_800A3A2CAbsolute[0];
@@ -2742,7 +2725,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     work0 += MathMultiplyFixed16(callA0, callA1 << 16);
     work0 >>= 16;
     separation.y = work0;
-    asm("" : "=r"(work6) : "0"(work6));
     tmp0 = *(s32 *)(car + 0x370);
     tmp0 = *(s16 *)(tmp0 + 0x1E);
     tmp1 = separation.x;
@@ -2758,10 +2740,8 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     result = 0;
     if (outsideCollisionWidth == 0) {
         work3 = MathMultiplyFixed16((*(s32 *)(otherCar + 0x18)), 0xFA0);
-        asm("" : "=r"(work3) : "0"(work3));
 
         work2 = MathMultiplyFixed16((*(s32 *)(otherCar + 0x24)), 0xFA0);
-        asm("" : "=r"(work2) : "0"(work2));
 
         tmp0 = MathMultiplyFixed16(*(s32 *)(otherCar + 0x30), 0xFA0);
         tmp1 = pairCosTable3[0];
@@ -2769,7 +2749,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         direction.z = tmp0;
         tmp1 = work1 + tmp1;
         callA0 = *(s32 *)tmp1;
-        asm("" : "=r"(work3) : "0"(work3), "r"(callA0));
         work3 <<= 16;
         tmp0 = MathMultiplyFixed16(callA0, work3);
         tmp1 = pairSinTable3[0];
@@ -2793,7 +2772,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         asm("" : "=r"(work1) : "0"(work1));
         callA0 = *(s32 *)work1;
         callA1 = work2;
-        asm("" : "=r"(tmp0) : "0"(tmp0), "r"(callA0), "r"(callA1));
         work0 = tmp0;
         work0 += MathMultiplyFixed16(callA0, callA1);
         work0 >>= 16;
@@ -2802,9 +2780,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         productX = *(s32 *)(otherCar + 0xB0);
         tmp1 = direction.x;
         scratchA0 = D_800A3668Absolute[0];
-        asm(""
-            : "=r"(tmp0)
-            : "0"(tmp0), "r"(productX), "r"(tmp1), "r"(scratchA0));
         tmp0 -= productX;
         productX = tmp0 * tmp0;
         tmp1 = __builtin_abs(tmp1);
@@ -2814,7 +2789,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         velocity.x = tmp0;
         tmp0 = *(s32 *)(car + 0xB4);
         tmp1 = *(s32 *)(otherCar + 0xB4);
-        asm("" : "=r"(productX) : "0"(productX), "r"(tmp0), "r"(tmp1));
         tmp0 -= tmp1;
         productY = tmp0 * tmp0;
         velocity.y = tmp0;
@@ -2827,11 +2801,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         tmp1 = separation.y;
         scratchA0 = *(s16 *)(car + 0x1EC);
         tmp0 = 1;
-        asm(""
-            :
-            : "r"(work0), "r"(work1), "r"(work2), "r"(work3), "r"(car),
-              "r"(otherCar), "r"(work6), "r"(collisionHalfWidth),
-              "r"(relativeSpeed));
         work2 = tmp1;
         if (tmp1 < 0) {
             work2 = -work2;
@@ -2931,11 +2900,9 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                             if (RandomScaledGet(0xA) == 0) {
                                 callA1 = 0;
                                 if (separation.y > 0) {
-                                    asm("# positive contact effect");
                                     callA0 = (s32)car;
                                 } else {
                                     callA0 = (s32)car;
-                                    asm("# negative contact effect");
                                     callA1 = 1;
                                 }
                                 func_800432C0((void *)callA0, callA1);
@@ -2947,12 +2914,10 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                                 asm("# positive contact side");
                                 callA1 = 5;
                             } else {
-                                asm("# negative contact side");
                                 callA1 = 6;
                             }
                             func_800432C0((void *)callA0, callA1);
                         }
-                        asm("" : : : "a0");
                         func_80043B68(car, 0);
                         func_80043B68(car, 1);
                         func_80043B68(otherCar, 2);
@@ -2972,7 +2937,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     tmp1 = D_800A3A34Absolute[0];
                     tmp0 = *(s32 *)(car + 0xC4);
                     scratchA0 += tmp1;
-                    asm("" : "=r"(scratchA0) : "0"(scratchA0));
                     asm(""
                         : "=r"(impulsePart)
                         : "0"(impulseX), "r"(tmp0), "r"(scratchA0));
@@ -3062,11 +3026,9 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     if (RandomScaledGet(0xA) == 0) {
                         callA1 = 0;
                         if (separation.y > 0) {
-                            asm("# positive contact effect");
                             callA0 = (s32)car;
                         } else {
                             callA0 = (s32)car;
-                            asm("# negative contact effect");
                             callA1 = 1;
                         }
                         func_800432C0((void *)callA0, callA1);
@@ -3078,18 +3040,15 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                         asm("# positive contact side");
                         callA1 = 5;
                     } else {
-                        asm("# negative contact side");
                         callA1 = 6;
                     }
                     func_800432C0((void *)callA0, callA1);
                 }
-                asm("" : : : "a0");
                 func_80043B68(car, 0);
                 func_80043B68(car, 1);
                 func_80043B68(otherCar, 2);
                 func_80043B68(otherCar, 3);
                 effectFlag = 1;
-                asm("" : "=r"(effectFlag) : "0"(effectFlag));
 
             effectsDoneNegative:
                 CollisionApplyImpulse(car, otherCar, velocity, 0, effectFlag);
@@ -3116,7 +3075,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                           MathMultiplyFixed16((*(s32 *)(car + 0x28)), work2));
                 func_80025DD4(otherCar, car);
                 nextCallback = (s32)func_80025720;
-                asm("" : "=r"(nextCallback) : "0"(nextCallback));
                 if ((((*(s16 *)(car + 0x1EC)) != work3) ||
                      (nextCallback != (s32)func_80025730)) &&
                     ((*(s32 *)(car + 0x354)) != (s32)func_80025730) &&
@@ -3190,13 +3148,11 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                 }
                 tmp1 = *(s16 *)(otherCar + 0x1EC);
                 tmp0 = 1;
-                asm("" : "=r"(tmp0) : "0"(tmp0));
                 if (tmp1 == tmp0) {
                     tmp1 = 0xFFFB0000;
                     tmp0 = *(s32 *)(otherCar + 0x90);
                     tmp0 += tmp1;
                     *(s32 *)(otherCar + 0x90) = tmp0;
-                    asm("# side impulse complete");
                 sideReturnOne:
                     asm("# side return one");
                     tmp0 = 1;
@@ -3230,7 +3186,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     responseCode = 5;
                 block_125:
                     asm("" : "=r"(callA0) : "0"((s32)func_80025730));
-                    asm("" : : "r"(tmp0), "r"(responseCode));
                     (*(s16 *)(car + 0x1CE)) = responseCode;
                     if ((tmp0 != 1) && ((*(s32 *)(car + 0x354)) != callA0) &&
                         ((*(s8 *)(car + 0x200)) != 4)) {
@@ -3239,7 +3194,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     if (((*(s16 *)(otherCar + 0x1EC)) == 0)) {
                         tmp0 = *(s32 *)(otherCar + 0x354);
                         callA0 = (s32)func_80025730;
-                        asm("" : "=r"(callA0) : "0"(callA0));
                         if ((tmp0 != callA0) &&
                             ((*(s8 *)(otherCar + 0x200)) != 4)) {
                             (*(s32 *)(otherCar + 0x354)) = callA0;
@@ -3249,7 +3203,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     if ((*(s16 *)(car + 0x1EC)) == 0) {
                         func_8003AC18(otherCar, relativeSpeed, separation.x,
                                       separation.y);
-                        asm("# collision response 2");
                         return 4;
                     }
                     return result;
@@ -3298,7 +3251,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     }
                 } else {
                     beyondFar = collisionHalfWidth < tmp1;
-                    asm("" : "=r"(beyondFar) : "0"(beyondFar));
                     if (beyondFar == 0) {
                         tmp0 = *(s32 *)(otherCar + 0xB0);
                         tmp1 = *(s32 *)(otherCar + 0xB4);
@@ -3307,7 +3259,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                         work1 = tmp0 << 16;
                         tmp0 = (u32)tmp1 >> 31;
                         tmp1 += tmp0;
-                        asm("" : "=r"(tmp1) : "0"(tmp1));
                         tmp1 >>= 1;
                         work0 = tmp1 << 16;
                         asm volatile("" : : "r"(work1), "r"(work0));
@@ -3315,7 +3266,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     }
                 }
                 nextCallback = (s32)func_80025614;
-                asm("" : "=r"(nextCallback) : "0"(nextCallback));
                 if ((((*(s16 *)(car + 0x1EC)) != 1) ||
                      (nextCallback != (s32)func_80025730)) &&
                     ((*(s32 *)(car + 0x354)) != (s32)func_80025730) &&
@@ -3326,7 +3276,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                 if ((*(s16 *)(car + 0x1EC)) == 0) {
                     func_8003AC18(otherCar, relativeSpeed, separation.x,
                                   separation.y);
-                    asm("");
                     return 2;
                 }
                 return result;
@@ -3337,7 +3286,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                 if ((*(s16 *)(otherCar + 0x1EC)) == 1) {
                     func_8003AC18(otherCar, relativeSpeed, separation.x,
                                   separation.y);
-                    asm("");
                     return 3;
                 }
                 return result;
@@ -5144,58 +5092,7 @@ s32 func_8002AEB0(u8 *arg0) {
     return value << 16;
 }
 
-#ifdef NON_MATCHING
-void func_8002AF94(u8 *arg0) {
-    extern u8 *trigA asm("D_800A3A2CAbsolute");
-    extern u8 *trigB asm("D_800A3A34Absolute");
-    u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
-    VECTOR front;
-    VECTOR rear;
-    s32 diff;
-    s32 absDiff;
-    s32 t;
-    s32 index;
-
-    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
-    t = MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xC4));
-    t = t - MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xC8));
-    front.vx = t;
-    t = MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xC4));
-    t = t + MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xC8));
-    front.vy = t;
-    t = MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xD0));
-    t = t - MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xD4));
-    rear.vx = t;
-    t = MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xD0));
-    t = t + MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xD4));
-    rear.vy = t;
-    diff = front.vx - rear.vx;
-    absDiff = diff;
-    if (diff < 0) {
-        absDiff = -diff;
-    }
-    if (absDiff > 0x50000) {
-        front.vx = front.vx + -diff * 4 / 10;
-        rear.vx = rear.vx + diff * 6 / 10;
-        index = *(s16 *)(arg0 + 0x114);
-        t = MathMultiplyFixed16(((s32 *)trigA)[index], front.vx);
-        *(s32 *)(arg0 + 0xC4) =
-            t - MathMultiplyFixed16(((s32 *)trigB)[index], front.vy);
-        t = MathMultiplyFixed16(((s32 *)trigB)[index], front.vx);
-        *(s32 *)(arg0 + 0xC8) =
-            t + MathMultiplyFixed16(((s32 *)trigA)[index], front.vy);
-        t = MathMultiplyFixed16(((s32 *)trigA)[index], rear.vx);
-        *(s32 *)(arg0 + 0xD0) =
-            t - MathMultiplyFixed16(((s32 *)trigB)[index], rear.vy);
-        t = MathMultiplyFixed16(((s32 *)trigB)[index], rear.vx);
-        *(s32 *)(arg0 + 0xD4) =
-            t + MathMultiplyFixed16(((s32 *)trigA)[index], rear.vy);
-    }
-}
-
-#else
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002AF94);
-#endif
 
 extern s32 D_800A2E44nm asm("D_800A2E44.NON_MATCHING");
 extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
@@ -5324,100 +5221,7 @@ void func_8002B538(u8 *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002B63C);
 
-#ifdef NON_MATCHING
-void func_8002B9AC(u8 *arg0, s32 *arg1, s32 *arg2) {
-    extern s32 func_8002B63C(u8 *, s32, s32);
-    extern s32 MathFixedDivide(s32, s32);
-    extern u8 D_800A2E5B;
-    extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
-    s32 prod;
-    s32 num;
-    s32 cnt;
-    s32 count;
-    s32 flags;
-    s32 ratio;
-
-    D_800A2E5B = 0;
-    prod = func_8002B63C(arg0, *(s16 *)(arg0 + 0x362), 0);
-    prod = prod + func_8002B63C(arg0, *(s16 *)(arg0 + 0x364), 1);
-    prod = MathMultiplyFixed16(*(s32 *)(arg0 + 0x308) + *(s32 *)(arg0 + 0x330),
-                               prod);
-    count = *(s16 *)(arg0 + 0x2A0);
-    flags = *(u16 *)(arg0 + 0x3A4);
-    cnt = count + 1;
-    if (flags & 0x20) {
-        cnt = count - 1;
-    }
-    if (flags & 0x40) {
-        cnt = cnt - 2;
-    }
-    num = cnt * D_800A2E38;
-    if (cnt < -7) {
-        cnt = cnt + 7;
-        num = D_800A2E38 - D_800A2E38 * 8;
-        num = num + cnt * 20;
-    }
-    prod = prod + MathMultiplyFixed16(prod, MathFixedDivide(num, 0x3E8));
-    *arg1 = prod;
-    prod = func_8002B63C(arg0, *(s16 *)(arg0 + 0x366), 2);
-    prod = prod + func_8002B63C(arg0, *(s16 *)(arg0 + 0x368), 3);
-    prod = MathMultiplyFixed16(*(s32 *)(arg0 + 0x2B8) + *(s32 *)(arg0 + 0x2E0),
-                               prod);
-    count = *(s16 *)(arg0 + 0x2A6);
-    flags = *(u16 *)(arg0 + 0x3A4);
-    cnt = count + 1;
-    if (flags & 0x80) {
-        cnt = count - 2;
-    }
-    num = cnt * D_800A2E3C;
-    if (cnt < -7) {
-        cnt = cnt + 7;
-        num = D_800A2E3C - D_800A2E3C * 8;
-        num = num + cnt * 20;
-    }
-    prod = prod + MathMultiplyFixed16(prod, MathFixedDivide(num, 0x3E8));
-    *arg2 = prod;
-    if (D_800A2E5B == 4) {
-        func_80041848(arg0, 3);
-    }
-    if (*(s16 *)(arg0 + 0x2FC) == 0) {
-        if (*(s16 *)(arg0 + 0x324) != 0) {
-            *arg1 = 0;
-        }
-    }
-    *(s16 *)(arg0 + 0x10A) = 0;
-    if (*(s16 *)(arg0 + 0x2AC) != 0) {
-        goto clearRear;
-    }
-    if (*(s16 *)(arg0 + 0x2D4) == 0) {
-        goto afterClear;
-    }
-clearRear:
-    *arg2 = 0;
-    if (*(s32 *)(arg0 + 0x238) & 0x40) {
-        *(u16 *)(arg0 + 0x10A) += 0xFA0;
-    }
-afterClear:
-    if (D_800A2EE4nm[0] != 0) {
-        ratio = MathFixedDivide(
-            (*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
-        *arg1 = MathMultiplyFixed16(*arg1, ratio);
-        ratio = MathFixedDivide(
-            (*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
-        *arg2 = MathMultiplyFixed16(*arg2, ratio);
-    }
-    *(s32 *)(arg0 + 0x240) = *arg1;
-    *(s32 *)(arg0 + 0x244) = *arg2;
-    if (*(s16 *)(arg0 + 0x120) != 0) {
-        *arg1 = *arg1 / 2;
-        *arg2 = 0;
-    }
-}
-
-#else
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002B9AC);
-#endif
-
 
 extern s32 D_800A2E24Absolute[];
 extern s32 D_800A2E40;
