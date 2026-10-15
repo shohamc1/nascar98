@@ -398,33 +398,20 @@ void TextureLoadTim(void *arg0) {
     }
 }
 
-static const char sTrackNameSaltBasin[] __attribute__((aligned(4))) =
-    "salt basin";
-static const char sTrackNameWillowLane[] __attribute__((aligned(4))) =
-    "willow lane";
-static const char sTrackNamePineRidge[] __attribute__((aligned(4))) =
-    "pine ridge";
-static const char sTrackNameRanchTower[] __attribute__((aligned(4))) =
-    "ranch tower";
-static const char sTrackNameCedarWoods[] __attribute__((aligned(4))) =
-    "cedar woods";
-static const char sTrackNameMichigan[] __attribute__((aligned(4))) = "Michigan";
-static const char sTrackNameSearsPoint[] __attribute__((aligned(4))) =
-    "Sears Point";
-static const char sTrackNameWatkinsGlen[] __attribute__((aligned(4))) =
-    "Watkins Glen";
-static const char sTrackNameTalladega[] __attribute__((aligned(4))) =
-    "Talladega";
-static const char sTrackNameCharlotte[] __attribute__((aligned(4))) =
-    "Charlotte";
-static const char sTrackNameSurfersParadise[] __attribute__((aligned(4))) =
-    "surfers paradise";
-static const char sTrackNameThunderdome[] __attribute__((aligned(4))) =
-    "thunderdome";
-static const char sTrackLoadingText[] __attribute__((aligned(4))) =
-    "Now Loading ... ";
-static const char sTrackTwoPlayersText[] __attribute__((aligned(4))) =
-    "\nTwo Players";
+static const char sTrackNameSaltBasin[] = "salt basin";
+static const char sTrackNameWillowLane[] = "willow lane";
+static const char sTrackNamePineRidge[] = "pine ridge";
+static const char sTrackNameRanchTower[] = "ranch tower";
+static const char sTrackNameCedarWoods[] = "cedar woods";
+static const char sTrackNameMichigan[] = "Michigan";
+static const char sTrackNameSearsPoint[] = "Sears Point";
+static const char sTrackNameWatkinsGlen[] = "Watkins Glen";
+static const char sTrackNameTalladega[] = "Talladega";
+static const char sTrackNameCharlotte[] = "Charlotte";
+static const char sTrackNameSurfersParadise[] = "surfers paradise";
+static const char sTrackNameThunderdome[] = "thunderdome";
+static const char sTrackLoadingText[] = "Now Loading ... ";
+static const char sTrackTwoPlayersText[] = "\nTwo Players";
 
 void TrackLoad(u8 selectTrack) {
     typedef struct {
