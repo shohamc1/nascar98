@@ -3419,7 +3419,639 @@ void func_8004B128(u8 *arg0) {
     *(s16 *)(arg0 + 0x402) = *(u16 *)(arg0 + 0x108);
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004B1C0);
+/* These calls keep the preceding result in the delay slot. */
+extern void HudMultiplyVoid(s32, s32) asm("MathMultiplyFixed16");
+extern u32 gHudPrimitiveCursor asm("gPrimitiveCursorAbsolute");
+extern u8 D_800A8184[], D_800A81B4[], D_800A8214[], D_800A82B4[];
+extern u8 D_800A80F4[], D_800A8354[], D_800A8534[], D_800A7995[];
+extern u16 D_8009934C[], D_8009934E[];
+extern s16 D_8009935C[], D_8009936C[];
+extern s16 D_800A3008;
+extern SVECTOR D_800A3004[];
+extern MATRIX D_800A7FC4[];
+extern u16 D_800A348C, D_800A3494;
+extern u8 D_800A2FD4[4], D_800A2FD8[], D_800A2FDC[];
+extern u8 D_800A2ED9[];
+extern s16 D_800A853C[], D_800A8544[], D_800A854C[], D_800A854E[];
+extern s16 D_800A8554[], D_800A8556[];
+
+void HudDrawDashboard(void) {
+    /* Preserve the temporary packet layout used by the draw loops. */
+    s16 points[16];
+    s16 angles[4];
+    s16 streakAngles[4];
+    s16 *cornerRows[2];
+    u32 intensityBytes[2];
+    u8 framePad[8];
+    register s32 product asm("s0");
+    s32 productY;
+    register s32 next asm("v0");
+    s32 cosine;
+    s32 sine;
+    s32 offset;
+    s32 count;
+    register s32 vertex asm("s4");
+    register s32 i asm("s7");
+    register s16 *point asm("s3");
+    s16 *corner;
+    POLY_F4 *needle;
+    register u32 cachedAngle asm("t3");
+    register s32 argA asm("a0");
+    register s32 argB asm("a1");
+    s32 callResult;
+    s32 nextVertex;
+    register s32 screenY asm("v1");
+    register s16 *baseCorner asm("t2");
+
+    if (D_800A2EA4[0] == 0) {
+        i = 0;
+    copyHud1:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A8184 + (s16)i * 0x18);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+            next = i + 1;
+            i = next;
+            asm("" : "=r"(next) : "0"(next));
+            if ((s16)next < 2)
+                goto copyHud1;
+        }
+        i = 0;
+        PushMatrix();
+        func_800474A0();
+        do {
+            baseCorner = D_8009935C;
+
+            cornerRows[0] = baseCorner;
+            switch ((s16)i) {
+            case 0: {
+                u8 *car;
+                s32 rpm;
+                s32 numerator;
+                register s32 quotient asm("$3");
+                register s32 trueFactor asm("$4");
+                register s32 falseFactor asm("$3");
+                register s32 trueHigh asm("$11");
+                register s32 falseHigh asm("$12");
+                s64 wideProduct;
+
+                /* Scale the tachometer angle by 585/13250 or 658/13250. */
+                car = D_800A3554[0];
+                rpm = *(s16 *)(car + 0x402);
+                if (*(u8 *)(car + 0xF6) != 0 ||
+                    *(s16 *)(car + 0x10C) == *(s16 *)(car + 0x110)) {
+                    trueFactor = 0x9E468F35;
+                    numerator = rpm * 585;
+                    asm("mult %2,%3\n\tmfhi %0"
+                        : "=r"(trueHigh), "=x"(wideProduct)
+                        : "r"(numerator), "r"(trueFactor)
+                        : "accum");
+                    quotient = trueHigh + numerator;
+                } else {
+                    falseFactor = 0x9E468F35;
+                    numerator = rpm * 658;
+                    asm("mult %2,%3\n\tmfhi %0"
+                        : "=r"(falseHigh), "=x"(wideProduct)
+                        : "r"(numerator), "r"(falseFactor)
+                        : "accum");
+                    quotient = falseHigh + numerator;
+                }
+                quotient >>= 13;
+                numerator >>= 31;
+                quotient -= numerator;
+                quotient += 256;
+
+                angles[0] = quotient;
+                asm("" : : "m"(angles[0]) : "$10", "memory");
+            }
+                baseCorner = D_8009936C;
+
+                cornerRows[0] = baseCorner;
+                break;
+            case 1:
+                if (D_800A2ED4[0] == 0) {
+                    if (RandomScaledGet(2)) {
+                        productY = -RandomScaledGet(
+                            *(s32 *)(D_800A3554[0] + 0x90) >> 20);
+                    } else {
+                        productY = RandomScaledGet(
+                            *(s32 *)(D_800A3554[0] + 0x90) >> 20);
+                    }
+                    productY += 0x300;
+                    D_800A3494 = productY;
+                    angles[0] = productY;
+                } else {
+                    cachedAngle = D_800A3494;
+
+                    angles[0] = cachedAngle;
+                }
+                break;
+            case 2: {
+                s32 speed;
+                s32 scaledSpeed;
+                register s32 factor asm("a0");
+                register s32 high asm("t4");
+                register s32 angleQuot asm("v1");
+                s64 wideProduct;
+
+                /* Scale speed by 768/16000 for the speedometer angle. */
+                speed = *(s32 *)(D_800A3554[0] + 0x28C);
+                factor = 0x10624DD3;
+                scaledSpeed = speed * 768;
+                asm("mult %1,%2"
+                    : "=x"(wideProduct)
+                    : "r"(scaledSpeed), "r"(factor)
+                    : "accum");
+                scaledSpeed >>= 31;
+                asm("mfhi %0"
+                    : "=r"(high)
+                    : "x"(wideProduct), "r"(scaledSpeed));
+                angleQuot = high >> 10;
+                angleQuot -= scaledSpeed;
+                angleQuot += 0x180;
+                angleQuot &= 0x3FF;
+                angles[0] = angleQuot;
+                break;
+            }
+            case 3:
+                angles[0] = ((s32)(D_800A3554[0][0x3FD] << 24) >> 21) + 0x2D8;
+                break;
+            }
+            vertex = 0;
+            {
+                register u32 angleWord asm("t2");
+                register s32 index asm("v0");
+                register s32 *cosineTable asm("v1");
+                register s32 *sineTable asm("a0");
+                extern s32 *hudCosine asm("D_800A3A2CAbsolute");
+                extern s32 *hudSine asm("D_800A3A34Absolute");
+
+                index = i << 16;
+                angleWord = *(u16 *)angles;
+
+                offset = index >> 14;
+                cosineTable = hudCosine;
+                sineTable = hudSine;
+                index = (s32)(angleWord << 16) >> 14;
+                cosineTable = (s32 *)(index + (u32)cosineTable);
+                cosine = *cosineTable;
+                sineTable = (s32 *)(index + (u32)sineTable);
+                sine = *sineTable;
+            }
+        rotateCorner:
+            {
+                register s16 *base asm("t3");
+
+                base = cornerRows[0];
+
+                count = (s32)(vertex << 16) >> 14;
+                corner = (s16 *)(count + (u32)base);
+
+                argB = corner[0];
+                argA = cosine;
+            }
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            argB = corner[1];
+            argA = sine;
+            product = callResult;
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            {
+                u32 centerX;
+
+                point = points;
+
+                centerX = *(u16 *)(offset + (u32)D_8009934C);
+                point = (s16 *)((u8 *)point + count);
+                asm("" : "=r"(point) : "0"(point), "r"(centerX), "r"(product));
+                product -= callResult;
+                product >>= 16;
+                centerX += product;
+                point[0] = centerX;
+                argB = corner[0];
+                argA = sine;
+            }
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            argB = corner[1];
+            argA = cosine;
+            product = callResult;
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            screenY = D_800A2FD4[0];
+
+            nextVertex = vertex + 1;
+            vertex = nextVertex;
+            asm("" : "=r"(nextVertex) : "0"(nextVertex));
+            argB = *(u16 *)(offset + (u32)D_8009934E);
+
+            product += callResult;
+            product >>= 16;
+            nextVertex = (s16)nextVertex < 4;
+            point[1] = (s8)screenY + (argB + product);
+            if (nextVertex)
+                goto rotateCorner;
+            {
+                register s32 copyIndex asm("v0");
+                s32 copyOffset;
+                register u32 needleBase asm("a1");
+
+                copyIndex = (s16)i;
+                needleBase = (u32)D_800A81B4;
+                copyOffset = copyIndex << 1;
+
+                argA = *(u16 *)points;
+                copyOffset += copyIndex;
+                copyOffset <<= 3;
+                needle = (POLY_F4 *)(copyOffset + needleBase);
+            }
+            needle->x0 = argA;
+            needle->y0 = points[1];
+            needle->x1 = points[2];
+            needle->y1 = points[3];
+            needle->x2 = points[4];
+            needle->y2 = points[5];
+            needle->x3 = points[6];
+            needle->y3 = points[7];
+            next = i + 1;
+            i = next;
+            asm("" : "=r"(next) : "0"(next));
+        } while ((s16)next < 4);
+        D_800A3008 = D_800A3480 * -15;
+        RotMatrix(D_800A3004, D_800A7FC4);
+        SetRotMatrix(D_800A7FC4);
+        SetTransMatrix(D_800A7FC4);
+        {
+            u8 *dest;
+            register u8 *source asm("s0");
+            register u8 *out asm("s1");
+            u32 *ot;
+            s32 count;
+            s32 product;
+            struct PacketWords {
+                s32 w0;
+                s32 w1;
+                s32 w2;
+                s32 w3;
+                s32 w4;
+            };
+            struct PacketWords *from;
+            struct PrimitiveWords {
+                u32 tag, color, xy0, uv0, xy1, uv1, xy2, uv2, xy3, uv3;
+            };
+            struct PrimitiveWords *poly;
+            register s32 w0 asm("v0");
+            s32 w1;
+            register s32 w2 asm("a0");
+            s32 w3;
+            s32 w4;
+            register SVECTOR *p0 asm("t4");
+            register SVECTOR *p1 asm("t2");
+            register SVECTOR *p2 asm("t3");
+            /* Project the 36 dashboard quads through the GTE. */
+            dest = (u8 *)gHudPrimitiveCursor;
+            count = 36;
+            source = D_800A7995;
+            ot = (u32 *)D_800A39C8[0];
+            out = dest + 0x18;
+            do {
+                p0 = *(SVECTOR **)(source + 0x17);
+                p1 = *(SVECTOR **)(source + 0x1B);
+                p2 = *(SVECTOR **)(source + 0x1F);
+                gte_ldv3(p0, p1, p2);
+                asm volatile(
+                    ".set\tnoreorder\n\tnop\n\tnop\n\trtpt\n\t.set\treorder");
+                asm volatile(
+                    ".set\tnoreorder\n\tnop\n\tnop\n\tavsz3\n\t.set\treorder");
+                from = (struct PacketWords *)(source + 3);
+                poly = (struct PrimitiveWords *)(out - 0x18);
+                w2 = from->w2;
+                w0 = from->w0;
+                w1 = from->w1;
+                w3 = from->w3;
+                w4 = from->w4;
+
+                poly->uv1 = w2;
+                poly->uv0 = w1;
+                poly->color = w0;
+                poly->uv2 = w3;
+                poly->uv3 = w4;
+                gte_stsxy3(dest + 8, dest + 0x10, dest + 0x20);
+                p0 = *(SVECTOR **)(source + 0x23);
+                gte_ldv0(p0);
+                asm volatile(
+                    ".set\tnoreorder\n\tnop\n\tnop\n\trtps\n\t.set\treorder");
+                gte_stsxy(out);
+                argB = (s32)dest;
+                asm("" : "=r"(argB) : "0"(argB));
+                count--;
+                product = *(s8 *)source;
+                source += 0x2C;
+                out += 0x28;
+                dest += 0x28;
+                GraphicsAddTaggedPrimitive(ot + product, (u32 *)argB,
+                                           0x09000000);
+            } while (count > 0);
+            gHudPrimitiveCursor = (u32)dest;
+        }
+        i = 0;
+    copyHud2:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A81B4 + (s16)i * 24);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(D_800A39C8[0] + 8), entry);
+            next = i + 1;
+            i = next;
+            asm("" : "=r"(next) : "0"(next));
+            if ((s16)next < 4)
+                goto copyHud2;
+        }
+        i = 0;
+    copyHud3:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A8214 + (s16)i * 40);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(D_800A39C8[0] + 16), entry);
+            next = i + 1;
+            i = next;
+            asm("" : "=r"(next) : "0"(next));
+            if ((s16)next < 4)
+                goto copyHud3;
+        }
+        i = 0;
+    copyHud4:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A82B4 + (s16)i * 40);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(D_800A39C8[0] + 16), entry);
+            next = i + 1;
+            i = next;
+            asm("" : "=r"(next) : "0"(next));
+            if ((s16)next < 4)
+                goto copyHud4;
+        }
+        {
+            register s32 product asm("s0");
+            s32 productX;
+            s32 rotatedX;
+            register s32 returnedValue asm("v0");
+            register s32 rowOffset asm("s4");
+            u16 *center;
+
+            register u32 intensityValue asm("t3");
+            register u32 reloadIntensity asm("t2");
+            register u16 rawAngle asm("t2");
+            register u32 shifted asm("a0");
+            s32 signedAngle;
+            i = 0;
+            streakAngles[0] = (D_800A348C + 0x120) & 0x3FF;
+            do {
+                rawAngle = *(u16 *)streakAngles;
+                asm("" : "=r"(rawAngle) : "0"(rawAngle));
+                shifted = (u32)rawAngle << 16;
+                signedAngle = (s32)shifted >> 16;
+                if (signedAngle < 0x200) {
+                    if (signedAngle - 0x100 >= 0) {
+                        offset = (u32)(0x200 - signedAngle) >> 2;
+                    } else {
+                        offset = shifted >> 18;
+                    }
+                    intensityValue = offset & 0xFF;
+
+                    intensityBytes[0] = intensityValue;
+                    if (intensityValue >= 8) {
+                        {
+                            s32 index;
+                            register s32 width asm("a2");
+                            register u32 angleWord asm("t4");
+                            u32 centers;
+                            register u32 angleIndex asm("a3");
+                            register u32 centerValue asm("v1");
+                            extern s32 *hudCosine asm("D_800A3A2CAbsolute");
+                            extern s32 *hudSine asm("D_800A3A34Absolute");
+
+                            index = (s16)i;
+                            width = D_800A2FD8[index];
+                            asm("" : "=r"(width) : "0"(width));
+                            angleWord = *(u16 *)streakAngles;
+                            asm("" : "=r"(angleWord) : "0"(angleWord));
+                            argB = 0x200;
+                            centers = (u32)D_800A2FDC;
+
+                            center = (u16 *)(index * 2 + centers);
+                            centerValue = *center;
+                            callResult = index * 5;
+
+                            rowOffset = callResult << 3;
+                            product = intensityValue >> 1;
+
+                            product <<= 16;
+                            width = (s8)width;
+                            angleIndex = angleWord;
+                            argB -= angleIndex;
+                            argB >>= 7;
+                            centerValue -= width;
+                            centerValue = argB + centerValue;
+                            *(s16 *)(rowOffset + (u32)D_800A853C) = centerValue;
+                            asm volatile("" : : : "memory");
+                            callResult = D_800A2FD8[index];
+                            asm("" : "=r"(callResult) : "0"(callResult));
+                            centerValue = *center;
+                            argA = (s32)hudCosine;
+                            callResult = (s8)callResult;
+                            centerValue += callResult;
+                            callResult = (s32)hudSine;
+                            angleIndex <<= 2;
+                            argB += centerValue;
+                            argA = angleIndex + argA;
+                            *(s16 *)(rowOffset + (u32)D_800A8544) = argB;
+                            cosine = *(s32 *)argA;
+                            argB = 0x640000;
+                            angleIndex += callResult;
+
+                            sine = *(s32 *)angleIndex;
+                        }
+                        callResult = MathMultiplyFixed16(cosine, argB);
+                        argB = product;
+                        productX = callResult;
+                        callResult = MathMultiplyFixed16(sine, argB);
+                        argA = sine;
+                        argB = 0x640000;
+
+                        rotatedX = callResult;
+                        HudMultiplyVoid(argA, argB);
+                        asm("" : "=r"(returnedValue));
+                        callResult = returnedValue;
+                        argA = cosine;
+                        argB = product;
+                        product = callResult;
+                        HudMultiplyVoid(argA, argB);
+                        asm("" : "=r"(returnedValue));
+                        callResult = returnedValue;
+                        argA = *center;
+                        screenY = (productX - rotatedX) >> 16;
+                        argA += screenY;
+                        *(s16 *)(rowOffset + (u32)D_800A854C) = argA;
+
+                        screenY = D_800A2FD4[0];
+                        asm("" : "=r"(screenY) : "0"(screenY));
+                        argA = (product + callResult) >> 16;
+                        screenY = (s8)screenY;
+                        screenY += 0x9E;
+                        argA += screenY;
+                        *(s16 *)(rowOffset + (u32)D_800A854E) = argA;
+
+                        screenY = *center;
+                        productX += rotatedX;
+                        productX >>= 16;
+                        screenY += productX;
+                        *(s16 *)(rowOffset + (u32)D_800A8554) = screenY;
+                        asm volatile("" : : : "memory");
+                        screenY = D_800A2FD4[0];
+                        asm("" : "=r"(screenY) : "0"(screenY));
+                        product -= callResult;
+                        product >>= 16;
+                        screenY = (s8)screenY;
+                        screenY += 0x9E;
+                        product += screenY;
+                        *(s16 *)(rowOffset + (u32)D_800A8556) = product;
+
+                        reloadIntensity = intensityBytes[0];
+                        next = reloadIntensity < 33;
+
+                        if (!next)
+                            offset = 32;
+                        {
+                            u32 raw;
+                            POLY_FT4 *entry;
+                            register POLY_FT4 *prim asm("v0");
+                            prim = (POLY_FT4 *)(rowOffset + (u32)D_800A8534);
+
+                            prim->r0 = offset;
+                            prim->g0 = offset;
+                            prim->b0 = offset;
+                            raw = gHudPrimitiveCursor;
+                            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+                            entry = (POLY_FT4 *)raw;
+                            *entry = *prim;
+                            AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+                        }
+                    }
+                }
+                {
+                    register u32 angleRaw asm("t3");
+                    register u32 angleNext asm("v0");
+
+                    angleRaw = *(u16 *)streakAngles;
+
+                    angleNext = (angleRaw + 0x3E0) & 0x3FF;
+                    streakAngles[0] = angleNext;
+                }
+                next = i + 1;
+                i = next;
+                asm("" : "=r"(next) : "0"(next));
+            } while ((s16)next < 3);
+        }
+        PopMatrix();
+    }
+    i = 0;
+copyHud5:
+    {
+        register u32 raw asm("a1");
+        register u32 mode asm("v0");
+        s32 row;
+        register s32 copyOffset asm("v1");
+        register s32 modeOffset asm("v1");
+        s32 rowOffset;
+        register POLY_FT4 *entry asm("t0");
+        POLY_FT4 *copyDest;
+        u32 sourceBase;
+        POLY_FT4 *prim;
+        mode = D_800A2ED9[0];
+        row = (s16)i;
+        asm volatile("" : "=r"(row) : "0"(row), "r"(mode) : "memory");
+        raw = gHudPrimitiveCursor;
+        asm("" : "=r"(raw) : "0"(raw));
+        modeOffset = mode * 240;
+
+        rowOffset = row * 40;
+
+        copyOffset = modeOffset + rowOffset;
+        entry = (POLY_FT4 *)raw;
+
+        copyDest = entry;
+
+        sourceBase = (u32)D_800A8354;
+        prim = (POLY_FT4 *)(copyOffset + sourceBase);
+        gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
+        *copyDest = *prim;
+        AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+        next = i + 1;
+        i = next;
+        asm("" : "=r"(next) : "0"(next));
+        if ((s16)next < 6)
+            goto copyHud5;
+    }
+    i = 0;
+copyHud6:
+    {
+        register u32 raw asm("a1");
+        register u32 mode asm("v0");
+        register s32 row asm("v1");
+        s32 copyOffset;
+        s32 modeOffset;
+        register POLY_FT4 *entry asm("t0");
+        POLY_FT4 *copyDest;
+        u32 sourceBase;
+        POLY_FT4 *prim;
+        mode = D_800A2ED9[0];
+        row = (s16)i;
+        asm volatile("" : "=r"(row) : "0"(row), "r"(mode) : "memory");
+        raw = gHudPrimitiveCursor;
+        asm("" : "=r"(raw) : "0"(raw));
+        modeOffset = mode * 9;
+        asm("" : "=r"(modeOffset) : "0"(modeOffset));
+        copyOffset = row * 3;
+
+        copyOffset += modeOffset;
+        copyOffset <<= 3;
+        entry = (POLY_FT4 *)raw;
+
+        copyDest = entry;
+
+        sourceBase = (u32)D_800A80F4;
+        prim = (POLY_FT4 *)(copyOffset + sourceBase);
+        gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
+        *copyDest = *prim;
+        AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+        next = i + 1;
+        i = next;
+        asm("" : "=r"(next) : "0"(next));
+        if ((s16)next < 3)
+            goto copyHud6;
+    }
+}
 
 void __maspsx_include_asm_hack_D_8008D4CC(void) {
     __asm__(".section .rodata # maspsx-keep \n"
