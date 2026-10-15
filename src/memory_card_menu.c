@@ -4261,7 +4261,120 @@ void func_8006CB40(void) {
     *((s16 *)(D_800A377C[0] + 0x1A)) = value;
 }
 
+#ifdef NON_MATCHING
+void func_8006CB80(s32 arg0, s32 arg1, s32 arg2) {
+    extern s32 D_800A3830Absolute[];
+    extern s32 D_800A3830Absolute2[];
+    s8 *new_var2;
+    extern s32 D_800A37F0Absolute[];
+    extern s32 D_800A37F0Absolute2[];
+    extern s32 D_800A37F0Absolute3[];
+    extern s32 D_800A37F0D[] asm("D_800A37F0.NON_MATCHING");
+    s32 threshold;
+    char *new_var;
+    s32 limitSave;
+    s32 ch;
+    s32 adj;
+    s8 *entry;
+    char *blank;
+    u8 cursor;
+    s32 result;
+    threshold = 0xF;
+    if (arg1 & (~arg2)) {
+        D_800A3830Absolute2[0] = 0;
+        limitSave = 1;
+    } else {
+        D_800A3830Absolute[0] = D_800A3830Absolute2[0] + 1;
+        if (threshold < D_800A3830Absolute[0]) {
+            D_800A37F0Absolute[0] =
+                D_800A37F0Absolute2[0] + (D_800A37F0Absolute2[0] / 2);
+            if (0x9 <= D_800A37F0Absolute[0]) {
+                limitSave = 8;
+            } else {
+                goto noStore;
+            }
+        } else {
+            return;
+        }
+    }
+    D_800A37F0Absolute3[0] = limitSave;
+noStore:
+    entry = *((s8 **)(D_800A377C[0] + 0x1C));
+
+    if ((*((s8 *)(entry + 5))) <
+        strlen((char *)((D_800A358C * 0x10) + D_800B0A2C))) {
+        goto readChar;
+    }
+    blank =
+        ((char *)((D_800A358C * 0x10) + D_800B0A2C)) + (*((s8 *)(entry + 5)));
+    blank[0] = ' ';
+    blank =
+        ((char *)(((*((volatile u8 *)(&D_800A358C))) * 0x10) + D_800B0A2C)) +
+        (*((s8 *)(entry + 5)));
+    blank[1] = 0;
+    ch = 0x21;
+    goto charJoined;
+readChar:
+    ch = (*((u8 *)((((*((volatile u8 *)(&D_800A358C))) * 0x10) + D_800B0A2C) +
+                   (*((s8 *)(entry + 5)))))) -
+         0x20;
+
+charJoined:
+    if ((arg0 & 0xFF) == 0) {
+        adj = ch - D_800A37F0D[0];
+        if (((s16)adj) >= 0) {
+            ch = adj;
+        } else {
+            ch = adj + 0x5F;
+        }
+        if (((u16)(ch - 1)) < 0xF) {
+            ch = 0;
+        } else if (((u16)(ch - 0x1A)) < 7) {
+            ch = 0x19;
+        } else if (((u16)(ch - 0x3B)) < 6) {
+            ch = 0x3A;
+        } else if (((s16)ch) < 0x5B) {
+        } else {
+            ch = 0x5A;
+        }
+    } else {
+        adj = ch + D_800A37F0D[0];
+        if (((s16)adj) < 0x5F) {
+            ch = adj;
+        } else {
+            ch = adj - 0x5F;
+        }
+        if (((u16)(ch - 1)) < 0xF) {
+            ch = 0x10;
+        } else if (((u16)(ch - 0x1A)) < 7) {
+            ch = 0x21;
+        } else if (((u16)(ch - 0x3B)) < 6) {
+            ch = 0x41;
+        } else if (((s16)ch) < 0x5B) {
+        } else {
+            ch = 0;
+        }
+    }
+
+    *((char *)((new_var = (D_800A358C * 0x10) + D_800B0A2C) + (*(entry + 5)))) =
+        ch + 0x20;
+    new_var2 = (s8 *)((D_800A358C * 0x10) + D_800B0A2C);
+    func_8005A7B8(2, 2);
+    cursor = *((u8 *)(entry + 5));
+    if ((*new_var2) == 0) {
+        *((s16 *)(entry + 0x16)) = func_8005AFF0(0x20);
+        result = 0;
+    } else {
+        func_8005AEC8(cursor, new_var);
+        result = (*((s16 *)(entry + 0x16)) =
+                      func_8005AFF0(*((s8 *)(new_var + cursor))));
+    }
+    *((s16 *)(entry + 6)) = result + 0xA;
+}
+
+#else
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006CB80);
+#endif
 
 extern char D_800B0A2D[];
 extern u8 D_800A358C;
