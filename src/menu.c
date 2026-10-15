@@ -2377,18 +2377,35 @@ extern s32 D_8009A268[];
 extern s32 D_8009A298[];
 extern s16 func_8005A84C(void);
 extern void func_80060008(u8);
-#ifdef NON_MATCHING
-/* Keep coordinate calculations wide until the s16 stores. */
-/* Permuter find (real-TU verified 10181 -> 8274): reuse pr5 as the
- * &D_8009AEAE[0] temp inside the obj8 GetTPage call, so its address
- * pseudo is born through an existing call-crossing pointer instead of a
- * fresh short-lived one. Frame grew 0x58 -> 0x60 and the s8/s7 saves now
- * lead the prologue like retail; the obj2 loop still allocates one
- * register away from retail (ours c2/k2 in s3/s6, obj2 in s1; retail
- * w2 in s6, obj2 in s0).
- */
+/* Menu screen builder. Each "object" is a 36-byte record taken from
+ * D_800A3678; the MenuObj struct matters for the match: member stores are
+ * MEM_IN_STRUCT_P, so the scheduler may hoist the scalar D_800A3654 load
+ * above them like retail. Retail's constants and register order depend on
+ * the locals below (k2b is pinned to $19, the empty asm statements make the
+ * primitive pointers function-wide). */
+typedef struct {
+    s16 unk0;
+    u8 unk2;
+    u8 unk3;
+    u8 unk4;
+    u8 unk5;
+    s16 unk6;
+    s16 unk8;
+    s16 unkA;
+    s16 unkC;
+    s16 unkE;
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    s32 unk1C;
+    u8 *unk20;
+} MenuObj;
 void func_8005ED74(u8 arg0, u8 arg1) {
     extern s32 func_8005A8EI(s32) asm("func_8005A8E0");
+    register s32 k2b asm("$19");
     u8 ix1;
     u8 ix11;
     u8 ix2;
@@ -2401,7 +2418,6 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     u8 ix9;
     u8 ixB10;
     u8 *obj1;
-    u8 *obj10;
     u8 *obj11;
     u8 *obj2;
     u8 *obj3;
@@ -2428,14 +2444,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     u8 *prD10;
     u8 *prD7;
     s16 w2, c2, k2, g2, b2;
-    s32 half;
+    s16 w4, g4, z4;
+    s16 k41, k32, k7;
+    s16 k3, k9, k30;
+    s32 m;
     s16 w1, g1, z1;
     u8 *prim2;
     s32 i;
     s32 j;
     s32 yBase;
     s32 h;
-    s16 x;
+    s32 x1;
     s32 x4;
     s32 x6;
     s32 value;
@@ -2450,31 +2469,33 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     do {
         s32 y1;
         u8 **listSlot;
+        x1 = yBase;
         j = 0;
         listSlot = list;
         w1 = 0x78;
         g1 = 0xF;
         z1 = 0x3FC;
-        do {
+    a1_L:
+        {
             ix1 = D_800A35EC;
             D_800A35EC = ix1 + 1;
             obj1 = D_800A3678 + ix1 * 36;
-            *(s16 *)(obj1 + 0x16) = w1;
-            *(s16 *)(obj1 + 0x12) = 0;
-            *(s16 *)(obj1 + 0x14) = 0;
-            *(s32 *)(obj1 + 0x1C) = 0;
+            ((MenuObj *)obj1)->unk12 = 0;
+            ((MenuObj *)obj1)->unk14 = 0;
+            ((MenuObj *)obj1)->unk1C = 0;
             obj1[4] = 0;
             obj1[3] = 0;
             obj1[2] = 0;
-            *(s16 *)(obj1 + 0x1A) = 0;
-            *(s16 *)(obj1 + 0) = 1;
-            *(s16 *)(obj1 + 0xA) = h;
-            *(s16 *)(obj1 + 6) = h;
-            *(s16 *)(obj1 + 0xC) = yBase + j * 0xF;
-            *(s16 *)(obj1 + 8) = yBase + j * 0xF;
-            *(s16 *)(obj1 + 0x18) = g1;
-            *(s16 *)(obj1 + 0xE) = 0;
-            *(s16 *)(obj1 + 0x10) = 0;
+            ((MenuObj *)obj1)->unk1A = 0;
+            ((MenuObj *)obj1)->unk0 = 1;
+            ((MenuObj *)obj1)->unk16 = w1;
+            ((MenuObj *)obj1)->unkA = h;
+            ((MenuObj *)obj1)->unk6 = h;
+            ((MenuObj *)obj1)->unkC = x1;
+            ((MenuObj *)obj1)->unk8 = x1;
+            ((MenuObj *)obj1)->unk18 = g1;
+            ((MenuObj *)obj1)->unkE = 0;
+            ((MenuObj *)obj1)->unk10 = 0;
             pr1 = func_80057CCC(1);
             SetPolyFT4((POLY_FT4 *)pr1);
             SetShadeTex(pr1, 0);
@@ -2483,16 +2504,16 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             pr1[6] = 0x80;
             SetSemiTrans(pr1, 0);
             entry = obj1;
-            *(u8 **)(entry + 0x20) = pr1;
-            *(s16 *)(entry + 0x1A) = z1;
+            ((MenuObj *)entry)->unk20 = pr1;
+            ((MenuObj *)entry)->unk1A = z1;
             if (j == 0) {
                 *listSlot = entry;
             } else {
                 *(u8 **)(*listSlot + 0x1C) = entry;
             }
-            prim2 = *(u8 **)(entry + 0x20);
-            *(s16 *)(entry + 6) = -0xF5;
-            *(s16 *)(entry + 0xE) = 2;
+            prim2 = ((MenuObj *)entry)->unk20;
+            ((MenuObj *)entry)->unk6 = -0xF5;
+            ((MenuObj *)entry)->unkE = 2;
             if (j == 0) {
                 u16 w;
                 u8 v;
@@ -2529,40 +2550,43 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 prim2[0x25] = v;
             }
             j++;
-        } while (j < 2);
+            x1 += 0xF;
+        }
+        if (j < 2) {
+            goto a1_L;
+        }
         j = 0;
         w2 = 0x78;
-        asm("" : "=r"(w2) : "0"(w2));
         c2 = 0x20;
         k2 = 2;
         g2 = 0x1E;
         b2 = 0x40;
-        do {
-            j++;
+    a2_L:
+        {
             ix2 = D_800A35EC;
             D_800A35EC = ix2 + 1;
             obj2 = D_800A3678 + ix2 * 36;
             obj2[4] = 0;
-            *(s16 *)(obj2 + 0x18) = g2;
-            *(s16 *)(obj2 + 0x12) = 0;
-            *(s16 *)(obj2 + 0x14) = 0;
-            *(s32 *)(obj2 + 0x1C) = 0;
+            ((MenuObj *)obj2)->unk18 = g2;
+            ((MenuObj *)obj2)->unk12 = 0;
+            ((MenuObj *)obj2)->unk14 = 0;
+            ((MenuObj *)obj2)->unk1C = 0;
             obj2[3] = 0;
             obj2[2] = 0;
-            *(s16 *)(obj2 + 0x1A) = 0;
-            *(s16 *)(obj2 + 0) = k2;
-            *(s16 *)(obj2 + 6) = 0;
-            *(s16 *)(obj2 + 0xA) = 0;
-            *(s16 *)(obj2 + 8) = yBase;
-            *(s16 *)(obj2 + 0xC) = yBase;
-            *(s16 *)(obj2 + 0xE) = 0;
-            *(s16 *)(obj2 + 0x10) = 0;
-            *(s16 *)(obj2 + 0x16) = w2;
+            ((MenuObj *)obj2)->unk1A = 0;
+            ((MenuObj *)obj2)->unk0 = k2;
+            ((MenuObj *)obj2)->unk6 = 0;
+            ((MenuObj *)obj2)->unkA = 0;
+            ((MenuObj *)obj2)->unk8 = yBase;
+            ((MenuObj *)obj2)->unkC = yBase;
+            ((MenuObj *)obj2)->unkE = 0;
+            ((MenuObj *)obj2)->unk10 = 0;
+            ((MenuObj *)obj2)->unk16 = w2;
             obj2[2] = c2;
             obj2[3] = c2;
             obj2[4] = b2;
             pr2 = func_80057D50(1);
-            *(u8 **)(obj2 + 0x20) = pr2;
+            ((MenuObj *)obj2)->unk20 = pr2;
             SetPolyF4(pr2);
             SetSemiTrans(pr2, 1);
             y1 = yBase + 0x1E;
@@ -2577,24 +2601,27 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             *(s16 *)(pr2 + 0x12) = y1;
             *(s16 *)(pr2 + 0x14) = w2;
             *(s16 *)(pr2 + 0x16) = y1;
-            *(s16 *)(obj2 + 0x1A) = 0x3FD;
-            *(s16 *)(obj2 + 0xE) = k2;
-            *(s16 *)(obj2 + 6) = -0xF5;
-            *(s16 *)(obj2 + 0xE) = k2;
+            ((MenuObj *)obj2)->unk1A = 0x3FD;
+            ((MenuObj *)obj2)->unkE = k2;
+            ((MenuObj *)obj2)->unk6 = -0xF5;
+            ((MenuObj *)obj2)->unkE = k2;
             *(u8 **)(entry + 0x1C) = obj2;
             entry = obj2;
-        } while (j < 2);
+            j++;
+        }
+        if (j < 2) {
+            goto a2_L;
+        }
+        asm("" : : "r"(pr2));
         list++;
         yBase = y1;
         i++;
     } while (i < 4);
     {
         s32 n;
-        s32 m;
         n = 0;
         i = 0;
-    textouter_L:
-        {
+        do {
             s16 yLoad;
             u8 *node;
             node = D_800B996C[i];
@@ -2626,30 +2653,30 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 obj3[2] = 0;
                 primIdx = D_800A37BC;
                 entry = obj3;
-                *(s16 *)(entry + 0x12) = 0;
-                *(s16 *)(entry + 0x14) = 0;
-                *(s32 *)(entry + 0x1C) = 0;
-                *(s16 *)(entry + 0x1A) = 0;
-                *(s16 *)(entry + 0) = 0;
-                *(s16 *)(entry + 0xA) = h;
-                *(s16 *)(entry + 6) = h;
-                *(s16 *)(entry + 0xC) = yBase;
-                *(s16 *)(entry + 8) = yBase;
-                *(s16 *)(entry + 0xE) = 0;
-                *(s16 *)(entry + 0x10) = 0;
-                *(s16 *)(entry + 0x1A) = 0;
+                ((MenuObj *)entry)->unk12 = 0;
+                ((MenuObj *)entry)->unk14 = 0;
+                ((MenuObj *)entry)->unk1C = 0;
+                ((MenuObj *)entry)->unk1A = 0;
+                ((MenuObj *)entry)->unk0 = 0;
+                ((MenuObj *)entry)->unkA = h;
+                ((MenuObj *)entry)->unk6 = h;
+                ((MenuObj *)entry)->unkC = yBase;
+                ((MenuObj *)entry)->unk8 = yBase;
+                ((MenuObj *)entry)->unkE = 0;
+                ((MenuObj *)entry)->unk10 = 0;
+                ((MenuObj *)entry)->unk1A = 0;
                 D_800A37BC = primIdx + 1;
                 textPrim = (u8 *)D_800A3654 + primIdx * 12;
-                *(u8 **)(entry + 0x20) = textPrim;
+                ((MenuObj *)entry)->unk20 = textPrim;
                 textPrim[0] = 0;
                 textPrim[3] = 0;
                 *(s32 *)(textPrim + 4) = 0;
                 D_800BB9F4[n] = entry;
-                *(s16 *)(entry + 0xE) = 2;
-                *(s16 *)(entry + 0x16) = value;
-                *(s16 *)(entry + 6) = *(u16 *)(entry + 0xA) - 0xF5;
-                *(s16 *)(entry + 0x18) = func_8005A84C();
-                primLoad = *(u8 **)(entry + 0x20);
+                ((MenuObj *)entry)->unkE = 2;
+                ((MenuObj *)entry)->unk16 = value;
+                ((MenuObj *)entry)->unk6 = *(u16 *)(entry + 0xA) - 0xF5;
+                ((MenuObj *)entry)->unk18 = func_8005A84C();
+                primLoad = ((MenuObj *)entry)->unk20;
                 primLoad[1] = 2;
                 primLoad[2] = 2;
                 *(s32 *)(primLoad + 8) = D_8009A268[n];
@@ -2660,20 +2687,23 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 m++;
             } while (m < 3);
             i++;
-            if (i < 4) {
-                goto textouter_L;
-            }
-        }
+        } while (i < 4);
     }
     {
         u8 *obj3;
         u8 *pr3;
         u8 *pq3;
         yBase = *(s16 *)(D_800B996C[0] + 0xC) + 0xD;
+        k3 = 3;
+        k9 = 9;
+        w4 = 0x68;
+        g4 = 5;
+        z4 = 0x3F2;
         h = 8;
         i = 0;
         do {
             u8 **slot;
+            u8 **tbl;
             u16 w;
             u16 hh;
             u32 scale;
@@ -2681,22 +2711,22 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             ix4 = D_800A35EC;
             D_800A35EC = ix4 + 1;
             obj4 = D_800A3678 + ix4 * 36;
-            *(s16 *)(obj4 + 0) = 1;
-            *(s16 *)(obj4 + 0x16) = 0x68;
-            *(s16 *)(obj4 + 0x12) = 0;
-            *(s16 *)(obj4 + 0x14) = 0;
-            *(s32 *)(obj4 + 0x1C) = 0;
+            ((MenuObj *)obj4)->unk0 = 1;
+            ((MenuObj *)obj4)->unk16 = w4;
+            ((MenuObj *)obj4)->unk12 = 0;
+            ((MenuObj *)obj4)->unk14 = 0;
+            ((MenuObj *)obj4)->unk1C = 0;
             obj4[4] = 0;
             obj4[3] = 0;
             obj4[2] = 0;
-            *(s16 *)(obj4 + 0x1A) = 0;
-            *(s16 *)(obj4 + 0xA) = h;
-            *(s16 *)(obj4 + 6) = h;
-            *(s16 *)(obj4 + 0xC) = yBase;
-            *(s16 *)(obj4 + 8) = yBase;
-            *(s16 *)(obj4 + 0x18) = 5;
-            *(s16 *)(obj4 + 0xE) = 0;
-            *(s16 *)(obj4 + 0x10) = 0;
+            ((MenuObj *)obj4)->unk1A = 0;
+            ((MenuObj *)obj4)->unkA = h;
+            ((MenuObj *)obj4)->unk6 = h;
+            ((MenuObj *)obj4)->unkC = yBase;
+            ((MenuObj *)obj4)->unk8 = yBase;
+            ((MenuObj *)obj4)->unk18 = g4;
+            ((MenuObj *)obj4)->unkE = 0;
+            ((MenuObj *)obj4)->unk10 = 0;
             pr4 = func_80057CCC(1);
             SetPolyFT4((POLY_FT4 *)pr4);
             SetShadeTex(pr4, 0);
@@ -2705,17 +2735,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             pr4[6] = 0x80;
             SetSemiTrans(pr4, 0);
             entry = obj4;
-            *(u8 **)(entry + 0x20) = pr4;
-            *(s16 *)(entry + 0x1A) = 0x3F2;
-            slot = &D_800B9980[i];
+            ((MenuObj *)entry)->unk20 = pr4;
+            ((MenuObj *)entry)->unk1A = z4;
+            tbl = D_800B9980;
+            slot = tbl + i;
             *slot = entry;
-            prim2 = *(u8 **)(entry + 0x20);
-            *(s16 *)(entry + 6) = -0xF5;
-            *(s16 *)(entry + 0xE) = 2;
+            prim2 = ((MenuObj *)entry)->unk20;
+            ((MenuObj *)entry)->unk6 = -0xF5;
+            ((MenuObj *)entry)->unkE = 2;
             w = *(u16 *)(entry + 0x16);
             hh = *(u16 *)(entry + 0x18);
-            *(s16 *)(prim2 + 0xE) =
-                GetClut(*(u16 *)((u8 *)D_8009AEA2 + 2), D_8009AEA6[0]);
+            *(s16 *)(prim2 + 0xE) = GetClut(D_8009AEA2[1], D_8009AEA6[0]);
             *(s16 *)(prim2 + 0x16) =
                 GetTPage(*(u16 *)((u8 *)D_8009AEAA + 2), 3,
                          *(u16 *)((u8 *)D_8009AEA2 - 2), D_8009AEA2[0]);
@@ -2727,10 +2757,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             prim2[0x1D] = *(u8 *)((u8 *)D_8009AEA2 + 8) + hh;
             prim2[0x24] = *(u8 *)((u8 *)D_8009AEAE - 6) + w;
             prim2[0x25] = *(u8 *)((u8 *)D_8009AEAE - 4) + hh;
-            level = D_800A3860[arg0][i];
-            scale = ((level << 1) + level) << 2;
-            scale += level;
-            scale >>= 3;
+            level = D_800A3860[arg0][(u8)i];
+            scale = ((((level << 1) + level) << 2) + level) >> 3;
             if (scale == 0) {
                 scale = 1;
             }
@@ -2740,46 +2768,49 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 ix5 = D_800A35EC;
                 D_800A35EC = ix5 + 1;
                 obj5 = D_800A3678 + ix5 * 36;
-                *(s16 *)(obj5 + 0) = 2;
-                *(s16 *)(obj5 + 6) = 9;
-                *(s16 *)(obj5 + 0xA) = 9;
+                ((MenuObj *)obj5)->unk0 = 2;
+                ((MenuObj *)obj5)->unk6 = k9;
+                ((MenuObj *)obj5)->unkA = k9;
                 obj5[2] = 0;
-                *(s16 *)(obj5 + 0x18) = 3;
+                ((MenuObj *)obj5)->unk18 = k3;
                 obj5[4] = 0;
                 obj5[2] = 0x40;
-                *(s16 *)(obj5 + 0x12) = 0;
-                *(s16 *)(obj5 + 0x14) = 0;
-                *(s32 *)(obj5 + 0x1C) = 0;
+                ((MenuObj *)obj5)->unk12 = 0;
+                ((MenuObj *)obj5)->unk14 = 0;
+                ((MenuObj *)obj5)->unk1C = 0;
                 obj5[3] = 0;
-                *(s16 *)(obj5 + 0x1A) = 0;
-                *(s16 *)(obj5 + 8) = x4;
-                *(s16 *)(obj5 + 0xC) = x4;
-                *(s16 *)(obj5 + 0xE) = 0;
-                *(s16 *)(obj5 + 0x10) = 0;
-                *(s16 *)(obj5 + 0x16) = scale;
+                ((MenuObj *)obj5)->unk1A = 0;
+                ((MenuObj *)obj5)->unk8 = x4;
+                ((MenuObj *)obj5)->unkC = x4;
+                ((MenuObj *)obj5)->unkE = 0;
+                ((MenuObj *)obj5)->unk10 = 0;
+                ((MenuObj *)obj5)->unk16 = scale;
                 obj5[3] = 0x60;
                 obj5[4] = 0x80;
                 pr5 = func_80057D50(1);
-                *(u8 **)(obj5 + 0x20) = pr5;
+                ((MenuObj *)obj5)->unk20 = pr5;
                 SetPolyF4(pr5);
                 SetSemiTrans(pr5, 1);
                 pr5[4] = 0x40;
-                pr5[6] = 0x80;
-                *(s16 *)(pr5 + 8) = 9;
-                y2 = scale + 9;
-                *(s16 *)(pr5 + 0x12) = yBase + 4;
-                *(s16 *)(pr5 + 0x16) = yBase + 4;
+                entry = obj5;
+                do {
+                    pr5[6] = 0x80;
+                } while (0);
+                *(s16 *)(pr5 + 8) = k9;
                 pr5[5] = 0x60;
                 *(s16 *)(pr5 + 0xA) = x4;
+                y2 = scale + k9;
                 *(s16 *)(pr5 + 0xC) = y2;
-                *(s16 *)(pr5 + 0xE) = x4;
-                *(s16 *)(pr5 + 0x10) = 9;
-                *(s16 *)(pr5 + 0x14) = y2;
-                *(s16 *)(obj5 + 0x1A) = 0x3E8;
                 i++;
-                *(u8 **)(*slot + 0x1C) = obj5;
-                *(s16 *)(obj5 + 6) = -0xF5;
-                *(s16 *)(obj5 + 0xE) = 2;
+                *(s16 *)(pr5 + 0xE) = x4;
+                *(s16 *)(pr5 + 0x10) = k9;
+                *(s16 *)(pr5 + 0x12) = yBase + 4;
+                *(s16 *)(pr5 + 0x16) = yBase + 4;
+                *(s16 *)(pr5 + 0x14) = y2;
+                ((MenuObj *)entry)->unk1A = 0x3E8;
+                *(u8 **)(*slot + 0x1C) = entry;
+                ((MenuObj *)entry)->unk6 = -0xF5;
+                ((MenuObj *)entry)->unkE = 2;
             }
             yBase += 0x1E;
         } while (i < 4);
@@ -2790,22 +2821,22 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         ix6 = D_800A35EC;
         D_800A35EC = ix6 + 1;
         obj6 = D_800A3678 + ix6 * 36;
-        *(s16 *)(obj6 + 0xC) = 0x2A;
-        *(s16 *)(obj6 + 8) = 0x2A;
-        *(s16 *)(obj6 + 0x16) = 0x78;
-        *(s16 *)(obj6 + 0x12) = 0;
-        *(s16 *)(obj6 + 0x14) = 0;
-        *(s32 *)(obj6 + 0x1C) = 0;
+        ((MenuObj *)obj6)->unk12 = 0;
+        ((MenuObj *)obj6)->unk14 = 0;
+        ((MenuObj *)obj6)->unk1C = 0;
         obj6[4] = 0;
         obj6[3] = 0;
         obj6[2] = 0;
-        *(s16 *)(obj6 + 0x1A) = 0;
-        *(s16 *)(obj6 + 0) = 1;
-        *(s16 *)(obj6 + 0xA) = 0;
-        *(s16 *)(obj6 + 6) = 0;
-        *(s16 *)(obj6 + 0x18) = 0x30;
-        *(s16 *)(obj6 + 0xE) = 0;
-        *(s16 *)(obj6 + 0x10) = 0;
+        ((MenuObj *)obj6)->unk1A = 0;
+        ((MenuObj *)obj6)->unk0 = 1;
+        ((MenuObj *)obj6)->unkC = 0x2A;
+        ((MenuObj *)obj6)->unkA = 0;
+        ((MenuObj *)obj6)->unk8 = 0x2A;
+        ((MenuObj *)obj6)->unk16 = 0x78;
+        ((MenuObj *)obj6)->unk6 = 0;
+        ((MenuObj *)obj6)->unk18 = 0x30;
+        ((MenuObj *)obj6)->unkE = 0;
+        ((MenuObj *)obj6)->unk10 = 0;
         pr6 = func_80057CCC(1);
         SetPolyFT4((POLY_FT4 *)pr6);
         SetShadeTex(pr6, 0);
@@ -2814,15 +2845,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         pr6[6] = 0x80;
         SetSemiTrans(pr6, 0);
         entry = obj6;
-        *(u8 **)(entry + 0x20) = pr6;
-        *(s16 *)(entry + 0x1A) = 0x3FC;
-        prim2 = *(u8 **)(entry + 0x20);
-        *(s16 *)(entry + 0xE) = 2;
-        *(s16 *)(entry + 0x10) = 0;
+        ((MenuObj *)entry)->unk20 = pr6;
+        ((MenuObj *)entry)->unk1A = 0x3FC;
+        do {
+        } while (0);
+        prim2 = ((MenuObj *)entry)->unk20;
         w = *(u16 *)(entry + 0x16);
         hh = *(u16 *)(entry + 0x18);
-        D_800A39ACPtr = entry;
+        ((MenuObj *)entry)->unkE = 2;
         j = 0;
+        D_800A39ACPtr = entry;
+        ((MenuObj *)entry)->unk10 = 0;
         *(s16 *)(prim2 + 0xE) = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
         *(s16 *)(prim2 + 0x16) =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
@@ -2837,54 +2870,60 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     }
     yBase = 0x2A;
     h = 0x78;
+    k2b = 2;
+    k30 = 0x30;
     *(s16 *)(D_800A39ACPtr + 6) = -0x7D;
     *(s16 *)(D_800A39ACPtr + 0xE) = 2;
     do {
-        j++;
         ix7 = D_800A35EC;
         D_800A35EC = ix7 + 1;
         obj7 = D_800A3678 + ix7 * 36;
         obj7[4] = 0;
-        *(s16 *)(obj7 + 0x18) = 0x30;
-        *(s16 *)(obj7 + 0x12) = 0;
-        *(s16 *)(obj7 + 0x14) = 0;
-        *(s32 *)(obj7 + 0x1C) = 0;
+        ((MenuObj *)obj7)->unk18 = k30;
+        ((MenuObj *)obj7)->unk12 = 0;
+        ((MenuObj *)obj7)->unk14 = 0;
+        ((MenuObj *)obj7)->unk1C = 0;
         obj7[3] = 0;
         obj7[2] = 0;
-        *(s16 *)(obj7 + 0x1A) = 0;
-        *(s16 *)(obj7 + 0) = 2;
-        *(s16 *)(obj7 + 6) = 0;
-        *(s16 *)(obj7 + 0xA) = 0;
-        *(s16 *)(obj7 + 8) = yBase;
-        *(s16 *)(obj7 + 0xC) = yBase;
-        *(s16 *)(obj7 + 0xE) = 0;
-        *(s16 *)(obj7 + 0x10) = 0;
-        *(s16 *)(obj7 + 0x16) = h;
+        ((MenuObj *)obj7)->unk1A = 0;
+        ((MenuObj *)obj7)->unk0 = k2b;
+        ((MenuObj *)obj7)->unk6 = 0;
+        ((MenuObj *)obj7)->unkA = 0;
+        ((MenuObj *)obj7)->unk8 = yBase;
+        ((MenuObj *)obj7)->unkC = yBase;
+        ((MenuObj *)obj7)->unkE = 0;
+        ((MenuObj *)obj7)->unk10 = 0;
+        ((MenuObj *)obj7)->unk16 = h;
         obj7[2] = 0x20;
         obj7[3] = 0x20;
         obj7[4] = 0x40;
         pr7 = func_80057D50(1);
-        *(u8 **)(obj7 + 0x20) = pr7;
+        ((MenuObj *)obj7)->unk20 = pr7;
         SetPolyF4(pr7);
         SetSemiTrans(pr7, 1);
-        *(s16 *)(pr7 + 0x12) = 0x5A;
-        *(s16 *)(pr7 + 0x16) = 0x5A;
         pr7[4] = 0x20;
         pr7[5] = 0x20;
         pr7[6] = 0x40;
+        *(s16 *)(pr7 + 0x12) = 0x5A;
+        *(s16 *)(pr7 + 0x16) = 0x5A;
         *(s16 *)(pr7 + 8) = 0;
         *(s16 *)(pr7 + 0xA) = yBase;
         *(s16 *)(pr7 + 0xC) = h;
         *(s16 *)(pr7 + 0xE) = yBase;
         *(s16 *)(pr7 + 0x10) = 0;
         *(s16 *)(pr7 + 0x14) = h;
-        *(s16 *)(obj7 + 0x1A) = 0x3FD;
-        *(s16 *)(obj7 + 0xE) = 2;
-        *(s16 *)(obj7 + 6) = -0x7D;
-        *(s16 *)(obj7 + 0xE) = 2;
+        ((MenuObj *)obj7)->unk1A = 0x3FD;
+        ((MenuObj *)obj7)->unkE = k2b;
+        ((MenuObj *)obj7)->unk6 = -0x7D;
+        ((MenuObj *)obj7)->unkE = k2b;
         *(u8 **)(entry + 0x1C) = obj7;
         entry = obj7;
+        j++;
     } while (j < 2);
+    asm("" : : "r"(pr7));
+    k41 = 0x41;
+    k32 = 0x32;
+    k7 = 7;
     yBase = 0x2F;
     i = 0;
     do {
@@ -2896,22 +2935,22 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         ix8 = D_800A35EC;
         D_800A35EC = ix8 + 1;
         obj8 = D_800A3678 + ix8 * 36;
-        *(s16 *)(obj8 + 0) = 1;
-        *(s16 *)(obj8 + 0xA) = 0x41;
-        *(s16 *)(obj8 + 6) = 0x41;
-        *(s16 *)(obj8 + 0x16) = 0x32;
-        *(s16 *)(obj8 + 0x12) = 0;
-        *(s16 *)(obj8 + 0x14) = 0;
-        *(s32 *)(obj8 + 0x1C) = 0;
+        ((MenuObj *)obj8)->unk0 = 1;
+        ((MenuObj *)obj8)->unkA = k41;
+        ((MenuObj *)obj8)->unk6 = k41;
+        ((MenuObj *)obj8)->unk16 = k32;
+        ((MenuObj *)obj8)->unk12 = 0;
+        ((MenuObj *)obj8)->unk14 = 0;
+        ((MenuObj *)obj8)->unk1C = 0;
         obj8[4] = 0;
         obj8[3] = 0;
         obj8[2] = 0;
-        *(s16 *)(obj8 + 0x1A) = 0;
-        *(s16 *)(obj8 + 0xC) = yBase;
-        *(s16 *)(obj8 + 8) = yBase;
-        *(s16 *)(obj8 + 0x18) = 7;
-        *(s16 *)(obj8 + 0xE) = 0;
-        *(s16 *)(obj8 + 0x10) = 0;
+        ((MenuObj *)obj8)->unk1A = 0;
+        ((MenuObj *)obj8)->unkC = yBase;
+        ((MenuObj *)obj8)->unk8 = yBase;
+        ((MenuObj *)obj8)->unk18 = k7;
+        ((MenuObj *)obj8)->unkE = 0;
+        ((MenuObj *)obj8)->unk10 = 0;
         pr8 = func_80057CCC(1);
         SetPolyFT4((POLY_FT4 *)pr8);
         SetShadeTex(pr8, 0);
@@ -2920,22 +2959,20 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         pr8[6] = 0x80;
         SetSemiTrans(pr8, 0);
         entry = obj8;
-        *(u8 **)(entry + 0x20) = pr8;
-        *(s16 *)(entry + 0x1A) = 1;
-        iOff = i * 4;
-        slot = (u8 **)((u8 *)D_800B60B8 + iOff);
+        ((MenuObj *)entry)->unk20 = pr8;
+        ((MenuObj *)entry)->unk1A = 1;
+        slot = &D_800B60B8[i];
         *slot = entry;
-        prim2 = *(u8 **)(entry + 0x20);
-        *(s16 *)(entry + 0xE) = 2;
-        *(s16 *)(entry + 6) = -0x7D;
+        prim2 = ((MenuObj *)entry)->unk20;
+        ((MenuObj *)entry)->unkE = 2;
+        ((MenuObj *)entry)->unk6 = -0x7D;
         w = *(u16 *)(entry + 0x16);
         hh = *(u16 *)(entry + 0x18);
         x6 = yBase + 1;
         *(s16 *)(prim2 + 0xE) =
             GetClut(D_8009AEB2[0], *(u16 *)((u8 *)D_8009AEB2 + 2));
-        *(s16 *)(prim2 + 0x16) =
-            GetTPage(D_8009AEBA[0], 3, *(u16 *)(pr5 = &D_8009AEAE[0]),
-                     *(u16 *)((u8 *)D_8009AEB2 - 2));
+        *(s16 *)(prim2 + 0x16) = GetTPage(D_8009AEBA[0], 3, *(u16 *)D_8009AEAE,
+                                          *(u16 *)((u8 *)D_8009AEB2 - 2));
         prim2[0xC] = D_8009AEB6[0];
         prim2[0xD] = *(u8 *)((u8 *)D_8009AEB2 + 6);
         prim2[0x14] = *(u8 *)&D_8009AEAE[8] + w;
@@ -2951,49 +2988,52 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             ix9 = D_800A35EC;
             D_800A35EC = ix9 + 1;
             objB9 = D_800A3678 + ix9 * 36;
-            *(s16 *)(objB9 + 0) = 2;
-            *(s16 *)(objB9 + 6) = 0x42;
-            *(s16 *)(objB9 + 0x12) = 0;
-            *(s16 *)(objB9 + 0x14) = 0;
-            *(s32 *)(objB9 + 0x1C) = 0;
+            ((MenuObj *)objB9)->unk0 = 2;
+            ((MenuObj *)objB9)->unk6 = 0x42;
+            ((MenuObj *)objB9)->unk12 = 0;
+            ((MenuObj *)objB9)->unk14 = 0;
+            ((MenuObj *)objB9)->unk1C = 0;
             objB9[4] = 0;
             objB9[3] = 0;
             objB9[2] = 0;
-            *(s16 *)(objB9 + 0x1A) = 0;
-            *(s16 *)(objB9 + 0xA) = 0x42;
-            *(s16 *)(objB9 + 8) = x6;
-            *(s16 *)(objB9 + 0xC) = x6;
-            *(s16 *)(objB9 + 0xE) = 0;
-            *(s16 *)(objB9 + 0x10) = 0;
-            *(s16 *)(objB9 + 0x18) = 5;
-            *(s16 *)(objB9 + 0x16) = 0x30;
+            ((MenuObj *)objB9)->unk1A = 0;
+            ((MenuObj *)objB9)->unkA = 0x42;
+            ((MenuObj *)objB9)->unk8 = x6;
+            ((MenuObj *)objB9)->unkC = x6;
+            ((MenuObj *)objB9)->unkE = 0;
+            ((MenuObj *)objB9)->unk10 = 0;
+            ((MenuObj *)objB9)->unk16 = 0x30;
+            ((MenuObj *)objB9)->unk18 = 5;
             objB9[2] = 0x40;
             objB9[3] = 0x60;
             objB9[4] = 0x80;
             prC9 = func_80057D50(1);
-            *(u8 **)(objB9 + 0x20) = prC9;
+            ((MenuObj *)objB9)->unk20 = prC9;
             SetPolyF4(prC9);
             SetSemiTrans(prC9, 0);
             prC9[6] = 0x80;
             *(s16 *)(prC9 + 8) = 0x42;
-            y2 = yBase + 6;
             prC9[4] = 0x40;
             prC9[5] = 0x60;
             *(s16 *)(prC9 + 0xA) = x6;
             *(s16 *)(prC9 + 0xC) = 0x72;
             *(s16 *)(prC9 + 0xE) = x6;
             *(s16 *)(prC9 + 0x10) = 0x42;
-            *(s16 *)(prC9 + 0x12) = y2;
-            *(s16 *)(prC9 + 0x14) = 0x72;
-            *(s16 *)(prC9 + 0x16) = y2;
-            *(u8 **)(*slot + 0x1C) = objB9;
-            *(s16 *)(objB9 + 6) = -0x7D;
-            *(s16 *)(objB9 + 0xE) = 2;
-            *(s16 *)(objB9 + 0x1A) = 0;
+            {
+                s32 y6;
+                y6 = yBase + 6;
+                *(s16 *)(prC9 + 0x12) = y6;
+                *(s16 *)(prC9 + 0x14) = 0x72;
+                *(s16 *)(prC9 + 0x16) = y6;
+            }
             entry = objB9;
+            *(u8 **)(*slot + 0x1C) = entry;
+            ((MenuObj *)entry)->unk6 = -0x7D;
+            ((MenuObj *)entry)->unkE = 2;
+            ((MenuObj *)entry)->unk1A = 0;
         }
         func_8005A7B8(2, 2);
-        strP = (s32 *)((u8 *)D_8009A298 + iOff);
+        strP = &D_8009A298[i];
         value = (s16)func_8005A8EI(*strP);
         {
             u8 primIdx;
@@ -3006,34 +3046,34 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             objC10[3] = 0;
             objC10[2] = 0;
             primIdx = D_800A37BC;
+            entry = objC10;
             h = 0x3E - value;
-            *(s16 *)(objC10 + 0x12) = 0;
-            *(s16 *)(objC10 + 0x14) = 0;
-            *(s32 *)(objC10 + 0x1C) = 0;
-            *(s16 *)(objC10 + 0x1A) = 0;
-            *(s16 *)(objC10 + 0) = 0;
-            *(s16 *)(objC10 + 0xA) = h;
-            *(s16 *)(objC10 + 6) = h;
-            *(s16 *)(objC10 + 0xC) = yBase;
-            *(s16 *)(objC10 + 8) = yBase;
-            *(s16 *)(objC10 + 0xE) = 0;
-            *(s16 *)(objC10 + 0x10) = 0;
-            *(s16 *)(objC10 + 0x1A) = 0;
+            ((MenuObj *)entry)->unk12 = 0;
+            ((MenuObj *)entry)->unk14 = 0;
+            ((MenuObj *)entry)->unk1C = 0;
+            ((MenuObj *)entry)->unk1A = 0;
+            ((MenuObj *)entry)->unk0 = 0;
+            ((MenuObj *)entry)->unkA = h;
+            ((MenuObj *)entry)->unk6 = h;
+            ((MenuObj *)entry)->unkC = yBase;
+            ((MenuObj *)entry)->unk8 = yBase;
+            ((MenuObj *)entry)->unkE = 0;
+            ((MenuObj *)entry)->unk10 = 0;
+            ((MenuObj *)entry)->unk1A = 0;
             D_800A37BC = primIdx + 1;
             textPrim = (u8 *)D_800A3654 + primIdx * 12;
-            *(u8 **)(objC10 + 0x20) = textPrim;
+            ((MenuObj *)entry)->unk20 = textPrim;
             textPrim[0] = 0;
             textPrim[3] = 0;
             *(s32 *)(textPrim + 4) = 0;
-            *(u8 **)((u8 *)D_800AE168 + iOff) = objC10;
-            *(s16 *)(objC10 + 0xE) = 2;
-            *(s16 *)(objC10 + 0x16) = value;
-            *(s16 *)(objC10 + 6) = *(u16 *)(objC10 + 0xA) - 0xAD;
-            *(s16 *)(objC10 + 0x18) = func_8005A84C();
-            prD10 = *(u8 **)(objC10 + 0x20);
+            D_800AE168[i] = entry;
+            ((MenuObj *)entry)->unkE = 2;
+            ((MenuObj *)entry)->unk16 = value;
+            ((MenuObj *)entry)->unk6 = ((MenuObj *)entry)->unkA - 0xAD;
+            ((MenuObj *)entry)->unk18 = func_8005A84C();
+            prD10 = ((MenuObj *)entry)->unk20;
             prD10[1] = 2;
             prD10[2] = 2;
-            entry = objC10;
         }
         i++;
         *(s32 *)(prD10 + 8) = *strP;
@@ -3041,7 +3081,6 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     } while (i < 4);
     if (arg1 != 0) {
         u8 primIdx;
-        u8 *obj10;
         u8 *textPrim;
         u8 *primLoad;
         ix11 = D_800A35EC;
@@ -3051,40 +3090,37 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         obj11[3] = 0;
         obj11[2] = 0;
         primIdx = D_800A37BC;
-        *(s16 *)(obj11 + 0xA) = 5;
-        *(s16 *)(obj11 + 0x12) = 0;
-        *(s16 *)(obj11 + 0x14) = 0;
-        *(s32 *)(obj11 + 0x1C) = 0;
-        *(s16 *)(obj11 + 0x1A) = 0;
-        *(s16 *)(obj11 + 0) = 0;
-        *(s16 *)(obj11 + 6) = 5;
-        *(s16 *)(obj11 + 0xC) = 0x20;
-        *(s16 *)(obj11 + 8) = 0x20;
-        *(s16 *)(obj11 + 0xE) = 0;
-        *(s16 *)(obj11 + 0x10) = 0;
-        *(s16 *)(obj11 + 0x1A) = 0;
+        m = (s32)obj11;
+        ((MenuObj *)m)->unkA = 5;
+        ((MenuObj *)m)->unk12 = 0;
+        ((MenuObj *)m)->unk14 = 0;
+        ((MenuObj *)m)->unk1C = 0;
+        ((MenuObj *)m)->unk1A = 0;
+        ((MenuObj *)m)->unk0 = 0;
+        ((MenuObj *)m)->unk6 = 5;
+        ((MenuObj *)m)->unkC = 0x20;
+        ((MenuObj *)m)->unk8 = 0x20;
+        ((MenuObj *)m)->unkE = 0;
+        ((MenuObj *)m)->unk10 = 0;
+        ((MenuObj *)m)->unk1A = 0;
         D_800A37BC = primIdx + 1;
         textPrim = (u8 *)D_800A3654 + primIdx * 12;
-        *(u8 **)(obj11 + 0x20) = textPrim;
+        ((MenuObj *)m)->unk20 = textPrim;
         textPrim[0] = 0;
         textPrim[3] = 0;
         *(s32 *)(textPrim + 4) = 0;
-        *(s16 *)(obj11 + 0xE) = 2;
-        *(s16 *)(obj11 + 0x16) = value;
-        *(s16 *)(obj11 + 6) = *(u16 *)(obj11 + 0xA) - 0xAD;
-        *(s16 *)(obj11 + 0x18) = func_8005A84C();
-        primLoad = *(u8 **)(obj11 + 0x20);
+        ((MenuObj *)m)->unkE = 2;
+        ((MenuObj *)m)->unk16 = value;
+        ((MenuObj *)m)->unk6 = *(u16 *)(((u8 *)m) + 0xA) - 0xAD;
+        ((MenuObj *)m)->unk18 = func_8005A84C();
+        primLoad = ((MenuObj *)m)->unk20;
         primLoad[1] = 2;
         primLoad[2] = 2;
         *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
-        *(u8 **)(entry + 0x1C) = obj11;
+        *(u8 **)(entry + 0x1C) = ((u8 *)m);
     }
     func_80060008(arg0);
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_8005ED74);
-#endif
 
 void func_8005FE90(void) {
     extern u8 *D_800B996C[];
