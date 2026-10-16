@@ -1491,7 +1491,7 @@ void TrackReadData(s32 *trackData, s32 file) {
     s32 vertexIndex;
     s32 faceMode;
     register s32 lastCorner asm("v1");
-    register s32 nextDataOffset asm("v0");
+    register s32 nextDataOffset;
     register s32 randomValue;
     register s32 shadeBase;
     s32 nodesOffset;
@@ -1509,11 +1509,11 @@ void TrackReadData(s32 *trackData, s32 file) {
     s32 value0;
     s32 value1;
     s32 value2;
-    register s32 objectFlags asm("v1");
+    register s32 objectFlags;
     register u32 typeA asm("v0");
     register u32 typeC;
-    register s16 *callFirst asm("a0");
-    register u8 *callHead asm("a1");
+    register s16 *callFirst;
+    register u8 *callHead;
     register u8 *callFaces;
     register s32 lastObjectOffset asm("v1");
     s32 scaledY;
@@ -1904,18 +1904,18 @@ void TrackReadData(s32 *trackData, s32 file) {
                 shade = 0x50;
             }
             func_80015930(data, resource, shade);
-            *(u8 **)((u8 *)data + (120)) =
-                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (26)) * 8));
-            *(u8 **)((u8 *)data + (124)) =
-                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (24)) * 8));
-            *(u8 **)((u8 *)data + (128)) =
-                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (20)) * 8));
-            *(u8 **)((u8 *)data + (132)) =
-                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (22)) * 8));
+            nextDataOffset = *(s16 *)(diskObject + 26);
+            *(u8 **)(data + 120) = vertices + nextDataOffset * 8;
+            nextDataOffset = *(s16 *)(diskObject + 24);
+            *(u8 **)(data + 124) = vertices + nextDataOffset * 8;
+            nextDataOffset = *(s16 *)(diskObject + 20);
+            *(u8 **)(data + 128) = vertices + nextDataOffset * 8;
+            nextDataOffset = *(s16 *)(diskObject + 22);
+            *(u8 **)(data + 132) = vertices + nextDataOffset * 8;
             nextObjectOffset += 0x90;
             prevObjectOffset += 0x90;
-            *(u8 **)((u8 *)data + (136)) =
-                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (28)) * 8));
+            nextDataOffset = *(s16 *)(diskObject + 28);
+            *(u8 **)(data + 136) = vertices + nextDataOffset * 8;
             i += 1;
             lastCorner = *(s16 *)(diskObject + 30);
             nextDataOffset = objectFaceCount * 2 + 2;
@@ -1999,10 +1999,10 @@ copyStart:
         D_800A39E0[0] = 0;
         D_800A376C[0] = 0;
     } else {
-        register s32 firstIndex asm("v0");
+        register s32 firstIndex;
         s32 lastIndex;
-        lastIndex = sectionCount * 0x1C;
         firstIndex = *(s16 *)sectionData;
+        lastIndex = sectionCount * 0x1C;
         lastIndex = *(s16 *)(lastIndex + (s32)sectionData - 28);
         D_800A39E0[0] = firstIndex;
         D_800A376C[0] = lastIndex;
