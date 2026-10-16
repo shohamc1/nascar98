@@ -1693,7 +1693,203 @@ fin:
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80045480);
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80045864);
+typedef struct {
+    u32 tag;
+    u32 color;
+    u32 uv[4];
+    SVECTOR *vertex[4];
+    u32 unk28;
+} ProjectileQuad;
+
+typedef struct {
+    u8 life;
+    u8 pad1[3];
+    Vector3 position;
+    ProjectileQuad quad;
+    Vector3 forward;
+    Vector3 right;
+    Vector3 up;
+    SVECTOR vertex[4];
+} Projectile;
+
+extern u8 D_800A2FC8;
+extern u8 D_800A372C;
+extern u8 gProjectileMode[] asm("D_800A2F58");
+extern s8 gProjectileWriteIndex[] asm("D_800A342C");
+extern s32 gProjectilePools[] asm("D_800A3430");
+extern u8 *gProjectileCars[] asm("D_800A3878");
+extern s32 gProjectileOriginX asm("D_800AE844");
+extern s32 gProjectileOriginY asm("D_800AE848");
+extern s32 gProjectileOriginZ asm("D_800AE84C");
+
+void SceneUpdateProjectiles(u8 *owner) {
+    u8 *other;
+    s8 player;
+    register Projectile *effect asm("s1");
+    Projectile *hitEffect;
+    s32 travel;
+    s32 rightX;
+    s32 rightY;
+    s32 rightZ;
+    s32 leftX;
+    s32 leftY;
+    s32 upX;
+    s32 upY;
+    s32 upZ;
+    s8 effectIndex;
+    s32 leftZ;
+    s8 vertexIndex;
+    Projectile *pool;
+    ProjectileQuad *drawQuad;
+    POLY_FT4 *prim;
+    register POLY_FT4 *primArg asm("a1");
+    u32 *ot;
+    s32 renderCount;
+    register s32 color asm("v0");
+    s32 uv0;
+    s32 uv1;
+    s32 uv2;
+    s32 uv3;
+    void (*callback)(void);
+
+    if (D_800A2FC8 == 0 || D_800A2EC8[0] != 0 || D_800A372C != 0 ||
+        gProjectileMode[0] != 0 || D_800A2EACAbsolute[0] != 0) {
+        return;
+    }
+    player = *(s8 *)(owner + 0x20B);
+    if ((func_80041B7C(player) & 0x10) &&
+        *(void (**)(u8 *))(owner + 0x354) != func_80025730 &&
+        owner[0x268] == 0 && D_800A372C == 0) {
+        pool = (Projectile *)(gProjectilePools[player] +
+                              gProjectileWriteIndex[player] * 0x80);
+        pool->life = 200;
+        pool->forward = *(Vector3 *)(owner + 0x3C);
+        pool->right = *(Vector3 *)(owner + 0x48);
+        pool->up = *(Vector3 *)(owner + 0x54);
+        pool->position.x = *(s32 *)owner;
+        pool->position.y = *(s32 *)(owner + 4);
+        pool->position.z = *(s32 *)(owner + 8);
+        gProjectileWriteIndex[player] =
+            (gProjectileWriteIndex[player] + 1) % 10;
+        func_8003F564(10, 9);
+    }
+    pool = (Projectile *)gProjectilePools[player];
+    effectIndex = 0;
+    do {
+        if (pool[effectIndex].life != 0) {
+            other = gProjectileCars[0];
+            hitEffect = &pool[effectIndex];
+            do {
+                if (other != owner &&
+                    (hitEffect->position.x - *(s32 *)other >= 0
+                         ? hitEffect->position.x - *(s32 *)other < 500
+                         : *(s32 *)other - hitEffect->position.x < 500) &&
+                    (hitEffect->position.y - *(s32 *)(other + 4) >= 0
+                         ? hitEffect->position.y - *(s32 *)(other + 4) < 500
+                         : *(s32 *)(other + 4) - hitEffect->position.y < 500) &&
+                    (hitEffect->position.z - *(s32 *)(other + 8) >= 0
+                         ? hitEffect->position.z - *(s32 *)(other + 8) < 500
+                         : *(s32 *)(other + 8) - hitEffect->position.z < 500)) {
+                    if (*(s32 *)(other + 0x90) != 0) {
+                        *(s16 *)(other + 0x102) = RandomScaledGet(2);
+                        callback = (void (*)(void))func_8003A880;
+                        if (*(s16 *)(other + 0x1EC) != 0) {
+                            callback = (void (*)(void))func_8003AA20;
+                        }
+                        ObjectSetCallbackIfAllowed(
+                            (Batch0CallbackObject *)other, callback);
+                    }
+                    hitEffect->life = 0;
+                    goto nextEffect;
+                }
+                other = *(u8 **)(other + 0x3E0);
+            } while (other != NULL);
+            effect = (Projectile *)(effectIndex * 0x80 + (u32)pool);
+            travel = (250 - effect->life) << 20;
+            effect->position.x +=
+                MathMultiplyFixed16(effect->forward.x, travel) >> 16;
+            effect->position.y +=
+                MathMultiplyFixed16(effect->forward.y, travel) >> 16;
+            effect->position.z +=
+                MathMultiplyFixed16(effect->forward.z, travel) >> 16;
+            rightX = MathMultiplyFixed16(effect->right.x, -(50 << 16));
+            rightY = MathMultiplyFixed16(effect->right.y, -(50 << 16));
+            rightZ = MathMultiplyFixed16(effect->right.z, -(50 << 16));
+            leftX = MathMultiplyFixed16(effect->right.x, 50 << 16);
+            leftY = MathMultiplyFixed16(effect->right.y, 50 << 16);
+            leftZ = MathMultiplyFixed16(effect->right.z, 50 << 16);
+            upX = MathMultiplyFixed16(effect->up.x, 100 << 16);
+            upY = MathMultiplyFixed16(effect->up.y, 100 << 16);
+            upZ = MathMultiplyFixed16(effect->up.z, 100 << 16);
+            effect->vertex[0].vx =
+                (effect->position.x + ((rightX + upX) >> 16)) >> 2;
+            effect->vertex[0].vy =
+                (effect->position.y + ((rightY + upY) >> 16)) >> 2;
+            effect->vertex[0].vz =
+                (effect->position.z + ((rightZ + upZ) >> 16)) >> 2;
+            effect->vertex[1].vx =
+                (effect->position.x + ((leftX + upX) >> 16)) >> 2;
+            effect->vertex[1].vy =
+                (effect->position.y + ((leftY + upY) >> 16)) >> 2;
+            effect->vertex[1].vz =
+                (effect->position.z + ((leftZ + upZ) >> 16)) >> 2;
+            effect->vertex[2].vx = (effect->position.x + (rightX >> 16)) >> 2;
+            effect->vertex[2].vy = (effect->position.y + (rightY >> 16)) >> 2;
+            effect->vertex[2].vz = (effect->position.z + (rightZ >> 16)) >> 2;
+            effect->vertex[3].vx = (effect->position.x + (leftX >> 16)) >> 2;
+            effect->vertex[3].vy = (effect->position.y + (leftY >> 16)) >> 2;
+            effect->vertex[3].vz = (effect->position.z + (leftZ >> 16)) >> 2;
+            vertexIndex = 0;
+            do {
+                register u32 vertexAddress asm("v1");
+
+                vertexAddress = vertexIndex * 8;
+                vertexAddress = (u32)effect + vertexAddress;
+                *(u16 *)(vertexAddress + 0x60) -= gProjectileOriginX;
+                *(u16 *)(vertexAddress + 0x62) -= gProjectileOriginY;
+                *(u16 *)(vertexAddress + 0x64) -= gProjectileOriginZ;
+                vertexIndex++;
+            } while (vertexIndex < 4);
+            renderCount = 1;
+            ot = (u32 *)D_800A39C8[0];
+            prim = (POLY_FT4 *)gPrimitiveCursor[0];
+            drawQuad =
+                (ProjectileQuad *)(effectIndex * 0x80 + (u32)pool + 0x10);
+            do {
+                gte_ldv3(drawQuad->vertex[0], drawQuad->vertex[1],
+                         drawQuad->vertex[2]);
+                gte_rtpt();
+                gte_avsz3();
+                uv1 = drawQuad->uv[1];
+                asm("" : : "r"(uv1) : "memory");
+                color = drawQuad->color;
+                uv0 = drawQuad->uv[0];
+                uv2 = drawQuad->uv[2];
+                uv3 = drawQuad->uv[3];
+                asm("" : : "r"(color), "r"(uv0));
+                *(u32 *)&prim->u1 = uv1;
+                *(u32 *)&prim->u0 = uv0;
+                *(u32 *)&prim->r0 = color;
+                *(u32 *)&prim->u2 = uv2;
+                *(u32 *)&prim->u3 = uv3;
+                gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
+                gte_ldv0(drawQuad->vertex[3]);
+                gte_rtps();
+                gte_stsxy(&prim->x2);
+                primArg = prim;
+                renderCount--;
+                GraphicsAddTaggedPrimitive(ot + ((s8 *)&drawQuad->tag)[1],
+                                           (u32 *)primArg, 0x09000000);
+                drawQuad++;
+                prim++;
+            } while (renderCount > 0);
+            gPrimitiveCursor[0] = (u32)prim;
+            pool[effectIndex].life--;
+        }
+    nextEffect:
+        effectIndex++;
+    } while (effectIndex < 10);
+}
 
 extern u8 D_800A342C[];
 extern s32 D_800A3430[];
