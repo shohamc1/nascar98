@@ -3121,24 +3121,24 @@ void HudInitRacePrims(void) {
     s8 line;
     s8 j;
     s8 row;
-    register u16 *page asm("$20");
-    register s32 markerOffset asm("$17");
+    u16 *page;
+    s32 markerOffset;
     register u8 *driver asm("$17");
-    register u8 driverR asm("$2");
+    u8 driverR;
     register s32 line24 asm("$22");
-    register s8 **slot asm("$17");
-    register s8 **lineSlot asm("$2");
+    s8 **slot;
+    s8 **lineSlot;
     register s32 glyphOffset asm("$17");
     s32 cornerOffset;
     s32 value;
-    register u8 *slotBase asm("$2");
+    u8 *slotBase;
     u8 *coord;
     u8 *driverCall;
-    register u8 *driverBase asm("$22");
+    u8 *driverBase;
     u32 borderFlag;
     u16 markerPage;
     register u8 *mapCall asm("$16");
-    register u8 *mapPrim asm("$17");
+    u8 *mapPrim;
     register s32 view asm("$22");
     register u8 *coordX asm("a0");
     s32 coordinateValue;
@@ -3177,7 +3177,6 @@ void HudInitRacePrims(void) {
                 }
                 if ((*lineSlot)[0] != 0) {
                     do {
-                        asm("" : "=r"(line24) : "0"(line24));
                         {
                             register u8 *addressBase asm("$8");
 
@@ -3295,7 +3294,7 @@ void HudInitRacePrims(void) {
             asm("" : "=r"(yOffset) : "0"((s32)D_800A2FD0[view]));
             coordX = (u8 *)D_800A3A2CAbsolute[0];
             value >>= 0x10;
-            asm("" : "=r"(yOffset) : "0"((s8)yOffset + 0xD7));
+            yOffset = (s8)yOffset + 0xD7;
             coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
             value += yOffset;
             asm("" : "=r"(value) : "0"(value), "r"(coordX));
@@ -3309,7 +3308,7 @@ void HudInitRacePrims(void) {
             asm("" : "=r"(yOffset) : "0"((s32)D_800A2FD0[view]));
             coordX = (u8 *)D_800A3A2CAbsolute[0];
             value >>= 0x10;
-            asm("" : "=r"(yOffset) : "0"((s8)yOffset + 0xD7));
+            yOffset = (s8)yOffset + 0xD7;
             coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
             value += yOffset;
             asm("" : "=r"(value) : "0"(value), "r"(coordX));
@@ -3336,14 +3335,13 @@ void HudInitRacePrims(void) {
         col = 0;
         tileIndex = (s8)entry;
         tileBytes = tileIndex * 0x30;
-        asm(""
-            : "=r"(f4base)
-            : "0"(D_800A7924), "r"(tileIndex), "r"(tileBytes), "r"(tileIndex));
+        f4base = (u8 *)D_800A7924;
         /* Keep these locals multi-set so loop.c does not hoist their values. */
         for (; col < 3; col++) {
-            asm("addu %0,%1,%2\naddu %0,%3,%0"
-                : "=&r"(p3)
-                : "r"(col * 0x10), "r"(f4base), "r"(tileBytes));
+            p3 = (u8 *)((u32)(col * 0x10) + (u32)f4base);
+            asm("addu %0,%1,%0"
+                : "=r"(p3)
+                : "r"(tileBytes), "0"(p3));
             SetTile((TILE *)p3);
             SetSemiTrans(p3, 1);
             p4 = (u8 *)((u32)tileBytes + (u32)(col * 0x10) + (u32)f4base);
@@ -3360,8 +3358,8 @@ void HudInitRacePrims(void) {
             register u8 *green asm("$2");
             register u8 *red asm("$3");
             register u8 *back asm("$4");
-            register s32 offset asm("$4");
-            register s32 color asm("$5");
+            s32 offset;
+            s32 color;
 
             tileRow = (s8)entry;
             red = (u8 *)D_800A7924;
@@ -3378,7 +3376,6 @@ void HudInitRacePrims(void) {
                     : "=r"(back), "=&r"(addressBase)
                     : "r"(offset), "r"(color));
             }
-            asm("" : : "r"(tileRow), "r"(green), "r"(red), "r"(back));
             ((TILE *)green)->r0 = 0;
             ((TILE *)green)->g0 = color;
             ((TILE *)green)->b0 = 0;
@@ -3423,7 +3420,6 @@ void HudInitRacePrims(void) {
     for (entry = 0; entry < 2; entry++) {
         for (col = 0; col < 0x18; col++) {
             driverCall = (u8 *)((u32)(col * 0x28) + (u32)driverBase);
-            asm("" : : "r"(driverCall));
             asm("addu %0,%1,%0"
                 : "=r"(driverCall)
                 : "r"(entry * 0x3C0), "0"(driverCall));
