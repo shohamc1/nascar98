@@ -3012,7 +3012,302 @@ void func_8005C0F4(u8 *object, s32 value) {
     func_80018588(*(void **)(*(u8 **)(object + 0x20) + 8), -1, value);
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005C124);
+extern u8 *D_8009A05C[];
+extern u8 *D_8009A078[];
+extern u8 *D_8009A098[];
+extern u8 *D_8009A0B8[];
+extern u8 *D_8009A0D8[];
+extern u8 *D_8009A0F4[];
+extern u8 *D_8009A110[];
+extern u8 *D_8009A134[];
+extern u8 *D_8009A158[];
+extern u8 *D_8009A17C[];
+extern u8 *D_8009A19C[];
+extern u8 *D_8009A1BC[];
+extern u8 *D_8009A1DC[];
+extern u8 *D_8009A200[];
+extern u8 *D_8009A21C[];
+extern u8 *D_8009A228[];
+extern u8 *D_8009A248[];
+extern u8 *D_8009A2C4[];
+extern u8 *D_8009ABFC[];
+extern u8 D_8009AF74[];
+extern u8 *D_800A3690;
+extern u8 *D_800A39C0;
+extern u8 *D_800A3A28;
+extern u8 *D_800A39B8;
+extern u8 *D_800A36F0;
+extern u8 *D_800A38F8;
+extern u8 *D_800A3678;
+extern s32 D_800A3654;
+extern u8 D_800A38E8;
+extern u8 D_800A3644[];
+extern u8 D_800A3950[];
+extern u8 D_800A3988[];
+extern u8 D_800A3989[];
+extern s32 D_800A37D0[];
+extern s16 *D_800AE290[];
+extern u8 *D_800AE27C[];
+extern u8 *D_800BB9E4[];
+extern u8 D_800A331C[];
+extern u8 D_800A3330[];
+extern u8 D_800AD980[];
+extern u8 D_800A35C8Text[] asm("D_800A35C8");
+extern void func_8005CBC8(s32);
+static inline u8 *MenuItemAlloc(void) {
+    u8 *item;
+
+    item = D_800A3678 + D_800A35EC++ * 0x24;
+    *(s16 *)(item + 0x12) = 0;
+    *(s16 *)(item + 0x14) = 0;
+    *(s32 *)(item + 0x1C) = 0;
+    item[4] = 0;
+    item[3] = 0;
+    item[2] = 0;
+    *(s16 *)(item + 0x1A) = 0;
+    return item;
+}
+
+void func_8005C124(u8 menuId, u8 selRow) {
+    s32 slots[3][4];
+    u8 *item;
+    u8 *entry;
+    u8 *text;
+    s32 i;
+    s32 rows;
+    s32 count;
+    s32 savedY;
+    s32 y;
+    s32 x;
+    s32 d;
+    s32 width;
+
+    count = 0;
+    D_800A39C0 = 0;
+    D_800A3A28 = 0;
+    switch (menuId) {
+    case 0:
+        D_800A3690 = (u8 *)D_8009A05C;
+        break;
+    case 1:
+        D_800A3690 = (u8 *)D_8009A0B8;
+        break;
+    case 2:
+        D_800A3690 = (u8 *)D_8009A078;
+        D_800A39C0 = (u8 *)D_8009A098;
+        break;
+    case 4:
+        D_800A3690 = (u8 *)D_8009A110;
+        D_800A39C0 = (u8 *)D_8009A134;
+        D_800A3A28 = (u8 *)D_8009A158;
+        break;
+    case 5:
+        D_800A3690 = (u8 *)D_8009A0D8;
+        D_800A39C0 = (u8 *)D_8009A0F4;
+        break;
+    case 3:
+        D_800A3690 = (u8 *)D_8009A1DC;
+        break;
+    case 6:
+        D_800A3690 = (u8 *)D_8009A200;
+        break;
+    case 8:
+        D_800A3690 = (u8 *)D_8009A21C;
+        break;
+    case 7:
+        D_800A3690 = (u8 *)D_8009A228;
+        D_800A39C0 = (u8 *)D_8009A248;
+        break;
+    case 13:
+        D_800A3690 = (u8 *)D_8009ABFC;
+        break;
+    case 11:
+        D_800A3690 = (u8 *)D_8009A17C;
+        D_800A39C0 = (u8 *)D_8009A19C;
+        D_800A3A28 = (u8 *)D_8009A1BC;
+        break;
+    case 15:
+        D_800A3690 = (u8 *)D_8009A2C4;
+        break;
+    case 9:
+    case 10:
+    case 12:
+    case 14:
+        break;
+    }
+    x = 0x20;
+    D_800A38E8 = D_8009AF74[menuId];
+    y = 0x32;
+    if (menuId == 0xD && D_800A3644[0] != 0) {
+        y = 0x2A;
+    }
+    rows = D_800A38E8 + 1;
+    if (menuId == 4) {
+        rows = D_800A38E8 + 2;
+    }
+    if (menuId == 0xB) {
+        rows += 5;
+    }
+    for (i = 0; i < rows; i++) {
+        item = MenuItemAlloc();
+        *(s16 *)(item + 0) = 0;
+        *(s16 *)(item + 0x1A) = 0;
+        *(s16 *)(item + 0xC) = y;
+        *(s16 *)(item + 8) = y;
+        if (menuId == 2) {
+            if (i >= 5) {
+                D_800AE27C[i] = item;
+            }
+            if (i == 5) {
+                savedY = y;
+            }
+            if (D_800A3988[0] == 0) {
+                if (i >= 5) {
+                    if (i < 7)
+                        goto lowRow;
+                    if (i == 7)
+                        goto lastRow;
+                    goto rowDone;
+                lowRow:
+                    *(s16 *)(item + 8) = 0xF1;
+                    goto rowDone;
+                lastRow:
+                    *(s16 *)(item + 8) = savedY;
+                }
+            }
+        } else if (menuId == 5 && i == 6) {
+            *(s16 *)(item + 8) = y + 0xF;
+            *(s16 *)(item + 0xC) = y + 0xF;
+            item[2] = 0xC8;
+            item[3] = 0x40;
+            item[4] = 0x40;
+            D_800AE290[0] = (s16 *)item;
+        } else {
+            *(s16 *)(item + 8) = y;
+        }
+    rowDone:
+        entry = (u8 *)(D_800A3654 + D_800A37BC++ * 0xC);
+        *(u8 **)(item + 0x20) = entry;
+        if (i == selRow + 1) {
+            entry[0] = 1;
+        } else {
+            entry[0] = 0;
+        }
+        if (menuId == 1)
+            goto check1;
+        if (menuId == 0x24)
+            goto check1;
+        if (menuId == 0x28)
+            goto check1;
+        if (menuId == 0x25)
+            goto check1;
+        if (menuId != 0x27)
+            goto check3;
+    check1:
+        if (D_800A3950[0] == 0) {
+            if ((u32)(i - 3) < 4)
+                goto setFlag;
+        }
+    check3:
+        if (menuId == 3) {
+            if (D_800A3644[0] != 0) {
+                if ((u32)(i - 3) < 2)
+                    goto setFlag;
+            }
+        }
+        if (menuId != 4)
+            goto noFlag;
+        if (D_800A3644[0] == 0)
+            goto noFlag;
+        if (i != 6)
+            goto noFlag;
+    setFlag:
+        entry[0] |= 2;
+    noFlag:
+        entry[3] = 0;
+        *(s32 *)(entry + 4) = 0;
+        *(s16 *)(item + 0x10) = 0;
+        if (i == 0) {
+            D_800A39B8 = item;
+            func_8005A7B8(1, 1);
+            entry[2] = 1;
+            entry[1] = 1;
+            *(u8 **)(entry + 8) = *(u8 **)D_800A3690;
+            *(s16 *)(item + 0xE) = -2;
+        } else {
+            if (i == 1) {
+                D_800A36F0 = item;
+                func_8005A7B8(0, 0);
+            }
+            entry[2] = 0;
+            entry[1] = 0;
+            if (menuId == 4 && D_800A38E8 < i) {
+                D_800A38F8 = item;
+                func_8005CBC8(D_800A37D0[0]);
+                *(u8 **)(entry + 8) = D_800A35C8Text;
+            } else if (menuId == 0xB && (d = D_800A38E8) < i) {
+                d = i - d;
+                D_800BB9E4[d - 1] = item;
+                func_8005CBC8(D_800A331C[d - 1]);
+                text = D_800AD980 + (i - D_800A38E8) * 8;
+                *(u8 **)(entry + 8) = text;
+                strcpy(text, D_800A35C8Text);
+            } else {
+                switch (D_800A3989[i - 2]) {
+                case 0:
+                case 0x80:
+                    *(u8 **)(entry + 8) = ((u8 **)D_800A3690)[i];
+                    if (D_800A3989[i - 2] == 0x80) {
+                        entry[0] |= 2;
+                    }
+                    break;
+                case 1:
+                case 0x81:
+                    *(u8 **)(entry + 8) = ((u8 **)D_800A39C0)[i];
+                    if (D_800A3989[i - 2] == 0x81) {
+                        entry[0] |= 2;
+                    }
+                    break;
+                case 2:
+                    *(u8 **)(entry + 8) = ((u8 **)D_800A3A28)[i];
+                    break;
+                }
+            }
+            *(s16 *)(item + 0xE) = 2;
+        }
+        *(s16 *)(item + 0x16) = func_8005A8E0(*(s32 *)(entry + 8));
+        *(s16 *)(item + 0x18) = func_8005A84C();
+        *(s16 *)(item + 0xA) = 0x131 - *(u16 *)(item + 0x16);
+        *(s16 *)(item + 6) = x - *(u16 *)(item + 0x16);
+        if ((menuId == 4 && i == 1) || (menuId == 0xB && (u32)(i - 2) < 5)) {
+            width = func_8005A8E0((s32)D_800A3330);
+            *(s16 *)(item + 0xA) = *(u16 *)(item + 0xA) - width;
+            slots[1][count] = y;
+            slots[2][count] = x;
+            count++;
+            *(s16 *)(item + 6) = *(u16 *)(item + 6) - width;
+        }
+        y += *(s16 *)(item + 0x18);
+        if (i == 0) {
+            y += 8;
+            *(s16 *)(item + 6) = 0x140;
+            *(s16 *)(item + 0xA) = *(u16 *)(item + 0xA) - 10;
+        } else {
+            if (menuId == 4 || menuId == 0xB) {
+                if (D_800A38E8 < i) {
+                    *(s16 *)(item + 6) =
+                        slots[2][i - D_800A38E8 - 1] - *(u16 *)(item + 0x16);
+                    *(s16 *)(item + 0xC) = slots[1][i - D_800A38E8 - 1];
+                    *(s16 *)(item + 8) = slots[1][i - D_800A38E8 - 1];
+                    if (selRow == 0) {
+                        entry[0] = 1;
+                    }
+                }
+            }
+            x -= 0x80;
+        }
+    }
+}
 
 extern u8 *D_800A36F0;
 extern u8 *D_800A3690;
