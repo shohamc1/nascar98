@@ -1930,7 +1930,201 @@ void func_80040AC8(u8 *object) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/sound", func_80040CF4);
+typedef struct SoundCarLink {
+    struct SoundCarLink *next;
+    struct SoundCarLink *previous;
+    u8 *car;
+} SoundCarLink;
+
+void SoundUpdateCar(u8 *car) {
+    extern u32 RandomGetScaled16(s32);
+    extern void func_80040260(u8 *, s32);
+    extern void func_800400D8Pair(u8 *, u8 *) asm("func_800400D8");
+    extern s8 D_800A354F[];
+    s32 i;
+    s32 distance;
+    s32 pitch;
+    s32 blend;
+    s32 id;
+    s32 volume;
+    s32 decayVolume;
+    s32 unusedHigh;
+    s32 sample;
+    s32 shiftedRpm;
+    s8 *clearFlags;
+    u16 rpm;
+    SoundCarLink *next;
+    SoundCarLink *previous;
+    s8 *flags;
+    s8 *fade;
+    s32 *handles;
+    s32 *positions;
+    s32 *pending;
+    s32 initialized;
+    s32 channel;
+    s32 one;
+    s32 minusOne;
+    s32 five;
+
+    if (D_800A2ED4[0] == 1) {
+        for (i = 0; i < 5; i++) {
+            func_8003FDE8((s8)i, 0, 0);
+        }
+        for (i = 14; i < 18; i++) {
+            func_8003F914((s8)i);
+        }
+        return;
+    }
+    if (D_800A2EACAbsolute[0] == 0 || D_800A2EACAbsolute[0] >= 3) {
+        if (D_800A2EC8[0] == 0 && *(s8 *)(car + 0x3B8) > 0) {
+            id = 20;
+            if (car != D_800A3554[0]) {
+                id = 21;
+            }
+            if (*(s8 *)(car + 0x3B9) == 0) {
+                *(s8 *)(car + 0x3B8) -= 3;
+                if (*(s8 *)(car + 0x3B8) <= 0) {
+                    *(s8 *)(car + 0x3B8) = 0;
+                    func_8003F914((s8)id);
+                }
+            }
+            decayVolume = (*(s8 *)(car + 0x3B8) * 4 + 31) & 0xFF;
+            func_8003FDE8((s8)id, decayVolume, decayVolume);
+        }
+        func_80040AC8(car);
+        if (D_800A2F9D != 0) {
+            rpm = *(u16 *)(car + 0x108);
+            pitch = ((s16)rpm + *(s16 *)(car + 0x10A)) / 100;
+            if ((s16)rpm >= 2001 && *(s32 *)(car + 0x90) <= 0x95FFFF &&
+                D_800A2EC8[0] == 0 &&
+                RandomGetScaled16((s16)((s16)rpm / 1000)) == 0) {
+                pitch -= pitch / (s16)(*(s16 *)(car + 0x108) / 1700);
+            }
+            /* Retail keeps this unused filter calculation. */
+            blend = pitch + *(s16 *)(car + 0x3BA) + *(s16 *)(car + 0x3BA) +
+                    *(s16 *)(car + 0x3BA) + 3;
+            asm("" : : "r"(blend) : "memory");
+            if (*(s16 *)(car + 0x108) >= 7001 && D_800A2EC8[0] == 0 &&
+                RandomGetScaled16((s16)(*(s16 *)(car + 0x108) / 1000)) == 0) {
+                /* Retail also keeps this unused signed high product. */
+                register s32 magic asm("a0");
+                u16 highRpm;
+                highRpm = *(u16 *)(car + 0x108);
+                shiftedRpm = (u32)highRpm << 16;
+                asm("" : "=r"(shiftedRpm) : "0"(shiftedRpm) : "v0");
+                sample = shiftedRpm >> 16;
+                magic = 0x134679AD;
+                asm("mult %1,%2"
+                    : "=h"(unusedHigh)
+                    : "r"(sample), "r"(magic), "r"(shiftedRpm)
+                    : "lo");
+                asm("" : : "r"(unusedHigh));
+            }
+            volume = 100;
+            if (*(s32 *)(car + 0x3BC) >= 4097) {
+                volume = 127;
+            }
+            if (*(s16 *)(car + 0x1CA) + 7 < volume) {
+                *(s16 *)(car + 0x1CA) = *(s16 *)(car + 0x1CA) + 7;
+            } else if (volume < *(s16 *)(car + 0x1CA) - 3) {
+                *(s16 *)(car + 0x1CA) = *(s16 *)(car + 0x1CA) - 3;
+            } else {
+                *(s16 *)(car + 0x1CA) = volume;
+            }
+            if (*(s16 *)(car + 0x1CA) >= 128) {
+                *(s16 *)(car + 0x1CA) = 127;
+            }
+            volume = *(s16 *)(car + 0x1CA);
+            pitch = (*(s16 *)(car + 0x108) + *(s16 *)(car + 0x10A)) / 110 - 32;
+            if (*(s8 *)(car + 0x3CA) >= 18) {
+                pitch = 78;
+            }
+            pitch += *(s32 *)(car + 0x3BC) >> 11;
+            if (*(s16 *)(car + 0x3BA) + 7 < pitch) {
+                *(s16 *)(car + 0x3BA) = *(s16 *)(car + 0x3BA) + 7;
+            } else if (pitch < *(s16 *)(car + 0x3BA) - 5) {
+                *(s16 *)(car + 0x3BA) = *(s16 *)(car + 0x3BA) - 5;
+            } else {
+                *(s16 *)(car + 0x3BA) = pitch;
+            }
+            if (*(s16 *)(car + 0x3BA) >= 128) {
+                *(s16 *)(car + 0x3BA) = 127;
+            }
+            pitch = *(s16 *)(car + 0x3BA);
+            if (car == D_800A3554[0]) {
+                func_8003FA84(0, (s8)pitch);
+                func_8003FDE8(0, volume & 0xFF, volume & 0xFF);
+            } else {
+                if (*(s16 *)(D_800A3554[0] + 0x3BA) >= 125 && pitch >= 125) {
+                    pitch = 120;
+                }
+                func_8003FDE8(1, volume & 0xFF, volume & 0xFF);
+                func_8003FA84(1, (s8)pitch);
+            }
+            i = 3;
+            if (D_800A2E94[0] == 24) {
+                next = *(SoundCarLink **)(car + 0x3F0);
+                previous = *(SoundCarLink **)(car + 0x3F4);
+                clearFlags = D_800A354F;
+                D_800A39D0B = 0;
+                do {
+                    *clearFlags = 0;
+                    i--;
+                    clearFlags--;
+                } while (i >= 0);
+                for (i = 0; i < 4; i++) {
+                    distance = ABS(func_8003702C(car, next->car));
+                    if (distance < ABS(func_8003702C(car, previous->car))) {
+                        func_800400D8Pair(next->car, car);
+                        next = next->next;
+                    } else {
+                        func_800400D8Pair(previous->car, car);
+                        previous = previous->previous;
+                    }
+                }
+                channel = 0;
+                if (D_800A39D0B > 0) {
+                    initialized = 0;
+                    one = 1;
+                    minusOne = -1;
+                    five = 5;
+                    asm("" : : "r"(one), "r"(minusOne), "r"(five));
+                    fade = D_800A2FA4B;
+                    handles = D_800BE988;
+                    positions = D_80098D00;
+                    flags = D_800A354CB;
+                    pending = D_800BA048B;
+                initializeChannel:
+                    if (*flags == 0 && *fade == 0) {
+                        *flags = one;
+                        *positions = *pending;
+                        *handles = minusOne;
+                        *fade = five;
+                        initialized++;
+                        pending++;
+                        if (initialized == D_800A39D0B) {
+                            goto channelsReady;
+                        }
+                    }
+                    fade++;
+                    handles++;
+                    positions++;
+                    channel++;
+                    flags++;
+                    if (channel < 4) {
+                        goto initializeChannel;
+                    }
+                }
+            channelsReady:
+                func_80040260(car, 1);
+                func_80040260(car, 2);
+                func_80040260(car, 3);
+                func_80040260(car, 4);
+            }
+        }
+    }
+}
+
 
 extern s32 D_800A2EA4[];
 extern u8 D_800A2F9D;

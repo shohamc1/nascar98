@@ -858,3 +858,5 @@ gSprintfDefaultFormat = 0x800A2B8C;
 
 gLibgccClzTable = 0x80090010; // force_not_migration:True
 GameRunSession = 0x800122D8; // type:func
+
+SoundUpdateCar = 0x80040CF4; // type:func
