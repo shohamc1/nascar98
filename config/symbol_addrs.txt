@@ -629,6 +629,7 @@ gOrderingTableBank = 0x800A2CF4;
 gOrderingTables = 0x800B2094;
 GraphicsLinkPrimitive = 0x800324EC; // type:func
 MathMultiplyFixed16 = 0x800337D0; // type:func
+GraphicsDrawRaceViews = 0x80030204; // type:func
 GraphicsSubdivideTexturedQuad = 0x80033900; // type:func
 MatrixCombineState = 0x8001EF14; // type:func
 

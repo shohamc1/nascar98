@@ -7367,7 +7367,384 @@ void func_8002FFB8(s32 arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80030204);
+/* Separate symbol views preserve this routine's GP and absolute accesses. */
+asm(".globl D_800A2E8CFrame\nD_800A2E8CFrame = D_800A2E8C\n"
+    ".globl D_800A2E98Frame\nD_800A2E98Frame = D_800A2E98\n"
+    ".globl D_800A2E9CFrame\nD_800A2E9CFrame = D_800A2E9C\n"
+    ".globl D_800A2EA0Frame\nD_800A2EA0Frame = D_800A2EA0\n"
+    ".globl D_800A2EA4Frame\nD_800A2EA4Frame = D_800A2EA4\n"
+    ".globl D_800A2EBCFrame\nD_800A2EBCFrame = D_800A2EBC\n"
+    ".globl D_800A2EC0Frame\nD_800A2EC0Frame = D_800A2EC0\n"
+    ".globl D_800A2EC4Frame\nD_800A2EC4Frame = D_800A2EC4\n"
+    ".globl D_800A2EC8Frame\nD_800A2EC8Frame = D_800A2EC8\n"
+    ".globl D_800A2ED8Frame\nD_800A2ED8Frame = D_800A2ED8\n"
+    ".globl D_800A2ED9Frame\nD_800A2ED9Frame = D_800A2ED9\n"
+    ".globl D_800A2EDAFrame\nD_800A2EDAFrame = D_800A2EDA\n"
+    ".globl D_800A2F08Frame\nD_800A2F08Frame = D_800A2F08\n"
+    ".globl D_800A2F0CFrame\nD_800A2F0CFrame = D_800A2F0C\n"
+    ".globl D_800A2F10Frame\nD_800A2F10Frame = D_800A2F10\n"
+    ".globl D_800A3075Frame\nD_800A3075Frame = D_800A3075\n"
+    ".globl D_800A3554Frame\nD_800A3554Frame = D_800A3554\n"
+    ".globl D_800A3558Frame\nD_800A3558Frame = D_800A3558\n"
+    ".globl D_800A3774Frame\nD_800A3774Frame = D_800A3774\n"
+    ".globl D_800A37B0Frame\nD_800A37B0Frame = D_800A37B0\n"
+    ".globl D_800A3984Frame\nD_800A3984Frame = D_800A3984\n"
+    ".globl D_800B9D54Frame\nD_800B9D54Frame = D_800B9D54\n"
+    ".globl D_800B9D5CFrame\nD_800B9D5CFrame = D_800B9D5C\n"
+    ".globl D_800A38ACFrame1\nD_800A38ACFrame1 = D_800A38AC\n"
+    ".globl D_800A38ACFrame2\nD_800A38ACFrame2 = D_800A38AC\n"
+    ".globl D_800A38ACFrame3\nD_800A38ACFrame3 = D_800A38AC\n"
+    ".globl D_800A38ACFrame5\nD_800A38ACFrame5 = D_800A38AC\n"
+    ".globl D_800A38ACFrame6\nD_800A38ACFrame6 = D_800A38AC\n"
+    ".globl D_800A38ACFrame7\nD_800A38ACFrame7 = D_800A38AC\n"
+    ".globl D_800A38ACFrame8\nD_800A38ACFrame8 = D_800A38AC\n"
+    ".globl D_800A38ACFrame9\nD_800A38ACFrame9 = D_800A38AC\n"
+    ".globl D_800A38ACFrame11\nD_800A38ACFrame11 = D_800A38AC\n"
+    ".globl D_800A38ACFrame12\nD_800A38ACFrame12 = D_800A38AC\n"
+    ".globl D_800A38ACFrame13\nD_800A38ACFrame13 = D_800A38AC\n"
+    ".globl D_800A38ACFrame14\nD_800A38ACFrame14 = D_800A38AC\n"
+    ".globl D_800A38ACFrame15\nD_800A38ACFrame15 = D_800A38AC\n"
+    ".globl D_800A38ACFrame17\nD_800A38ACFrame17 = D_800A38AC\n"
+    ".globl D_800A38ACFrame18\nD_800A38ACFrame18 = D_800A38AC\n"
+    ".globl D_800A2F3CFrame1\nD_800A2F3CFrame1 = D_800A2F3C\n"
+    ".globl D_800A2F3CFrame2\nD_800A2F3CFrame2 = D_800A2F3C\n"
+    ".globl D_800A2F3CFrame3\nD_800A2F3CFrame3 = D_800A2F3C\n"
+    ".globl D_800A2F3CFrame4\nD_800A2F3CFrame4 = D_800A2F3C\n"
+    ".globl D_800A2F3CFrame5\nD_800A2F3CFrame5 = D_800A2F3C\n"
+    ".globl D_800A2F3CFrame6\nD_800A2F3CFrame6 = D_800A2F3C\n"
+    ".globl D_800A2F3CFrame7\nD_800A2F3CFrame7 = D_800A2F3C\n"
+    ".globl D_800A39C8Frame1\nD_800A39C8Frame1 = D_800A39C8\n"
+    ".globl D_800A39C8Frame2\nD_800A39C8Frame2 = D_800A39C8\n"
+    ".globl D_800A39C8Frame3\nD_800A39C8Frame3 = D_800A39C8\n"
+    ".globl D_800A39C8Frame4\nD_800A39C8Frame4 = D_800A39C8\n"
+    ".globl D_800A39C8Frame5\nD_800A39C8Frame5 = D_800A39C8\n"
+    ".globl D_800A39C8Frame6\nD_800A39C8Frame6 = D_800A39C8\n"
+    ".globl D_800A39C8Frame7\nD_800A39C8Frame7 = D_800A39C8\n"
+    ".globl D_800A39C8Frame8\nD_800A39C8Frame8 = D_800A39C8\n"
+    ".globl gOrderingTableBankFrame1\ngOrderingTableBankFrame1 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame2\ngOrderingTableBankFrame2 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame3\ngOrderingTableBankFrame3 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame4\ngOrderingTableBankFrame4 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame5\ngOrderingTableBankFrame5 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame6\ngOrderingTableBankFrame6 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame7\ngOrderingTableBankFrame7 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame8\ngOrderingTableBankFrame8 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame9\ngOrderingTableBankFrame9 = gOrderingTableBank\n"
+    ".globl gOrderingTableBankFrame10\ngOrderingTableBankFrame10 = gOrderingTableBank\n"
+    ".globl D_800A38ACFrameCam1A\nD_800A38ACFrameCam1A = D_800A38AC\n"
+    ".globl D_800A38ACFrameCam1B\nD_800A38ACFrameCam1B = D_800A38AC\n"
+    ".globl D_800A38ACFrameCam2A\nD_800A38ACFrameCam2A = D_800A38AC\n"
+    ".globl D_800A38ACFrameCam2B\nD_800A38ACFrameCam2B = D_800A38AC\n"
+    ".globl D_800A38ACFrameCam3A\nD_800A38ACFrameCam3A = D_800A38AC\n"
+    ".globl D_800A38ACFrameCam3B\nD_800A38ACFrameCam3B = D_800A38AC\n"
+    ".globl gOrderingTableBankFrame3Read\ngOrderingTableBankFrame3Read = gOrderingTableBank\n"
+    ".globl D_800A39C8Frame3Read\nD_800A39C8Frame3Read = D_800A39C8\n"
+    ".globl gOrderingTableBankFrame8Read\ngOrderingTableBankFrame8Read = gOrderingTableBank\n"
+    ".globl D_800A39C8Frame4Read\nD_800A39C8Frame4Read = D_800A39C8\n"
+    ".globl D_800A39C8Frame5Read\nD_800A39C8Frame5Read = D_800A39C8\n"
+    ".globl D_800A39C8Frame8Read\nD_800A39C8Frame8Read = D_800A39C8\n");
+extern s32 D_800A2E8CFrame;
+extern s32 D_800A2E98Frame;
+extern u8 *D_800A2E9CFrame;
+extern u8 *D_800A2EA0Frame;
+extern s32 D_800A2EA4Frame;
+extern s32 D_800A2EBCFrame;
+extern s32 D_800A2EC0Frame;
+extern s32 D_800A2EC4Frame;
+extern s32 D_800A2EC8Frame;
+extern u8 D_800A2ED8Frame;
+extern s8 D_800A2ED9Frame;
+extern u8 D_800A2EDAFrame;
+extern s32 D_800A2F08Frame;
+extern s32 D_800A2F0CFrame;
+extern s32 D_800A2F10Frame;
+extern u8 D_800A3075Frame[];
+extern u8 *D_800A3554Frame[];
+extern u8 *D_800A3558Frame[];
+extern s32 D_800A3774Frame;
+extern s32 D_800A37B0Frame;
+extern u8 *D_800A3984Frame[];
+extern s32 D_800B9D54Frame[];
+extern s32 D_800B9D5CFrame[];
+extern u8 *D_800A38ACFrame1[];
+extern u8 *D_800A38ACFrame2[];
+extern u8 *D_800A38ACFrame3[];
+extern u8 *D_800A38ACFrame5[];
+extern u8 *D_800A38ACFrame6[];
+extern u8 *D_800A38ACFrame7[];
+extern u8 *D_800A38ACFrame8[];
+extern u8 *D_800A38ACFrame9[];
+extern u8 *D_800A38ACFrame11[];
+extern u8 *D_800A38ACFrame12[];
+extern u8 *D_800A38ACFrame13[];
+extern u8 *D_800A38ACFrame14[];
+extern u8 *D_800A38ACFrame15[];
+extern u8 *D_800A38ACFrame17[];
+extern u8 *D_800A38ACFrame18[];
+extern s32 D_800A2F3CFrame1[];
+extern s32 D_800A2F3CFrame2[];
+extern s32 D_800A2F3CFrame3[];
+extern s32 D_800A2F3CFrame4[];
+extern s32 D_800A2F3CFrame5[];
+extern s32 D_800A2F3CFrame6[];
+extern s32 D_800A2F3CFrame7[];
+extern s32 D_800A39C8Frame1[];
+extern s32 D_800A39C8Frame2[];
+extern s32 D_800A39C8Frame3[];
+extern s32 D_800A39C8Frame4[];
+extern s32 D_800A39C8Frame5[];
+extern s32 D_800A39C8Frame6[];
+extern s32 D_800A39C8Frame7[];
+extern s32 D_800A39C8Frame8[];
+extern s32 gOrderingTableBankFrame1[];
+extern s32 gOrderingTableBankFrame2[];
+extern s32 gOrderingTableBankFrame3[];
+extern s32 gOrderingTableBankFrame4[];
+extern s32 gOrderingTableBankFrame5[];
+extern s32 gOrderingTableBankFrame6[];
+extern s32 gOrderingTableBankFrame7[];
+extern s32 gOrderingTableBankFrame8[];
+extern s32 gOrderingTableBankFrame9[];
+extern s32 gOrderingTableBankFrame10[];
+extern u8 *D_800A38ACFrameCam1A[];
+extern u8 *D_800A38ACFrameCam1B[];
+extern u8 *D_800A38ACFrameCam2A[];
+extern u8 *D_800A38ACFrameCam2B[];
+extern u8 *D_800A38ACFrameCam3A[];
+extern u8 *D_800A38ACFrameCam3B[];
+extern s32 gOrderingTableBankFrame3Read[];
+extern s32 D_800A39C8Frame3Read[];
+extern s32 gOrderingTableBankFrame8Read[];
+extern s32 D_800A39C8Frame4Read[];
+extern s32 D_800A39C8Frame5Read[];
+extern s32 D_800A39C8Frame8Read[];
+
+void GraphicsDrawRaceViews(void) {
+    MATRIX rotation;
+    register s32 previousCount asm("v0");
+    u8 *drawCar;
+    s32 bank;
+    u8 *mainCamera;
+    u8 *secondCamera;
+    u8 *insetCamera;
+    s32 secondTable;
+    s32 tableOffset;
+    s32 ticks;
+    s32 bankAfterDraw;
+    s32 bankAfterInset;
+    register s32 randomIndex asm("v0");
+    register s32 viewLimit asm("v0");
+    u8 *car;
+    u8 *insetCar;
+    u8 *focusCar;
+
+    focusCar = D_800A3554Frame[0];
+    func_8002FFB8(1);
+    if (D_800A2EDAFrame != 0) {
+        focusCar = D_800A2E9CFrame;
+        if (D_800A2EC0Frame >= 0x349) {
+            if ((*(s8 *)(focusCar + 0x20C)) != 5) {
+                (*(s32 *)(focusCar + 0x380)) =
+                    (s32)(((*(s16 *)(focusCar + 0x114)) + 0x200) & 0x3FF);
+            }
+            (*(s8 *)(focusCar + 0x20C)) = 5;
+        } else if (D_800A2EC0Frame >= 0x169) {
+            (*(s8 *)(focusCar + 0x20C)) = 3;
+        }
+        if (D_800A2EC0Frame == ((D_800A2EC0Frame / 120) * 0x78)) {
+            if (RandomScaledGet(0x18) < 0) {
+                randomIndex = -RandomScaledGet(0x18);
+            } else {
+                randomIndex = RandomScaledGet(0x18);
+            }
+            D_800A2E9CFrame = D_800A3984Frame[0] + ((randomIndex + 1) * 0x500);
+        }
+    }
+    ticks = GetRCnt(RCntCNT1);
+    D_800A2EA0Frame = focusCar;
+    D_800B9D54Frame[0] = ticks - D_800B9D54Frame[0];
+    mainCamera = D_800A38ACFrame1[0];
+    if (focusCar != mainCamera) {
+        (*(u16 *)(mainCamera + 0x1E0)) = (u16)(*(u16 *)(focusCar + 0x1E0));
+    } else {
+        (*(u16 *)(D_800A38ACFrame2[0] + 0x1E0)) = func_8002482C(
+            (*(s32 *)(focusCar + 0x0)), (*(s32 *)(focusCar + 0x4)),
+            (s32 *)(focusCar + 0x1F8));
+    }
+    func_8002DA30((s32 *)D_800A38ACFrame3[0]);
+    if (D_800A2ED8Frame != 0) {
+        CameraUpdateForCar((RaceObject *)D_800A38ACFrameCam1A[0],
+                           (RaceObject *)focusCar, D_800A2EC4Frame + 4);
+    } else {
+        CameraUpdateForCar((RaceObject *)D_800A38ACFrameCam1B[0],
+                           (RaceObject *)focusCar, *(s8 *)(focusCar + 0x20C));
+    }
+    func_8001EC38((s32 *)D_800A38ACFrame5[0]);
+    MatrixBuildRotationFromTransform((s32 *)D_800A38ACFrame6[0],
+                                     (s32 *)&rotation);
+    rotation.t[2] = 0;
+    rotation.t[1] = 0;
+    rotation.t[0] = 0;
+    SetTransMatrix(&rotation);
+    SetRotMatrix(&rotation);
+    func_8002EEFC(focusCar);
+    func_80034D64();
+    previousCount = D_800A2E98Frame;
+    D_800A2EBCFrame = 0;
+    D_800A37B0Frame = previousCount;
+    viewLimit = 0x352;
+    if (D_800A3075Frame[0] == 0) {
+        viewLimit = 0x44C;
+    }
+    D_800A2F08Frame = viewLimit;
+    asm volatile("" : : : "memory");
+    D_800A2E98Frame = 0;
+    if (D_800A2EA4Frame == 2) {
+        D_800A2F0CFrame = 0x4E2;
+        D_800A2F10Frame = 0x44C;
+        D_800A2F08Frame = (D_800A2F08Frame * 0x46) / 100;
+        SetGeomScreen(0xD0);
+        D_800A2E8CFrame = 0x23;
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame1[0] == 0, 0);
+        D_800A2F3CFrame1[0] = 0x46;
+        func_8002E594(D_800A3554Frame[0]);
+        car = D_800A3558Frame[0];
+        if (car != NULL) {
+            do {
+                if ((*(s16 *)(car + 0x1EC)) >= 0) {
+                    (*(u16 *)(car + 0x1E2)) = (u16)(*(u16 *)(car + 0x1E6));
+                    (*(u16 *)(car + 0x1E4)) = (u16)(*(u16 *)(car + 0x1E8));
+                }
+                car = (*(u8 **)(car + 0x3E0));
+            } while (car != NULL);
+        }
+        focusCar = (*(u8 **)(D_800A3554Frame[0] + 0x3E0));
+        D_800A2F0CFrame = 0xA28;
+        D_800A2F10Frame = 0x992;
+        D_800A2ED9Frame = 1;
+        D_800A2EA0Frame = focusCar;
+        secondCamera = D_800A38ACFrame7[0];
+        if (focusCar != secondCamera) {
+            (*(u16 *)(secondCamera + 0x1E0)) =
+                (u16)(*(u16 *)(focusCar + 0x1E0));
+        } else {
+            (*(u16 *)(D_800A38ACFrame8[0] + 0x1E0)) = func_8002482C(
+                (*(s32 *)(focusCar + 0x0)), (*(s32 *)(focusCar + 0x4)),
+                (s32 *)(focusCar + 0x1F8));
+        }
+        func_8002DA30((s32 *)D_800A38ACFrame9[0]);
+        if (D_800A2ED8Frame != 0) {
+            CameraUpdateForCar((RaceObject *)D_800A38ACFrameCam2A[0],
+                               (RaceObject *)focusCar, D_800A2EC4Frame + 4);
+        } else {
+            CameraUpdateForCar((RaceObject *)D_800A38ACFrameCam2B[0],
+                               (RaceObject *)focusCar,
+                               *(s8 *)(focusCar + 0x20C));
+        }
+        func_8001EC38((s32 *)D_800A38ACFrame11[0]);
+        MatrixBuildRotationFromTransform((s32 *)D_800A38ACFrame12[0],
+                                         (s32 *)&rotation);
+        rotation.t[2] = 0;
+        rotation.t[1] = 0;
+        rotation.t[0] = 0;
+        SetTransMatrix(&rotation);
+        SetRotMatrix(&rotation);
+        func_8002EEFC(focusCar);
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame2[0] == 0, 1);
+        drawCar = *(u8 **)(D_800A3554Frame[0] + 0x3E0);
+        bank = gOrderingTableBankFrame3Read[0] + 1;
+        secondTable = D_800A39C8Frame1[0] + 0x1000;
+        D_800A2F3CFrame2[0] = 0x3C;
+        gOrderingTableBankFrame3[0] = bank;
+        D_800A39C8Frame2[0] = secondTable;
+        func_8002E594(drawCar);
+        D_800A2ED9Frame = 0;
+        bankAfterDraw = gOrderingTableBankFrame4[0] - 1;
+        gOrderingTableBankFrame5[0] = bankAfterDraw;
+        D_800A39C8Frame3[0] = D_800A39C8Frame3Read[0] - 0x1000;
+        GraphicsSetGeomOffsetForMode(bankAfterDraw == 0, 2);
+        D_800A2F3CFrame3[0] = 0x46;
+    } else if ((D_800A2EC4Frame != 0) && (D_800A2EC8Frame == 0)) {
+        D_800A2F10Frame = 0x578;
+        D_800A2F0CFrame = 0x708;
+        D_800A2F08Frame = (D_800A2F08Frame * 0x41) / 100;
+        SetGeomScreen(0xD0);
+        D_800A2E8CFrame = 0x23;
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame6[0] == 0, 3);
+        D_800A2F3CFrame4[0] = 0x82;
+        func_8002E594(D_800A3554Frame[0]);
+        insetCar = D_800A3558Frame[0];
+        if (insetCar != NULL) {
+            do {
+                if ((*(s16 *)(insetCar + 0x1EC)) >= 0) {
+                    (*(u16 *)(insetCar + 0x1E2)) =
+                        (u16)(*(u16 *)(insetCar + 0x1E6));
+                    (*(u16 *)(insetCar + 0x1E4)) =
+                        (u16)(*(u16 *)(insetCar + 0x1E8));
+                }
+                insetCar = (*(u8 **)(insetCar + 0x3E0));
+            } while (insetCar != NULL);
+        }
+        D_800A2ED8Frame = 1;
+        SetGeomScreen(0x64);
+        D_800A2E8CFrame = 0xA;
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame7[0] == 0, 4);
+        D_800A2F3CFrame5[0] = 0x1E;
+        D_800A2F0CFrame = 0xA28;
+        D_800A2F10Frame = 0x9C4;
+        D_800A2F08Frame = (D_800A2F08Frame * 0x23) / 100;
+        func_8002F674();
+        focusCar = D_800A2E9CFrame;
+        D_800A2EA0Frame = focusCar;
+        insetCamera = D_800A38ACFrame13[0];
+        if (focusCar != insetCamera) {
+            (*(u16 *)(insetCamera + 0x1E0)) = (u16)(*(u16 *)(focusCar + 0x1E0));
+        } else {
+            (*(u16 *)(D_800A38ACFrame14[0] + 0x1E0)) = func_8002482C(
+                (*(s32 *)(focusCar + 0x0)), (*(s32 *)(focusCar + 0x4)),
+                (s32 *)(focusCar + 0x1F8));
+        }
+        func_8002DA30((s32 *)D_800A38ACFrame15[0]);
+        if (D_800A2ED8Frame != 0) {
+            CameraUpdateForCar((RaceObject *)D_800A38ACFrameCam3A[0],
+                               (RaceObject *)focusCar, D_800A2EC4Frame + 4);
+        } else {
+            CameraUpdateForCar((RaceObject *)D_800A38ACFrameCam3B[0],
+                               (RaceObject *)focusCar,
+                               *(s8 *)(focusCar + 0x20C));
+        }
+        func_8001EC38((s32 *)D_800A38ACFrame17[0]);
+        MatrixBuildRotationFromTransform((s32 *)D_800A38ACFrame18[0],
+                                         (s32 *)&rotation);
+        rotation.t[2] = 0;
+        rotation.t[1] = 0;
+        rotation.t[0] = 0;
+        SetTransMatrix(&rotation);
+        SetRotMatrix(&rotation);
+        func_8002EEFC(focusCar);
+        gOrderingTableBankFrame8[0] = gOrderingTableBankFrame8Read[0] + 1;
+        D_800A39C8Frame4[0] = D_800A39C8Frame4Read[0] + 0x1000;
+        func_8002FFB8(1);
+        func_8002E594(D_800A2E9CFrame);
+        bankAfterInset = gOrderingTableBankFrame9[0] - 1;
+        gOrderingTableBankFrame10[0] = bankAfterInset;
+        D_800A39C8Frame5[0] = D_800A39C8Frame5Read[0] - 0x1000;
+        GraphicsSetGeomOffsetForMode(bankAfterInset == 0, 3);
+        D_800A2F3CFrame6[0] = 0x82;
+        D_800A2ED8Frame = 0;
+    } else {
+        D_800A2F0CFrame = 0xA28;
+        D_800A2F10Frame = 0x898;
+        SetGeomScreen(0xD0);
+        D_800A2F3CFrame7[0] = 0x82;
+        D_800A2E8CFrame = D_800A3774Frame + 0x32;
+        tableOffset = D_800A39C8Frame6[0] + 0x28;
+        D_800A39C8Frame7[0] = tableOffset;
+        func_8002E594(focusCar);
+        D_800A39C8Frame8[0] = D_800A39C8Frame8Read[0] - 0x28;
+    }
+    D_800B9D5CFrame[0] = GetRCnt(RCntCNT1) - D_800B9D5CFrame[0];
+}
 
 extern s32 D_800A3A80;
 /* The right-height block uses its own endpoint locals so leftHeight keeps

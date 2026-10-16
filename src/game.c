@@ -211,7 +211,7 @@ void GameRunSession(void) {
     extern void func_80041328(void);
     extern void func_8001475C(void);
     extern void func_8002F910(void);
-    extern void func_80030204(void);
+    extern void GraphicsDrawRaceViews(void);
     extern void func_8001C34C(void);
     extern void func_8003CC48(void);
     extern void func_8001E7EC(void *, s32 *, s32);
@@ -346,7 +346,7 @@ void GameRunSession(void) {
         D_800A2D14 = D_800A33C0;
         D_800A2D18 = D_800A33C4;
         func_8002F910();
-        func_80030204();
+        GraphicsDrawRaceViews();
         timings->elapsed = GetRCnt(0xF2000001) - D_800A3708;
         func_8001C34C();
         D_800A370C = GetRCnt(0xF2000001);
