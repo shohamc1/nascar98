@@ -577,6 +577,7 @@ SystemInitCounter = 0x80013080; // type:func
 GraphicsRenderFrame = 0x800131A8; // type:func
 MatrixBuildRotationFromTransform = 0x80015BF8; // type:func
 SystemShowFatalError = 0x80017C5C; // type:func
+HudDrawCarPanel = 0x80019C10; // type:func
 FontSetColor = 0x80018318; // type:func
 FontDrawPaddedNumber = 0x80018A04; // type:func
 ListInsertBefore = 0x8001C590; // type:func
