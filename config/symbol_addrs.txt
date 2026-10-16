@@ -850,6 +850,7 @@ sTrackReadSuccessMessage = 0x8008CC50; // force_not_migration:True
 
 SceneUpdateProjectiles = 0x80045864; // type:func
 
+SceneInitRoadStrip = 0x8004658C; // type:func
 SceneUpdateRoadStrip = 0x80046BD4; // type:func
 MenuDrawLapStatistics = 0x8004F158; // type:func
 

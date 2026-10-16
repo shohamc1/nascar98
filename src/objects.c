@@ -24,6 +24,7 @@ extern s32 D_800A2EACAbsolute[];
 extern void func_80058D94(void);
 extern void func_800531B8(void);
 extern void GameRunSession(void);
+extern void SceneInitRoadStrip(void);
 extern void func_80066B08(void);
 extern void func_800587A0(void);
 extern void func_80059DC4(void);
@@ -7776,7 +7777,7 @@ void RaceUpdateFrame(void) {
                     savedCar = D_800A3554RaceStep3[0];
                     savedSection = *(u16 *)(savedCar + 0x1E0);
                     *(u16 *)(savedCar + 0x1E0) = 0;
-                    func_8004658C();
+                    SceneInitRoadStrip();
                     (*(u16 *)(D_800A3554RaceStep5[0] + 0x1E0)) = savedSection;
                 }
             }
