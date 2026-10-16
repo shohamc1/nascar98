@@ -867,3 +867,5 @@ AudioQueueStereoAdpcm = 0x80073100; // type:func
 RaceUpdateFrame = 0x8002F910; // type:func
 
 CarPlaceOnStartingGrid = 0x80039DDC; // type:func
+
+CdUpdateStream = 0x800711F0; // type:func

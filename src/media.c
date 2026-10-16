@@ -3286,13 +3286,288 @@ s32 func_800710D8(void) {
     return D_800A3500[0x43C / 4];
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_800711F0);
+extern void bzero(void *, s32);
+extern void func_80070F40(u8, u8 *);
+extern void func_80070A60(u8, u8 *);
+extern void SwEnterCriticalSection(void);
+extern void SwExitCriticalSection(void);
+extern s32 D_800A3510;
+
+void CdUpdateStream(void) {
+    u8 param[0x20];
+    u8 result[0x20];
+    u8 mode;
+    u8 *clearResult;
+    u8 *controlResult;
+    CdlLOC *loc;
+    s32 completeStatus;
+    s32 test;
+    s32 requestState;
+    u8 *pendingPosition;
+    s32 readSectors;
+    s32 availableSectors;
+    s32 availableLimit;
+    s32 contiguousSectors;
+    s32 remainingSectors;
+    register s32 *restartRecord asm("a0");
+    s32 *activeRecord;
+    s32 *refillRecord;
+    s32 *bufferRecord;
+    register u8 *restartPosition asm("s0");
+    register u8 *refillPosition asm("s0");
+    u8 *readPosition;
+    s32 *initialStream;
+    s32 *stoppedStream;
+    s32 *startedStream;
+    s32 *restartStream;
+    s32 *restartSeekStream;
+    s32 *restartReadStream;
+    s32 *serviceStream;
+    s32 *ringStream;
+    register s32 *refillSeekStream asm("v1");
+    register s32 *refillReadStream asm("a0");
+    volatile s32 *restartSeekQueue;
+    volatile s32 *restartReadQueue;
+    volatile s32 *refillSeekQueue;
+    volatile s32 *refillReadQueue;
+    u32 bufferSector;
+    s32 bufferBase;
+    s32 *restartReadRecord;
+    s32 readBuffer;
+    s32 unusedPending;
+    s32 restartSector;
+    s32 refillSector;
+    void (*callback)(void);
+    register CdlCB noCallback asm("a0");
+
+    initialStream = D_800A3500;
+    if ((u32)initialStream[0x424 / 4] >= 2) {
+        callback = (void (*)(void))initialStream[0x570 / 4];
+        if (callback != 0) {
+            callback();
+        }
+        completeStatus = CdlComplete;
+        SwEnterCriticalSection();
+        asm("" : : "r"(completeStatus));
+        stoppedStream = D_800A3500;
+        noCallback = 0;
+        asm("" : : "r"(noCallback));
+        stoppedStream[0x410 / 4] = 0;
+        stoppedStream[0x408 / 4] = 0;
+        stoppedStream[0x40C / 4] = 0;
+        ((volatile s32 *)stoppedStream)[0x41C / 4] = 0;
+        CdSyncCallback(noCallback);
+        CdReadyCallback(0);
+        SwExitCriticalSection();
+        CdControl(CdlStop, 0, 0);
+        do {
+            bzero(param, 0x20);
+            clearResult = result;
+            bzero(clearResult, 0x20);
+            clearResult = 0;
+            controlResult = result;
+            test = CdControl(CdlNop, param, controlResult);
+            controlResult = 0;
+            if (test != 0) {
+                if (result[0] == CdlNoIntr || result[0] == completeStatus) {
+                    test = 0;
+                } else {
+                    test = 1;
+                }
+            } else {
+                CdControl(CdlReset, 0, 0);
+                test = 1;
+            }
+        } while (test != 0);
+        mode = CdlModeSpeed | CdlModeSize1;
+        CdControlB(CdlSetmode, &mode, 0);
+        SwEnterCriticalSection();
+        CdSyncCallback(func_80070F40);
+        CdReadyCallback(func_80070A60);
+        startedStream = D_800A3500;
+        startedStream[0x41C / 4] = 1;
+        startedStream[0x414 / 4] = 1;
+        ((volatile s32 *)startedStream)[0x424 / 4] = 0;
+        SwExitCriticalSection();
+        restartStream = D_800A3500;
+        if (restartStream[0x414 / 4] != 0 && restartStream[0] != 0) {
+            restartPosition = (u8 *)restartStream[0x430 / 4];
+
+            restartSector = ((s32 *)restartPosition)[2];
+            loc = (CdlLOC *)(restartPosition + 0xC);
+            restartPosition += 0x24;
+            CdIntToPos(CdPosToInt(loc) + restartSector,
+                       (CdlLOC *)restartPosition);
+            restartSeekStream = D_800A3500;
+            restartRecord = (s32 *)restartSeekStream[0x430 / 4];
+            restartSeekStream[0x418 / 4] = 2;
+            restartPosition = (u8 *)restartRecord + 0x24;
+
+            SwEnterCriticalSection();
+            restartSeekQueue = (volatile s32 *)D_800A3500;
+            ((s32 *)restartSeekQueue)[restartSeekQueue[0x40C / 4]++ + 2] =
+                CdlSeekL;
+            ((s32 *)restartSeekQueue)[restartSeekQueue[0x40C / 4]++ + 2] =
+                (s32)restartPosition;
+            ((s32 *)restartSeekQueue)[restartSeekQueue[0x40C / 4]++ + 2] = 0;
+            restartSeekQueue[0x40C / 4] = (u32)restartSeekQueue[0x40C / 4] % 48;
+            restartSeekQueue[0x410 / 4] += 1;
+            unusedPending = restartSeekQueue[0x410 / 4];
+            if (restartSeekQueue[0x410 / 4] == 1) {
+                SwExitCriticalSection();
+                while (CdControl(CdlSeekL, restartPosition, 0) == 0) {
+                }
+            } else {
+                SwExitCriticalSection();
+            }
+            restartReadStream = D_800A3500;
+            readBuffer = restartReadStream[1];
+            restartReadRecord = (s32 *)restartReadStream[0x430 / 4];
+            readSectors = restartReadStream[0];
+            restartPosition = (u8 *)restartReadRecord + 0x24;
+            restartReadStream[0x450 / 4] = readBuffer;
+            restartReadStream[0x454 / 4] = readSectors;
+            asm(""
+                :
+                : "r"(readBuffer), "r"(restartReadRecord), "r"(restartPosition),
+                  "r"(readSectors)
+                : "memory");
+            SwEnterCriticalSection();
+            restartReadQueue = (volatile s32 *)D_800A3500;
+            ((s32 *)restartReadQueue)[restartReadQueue[0x40C / 4]++ + 2] =
+                CdlReadN;
+            ((s32 *)restartReadQueue)[restartReadQueue[0x40C / 4]++ + 2] =
+                (s32)restartPosition;
+            ((s32 *)restartReadQueue)[restartReadQueue[0x40C / 4]++ + 2] = 0;
+            restartReadQueue[0x40C / 4] = (u32)restartReadQueue[0x40C / 4] % 48;
+            restartReadQueue[0x410 / 4] += 1;
+            unusedPending = restartReadQueue[0x410 / 4];
+            if (restartReadQueue[0x410 / 4] == 1) {
+                SwExitCriticalSection();
+                while (CdControl(CdlReadN, restartPosition, 0) == 0) {
+                }
+            } else {
+                SwExitCriticalSection();
+            }
+        } else {
+            D_800A3500[0x414 / 4] = 0;
+        }
+    }
+    serviceStream = D_800A3500;
+    if (serviceStream[0x414 / 4] == 0) {
+        activeRecord = (s32 *)serviceStream[0x430 / 4];
+        remainingSectors = activeRecord[0] - activeRecord[2];
+        if (remainingSectors == 0) {
+            func_800710D8();
+        }
+        ringStream = D_800A3500;
+        contiguousSectors = D_800A3510;
+        availableSectors =
+            (((volatile s32 *)ringStream)[0x440 / 4] + contiguousSectors) -
+            ((volatile s32 *)ringStream)[0x448 / 4];
+        availableLimit =
+            (u32)((volatile s32 *)ringStream)[0x448 / 4] % contiguousSectors;
+        contiguousSectors -= availableLimit;
+        /* Keep both values until the minimum has been selected. */
+        availableLimit = availableSectors;
+        asm(""
+            : "=r"(availableLimit)
+            : "0"(availableLimit), "r"(availableSectors),
+              "r"(contiguousSectors));
+        test = availableLimit < contiguousSectors;
+        if (test) {
+            availableSectors = availableLimit;
+        } else {
+            availableSectors = contiguousSectors;
+        }
+        readSectors = remainingSectors;
+        if (availableSectors < readSectors) {
+            readSectors = availableSectors;
+        }
+        if (readSectors != 0) {
+            refillPosition = (u8 *)D_800A3500[0x430 / 4];
+
+            refillSector = ((s32 *)refillPosition)[2];
+            loc = (CdlLOC *)(refillPosition + 0xC);
+            refillPosition += 0x24;
+            CdIntToPos(CdPosToInt(loc) + refillSector,
+                       (CdlLOC *)refillPosition);
+            refillSeekStream = D_800A3500;
+            refillRecord = (s32 *)refillSeekStream[0x430 / 4];
+            refillSeekStream[0x44C / 4] =
+                refillSeekStream[0x448 / 4] + readSectors;
+            asm("" : : : "v0", "memory");
+            requestState = 2;
+            pendingPosition = (u8 *)refillRecord + 0x24;
+            asm("" : "=r"(refillRecord) : "0"(refillRecord), "r"(requestState));
+            refillPosition = pendingPosition;
+            refillSeekStream[0x418 / 4] = requestState;
+            asm(""
+                :
+                : "r"(refillRecord), "r"(refillPosition), "r"(refillSeekStream)
+                : "memory");
+            SwEnterCriticalSection();
+            refillSeekQueue = (volatile s32 *)D_800A3500;
+            ((s32 *)refillSeekQueue)[refillSeekQueue[0x40C / 4]++ + 2] =
+                CdlSeekL;
+            ((s32 *)refillSeekQueue)[refillSeekQueue[0x40C / 4]++ + 2] =
+                (s32)refillPosition;
+            ((s32 *)refillSeekQueue)[refillSeekQueue[0x40C / 4]++ + 2] = 0;
+            refillSeekQueue[0x40C / 4] = (u32)refillSeekQueue[0x40C / 4] % 48;
+            refillSeekQueue[0x410 / 4] += 1;
+            unusedPending = refillSeekQueue[0x410 / 4];
+            if (refillSeekQueue[0x410 / 4] == 1) {
+                SwExitCriticalSection();
+                while (CdControl(CdlSeekL, refillPosition, 0) == 0) {
+                }
+            } else {
+                SwExitCriticalSection();
+            }
+            refillReadStream = D_800A3500;
+
+            bufferRecord = (s32 *)refillReadStream[0x430 / 4];
+            do {
+                bufferSector = (u32)(refillReadStream[0x448 / 4] +
+                                     bufferRecord[0x34 / 4]) %
+                               D_800A3510;
+                bufferBase = bufferRecord[0x30 / 4];
+
+                refillReadStream[0x414 / 4] = 1;
+                readPosition = (u8 *)refillReadStream[0x430 / 4] + 0x24;
+                readBuffer = bufferBase + (bufferSector << 11);
+                /* Publish the buffer address before its sector count. */
+                refillReadStream[0x450 / 4] = readBuffer;
+                asm("" : : : "memory");
+                refillReadStream[0x454 / 4] = readSectors;
+            } while (0);
+            asm("" : : "r"(readBuffer), "r"(readPosition) : "memory");
+            SwEnterCriticalSection();
+            refillReadQueue = (volatile s32 *)D_800A3500;
+            ((s32 *)refillReadQueue)[refillReadQueue[0x40C / 4]++ + 2] =
+                CdlReadN;
+            ((s32 *)refillReadQueue)[refillReadQueue[0x40C / 4]++ + 2] =
+                (s32)readPosition;
+            ((s32 *)refillReadQueue)[refillReadQueue[0x40C / 4]++ + 2] = 0;
+            refillReadQueue[0x40C / 4] = (u32)refillReadQueue[0x40C / 4] % 48;
+            refillReadQueue[0x410 / 4] += 1;
+            unusedPending = refillReadQueue[0x410 / 4];
+            if (refillReadQueue[0x410 / 4] == 1) {
+                SwExitCriticalSection();
+                while (CdControl(CdlReadN, readPosition, 0) == 0) {
+                }
+            } else {
+                SwExitCriticalSection();
+            }
+        }
+    }
+}
+
 
 /* All registers match after separating stream phases and reloading the
  * global stream before the tail update. An empty compiler barrier keeps the
  * fast-path store out of the jump delay slot. */
 extern s32 *D_800A3500;
-extern void func_800711F0(void);
+extern void CdUpdateStream(void);
 void func_800718D4(s32 arg) {
     s32 remaining;
     s32 offset;
@@ -3327,7 +3602,7 @@ void func_800718D4(s32 arg) {
         blocks = (((u32)arg) >> 11) + 1;
         stream[0x440 / 4] = oldBlocks + blocks;
     }
-    func_800711F0();
+    CdUpdateStream();
     after = D_800A3500;
     current = (s32 *)after[0x42C / 4];
     if (current[0x4 / 4] == current[0x10 / 4]) {
@@ -3352,7 +3627,7 @@ s32 func_800719D4(void) {
 
 extern s32 *D_800A3500;
 extern u32 D_800A3510w asm("D_800A3510.NON_MATCHING");
-extern void func_800711F0(void);
+extern void CdUpdateStream(void);
 extern void *memcpy(void *, const void *, size_t);
 
 u8 *func_800719FC(s32 *arg0) {
@@ -3407,7 +3682,7 @@ u8 *func_800719FC(s32 *arg0) {
                 return 0;
             }
             counter = 0;
-            func_800711F0();
+            CdUpdateStream();
             continue;
         }
         break;
