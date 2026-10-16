@@ -3054,20 +3054,6 @@ extern u8 D_800A3330[];
 extern u8 D_800AD980[];
 extern u8 D_800A35C8Text[] asm("D_800A35C8");
 extern void func_8005CBC8(s32);
-static inline u8 *MenuItemAlloc(void) {
-    u8 *item;
-
-    item = D_800A3678 + D_800A35EC++ * 0x24;
-    *(s16 *)(item + 0x12) = 0;
-    *(s16 *)(item + 0x14) = 0;
-    *(s32 *)(item + 0x1C) = 0;
-    item[4] = 0;
-    item[3] = 0;
-    item[2] = 0;
-    *(s16 *)(item + 0x1A) = 0;
-    return item;
-}
-
 void func_8005C124(u8 menuId, u8 selRow) {
     s32 slots[3][4];
     u8 *item;
@@ -3149,7 +3135,21 @@ void func_8005C124(u8 menuId, u8 selRow) {
         rows += 5;
     }
     for (i = 0; i < rows; i++) {
-        item = MenuItemAlloc();
+        {
+            u8 index;
+            u8 *object;
+
+            index = D_800A35EC++;
+            object = D_800A3678 + index * 36;
+            *(s16 *)(object + 0x12) = 0;
+            *(s16 *)(object + 0x14) = 0;
+            *(s32 *)(object + 0x1C) = 0;
+            object[4] = 0;
+            object[3] = 0;
+            object[2] = 0;
+            *(s16 *)(object + 0x1A) = 0;
+            item = object;
+        }
         *(s16 *)(item + 0) = 0;
         *(s16 *)(item + 0x1A) = 0;
         *(s16 *)(item + 0xC) = y;
