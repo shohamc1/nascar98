@@ -6738,30 +6738,13 @@ s32 func_80065028(void) {
     return current;
 }
 
-s32 func_80065040(void) {
+inline s32 func_80065040(void) {
     s32 old;
     old = D_800A367C;
     D_800A367C = old + 0x28;
     return old;
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-11 harvest, real-TU asm-differ 13003 -> 10555:
- * 1. yOffset lost its volatile: one memory home, one value. Volatile
- *    forced a load per read and broke the allocator cascade.
- * 2. Permuter 7760: (a) case 3 duplicates its height/red/green/blue/
- *    x1off arm under if (x0)/else (duplicated-arm barrier);
- *    (b) leftX = 0x17 hoisted before the D_8009A3EC[0] call with
- *    x = leftX in the loop; (c) b2 = (s32)entry routes the
- *    func_80018588 buffer into func_8005A9F4.
- * 3. asm("" : "=r"(match) : "r"(match)) after match = slots slows the
- *    cursor/match CSE.
- * Dead address-taken pad restores retail frame 0xa8 (1596 -> 1585
- * differing text bytes, size 0x7e0). cursor/match still one
- * addiu plus a derived copy where retail has two addiu, and ours reads
- * D_800BE70C/D_800A36E0/D_800A3644 through cached t-reg bases with
- * 0-offset loads where retail uses %hi/%lo displacements off the index.
- */
 extern u8 D_800A3950[];
 extern u8 D_800A305B[];
 extern u8 *D_8009A360[];
@@ -6769,12 +6752,17 @@ extern u8 *D_8009A3A4[];
 extern u8 *D_8009A3E8[];
 extern u8 *D_8009A41C[];
 extern u8 *D_8009A3EC[];
+extern u8 *D_8009A3ECLui asm("D_8009A3EC");
 extern u8 *D_8009ACE0[];
 extern s32 D_800AEB34[];
 extern u8 *D_8009A42C[];
-extern u16 D_800A3A44;
-extern s16 D_800A3940Signed asm("D_800A3940");
-extern u8 D_800A3760;
+extern u8 D_800A36E0Lui asm("D_800A36E0Absolute");
+extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");
+extern u8 D_800A3644Lui asm("D_800A3644Absolute");
+extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern volatile u16 D_800A3A44;
+extern volatile s16 D_800A3940Signed asm("D_800A3940");
+extern volatile u8 D_800A3760;
 extern u8 *D_800A3568;
 extern u8 *D_800A3970;
 extern u32 *D_800A38C4;
@@ -6782,12 +6770,11 @@ extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
 void func_80065058(u8 id, s32 shift) {
     u8 entry[0x40];
     u8 slots[2];
-    u8 pad[8];
-    u8 *cursor;
-    u8 *match;
+    s32 n;
     u8 *prim;
-    s32 yOffset;
-    s16 leftX;
+    u8 *end;
+    s32 xOffset;
+    s32 leftX;
     s32 i;
     s32 x0;
     s32 x1off;
@@ -6796,37 +6783,29 @@ void func_80065058(u8 id, s32 shift) {
     s32 green;
     s32 blue;
     s32 yBase;
-    s32 x;
     u8 color;
     s32 r2;
     s32 g2;
     s32 b2;
 
-    /* Keep the unused address-taken local in the retail frame. */
-    if (0) {
-        func_80018588(0, -1, pad);
-    }
-    yOffset = -((shift & 0xFF) != 0) & -0x140;
-    cursor = slots;
-    match = slots;
-    asm("" : "=r"(match) : "r"(match));
+    xOffset = -((shift & 0xFF) != 0) & -0x140;
+    n = 0;
+    height = id * 2;
     for (i = 0; i < 2; i++) {
-        *cursor = 0xFF;
-        if (D_800BE70C[id * 2 + i] == D_800A36E0[0]) {
-            *match = i;
-            match++;
+        slots[i] = 0xFF;
+        if (D_800BE70C[height + i] == D_800A36E0Lui) {
+            slots[n] = i;
+            n++;
         }
-        if (D_800A3644[0] != 0 && D_800BE70C[id * 2 + i] == D_800A36E1[0]) {
-            *match = i;
-            match++;
+        if (D_800A3644Lui != 0 && D_800BE70C[height + i] == D_800A36E1Lui) {
+            slots[n] = i;
+            n++;
         }
-        cursor++;
     }
     x1off = 0x11C;
-    x0 = yOffset + 0x12;
+    x0 = xOffset + 0x12;
     for (i = 0; i < 3; i++) {
-        prim = (u8 *)D_800A367C;
-        D_800A367C = (s32)prim + 0x28;
+        prim = (u8 *)func_80065040();
         SetPolyF4((POLY_F4 *)prim);
         SetSemiTrans(prim, 0);
         switch (i) {
@@ -6862,19 +6841,11 @@ void func_80065058(u8 id, s32 shift) {
             break;
         case 3:
             if (slots[0] != 0xFF) {
-                if (x0) {
-                    height = 0x12;
-                    red = 0x78;
-                    green = 0x78;
-                    blue = 0xEC;
-                    x1off = 0x8E;
-                } else {
-                    height = 0x12;
-                    red = 0x78;
-                    green = 0x78;
-                    blue = 0xEC;
-                    x1off = 0x8E;
-                }
+                height = 0x12;
+                red = 0x78;
+                green = 0x78;
+                blue = 0xEC;
+                x1off = 0x8E;
                 if (slots[0] == 1) {
                     x0 += 0x8E;
                 }
@@ -6888,15 +6859,13 @@ void func_80065058(u8 id, s32 shift) {
                 blue = 0xEC;
                 x1off = 0x8E;
                 if (slots[0] == 0) {
-                    x0 = yOffset + 0x12;
+                    x0 = xOffset + 0x12;
                 } else {
-                    x0 = yOffset + 0xA0;
+                    x0 = xOffset + 0xA0;
                 }
             }
             break;
         }
-        *(s16 *)(prim + 0x12) = yBase + height;
-        *(s16 *)(prim + 0x16) = yBase + height;
         prim[4] = red;
         prim[5] = green;
         prim[6] = blue;
@@ -6905,36 +6874,39 @@ void func_80065058(u8 id, s32 shift) {
         *(s16 *)(prim + 0xC) = x0 + x1off;
         *(s16 *)(prim + 0xE) = yBase;
         *(s16 *)(prim + 0x10) = x0;
+        *(s16 *)(prim + 0x12) = yBase + height;
         *(s16 *)(prim + 0x14) = x0 + x1off;
+        *(s16 *)(prim + 0x16) = yBase + height;
         if (i < 3) {
             AddPrim((u8 *)D_800A38C4 + 0xC, prim);
         } else {
             AddPrim((u8 *)D_800A38C4 + 8, prim);
         }
     }
-    leftX = yOffset + 0x17;
+    leftX = xOffset + 0x17;
+    height = id * 2;
     for (i = 0; i < 2; i++) {
-        prim = (u8 *)D_800A367C;
-        D_800A367C = (s32)prim + 0x28;
+        color = D_800BE70C[height + i];
+        prim = (u8 *)func_80065040();
         SetPolyFT4((POLY_FT4 *)prim);
-        func_80064AB4(prim, D_800BE70C[id * 2 + i]);
+        func_80064AB4(prim, color);
         if (i == 0) {
-            *(s16 *)(prim + 0xA) = 0x5A;
-            *(s16 *)(prim + 0x10) = yOffset + 0x57;
-            *(s16 *)(prim + 0x12) = 0x5A;
             *(s16 *)(prim + 8) = leftX;
-            *(s16 *)(prim + 0x1A) = 0xA2;
-            *(s16 *)(prim + 0x20) = yOffset + 0x57;
-            *(s16 *)(prim + 0x22) = 0xA2;
-            *(s16 *)(prim + 0x18) = leftX;
-        } else {
-            *(s16 *)(prim + 8) = yOffset + 0xA5;
             *(s16 *)(prim + 0xA) = 0x5A;
-            *(s16 *)(prim + 0x10) = yOffset + 0xE5;
+            *(s16 *)(prim + 0x10) = xOffset + 0x57;
             *(s16 *)(prim + 0x12) = 0x5A;
-            *(s16 *)(prim + 0x18) = yOffset + 0xA5;
+            *(s16 *)(prim + 0x18) = leftX;
             *(s16 *)(prim + 0x1A) = 0xA2;
-            *(s16 *)(prim + 0x20) = yOffset + 0xE5;
+            *(s16 *)(prim + 0x20) = xOffset + 0x57;
+            *(s16 *)(prim + 0x22) = 0xA2;
+        } else {
+            *(s16 *)(prim + 8) = xOffset + 0xA5;
+            *(s16 *)(prim + 0xA) = 0x5A;
+            *(s16 *)(prim + 0x10) = xOffset + 0xE5;
+            *(s16 *)(prim + 0x12) = 0x5A;
+            *(s16 *)(prim + 0x18) = xOffset + 0xA5;
+            *(s16 *)(prim + 0x1A) = 0xA2;
+            *(s16 *)(prim + 0x20) = xOffset + 0xE5;
             *(s16 *)(prim + 0x22) = 0xA2;
         }
         AddPrim((u8 *)D_800A38C4 + 8, prim);
@@ -6942,17 +6914,13 @@ void func_80065058(u8 id, s32 shift) {
     D_800A3568 = (u8 *)D_800A367C;
     func_8005A7B8(2, 4);
     func_8005A818(0x80, 0x80, 0xC0);
-    D_800A39C8[0] += 4;
-    switch (D_800A3950[0]) {
-    case 0xFB:
-    case 3:
-        func_8005A9F4((s32)D_8009A360[D_800A305B[0]], 0x17, 0x41, 0, 0, 0, 0,
+    D_800A39C8Lui += 4;
+    if (D_800A3950[0] == 0xFB || D_800A3950[0] == 3) {
+        func_8005A9F4((s32)D_8009A360[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
                       0);
-        break;
-    default:
-        func_8005A9F4((s32)D_8009A3A4[D_800A305B[0]], 0x17, 0x41, 0, 0, 0, 0,
+    } else {
+        func_8005A9F4((s32)D_8009A3A4[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
                       0);
-        break;
     }
     if (D_800A2EB0Absolute[0] == 0) {
         func_8005A9F4((s32)D_8009A3E8[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
@@ -6960,28 +6928,28 @@ void func_80065058(u8 id, s32 shift) {
         func_8005A9F4((s32)D_8009A41C[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
     }
     if (id + 1 >= 0xA) {
-        D_8009A3EC[0][4] = 0x31;
-        D_8009A3EC[0][5] = id + 0x27;
-        D_8009A3EC[0][6] = 0;
+        D_8009A3ECLui[4] = 0x31;
+        D_8009A3ECLui[5] = id + 0x27;
+        D_8009A3ECLui[6] = 0;
     } else {
-        D_8009A3EC[0][4] = id + 0x31;
-        D_8009A3EC[0][5] = 0;
+        D_8009A3ECLui[4] = id + 0x31;
+        D_8009A3ECLui[5] = 0;
     }
-    leftX = 0x17;
     func_8005A9F4((s32)D_8009A3EC[0], 0xFC, 0x4D, 0, 0, 0, 0, 0);
+    height = id * 2;
     for (i = 0; i < 2; i++) {
-        x = 0xA5;
+        x0 = 0xA5;
         if (i == 0) {
-            x = leftX;
+            x0 = 0x17;
         }
-        color = D_800BE70C[id * 2 + i];
-        if (color == D_800A36E0[0]) {
+        color = D_800BE70C[height + i];
+        if (color == D_800A36E0Lui) {
             r2 = 0xC0;
             g2 = 0x80;
             b2 = 0x40;
-        } else if (D_800A3644[0] != 0 && color == D_800A36E1[0]) {
-            r2 = 0xC0;
+        } else if (D_800A3644Lui != 0 && color == D_800A36E1Lui) {
             g2 = 0x80;
+            r2 = 0xC0;
             b2 = 0x40;
         } else {
             r2 = 0x80;
@@ -6989,41 +6957,34 @@ void func_80065058(u8 id, s32 shift) {
             b2 = 0xC0;
         }
         func_8005A818(r2, g2, b2);
-        func_8005A9F4((s32)D_8009ACE0[color], x, 0xA7, 0, 0, 0, 0, 0);
-        func_8005A9F4((s32)D_8009AC1C[color], x + 0x1E, 0xA7, 0, 0, 0, 0, 0);
+        func_8005A9F4((s32)D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
+        func_8005A9F4((s32)D_8009AC1C[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0, 0);
         if (D_800A2EB0Absolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
-            func_8005A9F4((s32)D_8009A42C[0], x + 0x45, 0x7E, 0, 0, 0, 0, 0);
+            func_8005A9F4((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
             func_80018588((void *)D_800AEB34[color], -1, entry);
-            b2 = (s32)entry;
-            func_8005A9F4(b2, x + 0x45, 0x7E, 0, 0, 0, 0, 7);
+            func_8005A9F4((s32)entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
         }
-        if (D_800A2EB0Absolute[0] == 0 && id == 0 && i == 0) {
-            func_8005A9F4((s32)D_8009A3EC[13], x + 0x59, 0x61, 0, 0, 0, 0, 0);
-            func_8005A9F4((s32)D_8009A3EC[14], x + 0x4F, 0x6B, 0, 0, 0, 0, 0);
+        if (D_800A2EB0Absolute[0] == 0 && height == 0 && i == 0) {
+            func_8005A9F4((s32)D_8009A3EC[13], x0 + 0x59, 0x61, 0, 0, 0, 0, 0);
+            func_8005A9F4((s32)D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
         }
     }
-    D_800A39C8[0] -= 4;
-    D_800A3970 = (u8 *)D_800A367C;
-    if (yOffset != 0) {
-        if (D_800A3568 != (u8 *)D_800A367C) {
-            prim = (u8 *)D_800A3568 + 0x20;
-            do {
-                *(u16 *)(prim - 0x18) = *(u16 *)(prim - 0x18) + yOffset;
-                *(u16 *)(prim - 0x10) = *(u16 *)(prim - 0x10) + yOffset;
-                *(u16 *)(prim - 8) = *(u16 *)(prim - 8) + yOffset;
-                *(u16 *)(prim) = *(u16 *)(prim) + yOffset;
-                prim += 0x28;
-            } while (prim != (u8 *)D_800A367C + 0x20);
+    D_800A39C8Lui -= 4;
+    end = (u8 *)D_800A367C;
+    D_800A3970 = end;
+    if (xOffset != 0) {
+        for (prim = D_800A3568; prim != end; prim += 0x28) {
+            *(u16 *)(prim + 8) += xOffset;
+            *(u16 *)(prim + 0x10) += xOffset;
+            *(u16 *)(prim + 0x18) += xOffset;
+            *(u16 *)(prim + 0x20) += xOffset;
         }
     }
     D_800A3940Signed = 2;
-    D_800A3A44 = yOffset;
+    D_800A3A44 = xOffset;
     D_800A3760 = 1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80065058);
-#endif
 
 extern u8 *D_8009A3F0[];
 extern u8 *D_8009A400[];

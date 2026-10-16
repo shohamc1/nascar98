@@ -412,6 +412,9 @@ LDFLAGS += \
             --defsym=D_800A380CAbsolute=D_800A380C \
             --defsym=D_800A3878Absolute=D_800A3878 \
             --defsym=D_800A3924Absolute=D_800A3924 \
+            --defsym=D_800A3644Absolute=D_800A3644 \
+            --defsym=D_800A36E0Absolute=D_800A36E0 \
+            --defsym=D_800A36E1Absolute=D_800A36E1 \
             --defsym=D_800A3A94Absolute=D_800A3A94
 
 # SDK C matches with R3000 scheduling. Game flags stay above. The Psy-Q

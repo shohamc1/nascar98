@@ -72,3 +72,251 @@
 +  return recog_memoized (dep_insn) >= 0
 +	 && get_attr_type (dep_insn) == TYPE_STORE;
 +}
+--- a/loop.c	2026-10-16 21:17:02
++++ b/loop.c	2026-10-16 21:17:02
+@@ -265,6 +265,18 @@
+ static void combine_movables ();
+ static int rtx_equal_for_loop_p ();
+ static void move_movables ();
++/* NASCAR 98: UIDs of giv inits that n98_fixed_base_value rewrote; cse2
++   keeps their frame-address sources.  */
++
++int n98_giv_init_uid[64];
++int n98_n_giv_inits;
++static rtx n98_cand_insn[64], n98_cand_reg[64], n98_cand_val[64];
++static int n98_n_cands;
++
++static rtx n98_fixed_base_value ();
++static int n98_reg_live_use_p ();
++static int n98_is_cand ();
++static int n98_value_computed_elsewhere ();
+ static void strength_reduce ();
+ static int valid_initial_value_p ();
+ static void find_mem_givs ();
+@@ -330,6 +342,7 @@
+      rtx f;
+      FILE *dumpfile;
+ {
++  n98_n_giv_inits = 0;
+   register rtx insn;
+   register int i;
+   rtx last_insn;
+@@ -972,9 +985,27 @@
+     if (n_times_set[i] < 0)
+       n_times_set[i] = n_times_used[i];
+ 
++  n98_n_cands = 0;
+   if (flag_strength_reduce)
+     strength_reduce (scan_start, end, loop_top,
+ 		     insn_count, loop_start, end);
++
++  /* NASCAR 98: a giv init copied from a hoisted frame address whose
++     register strength reduction left unused in the loop rematerialises
++     the address instead of copying it.  */
++  for (i = 0; i < n98_n_cands; i++)
++    {
++      rtx p = n98_cand_insn[i];
++      rtx set = single_set (p);
++
++      if (set != 0 && SET_SRC (set) == n98_cand_reg[i]
++	  && ! n98_reg_live_use_p (n98_cand_reg[i], get_insns (), NULL_RTX)
++	  && ! n98_value_computed_elsewhere (n98_cand_val[i], n98_cand_reg[i])
++	  && validate_change (p, &SET_SRC (set),
++			      copy_rtx (n98_cand_val[i]), 0)
++	  && n98_n_giv_inits < 64)
++	n98_giv_init_uid[n98_n_giv_inits++] = INSN_UID (p);
++    }
+ }
+ 
+ /* Add elements to *OUTPUT to record all the pseudo-regs
+@@ -3203,6 +3234,111 @@
+    Also, some of the optimizations could be a little less conservative.  */
+ 
+ /* Perform strength reduction and induction variable elimination.  */
++
++static int
++n98_is_cand (insn)
++     rtx insn;
++{
++  int i;
++
++  for (i = 0; i < n98_n_cands; i++)
++    if (n98_cand_insn[i] == insn)
++      return 1;
++  return 0;
++}
++
++/* NASCAR 98: nonzero if some insn other than a candidate init or the
++   set of REG computes VAL.  */
++
++static int
++n98_value_computed_elsewhere (val, reg)
++     rtx val, reg;
++{
++  rtx p, set;
++
++  for (p = get_insns (); p; p = NEXT_INSN (p))
++    {
++      if (GET_CODE (p) != INSN)
++	continue;
++      set = single_set (p);
++      if (set == 0 || SET_DEST (set) == reg || n98_is_cand (p))
++	continue;
++      if (rtx_equal_p (SET_SRC (set), val))
++	return 1;
++    }
++  return 0;
++}
++
++/* NASCAR 98: nonzero if REG is used between START and END by an insn
++   whose result is still needed.  A use in an insn that only sets a
++   pseudo nothing reads any more (a giv strength reduction replaced) is
++   not counted.  */
++
++static int
++n98_reg_live_use_p (reg, start, end)
++     rtx reg, start, end;
++{
++  rtx p, set;
++
++  for (p = start; p && p != end; p = NEXT_INSN (p))
++    {
++      if (GET_RTX_CLASS (GET_CODE (p)) != 'i'
++	  || ! reg_overlap_mentioned_p (reg, PATTERN (p)))
++	continue;
++      set = single_set (p);
++      if (set != 0 && SET_DEST (set) == reg
++	  && ! reg_overlap_mentioned_p (reg, SET_SRC (set)))
++	continue;
++      if (set != 0 && SET_SRC (set) == reg && n98_is_cand (p))
++	continue;
++      if (set != 0 && GET_CODE (SET_DEST (set)) == REG
++	  && REGNO (SET_DEST (set)) >= FIRST_PSEUDO_REGISTER
++	  && SET_DEST (set) != reg
++	  && ! reg_overlap_mentioned_p (reg, SET_DEST (set))
++	  && ! reg_used_between_p (SET_DEST (set), get_insns (), get_last_insn ()))
++	continue;
++      return 1;
++    }
++  return 0;
++}
++
++/* NASCAR 98: if REG is an invariant set just before LOOP_START from a
++   frame-pointer-plus-constant address, return that address so each giv
++   init rematerialises it.  Otherwise return REG.  */
++
++static rtx
++n98_fixed_base_value (reg, loop_start)
++     rtx reg, loop_start;
++{
++  rtx p, set, src;
++
++  if (GET_CODE (reg) != REG)
++    return reg;
++  for (p = PREV_INSN (loop_start); p; p = PREV_INSN (p))
++    {
++      if (GET_CODE (p) == CODE_LABEL || GET_CODE (p) == JUMP_INSN
++	  || GET_CODE (p) == CALL_INSN)
++	return reg;
++      if (GET_CODE (p) != INSN)
++	continue;
++      set = single_set (p);
++      if (set == 0 || SET_DEST (set) != reg)
++	{
++	  if (reg_set_p (reg, p))
++	    return reg;
++	  continue;
++	}
++      src = SET_SRC (set);
++      if (GET_CODE (src) == PLUS
++	  && (XEXP (src, 0) == frame_pointer_rtx
++	      || XEXP (src, 0) == hard_frame_pointer_rtx
++	      || XEXP (src, 0) == stack_pointer_rtx)
++	  && GET_CODE (XEXP (src, 1)) == CONST_INT)
++	return src;
++      return reg;
++    }
++  return reg;
++}
+ 
+ /* Pseudo registers created during this function will be beyond the last
+    valid index in several tables including n_times_set and regno_last_uid.
+@@ -3876,8 +4012,18 @@
+ 
+ 	      /* Add code at loop start to initialize giv's reduced reg.  */
+ 
+-	      emit_iv_add_mult (bl->initial_value, v->mult_val,
+-				v->add_val, v->new_reg, loop_start);
++	      {
++		rtx n98_add = n98_fixed_base_value (v->add_val, loop_start);
++
++		emit_iv_add_mult (bl->initial_value, v->mult_val,
++				  v->add_val, v->new_reg, loop_start);
++		if (n98_add != v->add_val && n98_n_cands < 64)
++		  {
++		    n98_cand_insn[n98_n_cands] = PREV_INSN (loop_start);
++		    n98_cand_reg[n98_n_cands] = v->add_val;
++		    n98_cand_val[n98_n_cands++] = n98_add;
++		  }
++	      }
+ 	    }
+ 	}
+ 
+--- a/cse.c	2026-10-16 21:17:02
++++ b/cse.c	2026-10-16 21:17:02
+@@ -477,7 +477,22 @@
+ #define CHEAP_REG(N) \
+   ((REG_USERVAR_P (N) && REGNO (N) < FIRST_PSEUDO_REGISTER)	\
+    || CHEAP_REGNO (REGNO (N)))
++
++static int cse_n98_after_loop;
++extern int n98_giv_init_uid[];
++extern int n98_n_giv_inits;
+ 
++static int
++n98_is_giv_init (insn)
++     rtx insn;
++{
++  int i;
++
++  for (i = 0; i < n98_n_giv_inits; i++)
++    if (n98_giv_init_uid[i] == INSN_UID (insn))
++      return 1;
++  return 0;
++}
+ #define COST(X)						\
+   (GET_CODE (X) == REG					\
+    ? (CHEAP_REG (X) ? 0					\
+@@ -6699,7 +6714,10 @@
+ 	  if (code != REG && ! exp_equiv_p (p->exp, p->exp, 1, 0))
+ 	    continue;
+ 
+-          if (src && GET_CODE (src) == code && rtx_equal_p (src, p->exp))
++          if (src && GET_CODE (src) == code && rtx_equal_p (src, p->exp)
++	      && ! (cse_n98_after_loop && code == PLUS
++		    && FIXED_BASE_PLUS_P (src) && GET_CODE (dest) == REG
++		    && n98_is_giv_init (insn)))
+ 	    src = 0;
+           else if (src_folded && GET_CODE (src_folded) == code
+ 		   && rtx_equal_p (src_folded, p->exp))
+@@ -6729,6 +6747,10 @@
+ 	{
+ 	  if (rtx_equal_p (src, dest))
+ 	    src_cost = -1;
++	  else if (cse_n98_after_loop && GET_CODE (src) == PLUS
++		   && FIXED_BASE_PLUS_P (src) && GET_CODE (dest) == REG
++		   && n98_is_giv_init (insn))
++	    src_cost = -1;
+ 	  else
+ 	    src_cost = COST (src);
+ 	}
+@@ -8223,6 +8245,9 @@
+      int after_loop;
+      FILE *file;
+ {
++  cse_n98_after_loop = after_loop;
++  if (! after_loop)
++    n98_n_giv_inits = 0;
+   struct cse_basic_block_data val;
+   register rtx insn = f;
+   register int i;
