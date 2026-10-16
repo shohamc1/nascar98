@@ -8915,7 +8915,413 @@ s32 func_800338D8(u16 *object) {
     return (flags & 0x7EFF) == 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80033900);
+#define SUBDIVISION_STORE_DEPTH3(a, b, c)                                      \
+    asm volatile("swc2 $17, 0(%0)\n\tswc2 $18, 0(%1)\n\tswc2 $19, 0(%2)"       \
+                 :                                                             \
+                 : "r"(a), "r"(b), "r"(c)                                      \
+                 : "memory")
+
+typedef struct SubdivisionVertex {
+    s16 x, y, z;
+    u8 u, v;
+    s32 screen;
+    s16 depth, pad;
+} SubdivisionVertex;
+extern u32 gSubdivisionTemplate0[] asm("gScratchpad+0");
+extern u32 gSubdivisionTemplate1[] asm("gScratchpad+4");
+extern u32 gSubdivisionTemplate2[] asm("gScratchpad+8");
+extern u32 gSubdivisionTemplate3[] asm("gScratchpad+12");
+extern u32 gSubdivisionTemplate4[] asm("gScratchpad+16");
+extern u32 gSubdivisionTemplate5[] asm("gScratchpad+20");
+extern u32 *gSubdivisionOt[] asm("gScratchpad+24");
+
+u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
+                                  s32 recursionLevel) {
+    register SubdivisionVertex *grid asm("s0");
+    register u8 *prim asm("t5");
+    register s32 level asm("s2");
+    s32 limit;
+    register SubdivisionVertex *row1 asm("t3");
+    register SubdivisionVertex *row2 asm("t2");
+    register SubdivisionVertex *center asm("t1");
+    register SubdivisionVertex *right asm("t0");
+    register s32 work0 asm("v0");
+    register s32 work1 asm("v1");
+    register s32 work2 asm("a0");
+    register s32 work3 asm("a1");
+    register s32 work4 asm("a2");
+    register s32 work5 asm("a3");
+    register s32 work6 asm("t0");
+    register s32 work7 asm("t1");
+    register s32 w0 asm("v0");
+    register s32 w1 asm("v1");
+    register s32 w2 asm("a3");
+    register s32 w3 asm("t0");
+    register s32 w4 asm("t1");
+    register s32 w5 asm("t2");
+    register s32 w6 asm("t3");
+    register s32 w7 asm("t4");
+    register u32 word0 asm("v1");
+    register u32 word1 asm("a0");
+    register u32 word2 asm("a1");
+    register u32 word3 asm("a2");
+    register u32 word4 asm("a3");
+    register u32 word5 asm("t0");
+    register u32 *ot asm("t1");
+    register u32 mask asm("t2");
+    register u16 uv asm("v0");
+    register SubdivisionVertex *mid asm("a1");
+    register u8 *packet asm("v0");
+    grid = vertices;
+    asm("" : : "r"(grid) : "t5");
+    prim = primCursor;
+    level = recursionLevel;
+    asm volatile("" : : "r"(grid), "r"(prim), "r"(level));
+    /* Reuse the eight scratch values in the GTE routine's order. The empty
+   * constraints keep the UV arithmetic and corner loads in that order. */
+    work0 = grid[0].x;
+    work1 = grid[2].x;
+    work3 = grid[2].y;
+    work5 = grid[2].u;
+    work4 = grid[0].v;
+    work6 = grid[2].v;
+    work7 = grid[6].x;
+    work0 += work1;
+    work1 = grid[0].y;
+    work2 = (u32)work0 >> 31;
+    work0 += work2;
+    work2 = grid[0].z;
+    work4 += work6;
+    asm volatile("" : "=r"(work4) : "0"(work4) : "memory");
+    work4 >>= 1;
+    grid[1].v = work4;
+    work4 = grid[2].v;
+    work6 = grid[6].v;
+    work0 >>= 1;
+    grid[1].x = work0;
+    work1 += work3;
+    work3 = grid[2].z;
+    work0 = (u32)work1 >> 31;
+    work1 += work0;
+    work1 >>= 1;
+    grid[1].y = work1;
+    work1 = grid[0].u;
+    work2 += work3;
+    work3 = grid[2].x;
+    work0 = (u32)work2 >> 31;
+    work2 += work0;
+    work0 = grid[2].y;
+    work2 >>= 1;
+    work1 += work5;
+    asm volatile("" : "=r"(work1) : "0"(work1) : "memory");
+    grid[1].z = work2;
+    work2 = grid[6].y;
+    work5 = grid[6].u;
+    row1 = grid + 6;
+    row2 = grid + 8;
+    work1 >>= 1;
+    grid[1].u = work1;
+    /* Interpolate the center of the diagonal from vertices 2 and 6. */
+    work3 += work7;
+    work0 += work2;
+    work2 = grid[2].z;
+    work1 = (u32)work3 >> 31;
+    work3 += work1;
+    work3 >>= 1;
+    grid[4].x = work3;
+    work3 = grid[6].z;
+    work1 = (u32)work0 >> 31;
+    work0 += work1;
+    work1 = grid[2].u;
+    work7 = grid[8].x;
+    asm volatile("" : : "r"(work7) : "memory");
+    work4 += work6;
+    work4 >>= 1;
+    work0 >>= 1;
+    grid[4].y = work0;
+    work2 += work3;
+    work3 = grid[2].x;
+    work0 = (u32)work2 >> 31;
+    work2 += work0;
+    work2 >>= 1;
+    grid[4].z = work2;
+    asm volatile("" : : "m"(grid[4].z) : "memory");
+    work0 = grid[2].y;
+    work2 = grid[8].y;
+    right = grid + 5;
+    work1 += work5;
+    work1 >>= 1;
+    grid[4].u = work1;
+    grid[4].v = work4;
+    /* Interpolate the right edge from vertices 2 and 8. */
+    work3 += work7;
+    work1 = (u32)work3 >> 31;
+    work3 += work1;
+    work3 >>= 1;
+    work0 += work2;
+    work1 = (u32)work0 >> 31;
+    work0 += work1;
+    work0 >>= 1;
+    grid[5].x = work3;
+    grid[5].y = work0;
+    asm volatile("" : : "m"(grid[5].y) : "memory");
+    work0 = grid[2].z;
+    asm volatile("" : : "r"(work0) : "memory");
+    work1 = grid[8].z;
+    asm volatile("" : : "r"(work1) : "memory");
+    work2 = grid[2].u;
+    asm volatile("" : : "r"(work2) : "memory");
+    work4 = grid[8].u;
+    asm volatile("" : : "r"(work4) : "memory");
+    work3 = grid[2].v;
+    asm volatile("" : : "r"(work3) : "memory");
+    work5 = grid[8].v;
+    asm volatile("" : : "r"(work5) : "memory");
+    center = grid + 4;
+    grid[5].z = (work0 + work1) / 2;
+    grid[5].u = (work2 + work4) >> 1;
+    grid[5].v = (work3 + work5) >> 1;
+    limit = (0x8C - (level << 6)) * 4;
+    gte_ldv3(&grid[0], &grid[1], &grid[2]);
+    gte_rtpt();
+    grid[3].x = (grid[0].x + grid[6].x) / 2;
+    grid[3].y = (grid[0].y + grid[6].y) / 2;
+    grid[3].z = (grid[0].z + grid[6].z) / 2;
+    grid[3].u = (grid[0].u + grid[6].u) >> 1;
+    grid[3].v = (grid[0].v + grid[6].v) >> 1;
+    asm volatile("addiu %0, %1, 0x30"
+                 : "=r"(mid)
+                 : "r"(grid), "r"(&grid[0].screen), "r"(&grid[1].screen),
+                   "r"(&grid[2].screen));
+    gte_stsxy3(&grid[0].screen, &grid[1].screen, &grid[2].screen);
+    SUBDIVISION_STORE_DEPTH3(&grid[0].depth, &grid[1].depth, &grid[2].depth);
+    gte_ldv3(mid, center, right);
+    gte_rtpt();
+    grid[7].x = (grid[6].x + grid[8].x) / 2;
+    grid[7].y = (grid[6].y + grid[8].y) / 2;
+    grid[7].z = (grid[6].z + grid[8].z) / 2;
+    grid[7].u = (grid[6].u + grid[8].u) >> 1;
+    grid[7].v = (grid[6].v + grid[8].v) >> 1;
+    asm volatile("addiu %0, %1, 0x70"
+                 : "=r"(mid)
+                 : "r"(grid), "r"(&grid[3].screen), "r"(&grid[4].screen),
+                   "r"(&grid[5].screen));
+    gte_stsxy3(&grid[3].screen, &grid[4].screen, &grid[5].screen);
+    SUBDIVISION_STORE_DEPTH3(&grid[3].depth, &grid[4].depth, &grid[5].depth);
+    gte_ldv3(row1, mid, row2);
+    gte_rtpt();
+    gte_stsxy3(&grid[6].screen, &grid[7].screen, &grid[8].screen);
+    SUBDIVISION_STORE_DEPTH3(&grid[6].depth, &grid[7].depth, &grid[8].depth);
+    if ((grid[0].depth < limit || grid[1].depth < limit ||
+         grid[3].depth < limit || grid[4].depth < limit) &&
+        level < 2) {
+        w0 = ((s32 *)&grid[0])[0];
+        w1 = ((s32 *)&grid[0])[1];
+        w2 = ((s32 *)&grid[1])[0];
+        w3 = ((s32 *)&grid[1])[1];
+        w4 = ((s32 *)&grid[3])[0];
+        w5 = ((s32 *)&grid[3])[1];
+        w6 = ((s32 *)&grid[4])[0];
+        w7 = ((s32 *)&grid[4])[1];
+        ((s32 *)&grid[9])[0] = w0;
+        ((s32 *)&grid[9])[1] = w1;
+        ((s32 *)&grid[11])[0] = w2;
+        ((s32 *)&grid[11])[1] = w3;
+        ((s32 *)&grid[15])[0] = w4;
+        ((s32 *)&grid[15])[1] = w5;
+        ((s32 *)&grid[17])[0] = w6;
+        ((s32 *)&grid[17])[1] = w7;
+        prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
+    } else {
+        word0 = gSubdivisionTemplate0[0];
+        *(s32 *)(prim + 8) = grid[0].screen;
+        *(s32 *)(prim + 16) = grid[1].screen;
+        *(s32 *)(prim + 24) = grid[3].screen;
+        *(s32 *)(prim + 32) = grid[4].screen;
+        uv = *(u16 *)&grid[0].u;
+        word1 = gSubdivisionTemplate1[0];
+        asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[1].u;
+        word2 = gSubdivisionTemplate2[0];
+        asm volatile("sh %0, gScratchpad+12" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[3].u;
+        word3 = gSubdivisionTemplate3[0];
+        asm volatile("sh %0, gScratchpad+16" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[4].u;
+        word4 = gSubdivisionTemplate4[0];
+        asm volatile("sh %0, gScratchpad+20" : : "r"(uv) : "memory");
+        word5 = gSubdivisionTemplate5[0];
+        packet = prim;
+        *(s32 *)packet = word0;
+        ot = gSubdivisionOt[0];
+        mask = 0xFFFFFF;
+        *(s32 *)(packet + 4) = word1;
+        *(s32 *)(packet + 12) = word2;
+        *(s32 *)(packet + 20) = word3;
+        *(s32 *)(packet + 28) = word4;
+        *(s32 *)(packet + 36) = word5;
+        prim += 0x28;
+        *(u32 *)packet = *ot | 0x09000000;
+        *ot = (u32)packet & mask;
+    }
+    if ((grid[1].depth < limit || grid[2].depth < limit ||
+         grid[4].depth < limit || grid[5].depth < limit) &&
+        level < 2) {
+        w0 = ((s32 *)&grid[1])[0];
+        w1 = ((s32 *)&grid[1])[1];
+        w2 = ((s32 *)&grid[2])[0];
+        w3 = ((s32 *)&grid[2])[1];
+        w4 = ((s32 *)&grid[4])[0];
+        w5 = ((s32 *)&grid[4])[1];
+        w6 = ((s32 *)&grid[5])[0];
+        w7 = ((s32 *)&grid[5])[1];
+        ((s32 *)&grid[9])[0] = w0;
+        ((s32 *)&grid[9])[1] = w1;
+        ((s32 *)&grid[11])[0] = w2;
+        ((s32 *)&grid[11])[1] = w3;
+        ((s32 *)&grid[15])[0] = w4;
+        ((s32 *)&grid[15])[1] = w5;
+        ((s32 *)&grid[17])[0] = w6;
+        ((s32 *)&grid[17])[1] = w7;
+        prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
+    } else {
+        word0 = gSubdivisionTemplate0[0];
+        *(s32 *)(prim + 8) = grid[1].screen;
+        *(s32 *)(prim + 16) = grid[2].screen;
+        *(s32 *)(prim + 24) = grid[4].screen;
+        *(s32 *)(prim + 32) = grid[5].screen;
+        uv = *(u16 *)&grid[1].u;
+        word1 = gSubdivisionTemplate1[0];
+        asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[2].u;
+        word2 = gSubdivisionTemplate2[0];
+        asm volatile("sh %0, gScratchpad+12" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[4].u;
+        word3 = gSubdivisionTemplate3[0];
+        asm volatile("sh %0, gScratchpad+16" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[5].u;
+        word4 = gSubdivisionTemplate4[0];
+        asm volatile("sh %0, gScratchpad+20" : : "r"(uv) : "memory");
+        word5 = gSubdivisionTemplate5[0];
+        packet = prim;
+        *(s32 *)packet = word0;
+        ot = gSubdivisionOt[0];
+        mask = 0xFFFFFF;
+        *(s32 *)(packet + 4) = word1;
+        *(s32 *)(packet + 12) = word2;
+        *(s32 *)(packet + 20) = word3;
+        *(s32 *)(packet + 28) = word4;
+        *(s32 *)(packet + 36) = word5;
+        prim += 0x28;
+        *(u32 *)packet = *ot | 0x09000000;
+        *ot = (u32)packet & mask;
+    }
+    if ((grid[3].depth < limit || grid[4].depth < limit ||
+         grid[6].depth < limit || grid[7].depth < limit) &&
+        level < 2) {
+        w0 = ((s32 *)&grid[3])[0];
+        w1 = ((s32 *)&grid[3])[1];
+        w2 = ((s32 *)&grid[4])[0];
+        w3 = ((s32 *)&grid[4])[1];
+        w4 = ((s32 *)&grid[6])[0];
+        w5 = ((s32 *)&grid[6])[1];
+        w6 = ((s32 *)&grid[7])[0];
+        w7 = ((s32 *)&grid[7])[1];
+        ((s32 *)&grid[9])[0] = w0;
+        ((s32 *)&grid[9])[1] = w1;
+        ((s32 *)&grid[11])[0] = w2;
+        ((s32 *)&grid[11])[1] = w3;
+        ((s32 *)&grid[15])[0] = w4;
+        ((s32 *)&grid[15])[1] = w5;
+        ((s32 *)&grid[17])[0] = w6;
+        ((s32 *)&grid[17])[1] = w7;
+        prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
+    } else {
+        word0 = gSubdivisionTemplate0[0];
+        *(s32 *)(prim + 8) = grid[3].screen;
+        *(s32 *)(prim + 16) = grid[4].screen;
+        *(s32 *)(prim + 24) = grid[6].screen;
+        *(s32 *)(prim + 32) = grid[7].screen;
+        uv = *(u16 *)&grid[3].u;
+        word1 = gSubdivisionTemplate1[0];
+        asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[4].u;
+        word2 = gSubdivisionTemplate2[0];
+        asm volatile("sh %0, gScratchpad+12" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[6].u;
+        word3 = gSubdivisionTemplate3[0];
+        asm volatile("sh %0, gScratchpad+16" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[7].u;
+        word4 = gSubdivisionTemplate4[0];
+        asm volatile("sh %0, gScratchpad+20" : : "r"(uv) : "memory");
+        word5 = gSubdivisionTemplate5[0];
+        packet = prim;
+        *(s32 *)packet = word0;
+        ot = gSubdivisionOt[0];
+        mask = 0xFFFFFF;
+        *(s32 *)(packet + 4) = word1;
+        *(s32 *)(packet + 12) = word2;
+        *(s32 *)(packet + 20) = word3;
+        *(s32 *)(packet + 28) = word4;
+        *(s32 *)(packet + 36) = word5;
+        prim += 0x28;
+        *(u32 *)packet = *ot | 0x09000000;
+        *ot = (u32)packet & mask;
+    }
+    if ((grid[4].depth < limit || grid[5].depth < limit ||
+         grid[7].depth < limit || grid[8].depth < limit) &&
+        level < 2) {
+        w0 = ((s32 *)&grid[4])[0];
+        w1 = ((s32 *)&grid[4])[1];
+        w2 = ((s32 *)&grid[5])[0];
+        w3 = ((s32 *)&grid[5])[1];
+        w4 = ((s32 *)&grid[7])[0];
+        w5 = ((s32 *)&grid[7])[1];
+        w6 = ((s32 *)&grid[8])[0];
+        w7 = ((s32 *)&grid[8])[1];
+        ((s32 *)&grid[9])[0] = w0;
+        ((s32 *)&grid[9])[1] = w1;
+        ((s32 *)&grid[11])[0] = w2;
+        ((s32 *)&grid[11])[1] = w3;
+        ((s32 *)&grid[15])[0] = w4;
+        ((s32 *)&grid[15])[1] = w5;
+        ((s32 *)&grid[17])[0] = w6;
+        ((s32 *)&grid[17])[1] = w7;
+        prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
+    } else {
+        word0 = gSubdivisionTemplate0[0];
+        *(s32 *)(prim + 8) = grid[4].screen;
+        *(s32 *)(prim + 16) = grid[5].screen;
+        *(s32 *)(prim + 24) = grid[7].screen;
+        *(s32 *)(prim + 32) = grid[8].screen;
+        uv = *(u16 *)&grid[4].u;
+        word1 = gSubdivisionTemplate1[0];
+        asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[5].u;
+        word2 = gSubdivisionTemplate2[0];
+        asm volatile("sh %0, gScratchpad+12" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[7].u;
+        word3 = gSubdivisionTemplate3[0];
+        asm volatile("sh %0, gScratchpad+16" : : "r"(uv) : "memory");
+        uv = *(u16 *)&grid[8].u;
+        word4 = gSubdivisionTemplate4[0];
+        asm volatile("sh %0, gScratchpad+20" : : "r"(uv) : "memory");
+        word5 = gSubdivisionTemplate5[0];
+        packet = prim;
+        *(s32 *)packet = word0;
+        ot = gSubdivisionOt[0];
+        mask = 0xFFFFFF;
+        *(s32 *)(packet + 4) = word1;
+        *(s32 *)(packet + 12) = word2;
+        *(s32 *)(packet + 20) = word3;
+        *(s32 *)(packet + 28) = word4;
+        *(s32 *)(packet + 36) = word5;
+        prim += 0x28;
+        *(u32 *)packet = *ot | 0x09000000;
+        *ot = (u32)packet & mask;
+    }
+    return prim;
+}
 extern u32 gScratchpad[];
 extern s32 D_800A3640[];
 extern s32 D_800A39C8[];
@@ -9037,16 +9443,20 @@ u32 func_800342D8(u32 *entry, u32 primCursor) {
     if (kind >= 13) {
         if (kind == 13) {
             *entry = 0;
-            return func_80033900(spad, primCursor, 2);
+            return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
+                                                      (u8 *)primCursor, 2);
         } else {
             *entry = 0;
-            return func_80033900(spad, primCursor, 1);
+            return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
+                                                      (u8 *)primCursor, 1);
         }
     } else {
         if (D_800A2EA4Absolute[0] != 0 || D_800A2ED8Abs[0] != 0) {
-            return func_80033900(spad, primCursor, 2);
+            return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
+                                                      (u8 *)primCursor, 2);
         } else {
-            return func_80033900(spad, primCursor, 0);
+            return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
+                                                      (u8 *)primCursor, 0);
         }
     }
 }
