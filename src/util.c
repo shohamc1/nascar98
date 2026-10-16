@@ -134,7 +134,268 @@ extern s32 D_800A2CF8[];
 extern s32 D_800A2D5C;
 extern s32 MathMultiplyFixed16(s32, s32);
 
-INCLUDE_ASM("asm/nonmatchings/util", func_80016CD8);
+extern s32 *D_800A38AC;
+extern s32 D_800A3798[], D_800A37AC[], D_800A3784[];
+extern s32 D_800A379C[], D_800A37B4[], D_800A3790[];
+extern s32 D_800A37A4[], D_800A37C4[], D_800A3794[];
+extern s16 D_800A3AF8Half[] asm("D_800A3AF8");
+extern MATRIX D_800A3AF8, D_800A3B18, D_800A3B38;
+extern s16 D_800A3AFA[], D_800A3AFC[], D_800A3AFE[], D_800A3B00[], D_800A3B02[],
+    D_800A3B04[], D_800A3B06[], D_800A3B08[];
+extern u8 *D_800A3674[];
+extern u8 D_800A2ED8[], D_800A2DE0[], D_800A2EDA[];
+extern s32 D_800A2ED4[];
+extern u8 *D_800A2EA0[];
+extern s16 D_800A2D68;
+extern void func_8001EEC4(u8 *);
+extern void MatrixCombineState(void);
+extern void func_80043F7C(u8 *, u8 *);
+extern s32 func_80016ACC(u8 *, s16 *);
+extern void func_80015EAC(u8 *);
+extern void func_80025730(void);
+extern void func_80032760();
+extern void func_800328AC();
+extern void func_80032544();
+
+u8 CarDrawModel(u8 *car, s32 drawMode) {
+    SVECTOR angles;
+    VECTOR position;
+    VECTOR partPosition;
+    VECTOR unused; /* Preserve the original stack frame. */
+    s32 flag;
+    s32 model;
+    s32 primitiveCount;
+    s32 basePrimitive;
+    s16 spinAngle;
+    s32 dx, dy, dz;
+    s32 wheelAngle;
+    s32 steeringAngle;
+    s32 steeringValue;
+    register s32 value asm("v0"); /* Keep the tilt sum in v0. */
+    s32 speed;
+    s32 i;
+    u8 *part;
+
+    spinAngle = 0;
+    primitiveCount = *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A);
+    dx = *(s32 *)(car + 0) - D_800A38AC[0];
+    dy = *(s32 *)(car + 4) - D_800A38AC[1];
+    dz = *(s32 *)(car + 8) - D_800A38AC[2];
+    model = *(s32 *)(*(u8 **)(car + 0x36C) + 0x38);
+    basePrimitive = *(s32 *)(car + gOrderingTableBankAbsolute[0] * 4 + 0x420);
+    if ((dx >= 0 ? dx < 30001 : -dx < 30001) == 0 ||
+        (dy >= 0 ? dy < 30001 : -dy < 30001) == 0 ||
+        (dz >= 0 ? dz < 30001 : -dz < 30001) == 0) {
+        return 0;
+    }
+    angles.vx = dx;
+    angles.vy = dy;
+    angles.vz = dz;
+    func_8001EEC4(car);
+    MatrixCombineState();
+    D_800A3AF8Half[0] = -D_800A3798[0] / 16;
+    D_800A3AFE[0] = -D_800A37AC[0] / 16;
+    D_800A3B04[0] = D_800A3784[0] / 16;
+    D_800A3AFA[0] = -D_800A379C[0] / 16;
+    D_800A3B00[0] = -D_800A37B4[0] / 16;
+    D_800A3B06[0] = D_800A3790[0] / 16;
+    D_800A3AFC[0] = -D_800A37A4[0] / 16;
+    D_800A3B02[0] = -D_800A37C4[0] / 16;
+    D_800A3B08[0] = D_800A3794[0] / 16;
+    PushMatrix();
+    RotTrans(&angles, &position, &flag);
+    TransMatrix(&D_800A3AF8, &position);
+    SetTransMatrix(&D_800A3AF8);
+    SetRotMatrix(&D_800A3AF8);
+    if (car == D_800A3674[0]) {
+        if (D_800A2ED8[0] == 0) {
+            if (*(s8 *)(car + 0x20C) == -2 || *(s8 *)(car + 0x20C) == 0) {
+                PopMatrix();
+                return 0;
+            }
+        } else if (D_800A2DE0[0] != 0) {
+            PopMatrix();
+            return 0;
+        }
+    }
+    if (D_800A2ED4[0] == 0 && (*(s8 *)(car + 0x3B9) == 0 || car[0xF9] != 0 ||
+                               *(s16 *)(car + 0x92) > 400)) {
+        if (*(s32 *)(car + 0x90) != 0) {
+            wheelAngle = (*(s32 *)(car + 0x90) >> 16) * 5;
+            if (wheelAngle > 1536)
+                wheelAngle = 1536;
+            *(u16 *)(car + 0x1BA) += wheelAngle;
+        } else if (!(*(s32 *)(car + 0x238) & 0x80)) {
+            *(u16 *)(car + 0x1BA) -= car[0x410] * 5;
+        }
+        if (car[0xF9] != 0) {
+            D_800A2D68 = (D_800A2D68 + 1024) % 4096;
+            spinAngle = D_800A2D68;
+        }
+    }
+    wheelAngle = (s16)(*(s16 *)(car + 0x1BA) % 4096);
+    spinAngle = (spinAngle + *(s16 *)(car + 0x1BA)) % 4096;
+    {
+        s32 turnValue;
+        s32 turnScale;
+        s32 turnSum;
+
+        if (D_800A2EB8[0] == 0) {
+            turnValue = *(s16 *)(car + 0x20E);
+            turnScale = turnValue * 8;
+        } else {
+            turnValue = *(s16 *)(car + 0x20E);
+            turnScale = turnValue * 4;
+        }
+        turnSum = turnScale + turnValue;
+        turnValue = turnSum + 4096;
+        steeringAngle = turnValue % 4096;
+        /* Keep the car-state load after this angle update. */
+        asm volatile("" : : : "memory");
+    }
+    if (*(s8 *)(car + 0x374) < 2 ||
+        (car == D_800A2EA0[0] && *(s16 *)(car + 0x1EC) == 0 &&
+         D_800A2ED8[0] == 0 && *(s8 *)(car + 0x20C) == 0)) {
+        for (i = 0; i < *(s16 *)(*(u8 **)(car + 0x36C) + 0x2C); i++) {
+            part = *(u8 **)(*(u8 **)(car + 0x36C) + 0x40) + i * 24;
+            if (*(s16 *)(part + 0x14) < 0) {
+                func_80043F7C(car, part);
+            } else if (*(s16 *)(part + 0x14) == 10) {
+                if ((u8)func_80016ACC(car, (s16 *)part)) {
+                    primitiveCount -= *(s16 *)(part + 0x12);
+                }
+            } else if (*(s16 *)(part + 0x14) < 9 &&
+                       *(s8 *)(car + *(s16 *)(part + 0x14) + 0x3A5) == 0) {
+                primitiveCount -= *(s16 *)(part + 0x12);
+            } else {
+                PushMatrix();
+                angles.vx = *(s32 *)(part + 4);
+                angles.vy = *(s32 *)(part + 8);
+                angles.vz = *(s32 *)(part + 12);
+                RotTrans(&angles, &partPosition, &flag);
+                switch ((s16)((u16) * (s16 *)(part + 0x14) - 1)) {
+                case 0:
+                case 1:
+                    angles.vx = 0;
+                    angles.vy = wheelAngle;
+                    angles.vz = 0;
+                    RotMatrix(&angles, &D_800A3B18);
+                    angles.vx = 0;
+                    angles.vy = 0;
+                    angles.vz = steeringAngle;
+                    RotMatrix(&angles, &D_800A3B38);
+                    MulMatrix2(&D_800A3B38, &D_800A3B18);
+                    break;
+                case 2:
+                case 3:
+                    angles.vx = 0;
+                    angles.vz = 0;
+                    angles.vy = spinAngle;
+                    RotMatrix(&angles, &D_800A3B18);
+                    break;
+                case 8:
+                    angles.vx = (4096 - steeringAngle) % 4096;
+                    angles.vy = 0;
+                    angles.vz = 0;
+                    RotMatrix(&angles, &D_800A3B18);
+                    break;
+                case 4:
+                    if (*(s16 *)(car + 0xFE) >= 6 ||
+                        *(void (**)(void))(car + 0x354) == func_80025730) {
+                        func_80015EAC(car);
+                    }
+                    part = *(u8 **)(*(u8 **)(car + 0x36C) + 0x40) + i * 24;
+                    angles.vx = *(s32 *)(part + 4);
+                    angles.vy = *(s32 *)(part + 8);
+                    angles.vz = *(s32 *)(part + 12);
+                    RotTrans(&angles, &partPosition, &flag);
+                    TransMatrix(&D_800A3B38, &partPosition);
+                    SetTransMatrix(&D_800A3B38);
+                    func_80032544(model + *(s16 *)(part + 0x10) * 44,
+                                  *(s16 *)(part + 0x12));
+                    goto partDone;
+                case 5:
+                case 6:
+                case 7:
+                    angles.vx = 0;
+                    angles.vy = 0;
+                    angles.vz = 0;
+                    RotMatrix(&angles, &D_800A3B18);
+                    break;
+                }
+                MulMatrix0(&D_800A3AF8, &D_800A3B18, &D_800A3B38);
+                TransMatrix(&D_800A3B38, &partPosition);
+                SetTransMatrix(&D_800A3B38);
+                SetRotMatrix(&D_800A3B38);
+                if (drawMode != 0) {
+                    s32 primitiveRow;
+
+                    primitiveRow =
+                        gOrderingTableBankAbsolute[0] * 48 + (s32)car;
+                    primitiveRow += i * 4;
+                    func_80032760(model + *(s16 *)(part + 0x10) * 44,
+                                  *(s32 *)(primitiveRow + 0x440),
+                                  *(s16 *)(part + 0x12));
+                } else {
+                    func_800328AC(model + *(s16 *)(part + 0x10) * 44,
+                                  *(s16 *)(part + 0x12));
+                }
+            partDone:
+                primitiveCount -= *(s16 *)(part + 0x12);
+                PopMatrix();
+            }
+        }
+    }
+    if (D_800A2EB8[0] == 0) {
+        wheelAngle = ((*(u16 *)(car + 0x1BA) >> 9) & 15) - 8;
+        if (wheelAngle > 0)
+            wheelAngle = -wheelAngle;
+        speed = (*(s32 *)(car + 0x228) * 3 >> 16) + 10;
+        if (speed > 70)
+            speed = 70;
+        value = (wheelAngle + 4) * 2;
+        speed += 4096;
+        wheelAngle = (value + speed) % 4096;
+        steeringValue = *(s16 *)(car + 0x20E) * 5;
+    } else {
+        wheelAngle = ((*(u16 *)(car + 0x1BA) >> 9) & 15) - 8;
+        if (wheelAngle > 0)
+            wheelAngle = -wheelAngle;
+        wheelAngle = (wheelAngle + 4100) % 4096;
+        steeringValue = *(s16 *)(car + 0x20E) * 3;
+    }
+    steeringAngle = steeringValue >> 2;
+    if (steeringValue < 0)
+        steeringAngle = (steeringValue + 3) >> 2;
+    angles.vx = 0;
+    angles.vy = wheelAngle;
+    angles.vz = 0;
+    RotMatrix(&angles, &D_800A3B18);
+    if (*(s16 *)(car + 0x1D0) == 0)
+        steeringAngle = 0;
+    if (steeringAngle > 64)
+        steeringAngle = 64;
+    else if (steeringAngle < -64)
+        steeringAngle = -64;
+    if (D_800A2EDA[0] != 0)
+        steeringAngle /= 4;
+    steeringAngle = (steeringAngle + 4096) % 4096;
+    angles.vx = steeringAngle;
+    angles.vy = 0;
+    angles.vz = 0;
+    RotMatrix(&angles, &D_800A3B38);
+    MulMatrix2(&D_800A3B38, &D_800A3B18);
+    MulMatrix0(&D_800A3AF8, &D_800A3B18, &D_800A3B38);
+    SetRotMatrix(&D_800A3B38);
+    if (drawMode != 0) {
+        func_80032760(model, basePrimitive, primitiveCount);
+    } else {
+        func_800328AC(model, primitiveCount);
+    }
+    PopMatrix();
+    asm(".rdata\n.long 0\n.text");
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/util", func_8001775C);
 

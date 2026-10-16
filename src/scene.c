@@ -2359,7 +2359,7 @@ extern s32 D_800A3A90[];
 extern s16 D_800A35A4w40;
 extern u8 *D_800A347C;
 extern void *D_800A3728;
-extern void func_80016CD8(u8 *, s32);
+extern u8 CarDrawModel(u8 *, s32);
 extern s32 func_80037204(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 extern void func_8004875C(void);
@@ -2379,11 +2379,11 @@ void func_80048568(void) {
         }
         if (target >= *(s32 *)(D_800A347C + 0xC) &&
             *(s32 *)(D_800A347C + 0x10) >= target) {
-            func_80016CD8(D_800A347C, 0);
+            CarDrawModel(D_800A347C, 0);
         }
     } else if (D_800A3728 != 0) {
         if (D_800A347C[0x401] != 0) {
-            func_80016CD8(D_800A347C, 0);
+            CarDrawModel(D_800A347C, 0);
             if (D_800A35A4w40 <= 0 && func_80037204((u8 *)D_800A3728) != 0) {
                 D_800A3728 = 0;
                 *(s32 *)(D_800A347C + 0x10) = D_800A2EC0nm[0];

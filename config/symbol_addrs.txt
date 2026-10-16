@@ -829,3 +829,5 @@ sTrackNameThunderdome = 0x8008CAE0; // force_not_migration:True
 sTrackLoadingText = 0x8008CAEC; // force_not_migration:True
 sTrackTwoPlayersText = 0x8008CB00; // force_not_migration:True
 TrackLoad = 0x800132F8; // type:func
+
+CarDrawModel = 0x80016CD8; // type:func
