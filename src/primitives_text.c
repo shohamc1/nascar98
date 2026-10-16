@@ -638,7 +638,6 @@ void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
     }
 }
 
-#ifdef NON_MATCHING
 
 /* A macro prevents extra out-of-line text before this function. */
 #define PRIMITIVE_X2_ADDR(prim) ((prim) + 0x18)
@@ -649,13 +648,21 @@ void func_80018C88(void) {
     extern u8 D_800BC22C[];
     extern u16 D_80090FC4[];
     u8 *prim;
-    u8 *f4;
-    u16 *table;
+    register u8 *f4 asm("s1");
+    register u16 *table asm("s2");
+    s32 left;
+    s32 top;
+    register s32 right asm("v1");
+    register s32 work asm("v0");
+    register s32 spare asm("t0");
+    register u8 *semiPrim asm("a0");
+    register s32 semiFlag asm("a1");
     s32 idx;
     u16 tv;
-    s32 uv;
+    register u16 page asm("v0");
+    register s32 uv asm("a3");
     s32 yv;
-    s32 vv;
+    register s32 vv asm("a2");
     s32 ww;
     s32 ta;
     s32 tb;
@@ -673,20 +680,19 @@ void func_80018C88(void) {
     s32 colOff;
     s32 colA;
     s32 colB;
-    s32 colC;
+    register s32 colC asm("s5");
     s32 vTop1;
-    u8 *new_var2;
     s32 vBot1;
     s32 vTop2;
-    s32 vBot2;
+    register s32 vBot2 asm("s5");
     s32 glyphW;
     s32 vBase;
-    s32 texX;
+    register s32 texX asm("s3");
     s32 uWide1;
     s32 uWide2;
     s32 off;
     s32 off3;
-    s32 i;
+    register s32 i asm("s4");
     glyphW = 25;
     vBase = 32;
     i = 0;
@@ -696,11 +702,11 @@ void func_80018C88(void) {
     off = 0;
     do {
         prim = D_800AEB94 + off;
-        idx = i * 4;
         SetPolyFT4((POLY_FT4 *)prim);
         SetShadeTex(prim, 1);
         *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEA);
         *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
+        idx = i * 4;
         switch (i) {
         case 0:
 
@@ -722,7 +728,6 @@ void func_80018C88(void) {
 
         case 9:
             vv = 0x30;
-            asm volatile("" : "=r"(vv) : "0"(vv));
             *((u8 *)(prim + 0xD)) = vv;
             *((u8 *)(prim + 0x15)) = vv;
             *((u8 *)(prim + 0x1D)) = vBase + 0x30;
@@ -741,7 +746,7 @@ void func_80018C88(void) {
             *((u8 *)(prim + 0x15)) = 0;
             *((u8 *)(prim + 0x1C)) = 0;
             ww = 0x18;
-            asm volatile("" : "=r"(ww) : "0"(ww));
+
             *((u8 *)(prim + 0x1D)) = ww;
             *((u8 *)(prim + 0x24)) = uWide1;
             *((u8 *)(prim + 0x25)) = ww;
@@ -756,24 +761,25 @@ void func_80018C88(void) {
         case 14:
             uv = texX * 2;
             vv = 0x18;
-            asm volatile("" : "=r"(vv) : "0"(vv));
+
+            right = uv + 0x25;
             ww = 0x30;
-            asm volatile("" : "=r"(ww) : "0"(ww));
+
             *((u8 *)(prim + 0xC)) = uv;
             *((u8 *)(prim + 0xD)) = vv;
-            *((u8 *)(prim + 0x14)) = uv + 0x25;
+            *((u8 *)(prim + 0x14)) = right;
             *((u8 *)(prim + 0x15)) = vv;
             *((u8 *)(prim + 0x1C)) = uv;
             *((u8 *)(prim + 0x1D)) = ww;
-            *((u8 *)(prim + 0x24)) = uv + 0x25;
+            *((u8 *)(prim + 0x24)) = right;
             *((u8 *)(prim + 0x25)) = ww;
             break;
 
         case 15:
             vv = 0x50;
-            asm volatile("" : "=r"(vv) : "0"(vv));
+
             ww = 0x71;
-            asm volatile("" : "=r"(ww) : "0"(ww));
+
             *((u8 *)(prim + 0xC)) = 0;
             *((u8 *)(prim + 0xD)) = vv;
             *((u8 *)(prim + 0x14)) = uWide2;
@@ -790,6 +796,7 @@ void func_80018C88(void) {
         off += 40;
     } while (i < 17);
     uMid = 0xCD;
+    asm volatile("" : "=r"(uMid) : "0"(uMid));
     yShift = 0;
     j = 0;
     colOff = 0;
@@ -800,567 +807,617 @@ void func_80018C88(void) {
         colB = 0x100;
         asm volatile("" : "=r"(colB) : "0"(colB));
         colC = 0x132;
-        asm volatile("" : "=r"(colC) : "0"(colC));
+
         do {
-            prim = &D_800AE29C[k * 40];
-            prim = colOff + prim;
+            {
+                s32 rowOffset;
+                u8 *address;
+                rowOffset = k * 5;
+                asm volatile("" : "=r"(rowOffset) : "0"(rowOffset) : "memory");
+                spare = colOff;
+                asm("" : "=r"(spare) : "0"(spare));
+                address = &D_800AE29C[rowOffset * 8];
+
+                prim = (u8 *)((u32)spare + (u32)address);
+            }
             SetPolyFT4((POLY_FT4 *)prim);
-            new_var2 = (u8 *)(prim + 0x1D);
             SetShadeTex(prim, 1);
             *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEC);
             *((u16 *)(prim + 0x16)) = GetTPage(0, 0, 0x340, 0);
-            asm volatile("" : : "r"(prim));
+
             f4 = prim;
             switch (k) {
+
             case 0:
-                ta = 0x70;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x88;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x14;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                td = 0x96;
-                asm volatile("" : "=r"(td) : "0"(td));
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                yv = td - yShift;
-                te = 0x9F;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tf = 0x70;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                tg = 0xB8;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                th = 0x43;
-                asm volatile("" : "=r"(th) : "0"(th));
-                *((s16 *)(prim + 0x10)) = th;
-                ta = 0x14;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((u8 *)(prim + 0x1C)) = tf;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                tb = 0x43;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 0x30;
-                *((s16 *)(prim + 0x20)) = tb;
-                *((s16 *)(prim + 0x22)) = yv + 0x30;
-                SetSemiTrans(prim, 1);
+                left = 0x70;
+
+                top = 0x88;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x14;
+
+                work = 0x96;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                semiPrim = prim;
+                semiFlag = 1;
+                right = 0x9F;
+
+                work = 0x70;
+
+                spare = 0xB8;
+
+                *((u8 *)(semiPrim + 0x1D)) = spare;
+                *((u8 *)(semiPrim + 0x25)) = spare;
+                spare = 0x43;
+
+                *((s16 *)(semiPrim + 0x10)) = spare;
+                spare = 0x14;
+
+                *((u8 *)(semiPrim + 0x1C)) = work;
+                work = top + 0x30;
+                *((s16 *)PRIMITIVE_X2_ADDR(semiPrim)) = spare;
+                spare = 0x43;
+                asm volatile("" : "=r"(spare) : "0"(spare));
+                *((u8 *)(semiPrim + 0x14)) = right;
+                *((u8 *)(semiPrim + 0x24)) = right;
+                *((s16 *)(semiPrim + 0x8)) = left;
+                *((s16 *)(semiPrim + 0xA)) = top;
+                *((s16 *)(semiPrim + 0x12)) = top;
+                *((s16 *)(semiPrim + 0x1A)) = work;
+                *((s16 *)(semiPrim + 0x20)) = spare;
+                *((s16 *)(semiPrim + 0x22)) = work;
+                SetSemiTrans(semiPrim, semiFlag);
                 break;
 
             case 1:
-                ta = 0x40;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x88;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x14;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                yv = 0x96 - yShift;
-                te = 0x6F;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tf = 0x40;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                tg = 0xB8;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                th = 0x43;
-                asm volatile("" : "=r"(th) : "0"(th));
-                *((s16 *)(prim + 0x10)) = th;
-                ta = 0x14;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((u8 *)(prim + 0x1C)) = tf;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                tb = 0x43;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 0x30;
-                *((s16 *)(prim + 0x20)) = tb;
-                *((s16 *)(prim + 0x22)) = yv + 0x30;
+                left = 0x40;
+
+                top = 0x88;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x14;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                work = 0x96;
+
+                top = work - yShift;
+                right = 0x6F;
+
+                work = 0x40;
+
+                spare = 0xB8;
+
+                *((u8 *)(prim + 0x1D)) = spare;
+                *((u8 *)(prim + 0x25)) = spare;
+                spare = 0x43;
+
+                *((s16 *)(prim + 0x10)) = spare;
+                spare = 0x14;
+                asm volatile("" : "=r"(spare) : "0"(spare));
+                *((u8 *)(prim + 0x1C)) = work;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = spare;
+                *((u8 *)(prim + 0x14)) = right;
+                *((u8 *)(prim + 0x24)) = right;
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
+                *((s16 *)(prim + 0x12)) = top;
+                work = top + 0x30;
+                spare = 0x43;
+
+                *((s16 *)(prim + 0x1A)) = work;
+                *((s16 *)(prim + 0x20)) = spare;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 2:
-                ta = 0xDD;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x95;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x29;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xAB - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0xEC;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tf = 0xDD;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                *((u8 *)(prim + 0x1C)) = tf;
-                tg = 0x9B;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                th = 0x38;
-                asm volatile("" : "=r"(th) : "0"(th));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                ta = 0x29;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = 0x29;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x10)) = th;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 6;
-                *((s16 *)(prim + 0x20)) = th;
-                *((s16 *)(prim + 0x22)) = yv + 6;
+                left = 0xDD;
+
+                top = 0x95;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x29;
+
+                work = 0xAB;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                right = 0xEC;
+
+                work = 0xDD;
+
+                *((u8 *)(prim + 0x1C)) = work;
+                work = 0x9B;
+
+                *((u8 *)(prim + 0x14)) = right;
+                *((u8 *)(prim + 0x24)) = right;
+                right = 0x38;
+
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                work = 0x29;
+                asm volatile("" : "=r"(work) : "0"(work));
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
+                *((s16 *)(prim + 0x10)) = right;
+                *((s16 *)(prim + 0x12)) = top;
+                work = top + 6;
+                *((s16 *)(prim + 0x1A)) = work;
+                *((s16 *)(prim + 0x20)) = right;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 3:
-                ta = 0xA0;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x89;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x14;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0x7D - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                tf = 0xA0;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                *((u8 *)(prim + 0x1C)) = tf;
-                tg = 0x92;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                *((u8 *)(prim + 0x14)) = uMid;
-                *((u8 *)(prim + 0x24)) = uMid;
-                ta = 0x14;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x10)) = colA;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                *((s16 *)(prim + 0x1A)) = yv + 9;
-                *((s16 *)(prim + 0x20)) = colA;
-                *((s16 *)(prim + 0x22)) = yv + 9;
-                break;
+                left = 0xA0;
+
+                top = 0x89;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x14;
+
+                work = 0x7D;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                work = 0xA0;
+
+                *((u8 *)(prim + 0x1C)) = work;
+                work = 0x92;
+
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                spare = 0x14;
+
+                work = top + 9;
+                goto smallMenuCoordinates;
 
             case 4:
-                ta = 0xA0;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x93;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x100;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0x7D - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0xD2;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tf = 0xA0;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                *((u8 *)(prim + 0x1C)) = tf;
+                left = 0xA0;
+
+                top = 0x93;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x100;
+
+                work = 0x7D;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                right = 0xD2;
+
+                work = 0xA0;
+
+                *((u8 *)(prim + 0x1C)) = work;
                 new_var = 0x9C;
-                tg = new_var;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *new_var2 = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
+                work = new_var;
+
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                *((u8 *)(prim + 0x14)) = right;
+                *((u8 *)(prim + 0x24)) = right;
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
                 *((s16 *)(prim + 0x10)) = colC;
-                *((s16 *)(prim + 0x12)) = yv;
+                *((s16 *)(prim + 0x12)) = top;
                 *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
-                *((s16 *)(prim + 0x1A)) = yv + 9;
+                work = top + 9;
+                *((s16 *)(prim + 0x1A)) = work;
                 *((s16 *)(prim + 0x20)) = colC;
-                *((s16 *)(prim + 0x22)) = yv + 9;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 5:
-                ta = 0xCD;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x89;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x100;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0x95 - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0xFF;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tg = 0x92;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                *((u8 *)(prim + 0x14)) = te;
+                left = 0xCD;
+
+                top = 0x89;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x100;
+
+                work = 0x95;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                right = 0xFF;
+
+                work = 0x92;
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                *((u8 *)(prim + 0x14)) = right;
                 *((u8 *)(prim + 0x1C)) = uMid;
-                *((u8 *)(prim + 0x24)) = te;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
+                *((u8 *)(prim + 0x24)) = right;
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
                 *((s16 *)(prim + 0x10)) = colC;
-                *((s16 *)(prim + 0x12)) = yv;
+                *((s16 *)(prim + 0x12)) = top;
                 *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
-                *((s16 *)(prim + 0x1A)) = yv + 9;
+                work = top + 9;
+                *((s16 *)(prim + 0x1A)) = work;
                 *((s16 *)(prim + 0x20)) = colC;
-                *((s16 *)(prim + 0x22)) = yv + 9;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 6:
-                ta = 0xCD;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x9D;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x100;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xAD - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0xFF;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tg = 0xA6;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                *((u8 *)(prim + 0x14)) = te;
+                left = 0xCD;
+
+                top = 0x9D;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x100;
+
+                work = 0xAD;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                right = 0xFF;
+
+                work = 0xA6;
+
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                *((u8 *)(prim + 0x14)) = right;
                 *((u8 *)(prim + 0x1C)) = uMid;
-                *((u8 *)(prim + 0x24)) = te;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
+                *((u8 *)(prim + 0x24)) = right;
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
                 *((s16 *)(prim + 0x10)) = colC;
-                *((s16 *)(prim + 0x12)) = yv;
+                *((s16 *)(prim + 0x12)) = top;
                 *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
-                *((s16 *)(prim + 0x1A)) = yv + 9;
+                work = top + 9;
+                *((s16 *)(prim + 0x1A)) = work;
                 *((s16 *)(prim + 0x20)) = colC;
-                *((s16 *)(prim + 0x22)) = yv + 9;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 7:
-                ta = 0xA0;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x9D;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x14;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xC8 - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                tf = 0xA0;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                *((u8 *)(prim + 0x1C)) = tf;
-                tg = 0xAB;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
+                left = 0xA0;
+
+                top = 0x9D;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x14;
+
+                work = 0xC8;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                work = 0xA0;
+
+                *((u8 *)(prim + 0x1C)) = work;
+                work = 0xAB;
+
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                spare = 0x14;
+
+                work = top + 0xE;
+            smallMenuCoordinates:
                 *((u8 *)(prim + 0x14)) = uMid;
                 *((u8 *)(prim + 0x24)) = uMid;
-                ta = 0x14;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
                 *((s16 *)(prim + 0x10)) = colA;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                *((s16 *)(prim + 0x1A)) = yv + 0xE;
+                *((s16 *)(prim + 0x12)) = top;
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = spare;
+                *((s16 *)(prim + 0x1A)) = work;
                 *((s16 *)(prim + 0x20)) = colA;
-                *((s16 *)(prim + 0x22)) = yv + 0xE;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 9:
                 SetPolyF4((POLY_F4 *)f4);
-                ta = 0x14;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                yv = 0x86 - yShift;
-                tc = 0x14;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                *((s16 *)(f4 + 0x8)) = ta;
-                *((s16 *)(f4 + 0xA)) = yv;
+                left = 0x14;
+
+                work = 0x86;
+
+                top = work - yShift;
+                semiPrim = f4;
+                semiFlag = 1;
+
+                spare = 0x14;
+                asm volatile("" : "=r"(spare) : "0"(spare));
+                *((s16 *)(f4 + 0x8)) = left;
+                *((s16 *)(f4 + 0xA)) = top;
                 *((s16 *)(f4 + 0xC)) = colA;
-                *((s16 *)(f4 + 0xE)) = yv;
-                *((s16 *)(f4 + 0x10)) = tc;
-                *((s16 *)(f4 + 0x12)) = yv + 9;
+                *((s16 *)(f4 + 0xE)) = top;
+                *((s16 *)(f4 + 0x10)) = spare;
+                work = top + 9;
+                *((s16 *)(f4 + 0x12)) = work;
                 *((s16 *)(f4 + 0x14)) = colA;
-                SetSemiTrans(f4, 1);
-                te = 0x1E;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((u8 *)(f4 + 4)) = te;
-                *((u8 *)(f4 + 5)) = te;
-                *((u8 *)(f4 + 6)) = te;
+                *((s16 *)(f4 + 0x16)) = work;
+                SetSemiTrans(semiPrim, semiFlag);
+                spare = 0x1E;
+
+                *((u8 *)(f4 + 4)) = spare;
+                *((u8 *)(f4 + 5)) = spare;
+                *((u8 *)(f4 + 6)) = spare;
                 break;
 
             case 10:
                 SetPolyF4((POLY_F4 *)f4);
-                ta = 0x100;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                yv = 0x86 - yShift;
-                *((s16 *)(f4 + 0x8)) = ta;
-                *((s16 *)(f4 + 0xA)) = yv;
+                left = 0x100;
+
+                work = 0x86;
+
+                top = work - yShift;
+                semiPrim = f4;
+                semiFlag = 1;
+                asm volatile("" : : "r"(semiPrim), "r"(semiFlag));
+                *((s16 *)(f4 + 0x8)) = left;
+                *((s16 *)(f4 + 0xA)) = top;
                 *((s16 *)(f4 + 0xC)) = colC;
-                *((s16 *)(f4 + 0xE)) = yv;
+                *((s16 *)(f4 + 0xE)) = top;
                 *((s16 *)(f4 + 0x10)) = colB;
-                *((s16 *)(f4 + 0x12)) = yv + 9;
+                work = top + 9;
+                *((s16 *)(f4 + 0x12)) = work;
                 *((s16 *)(f4 + 0x14)) = colC;
-                SetSemiTrans(f4, 1);
-                te = 0x1E;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((u8 *)(f4 + 4)) = te;
-                *((u8 *)(f4 + 5)) = te;
-                *((u8 *)(f4 + 6)) = te;
+                *((s16 *)(f4 + 0x16)) = work;
+                SetSemiTrans(semiPrim, semiFlag);
+                work = 0x1E;
+                *((u8 *)(f4 + 4)) = work;
+                *((u8 *)(f4 + 5)) = work;
+                *((u8 *)(f4 + 6)) = work;
                 break;
 
             case 11:
                 SetPolyF4((POLY_F4 *)f4);
-                ta = 0x100;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                yv = 0x9E - yShift;
-                *((s16 *)(f4 + 0x8)) = ta;
-                *((s16 *)(f4 + 0xA)) = yv;
+                left = 0x100;
+
+                work = 0x9E;
+
+                top = work - yShift;
+                semiPrim = f4;
+                semiFlag = 1;
+                asm volatile("" : : "r"(semiPrim), "r"(semiFlag));
+                *((s16 *)(f4 + 0x8)) = left;
+                *((s16 *)(f4 + 0xA)) = top;
                 *((s16 *)(f4 + 0xC)) = colC;
-                *((s16 *)(f4 + 0xE)) = yv;
+                *((s16 *)(f4 + 0xE)) = top;
                 *((s16 *)(f4 + 0x10)) = colB;
-                *((s16 *)(f4 + 0x12)) = yv + 9;
+                work = top + 9;
+                *((s16 *)(f4 + 0x12)) = work;
                 *((s16 *)(f4 + 0x14)) = colC;
-                SetSemiTrans(f4, 1);
-                te = 0x1E;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((u8 *)(f4 + 4)) = te;
-                *((u8 *)(f4 + 5)) = te;
-                *((u8 *)(f4 + 6)) = te;
+                *((s16 *)(f4 + 0x16)) = work;
+                SetSemiTrans(semiPrim, semiFlag);
+                work = 0x1E;
+                *((u8 *)(f4 + 4)) = work;
+                *((u8 *)(f4 + 5)) = work;
+                *((u8 *)(f4 + 6)) = work;
                 break;
 
             case 12:
                 SetPolyF4((POLY_F4 *)f4);
-                ta = 0x100;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                yv = 0xB6 - yShift;
-                *((s16 *)(f4 + 0x8)) = ta;
-                *((s16 *)(f4 + 0xA)) = yv;
+                left = 0x100;
+
+                work = 0xB6;
+
+                top = work - yShift;
+                semiPrim = f4;
+                semiFlag = 1;
+                asm volatile("" : : "r"(semiPrim), "r"(semiFlag));
+                *((s16 *)(f4 + 0x8)) = left;
+                *((s16 *)(f4 + 0xA)) = top;
                 *((s16 *)(f4 + 0xC)) = colC;
-                *((s16 *)(f4 + 0xE)) = yv;
+                *((s16 *)(f4 + 0xE)) = top;
                 *((s16 *)(f4 + 0x10)) = colB;
-                *((s16 *)(f4 + 0x12)) = yv + 9;
+                work = top + 9;
+                *((s16 *)(f4 + 0x12)) = work;
                 *((s16 *)(f4 + 0x14)) = colC;
-                SetSemiTrans(f4, 1);
-                te = 0x1E;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((u8 *)(f4 + 4)) = te;
-                *((u8 *)(f4 + 5)) = te;
-                *((u8 *)(f4 + 6)) = te;
+                *((s16 *)(f4 + 0x16)) = work;
+                SetSemiTrans(semiPrim, semiFlag);
+                work = 0x1E;
+                *((u8 *)(f4 + 4)) = work;
+                *((u8 *)(f4 + 5)) = work;
+                *((u8 *)(f4 + 6)) = work;
                 break;
 
             case 13:
                 SetPolyF4((POLY_F4 *)f4);
-                ta = 0x1E;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                yv = 0xCC - yShift;
-                th = 0x40;
-                asm volatile("" : "=r"(th) : "0"(th));
-                tc = 0x1E;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                *((s16 *)(f4 + 0xC)) = th;
-                *((s16 *)(f4 + 0x14)) = th;
-                ta = 0x1E;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)(f4 + 0x12)) = yv + 2;
-                *((s16 *)(f4 + 0x16)) = yv + 2;
-                te = 0xE6;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((s16 *)(f4 + 0x8)) = ta;
-                *((s16 *)(f4 + 0xA)) = yv;
-                *((s16 *)(f4 + 0xE)) = yv;
-                *((s16 *)(f4 + 0x10)) = tc;
-                *((u8 *)(f4 + 4)) = ta;
-                *((u8 *)(f4 + 5)) = te;
-                *((u8 *)(f4 + 6)) = ta;
+                left = 0x1E;
+
+                work = 0xCC;
+
+                top = work - yShift;
+                right = 0x40;
+
+                spare = 0x1E;
+                asm volatile("" : "=r"(spare) : "0"(spare));
+                *((s16 *)(f4 + 0xC)) = right;
+                *((s16 *)(f4 + 0x14)) = right;
+                work = top + 2;
+                right = 0x1E;
+                asm volatile("" : "=r"(right) : "0"(right));
+                *((s16 *)(f4 + 0x12)) = work;
+                *((s16 *)(f4 + 0x16)) = work;
+                work = 0xE6;
+
+                *((s16 *)(f4 + 0x8)) = left;
+                *((s16 *)(f4 + 0xA)) = top;
+                *((s16 *)(f4 + 0xE)) = top;
+                *((s16 *)(f4 + 0x10)) = spare;
+                *((u8 *)(f4 + 4)) = right;
+                *((u8 *)(f4 + 5)) = work;
+                *((u8 *)(f4 + 6)) = right;
                 break;
 
             case 14:
-                ta = 0xD7;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0x95;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x28;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xAB - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0xDC;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tf = 0xD7;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                *((u8 *)(prim + 0x1C)) = tf;
-                tg = 0x9B;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                th = 0x2D;
-                asm volatile("" : "=r"(th) : "0"(th));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                ta = 0x28;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x10)) = th;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 6;
-                *((s16 *)(prim + 0x20)) = th;
-                *((s16 *)(prim + 0x22)) = yv + 6;
+                left = 0xD7;
+
+                top = 0x95;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x28;
+
+                work = 0xAB;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                right = 0xDC;
+
+                work = 0xD7;
+
+                *((u8 *)(prim + 0x1C)) = work;
+                work = 0x9B;
+
+                *((u8 *)(prim + 0x14)) = right;
+                *((u8 *)(prim + 0x24)) = right;
+                right = 0x2D;
+
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                work = 0x28;
+                asm volatile("" : "=r"(work) : "0"(work));
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
+                asm volatile("" : : "m"(*((s16 *)PRIMITIVE_X2_ADDR(prim))));
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
+                *((s16 *)(prim + 0x10)) = right;
+                *((s16 *)(prim + 0x12)) = top;
+                work = top + 6;
+                *((s16 *)(prim + 0x1A)) = work;
+                *((s16 *)(prim + 0x20)) = right;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 8:
-                ta = 0xA0;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                tb = 0xAB;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                *((u8 *)(prim + 0xC)) = ta;
-                tc = 0x79;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xC8 - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0xEE;
-                asm volatile("" : "=r"(te) : "0"(te));
-                tf = 0xA0;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                tg = 0xB8;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                th = 0xC7;
-                asm volatile("" : "=r"(th) : "0"(th));
-                *((u8 *)(prim + 0x1C)) = tf;
-                ta = 0x79;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x10)) = th;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 0xD;
-                *((s16 *)(prim + 0x20)) = th;
-                *((s16 *)(prim + 0x22)) = yv + 0xD;
+                left = 0xA0;
+
+                top = 0xAB;
+
+                *((u8 *)(prim + 0xC)) = left;
+                left = 0x79;
+
+                work = 0xC8;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = work - yShift;
+                right = 0xEE;
+
+                work = 0xA0;
+
+                spare = 0xB8;
+
+                *((u8 *)(prim + 0x1D)) = spare;
+                asm volatile("" : : "m"(*((u8 *)(prim + 0x1D))));
+                *((u8 *)(prim + 0x14)) = right;
+                *((u8 *)(prim + 0x24)) = right;
+                right = 0xC7;
+
+                *((u8 *)(prim + 0x1C)) = work;
+                work = 0x79;
+
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
+                *((u8 *)(prim + 0x25)) = spare;
+                work = top + 0xD;
+                goto menuCoordinates;
                 break;
 
             case 15:
                 *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xE5);
-                *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
-                tb = 0xC1;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                tc = 0x79;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xA0 - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0x4E;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                tg = 0xCE;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                th = 0xC7;
-                asm volatile("" : "=r"(th) : "0"(th));
-                ta = 0x79;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x10)) = th;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 0xD;
-                *((s16 *)(prim + 0x20)) = th;
-                *((s16 *)(prim + 0x22)) = yv + 0xD;
-                *((u8 *)(prim + 0xC)) = 0;
-                *((u8 *)(prim + 0x1C)) = 0;
-                break;
+                page = GetTPage(1, 0, 0x280, 0);
+                top = 0xC1;
+
+                left = 0x79;
+
+                right = 0xA0;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = right - yShift;
+                right = 0x4E;
+
+                *((u16 *)(prim + 0x16)) = page;
+                work = 0xCE;
+                goto menuBytes;
 
             case 16:
                 *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xE5);
-                *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
-                tb = 0xCE;
-                asm volatile("" : "=r"(tb) : "0"(tb));
-                tc = 0x79;
-                asm volatile("" : "=r"(tc) : "0"(tc));
-                yv = 0xB4 - yShift;
-                *((u8 *)(prim + 0xD)) = tb;
-                *((u8 *)(prim + 0x15)) = tb;
-                te = 0x4E;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((u8 *)(prim + 0x14)) = te;
-                *((u8 *)(prim + 0x24)) = te;
-                tg = 0xDB;
-                asm volatile("" : "=r"(tg) : "0"(tg));
-                *((u8 *)(prim + 0x1D)) = tg;
-                *((u8 *)(prim + 0x25)) = tg;
-                th = 0xC7;
-                asm volatile("" : "=r"(th) : "0"(th));
-                ta = 0x79;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = ta;
-                *((s16 *)(prim + 0x8)) = tc;
-                *((s16 *)(prim + 0xA)) = yv;
-                *((s16 *)(prim + 0x10)) = th;
-                *((s16 *)(prim + 0x12)) = yv;
-                *((s16 *)(prim + 0x1A)) = yv + 0xD;
-                *((s16 *)(prim + 0x20)) = th;
-                *((s16 *)(prim + 0x22)) = yv + 0xD;
+                page = GetTPage(1, 0, 0x280, 0);
+                top = 0xCE;
+
+                left = 0x79;
+
+                right = 0xB4;
+
+                *((u8 *)(prim + 0xD)) = top;
+                *((u8 *)(prim + 0x15)) = top;
+                top = right - yShift;
+                right = 0x4E;
+
+                *((u16 *)(prim + 0x16)) = page;
+                work = 0xDB;
+            menuBytes:
+                *((u8 *)(prim + 0x14)) = right;
+                *((u8 *)(prim + 0x24)) = right;
+                *((u8 *)(prim + 0x1D)) = work;
+                *((u8 *)(prim + 0x25)) = work;
+                right = 0xC7;
+
+                work = 0x79;
+
+                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
                 *((u8 *)(prim + 0xC)) = 0;
                 *((u8 *)(prim + 0x1C)) = 0;
+                work = top + 0xD;
+            menuCoordinates:
+                *((s16 *)(prim + 0x8)) = left;
+                *((s16 *)(prim + 0xA)) = top;
+                *((s16 *)(prim + 0x10)) = right;
+                *((s16 *)(prim + 0x12)) = top;
+                *((s16 *)(prim + 0x1A)) = work;
+                *((s16 *)(prim + 0x20)) = right;
+                *((s16 *)(prim + 0x22)) = work;
                 break;
 
             case 17:
                 SetPolyF4((POLY_F4 *)f4);
-                ta = 0x55;
-                asm volatile("" : "=r"(ta) : "0"(ta));
-                yv = 0x8C - yShift;
-                th = 0xF0;
-                asm volatile("" : "=r"(th) : "0"(th));
-                tf = 0x55;
-                asm volatile("" : "=r"(tf) : "0"(tf));
-                *((s16 *)(f4 + 0x10)) = tf;
-                *((s16 *)(f4 + 0x12)) = yv + 0xC;
-                *((s16 *)(f4 + 0x16)) = yv + 0xC;
-                te = 0xA;
-                asm volatile("" : "=r"(te) : "0"(te));
-                *((s16 *)(f4 + 0x8)) = ta;
-                *((s16 *)(f4 + 0xA)) = yv;
-                *((s16 *)(f4 + 0xC)) = th;
-                *((s16 *)(f4 + 0xE)) = yv;
-                *((s16 *)(f4 + 0x14)) = th;
-                *((u8 *)(f4 + 4)) = te;
-                *((u8 *)(f4 + 5)) = te;
-                *((u8 *)(f4 + 6)) = te;
+                left = 0x55;
+
+                work = 0x8C;
+
+                top = work - yShift;
+                right = 0xF0;
+
+                work = 0x55;
+
+                *((s16 *)(f4 + 0x10)) = work;
+                work = top + 0xC;
+                *((s16 *)(f4 + 0x12)) = work;
+                *((s16 *)(f4 + 0x16)) = work;
+                work = 0xA;
+                *((s16 *)(f4 + 0x8)) = left;
+                *((s16 *)(f4 + 0xA)) = top;
+                *((s16 *)(f4 + 0xC)) = right;
+                *((s16 *)(f4 + 0xE)) = top;
+                *((s16 *)(f4 + 0x14)) = right;
+                *((u8 *)(f4 + 4)) = work;
+                *((u8 *)(f4 + 5)) = work;
+                *((u8 *)(f4 + 6)) = work;
                 break;
             }
-
             k++;
         } while (k < 18);
-        colOff += 0x2D0;
+        spare = colOff;
+        asm("" : "=r"(spare) : "0"(spare));
+        spare += 0x2D0;
+        colOff = spare;
+        spare = j;
+        asm("" : "=r"(spare) : "0"(spare));
         yShift += 0x64;
-        j++;
+        spare++;
+        j = spare;
     } while (j < 2);
     k = 0;
     table = D_80090FC4;
@@ -1374,51 +1431,52 @@ void func_80018C88(void) {
         SetPolyFT4((POLY_FT4 *)prim);
         SetShadeTex(prim, 1);
         *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEE);
+        idx = k * 4;
         switch (k) {
         case 0:
-            tv = GetTPage(1, 0, 0x300, 0);
-            ta = 0x58;
-            asm volatile("" : "=r"(ta) : "0"(ta));
-            *((u8 *)(prim + 0xD)) = ta;
-            tb = 0x9F;
-            asm volatile("" : "=r"(tb) : "0"(tb));
-            *((u8 *)(prim + 0x14)) = tb;
-            ta = 0x58;
-            asm volatile("" : "=r"(ta) : "0"(ta));
-            *((u16 *)(prim + 0x16)) = tv;
-            tc = 0x88;
-            asm volatile("" : "=r"(tc) : "0"(tc));
-            *((u8 *)(prim + 0x15)) = ta;
-            tb = 0x9F;
-            asm volatile("" : "=r"(tb) : "0"(tb));
+            page = GetTPage(1, 0, 0x300, 0);
+            spare = 0x58;
+
+            *((u8 *)(prim + 0xD)) = spare;
+            spare = 0x9F;
+
+            *((u8 *)(prim + 0x14)) = spare;
+            spare = 0x58;
+
+            *((u16 *)(prim + 0x16)) = page;
+            page = 0x88;
+
+            *((u8 *)(prim + 0x15)) = spare;
+            spare = 0x9F;
+
             *((u8 *)(prim + 0xC)) = 0;
             *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = tc;
-            *((u8 *)(prim + 0x24)) = tb;
-            *((u8 *)(prim + 0x25)) = tc;
+            *((u8 *)(prim + 0x1D)) = page;
+            *((u8 *)(prim + 0x24)) = spare;
+            *((u8 *)(prim + 0x25)) = page;
             break;
 
         case 1:
-            tv = GetTPage(1, 0, 0x380, 0);
-            ta = 0x58;
-            asm volatile("" : "=r"(ta) : "0"(ta));
-            *((u8 *)(prim + 0xD)) = ta;
-            tb = 0x9F;
-            asm volatile("" : "=r"(tb) : "0"(tb));
-            *((u8 *)(prim + 0x14)) = tb;
-            ta = 0x58;
-            asm volatile("" : "=r"(ta) : "0"(ta));
-            *((u16 *)(prim + 0x16)) = tv;
-            tc = 0xA0;
-            asm volatile("" : "=r"(tc) : "0"(tc));
-            *((u8 *)(prim + 0x15)) = ta;
-            tb = 0x9F;
-            asm volatile("" : "=r"(tb) : "0"(tb));
+            page = GetTPage(1, 0, 0x380, 0);
+            spare = 0x58;
+
+            *((u8 *)(prim + 0xD)) = spare;
+            spare = 0x9F;
+
+            *((u8 *)(prim + 0x14)) = spare;
+            spare = 0x58;
+
+            *((u16 *)(prim + 0x16)) = page;
+            page = 0xA0;
+
+            *((u8 *)(prim + 0x15)) = spare;
+            spare = 0x9F;
+
             *((u8 *)(prim + 0xC)) = 0;
             *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = tc;
-            *((u8 *)(prim + 0x24)) = tb;
-            *((u8 *)(prim + 0x25)) = tc;
+            *((u8 *)(prim + 0x1D)) = page;
+            *((u8 *)(prim + 0x24)) = spare;
+            *((u8 *)(prim + 0x25)) = page;
             break;
 
         case 2:
@@ -1428,36 +1486,38 @@ void func_80018C88(void) {
         case 4:
 
         case 5:
-            *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x300, 0);
-            ta = vTop1 + 0x188;
-            asm volatile("" : "=r"(ta) : "0"(ta));
-            tb = -0x61;
-            asm volatile("" : "=r"(tb) : "0"(tb));
-            *((u8 *)(prim + 0x14)) = tb;
+            page = GetTPage(1, 0, 0x300, 0);
+            top = vTop1 + 0x188;
+
+            spare = -0x61;
+
+            *((u8 *)(prim + 0x14)) = spare;
+            *((u16 *)(prim + 0x16)) = page;
             *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0xD)) = ta;
-            *((u8 *)(prim + 0x15)) = ta;
+            *((u8 *)(prim + 0xD)) = top;
+            *((u8 *)(prim + 0x15)) = top;
             *((u8 *)(prim + 0x1C)) = 0;
             *((u8 *)(prim + 0x1D)) = vBot1;
-            *((u8 *)(prim + 0x24)) = tb;
+            *((u8 *)(prim + 0x24)) = spare;
             *((u8 *)(prim + 0x25)) = vBot1;
             break;
 
         case 6:
 
         case 7:
-            *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x380, 0);
-            ta = vTop2 + 0x1A0;
-            asm volatile("" : "=r"(ta) : "0"(ta));
-            tb = -0x61;
-            asm volatile("" : "=r"(tb) : "0"(tb));
-            *((u8 *)(prim + 0x14)) = tb;
+            page = GetTPage(1, 0, 0x380, 0);
+            top = vTop2 + 0x1A0;
+
+            spare = -0x61;
+
+            *((u8 *)(prim + 0x14)) = spare;
+            *((u16 *)(prim + 0x16)) = page;
             *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0xD)) = ta;
-            *((u8 *)(prim + 0x15)) = ta;
+            *((u8 *)(prim + 0xD)) = top;
+            *((u8 *)(prim + 0x15)) = top;
             *((u8 *)(prim + 0x1C)) = 0;
             *((u8 *)(prim + 0x1D)) = vBot2;
-            *((u8 *)(prim + 0x24)) = tb;
+            *((u8 *)(prim + 0x24)) = spare;
             *((u8 *)(prim + 0x25)) = vBot2;
             break;
 
@@ -1472,20 +1532,24 @@ void func_80018C88(void) {
         case 12:
 
         case 13:
+            vBot2 += 0xC;
             *((u16 *)(prim + 0xE)) = GetClut(table[0], table[1]);
             *((u16 *)(prim + 0x16)) =
                 GetTPage(table[4], 0, table[-2], table[-1]);
-            uv = table[2] + ((k - 8) * 16);
-            vv = table[3];
-            *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0xD)) = vv + 0x18;
-            *((u8 *)(prim + 0x14)) = uv + 0xF;
-            *((u8 *)(prim + 0x15)) = vv + 0x18;
-            *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x1D)) = vv + 0x30;
-            *((u8 *)(prim + 0x24)) = uv + 0xF;
-            *((u8 *)(prim + 0x25)) = vv + 0x30;
-            break;
+            left = ((k - 8) * 16) + table[2];
+            right = table[3];
+            top = right + 0x18;
+            work = left + 0xF;
+            right += 0x30;
+            *((u8 *)(prim + 0xC)) = left;
+            *((u8 *)(prim + 0xD)) = top;
+            *((u8 *)(prim + 0x14)) = work;
+            *((u8 *)(prim + 0x15)) = top;
+            *((u8 *)(prim + 0x1C)) = left;
+            *((u8 *)(prim + 0x1D)) = right;
+            *((u8 *)(prim + 0x24)) = work;
+            *((u8 *)(prim + 0x25)) = right;
+            goto glyphAdvance;
 
         case 14:
 
@@ -1501,20 +1565,24 @@ void func_80018C88(void) {
             *((u16 *)(prim + 0xE)) = GetClut(table[0], table[1]);
             *((u16 *)(prim + 0x16)) =
                 GetTPage(table[4], 0, table[-2], table[-1]);
-            uv = table[2] + ((k - 14) * 16);
-            vv = table[3];
-            *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0xD)) = vv;
-            *((u8 *)(prim + 0x14)) = uv + 0xF;
-            *((u8 *)(prim + 0x15)) = vv;
-            *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x1D)) = vv + 0x18;
-            *((u8 *)(prim + 0x24)) = uv + 0xF;
-            *((u8 *)(prim + 0x25)) = vv + 0x18;
+            left = ((k - 14) * 16) + table[2];
+            top = table[3];
+            right = left + 0xF;
+            work = top + 0x18;
+            *((u8 *)(prim + 0xC)) = left;
+            *((u8 *)(prim + 0xD)) = top;
+            *((u8 *)(prim + 0x14)) = right;
+            *((u8 *)(prim + 0x15)) = top;
+            *((u8 *)(prim + 0x1C)) = left;
+            *((u8 *)(prim + 0x1D)) = work;
+            *((u8 *)(prim + 0x24)) = right;
+            *((u8 *)(prim + 0x25)) = work;
             break;
         }
 
         vBot2 += 0xC;
+    glyphAdvance:
+        asm("" : : "r"(idx));
         vTop2 += 0xC;
         vBot1 += 0xC;
         vTop1 += 0xC;
@@ -1523,9 +1591,6 @@ void func_80018C88(void) {
     } while (k < 20);
 }
 #undef PRIMITIVE_X2_ADDR
-#else
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_80018C88);
-#endif
 
 extern u32 gPrimitiveCursor[];
 extern s32 D_800A2EC8[];
