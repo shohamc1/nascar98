@@ -61,6 +61,14 @@ ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
             -T build/fixed_addrs.ld \
+            --defsym=D_800A2F68Small=D_800A2F68 \
+            --defsym=D_800A2E60Absolute=D_800A2E60 \
+            --defsym=D_800A2EA8Absolute=D_800A2EA8 \
+            --defsym=D_800A2EF4Absolute=D_800A2EF4 \
+            --defsym=D_800A35A4Absolute=D_800A35A4 \
+            --defsym=D_800A35E0Absolute=D_800A35E0 \
+            --defsym=D_800A372CAbsolute=D_800A372C \
+            --defsym=D_800A3910Absolute=D_800A3910 \
             --defsym=D_800A2F9CAbsolute=D_800A2F9C \
             --defsym=D_800A2E6CAbsolute=D_800A2E6C \
             --defsym=D_800A2F50Absolute=D_800A2F50 \

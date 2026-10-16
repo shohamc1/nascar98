@@ -13567,7 +13567,218 @@ void func_8003AD08(struct Unk_8003AD08 *arg0) {
                   arg0->unk8);
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8003AD94);
+extern s32 D_800A2E60Lap asm("D_800A2E60Absolute");
+extern s32 D_800A2EA8Lap asm("D_800A2EA8Absolute");
+extern s32 D_800A2EACLap asm("D_800A2EACAbsolute");
+extern s32 D_800A2EB0Lap asm("D_800A2EB0Absolute");
+extern s32 D_800A2EC0Lap asm("D_800A2EC0Absolute");
+extern s32 D_800A2EF4Lap asm("D_800A2EF4Absolute");
+extern s8 D_800A2F65Lap asm("D_800A2F65");
+extern s32 D_800A2F68Lap asm("D_800A2F68Small");
+extern s16 D_800A35A4Lap asm("D_800A35A4Absolute");
+extern u8 *D_800A35E0Lap asm("D_800A35E0Absolute");
+extern u8 D_800A372CLap asm("D_800A372CAbsolute");
+extern s16 D_800A3910Lap asm("D_800A3910Absolute");
+extern u8 *D_800BE980Lap asm("D_800BE980");
+extern void func_8003EDA0(u8 *);
+extern void func_8003CEFC(void);
+extern void func_8004E294(void);
+extern void func_8004FF3C(void);
+extern void func_8003B464(void);
+
+void RaceUpdateLapProgress(void) {
+    u8 *car;
+    s32 section;
+    s16 lastSegment;
+    u32 lapTime;
+    u32 nextLapTime;
+    s32 noPlayerLap;
+    s32 fuel;
+    u32 currentLapTime;
+    u32 bestLapTime;
+    s32 lapLimit;
+    s16 advancingLap;
+    s32 tick;
+    s32 totalFuel;
+    u8 consumeFuel;
+    s32 previousSegment;
+    s16 lap;
+    u16 playerLap;
+    s32 oldProgress;
+    s32 progress;
+    s32 lapNumber;
+    s32 end;
+
+    car = D_800A3878Control;
+    D_800A2EF4Lap++;
+    noPlayerLap = 1;
+    while (car != 0) {
+        fuel = 0;
+        if (*(s16 *)(car + 0x1EC) == 0) {
+            if (!(D_800A2EC0Lap & 31)) {
+                /* Compiler control: reserve the shared time temporary. */
+                asm("" : "=r"(lapTime));
+                fuel = *(s16 *)(car + 0x108) / D_800A2E60Lap;
+            }
+            if (*(s16 *)(car + 0x1D6) == 2) {
+                *(s32 *)(car + 0x294) += fuel;
+            }
+        }
+        totalFuel = *(s32 *)(car + 0x298) + fuel;
+        consumeFuel = D_800A372CLap;
+        *(s32 *)(car + 0x298) = totalFuel;
+        if (consumeFuel == 0) {
+            *(s32 *)(car + 0x28C) -= fuel;
+        }
+        if (*(s32 *)(car + 0x28C) < 0) {
+            *(s32 *)(car + 0x28C) = 0;
+        }
+        section = *(s16 *)(car + 0x1E0);
+        if (section == -1) {
+            previousSegment = *(s32 *)(car + 0x1F4);
+            /* Keep the word load before its signed-short conversion. */
+            asm("" : "=r"(previousSegment) : "0"(previousSegment));
+            section = (s16)previousSegment;
+            *(s16 *)(car + 0x1E0) = previousSegment;
+        }
+        if (*(s32 *)(car + 0x1F4) == 0 && section >= 11) {
+            lap = *(u16 *)(car + 0x1D6) - 1;
+            *(s16 *)(car + 0x1D6) = lap;
+            if (lap < 0) {
+                *(s16 *)(car + 0x1D6) = 0;
+            }
+        }
+        if ((u32)section < 5 && *(s32 *)(car + 0x1F4) >= 11) {
+            if (*(s16 *)(car + 0x1D6) == 1) {
+                func_8003EDA0(car);
+            }
+            if (D_800A2EB0Lap == 0 &&
+                (lapLimit = D_800A2EA8Lap) < *(s16 *)(D_800A35E0Lap + 0x1D6) &&
+                (advancingLap = *(s16 *)(car + 0x1D6)) < lapLimit) {
+                *(s16 *)(car + 0x1D6) = advancingLap + 1;
+                *(s16 *)(car + 0x41A) = 1;
+                if (*(s16 *)(car + 0x1EC) == 0) {
+                    func_8002F86C(car, 120);
+                }
+            } else {
+                *(s16 *)(car + 0x1D6) = *(u16 *)(car + 0x1D6) + 1;
+            }
+            lap = *(s16 *)(car + 0x1D6);
+            if (*(s16 *)(car + 0x1D8) < lap) {
+                bestLapTime = *(u32 *)(car + 0x25C);
+                currentLapTime = *(u32 *)(car + 0x258);
+                *(s16 *)(car + 0x1D8) = lap;
+                if (currentLapTime < bestLapTime && D_800A2EACLap == 0) {
+                    *(u32 *)(car + 0x25C) = currentLapTime;
+                    func_8003CEFC();
+                }
+            }
+            if (*(s16 *)(car + 0x1EC) == 0) {
+                noPlayerLap = 0;
+                func_8004E294();
+                func_8004FF3C();
+                if (D_800A2EA8Lap >= *(s16 *)(car + 0x1D6)) {
+                    if (*(s8 *)(car + 0x204) == 2) {
+                        func_80041848(car, 16);
+                    } else if (*(s8 *)(car + 0x204) == 3) {
+                        func_80041848(car, 18);
+                    }
+                } else {
+                    goto markFinished;
+                }
+            }
+            if (D_800A2EA8Lap < *(s16 *)(car + 0x1D6)) {
+            markFinished:
+                *(s32 *)(car + 0x414) = -1;
+            }
+            if (car == D_800A35E0Lap) {
+                playerLap = *(u16 *)(car + 0x1D6);
+                if (D_800A2EA8Lap < (s16)playerLap) {
+                    D_800A3910Lap = 32767;
+                    *(u32 *)(car + 0x258) = 0;
+                    goto nextCar;
+                }
+                if ((s16)playerLap < D_800A2EA8Lap && D_800A35A4Lap == 0) {
+                    if ((s16)playerLap < 50) {
+                        if (((*(s16 *)(car + 0x1D6) % 5) << 16) == 0 &&
+                            ((s16)playerLap + 5) % 15 != 0) {
+                            func_80041848(
+                                car, (s16)(*(s16 *)(car + 0x1D6) / 5) + 29);
+                            goto doneLapAnnounce;
+                        }
+                        lap = *(s16 *)(car + 0x1D6);
+                        if ((lap + 4) % 15 == 0) {
+                            func_80041848(car, (lap - 1) / 5 + 29);
+                            goto doneLapAnnounce;
+                        }
+                    } else if ((s16)playerLap < 100 &&
+                               ((*(s16 *)(car + 0x1D6) % 10) << 16) == 0) {
+                        func_80041848(car, ((s16)playerLap - 50) / 10 + 39);
+                    }
+                }
+            }
+        doneLapAnnounce:
+            *(u32 *)(car + 0x258) = 0;
+        }
+    nextCar:
+        car = *(u8 **)(car + 0x3E0);
+    }
+    if ((noPlayerLap & 255) && D_800A2EACLap == 0) {
+        func_8004E294();
+    }
+    func_8003B6DC(0);
+    car = D_800A3878Control;
+    oldProgress = D_800A2F68Lap;
+    while (car != 0) {
+        section = *(s16 *)(car + 0x1E0);
+        lapTime = ((*(u32 *)(car + 0x258) >> 3) + 1) * 8;
+        if (RandomScaledGet(8) < 0) {
+            nextLapTime = lapTime - RandomScaledGet(8);
+        } else {
+            nextLapTime = lapTime + RandomScaledGet(8);
+        }
+        *(u32 *)(car + 0x258) = nextLapTime;
+        if (*(s16 *)(car + 0x1D6) > 0) {
+            if (D_800A2EA8Lap >= *(s16 *)(car + 0x1D6)) {
+                (*(s32 *)(car + 0x260))++;
+            }
+            if (section >= 0) {
+                progress = *(s16 *)(car + 0x1D6) * 1000 + section;
+                if (progress >= D_800A2F68Lap) {
+                    D_800A2F68Lap = progress;
+                    *(s32 *)(D_800BE980Lap + section * 144 + 0x50) =
+                        D_800A2EF4Lap;
+                }
+            }
+        }
+        car = *(u8 **)(car + 0x3E0);
+    }
+    if (oldProgress + 1 < D_800A2F68Lap) {
+        lapNumber = D_800A2F68Lap / 1000;
+        if (lapNumber == oldProgress / 1000) {
+            section = oldProgress - lapNumber * 1000 + 1;
+            end = D_800A2F68Lap % 1000;
+            if (section < end) {
+                tick = D_800A2EF4Lap;
+                do {
+                    *(s32 *)(D_800BE980Lap + section * 144 + 0x50) = tick;
+                    section++;
+                } while (section < end);
+            }
+        }
+    }
+    if (D_800A2F65Lap != 0) {
+        func_8003B464();
+    }
+    car = D_800A3878Control;
+    while (car != 0) {
+        lastSegment = *(s16 *)(car + 0x1E0);
+        if (lastSegment >= 0) {
+            *(s32 *)(car + 0x1F4) = lastSegment;
+        }
+        car = *(u8 **)(car + 0x3E0);
+    }
+}
 
 extern s32 D_800A2E94[];
 extern s32 D_800A2EB0Absolute[];
