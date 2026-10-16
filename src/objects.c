@@ -7259,7 +7259,341 @@ void func_8002F86C(void *arg0, s32 arg1) {
     D_800A35FC[0] = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002F910);
+/* Separate symbol views preserve the retail GP and absolute accesses. */
+extern void func_80023454RaceStep(u8 *) asm("func_80023454");
+asm(".globl D_800A2EA4RaceStep\nD_800A2EA4RaceStep = D_800A2EA4\n"
+    ".globl D_800A2EA8RaceStep\nD_800A2EA8RaceStep = D_800A2EA8\n"
+    ".globl D_800A2EACRaceStep\nD_800A2EACRaceStep = D_800A2EAC\n"
+    ".globl D_800A2EB0RaceStep\nD_800A2EB0RaceStep = D_800A2EB0\n"
+    ".globl D_800A2EB4RaceStep\nD_800A2EB4RaceStep = D_800A2EB4\n"
+    ".globl D_800A2EC0RaceStep\nD_800A2EC0RaceStep = D_800A2EC0\n"
+    ".globl D_800A2EC8RaceStep\nD_800A2EC8RaceStep = D_800A2EC8\n"
+    ".globl D_800A2EFCRaceStep\nD_800A2EFCRaceStep = D_800A2EFC\n"
+    ".globl D_800A2F00RaceStep\nD_800A2F00RaceStep = D_800A2F00\n"
+    ".globl D_800A3878RaceStep\nD_800A3878RaceStep = D_800A3878\n"
+    ".globl D_800A2D0CRaceStep1\nD_800A2D0CRaceStep1 = D_800A2D0C\n"
+    ".globl D_800A2F58RaceStep1\nD_800A2F58RaceStep1 = D_800A2F58\n"
+    ".globl D_800A3554RaceStep1\nD_800A3554RaceStep1 = D_800A3554\n"
+    ".globl D_800A3554RaceStep2\nD_800A3554RaceStep2 = D_800A3554\n"
+    ".globl D_800A3554RaceStep3\nD_800A3554RaceStep3 = D_800A3554\n"
+    ".globl D_800A3554RaceStep5\nD_800A3554RaceStep5 = D_800A3554\n"
+    ".globl D_800A3554RaceStep6\nD_800A3554RaceStep6 = D_800A3554\n"
+    ".globl D_800A3554RaceStep7\nD_800A3554RaceStep7 = D_800A3554\n"
+    ".globl D_800A3554RaceStep9\nD_800A3554RaceStep9 = D_800A3554\n"
+    ".globl D_800A359CRaceStep1\nD_800A359CRaceStep1 = D_800A359C\n"
+    ".globl D_800A359CRaceStep2\nD_800A359CRaceStep2 = D_800A359C\n"
+    ".globl D_800A359CRaceStep3\nD_800A359CRaceStep3 = D_800A359C\n"
+    ".globl D_800A359CRaceStep4\nD_800A359CRaceStep4 = D_800A359C\n"
+    ".globl D_800A359CRaceStep5\nD_800A359CRaceStep5 = D_800A359C\n"
+    ".globl D_800A359CRaceStep6\nD_800A359CRaceStep6 = D_800A359C\n"
+    ".globl D_800A35A4RaceStep1\nD_800A35A4RaceStep1 = D_800A35A4\n"
+    ".globl D_800A35A4RaceStep2\nD_800A35A4RaceStep2 = D_800A35A4\n"
+    ".globl D_800A35FCRaceStep1\nD_800A35FCRaceStep1 = D_800A35FC\n"
+    ".globl D_800A35FCRaceStep2\nD_800A35FCRaceStep2 = D_800A35FC\n"
+    ".globl D_800A38E0RaceStep1\nD_800A38E0RaceStep1 = D_800A38E0\n"
+    ".globl D_800A38E0RaceStep2\nD_800A38E0RaceStep2 = D_800A38E0\n"
+    ".globl D_800A397CRaceStep1\nD_800A397CRaceStep1 = D_800A397C\n"
+    ".globl D_800A39F8RaceStep1\nD_800A39F8RaceStep1 = D_800A39F8\n"
+    ".globl D_800A39F8RaceStep2\nD_800A39F8RaceStep2 = D_800A39F8\n"
+    ".globl D_800A3A60RaceStep1\nD_800A3A60RaceStep1 = D_800A3A60\n"
+    ".globl D_800A3A94RaceStep1\nD_800A3A94RaceStep1 = D_800A3A94\n"
+    ".globl D_800A3A94RaceStep2\nD_800A3A94RaceStep2 = D_800A3A94\n"
+    ".globl D_800A2EA8RaceStepRepeat\nD_800A2EA8RaceStepRepeat = D_800A2EA8\n");
+extern s32 D_800A2EA4RaceStep;
+extern s32 D_800A2EA8RaceStep;
+extern s32 D_800A2EACRaceStep;
+extern s32 D_800A2EB0RaceStep;
+extern s32 D_800A2EB4RaceStep;
+extern s32 D_800A2EC0RaceStep;
+extern s32 D_800A2EC8RaceStep;
+extern s32 D_800A2EFCRaceStep;
+extern s32 D_800A2F00RaceStep;
+extern u8 *D_800A3878RaceStep;
+extern s8 D_800A2D0CRaceStep1[];
+extern u8 D_800A2F58RaceStep1[];
+extern u8 *D_800A3554RaceStep1[];
+extern u8 *D_800A3554RaceStep2[];
+extern u8 *D_800A3554RaceStep3[];
+extern u8 *D_800A3554RaceStep5[];
+extern u8 *D_800A3554RaceStep6[];
+extern u8 *D_800A3554RaceStep7[];
+extern u8 *D_800A3554RaceStep9[];
+extern s32 D_800A359CRaceStep1[];
+extern s32 D_800A359CRaceStep2[];
+extern s32 D_800A359CRaceStep3[];
+extern s32 D_800A359CRaceStep4[];
+extern s32 D_800A359CRaceStep5[];
+extern s32 D_800A359CRaceStep6[];
+extern s16 D_800A35A4RaceStep1[];
+extern s16 D_800A35A4RaceStep2[];
+extern s8 D_800A35FCRaceStep1[];
+extern s8 D_800A35FCRaceStep2[];
+extern u8 D_800A38E0RaceStep1[];
+extern u8 D_800A38E0RaceStep2[];
+extern s32 D_800A397CRaceStep1[];
+extern u8 D_800A39F8RaceStep1[];
+extern u8 D_800A39F8RaceStep2[];
+extern u8 D_800A3A60RaceStep1[];
+extern u8 D_800A3A94RaceStep1[];
+extern u8 D_800A3A94RaceStep2[];
+extern s32 D_800A2EA8RaceStepRepeat;
+
+void RaceUpdateFrame(void) {
+    s16 savedSections[2];
+    s32 noticeFrames;
+    RaceObject *head;
+    u8 *savedCar;
+    s32 currentLap;
+    s32 lapLimit;
+    register s32 morePlayers asm("v0");
+    register s16 playerIndex asm("s1");
+    s16 nextPlayerIndex;
+    s32 raceActive;
+    s32 finishDelay;
+    s32 finishFrames;
+    s32 activeMask;
+    s32 replayFrames;
+    s32 passedLap;
+    s32 cameraMode;
+    register u16 savedSection asm("s1");
+    u8 *playerCar;
+    u8 *object;
+
+    playerCar = D_800A3554RaceStep1[0];
+    raceActive = 0;
+    if (D_800A2EC8RaceStep != 0) {
+        func_80023454RaceStep(playerCar);
+        if (D_800A397CRaceStep1[0] == 2) {
+            func_80024280();
+        }
+        object = D_800A3878RaceStep;
+        if (D_800A2EC8RaceStep != 0) {
+            if (object != NULL) {
+            pausedList:
+                func_8002E9AC(object);
+                object = (*(u8 **)(object + 0x3E0));
+                if (object != NULL) {
+                    goto pausedList;
+                }
+            }
+        } else if (object != NULL) {
+        pausedListAfterChange:
+            func_8002E9AC(object);
+            object = (*(u8 **)(object + 0x3E0));
+            if (object != NULL) {
+                goto pausedListAfterChange;
+            }
+        }
+        goto finishUpdate;
+    }
+    D_800A2EC0RaceStep += 1;
+    if (D_800A2F58RaceStep1[0] != 0) {
+        func_8003A440();
+        goto updateList;
+    }
+    if (D_800A2EACRaceStep != 0) {
+        func_8003A54C();
+    updateList:
+        func_80028FCC(D_800A3878RaceStep);
+    } else {
+        func_80041AF0(0);
+        if (!(func_80050D1C() & 0xFF)) {
+            object = D_800A3878RaceStep;
+            if (object != NULL) {
+                do {
+                    func_8003CF0C(object);
+                    (*(void (**)(u8 *))(object + 0x350))(object);
+                    object = (*(u8 **)(object + 0x3E0));
+                } while (object != NULL);
+            }
+            func_80028FCC(D_800A3878RaceStep);
+        }
+        func_80039CF4();
+        object = D_800A3878RaceStep;
+        if (object != NULL) {
+            do {
+                if ((*(s16 *)(object + 0x1EC)) == 0) {
+                    func_800297D0(object);
+                } else if (!((*(u16 *)(object + 0x3A4)) & 0xF)) {
+                    func_80038D78(object);
+                }
+                object = (*(u8 **)(object + 0x3E0));
+            } while (object != NULL);
+        }
+    }
+    object = D_800A3878RaceStep;
+    if (D_800A2EC8RaceStep != 0) {
+        if (object != NULL) {
+        postUpdateList:
+            func_8002E9AC(object);
+            object = (*(u8 **)(object + 0x3E0));
+            if (object != NULL) {
+                goto postUpdateList;
+            }
+        }
+    } else if (object != NULL) {
+        do {
+            func_8002E9AC(object);
+            object = (*(u8 **)(object + 0x3E0));
+        } while (object != NULL);
+    }
+    if (D_800A2EACRaceStep != 0) {
+        if (D_800A359CRaceStep1[0] != 0) {
+            func_8002267C();
+            replayFrames = D_800A359CRaceStep2[0] - 1;
+            D_800A359CRaceStep3[0] = replayFrames;
+            if (replayFrames == 0) {
+                D_800A2D0CRaceStep1[0] = 1;
+                return;
+            }
+            D_800A2EA4RaceStep = 0;
+            GraphicsSetGeomOffsetForMode(0, 3);
+            goto finishUpdate;
+        }
+        func_8002267C();
+        if (D_800A2EB0RaceStep == 0) {
+            RaceUpdateLapProgress();
+        }
+        finishFrames = D_800A2EACRaceStep - 1;
+        D_800A2EACRaceStep = finishFrames;
+        if (finishFrames == 1) {
+            if (D_800A2EB0RaceStep == 2) {
+                D_800A359CRaceStep4[0] = finishFrames;
+            } else {
+                D_800A359CRaceStep5[0] = 0x21C;
+                (*(s8 *)(D_800A3554RaceStep2[0] + 0x20C)) = 0x11;
+                func_80041444(1);
+                if (D_800A3A60RaceStep1[0] != 0) {
+                    savedCar = D_800A3554RaceStep3[0];
+                    savedSection = *(u16 *)(savedCar + 0x1E0);
+                    *(u16 *)(savedCar + 0x1E0) = 0;
+                    func_8004658C();
+                    (*(u16 *)(D_800A3554RaceStep5[0] + 0x1E0)) = savedSection;
+                }
+            }
+        }
+        goto finishUpdate;
+    }
+    func_800488B8();
+    func_8002267C();
+    RaceUpdateLapProgress();
+    object = D_800A3878RaceStep;
+    if (object != NULL) {
+        noticeFrames = 0x50;
+        do {
+            if ((*(s16 *)(object + 0x1EC)) == 0) {
+                if (D_800A2EA8RaceStep < (*(s16 *)(object + 0x1D6))) {
+                    func_8003B6DC(1);
+                    finishDelay = 0x78;
+                    func_8003B464();
+                    D_800A2EACRaceStep = finishDelay;
+                    if (D_800A2EB0RaceStep == 1) {
+                        func_8003C3FC();
+                        cameraMode = 3;
+                    } else {
+                        func_8003C1CC();
+                        cameraMode = *(s8 *)(object + 0x204);
+                        if (cameraMode == 1) {
+                            cameraMode = 0xD;
+                        } else {
+                            cameraMode = 0x10;
+                        }
+                    }
+                    (*(s8 *)(object + 0x20C)) = cameraMode;
+                    D_800A2EACRaceStep = finishDelay;
+                    D_800A35FCRaceStep1[0] = 0;
+                    if (D_800A2EB0RaceStep == 1) {
+                        raceActive = 1;
+                    }
+                }
+                if ((*(u8 *)(object + 0xF4)) == 1) {
+                    raceActive = 1;
+                }
+            }
+            if (D_800A2EB0RaceStep != 1) {
+                currentLap = (*(s16 *)(object + 0x1D6));
+                /* Keep the current-lap read before the lap-limit read. */
+                asm("" : : "r"(currentLap) : "memory");
+                lapLimit = D_800A2EA8RaceStep;
+                if (currentLap == lapLimit) {
+                    if (D_800A38E0RaceStep1[0] != 0) {
+                        D_800A38E0RaceStep2[0] = 0;
+                        if ((D_800A2EFCRaceStep == 0) &&
+                            (D_800A39F8RaceStep1[0] == 0) &&
+                            (D_800A35A4RaceStep1[0] == 0)) {
+                            D_800A2EFCRaceStep = noticeFrames;
+                            D_800A2F00RaceStep = 2;
+                        }
+                    } else {
+                        passedLap = D_800A2EA8RaceStepRepeat < currentLap;
+                        goto testLapPassed;
+                    }
+                } else {
+                    passedLap = lapLimit < currentLap;
+                    goto testLapPassed;
+                }
+            } else {
+                passedLap =
+                    D_800A2EA8RaceStepRepeat < (*(s16 *)(object + 0x1D6));
+            testLapPassed:
+                if ((passedLap != 0) && (D_800A3A94RaceStep1[0] != 0)) {
+                    D_800A3A94RaceStep2[0] = 0;
+                    if ((D_800A2EFCRaceStep == 0) &&
+                        (D_800A39F8RaceStep2[0] == 0) &&
+                        (D_800A35A4RaceStep2[0] == 0)) {
+                        D_800A2EFCRaceStep = noticeFrames;
+                        D_800A2F00RaceStep = 0;
+                    }
+                }
+            }
+            object = (*(u8 **)(object + 0x3E0));
+        } while (object != NULL);
+    }
+    /* Retain the retail byte mask after the active-state test. */
+    asm("" : "=r"(raceActive) : "0"(raceActive));
+    activeMask = raceActive & 0xFF;
+    if ((activeMask == 0) && (D_800A2EB0RaceStep >= 0)) {
+        D_800A2EACRaceStep = 0x78;
+        if (D_800A2EB0RaceStep == 1) {
+            func_8003C3FC();
+        }
+        if (D_800A2EB0RaceStep == 2) {
+            func_8003C528();
+        }
+        object = D_800A3554RaceStep6[0];
+        playerIndex = 0;
+        morePlayers = activeMask < D_800A2EB4RaceStep;
+        if (morePlayers) {
+            do {
+                (*(s8 *)(object + 0x20C)) = 3;
+                savedSections[(*(s8 *)(object + 0x20B))] =
+                    (*(u16 *)(object + 0x1E0));
+                nextPlayerIndex = playerIndex + 1;
+                playerIndex = nextPlayerIndex;
+                (*(u16 *)(object + 0x1E0)) =
+                    (u16)(0x1E - (s8)(*(s8 *)(object + 0x204)));
+                object = (*(u8 **)(object + 0x3E0));
+            } while (nextPlayerIndex < D_800A2EB4RaceStep);
+        }
+        if (D_800A2EB0RaceStep == 0) {
+            func_8003C1CC();
+        }
+        head = (RaceObject *)D_800A3554RaceStep7[0];
+        head->unk1E0 = savedSections[0];
+        if (D_800A2EA4RaceStep != 0) {
+            ((RaceObject *)*(u8 **)((u8 *)head + 0x3E0))->unk1E0 =
+                savedSections[1];
+        }
+        D_800A35FCRaceStep2[0] = 0;
+    }
+finishUpdate:
+    if (D_800A359CRaceStep6[0] == 0) {
+        SoundUpdateCar(playerCar);
+        if (D_800A2EA4RaceStep == 2) {
+            SoundUpdateCar((*(u8 **)(D_800A3554RaceStep9[0] + 0x3E0)));
+        }
+    }
+}
 
 extern u32 D_800A2EEC;
 extern u32 D_800A2F28;
