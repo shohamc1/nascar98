@@ -831,3 +831,5 @@ sTrackTwoPlayersText = 0x8008CB00; // force_not_migration:True
 TrackLoad = 0x800132F8; // type:func
 
 CarDrawModel = 0x80016CD8; // type:func
+
+HudInitRacePrims = 0x8004A510; // type:func

@@ -1591,7 +1591,7 @@ void func_80045288(void) {
     void func_8004E700(void);
     void func_80048118(void);
     void func_8004F880(void);
-    void func_8004A510(void);
+    void HudInitRacePrims(void);
     void func_80048700(void);
     void func_80045F70(void);
     void func_800511E4(void);
@@ -1655,7 +1655,7 @@ void func_80045288(void) {
     func_8004E700();
     func_80048118();
     func_8004F880();
-    func_8004A510();
+    HudInitRacePrims();
     func_80048700();
     func_80045F70();
     func_800511E4();
@@ -3017,12 +3017,6 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004A0C4);
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-11: fix the 14-byte texture stride, remove the counter
- * pins, and keep the final page table in one call-preserved pointer.
- * Current active-TU text is 0xaf0 bytes; retail is 0xad0. The glyph loop
- * still hoists its string slot, and the remaining loops differ in register
- * allocation and instruction order. Keep the assembly fallback. */
 typedef struct {
     u16 tpx;
     u16 tpy;
@@ -3037,9 +3031,10 @@ extern u8 D_800A3680[1];
 extern u8 D_800A3490;
 extern u8 D_800A2FD0[3];
 extern s32 D_800A2EA4[];
-extern u8 D_800A3484;
+extern u8 D_800A3484Small;
+asm(".globl D_800A3484Small\nD_800A3484Small = D_800A3484");
 extern u8 D_800A3485;
-extern s8 D_800A3488;
+extern u8 D_800A3488;
 extern s8 *D_8009AE2C[];
 
 extern u8 D_8009AE14[];
@@ -3066,9 +3061,9 @@ extern u16 D_80090FF0[];
 extern u16 D_80090FF2[];
 extern u16 D_80090FF4[];
 extern u16 D_80090FF6[];
-extern u8 D_800A757C[];
+
 extern u16 D_800A7592[];
-extern TILE D_800A7924[][3];
+
 extern u8 D_800A7932[];
 extern u8 D_800A7944[];
 extern TILE D_800A7984[];
@@ -3089,27 +3084,36 @@ asm(".globl D_80090FF2c\nD_80090FF2c = D_80090FF2");
 asm(".globl D_80090FF4a\nD_80090FF4a = D_80090FF4");
 asm(".globl D_80090FF4b\nD_80090FF4b = D_80090FF4");
 asm(".globl D_80090FF4c\nD_80090FF4c = D_80090FF4");
-asm(".globl D_800A757Ca\nD_800A757Ca = D_800A757C");
 extern u16 D_80090FF2a[];
 extern u16 D_80090FF2b[];
 extern u16 D_80090FF2c[];
 extern u16 D_80090FF4a[];
 extern u16 D_80090FF4b[];
 extern u16 D_80090FF4c[];
-extern u8 D_800A757Ca[];
 
-void func_8004A510(void) {
+extern s32 D_800A3A34Map0[];
+asm(".globl D_800A3A34Map0\nD_800A3A34Map0 = D_800A3A34");
+extern s32 D_800A3A34Map1[];
+asm(".globl D_800A3A34Map1\nD_800A3A34Map1 = D_800A3A34");
+extern s32 D_800A3A34Map2[];
+asm(".globl D_800A3A34Map2\nD_800A3A34Map2 = D_800A3A34");
+extern s32 D_800A3A34Map3[];
+asm(".globl D_800A3A34Map3\nD_800A3A34Map3 = D_800A3A34");
+
+extern u8 D_800A798BWrite[];
+asm(".globl D_800A798BWrite\nD_800A798BWrite = D_800A798B");
+
+/* Keep address construction separate from the primitive stores. */
+void HudInitRacePrims(void) {
     HudTexture *tex;
     u8 *prim;
-    u8 *prim2;
-    u8 *p0;
-    u8 *p1;
-    u8 *p2;
     u8 *p3;
     u8 *p4;
-    u8 *p5;
-    u8 *f4base;
-    s16 *pts;
+    register u8 *f4base asm("$22");
+    s32 tileIndex;
+    s32 tileBytes;
+    s32 tileX;
+    u8 *tileHeightBase;
     u8 *heap;
     u8 *glyph;
     s8 entry;
@@ -3117,8 +3121,29 @@ void func_8004A510(void) {
     s8 line;
     s8 j;
     s8 row;
-    u16 *page;
-    s32 line24;
+    register u16 *page asm("$20");
+    register s32 markerOffset asm("$17");
+    register u8 *driver asm("$17");
+    register u8 driverR asm("$2");
+    register s32 line24 asm("$22");
+    register s8 **slot asm("$17");
+    register s8 **lineSlot asm("$2");
+    register s32 glyphOffset asm("$17");
+    s32 cornerOffset;
+    s32 value;
+    register u8 *slotBase asm("$2");
+    u8 *coord;
+    u8 *driverCall;
+    register u8 *driverBase asm("$22");
+    u32 borderFlag;
+    u16 markerPage;
+    register u8 *mapCall asm("$16");
+    register u8 *mapPrim asm("$17");
+    register s32 view asm("$22");
+    register u8 *coordX asm("a0");
+    s32 coordinateValue;
+    register u8 *coordY asm("v1");
+    register s32 yOffset asm("v1");
 
     D_800A3680[0] = 0;
     D_800A3490 = 0;
@@ -3126,21 +3151,42 @@ void func_8004A510(void) {
     for (entry = 0; entry < D_800A3424; entry++) {
         D_800A3485 = 0;
         for (col = 0; col < 6; col++) {
-            D_800A3485 += strlen((char *)((s8 **)D_8009AE14)[col]);
+            {
+                register u8 *addressBase asm("$8");
+
+                asm("lui %1,%%hi(D_8009AE14)\naddiu %1,%1,%%lo(D_8009AE14)\naddu %0,%2,%1"
+                    : "=r"(lineSlot), "=&r"(addressBase)
+                    : "r"(col * 4));
+            }
+            D_800A3485 += strlen((char *)*lineSlot);
         }
-        D_800A3484 = D_800A3485 + strlen((char *)D_8009AE2C[0]);
+        D_800A3484Small = D_800A3485 + strlen((char *)D_8009AE2C[0]);
         for (col = 0; col < 3; col += 2) {
             line = 0;
-            heap = (u8 *)HeapAlloc(D_800A3484 * 0x28);
+            heap = (u8 *)HeapAlloc(D_800A3484Small * 0x28);
             D_800A78C4[(s8)(entry + col)] = (s8 *)heap;
             for (; line < 7; line++) {
                 j = 0;
                 line24 = line << 24;
-                if (((s8 **)D_8009AE14)[line24 >> 24][0] != 0) {
+                {
+                    register u8 *addressBase asm("$8");
+
+                    asm("lui %1,%%hi(D_8009AE14)\naddiu %1,%1,%%lo(D_8009AE14)\naddu %0,%2,%1"
+                        : "=r"(lineSlot), "=&r"(addressBase)
+                        : "r"(line24 >> 22));
+                }
+                if ((*lineSlot)[0] != 0) {
                     do {
-                        glyph =
-                            &D_80098BD0[((s8 **)D_8009AE14)[line24 >> 24][j] *
-                                        10];
+                        asm("" : "=r"(line24) : "0"(line24));
+                        {
+                            register u8 *addressBase asm("$8");
+
+                            glyphOffset = line24 >> 22;
+                            asm("lui %1,%%hi(D_8009AE14)\naddiu %1,%1,%%lo(D_8009AE14)\naddu %0,%2,%1"
+                                : "=r"(slot), "=&r"(addressBase)
+                                : "r"(glyphOffset));
+                        }
+                        glyph = &D_80098BD0[(*slot)[j] * 10];
                         SetPolyFT4((POLY_FT4 *)heap);
                         *(s16 *)(heap + 0xE) = GetClut(0x390, 0x3C);
                         *(u8 *)(heap + 4) = 0x80;
@@ -3158,14 +3204,20 @@ void func_8004A510(void) {
                         *(u8 *)(heap + 0x25) = glyph[5] + glyph[8];
                         j++;
                         heap += 0x28;
-                    } while (((s8 **)D_8009AE14)[line24 >> 24][j] != 0);
+                    } while ((*slot)[j] != 0);
                 }
             }
         }
         row = entry;
         func_8004AFE0(row, D_80099298, (u16 *)D_800A78C4[row]);
-        prim = (u8 *)D_800A78CC;
-        func_8004AFE0(row, D_80099298, *(u16 **)(prim + row * 4));
+        {
+            register u8 *addressBase asm("$8");
+
+            asm("lui %1,%%hi(D_800A78CC)\naddiu %1,%1,%%lo(D_800A78CC)\naddu %0,%2,%1"
+                : "=r"(slotBase), "=&r"(addressBase)
+                : "r"(row * 4));
+        }
+        func_8004AFE0(row, D_80099298, *(u16 **)slotBase);
         D_800A3488 = strlen((char *)((s8 **)D_8009AE14)[0]);
         prim = (u8 *)D_800A78D4 + row * 0x28;
         SetPolyFT4((POLY_FT4 *)prim);
@@ -3190,99 +3242,157 @@ void func_8004A510(void) {
         *(u16 *)((u8 *)D_800A78E2 + row * 0x28) =
             GetClut(D_80090FEE[0], D_80090FF0[0]);
         tex = D_80090FEA;
+        asm("" : "=r"(view) : "0"((s32)row));
         *(u16 *)((u8 *)D_800A78EA + row * 0x28) =
             GetTPage(D_80090FF6[0], 0, tex->tpx, D_80090FEC[0]);
         tex -= 14;
         for (col = 0; col < 10; col++) {
-            SetPolyFT4(
-                (POLY_FT4 *)((u8 *)D_800A757C + row * 0x190 + col * 0x28));
-            SetShadeTex((u8 *)D_800A757C + row * 0x190 + col * 0x28, 0);
-            prim2 = (u8 *)D_800A757Ca + row * 0x190 + col * 0x28;
-            *(u8 *)(prim2 + 4) = 0x40;
-            *(u8 *)(prim2 + 5) = 0x40;
-            *(u8 *)(prim2 + 6) = 0x40;
-            *(u8 *)(prim2 + 0xC) = tex->u + 0x60;
-            *(u8 *)(prim2 + 0xD) = tex->v;
-            *(u8 *)(prim2 + 0x14) = tex->u + 0x6F;
-            *(u8 *)(prim2 + 0x15) = tex->v;
-            *(u8 *)(prim2 + 0x1C) = tex->u + 0x60;
-            *(u8 *)(prim2 + 0x1D) = tex->v + 0xF;
-            *(u8 *)(prim2 + 0x24) = tex->u + 0x6F;
-            *(u8 *)(prim2 + 0x25) = tex->v + 0xF;
-            *(u16 *)(row * 0x190 + col * 0x28 + (u8 *)D_800A7592) =
+            {
+                register u8 *addressBase asm("$8");
+
+                asm("lui %1,%%hi(D_800A757C)\naddiu %1,%1,%%lo(D_800A757C)\naddu %0,%3,%1"
+                    : "=r"(mapCall), "=&r"(addressBase)
+                    : "r"(view * 0x190), "r"(col * 0x28));
+            }
+            mapCall = (u8 *)((u32)(view * 0x190) + (u32)mapCall);
+            SetPolyFT4((POLY_FT4 *)mapCall);
+            SetShadeTex(mapCall, 0);
+            {
+                register u8 *addressBase asm("$8");
+
+                asm("lui %1,%%hi(D_800A757C)\naddiu %1,%1,%%lo(D_800A757C)\naddu %0,%2,%1"
+                    : "=r"(mapPrim), "=&r"(addressBase)
+                    : "r"(view * 0x190 + col * 0x28));
+            }
+            ((POLY_FT4 *)mapPrim)->r0 = 0x40;
+            ((POLY_FT4 *)mapPrim)->g0 = 0x40;
+            ((POLY_FT4 *)mapPrim)->b0 = 0x40;
+            *(u8 *)(mapPrim + 0xC) = tex->u + 0x60;
+            *(u8 *)(mapPrim + 0xD) = tex->v;
+            ((POLY_FT4 *)mapPrim)->u1 = tex->u + 0x6F;
+            ((POLY_FT4 *)mapPrim)->v1 = tex->v;
+            *(u8 *)(mapPrim + 0x1C) = tex->u + 0x60;
+            *(u8 *)(mapPrim + 0x1D) = tex->v + 0xF;
+            ((POLY_FT4 *)mapPrim)->u3 = tex->u + 0x6F;
+            ((POLY_FT4 *)mapPrim)->v3 = tex->v + 0xF;
+            *(u16 *)(view * 0x190 + col * 0x28 + (u8 *)D_800A7592) =
                 GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-            *(s16 *)(prim2 + 8) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                0x12C;
-            *(s16 *)(prim2 + 0xA) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                ((s8)D_800A2FD0[row] + 0xD7);
-            *(s16 *)(prim2 + 0x10) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                0x130;
-            *(s16 *)(prim2 + 0x12) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                ((s8)D_800A2FD0[row] + 0xD7);
-            *(s16 *)(prim2 + 0x18) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                0x12C;
-            *(s16 *)(prim2 + 0x1A) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                (s8)D_800A2FD0[row] + 0xDB;
-            *(s16 *)(prim2 + 0x20) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A2CAbsolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                0x130;
-            *(s16 *)(prim2 + 0x22) =
-                (MathMultiplyFixed16(0x370000,
-                                     *(s32 *)((u8 *)D_800A3A34Absolute[0] +
-                                              col * 0x68 + 0x828)) >>
-                 0x10) +
-                (s8)D_800A2FD0[row] + 0xDB;
+            {
+                register s32 cornerPrefix asm("s0");
+
+                cornerPrefix = col * 12;
+                coord = (u8 *)D_800A3A2CAbsolute[0];
+                cornerPrefix += col;
+                cornerPrefix = cornerPrefix * 8 + 0x828;
+                cornerOffset = cornerPrefix;
+            }
+            value = MathMultiplyFixed16(
+                0x370000, *(s32 *)((u32)cornerOffset + (u32)coord));
+            coordY = (u8 *)D_800A3A34Map0[0];
+            ((POLY_FT4 *)mapPrim)->x0 = (value >> 0x10) + 0x12C;
+            coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
+            value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
+            asm("" : "=r"(yOffset) : "0"((s32)D_800A2FD0[view]));
+            coordX = (u8 *)D_800A3A2CAbsolute[0];
+            value >>= 0x10;
+            asm("" : "=r"(yOffset) : "0"((s8)yOffset + 0xD7));
+            coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
+            value += yOffset;
+            asm("" : "=r"(value) : "0"(value), "r"(coordX));
+            ((POLY_FT4 *)mapPrim)->y0 = value;
+            coordinateValue = *(s32 *)coordX;
+            value = MathMultiplyFixed16(0x370000, coordinateValue);
+            coordY = (u8 *)D_800A3A34Map1[0];
+            ((POLY_FT4 *)mapPrim)->x1 = (value >> 0x10) + 0x130;
+            coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
+            value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
+            asm("" : "=r"(yOffset) : "0"((s32)D_800A2FD0[view]));
+            coordX = (u8 *)D_800A3A2CAbsolute[0];
+            value >>= 0x10;
+            asm("" : "=r"(yOffset) : "0"((s8)yOffset + 0xD7));
+            coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
+            value += yOffset;
+            asm("" : "=r"(value) : "0"(value), "r"(coordX));
+            ((POLY_FT4 *)mapPrim)->y1 = value;
+            coordinateValue = *(s32 *)coordX;
+            value = MathMultiplyFixed16(0x370000, coordinateValue);
+            coordY = (u8 *)D_800A3A34Map2[0];
+            ((POLY_FT4 *)mapPrim)->x2 = (value >> 0x10) + 0x12C;
+            coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
+            value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
+            coordX = (u8 *)D_800A3A2CAbsolute[0];
+            ((POLY_FT4 *)mapPrim)->y2 =
+                (value >> 0x10) + (s8)D_800A2FD0[view] + 0xDB;
+            coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
+            coordinateValue = *(s32 *)coordX;
+            value = MathMultiplyFixed16(0x370000, coordinateValue);
+            coordY = (u8 *)D_800A3A34Map3[0];
+            ((POLY_FT4 *)mapPrim)->x3 = (value >> 0x10) + 0x130;
+            cornerOffset += (u32)coordY;
+            value = MathMultiplyFixed16(0x370000, *(s32 *)cornerOffset);
+            ((POLY_FT4 *)mapPrim)->y3 =
+                (value >> 0x10) + (s8)D_800A2FD0[view] + 0xDB;
         }
-        for (col = 0; col < 3; col++) {
-            SetTile((TILE *)((u8 *)D_800A7924 + col * 0x10 + entry * 0x30));
-            SetSemiTrans((u8 *)D_800A7924 + col * 0x10 + entry * 0x30, 1);
-            *(s16 *)(entry * 0x30 + col * 0x10 + (u8 *)D_800A7924 + 8) = 0xD;
-            *(s16 *)(entry * 0x30 + col * 0x10 + (u8 *)D_800A7924 + 0xA) =
-                (s8)D_800A2FD0[entry] + 0xD3;
-            *(u16 *)(entry * 0x30 + col * 0x10 + (u8 *)D_800A7932) = 6;
+        col = 0;
+        tileIndex = (s8)entry;
+        tileBytes = tileIndex * 0x30;
+        asm(""
+            : "=r"(f4base)
+            : "0"(D_800A7924), "r"(tileIndex), "r"(tileBytes), "r"(tileIndex));
+        /* Keep these locals multi-set so loop.c does not hoist their values. */
+        for (; col < 3; col++) {
+            asm("addu %0,%1,%2\naddu %0,%3,%0"
+                : "=&r"(p3)
+                : "r"(col * 0x10), "r"(f4base), "r"(tileBytes));
+            SetTile((TILE *)p3);
+            SetSemiTrans(p3, 1);
+            p4 = (u8 *)((u32)tileBytes + (u32)(col * 0x10) + (u32)f4base);
+            tileX = 0xD;
+            ((TILE *)p4)->x0 = tileX;
+            tileX = 0;
+            ((TILE *)p4)->y0 = (s8)D_800A2FD0[tileIndex] + 0xD3;
+            tileHeightBase = (u8 *)D_800A7932;
+            *(u16 *)(tileBytes + col * 0x10 + tileHeightBase) = 6;
+            tileHeightBase = 0;
         }
-        prim = (u8 *)D_800A7924;
-        *(u8 *)(prim + entry * 0x30 + 4) = 0;
-        *(u8 *)(prim + entry * 0x30 + 5) = 0xFF;
-        *(u8 *)(prim + entry * 0x30 + 6) = 0;
-        *(u8 *)(prim + 0x10 + entry * 0x30 + 4) = 0xFF;
-        *(u8 *)(prim + 0x10 + entry * 0x30 + 5) = 0;
-        *(u8 *)(prim + 0x10 + entry * 0x30 + 6) = 0;
-        prim2 = (u8 *)D_800A7944;
-        *(u8 *)(prim2 + entry * 0x30 + 4) = 0;
-        *(u8 *)(prim2 + entry * 0x30 + 5) = 0;
-        *(u8 *)(prim2 + entry * 0x30 + 6) = 0;
-        *(s16 *)(prim2 + entry * 0x30 + 8) = 0xC;
-        *(s16 *)(prim2 + entry * 0x30 + 0xA) = (s8)D_800A2FD0[entry] + 0xD2;
-        *(s16 *)(prim2 + entry * 0x30 + 0xC) = 0x2A;
-        *(s16 *)(prim2 + entry * 0x30 + 0xE) = 8;
+        {
+            register s32 tileRow asm("$6");
+            register u8 *green asm("$2");
+            register u8 *red asm("$3");
+            register u8 *back asm("$4");
+            register s32 offset asm("$4");
+            register s32 color asm("$5");
+
+            tileRow = (s8)entry;
+            red = (u8 *)D_800A7924;
+            offset = tileRow * 0x30;
+            green = (u8 *)((u32)offset + (u32)red);
+            color = 0xFF;
+            asm("" : : "r"(green), "r"(color));
+            red += 0x10;
+            red = (u8 *)((u32)offset + (u32)red);
+            {
+                register u8 *addressBase asm("$8");
+
+                asm("lui %1,%%hi(D_800A7944)\naddiu %1,%1,%%lo(D_800A7944)\naddu %0,%2,%1"
+                    : "=r"(back), "=&r"(addressBase)
+                    : "r"(offset), "r"(color));
+            }
+            asm("" : : "r"(tileRow), "r"(green), "r"(red), "r"(back));
+            ((TILE *)green)->r0 = 0;
+            ((TILE *)green)->g0 = color;
+            ((TILE *)green)->b0 = 0;
+            ((TILE *)red)->r0 = color;
+            ((TILE *)red)->g0 = 0;
+            ((TILE *)red)->b0 = 0;
+            ((TILE *)back)->r0 = 0;
+            ((TILE *)back)->g0 = 0;
+            ((TILE *)back)->b0 = 0;
+            ((TILE *)back)->x0 = 0xC;
+            ((TILE *)back)->y0 = (s8)D_800A2FD0[tileRow] + 0xD2;
+            ((TILE *)back)->w = 0x2A;
+            ((TILE *)back)->h = 8;
+        }
     }
     SetPolyFT4((POLY_FT4 *)D_800A789C);
     SetSemiTrans((u8 *)D_800A789C, 1);
@@ -3297,36 +3407,47 @@ void func_8004A510(void) {
     D_800A78C0[0] = tex->u + 0x6F;
     D_800A78C1[0] = tex->v;
     SetTile(D_800A7984);
+    borderFlag = D_800A798B[0];
+    asm volatile("lui %0,%%hi(D_800B0B7C)\naddiu %0,%0,%%lo(D_800B0B7C)"
+                 : "=r"(driverBase)
+                 :
+                 : "memory");
     D_800A7990[0] = 0x140;
     D_800A798C[0] = 0;
     D_800A798E[0] = 0;
     D_800A7992[0] = 0xF0;
-    D_800A798B[0] |= 2;
+    D_800A798BWrite[0] = borderFlag | 2;
     page = (u16 *)D_80090F32;
     asm("" : "=r"(page) : "0"(page));
     SetPolyF4(D_800A7564);
     for (entry = 0; entry < 2; entry++) {
         for (col = 0; col < 0x18; col++) {
-            SetPolyFT4(
-                (POLY_FT4 *)((u8 *)D_800B0B7C + entry * 0x3C0 + col * 0x28));
-            SetShadeTex((u8 *)D_800B0B7C + entry * 0x3C0 + col * 0x28, 0);
-            *(u16 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B92) =
-                GetTPage(page[0], 0, page[-6], page[-5]);
-            *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 4) =
-                D_800991E8[col * 3];
-            *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 5) =
-                D_800991E9[col * 3];
-            *(u8 *)(col * 0x28 + entry * 0x3C0 + (u8 *)D_800B0B7C + 6) =
-                D_800991EA[col * 3];
+            driverCall = (u8 *)((u32)(col * 0x28) + (u32)driverBase);
+            asm("" : : "r"(driverCall));
+            asm("addu %0,%1,%0"
+                : "=r"(driverCall)
+                : "r"(entry * 0x3C0), "0"(driverCall));
+            SetPolyFT4((POLY_FT4 *)driverCall);
+            SetShadeTex(driverCall, 0);
+            markerPage = GetTPage(page[0], 0, page[-6], page[-5]);
+            asm volatile("addu %0,%1,%2"
+                         : "=r"(markerOffset)
+                         : "r"(col * 0x28), "r"(entry * 0x3C0)
+                         : "memory");
+            *(u16 *)(markerOffset + (u8 *)D_800B0B92) = markerPage;
+            asm volatile("lbu %0,D_800991E8(%1)"
+                         : "=r"(driverR)
+                         : "r"(col * 3)
+                         : "memory");
+            driver = (u8 *)((u32)markerOffset + (u32)driverBase);
+            ((POLY_FT4 *)driver)->r0 = driverR;
+            ((POLY_FT4 *)driver)->g0 = D_800991E9[col * 3];
+            ((POLY_FT4 *)driver)->b0 = D_800991EA[col * 3];
         }
     }
 }
 extern u8 D_800A2FD0[];
 extern u8 D_80098BD0[];
-
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004A510);
-#endif
 
 /* Parked 2026-10-14: corrected the inner table index to a byte offset.
  * Size exact; honest score 90. Two outer address adds and the inner add
