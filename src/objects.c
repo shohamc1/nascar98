@@ -559,7 +559,7 @@ void func_8001FDD0(RaceObject *cam, RaceObject *car) {
     func_8001F728((s32)&cam->rot[2]);
 }
 
-s16 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
+s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 
 void func_8001FF3C(u8 *arg0, u8 *arg1) {
@@ -573,8 +573,8 @@ void func_8001FF3C(u8 *arg0, u8 *arg1) {
     s32 value4;
 
     sp18 = -1;
-    if (func_80024E90(*(s32 *)(arg0 + 0x0), *(s32 *)(arg0 + 0x4), &sp18, &sp1C,
-                      &sp20) == -1) {
+    if ((s16)func_80024E90(*(s32 *)(arg0 + 0x0), *(s32 *)(arg0 + 0x4), &sp18,
+                              &sp1C, &sp20) == -1) {
         value0 = MathMultiplyFixed16(
             *(s32 *)(arg1 + 0xDC), ((s32) * (s32 *)(arg0 + 0x0) >> 2) << 0x10);
         value4 = MathMultiplyFixed16(
@@ -7104,10 +7104,10 @@ void func_8002F514(void) {
     D_800A2EF0 = 0;
 }
 
-void func_80039DDC(void);
+void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
 void func_8002F5A4(void) {
-    func_80039DDC();
+    CarPlaceOnStartingGrid();
     func_8003B6DC(1);
 }
 
@@ -8315,8 +8315,8 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
             D_800A2F2C = D_800A2F2C - 1;
         }
     }
-    *(s16 *)(object + 0x1E0) = func_80024E90(pointArray[0], pointArray[1],
-                                             D_800A2F2CAbsolute, &outX, &outZ);
+    *(s16 *)(object + 0x1E0) = (s16)func_80024E90(
+        pointArray[0], pointArray[1], D_800A2F2CAbsolute, &outX, &outZ);
     *(Vec3 *)(object + 0xDC) = *(Vec3 *)D_800B6094;
     result16 = *(s16 *)(object + 0x1E0);
     if (result16 == -1) {
@@ -13613,7 +13613,209 @@ void func_80039CF4(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80039DDC);
+/* Separate absolute aliases preserve the original access lifetimes. */
+extern FarVar gGridSavedRead;
+extern FarVar gGridSavedWrite;
+asm(".globl gGridSavedRead\ngGridSavedRead = D_800A2EE4\n"
+    ".globl gGridSavedWrite\ngGridSavedWrite = D_800A2EE4");
+extern s32 D_800A2DE8Grid[] asm("D_800A2DE8");
+extern s32 D_800A36A4;
+extern u8 D_800A2F58;
+extern u8 D_800A33E4;
+extern s32 D_800A2F5C;
+
+extern s32 gGridCameraX0[];
+extern s32 gGridCameraY0[];
+extern s32 gGridCameraX3[];
+extern s32 gGridCameraY3[];
+extern s32 gGridCameraX4[];
+extern s32 gGridCameraY4[];
+extern s32 gGridCameraX5[];
+extern s32 gGridCameraY5[];
+extern s32 gGridCameraX6[];
+extern s32 gGridCameraY6[];
+extern s32 gGridCameraX7[];
+extern s32 gGridCameraY7[];
+extern s32 gGridCameraZ0[];
+asm(".globl gGridCameraX0\ngGridCameraX0 = D_800B9954\n"
+    ".globl gGridCameraY0\ngGridCameraY0 = D_800B9958\n"
+    ".globl gGridCameraX3\ngGridCameraX3 = D_800B9954\n"
+    ".globl gGridCameraY3\ngGridCameraY3 = D_800B9958\n"
+    ".globl gGridCameraX4\ngGridCameraX4 = D_800B9954\n"
+    ".globl gGridCameraY4\ngGridCameraY4 = D_800B9958\n"
+    ".globl gGridCameraX5\ngGridCameraX5 = D_800B9954\n"
+    ".globl gGridCameraY5\ngGridCameraY5 = D_800B9958\n"
+    ".globl gGridCameraX6\ngGridCameraX6 = D_800B9954\n"
+    ".globl gGridCameraY6\ngGridCameraY6 = D_800B9958\n"
+    ".globl gGridCameraX7\ngGridCameraX7 = D_800B9954\n"
+    ".globl gGridCameraY7\ngGridCameraY7 = D_800B9958\n"
+    ".globl gGridCameraZ0\ngGridCameraZ0 = D_800B995C\n");
+void CarPlaceOnStartingGrid(void) {
+    volatile VECTOR position;
+    VECTOR ground;
+    s32 section;
+    register s32 cameraOffset asm("a0");
+    s32 gridSpeed;
+    s32 product;
+    s32 workValue;
+    s32 cameraWork;
+    register s32 tableWork asm("a2");
+    s32 lastGridSection;
+    s32 sectionOffset;
+    s32 cameraSectionOffset;
+    s32 groundSection;
+    s32 cameraSection;
+    s32 spacing;
+    s32 viewX;
+    s32 viewY;
+    s32 retryX;
+    s32 retryY;
+    s8 gridRow;
+    s32 side;
+    u8 savedFlag;
+    u8 *car;
+
+    car = D_800A3878w15[0];
+    savedFlag = FAR_VAR(u8, gGridSavedRead);
+    spacing = 2;
+    D_800A36A4 = 0x78;
+    D_800A2F58 = 1;
+    D_800A2DE8Grid[0] = 0x4B0;
+    FAR_VAR(u8, gGridSavedWrite) = 0;
+    D_800A33E4 = savedFlag;
+    D_800A2F5C = -(D_800A2E94[0] * 0x258);
+    if (FAR_VAR(s32, gFarMode2EA4) == spacing) {
+        spacing = 3;
+    }
+    lastGridSection = D_800BE974[0] - 0x23;
+    if (car != NULL) {
+        do {
+            gridRow = (*(s8 *)(car + 0x204));
+            section = lastGridSection - (gridRow * spacing);
+            if (gridRow & 1) {
+                /* Preserve the two branch delay slots. */
+                asm("" : : "r"(car));
+                side = 1;
+            } else {
+                side = -1;
+            }
+            (*(s8 *)(car + 0x206)) = side;
+            if (D_800A2EB0Absolute[0] > 0) {
+                (*(s8 *)(car + 0x206)) = 0;
+            }
+            if (FAR_VAR(s32, gFarMode2EA4) == 2) {
+                (*(s8 *)(car + 0x206)) = 0;
+            }
+            sectionOffset = section * 0xC;
+            (*(s32 *)(car + 0x0)) =
+                (s32) * (s32 *)(sectionOffset + D_800AE154[0]);
+            (*(s32 *)(car + 0x4)) =
+                (s32)(*(s32 *)(sectionOffset + D_800AE154[0] + 0x4));
+            func_80022FB8(
+                car, 0x400 - ((*(u16 *)(sectionOffset + D_800AE154[0] + 0xA)) &
+                              0x3FFF));
+            (*(s32 *)(car + 0x90)) =
+                (s32)(((*(s16 *)(sectionOffset + D_800AE154[0] + 0x8))
+                       << 0x11) /
+                      3);
+            gridSpeed = (*(s16 *)(sectionOffset + D_800AE154[0] + 0x8)) << 0x10;
+            (*(s16 *)(car + 0x1E0)) = section;
+            (*(s32 *)(car + 0x1F4)) = (s32)(s16)section;
+            (*(s32 *)(car + 0x90)) = gridSpeed;
+            if (((*(s16 *)(car + 0x1EC)) == 0) ||
+                ((D_800A2EDAw15[0] != 0) && (car == D_800A3554[0]))) {
+                (*(u8 *)(car + 0x20C)) = 0xC;
+                (*(s16 *)(car + 0xFA)) = (s16)(s8)(u8)(*(s8 *)(car + 0x204));
+                cameraSection = (s32)(section + 0xC) % (s32)D_800BE974[0];
+                cameraSectionOffset = cameraSection * 0xC;
+                *(s32 *)(((u8 *)gGridCameraX0) +
+                         ((*(s8 *)(car + 0x20B)) * 0xC)) =
+                    *(s32 *)(cameraSectionOffset + D_800AE154[0]);
+                *(s32 *)(((u8 *)gGridCameraY0) +
+                         ((*(s8 *)(car + 0x20B)) * 0xC)) =
+                    (*(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4));
+                workValue = *(u16 *)(cameraSectionOffset + D_800AE154[0] + 0xA);
+                cameraWork = *(s8 *)(car + 0x20B);
+                workValue &= 0x3FFF;
+                workValue += 0x300;
+                workValue &= 0x3FF;
+                tableWork = workValue * 4;
+                cameraOffset = cameraWork * 12;
+                workValue = *(s32 *)(tableWork + D_800A3A2CAbsolute[0]);
+                product = workValue * 1000;
+                workValue = *(s32 *)(((u8 *)gGridCameraX0) + cameraOffset);
+                cameraWork = D_800A3A34Absolute[0];
+                workValue -= product >> 16;
+                *(s32 *)(((u8 *)gGridCameraX0) + cameraOffset) = workValue;
+                cameraOffset = (*(s8 *)(car + 0x20B)) * 0xC;
+                tableWork += cameraWork;
+                cameraWork = *(s32 *)tableWork;
+                /* (124 + 1) * 8 keeps the camera load between scales. */
+                product = cameraWork * 124;
+                asm volatile("" : "=r"(product) : "0"(product));
+                workValue = *(s32 *)(((u8 *)gGridCameraY0) + cameraOffset);
+                product = (product + cameraWork) * 8;
+                workValue -= product >> 16;
+                *(s32 *)(((u8 *)gGridCameraY0) + cameraOffset) = workValue;
+                viewX = *(s32 *)(((u8 *)gGridCameraX3) +
+                                 ((*(s8 *)(car + 0x20B)) * 0xC));
+                if (viewX < 0) {
+                    viewX += 3;
+                }
+                position.vx = (viewX >> 2) - D_800AE844[0];
+                viewY = *(s32 *)(((u8 *)gGridCameraY3) +
+                                 ((*(s8 *)(car + 0x20B)) * 0xC));
+                if (viewY < 0) {
+                    viewY += 3;
+                }
+                position.vy = (viewY >> 2) - D_800AE844[1];
+                position.vx = *(s32 *)(((u8 *)gGridCameraX4) +
+                                       ((*(s8 *)(car + 0x20B)) * 0xC));
+                position.vy = *(s32 *)(((u8 *)gGridCameraY4) +
+                                       ((*(s8 *)(car + 0x20B)) * 0xC));
+                ground.vx = cameraSection;
+                groundSection =
+                    func_80024E90(position.vx, position.vy, &ground.vx,
+                                  &ground.vy, &ground.vz);
+                ground.vz = groundSection;
+                if (groundSection == -1) {
+                    *(s32 *)(((u8 *)gGridCameraX5) +
+                             ((*(s8 *)(car + 0x20B)) * 0xC)) =
+                        *(s32 *)(cameraSectionOffset + D_800AE154[0]);
+                    *(s32 *)(((u8 *)gGridCameraY5) +
+                             ((*(s8 *)(car + 0x20B)) * 0xC)) =
+                        (*(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4));
+                    retryX = *(s32 *)(((u8 *)gGridCameraX6) +
+                                      ((*(s8 *)(car + 0x20B)) * 0xC));
+                    if (retryX < 0) {
+                        retryX += 3;
+                    }
+                    position.vx = (retryX >> 2) - D_800AE844[0];
+                    retryY = *(s32 *)(((u8 *)gGridCameraY6) +
+                                      ((*(s8 *)(car + 0x20B)) * 0xC));
+                    if (retryY < 0) {
+                        retryY += 3;
+                    }
+                    position.vy = (retryY >> 2) - D_800AE844[1];
+                    position.vx = *(s32 *)(((u8 *)gGridCameraX7) +
+                                           ((*(s8 *)(car + 0x20B)) * 0xC));
+                    position.vy = *(s32 *)(((u8 *)gGridCameraY7) +
+                                           ((*(s8 *)(car + 0x20B)) * 0xC));
+                    cameraSection =
+                        func_80024E90(position.vx, position.vy, &ground.vx,
+                                      &ground.vy, &ground.vz);
+                }
+                *(s32 *)(((u8 *)gGridCameraZ0) +
+                         ((*(s8 *)(car + 0x20B)) * 0xC)) =
+                    (ground.vy * 4) + 0xE6;
+                *(s32 *)(((u8 *)D_800A3584nm) + ((*(s8 *)(car + 0x20B)) * 4)) =
+                    cameraSection;
+                *(((u8 *)D_800A363Cnm) + (*(s8 *)(car + 0x20B))) = 0;
+            }
+            car = (*(u8 **)(car + 0x3E0));
+        } while (car != NULL);
+    }
+}
 
 extern s32 D_800A2F4C;
 extern s32 D_800A36A4;
