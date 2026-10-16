@@ -1966,7 +1966,242 @@ void func_80046258(void) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004658C);
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80046BD4);
+typedef struct SceneRoadNode {
+    struct SceneRoadNode *prev;
+    struct SceneRoadNode *next;
+    u16 section;
+    u8 unkA[6];
+    u16 angle;
+    u8 unk12[10];
+    u16 height0;
+    s16 height1;
+    u8 unk20[0x70];
+} SceneRoadNode;
+
+typedef struct SceneRoadQuad {
+    u16 section;
+    u8 unk2[0x2E];
+    SVECTOR points[4];
+    struct SceneRoadQuad *next;
+    struct SceneRoadQuad *prev;
+} SceneRoadQuad;
+
+extern s16 D_800A3440[];
+extern SceneRoadQuad *D_800A344C[];
+extern SceneRoadQuad *D_800A3454[];
+extern s16 D_800A357C[];
+extern u8 D_800A2D0C[];
+extern MATRIX D_8009931C;
+typedef struct {
+    s16 x, y, z;
+} SceneRoadPoint;
+extern SceneRoadPoint D_800A45C0[][2];
+extern SceneRoadPoint D_800A45D8[][2];
+extern s32 D_800AE844[];
+
+void SceneUpdateRoadStrip(u8 *car) {
+    SVECTOR rotation;
+    VECTOR result;
+    long flag;
+    s8 count;
+    s8 slot;
+    s16 distance;
+    u16 section;
+    register s16 x asm("v1");
+    s16 y;
+    s32 z;
+    s8 side;
+    s8 otherSide;
+    SceneRoadNode *node;
+    SceneRoadQuad *quad;
+    SVECTOR *points;
+    SceneRoadPoint *cache;
+    register s32 row asm("a2");
+    s32 mode;
+
+    slot = *(s8 *)(car + 0x20B);
+    section = *(u16 *)(car + 0x1E0);
+    distance = section - D_800A3440[slot];
+    if (distance != 0 && (s16)section != -1 && D_800A359C[0] == 0 &&
+        D_800A2D0C[0] == 0) {
+        PushMatrix();
+        if (ABS(distance) >= 14) {
+            if (distance > 0) {
+                distance -= D_800BE974[0];
+            } else {
+                distance += D_800BE974[0];
+            }
+        }
+        if (distance > 0) {
+            /* Keep the offset and address in the same register. */
+            register SVECTOR *point asm("a1");
+            register s32 pointOffset asm("a1");
+            s32 *origin;
+            s32 cameraZ;
+
+            count = 0;
+            node = (SceneRoadNode *)D_800BE980[0] +
+                   (D_800A3440[slot] + D_800A3438) % D_800BE974[0];
+            while (count < distance) {
+                section = node->section;
+                rotation.vx = 0;
+                rotation.vy =
+                    ((SceneRoadNode *)D_800BE980[0])[(s16)section].angle * 4;
+                rotation.vz = 0;
+                RotMatrix(&rotation, &D_8009931C);
+                SetRotMatrix(&D_8009931C);
+                SetTransMatrix(&D_8009931C);
+                side = 0;
+                rotation.vy = 0;
+                D_800A344C[slot] = quad = D_800A3454[slot];
+                points = quad->points;
+                origin = D_800AE844;
+                do {
+                    otherSide = side + 2;
+                    rotation.vx = side ? -150 : 150;
+                    RotTrans(&rotation, &result, &flag);
+                    points[otherSide].vx = D_800A45C0[slot][side].x;
+                    points[otherSide].vy = D_800A45C0[slot][side].y;
+                    points[otherSide].vz = D_800A45C0[slot][side].z;
+                    x = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12) +
+                             result.vz >>
+                         2) -
+                        origin[0];
+                    row = slot * 12 + side * 6;
+                    /* Build the cache pointer after x is ready. */
+                    asm("" : "=r"(row) : "0"(row), "r"(x) : "v0", "a1");
+                    cache = (SceneRoadPoint *)((u8 *)D_800A45C0 + row);
+                    pointOffset = side * 8;
+                    point = (SVECTOR *)(pointOffset + (u32)points);
+                    cache->x = x;
+                    point->vx = x;
+                    y = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12 + 4) +
+                             result.vx >>
+                         2) -
+                        origin[1];
+                    cache->y = y;
+                    point->vy = y;
+                    cameraZ = origin[2];
+                    if (side) {
+                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                                .height0 -
+                            0x4000;
+                    } else {
+                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                                .height1 -
+                            0x4000;
+                    }
+                    cache->z = (z >> 2) - cameraZ;
+                    /* Reload the cached height before both stores. */
+                    point->vz = cache->z =
+                        ((volatile SceneRoadPoint *)cache)->z;
+                    D_800A45D8[slot][side].x =
+                        D_800A3454[slot]->next->points[otherSide].vx;
+                    D_800A45D8[slot][side].y =
+                        D_800A3454[slot]->next->points[otherSide].vy;
+                    D_800A45D8[slot][side].z =
+                        D_800A3454[slot]->next->points[otherSide].vz;
+                    side++;
+                } while (side < 2);
+                D_800A344C[slot]->section = section;
+                node = node->next;
+                count++;
+                D_800A3454[slot] = D_800A3454[slot]->next;
+                origin = 0;
+            }
+        } else {
+            s32 *origin;
+            register s32 lastSection asm("a0");
+            s32 sectionIndex;
+            s32 length;
+            s32 cameraZ;
+            register SVECTOR *point asm("a0");
+            register s32 pointOffset asm("a0");
+
+            count = 0;
+            sectionIndex = D_800A3440[slot] - D_800A3438;
+            /* Keep the subtraction separate from the length decrement. */
+            asm("" : "=r"(sectionIndex) : "0"(sectionIndex));
+            length = D_800BE974[0];
+            lastSection = length - 1;
+            node = (SceneRoadNode *)D_800BE980[0] +
+                   (sectionIndex + lastSection) % length;
+            distance = -distance;
+            while (count < distance) {
+                section = node->section;
+                rotation.vx = 0;
+                rotation.vy =
+                    ((SceneRoadNode *)D_800BE980[0])[(s16)section].angle * 4;
+                rotation.vz = 0;
+                RotMatrix(&rotation, &D_8009931C);
+                SetRotMatrix(&D_8009931C);
+                SetTransMatrix(&D_8009931C);
+                side = 0;
+                rotation.vy = 0;
+                D_800A3454[slot] = quad = D_800A344C[slot];
+                points = quad->points;
+                origin = D_800AE844;
+                do {
+                    otherSide = side + 2;
+                    rotation.vx = side ? -150 : 150;
+                    RotTrans(&rotation, &result, &flag);
+                    points[side].vx = D_800A45D8[slot][side].x;
+                    points[side].vy = D_800A45D8[slot][side].y;
+                    points[side].vz = D_800A45D8[slot][side].z;
+                    x = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12) +
+                             result.vz >>
+                         2) -
+                        origin[0];
+                    row = slot * 12 + side * 6;
+                    asm("" : "=r"(row) : "0"(row), "r"(x) : "v0", "a0");
+                    cache = (SceneRoadPoint *)((u8 *)D_800A45D8 + row);
+                    pointOffset = otherSide * 8;
+                    point = (SVECTOR *)(pointOffset + (u32)points);
+                    cache->x = x;
+                    point->vx = x;
+                    y = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12 + 4) +
+                             result.vx >>
+                         2) -
+                        origin[1];
+                    cache->y = y;
+                    point->vy = y;
+                    cameraZ = origin[2];
+                    if (side) {
+                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                                .height0 -
+                            0x4000;
+                    } else {
+                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                                .height1 -
+                            0x4000;
+                    }
+                    cache->z = (z >> 2) - cameraZ;
+                    point->vz = cache->z =
+                        ((volatile SceneRoadPoint *)cache)->z;
+                    D_800A45C0[slot][side].x =
+                        D_800A344C[slot]->prev->points[side].vx;
+                    D_800A45C0[slot][side].y =
+                        D_800A344C[slot]->prev->points[side].vy;
+                    D_800A45C0[slot][side].z =
+                        D_800A344C[slot]->prev->points[side].vz;
+                    side++;
+                } while (side < 2);
+                D_800A344C[slot] = D_800A344C[slot]->prev;
+                node = node->prev;
+                count++;
+                D_800A3454[slot]->section = section;
+                origin = 0;
+            }
+        }
+        mode = D_800A397C[0];
+        D_800A3440[slot] = *(s16 *)(car + 0x1E0);
+        if (mode != 2) {
+            D_800A357C[slot] = *(s16 *)(car + 0x1E0);
+        }
+        PopMatrix();
+    }
+}
+
 
 extern int abs(int);
 extern u8 D_800A2FE8;

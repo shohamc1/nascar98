@@ -842,3 +842,5 @@ sTrackReadVerticesMessage = 0x8008CC10; // force_not_migration:True
 sTrackReadFacesMessage = 0x8008CC28; // force_not_migration:True
 sTrackFaceErrorFormat = 0x8008CC3C; // force_not_migration:True
 sTrackReadSuccessMessage = 0x8008CC50; // force_not_migration:True
+
+SceneUpdateRoadStrip = 0x80046BD4; // type:func
