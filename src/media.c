@@ -2401,7 +2401,7 @@ extern void func_80072A34(void);
 extern s32 func_80072A5C(void);
 extern s32 func_80072AFC(u32);
 extern void func_80072CA8(u8 *);
-extern void func_80073100(u8 *);
+extern void AudioQueueStereoAdpcm(u8 *);
 extern void func_80070750(s32);
 extern void func_8007005C(void);
 extern void func_80070018Args(u8 *, s32, s32);
@@ -2482,7 +2482,7 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
             case 0x61753030:
 
             case 0x61753031:
-                func_80073100(p);
+                AudioQueueStereoAdpcm(p);
                 break;
 
             case 0x4D444332:
@@ -4066,7 +4066,133 @@ void func_80072FE4(u8 *dst, u8 *src, u32 n) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_80073100);
+#define COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount, length) \
+    if ((length) != 0) {                                                       \
+        do {                                                                   \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = 0;                                            \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            *copyDestination++ = *copySource++;                                \
+            copyCount += 15;                                                   \
+        } while (copyCount < (length));                                        \
+    }
+
+#define COPY_ADPCM_BLOCKS(src, dst, length, srcReg)                            \
+    {                                                                          \
+        register u8 *copySource asm(srcReg) = (src);                           \
+        u8 *copyDestination = (dst);                                           \
+        u32 copyCount = 0;                                                     \
+        COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,         \
+                               length);                                        \
+    }
+
+void AudioQueueStereoAdpcm(u8 *block) {
+    /* Compiler frame extent; retail does not access these bytes. */
+    u8 frameExtent[0x30];
+    u32 pollTail;
+    u32 pollHead;
+    u32 headerWord;
+    u32 headerSize;
+    u32 blockCount;
+    u32 outputBlocks;
+    u32 encodedTimes16;
+    u32 spaceBlocks;
+    u32 spaceTimes16;
+    u32 encodedLength;
+    u32 outputLength;
+    u32 head;
+    u32 firstLength;
+    u32 secondLength;
+    u32 lastLength;
+    u8 *leftSource;
+    u8 *rightSource;
+    u8 *leftDestination;
+    u8 *rightDestination;
+    u8 *leftBase;
+    u8 *rightBase;
+    volatile u32 *pollState;
+    register volatile u32 *spaceState asm("a3");
+    volatile u32 *rightState;
+    volatile u32 *tailState;
+
+    headerWord = *(u32 *)(block + 4);
+    headerSize = SWAP32(headerWord) - 0x10;
+    encodedLength = headerSize >> 1;
+    blockCount = encodedLength / 15;
+    encodedTimes16 = blockCount << 4;
+    encodedLength = encodedTimes16 - blockCount;
+    outputBlocks = encodedLength / 15;
+    outputLength = outputBlocks * 16;
+    leftSource = block + 0x10;
+    rightSource = leftSource + encodedLength;
+    pollState = (volatile u32 *)D_800A351C;
+    do {
+        pollTail = pollState[1];
+        pollHead = pollState[0];
+        pollTail -= 0x3C00;
+    } while (pollHead - pollTail < outputLength);
+    spaceState = (volatile u32 *)D_800A351C;
+    head = spaceState[1];
+    spaceBlocks = (0x3C00 - (head % 0x3C00)) >> 4;
+    spaceTimes16 = spaceBlocks << 4;
+    firstLength = spaceTimes16 - spaceBlocks;
+    if (firstLength >= encodedLength) {
+        leftDestination =
+            (u8 *)(((u32)spaceState[1] % 0x3C00) + (u32)spaceState) + 0x10;
+        COPY_ADPCM_BLOCKS(leftSource, leftDestination, encodedLength, "a1");
+        rightState = (volatile u32 *)D_800A351C;
+        rightDestination =
+            (u8 *)(((u32)rightState[1] % 0x3C00) + (u32)rightState) + 0x3C10;
+        COPY_ADPCM_BLOCKS(rightSource, rightDestination, encodedLength, "a2");
+    } else {
+        leftDestination =
+            (u8 *)(((u32)spaceState[1] % 0x3C00) + (u32)spaceState) + 0x10;
+        COPY_ADPCM_BLOCKS(leftSource, leftDestination, firstLength, "a1");
+        leftBase = (u8 *)D_800A351C;
+        {
+            u8 *copySource = leftSource + firstLength;
+            u8 *copyDestination;
+            u32 copyCount = 0;
+
+            secondLength = encodedLength - firstLength;
+            copyDestination = leftBase + 0x10;
+            COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,
+                                   secondLength);
+        }
+        rightState = (volatile u32 *)D_800A351C;
+        rightDestination =
+            (u8 *)(((u32)rightState[1] % 0x3C00) + (u32)rightState) + 0x3C10;
+        COPY_ADPCM_BLOCKS(rightSource, rightDestination, firstLength, "a2");
+        rightBase = (u8 *)D_800A351C;
+        {
+            u8 *copySource = rightSource + firstLength;
+            u8 *copyDestination;
+            register u32 copyCount asm("a2") = 0;
+
+            lastLength = encodedLength - firstLength;
+            copyDestination = rightBase + 0x3C10;
+            COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,
+                                   lastLength);
+        }
+    }
+    tailState = (volatile u32 *)D_800A351C;
+    tailState[1] = tailState[1] + outputLength;
+}
+
+#undef COPY_ADPCM_BLOCKS
+#undef COPY_ADPCM_BLOCKS_BODY
 
 extern volatile s32 *D_800A351C;
 void func_80073948(void) {
