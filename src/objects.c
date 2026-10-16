@@ -7370,10 +7370,8 @@ void func_8002FFB8(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/objects", func_80030204);
 
 extern s32 D_800A3A80;
-/* Parked 2026-10-14: 768 bytes, score 50 (was 165), 10 register-only
- * rows. Endpoint order, swap temporary reuse and height-load order match;
- * leftHeight/y1 and the right-height z temporaries still rotate. */
-#ifdef NON_MATCHING
+/* The right-height block uses its own endpoint locals so leftHeight keeps
+ * retail's register; the pinned span keeps the divisor in v0. */
 s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
     SVECTOR **points;
     s32 vyA;
@@ -7474,15 +7472,22 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
             leftHeight = sampleY;
             leftHeight = z0 + (((z1 - z0) * (leftHeight - y0)) / heightSpan);
         }
-        z0 = pointB->vz;
-        z1 = pointA->vz;
-        y0 = pointB->vy;
-        y1 = pointA->vy;
-        if (y1 == y0) {
-            result = z0;
-        } else {
-            result = (z1 - z0) * (sampleY - y0);
-            result = z0 + (result / (y1 - y0));
+        {
+            s32 endY;
+            register s32 span asm("$2");
+            s32 endZ;
+
+            z0 = pointB->vz;
+            endZ = pointA->vz;
+            y0 = pointB->vy;
+            endY = pointA->vy;
+            if (endY == y0) {
+                result = z0;
+            } else {
+                result = (endZ - z0) * (sampleY - y0);
+                span = endY - y0;
+                result = z0 + (result / span);
+            }
         }
         if (right == left) {
             result = leftHeight;
@@ -7497,9 +7502,6 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
 
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_800309DC);
-#endif
 
 extern s32 D_800A38AC[];
 extern s32 D_800BE980[];
