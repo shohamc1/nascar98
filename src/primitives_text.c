@@ -1692,7 +1692,175 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
 
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001A4D4);
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001A778);
+extern u8 *D_8009AD60[][6];
+extern u8 *D_8009AD68[][6];
+extern u8 *D_8009AD6C[][6];
+extern u8 *D_8009ADA8[];
+extern u8 *D_8009ADAC[];
+extern u8 *D_8009ADB4[];
+extern u8 *D_8009ADBC[];
+extern u8 *D_8009ADCC[];
+extern u8 *D_8009ADD0;
+extern u8 *D_8009ADD4;
+extern s16 D_800A3694Absolute[];
+extern s16 D_800A3696Absolute[];
+extern s8 D_800A39F0[];
+extern s32 D_800A2EB0panel asm("D_800A2EB0Absolute");
+extern u8 D_800A2F9Cpanel asm("D_800A2F9CAbsolute");
+extern u8 D_800A2F9Dpanel asm("D_800A2F9DAbsolute");
+extern u8 D_800A306Cpanel asm("D_800A306CAbsolute");
+extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
+extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern void func_8004DF38(void);
+extern void func_8004EBE4(void);
+extern void GraphicsSetColor(s32, s32, s32);
+extern s32 func_80050940(u8 *);
+extern void func_80050028(u8 *, s32, s32, s8);
+extern void func_8001D778();
+extern void func_8001D638();
+extern void func_80044A1C();
+void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
+    s32 frameExtent[2];
+    s32 y;
+    s32 arrowX;
+    s8 i;
+    s32 index;
+    s32 offset;
+    s32 x;
+    s32 rowY;
+    s32 rowY2;
+    s32 rowY3;
+    s32 cursorY;
+    s32 rowBias;
+    s32 arrowArg;
+    s32 volumeLimit;
+    u8 **labels;
+    u8 **choices;
+    u8 **volumeChoices;
+    register u8 **volumeLabels asm("s2");
+
+    y = 40;
+    arrowX = 80;
+    if (flags & 8) {
+        func_8004DF38();
+        return;
+    }
+    if (flags & 4) {
+        func_8004EBE4();
+        return;
+    }
+    if (D_800A2EA4w15[0] != 0) {
+        y = 20;
+        if (D_800A3620w18c[0] != 0) {
+            D_800A39C8Lui += 0x1004;
+        } else {
+            y = 30;
+        }
+    }
+    GraphicsSetColor(128, 128, 128);
+    switch (D_800A39F0[0]) {
+    case 0:
+        i = 0;
+        labels = (u8 **)D_8009AD60;
+        do {
+            /* Keep the signed byte index in one register. */
+            asm("sll %0,%1,24\n\tsra %0,%0,24" : "=r"(index) : "r"(i));
+            offset = index * 4;
+            x = (s16)(((u32)(158 - func_80050940(
+                                       *(u8 **)(offset + (D_800A2EB0panel * 24 +
+                                                          (s32)labels)))) >>
+                       1) +
+                      81);
+            offset += D_800A2EB0panel * 24 + (s32)labels;
+            func_80050028(*(u8 **)offset, x, index * 12 + y, 0);
+            i++;
+        } while ((s8)i < 2);
+        i = 4;
+        labels = (u8 **)D_8009AD60;
+        do {
+            /* Keep the signed byte index in one register. */
+            asm("sll %0,%1,24\n\tsra %0,%0,24" : "=r"(index) : "r"(i));
+            offset = index * 4;
+            x = (s16)(((u32)(158 - func_80050940(
+                                       *(u8 **)(offset + (D_800A2EB0panel * 24 +
+                                                          (s32)labels)))) >>
+                       1) +
+                      81);
+            offset += D_800A2EB0panel * 24 + (s32)labels;
+            func_80050028(*(u8 **)offset, x, index * 12 + y, 0);
+            i++;
+        } while ((s8)i < 6);
+        if (D_800A2EB0panel == 2) {
+            GraphicsSetColor(32, 32, 32);
+        }
+        x = (s16)(((u32)(158 - func_80050940(D_8009AD68[D_800A2EB0panel][0])) >>
+                   1) +
+                  81);
+        func_80050028(D_8009AD68[D_800A2EB0panel][0], x, y + 24, 0);
+        GraphicsSetColor(128, 128, 128);
+        if (D_800A2EA4w15[0] != 0) {
+            GraphicsSetColor(32, 32, 32);
+        }
+        x = (s16)(((u32)(158 - func_80050940(D_8009AD6C[D_800A2EB0panel][0])) >>
+                   1) +
+                  81);
+        func_80050028(D_8009AD6C[D_800A2EB0panel][0], x, y + 36, 0);
+        break;
+    case 1:
+        choices = D_8009ADA8;
+        rowY = y;
+        asm("" : "=r"(rowY) : "0"(rowY));
+        func_80050028(choices[0], 90, rowY, 0);
+        choices += 5;
+        cursorY = 13;
+        x = (s16)(230 - func_80050940(choices[D_800A2F9Dpanel]));
+        func_80050028(choices[D_800A2F9Dpanel], x, rowY, 0);
+        func_8001D778(110, y + cursorY, D_800A3696Absolute[0], 8, 0, 0,
+                      D_800A2F9Dpanel ? -128 : 0, 1);
+        func_8001D778(109, y + 12, 102, 10, -1, -1, -1, 1);
+        rowY2 = y + 24;
+        func_80050028(D_8009ADAC[D_800A306Dpanel], 90, rowY2, 0);
+        x = (s16)(230 - func_80050940(D_8009ADBC[D_800A2F9Cpanel]));
+        func_80050028(D_8009ADBC[D_800A2F9Cpanel], x, rowY2, 0);
+        func_8001D778(110, y + 37, D_800A3694Absolute[0], 8, 0, 0,
+                      D_800A2F9Cpanel ? -128 : 0, 1);
+        func_8001D778(109, y + 36, 102, 10, -1, -1, -1, 1);
+        rowY3 = y + 48;
+        volumeLabels = D_8009ADB4;
+        asm("" : "=r"(volumeLabels) : "0"(volumeLabels));
+        func_80050028(volumeLabels[0], 90, rowY3, 0);
+        volumeLimit = 8;
+        volumeChoices = volumeLabels - 3;
+        x = (s16)(230 -
+                  func_80050940(volumeChoices[volumeLimit - D_800A306Cpanel]));
+        func_80050028(volumeChoices[volumeLimit - D_800A306Cpanel], x, rowY3,
+                      0);
+        x = (s16)(((u32)(158 - func_80050940(volumeLabels[1])) >> 1) + 81);
+        func_80050028(volumeLabels[1], x, y + 60, 0);
+        break;
+    case 2:
+        x = (s16)(((u32)(158 - func_80050940(D_8009ADCC[0])) >> 1) + 81);
+        func_80050028(D_8009ADCC[0], x, y + 12, 0);
+        x = (s16)(((u32)(158 - func_80050940(D_8009ADD0)) >> 1) + 81);
+        func_80050028(D_8009ADD0, x, y + 36, 0);
+        x = (s16)(((u32)(158 - func_80050940(D_8009ADD4)) >> 1) + 81);
+        func_80050028(D_8009ADD4, x, y + 48, 0);
+        break;
+    }
+    func_80044A1C(81, y - 1, 158, 73, 0, 0, 0, 1);
+    arrowArg = arrowX - 1;
+    asm("" : : "r"(arrowArg));
+    cursorY = selection * 12;
+    rowBias = y + 5;
+    cursorY += rowBias;
+    func_8001D638(arrowArg, cursorY, 0, 5);
+    func_8001D638(arrowX | 160, cursorY, 1, 5);
+    if (D_800A3620w18c[0] != 0) {
+        D_800A39C8Lui -= 0x1004;
+    }
+    /* Compiler control: preserve the retail frame extent. */
+    asm("" : "=m"(frameExtent));
+}
 
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001AEDC);
 
@@ -1853,7 +2021,7 @@ void func_8001C34C(void) {
         if (D_800A397CAbsolute[0] == 2) {
             func_8001B3F0();
         } else {
-            func_8001A778((void *)0x80010000, D_800A2ECCnm[0], D_800A2ED0nm[0]);
+            MenuDrawPausePanel((void *)0x80010000, D_800A2ECCnm[0], D_800A2ED0nm[0]);
         }
     } else {
         func_8005098C();
