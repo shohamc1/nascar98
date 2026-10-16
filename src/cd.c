@@ -2436,63 +2436,15 @@ void func_8003EBD0(u8 *object, s32 index) {
     }
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-11 (w3e): size exact 0xE8, draft-unit diff 38 bytes (from 890).
- * Recipe stack that got here:
- * 1) Split the value web: `value = *(s16 *)(current + 0x94);` stays, but
- *    `value = value + extra - depth` became `sum = value + extra;
- *    moved = sum - depth;` with s32 locals (separate pseudos; retail keeps
- *    the lh result and the subu result on different regs). depth declared
- *    s32 (retail's lh sign-extends at load; a s16 depth gives an extra
- *    sll/sra pair), pad[1] removed once count stopped spilling.
- * 2) Permuter find (output-200-1, verified on the real TU): duplicate the
- *    prologue as `if (D_800AE84C) { current = load; base = ...; } else {
- *    current = *(u8 **)(new_var = D_800A387C - 4); base = ...; }` with a
- *    dead `u8 *new_var` — this materialises retail's `move t1,a0` entry
- *    park as the FIRST insn and puts current in a0; the same duplicated-arm
- *    shape around the depth load fixes the walk regs. `asm volatile
- *    ("" : : "r"(object));` before the loop keeps the dst-init out of the
- *    beqz delay slot (38-byte state). Removing the depth diamond or the
- *    barrier flips src/dst back (43).
- * 3) 2026-10-11 (w4d): permuter round 2 find (output-130-1, verified in
- *    the real TU, draft-unit 140 -> 130, TU 130 -> 120): brace the
- *    `break;` (`if (*(s16 *)(current + 0x1DE) == id) { break; }`) and move
- *    `dst += 2;` BEFORE `src += 6;` at the loop tail. Remaining 120: the
- *    depth/count load pair swapped (ours lh t2,0x27c then lh v0,0xa; retail
- *    count first) with the dst pointer home emitted between count load and
- *    blez (retail: both pointer homes after the AE84C lui/addiu, src=t0,
- *    dst=a3; ours: src=a3, dst=t0, so the tail increments swap too), and
- *    `addu a1,t3,v1` vs `addu a1,v1,t3`. Tried and failed: hoisting the
- *    count load into a new local (alloc exploded to 3930), into dead `id`
- *    (1330), swapping src/dst decl order and for-init order (normalized,
- *    identical asm). Lead: make the count load textually precede the depth
- *    diamond without changing the decl count.
- * 4) 2026-10-11 (w5d): re-diffed at 120 and probed the block structure with
- *    cc1 -dR/-ds. Sched1 input: [asm barrier][AE84C diamond (REAL branch,
- *    folded to one lh later)][block: count-lh, dst-init, i-init, blez,
- *    AE84C-mat, src-init][loop]. Final [depth,count,home,blez] = folded
- *    diamond + that block. gcc picks row=a1,i=a2,src=a3,dst=t0 by
- *    priority; retail = row,i,dst(a3),src(t0) — only the last two
- *    swapped. Tried and failed (all >= 120): `if (count > 0) { diamond;
- *    inits; do{}while; }` (3705, diamond falls below the guard, size +8);
- *    count into for-init comma `i=0, id=*(s16 *)(object+0xA); i<id`
- *    (1350, tail reload lost); dst decl-first and dst-first for-init
- *    (identical asm — pseudo order follows first USE, not decl);
- *    output-tied ref-raiser `asm("" : "=r"(dst) : "0"(dst));` at body
- *    start (290: src DID fall to t0, but dst took a1 and row/i cycled to
- *    a2/a3 — the copy changed the loop schedule and row's live_length);
- *    input-only src barrier after the loop (3495, src range explodes past
- *    the tail). Remaining leads: permuter round 3 from 120; make dst
- *    out-prioritize src by one ref WITHOUT touching row/i; a spelling
- *    that puts the count load before the diamond without killing the
- *    tail reload (named count local and && chains both break it). */
-
 extern u8 D_800A387C[];
 extern s32 D_800AE84C[];
 
+/* The two pins put base and the src walker in retail's registers. The
+ * opaque dst copy keeps cse from copying it out of src, and the explicit
+ * `adjust` local keeps the D_800AE84C address ahead of the walker copies. */
 void func_8003ECB8(u8 *object) {
     u8 *current;
-    u8 *base;
+    register u8 *base asm("$11");
     s32 id;
     s32 depth;
     s32 i;
@@ -2502,17 +2454,11 @@ void func_8003ECB8(u8 *object) {
     s32 extra;
     u16 u16v;
     u8 *row;
-    u8 *new_var;
-    u8 *src;
+    register u8 *src asm("$8");
     u8 *dst;
 
-    if (D_800AE84C) {
-        current = *(u8 **)(D_800A387C - 4);
-        base = D_800BE97C[0];
-    } else {
-        current = *(u8 **)(new_var = D_800A387C - 4);
-        base = D_800BE97C[0];
-    }
+    current = *(u8 **)(D_800A387C - 4);
+    base = D_800BE97C[0];
     if (current != 0) {
         id = *(s16 *)(object + 0xC) - 1;
         for (; current != 0; current = *(u8 **)(current + 0x3E0)) {
@@ -2522,34 +2468,34 @@ void func_8003ECB8(u8 *object) {
         }
         if (current != 0 && *(s16 *)(current + 0x1EC) != 1 &&
             *(u8 *)(current + 0x268) != 0) {
-            asm volatile("" : : "r"(object));
-            if (D_800AE84C) {
-                depth = *(s16 *)(current + 0x27C);
-            } else {
-                depth = *(s16 *)(current + 0x27C);
-            }
-            for (src = object, dst = object, i = 0; i < *(s16 *)(object + 0xA);
-                 i++) {
-                current = src;
-                value = *(s16 *)(current + 0x94);
-                extra = *(s32 *)(object + 0x218);
-                u16v = *(u16 *)(dst + 0x10);
-                row = (u16v << 3) + base;
-                sum = value + extra;
-                moved = sum - depth;
-                if (moved < 0) {
-                    moved += 3;
-                }
-                *(s16 *)(row + 4) = (moved >> 2) - D_800AE84C[0];
-                dst += 2;
-                src += 6;
+            depth = *(s16 *)(current + 0x27C);
+            i = 0;
+            if (i < *(s16 *)(object + 0xA)) {
+                s32 *adjust;
+
+                adjust = D_800AE84C;
+                src = object;
+                asm("" : "=r"(dst) : "0"(object));
+                do {
+                    current = src;
+                    value = *(s16 *)(current + 0x94);
+                    extra = *(s32 *)(object + 0x218);
+                    u16v = *(u16 *)(dst + 0x10);
+                    row = (u8 *)((u32)(u16v << 3) + (u32)base);
+                    sum = value + extra;
+                    moved = sum - depth;
+                    if (moved < 0) {
+                        moved += 3;
+                    }
+                    *(s16 *)(row + 4) = (moved >> 2) - adjust[0];
+                    src += 6;
+                    dst += 2;
+                    i++;
+                } while (i < *(s16 *)(object + 0xA));
             }
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003ECB8);
-#endif
 
 extern s32 D_800A2EA8[];
 extern s32 D_800BE974[];

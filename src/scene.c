@@ -3445,10 +3445,9 @@ void HudInitRacePrims(void) {
 extern u8 D_800A2FD0[];
 extern u8 D_80098BD0[];
 
-/* Parked 2026-10-14: corrected the inner table index to a byte offset.
- * Size exact; honest score 90. Two outer address adds and the inner add
- * commute differently; x loads before the lbu address setup. */
-#ifdef NON_MATCHING
+/* The `(u32)index + (u32)base` casts give retail's index-first `addu`
+ * operands. The block-local row load and the `asm volatile` barrier keep
+ * the row-pointer and pad-byte loads ahead of the x and y loads. */
 void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     extern u8 D_800A2FD0[];
     extern u8 D_8009AE14[];
@@ -3478,17 +3477,21 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     arg0e = (s8)arg0;
     a914 = (s8 **)table;
     do {
+        s8 *row;
+
         j = 0;
         i24 = i << 24;
+        xy0 = (u16 *)((u32)(i24 >> 22) + (u32)arg1);
+        row = *(s8 **)((u32)(i24 >> 22) + (u32)a914);
         asm("" : "=r"(padByte) : "0"(D_800A2FD0[arg0e]));
-        xy0 = (u16 *)((i24 >> 22) + ((char *)arg1));
+        asm volatile("");
         x = xy0[0];
         w = xy0[1] + ((padByte << 24) >> 24);
-        if ((*((s8 **)(((char *)a914) + (i24 >> 22))))[0] != 0) {
+        if (row[0] != 0) {
             out = (s16 *)(((u8 *)cursor) + 0x22);
         inner:
             do {
-                t = (*((s8 **)(((u8 *)a914) + (i24 >> 22))))[j];
+                t = (*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j];
                 glyph = (s16 *)(&D_80098BD0[t * 10]);
                 v0 = glyph[3];
                 out[-13] = x;
@@ -3507,16 +3510,13 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
             cursor += 0x14;
             x = sum;
             out += 0x14;
-            if ((*((s8 **)(((u8 *)a914) + (i24 >> 22))))[j] != 0) {
+            if ((*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j] != 0) {
                 goto inner;
             }
         }
         i++;
     } while (i < 7);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004AFE0);
-#endif
 
 extern s32 D_800A2E50[];
 extern s16 D_800A38E4[];
@@ -6631,22 +6631,13 @@ extern s32 D_800AE844[];
 extern s32 D_800A2EC0Absolute[];
 extern u8 D_80090F5E[], D_80090F6C[], D_80090F88[];
 
-#ifdef NON_MATCHING
-/* 2026-10-11 w3f: frame hole decoded and fixed. Retail's frame is 0xa0 with
- * 8 dead bytes between `m` (0x38) and `rot` (0x60); the draft was 0x98 with
- * rot at 0x58. An unused local is dropped entirely, but an ADDRESS-TAKEN
- * local whose only reference sits inside `if (0)` keeps its stack slot:
- * parse sets TREE_ADDRESSABLE, expand_decl allocates the slot in decl
- * order, and the dead branch never expands, so the slot is silent.
- * `SVECTOR padRot;` between m and rot + the `if (0)` RotMatrix below
- * reproduces the hole and shifts every prologue/epilogue/rot/out/flag
- * offset back onto retail. Retry 2026-10-11 keeps the permuter pointer
- * assignment at the trail-node store: 151 differing bytes, size 0x870.
- * Remaining (83 words): a0/a1 swaps in the coords
- * loop, the E8->v1 / F4->a0 assignment swap, the 413d8 nop-vs-move s3,a1
- * slot, and the tail interleave (mfhi t1 vs t0, subu a3 vs v0). */
+/* Retail's frame has 8 dead bytes between `m` and `rot`: the address-taken
+ * `padRot`, referenced only inside `if (0)`, keeps that slot. The block
+ * locals below are load-bearing. Retail computes each table slot as
+ * index + base into a block-local register, and the pins and the two
+ * `asm` statements reproduce the register choice and the store order
+ * that sched1 picks there. */
 void func_800525A8(u8 *arg0, s8 arg1) {
-    s32 new_var2;
     s16 coords[3][4];
     VECTOR vec;
     MATRIX m;
@@ -6663,31 +6654,28 @@ void func_800525A8(u8 *arg0, s8 arg1) {
     u16 w;
     u8 *tex;
     u8 *tex2;
-    u8 *new_var;
     u8 *q;
     u8 *p;
-    u16 *new_var3;
     u32 v;
     s8 side1;
     s8 side2;
     u8 *new_var4;
     s32 *ref;
     s8 i;
-    s8 j;
     SceneTexture *tim;
     u8 u;
     u8 uv;
     u8 *node;
-
-    s32 w2;
-    s32 n;
 
     diff = *(u16 *)(arg0 + 0x104) - *(u16 *)(arg0 + 0x114);
     entry = arg0 + (arg1 * 0x28 + 0x2AC);
     if (*(u16 *)(arg0 + 0x362) == 0 || *(u16 *)(arg0 + 0x364) == 0 ||
         *(u16 *)(arg0 + 0x366) == 0 || *(u16 *)(arg0 + 0x368) == 0) {
         for (i = 0; i < 4; i++) {
-            if (arg0[i * 0x28 + 0x2CC] != 0) {
+            u8 *row;
+
+            row = arg0 + i * 0x28;
+            if (row[0x2CC] != 0) {
                 e = arg0 + (i * 0x28 + 0x2AC);
                 m2 = *(s16 *)(e + 0x26);
                 e[0x24] = 0;
@@ -6803,9 +6791,15 @@ loop2:
     vec.vy = side2 * 120 + out.vx;
     vec.vz = 0;
     func_8001ED84((s32 *)&vec);
-    coords[0][i] = ((*(s32 *)(arg0 + 0) + vec.vx) >> 2) - ref[0];
-    coords[1][i] = ((*(s32 *)(arg0 + 4) + vec.vy) >> 2) - ref[1];
-    coords[2][i] = ((*(s32 *)(arg0 + 8) + vec.vz) >> 2) - ref[2];
+    {
+        register s16 *c asm("$5");
+
+        c = (s16 *)(i * 2);
+        c = (s16 *)((u8 *)c + (s32)coords);
+        c[0] = ((*(s32 *)(arg0 + 0) + vec.vx) >> 2) - ref[0];
+        c[4] = ((*(s32 *)(arg0 + 4) + vec.vy) >> 2) - ref[1];
+        c[8] = ((*(s32 *)(arg0 + 8) + vec.vz) >> 2) - ref[2];
+    }
     i++;
     if (i < 2) {
         goto loop2;
@@ -6819,30 +6813,24 @@ loop2:
         *(u16 *)(entry + 0x1A) = coords[2][1];
         entry[0x20] = 1;
     } else {
-        tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
+        {
+            s32 cur;
+
+            cur = D_800A34E8;
+            tex2 = (u8 *)D_800A34F4 + (cur * 12 - cur) * 8;
+        }
         *(u16 *)(tex2 + 0x44) = *(u16 *)(entry + 0x10);
         *(u16 *)(tex2 + 0x46) = *(u16 *)(entry + 0x12);
         *(u16 *)(tex2 + 0x48) = *(u16 *)(entry + 0x14);
-        w = coords[0][0];
-        *(new_var3 = (u16 *)(entry + 0x10)) = w;
-        *(u16 *)(tex2 + 0x34) = w;
-        w = coords[1][0];
-        *(u16 *)(entry + 0x12) = w;
-        *(u16 *)(tex2 + 0x36) = w;
-        w = coords[2][0];
-        *(u16 *)(entry + 0x14) = w;
-        *(u16 *)(tex2 + 0x38) = w;
+        *(u16 *)(tex2 + 0x34) = *(u16 *)(entry + 0x10) = coords[0][0];
+        *(u16 *)(tex2 + 0x36) = *(u16 *)(entry + 0x12) = coords[1][0];
+        *(u16 *)(tex2 + 0x38) = *(u16 *)(entry + 0x14) = coords[2][0];
         *(u16 *)(tex2 + 0x4C) = *(u16 *)(entry + 0x16);
         *(u16 *)(tex2 + 0x4E) = *(u16 *)(entry + 0x18);
         *(u16 *)(tex2 + 0x50) = *(u16 *)(entry + 0x1A);
-        w = coords[0][1];
-        *(u16 *)(entry + 0x16) = w;
-        *(u16 *)(tex2 + 0x3C) = w;
-        w = coords[1][1];
-        *(u16 *)(entry + 0x18) = w;
-        *(u16 *)(tex2 + 0x3E) = w;
-        w = (*(u16 *)(entry + 0x1A) = coords[2][1]);
-        *(u16 *)(tex2 + 0x40) = w;
+        *(u16 *)(tex2 + 0x3C) = *(u16 *)(entry + 0x16) = coords[0][1];
+        *(u16 *)(tex2 + 0x3E) = *(u16 *)(entry + 0x18) = coords[1][1];
+        *(u16 *)(tex2 + 0x40) = *(u16 *)(entry + 0x1A) = coords[2][1];
         if (*(s16 *)tex2 != -1) {
             node = *(u8 **)((u8 *)D_800BE980[0] + *(s16 *)tex2 * 0x90 + 0x74);
             if (*(u8 **)(node + 0x54) == 0) {
@@ -6854,13 +6842,23 @@ loop2:
                 *(u8 **)(node + 0x54) = 0;
             }
         }
-        tex2 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8;
-        n = *(u16 *)(arg0 + 0x1E0);
-        new_var = (u8 *)D_800A34F4;
-        *(u16 *)(new_var4 = tex2) = n;
-        *(u8 **)(tex2 + 0x54) =
-            *(u8 **)((u8 *)D_800BE980[0] + (s16)n * 0x90 + 0x74);
-        *(u8 **)((u8 *)D_800BE980[0] + (s16)n * 0x90 + 0x74) = tex2;
+        {
+            s32 cur;
+            register s32 owner asm("$5");
+            register u8 *slot asm("$4");
+            s32 key;
+
+            cur = D_800A34E8;
+            asm("" : "=r"(owner) : "0"(*(u16 *)(arg0 + 0x1E0)));
+            slot = (u8 *)((cur * 12 - cur) * 8);
+            slot += D_800A34F4;
+            key = (s16)owner;
+            asm volatile("");
+            *(u16 *)slot = owner;
+            *(u8 **)(slot + 0x54) =
+                *(u8 **)((u8 *)D_800BE980[0] + key * 0x90 + 0x74);
+            *(u8 **)((u8 *)D_800BE980[0] + key * 0x90 + 0x74) = slot;
+        }
         if (*(u16 *)(entry + 0x22) == 2) {
             if (entry[0x24] != 0) {
                 tim = (SceneTexture *)D_80090F6C;
@@ -6885,22 +6883,33 @@ loop2:
         tex2[0x10] = u;
         u = tim->u + 0x3F;
         tex2[0x1C] = u;
-        tex2[(new_var2 = 0x18)] = u;
+        tex2[0x18] = u;
         uv = tim->v + 0x1F;
         tex2[0x19] = uv;
         tex2[0x11] = uv;
         uv = tim->v;
         tex2[0x1D] = uv;
         tex2[0x15] = uv;
-        asm("" : "=r"(w) : "0"((u16)D_800A34E8));
-        w2 = (s16)w;
-        tex2 = new_var + (w2 * 12 - w2) * 8;
-        *(u16 *)(entry + 0x26) = w;
-        n = (s16)(w + 1);
-        *(s32 *)(tex2 + 4) = D_800A2EC0Absolute[0];
-        new_var4 = (arg0 + arg1 * 0x28) + 0x2B4;
-        *(s32 *)(arg0 + arg1 * 0x28 + 0x2B8) -= (0x12C - *(s16 *)new_var4) >> 3;
-        D_800A34E8 = n % 100;
+        {
+            register u16 cur asm("$5");
+            register u8 *base asm("$6");
+            s32 head;
+            s32 next;
+            u8 *slot;
+
+            cur = D_800A34E8;
+            base = (u8 *)D_800A34F4;
+            head = D_800A2EC0Absolute[0];
+            slot = (u8 *)(((s16)cur * 12 - (s16)cur) * 8);
+            slot += (s32)base;
+            *(u16 *)(entry + 0x26) = cur;
+            next = (s16)(cur + 1);
+            *(s32 *)(slot + 4) = head;
+            new_var4 = (arg0 + arg1 * 0x28) + 0x2B4;
+            *(s32 *)(arg0 + arg1 * 0x28 + 0x2B8) -=
+                (0x12C - *(s16 *)new_var4) >> 3;
+            D_800A34E8 = next % 100;
+        }
     }
     switch (arg1) {
     case 2:
@@ -6917,9 +6926,6 @@ loop2:
         break;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_800525A8);
-#endif
 
 extern s16 D_800A34E8;
 extern s8 D_800A34EC;
