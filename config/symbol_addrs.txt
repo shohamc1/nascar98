@@ -569,7 +569,7 @@ SoundSetMasterVolume = 0x8006FA7C; // type:func
 ListPushFront = 0x8001C88C; // type:func
 TableFindByte = 0x80058768; // type:func
 D_8008CA04 = 0x8008CA04; // u16 table, not executable code
-gScratchpad = 0x1F800000; // allow_duplicated:True CPU scratchpad RAM
+gScratchpad = 0x1F800000; // absolute:True allow_duplicated:True CPU scratchpad RAM
 
 GraphicsCompactOrderingTable = 0x80012270; // type:func
 SystemStopCounterAfterVSync = 0x80012C04; // type:func
@@ -632,22 +632,22 @@ MathMultiplyFixed16 = 0x800337D0; // type:func
 GraphicsSubdivideTexturedQuad = 0x80033900; // type:func
 MatrixCombineState = 0x8001EF14; // type:func
 
-HEAP_LIMIT = 0x801F6000; // fixed_address
-LOW_RAM_TABLE_80011E04 = 0x80011E04; // fixed_address
+HEAP_LIMIT = 0x801F6000; // absolute:True fixed_address
+LOW_RAM_TABLE_80011E04 = 0x80011E04; // absolute:True fixed_address
 SoundStart = 0x8003EEA4; // type:func
 SoundInitTables = 0x8003F014; // type:func
 GraphicsSetClearColor = 0x8001EB3C; // type:func
 
 // Numeric RAM addresses the original C used as constants (fixed_address).
-STACK_BLOCK_801D6C00 = 0x801D6C00; // fixed_address
-STACK_BLOCK_801E6600 = 0x801E6600; // fixed_address
-STACK_BLOCK_801E0000 = 0x801E0000; // fixed_address
-STACK_BLOCK_80180000 = 0x80180000; // fixed_address
-STACK_BLOCK_80193000 = 0x80193000; // fixed_address
-STACK_BLOCK_801A0000 = 0x801A0000; // fixed_address
-SCRATCH_TOP = 0x801F2800; // fixed_address
-STACK_BLOCK_801C0000 = 0x801C0000; // fixed_address
-USER_RAM_TOP = 0x80140000; // fixed_address
+STACK_BLOCK_801D6C00 = 0x801D6C00; // absolute:True fixed_address
+STACK_BLOCK_801E6600 = 0x801E6600; // absolute:True fixed_address
+STACK_BLOCK_801E0000 = 0x801E0000; // absolute:True fixed_address
+STACK_BLOCK_80180000 = 0x80180000; // absolute:True fixed_address
+STACK_BLOCK_80193000 = 0x80193000; // absolute:True fixed_address
+STACK_BLOCK_801A0000 = 0x801A0000; // absolute:True fixed_address
+SCRATCH_TOP = 0x801F2800; // absolute:True fixed_address
+STACK_BLOCK_801C0000 = 0x801C0000; // absolute:True fixed_address
+USER_RAM_TOP = 0x80140000; // absolute:True fixed_address
 
 // Data labels tracked so guarded drafts can reference them directly (wave 6-8 requests).
 D_8008CFC0 = 0x8008CFC0; // force_not_migration:True
@@ -694,8 +694,8 @@ D_800906D8 = 0x800906D8; // force_not_migration:True
 D_8009071C = 0x8009071C; // force_not_migration:True
 D_80090728 = 0x80090728; // force_not_migration:True
 D_8009073C = 0x8009073C; // force_not_migration:True
-SCRATCHPAD_BASE = 0x1F800000; // fixed_address allow_duplicated:True
-RAM_CACHED_BASE = 0x80000000; // fixed_address
+SCRATCHPAD_BASE = 0x1F800000; // absolute:True fixed_address allow_duplicated:True
+RAM_CACHED_BASE = 0x80000000; // absolute:True fixed_address
 D_8008D08C = 0x8008D08C; // force_not_migration:True
 D_8008D0AC = 0x8008D0AC; // force_not_migration:True
 D_8008D0CC = 0x8008D0CC; // force_not_migration:True
@@ -742,8 +742,8 @@ D_80090448 = 0x80090448; // force_not_migration:True
 D_80090464 = 0x80090464; // force_not_migration:True
 D_80090480 = 0x80090480; // force_not_migration:True
 D_8009049C = 0x8009049C; // force_not_migration:True
-D_80000004 = 0x80000004; // fixed_address
-RAM_RESOURCE_BOUNDARY = 0x001F4000; // fixed_address
+D_80000004 = 0x80000004; // absolute:True fixed_address
+RAM_RESOURCE_BOUNDARY = 0x001F4000; // absolute:True fixed_address
 D_800B9928 = 0x800B9928;
 D_800AD224 = 0x800AD224;
 D_800B9DE4 = 0x800B9DE4;

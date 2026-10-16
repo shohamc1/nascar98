@@ -12,7 +12,15 @@ import sys
 
 def fixed_addresses(text):
     return re.findall(
-        r"^([A-Z][A-Z0-9_]*)\s*=\s*(0x[0-9A-Fa-f]+);\s*// fixed_address(?:\s+allow_duplicated:True)?\s*$",
+        r"^([A-Z][A-Z0-9_]*)\s*=\s*(0x[0-9A-Fa-f]+);\s*// (?:absolute:True\s+)?fixed_address(?:\s+(?:allow_duplicated|absolute):True)*\s*$",
+        text,
+        re.MULTILINE,
+    )
+
+
+def absolute_addresses(text):
+    return re.findall(
+        r"^(\w+)\s*=\s*(0x[0-9A-Fa-f]+);\s*//[^\n]*\babsolute:True\b[^\n]*$",
         text,
         re.MULTILINE,
     )
@@ -29,5 +37,19 @@ if __name__ == "__main__":
     assert fixed_addresses(
         "gScratchpad = 0x1F800000; // allow_duplicated:True CPU scratchpad RAM\n"
     ) == []
-    for name, address in fixed_addresses(pathlib.Path(sys.argv[1]).read_text()):
-        print("#define %s ((u32)%s)" % (name, address))
+    assert fixed_addresses(
+        "HEAP_LIMIT = 0x1234; // absolute:True fixed_address\n"
+    ) == [("HEAP_LIMIT", "0x1234")]
+    assert fixed_addresses(
+        "SCRATCHPAD_BASE = 0x1F800000; // fixed_address allow_duplicated:True absolute:True\n"
+    ) == [("SCRATCHPAD_BASE", "0x1F800000")]
+    assert absolute_addresses(
+        "gScratchpad = 0x1F800000; // absolute:True allow_duplicated:True\n"
+    ) == [("gScratchpad", "0x1F800000")]
+    text = pathlib.Path(sys.argv[-1]).read_text()
+    if sys.argv[1] == "--ld":
+        for name, address in absolute_addresses(text):
+            print("%s = %s;" % (name, address))
+    else:
+        for name, address in fixed_addresses(text):
+            print("#define %s ((u32)%s)" % (name, address))

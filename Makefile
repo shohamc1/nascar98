@@ -60,6 +60,7 @@ CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=r4000 -mips1 -mgas -msoft-float -fgnu-linker 
 ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
+            -T build/fixed_addrs.ld \
             --defsym=D_800A2F9CAbsolute=D_800A2F9C \
             --defsym=D_800A2E6CAbsolute=D_800A2E6C \
             --defsym=D_800A2F50Absolute=D_800A2F50 \
@@ -459,6 +460,10 @@ build/fixed_addrs.h: config/symbol_addrs.txt tools/fixed_addrs.py
 	@mkdir -p $(@D)
 	$(PYTHON) tools/fixed_addrs.py $< > $@
 
+build/fixed_addrs.ld: config/symbol_addrs.txt tools/fixed_addrs.py
+	@mkdir -p build
+	$(PYTHON) tools/fixed_addrs.py --ld $< > $@
+
 build/%.c.o: %.c $(LD_SCRIPT) build/fixed_addrs.h
 	@mkdir -p $(@D)
 	set -o pipefail; $(CPP) $(CPPFLAGS) $< | $(CC1) $(CFLAGS) | $(MASPSX) | $(AS) $(ASFLAGS) -G$(GP_SIZE) -o $@
@@ -467,7 +472,7 @@ build/%.s.o: %.s $(LD_SCRIPT)
 	@mkdir -p $(@D)
 	$(AS) $(ASFLAGS) -G0 -o $@ $<
 
-$(ELF): $(O_FILES) $(LD_SCRIPT)
+$(ELF): $(O_FILES) $(LD_SCRIPT) build/fixed_addrs.ld
 	$(LD) $(LDFLAGS) -Map build/$(BASENAME).map -o $@
 
 # The retail EXE pads its last sector with zeros to 0x92000 bytes.
