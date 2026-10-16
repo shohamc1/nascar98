@@ -5506,7 +5506,188 @@ void func_8004EA34(void) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004EBE4);
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004F158);
+extern u8 *D_800A8A74[];
+extern char *D_8009AE64[];
+extern char *D_8009AE74[];
+extern char *D_8009AE78[];
+extern char *D_8009AE7C[];
+extern char *D_8009AE80[];
+extern char *D_8009AE84[];
+extern char *D_8009AE88[];
+extern char *D_8009AE8C[];
+extern char *D_8009AE90[];
+extern char *D_8009AE98[];
+extern char D_800A3040[];
+extern char D_800A3048[];
+extern char D_800A3050[];
+extern s32 func_80050940(u8 *);
+extern void func_8004FF90(s32, s32, s32, s8);
+
+void MenuDrawLapStatistics(s8 lap, s8 mode) {
+    char title[40];
+    char valueText[8];
+    u8 top;
+    u8 y;
+    u8 i;
+    u8 *lapData;
+    s32 textY;
+    u8 x;
+    s32 labelWidth;
+    s32 fraction;
+    register s32 setting asm("a3");
+    s16 speed;
+    s32 number;
+    char **label;
+    char *sign;
+
+    top = 47;
+    speed = *(s16 *)(D_800A8A74[lap] + 4);
+    if (speed == 0x7FFF) {
+        strcpy(title, D_8009AE64[lap]);
+    } else {
+        sprintfRow(title, D_800A3040, D_8009AE64[lap], speed);
+    }
+    func_80050028Row(title, 20, top, 2);
+    y = top + 24;
+    for (i = 1; i < D_800992D0[D_800A2CE0[0]]; i++) {
+        textY = y;
+        func_80050028Row(D_8009AE74[0], 20, textY, 0);
+        func_8004FF90(i, 60, textY, 0);
+        y += 12;
+    }
+    func_80050028Row(D_8009AE78[0], 20, y, 0);
+    y = top + 24;
+    switch (mode) {
+    case 0:
+        func_80050028Row(D_8009AE7C[0], 215, top, 3);
+        for (i = 0; i < D_800992D0[D_800A2CE0[0]]; i++) {
+            func_80050670Row(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x10), 215, y,
+                             3, 1);
+            y += 12;
+        }
+        y += 6;
+        textY = y;
+        func_80050028Row(D_8009AE80[0], 20, textY, 3);
+        lapData = D_800A8A74[lap];
+        lapData += D_800992D0[D_800A2CE0[0]] * 4;
+        func_80050670Row(*(s32 *)(lapData + 0x1C), 215, textY, 3, 1);
+        break;
+    case 1: {
+        s32 speedValue;
+
+        func_80050028Row(D_8009AE84[0], 215, top, 3);
+        for (i = 0; i < D_800992D0[D_800A2CE0[0]]; i++) {
+            speed = *(s16 *)(D_800A8A74[lap] + i * 2 + 6);
+            if (speed == 0x7FFF) {
+                func_80050028Row(D_8009AE90[0], 215, y, 3);
+            } else {
+                if (D_800A3554[0][0xF7]) {
+                    speedValue = speed * 292 / 550;
+                } else {
+                    speedValue = speed * 210 / 550;
+                }
+                func_8004FF90(speedValue, 215, y, 3);
+            }
+            y += 12;
+        }
+        y += 6;
+        textY = y;
+        func_80050028Row(D_8009AE88[0], 20, textY, 3);
+        speed = *(s16 *)(D_800A8A74[lap] + 2);
+        if (speed == 0x7FFF) {
+            func_80050028Row(D_8009AE90[0], 215, textY, 3);
+        } else {
+            if (D_800A3554[0][0xF7]) {
+                speedValue = speed * 292 / 550;
+            } else {
+                speedValue = speed * 210 / 550;
+            }
+            fraction = speedValue;
+            func_8004FF90(fraction, 215, y, 3);
+        }
+        break;
+    }
+    case 2:
+        func_80050028Row(D_8009AE8C[0], 215, top, 3);
+        for (i = 0; i < D_800992D0[D_800A2CE0[0]]; i++) {
+            func_80050670Row(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x20), 215, y,
+                             3, 1);
+            y += 12;
+        }
+        break;
+    }
+    top = 169;
+    if (*(s8 *)D_800A8A74[lap] == 127) {
+        for (i = 0; i < 2; i++) {
+            sprintfRow(title, D_800A3048, D_8009AE98[i], D_8009AE98[-2]);
+            func_80050028Row(
+                title, (s32)((320 - func_80050940((u8 *)title)) << 15) >> 16,
+                top, 2);
+            top += 12;
+        }
+    } else {
+        s32 footerY;
+        register char *valueBuffer asm("a0");
+        register char *valueFormat asm("a1");
+        s32 wholeSetting;
+        s32 setupIndex;
+        s32 screenX;
+        register s32 measuredWidth asm("v0");
+        char **labelBase;
+
+        for (i = 0; i < 2; i++) {
+            setupIndex = i;
+            setting = *(s8 *)(D_800A8A74[lap] + setupIndex);
+            valueBuffer = valueText;
+            /* Set the buffer argument before the sign test. */
+            asm("" : : "r"(valueBuffer), "r"(setting));
+            valueFormat = D_800A3050;
+            if (setting < 0) {
+                setting = -setting;
+            }
+            /* Keep the magnitude calculation before the split. */
+            asm("" : "=r"(setting) : "0"(setting));
+            wholeSetting = (u8)setting >> 1;
+            fraction = setting & 1;
+            setting = fraction;
+            asm(""
+                : "=r"(setting), "=r"(wholeSetting)
+                : "0"(setting), "1"(wholeSetting));
+            sprintfRow(valueBuffer, valueFormat, wholeSetting,
+                       (setting * 4) | setting);
+            labelBase = D_8009AE98;
+            label = &labelBase[setupIndex];
+            footerY = top;
+            measuredWidth = func_80050940((u8 *)*label);
+            valueBuffer = valueText;
+            /* Keep the width result until the next pointer is ready. */
+            asm(""
+                : "=r"(measuredWidth)
+                : "0"(measuredWidth), "r"(valueBuffer));
+            labelWidth = measuredWidth;
+            x = (u32)(320 -
+                      ((u8)labelWidth + func_80050940((u8 *)valueBuffer))) >>
+                1;
+            screenX = x;
+            func_80050028Row(*label, screenX, footerY, 2);
+            /* The repeated index input preserves the register order. */
+            asm(""
+                : "=r"(labelWidth)
+                : "0"(labelWidth), "r"(setupIndex), "r"(setupIndex),
+                  "r"(setupIndex), "r"(setupIndex), "r"(screenX));
+            sign = D_800A3038;
+            if (*(s8 *)(D_800A8A74[lap] + setupIndex) < 0) {
+                sign = D_800A3034;
+            }
+            number = screenX + (u8)labelWidth;
+            func_80050028Row(sign, number, footerY, 2);
+            func_80050028Row(valueText, number + 9, footerY, 2);
+            /* Keep both measured values through the setup text draws. */
+            asm("" : : "r"(screenX), "r"(labelWidth));
+            top += 12;
+        }
+    }
+}
 
 typedef struct {
     u16 tpx;

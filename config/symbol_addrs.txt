@@ -849,6 +849,7 @@ sTrackFaceErrorFormat = 0x8008CC3C; // force_not_migration:True
 sTrackReadSuccessMessage = 0x8008CC50; // force_not_migration:True
 
 SceneUpdateRoadStrip = 0x80046BD4; // type:func
+MenuDrawLapStatistics = 0x8004F158; // type:func
 
 sSprintfUpperDigits = 0x80090C40; // force_not_migration:True
 
