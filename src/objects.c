@@ -4981,7 +4981,316 @@ void func_8002A1FC(u8 *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002A2F8);
+/* Separate symbol views preserve the retail GP and absolute accesses. */
+asm(".globl D_800A2E1CPlayerStep\nD_800A2E1CPlayerStep = D_800A2E1C\n"
+    ".globl D_800A2E24PlayerStep\nD_800A2E24PlayerStep = D_800A2E24\n"
+    ".globl D_800A2E6CPlayerStep\nD_800A2E6CPlayerStep = D_800A2E6C\n"
+    ".globl D_800A2E70PlayerStep\nD_800A2E70PlayerStep = D_800A2E70\n"
+    ".globl D_800A2E74PlayerStep\nD_800A2E74PlayerStep = D_800A2E74\n"
+    ".globl D_800A2EA4PlayerStep\nD_800A2EA4PlayerStep = D_800A2EA4\n"
+    ".globl D_800A2EC0PlayerStep\nD_800A2EC0PlayerStep = D_800A2EC0\n"
+    ".globl D_800A2EC4PlayerStep\nD_800A2EC4PlayerStep = D_800A2EC4\n"
+    ".globl D_800A2EC8PlayerStep\nD_800A2EC8PlayerStep = D_800A2EC8\n"
+    ".globl D_800A3598PlayerStep\nD_800A3598PlayerStep = D_800A3598\n"
+    ".globl D_800A35D4PlayerStep\nD_800A35D4PlayerStep = D_800A35D4\n"
+    ".globl D_800A397CPlayerStep\nD_800A397CPlayerStep = D_800A397C\n");
+extern s32 D_800A2E1CPlayerStep;
+extern s32 D_800A2E24PlayerStep;
+extern s32 D_800A2E6CPlayerStep[];
+extern s32 D_800A2E70PlayerStep[];
+extern s32 D_800A2E74PlayerStep[];
+extern s32 D_800A2EA4PlayerStep[];
+extern s32 D_800A2EC0PlayerStep[];
+extern s32 D_800A2EC4PlayerStep[];
+extern s32 D_800A2EC8PlayerStep[];
+extern s32 D_800A3598PlayerStep[];
+extern u8 D_800A35D4PlayerStep[];
+extern s32 D_800A397CPlayerStep[];
+
+void CarUpdatePlayer(u8 *object) {
+    u8 frameScratch[0x48];
+    u8 *car;
+    register s32 zeroRoll asm("s5");
+    register s32 zeroPitch asm("s4");
+    s16 speed;
+    register s32 steeringValue asm("v0");
+    register s32 centerAngle asm("v1");
+    s32 positionX;
+    s32 positionY;
+    s32 positionZ;
+    s32 steeringSlope;
+    s32 controlFlags;
+    register s32 quarterAngle asm("v0");
+    s32 analogSample;
+    register s32 centeredAnalog asm("v0");
+    register s32 work asm("v0");
+    s32 unkF8;
+    s32 throttlePressed;
+    s32 nextCameraMode;
+    s32 steeringDivisor;
+    s32 steeringFactor;
+    s32 angleWork;
+    s32 turnWork;
+    s32 headingInput;
+    s32 analogProduct;
+    register s32 incomingS1 asm("s1");
+    s32 steeringLimit;
+    s32 cameraQuotientInput;
+    s32 headingQuotientInput;
+    s32 headingBase;
+    s8 cameraMode;
+    s8 leftStep;
+    s8 rightStep;
+    s8 nextLeftStep;
+    s8 nextRightStep;
+    register s32 centerRightAngle asm("v0");
+    u16 leftAngle;
+    register u16 rightAngle asm("v0");
+    register s32 centerLeftAngle asm("v0");
+    u8 nextCamera;
+
+    car = object;
+    /* Preserve the unused retail frame and the caller argument reloads. */
+    asm("" : : "r"(car), "m"(frameScratch[0]) : "a0");
+    if (D_800A2EC8PlayerStep[0] != 0) {
+        func_80023454();
+        return;
+    }
+    if ((*(u8 *)(car + 0x268)) != 0) {
+        func_8003DBA8(car);
+        return;
+    }
+    controlFlags = func_80029EF8(car);
+    if ((controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 0x10)) ||
+        (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 0x4000))) {
+        func_8001FD44((RaceObject *)car);
+    }
+    if (D_800A397CPlayerStep[0] == 2) {
+        (*(s32 *)(car + 0x238)) = controlFlags;
+        return;
+    }
+    if ((D_800A35D4PlayerStep[0] == 0) &&
+        (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 4))) {
+        if (D_800A2EA4PlayerStep[0] != 0) {
+            (*(u8 *)(car + 0x209)) = (u8)((*(u8 *)(car + 0x209)) ^ 1);
+        } else {
+            cameraMode = (s8)(*(u8 *)(car + 0x209));
+            nextCameraMode = cameraMode + 1;
+            cameraQuotientInput = nextCameraMode;
+            if (nextCameraMode < 0) {
+                cameraQuotientInput = cameraMode + 4;
+            }
+            nextCamera = nextCameraMode - ((cameraQuotientInput >> 2) * 4);
+            (*(u8 *)(car + 0x209)) = nextCamera;
+            D_800A2EC4PlayerStep[0] = (s8)nextCamera == 3;
+        }
+    }
+    if (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 1)) {
+        SelectionStepForward((Counter *)car);
+    }
+    if (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 2)) {
+        SelectionStepBackward((SelectionState *)car);
+    }
+    (*(s32 *)(car + 0x238)) = controlFlags;
+    (*(void (**)(u8 *))(car + 0x354))(car);
+    /* Retail keeps incoming s1 when unkF8 is nonzero. Earlier calls
+     * preserve s1. Capture that register input before using C locals. */
+    asm("" : "=r"(incomingS1));
+    steeringLimit = incomingS1;
+    D_800A2E24PlayerStep = 0x01EF0000 - ((D_800A2E1CPlayerStep - 3) * 0x30000);
+    unkF8 = *(u8 *)(car + 0xF8);
+    asm("" : : "r"(unkF8) : "s3");
+    controlFlags = (*(s32 *)(car + 0x238));
+    asm("" : : "r"(controlFlags) : "s5", "s4");
+    zeroRoll = 0;
+    zeroPitch = 0;
+    if (unkF8 == 0) {
+        steeringLimit = D_800A2E1CPlayerStep;
+        if (D_800A3598PlayerStep[0] == 1) {
+            if (controlFlags & 0x800) {
+                work = steeringLimit * 3;
+                steeringLimit = work >> 2;
+                if (work < 0) {
+                    work += 3;
+                    steeringLimit = work >> 2;
+                }
+            }
+            if (controlFlags & 0x1000) {
+                work = D_800A2E1CPlayerStep * 4;
+                steeringLimit = work / 3;
+            }
+        }
+    }
+    /* Scale the steering limit with speed and the steering setting. */
+    steeringSlope = (((D_800A2E70PlayerStep[0] - D_800A2E6CPlayerStep[0]) *
+                      (D_800A2E74PlayerStep[0] - 0x32)) /
+                     50) +
+                    D_800A2E6CPlayerStep[0];
+    steeringDivisor = func_8002AAA0((s32 *)car);
+    speed = (*(s16 *)(car + 0x92));
+    steeringLimit *= 4;
+    if (speed > 0xC8) {
+        steeringFactor =
+            1000 - ((speed - 200) * steeringSlope) / steeringDivisor;
+        if (steeringFactor > 1000) {
+            steeringFactor = 1000;
+        }
+    } else {
+        steeringFactor = 1000;
+    }
+    work = steeringLimit * steeringFactor;
+    steeringFactor = work / 1000;
+    steeringLimit = steeringFactor;
+    if (steeringLimit < 8) {
+        steeringLimit = 8;
+    }
+    /* Digital steering ramps toward either limit and returns to center. */
+    if ((*(s8 *)(car + 0x3C4)) == 4) {
+        if (controlFlags & 0x8000) {
+            leftStep = (*(s8 *)(car + 0x207));
+            if (leftStep == 0) {
+                nextLeftStep = 4;
+            } else {
+                nextLeftStep = leftStep + 3;
+            }
+            (*(s8 *)(car + 0x207)) = nextLeftStep;
+            asm("" : : : "memory");
+            if ((*(s8 *)(car + 0x207)) >= 0xC) {
+                (*(s8 *)(car + 0x207)) = 0xC;
+            }
+            (*(s8 *)(car + 0x208)) = 0;
+            angleWork = *(u16 *)(car + 0x20E);
+            steeringValue = *(u8 *)(car + 0x207);
+            asm(""
+                : "=r"(steeringValue)
+                : "0"(steeringValue), "m"(*(s8 *)(car + 0x208)));
+            steeringValue = (s8)steeringValue;
+            angleWork += 4;
+            leftAngle = steeringValue + angleWork;
+            (*(u16 *)(car + 0x20E)) = leftAngle;
+            if (steeringLimit < (s16)leftAngle) {
+                (*(u16 *)(car + 0x20E)) = (u16)steeringLimit;
+            }
+        } else if (controlFlags & 0x200) {
+            rightStep = (*(s8 *)(car + 0x208));
+            if (rightStep == 0) {
+                nextRightStep = 4;
+            } else {
+                nextRightStep = rightStep + 3;
+            }
+            (*(s8 *)(car + 0x208)) = nextRightStep;
+            asm("" : : : "memory");
+            if ((*(s8 *)(car + 0x208)) >= 0xC) {
+                (*(s8 *)(car + 0x208)) = 0xC;
+            }
+            (*(s8 *)(car + 0x207)) = 0;
+            rightAngle = *(u16 *)(car + 0x20E);
+            turnWork = *(u8 *)(car + 0x208);
+            asm("" : "=r"(turnWork) : "0"(turnWork), "m"(*(s8 *)(car + 0x207)));
+            turnWork = (s8)turnWork;
+            rightAngle -= 4;
+            rightAngle -= turnWork;
+            (*(u16 *)(car + 0x20E)) = rightAngle;
+            steeringValue = (s16)rightAngle;
+            turnWork = -steeringLimit;
+            if (steeringValue < turnWork) {
+                (*(u16 *)(car + 0x20E)) = (u16)turnWork;
+            }
+        } else {
+            steeringValue = *(s16 *)(car + 0x20E);
+            (*(s8 *)(car + 0x207)) = 0;
+            (*(s8 *)(car + 0x208)) = 0;
+            centerAngle = steeringValue;
+            if (steeringValue > 0) {
+                centerLeftAngle = centerAngle - 8;
+                (*(u16 *)(car + 0x20E)) = centerLeftAngle;
+                if ((centerLeftAngle << 16) < 0) {
+                    (*(u16 *)(car + 0x20E)) = 0U;
+                }
+            } else {
+                centerRightAngle = centerAngle + 8;
+                (*(u16 *)(car + 0x20E)) = centerRightAngle;
+                if ((centerRightAngle << 0x10) > 0) {
+                    (*(u16 *)(car + 0x20E)) = 0U;
+                }
+            }
+        }
+    } else {
+        /* Retail retains a second analog read and a discarded offset. */
+        analogProduct = -((*(s8 *)(car + 0x3C5)) * steeringLimit);
+        asm("" : "=r"(car) : "0"(car), "r"(analogProduct));
+        analogSample = *(s8 *)(car + 0x3C5);
+        (*(u16 *)(car + 0x20E)) = (u16)(analogProduct / 112);
+        asm("" : : "r"(analogSample), "m"(*(u16 *)(car + 0x20E)) : "v0");
+        centeredAnalog = analogSample - 128;
+        asm("" : : "r"(centeredAnalog));
+    }
+    if ((*(s32 *)(car + 0x90)) >= 0) {
+        quarterAngle = (s16)(*(u16 *)(car + 0x20E)) / 4;
+        headingInput = quarterAngle;
+        (*(s16 *)(car + 0x212)) = (s16)quarterAngle;
+        if (headingInput >= 0) {
+            if (headingInput != 1) {
+
+            } else {
+                goto clearQuarterAngle;
+            }
+        } else if (-headingInput == 1) {
+        clearQuarterAngle:
+            (*(s16 *)(car + 0x212)) = 0;
+        }
+    } else {
+        asm("" : : : "a0");
+        headingInput = 0;
+    }
+    headingBase = headingInput + 0x400;
+    if (((*(u8 *)(car + 0xF8)) != 0) && (controlFlags & 0x40)) {
+        work = headingInput * 5;
+        headingInput = work >> 2;
+        if (work < 0) {
+            work += 3;
+            headingInput = work >> 2;
+        }
+        headingBase = headingInput + 0x400;
+    }
+    headingQuotientInput = headingBase;
+    if (headingBase < 0) {
+        headingQuotientInput = headingInput + 0x7FF;
+    }
+    headingInput = headingQuotientInput >> 10;
+    work = headingInput << 10;
+    headingInput = headingBase - work;
+    (*(s16 *)(car + 0x1D0)) = (s16)headingInput;
+    (*(s16 *)(car + 0x1D2)) = zeroPitch;
+    (*(s16 *)(car + 0x1D4)) = zeroRoll;
+    throttlePressed = controlFlags & 0x40;
+    if (throttlePressed) {
+        work = D_800A2E24PlayerStep;
+        (*(s32 *)(car + 0x37C)) = 0;
+        (*(s32 *)(car + 0x84)) = work;
+    } else {
+        work = *(s32 *)(car + 0x37C);
+        (*(s32 *)(car + 0x84)) = 0;
+        work++;
+        (*(s32 *)(car + 0x37C)) = work;
+    }
+    func_8002B258(car);
+    func_8002D16C(car);
+    func_8002B538(car);
+    func_80029A78(car);
+    func_80029150(car);
+    positionX = *(s32 *)(car + 0) + *(s32 *)(car + 0xB0);
+    positionY = *(s32 *)(car + 4) + *(s32 *)(car + 0xB4);
+    positionZ = *(s32 *)(car + 8) + *(s32 *)(car + 0xB8);
+    *(s32 *)(car + 0) = positionX;
+    *(s32 *)(car + 4) = positionY;
+    *(s32 *)(car + 8) = positionZ;
+    func_80029CB4((s32 *)car);
+    func_80039B74((s32 *)car, 0);
+    if ((*(s8 *)(car + 0x204)) == 1) {
+        (*(s32 *)(car + 0x3D0)) = (s32)D_800A2EC0PlayerStep[0];
+    }
+}
 
 extern u8 D_800A331C[];
 extern u8 D_800A331D[];
@@ -6562,7 +6871,7 @@ void func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_800BE72C[];
     extern s32 D_800BE730[];
     extern s16 D_800BE738[];
-    extern void func_8002A2F8(u8 *);
+    extern void CarUpdatePlayer(u8 *);
     extern void func_800373B4(u8 *);
     extern void func_80029E34(void);
     extern void func_80025594(u8 *);
@@ -6589,7 +6898,7 @@ void func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     func_8002DA30((s32 *)entry);
     *(s16 *)(entry + 0x1EC) = arg0;
     if (arg0 == 0) {
-        *(u32 *)(entry + 0x350) = (u32)func_8002A2F8;
+        *(u32 *)(entry + 0x350) = (u32)CarUpdatePlayer;
         D_800A2EB4[0] = D_800A2EB4[0] + 1;
     } else if (arg0 == 1) {
         *(u32 *)(entry + 0x350) = (u32)func_800373B4;
