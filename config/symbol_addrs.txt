@@ -851,3 +851,5 @@ sSprintfUpperDigits = 0x80090C40; // force_not_migration:True
 sSprintfLowerDigits = 0x80090C54; // force_not_migration:True
 
 gSprintfDefaultFormat = 0x800A2B8C;
+
+gLibgccClzTable = 0x80090010; // force_not_migration:True

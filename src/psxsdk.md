@@ -99,3 +99,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+## GNU compiler division helper
+
+`__udivmoddi4` is adapted from GNU CC 2.7.2 `libgcc2.c` and `longlong.h`
+(Copyright 1989, 1992, 1993, 1994, 1995 Free Software Foundation).
+This code uses GPL version 2 or later with the original library linking
+exception. Its notice is before the implementation; the license is in
+`COPYING.libgcc`. The existing 256-byte leading-zero table stays in its
+rodata carrier. One three-instruction multiply block gives the low and
+high results independent output registers. The division logic is C89.
