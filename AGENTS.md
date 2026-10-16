@@ -93,6 +93,14 @@ To see progress, run `make report`. It prints matched code, functions, and
 initialised data (`.data` and `.sdata`; `.bss` has no bytes to match), and
 writes `build/report.json` for decomp.dev.
 
+After each new function match, run `make -B check`. On `MATCH`, run
+`make expected report`. Update the progress table in the `Status` section
+of `README.md` from `build/report.json`: matched and total functions,
+code bytes, and percentages for Game, Psy-Q SDK, and Total. Keep that
+section limited to the progress table. Include this update with the
+matching source change. Parked `NON_MATCHING` drafts that use
+`INCLUDE_ASM` do not count as matched.
+
 ## When a function won't match
 
 Near misses are where time goes. Follow these rules:

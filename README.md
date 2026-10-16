@@ -8,11 +8,11 @@ This repository holds no game data. You must supply your own disc image.
 
 ## Status
 
-The build reproduces `SLUS_005.21` with every game function wired through
-C, most still as `INCLUDE_ASM`. Run `make report` for the live figure.
-
-[Parked-function retry and integration update](docs/parked-functions-2026-10-05.md):
-historical attempts for all 131 targets, plus reconciliation with current main.
+| Scope | Functions matched | Code bytes matched |
+| --- | --- | --- |
+| Game | 731 / 865 (84.51%) | 268,472 / 407,944 (65.81%) |
+| Psy-Q SDK | 445 / 530 (83.96%) | 49,828 / 101,244 (49.22%) |
+| Total | 1,176 / 1,395 (84.30%) | 318,300 / 509,188 (62.51%) |
 
 ## Build
 
