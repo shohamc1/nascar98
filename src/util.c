@@ -171,7 +171,7 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
     s32 wheelAngle;
     s32 steeringAngle;
     s32 steeringValue;
-    register s32 value asm("v0"); /* Keep the tilt sum in v0. */
+    s32 value;
     s32 speed;
     s32 i;
     u8 *part;
@@ -351,9 +351,12 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
         if (wheelAngle > 0)
             wheelAngle = -wheelAngle;
         speed = (*(s32 *)(car + 0x228) * 3 >> 16) + 10;
-        if (speed > 70)
+        if (speed > 70) {
             speed = 70;
-        value = (wheelAngle + 4) * 2;
+            value = (wheelAngle + 4) * 2;
+        } else {
+            value = (wheelAngle + 4) * 2;
+        }
         speed += 4096;
         wheelAngle = (value + speed) % 4096;
         steeringValue = *(s16 *)(car + 0x20E) * 5;
