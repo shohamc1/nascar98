@@ -746,9 +746,10 @@ void func_80018C88(void) {
             prim->v3 = 0x71;
             break;
         }
-        asm("");
-        asm("");
-        asm("");
+        /* Keep phase-one constants inside this loop. */
+        u = 0;
+        v = 0;
+        w = 0;
         texX += 19;
         i++;
     } while (i < 17);
