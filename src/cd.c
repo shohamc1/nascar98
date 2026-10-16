@@ -1632,7 +1632,7 @@ s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
 extern void func_8003D754(u8 *);
 extern s32 func_80029EF8(u8 *);
 extern s32 func_800358EC(s32 *);
-extern void func_80036900(u8 *, s32);
+extern void CarSteerTowardHeading(u8 *, s32);
 extern void func_80041564(u8 *, s32);
 extern s32 D_800A2EA8CarState[] asm("D_800A2EA8");
 extern s32 D_800A2EACCarState[] asm("D_800A2EAC");
@@ -2114,7 +2114,7 @@ updateMotion:
     if (*(s16 *)(object + 0x1EC) == 1) {
         D_800A2F4CCarState[0] = 0xE;
     }
-    func_80036900(object, direction);
+    CarSteerTowardHeading(object, direction);
     ringV1 = *(u16 *)(object + 0x114);
     D_800A2F4CCarState[0] = 0x14;
     *(u16 *)(object + 0x104) = ringV1;

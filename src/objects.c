@@ -10829,7 +10829,188 @@ void func_800367DC(void) {
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0AC);
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0CC);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80036900);
+extern s32 D_800A2F4C;
+extern u8 D_800A2F58;
+extern u8 D_800A372C[];
+extern u8 D_800A38B8[];
+extern s32 gSteeringVectorLength[] asm("D_800A38A4");
+extern u8 *gTrackForSteering[] asm("D_800BE980");
+
+void CarSteerTowardHeading(u8 *car, s32 targetHeading) {
+    s32 maxStep;
+    s32 delta;
+    s32 speed;
+    s32 divisor;
+    s32 value;
+    s32 numerator;
+    s32 result;
+    s32 headingSum;
+
+    delta = *(s16 *)(car + 0x114) - targetHeading;
+    if (delta >= 0 ? delta >= 0x200 : -delta >= 0x200) {
+        if (delta < 0) {
+            delta += 0x400;
+        } else {
+            delta -= 0x400;
+        }
+    }
+    if (*(u8 *)(car + 0x268) == 0) {
+        maxStep = D_800A2F4C;
+        if (*(u16 *)(car + 0x3A4) & 0x20) {
+            maxStep = maxStep * 17 / 20;
+        }
+        if (*(u16 *)(car + 0x3A4) & 0x40) {
+            maxStep = D_800A2F4C * 17 / 20;
+        }
+        if (*(u16 *)(car + 0x3A4) & 0x80) {
+            maxStep = D_800A2F4C * 15 / 20;
+        }
+        if (*(s16 *)(car + 0x24E) == -1) {
+            value = 1000 - ((*(s16 *)(car + 0x92) - 250) * 12000) / 5500;
+            maxStep = maxStep * value / 1000;
+        }
+        speed = *(s16 *)(car + 0x92);
+        if (speed != 0) {
+            if (D_800A372C[0] != 0) {
+                if (D_800A38B8[0] == 0) {
+                    if ((ABS(MathGetAngleDelta(
+                             *(s16 *)(car + 0x114),
+                             *(u16 *)(gTrackForSteering[0] +
+                                      *(s16 *)(car + 0x1E0) * 0x90 + 0x10))) <
+                         65) != 0) {
+                        goto scaleSteering;
+                    }
+                }
+                divisor = 1;
+            } else {
+            scaleSteering:
+                divisor = gSteeringVectorLength[0] / speed;
+            }
+            if (divisor >= 2) {
+                divisor--;
+            }
+            if (divisor != 0) {
+                *(s16 *)(car + 0x20E) = -delta / divisor;
+                if (*(s16 *)(car + 0x20E) >= 0
+                        ? *(s16 *)(car + 0x20E) > maxStep
+                        : -*(s16 *)(car + 0x20E) > maxStep) {
+                    if (*(s16 *)(car + 0x20E) > maxStep) {
+                        *(s16 *)(car + 0x20E) = maxStep;
+                    } else {
+                        *(s16 *)(car + 0x20E) = -maxStep;
+                    }
+                    if (*(s16 *)(car + 0x20E) >= 0) {
+                        numerator = maxStep - (*(s16 *)(car + 0x20E) - maxStep);
+                    } else {
+                        numerator = maxStep * 2 + *(s16 *)(car + 0x20E);
+                    }
+                    result = MathMultiplyFixed16(
+                        *(s32 *)(car + 0x90),
+                        MathFixedDivide(numerator, maxStep + 3));
+                    if (*(s32 *)(car + 0x90) - result > 0x140000) {
+                        *(s32 *)(car + 0x90) -= 0x140000;
+                    } else {
+                        *(s32 *)(car + 0x90) = result;
+                    }
+                }
+            } else {
+                *(s16 *)(car + 0x20E) = 0;
+            }
+        } else {
+            *(s16 *)(car + 0x20E) = 0;
+        }
+    } else {
+        if (D_800A2F58 != 0) {
+            if (*(s32 *)(car + 0x90) > 0x960000) {
+                maxStep =
+                    (D_800A2F4C *
+                     MathFixedDivide(50, (*(s32 *)(car + 0x90) >> 16) - 150)) >>
+                    16;
+            } else {
+                maxStep = D_800A2F4C;
+            }
+            if (maxStep > D_800A2F4C) {
+                maxStep = D_800A2F4C;
+            }
+            if (maxStep < 3) {
+                maxStep = 3;
+            }
+            result = maxStep * 2;
+            if ((delta >= 0 ? delta > result : -delta > result) &&
+                (*(s32 *)(car + 0x90) >> 16) >= 241) {
+                *(s32 *)(car + 0x90) -= 0x90000;
+            }
+        } else {
+            maxStep = D_800A2F4C;
+        }
+        *(s16 *)(car + 0x20E) /= 4;
+        if (delta < 0) {
+            if (D_800A2F58 != 0) {
+                (*(u8 *)(car + 0x207))++;
+                if (*(s8 *)(car + 0x207) >= 3) {
+                    *(u8 *)(car + 0x207) = 3;
+                }
+            } else {
+                *(u8 *)(car + 0x207) = 5;
+            }
+            *(u8 *)(car + 0x208) = 0;
+            *(s16 *)(car + 0x20E) += *(s8 *)(car + 0x207);
+            if (*(s16 *)(car + 0x20E) > maxStep) {
+                *(s16 *)(car + 0x20E) = maxStep;
+            }
+            if (*(s16 *)(car + 0x20E) < -delta) {
+                *(s16 *)(car + 0x20E) = -delta;
+            }
+            if (delta < -maxStep) {
+                *(s16 *)(car + 0x20E) = maxStep;
+            } else {
+                *(s16 *)(car + 0x20E) = -delta;
+            }
+        } else if (delta > 0) {
+            if (D_800A2F58 != 0) {
+                (*(u8 *)(car + 0x208))++;
+                if (*(s8 *)(car + 0x208) >= 3) {
+                    *(u8 *)(car + 0x208) = 3;
+                }
+            } else {
+                *(u8 *)(car + 0x208) = 5;
+            }
+            *(u8 *)(car + 0x207) = 0;
+            *(s16 *)(car + 0x20E) -= *(s8 *)(car + 0x208);
+            if (*(s16 *)(car + 0x20E) < -maxStep) {
+                *(s16 *)(car + 0x20E) = -maxStep;
+            }
+            if (-delta < *(s16 *)(car + 0x20E)) {
+                *(s16 *)(car + 0x20E) = -delta;
+            }
+            if (delta > maxStep) {
+                *(s16 *)(car + 0x20E) = -maxStep;
+            } else {
+                *(s16 *)(car + 0x20E) = -delta;
+            }
+        } else {
+            *(u8 *)(car + 0x208) = *(u8 *)(car + 0x207) = 0;
+            if (*(s16 *)(car + 0x20E) > 0) {
+                *(s16 *)(car + 0x20E) -= 3;
+                if (*(s16 *)(car + 0x20E) < 0) {
+                    *(s16 *)(car + 0x20E) = 0;
+                }
+            } else {
+                *(s16 *)(car + 0x20E) += 3;
+                if (*(s16 *)(car + 0x20E) > 0) {
+                    *(s16 *)(car + 0x20E) = 0;
+                }
+            }
+            *(s16 *)(car + 0x20E) = 0;
+        }
+    }
+    value = *(s16 *)(car + 0x20E) + 1024;
+    headingSum = *(s16 *)(car + 0x114) + value;
+    delta = headingSum / 1024;
+    *(s16 *)(car + 0x11A) = headingSum - delta * 1024;
+    *(s16 *)(car + 0x114) = *(s16 *)(car + 0x11A);
+    *(s16 *)(car + 0x20E) *= 4;
+}
 
 s32 func_80036F64(u8 *arg0, u8 *arg1, s32 arg2) {
     s32 idx;
@@ -11233,7 +11414,7 @@ extern void func_8002A1D0373B4(u8 *) asm("func_8002A1D0");
 extern void func_8002BC88373B4(u8 *) asm("func_8002BC88");
 extern void func_8002D16C373B4(u8 *) asm("func_8002D16C");
 extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
-extern void func_80036900373B4(u8 *, s32) asm("func_80036900");
+extern void CarSteerTowardHeading373B4(u8 *, s32) asm("CarSteerTowardHeading");
 extern s32 func_8003702C373B4(u8 *, u8 *) asm("func_8003702C");
 extern s32 func_80037204373B4(u8 *) asm("func_80037204");
 extern s32 func_800395BC373B4(u8 *, s32) asm("func_800395BC");
@@ -12834,7 +13015,7 @@ void func_800373B4(u8 *object) {
             }
             tempV118 = (*(void (**)(u8 *, s32))(car + 0x354));
             if (tempV118 == func_80025594373B4) {
-                func_80036900373B4(car, varA19);
+                CarSteerTowardHeading373B4(car, varA19);
                 (*(s16 *)((u8 *)car + 0x104)) =
                     (u16)(*(s16 *)((u8 *)car + 0x114));
             } else {
