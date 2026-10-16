@@ -9890,7 +9890,316 @@ ASM_FUNC(printf, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
                  "    addiu $t1, $zero, 0x3F # maspsx-keep\n"
                  "    nop # maspsx-keep\n")
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", sprintf);
+typedef struct SprintfFormat {
+    unsigned left : 1;
+    unsigned plus : 1;
+    unsigned alternate : 1;
+    unsigned zero : 1;
+    unsigned precisionSet : 1;
+    unsigned shortArg : 1;
+    unsigned longArg : 1;
+    unsigned longDouble : 1;
+    u8 sign;
+    s32 width;
+    s32 precision;
+} SprintfFormat;
+extern SprintfFormat gSprintfDefaultFormat[];
+extern void *memchr(const void *, s32, s32);
+extern void *memmove(u8 *, u8 *, s32);
+extern u8 sSprintfUpperDigits[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", sSprintfUpperDigits);
+extern u8 sSprintfLowerDigits[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", sSprintfLowerDigits);
+
+s32 sprintf(char *dest, char *format, ...) {
+    u8 buffer[512];
+    SprintfFormat spec;
+    u32 *args;
+    s32 length;
+    u8 *text;
+    s32 written;
+    s32 accumulator;
+    s32 c;
+    u32 value;
+    u8 *end;
+    const u8 *digits;
+
+    /* Keep the SDK argument cursor in its stack slot. */
+    (void)&args;
+    args = (u32 *)((u8 *)&format + sizeof(format));
+    written = 0;
+    while ((c = (u8)*format) != 0) {
+        if (c == '%') {
+            spec = gSprintfDefaultFormat[0];
+            for (;;) {
+                c = (u8)*++format;
+                if (c == '-') {
+                    spec.left = 1;
+                } else if (c == '+') {
+                    spec.plus = 1;
+                } else if (c == ' ') {
+                    spec.sign = c;
+                } else if (c == '#') {
+                    spec.alternate = 1;
+                } else if (c == '0') {
+                    spec.zero = 1;
+                } else {
+                    break;
+                }
+            }
+            if (c == '*') {
+                spec.width = (s32)*args++;
+                if (spec.width < 0) {
+                    spec.width = -spec.width;
+                    spec.left = 1;
+                }
+                c = (u8)*++format;
+            } else {
+                while ((u32)(c - '0') < 10) {
+                    /* Keep the character offset after the multiply. */
+                    accumulator = spec.width * 10 - '0';
+                    asm("" : "=r"(accumulator) : "0"(accumulator));
+                    spec.width = accumulator + c;
+                    c = (u8)*++format;
+                }
+            }
+            if (c == '.') {
+                c = (u8)*++format;
+                if (c == '*') {
+                    spec.precision = (s32)*args++;
+                    c = (u8)*++format;
+                } else {
+                    while ((u32)(c - '0') < 10) {
+                        accumulator = spec.precision * 10 - '0';
+                        asm("" : "=r"(accumulator) : "0"(accumulator));
+                        spec.precision = accumulator + c;
+                        c = (u8)*++format;
+                    }
+                }
+                if (spec.precision >= 0) {
+                    spec.precisionSet = 1;
+                }
+            }
+            text = buffer + sizeof(buffer);
+            if (spec.left) {
+                spec.zero = 0;
+            }
+        convert:
+            switch (c) {
+            case 'h':
+                spec.shortArg = 1;
+                c = (u8)*++format;
+                goto convert;
+            case 'l':
+                spec.longArg = 1;
+                c = (u8)*++format;
+                goto convert;
+            case 'L':
+                spec.longDouble = 1;
+                c = (u8)*++format;
+                goto convert;
+            case 'd':
+            case 'i':
+                /* Keep the argument load before the format flags. */
+                {
+                    register u32 *arg asm("v1");
+                    arg = args;
+                    args = arg + 1;
+                    value = *arg;
+                    asm("" : "=r"(value) : "0"(value));
+                }
+                if (spec.shortArg) {
+                    value = (s16)value;
+                }
+                if ((s32)value < 0) {
+                    value = -value;
+                    spec.sign = '-';
+                } else if (spec.plus) {
+                    spec.sign = '+';
+                }
+                goto decimal;
+            case 'u': {
+                register u32 *arg asm("v1");
+                arg = args;
+                args = arg + 1;
+                value = *arg;
+                asm("" : "=r"(value) : "0"(value));
+            }
+                if (spec.shortArg) {
+                    value = (u16)value;
+                }
+                spec.sign = 0;
+            decimal:
+                if (!spec.precisionSet) {
+                    if (spec.zero) {
+                        spec.precision = spec.width;
+                        if (spec.sign) {
+                            --spec.precision;
+                        }
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value) {
+                    *--text = value % 10 + '0';
+                    value /= 10;
+                    ++length;
+                }
+                while (length < spec.precision) {
+                    *--text = '0';
+                    ++length;
+                }
+                if (spec.sign) {
+                    *--text = spec.sign;
+                    ++length;
+                }
+                goto emit;
+            case 'o': {
+                register u32 *arg asm("v1");
+                arg = args;
+                args = arg + 1;
+                value = *arg;
+                asm("" : "=r"(value) : "0"(value));
+            }
+                if (spec.shortArg) {
+                    value = (u16)value;
+                }
+                if (!spec.precisionSet) {
+                    if (spec.zero) {
+                        spec.precision = spec.width;
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value) {
+                    *--text = (value & 7) + '0';
+                    value >>= 3;
+                    ++length;
+                }
+                if (spec.alternate && length && *text != '0') {
+                    *--text = '0';
+                    ++length;
+                }
+                while (length < spec.precision) {
+                    *--text = '0';
+                    ++length;
+                }
+                goto emit;
+            case 'p':
+                spec.precision = 8;
+                spec.precisionSet = 1;
+                spec.longArg = 1;
+            case 'X':
+                digits = sSprintfUpperDigits;
+                goto hexadecimal;
+            case 'x':
+                digits = sSprintfLowerDigits;
+            hexadecimal:
+                {
+                    register u32 *arg asm("v1");
+                    arg = args;
+                    args = arg + 1;
+                    value = *arg;
+                    asm("" : "=r"(value) : "0"(value));
+                }
+                if (spec.shortArg) {
+                    value = (u16)value;
+                }
+                if (!spec.precisionSet) {
+                    if (spec.zero) {
+                        spec.precision = spec.width;
+                        if (spec.alternate) {
+                            spec.precision -= 2;
+                        }
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value) {
+                    *--text = digits[value & 15];
+                    value >>= 4;
+                    ++length;
+                }
+                while (length < spec.precision) {
+                    *--text = '0';
+                    ++length;
+                }
+                if (spec.alternate) {
+                    *--text = c;
+                    *--text = '0';
+                    length += 2;
+                }
+                goto emit;
+            case 'c':
+                *--text = *(u8 *)args++;
+                length = 1;
+                goto emit;
+            case 's':
+                text = (u8 *)*args++;
+                if (spec.alternate) {
+                    length = *text++;
+                    if (spec.precisionSet && spec.precision < length) {
+                        length = spec.precision;
+                    }
+                } else if (!spec.precisionSet) {
+                    length = strlen((char *)text);
+                } else {
+                    end = memchr(text, 0, spec.precision);
+                    length = end - text;
+                    if (!end) {
+                        length = spec.precision;
+                    }
+                }
+                goto emit;
+            case 'n': {
+                u32 flags;
+
+                text = (u8 *)*args++;
+                flags = *(u32 *)&spec;
+                if (flags & 0x20) {
+                    /* Keep the full flags live through this test. */
+                    asm("" : : "r"(flags));
+                    *(s16 *)text = written;
+                } else {
+                    *(s32 *)text = written;
+                }
+                goto next;
+            }
+            default:
+                if (c != '%') {
+                    goto done;
+                }
+                goto character;
+            }
+        }
+    character:
+        dest[written++] = c;
+        goto next;
+    emit:
+        if (length < spec.width && !spec.left) {
+            do {
+                dest[written++] = ' ';
+            } while (length < --spec.width);
+        }
+        memmove((u8 *)dest + written, text, length);
+        written += length;
+        while (length < spec.width) {
+            dest[written++] = ' ';
+            ++length;
+        }
+    next:
+        ++format;
+    }
+done:
+    dest[written] = 0;
+    return written;
+}
 
 ASM_FUNC(memchr, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
                  "    jr $t2 # maspsx-keep\n"
