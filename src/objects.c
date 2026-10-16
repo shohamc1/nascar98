@@ -23,7 +23,7 @@ extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A2EACAbsolute[];
 extern void func_80058D94(void);
 extern void func_800531B8(void);
-extern void func_800122D8(void);
+extern void GameRunSession(void);
 extern void func_80066B08(void);
 extern void func_800587A0(void);
 extern void func_80059DC4(void);

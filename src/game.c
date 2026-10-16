@@ -48,7 +48,7 @@ extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A2EACAbsolute[];
 extern void func_80058D94(void);
 extern void func_800531B8(void);
-extern void func_800122D8(void);
+extern void GameRunSession(void);
 extern void func_80066B08(void);
 extern void func_800587A0(void);
 extern void func_80059DC4(void);
@@ -84,7 +84,7 @@ int main(void) {
             func_800531B8();
             HeapResetInitFlag();
         }
-        func_800122D8();
+        GameRunSession();
         D_800A2EACAbsolute[0] = 0;
         D_800A2EC8[0] = 0;
         if (D_800A2D0E != 0 || D_800A2D0F != 0) {
@@ -134,7 +134,349 @@ void GraphicsCompactOrderingTable(s32 tableAddress) {
     } while (count != 0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_800122D8);
+void GameRunSession(void) {
+    extern s32 D_800A2F74[];
+    extern s32 D_8008CA28[];
+    extern s32 D_800A2F54[];
+    extern s32 D_800A2EC4Absolute[];
+    extern u8 D_800A306DAbsolute[];
+    extern s16 D_800A3694Absolute[];
+    extern s8 D_800A2F9CAbsolute[];
+    extern s32 D_800A3720;
+    extern s32 D_800A3948;
+    extern u8 D_800A3884[];
+    extern s32 D_800A2EB0After[] asm("D_800A2EB0.NON_MATCHING");
+    extern s32 D_800A33C8;
+    extern s32 D_800A2EA4Absolute[];
+    extern u8 D_800A2D0C;
+    extern s8 D_800A2D10;
+    extern s32 D_800A359C;
+    extern s32 D_800A33D0;
+    extern s32 D_800A33CC;
+    extern u8 D_800A2EDAAbsolute[] asm("D_800A2EDA");
+    extern u8 gOrderingTables[];
+    extern s32 gOrderingTableBank;
+    extern void *D_800A39C8;
+    extern u8 *D_800A3A8C;
+    extern u32 D_800A3570;
+    extern u32 gPrimitiveCursorRun asm("gPrimitiveCursor.NON_MATCHING");
+    extern s32 D_800A3708;
+    extern s32 D_800A370C;
+    extern s32 D_800B9DA0[];
+    typedef struct {
+        s32 first;
+        s32 gap;
+        s32 second;
+        s32 pad[6];
+        s32 elapsed;
+    } SessionTiming;
+    extern SessionTiming D_800B9D58Run asm("D_800B9D58");
+    extern s32 D_800A2CFC;
+    extern s32 D_800A38F4;
+    extern s32 D_800A2D50[];
+    extern s32 D_800A2D14;
+    extern s32 D_800A2D18;
+    extern s32 D_800A33C0;
+    extern s32 D_800A33C4;
+    extern u8 D_800A3075[];
+    extern s32 D_800A2D00;
+    extern u8 *D_8009A400[];
+    extern DRAWENV D_800BDD4C[];
+    extern DISPENV D_800BDE04[];
+    extern void func_8001E3E0(s32, s32, s32, s32);
+    extern void GraphicsPartitionWorkBuffers(void);
+    extern void func_8002DDA0(void);
+    extern void func_80041850(void);
+    extern void TextureLoadAll(void);
+    extern void func_80017E08(void);
+    extern void func_80018C88(void);
+    extern void func_800144B4(void);
+    extern void func_8002F514(void);
+    extern void func_8001636C(void);
+    extern void func_80025370(s32);
+    extern void func_8002F5A4(void);
+    extern void func_80012E00(void);
+    extern void func_80014440(void);
+    extern void func_80024210(void);
+    extern void func_8002F2CC(void);
+    extern void GraphicsSetClearColor(u32, u32, u32);
+    extern void func_80045288(void);
+    extern void func_80014A70(void);
+    extern void func_8001FC6C(void);
+    extern void func_80041DEC(void);
+    extern void func_80041AF0Run(s8) asm("func_80041AF0");
+    extern s32 func_80041B7C(s32);
+    extern void SystemInitCounter(void);
+    extern void func_8004195C(void);
+    extern void func_80041328(void);
+    extern void func_8001475C(void);
+    extern void func_8002F910(void);
+    extern void func_80030204(void);
+    extern void func_8001C34C(void);
+    extern void func_8003CC48(void);
+    extern void func_8001E7EC(void *, s32 *, s32);
+    extern void func_8003CF04(void);
+    extern void func_80041A28(void);
+    extern void GraphicsSetColor(s32, s32, s32);
+    extern s32 func_80050940(u8 *);
+    extern void func_80050028(u8 *, s16, s32, s8);
+    extern void func_8001D778(s32, s32, s32, s32, s32, s32, s32, s32);
+    extern void func_8003C1CC(void);
+    extern void func_8003C528(void);
+    extern void func_80067598(void);
+    extern void func_8001BDBC(s32);
+    extern void func_80066CFC(void);
+    extern void func_80067DFC(void);
+    extern void SystemStopCounterAfterVSync(void);
+    register SessionTiming *timings asm("s3");
+    u8 *ot;
+    u8 *tables;
+    u8 *secondTables;
+    register s32 mode asm("v1");
+    register s32 checkValue asm("v0");
+    s32 sync;
+    s32 bank;
+    s32 timeout;
+    s32 firstButtons;
+    s32 buttons;
+    s32 count;
+    s32 *timer;
+    s32 ticks;
+
+    D_800A2F74[0] = 0;
+    D_8008CA28[0] = 0;
+    D_800A2D10 = 0;
+    D_800A2F54[0] = 0;
+    D_800A2EC4Absolute[0] = 0;
+    VSync(0);
+    func_8001E3E0(320, 240, 160, 0);
+    bank = 0;
+    GraphicsPartitionWorkBuffers();
+    timeout = 1200;
+    func_8002DDA0();
+    func_80041850();
+    TextureLoadAll();
+    func_80017E08();
+    func_80018C88();
+    func_800144B4();
+    func_8002F514();
+    func_8001636C();
+    func_80025370(D_800A3720);
+    func_8002F5A4();
+    func_80012E00();
+    SsSetMVol(127, 127);
+    if (D_800A306DAbsolute[0] != 0 && D_800A2EB0Absolute[0] != -1) {
+        D_800A2F9CAbsolute[0] = 0;
+    } else {
+        if (D_800A3694Absolute[0] != 0) {
+            D_800A2F9CAbsolute[0] = 1;
+        } else {
+            D_800A2F9CAbsolute[0] = 0;
+        }
+        func_80014440();
+    }
+    func_80024210();
+    func_8002F2CC();
+    GraphicsSetClearColor((u32)(D_800A3948 & 0x7C00) >> 7,
+                          (u32)(D_800A3948 & 0x3E0) >> 2,
+                          (D_800A3948 & 31) << 3);
+    func_80045288();
+    func_80014A70();
+    func_8001FC6C();
+    func_80041DEC();
+    D_800A3884[0] = 1;
+    if (D_800A2EB0Absolute[0] != -1) {
+        D_800A33C8 = 0;
+        do {
+            func_80041AF0Run(0);
+            if (D_800A2EA4Absolute[0] != 0) {
+                firstButtons = func_80041B7C(0);
+                buttons = firstButtons | func_80041B7C(1);
+            } else {
+                buttons = func_80041B7C(0);
+            }
+            D_800A33C8 = buttons;
+        } while (!(buttons & 0x800));
+    }
+    func_80066B08();
+    SystemInitCounter();
+    GetRCnt(0xF2000001);
+    func_8004195C();
+    func_80041328();
+    SetDispMask(1);
+    tables = gOrderingTables;
+    secondTables = tables + 0x1000;
+    /* Keep the table bases before the timing-pointer assignment. */
+    asm("" : : "r"(tables), "r"(secondTables) : "s3");
+    timings = &D_800B9D58Run;
+    /* Keep the timing base at its first field. */
+    asm("" : : "r"(timings));
+    D_800A2D0C = 0;
+    D_800A359C = 0;
+    D_800A33D0 = 0;
+    D_800A33CC = 0;
+    do {
+        if (D_800A2EDAAbsolute[0] != 0 && timeout-- == 0) {
+            D_800A2D0C = 1;
+        }
+        bank = bank == 0;
+        D_800A39C8 = (u8 *)((bank << 13) + (u32)tables);
+        gOrderingTableBank = bank * 2;
+        D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+        gPrimitiveCursorRun = D_800A3570;
+        ClearOTagR((u_long *)D_800A39C8, 0x400);
+        ClearOTagR(
+            (u_long *)((u8 *)((gOrderingTableBank << 12) + (u32)secondTables)),
+            0x400);
+        ticks = GetRCnt(0xF2000001);
+        count = 19;
+        timer = D_800B9DA0;
+        D_800A3708 = ticks;
+        do {
+            *timer = ticks;
+            count--;
+            timer--;
+        } while (count >= 0);
+        timings->second = 0;
+        timings->first = 0;
+        D_800A2CFC = 0;
+        D_800A38F4 = 0;
+        D_800A2D50[0] = 0;
+        func_8001475C();
+        D_800A2D14 = D_800A33C0;
+        D_800A2D18 = D_800A33C4;
+        func_8002F910();
+        func_80030204();
+        timings->elapsed = GetRCnt(0xF2000001) - D_800A3708;
+        func_8001C34C();
+        D_800A370C = GetRCnt(0xF2000001);
+        func_8003CC48();
+        if (D_800A3075[0] != 0) {
+            while ((u32)(GetRCnt(0xF2000001) - D_800A3708) < 270U) {
+                func_80041AF0Run(D_800A2D10);
+            }
+        } else {
+            while ((u32)(GetRCnt(0xF2000001) - D_800A3708) < 530U) {
+                func_80041AF0Run(D_800A2D10);
+            }
+        }
+        D_800A2D00 = 0;
+        GetRCnt(0xF2000001);
+        func_80041AF0Run(0);
+        {
+            u32 linkMask;
+            s32 *entry;
+            s32 *firstEmpty;
+            s32 previousOffset;
+            s32 count;
+            s32 tableAddress;
+
+            firstEmpty = NULL;
+            count = 0x3FC;
+            linkMask = 0xFFFFFF;
+            previousOffset = 0xFEC;
+            tableAddress =
+                (s32)((u8 *)((gOrderingTableBank << 12) + (u32)tables));
+            entry = (s32 *)(tableAddress + 0xFF0);
+            do {
+                if ((*entry & linkMask) !=
+                    ((tableAddress + previousOffset) & linkMask)) {
+                    if (firstEmpty != NULL) {
+                        *firstEmpty = (u32)entry & linkMask;
+                        firstEmpty = NULL;
+                    }
+                } else if (firstEmpty == NULL) {
+                    firstEmpty = entry;
+                }
+                previousOffset -= 4;
+                count--;
+                entry--;
+            } while (count != 0);
+        }
+        DrawSync(0);
+        D_800A2D00 = GetRCnt(0xF2000001) - D_800A3708;
+        if (D_800A2EACAbsolute[0] != 2 || D_800A2EC8[0] != 0) {
+            func_8001E7EC((u8 *)((gOrderingTableBank << 12) + (u32)tables),
+                          &sync, 0);
+        }
+    } while (D_800A2D0C == 0);
+    if (D_800A2EB0Absolute[0] == 2) {
+        func_8003CF04();
+    }
+    func_80041A28();
+    DrawSync(0);
+    if (D_800A2EB0After[0] == -1 && D_800A2D0F == 0) {
+        ot = gOrderingTables;
+        D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+        gPrimitiveCursorRun = D_800A3570;
+        ClearOTagR((u_long *)(ot + (gOrderingTableBank << 12)), 0x400);
+        GraphicsSetColor(255, 128, 64);
+        bank ^= 1;
+        func_80050028(D_8009A400[0],
+                      (s16)((320 - func_80050940(D_8009A400[0])) << 15 >> 16),
+                      110, 0);
+        func_8001D778(0, 0, 320, 240, 0, 0, 0, 0);
+        /* Keep the base operand first. */
+        asm("addu %0, %0, %2"
+            : "=r"(ot)
+            : "0"(ot), "r"(gOrderingTableBank << 12));
+        DrawOTag((u_long *)(ot + 0xFFC));
+        /* Keep the table pointer across the GPU call. */
+        asm("" : : "r"(ot));
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_800BDD4C[bank]);
+        PutDispEnv(&D_800BDE04[bank]);
+    } else {
+        if (D_800A2EACAbsolute[0] != 0) {
+            mode = D_800A2EB0Absolute[0];
+            checkValue = 2;
+            if (mode == checkValue) {
+                goto checkMode;
+            }
+            goto otherDisplay;
+        }
+        func_8003C1CC();
+        SetDispMask(0);
+        mode = D_800A2EB0Absolute[0];
+        checkValue = 2;
+    checkMode:
+        /* Keep the mode test on both paths. */
+        asm("" : "=r"(mode) : "0"(mode), "r"(checkValue));
+        if (mode == checkValue) {
+            func_8003C528();
+            if (D_800A2D0E == 0) {
+                D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+                gPrimitiveCursorRun = D_800A3570;
+                ClearOTagR(
+                    (u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
+                    0x400);
+                D_800A39C8 = gOrderingTables + (gOrderingTableBank << 12);
+                func_80067598();
+                goto finishDisplay;
+            }
+            goto hideDisplay;
+        }
+        goto displayDone;
+    otherDisplay:
+        if (D_800A2D0E != 0 || D_800A359C == 0) {
+        hideDisplay:
+            SetDispMask(0);
+            goto displayDone;
+        }
+        D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+        gPrimitiveCursorRun = D_800A3570;
+        ClearOTagR((u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
+                   0x400);
+        func_8001BDBC(D_800A359C >= 540);
+        func_80066CFC();
+    finishDisplay:
+        func_80067DFC();
+    }
+displayDone:
+    SystemStopCounterAfterVSync();
+    HeapResetInitFlag();
+}
 
 void SystemDrainHardware(void) {
     u8 result[16];
