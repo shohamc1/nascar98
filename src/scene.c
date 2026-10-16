@@ -7000,7 +7000,7 @@ void func_80053C00(s32 arg0, s32 arg1) {
     extern void func_8005B8B8(u8 *, u8);
     extern void func_80064898(void);
     extern void func_800686FC(u8, u8);
-    extern void func_8005D094(u8, u8, u8);
+    extern void func_8005D094(s32, u8, u8);
     extern s32 func_8005DCF0(void);
 
     if (D_800A39E4Small == 0xFC) {
