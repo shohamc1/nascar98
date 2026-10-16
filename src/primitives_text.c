@@ -638,959 +638,580 @@ void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
     }
 }
 
-
-/* A macro prevents extra out-of-line text before this function. */
-#define PRIMITIVE_X2_ADDR(prim) ((prim) + 0x18)
+extern POLY_FT4 D_800AEB94[];
+extern POLY_FT4 D_800AE29C[];
+extern POLY_FT4 D_800BC22C[];
+extern u16 D_80090FC4[];
 
 void func_80018C88(void) {
-    extern u8 D_800AEB94[];
-    extern u8 D_800AE29C[];
-    extern u8 D_800BC22C[];
-    extern u16 D_80090FC4[];
-    u8 *prim;
-    register u8 *f4 asm("s1");
-    register u16 *table asm("s2");
-    s32 left;
-    s32 top;
-    register s32 right asm("v1");
-    register s32 work asm("v0");
-    register s32 spare asm("t0");
-    register u8 *semiPrim asm("a0");
-    register s32 semiFlag asm("a1");
-    s32 idx;
-    u16 tv;
-    register u16 page asm("v0");
-    register s32 uv asm("a3");
-    s32 yv;
-    register s32 vv asm("a2");
-    s32 ww;
-    s32 ta;
-    s32 tb;
-    s32 tc;
-    int new_var;
-    s32 td;
-    s32 te;
-    s32 tf;
-    s32 tg;
-    s32 th;
-    s32 uMid;
-    s32 yShift;
+    POLY_FT4 *prim;
+    POLY_F4 *f4;
+    u16 *table;
+    u16 tpage;
+    s32 u;
+    s32 v;
+    s32 w;
+    s32 c;
+    s32 i;
     s32 j;
-    s32 k;
-    s32 colOff;
-    s32 colA;
-    s32 colB;
-    register s32 colC asm("s5");
+    s32 rowOff;
+    s32 uMid;
+    s32 vLow;
+    s32 glyphW;
+    s32 vBase;
+    s32 texX;
+    s32 uWide1;
+    s32 uWide2;
+    s32 yShift;
     s32 vTop1;
     s32 vBot1;
     s32 vTop2;
-    register s32 vBot2 asm("s5");
-    s32 glyphW;
-    s32 vBase;
-    register s32 texX asm("s3");
-    s32 uWide1;
-    s32 uWide2;
-    s32 off;
-    s32 off3;
-    register s32 i asm("s4");
+    s32 vBot2;
+    s32 k;
+    s32 r8;
+    s32 r15;
+    s32 r16;
+
     glyphW = 25;
     vBase = 32;
     i = 0;
     uWide1 = -66;
     uWide2 = -8;
     texX = -209;
-    off = 0;
     do {
-        prim = D_800AEB94 + off;
-        SetPolyFT4((POLY_FT4 *)prim);
+        prim = &D_800AEB94[i];
+        SetPolyFT4(prim);
         SetShadeTex(prim, 1);
-        *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEA);
-        *((u16 *)(prim + 0x16)) = GetTPage(1, 0, 0x280, 0);
-        idx = i * 4;
+        prim->clut = GetClut(0x300, 0xEA);
+        prim->tpage = GetTPage(1, 0, 0x280, 0);
         switch (i) {
         case 0:
-
         case 1:
-
         case 2:
-
         case 3:
-
         case 4:
-
         case 5:
-
         case 6:
-
         case 7:
-
         case 8:
-
         case 9:
-            vv = 0x30;
-            *((u8 *)(prim + 0xD)) = vv;
-            *((u8 *)(prim + 0x15)) = vv;
-            *((u8 *)(prim + 0x1D)) = vBase + 0x30;
-            *((u8 *)(prim + 0x25)) = vBase + 0x30;
-            uv = i * glyphW;
-            *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0x14)) = (uv + glyphW) - 1;
-            *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x24)) = (uv + glyphW) - 1;
+            v = 0x30;
+            u = i * glyphW;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = u + glyphW - 1;
+            prim->u2 = u;
+            prim->v1 = v;
+            prim->u3 = u + glyphW - 1;
+            prim->v2 = vBase + 0x30;
+            prim->v3 = vBase + 0x30;
             break;
-
         case 10:
-            *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0xD)) = 0;
-            *((u8 *)(prim + 0x14)) = uWide1;
-            *((u8 *)(prim + 0x15)) = 0;
-            *((u8 *)(prim + 0x1C)) = 0;
-            ww = 0x18;
-
-            *((u8 *)(prim + 0x1D)) = ww;
-            *((u8 *)(prim + 0x24)) = uWide1;
-            *((u8 *)(prim + 0x25)) = ww;
+            u = 0;
+            v = 0;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = uWide1;
+            prim->v1 = v;
+            prim->u2 = u;
+            prim->v2 = 0x18;
+            prim->u3 = uWide1;
+            prim->v3 = 0x18;
             break;
-
         case 11:
-
         case 12:
-
         case 13:
-
         case 14:
-            uv = texX * 2;
-            vv = 0x18;
-
-            right = uv + 0x25;
-            ww = 0x30;
-
-            *((u8 *)(prim + 0xC)) = uv;
-            *((u8 *)(prim + 0xD)) = vv;
-            *((u8 *)(prim + 0x14)) = right;
-            *((u8 *)(prim + 0x15)) = vv;
-            *((u8 *)(prim + 0x1C)) = uv;
-            *((u8 *)(prim + 0x1D)) = ww;
-            *((u8 *)(prim + 0x24)) = right;
-            *((u8 *)(prim + 0x25)) = ww;
+            u = texX * 2;
+            v = 0x18;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = u + 0x25;
+            prim->v1 = v;
+            prim->u2 = u;
+            prim->v2 = 0x30;
+            prim->u3 = u + 0x25;
+            prim->v3 = 0x30;
             break;
-
         case 15:
-            vv = 0x50;
-
-            ww = 0x71;
-
-            *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0xD)) = vv;
-            *((u8 *)(prim + 0x14)) = uWide2;
-            *((u8 *)(prim + 0x15)) = vv;
-            *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = ww;
-            *((u8 *)(prim + 0x24)) = uWide2;
-            *((u8 *)(prim + 0x25)) = ww;
+            u = 0;
+            v = 0x50;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = uWide2;
+            prim->v1 = v;
+            prim->u2 = u;
+            prim->v2 = 0x71;
+            prim->u3 = uWide2;
+            prim->v3 = 0x71;
             break;
         }
-
+        asm("");
+        asm("");
+        asm("");
         texX += 19;
         i++;
-        off += 40;
     } while (i < 17);
+
     uMid = 0xCD;
-    asm volatile("" : "=r"(uMid) : "0"(uMid));
+    vLow = 0xB8;
     yShift = 0;
     j = 0;
-    colOff = 0;
+    rowOff = 0;
+panel:
+    i = 0;
     do {
-        k = 0;
-        colA = 0x41;
-        asm volatile("" : "=r"(colA) : "0"(colA));
-        colB = 0x100;
-        asm volatile("" : "=r"(colB) : "0"(colB));
-        colC = 0x132;
-
-        do {
-            {
-                s32 rowOffset;
-                u8 *address;
-                rowOffset = k * 5;
-                asm volatile("" : "=r"(rowOffset) : "0"(rowOffset) : "memory");
-                spare = colOff;
-                asm("" : "=r"(spare) : "0"(spare));
-                address = &D_800AE29C[rowOffset * 8];
-
-                prim = (u8 *)((u32)spare + (u32)address);
-            }
-            SetPolyFT4((POLY_FT4 *)prim);
-            SetShadeTex(prim, 1);
-            *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEC);
-            *((u16 *)(prim + 0x16)) = GetTPage(0, 0, 0x340, 0);
-
-            f4 = prim;
-            switch (k) {
-
-            case 0:
-                left = 0x70;
-
-                top = 0x88;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x14;
-
-                work = 0x96;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                semiPrim = prim;
-                semiFlag = 1;
-                right = 0x9F;
-
-                work = 0x70;
-
-                spare = 0xB8;
-
-                *((u8 *)(semiPrim + 0x1D)) = spare;
-                *((u8 *)(semiPrim + 0x25)) = spare;
-                spare = 0x43;
-
-                *((s16 *)(semiPrim + 0x10)) = spare;
-                spare = 0x14;
-
-                *((u8 *)(semiPrim + 0x1C)) = work;
-                work = top + 0x30;
-                *((s16 *)PRIMITIVE_X2_ADDR(semiPrim)) = spare;
-                spare = 0x43;
-                asm volatile("" : "=r"(spare) : "0"(spare));
-                *((u8 *)(semiPrim + 0x14)) = right;
-                *((u8 *)(semiPrim + 0x24)) = right;
-                *((s16 *)(semiPrim + 0x8)) = left;
-                *((s16 *)(semiPrim + 0xA)) = top;
-                *((s16 *)(semiPrim + 0x12)) = top;
-                *((s16 *)(semiPrim + 0x1A)) = work;
-                *((s16 *)(semiPrim + 0x20)) = spare;
-                *((s16 *)(semiPrim + 0x22)) = work;
-                SetSemiTrans(semiPrim, semiFlag);
-                break;
-
-            case 1:
-                left = 0x40;
-
-                top = 0x88;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x14;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                work = 0x96;
-
-                top = work - yShift;
-                right = 0x6F;
-
-                work = 0x40;
-
-                spare = 0xB8;
-
-                *((u8 *)(prim + 0x1D)) = spare;
-                *((u8 *)(prim + 0x25)) = spare;
-                spare = 0x43;
-
-                *((s16 *)(prim + 0x10)) = spare;
-                spare = 0x14;
-                asm volatile("" : "=r"(spare) : "0"(spare));
-                *((u8 *)(prim + 0x1C)) = work;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = spare;
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x24)) = right;
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x12)) = top;
-                work = top + 0x30;
-                spare = 0x43;
-
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = spare;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 2:
-                left = 0xDD;
-
-                top = 0x95;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x29;
-
-                work = 0xAB;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                right = 0xEC;
-
-                work = 0xDD;
-
-                *((u8 *)(prim + 0x1C)) = work;
-                work = 0x9B;
-
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x24)) = right;
-                right = 0x38;
-
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                work = 0x29;
-                asm volatile("" : "=r"(work) : "0"(work));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = right;
-                *((s16 *)(prim + 0x12)) = top;
-                work = top + 6;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = right;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 3:
-                left = 0xA0;
-
-                top = 0x89;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x14;
-
-                work = 0x7D;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                work = 0xA0;
-
-                *((u8 *)(prim + 0x1C)) = work;
-                work = 0x92;
-
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                spare = 0x14;
-
-                work = top + 9;
-                goto smallMenuCoordinates;
-
-            case 4:
-                left = 0xA0;
-
-                top = 0x93;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x100;
-
-                work = 0x7D;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                right = 0xD2;
-
-                work = 0xA0;
-
-                *((u8 *)(prim + 0x1C)) = work;
-                new_var = 0x9C;
-                work = new_var;
-
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x24)) = right;
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = colC;
-                *((s16 *)(prim + 0x12)) = top;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
-                work = top + 9;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = colC;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 5:
-                left = 0xCD;
-
-                top = 0x89;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x100;
-
-                work = 0x95;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                right = 0xFF;
-
-                work = 0x92;
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x1C)) = uMid;
-                *((u8 *)(prim + 0x24)) = right;
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = colC;
-                *((s16 *)(prim + 0x12)) = top;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
-                work = top + 9;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = colC;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 6:
-                left = 0xCD;
-
-                top = 0x9D;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x100;
-
-                work = 0xAD;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                right = 0xFF;
-
-                work = 0xA6;
-
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x1C)) = uMid;
-                *((u8 *)(prim + 0x24)) = right;
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = colC;
-                *((s16 *)(prim + 0x12)) = top;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = colB;
-                work = top + 9;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = colC;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 7:
-                left = 0xA0;
-
-                top = 0x9D;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x14;
-
-                work = 0xC8;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                work = 0xA0;
-
-                *((u8 *)(prim + 0x1C)) = work;
-                work = 0xAB;
-
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                spare = 0x14;
-
-                work = top + 0xE;
-            smallMenuCoordinates:
-                *((u8 *)(prim + 0x14)) = uMid;
-                *((u8 *)(prim + 0x24)) = uMid;
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = colA;
-                *((s16 *)(prim + 0x12)) = top;
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = spare;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = colA;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 9:
-                SetPolyF4((POLY_F4 *)f4);
-                left = 0x14;
-
-                work = 0x86;
-
-                top = work - yShift;
-                semiPrim = f4;
-                semiFlag = 1;
-
-                spare = 0x14;
-                asm volatile("" : "=r"(spare) : "0"(spare));
-                *((s16 *)(f4 + 0x8)) = left;
-                *((s16 *)(f4 + 0xA)) = top;
-                *((s16 *)(f4 + 0xC)) = colA;
-                *((s16 *)(f4 + 0xE)) = top;
-                *((s16 *)(f4 + 0x10)) = spare;
-                work = top + 9;
-                *((s16 *)(f4 + 0x12)) = work;
-                *((s16 *)(f4 + 0x14)) = colA;
-                *((s16 *)(f4 + 0x16)) = work;
-                SetSemiTrans(semiPrim, semiFlag);
-                spare = 0x1E;
-
-                *((u8 *)(f4 + 4)) = spare;
-                *((u8 *)(f4 + 5)) = spare;
-                *((u8 *)(f4 + 6)) = spare;
-                break;
-
-            case 10:
-                SetPolyF4((POLY_F4 *)f4);
-                left = 0x100;
-
-                work = 0x86;
-
-                top = work - yShift;
-                semiPrim = f4;
-                semiFlag = 1;
-                asm volatile("" : : "r"(semiPrim), "r"(semiFlag));
-                *((s16 *)(f4 + 0x8)) = left;
-                *((s16 *)(f4 + 0xA)) = top;
-                *((s16 *)(f4 + 0xC)) = colC;
-                *((s16 *)(f4 + 0xE)) = top;
-                *((s16 *)(f4 + 0x10)) = colB;
-                work = top + 9;
-                *((s16 *)(f4 + 0x12)) = work;
-                *((s16 *)(f4 + 0x14)) = colC;
-                *((s16 *)(f4 + 0x16)) = work;
-                SetSemiTrans(semiPrim, semiFlag);
-                work = 0x1E;
-                *((u8 *)(f4 + 4)) = work;
-                *((u8 *)(f4 + 5)) = work;
-                *((u8 *)(f4 + 6)) = work;
-                break;
-
-            case 11:
-                SetPolyF4((POLY_F4 *)f4);
-                left = 0x100;
-
-                work = 0x9E;
-
-                top = work - yShift;
-                semiPrim = f4;
-                semiFlag = 1;
-                asm volatile("" : : "r"(semiPrim), "r"(semiFlag));
-                *((s16 *)(f4 + 0x8)) = left;
-                *((s16 *)(f4 + 0xA)) = top;
-                *((s16 *)(f4 + 0xC)) = colC;
-                *((s16 *)(f4 + 0xE)) = top;
-                *((s16 *)(f4 + 0x10)) = colB;
-                work = top + 9;
-                *((s16 *)(f4 + 0x12)) = work;
-                *((s16 *)(f4 + 0x14)) = colC;
-                *((s16 *)(f4 + 0x16)) = work;
-                SetSemiTrans(semiPrim, semiFlag);
-                work = 0x1E;
-                *((u8 *)(f4 + 4)) = work;
-                *((u8 *)(f4 + 5)) = work;
-                *((u8 *)(f4 + 6)) = work;
-                break;
-
-            case 12:
-                SetPolyF4((POLY_F4 *)f4);
-                left = 0x100;
-
-                work = 0xB6;
-
-                top = work - yShift;
-                semiPrim = f4;
-                semiFlag = 1;
-                asm volatile("" : : "r"(semiPrim), "r"(semiFlag));
-                *((s16 *)(f4 + 0x8)) = left;
-                *((s16 *)(f4 + 0xA)) = top;
-                *((s16 *)(f4 + 0xC)) = colC;
-                *((s16 *)(f4 + 0xE)) = top;
-                *((s16 *)(f4 + 0x10)) = colB;
-                work = top + 9;
-                *((s16 *)(f4 + 0x12)) = work;
-                *((s16 *)(f4 + 0x14)) = colC;
-                *((s16 *)(f4 + 0x16)) = work;
-                SetSemiTrans(semiPrim, semiFlag);
-                work = 0x1E;
-                *((u8 *)(f4 + 4)) = work;
-                *((u8 *)(f4 + 5)) = work;
-                *((u8 *)(f4 + 6)) = work;
-                break;
-
-            case 13:
-                SetPolyF4((POLY_F4 *)f4);
-                left = 0x1E;
-
-                work = 0xCC;
-
-                top = work - yShift;
-                right = 0x40;
-
-                spare = 0x1E;
-                asm volatile("" : "=r"(spare) : "0"(spare));
-                *((s16 *)(f4 + 0xC)) = right;
-                *((s16 *)(f4 + 0x14)) = right;
-                work = top + 2;
-                right = 0x1E;
-                asm volatile("" : "=r"(right) : "0"(right));
-                *((s16 *)(f4 + 0x12)) = work;
-                *((s16 *)(f4 + 0x16)) = work;
-                work = 0xE6;
-
-                *((s16 *)(f4 + 0x8)) = left;
-                *((s16 *)(f4 + 0xA)) = top;
-                *((s16 *)(f4 + 0xE)) = top;
-                *((s16 *)(f4 + 0x10)) = spare;
-                *((u8 *)(f4 + 4)) = right;
-                *((u8 *)(f4 + 5)) = work;
-                *((u8 *)(f4 + 6)) = right;
-                break;
-
-            case 14:
-                left = 0xD7;
-
-                top = 0x95;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x28;
-
-                work = 0xAB;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                right = 0xDC;
-
-                work = 0xD7;
-
-                *((u8 *)(prim + 0x1C)) = work;
-                work = 0x9B;
-
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x24)) = right;
-                right = 0x2D;
-
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                work = 0x28;
-                asm volatile("" : "=r"(work) : "0"(work));
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
-                asm volatile("" : : "m"(*((s16 *)PRIMITIVE_X2_ADDR(prim))));
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = right;
-                *((s16 *)(prim + 0x12)) = top;
-                work = top + 6;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = right;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 8:
-                left = 0xA0;
-
-                top = 0xAB;
-
-                *((u8 *)(prim + 0xC)) = left;
-                left = 0x79;
-
-                work = 0xC8;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = work - yShift;
-                right = 0xEE;
-
-                work = 0xA0;
-
-                spare = 0xB8;
-
-                *((u8 *)(prim + 0x1D)) = spare;
-                asm volatile("" : : "m"(*((u8 *)(prim + 0x1D))));
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x24)) = right;
-                right = 0xC7;
-
-                *((u8 *)(prim + 0x1C)) = work;
-                work = 0x79;
-
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
-                *((u8 *)(prim + 0x25)) = spare;
-                work = top + 0xD;
-                goto menuCoordinates;
-                break;
-
-            case 15:
-                *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xE5);
-                page = GetTPage(1, 0, 0x280, 0);
-                top = 0xC1;
-
-                left = 0x79;
-
-                right = 0xA0;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = right - yShift;
-                right = 0x4E;
-
-                *((u16 *)(prim + 0x16)) = page;
-                work = 0xCE;
-                goto menuBytes;
-
-            case 16:
-                *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xE5);
-                page = GetTPage(1, 0, 0x280, 0);
-                top = 0xCE;
-
-                left = 0x79;
-
-                right = 0xB4;
-
-                *((u8 *)(prim + 0xD)) = top;
-                *((u8 *)(prim + 0x15)) = top;
-                top = right - yShift;
-                right = 0x4E;
-
-                *((u16 *)(prim + 0x16)) = page;
-                work = 0xDB;
-            menuBytes:
-                *((u8 *)(prim + 0x14)) = right;
-                *((u8 *)(prim + 0x24)) = right;
-                *((u8 *)(prim + 0x1D)) = work;
-                *((u8 *)(prim + 0x25)) = work;
-                right = 0xC7;
-
-                work = 0x79;
-
-                *((s16 *)PRIMITIVE_X2_ADDR(prim)) = work;
-                *((u8 *)(prim + 0xC)) = 0;
-                *((u8 *)(prim + 0x1C)) = 0;
-                work = top + 0xD;
-            menuCoordinates:
-                *((s16 *)(prim + 0x8)) = left;
-                *((s16 *)(prim + 0xA)) = top;
-                *((s16 *)(prim + 0x10)) = right;
-                *((s16 *)(prim + 0x12)) = top;
-                *((s16 *)(prim + 0x1A)) = work;
-                *((s16 *)(prim + 0x20)) = right;
-                *((s16 *)(prim + 0x22)) = work;
-                break;
-
-            case 17:
-                SetPolyF4((POLY_F4 *)f4);
-                left = 0x55;
-
-                work = 0x8C;
-
-                top = work - yShift;
-                right = 0xF0;
-
-                work = 0x55;
-
-                *((s16 *)(f4 + 0x10)) = work;
-                work = top + 0xC;
-                *((s16 *)(f4 + 0x12)) = work;
-                *((s16 *)(f4 + 0x16)) = work;
-                work = 0xA;
-                *((s16 *)(f4 + 0x8)) = left;
-                *((s16 *)(f4 + 0xA)) = top;
-                *((s16 *)(f4 + 0xC)) = right;
-                *((s16 *)(f4 + 0xE)) = top;
-                *((s16 *)(f4 + 0x14)) = right;
-                *((u8 *)(f4 + 4)) = work;
-                *((u8 *)(f4 + 5)) = work;
-                *((u8 *)(f4 + 6)) = work;
-                break;
-            }
-            k++;
-        } while (k < 18);
-        spare = colOff;
-        asm("" : "=r"(spare) : "0"(spare));
-        spare += 0x2D0;
-        colOff = spare;
-        spare = j;
-        asm("" : "=r"(spare) : "0"(spare));
-        yShift += 0x64;
-        spare++;
-        j = spare;
-    } while (j < 2);
-    k = 0;
+        prim = (POLY_FT4 *)((u8 *)D_800AE29C + rowOff + i * sizeof(POLY_FT4));
+        SetPolyFT4(prim);
+        SetShadeTex(prim, 1);
+        prim->clut = GetClut(0x300, 0xEC);
+        prim->tpage = GetTPage(0, 0, 0x340, 0);
+        f4 = (POLY_F4 *)prim;
+        switch (i) {
+        case 0:
+            u = 0x70;
+            v = 0x88;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0x9F;
+            prim->v1 = v;
+            prim->u2 = 0x70;
+            prim->u3 = 0x9F;
+            prim->v2 = vLow;
+            prim->v3 = vLow;
+            u = 0x14;
+            v = 0x96 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x43;
+            prim->y1 = v;
+            prim->x2 = 0x14;
+            prim->y2 = v + 0x30;
+            prim->x3 = 0x43;
+            prim->y3 = v + 0x30;
+            SetSemiTrans(prim, 1);
+            break;
+        case 1:
+            u = 0x40;
+            v = 0x88;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0x6F;
+            prim->v1 = v;
+            prim->u2 = 0x40;
+            prim->v2 = vLow;
+            prim->u3 = 0x6F;
+            prim->v3 = vLow;
+            u = 0x14;
+            v = 0x96 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x43;
+            prim->y1 = v;
+            prim->x2 = 0x14;
+            prim->y2 = v + 0x30;
+            prim->x3 = 0x43;
+            prim->y3 = v + 0x30;
+            break;
+        case 2:
+            u = 0xDD;
+            v = 0x95;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0xEC;
+            prim->v1 = v;
+            prim->u2 = 0xDD;
+            prim->u3 = 0xEC;
+            prim->v2 = 0x9B;
+            prim->v3 = 0x9B;
+            u = 0x29;
+            v = 0xAB - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x38;
+            prim->y1 = v;
+            prim->x2 = 0x29;
+            prim->y2 = v + 6;
+            prim->x3 = 0x38;
+            prim->y3 = v + 6;
+            break;
+        case 3:
+            u = 0xA0;
+            v = 0x89;
+            prim->u0 = u;
+            prim->u1 = uMid;
+            prim->u2 = 0xA0;
+            prim->u3 = uMid;
+            prim->v0 = v;
+            prim->v1 = v;
+            prim->v2 = 0x92;
+            prim->v3 = 0x92;
+            u = 0x14;
+            v = 0x7D - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x41;
+            prim->y1 = v;
+            prim->x2 = 0x14;
+            prim->y2 = v + 9;
+            prim->x3 = 0x41;
+            prim->y3 = v + 9;
+            k = 0x100;
+            w = k - v;
+            break;
+        case 4:
+            u = 0xA0;
+            v = 0x93;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0xD2;
+            prim->v1 = v;
+            prim->u2 = 0xA0;
+            prim->u3 = 0xD2;
+            prim->v2 = 0x9C;
+            prim->v3 = 0x9C;
+            u = 0x100;
+            v = 0x7D - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x132;
+            prim->y1 = v;
+            prim->x2 = 0x100;
+            prim->y2 = v + 9;
+            prim->x3 = 0x132;
+            prim->y3 = v + 9;
+            break;
+        case 5:
+            u = 0xCD;
+            v = 0x89;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0xFF;
+            prim->v1 = v;
+            prim->v2 = 0x92;
+            prim->v3 = 0x92;
+            prim->u2 = uMid;
+            prim->u3 = 0xFF;
+            u = 0x100;
+            v = 0x95 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x132;
+            prim->y1 = v;
+            prim->x2 = 0x100;
+            prim->y2 = v + 9;
+            prim->x3 = 0x132;
+            prim->y3 = v + 9;
+            break;
+        case 6:
+            u = 0xCD;
+            v = 0x9D;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0xFF;
+            prim->v1 = v;
+            prim->v2 = 0xA6;
+            prim->v3 = 0xA6;
+            prim->u2 = uMid;
+            prim->u3 = 0xFF;
+            u = 0x100;
+            v = 0xAD - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x132;
+            prim->y1 = v;
+            prim->x2 = 0x100;
+            prim->y2 = v + 9;
+            prim->x3 = 0x132;
+            prim->y3 = v + 9;
+            break;
+        case 7:
+            u = 0xA0;
+            v = 0x9D;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = uMid;
+            prim->v1 = v;
+            prim->u2 = 0xA0;
+            prim->v2 = 0xAB;
+            prim->u3 = uMid;
+            prim->v3 = 0xAB;
+            u = 0x14;
+            v = 0xC8 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x41;
+            prim->y1 = v;
+            prim->x2 = 0x14;
+            prim->y2 = v + 0xE;
+            prim->x3 = 0x41;
+            prim->y3 = v + 0xE;
+            break;
+        case 9:
+            SetPolyF4(f4);
+            u = 0x14;
+            v = 0x86 - yShift;
+            f4->x0 = u;
+            f4->y0 = v;
+            f4->x1 = 0x41;
+            f4->y1 = v;
+            f4->x2 = 0x14;
+            f4->y2 = v + 9;
+            f4->x3 = 0x41;
+            f4->y3 = v + 9;
+            SetSemiTrans(f4, 1);
+            setRGB0(f4, 0x1E, 0x1E, 0x1E);
+            break;
+        case 10:
+            SetPolyF4(f4);
+            u = 0x100;
+            v = 0x86 - yShift;
+            f4->x0 = u;
+            f4->y0 = v;
+            f4->x1 = 0x132;
+            f4->y1 = v;
+            f4->x2 = 0x100;
+            f4->y2 = v + 9;
+            f4->x3 = 0x132;
+            f4->y3 = v + 9;
+            SetSemiTrans(f4, 1);
+            setRGB0(f4, 0x1E, 0x1E, 0x1E);
+            break;
+        case 11:
+            SetPolyF4(f4);
+            u = 0x100;
+            v = 0x9E - yShift;
+            f4->x0 = u;
+            f4->y0 = v;
+            f4->x1 = 0x132;
+            f4->y1 = v;
+            f4->x2 = 0x100;
+            f4->y2 = v + 9;
+            f4->x3 = 0x132;
+            f4->y3 = v + 9;
+            SetSemiTrans(f4, 1);
+            setRGB0(f4, 0x1E, 0x1E, 0x1E);
+            break;
+        case 12:
+            SetPolyF4(f4);
+            u = 0x100;
+            v = 0xB6 - yShift;
+            f4->x0 = u;
+            f4->y0 = v;
+            f4->x1 = 0x132;
+            f4->y1 = v;
+            f4->x2 = 0x100;
+            f4->y2 = v + 9;
+            f4->x3 = 0x132;
+            f4->y3 = v + 9;
+            SetSemiTrans(f4, 1);
+            setRGB0(f4, 0x1E, 0x1E, 0x1E);
+            break;
+        case 13:
+            SetPolyF4(f4);
+            u = 0x1E;
+            v = 0xCC - yShift;
+            f4->x0 = u;
+            f4->y0 = v;
+            f4->x1 = 0x40;
+            f4->y1 = v;
+            f4->x2 = 0x1E;
+            f4->y2 = v + 2;
+            f4->x3 = 0x40;
+            f4->y3 = v + 2;
+            setRGB0(f4, 0x1E, 0xE6, 0x1E);
+            break;
+        case 14:
+            u = 0xD7;
+            v = 0x95;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0xDC;
+            prim->v1 = v;
+            prim->u2 = 0xD7;
+            prim->v2 = 0x9B;
+            prim->u3 = 0xDC;
+            prim->v3 = 0x9B;
+            u = 0x28;
+            v = 0xAB - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            prim->x1 = 0x2D;
+            prim->y1 = v;
+            prim->x2 = 0x28;
+            prim->y2 = v + 6;
+            prim->x3 = 0x2D;
+            prim->y3 = v + 6;
+            break;
+        case 8:
+            u = 0xA0;
+            v = 0xAB;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0xEE;
+            prim->v1 = v;
+            prim->u2 = 0xA0;
+            prim->u3 = 0xEE;
+            prim->v2 = vLow;
+            prim->v3 = vLow;
+            u = 0x79;
+            v = 0xC8 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            r8 = 0;
+            r8 = 0xC7;
+            prim->x1 = r8;
+            prim->y1 = v;
+            prim->x2 = 0x79;
+            prim->y2 = v + 0xD;
+            prim->x3 = r8;
+            prim->y3 = v + 0xD;
+            break;
+        case 15:
+            prim->clut = GetClut(0x300, 0xE5);
+            prim->tpage = GetTPage(1, 0, 0x280, 0);
+            u = 0;
+            v = 0xC1;
+            prim->u0 = u;
+            prim->v0 = v;
+            prim->u1 = 0x4E;
+            prim->v1 = v;
+            prim->v2 = 0xCE;
+            prim->v3 = 0xCE;
+            prim->u2 = 0;
+            prim->u3 = 0x4E;
+            u = 0x79;
+            v = 0xA0 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            r15 = 0;
+            r15 = 0xC7;
+            prim->x1 = r15;
+            prim->y1 = v;
+            prim->x2 = 0x79;
+            prim->y2 = v + 0xD;
+            prim->x3 = r15;
+            prim->y3 = v + 0xD;
+            break;
+        case 16:
+            prim->clut = GetClut(0x300, 0xE5);
+            prim->tpage = GetTPage(1, 0, 0x280, 0);
+            u = 0;
+            v = 0xCE;
+            prim->v0 = v;
+            prim->u0 = u;
+            prim->u1 = 0x4E;
+            prim->v1 = v;
+            prim->v2 = 0xDB;
+            prim->v3 = 0xDB;
+            prim->u2 = 0;
+            prim->u3 = 0x4E;
+            u = 0x79;
+            v = 0xB4 - yShift;
+            prim->x0 = u;
+            prim->y0 = v;
+            r16 = 0;
+            r16 = 0xC7;
+            prim->x1 = r16;
+            prim->y1 = v;
+            prim->x2 = 0x79;
+            prim->y2 = v + 0xD;
+            prim->x3 = r16;
+            prim->y3 = v + 0xD;
+            break;
+        case 17:
+            SetPolyF4(f4);
+            u = 0x55;
+            v = 0x8C - yShift;
+            f4->x0 = u;
+            f4->y0 = v;
+            f4->x1 = 0xF0;
+            f4->y1 = v;
+            f4->x2 = 0x55;
+            f4->y2 = v + 0xC;
+            f4->x3 = 0xF0;
+            f4->y3 = v + 0xC;
+            setRGB0(f4, 0xA, 0xA, 0xA);
+            break;
+        }
+        i++;
+    } while (i < 18);
+    rowOff += 18 * sizeof(POLY_FT4);
+    yShift += 100;
+    j++;
+    if (j < 2) {
+        goto panel;
+    }
+
+    i = 0;
     table = D_80090FC4;
     vBot2 = 0x164;
     vTop2 = -0x48;
     vBot1 = 0x17C;
     vTop1 = -0x18;
-    off3 = 0;
+    c = -0x61;
     do {
-        prim = D_800BC22C + off3;
-        SetPolyFT4((POLY_FT4 *)prim);
+        prim = &D_800BC22C[i];
+        SetPolyFT4(prim);
         SetShadeTex(prim, 1);
-        *((u16 *)(prim + 0xE)) = GetClut(0x300, 0xEE);
-        idx = k * 4;
-        switch (k) {
+        prim->clut = GetClut(0x300, 0xEE);
+        switch (i) {
         case 0:
-            page = GetTPage(1, 0, 0x300, 0);
-            spare = 0x58;
-
-            *((u8 *)(prim + 0xD)) = spare;
-            spare = 0x9F;
-
-            *((u8 *)(prim + 0x14)) = spare;
-            spare = 0x58;
-
-            *((u16 *)(prim + 0x16)) = page;
-            page = 0x88;
-
-            *((u8 *)(prim + 0x15)) = spare;
-            spare = 0x9F;
-
-            *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = page;
-            *((u8 *)(prim + 0x24)) = spare;
-            *((u8 *)(prim + 0x25)) = page;
+            prim->tpage = GetTPage(1, 0, 0x300, 0);
+            setUV4(prim, 0, 0x58, 0x9F, 0x58, 0, 0x88, 0x9F, 0x88);
             break;
-
         case 1:
-            page = GetTPage(1, 0, 0x380, 0);
-            spare = 0x58;
-
-            *((u8 *)(prim + 0xD)) = spare;
-            spare = 0x9F;
-
-            *((u8 *)(prim + 0x14)) = spare;
-            spare = 0x58;
-
-            *((u16 *)(prim + 0x16)) = page;
-            page = 0xA0;
-
-            *((u8 *)(prim + 0x15)) = spare;
-            spare = 0x9F;
-
-            *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = page;
-            *((u8 *)(prim + 0x24)) = spare;
-            *((u8 *)(prim + 0x25)) = page;
+            prim->tpage = GetTPage(1, 0, 0x380, 0);
+            setUV4(prim, 0, 0x58, 0x9F, 0x58, 0, 0xA0, 0x9F, 0xA0);
             break;
-
         case 2:
-
         case 3:
-
         case 4:
-
         case 5:
-            page = GetTPage(1, 0, 0x300, 0);
-            top = vTop1 + 0x188;
-
-            spare = -0x61;
-
-            *((u8 *)(prim + 0x14)) = spare;
-            *((u16 *)(prim + 0x16)) = page;
-            *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0xD)) = top;
-            *((u8 *)(prim + 0x15)) = top;
-            *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = vBot1;
-            *((u8 *)(prim + 0x24)) = spare;
-            *((u8 *)(prim + 0x25)) = vBot1;
+            prim->tpage = GetTPage(1, 0, 0x300, 0);
+            v = vTop1 + 0x188;
+            setUV4(prim, 0, v, c, v, 0, vBot1, c, vBot1);
             break;
-
         case 6:
-
         case 7:
-            page = GetTPage(1, 0, 0x380, 0);
-            top = vTop2 + 0x1A0;
-
-            spare = -0x61;
-
-            *((u8 *)(prim + 0x14)) = spare;
-            *((u16 *)(prim + 0x16)) = page;
-            *((u8 *)(prim + 0xC)) = 0;
-            *((u8 *)(prim + 0xD)) = top;
-            *((u8 *)(prim + 0x15)) = top;
-            *((u8 *)(prim + 0x1C)) = 0;
-            *((u8 *)(prim + 0x1D)) = vBot2;
-            *((u8 *)(prim + 0x24)) = spare;
-            *((u8 *)(prim + 0x25)) = vBot2;
+            prim->tpage = GetTPage(1, 0, 0x380, 0);
+            v = vTop2 + 0x1A0;
+            setUV4(prim, 0, v, c, v, 0, vBot2, c, vBot2);
             break;
-
         case 8:
-
         case 9:
-
         case 10:
-
         case 11:
-
         case 12:
-
         case 13:
-            vBot2 += 0xC;
-            *((u16 *)(prim + 0xE)) = GetClut(table[0], table[1]);
-            *((u16 *)(prim + 0x16)) =
-                GetTPage(table[4], 0, table[-2], table[-1]);
-            left = ((k - 8) * 16) + table[2];
-            right = table[3];
-            top = right + 0x18;
-            work = left + 0xF;
-            right += 0x30;
-            *((u8 *)(prim + 0xC)) = left;
-            *((u8 *)(prim + 0xD)) = top;
-            *((u8 *)(prim + 0x14)) = work;
-            *((u8 *)(prim + 0x15)) = top;
-            *((u8 *)(prim + 0x1C)) = left;
-            *((u8 *)(prim + 0x1D)) = right;
-            *((u8 *)(prim + 0x24)) = work;
-            *((u8 *)(prim + 0x25)) = right;
-            goto glyphAdvance;
-
+            prim->clut = GetClut(table[0], table[1]);
+            prim->tpage = GetTPage(table[4], 0, table[-2], table[-1]);
+            w = (i - 8) * 16;
+            u = w + table[2];
+            v = table[3] + 0x18;
+            setUV4(prim, u, v, u + 0xF, v, u, v + 0x18, u + 0xF, v + 0x18);
+            break;
         case 14:
-
         case 15:
-
         case 16:
-
         case 17:
-
         case 18:
-
         case 19:
-            *((u16 *)(prim + 0xE)) = GetClut(table[0], table[1]);
-            *((u16 *)(prim + 0x16)) =
-                GetTPage(table[4], 0, table[-2], table[-1]);
-            left = ((k - 14) * 16) + table[2];
-            top = table[3];
-            right = left + 0xF;
-            work = top + 0x18;
-            *((u8 *)(prim + 0xC)) = left;
-            *((u8 *)(prim + 0xD)) = top;
-            *((u8 *)(prim + 0x14)) = right;
-            *((u8 *)(prim + 0x15)) = top;
-            *((u8 *)(prim + 0x1C)) = left;
-            *((u8 *)(prim + 0x1D)) = work;
-            *((u8 *)(prim + 0x24)) = right;
-            *((u8 *)(prim + 0x25)) = work;
+            prim->clut = GetClut(table[0], table[1]);
+            prim->tpage = GetTPage(table[4], 0, table[-2], table[-1]);
+            w = (i - 14) * 16;
+            u = w + table[2];
+            v = table[3];
+            setUV4(prim, u, v, u + 0xF, v, u, v + 0x18, u + 0xF, v + 0x18);
             break;
         }
-
-        vBot2 += 0xC;
-    glyphAdvance:
-        asm("" : : "r"(idx));
-        vTop2 += 0xC;
-        vBot1 += 0xC;
-        vTop1 += 0xC;
-        k++;
-        off3 += 40;
-    } while (k < 20);
+        vBot2 += 12;
+        vTop2 += 12;
+        vBot1 += 12;
+        vTop1 += 12;
+        i++;
+    } while (i < 20);
 }
-#undef PRIMITIVE_X2_ADDR
 
 extern u32 gPrimitiveCursor[];
 extern s32 D_800A2EC8[];
