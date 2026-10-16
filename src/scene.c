@@ -5988,7 +5988,6 @@ void SceneSkyFadeDraw(void) {
             }
             result <<= 4;
             table += result;
-            asm("" : "=r"(table) : "0"(table));
             argument = *(s32 *)table;
         }
         result = MathMultiplyFixed16(argument, 0x80000);
@@ -6008,7 +6007,6 @@ void SceneSkyFadeDraw(void) {
             }
             asm("" : "=r"(table) : "0"(table), "r"(result));
             table += result;
-            asm("" : "=r"(table) : "0"(table));
             argument = *(s32 *)table;
         }
         result = MathMultiplyFixed16(argument, 0x40000);

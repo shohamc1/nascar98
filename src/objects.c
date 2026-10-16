@@ -1591,8 +1591,6 @@ void func_80023454(void) {
                 selectionIndex = selectionDividend / 6;
                 asm("" : "=r"(selectionIndex) : "0"(selectionIndex));
                 selectionIndex = selectionDividend - selectionIndex * 6;
-                /* Release the quotient scratch register before loading one. */
-                asm("" : "=r"(selectionIndex) : "0"(selectionIndex) : "$2");
                 navigationState = D_800A39F0Control;
                 nextStateOne = 1;
                 D_800A2ECCControl = selectionIndex;
@@ -2784,7 +2782,6 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         productX = tmp0 * tmp0;
         tmp1 = __builtin_abs(tmp1);
         scratchA0 += tmp1;
-        asm("" : "=r"(scratchA0) : "0"(scratchA0));
         work6 = *(u8 *)scratchA0;
         velocity.x = tmp0;
         tmp0 = *(s32 *)(car + 0xB4);
