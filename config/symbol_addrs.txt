@@ -833,3 +833,10 @@ TrackLoad = 0x800132F8; // type:func
 CarDrawModel = 0x80016CD8; // type:func
 
 HudInitRacePrims = 0x8004A510; // type:func
+
+TrackReadData = 0x80014BEC; // type:func
+sTrackInitMessage = 0x8008CBF8; // force_not_migration:True
+sTrackReadVerticesMessage = 0x8008CC10; // force_not_migration:True
+sTrackReadFacesMessage = 0x8008CC28; // force_not_migration:True
+sTrackFaceErrorFormat = 0x8008CC3C; // force_not_migration:True
+sTrackReadSuccessMessage = 0x8008CC50; // force_not_migration:True

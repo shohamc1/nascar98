@@ -1406,7 +1406,622 @@ void func_80014B10(s32 arg0, s32 arg1, s32 arg2) {
         SystemShowFatalError(D_8008CBD0);
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80014BEC);
+typedef struct {
+    s32 x, y, z;
+} FileVertex;
+typedef struct {
+    s32 vertexCount, objectCount, faceCount;
+    u8 *vertices, *objects, *faces;
+} TrackResource;
+typedef struct {
+    s32 w[4];
+} TrackCopy16;
+typedef struct {
+    s32 w[7];
+} TrackCopy28;
+typedef struct {
+    s32 w[135];
+} TrackNode;
+extern s32 FileSeek(s32, s32, s32);
+extern s32 FileRead(void *, s32, s32, s32);
+extern s32 sprintf(char *, char *, ...);
+extern void func_8001D218(char *, ...);
+extern s32 RandomScaledGet(s32);
+extern s32 func_800157B0(s16 *, void *, u8 *);
+extern void func_80015870(u8 *, void *);
+extern void func_80015930(u8 *, void *, s32);
+extern s32 D_800AE844[];
+extern s32 D_800A2F80[], D_800A39E0[], D_800A376C[];
+extern s32 D_800BE72C[], D_800B1348[], D_800B134C[], D_800B1350[];
+extern s32 D_800AE848[], D_800AE84C[];
+extern char sTrackInitMessage[];
+INCLUDE_RODATA("asm/nonmatchings/game", sTrackInitMessage);
+extern char sTrackReadVerticesMessage[];
+INCLUDE_RODATA("asm/nonmatchings/game", sTrackReadVerticesMessage);
+extern char sTrackReadFacesMessage[];
+INCLUDE_RODATA("asm/nonmatchings/game", sTrackReadFacesMessage);
+extern char sTrackFaceErrorFormat[];
+INCLUDE_RODATA("asm/nonmatchings/game", sTrackFaceErrorFormat);
+extern char sTrackReadSuccessMessage[];
+INCLUDE_RODATA("asm/nonmatchings/game", sTrackReadSuccessMessage);
+
+void TrackReadData(s32 *trackData, s32 file) {
+    register TrackResource *resource asm("s7");
+    /* Only the first byte is accessed in the retail function. */
+    char scratch[0x220];
+    VECTOR maxBounds;
+    VECTOR minBounds;
+    VECTOR point;
+    char errorBuffer[0x40];
+    u8 *sectionHeader;
+    u8 *objectData;
+    s32 objectFaceCount;
+    s32 faceCount;
+    s32 nodeCount;
+    u8 *copy16Data;
+    u8 *positionData;
+    u8 *nodeData;
+    u8 *sectionData;
+    u8 *errorText;
+    s32 specialFaceColor;
+    /* Reserve seven spill homes between the color and object offsets. */
+    s32 spillPad0;
+    s32 spillPad1;
+    s32 spillPad2;
+    s32 spillPad3;
+    s32 spillPad4;
+    s32 spillPad5;
+    s32 spillPad6;
+
+    s32 nextObjectOffset;
+    s32 prevObjectOffset;
+    s32 faceCodeSave;
+    u8 *vertexOffset;
+    u8 *faceOffset;
+    u8 *objectOffset;
+    register s32 copy16Offset;
+    register s32 positionOffset;
+    register u8 *outputVertices;
+    register u8 *vertices asm("s4");
+    register SVECTOR *outputVertex asm("a0");
+    register s32 minimumZ;
+    u8 *outputRecord;
+    u8 *section;
+    s32 vertexCount;
+    s32 vertexIndex;
+    s32 faceMode;
+    register s32 lastCorner asm("v1");
+    register s32 nextDataOffset asm("v0");
+    register s32 randomValue;
+    register s32 shadeBase;
+    s32 nodesOffset;
+    s32 sectionsOffset;
+    u8 *sectionHeaderData;
+    register u8 *outputZ;
+    FileVertex *inputVertex;
+    register u8 *data asm("s2");
+    u8 *fileData;
+    s32 sectionCount;
+    s32 fileSize;
+    register u32 nodeScale asm("a0");
+    register char *initText asm("a0");
+    s32 positionZ;
+    s32 value0;
+    s32 value1;
+    s32 value2;
+    register s32 objectFlags asm("v1");
+    register u32 typeA asm("v0");
+    register u32 typeC;
+    register s16 *callFirst asm("a0");
+    register u8 *callHead asm("a1");
+    register u8 *callFaces;
+    register s32 lastObjectOffset asm("v1");
+    s32 scaledY;
+    s32 scaledX;
+    s32 workValue;
+    s32 vertexSlot;
+    s32 uvSlot;
+    s32 faceCode;
+    register s32 runtimeFaceOffset;
+    s32 shade;
+    s32 i;
+    s32 nodeOffset;
+    s32 rawX;
+    s32 rawY;
+    s32 rawZ;
+    s32 scaledZ;
+    register s32 positionByteOffset;
+    u8 *inputIndex;
+    u8 *inputUv;
+    u8 *diskFace;
+    register s32 count asm("s6");
+    register s32 objectPolygonCount asm("a1");
+    register s32 faceColor;
+    register u8 *flagObject;
+    u8 faceFlags;
+    u8 byteValue;
+    u8 modeFlags;
+    u8 *allocatedVertices;
+    u8 *allocatedFaces;
+    u8 *allocatedNodes;
+    u8 *allocatedObjects;
+    u8 *node;
+    u8 *objectFaceIndices;
+    u8 *face;
+    u8 *nodeDataStart;
+    u8 *sectionObject;
+    u8 *unusedCursor;
+    u8 *inputCopy16;
+    u8 *inputPosition;
+    u8 *inputNode;
+    register u8 *faceFields asm("s2");
+    register u8 *diskObject asm("s5");
+    u8 *outputIndex;
+    u8 *outputUv;
+    register u32 boundLimit;
+
+    resource = (TrackResource *)trackData;
+    fileSize = FileSeek(file, 0, 2);
+    fileData = (u8 *)((0x1F4000 - fileSize) | RAM_CACHED_BASE);
+    FileSeek(file, 0, 0);
+    FileRead(fileData, fileSize, 1, file);
+    vertexOffset = (u8 *)*(s32 *)(fileData + 8);
+    faceOffset = (u8 *)*(s32 *)(fileData + 12);
+    objectOffset = (u8 *)*(s32 *)(fileData + 16);
+    copy16Offset = *(s32 *)(fileData + 20);
+    positionOffset = *(s32 *)(fileData + 24);
+    nodesOffset = *(s32 *)(fileData + 28);
+    sectionsOffset = *(s32 *)(fileData + 32);
+    vertexCount = *(s16 *)(fileData + 0);
+    asm volatile(""
+                 :
+                 : "g"(vertexOffset), "g"(faceOffset), "g"(objectOffset),
+                   "g"(copy16Offset), "g"(positionOffset), "g"(nodesOffset),
+                   "g"(sectionsOffset), "g"(vertexCount)
+                 : "memory");
+    /* Inverse of 135 for the aligned 540-byte node records. */
+    asm volatile("lui %0,0xE1A8\nori %0,%0,0xC537"
+                 : "=r"(nodeScale)
+                 : "g"(vertexCount)
+                 : "memory");
+    nodeDataStart = fileData + nodesOffset;
+    sectionHeaderData = fileData + sectionsOffset;
+    resource->vertexCount = (s32)vertexCount;
+    nodeData = nodeDataStart;
+    sectionHeader = sectionHeaderData;
+    asm volatile("lh %0,%2"
+                 : "=r"(faceCount), "=r"(nodeScale)
+                 : "m"(*(s16 *)(fileData + 2)), "1"(nodeScale), "g"(nodeData),
+                   "g"(sectionHeader), "m"(resource->vertexCount));
+    nodeCount =
+        (s32)((u32)(sectionHeaderData - nodeDataStart) * nodeScale) >> 2;
+    initText = sTrackInitMessage;
+    asm("" : "=r"(initText) : "0"(initText));
+    data = fileData + (s32)vertexOffset;
+    diskFace = fileData + (s32)faceOffset;
+    resource->faceCount = (s32)faceCount;
+    diskObject = fileData + (s32)objectOffset;
+    resource->objectCount = (s32) * (s16 *)(fileData + 4);
+    copy16Data = fileData + copy16Offset;
+    positionData = fileData + positionOffset;
+    func_8001D218(initText, vertexOffset, faceOffset, objectOffset);
+    allocatedVertices = HeapAlloc(vertexCount * 8);
+    D_800BE97C[0] = allocatedVertices;
+    sectionData = sectionHeader + 4;
+    if (allocatedVertices == NULL) {
+        SystemShowFatalError(&D_8008CB94);
+    }
+    allocatedFaces = HeapAlloc(faceCount * 0x2C);
+    D_800A3A40 = allocatedFaces;
+    if (allocatedFaces == NULL) {
+        SystemShowFatalError(&D_8008CBB4);
+    }
+    D_800BE984[0] = 0;
+    D_800BE970[0] = (s32)vertexCount;
+    allocatedNodes = HeapAlloc(nodeCount * 0x21C);
+    D_800A39A4 = allocatedNodes;
+    if (allocatedNodes == NULL) {
+        SystemShowFatalError(&D_8008CBD0);
+    }
+    i = 0;
+    allocatedObjects = HeapAlloc(resource->objectCount * 0x90);
+    objectData = allocatedObjects;
+    resource->objects = allocatedObjects;
+    func_8001D218(sTrackReadVerticesMessage);
+    boundLimit = 0x7FFF0000;
+    outputVertices = resource->vertices;
+    boundLimit |= 0xFFFF;
+    D_800AE84C[0] = 0;
+    D_800AE848[0] = 0;
+    D_800AE844[0] = 0;
+    minBounds.vz = boundLimit;
+    minBounds.vy = boundLimit;
+    minBounds.vx = boundLimit;
+    maxBounds.vz = 0x80000001;
+    maxBounds.vy = 0x80000001;
+    maxBounds.vx = 0x80000001;
+    if (vertexCount > 0) {
+        inputVertex = (FileVertex *)data;
+    readVertexBounds:
+        value0 = inputVertex->x;
+        scaledX = value0 >> 2;
+        if (value0 < 0) {
+            scaledX = (s32)(value0 + 3) >> 2;
+        }
+        point.vx = scaledX;
+        value1 = inputVertex->y;
+        scaledY = value1 >> 2;
+        if (value1 < 0) {
+            scaledY = (s32)(value1 + 3) >> 2;
+        }
+        point.vy = scaledY;
+        rawZ = inputVertex->z;
+        if (rawZ < 0) {
+            rawZ += 3;
+        }
+        value2 = rawZ >> 2;
+        point.vz = value2;
+        if (scaledX < minBounds.vx) {
+            minBounds.vx = scaledX;
+        }
+        if (scaledY < minBounds.vy) {
+            minBounds.vy = scaledY;
+        }
+        if (value2 < minBounds.vz) {
+            minBounds.vz = value2;
+        }
+        if (maxBounds.vx < scaledX) {
+            maxBounds.vx = scaledX;
+        }
+        if (maxBounds.vy < scaledY) {
+            maxBounds.vy = scaledY;
+        }
+        if (maxBounds.vz < value2) {
+            maxBounds.vz = value2;
+        }
+        i += 1;
+        inputVertex++;
+        if (i < vertexCount)
+            goto readVertexBounds;
+    }
+    value2 = minBounds.vx;
+    value1 = maxBounds.vx;
+    workValue = maxBounds.vy;
+    D_800AE84C[0] = 0;
+    D_800AE844[0] = (s32)((s32)(value2 + value1) / 2);
+    D_800AE848[0] = (s32)(minBounds.vy + workValue) / 2;
+    i = 0;
+    if (vertexCount > 0) {
+        outputVertex = (SVECTOR *)outputVertices;
+        workValue = (s32)(data + 8);
+        do {
+            rawX = *(s32 *)data;
+            if (rawX < 0) {
+                rawX += 3;
+            }
+            outputVertex->vx = (s16)((rawX >> 2) - D_800AE844[0]);
+            rawY = *(s32 *)((u8 *)workValue + (-4));
+            if (rawY < 0) {
+                rawY += 3;
+            }
+            outputVertex->vy = (s16)((rawY >> 2) - D_800AE844[1]);
+            scaledZ = *(s32 *)((u8 *)workValue + (0));
+            if (scaledZ < 0) {
+                scaledZ += 3;
+            }
+            workValue += 0xC;
+            data += 0xC;
+            i += 1;
+            outputVertex->vz = (s16)((scaledZ >> 2) - D_800AE844[2]);
+            outputVertex++;
+        } while (i < vertexCount);
+    }
+    i = 0;
+    func_8001D218(sTrackReadFacesMessage);
+    scratch[0] = 0;
+    vertices = resource->vertices;
+    if (faceCount > 0) {
+        errorText = (u8 *)errorBuffer;
+        faceCode = 0x40;
+        runtimeFaceOffset = 0;
+        faceFields = diskFace + 0x13;
+        do {
+            face = D_800A3A40 + runtimeFaceOffset;
+            *(u8 **)((u8 *)face + (40)) = (void *)resource->faces;
+            resource->faces = face;
+            count = *(s8 *)diskFace;
+            *(u8 *)((u8 *)face + (18)) = count;
+            if ((u32)count >= 5U) {
+                faceCodeSave = faceCode;
+                sprintf((char *)errorText, sTrackFaceErrorFormat, i);
+                GraphicsRenderFrame((s32)errorText);
+            }
+            *(s32 *)((u8 *)face + (4)) =
+                (s32) * (s32 *)((u8 *)faceFields + (5));
+            byteValue = *(u8 *)(faceFields - 18);
+            *(u8 *)(face + 19) = 0;
+            *(u8 *)(face + 2) = byteValue;
+            *(u16 *)((u8 *)face + (22)) =
+                (u16) * (s16 *)((u8 *)faceFields + (3));
+            if (*(s8 *)((u8 *)faceFields + (-16)) != 0) {
+                faceFlags = *(u8 *)((u8 *)face + (19));
+                *(u8 *)((u8 *)face + (19)) = (u8)(faceFlags | 1);
+                if (*(s8 *)((u8 *)faceFields + (-16)) == 1) {
+                    *(u8 *)((u8 *)face + (19)) = (u8)(faceFlags | 3);
+                }
+            } else {
+                *(u16 *)((u8 *)face + (22)) =
+                    (u16) * (u16 *)((u8 *)faceFields + (-7));
+                if ((s16) * (s16 *)((u8 *)faceFields + (3)) == faceCode) {
+                    *(u8 *)((u8 *)face + (19)) =
+                        (u8)(*(u8 *)((u8 *)face + (19)) | 4);
+                }
+            }
+            *(s8 *)((u8 *)face + (1)) = 0;
+            if (*(s8 *)((u8 *)faceFields + (-17)) != 0x7F) {
+                *(u8 *)((u8 *)face + (19)) =
+                    (u8)(*(u8 *)((u8 *)face + (19)) | 0x80);
+                if ((u8) * (s8 *)((u8 *)faceFields + (-17)) == 0x81) {
+                    *(s8 *)((u8 *)face + (1)) = (s8)faceCode;
+                }
+                if ((u8) * (s8 *)((u8 *)faceFields + (-17)) == 0x82) {
+                    *(s8 *)((u8 *)face + (1)) = 0;
+                } else {
+                    *(s8 *)((u8 *)face + (1)) = (s8)faceCode;
+                }
+            } else {
+                *(s8 *)((u8 *)face + (1)) = (s8)faceCode;
+                faceMode = (s16) * (s16 *)((u8 *)faceFields + (3));
+                switch (faceMode) {
+                case 1:
+                    modeFlags = *(u8 *)(face + 19) | 8;
+                    break;
+                case 2:
+                    modeFlags = *(u8 *)(face + 19) | 0x28;
+                    break;
+                default:
+                    goto faceFlagsDone;
+                }
+                *(u8 *)(face + 19) = modeFlags;
+            }
+        faceFlagsDone:
+            vertexSlot = 0;
+            if (count > 0) {
+                inputIndex = diskFace;
+                outputIndex = face;
+                do {
+                    vertexIndex = *(s16 *)((u8 *)inputIndex + (4));
+                    inputIndex += 2;
+                    vertexSlot += 1;
+                    *(u8 **)((u8 *)outputIndex + (24)) =
+                        (u8 *)(vertices + (vertexIndex * 8));
+                    outputIndex += 4;
+                } while (vertexSlot < count);
+            }
+            if (vertexSlot == 3) {
+                *(u8 **)((u8 *)face + (36)) =
+                    (s32) * (u8 **)((u8 *)face + (24));
+            }
+            uvSlot = 0;
+            inputUv = diskFace;
+            outputUv = face;
+        readFaceUv:
+            *(u8 *)((u8 *)outputUv + (8)) = (u8) * (u8 *)((u8 *)inputUv + (14));
+            byteValue = *(u8 *)((u8 *)inputUv + (15));
+            uvSlot += 1;
+            inputUv += 2;
+            *(u8 *)((u8 *)outputUv + (9)) = byteValue;
+            outputUv += 4;
+            if (uvSlot < 3) {
+                goto readFaceUv;
+            }
+            if ((u8) * (u8 *)((u8 *)face + (18)) >= 4U) {
+                *(u8 *)((u8 *)face + (16)) =
+                    (u8) * (u8 *)((u8 *)faceFields + (1));
+                *(u8 *)((u8 *)face + (17)) =
+                    (u8) * (u8 *)((u8 *)faceFields + (2));
+                *(u8 *)((u8 *)face + (20)) =
+                    (u8) * (u8 *)((u8 *)faceFields + (-1));
+                *(u8 *)((u8 *)face + (21)) =
+                    (u8) * (u8 *)((u8 *)faceFields + (0));
+            }
+            faceFields += 0x1C;
+            diskFace += 0x1C;
+            i += 1;
+            runtimeFaceOffset += 0x2C;
+        } while (i < faceCount);
+    }
+    count = resource->objectCount;
+    vertices = resource->vertices;
+    shade = 0x80;
+    i = 0;
+    if (count > 0) {
+        data = objectData;
+        asm volatile(""
+                     : "=g"(spillPad0), "=g"(spillPad1), "=g"(spillPad2),
+                       "=g"(spillPad3), "=g"(spillPad4), "=g"(spillPad5),
+                       "=g"(spillPad6));
+        specialFaceColor = 0x4A4A4A;
+        nextObjectOffset = 0x90;
+        prevObjectOffset = -0x90;
+        do {
+            *(u8 **)((u8 *)data + (0)) = objectData + prevObjectOffset;
+            *(u8 **)((u8 *)data + (4)) =
+                (void *)(objectData + nextObjectOffset);
+            objectFlags = *(u32 *)((u8 *)data + (16));
+            typeA = *(u16 *)diskObject;
+            *(u16 *)(data + 10) = typeA;
+            typeC = *(u16 *)(diskObject + 2);
+            objectFlags &= 0xFFFEFFFF;
+            *(s16 *)((u8 *)data + (8)) = i;
+            *(u32 *)((u8 *)data + (16)) = objectFlags;
+            *(u16 *)(data + 12) = typeC;
+            typeA = *(s16 *)(diskObject + 4);
+            *(u32 *)((u8 *)data + (16)) =
+                (objectFlags & 0xFF01FFFF) | ((typeA & 0x7F) << 17);
+            typeA = *(u16 *)(diskObject + 6);
+            objectFaceIndices = diskObject + 0x20;
+            asm("" : : "r"(typeA), "r"(objectFaceIndices));
+            *(u16 *)(data + 16) = typeA;
+            *(FileVertex *)(data + 20) = *(FileVertex *)(diskObject + 8);
+            asm volatile("" : : : "memory");
+            callFaces = D_800A3A40;
+            callFirst = (s16 *)objectFaceIndices;
+            callHead = data + 32;
+            *(u8 **)((u8 *)data + (48)) = 0;
+            *(s32 *)((u8 *)data + (80)) = 0;
+            *(u16 *)((u8 *)data + (14)) = 0;
+            *(s32 *)((u8 *)data + (36)) = 0;
+            *(u8 **)((u8 *)data + (32)) = NULL;
+            *(s32 *)((u8 *)data + (44)) = 0;
+            *(s32 *)((u8 *)data + (40)) = 0;
+            *(s16 *)(data + 52) = -1;
+            objectFaceCount = func_800157B0(callFirst, callHead, callFaces);
+            face = *(u8 **)((u8 *)data + (32));
+            objectPolygonCount = 0;
+            if ((face != NULL) && !(*(u8 *)((u8 *)face + (19)) & 0x80)) {
+                flagObject = data;
+                faceColor = 0x808080;
+                do {
+                    if (*(s32 *)((u8 *)face + (4)) == specialFaceColor) {
+                        *(u32 *)((u8 *)flagObject + (16)) |= 0x10000;
+                    } else {
+                        *(s32 *)((u8 *)face + (4)) = faceColor;
+                    }
+                    face = *(u8 **)((u8 *)face + (40));
+                    objectPolygonCount += 1;
+                } while ((face != NULL) &&
+                         !(*(u8 *)((u8 *)face + (19)) & 0x80));
+            }
+            *(s8 *)((u8 *)data + (19)) = objectPolygonCount;
+            func_80015870(data + 0x20, data + 0x28);
+            randomValue = RandomScaledGet(3);
+            shadeBase = shade - 1;
+            shade = shadeBase + randomValue;
+            if (shade >= 0x81) {
+                shade = 0x80;
+            } else if (shade < 0x50) {
+                shade = 0x50;
+            }
+            func_80015930(data, resource, shade);
+            *(u8 **)((u8 *)data + (120)) =
+                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (26)) * 8));
+            *(u8 **)((u8 *)data + (124)) =
+                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (24)) * 8));
+            *(u8 **)((u8 *)data + (128)) =
+                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (20)) * 8));
+            *(u8 **)((u8 *)data + (132)) =
+                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (22)) * 8));
+            nextObjectOffset += 0x90;
+            prevObjectOffset += 0x90;
+            *(u8 **)((u8 *)data + (136)) =
+                (void *)(vertices + (*(s16 *)((u8 *)diskObject + (28)) * 8));
+            i += 1;
+            lastCorner = *(s16 *)(diskObject + 30);
+            nextDataOffset = objectFaceCount * 2 + 2;
+            diskObject = objectFaceIndices + nextDataOffset;
+            lastCorner = (s32)vertices + lastCorner * 8;
+            *(u8 **)(data + 140) = (u8 *)lastCorner;
+            data += 0x90;
+        } while (i < count);
+        asm volatile(""
+                     :
+                     : "g"(spillPad0), "g"(spillPad1), "g"(spillPad2),
+                       "g"(spillPad3), "g"(spillPad4), "g"(spillPad5),
+                       "g"(spillPad6));
+    }
+    {
+        u8 *objects;
+        i -= 1;
+        value0 = resource->objectCount;
+        lastObjectOffset = i * 8;
+        inputCopy16 = copy16Data;
+        lastObjectOffset += i;
+        i = 0;
+        resource->objectCount = value0 - 1;
+        objects = objectData;
+        /* Keep this address setup after the object count update. */
+        asm volatile("lui %1,%%hi(D_800BE72C)\naddiu %1,%1,%%lo(D_800BE72C)"
+                     : "=r"(lastObjectOffset), "=&r"(outputRecord)
+                     : "0"(lastObjectOffset), "r"(objects),
+                       "m"(resource->objectCount)
+                     : "memory");
+        lastObjectOffset *= 16;
+        *(u8 **)objects = objects + (lastObjectOffset - 0x90);
+        *(u8 **)(lastObjectOffset + (s32)objects - 140) = objects;
+    }
+    do {
+        *(TrackCopy16 *)outputRecord = *(TrackCopy16 *)inputCopy16;
+        outputRecord += 0x10;
+        i += 1;
+        inputCopy16 += 0x10;
+    } while (i < 0x14);
+    i = 0;
+    minimumZ = 0xFA0;
+    outputZ = &D_800B1350;
+    inputPosition = positionData;
+    positionByteOffset = 0;
+copyStart:
+    *(s32 *)((u8 *)D_800B1348 + positionByteOffset) =
+        *(s32 *)((u8 *)inputPosition + (0));
+    *(s32 *)((u8 *)D_800B134C + positionByteOffset) =
+        *(s32 *)((u8 *)inputPosition + (4));
+    positionZ = *(s32 *)((u8 *)inputPosition + (8));
+    *(s32 *)outputZ = positionZ;
+    if (positionZ < 0xFA0) {
+        *(s32 *)outputZ = minimumZ;
+    }
+    outputZ += 0x58;
+    inputPosition += 0xC;
+    i += 1;
+    positionByteOffset += 0x58;
+    if (i < 0x14)
+        goto copyStart;
+    i = 0;
+    if (nodeCount > 0) {
+        nodeOffset = 0;
+        inputNode = nodeData;
+        do {
+            *(TrackNode *)((u8 *)(nodeOffset + (s32)D_800A39A4)) =
+                *(TrackNode *)inputNode;
+            node = (u8 *)(nodeOffset + (s32)D_800A39A4);
+            *(u8 **)((u8 *)node + (0)) =
+                (s32) * (u8 **)((*(s16 *)(node + 8) * 0x90) + objectData + 48);
+            *(u8 **)((*(s16 *)(node + 8) * 0x90) + objectData + 48) = node;
+            inputNode += 0x21C;
+            i += 1;
+            nodeOffset += 0x21C;
+        } while (i < nodeCount);
+    }
+    sectionCount = *(s32 *)sectionHeader;
+    D_800A2F80[0] = sectionCount;
+    if (sectionCount == 0) {
+        D_800A39E0[0] = 0;
+        D_800A376C[0] = 0;
+    } else {
+        register s32 firstIndex asm("v0");
+        s32 lastIndex;
+        lastIndex = sectionCount * 0x1C;
+        firstIndex = *(s16 *)sectionData;
+        lastIndex = *(s16 *)(lastIndex + (s32)sectionData - 28);
+        D_800A39E0[0] = firstIndex;
+        D_800A376C[0] = lastIndex;
+    }
+    i = 0;
+    if (D_800A2F80[0] > 0) {
+        section = sectionData;
+    readSection:
+        sectionObject = (u8 *)(*(s16 *)section * 0x90 + (s32)objectData);
+        outputRecord = *(s32 *)((u8 *)section + (12));
+        *(TrackCopy28 *)(sectionObject + 52) = *(TrackCopy28 *)section;
+        i += 1;
+        section += 0x1C;
+        if (i < D_800A2F80[0])
+            goto readSection;
+    }
+    func_8001D218(sTrackReadSuccessMessage);
+}
+
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC6C);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC7C);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC9C);
@@ -1447,8 +2062,6 @@ s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
     return count;
 }
 
-extern s32 sprintf(char *, u8 *);
-
 extern u8 D_8008CC6C[];
 
 void func_80015870(u8 *arg0, void *arg1) {
@@ -1474,7 +2087,7 @@ void func_80015870(u8 *arg0, void *arg1) {
     }
 }
 
-void func_80015930(u8 *arg0) {
+void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
     s32 minX;
     s32 minY;
     s32 minZ;
@@ -1547,7 +2160,7 @@ void func_80015930(u8 *arg0) {
 
 void func_80015A74(s32 arg0) {
     extern s32 FileOpen(s32, void *);
-    extern void func_80014BEC(s32 *, s32);
+    extern void TrackReadData(s32 *, s32);
     extern void FileClose(s32);
     extern void SystemShowFatalError(char *);
     extern char D_8008CC7C[] __attribute__((aligned(4)));
@@ -1558,7 +2171,7 @@ void func_80015A74(s32 arg0) {
     value0 = FileOpen(arg0, D_800A2D48);
     if (value0 == 0)
         SystemShowFatalError(D_8008CC7C);
-    func_80014BEC(D_800BE970, value0);
+    TrackReadData(D_800BE970, value0);
     D_800A2D4C[0] = 1;
     FileClose(value0);
 }
