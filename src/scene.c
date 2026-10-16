@@ -7296,7 +7296,7 @@ s32 RandomScaledGetMainLoop(s32 scale) asm("RandomScaledGet");
 void SetDispMaskMainLoop(s32) asm("SetDispMask");
 s32 VSyncMainLoop(s32) asm("VSync");
 void func_80053C00MainLoop(s32, s32) asm("func_80053C00");
-u8 func_800571ECMainLoop(u8, u8 *, s32) asm("func_800571EC");
+u8 MenuUpdateScreenStateMainLoop(u8, u8 *, u8) asm("MenuUpdateScreenState");
 void func_8005DAD4MainLoop(void) asm("func_8005DAD4");
 void func_8005DFA0MainLoop(void) asm("func_8005DFA0");
 void func_8005ED74MainLoop() asm("func_8005ED74");
@@ -8927,7 +8927,7 @@ void func_80053D40(void) {
         }
         screenResultByte = screenResult & 0xFF;
         if (D_800A39E4MainLoop != 0xFD) {
-            nextScreen = func_800571ECMainLoop(
+            nextScreen = MenuUpdateScreenStateMainLoop(
                 D_800A39E4MainLoop, &D_800A3950MainLoop, screenResultByte);
             D_800A39E4MainLoop = nextScreen;
             if ((nextScreen & 0xFF) == 7) {
@@ -9890,7 +9890,368 @@ void func_80057160(s32 arg0) {
     func_80069AFC(D_800A39E4Small);
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_800571EC);
+u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
+    extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");
+    extern u8 D_800A35C0;
+    extern u8 D_800A3064;
+    extern u8 D_800A3065;
+    extern u8 D_800A374C;
+    extern u8 D_800A36E0[];
+    extern s32 D_800AE178[];
+    extern u8 D_800AD974[];
+    extern u8 D_800AD974Other[] asm("D_800AD974");
+    extern s32 D_800A2EB0Transition[] asm("D_800A2EB0.NON_MATCHING");
+    extern char D_800B9B73[];
+    extern void func_8006BA68(void);
+    extern void func_8006EEBC(void);
+    extern void func_8005E4A4(s32);
+    extern void func_80063C34(u8, u8);
+    extern s32 func_8006AD44(char *);
+    extern void func_8006D424(u8, u8);
+    extern void func_8006D684(u8);
+    extern void func_8005ED04(u8);
+    extern void func_8005EC5C(u8);
+    extern void func_8006D634(u8);
+    extern void func_8006EEE0(u8);
+    extern void func_8006D708(s32, u8, s32);
+    extern void func_8005DEDC(s32);
+    extern void func_8006F128(u8);
+    extern void func_8006F194(s32);
+    u8 i;
+    u8 next;
+    u8 selection;
+    u8 found;
+
+    selection = 0;
+    switch (screen) {
+    case 0:
+        switch (D_800A3059) {
+        case 1:
+            D_800A3644NM = 0;
+            func_8006BA68();
+            func_8006EEBC();
+            D_800A305BSmall = 0;
+            func_8005E4A4(D_800AE178[0]);
+            if (D_800A3064 != 0) {
+                func_80063C34(5, 0x18);
+                D_800A3064 = 0;
+            }
+            if (D_800A3065 != 0) {
+                func_80063C34(2, 0x19);
+                D_800A3065 = 0;
+            }
+            next = 1;
+            break;
+        case 2:
+            next = 14;
+            break;
+        case 4:
+            next = 4;
+            break;
+        case 5:
+            next = 15;
+            break;
+        case 0:
+            next = 2;
+            break;
+        case 3:
+            next = 5;
+            break;
+        default:
+            next = 0;
+            break;
+        }
+        break;
+    case 2:
+        if (action == 0xFF) {
+            if (*previous == 0 || *previous == 3) {
+                next = *previous;
+            } else {
+                next = D_800A35C0;
+            }
+            *previous = 2;
+        resetSelection:
+            selection = 0;
+        } else {
+            next = 3;
+            if (D_800A3059 == 3) {
+                D_800A35C0 = *previous;
+                next = 4;
+            } else {
+                for (i = 0; i < D_800A3644NM + 1; i++) {
+                    found = func_8006AD44(D_8009AC1C[D_800A36E0[i]]);
+                    if (found != 0xFF) {
+                        func_8006D424(i, found);
+                    }
+                }
+                func_8006D684(D_800A305BSmall);
+            }
+        }
+        break;
+    case 1:
+        if (action == 0xFF) {
+            next = 0;
+            *previous = 1;
+            selection = 1;
+        } else {
+            switch (D_800A3059) {
+            case 0:
+                next = 8;
+                func_8006BA68();
+                func_8006EEBC();
+                D_800A305BSmall = 0;
+                func_8005E4A4(D_800AE178[0]);
+                func_8005ED04(D_800A305BSmall);
+                func_8005EC5C(D_800A305BSmall);
+                func_8006D634(D_800A305BSmall);
+                break;
+            case 5:
+                next = 6;
+                if (D_800AD974[D_800A305BSmall] == 0) {
+                    func_8006EEE0(D_800A305BSmall);
+                    D_800AD974Other[D_800A305BSmall] = 1;
+                }
+                break;
+            case 3:
+                next = 10;
+                break;
+            case 4:
+                next = 12;
+                break;
+            default:
+                next = 0;
+                selection = 1;
+                found = func_8006AD44(D_8009AC1C[D_800A36E0Small]);
+                if (found != 0xFF) {
+                    func_8006D424(0, found);
+                } else {
+                    i = 0;
+                    do {
+                        func_8006D634(i);
+                        i++;
+                    } while (i < 17U);
+                }
+                break;
+            }
+        }
+        break;
+    case 8:
+        next = 1;
+        if (action == 0xFF) {
+            *previous = 0;
+        } else {
+            D_800A305BSmall = 0;
+            next = 4;
+            func_8006BA68();
+            D_800B9B73[0] = D_800A36E0Small;
+            strcpy(D_800B9B73 - 31, D_8009AC1C[D_800A36E0Small]);
+        }
+        break;
+    case 5:
+        if (D_800A3059 == 0) {
+            next = 13;
+        } else {
+            next = *previous;
+            switch (next) {
+            case 3:
+                selection = 5;
+                break;
+            case 0:
+                goto selectionThree;
+            case 6:
+                selection = 4;
+                break;
+            }
+        }
+        break;
+    case 4:
+        if (action == 0xFF) {
+            next = 8;
+            *previous = 4;
+        } else if (D_800A3059 == 6) {
+            next = 11;
+        } else if (*previous == 8) {
+            next = 6;
+            func_8006EEE0(D_800A305BSmall);
+            D_800AD974[D_800A305BSmall] = 1;
+        } else {
+            next = *previous;
+            if (*previous == 0) {
+                selection = 4;
+            } else if (*previous == 2) {
+                selection = 3;
+            }
+        }
+        break;
+    case 11:
+        next = 4;
+        selection = 6;
+        break;
+    case 3:
+        if (action == 0xFF) {
+            next = 0;
+            *previous = 3;
+        } else {
+            switch (D_800A3059) {
+            case 7:
+                next = 0;
+                goto resetSelection;
+            case 0:
+                next = 2;
+                break;
+            case 6:
+                next = 9;
+                break;
+            case 1:
+                next = 7;
+                break;
+            case 2:
+                D_800A2EB0Absolute[0] = 2;
+                next = 0xFF;
+                break;
+            case 3:
+                D_800A2EB0Transition[0] = 1;
+                next = 0xFF;
+                break;
+            case 4:
+                D_800A2EB0Absolute[0] = 0;
+                next = 0xFF;
+                break;
+            case 5:
+                next = 5;
+                break;
+            }
+        }
+        break;
+    case 6:
+        if (action == 0xFF) {
+            next = 1;
+            *previous = 6;
+        } else {
+            switch (D_800A3059) {
+            case 5:
+                next = 1;
+                break;
+            case 1:
+                D_800A2EB0Absolute[0] = 2;
+                next = 0xFF;
+                break;
+            case 2:
+                D_800A2EB0Transition[0] = 1;
+                next = 0xFF;
+                break;
+            case 0:
+                next = 7;
+                break;
+            case 3:
+                D_800A2EB0Absolute[0] = 0;
+                next = 0xFF;
+                break;
+            case 4:
+                next = 5;
+                break;
+            }
+        }
+        break;
+    case 7:
+        if (action == 0xFF) {
+            *previous = 7;
+            selection = 1;
+            next = 3;
+        } else {
+            func_8006D708(0, D_800A305BSmall, *previous == 3);
+            func_8006D708(1, D_800A305BSmall, *previous == 3);
+            found = *previous;
+            if ((u8)(found + 6) < 2U) {
+                D_800A2EB0Absolute[0] = 0;
+                next = 0xFF;
+            } else {
+                next = found;
+                switch (next) {
+                case 3:
+                    *previous = 7;
+                    selection = 1;
+                    break;
+                case 6:
+                    goto resetSelection;
+                }
+            }
+        }
+        break;
+    case 9:
+        func_8005DEDC(0);
+        next = 3;
+        selection = 6;
+        break;
+    case 10:
+        func_8005DEDC(0);
+        next = 1;
+    selectionThree:
+        /* Keep this entry separate from the screen-4 return path. */
+        asm("" : : "r"(next));
+        selection = 3;
+        break;
+    case 12:
+        func_8005DEDC(0);
+        next = 1;
+        if (*previous == 1) {
+            selection = 4;
+        } else if (D_800A305BSmall < 17U) {
+            selection = 5;
+        } else {
+            if (D_800A374C < 3U) {
+                func_8006F128(D_800A374C);
+            }
+            D_800A305BSmall = 0;
+            next = 0;
+        }
+        break;
+    case 13:
+        next = 5;
+        break;
+    case 252:
+        next = 0;
+        *previous = 0;
+        break;
+    case 14:
+        selection = 2;
+        next = 0;
+        break;
+    case 15:
+        if (action == 0xFF) {
+            next = 0;
+        } else {
+            switch (D_800A3059) {
+            case 0:
+                next = 16;
+                break;
+            case 1:
+                next = 17;
+                break;
+            case 2:
+                selection = 5;
+                next = 0;
+                break;
+            }
+        }
+        break;
+    case 16:
+    case 17:
+        if (action != 0xFF) {
+            func_8006F194(screen == 16);
+        }
+        selection = screen - 16;
+        next = 15;
+        func_8005DEDC(0);
+        break;
+    }
+    if (action != 0xFF && screen != 5 && screen != 13 && screen != 7 &&
+        screen != 4 && screen != 11) {
+        *previous = screen;
+    }
+    D_800A3059 = selection;
+    return next;
+}
 
 extern s32 D_800A3668Absolute[];
 extern s32 D_800A3654Lui asm("D_800A3654Absolute");

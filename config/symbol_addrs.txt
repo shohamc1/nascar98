@@ -537,6 +537,7 @@ HeapAlloc = 0x80044738; // type:func
 HeapFreeSpaceCount = 0x80044884; // type:func
 HeapCoalesce = 0x800448E0; // type:func
 HeapFree = 0x800449F0; // type:func
+MenuUpdateScreenState = 0x800571EC; // type:func
 
 // Game data
 gRandomSeed = 0x800A2D70;
