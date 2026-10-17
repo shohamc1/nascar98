@@ -1577,8 +1577,8 @@ void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
-void ListInsertBefore(u8 **head, u8 *node, u8 *before);
-void ListRemoveNode(u8 **head, u8 *target);
+void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before);
+void ListRemoveNode(ListNode28 **head, ListNode28 *target);
 void func_8001C668(void *arg0, void *arg1);
 void ListPushFront(u8 *node, u8 **head, u8 **tail);
 void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,

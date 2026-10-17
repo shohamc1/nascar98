@@ -215,11 +215,13 @@ struct ListNode28 {
     ListNode28 *next;
 };
 
-void ListInsertBefore(u8 **head, u8 *node, u8 *before) {
-    u8 *current;
-    u8 *previous;
+void ListInsertBefore(ListNode28 **head, ListNode28 *node,
+                      ListNode28 *before) {
+    ListNode28 *current;
+    ListNode28 *previous;
+
     if (before == 0) {
-        ((ListNode28 *)node)->next = (ListNode28 *)*head;
+        node->next = *head;
         *head = node;
         return;
     }
@@ -228,37 +230,38 @@ void ListInsertBefore(u8 **head, u8 *node, u8 *before) {
     while (current != 0) {
         if (current == before) {
             if (current == previous) {
-                ((ListNode28 *)node)->next = (ListNode28 *)*head;
+                node->next = *head;
                 *head = node;
             } else {
-                ((ListNode28 *)node)->next = (ListNode28 *)current;
-                ((ListNode28 *)previous)->next = (ListNode28 *)node;
+                node->next = current;
+                previous->next = node;
             }
             return;
         }
         if (current != *head)
-            previous = (u8 *)((ListNode28 *)previous)->next;
-        current = (u8 *)((ListNode28 *)current)->next;
+            previous = previous->next;
+        current = current->next;
     }
 }
 
-void ListRemoveNode(u8 **head, u8 *target) {
-    u8 *current;
-    u8 *previous;
+void ListRemoveNode(ListNode28 **head, ListNode28 *target) {
+    ListNode28 *current;
+    ListNode28 *previous;
+
     current = *head;
     previous = current;
     while (current != 0) {
         if (current == target) {
             if (current == previous) {
-                *head = (u8 *)((ListNode28 *)current)->next;
+                *head = current->next;
             } else {
-                ((ListNode28 *)previous)->next = ((ListNode28 *)current)->next;
+                previous->next = current->next;
             }
             return;
         }
         if (current != *head)
-            previous = (u8 *)((ListNode28 *)previous)->next;
-        current = (u8 *)((ListNode28 *)current)->next;
+            previous = previous->next;
+        current = current->next;
     }
 }
 
