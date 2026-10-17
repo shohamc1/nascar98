@@ -5429,7 +5429,7 @@ void _SsGetSeqData(s16 access, s16 sequence) {
 }
 
 /* SPDX-License-Identifier: MIT */
-void SpuVmKeyOn(s16, s16, s16, s32, s32, s32);
+s32 SpuVmKeyOn(s16, s16, s16, s32, s32, s32);
 void SpuVmKeyOff(s16, s16, u8, s32);
 void _SsNoteOn(s16 access, s16 sequence, s32 note, s32 velocity) {
     struct SeqStruct *score;
@@ -7306,7 +7306,203 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPitchBend);
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmFlush);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOn);
+struct KeyState {
+    u8 toneCount;
+    u8 vabId;
+    u8 note;
+    u8 fine;
+    u8 volume;
+    u8 pan;
+    u8 prog;
+    u8 fakeProg;
+    u8 unk8[2];
+    u8 progVolume;
+    u8 progPan;
+    u8 tone;
+    u8 toneVolume;
+    u8 tonePan;
+    u8 priority;
+    u8 center;
+    u8 shift;
+    u8 minNote;
+    u8 maxNote;
+    u8 mode;
+    u8 unk15;
+    s16 seq;
+    u16 vag;
+    s16 voice;
+};
+s32 SpuVmKeyOn(seq, vabId, prog, note, volume, pan)
+s16 seq;
+s16 vabId;
+s16 prog;
+u16 note;
+u16 volume;
+u16 pan;
+{
+
+    extern struct KeyState keyState[] asm("D_800B9DC4");
+    extern s16 D_800B9DDA[];
+    extern u8 D_800B9DC6[];
+    extern u8 D_800B9DC7[];
+    extern u8 D_800B9DC8[];
+    extern u8 D_800B9DC9[];
+    extern u8 D_800B9DCE[];
+    extern u8 D_800B9DCF[];
+    extern u8 D_800B9DC4[];
+    extern u8 keyToneCountRead[] asm("D_800B9DC4");
+    extern u8 D_800B9DCB[];
+    extern u8 D_800B9928[];
+    extern u8 D_800B9930[];
+    extern u8 D_800B9950[];
+    extern u8 D_800B9C80[];
+    extern u8 D_800AD3BC[];
+    extern u8 D_800AD3BE[];
+    extern u8 D_800AD3C4[];
+    extern u8 D_800AD3C6[];
+    extern u8 D_800AD3C8[];
+    extern u8 D_800AD3CA[];
+    extern u8 D_800AD3CC[];
+    extern u8 D_800AD3CE[];
+    extern u8 D_800AD3D0[];
+    extern u8 D_800AD3D2[];
+    extern u8 D_800AD3D4[];
+    extern u8 D_800AD3D7[];
+    extern s32 SpuVmAlloc();
+    extern s32 keyOff(s16, s16, s16, u16) asm("SpuVmKeyOff");
+    extern void vmNoiseOn();
+    u8 vags[128];
+    u8 tones[128];
+    s32 mask;
+    u8 tone;
+    s32 count;
+    u32 vagCount;
+    u8 i;
+    s16 voice;
+    s32 selected;
+    s32 oldCount;
+    u8 *progAttr;
+    u8 *vagList;
+    u8 *toneList;
+    u8 *toneAttr;
+    u8 *selectedTone;
+    u8 *voiceLimit;
+    struct SeqStruct *score;
+
+    mask = 0;
+    score = &D_800BDE3C[seq & 0xFF][(seq >> 8) & 0xFF];
+    if (SpuVmVSetUp(vabId, prog) != 0) {
+        return -1;
+    }
+    D_800B9DDA[0] = seq;
+    D_800B9DC6[0] = note;
+    D_800B9DC7[0] = 0;
+    if (seq == 0x21) {
+        D_800B9DC8[0] = volume;
+    } else {
+        D_800B9DC8[0] = volume * score->vol[score->channel] / 127;
+    }
+    D_800B9DC9[0] = pan;
+    progAttr = (u8 *)(prog * 16 + *(s32 *)D_800B9928);
+    D_800B9DCE[0] = progAttr[1];
+    D_800B9DCF[0] = progAttr[4];
+    D_800B9DC4[0] = progAttr[0];
+    if (D_800B9DCB[0] >= *(u16 *)(*(u8 **)D_800B9930 + 0x12)) {
+        return -1;
+    }
+    if (volume == 0) {
+        mask = keyOff(seq, vabId, prog, note & 0xFFFF);
+    } else {
+        count = 0;
+        toneList = tones;
+        vagList = vags;
+        tone = 0;
+        if (tone >= keyToneCountRead[0]) {
+            goto tonesDone;
+        }
+    findTone:
+        {
+            toneAttr =
+                (u8 *)(((D_800B9DCB[0] * 16 + tone) << 5) + *(s32 *)D_800B9950);
+            if (toneAttr[6] <= D_800B9DC6[0] && toneAttr[7] >= D_800B9DC6[0]) {
+                selected = (u8)count;
+                oldCount = count;
+                count++;
+                vagList[selected] = toneAttr[0x16];
+                toneList[(u8)oldCount] = tone;
+            }
+        }
+        do {
+            tone++;
+            if (tone < D_800B9DC4[0]) {
+                goto findTone;
+            }
+        } while (0);
+    tonesDone:
+        {
+            /* Keep the count in v0 for the copy and first loop test. */
+            register u32 narrowedCount asm("v0");
+            narrowedCount = (u8)count;
+            vagCount = narrowedCount;
+            asm("" : "=r"(narrowedCount) : "0"(narrowedCount));
+            i = 0;
+            if (narrowedCount != 0) {
+                do {
+                    keyState[0].vag = vags[(u8)i];
+                    keyState[0].tone = tones[(u8)i];
+                    selectedTone =
+                        (u8 *)(((keyState[0].tone + keyState[0].fakeProg * 16)
+                                << 5) +
+                               *(s32 *)D_800B9950);
+                    keyState[0].priority = selectedTone[0];
+                    keyState[0].toneVolume = selectedTone[2];
+                    keyState[0].tonePan = selectedTone[3];
+                    keyState[0].center = selectedTone[4];
+                    voiceLimit = D_800B9C80;
+                    keyState[0].shift = selectedTone[5];
+                    keyState[0].mode = selectedTone[1];
+                    keyState[0].minNote = selectedTone[6];
+                    keyState[0].maxNote = selectedTone[7];
+                    voice = (u8)SpuVmAlloc(0);
+                    keyState[0].voice = voice;
+                    if (voice < voiceLimit[0]) {
+                        D_800AD3D7[voice * 52] = 1;
+                        *(s16 *)(D_800AD3BE + keyState[0].voice * 52) = 0;
+                        *(s16 *)(D_800AD3CA + keyState[0].voice * 52) = seq;
+                        *(s16 *)(D_800AD3D2 + keyState[0].voice * 52) =
+                            keyState[0].vabId;
+                        *(s16 *)(D_800AD3CC + keyState[0].voice * 52) =
+                            keyState[0].fakeProg;
+                        *(s16 *)(D_800AD3CE + keyState[0].voice * 52) = prog;
+                        if (seq != 0x21) {
+                            *(s16 *)(D_800AD3C4 + keyState[0].voice * 52) =
+                                volume;
+                        }
+                        D_800AD3C6[keyState[0].voice * 52] = pan;
+                        *(s16 *)(D_800AD3D0 + keyState[0].voice * 52) =
+                            keyState[0].tone;
+                        *(s16 *)(D_800AD3C8 + keyState[0].voice * 52) = note;
+                        *(s16 *)(D_800AD3D4 + keyState[0].voice * 52) =
+                            keyState[0].priority;
+                        *(u16 *)(D_800AD3BC + keyState[0].voice * 52) =
+                            keyState[0].vag;
+                        SpuVmDoAllocate();
+                        if ((s16)keyState[0].vag == 0xFF) {
+                            vmNoiseOn(*(u8 *)&keyState[0].voice);
+                        } else {
+                            SpuVmKeyOnNow((u8)vagCount, (u16)note2pitch());
+                        }
+                        mask |= 1 << keyState[0].voice;
+                    } else {
+                        mask = -1;
+                    }
+                    i++;
+                } while ((u8)i < vagCount);
+            }
+        }
+    }
+    return mask;
+}
 
 #ifdef NON_MATCHING
 s32 SpuVmKeyOffDraft(s16, s16, s16, u16) asm("SpuVmKeyOff");
