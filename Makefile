@@ -50,13 +50,23 @@ GP_SIZE   ?= 8
 CC_DIR := tools/cc/$(CC_VER)
 CPP    := $(firstword $(wildcard $(CC_DIR)/cpp) tools/cc/2.7.2-psx/cpp)
 CC1    := $(if $(filter psyq-3.6,$(CC_VER)),tools/cc1-psyq36.sh,$(CC_DIR)/cc1)
+# 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-nascar98.patch, a native
+# stand-in that emits the same assembly as the retail compiler at
+# -mcpu=r4000. The permuter and RTL dumps (-da) use it; `make check`
+# doesn't. See "Fast stand-in" in kb/psx/toolchain.md.
+MCPU   := $(if $(filter 2.7.2-psx-nascar98,$(CC_VER)),r4000,3000)
+ifneq ($(filter check expected,$(MAKECMDGOALS)),)
+ifneq ($(CC_VER),psyq-3.6)
+$(error make check runs only on the retail compiler: unset CC_VER)
+endif
+endif
 MASPSX := $(PYTHON) tools/maspsx_extern.py --aspsx-version=$(ASPSX_VER) -G$(GP_SIZE) --dont-force-G0 --expand-div
 
 CPPFLAGS := -Iinclude -Ibuild -undef -Wall -lang-c -nostdinc \
             -D__GNUC__=2 -D__OPTIMIZE__ -Dmips -D__mips__ -D__mips -Dpsx \
             -D__psx__ -D__psx -D_PSYQ -D_MIPSEL -D_LANGUAGE_C -DLANGUAGE_C
 # Psy-Q's default CPU is the R3000; -mips1 is the PSX instruction set.
-CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=3000 -mips1 -mgas -msoft-float -fgnu-linker -quiet -w
+CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=$(MCPU) -mips1 -mgas -msoft-float -fgnu-linker -quiet -w
 ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
@@ -531,6 +541,9 @@ tools: $(PSYQ36_EXE)
 	for v in 2.7.2-psx 2.8.1-psx; do mkdir -p tools/cc/$$v && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-$$v$(OLD_GCC_SUFFIX).tar.gz \
 	  | tar xz -C tools/cc/$$v; done
+	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
+	  || sh tools/build_cc.sh \
+	  || echo "Couldn't build the 2.7.2-psx-nascar98 stand-in; make check doesn't need it, permute.py does."
 	mkdir -p tools/cc/2.6.3-psx && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-2.6.3-psx.tar.gz \
 	  | tar xz -C tools/cc/2.6.3-psx

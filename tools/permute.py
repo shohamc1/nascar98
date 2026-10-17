@@ -7,8 +7,9 @@ Sets up nonmatchings/FUNC/ the way the permuter expects: base.c is the
 draft's file preprocessed with only that draft switched on and pruned to
 the function and what it uses, target.o is the splat asm assembled the
 way INCLUDE_ASM assembles it, and compile.sh is the project's own
-cpp | cc1 | maspsx | as recipe from `make -n`. Then it runs the permuter
-for the given number of minutes. Better candidates land in
+cpp | cc1 | maspsx | as recipe from `make -n`, with the native stand-in
+compiler (2.7.2-psx-nascar98) in place of the DOSBox-X one. Then it runs
+the permuter for the given number of minutes. Better candidates land in
 nonmatchings/FUNC/output-SCORE-N/source.c; paste the changes back into
 the draft and confirm with asm-differ and `make check`.
 """
@@ -24,6 +25,7 @@ import sys
 
 from funcs import invalidate_stale_objects, make_command, parked_drafts
 
+STANDIN = "2.7.2-psx-nascar98"
 PERMUTER = pathlib.Path("tools/decomp-permuter")
 sys.path.insert(0, str(PERMUTER))
 permuter_import = importlib.import_module("import")
@@ -56,7 +58,10 @@ def main() -> None:
     variant = work / "variant.c"
     variant.write_text("\n".join(lines) + "\n")
 
-    cc = make_command(f"build/{src}.o", str(src), "cc1")
+    # The native stand-in emits the same assembly as the retail compiler
+    # about 200 times faster than DOSBox-X. `make check` confirms a find.
+    cc = make_command(f"build/{src}.o", str(src), "cc1",
+                      f"CC_VER={STANDIN}")
     cpp = cc.split("|")[0].removeprefix("set -o pipefail;").split()
     cpp = [a for a in cpp if a != str(src)]
     source = subprocess.run(
@@ -106,7 +111,12 @@ def main() -> None:
         proc.wait(timeout=args.minutes * 60)
     except subprocess.TimeoutExpired:
         os.killpg(proc.pid, signal.SIGINT)
-        proc.wait()
+        try:
+            proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            # The permuter can ignore SIGINT while its workers are busy.
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
         print(f"Stopped after {args.minutes:g} minutes.")
     outputs = sorted(work.glob("output-*"),
                      key=lambda p: int(p.name.split("-")[1]))

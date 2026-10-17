@@ -110,7 +110,8 @@ Near misses are where time goes. Follow these rules:
 - If every opcode matches and only registers or instruction order
   differ, run the permuter instead of editing by hand:
   `.venv/bin/python tools/permute.py FUNC --minutes 10`. It works on the
-  parked draft, so park the draft first. Copy any improvement from
+  parked draft, so park the draft first. It compiles with the native
+  stand-in (see "Compiler settings"). Copy any improvement from
   `nonmatchings/FUNC/output-SCORE-N/source.c` back into the draft and
   confirm it with asm-differ and `make check`. Permuter rewrites can be
   ugly; keep the change and drop the noise.
@@ -220,10 +221,22 @@ DOSBox-X, and a full rebuild takes about 100 seconds. DOS gives no exit
 status, so the script reads the compiler's diagnostics from a serial port
 and fails on any. The compiler can't write RTL dumps (`-da`).
 
-Other `CC_VER` values name old-gcc builds, for experiments
-(`make check CC_VER=2.7.2-psx`). Stock builds write RTL dumps but schedule
-differently from retail, so use them for allocation and structure, not for
-instruction order. Don't change the default to fit one function.
+`make check` and `make expected` run only on that compiler: they stop with
+an error if you set `CC_VER`.
+
+`2.7.2-psx-nascar98` is the native stand-in: GCC 2.7.2 with
+`tools/gcc-nascar98.patch`, built by `make tools` (`tools/build_cc.sh`),
+run at `-mcpu=r4000`. It emits the same assembly as the retail compiler
+on every function and compilable draft tested, about 200 times faster,
+and it writes RTL dumps. `tools/permute.py` uses it. For dumps, build one
+object with it: `make build/src/FILE.c.o CC_VER=2.7.2-psx-nascar98`, or
+run its `cc1 -mcpu=r4000 -da` on the preprocessed file. Confirm every
+result with `make -B check`. Keep the patch: it's the stand-in's source.
+
+Other `CC_VER` values name stock old-gcc builds, for experiments. Stock
+builds schedule differently from retail, so use them for allocation and
+structure, not for instruction order. Don't change the default to fit one
+function.
 
 `src/psxsdk.c` is the exception: the Psy-Q libraries came from GNU C
 2.6.3, so `tools/cc1-263.sh` compiles that file, not `CC_VER`. The binary

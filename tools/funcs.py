@@ -175,10 +175,14 @@ def parked_drafts(src: pathlib.Path) -> list[tuple[str, int]]:
     return drafts
 
 
-def make_command(target: str, touched: str, tool: str) -> str:
-    """The recipe line `make` would run for target, read from `make -n`."""
+def make_command(target: str, touched: str, tool: str,
+                 *variables: str) -> str:
+    """The recipe line `make` would run for target, read from `make -n`.
+
+    variables are extra `NAME=VALUE` overrides, such as `CC_VER=...`.
+    """
     out = subprocess.run(
-        ["make", "-n", "-W", touched, target],
+        ["make", "-n", "-W", touched, *variables, target],
         capture_output=True, text=True, check=True,
     ).stdout
     return next(line for line in out.splitlines() if tool in line)
