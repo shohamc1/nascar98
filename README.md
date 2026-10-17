@@ -37,9 +37,8 @@ sudo apt-get install build-essential binutils-mipsel-linux-gnu
 sudo apt-get install dosbox-x
 ```
 
-Only Ubuntu 24.04 and Debian 13 or newer package DOSBox-X. Without root,
-run `sh tools/install_dosbox_x.sh` instead: it installs DOSBox-X under
-`~/.local` (add `~/.local/bin` to `PATH`).
+Only Ubuntu 24.04 and Debian 13 or newer package DOSBox-X. On other
+systems, get a build from [dosbox-x.com](https://dosbox-x.com/).
 
 Clone the repository and fetch the tools:
 

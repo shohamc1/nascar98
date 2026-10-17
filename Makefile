@@ -521,7 +521,7 @@ $(PSYQ36_EXE):
 
 # Download the compilers and objdiff, and set up the Python environment.
 tools: $(PSYQ36_EXE)
-	@command -v dosbox-x >/dev/null 2>&1 || echo "Install DOSBox-X to run the Psy-Q compiler: brew install --cask dosbox-x, apt install dosbox-x (Ubuntu 24.04, Debian 13), or sh tools/install_dosbox_x.sh without root."
+	@command -v dosbox-x >/dev/null 2>&1 || echo "Install DOSBox-X to run the Psy-Q compiler: brew install --cask dosbox-x, or apt install dosbox-x (Ubuntu 24.04, Debian 13)."
 	git submodule update --init
 	uv venv -q --allow-existing .venv
 	uv pip install -q --python $(PYTHON) -r requirements.txt

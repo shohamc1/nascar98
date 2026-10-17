@@ -13,7 +13,7 @@ if [ ! -f "$exe" ]; then
     exit 1
 fi
 if ! command -v dosbox-x >/dev/null 2>&1; then
-    echo "cc1-psyq36: DOSBox-X not found (macOS: brew install --cask dosbox-x; Ubuntu 24.04 or Debian 13: apt install dosbox-x; without root: sh tools/install_dosbox_x.sh)" >&2
+    echo "cc1-psyq36: DOSBox-X not found (macOS: brew install --cask dosbox-x; Ubuntu 24.04 or Debian 13: apt install dosbox-x)" >&2
     exit 1
 fi
 work=$(mktemp -d)
