@@ -3218,7 +3218,7 @@ void func_800606D4(void) {
     s16 *new_var2;
     u8 *mark;
     u8 *cell;
-    u8 *new_var;
+    u8 *writeEnd;
     u8 idx2;
     u8 primIdx2;
     s32 i;
@@ -5575,7 +5575,7 @@ void func_80062910(s32 arg0) {
     s32 cc;
     u8 *prim2;
     u8 *tab;
-    u8 *new_var;
+    u8 *writeEnd;
 
     node = (u8 *)D_800A37D8[arg0 & 0xFF];
     while (*(u16 *)node != 1) {
@@ -7500,7 +7500,99 @@ void func_80066B70(void) {
     D_800BDD64[0] = 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80066CFC);
+extern u32 gPrimitiveCursor2[] asm("gPrimitiveCursor");
+extern u32 D_800A3570Absolute[];
+extern u8 *gOtMenuStore[] asm("D_800A39C8");
+extern u8 *gOtMenuBase[] asm("D_800A39C8");
+extern u8 *gOtMenuLow[] asm("D_800A39C8");
+extern u8 *gOtMenuMid[] asm("D_800A39C8");
+extern u8 *gOtMenuHigh[] asm("D_800A39C8");
+extern u8 *gOtMenuGhost[] asm("D_800A39C8");
+extern u16 *D_800A389C[];
+extern u16 *D_800A3898;
+extern u16 *D_800A387C;
+extern u16 *D_800A36BC;
+extern s32 D_800A365C;
+extern s32 D_800A39F4;
+extern u8 D_800A3884;
+extern u8 D_800A36A0;
+extern s32 D_800A3930;
+void func_80066CFC(void) {
+    POLY_FT4 *dst;
+    POLY_FT4 *prim;
+    POLY_FT4 *next;
+    POLY_FT4 *oldCursor;
+    u8 *ot;
+    u8 *limit;
+
+    oldCursor = (POLY_FT4 *)gPrimitiveCursor2[0];
+    func_8001D778(0, 0xD2, 0x140, 0x1E, 8, 8, 8, 0);
+    func_80066B70();
+    *(volatile u8 *)&D_800A36A0 = 1;
+    gOtMenuStore[0] = gOrderingTables;
+    ClearOTagR((u_long *)gOrderingTables, 4);
+    ot = gOtMenuBase[0];
+    dst = (POLY_FT4 *)(ot + 0x10);
+    prim = (POLY_FT4 *)D_800A3570Absolute[0];
+    limit = ot + 0x4000;
+    if (prim != (POLY_FT4 *)gPrimitiveCursor[0]) {
+        next = (POLY_FT4 *)(ot + 0x38);
+        while (prim != (POLY_FT4 *)gPrimitiveCursor[0] && (u8 *)next < limit) {
+            *dst = *prim;
+            if (prim >= (POLY_FT4 *)D_800A365C) {
+                if (prim == (POLY_FT4 *)D_800A365C) {
+                    D_800A387C = (u16 *)dst;
+                } else if (prim == (POLY_FT4 *)D_800A39F4) {
+                    D_800A36BC = (u16 *)dst;
+                }
+                AddPrim(gOtMenuLow[0], dst);
+            } else {
+                if (prim == oldCursor) {
+                    AddPrim(gOtMenuMid[0] + 4, dst);
+                } else if (next[-1].r0 != 0xFF) {
+                    AddPrim(gOtMenuHigh[0] + 0xC, dst);
+                } else {
+                    AddPrim(gOtMenuGhost[0] + 8, dst);
+                }
+            }
+            prim++;
+            next++;
+            dst++;
+        }
+    }
+    D_800A3898 = (u16 *)dst;
+    dst = (POLY_FT4 *)(SCRATCH_TOP - 0x28);
+    D_800A389C[0] = 0;
+    while (prim != (POLY_FT4 *)gPrimitiveCursor[0]) {
+        *dst = *prim;
+        if (prim >= (POLY_FT4 *)D_800A365C) {
+            if (prim == (POLY_FT4 *)D_800A365C) {
+                D_800A387C = (u16 *)dst;
+            } else if (prim == (POLY_FT4 *)D_800A39F4) {
+                D_800A36BC = (u16 *)dst;
+            }
+            AddPrim(gOtMenuLow[0], dst);
+        } else {
+            if (prim == oldCursor) {
+                AddPrim(gOtMenuMid[0] + 4, dst);
+            } else {
+                if (dst->r0 != 0xFF) {
+                    AddPrim(gOtMenuHigh[0] + 0xC, dst);
+                } else {
+                    AddPrim(gOtMenuGhost[0] + 8, dst);
+                }
+                D_800A389C[0] = (u16 *)dst;
+            }
+        }
+        prim++;
+        dst--;
+    }
+    DrawOTag((u32 *)(gOtMenuBase[0] + 0xC));
+    DrawSync(0);
+    SetDispMask(1);
+    D_800A3884 = 0;
+    D_800A3930 = 0;
+}
 
 void func_80067020(u8 *start, u8 *end, u8 delta) {
     POLY_FT4 *quad;
