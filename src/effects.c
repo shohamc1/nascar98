@@ -1320,7 +1320,121 @@ void func_800436D0(u8 *object) {
     PopMatrix();
 }
 
-INCLUDE_ASM("asm/nonmatchings/effects", func_8004382C);
+extern s32 pairTable4382C[] asm("D_800A3A2C");
+extern s32 pairTable4382CA[] asm("D_800A3A34");
+extern u8 D_800AD9B0p[] asm("D_800AD9B0");
+extern s8 D_800AD9CCp[] asm("D_800AD9CC");
+extern s32 D_800A38ACw38[] asm("D_800A38AC");
+typedef struct {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    u16 unkC;
+    u8 pad0E[2];
+    u16 unk10;
+    u16 unk12;
+    u16 unk14;
+    u16 unk16;
+    u16 unk18;
+    u16 unk1A;
+    u8 unk1C;
+    s8 unk1D;
+    u8 pad1E[6];
+    s32 unk24;
+} EffectRow30;
+void func_8004382C(void) {
+    EffectRow30 *fx;
+    s32 i;
+    s8 *flagPtr;
+    s32 x;
+    s32 y;
+    s32 idx4;
+    s32 dx;
+    s32 dy;
+    s32 ground;
+    s32 f10v;
+    s32 value;
+    s32 f10;
+    s32 oldSection;
+    s32 scratch[6];
+
+    flagPtr = D_800AD9CCp;
+    for (i = 0; i < 0x28; i++) {
+        if (flagPtr[i * 0x30] == 0) {
+            continue;
+        }
+        fx = (EffectRow30 *)(D_800AD9B0p + i * 0x30);
+        if (D_800A2ED4[0] == 0) {
+            if ((s16)fx->unk1A-- < 0) {
+                flagPtr[i * 0x30] = 0;
+                continue;
+            }
+            x = *(volatile s32 *)fx;
+            dx = x - ((s32 *)D_800A38AC[0])[0];
+            if (dx < 0) {
+                dx = ((s32 *)D_800A38AC[0])[0] - x;
+            }
+            if (dx >= 0x3E81) {
+                continue;
+            }
+            y = *(volatile s32 *)((u8 *)fx + 4);
+            dy = y - ((s32 *)D_800A38ACw38[0])[1];
+            if (dy < 0) {
+                dy = ((s32 *)D_800A38ACw38[0])[1] - y;
+            }
+            if (dy >= 0x3E81) {
+                continue;
+            }
+            idx4 = (s16)fx->unk12 * 4;
+            scratch[0] = fx->unk0;
+            scratch[1] = fx->unk4;
+            scratch[0] =
+                scratch[0] +
+                ((*(s32 *)(idx4 + pairTable4382C[0]) * (s16)fx->unk14) >> 16);
+            scratch[1] =
+                scratch[1] +
+                ((*(s32 *)(idx4 + pairTable4382CA[0]) * (s16)fx->unk14) >> 16);
+            oldSection = fx->unk24;
+            if (func_80024E90(scratch[0], scratch[1], &fx->unk24, &scratch[2],
+                              &scratch[4]) == -1) {
+                fx->unk24 = oldSection;
+                scratch[0] = fx->unk0;
+                scratch[1] = fx->unk4;
+                fx->unk14 = (s16)fx->unk14 * 2 / 3;
+                fx->unk12 = (fx->unk12 + 0x200) & 0x3FF;
+            }
+            f10v = fx->unk10;
+            *(volatile s32 *)&fx->unk0 = scratch[0];
+            *(volatile s32 *)&fx->unk4 = scratch[1];
+            ground = scratch[2] * 4 + (s16)fx->unkC;
+            value = *(volatile u16 *)&fx->unkC + f10v;
+            fx->unkC = value;
+            fx->unk8 = ground;
+            if ((s16)value <= 0) {
+                fx->unkC = 0;
+                f10 = -((s16)fx->unk10 * 2 / 3) - 2;
+                fx->unk10 = f10;
+                if ((s16)f10 < 0) {
+                    fx->unk10 = 0;
+                } else {
+                    fx->unk14 = (s16)fx->unk14 * 3 / 4;
+                }
+                if (fx->unk1D >= 5) {
+                    fx->unk14 = (s16)fx->unk14 * 3 / 4;
+                }
+            } else {
+                fx->unk10 = fx->unk10 - 8;
+            }
+            if (fx->unk1D < 5) {
+                fx->unk16 = (s16)fx->unk12 * 4;
+            } else {
+                fx->unk16 = (fx->unk16 + fx->unk14 * 4) & 0xFFF;
+            }
+            fx->unk18 = (fx->unk18 + 0x80) & 0xFFF;
+        }
+        func_800436D0((u8 *)fx);
+    }
+}
 
 #ifdef NON_MATCHING
 /* 2026-10-12: permuter rounds 1-4 (2855 -> 1945 -> 1635 -> 1350 unit;
