@@ -4591,7 +4591,102 @@ void func_80029450(s32 *p) {
     p[2] += p[0xB8 / 4];
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800294A8);
+void func_800294A8(void *arg0) {
+    extern s32 D_800A2EC0Lui asm("D_800A2EC0Absolute");
+    extern s32 D_800A2E28;
+    extern void func_800409A0(u8 * object);
+    extern void func_80040AC0(u8 * object);
+    extern void func_800524A0(u8 * arg0, s8 arg1);
+    extern void func_800525A8(u8 * arg0, s8 arg1);
+    extern void func_80029994(u8 * arg0, s32 arg1);
+    volatile s32 pad[8];
+    s32 delta;
+    s32 value;
+    s32 i;
+    s32 shade;
+    s32 shade2;
+    u8 *car = arg0;
+
+    delta = (*(s16 *)(car + 0x104) - *(s16 *)(car + 0x114) + 0x400) & 0x3FF;
+    if (delta >= 0x201) {
+        delta = (0x400 - delta) & 0x3FF;
+    }
+    func_8001EC38((s32 *)car);
+    if (delta >= 0) {
+        if (delta >= 0x1A) {
+            goto Far;
+        }
+        goto Checks;
+    }
+    if (-delta < 0x1A) {
+        goto Checks;
+    }
+Far:
+    if (*(s32 *)(car + 0x90) > 0x320000) {
+        goto Visible;
+    }
+Checks:
+    if ((*(s16 *)(car + 0x120) == 0 && *(u8 *)(car + 0xF9) == 0) ||
+        D_800A2EACAbsolute[0] != 0) {
+        goto Other;
+    }
+Visible:
+    if (*(u8 *)(car + 0xF9) == 0) {
+        if (RandomScaledGet(4) < 0) {
+            value = -RandomScaledGet(4);
+        } else {
+            value = RandomScaledGet(4);
+        }
+        func_80029994(car, value);
+        if (RandomScaledGet(4) < 0) {
+            value = -RandomScaledGet(4);
+        } else {
+            value = RandomScaledGet(4);
+        }
+        func_80029994(car, value);
+    }
+    func_800409A0(car);
+    for (i = 0, shade = 0; i < 4; shade += 0x1000000, i++) {
+        if (*(s16 *)(car + i * 0x28 + 0x2AC) == 0 &&
+            *(s8 *)(car + i + 0x3A6) != 0) {
+            func_800525A8(car, shade >> 24);
+            if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
+                func_80041848(car, 0x57);
+            }
+            D_800A2E28 = D_800A2EC0Lui;
+        } else if (*(u8 *)(car + i * 0x28 + 0x2CC) != 0) {
+            func_800524A0(car, shade >> 24);
+        }
+    }
+    return;
+Other:
+    if (*(s16 *)(car + 0x1C4) > 0) {
+        *(s16 *)(car + 0x1C4) = 0;
+        if (*(s8 *)(car + 0x3B8) >= 0xB) {
+            *(u8 *)(car + 0x3B8) = 5;
+        }
+        func_800409A0(car);
+        for (i = 0, shade2 = 0; i < 4; shade2 += 0x1000000, i++) {
+            if (*(s16 *)(car + i * 0x28 + 0x2AC) == 0 &&
+                *(s8 *)(car + i + 0x3A6) != 0) {
+                func_800525A8(car, shade2 >> 24);
+                if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
+                    func_80041848(car, 0x57);
+                }
+                D_800A2E28 = D_800A2EC0Lui;
+            } else if (*(u8 *)(car + i * 0x28 + 0x2CC) != 0) {
+                func_800524A0(car, shade2 >> 24);
+            }
+        }
+        return;
+    }
+    func_80040AC0(car);
+    for (i = 0; i < 4; i++) {
+        if (*(u8 *)(car + i * 0x28 + 0x2CC) != 0) {
+            func_800524A0(car, i);
+        }
+    }
+}
 
 void func_800297D0(u8 *arg0) {
     extern void func_80031264(void);
