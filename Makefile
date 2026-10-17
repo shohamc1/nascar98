@@ -280,6 +280,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26C0Init=D_800A26C0 \
             --defsym=D_800A26B0Init=D_800A26B0 \
             --defsym=D_800A26B4Init=D_800A26B4 \
+            --defsym=_spu_keystat=D_800A229C \
             --defsym=_spu_inTransfer=D_800A26DC \
             --defsym=_spu_transferCallback=D_800A26E0 \
             --defsym=_spu_IRQCallback=D_800A26E4 \
@@ -432,6 +433,11 @@ LDFLAGS += \
 # tools/cc1-263.sh runs it (Docker off x86 Linux).
 build/src/psxsdk.c.o: CC1 := tools/cc1-263.sh
 build/src/psxsdk.c.o: tools/cc1-263.sh
+
+# The Psy-Q libraries reach no global through $gp (the SDK range of the
+# retail EXE has no gp-relative access), so they came from -G0. Compile
+# psxsdk.c the same way: a plain `extern` scalar then loads with lui/lw.
+build/src/psxsdk.c.o: CFLAGS := $(subst -G$(GP_SIZE),-G0,$(CFLAGS))
 
 # src/globals.c owns the former .sdata range. splat emits no .sdata
 # collection for c subsegments, so compile with -G0: every literal lands

@@ -10340,17 +10340,14 @@ u16 pitch;
     return -1;
 }
 
-#ifdef NON_MATCHING
-extern s32 D_800A229C[];
+/* Fills status[min..max] with the key state of each voice: 1 when the voice
+ * is keyed on and has a volume, 3 when keyed on with no volume, 2 when keyed
+ * off with a volume, 0 otherwise. Returns -3 for a bad range. */
+extern s32 _spu_keystat;
 
 s32 SpuRGetAllKeysStatus(s32 min, s32 max, s8 *status) {
     s32 voice;
     s32 one;
-    s32 three;
-    s32 two;
-    s32 mask2;
-    s32 mask3;
-    s32 new_var;
     u16 volume;
     if (min < 0)
         min = 0;
@@ -10361,32 +10358,23 @@ s32 SpuRGetAllKeysStatus(s32 min, s32 max, s8 *status) {
     if (max < 0 || max < min)
         return -3;
     max++;
-    new_var = D_800A229C[0];
     for (voice = min; voice < max; voice++) {
-        volume = *(volatile u16 *)&D_800A26AC[0][(8 * voice) + 6];
         one = 1;
-        asm("" : "=r"(one) : "0"(one));
-        three = 3;
-        two = 2;
-        mask3 = one << voice;
-        mask2 = mask3 & new_var;
-        if (mask2 != 0) {
+        volume = D_800A26AC[0][(8 * voice) + 6];
+        if ((one << voice) & _spu_keystat) {
             if (volume != 0)
                 status[voice] = one;
             else
-                status[voice] = three;
+                status[voice] = 3;
         } else {
             if (volume != 0)
-                status[voice] = two;
+                status[voice] = 2;
             else
                 status[voice] = 0;
         }
     }
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuRGetAllKeysStatus);
-#endif
 
 void SpuGetAllKeysStatus(s8 *status) {
     extern u16 *D_800A26AC[];
