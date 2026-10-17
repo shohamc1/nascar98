@@ -1463,17 +1463,17 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", VSync);
 extern s32 D_8009CE84[];
 extern char D_80090404[];
 
-/* PARKED 2026-10-11: GNU C 2.6.3, 156/156 bytes, 22 bytes differ.
- * Removing the entry loop note improves 26 to 22. The frame save and
- * counter initialisation still precede the first branch in the wrong order;
- * retail saves ra in that branch's delay slot. */
-#ifdef NON_MATCHING
+/* The asm orders the D_8009CE84 load after the volatile count store. With no
+ * dependence between them sched moves the load above the store, and the ra
+ * save stays in the prologue; with it, the save sinks into the first branch's
+ * delay slot like retail. The asm emits no code. */
 void v_wait(int mode, int time) {
     volatile int count;
+    int cur;
 
     count = time << 15;
-    if (D_8009CE84[0] < mode) {
-        asm("");
+    asm("" : "=r"(cur) : "m"(count));
+    if ((cur = D_8009CE84[0]) < mode) {
         do {
             count = count - 1;
             if (count == -1) {
@@ -1485,9 +1485,6 @@ void v_wait(int mode, int time) {
         } while (D_8009CE84[0] < mode);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", v_wait);
-#endif
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090404);
 
 ASM_FUNC(ChangeClearRCnt, "    addiu $t2, $zero, 0xC0 # maspsx-keep\n"
