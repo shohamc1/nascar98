@@ -1712,7 +1712,7 @@ extern u8 D_800A306Cpanel asm("D_800A306CAbsolute");
 extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
 extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
 extern void func_8004DF38(void);
-extern void func_8004EBE4(void);
+extern void MenuDrawTimingAndScoring(void);
 extern void GraphicsSetColor(s32, s32, s32);
 extern s32 func_80050940(u8 *);
 extern void func_80050028(u8 *, s32, s32, s8);
@@ -1746,7 +1746,7 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
         return;
     }
     if (flags & 4) {
-        func_8004EBE4();
+        MenuDrawTimingAndScoring();
         return;
     }
     if (D_800A2EA4w15[0] != 0) {

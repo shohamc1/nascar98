@@ -5946,7 +5946,115 @@ void func_8004EA34(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004EBE4);
+extern char D_8008D4F4[];
+extern char *D_8009A31C[];
+extern char *D_8009A3F8[];
+extern char *D_8009AE70[];
+extern POLY_FT4 D_800A8A84[];
+extern u8 D_800A35A8;
+extern u8 D_800A3924;
+extern u8 D_800A380C;
+extern u8 D_800A3614;
+extern u8 D_800A36FC;
+extern u8 D_800A3700;
+extern s16 D_800A34C4;
+extern u8 D_80099230[];
+extern u8 D_80099231[];
+extern u8 D_800A8AB6[];
+/* Keep the first x-coordinate load separate from the indexed table base. */
+extern s16 D_800A8AB4First[];
+asm(".globl D_800A8AB4First\nD_800A8AB4First = D_800A8AB4");
+extern s16 D_800A8AB4Coords[][2] asm("D_800A8AB4");
+extern s16 D_800A8AB6Coords[][2] asm("D_800A8AB6");
+extern s32 func_80050940(u8 *);
+extern void MenuDrawLapStatistics(s8, s8);
+extern void func_8004FF90(s32, s32, s32, s8);
+
+void MenuDrawTimingAndScoring(void) {
+    char caption[40];
+    char *title;
+    char *captionArg;
+    char **titleTable;
+    register s32 width asm("v0");
+    s32 centeredX;
+    s8 *lapCount;
+    s32 loopLapCount;
+    u8 slideLap;
+    u8 slideMode;
+    s32 *position;
+    s32 scale;
+    s32 track;
+    u8 i;
+
+    GraphicsSetColor(128, 128, 192);
+    sprintfHud(caption, D_8008D4F4, *(char **)(D_800A3554[0] + 0x34C),
+               D_8009A3F8[0], D_8009A31C[D_800A2CE0[0]]);
+    titleTable = D_8009AE70;
+    width = func_80050940((u8 *)titleTable[0]);
+    /* Load the title before reusing the table register for screen width. */
+    asm volatile("lw %0, 0(%1)"
+                 : "=r"(title)
+                 : "r"(titleTable), "m"(*titleTable));
+    centeredX = 320;
+    width = centeredX - width;
+    HudDrawText(title, (s16)(width >> 1), 20, 0);
+    width = func_80050940((u8 *)caption);
+    captionArg = caption;
+    /* Form the caption address before updating its centered x value. */
+    asm volatile("" : "=r"(centeredX) : "0"(centeredX), "r"(captionArg));
+    centeredX -= width;
+    /* Narrow and halve the x coordinate for the text renderer. */
+    centeredX <<= 15;
+    HudDrawText(captionArg, (s16)(centeredX >> 16), 210, 0);
+    func_8001D778(0, 0, 320, 35, 0, 0, 0, 0);
+    func_8001D778(0, 205, 320, 35, 0, 0, 0, 0);
+    GraphicsSetColor(128, 128, 128);
+    MenuDrawLapStatistics((s8)D_800A35A8, (s8)D_800A3924);
+    slideLap = D_800A36FC;
+    slideMode = D_800A3700;
+    D_800A36FC = 128 - slideLap;
+    D_800A3700 = 128 - slideMode;
+    MenuDrawLapStatistics((s8)D_800A380C, (s8)D_800A3614);
+    if (slideLap != 0) {
+        D_800A36FC = slideLap - 8;
+    } else {
+        D_800A36FC = 0;
+        D_800A35A8 = D_800A380C;
+    }
+    if (slideMode != 0) {
+        D_800A3700 = slideMode - 8;
+    } else {
+        D_800A3700 = 0;
+        D_800A3924 = D_800A3614;
+    }
+    position = (s32 *)D_800A3554[0];
+    scale = D_800A34C4;
+    track = D_800A2CE0[0] * 2;
+    D_800A8A84[0].x0 = 300 - D_80099230[track] - position[0] / scale - 3;
+    D_800A8A84[0].y0 = D_80099231[track] + position[1] / scale + 15;
+    D_800A8A84[0].x1 = 300 - D_80099230[track] - position[0] / scale + 3;
+    D_800A8A84[0].y1 = D_80099231[track] + position[1] / scale + 15;
+    D_800A8A84[0].x2 = 300 - D_80099230[track] - position[0] / scale - 3;
+    D_800A8A84[0].y2 = D_80099231[track] + position[1] / scale + 21;
+    D_800A8A84[0].x3 = 300 - D_80099230[track] - position[0] / scale + 3;
+    D_800A8A84[0].y3 = D_80099231[track] + position[1] / scale + 21;
+    func_80017D80((u8 *)D_800A8A84);
+    HudDrawText(D_8009AE94[0], D_800A8AB4First[0], *(s16 *)D_800A8AB6, 0);
+    lapCount = D_800992D0;
+    i = 1;
+    if (i < D_800992D0[D_800A2CE0[0]]) {
+        loopLapCount = (s32)lapCount;
+    drawLapMarker:
+        func_8004FF90(i, D_800A8AB4Coords[i][0], D_800A8AB6Coords[i][0], 0);
+        i++;
+        if (i < *(s8 *)(D_800A2CE0[0] + loopLapCount)) {
+            goto drawLapMarker;
+        }
+    }
+    func_8001BA94(1);
+    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
+    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
+}
 
 extern u8 *D_800A8A74[];
 extern char *D_8009AE64[];
