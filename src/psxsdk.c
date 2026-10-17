@@ -1009,7 +1009,203 @@ INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902D8);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800902E4);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090300);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090314);
-INCLUDE_ASM("asm/nonmatchings/psxsdk", getintr);
+extern u32 D_8009BD40[];
+extern u32 D_8009BD44[];
+extern u32 D_8009BD48[];
+extern u32 D_8009BD4C[];
+extern u32 D_8009BA88[];
+extern u32 D_8009BA90[];
+extern s32 D_8009BA94[];
+extern u8 D_8009BA9D[];
+extern s32 D_8009BB40[];
+extern s32 D_8009BC40[];
+extern u8 D_8009BD58[];
+extern u8 D_8009BD59[];
+extern u8 D_8009BD5A[];
+extern u8 D_800A8CB8[];
+extern u8 D_800A8CC0[];
+extern u8 D_800A8CC8[];
+extern char D_800902D8[];
+extern char D_800902E4[];
+extern char D_80090300[];
+extern char D_80090314[];
+
+/* shortcut: SDK register controls need review for a native build. */
+/* Keep the SDK copy destination in v1. */
+#define COPY_CD_RESULT(buffer)                                                 \
+    do {                                                                       \
+        register u8 *destination asm("v1");                                    \
+        u8 *source;                                                            \
+        s32 remaining;                                                         \
+        destination = buffer;                                                  \
+        source = (u8 *)result;                                                 \
+        if (destination != 0) {                                                \
+            remaining = 7;                                                     \
+            do {                                                               \
+                *destination++ = *source++;                                    \
+            } while (--remaining != -1);                                       \
+        }                                                                      \
+    } while (0)
+
+int getintr(void) {
+    volatile u8 interrupt;
+    u8 result[8];
+    u8 status;
+    s32 statusValue;
+    u8 loadedStatus;
+    u8 secondaryStatus;
+    u8 *statusPointer;
+    u8 *readyPointer;
+    u8 *clear;
+    s32 count;
+    s32 errors;
+
+    *(volatile u8 *)D_8009BD40[0] = 1;
+    interrupt = *(volatile u8 *)D_8009BD4C[0] & 7;
+    errors = 0;
+    if (interrupt == 0) {
+        return 0;
+    }
+    while (interrupt != (*(volatile u8 *)D_8009BD4C[0] & 7)) {
+        interrupt = *(volatile u8 *)D_8009BD4C[0] & 7;
+    }
+    for (count = 0; count < 8; count++) {
+        if ((*(volatile u8 *)D_8009BD40[0] & 0x20) == 0) {
+            break;
+        }
+        result[count] = *(volatile u8 *)D_8009BD44[0];
+    }
+    if (count < 8) {
+        clear = (u8 *)(count + (s32)result);
+        do {
+            *clear++ = 0;
+        } while ((s32)clear < (s32)(result + 8));
+    }
+    *(volatile u8 *)D_8009BD40[0] = 1;
+    *(volatile u8 *)D_8009BD4C[0] = 7;
+    *(volatile u8 *)D_8009BD48[0] = 7;
+    if (interrupt != CdlAcknowledge || D_8009BC40[D_8009BA9D[0]] != 0) {
+        if ((((s32 *)D_8009BA8C)[0] & CdlStatShellOpen) == 0 &&
+            (result[0] & CdlStatShellOpen)) {
+            ((s32 *)D_8009BA90)[1] = D_8009BA94[0] + 1;
+        }
+        statusValue = result[0];
+        secondaryStatus = result[1];
+        /* GCC removes this explicit SDK byte mask. */
+        asm("andi %0, %0, 0xff"
+            : "=r"(statusValue)
+            : "0"(statusValue), "r"(secondaryStatus));
+        errors = statusValue & 0x1D;
+        ((s32 *)D_8009BA8C)[0] = statusValue;
+        D_8009BA90[0] = secondaryStatus;
+    }
+    if (interrupt == CdlDiskError) {
+        puts(D_800902D8);
+        if ((s32)D_8009BA88[0] > 0) {
+            printf(D_800902E4, D_8009BAA0[D_8009BA9D[0]],
+                   ((s32 *)D_8009BA8C)[0], D_8009BA90[0]);
+        }
+    }
+    switch (interrupt) {
+    case CdlAcknowledge:
+        if (errors != 0) {
+            statusPointer = D_8009BD58;
+            *statusPointer = CdlDiskError;
+            /* Keep the status address for the result copy. */
+            asm("" : : "r"(statusPointer));
+            COPY_CD_RESULT(D_800A8CB8);
+            return 2;
+        }
+        if (D_8009BB40[D_8009BA9D[0]] != 0) {
+            statusPointer = D_8009BD58;
+            *statusPointer = CdlAcknowledge;
+            asm("" : : "r"(statusPointer));
+            COPY_CD_RESULT(D_800A8CB8);
+            return 1;
+        }
+        statusPointer = D_8009BD58;
+        *statusPointer = CdlComplete;
+        asm("" : : "r"(statusPointer));
+        COPY_CD_RESULT(D_800A8CB8);
+        return 2;
+    case CdlComplete:
+        status = CdlComplete;
+        if (errors) {
+            status = CdlDiskError;
+        }
+        D_8009BD58[0] = status;
+        COPY_CD_RESULT(D_800A8CB8);
+        return 2;
+    case CdlDataReady:
+        if (errors && count == 1) {
+            errors = 0;
+        }
+        status = CdlDataReady;
+        if (errors) {
+            status = CdlDiskError;
+        }
+        D_8009BD59[0] = status;
+        COPY_CD_RESULT(D_800A8CC0);
+        *(volatile u8 *)D_8009BD40[0] = 0;
+        *(volatile u8 *)D_8009BD4C[0] = 0;
+        return 4;
+    case CdlDataEnd: {
+        u8 *destination;
+        u8 *source;
+        s32 remaining;
+        destination = D_800A8CC8;
+        source = result;
+        status = CdlDataEnd;
+        D_8009BD5A[0] = status;
+        /* Read the stored status again before the buffer test. */
+        asm("" : : : "memory");
+        loadedStatus = D_8009BD58[2];
+        readyPointer = D_8009BD59;
+        *readyPointer = loadedStatus;
+        asm(""
+            : "=r"(destination)
+            : "0"(destination), "r"(readyPointer), "m"(*readyPointer));
+        if (destination != 0) {
+            remaining = 7;
+            do {
+                *destination++ = *source++;
+            } while (--remaining != -1);
+        }
+        COPY_CD_RESULT(D_800A8CC0);
+        return 4;
+    }
+    case CdlDiskError: {
+        u8 *destination;
+        u8 *source;
+        s32 remaining;
+        destination = D_800A8CB8;
+        source = result;
+        status = CdlDiskError;
+        D_8009BD59[0] = status;
+        /* Read the stored status again before the buffer test. */
+        asm("" : : : "memory");
+        loadedStatus = D_8009BD5A[-1];
+        readyPointer = D_8009BD58;
+        *readyPointer = loadedStatus;
+        asm(""
+            : "=r"(destination)
+            : "0"(destination), "r"(readyPointer), "m"(*readyPointer));
+        if (destination != 0) {
+            remaining = 7;
+            do {
+                *destination++ = *source++;
+            } while (--remaining != -1);
+        }
+        COPY_CD_RESULT(D_800A8CC0);
+        return 6;
+    }
+    default:
+        puts(D_80090300);
+        printf(D_80090314, interrupt);
+        return 0;
+    }
+}
+#undef COPY_CD_RESULT
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_sync);
 
