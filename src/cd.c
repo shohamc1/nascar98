@@ -2123,7 +2123,6 @@ updateMotion:
     }
 }
 
-
 #ifdef NON_MATCHING
 /* 2026-10-11 (w3e): size exact 0x308, draft-unit diff 393 bytes
  * (from 6885 with size -32). Applied on top of the w2i state:

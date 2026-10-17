@@ -1885,85 +1885,74 @@ extern u16 D_80090F30c[] asm("D_80090F30");
 extern u8 D_80090F30d[] asm("D_80090F30");
 extern u8 D_80090F30e[] asm("D_80090F30");
 extern void AddPrim(void *ot, void *p);
-void func_8001B82C(u8 *obj, s32 arg1)
-{
-  u8 *prim;
-  s32 y0;
-  s32 y1;
-  s32 uOff;
-  int new_var;
-  u32 width;
-  s32 mode;
-  new_var = (gOrderingTableBankAbsolute[0] >> 1) * 0x3C0;
-  y0 = 0x12C - ((*((s32 *) obj)) / arg1);
-  y1 = ((*((s32 *) (obj + 4))) / arg1) - -0x12;
-  prim = new_var + (D_800B0B7C + ((*((s8 *) (obj + 0x376))) * 0x28));
-  if ((*((s16 *) (obj + 0x1EC))) == 0)
-  {
-    width = 0xA;
-    if (D_800A2EB4[0] >= 2)
-    {
-      uOff = ((*((s16 *) (obj + 0x1DE))) * 0x10) + 0x20;
-    }
-    else
-    {
-      uOff = 0x10;
-    }
-  }
-  else
-  {
-    mode = *((s8 *) (obj + 0x204));
-    switch (mode)
-    {
-      case 2:
-        width = 8;
-        if (((*((s8 *) (D_800A3554 + 0x204))) == 1) && (D_800A2EB4[0] == (*((s8 *) (D_800A3554 + 0x204)))))
-      {
+void func_8001B82C(u8 *obj, s32 arg1) {
+    u8 *prim;
+    s32 y0;
+    s32 y1;
+    s32 uOff;
+    int new_var;
+    u32 width;
+    s32 mode;
+    new_var = (gOrderingTableBankAbsolute[0] >> 1) * 0x3C0;
+    y0 = 0x12C - ((*((s32 *)obj)) / arg1);
+    y1 = ((*((s32 *)(obj + 4))) / arg1) - -0x12;
+    prim = new_var + (D_800B0B7C + ((*((s8 *)(obj + 0x376))) * 0x28));
+    if ((*((s16 *)(obj + 0x1EC))) == 0) {
         width = 0xA;
-      }
-        uOff = 0x30;
-        break;
+        if (D_800A2EB4[0] >= 2) {
+            uOff = ((*((s16 *)(obj + 0x1DE))) * 0x10) + 0x20;
+        } else {
+            uOff = 0x10;
+        }
+    } else {
+        mode = *((s8 *)(obj + 0x204));
+        switch (mode) {
+        case 2:
+            width = 8;
+            if (((*((s8 *)(D_800A3554 + 0x204))) == 1) &&
+                (D_800A2EB4[0] == (*((s8 *)(D_800A3554 + 0x204))))) {
+                width = 0xA;
+            }
+            uOff = 0x30;
+            break;
 
-      case 1:
-        width = 0xA;
-        uOff = 0;
-        break;
+        case 1:
+            width = 0xA;
+            uOff = 0;
+            break;
 
-      case 3:
-        width = 8;
-        uOff = 0x40;
-        break;
+        case 3:
+            width = 8;
+            uOff = 0x40;
+            break;
 
-      default:
-        width = 6;
-        uOff = 0x60;
-        break;
-
+        default:
+            width = 6;
+            uOff = 0x60;
+            break;
+        }
     }
-
-  }
-  *((s16 *) (prim + 8)) = (y0 -= width >> 1);
-  y1 -= width >> 1;
-  *((s16 *) (prim + 0x10)) = y0 + width;
-  *((s16 *) (prim + 0x20)) = y0 + width;
-  *((s16 *) (prim + 0xA)) = y1;
-  *((s16 *) (prim + 0x12)) = y1;
-  *((s16 *) (prim + 0x18)) = y0;
-  *((s16 *) (prim + 0x1A)) = (*((s16 *) (prim + 0x22)) = y1 + width);
-  prim[0xC] = uOff + D_80090F2E[0];
-  prim[0xD] = D_80090F30b[0];
-  prim[0x14] = (uOff + D_80090F2E[0]) + 0xF;
-  prim[0x15] = D_80090F30c[0];
-  prim[0x1C] = uOff + D_80090F2E[0];
-  prim[0x1D] = D_80090F30d[0] + 0xF;
-  prim[0x24] = (uOff + D_80090F2E[0]) + 0xF;
-  prim[0x25] = D_80090F30e[0] + 0xF;
-  AddPrim((void *) D_800A39C8[0], prim);
+    *((s16 *)(prim + 8)) = (y0 -= width >> 1);
+    y1 -= width >> 1;
+    *((s16 *)(prim + 0x10)) = y0 + width;
+    *((s16 *)(prim + 0x20)) = y0 + width;
+    *((s16 *)(prim + 0xA)) = y1;
+    *((s16 *)(prim + 0x12)) = y1;
+    *((s16 *)(prim + 0x18)) = y0;
+    *((s16 *)(prim + 0x1A)) = (*((s16 *)(prim + 0x22)) = y1 + width);
+    prim[0xC] = uOff + D_80090F2E[0];
+    prim[0xD] = D_80090F30b[0];
+    prim[0x14] = (uOff + D_80090F2E[0]) + 0xF;
+    prim[0x15] = D_80090F30c[0];
+    prim[0x1C] = uOff + D_80090F2E[0];
+    prim[0x1D] = D_80090F30d[0] + 0xF;
+    prim[0x24] = (uOff + D_80090F2E[0]) + 0xF;
+    prim[0x25] = D_80090F30e[0] + 0xF;
+    AddPrim((void *)D_800A39C8[0], prim);
 }
 #else
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B82C);
 #endif
-
 
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BA94);
 
@@ -2021,7 +2010,8 @@ void func_8001C34C(void) {
         if (D_800A397CAbsolute[0] == 2) {
             func_8001B3F0();
         } else {
-            MenuDrawPausePanel((void *)0x80010000, D_800A2ECCnm[0], D_800A2ED0nm[0]);
+            MenuDrawPausePanel((void *)0x80010000, D_800A2ECCnm[0],
+                               D_800A2ED0nm[0]);
         }
     } else {
         func_8005098C();

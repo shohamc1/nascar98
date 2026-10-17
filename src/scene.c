@@ -2644,7 +2644,6 @@ void SceneUpdateRoadStrip(u8 *car) {
     }
 }
 
-
 extern int abs(int);
 extern u8 D_800A2FE8;
 extern s8 D_800A3480;
@@ -4016,9 +4015,7 @@ void HudInitRacePrims(void) {
         /* Keep these locals multi-set so loop.c does not hoist their values. */
         for (; col < 3; col++) {
             p3 = (u8 *)((u32)(col * 0x10) + (u32)f4base);
-            asm("addu %0,%1,%0"
-                : "=r"(p3)
-                : "r"(tileBytes), "0"(p3));
+            asm("addu %0,%1,%0" : "=r"(p3) : "r"(tileBytes), "0"(p3));
             SetTile((TILE *)p3);
             SetSemiTrans(p3, 1);
             p4 = (u8 *)((u32)tileBytes + (u32)(col * 0x10) + (u32)f4base);

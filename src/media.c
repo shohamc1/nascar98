@@ -3559,7 +3559,6 @@ void CdUpdateStream(void) {
     }
 }
 
-
 /* All registers match after separating stream phases and reloading the
  * global stream before the tail update. An empty compiler barrier keeps the
  * fast-path store out of the jump delay slot. */

@@ -10537,7 +10537,7 @@ s32 sprintf(char *dest, char *format, ...) {
         if (c == '%') {
             spec = gSprintfDefaultFormat[0];
             for (;;) {
-                c = (u8)*++format;
+                c = (u8) * ++format;
                 if (c == '-') {
                     spec.left = 1;
                 } else if (c == '+') {
@@ -10558,27 +10558,27 @@ s32 sprintf(char *dest, char *format, ...) {
                     spec.width = -spec.width;
                     spec.left = 1;
                 }
-                c = (u8)*++format;
+                c = (u8) * ++format;
             } else {
                 while ((u32)(c - '0') < 10) {
                     /* Keep the character offset after the multiply. */
                     accumulator = spec.width * 10 - '0';
                     asm("" : "=r"(accumulator) : "0"(accumulator));
                     spec.width = accumulator + c;
-                    c = (u8)*++format;
+                    c = (u8) * ++format;
                 }
             }
             if (c == '.') {
-                c = (u8)*++format;
+                c = (u8) * ++format;
                 if (c == '*') {
                     spec.precision = (s32)*args++;
-                    c = (u8)*++format;
+                    c = (u8) * ++format;
                 } else {
                     while ((u32)(c - '0') < 10) {
                         accumulator = spec.precision * 10 - '0';
                         asm("" : "=r"(accumulator) : "0"(accumulator));
                         spec.precision = accumulator + c;
-                        c = (u8)*++format;
+                        c = (u8) * ++format;
                     }
                 }
                 if (spec.precision >= 0) {
@@ -10593,15 +10593,15 @@ s32 sprintf(char *dest, char *format, ...) {
             switch (c) {
             case 'h':
                 spec.shortArg = 1;
-                c = (u8)*++format;
+                c = (u8) * ++format;
                 goto convert;
             case 'l':
                 spec.longArg = 1;
-                c = (u8)*++format;
+                c = (u8) * ++format;
                 goto convert;
             case 'L':
                 spec.longDouble = 1;
-                c = (u8)*++format;
+                c = (u8) * ++format;
                 goto convert;
             case 'd':
             case 'i':

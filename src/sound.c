@@ -2122,7 +2122,6 @@ void SoundUpdateCar(u8 *car) {
     }
 }
 
-
 extern s32 D_800A2EA4[];
 extern u8 D_800A2F9D;
 extern u8 D_800A2FA8;

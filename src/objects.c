@@ -575,7 +575,7 @@ void func_8001FF3C(u8 *arg0, u8 *arg1) {
 
     sp18 = -1;
     if ((s16)func_80024E90(*(s32 *)(arg0 + 0x0), *(s32 *)(arg0 + 0x4), &sp18,
-                              &sp1C, &sp20) == -1) {
+                           &sp1C, &sp20) == -1) {
         value0 = MathMultiplyFixed16(
             *(s32 *)(arg1 + 0xDC), ((s32) * (s32 *)(arg0 + 0x0) >> 2) << 0x10);
         value4 = MathMultiplyFixed16(
@@ -5654,11 +5654,9 @@ clearRear:
     }
 afterClear:
     if (D_800A2EE4nm[0] != 0) {
-        ratio = MathFixedDivide(
-            (*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
+        ratio = MathFixedDivide((*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
         *arg1 = MathMultiplyFixed16(*arg1, ratio);
-        ratio = MathFixedDivide(
-            (*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
+        ratio = MathFixedDivide((*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
         *arg2 = MathMultiplyFixed16(*arg2, ratio);
     }
     *(s32 *)(arg0 + 0x240) = *arg1;
@@ -5672,7 +5670,6 @@ afterClear:
 #else
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002B9AC);
 #endif
-
 
 extern s32 D_800A2E24Absolute[];
 extern s32 D_800A2E40;
@@ -9024,7 +9021,8 @@ extern s32 D_800A353CLui asm("D_800A353CAbsolute");
 extern s32 D_800A3758Lui asm("D_800A3758Absolute");
 extern s32 D_800A2F30;
 extern ModelVector *D_800AE130[];
-extern char sObjectVectorsAllocationError[], sObjectFacesAllocationError[], sObjectOffsetsAllocationError[];
+extern char sObjectVectorsAllocationError[], sObjectFacesAllocationError[],
+    sObjectOffsetsAllocationError[];
 
 void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
     ModelFace *faceTable[1436];
