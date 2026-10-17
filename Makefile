@@ -52,7 +52,7 @@ CPP    := $(firstword $(wildcard $(CC_DIR)/cpp) tools/cc/2.7.2-psx/cpp)
 CC1    := $(if $(filter psyq-3.6,$(CC_VER)),tools/cc1-psyq36.sh,$(CC_DIR)/cc1)
 # 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-nascar98.patch, a native
 # stand-in that emits the same assembly as the retail compiler at
-# -mcpu=r4000. The permuter and RTL dumps (-da) use it; `make check`
+# -mcpu=r4000. `make standin` builds it. The permuter and RTL dumps (-da) use it; `make check`
 # doesn't. See "Fast stand-in" in kb/psx/toolchain.md.
 MCPU   := $(if $(filter 2.7.2-psx-nascar98,$(CC_VER)),r4000,3000)
 ifneq ($(filter check expected,$(MAKECMDGOALS)),)
@@ -460,7 +460,7 @@ PSYQ36_URL  := https://github.com/mkst/esa/releases/download/psyq-binaries/psyq3
 PSYQ36_EXE  := tools/cc/psyq-3.6/CC1PSX.EXE
 PSYQ36_SHA1 := 6da49839dd22aa2f3aea678b46447bad7a16859a
 
-.PHONY: all check extract split expected report format tools clean distclean
+.PHONY: all check extract split expected report format tools standin clean distclean
 .DELETE_ON_ERROR:
 
 all: $(EXE)
@@ -529,6 +529,12 @@ $(PSYQ36_EXE):
 	curl -sL $(PSYQ36_URL) | tar xz -C $(@D) --strip-components=1 psyq3.6/CC1PSX.EXE
 	echo "$(PSYQ36_SHA1)  $@" | shasum -c - || { rm -f $@; exit 1; }
 
+# Build the instrumentable stand-in compiler for permute.py and RTL dumps.
+# make check doesn't use it. Rebuilds when tools/gcc-nascar98.patch changes.
+standin:
+	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
+	  || sh tools/build_cc.sh
+
 # Download the compilers and objdiff, and set up the Python environment.
 tools: $(PSYQ36_EXE)
 	@command -v dosbox-x >/dev/null 2>&1 || echo "Install DOSBox-X to run the Psy-Q compiler: brew install --cask dosbox-x, or apt install dosbox-x (Ubuntu 24.04, Debian 13)."
@@ -541,9 +547,6 @@ tools: $(PSYQ36_EXE)
 	for v in 2.7.2-psx 2.8.1-psx; do mkdir -p tools/cc/$$v && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-$$v$(OLD_GCC_SUFFIX).tar.gz \
 	  | tar xz -C tools/cc/$$v; done
-	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
-	  || sh tools/build_cc.sh \
-	  || echo "Couldn't build the 2.7.2-psx-nascar98 stand-in; make check doesn't need it, permute.py does."
 	mkdir -p tools/cc/2.6.3-psx && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-2.6.3-psx.tar.gz \
 	  | tar xz -C tools/cc/2.6.3-psx

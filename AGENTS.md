@@ -53,6 +53,9 @@ These are the paths you work with:
    DOSBox-X. Off x86 Linux, the 2.6.3 SDK compiler also needs Docker.
 3. Run `make extract CUE="path/to/NASCAR 98 (USA).cue"`.
 4. Run `make check`. It runs splat on the first build.
+5. Optional: to run the permuter or write RTL dumps, run `make standin`.
+   It builds the instrumentable stand-in compiler (see "Compiler
+   settings"). On Linux it needs Docker. `make check` doesn't use it.
 
 ## The loop
 
@@ -225,7 +228,7 @@ and fails on any. The compiler can't write RTL dumps (`-da`).
 an error if you set `CC_VER`.
 
 `2.7.2-psx-nascar98` is the native stand-in: GCC 2.7.2 with
-`tools/gcc-nascar98.patch`, built by `make tools` (`tools/build_cc.sh`),
+`tools/gcc-nascar98.patch`, built by `make standin` (`tools/build_cc.sh`),
 run at `-mcpu=r4000`. It emits the same assembly as the retail compiler
 on every function and compilable draft tested, about 200 times faster,
 and it writes RTL dumps. `tools/permute.py` uses it. For dumps, build one

@@ -38,6 +38,9 @@ def main() -> None:
                         help="stop the permuter after this long")
     args, permuter_args = parser.parse_known_args()
 
+    if not pathlib.Path(f"tools/cc/{STANDIN}/cc1").exists():
+        sys.exit(f"{STANDIN} is missing: run make standin")
+
     if invalidate_stale_objects():
         subprocess.run(["make", "build/SLUS_005.21"], check=True)
 
