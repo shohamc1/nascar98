@@ -9050,7 +9050,47 @@ void _spu_gcSPU(void) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_gcSPU);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuFree);
+/* Adapted from Sozud's MIT-licensed Psy-Q 3.5 source, src/spu/s_m_f.c. */
+typedef struct SpuMallocItem {
+    u32 addr;
+    u32 size;
+} SpuMallocItem;
+extern s32 D_800A2704[];
+extern SpuMallocItem *D_800A270C[];
+extern void _spu_gcSPU(void);
+void SpuFree(unsigned long arg0) {
+    s32 temp_v1;
+    s32 cur_block_num;
+    SpuMallocItem *cur_mem;
+    s32 temp;
+    s32 mask4;
+    s32 block_num;
+    u8 pad[2];
+
+    cur_block_num = 0;
+    if (temp_v1 = D_800A2704[0] > 0) {
+        mask4 = 0x40000000;
+        temp = arg0 | 0x80000000;
+        block_num = D_800A2704[0];
+        cur_mem = D_800A270C[0];
+        while (1) {
+            temp_v1 = cur_mem->addr;
+            if (temp_v1 & mask4) {
+                break;
+            }
+            if (temp_v1 == arg0) {
+                cur_mem->addr = temp;
+                break;
+            }
+            cur_mem++;
+            cur_block_num++;
+            if (cur_block_num >= block_num) {
+                break;
+            }
+        }
+    }
+    _spu_gcSPU();
+}
 
 s32 _SpuSetAnyVoice(s32, u32, s32, s32);
 void SpuSetNoiseVoice(s32 a, s32 b) {
@@ -9123,13 +9163,6 @@ s32 SpuSetReverb(s32 arg0) {
 }
 
 /* SPDX-License-Identifier: MIT */
-
-typedef struct {
-    u32 addr;
-    u32 size;
-} SpuMallocItem;
-
-extern SpuMallocItem *D_800A270C[];
 
 s32 _SpuIsInAllocateArea(u32 arg0) {
     s32 i;
