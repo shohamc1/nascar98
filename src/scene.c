@@ -6812,7 +6812,139 @@ void func_800514EC(u8 arg0, u8 arg1, u8 arg2) {
     D_800A8B02[0] = arg2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8005157C);
+extern s32 D_800A2E94[];
+extern s32 D_800A2F84[];
+extern s32 D_800A3598[];
+extern s32 D_800BE974[];
+extern u8 *D_800A3554[];
+
+/* The car block as the restart-order queue sees it: unk3F4 chains the
+ * field list, unk404/unk408 receive the rebuilt order. */
+typedef struct QueueCar {
+    u8 unk0[0xF4];
+    u8 unkF4;
+    u8 unkF5[0x1D6 - 0xF5];
+    s16 lap;
+    u8 unk1D8[0x1E0 - 0x1D8];
+    s16 unk1E0;
+    u8 unk1E2[0x288 - 0x1E2];
+    s16 unk288;
+    u8 unk28A[0x3A4 - 0x28A];
+    u16 unk3A4;
+    u8 unk3A6[0x3F4 - 0x3A6];
+    struct QueueCarLink *unk3F4;
+    u8 unk3F8[0x3FE - 0x3F8];
+    s8 unk3FE;
+    s8 unk3FF;
+    s8 unk400;
+    s8 unk401;
+    struct QueueCar *unk404;
+    s8 unk408;
+    s8 unk409;
+} QueueCar;
+
+typedef struct QueueCarLink {
+    u8 unk0[8];
+    QueueCar *next;
+} QueueCarLink;
+
+extern QueueCar *D_800A37C0;
+extern QueueCar *D_800A3A64;
+extern u8 D_800A3670;
+extern s8 D_800A3564;
+
+void func_8005157C(void) {
+    QueueCar *arr[0x60];
+    QueueCar *car;
+    s32 playerDist;
+    s8 i;
+    s8 ahead;
+    s8 behind;
+    s8 flagged;
+    s8 linked;
+    s32 rnd;
+    s8 dir;
+    s32 pos;
+
+    car = (QueueCar *)D_800A35E0[0];
+    playerDist = (car->lap - 1) * D_800BE974[0] + car->unk1E0;
+    ahead = 0;
+    linked = 0;
+    behind = 0;
+    flagged = 0;
+    D_800A37C0 = 0;
+    D_800A3A64 = 0;
+    D_800A3670 = 1;
+    for (i = 0; i < 0x60; i++) {
+        arr[i] = 0;
+    }
+    for (i = 0; i < D_800A2E94[0]; i++) {
+        if (car->unkF4 != 0) {
+            if (car->unk3A4 & 0xF) {
+                arr[0x48 + flagged] = car;
+                flagged++;
+            } else if (car->unk288 != 0) {
+                arr[0x30 + linked] = car;
+                linked++;
+            } else {
+                car->unk401 = 0;
+                rnd = RandomScaledGet(0xA) + 0x14;
+                car->unk400 = rnd;
+                car->unk409 = rnd;
+                if (D_800A3598[0] == 1) {
+                    dir = -1;
+                    if (D_800A2F84[0] != 0) {
+                        dir = 1;
+                    }
+                    car->unk3FE = dir;
+                    car->unk3FF = dir;
+                    arr[ahead] = car;
+                    ahead++;
+                    if (D_800A3A64 == 0) {
+                        car->unk401 = 1;
+                        D_800A3A64 = car;
+                    }
+                } else if (playerDist <
+                           car->lap * D_800BE974[0] + car->unk1E0) {
+                    car->unk3FE = -1;
+                    car->unk3FF = -1;
+                    arr[ahead * 2] = car;
+                    ahead++;
+                    if (D_800A3A64 == 0) {
+                        car->unk401 = 1;
+                        D_800A3A64 = car;
+                    }
+                } else {
+                    car->unk3FE = 1;
+                    car->unk3FF = 1;
+                    arr[behind * 2 + 1] = car;
+                    behind++;
+                    if (D_800A37C0 == 0) {
+                        D_800A3670 = 0;
+                        D_800A37C0 = car;
+                    }
+                }
+            }
+        }
+        car = car->unk3F4->next;
+    }
+    if (D_800A3A64 == 0) {
+        D_800A3A64 = (QueueCar *)D_800A3554[0];
+    }
+    car = D_800A3A64;
+    pos = 0;
+    car->unk408 = -1;
+    for (i = 1; i < 0x60; i++) {
+        if (arr[i] != 0) {
+            car->unk404 = arr[i];
+            car = arr[i];
+            car->unk408 = pos;
+            pos++;
+        }
+    }
+    car->unk404 = 0;
+    D_800A3564 = 0;
+}
 
 extern s16 D_800A34D8;
 extern u8 D_800A34DC;
