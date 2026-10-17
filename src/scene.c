@@ -6381,7 +6381,78 @@ void func_8004F880(void) {
     *(u16 *)(car + 0x2AA) = *(u16 *)(car + 0x2A6) + 8;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004FCF4);
+typedef struct {
+    /* 0x00 */ s32 lapTime;
+} LapTimeSlot;
+
+typedef struct {
+    /* 0x00 */ u8 unk0[0x20];
+    /* 0x20 */ s32 unk20;
+} LapTotalSlot;
+
+typedef struct {
+    /* 0x00 */ u8 unk0[2];
+    /* 0x02 */ s16 unk2;
+} LapAvgSlot;
+
+void func_8004FCF4(void) {
+    extern u8 D_800A3688;
+    extern u8 *D_800A8A80[];
+    u8 *entry;
+    u8 *car;
+    LapTimeSlot *slot;
+    s32 lapTime;
+    s32 speed;
+    s32 sum;
+    s32 idx;
+    u8 *tmp;
+    s8 i;
+    s8 j;
+
+    entry = (u8 *)(D_800A3498 * 4 + (s32)D_800A8A80[0]);
+    slot = (LapTimeSlot *)(entry + 0x10);
+    if (D_800A3498 == 0) {
+        lapTime = *(s32 *)(D_800A3554[0] + 0x258);
+    } else {
+        lapTime = *(s32 *)(D_800A3554[0] + 0x258) - *(s32 *)(entry + 0x1C);
+    }
+    car = D_800A3554[0];
+    slot->lapTime = lapTime;
+    speed = *(s16 *)(car + 0x92);
+    *(s16 *)(D_800A3498 * 2 + D_800A8A80[0] + 6) = speed;
+    ((LapTotalSlot *)(D_800A3498 * 4 + D_800A8A80[0]))->unk20 =
+        *(s32 *)(car + 0x258);
+    if (D_800A3498 == D_800992D0[*(s32 *)(void *)D_800A2CE0] - 1) {
+        if (D_800A3688 != 0 && D_800A2EB0Absolute[0] == 0) {
+            D_800A34B0 = *(s32 *)(void *)D_800A2CE0 == 3 ? 0x28 : 0x32;
+        }
+        sum = 0;
+        i = 0;
+        if (D_800992D0[D_800A2CE0[0]] > 0) {
+            do {
+                sum += *(u16 *)(i * 2 + D_800A8A80[0] + 6);
+                i++;
+            } while (i < D_800992D0[D_800A2CE0[0]]);
+        }
+        ((LapAvgSlot *)D_800A8A80[0])->unk2 =
+            (s16)sum / D_800992D0[D_800A2CE0[0]];
+        idx = D_800A3498;
+        for (i = 0; i < 3; i++) {
+            j = i + 1;
+            if (j < 4) {
+                do {
+                    if (*(s32 *)(idx * 4 + D_800A8A74[j] + 0x20) <
+                        *(s32 *)(idx * 4 + D_800A8A74[i] + 0x20)) {
+                        tmp = D_800A8A74[i];
+                        D_800A8A74[i] = D_800A8A74[j];
+                        D_800A8A74[j] = tmp;
+                    }
+                    j++;
+                } while (j < 4);
+            }
+        }
+    }
+}
 
 extern u8 *D_800A3554[];
 extern u8 *D_800A8A80[];
