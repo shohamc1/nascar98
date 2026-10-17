@@ -46,10 +46,11 @@ These are the paths you work with:
 1. Install `mipsel-linux-gnu-binutils` (Homebrew) or
    `binutils-mipsel-linux-gnu` (apt), `clang-format`, `uv`, and Python
    3.11 or newer.
-2. Run `make tools` to fetch the submodules, compilers, objdiff, and the
-   Python environment. It also builds the default compiler,
-   `2.7.2-psx-nascar98`, from `tools/gcc-nascar98.patch`. On Linux,
-   that build needs Docker.
+2. Install DOSBox-X (macOS: `brew install --cask dosbox-x`; Debian or
+   Ubuntu: `apt install dosbox-x`). Run `make tools` to fetch the
+   submodules, compilers, objdiff, and the Python environment. It downloads
+   the default compiler, the Psy-Q 3.6 `CC1PSX.EXE`, which runs in
+   DOSBox-X. Off x86 Linux, the 2.6.3 SDK compiler also needs Docker.
 3. Run `make extract CUE="path/to/NASCAR 98 (USA).cue"`.
 4. Run `make check`. It runs splat on the first build.
 
@@ -212,9 +213,17 @@ evidence in the knowledge base.
 ## Compiler settings
 
 `CC_VER`, `ASPSX_VER`, and `GP_SIZE` in the `Makefile` hold the current
-best settings. Override them on the command line to experiment
-(`make check CC_VER=2.8.1-psx`). Change the defaults only when a setting
-matches more functions without losing any.
+settings. The default compiler is the Psy-Q 3.6 `CC1PSX.EXE` (GNU C
+2.7.2.SN.1), the retail compiler: with `-mcpu=3000` it rebuilds the whole
+EXE with no compiler patch. `tools/cc1-psyq36.sh` runs it in headless
+DOSBox-X, and a full rebuild takes about 100 seconds. DOS gives no exit
+status, so the script reads the compiler's diagnostics from a serial port
+and fails on any. The compiler can't write RTL dumps (`-da`).
+
+Other `CC_VER` values name old-gcc builds, for experiments
+(`make check CC_VER=2.7.2-psx`). Stock builds write RTL dumps but schedule
+differently from retail, so use them for allocation and structure, not for
+instruction order. Don't change the default to fit one function.
 
 `src/psxsdk.c` is the exception: the Psy-Q libraries came from GNU C
 2.6.3, so `tools/cc1-263.sh` compiles that file, not `CC_VER`. The binary

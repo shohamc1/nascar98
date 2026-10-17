@@ -19,19 +19,21 @@ This repository holds no game data. You must supply your own disc image.
 You need Git, Make, Python 3.11 or newer, [uv](https://docs.astral.sh/uv/),
 and GNU binutils for little-endian MIPS.
 
-`make tools` builds the project's patched GCC 2.7.2 from source. On macOS
-this needs the Xcode command-line tools. On Linux it needs Docker.
+`make tools` downloads the Psy-Q 3.6 compiler, a DOS program that runs in
+[DOSBox-X](https://dosbox-x.com/). On macOS and other systems that aren't
+x86 Linux, the Psy-Q library compiler also needs Docker.
 
 On macOS:
 
 ```sh
 brew install mipsel-linux-gnu-binutils uv
+brew install --cask dosbox-x
 ```
 
 On Debian or Ubuntu:
 
 ```sh
-sudo apt-get install build-essential binutils-mipsel-linux-gnu
+sudo apt-get install build-essential binutils-mipsel-linux-gnu dosbox-x
 ```
 
 Clone the repository and fetch the tools:

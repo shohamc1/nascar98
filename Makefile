@@ -40,23 +40,23 @@ LD      := $(CROSS)ld
 OBJCOPY := $(CROSS)objcopy
 
 # Compiler and assembler versions, decided by matching. See AGENTS.md.
-# 2.7.2-psx-nascar98 is GCC 2.7.2 with tools/gcc-nascar98.patch: load
-# latency 4, high-part multiply latency 12, a 12-cycle mult-to-mflo/mfhi
-# edge, a 3-cycle store-to-lb edge in sched1, and an unfused R4000 multiply.
-# See "High-part multiply scheduling" in kb/psx/toolchain.md.
-CC_VER    ?= 2.7.2-psx-nascar98
+# psyq-3.6 is the Psy-Q 3.6 CC1PSX.EXE (GNU C 2.7.2.SN.1), the retail
+# compiler. It's a DOS program that tools/cc1-psyq36.sh runs in DOSBox-X.
+# Any other CC_VER names an old-gcc build in tools/cc/, for experiments.
+# See "Retail compiler" in kb/psx/toolchain.md.
+CC_VER    ?= psyq-3.6
 ASPSX_VER ?= 2.34
 GP_SIZE   ?= 8
 CC_DIR := tools/cc/$(CC_VER)
-CPP    := $(CC_DIR)/cpp
-CC1    := $(CC_DIR)/cc1
+CPP    := $(firstword $(wildcard $(CC_DIR)/cpp) tools/cc/2.7.2-psx/cpp)
+CC1    := $(if $(filter psyq-3.6,$(CC_VER)),tools/cc1-psyq36.sh,$(CC_DIR)/cc1)
 MASPSX := $(PYTHON) tools/maspsx_extern.py --aspsx-version=$(ASPSX_VER) -G$(GP_SIZE) --dont-force-G0 --expand-div
 
 CPPFLAGS := -Iinclude -Ibuild -undef -Wall -lang-c -nostdinc \
             -D__GNUC__=2 -D__OPTIMIZE__ -Dmips -D__mips__ -D__mips -Dpsx \
             -D__psx__ -D__psx -D_PSYQ -D_MIPSEL -D_LANGUAGE_C -DLANGUAGE_C
-# R4000 scheduling matches func_8002DDA0; keep the PSX instruction set.
-CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=r4000 -mips1 -mgas -msoft-float -fgnu-linker -quiet -w
+# Psy-Q's default CPU is the R3000; -mips1 is the PSX instruction set.
+CFLAGS   := -O2 -G$(GP_SIZE) -mcpu=3000 -mips1 -mgas -msoft-float -fgnu-linker -quiet -w
 ASFLAGS  := -EL -march=r3000 -mtune=r3000 -no-pad-sections -O1 -Iinclude
 LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
@@ -417,10 +417,9 @@ LDFLAGS += \
             --defsym=D_800A36E1Absolute=D_800A36E1 \
             --defsym=D_800A3A94Absolute=D_800A3A94
 
-# SDK C matches with R3000 scheduling. Game flags stay above. The Psy-Q
-# libraries came from GNU C 2.6.3, not the game's 2.7.2: see "SDK compiler"
-# in kb/psx/toolchain.md. tools/cc1-263.sh runs it (Docker off x86 Linux).
-build/src/psxsdk.c.o: CFLAGS := $(subst -mcpu=r4000,-mcpu=r3000,$(CFLAGS))
+# SDK C uses the game flags above. The Psy-Q libraries came from GNU C 2.6.3,
+# not the game's 2.7.2.SN.1: see "SDK compiler" in kb/psx/toolchain.md.
+# tools/cc1-263.sh runs it (Docker off x86 Linux).
 build/src/psxsdk.c.o: CC1 := tools/cc1-263.sh
 build/src/psxsdk.c.o: tools/cc1-263.sh
 
@@ -447,6 +446,9 @@ O_FILES := $(C_FILES:%=build/%.o) $(S_FILES:%=build/%.o)
 OBJDIFF := tools/bin/objdiff-cli
 OBJDIFF_VER := v3.8.2
 OLD_GCC_VER := 0.17
+PSYQ36_URL  := https://github.com/mkst/esa/releases/download/psyq-binaries/psyq3.6.tar.gz
+PSYQ36_EXE  := tools/cc/psyq-3.6/CC1PSX.EXE
+PSYQ36_SHA1 := 6da49839dd22aa2f3aea678b46447bad7a16859a
 
 .PHONY: all check extract split expected report format tools clean distclean
 .DELETE_ON_ERROR:
@@ -511,8 +513,15 @@ report: objdiff.json $(EXE)
 	  m.get('matched_functions', 0), m.get('total_functions', 0), \
 	  m.get('matched_data_percent', 0)))"
 
+# The Psy-Q 3.6 compiler is a Sony DOS program: download it, never commit it.
+$(PSYQ36_EXE):
+	mkdir -p $(@D)
+	curl -sL $(PSYQ36_URL) | tar xz -C $(@D) --strip-components=1 psyq3.6/CC1PSX.EXE
+	echo "$(PSYQ36_SHA1)  $@" | shasum -c - || { rm -f $@; exit 1; }
+
 # Download the compilers and objdiff, and set up the Python environment.
-tools:
+tools: $(PSYQ36_EXE)
+	@command -v dosbox-x >/dev/null 2>&1 || echo "Install DOSBox-X to run the Psy-Q compiler: brew install --cask dosbox-x, or apt install dosbox-x."
 	git submodule update --init
 	uv venv -q --allow-existing .venv
 	uv pip install -q --python $(PYTHON) -r requirements.txt
@@ -522,8 +531,6 @@ tools:
 	for v in 2.7.2-psx 2.8.1-psx; do mkdir -p tools/cc/$$v && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-$$v$(OLD_GCC_SUFFIX).tar.gz \
 	  | tar xz -C tools/cc/$$v; done
-	cmp -s tools/gcc-nascar98.patch tools/cc/2.7.2-psx-nascar98/nascar98.patch \
-	  || sh tools/build_cc.sh
 	mkdir -p tools/cc/2.6.3-psx && \
 	  curl -sL https://github.com/decompals/old-gcc/releases/download/$(OLD_GCC_VER)/gcc-2.6.3-psx.tar.gz \
 	  | tar xz -C tools/cc/2.6.3-psx

@@ -17,8 +17,8 @@ jobs:
       - name: Prepare local inputs
         run: |
           install -D -m 0644 /baserom/SLUS_005.21 disc/SLUS_005.21
-          mkdir -p tools/cc/2.7.2-psx-nascar98
-          cp -a /nascar98-cc/. tools/cc/2.7.2-psx-nascar98/
+      - name: Install DOSBox-X
+        run: command -v dosbox-x || sudo -n apt-get install -y dosbox-x
       - name: Fetch tools
         run: make tools
       - name: Check
