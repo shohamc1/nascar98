@@ -6786,16 +6786,16 @@ void func_80065058(u8 id, s32 shift) {
     s32 b2;
 
     xOffset = -((shift & 0xFF) != 0) & -0x140;
-    n = 0;
+    n = 1;
     height = id * 2;
     for (i = 0; i < 2; i++) {
         slots[i] = 0xFF;
         if (D_800BE70C[height + i] == D_800A36E0Lui) {
-            slots[n] = i;
+            slots[n - 1] = i;
             n++;
         }
         if (D_800A3644Lui != 0 && D_800BE70C[height + i] == D_800A36E1Lui) {
-            slots[n] = i;
+            slots[n - 1] = i;
             n++;
         }
     }
