@@ -284,15 +284,13 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=_spu_inTransfer=D_800A26DC \
             --defsym=_spu_transferCallback=D_800A26E0 \
             --defsym=_spu_IRQCallback=D_800A26E4 \
-            --defsym=D_800A224CMalloc=D_800A224C \
-            --defsym=D_800A2250Malloc=D_800A2250 \
-            --defsym=D_800A26D0Malloc=D_800A26D0 \
-            --defsym=D_800A26D8Malloc=D_800A26D8 \
-            --defsym=D_800A2704Malloc=D_800A2704 \
-            --defsym=D_800A2708Malloc=D_800A2708 \
-            --defsym=D_800A270CMalloc=D_800A270C \
-            --defsym=D_800A2708GC=D_800A2708 \
-            --defsym=D_800A270CGC=D_800A270C \
+            --defsym=_spu_AllocBlockNum=D_800A2704 \
+            --defsym=_spu_AllocLastNum=D_800A2708 \
+            --defsym=_spu_rev_reserve_wa=D_800A224C \
+            --defsym=_spu_rev_offsetaddr=D_800A2250 \
+            --defsym=_spu_mem_mode_plus=D_800A26D0 \
+            --defsym=_spu_mem_mode_unitM=D_800A26D8 \
+            --defsym=_spu_memList=D_800A270C \
             --defsym=D_800A26ACVA=D_800A26AC \
             --defsym=D_800A2710Clear=D_800A2710 \
             --defsym=D_800A2298Clear=D_800A2298 \

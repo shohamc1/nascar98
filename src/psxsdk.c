@@ -8960,288 +8960,194 @@ s32 SpuInitMalloc(s32 num, s32 *table) {
     return 0;
 }
 
-#ifdef NON_MATCHING
-typedef struct {
+/* The SPU memory list that SpuMalloc and SpuFree keep. Entry flags sit in
+ * the top bits of the address word. */
+typedef struct tagSpuMalloc {
     u32 addr;
     u32 size;
-} SpuMallocCandidateItem;
-extern s32 D_800A224CMalloc[];
-extern s32 D_800A2250Malloc[];
-extern s32 D_800A26D0Malloc[];
-extern s32 D_800A26D8Malloc[];
-extern s32 D_800A2704Malloc[];
-extern s32 D_800A2708Malloc[];
-extern void *D_800A270CMalloc[];
+} SPU_MALLOC;
+
+#define SPU_MALLOC_DEAD_ENTRY (1 << 29)
+#define SPU_MALLOC_END_MARKER (1 << 30)
+#define SPU_MALLOC_FREE_ENTRY (1 << 31)
+#define SPU_MALLOC_ADDR_MASK (~0xF0000000)
+#define SPU_MALLOC_DEAD_MARKER (SPU_MALLOC_DEAD_ENTRY | 0x0FFFFFFF)
+
+#define BLK(i) (&((SPU_MALLOC *)_spu_memList)[i])
+#define BLK_IS_FREE(i) (BLK(i)->addr & SPU_MALLOC_FREE_ENTRY)
+#define BLK_IS_END(i) (BLK(i)->addr & SPU_MALLOC_END_MARKER)
+#define BLK_IS_DEAD_MARK(i) (BLK(i)->addr == SPU_MALLOC_DEAD_MARKER)
+#define BLK_ADDR(i) (BLK(i)->addr & SPU_MALLOC_ADDR_MASK)
+#define BLK_ADDR_END(i) (BLK_ADDR(i) + BLK(i)->size)
+#define BLK_SWAP(dst, src)                                                     \
+    {                                                                          \
+        u32 addr, size;                                                        \
+        addr = (src)->addr;                                                    \
+        size = (src)->size;                                                    \
+        (src)->addr = (dst)->addr;                                             \
+        (src)->size = (dst)->size;                                             \
+        (dst)->addr = addr;                                                    \
+        (dst)->size = size;                                                    \
+    }
+
 extern void _spu_gcSPU(void);
-/* Retry 2026-10-11: 704/712 bytes; keep the assembly fallback. */
-s32 SpuMalloc(s32 arg0) {
-    s32 temp_a0;
-    s32 temp_a0_2;
-    s32 temp_a1;
-    s32 temp_v1;
-    s32 temp_v1_2;
-    s32 var_a0;
-    s32 var_s0;
-    s32 var_s2;
-    s32 var_s3;
-    s32 var_v0;
-    u32 temp_t0;
-    void *temp_a2;
-    void *temp_v0;
-    void *temp_v1_3;
-    void *temp_v1_4;
-    void *var_a0_2;
 
-    var_s0 = 0;
-    var_s2 = -1;
-    if (D_800A224CMalloc[0] == 0) {
-        var_s3 = 0;
+extern s32 _spu_AllocBlockNum;
+extern s32 _spu_AllocLastNum;
+extern s8 *_spu_memList;
+extern s32 _spu_rev_reserve_wa;
+extern s32 _spu_rev_offsetaddr;
+
+/* Returns the SPU address of a block of at least size bytes, or -1. */
+long SpuMalloc(long size) {
+    s32 rounded;
+    s32 found;
+    s32 reserve;
+    s32 i;
+
+    i = 0;
+    found = -1;
+
+    if (_spu_rev_reserve_wa == 0) {
+        reserve = 0;
     } else {
-        var_s3 = (0x10000 - D_800A2250Malloc[0]) << D_800A26D0Malloc[0];
+        reserve = (0x10000 - _spu_rev_offsetaddr) << _spu_mem_mode_plus;
     }
-    var_a0 = arg0;
-    if (arg0 & ~D_800A26D8Malloc[0]) {
-        var_a0 = arg0 + D_800A26D8Malloc[0];
+
+    rounded = size;
+    if (size & ~_spu_mem_mode_unitM) {
+        rounded += _spu_mem_mode_unitM;
     }
-    arg0 = (var_a0 >> D_800A26D0Malloc[0]) << D_800A26D0Malloc[0];
-    if (*(s32 *)D_800A270CMalloc[0] & 0x40000000) {
-        var_s2 = 0;
+
+    size = rounded;
+    size >>= _spu_mem_mode_plus;
+    size <<= _spu_mem_mode_plus;
+
+    if (BLK_IS_END(0)) {
+        found = 0;
     } else {
         _spu_gcSPU();
-        if (var_s0 < D_800A2704Malloc[0]) {
-            var_a0_2 = (var_s0 * 8) + D_800A270CMalloc[0];
-        loop_9:
-            temp_v1 = *(s32 *)((u8 *)var_a0_2 + 0x0);
-            if ((temp_v1 & 0x40000000) ||
-                ((temp_v1 & 0x80000000) &&
-                 ((u32) * (s32 *)((u8 *)var_a0_2 + 0x4) >= arg0))) {
-                var_s2 = var_s0;
-            } else {
-                var_s0 += 1;
-                var_a0_2 += 8;
-                if (var_s0 < D_800A2704Malloc[0]) {
-                    goto loop_9;
-                }
+
+        for (; i < _spu_AllocBlockNum; i++) {
+            if (BLK_IS_END(i) || (BLK_IS_FREE(i) && BLK(i)->size >= size)) {
+                found = i;
+                break;
             }
         }
     }
-    var_v0 = -1;
-    var_s0 = var_s2 * 8;
-    if (var_s2 != -1) {
-        temp_a2 = var_s0 + D_800A270CMalloc[0];
-        temp_v1_2 = *(s32 *)((u8 *)temp_a2 + 0x0);
-        if (temp_v1_2 & 0x40000000) {
-            var_v0 = -1;
-            if (var_s2 < D_800A2704Malloc[0]) {
-                var_v0 = -1;
-                if ((u32)(*(s32 *)((u8 *)temp_a2 + 0x4) - var_s3) >= arg0) {
-                    temp_a0 = var_s2 + 1;
-                    temp_v1_3 = (temp_a0 * 8) + D_800A270CMalloc[0];
-                    *(s32 *)((u8 *)temp_v1_3 + 0x0) =
-                        (s32)(((*(s32 *)((u8 *)temp_a2 + 0x0) & 0x0FFFFFFF) +
-                               arg0) |
-                              0x40000000);
-                    *(s32 *)((u8 *)temp_v1_3 + 0x4) =
-                        (s32)(*(s32 *)((u8 *)temp_a2 + 0x4) - arg0);
-                    D_800A2708Malloc[0] = temp_a0;
-                    *(s32 *)((u8 *)temp_a2 + 0x4) = arg0;
-                    *(s32 *)((u8 *)temp_a2 + 0x0) =
-                        (s32)(*(s32 *)((u8 *)temp_a2 + 0x0) & 0x0FFFFFFF);
-                    _spu_gcSPU();
-                    return *(s32 *)((u8 *)D_800A270CMalloc[0] + var_s0);
-                }
-            }
-            /* Duplicate return node #23. Try simplifying control flow for better match */
-            return var_v0;
-        }
-        temp_t0 = *(s32 *)((u8 *)temp_a2 + 0x4);
-        var_s0 = var_s2 * 8;
-        if ((arg0 < temp_t0) && (D_800A2708Malloc[0] < D_800A2704Malloc[0])) {
-            temp_v0 = (D_800A2708Malloc[0] * 8) + D_800A270CMalloc[0];
-            temp_a1 = *(s32 *)((u8 *)temp_v0 + 0x0);
-            temp_a0_2 = *(s32 *)((u8 *)temp_v0 + 0x4);
-            *(s32 *)((u8 *)temp_v0 + 0x0) =
-                (s32)(((u32)arg0 + temp_v1_2) | 0x80000000);
-            *(s32 *)((u8 *)temp_v0 + 0x4) = (s32)(temp_t0 - arg0);
-            D_800A2708Malloc[0] += 1;
-            *(s32 *)((u8 *)temp_v0 + 0x8) = temp_a1;
-            *(s32 *)((u8 *)temp_v0 + 0xC) = temp_a0_2;
-        }
-        temp_v1_4 = var_s0 + D_800A270CMalloc[0];
-        *(s32 *)((u8 *)temp_v1_4 + 0x4) = arg0;
-        *(s32 *)((u8 *)temp_v1_4 + 0x0) =
-            (s32)(*(s32 *)((u8 *)temp_v1_4 + 0x0) & 0x0FFFFFFF);
-        _spu_gcSPU();
-        var_v0 = *(s32 *)((u8 *)D_800A270CMalloc[0] + var_s0);
-        /* Duplicate return node #23. Try simplifying control flow for better match */
-        return var_v0;
+
+    if (found == -1) {
+        return -1;
     }
-    return var_v0;
+
+    if (BLK_IS_END(found)) {
+        if (found < _spu_AllocBlockNum && BLK(found)->size - reserve >= size) {
+            s32 next = found + 1;
+
+            BLK(next)->addr =
+                (*(volatile u32 *)&BLK(found)->addr & SPU_MALLOC_ADDR_MASK) +
+                size;
+            BLK(next)->addr |= SPU_MALLOC_END_MARKER;
+            BLK(next)->size = BLK(found)->size - size;
+
+            BLK(found)->addr &= SPU_MALLOC_ADDR_MASK;
+            BLK(found)->size = size;
+
+            _spu_AllocLastNum = next;
+            _spu_gcSPU();
+
+            return BLK(found)->addr;
+        }
+    } else {
+        if (size < BLK(found)->size && _spu_AllocLastNum < _spu_AllocBlockNum) {
+            u32 tAddr, tSize;
+            u32 addr = BLK(found)->addr + size;
+            u32 left = BLK(found)->size - size;
+
+            tAddr = BLK(_spu_AllocLastNum)->addr;
+            tSize = BLK(_spu_AllocLastNum)->size;
+
+            BLK(_spu_AllocLastNum)->addr = addr | SPU_MALLOC_FREE_ENTRY;
+            BLK(_spu_AllocLastNum)->size = left;
+
+            BLK(_spu_AllocLastNum + 1)->addr = tAddr;
+            BLK(_spu_AllocLastNum + 1)->size = tSize;
+
+            _spu_AllocLastNum++;
+        }
+
+        BLK(found)->size = size;
+        BLK(found)->addr = BLK_ADDR(found);
+        _spu_gcSPU();
+
+        return BLK(found)->addr;
+    }
+
+    return -1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuMalloc);
-#endif
 
-#ifdef NON_MATCHING
-extern s32 D_800A2708GC[];
-extern void *D_800A270CGC[];
-/* Retry 2026-10-11: 800/768 bytes; reload the table for each pass. */
+/* Merges adjacent free blocks, drops empty ones, sorts the rest by address,
+ * and trims free blocks off the end of the list. */
 void _spu_gcSPU(void) {
-    void *table;
-    s32 *var_v1;
-    s32 temp_a1_2;
-    s32 temp_a3;
-    s32 temp_v1;
-    s32 temp_v1_2;
-    s32 temp_v1_3;
-    s32 temp_v1_4;
-    s32 temp_v1_5;
-    s32 var_a2;
-    s32 var_a2_2;
-    s32 var_t1;
-    s32 var_t1_2;
-    s32 var_t1_3;
-    s32 var_t1_4;
-    s32 var_t1_5;
-    void *temp_a1;
-    void *temp_v0;
-    void *var_a0;
-    void *var_a0_2;
-    void *var_a0_3;
-    void *var_a3;
-    void *var_t2;
-    void *var_v1_2;
+    s32 i, j;
 
-    var_t1 = 0;
-    if (D_800A2708GC[0] >= 0) {
-        table = D_800A270CGC[0];
-        var_a3 = table;
-        do {
-            var_a2 = var_t1 + 1;
-            if (*(s32 *)((u8 *)var_a3 + 0x0) & 0x80000000) {
-                var_v1 = (s32 *)((u8 *)table + (var_a2 * 8));
-            loop_4:
-                if (*var_v1 == 0x2FFFFFFF) {
-                    var_a2 += 1;
-                    var_v1 = (s32 *)((u8 *)var_v1 + 8);
-                    goto loop_4;
+    for (i = 0; i <= _spu_AllocLastNum;) {
+        if (BLK_IS_FREE(i)) {
+            for (j = i + 1; 1; j++) {
+                if (!BLK_IS_DEAD_MARK(j)) {
+                    break;
                 }
-                temp_a1 = (var_a2 * 8) + table;
-                temp_v1 = *(s32 *)((u8 *)temp_a1 + 0x0);
-                if ((temp_v1 & 0x80000000) &&
-                    ((temp_v1 & 0x0FFFFFFF) ==
-                     ((*(s32 *)((u8 *)var_a3 + 0x0) & 0x0FFFFFFF) +
-                      *(s32 *)((u8 *)var_a3 + 0x4)))) {
-                    *(s32 *)((u8 *)temp_a1 + 0x0) = 0x2FFFFFFF;
-                    *(s32 *)((u8 *)var_a3 + 0x4) =
-                        (s32)(*(s32 *)((u8 *)var_a3 + 0x4) +
-                              *(s32 *)((u8 *)temp_a1 + 0x4));
-                } else {
-                    goto block_9;
-                }
-            } else {
-            block_9:
-                var_a3 += 8;
-                var_t1 += 1;
             }
-        } while (D_800A2708GC[0] >= var_t1);
+            if (BLK_IS_FREE(j) && BLK_ADDR(j) == BLK_ADDR_END(i)) {
+                BLK(j)->addr = SPU_MALLOC_DEAD_MARKER;
+                BLK(i)->size += BLK(j)->size;
+                continue;
+            }
+        }
+        i++;
     }
-    var_t1_2 = 0;
-    if (D_800A2708GC[0] >= 0) {
-        table = D_800A270CGC[0];
-        var_v1_2 = table;
-        do {
-            var_t1_2 += 1;
-            if (*(s32 *)((u8 *)var_v1_2 + 0x4) == 0) {
-                *(s32 *)((u8 *)var_v1_2 + 0x0) = 0x2FFFFFFF;
-            }
-            var_v1_2 += 8;
-        } while (D_800A2708GC[0] >= var_t1_2);
+
+    for (i = 0; i <= _spu_AllocLastNum; i++) {
+        if (BLK(i)->size == 0) {
+            BLK(i)->addr = SPU_MALLOC_DEAD_MARKER;
+        }
     }
-    var_t1_3 = 0;
-    if (D_800A2708GC[0] >= 0) {
-        table = D_800A270CGC[0];
-        var_t2 = table;
-    loop_19:
-        if (!(*(s32 *)((u8 *)var_t2 + 0x0) & 0x40000000)) {
-            var_a2_2 = var_t1_3 + 1;
-            if (D_800A2708GC[0] >= var_a2_2) {
-                var_a0 = (var_a2_2 * 8) + table;
-            loop_22:
-                temp_a1_2 = *(s32 *)((u8 *)var_a0 + 0x0);
-                if (!(temp_a1_2 & 0x40000000)) {
-                    temp_a3 = *(s32 *)((u8 *)var_t2 + 0x0);
-                    var_a2_2 += 1;
-                    if ((u32)(temp_a1_2 & 0x0FFFFFFF) <
-                        (u32)(temp_a3 & 0x0FFFFFFF)) {
-                        *(s32 *)((u8 *)var_t2 + 0x0) = temp_a1_2;
-                        temp_v1_2 = *(s32 *)((u8 *)var_t2 + 0x4);
-                        *(s32 *)((u8 *)var_t2 + 0x4) =
-                            (s32) * (s32 *)((u8 *)var_a0 + 0x4);
-                        *(s32 *)((u8 *)var_a0 + 0x0) = temp_a3;
-                        *(s32 *)((u8 *)var_a0 + 0x4) = temp_v1_2;
-                    }
-                    var_a0 += 8;
-                    if (D_800A2708GC[0] >= var_a2_2) {
-                        goto loop_22;
-                    }
-                }
+
+    for (i = 0; i <= _spu_AllocLastNum; i++) {
+        if (BLK_IS_END(i)) {
+            break;
+        }
+        for (j = i + 1; j <= _spu_AllocLastNum; j++) {
+            if (BLK_IS_END(j)) {
+                break;
             }
-            var_t1_3 += 1;
-            var_t2 += 8;
-            if (D_800A2708GC[0] >= var_t1_3) {
-                goto loop_19;
+            if (BLK_ADDR(j) < BLK_ADDR(i)) {
+                BLK_SWAP(BLK(j), BLK(i));
             }
         }
     }
-    var_t1_4 = 0;
-    if (D_800A2708GC[0] >= 0) {
-        table = D_800A270CGC[0];
-        var_a0_2 = table;
-    loop_29:
-        temp_v1_3 = *(s32 *)((u8 *)var_a0_2 + 0x0);
-        if (!(temp_v1_3 & 0x40000000)) {
-            if (temp_v1_3 == 0x2FFFFFFF) {
-                temp_v0 = (D_800A2708GC[0] * 8) + table;
-                *(s32 *)((u8 *)var_a0_2 + 0x0) =
-                    (s32) * (s32 *)((u8 *)temp_v0 + 0x0);
-                D_800A2708GC[0] = var_t1_4;
-                *(s32 *)((u8 *)var_a0_2 + 0x4) =
-                    (s32) * (s32 *)((u8 *)temp_v0 + 0x4);
-            } else {
-                var_t1_4 += 1;
-                var_a0_2 += 8;
-                if (D_800A2708GC[0] >= var_t1_4) {
-                    goto loop_29;
-                }
-            }
+
+    for (i = 0; i <= _spu_AllocLastNum; i++) {
+        if (BLK_IS_END(i)) {
+            break;
+        }
+        if (BLK_IS_DEAD_MARK(i)) {
+            BLK(i)->addr = BLK(_spu_AllocLastNum)->addr;
+            BLK(i)->size = BLK(_spu_AllocLastNum)->size;
+            _spu_AllocLastNum = i;
+            break;
         }
     }
-    var_t1_5 = D_800A2708GC[0] - 1;
-    if (var_t1_5 >= 0) {
-        table = D_800A270CGC[0];
-        var_a0_3 = (var_t1_5 * 8) + table;
-    loop_35:
-        temp_v1_4 = *(s32 *)((u8 *)var_a0_3 + 0x0);
-        if (temp_v1_4 & 0x80000000) {
-            temp_v1_5 = D_800A2708GC[0];
-            *(s32 *)((u8 *)var_a0_3 + 0x0) =
-                (s32)((temp_v1_4 & 0x0FFFFFFF) | 0x40000000);
-            D_800A2708GC[0] = var_t1_5;
-            var_t1_5 -= 1;
-            *(s32 *)((u8 *)var_a0_3 + 0x4) =
-                (s32)(*(s32 *)((u8 *)var_a0_3 + 0x4) +
-                      *(s32 *)((u8 *)table + (temp_v1_5 * 8) + 4));
-            var_a0_3 -= 8;
-            if (var_t1_5 >= 0) {
-                goto loop_35;
-            }
+
+    for (i = _spu_AllocLastNum - 1; i >= 0; i--) {
+        if (BLK_IS_FREE(i) == 0) {
+            break;
         }
+        BLK(i)->addr = BLK_ADDR(i) | SPU_MALLOC_END_MARKER;
+        BLK(i)->size += BLK(_spu_AllocLastNum)->size;
+        _spu_AllocLastNum = i;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_gcSPU);
-#endif
 
 /* Adapted from Sozud's MIT-licensed Psy-Q 3.5 source, src/spu/s_m_f.c. */
 typedef struct SpuMallocItem {
