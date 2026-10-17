@@ -9263,360 +9263,299 @@ void SpuSetVoiceAttr(SpuVoiceAttr *arg) {
     _SpuSetVoiceAttr(arg, 0, 23, 0);
 }
 
-#ifdef NON_MATCHING
-extern volatile u16 *D_800A26ACVA[];
 extern u16 _spu_note2pitch();
-s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg0, s32 arg1, s32 arg2, s32 arg3) {
-    /* Keep the SPU delay loop when optimization is enabled. */
-    volatile s32 sp10;
-    volatile s32 sp14;
-    s16 temp_a0;
-    s16 temp_a0_2;
-    s16 temp_v1_10;
-    s16 temp_v1_9;
-    s32 temp_s1;
-    s32 temp_s2;
-    s32 temp_s3;
-    s32 temp_v1;
-    s32 temp_v1_5;
-    s32 temp_v1_7;
-    s32 var_a1;
-    s32 var_a1_2;
-    s32 var_a1_3;
-    s32 var_a1_4;
-    s32 var_a1_5;
-    s32 var_a1_6;
-    s32 var_s4;
-    s32 var_s7;
-    s32 var_v0;
-    s32 var_v0_2;
-    s32 var_v0_3;
-    s32 var_v0_4;
-    s32 var_v0_5;
-    u16 temp_a1;
-    u16 temp_a3;
-    u16 var_a2;
-    u16 var_a2_2;
-    u16 var_a2_3;
-    u16 var_a2_4;
-    u16 var_a2_5;
-    u16 var_s5;
-    u16 var_s6;
-    void *temp_v1_2;
-    void *temp_v1_3;
-    void *temp_v1_4;
-    void *temp_v1_6;
-    void *temp_v1_8;
+extern volatile u16 *D_800A26ACVA[];
+s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
+    volatile s32 i;
+    volatile s32 delay;
+    s32 ch;
+    s32 ch8;
+    u32 attrMask;
+    s32 maskFlag;
+    u16 vl;
+    u16 vr;
+    s32 mode;
+    u16 rate;
+    u16 note;
+    u16 pitchNote;
+    volatile u16 *voice;
 
-    var_a1 = arg1;
-    var_s7 = arg2;
-    var_s6 = 0;
-    temp_s1 = (*(u32 *)((u8 *)arg0 + 0x4));
-    var_s5 = 0;
-    temp_s2 = temp_s1 == 0;
-    if (var_a1 < 0) {
-        var_a1 = 0;
+    vl = 0;
+    vr = 0;
+    attrMask = arg->mask;
+    maskFlag = attrMask == 0;
+    if (min < 0) {
+        min = 0;
     }
-    if (var_a1 < 0x18) {
-        if (var_s7 >= 0x18) {
-            var_s7 = 0x17;
+    if (min >= 24) {
+        return -3;
+    }
+    if (max >= 24) {
+        max = 23;
+    }
+    if (max < 0 || max < min) {
+        return -3;
+    }
+    max++;
+    for (ch = min; ch < max; ch++) {
+        if (!((1 << ch) & arg->voice)) {
+            continue;
         }
-        if ((var_s7 < 0) || (var_s7 < var_a1)) {
-            goto block_7;
+        ch8 = ch << 3;
+        if (maskFlag || (attrMask & 0x10)) {
+            D_800A26ACVA[0][ch * 8 + 2] = arg->pitch;
         }
-        var_s7++;
-        var_s4 = var_a1;
-        if (var_s4 < var_s7) {
-            do {
-                if ((1 << var_s4) & (*(u32 *)((u8 *)arg0 + 0x0))) {
-                    temp_s3 = var_s4 * 8;
-                    if ((temp_s2 != 0) || (temp_s1 & 0x10)) {
-                        *(u16 *)((u8 *)D_800A26ACVA[0] + (var_s4 * 0x10) + 4) =
-                            (u16)(*(u16 *)((u8 *)arg0 + 0x14));
-                    }
-                    if ((temp_s2 != 0) || (temp_s1 & 0x40)) {
-                        gSpuVoiceCenterNotes[var_s4] =
-                            (*(u16 *)((u8 *)arg0 + 0x18));
-                    }
-                    var_v0 = var_s4 * 2;
-                    if ((temp_s2 != 0) ||
-                        (var_v0 = var_s4 * 2, ((temp_s1 & 0x20) != 0))) {
-                        temp_a1 = *(s16 *)((u8 *)gSpuVoiceCenterNotes + var_v0);
-                        temp_a3 = (*(u16 *)((u8 *)arg0 + 0x16));
-                        *(u16 *)((u8 *)D_800A26ACVA[0] + (temp_s3 * 2) + 4) =
-                            _spu_note2pitch(temp_a1 >> 8, temp_a1 & 0xFF,
-                                            temp_a3 >> 8, temp_a3 & 0xFF);
-                    }
-                    if ((temp_s2 != 0) || (temp_s1 & 0x80)) {
-                        _spu_FsetRXXa(temp_s3 | 3,
-                                      (*(u32 *)((u8 *)arg0 + 0x1c)));
-                    }
-                    if (temp_s2 == 0) {
-                        if (temp_s1 & 0x800) {
-                            var_a1_2 = 0;
-                            if (temp_s1 & 0x100) {
-                                goto block_25;
-                            }
-                            goto block_29;
-                        }
-                    } else {
-                    block_25:
-                        temp_v1 = (*(s32 *)((u8 *)arg0 + 0x24));
-                        if (temp_v1 != 1) {
-                            var_a1_2 = 0;
-                            if (temp_v1 == 5) {
-                                var_a1_2 = 0x80;
-                            }
-                        } else {
-                            var_a1_2 = 0;
-                        }
-                    block_29:
-                        var_a2 = 0x7F;
-                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x30)) < 0x80U) {
-                            var_a2 = (*(u16 *)((u8 *)arg0 + 0x30));
-                        }
-                        temp_v1_2 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
-                        *(u16 *)((u8 *)temp_v1_2 + 0x8) =
-                            (u16)((*(u16 *)((u8 *)temp_v1_2 + 0x8) & 0xFF) |
-                                  ((var_a2 | var_a1_2) << 8));
-                    }
-                    if ((temp_s2 != 0) || (temp_s1 & 0x1000)) {
-                        var_a2_2 = 0xF;
-                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x32)) < 0x10U) {
-                            var_a2_2 = (*(u16 *)((u8 *)arg0 + 0x32));
-                        }
-                        temp_v1_3 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
-                        *(u16 *)((u8 *)temp_v1_3 + 0x8) =
-                            (u16)((*(u16 *)((u8 *)temp_v1_3 + 0x8) & 0xFF0F) |
-                                  (var_a2_2 * 0x10));
-                    }
-                    if ((temp_s2 != 0) || (temp_s1 & 0x8000)) {
-                        var_a2_3 = 0xF;
-                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x38)) < 0x10U) {
-                            var_a2_3 = (*(u16 *)((u8 *)arg0 + 0x38));
-                        }
-                        temp_v1_4 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
-                        *(u16 *)((u8 *)temp_v1_4 + 0x8) =
-                            (u16)(var_a2_3 |
-                                  (*(u16 *)((u8 *)temp_v1_4 + 0x8) & 0xFFF0));
-                    }
-                    if (temp_s2 == 0) {
-                        if (temp_s1 & 0x2000) {
-                            var_a1_3 = 0;
-                            if (temp_s1 & 0x200) {
-                                goto block_45;
-                            }
-                            goto block_54;
-                        }
-                    } else {
-                    block_45:
-                        temp_v1_5 = (*(s32 *)((u8 *)arg0 + 0x28));
-                        if (temp_v1_5 != 3) {
-                            if (temp_v1_5 < 4) {
-                                var_a1_3 = 0;
-                                if (temp_v1_5 != 1) {
-                                    var_a1_3 = 0x100;
-                                }
-                            } else if (temp_v1_5 != 5) {
-                                var_a1_3 = 0x300;
-                                if (temp_v1_5 != 7) {
-                                    var_a1_3 = 0x100;
-                                }
-                            } else {
-                                var_a1_3 = 0x200;
-                            }
-                        } else {
-                            var_a1_3 = 0x100;
-                        }
-                    block_54:
-                        var_a2_4 = 0x7F;
-                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x34)) < 0x80U) {
-                            var_a2_4 = (*(u16 *)((u8 *)arg0 + 0x34));
-                        }
-                        temp_v1_6 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
-                        *(u16 *)((u8 *)temp_v1_6 + 0xA) =
-                            (u16)((*(u16 *)((u8 *)temp_v1_6 + 0xA) & 0x3F) |
-                                  ((var_a2_4 | var_a1_3) << 6));
-                    }
-                    if (temp_s2 == 0) {
-                        if (temp_s1 & 0x4000) {
-                            var_a1_4 = 0;
-                            if (temp_s1 & 0x400) {
-                                goto block_60;
-                            }
-                            goto block_64;
-                        }
-                    } else {
-                    block_60:
-                        temp_v1_7 = (*(s32 *)((u8 *)arg0 + 0x2c));
-                        if (temp_v1_7 != 3) {
-                            var_a1_4 = 0;
-                            if (temp_v1_7 == 7) {
-                                var_a1_4 = 0x20;
-                            }
-                        } else {
-                            var_a1_4 = 0;
-                        }
-                    block_64:
-                        var_a2_5 = 0x1F;
-                        if ((u16)(*(u16 *)((u8 *)arg0 + 0x36)) < 0x20U) {
-                            var_a2_5 = (*(u16 *)((u8 *)arg0 + 0x36));
-                        }
-                        temp_v1_8 = (temp_s3 * 2) + (u8 *)D_800A26ACVA[0];
-                        *(u16 *)((u8 *)temp_v1_8 + 0xA) =
-                            (u16)((*(u16 *)((u8 *)temp_v1_8 + 0xA) & 0xFFC0) |
-                                  (var_a2_5 | var_a1_4));
-                    }
-                    var_v0_2 = temp_s3 * 2;
-                    if ((temp_s2 != 0) ||
-                        (var_v0_2 = temp_s3 * 2, ((temp_s1 & 0x20000) != 0))) {
-                        *(u16 *)((u8 *)D_800A26ACVA[0] + var_v0_2 + 8) =
-                            (u16)(*(u16 *)((u8 *)arg0 + 0x3a));
-                    }
-                    var_v0_3 = temp_s3 * 2;
-                    if ((temp_s2 != 0) ||
-                        (var_v0_3 = temp_s3 * 2, ((temp_s1 & 0x40000) != 0))) {
-                        *(u16 *)((u8 *)D_800A26ACVA[0] + var_v0_3 + 0xA) =
-                            (u16)(*(u16 *)((u8 *)arg0 + 0x3c));
-                    }
-                    if ((temp_s2 != 0) || (temp_s1 & 0x10000)) {
-                        _spu_FsetRXXa(temp_s3 | 7,
-                                      (*(u32 *)((u8 *)arg0 + 0x20)));
-                    }
-                    if (temp_s2 == 0) {
-                        if (temp_s1 & 1) {
-                            if (temp_s1 & 4) {
-                                goto block_79;
-                            }
-                            goto block_88;
-                            goto block_89;
-                        }
-                    } else {
-                    block_79:
-                        temp_v1_9 = (*(u16 *)((u8 *)arg0 + 0xc));
-                        switch (temp_v1_9) { /* switch 1 */
-                        case 1:              /* switch 1 */
-                            var_a1_5 = 0x8000;
-                            break;
-                        case 2: /* switch 1 */
-                            var_a1_5 = 0x9000;
-                            break;
-                        case 3: /* switch 1 */
-                            var_a1_5 = 0xA000;
-                            break;
-                        case 4: /* switch 1 */
-                            var_a1_5 = 0xB000;
-                            break;
-                        case 5: /* switch 1 */
-                            var_a1_5 = 0xC000;
-                            break;
-                        case 6: /* switch 1 */
-                            var_a1_5 = 0xD000;
-                            break;
-                        case 7: /* switch 1 */
-                            var_a1_5 = 0xE000;
-                            break;
-                        default: /* switch 1 */
-                        block_88:
-                            var_s6 = (*(u16 *)((u8 *)arg0 + 0x8));
-                            var_a1_5 = 0;
-                            break;
-                        }
-                    block_89:
-                        var_v0_4 = var_s6 & 0x7FFF;
-                        if (var_a1_5 != 0) {
-                            temp_a0 = (s16)(*(u16 *)((u8 *)arg0 + 0x8));
-                            if (temp_a0 >= 0x80) {
-                                var_s6 = 0x7F;
-                            } else {
-                                var_s6 = (u16)temp_a0;
-                                if (temp_a0 < 0) {
-                                    var_s6 = 0;
-                                }
-                            }
-                            var_v0_4 = var_s6 & 0x7FFF;
-                        }
-                        *(u16 *)((temp_s3 * 2) + (u8 *)D_800A26ACVA[0]) =
-                            var_v0_4 | var_a1_5;
-                    }
-                    if (temp_s2 == 0) {
-                        if (temp_s1 & 2) {
-                            if (temp_s1 & 8) {
-                                goto block_99;
-                            }
-                            goto block_108;
-                            goto block_109;
-                        }
-                    } else {
-                    block_99:
-                        temp_v1_10 = (*(u16 *)((u8 *)arg0 + 0xe));
-                        switch (temp_v1_10) { /* switch 2 */
-                        case 1:               /* switch 2 */
-                            var_a1_6 = 0x8000;
-                            break;
-                        case 2: /* switch 2 */
-                            var_a1_6 = 0x9000;
-                            break;
-                        case 3: /* switch 2 */
-                            var_a1_6 = 0xA000;
-                            break;
-                        case 4: /* switch 2 */
-                            var_a1_6 = 0xB000;
-                            break;
-                        case 5: /* switch 2 */
-                            var_a1_6 = 0xC000;
-                            break;
-                        case 6: /* switch 2 */
-                            var_a1_6 = 0xD000;
-                            break;
-                        case 7: /* switch 2 */
-                            var_a1_6 = 0xE000;
-                            break;
-                        default: /* switch 2 */
-                        block_108:
-                            var_s5 = (*(u16 *)((u8 *)arg0 + 0xa));
-                            var_a1_6 = 0;
-                            break;
-                        }
-                    block_109:
-                        var_v0_5 = var_s5 & 0x7FFF;
-                        if (var_a1_6 != 0) {
-                            temp_a0_2 = (s16)(*(u16 *)((u8 *)arg0 + 0xa));
-                            if (temp_a0_2 >= 0x80) {
-                                var_s5 = 0x7F;
-                            } else {
-                                var_s5 = (u16)temp_a0_2;
-                                if (temp_a0_2 < 0) {
-                                    var_s5 = 0;
-                                }
-                            }
-                            var_v0_5 = var_s5 & 0x7FFF;
-                        }
-                        *(u16 *)((u8 *)D_800A26ACVA[0] + (temp_s3 * 2) + 2) =
-                            (s16)(var_v0_5 | var_a1_6);
-                    }
+        if (maskFlag || (attrMask & 0x40)) {
+            gSpuVoiceCenterNotes[ch] = arg->sample_note;
+        }
+        if (maskFlag || (attrMask & 0x20)) {
+            note = gSpuVoiceCenterNotes[ch];
+            pitchNote = arg->note;
+            D_800A26ACVA[0][ch8 + 2] = _spu_note2pitch(
+                note >> 8, note & 0xFF, pitchNote >> 8, pitchNote & 0xFF);
+        }
+        if (maskFlag || (attrMask & 0x80)) {
+            _spu_FsetRXXa(ch8 | 3, arg->addr);
+        }
+        if (maskFlag || (attrMask & 0x800)) {
+            if (maskFlag || (attrMask & 0x100)) {
+                switch (arg->a_mode) {
+                case 1:
+                    mode = 0;
+                    break;
+                case 5:
+                    mode = 0x80;
+                    break;
+                default:
+                    mode = 0;
+                    break;
                 }
-                var_s4 += 1;
-            } while (var_s4 < var_s7);
-        }
-        if (arg3 == 0) {
-            sp14 = 1;
-            sp10 = 0;
-        loop_120:
-            if (sp10 < 2) {
-                sp14 *= 0xD;
-                sp10 += 1;
-                goto loop_120;
+            } else {
+                mode = 0;
+            }
+            rate = 0x7F;
+            if (arg->ar < 0x80) {
+                rate = arg->ar;
+            }
+            {
+                register s32 value asm("$2");
+                register s32 low asm("$4");
+                value = D_800A26ACVA[0][ch8 + 4];
+                asm("andi %0,%1,0xFF" : "=r"(low) : "r"(value));
+                value = (rate | mode) << 8;
+                value = low | value;
+                D_800A26ACVA[0][ch8 + 4] = value;
             }
         }
-        return 0;
+        if (maskFlag || (attrMask & 0x1000)) {
+            if (arg->dr >= 0x10) {
+                rate = 0xF;
+            } else {
+                rate = arg->dr;
+            }
+            {
+                register s32 value asm("$2");
+                register s32 low asm("$4");
+                value = D_800A26ACVA[0][ch8 + 4];
+                asm("andi %0,%1,0xFF0F" : "=r"(low) : "r"(value));
+                value = rate << 4;
+                value = low | value;
+                D_800A26ACVA[0][ch8 + 4] = value;
+            }
+        }
+        if (maskFlag || (attrMask & 0x8000)) {
+            if (arg->sl >= 0x10) {
+                rate = 0xF;
+            } else {
+                rate = arg->sl;
+            }
+            D_800A26ACVA[0][ch8 + 4] =
+                rate | (D_800A26ACVA[0][ch8 + 4] & 0xFFF0);
+        }
+        if (maskFlag || (attrMask & 0x2000)) {
+            if (maskFlag || (attrMask & 0x200)) {
+                switch (arg->s_mode) {
+                case 1:
+                    mode = 0;
+                    break;
+                case 3:
+                    mode = 0x100;
+                    break;
+                case 5:
+                    mode = 0x200;
+                    break;
+                case 7:
+                    mode = 0x300;
+                    break;
+                default:
+                    mode = 0x100;
+                    break;
+                }
+            } else {
+                mode = 0;
+            }
+            rate = 0x7F;
+            if (arg->sr < 0x80) {
+                rate = arg->sr;
+            }
+            {
+                register s32 value asm("$2");
+                register s32 low asm("$4");
+                value = D_800A26ACVA[0][ch8 + 5];
+                asm("andi %0,%1,0x3F" : "=r"(low) : "r"(value));
+                value = (rate | mode) << 6;
+                value = low | value;
+                D_800A26ACVA[0][ch8 + 5] = value;
+            }
+        }
+        if (maskFlag || (attrMask & 0x4000)) {
+            if (maskFlag || (attrMask & 0x400)) {
+                switch (arg->r_mode) {
+                case 3:
+                    mode = 0;
+                    break;
+                case 7:
+                    mode = 0x20;
+                    break;
+                default:
+                    mode = 0;
+                    break;
+                }
+            } else {
+                mode = 0;
+            }
+            rate = 0x1F;
+            if (arg->rr < 0x20) {
+                rate = arg->rr;
+            }
+            {
+                register s32 value asm("$2");
+                register s32 low asm("$4");
+                value = D_800A26ACVA[0][ch8 + 5];
+                asm("andi %0,%1,0xFFC0" : "=r"(low) : "r"(value));
+                value = rate | mode;
+                value = low | value;
+                D_800A26ACVA[0][ch8 + 5] = value;
+            }
+        }
+        if (maskFlag || (attrMask & 0x20000)) {
+            D_800A26ACVA[0][ch8 + 4] = arg->adsr1;
+        }
+        if (maskFlag || (attrMask & 0x40000)) {
+            D_800A26ACVA[0][ch8 + 5] = arg->adsr2;
+        }
+        if (maskFlag || (attrMask & 0x10000)) {
+            _spu_FsetRXXa(ch8 | 7, arg->loop_addr);
+        }
+        if (maskFlag || (attrMask & 1)) {
+            if (maskFlag || (attrMask & 4)) {
+                switch (*(s16 *)&arg->volmode.left) {
+                case 1:
+                    mode = 0x8000;
+                    break;
+                case 2:
+                    mode = 0x9000;
+                    break;
+                case 3:
+                    mode = 0xA000;
+                    break;
+                case 4:
+                    mode = 0xB000;
+                    break;
+                case 5:
+                    mode = 0xC000;
+                    break;
+                case 6:
+                    mode = 0xD000;
+                    break;
+                case 7:
+                    mode = 0xE000;
+                    break;
+                case 0:
+                default:
+                    vl = arg->volume.left;
+                    mode = 0;
+                    break;
+                }
+            } else {
+                vl = arg->volume.left;
+                mode = 0;
+            }
+            if (mode != 0) {
+                if (*(s16 *)&arg->volume.left >= 0x80) {
+                    vl = 0x7F;
+                } else if (*(s16 *)&arg->volume.left < 0) {
+                    vl = 0;
+                } else {
+                    vl = *(s16 *)&arg->volume.left;
+                }
+            }
+            {
+                register s32 value asm("$2");
+                value = vl & 0x7FFF;
+                voice = D_800A26ACVA[0];
+                voice[ch8] = value | mode;
+            }
+        }
+        if (maskFlag || (attrMask & 2)) {
+            if (maskFlag || (attrMask & 8)) {
+                switch (*(s16 *)&arg->volmode.right) {
+                case 1:
+                    mode = 0x8000;
+                    break;
+                case 2:
+                    mode = 0x9000;
+                    break;
+                case 3:
+                    mode = 0xA000;
+                    break;
+                case 4:
+                    mode = 0xB000;
+                    break;
+                case 5:
+                    mode = 0xC000;
+                    break;
+                case 6:
+                    mode = 0xD000;
+                    break;
+                case 7:
+                    mode = 0xE000;
+                    break;
+                case 0:
+                default:
+                    vr = arg->volume.right;
+                    mode = 0;
+                    break;
+                }
+            } else {
+                vr = arg->volume.right;
+                mode = 0;
+            }
+            if (mode != 0) {
+                if (*(s16 *)&arg->volume.right >= 0x80) {
+                    vr = 0x7F;
+                } else if (*(s16 *)&arg->volume.right < 0) {
+                    vr = 0;
+                } else {
+                    vr = *(s16 *)&arg->volume.right;
+                }
+            }
+            {
+                register s32 value asm("$2");
+                value = vr & 0x7FFF;
+                voice = D_800A26ACVA[0];
+                voice[ch8 + 1] = value | mode;
+            }
+        }
     }
-block_7:
-    return -3;
+    if (sw == 0) {
+        delay = 1;
+        for (i = 0; i < 2; i++) {
+            delay *= 13;
+        }
+    }
+    return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SpuSetVoiceAttr);
-#endif
 
 s32 SpuGetKeyStatus(s32 voice_bit) {
     extern u16 *D_800A26AC[];
@@ -9751,12 +9690,11 @@ s32 _spu_getInTransfer(void) {
     return D_800A26DC[0] == 0;
 }
 
-#ifdef NON_MATCHING
 void SpuSetCommonAttrDraft(SpuCommonAttr *) asm("SpuSetCommonAttr");
 extern volatile u16 *D_800A26ACCommon2[];
 void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
-    s32 mask;
-    s32 isDefault;
+    register s32 mask asm("$9");
+    register s32 isDefault asm("$10");
     u16 volLeft;
     u16 volRight;
     s32 modeLeft;
@@ -9764,7 +9702,6 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     s32 modeCode;
     s32 value;
     volatile u16 *control;
-    s32 tmp;
     mask = arg0->mask;
     isDefault = (mask == 0);
     volLeft = 0;
@@ -9806,19 +9743,23 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
             volLeft = arg0->mvol.left;
             modeLeft = 0;
         }
-        value = volLeft & 0x7FFF;
         if (modeLeft != 0) {
-            tmp = (s16)arg0->mvol.left;
-            if (tmp >= 0x80)
+            register s32 level asm("$7");
+            level = *(s16 *)&arg0->mvol.left;
+            if (level >= 0x80) {
                 volLeft = 0x7F;
-            else {
-                volLeft = tmp;
-                if (tmp < 0)
-                    volLeft = 0;
+            } else if (level < 0) {
+                volLeft = 0;
+            } else {
+                volLeft = *(s16 *)&arg0->mvol.left;
             }
-            value = volLeft & 0x7FFF;
         }
-        D_800A26ACCommon2[0][0x180 / 2] = (value | modeLeft);
+        {
+            register s32 volume asm("$2");
+            volume = volLeft & 0x7FFF;
+            control = D_800A26ACCommon2[0];
+            control[0x180 / 2] = volume | modeLeft;
+        }
     }
     if (isDefault || (mask & 2)) {
         if (isDefault || (mask & 8)) {
@@ -9855,80 +9796,95 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
             volRight = arg0->mvol.right;
             modeRight = 0;
         }
-        value = volRight & 0x7FFF;
         if (modeRight != 0) {
-            tmp = (s16)arg0->mvol.right;
-            if (tmp >= 0x80)
+            if (*(s16 *)&arg0->mvol.right >= 0x80) {
                 volRight = 0x7F;
-            else {
-                volRight = tmp;
-                if (tmp < 0)
-                    volRight = 0;
+            } else if (*(s16 *)&arg0->mvol.right < 0) {
+                volRight = 0;
+            } else {
+                volRight = *(s16 *)&arg0->mvol.right;
             }
-            value = volRight & 0x7FFF;
         }
-        D_800A26ACCommon2[0][0x182 / 2] = (value | modeRight);
+        {
+            register s32 volume asm("$2");
+            volume = volRight & 0x7FFF;
+            control = D_800A26ACCommon2[0];
+            control[0x182 / 2] = volume | modeRight;
+        }
     }
     if (isDefault || (mask & 0x40))
         D_800A26ACCommon2[0][0x1B0 / 2] = arg0->cd.volume.left;
     if (isDefault || (mask & 0x80))
         D_800A26ACCommon2[0][0x1B2 / 2] = arg0->cd.volume.right;
     if (isDefault || (mask & 0x100)) {
-        if (arg0->cd.reverb == 0) {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value &= 0xFFFB;
-        } else {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value |= 4;
+        {
+            register volatile u16 *ctl asm("$2");
+            if (arg0->cd.reverb == 0) {
+                ctl = D_800A26ACCommon2[0];
+                value = ctl[0x1AA / 2];
+                value &= 0xFFFB;
+            } else {
+                ctl = D_800A26ACCommon2[0];
+                value = ctl[0x1AA / 2];
+                value |= 4;
+            }
+            ctl[0x1AA / 2] = value;
         }
-        control[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x200)) {
-        if (arg0->cd.mix == 0) {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value &= 0xFFFE;
-        } else {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value |= 1;
+        {
+            register volatile u16 *ctl asm("$2");
+            if (arg0->cd.mix == 0) {
+                ctl = D_800A26ACCommon2[0];
+                value = ctl[0x1AA / 2];
+                value &= 0xFFFE;
+            } else {
+                ctl = D_800A26ACCommon2[0];
+                value = ctl[0x1AA / 2];
+                value |= 1;
+            }
+            ctl[0x1AA / 2] = value;
         }
-        control[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x400))
         D_800A26ACCommon2[0][0x1B4 / 2] = arg0->ext.volume.left;
     if (isDefault || (mask & 0x800))
         D_800A26ACCommon2[0][0x1B6 / 2] = arg0->ext.volume.right;
     if (isDefault || (mask & 0x1000)) {
-        if (arg0->ext.reverb == 0) {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value &= 0xFFF7;
-        } else {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value |= 8;
+        {
+            register volatile u16 *ctl asm("$2");
+            if (arg0->ext.reverb == 0) {
+                ctl = D_800A26ACCommon2[0];
+                value = ctl[0x1AA / 2];
+                value &= 0xFFF7;
+            } else {
+                ctl = D_800A26ACCommon2[0];
+                value = ctl[0x1AA / 2];
+                value |= 8;
+            }
+            ctl[0x1AA / 2] = value;
         }
-        control[0x1AA / 2] = value;
     }
-    if (isDefault || (mask & 0x2000)) {
-        if (arg0->ext.mix == 0) {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value &= 0xFFFD;
-        } else {
-            control = D_800A26ACCommon2[0];
-            value = control[0x1AA / 2];
-            value |= 2;
+    {
+        register s32 bit asm("$2");
+        bit = mask & 0x2000;
+        if (isDefault || bit) {
+            {
+                register volatile u16 *ctl asm("$2");
+                if (arg0->ext.mix == 0) {
+                    ctl = D_800A26ACCommon2[0];
+                    value = ctl[0x1AA / 2];
+                    value &= 0xFFFD;
+                } else {
+                    ctl = D_800A26ACCommon2[0];
+                    value = ctl[0x1AA / 2];
+                    value |= 2;
+                }
+                ctl[0x1AA / 2] = value;
+            }
         }
-        control[0x1AA / 2] = value;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetCommonAttr);
-#endif
 
 extern u16 D_800A2A08[];
 /* D_800A2A08 holds 12 rows of 16 columns. key % 12 picks the row, the fine
