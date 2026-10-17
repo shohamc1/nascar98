@@ -14771,7 +14771,118 @@ void func_8003A440(void) {
     D_800A2EE4w15[0] = D_800A33E4;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8003A54C);
+extern void func_80041564(u8 *, s32);
+extern void func_800294A8(void *);
+extern void func_8003CF0C(u8 *);
+extern u8 *D_800A3554Absolute[];
+extern s32 D_800A2EACAbsolute[];
+extern s32 D_800A2EA4Absolute[];
+extern u32 D_800A2F50;
+extern u8 D_800A39F8nm[] asm("D_800A39F8.NON_MATCHING");
+extern u8 D_800A38B8nm[] asm("D_800A38B8.NON_MATCHING");
+
+void func_8003A54C(void) {
+    u8 *node;
+    u8 *object;
+    u8 *player;
+    s32 mode;
+    s32 nodeState;
+    s32 nodeIndex;
+    s8 place;
+
+    node = D_800A3878Absolute[0];
+    D_800A2F4C = 0x14;
+    D_800A2EE4w15[0] = 0;
+    if (D_800A2EACAbsolute[0] == 0x77) {
+        mode = D_800A2EB0Absolute[0];
+        D_800A2EC4w15[0] = 0;
+        if (mode == 0) {
+            object = D_800A3554Absolute[0];
+            if (D_800A2EA4Absolute[0] == 2) {
+                *(u8 *)(*(u8 **)(object + 0x3E0) + 0x410) = 0;
+                player = D_800A3554[0];
+                if (*(u8 *)(player + 0xF4) == 0 &&
+                    *(u8 *)(*(u8 **)(player + 0x3E0) + 0xF4) == 0) {
+                    goto store410;
+                }
+                if (*(s8 *)(player + 0x204) <
+                    *(s8 *)(*(u8 **)(player + 0x3E0) + 0x204)) {
+                    object = player;
+                } else {
+                    object = *(u8 **)(player + 0x3E0);
+                }
+            }
+            if (*(s8 *)(object + 0x204) == 1) {
+                func_80041564(object, 0x28);
+            } else if (*(s8 *)(object + 0x204) < 6 && D_800A2E90w15[0] >= 6) {
+                func_80041564(object, 0x43);
+            }
+        } else if (mode == 1) {
+            u8 *racer;
+
+            racer = D_800A3554Absolute[0];
+            if (*(u8 *)(racer + 0xF4) == 0) {
+                goto afterStore;
+            }
+            if (*(s8 *)(racer + 0x204) < 6 && *(s8 *)(racer + 0x204) != mode) {
+                func_80041564(racer, 0x46);
+            } else if (*(s8 *)(racer + 0x204) >= 0xC) {
+                func_80041564(racer, 0x40);
+            }
+        } else {
+            goto afterStore;
+        }
+    store410:
+        *(u8 *)(D_800A3554Absolute[0] + 0x410) = 0;
+    afterStore:
+        D_800A3910nm[0] = 0x7FFF;
+        if (D_800A35A4w15f[0] != 0) {
+            D_800A39F8nm[0] = 0;
+            D_800A3764w15f[0] = 0;
+            D_800A372Cw15f[0] = 0;
+            D_800A2EFCnm[0] = 0;
+            D_800A38B8nm[0] = 0;
+        }
+    }
+    if (node != NULL) {
+        do {
+            nodeState = *(s16 *)(node + 0x1EC);
+            D_800A2F50 = D_800A2EACAbsolute[0] / 2 + 0x172;
+            if (nodeState == 0) {
+                if (*(u8 *)(node + 0xF4) == 0 || *(u8 *)(node + 0xF4) == 2 ||
+                    *(s32 *)(node + 0x354) != (s32)func_80025594) {
+                    *(s32 *)(node + 0x84) = 0;
+                    func_80029CB4((s32 *)node);
+                    (*(void (**)(u8 *))(node + 0x354))(node);
+                } else {
+                    *(s16 *)(node + 0x120) = 0;
+                    *(s32 *)(node + 0x228) = 0;
+                    if (*(s32 *)(node + 0x90) > 0x1B80000) {
+                        *(s32 *)(node + 0x90) = 0x1B80000;
+                    }
+                    if (D_800A2EB4Absolute[0] >= 2) {
+                        place = *(u8 *)(node + 0x204);
+                        *(s8 *)(node + 0x206) = place % 3 - 1;
+                    } else {
+                        *(s8 *)(node + 0x206) = 0;
+                    }
+                    D_800A2F4C = 0x14;
+                    func_8003CF0C(node);
+                    func_800373B4(node);
+                    nodeIndex = *(s16 *)(node + 0x114);
+                    D_800A2F4C = 0x14;
+                    func_8002AD20((s32 *)node, nodeIndex);
+                    func_800294A8(node);
+                }
+            } else {
+                func_8003CF0C(node);
+                func_800373B4(node);
+            }
+            node = *(u8 **)(node + 0x3E0);
+        } while (node != NULL);
+    }
+    func_80039CF4();
+}
 
 extern void func_8003ABC0();
 extern s16 D_80098254[];
