@@ -1,6 +1,7 @@
 #include "common.h"
 #include "libpress.h"
 #include "fixed_addrs.h"
+#include "menu_obj.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -2380,26 +2381,6 @@ extern void func_80060008(u8);
  * above them like retail. Retail's constants and register order depend on
  * the locals below (k2b is pinned to $19, the empty asm statements make the
  * primitive pointers function-wide). */
-typedef struct {
-    s16 unk0;
-    u8 unk2;
-    u8 unk3;
-    u8 unk4;
-    u8 unk5;
-    s16 unk6;
-    s16 unk8;
-    s16 unkA;
-    s16 unkC;
-    s16 unkE;
-    s16 unk10;
-    s16 unk12;
-    s16 unk14;
-    s16 unk16;
-    s16 unk18;
-    s16 unk1A;
-    s32 unk1C;
-    u8 *unk20;
-} MenuObj;
 void func_8005ED74(u8 arg0, u8 arg1) {
     extern s32 func_8005A8EI(s32) asm("func_8005A8E0");
     register s32 k2b asm("$19");

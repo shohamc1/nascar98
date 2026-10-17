@@ -1,6 +1,7 @@
 #include "common.h"
 #include "libpress.h"
 #include "fixed_addrs.h"
+#include "menu_obj.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -2662,24 +2663,24 @@ void func_8005B688(u8 *first, u8 friction) {
                         (s16) * (u16 *)(object + 0x10) / 2;
                 }
             }
-            object = *(u8 **)(object + 0x1C);
+            object = (u8 *)((MenuObj *)object)->unk1C;
         } while (object != 0);
     }
 }
 
 extern s32 D_800A39C8[];
 void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
-    u8 *poly;
+    POLY_F4 *poly;
 
-    poly = *(u8 **)(object + 0x20);
-    *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6);
-    *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8);
-    *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
-    *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8);
-    *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6);
-    *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
-    *(u16 *)(poly + 0x14) = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
-    *(u16 *)(poly + 0x16) = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+    poly = (POLY_F4 *)*(u8 **)(object + 0x20);
+    poly->x0 = *(u16 *)(object + 0x6);
+    poly->y0 = *(u16 *)(object + 0x8);
+    poly->x1 = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+    poly->y1 = *(u16 *)(object + 0x8);
+    poly->x2 = *(u16 *)(object + 0x6);
+    poly->y2 = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+    poly->x3 = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+    poly->y3 = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
     if (semiTrans != 0xFF) {
         SetSemiTrans(poly, semiTrans);
     }
@@ -2717,7 +2718,7 @@ void func_8005B8B8(u8 *object, s32 arg1) {
         return;
     }
     semiTrans = arg1 & 0xFF;
-    for (; object != 0; object = *(u8 **)(object + 0x1C)) {
+    for (; object != 0; object = (u8 *)((MenuObj *)object)->unk1C) {
         if (*(s16 *)(object + 0x1A) >= 0) {
             if (D_800A39E4Absolute[0] != 0xD || *(s8 *)(object + 5) != 0) {
                 switch (*(u16 *)(object)) {
@@ -4073,6 +4074,6 @@ void func_8005DF08(s32 a, s32 b, s32 c, u8 flag) {
         object[5] = c;
         if (flag)
             *(s16 *)(object + 0xA) = 125;
-        object = *(u8 **)(object + 0x1C);
+        object = (u8 *)((MenuObj *)object)->unk1C;
     }
 }

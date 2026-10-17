@@ -209,11 +209,17 @@ void func_8001C34C(void);
 
 /* Lists and callbacks. */
 
+typedef struct ListNode28 ListNode28;
+struct ListNode28 {
+    u8 unk0[0x28];
+    ListNode28 *next;
+};
+
 void ListInsertBefore(u8 **head, u8 *node, u8 *before) {
     u8 *current;
     u8 *previous;
     if (before == 0) {
-        *(u8 **)(node + 0x28) = *head;
+        ((ListNode28 *)node)->next = (ListNode28 *)*head;
         *head = node;
         return;
     }
@@ -222,17 +228,17 @@ void ListInsertBefore(u8 **head, u8 *node, u8 *before) {
     while (current != 0) {
         if (current == before) {
             if (current == previous) {
-                *(u8 **)(node + 0x28) = *head;
+                ((ListNode28 *)node)->next = (ListNode28 *)*head;
                 *head = node;
             } else {
-                *(u8 **)(node + 0x28) = current;
-                *(u8 **)(previous + 0x28) = node;
+                ((ListNode28 *)node)->next = (ListNode28 *)current;
+                ((ListNode28 *)previous)->next = (ListNode28 *)node;
             }
             return;
         }
         if (current != *head)
-            previous = *(u8 **)(previous + 0x28);
-        current = *(u8 **)(current + 0x28);
+            previous = (u8 *)((ListNode28 *)previous)->next;
+        current = (u8 *)((ListNode28 *)current)->next;
     }
 }
 
@@ -244,15 +250,15 @@ void ListRemoveNode(u8 **head, u8 *target) {
     while (current != 0) {
         if (current == target) {
             if (current == previous) {
-                *head = *(u8 **)(current + 0x28);
+                *head = (u8 *)((ListNode28 *)current)->next;
             } else {
-                *(u8 **)(previous + 0x28) = *(u8 **)(current + 0x28);
+                ((ListNode28 *)previous)->next = ((ListNode28 *)current)->next;
             }
             return;
         }
         if (current != *head)
-            previous = *(u8 **)(previous + 0x28);
-        current = *(u8 **)(current + 0x28);
+            previous = (u8 *)((ListNode28 *)previous)->next;
+        current = (u8 *)((ListNode28 *)current)->next;
     }
 }
 
@@ -396,11 +402,6 @@ void ListPushFront(u8 *node, u8 **head, u8 **tail) {
     }
 }
 
-typedef struct ListNode28 ListNode28;
-struct ListNode28 {
-    u8 unk0[0x28];
-    ListNode28 *next;
-};
 void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
                             ListNode28 **tail) {
     ListNode28 *previous;
