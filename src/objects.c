@@ -12295,7 +12295,7 @@ extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
 extern void CarSteerTowardHeading373B4(u8 *, s32) asm("CarSteerTowardHeading");
 extern s32 func_8003702C373B4(u8 *, u8 *) asm("func_8003702C");
 extern s32 func_80037204373B4(u8 *) asm("func_80037204");
-extern s32 func_800395BC373B4(u8 *, s32) asm("func_800395BC");
+extern s32 CarAvoidTraffic373B4(u8 *, s32) asm("CarAvoidTraffic");
 extern void func_8003DBA8373B4(u8 *) asm("func_8003DBA8");
 extern u8 func_8003E78C373B4(u8 *) asm("func_8003E78C");
 extern void func_80044114373B4(u8 *) asm("func_80044114");
@@ -13858,10 +13858,10 @@ void func_800373B4(u8 *object) {
                                      workspace.targetX = tailTargetValue,
                                      tailTargetValue = *(s32 *)(car + 0x254),
                                      workspace.targetY = tailTargetValue,
-                                     (func_800395BC373B4(car, 1) == 0))) {
+                                     (CarAvoidTraffic373B4(car, 1) == 0))) {
                     (*(s16 *)((u8 *)car + 0x24E)) = -1;
                 }
-            } else if (func_800395BC373B4(car, 0) != 0) {
+            } else if (CarAvoidTraffic373B4(car, 0) != 0) {
                 tailTargetValue = *(s32 *)(car + 0x250);
                 workspace.targetX = tailTargetValue;
                 tailTargetValue = *(s32 *)(car + 0x254);
@@ -14048,7 +14048,197 @@ ok:
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80039274);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800395BC);
+extern s32 D_800A2EB4Absolute[];
+extern u8 *D_800A3878Absolute[];
+extern s32 D_800AE154[];
+extern s32 func_80039274(u8 *, u8 *, s32);
+extern void func_80039B74(s32 *, s32);
+
+typedef struct TrafficCar {
+    s32 x, y;
+    u8 unk8[0x88];
+    s32 speed;
+    u8 unk94[0x80];
+    s16 heading;
+    u8 unk116[0xCA];
+    s16 segment;
+    u8 unk1E2[0x21];
+    s8 unk203;
+    u8 unk204[2];
+    s8 lane;
+    u8 unk207[0x47];
+    s16 targetSegment;
+    u8 unk250[0x38];
+    s16 unk288;
+    u8 unk28A[0x156];
+    struct TrafficCar *next;
+} TrafficCar;
+
+s32 CarAvoidTraffic(TrafficCar *car, s32 keepTarget) {
+    s32 maxDistance;
+    s32 count;
+    TrafficCar *other;
+    s32 value;
+    s32 forward;
+    s32 lateral;
+    s8 leftAllowed;
+    s32 routeDistance;
+    s32 angle;
+    s32 cosine;
+    register s32 *cosTable asm("v1");
+    s32 sine;
+    s32 dx;
+    s32 carX;
+    s32 dy;
+    s32 sideLimit;
+    s32 sideScale;
+    s32 backLimit;
+    s32 lateralLimit;
+    u32 flags;
+    s8 otherLane;
+
+    if (D_800A2F58 != 0) {
+        return 0;
+    }
+    if (car->speed == 0) {
+        return 0;
+    }
+    other = (TrafficCar *)D_800A3878Absolute[0];
+    for (count = 0; count < D_800A2EB4Absolute[0];
+         count++, other = other->next) {
+        if (car == other) {
+            continue;
+        }
+        value = car->speed - other->speed;
+        maxDistance = (value >> 16) / 50 + 1;
+        if (maxDistance >= 6) {
+            maxDistance = 5;
+        }
+        routeDistance = func_8003702C((u8 *)other, (u8 *)car);
+        if (keepTarget & 0xFF) {
+            if (routeDistance < 3) {
+                return 0;
+            }
+        } else if (routeDistance < -1 || maxDistance < routeDistance) {
+            continue;
+        }
+        if (car->unk288 == 0) {
+            if (ABS(other->unk203) >= 7) {
+                car->targetSegment = -1;
+                continue;
+            }
+        }
+        angle = 0x400;
+        angle -= car->heading;
+        cosTable = (s32 *)D_800A3A2CAbsolute[0];
+        /* Keep the x loads after the table base and entry address. */
+        asm("lw %0,%1" : "=r"(dx) : "m"(other->x), "r"(cosTable));
+        maxDistance = angle & 0x3FF;
+        cosTable = (s32 *)((maxDistance * 4) + (u32)cosTable);
+        asm("lw %0,%2"
+            : "=r"(carX), "=r"(cosTable)
+            : "m"(car->x), "1"(cosTable));
+        cosine = *cosTable;
+        dx -= carX;
+        sine = ((s32 **)D_800A3A34Absolute)[0][maxDistance];
+        dy = other->y - car->y;
+        forward = (cosine * dx - sine * dy) >> 16;
+        lateral = (sine * dx + cosine * dy) >> 16;
+        routeDistance = ABS(MathGetAngleDelta(car->heading, other->heading));
+        sideScale =
+            (((s32 **)D_800A3A34Absolute)[0][routeDistance] * 250) >> 16;
+        if (sideScale < 0) {
+            sideScale = -sideScale;
+        }
+        sideLimit = sideScale + 400;
+        if (lateral >= 0 ? lateral >= 201 : -lateral >= 201) {
+            if (ABS(value) <= 0x36FFFF) {
+                if (value > 0) {
+                    backLimit = ((value >> 16) * 4) - 230;
+                } else {
+                    backLimit = -230;
+                }
+                lateralLimit = sideLimit + 20;
+                if ((lateral >= 0 ? lateral < lateralLimit
+                                  : -lateral < lateralLimit) &&
+                    backLimit < forward && forward < 1350 &&
+                    !(keepTarget & 0xFF)) {
+                    value = car->lane;
+                    func_80039B74((s32 *)car, 0);
+                    maxDistance = (car->segment + 4) % D_800BE974[0];
+                    flags = ((u32 *)D_800AE154[0])[maxDistance * 3 + 2] >> 30;
+                    leftAllowed = flags & 1;
+                    maxDistance = flags & 2;
+                    if (lateral > 0) {
+                        otherLane = other->lane;
+                        if (otherLane < car->lane && otherLane < -1) {
+                            car->lane = value;
+                            continue;
+                        }
+                        backLimit = func_80039274((u8 *)car, (u8 *)other, 1);
+                        if (car->lane > 0 && maxDistance == 0) {
+                            backLimit = 1;
+                        }
+                    } else {
+                        otherLane = other->lane;
+                        if (otherLane > car->lane && otherLane >= 2) {
+                            car->lane = value;
+                            continue;
+                        }
+                        backLimit = func_80039274((u8 *)car, (u8 *)other, 0);
+                        if (car->lane < 0 && leftAllowed == 0) {
+                            backLimit = 1;
+                        }
+                    }
+                    car->lane = value;
+                    if ((s8)backLimit != 0) {
+                        if (forward < 0) {
+                            car->speed = other->speed + 0x280000;
+                        } else {
+                            car->speed = other->speed - 0x280000;
+                        }
+                    }
+                    return 1;
+                }
+            }
+            if (sideLimit < ABS(lateral)) {
+                if (car->targetSegment != -1) {
+                    return 1;
+                }
+                continue;
+            }
+        }
+        if (value < 0 && other->speed > 0x320000) {
+            continue;
+        }
+        if (!(keepTarget & 0xFF)) {
+            if (routeDistance < 0) {
+                continue;
+            }
+            if (value > 0x460000) {
+                if (other->unk203 < 0) {
+                    func_800390A0((s32)car, (s32)other, 1, 1);
+                } else {
+                    func_800390A0((s32)car, (s32)other, 0, 1);
+                }
+            }
+        }
+        if ((u32)(forward - 1001) < 349) {
+            if (other->speed > 0xC80000) {
+                car->speed = other->speed - 0x10000;
+            } else if (other->speed > 0x3C0000) {
+                car->speed -= value / 20;
+            }
+        }
+        if (car->targetSegment != -1) {
+            if (car->speed < 0) {
+                car->speed = 0xA0000;
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
 
 extern s32 D_800AE154[];
 
