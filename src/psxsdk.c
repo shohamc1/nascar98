@@ -9358,8 +9358,8 @@ extern char D_80090B80[];
 extern char D_80090BA0[];
 extern s32 printf(const char *, ...);
 s32 SpuSetIRQ(s32 arg0) {
-    register s32 value asm("$3");
-    register SpuIRQUnion *spu asm("$2");
+    u16 value;
+    SpuIRQUnion *spu;
     u32 i;
     if (arg0 == 0 || arg0 == 3) {
         spu = D_800A26ACIRQ[0];
@@ -9375,7 +9375,6 @@ s32 SpuSetIRQ(s32 arg0) {
             }
             spu = D_800A26ACIRQ[0];
         }
-        value = 1;
     }
     if (arg0 == 1 || arg0 == 3) {
         spu = D_800A26ACIRQ[0];
