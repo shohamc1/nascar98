@@ -4312,7 +4312,75 @@ u32 func_80072BDC(u32 *header) {
     return size;
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_80072CA8);
+void func_80072CA8(u8 *block) {
+    volatile u32 *pollState;
+    volatile u32 *state;
+    volatile u32 *tailState;
+    u32 swapped;
+    u32 isAd2;
+    u32 size;
+    u32 firstLength;
+    u32 pollTail;
+    u32 pollHead;
+    u8 *leftBase;
+    u8 *leftSource;
+    u8 *rightSource;
+    u8 *secondSource;
+
+    swapped = SWAP32(*((u32 *)block));
+    isAd2 = (swapped & 0xFFFFFF00) == 0x61643200;
+    if ((swapped & 0xFFFF0000) == 0x61640000) {
+        leftSource = block + 0x10;
+        size = SWAP32(*((u32 *)(block + 4))) - 0x10;
+    } else {
+        leftSource = block + 0xC;
+        size = SWAP32(*((u32 *)(block + 4))) - 0xC;
+    }
+    rightSource = leftSource;
+    if (isAd2) {
+        size >>= 1;
+        rightSource = leftSource + size;
+    }
+    pollState = (volatile u32 *)D_800A351C;
+    do {
+        pollTail = pollState[1];
+        pollHead = pollState[0];
+        pollTail -= 0x3C00;
+    } while (pollHead - pollTail < size);
+    state = (volatile u32 *)D_800A351C;
+    firstLength = 0x3C00 - ((u32)state[1] % 0x3C00);
+    if (firstLength >= size) {
+        memcpy((u8 *)(((u32)state[1] % 0x3C00) + (u32)state) + 0x10, leftSource,
+               size);
+        state = (volatile u32 *)D_800A351C;
+        if (isAd2) {
+            memcpy((u8 *)(((u32)state[1] % 0x3C00) + (u32)state) + 0x3C10,
+                   rightSource, size);
+        } else {
+            memcpy((u8 *)(((u32)state[1] % 0x3C00) + (u32)state) + 0x3C10,
+                   leftSource, size);
+        }
+    } else {
+        memcpy((u8 *)(((u32)state[1] % 0x3C00) + (u32)state) + 0x10, leftSource,
+               firstLength);
+        leftBase = (u8 *)D_800A351C;
+        secondSource = leftSource + firstLength;
+        memcpy(leftBase + 0x10, secondSource, size - firstLength);
+        state = (volatile u32 *)D_800A351C;
+        if (isAd2) {
+            memcpy((u8 *)(((u32)state[1] % 0x3C00) + (u32)state) + 0x3C10,
+                   rightSource, firstLength);
+            memcpy((u8 *)D_800A351C + 0x3C10, rightSource + firstLength,
+                   size - firstLength);
+        } else {
+            memcpy((u8 *)(((u32)state[1] % 0x3C00) + (u32)state) + 0x3C10,
+                   leftSource, firstLength);
+            memcpy((u8 *)D_800A351C + 0x3C10, secondSource, size - firstLength);
+        }
+    }
+    tailState = (volatile u32 *)D_800A351C;
+    tailState[1] = tailState[1] + size;
+}
 
 void func_80072FE4(u8 *dst, u8 *src, u32 n) {
     u32 i;
