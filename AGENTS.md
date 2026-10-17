@@ -46,8 +46,9 @@ These are the paths you work with:
 1. Install `mipsel-linux-gnu-binutils` (Homebrew) or
    `binutils-mipsel-linux-gnu` (apt), `clang-format`, `uv`, and Python
    3.11 or newer.
-2. Install DOSBox-X (macOS: `brew install --cask dosbox-x`; Debian or
-   Ubuntu: `apt install dosbox-x`). Run `make tools` to fetch the
+2. Install DOSBox-X (macOS: `brew install --cask dosbox-x`; Ubuntu 24.04
+   or Debian 13: `apt install dosbox-x`; no root: `sh
+   tools/install_dosbox_x.sh`). Run `make tools` to fetch the
    submodules, compilers, objdiff, and the Python environment. It downloads
    the default compiler, the Psy-Q 3.6 `CC1PSX.EXE`, which runs in
    DOSBox-X. Off x86 Linux, the 2.6.3 SDK compiler also needs Docker.

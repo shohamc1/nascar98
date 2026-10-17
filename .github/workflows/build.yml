@@ -18,7 +18,10 @@ jobs:
         run: |
           install -D -m 0644 /baserom/SLUS_005.21 disc/SLUS_005.21
       - name: Install DOSBox-X
-        run: command -v dosbox-x || sudo -n apt-get install -y dosbox-x
+        run: |
+          cat /etc/os-release
+          sh tools/install_dosbox_x.sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Fetch tools
         run: make tools
       - name: Check

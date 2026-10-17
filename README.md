@@ -33,8 +33,13 @@ brew install --cask dosbox-x
 On Debian or Ubuntu:
 
 ```sh
-sudo apt-get install build-essential binutils-mipsel-linux-gnu dosbox-x
+sudo apt-get install build-essential binutils-mipsel-linux-gnu
+sudo apt-get install dosbox-x
 ```
+
+Only Ubuntu 24.04 and Debian 13 or newer package DOSBox-X. Without root,
+run `sh tools/install_dosbox_x.sh` instead: it installs DOSBox-X under
+`~/.local` (add `~/.local/bin` to `PATH`).
 
 Clone the repository and fetch the tools:
 
