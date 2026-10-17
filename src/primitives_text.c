@@ -1954,8 +1954,127 @@ void func_8001B82C(u8 *obj, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B82C);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BA94);
+extern s32 D_801F3FF8[];
+extern s32 D_801F3FFC[];
+extern s32 D_800A2E94[];
+extern s32 D_800A2ED0[];
+extern s32 D_800A2CE0[];
+extern u8 D_80099230[];
+extern u8 D_80099231[];
+extern void *D_800A35E0;
+extern u8 *D_800A3554;
+extern void func_8001B82C(u8 *obj, s32 arg1);
+#ifdef NON_MATCHING
+/* Parked 2026-10-17, best 20 bytes / 2 instructions off (asm-differ 120,
+ * permuter floor 180 over 36k iterations). Everything else byte-identical:
+ * 0x50 frame, prologue saves, mode byte-homed at 0x10(sp) with sb/lbu, head
+ * early-return checks and car-list walk, ((gOrderingTableBank/2)+1)*24
+ * stride as its own local (inline, fold reassociates count*(x*24) into
+ * (count*24)*x and swaps the mult operands), shade=0x80 inside the loop so
+ * loop.c hoists the li s8 next to the giv init addiu s0,s1,6, all four
+ * coord save/update groups, the y3 statement between the cursor load and
+ * prim=cursor (blocks cse's load/copy merge, keeping move t0,v1), the
+ * POLY_FT4 movstr copy, both AddPrim arms, restores, loop tail, epilogue.
+ * Remaining wall, last coord group:
+ *   retail: subu; lui v1(gPrimitiveCursor); lw v1; move a3,s1; sh v0,0xe(s0)
+ *   ours:   move a3,s1; subu; sh v0,0xe(s0); lui v1; lw v1
+ * sched1 tie-break: the movstr src copy has priority 1 (consumers in the
+ * next block) and wins the empty ready tick after the blocked lw s2. Tried:
+ * six cursor-statement positions (earlier ones hoist lw s2 into the y2
+ * load-delay nop and go 4 bytes short), splitting the x3 store across the
+ * cursor statement with s32/u16/off-reused temps (221-236 off), dead
+ * allocation anchors, cursor/prim decl order, gPrimitiveCursor alias
+ * spellings, compound vs full-expression x3. Beware stale-exe false
+ * PERFECTs: always rm the .o and check make's exit code before trusting a
+ * byte comparison (make's whole-second mtimes miss same-second edits).
+ * Same-day follow-ups: full-expression y1 spelling identical 4-row wall;
+ * yv-temp split 7 rows; xy2-interleave 5 rows. */
+void func_8001BA94(s32 arg0) {
+    s32 shade;
+    u8 mode;
+    u8 *tile;
+    u8 *node;
+    s32 cursor;
+    POLY_FT4 *prim;
+    s32 xy0;
+    s32 xy1;
+    s32 xy2;
+    s32 xy3;
+    s32 idx;
+    s32 off;
+    s32 count;
+    s32 stride;
+    s32 i;
+    s32 j;
 
+    mode = arg0;
+    if (mode == 0) {
+        if (D_800A2ED0[0] != 0) {
+            return;
+        }
+        if (D_800A2EACAbsolute[0] != 0) {
+            return;
+        }
+    }
+    off = D_801F3FF8[0] * 4;
+    count = D_801F3FFC[0];
+    if (mode == 0) {
+        func_8001B82C(D_800A3554, off);
+        if (D_800A2E94[0] >= 2) {
+            node = D_800A35E0;
+            for (i = 0; i < D_800A2E94[0]; i++) {
+                if (node != D_800A3554) {
+                    func_8001B82C(node, off);
+                }
+                node = *(u8 **)(*(s32 *)(node + 0x3E8) + 8);
+            }
+        }
+    }
+    stride = ((gOrderingTableBankAbsolute[0] / 2) + 1) * 24;
+    tile = (u8 *)(RAM_CACHED_BASE |
+                  (RAM_RESOURCE_BOUNDARY - 8 - (count * stride)));
+    for (j = 0; j < count; j++) {
+        shade = 0x80;
+        *(u32 *)(tile + 0) = 0x05000000;
+        if (mode != 0) {
+            tile[4] = shade;
+            tile[5] = 0xC0;
+            tile[6] = shade;
+            idx = D_800A2CE0[0] * 2;
+            xy0 = *(u32 *)(tile + 8);
+            *(u16 *)(tile + 8) -= D_80099230[idx];
+            *(u16 *)(tile + 0xA) += D_80099231[idx];
+            xy1 = *(u32 *)(tile + 0xC);
+            *(u16 *)(tile + 0xC) -= D_80099230[idx];
+            *(u16 *)(tile + 0xE) += D_80099231[idx];
+            xy2 = *(u32 *)(tile + 0x10);
+            *(u16 *)(tile + 0x10) -= D_80099230[idx];
+            *(u16 *)(tile + 0x12) += D_80099231[idx];
+            xy3 = *(u32 *)(tile + 0x14);
+            *(u16 *)(tile + 0x14) -= D_80099230[idx];
+            cursor = gPrimitiveCursor[0];
+            *(u16 *)(tile + 0x16) += D_80099231[idx];
+            prim = (POLY_FT4 *)cursor;
+            gPrimitiveCursorLui = cursor + 0x28;
+            *prim = *(POLY_FT4 *)tile;
+            AddPrim((void *)D_800A39C8[0], prim);
+            *(u32 *)(tile + 8) = xy0;
+            *(u32 *)(tile + 0xC) = xy1;
+            *(u32 *)(tile + 0x10) = xy2;
+            *(u32 *)(tile + 0x14) = xy3;
+            tile[4] = 0;
+            tile[5] = 0;
+            tile[6] = 0;
+        } else {
+            AddPrim((void *)D_800A39C8[0], tile);
+        }
+        tile += 0x18;
+    }
+}
+
+#else
+INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BA94);
+#endif
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BDBC);
 
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
