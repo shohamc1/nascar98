@@ -9278,7 +9278,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
     u16 rate;
     u16 note;
     u16 pitchNote;
-    volatile u16 *voice;
+    s32 low;
+    u16 volume;
 
     vl = 0;
     vr = 0;
@@ -9337,15 +9338,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
             if (arg->ar < 0x80) {
                 rate = arg->ar;
             }
-            {
-                register s32 value asm("$2");
-                register s32 low asm("$4");
-                value = D_800A26ACVA[0][ch8 + 4];
-                asm("andi %0,%1,0xFF" : "=r"(low) : "r"(value));
-                value = (rate | mode) << 8;
-                value = low | value;
-                D_800A26ACVA[0][ch8 + 4] = value;
-            }
+            low = D_800A26ACVA[0][ch8 + 4] & 0xFF;
+            D_800A26ACVA[0][ch8 + 4] = low | ((rate | mode) << 8);
         }
         if (maskFlag || (attrMask & 0x1000)) {
             if (arg->dr >= 0x10) {
@@ -9353,15 +9347,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
             } else {
                 rate = arg->dr;
             }
-            {
-                register s32 value asm("$2");
-                register s32 low asm("$4");
-                value = D_800A26ACVA[0][ch8 + 4];
-                asm("andi %0,%1,0xFF0F" : "=r"(low) : "r"(value));
-                value = rate << 4;
-                value = low | value;
-                D_800A26ACVA[0][ch8 + 4] = value;
-            }
+            low = D_800A26ACVA[0][ch8 + 4] & 0xFF0F;
+            D_800A26ACVA[0][ch8 + 4] = low | (rate << 4);
         }
         if (maskFlag || (attrMask & 0x8000)) {
             if (arg->sl >= 0x10) {
@@ -9398,15 +9385,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
             if (arg->sr < 0x80) {
                 rate = arg->sr;
             }
-            {
-                register s32 value asm("$2");
-                register s32 low asm("$4");
-                value = D_800A26ACVA[0][ch8 + 5];
-                asm("andi %0,%1,0x3F" : "=r"(low) : "r"(value));
-                value = (rate | mode) << 6;
-                value = low | value;
-                D_800A26ACVA[0][ch8 + 5] = value;
-            }
+            low = D_800A26ACVA[0][ch8 + 5] & 0x3F;
+            D_800A26ACVA[0][ch8 + 5] = low | ((rate | mode) << 6);
         }
         if (maskFlag || (attrMask & 0x4000)) {
             if (maskFlag || (attrMask & 0x400)) {
@@ -9428,15 +9408,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
             if (arg->rr < 0x20) {
                 rate = arg->rr;
             }
-            {
-                register s32 value asm("$2");
-                register s32 low asm("$4");
-                value = D_800A26ACVA[0][ch8 + 5];
-                asm("andi %0,%1,0xFFC0" : "=r"(low) : "r"(value));
-                value = rate | mode;
-                value = low | value;
-                D_800A26ACVA[0][ch8 + 5] = value;
-            }
+            low = D_800A26ACVA[0][ch8 + 5] & 0xFFC0;
+            D_800A26ACVA[0][ch8 + 5] = low | (rate | mode);
         }
         if (maskFlag || (attrMask & 0x20000)) {
             D_800A26ACVA[0][ch8 + 4] = arg->adsr1;
@@ -9490,12 +9463,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
                     vl = *(s16 *)&arg->volume.left;
                 }
             }
-            {
-                register s32 value asm("$2");
-                value = vl & 0x7FFF;
-                voice = D_800A26ACVA[0];
-                voice[ch8] = value | mode;
-            }
+            volume = vl & 0x7FFF;
+            D_800A26ACVA[0][ch8] = volume | mode;
         }
         if (maskFlag || (attrMask & 2)) {
             if (maskFlag || (attrMask & 8)) {
@@ -9540,12 +9509,8 @@ s32 _SpuSetVoiceAttr(SpuVoiceAttr *arg, s32 min, s32 max, s32 sw) {
                     vr = *(s16 *)&arg->volume.right;
                 }
             }
-            {
-                register s32 value asm("$2");
-                value = vr & 0x7FFF;
-                voice = D_800A26ACVA[0];
-                voice[ch8 + 1] = value | mode;
-            }
+            volume = vr & 0x7FFF;
+            D_800A26ACVA[0][ch8 + 1] = volume | mode;
         }
     }
     if (sw == 0) {
@@ -9693,8 +9658,10 @@ s32 _spu_getInTransfer(void) {
 void SpuSetCommonAttrDraft(SpuCommonAttr *) asm("SpuSetCommonAttr");
 extern volatile u16 *D_800A26ACCommon2[];
 void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
-    register s32 mask asm("$9");
-    register s32 isDefault asm("$10");
+    s32 mask;
+    s32 isDefault;
+    s32 level;
+    s32 volume;
     u16 volLeft;
     u16 volRight;
     s32 modeLeft;
@@ -9744,22 +9711,19 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
             modeLeft = 0;
         }
         if (modeLeft != 0) {
-            register s32 level asm("$7");
-            level = *(s16 *)&arg0->mvol.left;
-            if (level >= 0x80) {
+            if (*(s16 *)&arg0->mvol.left >= 0x80) {
                 volLeft = 0x7F;
-            } else if (level < 0) {
+            } else if (*(s16 *)&arg0->mvol.left < 0) {
                 volLeft = 0;
             } else {
                 volLeft = *(s16 *)&arg0->mvol.left;
             }
-        }
-        {
-            register s32 volume asm("$2");
             volume = volLeft & 0x7FFF;
-            control = D_800A26ACCommon2[0];
-            control[0x180 / 2] = volume | modeLeft;
+        } else {
+            volume = volLeft & 0x7FFF;
         }
+        control = D_800A26ACCommon2[0];
+        control[0x180 / 2] = volume | modeLeft;
     }
     if (isDefault || (mask & 2)) {
         if (isDefault || (mask & 8)) {
@@ -9804,85 +9768,76 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
             } else {
                 volRight = *(s16 *)&arg0->mvol.right;
             }
-        }
-        {
-            register s32 volume asm("$2");
             volume = volRight & 0x7FFF;
-            control = D_800A26ACCommon2[0];
-            control[0x182 / 2] = volume | modeRight;
+        } else {
+            volume = volRight & 0x7FFF;
         }
+        control = D_800A26ACCommon2[0];
+        control[0x182 / 2] = volume | modeRight;
     }
     if (isDefault || (mask & 0x40))
         D_800A26ACCommon2[0][0x1B0 / 2] = arg0->cd.volume.left;
     if (isDefault || (mask & 0x80))
         D_800A26ACCommon2[0][0x1B2 / 2] = arg0->cd.volume.right;
     if (isDefault || (mask & 0x100)) {
-        {
-            register volatile u16 *ctl asm("$2");
-            if (arg0->cd.reverb == 0) {
-                ctl = D_800A26ACCommon2[0];
-                value = ctl[0x1AA / 2];
-                value &= 0xFFFB;
-            } else {
-                ctl = D_800A26ACCommon2[0];
-                value = ctl[0x1AA / 2];
-                value |= 4;
-            }
-            ctl[0x1AA / 2] = value;
+        register volatile u16 *ctl asm("$2");
+
+        if (arg0->cd.reverb == 0) {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value &= 0xFFFB;
+        } else {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value |= 4;
         }
+        ctl[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x200)) {
-        {
-            register volatile u16 *ctl asm("$2");
-            if (arg0->cd.mix == 0) {
-                ctl = D_800A26ACCommon2[0];
-                value = ctl[0x1AA / 2];
-                value &= 0xFFFE;
-            } else {
-                ctl = D_800A26ACCommon2[0];
-                value = ctl[0x1AA / 2];
-                value |= 1;
-            }
-            ctl[0x1AA / 2] = value;
+        register volatile u16 *ctl asm("$2");
+
+        if (arg0->cd.mix == 0) {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value &= 0xFFFE;
+        } else {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value |= 1;
         }
+        ctl[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x400))
         D_800A26ACCommon2[0][0x1B4 / 2] = arg0->ext.volume.left;
     if (isDefault || (mask & 0x800))
         D_800A26ACCommon2[0][0x1B6 / 2] = arg0->ext.volume.right;
     if (isDefault || (mask & 0x1000)) {
-        {
-            register volatile u16 *ctl asm("$2");
-            if (arg0->ext.reverb == 0) {
-                ctl = D_800A26ACCommon2[0];
-                value = ctl[0x1AA / 2];
-                value &= 0xFFF7;
-            } else {
-                ctl = D_800A26ACCommon2[0];
-                value = ctl[0x1AA / 2];
-                value |= 8;
-            }
-            ctl[0x1AA / 2] = value;
+        register volatile u16 *ctl asm("$2");
+
+        if (arg0->ext.reverb == 0) {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value &= 0xFFF7;
+        } else {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value |= 8;
         }
+        ctl[0x1AA / 2] = value;
     }
-    {
-        register s32 bit asm("$2");
-        bit = mask & 0x2000;
-        if (isDefault || bit) {
-            {
-                register volatile u16 *ctl asm("$2");
-                if (arg0->ext.mix == 0) {
-                    ctl = D_800A26ACCommon2[0];
-                    value = ctl[0x1AA / 2];
-                    value &= 0xFFFD;
-                } else {
-                    ctl = D_800A26ACCommon2[0];
-                    value = ctl[0x1AA / 2];
-                    value |= 2;
-                }
-                ctl[0x1AA / 2] = value;
-            }
+    if (isDefault || (mask & 0x2000)) {
+        register volatile u16 *ctl asm("$2");
+
+        if (arg0->ext.mix == 0) {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value &= 0xFFFD;
+        } else {
+            ctl = D_800A26ACCommon2[0];
+            value = ctl[0x1AA / 2];
+            value |= 2;
         }
+        ctl[0x1AA / 2] = value;
     }
 }
 
