@@ -1964,31 +1964,6 @@ extern u8 D_80099231[];
 extern void *D_800A35E0;
 extern u8 *D_800A3554;
 extern void func_8001B82C(u8 *obj, s32 arg1);
-#ifdef NON_MATCHING
-/* Parked 2026-10-17, best 20 bytes / 2 instructions off (asm-differ 120,
- * permuter floor 180 over 36k iterations). Everything else byte-identical:
- * 0x50 frame, prologue saves, mode byte-homed at 0x10(sp) with sb/lbu, head
- * early-return checks and car-list walk, ((gOrderingTableBank/2)+1)*24
- * stride as its own local (inline, fold reassociates count*(x*24) into
- * (count*24)*x and swaps the mult operands), shade=0x80 inside the loop so
- * loop.c hoists the li s8 next to the giv init addiu s0,s1,6, all four
- * coord save/update groups, the y3 statement between the cursor load and
- * prim=cursor (blocks cse's load/copy merge, keeping move t0,v1), the
- * POLY_FT4 movstr copy, both AddPrim arms, restores, loop tail, epilogue.
- * Remaining wall, last coord group:
- *   retail: subu; lui v1(gPrimitiveCursor); lw v1; move a3,s1; sh v0,0xe(s0)
- *   ours:   move a3,s1; subu; sh v0,0xe(s0); lui v1; lw v1
- * sched1 tie-break: the movstr src copy has priority 1 (consumers in the
- * next block) and wins the empty ready tick after the blocked lw s2. Tried:
- * six cursor-statement positions (earlier ones hoist lw s2 into the y2
- * load-delay nop and go 4 bytes short), splitting the x3 store across the
- * cursor statement with s32/u16/off-reused temps (221-236 off), dead
- * allocation anchors, cursor/prim decl order, gPrimitiveCursor alias
- * spellings, compound vs full-expression x3. Beware stale-exe false
- * PERFECTs: always rm the .o and check make's exit code before trusting a
- * byte comparison (make's whole-second mtimes miss same-second edits).
- * Same-day follow-ups: full-expression y1 spelling identical 4-row wall;
- * yv-temp split 7 rows; xy2-interleave 5 rows. */
 void func_8001BA94(s32 arg0) {
     s32 shade;
     u8 mode;
@@ -2042,18 +2017,18 @@ void func_8001BA94(s32 arg0) {
             tile[6] = shade;
             idx = D_800A2CE0[0] * 2;
             xy0 = *(u32 *)(tile + 8);
-            *(u16 *)(tile + 8) -= D_80099230[idx];
-            *(u16 *)(tile + 0xA) += D_80099231[idx];
+            ((POLY_F4 *)tile)->x0 -= D_80099230[idx];
+            ((POLY_F4 *)tile)->y0 += D_80099231[idx];
             xy1 = *(u32 *)(tile + 0xC);
-            *(u16 *)(tile + 0xC) -= D_80099230[idx];
-            *(u16 *)(tile + 0xE) += D_80099231[idx];
+            ((POLY_F4 *)tile)->x1 -= D_80099230[idx];
+            ((POLY_F4 *)tile)->y1 += D_80099231[idx];
             xy2 = *(u32 *)(tile + 0x10);
-            *(u16 *)(tile + 0x10) -= D_80099230[idx];
-            *(u16 *)(tile + 0x12) += D_80099231[idx];
+            ((POLY_F4 *)tile)->x2 -= D_80099230[idx];
+            ((POLY_F4 *)tile)->y2 += D_80099231[idx];
+            cursor = gPrimitiveCursorLui;
             xy3 = *(u32 *)(tile + 0x14);
-            *(u16 *)(tile + 0x14) -= D_80099230[idx];
-            cursor = gPrimitiveCursor[0];
-            *(u16 *)(tile + 0x16) += D_80099231[idx];
+            ((POLY_F4 *)tile)->x3 -= D_80099230[idx];
+            ((POLY_F4 *)tile)->y3 += D_80099231[idx];
             prim = (POLY_FT4 *)cursor;
             gPrimitiveCursorLui = cursor + 0x28;
             *prim = *(POLY_FT4 *)tile;
@@ -2072,9 +2047,6 @@ void func_8001BA94(s32 arg0) {
     }
 }
 
-#else
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BA94);
-#endif
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BDBC);
 
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
