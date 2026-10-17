@@ -7106,7 +7106,112 @@ tailTest:
 INCLUDE_ASM("asm/nonmatchings/menu", func_8006594C);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80065C3C);
+/* The ", D_800A3940" and ", D_800A3778" tails below are reads of the just
+ * stored volatile; retail reloads the byte/word after the store. */
+void func_80065C3C(void) {
+    extern s32 GetGp(void);
+    extern s32 D_8008CA4C[];
+    extern s32 D_800A2EB0Absolute[];
+    extern u8 D_800A39E4[];
+    extern volatile u16 D_800A3940;
+    extern volatile u8 D_800A3760;
+    extern volatile u8 D_800A3778;
+    extern u8 D_800A35DC;
+    extern u8 D_800A3884;
+    extern u8 D_800A3A4C;
+    extern u8 *D_800A369C;
+    extern u8 D_800A3698;
+    extern s32 D_800A367C;
+    extern u32 *D_800A38C4;
+    extern u8 *D_8009A3F0[];
+    extern u8 *D_8009A400[];
+    extern u8 *D_8009A418[];
+    extern volatile u8 D_800A3360;
+    extern void func_8006594C(s32, s32);
+    extern void func_80065058(u8, s32);
+    s32 oldGp;
+    u8 *walk;
+    char *text;
+    s32 len;
+    s32 i;
+
+    oldGp = GetGp();
+    func_80058D08(D_8008CA4C[0]);
+    SetDispMask(1);
+    if ((u8)(D_800A39E4[0] + 3) >= 2) {
+        PutDrawEnv(D_800BDD4C);
+        if ((D_800A3940 << 16) > 0) {
+            func_8006594C(D_800A3760, 0);
+        } else if (D_800A3760 == 0) {
+            D_800A3940Signed = -0xB5;
+        } else {
+            D_800A3940 = D_800A3940 - 1, D_800A3940;
+        }
+        if ((s16)D_800A3940 < -0xB4) {
+            if (D_800A3778 == D_800A35DC) {
+                D_800A3940 = 0;
+                if (*(volatile u8 *)&D_800A3884 == 1) {
+                    ClearOTagR(D_800A38C4, 4);
+                    walk = D_800A369C;
+                    walk += D_800A3A4C * 0x28;
+                    if (D_800A2EB0Absolute[0] == 0) {
+                        text = (char *)D_8009A3F0[0];
+                    } else {
+                        text = (char *)D_8009A418[0];
+                    }
+                    len = strlen(text);
+                    for (i = 0; i < len; i++) {
+                        AddPrim(D_800A38C4, walk);
+                        walk += 0x28;
+                    }
+                    D_800A367C =
+                        (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
+                    func_80065058(D_800A3778, 0);
+                    D_800A3884 = 2;
+                }
+            } else {
+                D_800A3940 = 2;
+                D_800A3760 = D_800A3760 ^ 1;
+                if (D_800A3760 == 1) {
+                    D_800A3778 = D_800A3778 + 1, D_800A3778;
+                    ClearOTagR(D_800A38C4, 4);
+                    if (D_800A3884 == 0) {
+                        text = (char *)D_8009A400[0];
+                        walk = D_800A369C;
+                        len = strlen(text);
+                        for (i = 0; i < len; i++) {
+                            AddPrim(D_800A38C4, walk);
+                            walk += 0x28;
+                        }
+                    } else {
+                        walk = D_800A369C;
+                        walk += D_800A3A4C * 0x28;
+                        if (D_800A2EB0Absolute[0] == 0) {
+                            text = (char *)D_8009A3F0[0];
+                        } else {
+                            text = (char *)D_8009A418[0];
+                        }
+                        len = strlen(text);
+                        for (i = 0; i < len; i++) {
+                            AddPrim(D_800A38C4, walk);
+                            walk += 0x28;
+                        }
+                        if (*(volatile u8 *)&D_800A3884 == 1) {
+                            D_800A3884 = 2;
+                        }
+                    }
+                    D_800A367C =
+                        (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
+                    func_80065058(D_800A3778, 1);
+                }
+            }
+        }
+        DrawOTag(D_800A38C4 + 3);
+        DrawSync(0);
+    }
+    D_800A3360 = 1;
+    asm("addu $gp, %0, $zero" : : "r"(oldGp));
+}
 
 extern void func_8005A818(u8 arg0, u8 arg1, u8 arg2);
 extern s32 func_8005B0E4(s16 arg0, s32 arg1);
