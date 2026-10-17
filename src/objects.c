@@ -1295,7 +1295,85 @@ void CameraUpdateForCar(RaceObject *cam, RaceObject *car, s32 mode) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002267C);
+extern s32 D_800A37E0Record asm("D_800A37E0.NON_MATCHING");
+extern u8 *D_800A3878Record[] asm("D_800A3878.NON_MATCHING");
+extern u8 *D_800A3960Record[] asm("D_800A3960.NON_MATCHING");
+extern u8 *D_800A3554Record[] asm("D_800A3554.NON_MATCHING");
+
+void func_8002267C(void) {
+    u8 *node;
+    s32 base;
+    u8 *curCar;
+    u8 *car;
+    u8 *rec;
+    u32 bits;
+
+    node = D_800A3878Record[0];
+    if (D_800A397CSmall != 1) {
+        return;
+    }
+    if (node != 0) {
+        base = (s32)D_800A3A38Small;
+        curCar = D_800A3960Record[0];
+        car = D_800A3554Record[0];
+        do {
+            if (*(s16 *)(node + 0x1EC) >= 0) {
+                rec = (u8 *)(D_800A37E8Small * 20 + base);
+                *(s32 *)rec = *(s32 *)(node + 0);
+                *(s32 *)(rec + 4) = *(s32 *)(node + 4);
+                *(u16 *)(rec + 0xC) = *(u16 *)(node + 0x3A4);
+                *(u16 *)(rec + 0xE) = ((*(s32 *)(node + 0x90) / 2 >> 16) << 7) |
+                                      *(u8 *)(node + 0x410);
+                bits = (*(s16 *)(node + 0x114) << 22) |
+                       ((*(s16 *)(node + 0x20E) + 0x80) << 14) |
+                       ((*(u8 *)(node + 0x3AE) & 3) << 12) |
+                       ((*(u8 *)(node + 0x3AF) & 3) << 10) |
+                       ((*(u8 *)(node + 0x3B0) & 3) << 8) |
+                       ((*(u8 *)(node + 0x3B1) & 3) << 6) |
+                       (*(s16 *)(node + 0x10C) << 4) |
+                       (*(s8 *)(node + 0x3B9) << 3) |
+                       (*(u8 *)(node + 0xF9) << 2);
+                if (curCar == car) {
+                    bits |= 1;
+                } else if (D_800A2EA4nm[0] != 0 &&
+                           curCar == *(u8 **)(car + 0x3E0)) {
+                    bits |= 0x10;
+                }
+                *(s32 *)((u8 *)(D_800A37E8Small * 20 + base) + 8) = bits;
+                *(s32 *)((u8 *)(D_800A37E8Small * 20 + base) + 0x10) =
+                    (((*(u16 *)(node + 0xFE) << 16) >> 17) + 0x800 << 20) |
+                    (*(s16 *)(node + 0x388) << 10) | *(s16 *)(node + 0x38A);
+                if (*(s16 *)(node + 0x1EC) == 1) {
+                    if (*(s16 *)(node + 0x1E0) != -1) {
+                        *(s32 *)(node + 0xC) = *(s32 *)(node + 0);
+                        *(s32 *)(node + 0x10) = *(s32 *)(node + 4);
+                        *(s32 *)(node + 0x14) = *(s32 *)(node + 8);
+                    }
+                } else if (*(s16 *)(node + 0x1E0) != -1 &&
+                           *(u16 *)(node + 0x362) != 0 &&
+                           *(u16 *)(node + 0x364) != 0 &&
+                           *(u16 *)(node + 0x366) != 0 &&
+                           *(u16 *)(node + 0x368) != 0) {
+                    *(s32 *)(node + 0xC) = *(s32 *)(node + 0);
+                    *(s32 *)(node + 0x10) = *(s32 *)(node + 4);
+                    *(s32 *)(node + 0x14) = *(s32 *)(node + 8);
+                }
+                D_800A37E8Small = D_800A37E8Small + 1;
+                D_800A37E0Record = D_800A37E8Small;
+            }
+            node = *(u8 **)(node + 0x3E0);
+        } while (node != 0);
+    }
+    func_800365B8((u8 *)D_800A3A38Small + D_800A37E8Small * 20);
+    func_80044354((u8 *)D_800A3A38Small + (D_800A37E8Small * 20 + 0x50));
+    D_800A3550Small = (D_800A3550Small + 1) % D_800A3A90Small;
+    D_800A37E8Small = D_800A37E8Small + 6;
+    D_800A37E0Record = D_800A37E8Small;
+    D_800A37E8Small = D_800A3550Small * (D_800A2E94[0] + 6);
+    if (D_800A3804Small == D_800A3550Small) {
+        D_800A3804Small = (D_800A3804Small + 1) % D_800A3A90Small;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_800229B8);
 
