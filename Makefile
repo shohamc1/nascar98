@@ -533,3 +533,7 @@ clean:
 
 distclean: clean
 	rm -rf asm expected objdiff.json
+
+# Absolute scalar loads for model geometry scales.
+LDFLAGS += --defsym=D_800A353CAbsolute=D_800A353C \
+           --defsym=D_800A3758Absolute=D_800A3758

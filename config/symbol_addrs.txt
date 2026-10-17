@@ -874,3 +874,9 @@ CarPlaceOnStartingGrid = 0x80039DDC; // type:func
 CdUpdateStream = 0x800711F0; // type:func
 
 CarUpdatePlayer = 0x8002A2F8; // type:func
+
+sObjectVectorsAllocationError = 0x8008D030; // force_not_migration:True
+sObjectFacesAllocationError = 0x8008D050; // force_not_migration:True
+sObjectOffsetsAllocationError = 0x8008D06C; // force_not_migration:True
+
+ObjectLoadGeometry = 0x80031D74; // type:func
