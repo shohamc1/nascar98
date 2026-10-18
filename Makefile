@@ -241,11 +241,6 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26B8r=D_800A26B8 \
             --defsym=D_800A26F8r=D_800A26F8 \
             --defsym=D_800A26ACReverbA=D_800A26AC \
-            --defsym=D_800A26ACReverbB=D_800A26AC \
-            --defsym=D_800A2248ReverbRead=D_800A2248 \
-            --defsym=D_800A2248ReverbWrite=D_800A2248 \
-            --defsym=D_800A224CReverb=D_800A224C \
-            --defsym=D_800A2250Reverb=D_800A2250 \
             --defsym=D_800A26ACIRQ=D_800A26AC \
             --defsym=D_800A26ACReverbAttr2=D_800A26AC \
             --defsym=gDispPrintfRead1=D_8009DA8C \
@@ -403,6 +398,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=_spu_IRQCallback=D_800A26E4 \
             --defsym=_spu_AllocBlockNum=D_800A2704 \
             --defsym=_spu_AllocLastNum=D_800A2708 \
+            --defsym=_spu_rev_flag=D_800A2248 \
             --defsym=_spu_rev_reserve_wa=D_800A224C \
             --defsym=_spu_rev_offsetaddr=D_800A2250 \
             --defsym=_spu_mem_mode_plus=D_800A26D0 \

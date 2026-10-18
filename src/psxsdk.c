@@ -6925,27 +6925,14 @@ void _SsContPortamento(s16 arg0, s16 arg1, u8 arg2) {
 
 void _SsContResetAll(s16 access, s16 sequence) {
     struct SeqStruct *score;
-    s32 row;
-    s32 offset;
-    u8 *bytes;
-    register s32 channel0 asm("v0");
-    register s32 channel1 asm("v1");
-    row = (s32)D_800BDE3C[access];
-    offset = sequence * 0xAC;
-    score = (struct SeqStruct *)(offset + row);
-    bytes = (u8 *)score;
+    score = (struct SeqStruct *)((s32)D_800BDE3C[access] + sequence * 0xAC);
     func_80082B70();
     SpuVmDamperOff();
-    channel0 = *(volatile u8 *)(bytes + 0x12);
-    channel1 = *(volatile u8 *)(bytes + 0x12);
-    asm("addu %0, %1, %0" : "=r"(channel0) : "r"(bytes), "0"(channel0));
-    *(u8 *)(channel0 + 0x2C) = (u8)channel1;
+    score->programs[score->channel] = score->channel;
     score->unk13 = 0;
     score->unk14 = 0;
-    *(u16 *)(bytes + *(volatile u8 *)(bytes + 0x12) * 2 + 0x4E) = 0x7F;
-    channel0 = *(volatile u8 *)(bytes + 0x12);
-    asm("addu %0, %1, %0" : "=r"(channel0) : "r"(bytes), "0"(channel0));
-    *(u8 *)(channel0 + 0x17) = 0x40;
+    score->vol[score->channel] = 0x7F;
+    score->panpot[score->channel] = 0x40;
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
@@ -8160,14 +8147,14 @@ void SsVabClose(s16 vabid) {
 }
 
 extern s32 D_800BE930[];
-extern s32 SsVabTransBody(s32, s16);
+extern s32 SsVabTransBody(u8 *, s16);
 s32 SsVabOpen(u8 *addr) {
     s32 result;
     s16 vabid;
     result = SsVabOpenHead(addr, -1);
     vabid = result;
     if (vabid != -1) {
-        result = SsVabTransBody(D_800BE930[vabid], vabid);
+        result = SsVabTransBody((u8 *)D_800BE930[vabid], vabid);
     }
     return (s16)result;
 }
@@ -8329,29 +8316,18 @@ s16 SsVabOpenHeadMode(u8 *addr, s16 vabid, s16 arg2, u32 sbaddr) {
 extern s32 D_800BE8AC[];
 extern s32 SpuSetTransferStartAddr(s32);
 extern void _spu_setInTransfer(s32);
-s32 SsVabTransBody(s32 addr, s16 vabId) {
-    register s32 data asm("s3") = addr;
-    register s32 id asm("s2");
-    register s32 normalized asm("v0");
-    register s32 index asm("s1");
-    register s32 transfer asm("s0");
-    if ((u16)vabId >= 0x11) {
-        goto fail;
+s32 SsVabTransBody(u8 *addr, s16 vabId) {
+    s32 start;
+    if (vabId >= 0 && vabId < 0x11) {
+        if (_svm_vab_used[vabId] == 2) {
+            start = _svm_vab_start[vabId];
+            SpuSetTransferMode(0);
+            SpuSetTransferStartAddr(start);
+            SpuWrite(addr, _svm_vab_total[vabId]);
+            _svm_vab_used[vabId] = 1;
+            return vabId;
+        }
     }
-    asm("sll %0, %2, 16\n\tsra %1, %0, 16"
-        : "=r"(normalized), "=r"(id)
-        : "r"(vabId));
-    index = id * 4;
-    if (D_800B9DE4[id] != 2) {
-        goto fail;
-    }
-    transfer = *(s32 *)((u8 *)D_800BE8F0 + index);
-    SpuSetTransferMode(0);
-    SpuSetTransferStartAddr(transfer);
-    SpuWrite((u8 *)data, *(s32 *)((u8 *)D_800BE8AC + index));
-    D_800B9DE4[id] = 1;
-    return id;
-fail:
     _spu_setInTransfer(0);
     return -1;
 }
@@ -11476,48 +11452,32 @@ s32 _SpuSetAnyVoice(s32 on_off, u32 bits, s32 addr1, s32 addr2) {
     return var_t0 & 0xFFFFFF;
 }
 
-typedef struct SpuReverbPrefix {
-    u8 pad[0x1AA];
-    u16 spucnt;
-} SpuReverbPrefix;
-typedef union SpuReverbUnion {
-    volatile SpuReverbPrefix rxx;
-} SpuReverbUnion;
-extern SpuReverbUnion *D_800A26ACReverbA[];
-extern SpuReverbUnion *D_800A26ACReverbB[];
-extern s32 D_800A2248ReverbRead[];
-extern s32 D_800A2248ReverbWrite[];
-extern s32 D_800A224CReverb[];
-extern s32 D_800A2250Reverb[];
-s32 SpuSetReverb(s32 arg0) {
-    register s32 value asm("$3");
-    register SpuReverbUnion *spu asm("$2");
-    switch (arg0) {
+extern s32 _spu_rev_flag;
+s32 SpuSetReverb(s32 on_off) {
+    u16 cnt;
+    switch (on_off) {
     case 0:
-        spu = D_800A26ACReverbA[0];
-        value = spu->rxx.spucnt;
-        D_800A2248ReverbWrite[0] = 0;
-        value &= 0xFF7F;
-        spu->rxx.spucnt = value;
+        _spu_rev_flag = 0;
+        cnt = _spu_RXX->rxx.spucnt;
+        cnt &= ~0x80;
+        _spu_RXX->rxx.spucnt = cnt;
         break;
     case 1:
-        if (D_800A224CReverb[0] != arg0 &&
-            _SpuIsInAllocateArea_(D_800A2250Reverb[0]) != 0) {
-            spu = D_800A26ACReverbB[0];
-            value = spu->rxx.spucnt;
-            D_800A2248ReverbWrite[0] = 0;
-            value &= 0xFF7F;
-            spu->rxx.spucnt = value;
+        if (_spu_rev_reserve_wa != on_off &&
+            _SpuIsInAllocateArea_(_spu_rev_offsetaddr) != 0) {
+            _spu_rev_flag = 0;
+            cnt = _spu_RXX->rxx.spucnt;
+            cnt &= ~0x80;
+            _spu_RXX->rxx.spucnt = cnt;
         } else {
-            spu = D_800A26ACReverbB[0];
-            value = spu->rxx.spucnt;
-            D_800A2248ReverbWrite[0] = arg0;
-            value |= 0x80;
-            spu->rxx.spucnt = value;
+            _spu_rev_flag = on_off;
+            cnt = _spu_RXX->rxx.spucnt;
+            cnt |= 0x80;
+            _spu_RXX->rxx.spucnt = cnt;
         }
         break;
     }
-    return D_800A2248ReverbRead[0];
+    return _spu_rev_flag;
 }
 
 /* SPDX-License-Identifier: MIT */
