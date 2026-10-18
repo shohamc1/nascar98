@@ -830,8 +830,13 @@ char CdStatus(void) {
 
 extern u8 D_8009BA9C[];
 
+extern CdlCB CD_cbsync;
+extern CdlCB CD_cbready;
+extern u8 CD_mode;
+extern u8 CD_com;
+
 int CdMode(void) {
-    return D_8009BA9C[0];
+    return CD_mode;
 }
 
 /* SPDX-License-Identifier: MIT */
@@ -839,7 +844,7 @@ int CdMode(void) {
 extern u8 D_8009BA9D[];
 
 int CdLastCom(void) {
-    return D_8009BA9D[0];
+    return CD_com;
 }
 
 /* SPDX-License-Identifier: MIT */
@@ -852,7 +857,7 @@ unsigned char *CdLastPos(void) {
 
 /* SPDX-License-Identifier: MIT */
 
-extern int CD_initintr(void);
+extern void CD_initintr(void);
 extern int CD_init(void);
 extern int CD_initvol(void);
 
@@ -937,10 +942,8 @@ extern u32 D_8009BA7C[];
 extern u32 D_8009BA80[];
 
 CdlCB CdSyncCallback(CdlCB func) {
-    CdlCB old;
-
-    old = (CdlCB)D_8009BA7C[0];
-    ((CdlCB *)D_8009BA80)[-1] = func;
+    CdlCB old = CD_cbsync;
+    CD_cbsync = func;
     return old;
 }
 
@@ -949,10 +952,8 @@ CdlCB CdSyncCallback(CdlCB func) {
 extern u32 D_8009BA88[];
 
 CdlCB CdReadyCallback(CdlCB func) {
-    CdlCB old;
-
-    old = (CdlCB)D_8009BA80[0];
-    ((CdlCB *)D_8009BA88)[-2] = func;
+    CdlCB old = CD_cbready;
+    CD_cbready = func;
     return old;
 }
 
@@ -1082,183 +1083,6 @@ extern char D_800902E4[];
 extern char D_80090300[];
 extern char D_80090314[];
 
-/* shortcut: SDK register controls need review for a native build. */
-/* Keep the SDK copy destination in v1. */
-#define COPY_CD_RESULT(buffer)                                                 \
-    do {                                                                       \
-        register u8 *destination asm("v1");                                    \
-        u8 *source;                                                            \
-        s32 remaining;                                                         \
-        destination = buffer;                                                  \
-        source = (u8 *)result;                                                 \
-        if (destination != 0) {                                                \
-            remaining = 7;                                                     \
-            do {                                                               \
-                *destination++ = *source++;                                    \
-            } while (--remaining != -1);                                       \
-        }                                                                      \
-    } while (0)
-
-int getintr(void) {
-    volatile u8 interrupt;
-    u8 result[8];
-    u8 status;
-    s32 statusValue;
-    u8 loadedStatus;
-    u8 secondaryStatus;
-    u8 *statusPointer;
-    u8 *readyPointer;
-    u8 *clear;
-    s32 count;
-    s32 errors;
-
-    *(volatile u8 *)D_8009BD40[0] = 1;
-    interrupt = *(volatile u8 *)D_8009BD4C[0] & 7;
-    errors = 0;
-    if (interrupt == 0) {
-        return 0;
-    }
-    while (interrupt != (*(volatile u8 *)D_8009BD4C[0] & 7)) {
-        interrupt = *(volatile u8 *)D_8009BD4C[0] & 7;
-    }
-    for (count = 0; count < 8; count++) {
-        if ((*(volatile u8 *)D_8009BD40[0] & 0x20) == 0) {
-            break;
-        }
-        result[count] = *(volatile u8 *)D_8009BD44[0];
-    }
-    if (count < 8) {
-        clear = (u8 *)(count + (s32)result);
-        do {
-            *clear++ = 0;
-        } while ((s32)clear < (s32)(result + 8));
-    }
-    *(volatile u8 *)D_8009BD40[0] = 1;
-    *(volatile u8 *)D_8009BD4C[0] = 7;
-    *(volatile u8 *)D_8009BD48[0] = 7;
-    if (interrupt != CdlAcknowledge || D_8009BC40[D_8009BA9D[0]] != 0) {
-        if ((((s32 *)D_8009BA8C)[0] & CdlStatShellOpen) == 0 &&
-            (result[0] & CdlStatShellOpen)) {
-            ((s32 *)D_8009BA90)[1] = D_8009BA94[0] + 1;
-        }
-        statusValue = result[0];
-        secondaryStatus = result[1];
-        /* GCC removes this explicit SDK byte mask. */
-        asm("andi %0, %0, 0xff"
-            : "=r"(statusValue)
-            : "0"(statusValue), "r"(secondaryStatus));
-        errors = statusValue & 0x1D;
-        ((s32 *)D_8009BA8C)[0] = statusValue;
-        D_8009BA90[0] = secondaryStatus;
-    }
-    if (interrupt == CdlDiskError) {
-        puts(D_800902D8);
-        if ((s32)D_8009BA88[0] > 0) {
-            printf(D_800902E4, D_8009BAA0[D_8009BA9D[0]],
-                   ((s32 *)D_8009BA8C)[0], D_8009BA90[0]);
-        }
-    }
-    switch (interrupt) {
-    case CdlAcknowledge:
-        if (errors != 0) {
-            statusPointer = D_8009BD58;
-            *statusPointer = CdlDiskError;
-            /* Keep the status address for the result copy. */
-            asm("" : : "r"(statusPointer));
-            COPY_CD_RESULT(D_800A8CB8);
-            return 2;
-        }
-        if (D_8009BB40[D_8009BA9D[0]] != 0) {
-            statusPointer = D_8009BD58;
-            *statusPointer = CdlAcknowledge;
-            asm("" : : "r"(statusPointer));
-            COPY_CD_RESULT(D_800A8CB8);
-            return 1;
-        }
-        statusPointer = D_8009BD58;
-        *statusPointer = CdlComplete;
-        asm("" : : "r"(statusPointer));
-        COPY_CD_RESULT(D_800A8CB8);
-        return 2;
-    case CdlComplete:
-        status = CdlComplete;
-        if (errors) {
-            status = CdlDiskError;
-        }
-        D_8009BD58[0] = status;
-        COPY_CD_RESULT(D_800A8CB8);
-        return 2;
-    case CdlDataReady:
-        if (errors && count == 1) {
-            errors = 0;
-        }
-        status = CdlDataReady;
-        if (errors) {
-            status = CdlDiskError;
-        }
-        D_8009BD59[0] = status;
-        COPY_CD_RESULT(D_800A8CC0);
-        *(volatile u8 *)D_8009BD40[0] = 0;
-        *(volatile u8 *)D_8009BD4C[0] = 0;
-        return 4;
-    case CdlDataEnd: {
-        u8 *destination;
-        u8 *source;
-        s32 remaining;
-        destination = D_800A8CC8;
-        source = result;
-        status = CdlDataEnd;
-        D_8009BD5A[0] = status;
-        /* Read the stored status again before the buffer test. */
-        asm("" : : : "memory");
-        loadedStatus = D_8009BD58[2];
-        readyPointer = D_8009BD59;
-        *readyPointer = loadedStatus;
-        asm(""
-            : "=r"(destination)
-            : "0"(destination), "r"(readyPointer), "m"(*readyPointer));
-        if (destination != 0) {
-            remaining = 7;
-            do {
-                *destination++ = *source++;
-            } while (--remaining != -1);
-        }
-        COPY_CD_RESULT(D_800A8CC0);
-        return 4;
-    }
-    case CdlDiskError: {
-        u8 *destination;
-        u8 *source;
-        s32 remaining;
-        destination = D_800A8CB8;
-        source = result;
-        status = CdlDiskError;
-        D_8009BD59[0] = status;
-        /* Read the stored status again before the buffer test. */
-        asm("" : : : "memory");
-        loadedStatus = D_8009BD5A[-1];
-        readyPointer = D_8009BD58;
-        *readyPointer = loadedStatus;
-        asm(""
-            : "=r"(destination)
-            : "0"(destination), "r"(readyPointer), "m"(*readyPointer));
-        if (destination != 0) {
-            remaining = 7;
-            do {
-                *destination++ = *source++;
-            } while (--remaining != -1);
-        }
-        COPY_CD_RESULT(D_800A8CC0);
-        return 6;
-    }
-    default:
-        puts(D_80090300);
-        printf(D_80090314, interrupt);
-        return 0;
-    }
-}
-#undef COPY_CD_RESULT
-
 typedef char Result_t[8];
 
 typedef struct {
@@ -1311,6 +1135,107 @@ static __inline__ void CD_memcpy(void *_dst, void *_src, u32 _size) {
 
     while (_size--) {
         *pDst++ = *pSrc++;
+    }
+}
+
+extern s32 CD_cmdAck[];
+extern s32 CD_cmdStat[];
+extern char D_800902D8[];
+extern char D_800902E4[];
+extern char D_80090300[];
+extern char D_80090314[];
+
+s32 getintr(void) {
+    volatile char nReg;
+    volatile Result_t buf;
+    s32 i, j;
+    s32 bHasError;
+
+    *libcd_CDRegister0 = 1;
+
+    nReg = *libcd_CDRegister3 & 0x7;
+
+    if (nReg == 0) {
+        return 0;
+    }
+
+    bHasError = 0;
+
+    while (nReg != (*libcd_CDRegister3 & 7)) {
+        nReg = *libcd_CDRegister3 & 0x7;
+    }
+
+    for (i = 0; i < 8; i++) {
+        if ((*libcd_CDRegister0 & 0x20) == 0) {
+            break;
+        }
+        buf[i] = *libcd_CDRegister1;
+    }
+    for (j = i; j < 8; j++) {
+        buf[j] = 0;
+    }
+
+    *libcd_CDRegister0 = 1;
+    *libcd_CDRegister3 = 7;
+    *libcd_CDRegister2 = 7;
+    if (nReg != 3 || CD_cmdStat[CD_com]) {
+        if (!(CD_status & CdlStatShellOpen) && (buf[0] & CdlStatShellOpen)) {
+            CD_nopen++;
+        }
+        CD_status = buf[0];
+        CD_status1 = buf[1];
+        bHasError = CD_status;
+        bHasError &= (CdlStatError | CdlStatSeekError | CdlStatIdError |
+                      CdlStatShellOpen);
+    }
+    if (nReg == 5) {
+        puts(D_800902D8);
+        if (CD_debug > 0) {
+            printf(D_800902E4, CD_comstr[CD_com], CD_status, CD_status1);
+        }
+    }
+    switch (nReg) {
+    case 3:
+        if (bHasError) {
+            Intr.sync = CdlDiskError;
+            CD_memcpy(&CD_resultSync, &buf, sizeof(Result_t));
+            return 2;
+        }
+        if (CD_cmdAck[CD_com]) {
+            Intr.sync = CdlAcknowledge;
+            CD_memcpy(&CD_resultSync, &buf, sizeof(Result_t));
+            return 1;
+        }
+        Intr.sync = CdlComplete;
+        CD_memcpy(&CD_resultSync, &buf, sizeof(Result_t));
+        return 2;
+    case 2:
+        Intr.sync = bHasError ? CdlDiskError : CdlComplete;
+        CD_memcpy(&CD_resultSync, &buf, sizeof(Result_t));
+        return 2;
+    case 1:
+        if (bHasError && i == 1) {
+            bHasError = 0;
+        }
+        Intr.ready = bHasError ? CdlDiskError : CdlDataReady;
+        CD_memcpy(&CD_resultReady, &buf, sizeof(Result_t));
+        *libcd_CDRegister0 = 0;
+        *libcd_CDRegister3 = 0;
+        return 4;
+    case 4:
+        Intr.ready = Intr.c = CdlDataEnd;
+        CD_memcpy(&CD_resultC, &buf, sizeof(Result_t));
+        CD_memcpy(&CD_resultReady, &buf, sizeof(Result_t));
+        return 4;
+    case 5:
+        Intr.sync = Intr.ready = CdlDiskError;
+        CD_memcpy(&CD_resultSync, &buf, sizeof(Result_t));
+        CD_memcpy(&CD_resultReady, &buf, sizeof(Result_t));
+        return 6;
+    default:
+        puts(D_80090300);
+        printf(D_80090314, nReg);
+        return 0;
     }
 }
 
@@ -1484,14 +1409,14 @@ extern u32 D_8009BD44[];
 extern u32 D_8009BD48[];
 extern u32 D_8009BD4C[];
 
-int CD_vol(CdlATV *vol) {
-    *(u8 *)D_8009BD40[0] = 2;
-    *(u8 *)D_8009BD48[0] = vol->val0;
-    *(u8 *)D_8009BD4C[0] = vol->val1;
-    *(u8 *)D_8009BD40[0] = 3;
-    *(u8 *)D_8009BD44[0] = vol->val2;
-    *(u8 *)D_8009BD48[0] = vol->val3;
-    *(u8 *)D_8009BD4C[0] = 0x20;
+s32 CD_vol(CdlATV *vol) {
+    *libcd_CDRegister0 = 2;
+    *libcd_CDRegister2 = vol->val0;
+    *libcd_CDRegister3 = vol->val1;
+    *libcd_CDRegister0 = 3;
+    *libcd_CDRegister1 = vol->val2;
+    *libcd_CDRegister2 = vol->val3;
+    *libcd_CDRegister3 = 0x20;
     return 0;
 }
 
@@ -1510,51 +1435,58 @@ extern u8 D_8009BD59[];
 extern u8 D_8009BD5A[];
 
 void CD_flush(void) {
-    register volatile u8 *statusPtr asm("$2");
-    register u8 statusValue asm("$3");
-    *(u8 *)D_8009BD40[0] = 1;
-    while (*(u8 *)D_8009BD4C[0] & 7) {
-        *(u8 *)D_8009BD40[0] = 1;
-        *(u8 *)D_8009BD4C[0] = 7;
-        *(u8 *)D_8009BD48[0] = 7;
+    *libcd_CDRegister0 = 1;
+    while (*libcd_CDRegister3 & 7) {
+        *libcd_CDRegister0 = 1;
+        *libcd_CDRegister3 = 7;
+        *libcd_CDRegister2 = 7;
     }
-    asm volatile(
-        "lui $1, %%hi(D_8009BD5A)\n\tsb $0, %%lo(D_8009BD5A)($1)\n\tlui %0, %%hi(D_8009BD5A)\n\tlbu %0, %%lo(D_8009BD5A)(%0)"
-        : "=r"(statusValue)
-        :
-        : "$1", "memory");
-    asm volatile("" : : "r"(statusValue) : "memory");
-    statusPtr = (volatile u8 *)D_8009BD59;
-    *statusPtr = statusValue;
-    D_8009BD58[0] = 2;
-    *(u8 *)D_8009BD40[0] = 0;
-    *(u8 *)D_8009BD4C[0] = 0;
-    *(u32 *)D_8009BD50[0] = 0x1325;
-    asm("");
+
+    Intr.ready = Intr.c = CdlNoIntr;
+    Intr.sync = CdlComplete;
+    *libcd_CDRegister0 = 0;
+    *libcd_CDRegister3 = 0;
+    *CD_comDelay = 0x1325;
 }
 
 extern u32 D_8009BD54[];
-int CD_initvol(void) {
+typedef struct CdSpuRegs {
+    u8 pad0[0x180];
+    volatile s16 mainVolLeft;
+    volatile s16 mainVolRight;
+    u8 pad1[0x1AA - 0x184];
+    volatile u16 spucnt;
+    u8 pad2[0x1B0 - 0x1AC];
+    volatile s16 cdVolLeft;
+    volatile s16 cdVolRight;
+    u8 pad3[0x1B8 - 0x1B4];
+    volatile s16 mainVolxLeft;
+    volatile s16 mainVolxRight;
+} CdSpuRegs;
+
+extern volatile CdSpuRegs *CD_spu;
+
+s32 CD_initvol(void) {
     CdlATV vol;
-    u8 *spu;
-    spu = (u8 *)D_8009BD54[0];
-    if (*(u16 *)(spu + 0x1B8) == 0 && *(u16 *)(spu + 0x1BA) == 0) {
-        *(u16 *)(spu + 0x180) = 0x3FFF;
-        *(u16 *)(spu + 0x182) = 0x3FFF;
+
+    if (CD_spu->mainVolxLeft == 0 && CD_spu->mainVolxRight == 0) {
+        CD_spu->mainVolLeft = 0x3FFF;
+        CD_spu->mainVolRight = 0x3FFF;
     }
-    spu = (u8 *)D_8009BD54[0];
-    *(u16 *)(spu + 0x1B0) = 0x3FFF;
-    *(u16 *)(spu + 0x1B2) = 0x3FFF;
-    *(u16 *)(spu + 0x1AA) = 0xC001;
+
+    CD_spu->cdVolLeft = 0x3FFF;
+    CD_spu->cdVolRight = 0x3FFF;
+    CD_spu->spucnt = 0xC001;
     vol.val0 = vol.val2 = 0x80;
     vol.val1 = vol.val3 = 0;
-    *(u8 *)D_8009BD40[0] = 2;
-    *(u8 *)D_8009BD48[0] = vol.val0;
-    *(u8 *)D_8009BD4C[0] = vol.val1;
-    *(u8 *)D_8009BD40[0] = 3;
-    *(u8 *)D_8009BD44[0] = vol.val2;
-    *(u8 *)D_8009BD48[0] = vol.val3;
-    *(u8 *)D_8009BD4C[0] = 0x20;
+    *libcd_CDRegister0 = 2;
+    *libcd_CDRegister2 = vol.val0;
+    *libcd_CDRegister3 = vol.val1;
+    *libcd_CDRegister0 = 3;
+    *libcd_CDRegister1 = vol.val2;
+    *libcd_CDRegister2 = vol.val3;
+    *libcd_CDRegister3 = 0x20;
+
     return 0;
 }
 
@@ -1563,11 +1495,11 @@ extern u32 D_8009BA7C[];
 extern u32 D_8009BA90[];
 extern void callback();
 
-int CD_initintr(void) {
-    D_8009BA80[0] = 0;
-    D_8009BA7C[0] = 0;
-    D_8009BA90[0] = 0;
-    ((u32 *)D_8009BA8C)[0] = 0;
+void CD_initintr(void) {
+    CD_cbready = 0;
+    CD_cbsync = 0;
+    CD_status1 = 0;
+    CD_status = 0;
     ResetCallback();
     InterruptCallback(2, callback);
 }
@@ -1651,27 +1583,32 @@ extern u32 D_8009BD78[];
 extern u32 D_8009BD7C[];
 extern u32 D_8009BD80[];
 extern u32 D_8009BD84[];
-int CD_getsector(void *buffer, int size) {
-    *(u8 *)D_8009BD40[0] = 0;
-    *(u8 *)D_8009BD4C[0] = 0x80;
-    *(u32 *)D_8009BD74[0] = 0x20943;
-    *(u32 *)D_8009BD50[0] = 0x1323;
-    *(u32 *)D_8009BD78[0] |= 0x8000;
-    *(u32 *)D_8009BD7C[0] = (u32)buffer;
-    *(u32 *)D_8009BD80[0] = size | 0x10000;
-    while ((*(volatile u8 *)D_8009BD40[0] & 0x40) == 0) {
-    }
-    *(u32 *)D_8009BD84[0] = 0x11000000;
-    while (*(volatile u32 *)D_8009BD84[0] & 0x01000000) {
-    }
-    *(u32 *)D_8009BD50[0] = 0x1325;
+extern volatile s32 *CD_dmaDelay;
+extern volatile s32 *CD_dpcr;
+extern volatile s32 *CD_dmaMadr;
+extern volatile s32 *CD_dmaBcr;
+
+s32 CD_getsector(void *buffer, s32 size) {
+    *libcd_CDRegister0 = 0;
+    *libcd_CDRegister3 = 0x80;
+    *CD_dmaDelay = 0x20943;
+    *CD_comDelay = 0x1323;
+    *CD_dpcr |= 0x8000;
+    *CD_dmaMadr = (s32)buffer;
+    *CD_dmaBcr = size | 0x10000;
+    while (!(*libcd_CDRegister0 & 0x40)) {
+    };
+    *CD_dmaChcr = 0x11000000;
+    while (*CD_dmaChcr & 0x01000000) {
+    };
+    *CD_comDelay = 0x1325;
     return 0;
 }
 
 extern u32 D_8009BD24[];
 
-void CD_set_test_parmnum(int parmNum) {
-    D_8009BD24[0] = parmNum;
+void CD_set_test_parmnum(s32 parmNum) {
+    CD_cmdPos[25] = parmNum;
 }
 
 extern u32 D_8009BD40[];
@@ -1681,26 +1618,7 @@ extern u8 D_800A8CB8[];
 extern u8 D_800A8CC0[];
 extern int getintr(void);
 void callback(void) {
-    int interrupt;
-    u8 temp;
-    u8 *readyPtr;
-    temp = *(u8 *)D_8009BD40[0] & 3;
-    readyPtr = D_8009BD59;
-    for (;;) {
-        interrupt = getintr();
-        if (interrupt == 0) {
-            break;
-        }
-        if ((interrupt & 4) && D_8009BA80[0] != 0) {
-            ((CdlCB)D_8009BA80[0])(readyPtr[0], D_800A8CC0);
-        }
-        if ((interrupt & 2) && D_8009BA7C[0] != 0) {
-            register u8 *syncPtr asm("$2");
-            asm volatile("" : "=r"(syncPtr) : "0"(D_8009BD58));
-            ((CdlCB)D_8009BA7C[0])(syncPtr[0], D_800A8CB8);
-        }
-    }
-    *(u8 *)D_8009BD40[0] = temp;
+    CD_callback();
 }
 
 typedef struct {
@@ -1816,40 +1734,28 @@ extern s32 D_8009BDA8[];
 extern s32 VSync(s32);
 extern char CdStatus(void);
 extern s32 cd_read_retry(s32);
-int CdRead(int sectors, u_long *buffer, int mode) {
-    D_8009BD98[0] = mode;
-    switch (D_8009BD98[0] & 0x30) {
+int CdRead(int sectors, u_long *buf, int mode) {
+    CD_read.mode = mode;
+    switch (CD_read.mode & (CdlModeSize0 | CdlModeSize1)) {
     case 0:
-        D_8009BD9C[0] = 0x200;
-        asm volatile("" : : : "memory");
+        CD_read.unk10 = 0x200;
         break;
-    case 0x20:
-        D_8009BD9C[0] = 0x249;
-        asm volatile("" : : : "memory");
+    case CdlModeSize1:
+        CD_read.unk10 = 0x249;
         break;
-    default: {
-        volatile u32 *p;
-        p = D_8009BD9C;
-        p[0] = 0x246;
+    default:
+        CD_read.unk10 = 0x246;
         break;
     }
-    }
-    D_8009BD98[0] |= 0x20;
-    {
-        u32 z1;
-        u32 z2;
-        s32 vm1;
-        asm volatile("" : "=r"(z1) : "0"(0));
-        D_8009BD90[0] = (u32)buffer;
-        D_8009BD8C[0] = sectors;
-        D_8009BDB0[0] = (u32)CdSyncCallback(z1);
-        asm volatile("" : "=r"(z2) : "0"(0));
-        D_8009BDB4[0] = (u32)CdReadyCallback(z2);
-        asm volatile("" : "=r"(vm1) : "0"(-1));
-        D_8009BDA8[0] = VSync(vm1);
-    }
-    if (CdStatus() & (CdlStatPlay | CdlStatSeek | CdlStatRead))
+    CD_read.mode |= CdlModeSize1;
+    CD_read.unk4 = (u32 *)buf;
+    CD_read.sectors = sectors;
+    CD_read.sync = CdSyncCallback(0);
+    CD_read.ready = CdReadyCallback(0);
+    CD_read.unk1C = VSync(-1);
+    if (CdStatus() & (CdlStatPlay | CdlStatSeek | CdlStatRead)) {
         CdControlB(CdlPause, 0, 0);
+    }
     return cd_read_retry(0) > 0;
 }
 
@@ -1886,11 +1792,9 @@ extern u32 D_8009BD88[];
 extern u32 D_8009BD8C[];
 
 CdlCB CdReadCallback(CdlCB func) {
-    CdlCB old;
-
-    old = (CdlCB)D_8009BD88[0];
-    ((CdlCB *)D_8009BD8C)[-1] = func;
-    return old;
+    CdlCB prevFunc = CD_ReadCallbackFunc;
+    CD_ReadCallbackFunc = func;
+    return prevFunc;
 }
 
 extern void v_wait(int, int);

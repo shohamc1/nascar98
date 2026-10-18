@@ -329,6 +329,8 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=CD_com=D_8009BA9D \
             --defsym=CD_comstr=D_8009BAA0 \
             --defsym=CD_intrstr=D_8009BB20 \
+            --defsym=CD_cmdAck=D_8009BB40 \
+            --defsym=CD_cmdStat=D_8009BC40 \
             --defsym=CD_cmdParams=D_8009BBC0 \
             --defsym=CD_cmdPos=D_8009BCC0 \
             --defsym=libcd_CDRegister0=D_8009BD40 \
@@ -338,6 +340,11 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=CD_comDelay=D_8009BD50 \
             --defsym=CD_info=D_8009BD5C \
             --defsym=CD_dmaChcr=D_8009BD84 \
+            --defsym=CD_spu=D_8009BD54 \
+            --defsym=CD_dmaDelay=D_8009BD74 \
+            --defsym=CD_dpcr=D_8009BD78 \
+            --defsym=CD_dmaMadr=D_8009BD7C \
+            --defsym=CD_dmaBcr=D_8009BD80 \
             --defsym=CD_ReadCallbackFunc=D_8009BD88 \
             --defsym=CD_read=D_8009BD8C \
             --defsym=_spu_rev_attr=D_800A2258-4 \
