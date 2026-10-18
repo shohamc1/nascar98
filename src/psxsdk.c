@@ -31,6 +31,19 @@ typedef struct GpuVtbl {
     s32 (*sync)(s32);
 } GpuVtbl;
 
+/* Saved copy of the last DISPENV; retail reads its halfwords as unsigned. */
+typedef struct SavedDispEnv {
+    volatile u16 dispX;
+    volatile u16 dispY;
+    volatile u16 dispW;
+    volatile u16 dispH;
+    volatile u16 scrX;
+    volatile u16 scrY;
+    volatile u16 scrW;
+    volatile u16 scrH;
+    s32 flags;
+} SavedDispEnv;
+
 typedef struct GfxState {
     u8 type;    /* 0: PSX, 1: 1 MB VRAM, 2: debug */
     u8 queue;   /* 1: queued drawing */
@@ -41,7 +54,7 @@ typedef struct GfxState {
     s32 pad8; /* set while a draw-sync callback is pending */
     void (*drawSyncCb)();
     DRAWENV drawEnv;
-    DISPENV dispEnv;
+    SavedDispEnv dispEnv;
 } GfxState;
 
 #define LOW(x) (*(u32 *)&(x))
@@ -670,13 +683,86 @@ long ResetRCnt(long timer) {
 
 /* SPDX-License-Identifier: MIT */
 
-extern int CdGetToc2(int mode, u8 *toc);
+extern int CdGetToc2(int session, CdlLOC *table);
 
 int CdGetToc(u8 *toc) {
     return CdGetToc2(1, toc);
 }
 
+extern s32 CD_debug;
+extern char D_80090110[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090110);
+extern char D_80090120[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090120);
+extern char D_8009013C[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009013C);
+
+#ifdef NON_MATCHING
+/* 2026-10-17: same control flow as retail but 0x228 bytes against 0x224.
+ * Retail gives first the lowest saved register and reuses the register that
+ * held the result address as the table pointer. */
+/* Reads the first and last track and the start of each track. Returns the
+ * number of tracks, or 0 on failure. */
+int CdGetToc2(int session, CdlLOC *table) {
+    u8 param[4];
+    u8 result[8];
+    s32 first;
+    s32 last;
+    s32 n;
+    s32 i;
+    u32 a;
+    u32 b;
+    CdlCB old;
+
+    param[0] = 1;
+    old = CdSyncCallback(0);
+    if (CdControlB(CdlGetTN, 0, result) != 0) {
+        a = result[1];
+        b = result[2];
+        first = (a >> 4) * 10 + (a & 0xF);
+        last = (b >> 4) * 10 + (b & 0xF);
+        if (CD_debug >= 2) {
+            printf(D_80090110, first, last);
+        }
+        param[0] = 0;
+        if (CdControlB(CdlGetTD, param, result) != 0) {
+            table[0].minute = result[1];
+            table[0].sector = 0;
+            table[0].second = result[2];
+            n = 1;
+            if (first <= last) {
+                do {
+                    param[0] = ((first / 10) << 4) + (first % 10);
+                    n++;
+                    if (CdControlB(CdlGetTD, param, result) == 0) {
+                        goto fail;
+                    }
+                    table[n - 1].minute = result[1];
+                    first++;
+                    table[n - 1].sector = 0;
+                    table[n - 1].second = result[2];
+                } while (first <= last);
+            }
+            n--;
+            if (CD_debug >= 2) {
+                for (i = 0; i <= n; i++) {
+                    printf(D_80090120, table[i].minute, table[i].second);
+                }
+            }
+            CdSyncCallback(old);
+            return n;
+        }
+    }
+fail:
+    if (CD_debug != 0) {
+        printf(D_8009013C);
+    }
+    CdSyncCallback(old);
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc2);
+#endif
 
 extern CdlCB CdSyncCallback(CdlCB func);
 extern CdlCB CdReadyCallback(CdlCB func);
@@ -2705,7 +2791,78 @@ void FntLoad(int tx, int ty) {
     memset_8008B820(D_8009CEB8, 0, 0x180);
 }
 
+typedef struct FntStream {
+    TILE tile;         /* 0x00 */
+    DR_MODE draw_mode; /* 0x10 */
+    s32 capacity;      /* 0x1C */
+    SPRT_8 *sprites;   /* 0x20 */
+    char *buffer;      /* 0x24 */
+    s32 written;       /* 0x28 */
+    s32 autoWidth;     /* 0x2C: the box grows to fit the text */
+} FntStream;
+
+extern FntStream Font[];
+extern s32 fntCountX;
+extern s32 fntBase;
+extern char fntText[];
+extern SPRT_8 fntSprt[];
+extern u16 fntTpage;
+extern u16 fntClut;
+
+#ifdef NON_MATCHING
+/* 2026-10-17: right shape, 0x2D4 bytes against 0x2B8. Retail keeps one more
+ * argument live across the SetDrawMode call and reloads the count (a word the
+ * compiler must treat as aliased by the byte stores) before each tile store. */
+/* Opens a text stream n characters long at (x, y). isbg is 0 for no
+ * background, 1 for an opaque one and 2 for a semi-transparent one. */
+s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
+    RECT tw;
+    s32 i;
+    SPRT_8 *sprites;
+
+    if (fntCountX >= 8) {
+        return -1;
+    }
+    if (fntCountX == 0) {
+        fntBase = 0;
+    }
+    Font[fntCountX].autoWidth = w == 0;
+    if (n + fntBase > 0x400) {
+        n = 0x400 - fntBase;
+    }
+    tw.w = 0x100;
+    tw.h = 0x100;
+    tw.x = 0;
+    tw.y = 0;
+    SetDrawMode(&Font[fntCountX].draw_mode, 0, 0, fntTpage, &tw);
+    if (isbg != 0) {
+        SetTile(&Font[fntCountX].tile);
+        Font[fntCountX].tile.r0 = 0;
+        Font[fntCountX].tile.g0 = 0;
+        Font[fntCountX].tile.b0 = 0;
+        SetSemiTrans(&Font[fntCountX].tile, isbg == 2);
+    }
+    Font[fntCountX].tile.x0 = x;
+    Font[fntCountX].tile.y0 = y;
+    Font[fntCountX].tile.w = w;
+    Font[fntCountX].tile.h = h;
+    Font[fntCountX].capacity = n;
+    Font[fntCountX].written = 0;
+    Font[fntCountX].buffer = &fntText[fntBase];
+    Font[fntCountX].sprites = &fntSprt[fntBase];
+    *Font[fntCountX].buffer = 0;
+    sprites = Font[fntCountX].sprites;
+    for (i = 0; i < n; i++) {
+        SetSprt8(sprites);
+        sprites->clut = fntClut;
+        sprites++;
+    }
+    fntBase += n;
+    return fntCountX++;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
 
@@ -3098,7 +3255,33 @@ s32 MargePrim(void *p0, void *p1) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DumpDrawEnv);
+extern char D_80090548[];
+extern char D_80090570[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090570);
+extern char D_80090588[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090588);
+extern char D_80090598[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090598);
+extern char D_800905B0[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800905B0);
+extern char D_800905BC[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800905BC);
+
+void DumpDrawEnv(DRAWENV *env) {
+    GPU_printf(D_80090570, env->clip.x, env->clip.y, env->clip.w, env->clip.h);
+    GPU_printf(D_80090588, env->ofs[0], env->ofs[1]);
+    GPU_printf(D_80090598, env->tw.x, env->tw.y, env->tw.w, env->tw.h);
+    GPU_printf(D_800905B0, env->dtd);
+    GPU_printf(D_800905BC, env->dfe);
+    if (GetGraphType() == 1 || GetGraphType() == 2) {
+        GPU_printf(D_80090548, (env->tpage >> 9) & 3, (env->tpage >> 7) & 3,
+                   (env->tpage << 6) & 0x7C0, (env->tpage * 8) & 0x300);
+    } else {
+        GPU_printf(D_80090548, (env->tpage >> 7) & 3, (env->tpage >> 5) & 3,
+                   (env->tpage << 6) & 0x7C0,
+                   ((env->tpage * 0x10) & 0x100) + ((env->tpage >> 2) & 0x200));
+    }
+}
 
 extern u32 gDispPrintfRead1[];
 extern u32 gDispPrintfRead2[];
@@ -3552,7 +3735,92 @@ DRAWENV *GetDrawEnv(DRAWENV *env) {
     return env;
 }
 
+extern char D_800907E8[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800907E8);
+extern s32 get_dx();
+
+#ifdef NON_MATCHING
+/* 2026-10-17: one compare short of retail. 0x4B4 bytes against 0x4B0; the final
+ * height test (pad0 in v0, height in v1, one result register) and the saved
+ * copy as volatile halfwords are the open rows. */
+DISPENV *PutDispEnv(DISPENV *env) {
+    s32 h_start;
+    s32 v_start;
+    s32 cmd;
+    s32 v_end;
+    s32 h_end;
+    s32 size;
+    s32 small;
+
+    cmd = 0x08000000;
+    if (*(volatile u8 *)&gGfx.level >= 2) {
+        GPU_printf(D_800907E8, env);
+    }
+    gGpu->ctl(0x05000000 |
+              (gGfx.type == 1 || gGfx.type == 2
+                   ? ((env->disp.y & 0xFFF) << 0xC) | (get_dx(env) & 0xFFF)
+                   : ((env->disp.y & 0x3FF) << 0xA) | (env->disp.x & 0x3FF)));
+    if ((s16)gGfx.dispEnv.scrX != env->screen.x ||
+        (s16)gGfx.dispEnv.scrY != env->screen.y ||
+        (s16)gGfx.dispEnv.scrW != env->screen.w ||
+        (s16)gGfx.dispEnv.scrH != env->screen.h) {
+        env->pad0 = GetVideoMode();
+        h_start = env->screen.x * 0xA + 0x260;
+        v_start = env->screen.y + (env->pad0 ? 0x13 : 0x10);
+        h_end = h_start + (env->screen.w ? env->screen.w * 0xA : 0xA00);
+        v_end = v_start + (env->screen.h ? env->screen.h : 0xF0);
+        h_start = GPU_CLAMP(h_start, 0x1F4, 0xCDA);
+        h_end = GPU_CLAMP(h_end, h_start + 0x50, 0xCDA);
+        v_start = GPU_CLAMP(v_start, 0x10, (env->pad0 ? 0x136 : 0x100));
+        v_end = GPU_CLAMP(v_end, v_start + 2, (env->pad0 ? 0x138 : 0x102));
+        gGpu->ctl(0x06000000 | ((h_end & 0xFFF) << 0xC) | (h_start & 0xFFF));
+        gGpu->ctl(0x07000000 | ((v_end & 0x3FF) << 0xA) | (v_start & 0x3FF));
+    }
+    if (gGfx.dispEnv.flags != LOW(env->isinter) ||
+        (s16)gGfx.dispEnv.dispX != env->disp.x ||
+        (s16)gGfx.dispEnv.dispY != env->disp.y ||
+        (s16)gGfx.dispEnv.dispW != env->disp.w ||
+        (s16)gGfx.dispEnv.dispH != env->disp.h) {
+        env->pad0 = GetVideoMode();
+        if (env->pad0 == 1) {
+            cmd |= 0x8;
+        }
+        if (env->isrgb24) {
+            cmd |= 0x10;
+        }
+        if (env->isinter) {
+            cmd |= 0x20;
+        }
+        if (*(volatile u8 *)&gGfx.reverse != 0) {
+            cmd |= 0x80;
+        }
+        if (env->disp.w > 0x118) {
+            if (env->disp.w < 0x161) {
+                cmd |= 1;
+            } else if (env->disp.w < 0x191) {
+                cmd |= 0x40;
+            } else if (env->disp.w < 0x231) {
+                cmd |= 2;
+            } else {
+                cmd |= 3;
+            }
+        }
+        small = env->disp.h < 0x121;
+        if (env->pad0 == 0) {
+            small = env->disp.h < 0x101;
+        }
+        if (small == 0) {
+            cmd |= 0x24;
+        }
+        gGpu->ctl(cmd);
+    }
+    size = sizeof(DISPENV);
+    memcpy(&gGfx.dispEnv, env, size);
+    return env;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", PutDispEnv);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 

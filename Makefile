@@ -358,6 +358,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=gGpu=D_8009DA88 \
             --defsym=GPU_printf=D_8009DA8C \
             --defsym=gGfx=D_8009DA90 \
+            --defsym=gfxLevelArr=D_8009DA92 \
             --defsym=gfxMaxW=D_8009DA94 \
             --defsym=gfxMaxH=D_8009DA96 \
             --defsym=gfxTypeArr=D_8009DA90 \
@@ -380,6 +381,13 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=gpuAlarmEnd=D_8009DBA8 \
             --defsym=gpuAlarmCount=D_8009DBAC \
             --defsym=gpuCtlBuf=D_800AD124 \
+            --defsym=Font=D_8009CEB8 \
+            --defsym=fntCountX=D_8009D038 \
+            --defsym=fntBase=D_8009DA40 \
+            --defsym=fntText=D_800A8CDC \
+            --defsym=fntSprt=D_800A90DC \
+            --defsym=fntTpage=D_800AD0DC \
+            --defsym=fntClut=D_800AD0E0 \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \
