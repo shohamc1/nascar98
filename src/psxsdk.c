@@ -771,21 +771,21 @@ int CdGetToc2(int session, CdlLOC *table) {
             table[0].minute = result[1];
             table[0].second = result[2];
             table[0].sector = 0;
-            n = 1;
+            i = 1;
             if (first <= last) {
                 do {
-                    param[0] = ((first / 10) << 4) + (first % 10);
+                    param[0] = ((first / 10) << 4) + (first % 10) + ((first << 4) & 0xF);
                     if (CdControlB(CdlGetTD, param, result) == 0) {
                         goto fail;
                     }
-                    table[n].minute = result[1];
-                    table[n].second = result[2];
-                    table[n].sector = 0;
+                    table[i].minute = result[1];
+                    table[i].second = result[2];
+                    table[i].sector = 0;
                     first++;
-                    n++;
+                    i++;
                 } while (first <= last);
             }
-            n--;
+            n = i - 1;
             if (CD_debug >= 2) {
                 for (i = 0; i <= n; i++) {
                     printf(D_80090120, table[i].minute, table[i].second);
@@ -2454,10 +2454,10 @@ extern SPRT_8 fntSprt[];
 extern u16 fntTpage;
 extern u16 fntClut;
 
-#ifdef NON_MATCHING
-/* 2026-10-17: right shape, 0x2D4 bytes against 0x2B8. Retail keeps one more
- * argument live across the SetDrawMode call and reloads the count (a word the
- * compiler must treat as aliased by the byte stores) before each tile store. */
+/* The tile colour and box go through the libgpu setRGB0, setXY0 and setWH
+ * macros: each expansion repeats `&Font[fntCountX].tile`, which gives
+ * retail's pointer-based stores and its reload of fntCountX after each byte
+ * store. */
 /* Opens a text stream n characters long at (x, y). isbg is 0 for no
  * background, 1 for an opaque one and 2 for a semi-transparent one. */
 s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
@@ -2482,15 +2482,11 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
     SetDrawMode(&Font[fntCountX].draw_mode, 0, 0, fntTpage, &tw);
     if (isbg != 0) {
         SetTile(&Font[fntCountX].tile);
-        Font[fntCountX].tile.r0 = 0;
-        Font[fntCountX].tile.g0 = 0;
-        Font[fntCountX].tile.b0 = 0;
+        setRGB0(&Font[fntCountX].tile, 0, 0, 0);
         SetSemiTrans(&Font[fntCountX].tile, isbg == 2);
     }
-    Font[fntCountX].tile.x0 = x;
-    Font[fntCountX].tile.y0 = y;
-    Font[fntCountX].tile.w = w;
-    Font[fntCountX].tile.h = h;
+    setXY0(&Font[fntCountX].tile, x, y);
+    setWH(&Font[fntCountX].tile, w, h);
     Font[fntCountX].capacity = n;
     Font[fntCountX].written = 0;
     Font[fntCountX].buffer = &fntText[fntBase];
@@ -2505,9 +2501,6 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
     fntBase += n;
     return fntCountX++;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
-#endif
 
 #ifdef NON_MATCHING
 /* 2026-10-18: draft from the retail asm (the 3.6 font has colour escapes and
@@ -3978,11 +3971,8 @@ s32 _clr(RECT *arg0, s32 color) {
     return 0;
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-18: size matches (0x254) and 13 rows differ, all in the two clamp
- * temps: retail keeps the first clamp result in v1 (the copy of w) and the
- * second in a0. s16 locals with a separate result local get the loads and
- * branches right. Declaration order and register pins do not move it. */
+/* The clamps are written as `r = v; if (v > max) r = max;` inside the
+ * non-negative arm: that shape gives retail's single result register. */
 /* LoadImage: copies host memory to VRAM. */
 s32 _dws(RECT *arg0, s32 *arg1) {
     s16 w;
@@ -3998,10 +3988,24 @@ s32 _dws(RECT *arg0, s32 *arg1) {
     var_s4 = 0;
 
     w = arg0->w;
-    rw = GPU_CLAMP(w, 0, (s16)gfxMaxW[0]);
+    if (w >= 0) {
+        rw = w;
+        if (w > (s16)gfxMaxW[0]) {
+            rw = gfxMaxW[0];
+        }
+    } else {
+        rw = 0;
+    }
     arg0->w = rw;
     h = arg0->h;
-    rh = GPU_CLAMP(h, 0, (s16)gfxMaxH[0]);
+    if (h >= 0) {
+        rh = h;
+        if (h > (s16)gfxMaxH[0]) {
+            rh = gfxMaxH[0];
+        }
+    } else {
+        rh = 0;
+    }
     arg0->h = rh;
 
     temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
@@ -4036,13 +4040,7 @@ s32 _dws(RECT *arg0, s32 *arg1) {
 
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _dws);
-#endif
 
-#ifdef NON_MATCHING
-/* 2026-10-18: size matches (0x29c) and 17 rows differ, all in the two clamp
- * temps, as for _dws (here retail also keeps w in a0, ours in v1). */
 /* StoreImage: copies VRAM to host memory. */
 s32 _drs(RECT *arg0, s32 *arg1) {
     s16 w;
@@ -4056,10 +4054,24 @@ s32 _drs(RECT *arg0, s32 *arg1) {
     set_alarm();
 
     w = arg0->w;
-    rw = GPU_CLAMP(w, 0, (s16)gfxMaxW[0]);
+    if (w >= 0) {
+        rw = w;
+        if (w > (s16)gfxMaxW[0]) {
+            rw = gfxMaxW[0];
+        }
+    } else {
+        rw = 0;
+    }
     arg0->w = rw;
     h = arg0->h;
-    rh = GPU_CLAMP(h, 0, (s16)gfxMaxH[0]);
+    if (h >= 0) {
+        rh = h;
+        if (h > (s16)gfxMaxH[0]) {
+            rh = gfxMaxH[0];
+        }
+    } else {
+        rh = 0;
+    }
     arg0->h = rh;
 
     temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
@@ -4100,9 +4112,6 @@ s32 _drs(RECT *arg0, s32 *arg1) {
 
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _drs);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -6919,8 +6928,6 @@ void _SsContRpn2(s16 access, s16 sequence, u8 value) {
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContDataEntry);
-
 typedef struct {
     u16 unk0, unk2, unk4, unk6, unk8;
     s16 unkA, unkC, unkE, unk10;
@@ -6948,6 +6955,96 @@ typedef struct {
     s16 vag;
     s16 reserved[4];
 } SdkVagAttr;
+#ifdef NON_MATCHING
+void _SsSndSetVabAttr(s16, s16, s16, SdkVagAttr, SsAdsr, s16, u8);
+void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
+    struct SeqStruct *score;
+    s32 row;
+    s32 offset;
+    ProgAtr progAtr;
+    VagAtr vagAtr;
+    SsAdsr adsr;
+    u8 channel;
+    s32 i;
+    u16 fine;
+    s32 coarse;
+
+    row = (s32)D_800BDE3C[access];
+    offset = sequence * 0xAC;
+    score = (struct SeqStruct *)(offset + row);
+    channel = score->channel;
+    SsUtGetProgAtr(score->unk4C, score->programs[channel], (u8 *)&progAtr);
+    if (score->unk27 == 1 && score->unk10 == 0) {
+        score->unk28 = value;
+        score->unk10 = 1;
+        score->deltaValue = _SsReadDeltaValue(access, sequence);
+        return;
+    }
+    if (score->unk29 == 2) {
+        if (score->unk13 == 0 && score->unk14 == 0) {
+            for (i = 0; i < progAtr.tones; i++) {
+                SsUtGetVagAtr(score->unk4C, score->programs[channel], i,
+                              &vagAtr);
+                vagAtr.pbmax = value & 0x7F;
+                vagAtr.pbmin = value & 0x7F;
+                SsUtSetVagAtr(score->unk4C, score->programs[channel], i,
+                              &vagAtr);
+            }
+        }
+        if (score->unk13 == 1 && score->unk14 == 0) {
+            if ((u8)(value - 0x41) < 0x3F) {
+                fine = (value * 100 / 0x2000) << 13;
+            } else {
+                fine = 0;
+            }
+            for (i = 0; i < progAtr.tones; i++) {
+                SsUtGetVagAtr(score->unk4C, score->programs[channel], i,
+                              &vagAtr);
+                vagAtr.shift += fine & 0xFF;
+                SsUtSetVagAtr(score->unk4C, score->programs[channel], i,
+                              &vagAtr);
+            }
+        }
+        if (score->unk13 == 2 && score->unk14 == 0) {
+            if ((u8)(value - 0x40) < 0x40) {
+                coarse = (value * 25) << 8;
+            } else {
+                coarse = 0;
+            }
+            for (i = 0; i < progAtr.tones; i++) {
+                SsUtGetVagAtr(score->unk4C, score->programs[channel], i,
+                              &vagAtr);
+                vagAtr.center += coarse & 0xFF;
+                SsUtSetVagAtr(score->unk4C, score->programs[channel], i,
+                              &vagAtr);
+            }
+        }
+        score->deltaValue = _SsReadDeltaValue(access, sequence);
+        score->unk29 = 0;
+        return;
+    }
+    if (score->unk2A == 2) {
+        if (score->unk16 == 0x10) {
+            for (i = 0; i < progAtr.tones; i++) {
+                _SsSndSetVabAttr(score->unk4C, score->programs[channel], i,
+                                 *(SdkVagAttr *)&vagAtr, *(SsAdsr *)&adsr,
+                                 score->unk15, value);
+            }
+        } else {
+            _SsSndSetVabAttr(score->unk4C, score->programs[channel],
+                             score->unk16, *(SdkVagAttr *)&vagAtr,
+                             *(SsAdsr *)&adsr, score->unk15, value);
+        }
+        score->deltaValue = _SsReadDeltaValue(access, sequence);
+        score->unk2A = 0;
+        return;
+    }
+    score->deltaValue = _SsReadDeltaValue(access, sequence);
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContDataEntry);
+#endif
+
 s16 SsUtGetVagAtr(s16, s16, s16, VagAtr *);
 s16 SsUtSetVagAtr(s16, s16, s16, VagAtr *);
 void SsUtSetReverbDepth(short, short);
@@ -10114,16 +10211,18 @@ s32 SsUtKeyOff(s16 vc, s32 vabId, s32 prog, s16 tone, s16 note) {
     return -1;
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-17: donor body (sotn vmanager.c). 0x3A4 bytes against 0x39C: retail
- * passes note and fine to note2pitch2 without a sign extension and allocates
- * voice and vabId to s2 and s3 in the other order. */
+/* Donor body (sotn vmanager.c). Retail reads note and fine as u16 (no sign
+ * extension at the note2pitch2 call), so the C name differs from libsnd.h's
+ * all-short prototype; the asm label keeps the SDK name. (u8)voice for
+ * vmNoiseOn also fixes the s2/s3 order of voice and voll. */
 extern void SpuVmDoAllocate(void);
 extern void SpuVmKeyOnNow();
+extern void vmNoiseOn();
 extern s32 note2pitch2();
 
-s16 SsUtKeyOnV(s16 voice, s16 vabId, s16 prog, s16 tone, s16 note, s16 fine,
-               s16 voll, s16 volr) {
+s16 SsUtKeyOnVImpl(s16, s16, s16, s16, u16, u16, s16, s16) asm("SsUtKeyOnV");
+s16 SsUtKeyOnVImpl(s16 voice, s16 vabId, s16 prog, s16 tone, u16 note, u16 fine,
+                   s16 voll, s16 volr) {
     s32 tone2;
 
     if (_snd_ev_flag == 1) {
@@ -10186,16 +10285,13 @@ s16 SsUtKeyOnV(s16 voice, s16 vabId, s16 prog, s16 tone, s16 note, s16 fine,
     _svm_voice[voice].unk2 = 0;
     SpuVmDoAllocate();
     if (_svm_cur.voiceIdx == 0xFF) {
-        vmNoiseOn(voice);
+        vmNoiseOn((u8)voice);
     } else {
-        SpuVmKeyOnNow(1, note2pitch2(note, fine));
+        SpuVmKeyOnNow(1, (u16)note2pitch2(note, fine));
     }
     _snd_ev_flag = 0;
     return voice;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOnV);
-#endif
 
 s32 SsUtKeyOffV(s16 voice) {
     u16 bitsUpper;
@@ -13373,4 +13469,6 @@ int timeout(char *funcName) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", D_8008CA04);
+/* 0x4C zero bytes after timeout(): a scratch buffer that input.c fills at
+ * run time, not code. */
+ASM_FUNC(D_8008CA04, "    .space 0x4C # maspsx-keep\n")

@@ -1231,12 +1231,12 @@ void func_80041AF0(void) {
     func_80041F54(gPadBuffers, D_8008CA04, D_800B9DF8[0], D_800B9E00[0]);
 }
 
-extern u16 D_8008CA04U16[] asm("D_8008CA04.NON_MATCHING");
+extern u16 D_8008CA04U16[] asm("D_8008CA04");
 s32 func_80041B7C(s32 index) {
     return D_8008CA04U16[index * 4];
 }
 
-extern u16 D_8008CA04U16[] asm("D_8008CA04.NON_MATCHING");
+extern u16 D_8008CA04U16[] asm("D_8008CA04");
 u16 func_80041B94(s32 index) {
     return D_8008CA04U16[index];
 }
