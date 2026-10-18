@@ -2375,8 +2375,7 @@ void func_80041848(u8 *arg0, s32 arg1) {
  * probe inserted at other TU positions, so it is not positional. A
  * for-loop body in the same function compiled fine. Also reproducible:
  * the crash follows the statement stream, not one statement. Parked as
- * assembly. Draft that produced the near-miss shape (before the ICE
- * blocked iteration) is in kb/games/nascar98-us/notes-w6f.md. */
+ * assembly. */
 extern u8 D_8008D21C[];
 extern u8 D_8008D228[];
 extern u8 D_8008D234[];

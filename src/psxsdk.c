@@ -2507,8 +2507,7 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
  * birth and schedules it after max_y, as retail does. The one in the id
  * check is dead (flow deletes it) and leaves sprt a single-set biv. `v` is
  * reused in the colour escape so its second set stops sched1 from moving
- * the v0 shift after the u0 store. See "Allocator levers worked out on
- * FntFlush" in the KB. */
+ * the v0 shift after the u0 store. */
 u_long *FntFlush(s32 id) {
     char *buf;
     s32 x;
@@ -6969,8 +6968,7 @@ void _SsSndSetVabAttr(s16, s16, s16, SdkVagAttr, SsAdsr, s16, u8);
  * folds to zero, which leaves retail's extra `andi v1,s6,0xFF` in the
  * `beqz` delay slot; the `((x + y) << 4) & 0xF` terms in the three constant
  * stores add one 8-byte phantom frame slot each; the inline helper keeps
- * loop.c from hoisting `value & 0x7F`. See the KB, "Ghost uses and inline
- * helpers". */
+ * loop.c from hoisting `value & 0x7F`. */
 static __inline__ int SsDataEntryLow7(u8 data) {
     return data & 0x7F;
 }
@@ -9419,8 +9417,7 @@ s32 SpuVmPBVoice(s16, s16, s16, s16, u16);
 /* `seq` is retail's copy of arg0 for the vagIdx16 store. The
  * `(x << 4) & 0xF` terms are ghost uses (combine folds them to zero) that
  * set allocation priority: `voice` gets s0, the sum outranks arg0, and the
- * extra use of `(s16)arg0` makes loop.c hoist its `<< 16` out of the loop.
- * See the KB, "Ghost uses and inline helpers". */
+ * extra use of `(s16)arg0` makes loop.c hoist its `<< 16` out of the loop. */
 s32 SpuVmPitchBend(arg0, arg1, arg2, arg3)
 s32 arg0;
 s16 arg1;

@@ -11847,7 +11847,7 @@ INCLUDE_RODATA("asm/nonmatchings/scene", D_8008D738);
 /* func_80058D08: writes $gp directly; not expressible in C. */
 void func_80058D08(s32 gp) {
     /* Retail writes the new global pointer directly; not expressible
-     * in plain C (see kb/psx/matching.md func_80062874). */
+     * in plain C. */
     asm("addu $gp, $a0, $zero");
 }
 
