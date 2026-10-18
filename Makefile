@@ -340,6 +340,21 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=CD_dmaChcr=D_8009BD84 \
             --defsym=CD_ReadCallbackFunc=D_8009BD88 \
             --defsym=CD_read=D_8009BD8C \
+            --defsym=_spu_rev_attr=D_800A2258-4 \
+            --defsym=_spu_rev_startaddr=D_800A2710 \
+            --defsym=_spu_rev_param=D_800A2760 \
+            --defsym=_spu_timeout=D_800A26A4 \
+            --defsym=VSync_gpuStat=D_8009BDB8 \
+            --defsym=VSync_rcnt=D_8009BDBC \
+            --defsym=Hcount=D_8009BDC0 \
+            --defsym=prevVcount=D_8009BDC4 \
+            --defsym=Vcount=D_8009CE84 \
+            --defsym=mdec1=D_800A2CD8 \
+            --defsym=d0_chcr=D_800A2CAC \
+            --defsym=d1_chcr=D_800A2CB8 \
+            --defsym=d0_madr=D_800A2CA4 \
+            --defsym=d1_madr=D_800A2CB0 \
+            --defsym=_strtokLast=D_800A2B98 \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \

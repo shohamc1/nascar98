@@ -151,6 +151,22 @@ typedef struct VabHdr {
     u32 reserved1;
 } VabHdr;
 
+typedef struct SpuTRegs2 {
+    u8 pad[0x184];
+    s16 revVolLeft;
+    s16 revVolRight;
+    u8 pad1[0x1A6 - 0x188];
+    volatile u16 trans_addr;
+    volatile u16 trans_fifo;
+    volatile u16 spucnt;
+    u8 pad3[2];
+    volatile u16 spustat;
+} SpuTRegs2;
+typedef union SpuTRegsUnion2 {
+    SpuTRegs2 rxx;
+} SpuTRegsUnion2;
+extern volatile SpuTRegsUnion2 *_spu_RXX;
+
 extern VabHdr *_svm_vh;
 extern s16 _svm_stereo_mono;
 extern u16 _svm_orev1;

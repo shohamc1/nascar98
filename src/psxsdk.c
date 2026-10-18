@@ -1755,7 +1755,50 @@ CdlCB CdReadCallback(CdlCB func) {
     return old;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", VSync);
+extern void v_wait(int, int);
+extern volatile s32 *VSync_gpuStat;
+extern volatile s32 *VSync_rcnt;
+extern volatile s32 Hcount;
+extern volatile s32 prevVcount;
+extern volatile s32 Vcount;
+
+s32 VSync(s32 mode) {
+    s32 temp_s0;
+    s32 ret;
+    s32 max;
+    s32 waitCount;
+
+    temp_s0 = *VSync_gpuStat;
+
+    ret = (*VSync_rcnt - Hcount) & 0xFFFF;
+    if (mode < 0) {
+        return Vcount;
+    }
+    if (mode == 1) {
+        return ret;
+    }
+    if (mode > 0) {
+        waitCount = 1;
+        waitCount = (prevVcount - waitCount) + mode;
+    } else {
+        waitCount = prevVcount;
+    }
+    max = 0;
+    if (mode > 0) {
+        max = mode - 1;
+    }
+    v_wait(waitCount, max);
+    temp_s0 = *VSync_gpuStat;
+    v_wait(Vcount + 1, 1);
+    if ((temp_s0 & 0x80000) && ((temp_s0 ^ *VSync_gpuStat) >= 0)) {
+        do {
+
+        } while (!((temp_s0 ^ *VSync_gpuStat) & 0x80000000));
+    }
+    prevVcount = Vcount;
+    Hcount = *VSync_rcnt;
+    return ret;
+}
 
 extern s32 D_8009CE84[];
 extern char D_80090404[];
@@ -10170,7 +10213,71 @@ s32 _spu_init(s32 hotInit) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_writeByIO);
+extern char D_80090B58[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B58);
+extern char D_80090B6C[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090B6C);
+extern char D_80090B38[];
+extern s32 _spu_timeout;
+extern u16 _spu_tsa;
+
+#define WASTE_TIME()                                                           \
+    sp4 = 0xD;                                                                 \
+    for (sp0 = 0; sp0 < 0xF0; sp0++) {                                         \
+        sp4 *= 3;                                                              \
+    }
+
+s32 _spu_writeByIO(u8 *addr, u32 size) {
+    volatile s32 sp0;
+    volatile s32 sp4;
+    u16 spustat;
+    s32 num_to_trans;
+    u16 *cur_pos;
+    s32 spustat_cur;
+    s32 i;
+    u16 cnt;
+
+    cur_pos = (u16 *)addr;
+    spustat = _spu_RXX->rxx.spustat & 0x7FF;
+    _spu_RXX->rxx.trans_addr = _spu_tsa;
+    WASTE_TIME();
+    while (size != 0) {
+        num_to_trans = (size > 0x40) ? 0x40 : size;
+        for (i = 0; i < num_to_trans; i += 2) {
+            _spu_RXX->rxx.trans_fifo = *cur_pos++;
+        }
+        cnt = _spu_RXX->rxx.spucnt;
+        cnt &= ~0x30;
+        cnt |= 0x10;
+        _spu_RXX->rxx.spucnt = cnt;
+        WASTE_TIME();
+        _spu_timeout = 0;
+        while (_spu_RXX->rxx.spustat & 0x400) {
+            _spu_timeout++;
+            if (_spu_timeout > 5000) {
+                printf(D_80090B38, D_80090B58);
+                break;
+            }
+        }
+        WASTE_TIME();
+        WASTE_TIME();
+        size -= num_to_trans;
+    }
+    cnt = _spu_RXX->rxx.spucnt;
+    cnt &= ~0x30;
+    _spu_RXX->rxx.spucnt = cnt;
+    _spu_timeout = 0;
+    spustat_cur = _spu_RXX->rxx.spustat & 0x7FF;
+    while (spustat_cur != spustat) {
+        _spu_timeout++;
+        if (_spu_timeout > 5000) {
+            printf(D_80090B38, D_80090B6C);
+            return;
+        }
+        spustat_cur = _spu_RXX->rxx.spustat & 0x7FF;
+    }
+    return spustat_cur;
+}
 
 extern s32 D_800A26F8FiDMA[];
 extern u16 *D_800A26ACFiDMA[];
@@ -10253,16 +10360,6 @@ void _spu_r_(s32 arg0, u16 arg1, s32 arg2) {
     *D_800A26B8r[0] = 0x01000200;
 }
 
-typedef struct SpuTRegs2 {
-    u8 pad[0x1A6];
-    volatile u16 trans_addr;
-    u8 pad2[2];
-    volatile u16 spucnt;
-} SpuTRegs2;
-typedef union SpuTRegsUnion2 {
-    SpuTRegs2 rxx;
-} SpuTRegsUnion2;
-extern volatile SpuTRegsUnion2 *_spu_RXX;
 extern s32 _spu_transDir;
 extern volatile s32 *_spu_dmaAddr;
 extern volatile s32 *_spu_dmaSize;
@@ -10843,7 +10940,209 @@ s32 _SpuIsInAllocateArea_(u32 arg0) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuSetReverbModeParam);
+struct rev_param_entry {
+    u32 flags;
+    u16 dAPF1;
+    u16 dAPF2;
+    u16 vIIR;
+    u16 vCOMB1;
+    u16 vCOMB2;
+    u16 vCOMB3;
+    u16 vCOMB4;
+    u16 vWALL;
+    u16 vAPF1;
+    u16 vAPF2;
+    u16 mLSAME;
+    u16 mRSAME;
+    u16 mLCOMB1;
+    u16 mRCOMB1;
+    u16 mLCOMB2;
+    u16 mRCOMB2;
+    u16 dLSAME;
+    u16 dRSAME;
+    u16 mLDIFF;
+    u16 mRDIFF;
+    u16 mLCOMB3;
+    u16 mRCOMB3;
+    u16 mLCOMB4;
+    u16 mRCOMB4;
+    u16 dLDIFF;
+    u16 dRDIFF;
+    u16 mLAPF1;
+    u16 mRAPF1;
+    u16 mLAPF2;
+    u16 mRAPF2;
+    u16 vLIN;
+    u16 vRIN;
+};
+
+extern SpuReverbAttr _spu_rev_attr;
+extern u32 _spu_rev_startaddr[];
+extern struct rev_param_entry _spu_rev_param[];
+extern s32 _SpuIsInAllocateArea_(u32);
+extern void _spu_setReverbAttr();
+extern void _spu_FsetRXX(s32, u32, s32);
+
+static __inline__ void spuMemcpy(void *_dst, void *_src, u32 _size) {
+    char *pDst = (char *)_dst;
+    char *pSrc = (char *)_src;
+
+    while (_size--) {
+        *pDst++ = *pSrc++;
+    }
+}
+
+long SpuSetReverbModeParam(SpuReverbAttr *attr) {
+    struct rev_param_entry param;
+    long clear_wa;
+    long bSetMode;
+    long bSetDelay;
+    long bSetFeedback;
+    long bReverbWasEnabled;
+    long mode;
+    u32 mask;
+    long no_mask;
+    long temp;
+    long delay;
+    long feedback;
+    u16 spucnt;
+
+    clear_wa = 0;
+    mask = attr->mask;
+    bReverbWasEnabled = 0;
+    bSetMode = 0;
+    bSetDelay = 0;
+    bSetFeedback = 0;
+    no_mask = (mask == 0);
+    param.flags = 0;
+
+    if (no_mask || (mask & SPU_REV_MODE)) {
+        mode = attr->mode;
+        if (mode & SPU_REV_MODE_CLEAR_WA) {
+            mode &= ~SPU_REV_MODE_CLEAR_WA;
+            clear_wa = 1;
+        }
+
+        if ((u32)mode >= SPU_REV_MODE_MAX ||
+            _SpuIsInAllocateArea_(_spu_rev_startaddr[mode])) {
+            return -1;
+        }
+
+        bSetMode = 1;
+        _spu_rev_attr.mode = mode;
+        _spu_rev_offsetaddr = _spu_rev_startaddr[_spu_rev_attr.mode];
+        spuMemcpy(&param, &_spu_rev_param[_spu_rev_attr.mode], 0x44);
+
+        switch (_spu_rev_attr.mode) {
+        case SPU_REV_MODE_ECHO:
+            _spu_rev_attr.feedback = 127;
+            _spu_rev_attr.delay = 127;
+            break;
+        case SPU_REV_MODE_DELAY:
+            _spu_rev_attr.feedback = 0;
+            _spu_rev_attr.delay = 127;
+            break;
+        default:
+            _spu_rev_attr.feedback = 0;
+            _spu_rev_attr.delay = 0;
+            break;
+        }
+    }
+
+    if (no_mask || (mask & SPU_REV_DELAYTIME)) {
+        if (_spu_rev_attr.mode < 9) {
+            if (_spu_rev_attr.mode >= 7) {
+                bSetDelay = 1;
+                if (!bSetMode) {
+                    spuMemcpy(&param, &_spu_rev_param[_spu_rev_attr.mode],
+                              0x44);
+                    param.flags = 0x0C011C00;
+                }
+                delay = attr->delay;
+                _spu_rev_attr.delay = delay;
+                param.mLSAME = ((delay << 13) / 127) - param.dAPF1;
+                temp = (delay << 12) / 127;
+                param.mRSAME = temp - param.dAPF2;
+                param.mLCOMB1 = temp + param.mRCOMB1;
+                param.dLSAME = temp + param.dRSAME;
+                param.mLAPF1 = temp + param.mLAPF2;
+                param.mRAPF1 = temp + param.mRAPF2;
+            } else {
+                _spu_rev_attr.delay = 0;
+            }
+        } else {
+            _spu_rev_attr.delay = 0;
+        }
+    }
+
+    if (no_mask || (mask & SPU_REV_FEEDBACK)) {
+        if (_spu_rev_attr.mode < 9) {
+            if (_spu_rev_attr.mode >= 7) {
+                bSetFeedback = 1;
+                if (!bSetMode) {
+                    if (!bSetDelay) {
+                        spuMemcpy(&param, &_spu_rev_param[_spu_rev_attr.mode],
+                                  0x44);
+                        param.flags = 0x80;
+                    } else {
+                        param.flags |= 0x80;
+                    }
+                }
+                feedback = attr->feedback;
+                _spu_rev_attr.feedback = feedback;
+                param.vWALL = (feedback * 0x8100) / 127;
+            } else {
+                _spu_rev_attr.feedback = 0;
+            }
+        } else {
+            _spu_rev_attr.feedback = 0;
+        }
+    }
+
+    if (bSetMode) {
+        bReverbWasEnabled = (_spu_RXX->rxx.spucnt) >> 7 & 1;
+        if (bReverbWasEnabled) {
+            spucnt = _spu_RXX->rxx.spucnt;
+            spucnt &= 0xFF7F;
+            _spu_RXX->rxx.spucnt = spucnt;
+        }
+    }
+
+    if (!bSetMode) {
+        if (no_mask || (mask & SPU_REV_DEPTHL)) {
+            _spu_RXX->rxx.revVolLeft = attr->depth.left;
+            _spu_rev_attr.depth.left = attr->depth.left;
+        }
+        if (no_mask || (mask & SPU_REV_DEPTHR)) {
+            _spu_RXX->rxx.revVolRight = attr->depth.right;
+            _spu_rev_attr.depth.right = attr->depth.right;
+        }
+    } else {
+        _spu_RXX->rxx.revVolLeft = 0;
+        _spu_RXX->rxx.revVolRight = 0;
+        _spu_rev_attr.depth.left = 0;
+        _spu_rev_attr.depth.right = 0;
+    }
+
+    if (bSetMode || bSetDelay || bSetFeedback) {
+        _spu_setReverbAttr(&param);
+    }
+
+    if (clear_wa) {
+        SpuClearReverbWorkArea(_spu_rev_attr.mode);
+    }
+
+    if (bSetMode) {
+        _spu_FsetRXX(0xD1, _spu_rev_offsetaddr, 0);
+        if (bReverbWasEnabled) {
+            spucnt = _spu_RXX->rxx.spucnt;
+            spucnt |= 0x80;
+            _spu_RXX->rxx.spucnt = spucnt;
+        }
+    }
+
+    return 0;
+}
 
 typedef struct SpuReverbParams {
     u32 mask;
@@ -12248,7 +12547,51 @@ void *memmove(u8 *dest, u8 *src, int count) {
     return dest;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", strtok);
+extern char *_strtokLast;
+
+char *strtok(char *s, char *delim) {
+    u8 c;
+    char *spanp;
+    s32 found;
+    char *tok;
+
+    if (s == 0 && (s = _strtokLast) == 0) {
+        return 0;
+    }
+    while ((c = *s++) != 0) {
+        found = 0;
+        for (spanp = delim; *spanp != 0; spanp++) {
+            if (*spanp == c) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+    }
+    if (c == 0) {
+        _strtokLast = 0;
+        return 0;
+    }
+    tok = s - 1;
+    c = *s++;
+    while (c != 0) {
+        spanp = delim;
+        if (*spanp != 0) {
+            do {
+                if (*spanp++ == c) {
+                    s[-1] = 0;
+                    _strtokLast = s;
+                    return tok;
+                }
+            } while (*spanp != 0);
+        }
+        c = *s++;
+    }
+    _strtokLast = 0;
+    return tok;
+}
 
 ASM_FUNC(_card_info, "    addiu $t2, $zero, 0xA0 # maspsx-keep\n"
                      "    jr $t2 # maspsx-keep\n"
@@ -12472,7 +12815,7 @@ void MDEC_out(u32 *buf, u32 size) {
     *D_800A2CB8[0] = 0x01000200;
 }
 
-extern void timeout(char *name);
+extern int timeout(char *name);
 extern volatile u32 *D_800A2CD8[];
 extern char D_80090D38[];
 
@@ -12535,6 +12878,38 @@ void __maspsx_include_asm_hack_D_80090D48(void) {
             "    .section .text # maspsx-keep\n");
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", timeout);
+extern char D_80090D58[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090D58);
+extern char D_80090D80[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090D80);
+extern char D_80090DB8[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090DB8);
+extern volatile u32 *mdec1;
+extern volatile u32 *d0_chcr;
+extern volatile u32 *d1_chcr;
+extern volatile u32 *d0_madr;
+extern volatile u32 *d1_madr;
+
+int timeout(char *funcName) {
+    u32 temp_s0;
+
+    printf(D_80090DB8, funcName);
+    temp_s0 = *mdec1;
+
+    printf(D_80090D58, (*d0_chcr >> 0x18) & 1, (*d1_chcr >> 0x18) & 1, *d0_madr,
+           *d1_madr);
+
+    printf(D_80090D80, ~temp_s0 >> 0x1F, (temp_s0 >> 0x1E) & 1,
+           (temp_s0 >> 0x1D) & 1, (temp_s0 >> 0x1C) & 1, (temp_s0 >> 0x1B) & 1,
+           (temp_s0 >> 0x19) & 1, (temp_s0 >> 0x17) & 1);
+
+    *mdec1 = 0x80000000;
+    *d0_chcr = 0;
+    *d1_chcr = 0;
+    *d1_chcr;
+    *mdec1 = 0x60000000;
+
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", D_8008CA04);
