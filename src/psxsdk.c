@@ -3785,9 +3785,16 @@ s32 _clr(RECT *arg0, s32 color) {
 }
 
 #ifdef NON_MATCHING
-/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
+/* 2026-10-18: size matches (0x254) and 13 rows differ, all in the two clamp
+ * temps: retail keeps the first clamp result in v1 (the copy of w) and the
+ * second in a0. s16 locals with a separate result local get the loads and
+ * branches right. Declaration order and register pins do not move it. */
 /* LoadImage: copies host memory to VRAM. */
 s32 _dws(RECT *arg0, s32 *arg1) {
+    s16 w;
+    s16 h;
+    s16 rw;
+    s16 rh;
     s32 temp_a0;
     s32 size;
     s32 var_s0;
@@ -3796,8 +3803,12 @@ s32 _dws(RECT *arg0, s32 *arg1) {
     set_alarm();
     var_s4 = 0;
 
-    arg0->w = GPU_CLAMP(arg0->w, 0, (s16)gfxMaxW[0]);
-    arg0->h = GPU_CLAMP(arg0->h, 0, (s16)gfxMaxH[0]);
+    w = arg0->w;
+    rw = GPU_CLAMP(w, 0, (s16)gfxMaxW[0]);
+    arg0->w = rw;
+    h = arg0->h;
+    rh = GPU_CLAMP(h, 0, (s16)gfxMaxH[0]);
+    arg0->h = rh;
 
     temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
     if (temp_a0 <= 0) {
@@ -3818,7 +3829,7 @@ s32 _dws(RECT *arg0, s32 *arg1) {
     *GPU_DATA = LOW(arg0->x);
     *GPU_DATA = LOW(arg0->w);
 
-    while (var_s0--) {
+    while (--var_s0 != -1) {
         *GPU_DATA = *arg1++;
     }
 
@@ -3836,17 +3847,26 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", _dws);
 #endif
 
 #ifdef NON_MATCHING
-/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
+/* 2026-10-18: size matches (0x29c) and 17 rows differ, all in the two clamp
+ * temps, as for _dws (here retail also keeps w in a0, ours in v1). */
 /* StoreImage: copies VRAM to host memory. */
 s32 _drs(RECT *arg0, s32 *arg1) {
+    s16 w;
+    s16 h;
+    s16 rw;
+    s16 rh;
     s32 temp_a0;
     s32 size;
     s32 var_s0;
 
     set_alarm();
 
-    arg0->w = GPU_CLAMP(arg0->w, 0, (s16)gfxMaxW[0]);
-    arg0->h = GPU_CLAMP(arg0->h, 0, (s16)gfxMaxH[0]);
+    w = arg0->w;
+    rw = GPU_CLAMP(w, 0, (s16)gfxMaxW[0]);
+    arg0->w = rw;
+    h = arg0->h;
+    rh = GPU_CLAMP(h, 0, (s16)gfxMaxH[0]);
+    arg0->h = rh;
 
     temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
     if (temp_a0 <= 0) {
@@ -3873,7 +3893,7 @@ s32 _drs(RECT *arg0, s32 *arg1) {
         }
     }
 
-    while (var_s0--) {
+    while (--var_s0 != -1) {
         *arg1++ = *GPU_DATA;
     }
 
