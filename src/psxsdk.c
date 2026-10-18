@@ -738,11 +738,10 @@ INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090120);
 extern char D_8009013C[];
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009013C);
 
-#ifdef NON_MATCHING
-/* 2026-10-18: size matches (0x224) and 24 rows differ, all register names.
- * Retail gives first s0, the result address and then the table cursor s1,
- * n s2 and last s3; this draft gives the result address s0, n s1 and first
- * s2. Declaration order, register keywords and an s0 pin do not fix it. */
+/* One counter i runs both loops and n = i - 1 is a separate pseudo, as in
+ * retail. The `(first << 4) & 0xF` term is zero (combine folds it after flow
+ * analysis) but adds references to first, which lifts it above the fill-loop
+ * cursor in global allocation so that first gets s0. */
 /* Reads the first and last track and the start of each track. Returns the
  * number of tracks, or 0 on failure. */
 int CdGetToc2(int session, CdlLOC *table) {
@@ -774,15 +773,16 @@ int CdGetToc2(int session, CdlLOC *table) {
             i = 1;
             if (first <= last) {
                 do {
-                    param[0] = ((first / 10) << 4) + (first % 10) + ((first << 4) & 0xF);
+                    param[0] = ((first / 10) << 4) + (first % 10) +
+                               ((first << 4) & 0xF);
                     if (CdControlB(CdlGetTD, param, result) == 0) {
                         goto fail;
                     }
                     table[i].minute = result[1];
                     table[i].second = result[2];
                     table[i].sector = 0;
-                    first++;
                     i++;
+                    first++;
                 } while (first <= last);
             }
             n = i - 1;
@@ -802,9 +802,6 @@ fail:
     CdSyncCallback(old);
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdGetToc2);
-#endif
 
 extern CdlCB CdSyncCallback(CdlCB func);
 extern CdlCB CdReadyCallback(CdlCB func);
@@ -6957,6 +6954,9 @@ typedef struct {
 } SdkVagAttr;
 #ifdef NON_MATCHING
 void _SsSndSetVabAttr(s16, s16, s16, SdkVagAttr, SsAdsr, s16, u8);
+static __inline__ int SsDataEntryLow7(u8 data) {
+    return data & 0x7F;
+}
 void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
     struct SeqStruct *score;
     s32 row;
@@ -6985,8 +6985,8 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
             for (i = 0; i < progAtr.tones; i++) {
                 SsUtGetVagAtr(score->unk4C, score->programs[channel], i,
                               &vagAtr);
-                vagAtr.pbmax = value & 0x7F;
-                vagAtr.pbmin = value & 0x7F;
+                vagAtr.pbmax = SsDataEntryLow7(value);
+                vagAtr.pbmin = SsDataEntryLow7(value);
                 SsUtSetVagAtr(score->unk4C, score->programs[channel], i,
                               &vagAtr);
             }
@@ -9409,11 +9409,11 @@ s32 SpuVmPitchBend(s32 arg0, s16 arg1, s16 arg2, s16 arg3) {
     s32 var_s1;
     s16 voice;
 
-    _svm_cur.vagIdx16 = arg0;
     SpuVmVSetUp(arg1, arg2);
+    _svm_cur.vagIdx16 = arg0;
     var_s1 = 0;
     for (voice = 0; voice < spuVmMaxVoice; voice++) {
-        var_s1 += (s16)SpuVmPBVoice(voice, arg0, arg1, arg2, arg3);
+        var_s1 += (s16)SpuVmPBVoice(voice + ((voice << 4) & 0xF), arg0, arg1, arg2, arg3);
     }
     return var_s1;
 }
