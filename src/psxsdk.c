@@ -4030,7 +4030,7 @@ typedef struct GpuLast {
 } GpuLast;
 
 extern volatile GpuQueueItem gpuQueue[];
-extern GpuLast gpuLast;
+extern volatile GpuLast gpuLast;
 extern volatile s32 _qin;
 extern volatile s32 _qout;
 extern s32 gpuSavedMask;
@@ -4039,45 +4039,35 @@ extern s32 gpuAlarmEnd;
 extern s32 gpuAlarmCount;
 extern u8 gpuCtlBuf[];
 
-#ifdef NON_MATCHING
-/* 2026-10-17: right control flow, but 0x2CC bytes against 0x2FC: retail
- * recomputes the queue index (qout * 0x60) for every field access. */
 /* Runs queued drawing commands while the GPU DMA is idle. */
 s32 _exeque(void) {
-    s32 ret;
-
-    ret = 1;
-    if (!(*DMA2_CHCR & 0x01000000)) {
-        gpuSavedMask2 = SetIntrMaskFull(0);
-        if (_qin != _qout && !(*DMA2_CHCR & 0x01000000)) {
-            do {
-                if (((_qout + 1) & 0x3F) == _qin && gGfx.drawSyncCb == 0) {
-                    DMACallback(2, 0);
-                }
-                if (!(*GPU_STATUS & 0x04000000)) {
-                    do {
-                    } while (!(*GPU_STATUS & 0x04000000));
-                }
-                gpuQueue[_qout].func(gpuQueue[_qout].arg, gpuQueue[_qout].arg2);
-                gpuLast.func = gpuQueue[_qout].func;
-                gpuLast.arg = gpuQueue[_qout].arg;
-                gpuLast.arg2 = gpuQueue[_qout].arg2;
-                _qout = (_qout + 1) & 0x3F;
-            } while (_qin != _qout && !(*DMA2_CHCR & 0x01000000));
-        }
-        SetIntrMaskFull(gpuSavedMask2);
-        if (_qin == _qout && !(*DMA2_CHCR & 0x01000000) && gGfx.pad8 != 0 &&
-            gGfx.drawSyncCb != 0) {
-            gGfx.pad8 = 0;
-            gGfx.drawSyncCb();
-        }
-        ret = (_qin - _qout) & 0x3F;
+    if (*DMA2_CHCR & 0x01000000) {
+        return 1;
     }
-    return ret;
+    gpuSavedMask2 = SetIntrMaskFull(0);
+    if (_qin != _qout && !(*DMA2_CHCR & 0x01000000)) {
+        do {
+            if (((_qout + 1) & 0x3F) == _qin &&
+                *(volatile u32 *)&D_8009DA9C[0] == 0) {
+                DMACallback(2, 0);
+            }
+            while (!(*GPU_STATUS & 0x04000000)) {
+            }
+            gpuQueue[_qout].func(gpuQueue[_qout].arg, gpuQueue[_qout].arg2);
+            gpuLast.func = gpuQueue[_qout].func;
+            gpuLast.arg = gpuQueue[_qout].arg;
+            gpuLast.arg2 = gpuQueue[_qout].arg2;
+            _qout = (_qout + 1) & 0x3F;
+        } while (_qin != _qout && !(*DMA2_CHCR & 0x01000000));
+    }
+    SetIntrMaskFull(gpuSavedMask2);
+    if (_qin == _qout && !(*DMA2_CHCR & 0x01000000) && gGfx.pad8 != 0 &&
+        *(void *volatile *)&gGfx.drawSyncCb != 0) {
+        *(volatile s32 *)&gGfx.pad8 = 0;
+        (*(void (*volatile *)())&gGfx.drawSyncCb)();
+    }
+    return (_qin - _qout) & 0x3F;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _exeque);
-#endif
 
 /* Resets the GPU (mode 0 also clears the control shadow and the queue) and
  * flushes the command queue. */
