@@ -2500,11 +2500,14 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
 }
 
 #ifdef NON_MATCHING
-/* 2026-10-18: draft from the retail asm (the 3.6 font has colour escapes and
- * an auto-width box, unlike the sotn 3.3 donor). 211 rows against 201: retail
- * spills six values (the draw-mode pointer, the widest column, the bottom
- * edge and r, g, b) and keeps len in fp; this draft spills one more and keeps
- * the draw-mode pointer in fp. Declaration order does not move it. */
+/* Draft from the retail asm (the 3.6 font has colour escapes and an
+ * auto-width box, unlike the sotn 3.3 donor). Registers and frame match
+ * retail (0x68); 202 rows against 201, all in instruction order. The zero
+ * terms `(x << 4) & 0xF` are allocator levers: combine folds them away
+ * after flow analysis, but they add references that keep max_x, auto_width
+ * and line_break in registers and stop loop.c from reducing the sprite
+ * stores into a giv. See "Allocator levers worked out on FntFlush" in the
+ * KB. */
 u_long *FntFlush(s32 id) {
     char *buf;
     s32 x;
@@ -2525,8 +2528,8 @@ u_long *FntFlush(s32 id) {
 
     r = 0x80;
     g = 0x80;
-    b = 0x80;
     min_x = 0;
+    b = 0x80;
     if (id < 0 || id >= fntCountX) {
         id = D_8009D03C[0];
         if (Font[id].buffer == 0) {
@@ -2550,14 +2553,6 @@ u_long *FntFlush(s32 id) {
         }
         line_break = 0;
         switch (*buf) {
-        case '\n':
-            line_break = 1;
-            break;
-        case '\t':
-            x += 0x20;
-            goto test;
-        case ' ':
-            goto advance;
         case '~':
             buf++;
             if (*buf == 'c') {
@@ -2569,6 +2564,9 @@ u_long *FntFlush(s32 id) {
                 b = (*buf - '0') << 4;
             }
             break;
+        case '\t':
+            x += 0x20;
+            goto test;
         default:
             if ((u8)(*buf - 'a') < 26) {
                 ch = *buf - 0x40;
@@ -2582,16 +2580,20 @@ u_long *FntFlush(s32 id) {
             sprt->r0 = r;
             sprt->g0 = g;
             sprt->b0 = b;
-            AddPrim(dr, sprt);
-            sprt++;
-        advance:
+            AddPrim(dr, sprt++);
+            sprt += (x << 4) & 0xF; /* zero: sprt stops being a biv */
+        case ' ':
             x += 8;
         test:
+            max_x += (x << 4) & 0xF;
+            auto_width += (x << 5) & 0xF;
             if (x >= max_x && auto_width == 0) {
+            case '\n':
                 line_break = 1;
             }
             break;
         }
+        line_break += (x << 6) & 0xF;
         if (line_break) {
             if (min_x < x) {
                 min_x = x;
@@ -6954,6 +6956,14 @@ typedef struct {
 } SdkVagAttr;
 #ifdef NON_MATCHING
 void _SsSndSetVabAttr(s16, s16, s16, SdkVagAttr, SsAdsr, s16, u8);
+/* Draft from the retail asm. Registers and the 0x108 frame match; one rows
+ * differs (retail keeps a second `andi v1,s6,0xFF` in a delay slot). The
+ * odd terms are allocator levers, not original code: `fine` and `coarse`
+ * are retail's dead pitch computations (combine folds their uses, so they
+ * stay in s5); the `((x + y) << 4) & 0xF` terms in the three constant
+ * stores add one 8-byte phantom frame slot each; the inline helper keeps
+ * loop.c from hoisting `value & 0x7F`. See the KB, "Ghost uses and inline
+ * helpers". */
 static __inline__ int SsDataEntryLow7(u8 data) {
     return data & 0x7F;
 }
@@ -6976,7 +6986,7 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
     SsUtGetProgAtr(score->unk4C, score->programs[channel], (u8 *)&progAtr);
     if (score->unk27 == 1 && score->unk10 == 0) {
         score->unk28 = value;
-        score->unk10 = 1;
+        score->unk10 = 1 + ((((s32)score + channel) << 4) & 0xF);
         score->deltaValue = _SsReadDeltaValue(access, sequence);
         return;
     }
@@ -7020,7 +7030,7 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
             }
         }
         score->deltaValue = _SsReadDeltaValue(access, sequence);
-        score->unk29 = 0;
+        score->unk29 = (((s32)score - channel) << 5) & 0xF;
         return;
     }
     if (score->unk2A == 2) {
@@ -7036,7 +7046,7 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
                              *(SsAdsr *)&adsr, score->unk15, value);
         }
         score->deltaValue = _SsReadDeltaValue(access, sequence);
-        score->unk2A = 0;
+        score->unk2A = (((s32)score ^ channel) << 4) & 0xF;
         return;
     }
     score->deltaValue = _SsReadDeltaValue(access, sequence);
@@ -7163,7 +7173,7 @@ void _SsSndSetVabAttr(s16 vabId, s16 progNum, s16 toneNum, SdkVagAttr vagAtr,
 }
 
 /* SPDX-License-Identifier: MIT */
-s32 SpuVmPitchBend(s32, s16, s16, s16);
+s32 SpuVmPitchBend();
 s32 _SsReadDeltaValue(s16, s16);
 void _SsSetPitchBend(s16 access, s16 sequence) {
     struct SeqStruct *score;
@@ -9405,7 +9415,12 @@ s32 SpuVmPBVoice(s16, s16, s16, s16, u16);
  * rows differ: retail stores _svm_cur.vagIdx16 after the SpuVmVSetUp call
  * through a copy of arg0 (move v0,s2), and puts voice in s0 and the sum in
  * s1. */
-s32 SpuVmPitchBend(s32 arg0, s16 arg1, s16 arg2, s16 arg3) {
+s32 SpuVmPitchBend(arg0, arg1, arg2, arg3)
+s32 arg0;
+s16 arg1;
+s16 arg2;
+s16 arg3;
+{
     s32 var_s1;
     s16 voice;
 
@@ -9413,7 +9428,8 @@ s32 SpuVmPitchBend(s32 arg0, s16 arg1, s16 arg2, s16 arg3) {
     _svm_cur.vagIdx16 = arg0;
     var_s1 = 0;
     for (voice = 0; voice < spuVmMaxVoice; voice++) {
-        var_s1 += (s16)SpuVmPBVoice(voice + ((voice << 4) & 0xF), arg0, arg1, arg2, arg3);
+        var_s1 += (s16)SpuVmPBVoice(voice + ((voice << 4) & 0xF), arg0, arg1,
+                                    arg2, arg3);
     }
     return var_s1;
 }
