@@ -2499,15 +2499,16 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
     return fntCountX++;
 }
 
-#ifdef NON_MATCHING
-/* Draft from the retail asm (the 3.6 font has colour escapes and an
- * auto-width box, unlike the sotn 3.3 donor). Registers and frame match
- * retail (0x68); 200 rows against 201, all in instruction order. The zero
- * terms `(x << 4) & 0xF` are allocator levers: combine folds them away
- * after flow analysis, but they add references that keep max_x, auto_width
- * and line_break in registers and stop loop.c from reducing the sprite
- * stores into a giv. See "Allocator levers worked out on FntFlush" in the
- * KB. */
+/* The 3.6 font has colour escapes (`~cRGB`) and an auto-width box, unlike
+ * the sotn 3.3 donor. The zero terms `(n << k) & 0xF` are allocator levers:
+ * combine folds them away after flow analysis, but their references set
+ * register priorities. The ones before the loop add uses of auto_width
+ * without a second set, so sched1 still treats its load as a single-set
+ * birth and schedules it after max_y, as retail does. The one in the id
+ * check is dead (flow deletes it) and leaves sprt a single-set biv. `v` is
+ * reused in the colour escape so its second set stops sched1 from moving
+ * the v0 shift after the u0 store. See "Allocator levers worked out on
+ * FntFlush" in the KB. */
 u_long *FntFlush(s32 id) {
     char *buf;
     s32 x;
@@ -2526,12 +2527,15 @@ u_long *FntFlush(s32 id) {
     s32 b;
     s32 ch;
     s32 step;
+    s32 u;
+    s32 v;
 
     r = 0x80;
     g = 0x80;
     min_x = 0;
     b = 0x80;
     if (id < 0 || id >= fntCountX) {
+        sprt += (x << 4) & 0xF;
         id = D_8009D03C[0];
         if (Font[id].buffer == 0) {
             return 0;
@@ -2548,6 +2552,10 @@ u_long *FntFlush(s32 id) {
     max_y = y + font->tile.h;
     auto_width = font->autoWidth;
     TermPrim(dr);
+    x += (auto_width << 4) & 0xF;
+    x += (auto_width << 5) & 0xF;
+    x += (auto_width << 6) & 0xF;
+    x += (auto_width << 7) & 0xF;
     step = 8; /* an int, so the front end can't narrow `- 8` to 0xFFF8 */
     while (*buf != 0) {
         if (len == 0) {
@@ -2559,7 +2567,8 @@ u_long *FntFlush(s32 id) {
             buf++;
             if (*buf == 'c') {
                 buf++;
-                r = (*buf - '0') << 4;
+                v = *buf - '0';
+                r = v << 4;
                 buf++;
                 g = (*buf - '0') << 4;
                 buf++;
@@ -2575,20 +2584,20 @@ u_long *FntFlush(s32 id) {
             } else {
                 ch = *buf - 0x20;
             }
-            sprt->u0 = (ch % 16) * 8;
-            sprt->v0 = (ch / 16) * 8;
+            u = (ch % 16) * 8;
+            v = (ch / 16) * 8;
+            sprt->u0 = u;
+            sprt->v0 = v;
             sprt->x0 = x;
             sprt->y0 = y;
             sprt->r0 = r;
             sprt->g0 = g;
             sprt->b0 = b;
             AddPrim(dr, sprt++);
-            sprt += (x << 4) & 0xF; /* zero: sprt stops being a biv */
         case ' ':
             x += 8;
         test:
             max_x += (x << 4) & 0xF;
-            auto_width += (x << 5) & 0xF;
             if (x >= max_x && auto_width == 0) {
             case '\n':
                 line_break = 1;
@@ -2621,9 +2630,6 @@ u_long *FntFlush(s32 id) {
     *font->buffer = 0;
     return (u_long *)dr;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
-#endif
 
 extern u8 *D_8009DA44[];
 extern int strlen(const char *);
