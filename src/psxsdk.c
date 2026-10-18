@@ -598,49 +598,32 @@ typedef struct {
 
 extern u32 D_8009B9E8[];
 
+extern volatile RCnt *_counters asm("D_8009B9E8");
 long SetRCnt(long timer, unsigned short target, long mode) {
-    RCnt *r;
-    long md;
-    int t;
-    int isLow;
-    u32 addr;
-    register int result asm("v0");
-
-    t = timer & 0xFFFF;
-    if (t >= 3) {
+    long i = timer & 0xFFFF;
+    long md = 0x48;
+    if (i >= 3) {
         return 0;
     }
-    md = 0x48;
-    r = (RCnt *)(t * 16 + (u32)D_8009B9E8[0]);
-    isLow = (unsigned)t < 2;
-    r->mode = 0;
-    r->target = target;
-    do {
-    } while (0);
-    asm("" : : "r"(timer));
-    if (isLow) {
+    _counters[i].mode = 0;
+    _counters[i].target = target;
+    if (i < 2U) {
         if (mode & 0x10) {
             md = 0x49;
         }
         if (!(mode & 1)) {
             md |= 0x100;
         }
-    } else if (t == 2) {
+    } else if (i == 2U) {
         if (!(mode & 1)) {
             md = 0x248;
         }
     }
-    if (mode & 0x1000) {
+    if ((mode & 0x1000) != 0) {
         md |= 0x10;
     }
-    addr = t * 16;
-    do {
-    } while (0);
-    result = 1;
-    asm("" : : "r"(result));
-    addr += (u32)D_8009B9E8[0];
-    ((RCnt *)addr)->mode = md;
-    return result;
+    _counters[i].mode = md;
+    return 1;
 }
 
 long GetRCnt(long timer) {
@@ -1845,26 +1828,17 @@ s32 VSync(s32 mode) {
 extern s32 D_8009CE84[];
 extern char D_80090404[];
 
-/* The asm orders the D_8009CE84 load after the volatile count store. With no
- * dependence between them sched moves the load above the store, and the ra
- * save stays in the prologue; with it, the save sinks into the first branch's
- * delay slot like retail. The asm emits no code. */
 void v_wait(int mode, int time) {
-    volatile int count;
-    int cur;
+    volatile int timeout[2];
 
-    count = time << 15;
-    asm("" : "=r"(cur) : "m"(count));
-    if ((cur = D_8009CE84[0]) < mode) {
-        do {
-            count = count - 1;
-            if (count == -1) {
-                puts(D_80090404);
-                ChangeClearPAD(0);
-                ChangeClearRCnt(3, 0);
-                break;
-            }
-        } while (D_8009CE84[0] < mode);
+    timeout[0] = time << 15;
+    while (Vcount < mode) {
+        if (timeout[0]-- == 0) {
+            puts(D_80090404);
+            ChangeClearPAD(0);
+            ChangeClearRCnt(3, 0);
+            return;
+        }
     }
 }
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090404);
