@@ -12802,293 +12802,288 @@ INCLUDE_RODATA("asm/nonmatchings/psxsdk", sSprintfUpperDigits);
 extern u8 sSprintfLowerDigits[];
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", sSprintfLowerDigits);
 
-s32 sprintf(char *dest, char *format, ...) {
-    u8 buffer[512];
-    SprintfFormat spec;
-    u32 *args;
-    s32 length;
-    u8 *text;
+s32 sprintf(char *out, char *f, ...) {
+    char buf[0x200];
+    SprintfFormat info;
+    va_list args;
+    char *hexChars;
     s32 written;
-    s32 accumulator;
-    s32 c;
-    u32 value;
-    u8 *end;
-    const u8 *digits;
+    s32 num;
+    s32 len;
+    char *bufPtr;
+    u32 ch;
 
-    /* Keep the SDK argument cursor in its stack slot. */
-    (void)&args;
-    args = (u32 *)((u8 *)&format + sizeof(format));
+    va_start(args, f);
+    ch = *f;
     written = 0;
-    while ((c = (u8)*format) != 0) {
-        if (c == '%') {
-            spec = gSprintfDefaultFormat[0];
-            for (;;) {
-                c = (u8) * ++format;
-                if (c == '-') {
-                    spec.left = 1;
-                } else if (c == '+') {
-                    spec.plus = 1;
-                } else if (c == ' ') {
-                    spec.sign = c;
-                } else if (c == '#') {
-                    spec.alternate = 1;
-                } else if (c == '0') {
-                    spec.zero = 1;
-                } else {
-                    break;
-                }
-            }
-            if (c == '*') {
-                spec.width = (s32)*args++;
-                if (spec.width < 0) {
-                    spec.width = -spec.width;
-                    spec.left = 1;
-                }
-                c = (u8) * ++format;
-            } else {
-                while ((u32)(c - '0') < 10) {
-                    /* Keep the character offset after the multiply. */
-                    accumulator = spec.width * 10 - '0';
-                    asm("" : "=r"(accumulator) : "0"(accumulator));
-                    spec.width = accumulator + c;
-                    c = (u8) * ++format;
-                }
-            }
-            if (c == '.') {
-                c = (u8) * ++format;
-                if (c == '*') {
-                    spec.precision = (s32)*args++;
-                    c = (u8) * ++format;
-                } else {
-                    while ((u32)(c - '0') < 10) {
-                        accumulator = spec.precision * 10 - '0';
-                        asm("" : "=r"(accumulator) : "0"(accumulator));
-                        spec.precision = accumulator + c;
-                        c = (u8) * ++format;
-                    }
-                }
-                if (spec.precision >= 0) {
-                    spec.precisionSet = 1;
-                }
-            }
-            text = buffer + sizeof(buffer);
-            if (spec.left) {
-                spec.zero = 0;
-            }
-        convert:
-            switch (c) {
-            case 'h':
-                spec.shortArg = 1;
-                c = (u8) * ++format;
-                goto convert;
-            case 'l':
-                spec.longArg = 1;
-                c = (u8) * ++format;
-                goto convert;
-            case 'L':
-                spec.longDouble = 1;
-                c = (u8) * ++format;
-                goto convert;
-            case 'd':
-            case 'i':
-                /* Keep the argument load before the format flags. */
-                {
-                    register u32 *arg asm("v1");
-                    arg = args;
-                    args = arg + 1;
-                    value = *arg;
-                    asm("" : "=r"(value) : "0"(value));
-                }
-                if (spec.shortArg) {
-                    value = (s16)value;
-                }
-                if ((s32)value < 0) {
-                    value = -value;
-                    spec.sign = '-';
-                } else if (spec.plus) {
-                    spec.sign = '+';
-                }
-                goto decimal;
-            case 'u': {
-                register u32 *arg asm("v1");
-                arg = args;
-                args = arg + 1;
-                value = *arg;
-                asm("" : "=r"(value) : "0"(value));
-            }
-                if (spec.shortArg) {
-                    value = (u16)value;
-                }
-                spec.sign = 0;
-            decimal:
-                if (!spec.precisionSet) {
-                    if (spec.zero) {
-                        spec.precision = spec.width;
-                        if (spec.sign) {
-                            --spec.precision;
-                        }
-                    }
-                    if (spec.precision <= 0) {
-                        spec.precision = 1;
-                    }
-                }
-                length = 0;
-                while (value) {
-                    *--text = value % 10 + '0';
-                    value /= 10;
-                    ++length;
-                }
-                while (length < spec.precision) {
-                    *--text = '0';
-                    ++length;
-                }
-                if (spec.sign) {
-                    *--text = spec.sign;
-                    ++length;
-                }
-                goto emit;
-            case 'o': {
-                register u32 *arg asm("v1");
-                arg = args;
-                args = arg + 1;
-                value = *arg;
-                asm("" : "=r"(value) : "0"(value));
-            }
-                if (spec.shortArg) {
-                    value = (u16)value;
-                }
-                if (!spec.precisionSet) {
-                    if (spec.zero) {
-                        spec.precision = spec.width;
-                    }
-                    if (spec.precision <= 0) {
-                        spec.precision = 1;
-                    }
-                }
-                length = 0;
-                while (value) {
-                    *--text = (value & 7) + '0';
-                    value >>= 3;
-                    ++length;
-                }
-                if (spec.alternate && length && *text != '0') {
-                    *--text = '0';
-                    ++length;
-                }
-                while (length < spec.precision) {
-                    *--text = '0';
-                    ++length;
-                }
-                goto emit;
-            case 'p':
-                spec.precision = 8;
-                spec.precisionSet = 1;
-                spec.longArg = 1;
-            case 'X':
-                digits = sSprintfUpperDigits;
-                goto hexadecimal;
-            case 'x':
-                digits = sSprintfLowerDigits;
-            hexadecimal:
-                {
-                    register u32 *arg asm("v1");
-                    arg = args;
-                    args = arg + 1;
-                    value = *arg;
-                    asm("" : "=r"(value) : "0"(value));
-                }
-                if (spec.shortArg) {
-                    value = (u16)value;
-                }
-                if (!spec.precisionSet) {
-                    if (spec.zero) {
-                        spec.precision = spec.width;
-                        if (spec.alternate) {
-                            spec.precision -= 2;
-                        }
-                    }
-                    if (spec.precision <= 0) {
-                        spec.precision = 1;
-                    }
-                }
-                length = 0;
-                while (value) {
-                    *--text = digits[value & 15];
-                    value >>= 4;
-                    ++length;
-                }
-                while (length < spec.precision) {
-                    *--text = '0';
-                    ++length;
-                }
-                if (spec.alternate) {
-                    *--text = c;
-                    *--text = '0';
-                    length += 2;
-                }
-                goto emit;
-            case 'c':
-                *--text = *(u8 *)args++;
-                length = 1;
-                goto emit;
-            case 's':
-                text = (u8 *)*args++;
-                if (spec.alternate) {
-                    length = *text++;
-                    if (spec.precisionSet && spec.precision < length) {
-                        length = spec.precision;
-                    }
-                } else if (!spec.precisionSet) {
-                    length = strlen((char *)text);
-                } else {
-                    end = memchr(text, 0, spec.precision);
-                    length = end - text;
-                    if (!end) {
-                        length = spec.precision;
-                    }
-                }
-                goto emit;
-            case 'n': {
-                u32 flags;
+    for (; ch = *f, ch != 0; ++f) {
+        if (ch != '%') {
+            out[written++] = ch;
+            continue;
+        }
+        info = gSprintfDefaultFormat[0];
 
-                text = (u8 *)*args++;
-                flags = *(u32 *)&spec;
-                if (flags & 0x20) {
-                    /* Keep the full flags live through this test. */
-                    asm("" : : "r"(flags));
-                    *(s16 *)text = written;
-                } else {
-                    *(s32 *)text = written;
-                }
-                goto next;
-            }
-            default:
-                if (c != '%') {
-                    goto done;
-                }
-                goto character;
+        while (1) {
+            ch = *++f;
+            if (ch == '-') {
+                info.left = 1;
+            } else if (ch == '+') {
+                info.plus = 1;
+            } else if (ch == ' ') {
+                info.sign = ' ';
+            } else if (ch == '#') {
+                info.alternate = 1;
+            } else if (ch == '0') {
+                info.zero = 1;
+            } else {
+                break;
             }
         }
-    character:
-        dest[written++] = c;
-        goto next;
-    emit:
-        if (length < spec.width && !spec.left) {
+
+        if (ch == '*') {
+            info.width = va_arg(args, s32);
+            if (info.width < 0) {
+                info.width = -info.width;
+                info.left = 1;
+            }
+            ch = *++f;
+        } else {
+            while (ch >= '0' && ch <= '9') {
+                info.width = (info.width * 10) + (ch - '0');
+                ch = *++f;
+            }
+        }
+        if (ch == '.') {
+            ch = *++f;
+            if (ch == '*') {
+                info.precision = va_arg(args, s32);
+                ch = *++f;
+            } else {
+                while (ch >= '0' && ch <= '9') {
+                    info.precision = (info.precision * 10) + (ch - '0');
+                    ch = *++f;
+                }
+            }
+            if (info.precision >= 0) {
+                info.precisionSet = 1;
+            }
+        }
+
+        bufPtr = (char *)&args - sizeof(SprintfFormat) - 4;
+
+        if (info.left) {
+            info.zero = 0;
+        }
+
+    loop_30:
+        switch (ch) {
+        case 'h':
+            info.shortArg = 1;
+            ch = *++f;
+            goto loop_30;
+
+        case 'l':
+            info.longArg = 1;
+            ch = *++f;
+            goto loop_30;
+
+        case 'L':
+            info.longDouble = 1;
+            ch = *++f;
+            goto loop_30;
+
+        case 'd':
+        case 'i':
+            num = va_arg(args, s32);
             do {
-                dest[written++] = ' ';
-            } while (length < --spec.width);
+                if (info.shortArg) {
+                    num = (s16)num;
+                }
+            } while (0);
+            if (num < 0) {
+                num = -num;
+                info.sign = '-';
+            } else {
+                do {
+                    if (info.plus) {
+                        info.sign = '+';
+                    }
+                } while (0);
+            }
+            goto printDec;
+
+        case 'u':
+            num = va_arg(args, u32);
+            do {
+                if (info.shortArg) {
+                    num = (u16)num;
+                }
+            } while (0);
+            info.sign = '\0';
+        printDec:
+            if (!info.precisionSet) {
+                if (info.zero) {
+                    info.precision = info.width;
+                    if (info.sign != '\0') {
+                        info.precision = info.width - 1;
+                    }
+                }
+                if (info.precision <= 0) {
+                    info.precision = 1;
+                }
+            }
+            len = 0;
+            while (num != 0) {
+                *--bufPtr = (num % 10U) + '0';
+                num /= 10U;
+                len++;
+            }
+            while (len < info.precision) {
+                *--bufPtr = '0';
+                len++;
+            }
+            if (info.sign != '\0') {
+                *--bufPtr = info.sign;
+                len++;
+            }
+            break;
+
+        case 'o':
+            num = va_arg(args, u32);
+            do {
+                if (info.shortArg) {
+                    num = (u16)num;
+                }
+            } while (0);
+            if (!info.precisionSet) {
+                if (info.zero) {
+                    info.precision = info.width;
+                }
+                if (info.precision <= 0) {
+                    info.precision = 1;
+                }
+            }
+            len = 0;
+            while (num != 0) {
+                *--bufPtr = (num % 8U) + '0';
+                num /= 8U;
+                len++;
+            }
+            if (info.alternate && (len != 0) && (*bufPtr != '0')) {
+                *--bufPtr = '0';
+                len++;
+            }
+            while (len < info.precision) {
+                *--bufPtr = '0';
+                len++;
+            }
+            break;
+
+        case 'p':
+            info.precision = 8;
+            info.precisionSet = 1;
+            info.longArg = 1;
+        case 'X':
+            hexChars = (char *)sSprintfUpperDigits;
+            goto printHex;
+        case 'x':
+            hexChars = (char *)sSprintfLowerDigits;
+        printHex:
+            num = va_arg(args, u32);
+            do {
+                if (info.shortArg) {
+                    num = (u16)num;
+                }
+            } while (0);
+            if (!info.precisionSet) {
+                if (info.zero) {
+                    info.precision = info.width;
+                    if (info.alternate) {
+                        info.precision = info.width - 2;
+                    }
+                }
+                if (info.precision <= 0) {
+                    info.precision = 1;
+                }
+            }
+            len = 0;
+            while (num != 0) {
+                *--bufPtr = hexChars[num % 16U];
+                num /= 16U;
+                len++;
+            }
+            while (len < info.precision) {
+                *--bufPtr = '0';
+                len++;
+            }
+            if (info.alternate) {
+                *--bufPtr = ch;
+                *--bufPtr = '0';
+                len += 2;
+            }
+            break;
+
+        case 'c':
+            *--bufPtr = va_arg(args, char);
+            len = 1;
+            break;
+
+        case 's':
+            bufPtr = va_arg(args, char *);
+            if (info.alternate) {
+                len = *bufPtr++;
+                if (info.precisionSet) {
+                    if (info.precision < len) {
+                        len = info.precision;
+                    }
+                }
+            } else if (!info.precisionSet) {
+                len = strlen(bufPtr);
+            } else {
+                char *ptr = memchr(bufPtr, 0, info.precision);
+                len = ptr - bufPtr;
+                if (ptr == 0) {
+                    len = info.precision;
+                }
+            }
+            break;
+
+        case 'n':
+            bufPtr = va_arg(args, char *);
+            if (info.shortArg) {
+                *(u16 *)bufPtr = written;
+            } else if (info.longArg) {
+                LOW(*bufPtr) = written;
+            } else if (info.longDouble) {
+                LOW(*bufPtr) = written;
+            } else {
+                LOW(*bufPtr) = written;
+            }
+            continue;
+
+        default:
+            if (ch == '%') {
+                out[written++] = ch;
+                continue;
+            } else {
+                goto end;
+            }
         }
-        memmove((u8 *)dest + written, text, length);
-        written += length;
-        while (length < spec.width) {
-            dest[written++] = ' ';
-            ++length;
+        if (len < info.width && !info.left) {
+            while (len < info.width) {
+                out[written++] = ' ';
+                info.width--;
+            }
         }
-    next:
-        ++format;
+        memmove(&out[written], bufPtr, len);
+        written += len;
+        while (len < info.width) {
+            out[written++] = ' ';
+            len++;
+        }
     }
-done:
-    dest[written] = 0;
+end:
+    out[written] = 0;
     return written;
 }
 
