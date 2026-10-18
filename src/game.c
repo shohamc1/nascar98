@@ -1286,36 +1286,6 @@ INCLUDE_RODATA("asm/nonmatchings/game", D_8008CB94);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBB4);
 INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBD0);
 
-#ifdef NON_MATCHING
-/* Wall: semantics recovered (signed /50 then unsigned /100 final divide; D_80090ED8
- * loaded before D_80099590), but gcc schedules both index shifts above both loads and
- * allocates source into a2 / magic into a3, ours keeps expression order and picks a0/v1.
- * Consistent with the latency-5 scheduling profile. */
-extern u16 D_80090ED8[];
-extern s32 D_80099590[];
-extern u8 D_800A3320Absolute[];
-extern u8 D_800A331CAbsolute[];
-
-s32 func_80014398(s32 arg0) {
-    s32 source;
-    s32 difference;
-    s32 adjust;
-    s32 value;
-    s32 scale;
-    s32 tableValue;
-
-    tableValue = D_80090ED8[arg0];
-    source = D_80099590[arg0];
-    difference = source - tableValue;
-    adjust = difference * (0x64 - D_800A3320Absolute[0]);
-    adjust = adjust / 50;
-    value = source - adjust;
-    scale = D_800A331CAbsolute[0] + 0xC8;
-    scale = scale / 3;
-    value = value * (0xC8 - scale);
-    return (u32)value / 100;
-}
-#else
 extern u16 D_80090ED8[];
 extern s32 D_80099590[];
 extern u8 D_800A3320Absolute[];
@@ -1325,53 +1295,27 @@ s32 func_80014398(s32 arg0) {
     s32 *srcPtr;
     u16 *tblPtr;
     s32 source;
-    s32 tableValue;
-    register s32 raw asm("a0");
-    register s32 value asm("v1");
-    s32 difference;
     s32 adjust;
+    s32 value;
     s32 scale;
-    register s32 prod asm("v0");
-    s32 magic;
-    s32 sign;
-    s32 magic3;
-    s32 hi3;
-    s32 sign3;
+    s32 prod;
+    s32 tableValue;
 
     srcPtr = D_80099590 + arg0;
     tblPtr = D_80090ED8 + arg0;
     tableValue = *tblPtr;
     source = *srcPtr;
-    difference = source - tableValue;
-    adjust = difference * (0x64 - D_800A3320Absolute[0]);
-    magic = 0x51eb << 16;
-    do {
-    } while (0);
-    magic = magic | 0x851f;
-    asm volatile("mult\t%0,%1" : : "r"(adjust), "r"(magic));
-    raw = D_800A331CAbsolute[0];
-    magic3 = 0x5555 << 16;
-    asm volatile("mfhi\t%0" : "=r"(value));
-    asm volatile("ori\t%0,%1,0x5556" : "=r"(magic3) : "0"(magic3));
-    scale = raw + 0xC8;
-    asm volatile("mult\t%0,%1" : : "r"(scale), "r"(magic3));
-    sign = adjust >> 31;
-    do {
-    } while (0);
-    value >>= 4;
-    value -= sign;
+    adjust = (source - tableValue) * (0x64 - D_800A3320Absolute[0]);
+    value = adjust / 50;
     value = source - value;
-    sign3 = scale >> 31;
-    asm volatile("mfhi\t%0" : "=r"(hi3));
-    scale = hi3 - sign3;
+    scale = D_800A331CAbsolute[0] + 0xC8;
+    scale = scale / 3;
+    /* Rank anchor: two extra refs keep value in v1 without folding the
+     * final product into it, so the product reloads into v0. Emits nothing. */
+    asm("" : "=r"(value) : "0"(value));
     prod = value * (0xC8 - scale);
-    asm volatile("nop\n\tnop");
-    asm volatile("multu\t%0,%1" : : "r"(prod), "r"(magic));
-    asm volatile("mfhi\t%0" : "=r"(value));
-    return (u32)value >> 5;
+    return (u32)prod / 100;
 }
-
-#endif
 
 extern s32 D_800A2EB0Absolute[];
 extern void func_8003CAE8(s32);
