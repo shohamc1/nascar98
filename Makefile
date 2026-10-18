@@ -308,6 +308,38 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=kMaxPrograms=D_800B60A0 \
             --defsym=_svm_auto_kof_mode=D_800BA044 \
             --defsym=_svm_envx_idx=D_800AD89C \
+            --defsym=_svm_vab_vh=D_800AFAD8 \
+            --defsym=_svm_vab_pg=D_800AFA98 \
+            --defsym=_svm_vab_tn=D_800AFD9C \
+            --defsym=_svm_vab_total=D_800BE8AC \
+            --defsym=_svm_vab_start=D_800BE8F0 \
+            --defsym=_svm_brr_start_addr=D_800BE930 \
+            --defsym=Intr=D_8009BD58 \
+            --defsym=CD_resultSync=D_800A8CB8 \
+            --defsym=CD_resultReady=D_800A8CC0 \
+            --defsym=CD_resultC=D_800A8CC8 \
+            --defsym=Alarm=D_800A8CD0 \
+            --defsym=CD_cbready=D_8009BA80 \
+            --defsym=CD_debug=D_8009BA88 \
+            --defsym=CD_status=D_8009BA8C \
+            --defsym=CD_status1=D_8009BA90 \
+            --defsym=CD_nopen=D_8009BA94 \
+            --defsym=CD_pos=D_8009BA98 \
+            --defsym=CD_mode=D_8009BA9C \
+            --defsym=CD_com=D_8009BA9D \
+            --defsym=CD_comstr=D_8009BAA0 \
+            --defsym=CD_intrstr=D_8009BB20 \
+            --defsym=CD_cmdParams=D_8009BBC0 \
+            --defsym=CD_cmdPos=D_8009BCC0 \
+            --defsym=libcd_CDRegister0=D_8009BD40 \
+            --defsym=libcd_CDRegister1=D_8009BD44 \
+            --defsym=libcd_CDRegister2=D_8009BD48 \
+            --defsym=libcd_CDRegister3=D_8009BD4C \
+            --defsym=CD_comDelay=D_8009BD50 \
+            --defsym=CD_info=D_8009BD5C \
+            --defsym=CD_dmaChcr=D_8009BD84 \
+            --defsym=CD_ReadCallbackFunc=D_8009BD88 \
+            --defsym=CD_read=D_8009BD8C \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \

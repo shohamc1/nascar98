@@ -892,7 +892,7 @@ long CdDataCallback(void (*func)()) {
 
 /* SPDX-License-Identifier: MIT */
 
-extern void CD_datasync(int mode);
+extern int CD_datasync(int mode);
 
 void CdDataSync(int mode) {
     CD_datasync(mode);
@@ -1121,11 +1121,225 @@ int getintr(void) {
 }
 #undef COPY_CD_RESULT
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_sync);
+typedef char Result_t[8];
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_ready);
+typedef struct {
+    u8 sync;  /* sync state */
+    u8 ready; /* ready state */
+    u8 c;
+} CD_intr;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_cw);
+typedef struct Alarm_t {
+    s32 unk0;
+    s32 unk4;
+    char *unk8;
+} Alarm_t;
+
+extern volatile CD_intr Intr;
+extern Result_t CD_resultSync;
+extern Result_t CD_resultReady;
+extern Result_t CD_resultC;
+extern volatile Alarm_t Alarm;
+extern CdlCB CD_cbready;
+extern s32 CD_debug;
+extern s32 CD_status;
+extern s32 CD_status1;
+extern s32 CD_nopen;
+extern u8 CD_pos[];
+extern u8 CD_mode;
+extern u8 CD_com;
+extern char *CD_comstr[];
+extern char *CD_intrstr[];
+extern s32 CD_cmdParams[];
+extern s32 CD_cmdPos[];
+extern volatile u8 *libcd_CDRegister0;
+extern volatile u8 *libcd_CDRegister1;
+extern volatile u8 *libcd_CDRegister2;
+extern volatile u8 *libcd_CDRegister3;
+extern volatile s32 *CD_comDelay;
+extern char CD_info[];
+extern volatile s32 *CD_dmaChcr;
+extern s32 CheckCallback(void);
+extern void CD_flush(void);
+extern int getintr(void);
+
+static __inline__ void CD_memcpy(void *_dst, void *_src, u32 _size) {
+    char *pDst = (char *)_dst;
+    char *pSrc = (char *)_src;
+
+    if (pDst == 0) {
+        return;
+    }
+
+    while (_size--) {
+        *pDst++ = *pSrc++;
+    }
+}
+
+static __inline__ void CD_setAlarm(char *name) {
+    /* schedule a timeout 960 vblanks from now */
+    ((Alarm_t *)&Alarm)->unk0 = VSync(-1) + 960;
+    ((Alarm_t *)&Alarm)->unk4 = 0;
+    ((Alarm_t *)&Alarm)->unk8 = name;
+}
+
+extern char D_800902AC[];
+extern char D_800902BC[];
+
+static __inline__ s32 CD_getAlarm(void) {
+    if (((Alarm_t *)&Alarm)->unk0 < VSync(-1) ||
+        ((Alarm_t *)&Alarm)->unk4++ > 0x3C0000) {
+        puts(D_800902AC);
+        printf(D_800902BC, ((Alarm_t *)&Alarm)->unk8, CD_comstr[CD_com],
+               CD_intrstr[Intr.sync], CD_intrstr[Intr.ready]);
+        CD_flush();
+        return -1;
+    }
+    return 0;
+}
+
+static __inline__ void CD_callback(void) {
+    s32 interrupt;
+    u8 temp_s1;
+
+    temp_s1 = *libcd_CDRegister0 & 3;
+
+    while (1) {
+        interrupt = getintr();
+        if (interrupt == 0) {
+            break;
+        }
+
+        if ((interrupt & 4) && CD_cbready != 0) {
+            CD_cbready(Intr.ready, CD_resultReady);
+        }
+        if ((interrupt & 2) && CD_cbsync != 0) {
+            CD_cbsync(Intr.sync, CD_resultSync);
+        }
+    }
+    *libcd_CDRegister0 = temp_s1;
+}
+
+extern char D_80090334[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090334);
+extern char D_8009033C[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009033C);
+extern char D_80090348[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090348);
+extern char D_80090350[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090350);
+extern char D_80090360[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090360);
+
+s32 CD_sync(s32 mode, u8 *result) {
+    s32 i;
+    s32 sync;
+
+    CD_setAlarm(D_80090334);
+
+    while (1) {
+        if (CD_getAlarm()) {
+            return -1;
+        }
+
+        if (CheckCallback()) {
+            CD_callback();
+        }
+
+        sync = Intr.sync;
+        if (sync == CdlComplete || sync == CdlDiskError) {
+            Intr.sync = CdlComplete;
+            CD_memcpy(result, CD_resultSync, sizeof(Result_t));
+            return sync;
+        }
+
+        if (mode != 0) {
+            return 0;
+        }
+    }
+}
+
+s32 CD_ready(s32 mode, u8 *result) {
+    s32 i;
+    s32 c;
+    s32 ready;
+
+    CD_setAlarm(D_8009033C);
+    while (1) {
+        if (CD_getAlarm()) {
+            return -1;
+        }
+        if (CheckCallback()) {
+            CD_callback();
+        }
+        c = Intr.c;
+        if (c != 0) {
+            Intr.c = 0;
+            CD_memcpy(result, CD_resultC, sizeof(Result_t));
+            return c;
+        }
+        ready = Intr.ready;
+        if (ready != 0) {
+            Intr.ready = 0;
+            CD_memcpy(result, CD_resultReady, sizeof(Result_t));
+            return ready;
+        }
+        if (mode != 0) {
+            return 0;
+        }
+    }
+}
+
+s32 CD_cw(u8 com, u8 *param, u8 *result, s32 arg3) {
+    s32 i;
+
+    if (CD_debug > 1) {
+        printf(D_80090348, CD_comstr[com]);
+    }
+    if ((CD_cmdPos[com] != 0) && (param == 0)) {
+        if (CD_debug > 0) {
+            printf(D_80090350, CD_comstr[com]);
+        }
+        return -2;
+    }
+    CD_sync(CdlSync, 0);
+    if (com == CdlSetloc) {
+        for (i = 0; i < 4; i++) {
+            CD_pos[i] = param[i];
+        }
+    }
+    Intr.sync = CdlNoIntr;
+    if (CD_cmdParams[com]) {
+        Intr.ready = CdlNoIntr;
+    }
+    *libcd_CDRegister0 = 0;
+    for (i = 0; i < CD_cmdParams[com + 0x40]; i++) {
+        *libcd_CDRegister2 = param[i];
+    }
+    CD_com = com;
+    *libcd_CDRegister1 = com;
+    if (arg3 != 0) {
+        return 0;
+    }
+
+    CD_setAlarm(D_80090360);
+
+    while (Intr.sync == CdlNoIntr) {
+        if (CD_getAlarm()) {
+            return -1;
+        }
+        if (CheckCallback()) {
+            CD_callback();
+        }
+    }
+    if (Intr.sync == CdlComplete && com == CdlSetmode) {
+        CD_mode = *param;
+    }
+
+    CD_memcpy(result, CD_resultSync, sizeof(Result_t));
+
+    return -(Intr.sync == CdlDiskError);
+}
 
 extern u32 D_8009BD40[];
 extern u32 D_8009BD44[];
@@ -1220,9 +1434,79 @@ int CD_initintr(void) {
     InterruptCallback(2, callback);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_init);
+extern char D_8009039C[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009039C);
+extern char D_800903A8[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800903A8);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CD_datasync);
+s32 CD_init(void) {
+    puts(D_8009039C);
+    printf(D_800903A8, &CD_info);
+    CD_com = 0;
+    CD_mode = 0;
+    CD_cbready = 0;
+    CD_cbsync = 0;
+    CD_status1 = 0;
+    CD_status = 0;
+    ResetCallback();
+    InterruptCallback(2, callback);
+
+    *libcd_CDRegister0 = 1;
+    while (*libcd_CDRegister3 & 7) {
+        *libcd_CDRegister0 = 1;
+        *libcd_CDRegister3 = 7;
+        *libcd_CDRegister2 = 7;
+    }
+
+    Intr.ready = Intr.c = CdlNoIntr;
+    Intr.sync = CdlComplete;
+
+    *libcd_CDRegister0 = 0;
+    *libcd_CDRegister3 = 0;
+    *CD_comDelay = 0x1325;
+
+    CD_cw(CdlNop, 0, 0, 0);
+    if (CD_status & CdlStatShellOpen) {
+        CD_cw(CdlNop, 0, 0, 0);
+    }
+
+    if (CD_cw(CdlReset, 0, 0, 0)) {
+        return -1;
+    }
+
+    if (CD_cw(CdlDemute, 0, 0, 0)) {
+        return -1;
+    }
+
+    if (CD_sync(CdlSync, 0) != CdlComplete) {
+        return -1;
+    }
+    return 0;
+}
+
+extern char D_800903B4[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800903B4);
+
+s32 CD_datasync(s32 mode) {
+    s32 ret;
+
+    CD_setAlarm(D_800903B4);
+    while (1) {
+        if (CD_getAlarm()) {
+            ret = -1;
+            break;
+        }
+        if (!(*CD_dmaChcr & 0x01000000)) {
+            ret = 0;
+            break;
+        }
+        if (mode != 0) {
+            ret = 1;
+            break;
+        }
+    }
+    return ret;
+}
 
 extern u32 D_8009BD74[];
 extern u32 D_8009BD78[];
@@ -1281,9 +1565,108 @@ void callback(void) {
     *(u8 *)D_8009BD40[0] = temp;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", cb_read);
+typedef struct {
+    s32 sectors;
+    u32 *unk4;
+    u32 *unk8;
+    s32 mode;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s32 unk20;
+    CdlCB sync;
+    CdlCB ready;
+} cdreadStruct;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", cd_read_retry);
+extern volatile cdreadStruct CD_read;
+extern CdlCB CD_ReadCallbackFunc;
+extern char D_800903C0[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800903C0);
+extern s32 cd_read_retry(s32);
+
+void cb_read(u8 arg0, u8 *result) {
+    s32 pos[3];
+
+    if (arg0 == 1) {
+        if (CD_read.unk14 > 0) {
+            if (CD_read.unk10 == 0x200) {
+                CdGetSector(pos, 3);
+                if (CdPosToInt((CdlLOC *)pos) != CD_read.unk20) {
+                    puts(D_800903C0);
+                    CD_read.unk14 = -1;
+                }
+            }
+            CdGetSector(CD_read.unk8, CD_read.unk10);
+            CD_read.unk8 += CD_read.unk10;
+            CD_read.unk14--;
+            CD_read.unk20++;
+        }
+    } else {
+        CD_read.unk14 = -1;
+    }
+    CD_read.unk18 = VSync(-1);
+    if (CD_read.unk14 < 0) {
+        cd_read_retry(1);
+    }
+    if (VSync(-1) > CD_read.unk1C + 1200) {
+        CD_read.unk14 = -1;
+    }
+    if (CD_read.unk14 && VSync(-1) <= CD_read.unk1C + 1200) {
+        return;
+    }
+    CdSyncCallback(CD_read.sync);
+    CdReadyCallback(CD_read.ready);
+    CdControl(CdlPause, 0, 0);
+    if (CD_ReadCallbackFunc != 0) {
+        CD_ReadCallbackFunc(CD_read.unk14 == 0 ? CdlComplete : CdlDiskError,
+                            result);
+    }
+}
+
+extern char D_800903D8[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800903D8);
+extern char D_800903F0[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800903F0);
+
+s32 cd_read_retry(s32 retry) {
+    char mode;
+    s32 mode2;
+    CdSyncCallback(0);
+    CdReadyCallback(0);
+    if (CdStatus() & CdlStatShellOpen) {
+        if ((VSync(-1) % 0x40) == 0) {
+            puts(D_800903D8);
+        }
+        CdControlF(CdlNop, 0);
+        CD_read.unk1C = VSync(-1);
+        CD_read.unk14 = -1;
+        return CD_read.unk14;
+    }
+    if (retry) {
+        puts(D_800903F0);
+        CdControl(CdlPause, 0, 0);
+        if (!CdControl(CdlSetloc, CdLastPos(), 0)) {
+            return CD_read.unk14 = -1;
+        }
+    }
+    CdFlush();
+    mode2 = CD_read.mode;
+    mode = mode2;
+    if ((char)mode2 != CdMode() || retry) {
+        if (!CdControl(CdlSetmode, (u8 *)&mode, 0)) {
+            CD_read.unk14 = -1;
+            return CD_read.unk14;
+        }
+    }
+    CD_read.unk20 = CdPosToInt(CdLastPos());
+    CdReadyCallback((CdlCB)&cb_read);
+    CD_read.unk8 = CD_read.unk4;
+    CdControlF(CdlReadN, 0);
+    CD_read.unk14 = CD_read.sectors;
+    CD_read.unk18 = VSync(-1);
+    return CD_read.unk14;
+}
 
 extern volatile u32 D_8009BD98[];
 extern u32 D_8009BD9C[];
@@ -6136,7 +6519,64 @@ void _SsSetPitchBend(s16 access, s16 sequence) {
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsGetMetaEvent);
+extern void _SsSndNextSep(s16, s16);
+
+void _SsGetMetaEvent(s16 arg0, s16 arg1, u8 arg2) {
+    struct SeqStruct *score = &D_800BDE3C[arg0][arg1];
+
+    switch (arg2) {
+    case 0x51:
+        score->unk8C = (*score->readPos++) << 0x10 | (*score->readPos++) << 8 |
+                       *score->readPos++;
+        score->unk8C = 60000000 / score->unk8C;
+        if ((score->unk4A * score->unk8C * 10) < VBLANK_MINUS * 60) {
+            score->unk70 = score->unk6E =
+                (VBLANK_MINUS * 600) / (score->unk4A * score->unk8C);
+        } else {
+            score->unk6E = -1;
+            score->unk70 =
+                (score->unk4A * score->unk8C * 10) / (VBLANK_MINUS * 60);
+            if ((VBLANK_MINUS * 30) <
+                (score->unk4A * score->unk8C * 10) % (VBLANK_MINUS * 60)) {
+                score->unk70++;
+            }
+        }
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        return;
+    case 0x2F:
+        score->loopIndex++;
+        if (score->loopCount == 0) {
+            score->unk80 = 0;
+            score->unk27 = 0;
+            score->deltaValue = 0;
+            score->readPos = score->nextSepPos;
+            return;
+        }
+        if (score->loopIndex < score->loopCount) {
+            score->unk80 = 0;
+            score->unk27 = 0;
+            score->deltaValue = 0;
+            score->readPos = score->nextSepPos;
+            score->loopPos = score->nextSepPos;
+            return;
+        }
+        D_800BDE3C[arg0][arg1].unk90 &= ~1;
+        D_800BDE3C[arg0][arg1].unk90 &= ~8;
+        D_800BDE3C[arg0][arg1].unk90 &= ~2;
+        D_800BDE3C[arg0][arg1].unk90 |= 0x200;
+        D_800BDE3C[arg0][arg1].unk90 |= 4;
+        score->unk2B = 0;
+        score->loopPos = score->nextSepPos;
+        if (score->unk3C != 0xFF) {
+            score->unk2B = 0;
+            _SsSndNextSep(score->unk3C, score->unk0);
+            SpuVmSeqKeyOff((arg1 << 8) | arg0);
+        }
+        SpuVmSeqKeyOff((arg1 << 8) | arg0);
+        score->deltaValue = score->unk70;
+        return;
+    }
+}
 
 /* SPDX-License-Identifier: MIT */
 s32 _SsReadDeltaValue(s16 access, s16 sequence) {
@@ -6222,7 +6662,23 @@ void _SsSndNextSep(s16 access, s16 sequence) {
     D_800BDE3C[access][sequence].unk90 |= 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSetTempo);
+void SsSetTempo(s16 access, s16 sequence, s16 tempo) {
+    struct SeqStruct *score = &D_800BDE3C[access][sequence];
+
+    score->unk8C = tempo;
+    if ((score->unk4A * score->unk8C * 10) < (VBLANK_MINUS * 60)) {
+        score->unk70 = score->unk6E =
+            (VBLANK_MINUS * 600) / (score->unk4A * score->unk8C);
+    } else {
+        score->unk6E = -1;
+        score->unk70 = (score->unk4A * score->unk8C * 10) / (VBLANK_MINUS * 60);
+        if ((VBLANK_MINUS * 30) <
+            (score->unk4A * score->unk8C * 10) % (VBLANK_MINUS * 60)) {
+            score->unk70++;
+        }
+    }
+    score->unk72 = score->unk70;
+}
 
 void SsSetLoop(s16 access, s16 sequence, s16 count) {
     struct SeqStruct *score;
@@ -7035,7 +7491,138 @@ s32 sbaddr;
     return (s16)SsVabOpenHeadWithMode(addr, vabid, 1, sbaddr);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsVabOpenHeadWithMode);
+extern s32 _spu_getInTransfer(void);
+
+s16 SsVabOpenHeadMode(u8 *, s16, s16, u32) asm("SsVabOpenHeadWithMode");
+s16 SsVabOpenHeadMode(u8 *addr, s16 vabid, s16 arg2, u32 sbaddr) {
+    s32 vagLens[256];
+    s32 i;
+    s32 var_s0;
+    s16 vabId_2;
+    u16 temp_v1;
+    u16 *ptr_vag_off_table;
+    u32 magic;
+    u32 spuAllocMem;
+    u8 num_vags;
+    ProgAtr *pProgTable;
+    u8 *var_a2;
+    VabHdr *vab_hdr_2;
+    vabId_2 = 0x10;
+    if (_spu_getInTransfer() == 1) {
+        return -1;
+    }
+    _spu_setInTransfer(1);
+    if (vabid >= 0x10) {
+        _spu_setInTransfer(0);
+        return -1;
+    }
+    if (vabid == -1) {
+        for (i = 0; i < 16; i++) {
+            if (_svm_vab_used[i] == 0) {
+                _svm_vab_used[i] = 1;
+                vabId_2 = i;
+                _svm_vab_count++;
+                break;
+            }
+        }
+    } else {
+        var_a2 = _svm_vab_used;
+        if (var_a2[vabid] == 0) {
+            _svm_vab_used[vabid] = 1;
+            vabId_2 = vabid;
+            _svm_vab_count++;
+        }
+    }
+    if (vabId_2 >= 0x10) {
+        _spu_setInTransfer(0);
+        return -1;
+    }
+    var_a2 = addr;
+    _svm_vab_vh[vabId_2] = var_a2;
+
+    var_a2 = var_a2 + 0x20;
+    vab_hdr_2 = addr;
+    magic = vab_hdr_2->form;
+    if ((magic >> 8) != ('V' << 0x10 | 'A' << 0x8 | 'B')) {
+        _svm_vab_used[vabId_2] = 0;
+        _spu_setInTransfer(0);
+        _svm_vab_count -= 1;
+        return -1;
+    }
+    if ((magic & 0xFF) == 'p') {
+        if (vab_hdr_2->ver >= 5) {
+            kMaxPrograms = 0x80;
+        } else {
+            kMaxPrograms = 0x40;
+        }
+    } else {
+        kMaxPrograms = 0x40;
+    }
+    if (vab_hdr_2->ps <= kMaxPrograms) {
+        _svm_vab_pg[vabId_2] = var_a2;
+        pProgTable = var_a2;
+        var_a2 = var_a2 + (kMaxPrograms * 0x10);
+        var_s0 = 0;
+        for (i = 0; i < kMaxPrograms; i++) {
+            pProgTable[i].reserved1 = var_s0;
+            if (pProgTable[i].tones != 0) {
+                var_s0++;
+            }
+        }
+        var_s0 = 0;
+        _svm_vab_tn[vabId_2] = var_a2;
+        ptr_vag_off_table = var_a2 + (vab_hdr_2->ps << 9);
+        num_vags = vab_hdr_2->vs;
+        for (i = 0; i < 256; i++) {
+            if (num_vags >= i) {
+                temp_v1 = *ptr_vag_off_table;
+                if (vab_hdr_2->ver >= 5) {
+                    vagLens[i] = temp_v1 * 8;
+                } else {
+                    vagLens[i] = temp_v1 * 4;
+                }
+                var_s0 += vagLens[i];
+            }
+            ptr_vag_off_table++;
+        }
+
+        _svm_brr_start_addr[vabId_2] = ptr_vag_off_table;
+        spuAllocMem = sbaddr;
+        if (arg2 == 0) {
+            spuAllocMem = SpuMalloc(var_s0);
+            if (spuAllocMem == -1) {
+                _svm_vab_used[vabId_2] = 0;
+                _spu_setInTransfer(0);
+                _svm_vab_count -= 1;
+                return -1;
+            }
+        }
+        if ((spuAllocMem + var_s0) > 0x80000U) {
+        end:
+            _svm_vab_used[vabId_2] = 0;
+
+            _spu_setInTransfer(0);
+            _svm_vab_count -= 1;
+            return -1;
+        }
+        _svm_vab_start[vabId_2] = spuAllocMem;
+        var_s0 = 0;
+        for (i = 0; i <= num_vags; i++) {
+            var_s0 += vagLens[i];
+            if (!(i & 1)) {
+                pProgTable[i / 2].reserved2 = (spuAllocMem + var_s0) >> 3;
+            } else {
+                pProgTable[i / 2].reserved3 = (spuAllocMem + var_s0) >> 3;
+            }
+        }
+
+        _svm_vab_total[vabId_2] = var_s0;
+        _svm_vab_used[vabId_2] = 2;
+    } else {
+        goto end;
+    }
+    return vabId_2;
+}
 
 extern s32 D_800BE8AC[];
 extern s32 SpuSetTransferStartAddr(s32);
@@ -8712,7 +9299,86 @@ s16 prog;
     return ((u8 *)D_800B9928[0])[prog * 16 + 4];
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetVol);
+/* The unprototyped void declaration above is what the callers see. */
+s32 SpuVmSetVolImpl(s16, s16, s16, u16, u16) asm("SpuVmSetVol");
+s32 SpuVmSetVolImpl(s16 seq_sep_no, s16 vabId, s16 prog, u16 arg3, u16 arg4) {
+    struct SeqStruct *score =
+        &D_800BDE3C[seq_sep_no & 0xFF][(seq_sep_no & 0xFF00) >> 8];
+    s32 var_s2;
+    u8 voice;
+    s32 new_var;
+    u32 voll, volr;
+    u32 voll_t, volr_t;
+    s32 mvol_scaled;
+    u8 temp;
+    s16 new_var2;
+
+    var_s2 = 0;
+    SpuVmVSetUp(vabId, prog);
+    _svm_cur.vagIdx16 = seq_sep_no;
+    for (voice = 0; voice < spuVmMaxVoice; voice++) {
+        new_var2 = prog;
+        if ((_svm_voice[voice].unkE == seq_sep_no) &&
+            (_svm_voice[voice].prog == new_var2) &&
+            (_svm_voice[voice].vabId == vabId)) {
+            if (score->vol[score->channel] != arg3 &&
+                score->vol[score->channel] == 0) {
+                score->vol[score->channel] = 1;
+            }
+            new_var = (_svm_voice[voice].unk8 * arg3) / 0x7F;
+            mvol_scaled = _svm_vh->mvol * 0x3FFF;
+            voll_t = ((new_var * mvol_scaled) / 0x7F) / 0x7F;
+            voll_t =
+                ((voll_t * _svm_pg[new_var2].mvol *
+                  _svm_tn[_svm_voice[voice].tone + (new_var2 * 0x10)].vol) /
+                 0x7F) /
+                0x7F;
+            volr_t = voll_t;
+
+            voll_t = (voll_t * score->leftVolume) / 0x7F;
+            volr_t = (volr_t * score->rightVolume) / 0x7F;
+
+            temp = _svm_tn[_svm_voice[voice].tone].pan;
+            if (temp < 0x40) {
+                voll = voll_t;
+                volr = (volr_t * temp) / 0x3F;
+            } else {
+                voll = (voll_t * (0x7F - temp)) / 0x3F;
+                volr = volr_t;
+            }
+            temp = _svm_pg[_svm_voice[voice].unk10].mpan;
+            if (temp < 0x40) {
+                volr = (volr * temp) / 0x3F;
+            } else {
+                voll = (voll * (0x7F - temp)) / 0x3F;
+            }
+            do {
+                do {
+                    temp = arg4;
+                } while (0);
+            } while (0);
+            if (temp < 0x40) {
+                volr = (volr * temp) / 0x3F;
+            } else {
+                voll = (voll * (0x7F - temp)) / 0x3F;
+            }
+            if (_svm_stereo_mono == 1) {
+                if (voll < volr) {
+                    voll = volr;
+                } else {
+                    volr = voll;
+                }
+            }
+            voll = (voll * voll) / 0x3FFF;
+            volr = (volr * volr) / 0x3FFF;
+            _svm_sreg_buf[voice * 8 + 0] = voll;
+            _svm_sreg_buf[voice * 8 + 1] = volr;
+            _svm_sreg_dirty[voice] |= 3;
+            var_s2++;
+        }
+    }
+    return var_s2;
+}
 
 extern s32 D_800B2090[];
 extern s32 gOrderingTables[];
