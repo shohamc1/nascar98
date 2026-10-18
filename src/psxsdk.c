@@ -3851,32 +3851,13 @@ INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawEnv);
 extern u8 D_8009DA90[];
 
 s32 get_mode(s32 dfe, s32 dtd, s32 tpage) {
-    register s32 mode asm("v1");
-    register s32 page asm("v0");
-    u8 *type;
-
-    type = D_8009DA90;
-    asm("" : "=r"(type) : "0"(type));
-    if ((u32)(type[0] - 1) < 2U) {
-        mode = 0xE1000000;
-        if (dtd != 0) {
-            mode = 0xE1000800;
-        }
-        page = tpage & 0x27FF;
-        if (dfe != 0) {
-            page = page | 0x1000;
-        }
+    if ((u32)(*(volatile u8 *)&gGfx.type - 1) < 2U) {
+        return 0xE1000000 | (dtd ? 0x800 : 0) | (dfe ? 0x1000 : 0) |
+               (tpage & 0x27FF);
     } else {
-        mode = 0xE1000000;
-        if (dtd != 0) {
-            mode = 0xE1000200;
-        }
-        page = tpage & 0x9FF;
-        if (dfe != 0) {
-            page = page | 0x400;
-        }
+        return 0xE1000000 | (dtd ? 0x200 : 0) | (dfe ? 0x400 : 0) |
+               (tpage & 0x9FF);
     }
-    return mode | page;
 }
 
 /* SPDX-License-Identifier: MIT */
@@ -4012,23 +3993,11 @@ u32 get_ce(s16 arg0, s16 arg1) {
 extern u8 D_8009DA90[];
 
 s32 get_ofs(s32 x, s32 y) {
-    register s32 offsetX asm("v0");
-    register s32 offsetY asm("v1");
-    u8 *type;
-
-    type = D_8009DA90;
-    asm("" : "=r"(type) : "0"(type));
-    offsetY = y & 0xFFF;
-    if ((u32)(type[0] - 1) >= 2U) {
-        offsetY = y & 0x7FF;
-        offsetY = offsetY << 0xB;
-        offsetX = x & 0x7FF;
+    if ((u32)(*(volatile u8 *)&gGfx.type - 1) < 2U) {
+        return 0xE5000000 | ((y & 0xFFF) << 12) | (x & 0xFFF);
     } else {
-        offsetY = offsetY << 0xC;
-        offsetX = x & 0xFFF;
+        return 0xE5000000 | ((y & 0x7FF) << 11) | (x & 0x7FF);
     }
-    offsetX = offsetX | 0xE5000000;
-    return offsetY | offsetX;
 }
 
 /* SPDX-License-Identifier: MIT */
@@ -4051,11 +4020,12 @@ u32 get_tw(RECT *tw) {
 }
 
 #ifdef NON_MATCHING
-/* 2026-10-17: right shape (case 1 falls into default) but 8 bytes short.
- * Retail reads gGfx.type as lui/addiu/lbu 0(reg) and ANDs it with 0xFF; the
- * type read here compiles to a direct lbu. */
+/* 2026-10-17: the type read as a volatile byte gives retail's lui/addiu/lbu/
+ * andi head. The case blocks then differ (retail tests case 1 and case 2 in
+ * order and cross-jumps the two "0x400 - w - x" tails into one) and the
+ * result is 4 bytes long. */
 s32 get_dx(DISPENV *env) {
-    switch (gGfx.type) {
+    switch (*(volatile u8 *)&gGfx.type) {
     case 1:
         if (gGfx.reverse) {
             return 0x400 - env->disp.w - env->disp.x;
