@@ -3325,10 +3325,6 @@ extern char D_800907E8[];
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800907E8);
 extern s32 get_dx();
 
-#ifdef NON_MATCHING
-/* 2026-10-17: one compare short of retail. 0x4B4 bytes against 0x4B0; the final
- * height test (pad0 in v0, height in v1, one result register) and the saved
- * copy as volatile halfwords are the open rows. */
 DISPENV *PutDispEnv(DISPENV *env) {
     s32 h_start;
     s32 v_start;
@@ -3336,7 +3332,6 @@ DISPENV *PutDispEnv(DISPENV *env) {
     s32 v_end;
     s32 h_end;
     s32 size;
-    s32 small;
 
     cmd = 0x08000000;
     if (*(volatile u8 *)&gGfx.level >= 2) {
@@ -3391,11 +3386,8 @@ DISPENV *PutDispEnv(DISPENV *env) {
                 cmd |= 3;
             }
         }
-        small = env->disp.h < 0x121;
-        if (env->pad0 == 0) {
-            small = env->disp.h < 0x101;
-        }
-        if (small == 0) {
+        if (env->disp.h <= (env->pad0 ? 0x120 : 0x100)) {
+        } else {
             cmd |= 0x24;
         }
         gGpu->ctl(cmd);
@@ -3404,9 +3396,6 @@ DISPENV *PutDispEnv(DISPENV *env) {
     memcpy(&gGfx.dispEnv, env, size);
     return env;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", PutDispEnv);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
