@@ -281,6 +281,15 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26B0Init=D_800A26B0 \
             --defsym=D_800A26B4Init=D_800A26B4 \
             --defsym=_spu_keystat=D_800A229C \
+            --defsym=_spu_RXX=D_800A26AC \
+            --defsym=_spu_tsa=D_800A26A8 \
+            --defsym=_spu_transDir=D_800A26F8 \
+            --defsym=_spu_dmaAddr=D_800A26B0 \
+            --defsym=_spu_dmaSize=D_800A26B4 \
+            --defsym=_spu_dmaCtrl=D_800A26B8 \
+            --defsym=_spu_delayCtrl=D_800A26C0 \
+            --defsym=_spu_xferAddr=D_800A26FC \
+            --defsym=_spu_xferBlocks=D_800A2700 \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \
@@ -319,16 +328,6 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26E0ClearWrite=D_800A26E0 \
             --defsym=D_800A26E0ClearRestore=D_800A26E0 \
             --defsym=D_800A26ACCommon2=D_800A26AC \
-            --defsym=SpuRXXT=D_800A26AC \
-            --defsym=SpuTsaT=D_800A26A8 \
-            --defsym=SpuMemModePlusT=D_800A26D0 \
-            --defsym=SpuTransferDirT=D_800A26F8 \
-            --defsym=SpuTransferAddrT=D_800A26B0 \
-            --defsym=SpuTransferSizeT=D_800A26B4 \
-            --defsym=SpuTransferCtrlT=D_800A26B8 \
-            --defsym=SpuDelayCtrlT=D_800A26C0 \
-            --defsym=SpuTransferCountT=D_800A26FC \
-            --defsym=SpuTransferBlocksT=D_800A2700 \
             --defsym=D_800A2CE0.NON_MATCHING=D_800A2CE0 \
             --defsym=D_800A2CFC.NON_MATCHING=D_800A2CFC \
             --defsym=D_800A2D0C.NON_MATCHING=D_800A2D0C \

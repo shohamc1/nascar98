@@ -7837,47 +7837,44 @@ extern u8 D_800AD224[];
 extern u8 D_800AD3A4[];
 extern u16 D_800AD3CA[][26];
 
-#ifdef NON_MATCHING
-s32 SpuVmSetSeqVol(s16 seq_access, u16 volL, u16 volR, s16 applyNow) {
-    struct SeqStruct *score;
-    s32 mvolL;
-    s32 mvolR;
-    s16 i;
-    s32 pad[2];
-    u8 *chanL;
-    u8 *chanR;
+extern struct SeqStruct *D_800BDE3C[];
 
-    (void)&pad;
-    score = D_800BDE3C[seq_access & 0xFF];
-    D_800B9DDA[0] = seq_access;
-    score[(u16)seq_access >> 8].leftVolume = volL;
-    score[(u16)seq_access >> 8].rightVolume = volR;
-    if (score[(u16)seq_access >> 8].leftVolume >= 0x80) {
-        score[(u16)seq_access >> 8].leftVolume = 0x7F;
+/* Stores the sequence volume, and when applyNow is 1 updates the registers
+ * of every voice that plays it. */
+s32 SpuVmSetSeqVol(s16 seq, u16 voll, u16 volr, s16 applyNow) {
+    struct SeqStruct *score = &D_800BDE3C[seq & 0xFF][(seq >> 8) & 0xFF];
+    s16 voice;
+    s32 vollMul;
+    s32 volrMul;
+    u8 pad[4];
+    s32 temp;
+    s16 pos;
+
+    _svm_cur.vagIdx16 = seq;
+    score->leftVolume = voll;
+    score->rightVolume = volr;
+    temp = seq;
+    if (score->leftVolume >= 0x80) {
+        score->leftVolume = 0x7F;
     }
-    if (score[(u16)seq_access >> 8].rightVolume >= 0x80) {
-        score[(u16)seq_access >> 8].rightVolume = 0x7F;
+    if (score->rightVolume >= 0x80) {
+        score->rightVolume = 0x7F;
     }
-    mvolL = volL * 129;
-    mvolR = volR * 129;
+    vollMul = voll * 0x81;
+    volrMul = volr * 0x81;
+
     if (applyNow == 1) {
-        for (i = 0; i < D_800B9C80[0]; i++) {
-            if (D_800AD3CA[i][0] == (u16)seq_access) {
-                chanL = D_800AD224;
-                do {
-                    chanR = chanL + 2;
-                    *(s16 *)(chanL + ((i << 19) >> 15)) = mvolL;
-                    *(s16 *)(chanR + ((i << 19) >> 15)) = mvolR;
-                    D_800AD3A4[i] |= 3;
-                } while (0);
+        for (voice = 0; voice < spuVmMaxVoice; voice++) {
+            if ((u16)_svm_voice[voice].unkE == (u16)temp) {
+                pos = voice * 8;
+                _svm_sreg_buf[pos + 0] = vollMul;
+                _svm_sreg_buf[pos + 1] = volrMul;
+                _svm_sreg_dirty[voice] |= 3;
             }
         }
     }
-    return D_800B9DDA[0];
+    return _svm_cur.vagIdx16;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSetSeqVol);
-#endif
 
 extern s16 D_800B9DDA[];
 
@@ -7909,51 +7906,18 @@ s16 SpuVmGetSeqRVol(s16 seq_access) {
     return *(s16 *)&score[(seq_access & 0xFF00) >> 8].rightVolume;
 }
 
-#ifdef NON_MATCHING
-void SpuVmSeqKeyOff(arg0) s32 arg0;
+/* Keys off every voice that plays sequence arg0. */
+void SpuVmSeqKeyOff(arg0) s16 arg0;
 {
-    struct Voice {
-        s16 unk0;
-        s16 unk2;
-        s16 unk4;
-        u8 pad6[6];
-        s16 note;
-        s16 seq;
-        s16 unk10;
-        s16 prog;
-        s16 unk14;
-        s16 vabId;
-        u8 pad18[3];
-        u8 unk1b;
-        u8 pad1c[24];
-    };
-    extern struct Voice D_800AD3BC[];
-    extern u8 D_800B9C80[];
-    extern u16 D_800B9DDE[];
-    extern u8 D_800BEB98[];
-    extern u8 D_800BEB9C[];
-    extern u8 D_800BE998[];
-    extern u8 D_800BEBA0[];
-    extern u8 D_800AD8E4[];
-    extern u8 D_800AD974[];
-    extern u16 D_800AD96C[];
-    extern u16 D_800AD970[];
-    extern u8 D_800AD3D7[];
-    extern u8 D_800AD3C0[];
-    extern s16 D_800AD3CASeq[][26] asm("D_800AD3CA");
-    u16 bitsLower;
-    u16 bitsUpper;
     u8 voice;
-    u16 maskLow;
-    u16 maskUp;
+    u16 bitsUpper;
+    u16 bitsLower;
     u16 tempVoice;
 
-    for (voice = 0; voice < D_800B9C80[0]; voice++) {
-        if (D_800AD3CASeq[voice][0] == (s16)arg0) {
-            D_800B9DDE[0] = voice;
-            do {
-            } while (0);
-            tempVoice = *(u16 *)((s32)D_800B9DDA + 4);
+    for (voice = 0; voice < spuVmMaxVoice; voice++) {
+        if (_svm_voice[voice].unkE == arg0) {
+            _svm_cur.voice = voice;
+            tempVoice = GetSvmVoice();
             if (tempVoice < 0x10) {
                 bitsLower = 1 << tempVoice;
                 bitsUpper = 0;
@@ -7961,27 +7925,19 @@ void SpuVmSeqKeyOff(arg0) s32 arg0;
                 bitsLower = 0;
                 bitsUpper = 1 << (tempVoice - 0x10);
             }
-            D_800AD3BC[tempVoice].unk1b = 0;
-            D_800AD3BC[tempVoice].unk4 = 0;
-            D_800AD3BC[tempVoice].unk0 = 0;
-            maskLow = *(u16 *)D_800BEB98 | bitsLower;
-            *(u16 *)(D_800BE998 + 512) = maskLow;
-            maskUp = *(u16 *)(D_800BEBA0 + -4) | bitsUpper;
-            *(u16 *)D_800BEB9C = maskUp;
-            {
-                u16 next0;
-                u16 next1;
-                next0 = ((u16 *)D_800AD96C)[0] & ~*(u16 *)(D_800BE998 + 512);
-                ((u16 *)D_800AD8E4)[68] = next0;
-                next1 = ((u16 *)D_800AD974)[-2] & ~*(u16 *)D_800BEB9C;
-                *(u16 *)D_800AD970 = next1;
-            }
+
+            _svm_voice[tempVoice].unk1B = 0;
+            _svm_voice[tempVoice].unk4 = 0;
+            _svm_voice[tempVoice].unk0 = 0;
+
+            _svm_okof1 |= bitsLower;
+            _svm_okof2 |= bitsUpper;
+
+            _svm_okon1 &= ~_svm_okof1;
+            _svm_okon2 &= ~_svm_okof2;
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmSeqKeyOff);
-#endif
 
 extern s32 SpuVmVSetUp(s16, s16);
 extern u32 D_800B9928[];
@@ -8522,7 +8478,7 @@ extern s32 _spu_mem_mode_plus;
 extern s32 _spu_mem_mode;
 extern s32 _spu_mem_mode_unit;
 extern s32 _spu_mem_mode_unitM;
-extern s32 _spu_tsa;
+extern u16 _spu_tsa;
 extern s32 _spu_inTransfer[];
 extern s32 _spu_transferCallback[];
 extern s32 _spu_IRQCallback[];
@@ -8745,7 +8701,6 @@ void _spu_r_(s32 arg0, u16 arg1, s32 arg2) {
     *D_800A26B8r[0] = 0x01000200;
 }
 
-#ifdef NON_MATCHING
 typedef struct SpuTRegs2 {
     u8 pad[0x1A6];
     volatile u16 trans_addr;
@@ -8755,16 +8710,26 @@ typedef struct SpuTRegs2 {
 typedef union SpuTRegsUnion2 {
     SpuTRegs2 rxx;
 } SpuTRegsUnion2;
-extern volatile SpuTRegsUnion2 *SpuRXXT[];
-extern u16 SpuTsaT[];
-extern s32 SpuMemModePlusT[];
-extern s32 SpuTransferDirT[];
-extern volatile s32 *SpuTransferAddrT[];
-extern volatile s32 *SpuTransferSizeT[];
-extern volatile s32 *SpuTransferCtrlT[];
-extern volatile s32 *SpuDelayCtrlT[];
-extern s32 SpuTransferCountT[];
-extern s32 SpuTransferBlocksT[];
+extern volatile SpuTRegsUnion2 *_spu_RXX;
+extern s32 _spu_transDir;
+extern volatile s32 *_spu_dmaAddr;
+extern volatile s32 *_spu_dmaSize;
+extern volatile s32 *_spu_dmaCtrl;
+extern volatile s32 *_spu_delayCtrl;
+extern s32 _spu_xferAddr;
+extern s32 _spu_xferBlocks;
+
+static __inline__ void _spu_FsetDelayW(void) {
+    *_spu_delayCtrl = (*_spu_delayCtrl & 0xF0FFFFFF) | 0x20000000;
+}
+
+static __inline__ void _spu_FsetDelayR(void) {
+    *_spu_delayCtrl = (*_spu_delayCtrl & 0xF0FFFFFF) | 0x22000000;
+}
+
+/* Starts or checks an SPU transfer: 2 sets the address, 0 and 1 start a
+ * write or a read, 3 programs the DMA for count bytes. Returns -2 when the
+ * SPU does not settle. */
 s32 _spu_t(s32 arg0, ...) {
     s32 var_a2;
     s32 i;
@@ -8776,67 +8741,63 @@ s32 _spu_t(s32 arg0, ...) {
     switch (arg0) {
     case 2:
         count = va_arg(args, u32);
-        SpuTsaT[0] = count >> SpuMemModePlusT[0];
-        SpuRXXT[0]->rxx.trans_addr = SpuTsaT[0];
+        _spu_tsa = count >> _spu_mem_mode_plus;
+        _spu_RXX->rxx.trans_addr = _spu_tsa;
         break;
     case 1:
-        SpuTransferDirT[0] = 0;
+        _spu_transDir = 0;
         i = 0;
-        while (SpuRXXT[0]->rxx.trans_addr != SpuTsaT[0]) {
+        while (_spu_RXX->rxx.trans_addr != _spu_tsa) {
             if (++i > 0xF00)
                 return -2;
         }
-        cnt = SpuRXXT[0]->rxx.spucnt;
+        cnt = _spu_RXX->rxx.spucnt;
         cnt &= ~0x30;
         cnt |= 0x20;
-        SpuRXXT[0]->rxx.spucnt = cnt;
+        _spu_RXX->rxx.spucnt = cnt;
         break;
     case 0:
-        SpuTransferDirT[0] = 1;
+        _spu_transDir = 1;
         i = 0;
-        while (SpuRXXT[0]->rxx.trans_addr != SpuTsaT[0]) {
+        while (_spu_RXX->rxx.trans_addr != _spu_tsa) {
             if (++i > 0xF00)
                 return -2;
         }
-        cnt = SpuRXXT[0]->rxx.spucnt;
+        cnt = _spu_RXX->rxx.spucnt;
         cnt &= ~0x30;
         cnt |= 0x30;
-        SpuRXXT[0]->rxx.spucnt = cnt;
+        _spu_RXX->rxx.spucnt = cnt;
         break;
     case 3:
-        if (SpuTransferDirT[0] == 1)
+        if (_spu_transDir == 1)
             ck2 = 0x30;
         else
             ck2 = 0x20;
         i = 0;
-        while ((SpuRXXT[0]->rxx.spucnt & 0x30) != ck2) {
+        while ((_spu_RXX->rxx.spucnt & 0x30) != ck2) {
             if (++i > 0xF00)
                 return -2;
         }
-        if (SpuTransferDirT[0] == 1)
-            var_a2 = 0x22000000;
+        if (_spu_transDir == 1)
+            _spu_FsetDelayR();
         else
-            var_a2 = 0x20000000;
-        *SpuDelayCtrlT[0] = (*SpuDelayCtrlT[0] & 0xF0FFFFFF) | var_a2;
+            _spu_FsetDelayW();
         count = va_arg(args, u32);
-        SpuTransferCountT[0] = count;
+        _spu_xferAddr = count;
         count = va_arg(args, u32);
-        SpuTransferBlocksT[0] = count / 64;
-        SpuTransferBlocksT[0] += ((count % 64) ? 1 : 0);
-        *SpuTransferAddrT[0] = SpuTransferCountT[0];
-        *SpuTransferSizeT[0] = (SpuTransferBlocksT[0] << 16) | 0x10;
-        if (SpuTransferDirT[0] == 1)
+        _spu_xferBlocks = count / 64;
+        _spu_xferBlocks += ((count % 64) ? 1 : 0);
+        *_spu_dmaAddr = _spu_xferAddr;
+        *_spu_dmaSize = (_spu_xferBlocks << 16) | 0x10;
+        if (_spu_transDir == 1)
             var_a2 = 0x01000200;
         else
             var_a2 = 0x01000201;
-        *SpuTransferCtrlT[0] = var_a2;
+        *_spu_dmaCtrl = var_a2;
         break;
     }
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _spu_t);
-#endif
 
 extern long D_800A26C4[];
 extern u16 D_800A26A8[];
