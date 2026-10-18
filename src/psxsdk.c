@@ -3468,9 +3468,13 @@ void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw) {
 
 extern s32 get_mode();
 
-#ifdef NON_MATCHING
-/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
 void SetDrawEnv(DR_ENV *dr_env_in, DRAWENV *env) {
+    s32 w;
+    s32 h;
+    s32 m;
+    s32 n;
+    s32 rw;
+    s32 rh;
     RECT clip_rect;
     s32 offset;
     DR_ENV *dr_env;
@@ -3491,8 +3495,22 @@ void SetDrawEnv(DR_ENV *dr_env_in, DRAWENV *env) {
         clip_rect.y = env->clip.y;
         clip_rect.w = env->clip.w;
         clip_rect.h = env->clip.h;
-        clip_rect.w = GPU_CLAMP(clip_rect.w, 0, (s16)gfxMaxW[0] - 1);
-        clip_rect.h = GPU_CLAMP(clip_rect.h, 0, (s16)gfxMaxH[0] - 1);
+        w = clip_rect.w;
+        rw = w < 0 ? 0
+                   : (
+                         {
+                             m = (s16)gfxMaxW[0] - 1;
+                             w > m ? m : w;
+                         });
+        clip_rect.w = rw;
+        h = clip_rect.h;
+        rh = h < 0 ? 0
+                   : (
+                         {
+                             n = (s16)gfxMaxH[0] - 1;
+                             h > n ? n : h;
+                         });
+        clip_rect.h = rh;
 
         if ((clip_rect.x & 0x3F) || (clip_rect.w & 0x3F)) {
             clip_rect.x -= env->ofs[0];
@@ -3513,9 +3531,6 @@ void SetDrawEnv(DR_ENV *dr_env_in, DRAWENV *env) {
 
     setlen(dr_env, offset - 1);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawEnv);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
