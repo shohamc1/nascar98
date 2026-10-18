@@ -135,6 +135,33 @@ extern char _svm_sreg_dirty[];
 extern ProgAtr *_svm_pg;
 extern VagAtr *_svm_tn;
 extern s16 _svm_damper;
+typedef struct VabHdr {
+    s32 form;
+    s32 ver;
+    s32 id;
+    u32 fsize;
+    u16 reserved0;
+    u16 ps;
+    u16 ts;
+    u16 vs;
+    u8 mvol;
+    u8 pan;
+    u8 attr1;
+    u8 attr2;
+    u32 reserved1;
+} VabHdr;
+
+extern VabHdr *_svm_vh;
+extern s16 _svm_stereo_mono;
+extern u16 _svm_orev1;
+extern u16 _svm_orev2;
+extern s16 _svm_vcf;
+extern u16 _svm_vab_count;
+extern u32 _ss_spu_vm_rec[];
+extern s16 kMaxPrograms;
+extern u8 _svm_auto_kof_mode;
+extern s32 _svm_envx_idx;
+extern u8 _svm_vab_used[];
 extern u8 spuVmMaxVoice;
 extern void SpuSetNoiseVoice();
 

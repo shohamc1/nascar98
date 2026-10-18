@@ -297,6 +297,17 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=_snd_seq_t_max=D_800BE728 \
             --defsym=VBLANK_MINUS=D_800BDE2C \
             --defsym=_svm_rattr=D_800AE27C \
+            --defsym=_svm_vab_used=D_800B9DE4 \
+            --defsym=_svm_vh=D_800B9930 \
+            --defsym=_svm_stereo_mono=D_800B1EA4 \
+            --defsym=_svm_orev1=D_800AD9A8 \
+            --defsym=_svm_orev2=D_800AD9AC \
+            --defsym=_svm_vcf=D_800B9DBC \
+            --defsym=_svm_vab_count=D_800BE8EC \
+            --defsym=_ss_spu_vm_rec=D_800AD8E4 \
+            --defsym=kMaxPrograms=D_800B60A0 \
+            --defsym=_svm_auto_kof_mode=D_800BA044 \
+            --defsym=_svm_envx_idx=D_800AD89C \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \
