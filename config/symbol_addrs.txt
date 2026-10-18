@@ -365,6 +365,7 @@ SsVabFakeHead = 0x80082148; // type:func
 SsVabOpenHeadWithMode = 0x8008217C; // type:func
 SsVabTransBody = 0x80082584; // type:func
 SsVabTransCompleted = 0x80082644; // type:func
+SpuVmDamperOff = 0x80082670; // type:func
 SpuVmDamperOn = 0x80082680; // type:func
 SsUtGetProgAtr = 0x80082694; // type:func
 SpuVmVSetUp = 0x8008279C; // type:func

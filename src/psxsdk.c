@@ -5578,12 +5578,10 @@ void _SsSetProgramChange(s16 access, s16 sequence, u8 program) {
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
-#ifdef NON_MATCHING
-/* WALL (2026-10-11): 756 bytes versus 792 retail. Controller 101 calls
- * _SsContRpn2. Parameter copies and branch tails remain different. */
 /* SPDX-License-Identifier: MIT */
 void SpuVmSetVol();
 s32 SpuVmSetProgVol(s16, s16, s32);
+void SpuVmDamperOff(void);
 void _SsContDataEntry(s16, s16, u8);
 void _SsContPortamento(s16, s16, u8);
 void _SsContNrpn1(s16, s16, u8);
@@ -5592,98 +5590,72 @@ void _SsContRpn1(s16, s16, u8);
 void _SsContRpn2(s16, s16, u8);
 void _SsContResetAll(s16, s16);
 
-void _SsSetControlChange(s16 access, s16 sequence, u8 event) {
-    struct SeqStruct *score;
-    s32 value;
-    s32 ch;
-    s32 accessValue;
-    s32 sequenceValue;
+void _SsSetControlChange(s16 arg0, s16 arg1, u8 control) {
+    struct SeqStruct *score = &D_800BDE3C[arg0][arg1];
+    s16 channel = score->channel;
+    s16 val = *score->readPos++;
 
-    score = (struct SeqStruct *)((s32)D_800BDE3C[access] + sequence * 0xAC);
-    value = *score->readPos++;
-    ch = score->channel;
-    switch (event) {
-    case 0:
-        score->unk4C = value;
+    switch (control) {
+    case 0x0:
+        score->unk4C = val;
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
         break;
-    case 6:
-        _SsContDataEntry(access, sequence, value);
-        return;
-    case 7:
-        sequenceValue = sequence;
-        accessValue = access;
-        SpuVmSetVol((sequenceValue << 8) | accessValue, score->unk4C,
-                    score->programs[ch], value, score->panpot[ch]);
-        score->vol[ch] = value;
-        score->deltaValue = _SsReadDeltaValue(accessValue, sequenceValue);
-        return;
-    case 10:
-        sequenceValue = sequence;
-        accessValue = access;
-        SpuVmSetVol((sequenceValue << 8) | accessValue, score->unk4C,
-                    score->programs[ch], score->vol[ch], value);
-        score->panpot[ch] = value;
-        score->deltaValue = _SsReadDeltaValue(accessValue, sequenceValue);
-        return;
-    case 11:
-        sequenceValue = sequence;
-        accessValue = access;
-        SpuVmSetProgVol(score->unk4C, score->programs[ch], value);
-        SpuVmSetVol((sequenceValue << 8) | accessValue, score->unk4C,
-                    score->programs[ch], score->vol[ch], score->panpot[ch]);
-        score->deltaValue = _SsReadDeltaValue(accessValue, sequenceValue);
-        return;
-    case 64:
-        if (value < 0x40) {
-            func_80082670();
+    case 0x6:
+        _SsContDataEntry(arg0, arg1, val);
+        break;
+    case 0x7:
+        SpuVmSetVol((arg1 << 8) | arg0, score->unk4C, score->programs[channel],
+                    val, score->panpot[channel]);
+        score->vol[channel] = val;
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        break;
+    case 0xA:
+        SpuVmSetVol((arg1 << 8) | arg0, score->unk4C, score->programs[channel],
+                    score->vol[channel], val);
+        score->panpot[channel] = val;
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        break;
+    case 0xB:
+        SpuVmSetProgVol(score->unk4C, score->programs[channel], val);
+        SpuVmSetVol((arg1 << 8) | arg0, score->unk4C, score->programs[channel],
+                    score->vol[channel], score->panpot[channel]);
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        break;
+    case 0x40:
+        if (val >= 0 && val < 0x40) {
+            SpuVmDamperOff();
         } else {
             SpuVmDamperOn();
         }
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
         break;
-    case 65:
-        _SsContPortamento(access, sequence, value);
-        return;
-    case 93:
-        SsUtSetReverbDepth(value, value);
+    case 0x41:
+        _SsContPortamento(arg0, arg1, val);
         break;
-    case 98:
-        _SsContNrpn1(access, sequence, value);
-        return;
-    case 99:
-        _SsContNrpn2(access, sequence, value);
-        return;
-    case 100:
-        _SsContRpn1(access, sequence, value);
-        return;
-    case 101:
-        _SsContRpn2(access, sequence, value);
-        return;
-    case 121:
-        _SsContResetAll(access, sequence);
-        return;
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 8:
-    case 9:
-    case 12:
-    case 91:
-    case 92:
-    case 94:
-    case 95:
-    case 96:
-    case 97:
-    case 120:
+    case 0x5B:
+        SsUtSetReverbDepth(val, val);
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        break;
+    case 0x62:
+        _SsContNrpn1(arg0, arg1, val);
+        break;
+    case 0x63:
+        _SsContNrpn2(arg0, arg1, val);
+        break;
+    case 0x64:
+        _SsContRpn1(arg0, arg1, val);
+        break;
+    case 0x65:
+        _SsContRpn2(arg0, arg1, val);
+        break;
+    case 0x79:
+        _SsContResetAll(arg0, arg1);
+        break;
     default:
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
         break;
     }
-    score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSetControlChange);
-#endif
 typedef struct {
     u8 tones;
     u8 bytes[15];
@@ -5754,7 +5726,7 @@ void _SsContResetAll(s16 access, s16 sequence) {
     score = (struct SeqStruct *)(offset + row);
     bytes = (u8 *)score;
     func_80082B70();
-    func_80082670();
+    SpuVmDamperOff();
     channel0 = *(volatile u8 *)(bytes + 0x12);
     channel1 = *(volatile u8 *)(bytes + 0x12);
     asm("addu %0, %1, %0" : "=r"(channel0) : "r"(bytes), "0"(channel0));
@@ -6669,7 +6641,7 @@ s16 immediateFlag;
 
 extern u16 D_800AFD98[];
 
-void func_80082670(void) {
+void SpuVmDamperOff(void) {
     D_800AFD98[0] = 0;
 }
 
