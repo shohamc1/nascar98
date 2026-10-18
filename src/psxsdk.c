@@ -681,9 +681,10 @@ extern char D_8009013C[];
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009013C);
 
 #ifdef NON_MATCHING
-/* 2026-10-17: same control flow as retail but 0x228 bytes against 0x224.
- * Retail gives first the lowest saved register and reuses the register that
- * held the result address as the table pointer. */
+/* 2026-10-18: size matches (0x224) and 24 rows differ, all register names.
+ * Retail gives first s0, the result address and then the table cursor s1,
+ * n s2 and last s3; this draft gives the result address s0, n s1 and first
+ * s2. Declaration order, register keywords and an s0 pin do not fix it. */
 /* Reads the first and last track and the start of each track. Returns the
  * number of tracks, or 0 on failure. */
 int CdGetToc2(int session, CdlLOC *table) {
@@ -710,20 +711,20 @@ int CdGetToc2(int session, CdlLOC *table) {
         param[0] = 0;
         if (CdControlB(CdlGetTD, param, result) != 0) {
             table[0].minute = result[1];
-            table[0].sector = 0;
             table[0].second = result[2];
+            table[0].sector = 0;
             n = 1;
             if (first <= last) {
                 do {
                     param[0] = ((first / 10) << 4) + (first % 10);
-                    n++;
                     if (CdControlB(CdlGetTD, param, result) == 0) {
                         goto fail;
                     }
-                    table[n - 1].minute = result[1];
+                    table[n].minute = result[1];
+                    table[n].second = result[2];
+                    table[n].sector = 0;
                     first++;
-                    table[n - 1].sector = 0;
-                    table[n - 1].second = result[2];
+                    n++;
                 } while (first <= last);
             }
             n--;
@@ -2450,7 +2451,127 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntOpen);
 #endif
 
+#ifdef NON_MATCHING
+/* 2026-10-18: draft from the retail asm (the 3.6 font has colour escapes and
+ * an auto-width box, unlike the sotn 3.3 donor). 211 rows against 201: retail
+ * spills six values (the draw-mode pointer, the widest column, the bottom
+ * edge and r, g, b) and keeps len in fp; this draft spills one more and keeps
+ * the draw-mode pointer in fp. Declaration order does not move it. */
+u_long *FntFlush(s32 id) {
+    char *buf;
+    s32 x;
+    SPRT_8 *sprt;
+    FntStream *font;
+    s32 line_break;
+    s32 y;
+    s32 auto_width;
+    s32 max_x;
+    s32 len;
+    DR_MODE *dr;
+    s32 min_x;
+    s32 max_y;
+    s32 r;
+    s32 g;
+    s32 b;
+    s32 ch;
+
+    r = 0x80;
+    g = 0x80;
+    b = 0x80;
+    min_x = 0;
+    if (id < 0 || id >= fntCountX) {
+        id = D_8009D03C[0];
+        if (Font[id].buffer == 0) {
+            return 0;
+        }
+    }
+    font = &Font[id];
+    dr = &font->draw_mode;
+    buf = font->buffer;
+    sprt = font->sprites;
+    len = font->capacity;
+    x = font->tile.x0;
+    y = font->tile.y0;
+    max_x = x + font->tile.w;
+    max_y = y + font->tile.h;
+    auto_width = font->autoWidth;
+    TermPrim(dr);
+    while (*buf != 0) {
+        if (len == 0) {
+            break;
+        }
+        line_break = 0;
+        switch (*buf) {
+        case '\n':
+            line_break = 1;
+            break;
+        case '\t':
+            x += 0x20;
+            goto test;
+        case ' ':
+            goto advance;
+        case '~':
+            buf++;
+            if (*buf == 'c') {
+                buf++;
+                r = (*buf - '0') << 4;
+                buf++;
+                g = (*buf - '0') << 4;
+                buf++;
+                b = (*buf - '0') << 4;
+            }
+            break;
+        default:
+            if ((u8)(*buf - 'a') < 26) {
+                ch = *buf - 0x40;
+            } else {
+                ch = *buf - 0x20;
+            }
+            sprt->u0 = (ch % 16) * 8;
+            sprt->v0 = (ch / 16) * 8;
+            sprt->x0 = x;
+            sprt->y0 = y;
+            sprt->r0 = r;
+            sprt->g0 = g;
+            sprt->b0 = b;
+            AddPrim(dr, sprt);
+            sprt++;
+        advance:
+            x += 8;
+        test:
+            if (x >= max_x && auto_width == 0) {
+                line_break = 1;
+            }
+            break;
+        }
+        if (line_break) {
+            if (min_x < x) {
+                min_x = x;
+            }
+            y += 8;
+            x = font->tile.x0;
+            if (y >= max_y) {
+                break;
+            }
+        }
+        buf++;
+        len--;
+    }
+    if (font->tile.code != 0) {
+        AddPrim(dr, &font->tile);
+        if (auto_width != 0) {
+            font->tile.w = min_x - (u16)font->tile.x0;
+            font->tile.h = y - ((u16)font->tile.y0 - 8);
+        }
+    }
+    DrawOTag((u_long *)dr);
+    font->written = 0;
+    *font->buffer = 0;
+    return (u_long *)dr;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", FntFlush);
+#endif
 
 extern u8 *D_8009DA44[];
 extern int strlen(const char *);
