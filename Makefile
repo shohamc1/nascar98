@@ -291,6 +291,12 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=_spu_delayCtrl=D_800A26C0 \
             --defsym=_spu_xferAddr=D_800A26FC \
             --defsym=_spu_xferBlocks=D_800A2700 \
+            --defsym=_snd_openflag=D_800B9DC0 \
+            --defsym=_snd_ev_flag=D_800B2090 \
+            --defsym=_snd_seq_s_max=D_800BE724 \
+            --defsym=_snd_seq_t_max=D_800BE728 \
+            --defsym=VBLANK_MINUS=D_800BDE2C \
+            --defsym=_svm_rattr=D_800AE27C \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \

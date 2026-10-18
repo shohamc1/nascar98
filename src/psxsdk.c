@@ -5432,7 +5432,34 @@ void SsSetSerialVol(short channel, short voll, short volr) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsInitSoundSeq);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSeqOpen);
+extern char D_80090888[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090888);
+s16 _SsInitSoundSeq(s16, s16, u32);
+
+s16 SsSeqOpen(u32 addr, s16 vab_id) {
+    s16 seq_sep_no;
+    u32 bit_pos;
+    u8 found;
+
+    if (_snd_openflag == 0xFFFFFFFF) {
+        printf(D_80090888);
+        return -1;
+    }
+    bit_pos = 0;
+    found = 0;
+    while (!found) {
+        if (!((1 << bit_pos) & _snd_openflag)) {
+            seq_sep_no = bit_pos;
+            found = 1;
+        }
+        bit_pos++;
+    }
+    _snd_openflag |= 1 << seq_sep_no;
+    if (_SsInitSoundSeq(seq_sep_no, vab_id, addr) == -1) {
+        return -1;
+    }
+    return seq_sep_no;
+}
 
 /* SPDX-License-Identifier: MIT */
 void _SsGetSeqData(s16, s16);
@@ -5712,7 +5739,28 @@ void _SsContPortaTime(s16 access, s16 sequence, s32 value) {
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContPortamento);
+void _SsContPortamento(s16 arg0, s16 arg1, u8 arg2) {
+    struct SeqStruct *score = &D_800BDE3C[arg0][arg1];
+    u8 channel = score->channel;
+    ProgAtr progAtr;
+    VagAtr vagAtr;
+    s32 toneNum;
+
+    SsUtGetProgAtr(score->unk4C, score->programs[channel], (u8 *)&progAtr);
+    for (toneNum = 0; toneNum < progAtr.tones; toneNum++) {
+        SsUtGetVagAtr(score->unk4C, score->programs[channel], toneNum,
+                      (u8 *)&vagAtr);
+        if (arg2 >= 0 && arg2 < 0x40) {
+            vagAtr.mode = 2;
+        } else if (arg2 >= 0x40 && arg2 < 0x80) {
+            vagAtr.mode = 0;
+        }
+        SsUtSetVagAtr(score->unk4C, score->programs[channel], toneNum,
+                      (u8 *)&vagAtr);
+    }
+
+    score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+}
 
 void _SsContResetAll(s16 access, s16 sequence) {
     struct SeqStruct *score;
@@ -5780,7 +5828,44 @@ after_status:
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContNrpn2);
+void _SsContNrpn2(s16 arg0, s16 arg1, u8 arg2) {
+    struct SeqStruct *score = &D_800BDE3C[arg0][arg1];
+
+    switch (arg2) {
+    case 0x14:
+        score->unk16 = arg2;
+        score->unk27 = 1;
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        score->loopPos = score->readPos;
+        break;
+
+    case 0x1E:
+        score->unk16 = arg2;
+        if (score->unk28 == 0) {
+            score->unk10 = 0;
+            score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        } else if (score->unk28 < 0x7FU) {
+            score->unk28--;
+            score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+            if (score->unk28 != 0) {
+                score->readPos = score->loopPos;
+            } else {
+                score->unk10 = 0;
+            }
+        } else {
+            _SsReadDeltaValue(arg0, arg1);
+            score->deltaValue = 0;
+            score->readPos = score->loopPos;
+        }
+        break;
+
+    default:
+        score->unk16 = arg2;
+        score->unk2A += 1;
+        score->deltaValue = _SsReadDeltaValue(arg0, arg1);
+        break;
+    }
+}
 
 /* SPDX-License-Identifier: MIT */
 s32 _SsReadDeltaValue(s16, s16);
@@ -5841,7 +5926,6 @@ typedef struct {
 } SdkVagAttr;
 void SsUtGetVagAtr(s16, s16, s16, u8 *);
 void SsUtSetVagAtr(s16, s16, s16, u8 *);
-void SsUtSetReverbType(short);
 void SsUtSetReverbDepth(short, short);
 void SsUtSetReverbFeedback(short);
 void SsUtSetReverbDelay(short);
@@ -5958,7 +6042,7 @@ void _SsSndSetVabAttr(s16 vabId, s16 progNum, s16 toneNum, SdkVagAttr vagAtr,
 }
 
 /* SPDX-License-Identifier: MIT */
-void SpuVmPitchBend(s32, s16, u8, u8);
+s32 SpuVmPitchBend(s32, s16, s16, s16);
 s32 _SsReadDeltaValue(s16, s16);
 void _SsSetPitchBend(s16 access, s16 sequence) {
     struct SeqStruct *score;
@@ -6088,7 +6172,28 @@ void SsSetMarkCallback(s16 arg0, s16 arg1, s32 arg2) {
     row[arg1] = arg2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsClose);
+void _SsClose(s16 seq_sep_num) {
+    s32 seq_num;
+    SpuVmSetSeqVol(seq_sep_num, 0, 0, 1);
+    SpuVmSeqKeyOff(seq_sep_num);
+    _snd_openflag &= ~(1 << seq_sep_num);
+    for (seq_num = 0; seq_num < _snd_seq_t_max; seq_num++) {
+        D_800BDE3C[seq_sep_num][seq_num].unk90 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk3C = 0xFF;
+        D_800BDE3C[seq_sep_num][seq_num].unk0 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk3E = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk40 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk94 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk98 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk42 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unkA4 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unkA0 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk9C = 0;
+        D_800BDE3C[seq_sep_num][seq_num].unk44 = 0;
+        D_800BDE3C[seq_sep_num][seq_num].leftVolume = 0x7f;
+        D_800BDE3C[seq_sep_num][seq_num].rightVolume = 0x7f;
+    }
+}
 
 extern void _SsClose(short);
 
@@ -6368,7 +6473,38 @@ void SsEnd(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsSetTableSize);
+void SsSetTableSize(char *table, short s_max, short t_max) {
+    s32 i, j;
+    struct SeqStruct *pTypedTable;
+
+    _snd_seq_s_max = s_max;
+    _snd_seq_t_max = t_max;
+    pTypedTable = (struct SeqStruct *)table;
+    for (i = 0; i < s_max; i++) {
+        D_800BDE3C[i] = &pTypedTable[i * t_max];
+    }
+
+    for (i = 0; i < _snd_seq_s_max; i++) {
+        for (j = 0; j < _snd_seq_t_max; j++) {
+            D_800BDE3C[i][j].unk90 = 0;
+            D_800BDE3C[i][j].unk3C = 0xFF;
+            D_800BDE3C[i][j].unk0 = 0;
+            D_800BDE3C[i][j].unk3E = 0;
+            D_800BDE3C[i][j].unk40 = 0;
+            D_800BDE3C[i][j].unk94 = 0;
+            D_800BDE3C[i][j].unk98 = 0;
+            D_800BDE3C[i][j].unk42 = 0;
+            D_800BDE3C[i][j].unkA4 = 0;
+            D_800BDE3C[i][j].unkA0 = 0;
+            D_800BDE3C[i][j].unk9C = 0;
+            D_800BDE3C[i][j].unk44 = 0;
+            D_800BDE3C[i][j].leftVolume = 0x7F;
+            D_800BDE3C[i][j].rightVolume = 0x7F;
+            D_800BDE3C[i][j].unk78 = 0x7F;
+            D_800BDE3C[i][j].unk7A = 0x7F;
+        }
+    }
+}
 
 extern long SpuVmGetSeqVol(short, short *, short *);
 void _SsSndSetPauseMode(short access, short sequence) {
@@ -6540,7 +6676,51 @@ void SsSepStop(short sep_access_num, short seq_num) {
     _SsSndStop(sep_access_num, seq_num);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsSndTempo);
+void _SsSndTempo(s16 arg0, s16 arg1) {
+    struct SeqStruct *pSeq = &D_800BDE3C[arg0][arg1];
+
+    pSeq->unkA0--;
+
+    if (pSeq->unk44 > 0) {
+        if ((pSeq->unkA0 % pSeq->unk44) == 0) {
+            if (pSeq->unk8C > pSeq->unkA4) {
+                pSeq->unk8C--;
+            } else if (pSeq->unk8C < pSeq->unkA4) {
+                pSeq->unk8C++;
+            }
+
+            pSeq->unk70 = (pSeq->unk4A * pSeq->unk8C * 10) / (VBLANK_MINUS * 60);
+            if (pSeq->unk70 <= 0) {
+                pSeq->unk70 = 1;
+            }
+            if ((pSeq->unkA0 == 0) || (pSeq->unk8C == pSeq->unkA4)) {
+                D_800BDE3C[arg0][arg1].unk90 &= ~0x40;
+                D_800BDE3C[arg0][arg1].unk90 &= ~0x80;
+            }
+        }
+    } else {
+        if (pSeq->unk8C > pSeq->unkA4) {
+            pSeq->unk8C += pSeq->unk44;
+            if (pSeq->unk8C < pSeq->unkA4) {
+                pSeq->unk8C = pSeq->unkA4;
+            }
+        } else if (pSeq->unk8C < pSeq->unkA4) {
+            pSeq->unk8C -= pSeq->unk44;
+            if (pSeq->unk8C > pSeq->unkA4) {
+                pSeq->unk8C = pSeq->unkA4;
+            }
+        }
+
+        pSeq->unk70 = (pSeq->unk4A * pSeq->unk8C * 10) / (VBLANK_MINUS * 60);
+        if (pSeq->unk70 <= 0) {
+            pSeq->unk70 = 1;
+        }
+        if ((pSeq->unkA0 == 0) || (pSeq->unk8C == pSeq->unkA4)) {
+            D_800BDE3C[arg0][arg1].unk90 &= ~0x40;
+            D_800BDE3C[arg0][arg1].unk90 &= ~0x80;
+        }
+    }
+}
 
 extern short D_800B1EA4[];
 void SsSetMono(void) {
@@ -6716,7 +6896,36 @@ s32 SpuVmVSetUp(s16 vabId, s16 prog) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtGetVagAtr);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetReverbType);
+extern SpuReverbAttr _svm_rattr;
+
+/* libsnd.h declares this void; retail returns the type or -1. */
+s16 SsUtSetReverbTypeS16(s16) asm("SsUtSetReverbType");
+s16 SsUtSetReverbTypeS16(s16 arg0) {
+    s16 var_v1;
+    s32 var_a1;
+
+    var_a1 = 0;
+    var_v1 = arg0;
+    if (arg0 < 0) {
+        var_a1 = 1;
+        var_v1 = -arg0;
+    }
+
+    if ((u16)var_v1 < 10) {
+        _svm_rattr.mask = 1;
+        if (var_a1 != 0) {
+            _svm_rattr.mode = var_v1 | 0x100;
+        } else {
+            _svm_rattr.mode = var_v1;
+        }
+        if (var_v1 == 0) {
+            SpuSetReverb(0);
+        }
+        SpuSetReverbModeParam(&_svm_rattr);
+        return var_v1;
+    }
+    return -1;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -6756,116 +6965,6 @@ void SsUtSetReverbDelay(short delay) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetVagAtr);
-
-/* Voice manager state, after the Psy-Q 3.5 libsnd headers. */
-typedef struct ProgAtr {
-    u8 tones;
-    u8 mvol;
-    u8 prior;
-    u8 mode;
-    u8 mpan;
-    s8 reserved0;
-    s16 attr;
-    u32 reserved1;
-    u16 reserved2; /* even vag spu pointer */
-    u16 reserved3; /* odd vag spu pointer */
-} ProgAtr;
-
-typedef struct VagAtr {
-    u8 prior;
-    u8 mode;
-    u8 vol;
-    u8 pan;
-    u8 center;
-    u8 shift;
-    u8 min;
-    u8 max;
-    u8 vibW;
-    u8 vibT;
-    u8 porW;
-    u8 porT;
-    u8 pbmin;
-    u8 pbmax;
-    u8 reserved1;
-    u8 reserved2;
-    u16 adsr1;
-    u16 adsr2;
-    s16 prog;
-    s16 vag;
-    s16 reserved[4];
-} VagAtr;
-
-struct SpuVoice {
-    s16 unk0;
-    s16 unk2;
-    s16 unk4;
-    u16 unk6;
-    s16 unk8;
-    s8 unkA;
-    s8 unkB;
-    s16 note;
-    s16 unkE;
-    s16 unk10;
-    s16 prog;
-    s16 tone;
-    s16 vabId;
-    s16 unk18;
-    u8 pad1A;
-    u8 unk1B;
-    s16 autoVol;
-    s16 unk1E;
-    s16 unk20;
-    s16 unk22;
-    s16 startVol;
-    s16 endVol;
-    s16 autoPan;
-    s16 unk2A;
-    s16 unk2C;
-    s16 unk2E;
-    s16 startPan;
-    s16 endPan;
-};
-
-struct SvmCur {
-    char field0;
-    char vabId;
-    char note;
-    char field3;
-    char voll;
-    char field5;
-    char program;
-    char fakeProgram;
-    char field8;
-    char field9;
-    char mvol;
-    char mpan;
-    char vagIdx;
-    char vol;
-    char pan;
-    char prior;
-    char centre;
-    u8 shift;
-    char mode;
-    char field13;
-    u8 seqSepNo;
-    u8 pad15;
-    s16 vagIdx16;
-    s16 voiceIdx;
-    s16 voice;
-    s16 regOff;
-    s16 toneOff;
-};
-
-extern struct SvmCur _svm_cur;
-extern struct SpuVoice _svm_voice[];
-extern s32 _svm_envx_hist[];
-extern s16 _svm_sreg_buf[];
-extern char _svm_sreg_dirty[];
-extern ProgAtr *_svm_pg;
-extern VagAtr *_svm_tn;
-extern s16 _svm_damper;
-extern u8 spuVmMaxVoice;
-extern void SpuSetNoiseVoice();
 
 /* Picks a free voice for a note, or steals the quietest lowest-priority one.
  * Returns spuVmMaxVoice when none can be used. */
@@ -7431,7 +7530,28 @@ s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
     return 0;
 }
 
+s32 SpuVmPBVoice(s16, s16, s16, s16, u16);
+
+#ifdef NON_MATCHING
+/* 2026-10-17: the donor body is 240 bytes. This draft has the size but 22
+ * rows differ: retail stores _svm_cur.vagIdx16 after the SpuVmVSetUp call
+ * through a copy of arg0 (move v0,s2), and puts voice in s0 and the sum in
+ * s1. */
+s32 SpuVmPitchBend(s32 arg0, s16 arg1, s16 arg2, s16 arg3) {
+    s32 var_s1;
+    s16 voice;
+
+    _svm_cur.vagIdx16 = arg0;
+    SpuVmVSetUp(arg1, arg2);
+    var_s1 = 0;
+    for (voice = 0; voice < spuVmMaxVoice; voice++) {
+        var_s1 += (s16)SpuVmPBVoice(voice, arg0, arg1, arg2, arg3);
+    }
+    return var_s1;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPitchBend);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmFlush);
 
@@ -7631,16 +7751,6 @@ u16 pan;
         }
     }
     return mask;
-}
-
-extern u16 *_svm_spuBase;
-extern u16 _svm_okon1;
-extern u16 _svm_okon2;
-extern u16 _svm_okof1;
-extern u16 _svm_okof2;
-
-static __inline__ u16 GetSvmVoice(void) {
-    return _svm_cur.voice;
 }
 
 /* Keys off every voice that plays this note of this program. Returns the
@@ -8088,7 +8198,43 @@ s32 SsUtKeyOff(s16 vc, s32 vabId, s32 prog, s16 tone, s16 note) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOnV);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtKeyOffV);
+s32 SsUtKeyOffV(s16 voice) {
+    u16 bitsUpper;
+    u16 bitsLower;
+    u16 temp2;
+
+    if (_snd_ev_flag == 1) {
+        return -1;
+    }
+    _snd_ev_flag = 1;
+
+    if (voice >= 0 && voice < 24) {
+        _svm_cur.voice = voice;
+        temp2 = GetSvmVoice();
+        if (temp2 < 0x10) {
+            bitsLower = 1 << temp2;
+            bitsUpper = 0;
+        } else {
+            bitsLower = 0;
+            bitsUpper = 1 << (temp2 - 0x10);
+        }
+
+        _svm_voice[temp2].unk1B = 0;
+        _svm_voice[temp2].unk4 = 0;
+        _svm_voice[temp2].unk0 = 0;
+
+        _snd_ev_flag = 0;
+
+        _svm_okof1 |= bitsLower;
+        _svm_okof2 |= bitsUpper;
+
+        _svm_okon1 &= ~_svm_okof1;
+        _svm_okon2 &= ~_svm_okof2;
+        return 0;
+    }
+    _snd_ev_flag = 0;
+    return -1;
+}
 
 extern s16 D_800B9DDA[];
 extern s32 SpuVmVSetUp(s16, s16);
@@ -8226,7 +8372,53 @@ s32 SsUtAutoPan(s32 seq_access, s32 pan1, s32 pan2, s32 mSec) {
     return -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtAllKeyOff);
+void SsUtAllKeyOff(void) {
+    s16 voice;
+    u16 bitsUpper;
+    u16 bitsLower;
+    u16 temp2;
+    s16 pos;
+
+    for (voice = 0; voice < spuVmMaxVoice; voice++) {
+        _svm_voice[voice].unk2 = 0x18;
+        _svm_voice[voice].unk0 = 0xFF;
+        _svm_voice[voice].unk1B = 0;
+        _svm_voice[voice].unk4 = 0;
+        _svm_voice[voice].unk6 = 0;
+        _svm_voice[voice].unkE = 0xFF;
+        _svm_voice[voice].unk10 = 0;
+        _svm_voice[voice].prog = 0;
+        _svm_voice[voice].tone = 0xFF;
+
+        pos = voice * 8;
+        _svm_spuBase[pos + 0x6 / 2] = 0x200;
+        _svm_spuBase[pos + 0x4 / 2] = 0x1000;
+        _svm_spuBase[pos + 0x8 / 2] = 0x80ff;
+        _svm_spuBase[pos + 0x0] = 0;
+        _svm_spuBase[pos + 0x2 / 2] = 0;
+        _svm_spuBase[pos + 0xa / 2] = 0x4000;
+
+        _svm_cur.voice = voice;
+        temp2 = GetSvmVoice();
+        if (temp2 < 0x10) {
+            bitsLower = 1 << temp2;
+            bitsUpper = 0;
+        } else {
+            bitsLower = 0;
+            bitsUpper = 1 << (temp2 - 0x10);
+        }
+
+        _svm_voice[temp2].unk1B = 0;
+        _svm_voice[temp2].unk4 = 0;
+        _svm_voice[temp2].unk0 = 0;
+
+        _svm_okof1 |= bitsLower;
+        _svm_okof2 |= bitsUpper;
+
+        _svm_okon1 &= ~_svm_okof1;
+        _svm_okon2 &= ~_svm_okof2;
+    }
+}
 
 extern void _SpuInit(s32 mode);
 

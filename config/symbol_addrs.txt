@@ -883,3 +883,4 @@ sObjectFacesAllocationError = 0x8008D050; // force_not_migration:True
 sObjectOffsetsAllocationError = 0x8008D06C; // force_not_migration:True
 
 ObjectLoadGeometry = 0x80031D74; // type:func
+D_80090888 = 0x80090888; // force_not_migration:True
