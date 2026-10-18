@@ -6962,13 +6962,12 @@ typedef struct {
     s16 vag;
     s16 reserved[4];
 } SdkVagAttr;
-#ifdef NON_MATCHING
 void _SsSndSetVabAttr(s16, s16, s16, SdkVagAttr, SsAdsr, s16, u8);
-/* Draft from the retail asm. Registers and the 0x108 frame match; one row
- * differs (retail keeps a second `andi v1,s6,0xFF` in a delay slot). The
- * odd terms are allocator levers, not original code: `fine` and `coarse`
- * are retail's dead pitch computations (combine folds their uses, so they
- * stay in s5); the `((x + y) << 4) & 0xF` terms in the three constant
+/* The odd terms are allocator levers, not original code: `fine` and
+ * `coarse` are retail's dead pitch computations (combine folds their uses,
+ * so they stay in s5); `ghost` is a dead copy of `value` whose only use
+ * folds to zero, which leaves retail's extra `andi v1,s6,0xFF` in the
+ * `beqz` delay slot; the `((x + y) << 4) & 0xF` terms in the three constant
  * stores add one 8-byte phantom frame slot each; the inline helper keeps
  * loop.c from hoisting `value & 0x7F`. See the KB, "Ghost uses and inline
  * helpers". */
@@ -6986,6 +6985,7 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
     s32 i;
     u16 fine;
     s32 coarse;
+    u16 ghost;
 
     row = (s32)D_800BDE3C[access];
     offset = sequence * 0xAC;
@@ -7010,10 +7010,11 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
             }
         }
         if (score->unk13 == 1 && score->unk14 == 0) {
+            ghost = value;
             if ((u8)(value - 0x41) < 0x3F) {
                 fine = (value * 100 / 0x2000) << 13;
             } else {
-                fine = 0;
+                fine = (ghost << 4) & 0xF;
             }
             for (i = 0; i < progAtr.tones; i++) {
                 SsUtGetVagAtr(score->unk4C, score->programs[channel], i,
@@ -7059,9 +7060,6 @@ void _SsContDataEntry(s16 access, s16 sequence, u8 value) {
     }
     score->deltaValue = _SsReadDeltaValue(access, sequence);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _SsContDataEntry);
-#endif
 
 s16 SsUtGetVagAtr(s16, s16, s16, VagAtr *);
 s16 SsUtSetVagAtr(s16, s16, s16, VagAtr *);
