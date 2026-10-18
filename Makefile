@@ -355,6 +355,31 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=d0_madr=D_800A2CA4 \
             --defsym=d1_madr=D_800A2CB0 \
             --defsym=_strtokLast=D_800A2B98 \
+            --defsym=gGpu=D_8009DA88 \
+            --defsym=GPU_printf=D_8009DA8C \
+            --defsym=gGfx=D_8009DA90 \
+            --defsym=gfxMaxW=D_8009DA94 \
+            --defsym=gfxMaxH=D_8009DA96 \
+            --defsym=gfxTypeArr=D_8009DA90 \
+            --defsym=GPU_DATA=D_8009DB60 \
+            --defsym=GPU_STATUS=D_8009DB64 \
+            --defsym=DMA2_MADR=D_8009DB68 \
+            --defsym=DMA2_BCR=D_8009DB6C \
+            --defsym=DMA2_CHCR=D_8009DB70 \
+            --defsym=DMA6_MADR=D_8009DB74 \
+            --defsym=DMA6_BCR=D_8009DB78 \
+            --defsym=DMA6_CHCR=D_8009DB7C \
+            --defsym=DPCR=D_8009DB80 \
+            --defsym=gpuClrBuf=D_800AD0E4 \
+            --defsym=gpuQueue=D_800BC54C \
+            --defsym=gpuLast=D_8009DB84 \
+            --defsym=_qin=D_8009DB94 \
+            --defsym=_qout=D_8009DB98 \
+            --defsym=gpuSavedMask2=D_8009DBA0 \
+            --defsym=gpuSavedMask=D_8009DBA4 \
+            --defsym=gpuAlarmEnd=D_8009DBA8 \
+            --defsym=gpuAlarmCount=D_8009DBAC \
+            --defsym=gpuCtlBuf=D_800AD124 \
             --defsym=_svm_cur=D_800B9DC4 \
             --defsym=spuVmMaxVoice=D_800B9C80 \
             --defsym=_svm_spuBase=D_800A20B8 \

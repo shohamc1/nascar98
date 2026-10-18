@@ -11,6 +11,58 @@
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libcd.h>
 
+/* libgpu state, Psy-Q 3.6 layout. The Makefile binds each name. */
+typedef struct GpuVtbl {
+    const char *rcsid;
+    void (*addque)(void (*)(), s32 *, s32);
+    s32 (*addque2)(void (*)(), s32 *, s32, s32);
+    s32 (*clr)(RECT *, s32);
+    void (*ctl)(u32);
+    s32 (*cwb)(s32 *, s32);
+    void (*cwc)(s32);
+    s32 (*drs)(RECT *, s32 *);
+    s32 (*dws)(RECT *, s32 *);
+    s32 (*exeque)(void);
+    s32 (*getctl)(s32);
+    s32 (*otc)(s32, s32);
+    s32 (*param)(s32);
+    s32 (*reset)(s32);
+    u32 (*status)(void);
+    s32 (*sync)(s32);
+} GpuVtbl;
+
+typedef struct GfxState {
+    u8 type;    /* 0: PSX, 1: 1 MB VRAM, 2: debug */
+    u8 queue;   /* 1: queued drawing */
+    u8 level;   /* debug level */
+    u8 reverse; /* upside-down display */
+    s16 maxW;
+    s16 maxH;
+    s32 pad8; /* set while a draw-sync callback is pending */
+    void (*drawSyncCb)();
+    DRAWENV drawEnv;
+    DISPENV dispEnv;
+} GfxState;
+
+#define LOW(x) (*(u32 *)&(x))
+#define GPU_CLAMP(value, low, high)                                            \
+    value < low ? low : (value > high ? high : value)
+
+extern volatile u16 gfxMaxW[];
+extern volatile u16 gfxMaxH[];
+extern GpuVtbl *gGpu;
+extern s32 (*GPU_printf)(const char *, ...);
+extern GfxState gGfx;
+extern volatile s32 *GPU_DATA;
+extern volatile u32 *GPU_STATUS;
+extern volatile s32 *DMA2_MADR;
+extern volatile s32 *DMA2_BCR;
+extern volatile s32 *DMA2_CHCR;
+extern volatile s32 *DMA6_MADR;
+extern volatile s32 *DMA6_BCR;
+extern volatile s32 *DMA6_CHCR;
+extern volatile s32 *DPCR;
+
 extern void SpuVmSeqKeyOff();
 
 /* SDK functions whose Psy-Q source was assembly: BIOS table thunks and
@@ -3071,9 +3123,55 @@ void DumpDispEnv(DISPENV *env) {
     ((DebugPrintf)gDispPrintfRead4[0])(D_8009060C, env->isrgb24);
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", ResetGraph);
+extern char D_8009064C[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009064C);
+extern char D_8009066C[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009066C);
+extern char D_8009DA48[];
+extern u16 D_8009DB10[][2];
+extern u16 D_8009DB24[][2];
+extern s32 _reset(s32);
+extern void GPU_cw(u32);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SetGraphReverse);
+s32 ResetGraph(s32 level) {
+    s32 mode = level & 7;
+
+    if (mode == 0 || mode == 3) {
+        printf(D_8009064C, D_8009DA48, &gGfx);
+        memset(&gGfx, 0, sizeof(GfxState));
+        ResetCallback();
+        GPU_cw((u32)gGpu & 0xFFFFFF);
+        gGfx.type = _reset(mode != 0);
+        gGfx.queue = 1;
+        gGfx.maxW = D_8009DB10[gGfx.type][0];
+        gGfx.maxH = D_8009DB24[gGfx.type][0];
+        memset(&gGfx.drawEnv, -1, sizeof(DRAWENV));
+        memset(&gGfx.dispEnv, -1, sizeof(DISPENV));
+        return gGfx.type;
+    }
+    if (gGfx.level >= 2) {
+        GPU_printf(D_8009066C, level);
+    }
+    return gGpu->reset(1);
+}
+
+extern char D_80090680[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090680);
+
+s32 SetGraphReverse(s32 mode) {
+    s32 old = gGfx.reverse;
+
+    if (gGfx.level >= 2) {
+        GPU_printf(D_80090680, mode);
+    }
+
+    gGfx.reverse = mode;
+    gGpu->ctl(gGpu->getctl(8) | (gGfx.reverse ? 0x08000080 : 0x08000000));
+    if (gGfx.type == 2) {
+        gGpu->ctl(gGfx.reverse ? 0x20000501 : 0x20000504);
+    }
+    return old;
+}
 
 extern u8 D_8009DA90[];
 extern u8 D_8009DA92[];
@@ -3405,9 +3503,42 @@ void __maspsx_include_asm_hack_D_800907A0(void) {
             "    .section .text # maspsx-keep\n");
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", PutDrawEnv);
+extern void *memcpy();
+extern char D_800907B4[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800907B4);
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", DrawOTagEnv);
+DRAWENV *PutDrawEnv(DRAWENV *env) {
+    s32 size;
+
+    if (gGfx.level >= 2) {
+        GPU_printf(D_800907B4, env);
+    }
+
+    SetDrawEnv(&env->dr_env, env);
+    env->dr_env.tag |= 0xFFFFFF;
+    gGpu->addque2(gGpu->cwc, &env->dr_env, sizeof(DR_ENV), 0);
+    size = sizeof(DRAWENV);
+    memcpy(&gGfx.drawEnv, env, size);
+
+    return env;
+}
+
+extern char D_800907CC[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_800907CC);
+
+void DrawOTagEnv(OT_TYPE *ot, DRAWENV *env) {
+    s32 size;
+
+    if (gGfx.level >= 2) {
+        GPU_printf(D_800907CC, ot, env);
+    }
+
+    SetDrawEnv(&env->dr_env, env);
+    env->dr_env.tag = (env->dr_env.tag & 0xFF000000) | ((u32)ot & 0xFFFFFF);
+    gGpu->addque2(gGpu->cwc, &env->dr_env, sizeof(DR_ENV), 0);
+    size = sizeof(DRAWENV);
+    memcpy(&gGfx.drawEnv, env, size);
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -3492,7 +3623,56 @@ void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw) {
     *((u32 *)p + 2) = get_tw(tw);
 }
 
+extern s32 get_mode();
+
+#ifdef NON_MATCHING
+/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
+void SetDrawEnv(DR_ENV *dr_env_in, DRAWENV *env) {
+    RECT clip_rect;
+    s32 offset;
+    DR_ENV *dr_env;
+
+    dr_env = dr_env_in;
+
+    dr_env->code[0] = get_cs(env->clip.x, env->clip.y);
+    dr_env->code[1] =
+        get_ce(env->clip.w + env->clip.x - 1, env->clip.y + env->clip.h - 1);
+    dr_env->code[2] = get_ofs(env->ofs[0], env->ofs[1]);
+    dr_env->code[3] = get_mode(env->dfe, env->dtd, env->tpage);
+    dr_env->code[4] = get_tw(&env->tw);
+    dr_env->code[5] = 0xE6000000;
+
+    offset = 7;
+    if (env->isbg != 0) {
+        clip_rect.x = env->clip.x;
+        clip_rect.y = env->clip.y;
+        clip_rect.w = env->clip.w;
+        clip_rect.h = env->clip.h;
+        clip_rect.w = GPU_CLAMP(clip_rect.w, 0, (s16)gfxMaxW[0] - 1);
+        clip_rect.h = GPU_CLAMP(clip_rect.h, 0, (s16)gfxMaxH[0] - 1);
+
+        if ((clip_rect.x & 0x3F) || (clip_rect.w & 0x3F)) {
+            clip_rect.x -= env->ofs[0];
+            clip_rect.y -= env->ofs[1];
+            *((s32 *)dr_env + offset++) =
+                0x60000000 | env->b0 << 0x10 | env->g0 << 8 | env->r0;
+            *((s32 *)dr_env + offset++) = LOW(clip_rect.x);
+            *((s32 *)dr_env + offset++) = LOW(clip_rect.w);
+            clip_rect.x += env->ofs[0];
+            clip_rect.y += env->ofs[1];
+        } else {
+            *((s32 *)dr_env + offset++) =
+                0x02000000 | env->b0 << 0x10 | env->g0 << 8 | env->r0;
+            *((s32 *)dr_env + offset++) = LOW(clip_rect.x);
+            *((s32 *)dr_env + offset++) = LOW(clip_rect.w);
+        }
+    }
+
+    setlen(dr_env, offset - 1);
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SetDrawEnv);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -3698,7 +3878,28 @@ u32 get_tw(RECT *tw) {
     return 0;
 }
 
+#ifdef NON_MATCHING
+/* 2026-10-17: right shape (case 1 falls into default) but 8 bytes short.
+ * Retail reads gGfx.type as lui/addiu/lbu 0(reg) and ANDs it with 0xFF; the
+ * type read here compiles to a direct lbu. */
+s32 get_dx(DISPENV *env) {
+    switch (gGfx.type) {
+    case 1:
+        if (gGfx.reverse) {
+            return 0x400 - env->disp.w - env->disp.x;
+        }
+    default:
+        return env->disp.x;
+    case 2:
+        if (gGfx.reverse) {
+            return 0x400 - env->disp.w / 2 - env->disp.x;
+        }
+        return env->disp.x / 2;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", get_dx);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -3708,13 +3909,168 @@ s32 _status(void) {
     return *(s32 *)D_8009DB64[0];
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _otc);
+extern void set_alarm(void);
+extern s32 get_alarm(void);
 
+s32 _otc(s32 arg0, s32 arg1) {
+    *DPCR |= 0x08000000;
+    *DMA6_CHCR = 0;
+    *DMA6_MADR = arg0 - 4 + arg1 * 4;
+    *DMA6_BCR = arg1;
+    *DMA6_CHCR = 0x11000002;
+    set_alarm();
+    while (*DMA6_CHCR & 0x01000000) {
+        if (get_alarm()) {
+            return -1;
+        }
+    }
+    return arg1;
+}
+
+extern s32 gpuClrBuf[];
+extern void _cwc(s32);
+
+#ifdef NON_MATCHING
+/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
+/* Clears a frame buffer rectangle. */
+s32 _clr(RECT *arg0, s32 color) {
+    arg0->w = GPU_CLAMP(arg0->w, 0, (s16)gfxMaxW[0] - 1);
+    arg0->h = GPU_CLAMP(arg0->h, 0, (s16)gfxMaxH[0] - 1);
+
+    if ((arg0->x & 0x3F) || (arg0->w & 0x3F)) {
+        gpuClrBuf[0] = 0x07000000 | ((s32)&gpuClrBuf[8] & 0xFFFFFF);
+        gpuClrBuf[1] = 0xE3000000;
+        gpuClrBuf[2] = 0xE4FFFFFF;
+        gpuClrBuf[3] = 0xE5000000;
+        gpuClrBuf[4] = 0xE6000000;
+
+        gpuClrBuf[5] = (color & 0xFFFFFF) | 0x60000000;
+        gpuClrBuf[6] = LOW(arg0->x);
+        gpuClrBuf[7] = LOW(arg0->w);
+        gpuClrBuf[8] = 0x03FFFFFF;
+        gpuClrBuf[9] = 0xE3000000 | _param(3);
+        gpuClrBuf[10] = 0xE4000000 | _param(4);
+        gpuClrBuf[11] = 0xE5000000 | _param(5);
+    } else {
+        gpuClrBuf[0] = 0x04FFFFFF;
+        gpuClrBuf[1] = 0xE6000000;
+
+        gpuClrBuf[2] = (color & 0xFFFFFF) | 0x02000000;
+        gpuClrBuf[3] = LOW(arg0->x);
+        gpuClrBuf[4] = LOW(arg0->w);
+    }
+    _cwc(&gpuClrBuf[0]);
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _clr);
+#endif
 
+#ifdef NON_MATCHING
+/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
+/* LoadImage: copies host memory to VRAM. */
+s32 _dws(RECT *arg0, s32 *arg1) {
+    s32 temp_a0;
+    s32 size;
+    s32 var_s0;
+    s32 var_s4;
+
+    set_alarm();
+    var_s4 = 0;
+
+    arg0->w = GPU_CLAMP(arg0->w, 0, (s16)gfxMaxW[0]);
+    arg0->h = GPU_CLAMP(arg0->h, 0, (s16)gfxMaxH[0]);
+
+    temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
+    if (temp_a0 <= 0) {
+        return -1;
+    }
+    var_s0 = temp_a0 % 16;
+    size = temp_a0 / 16;
+    while (!(*GPU_STATUS & 0x04000000)) {
+        if (get_alarm()) {
+            return -1;
+        }
+    }
+
+    *GPU_STATUS = 0x04000000;
+
+    *GPU_DATA = 0x01000000;
+    *GPU_DATA = var_s4 ? 0xB0000000 : 0xA0000000;
+    *GPU_DATA = LOW(arg0->x);
+    *GPU_DATA = LOW(arg0->w);
+
+    while (var_s0--) {
+        *GPU_DATA = *arg1++;
+    }
+
+    if (size != 0) {
+        *GPU_STATUS = 0x04000002;
+        *DMA2_MADR = (s32)arg1;
+        *DMA2_BCR = (size << 0x10) | 0x10;
+        *DMA2_CHCR = 0x01000201;
+    }
+
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _dws);
+#endif
 
+#ifdef NON_MATCHING
+/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
+/* StoreImage: copies VRAM to host memory. */
+s32 _drs(RECT *arg0, s32 *arg1) {
+    s32 temp_a0;
+    s32 size;
+    s32 var_s0;
+
+    set_alarm();
+
+    arg0->w = GPU_CLAMP(arg0->w, 0, (s16)gfxMaxW[0]);
+    arg0->h = GPU_CLAMP(arg0->h, 0, (s16)gfxMaxH[0]);
+
+    temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
+    if (temp_a0 <= 0) {
+        return -1;
+    }
+    var_s0 = temp_a0 % 16;
+    size = temp_a0 / 16;
+    while (!(*GPU_STATUS & 0x04000000)) {
+        if (get_alarm()) {
+            return -1;
+        }
+    }
+
+    *GPU_STATUS = 0x04000000;
+
+    *GPU_DATA = 0x01000000;
+    *GPU_DATA = 0xC0000000;
+    *GPU_DATA = LOW(arg0->x);
+    *GPU_DATA = LOW(arg0->w);
+
+    while (!(*GPU_STATUS & 0x08000000)) {
+        if (get_alarm()) {
+            return -1;
+        }
+    }
+
+    while (var_s0--) {
+        *arg1++ = *GPU_DATA;
+    }
+
+    if (size != 0) {
+        *GPU_STATUS = 0x04000003;
+        *DMA2_MADR = (s32)arg1;
+        *DMA2_BCR = (size << 0x10) | 0x10;
+        *DMA2_CHCR = 0x01000200;
+    }
+
+    return 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _drs);
+#endif
 
 /* SPDX-License-Identifier: MIT */
 
@@ -3753,7 +4109,10 @@ void _cwc(s32 arg0) {
     *(volatile u32 *)D_8009DB70[0] = 0x01000401;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _param);
+s32 _param(s32 arg0) {
+    *GPU_STATUS = 0x10000000 | arg0;
+    return *GPU_DATA & 0xFFFFFF;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -3772,7 +4131,7 @@ extern s32 D_800BC554[];
 extern s32 D_800BC54C[];
 extern void set_alarm(void);
 extern s32 get_alarm(void);
-extern void _exeque(void);
+extern s32 _exeque(void);
 extern s32 SetIntrMaskFull(s32 arg0) asm("SetIntrMask");
 
 s32 _addque2(Callback func, s32 *arg, s32 size, s32 arg2);
@@ -3856,11 +4215,131 @@ queue:
     return (((s32 *)D_8009DB9C)[-2] - D_8009DB98[0]) & 0x3F;
 }
 
+typedef struct GpuQueueItem {
+    void (*func)(s32 *, s32);
+    s32 *arg;
+    s32 arg2;
+    s32 data[21];
+} GpuQueueItem;
+
+typedef struct GpuLast {
+    void (*func)(s32 *, s32);
+    s32 *arg;
+    s32 arg2;
+} GpuLast;
+
+extern volatile GpuQueueItem gpuQueue[];
+extern GpuLast gpuLast;
+extern volatile s32 _qin;
+extern volatile s32 _qout;
+extern s32 gpuSavedMask;
+extern s32 gpuSavedMask2;
+extern s32 gpuAlarmEnd;
+extern s32 gpuAlarmCount;
+extern u8 gpuCtlBuf[];
+
+#ifdef NON_MATCHING
+/* 2026-10-17: right control flow, but 0x2CC bytes against 0x2FC: retail
+ * recomputes the queue index (qout * 0x60) for every field access. */
+/* Runs queued drawing commands while the GPU DMA is idle. */
+s32 _exeque(void) {
+    s32 ret;
+
+    ret = 1;
+    if (!(*DMA2_CHCR & 0x01000000)) {
+        gpuSavedMask2 = SetIntrMaskFull(0);
+        if (_qin != _qout && !(*DMA2_CHCR & 0x01000000)) {
+            do {
+                if (((_qout + 1) & 0x3F) == _qin && gGfx.drawSyncCb == 0) {
+                    DMACallback(2, 0);
+                }
+                if (!(*GPU_STATUS & 0x04000000)) {
+                    do {
+                    } while (!(*GPU_STATUS & 0x04000000));
+                }
+                gpuQueue[_qout].func(gpuQueue[_qout].arg, gpuQueue[_qout].arg2);
+                gpuLast.func = gpuQueue[_qout].func;
+                gpuLast.arg = gpuQueue[_qout].arg;
+                gpuLast.arg2 = gpuQueue[_qout].arg2;
+                _qout = (_qout + 1) & 0x3F;
+            } while (_qin != _qout && !(*DMA2_CHCR & 0x01000000));
+        }
+        SetIntrMaskFull(gpuSavedMask2);
+        if (_qin == _qout && !(*DMA2_CHCR & 0x01000000) && gGfx.pad8 != 0 &&
+            gGfx.drawSyncCb != 0) {
+            gGfx.pad8 = 0;
+            gGfx.drawSyncCb();
+        }
+        ret = (_qin - _qout) & 0x3F;
+    }
+    return ret;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/psxsdk", _exeque);
+#endif
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _reset);
+/* Resets the GPU (mode 0 also clears the control shadow and the queue) and
+ * flushes the command queue. */
+inline s32 _reset(s32 arg0) {
+    s32 intrMask;
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _sync);
+    intrMask = SetIntrMaskFull(0);
+    _qout = 0;
+    gpuSavedMask = intrMask;
+    _qin = _qout;
+
+    switch (arg0 & 7) {
+    case 0:
+        *DMA2_CHCR = 0x401;
+        *DPCR |= 0x800;
+        *GPU_STATUS = 0;
+        memset(gpuCtlBuf, 0, 0x100);
+        memset(gpuQueue, 0, sizeof(GpuQueueItem) * 64);
+        break;
+    case 1:
+        *DMA2_CHCR = 0x401;
+        *DPCR |= 0x800;
+        *GPU_STATUS = 0x02000000;
+        *GPU_STATUS = 0x01000000;
+        break;
+    }
+    SetIntrMaskFull(gpuSavedMask);
+    if ((arg0 & 7) == 0) {
+        return _version(arg0);
+    }
+    return 0;
+}
+
+s32 _sync(s32 mode) {
+    s32 n;
+
+    if (mode == 0) {
+        set_alarm();
+        while (_qin != _qout) {
+            _exeque();
+            if (get_alarm()) {
+                return -1;
+            }
+        }
+        while ((*DMA2_CHCR & 0x01000000) || !(*GPU_STATUS & 0x04000000)) {
+            if (get_alarm()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+    n = (_qin - _qout) & 0x3F;
+    if (n != 0) {
+        _exeque();
+    }
+    if ((*DMA2_CHCR & 0x01000000) || !(*GPU_STATUS & 0x04000000)) {
+        if (n == 0) {
+            return 1;
+        }
+        return n;
+    }
+    return n;
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -3872,9 +4351,47 @@ void set_alarm(void) {
     D_8009DBAC[0] = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", get_alarm);
+extern char D_80090800[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090800);
+extern char D_80090834[];
+INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090834);
+#ifdef NON_MATCHING
+/* 2026-10-17: retail loads the printf arguments in a different order and has 2 more rows than this draft */
 
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _version);
+s32 get_alarm(void) {
+    if (gpuAlarmEnd < VSync(-1) || gpuAlarmCount++ > 0xF0000) {
+        printf(D_80090800, (_qin - _qout) & 0x3F, *GPU_STATUS, *DMA2_CHCR,
+               *DMA2_MADR);
+        printf(D_80090834, gpuLast.func, gpuLast.arg, gpuLast.arg2);
+        _reset(1);
+        return -1;
+    }
+    return 0;
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/psxsdk", get_alarm);
+#endif
+
+s32 _version(s32 mode) {
+    *GPU_STATUS = 0x10000007;
+    if ((*GPU_DATA & 0xFFFFFF) != 2) {
+        *GPU_DATA = (*GPU_STATUS & 0x3FFF) | 0xE1001000;
+        *GPU_DATA;
+        if (!(*GPU_STATUS & 0x1000)) {
+            return 0;
+        }
+        if (!(mode & 8)) {
+            return 1;
+        }
+        *GPU_STATUS = 0x20000504;
+        return 2;
+    }
+    if (!(mode & 8)) {
+        return 3;
+    }
+    *GPU_STATUS = 0x09000001;
+    return 4;
+}
 
 void MemsetBytes(unsigned char *dest, unsigned char value,
                  int count) asm("memset");
