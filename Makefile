@@ -281,6 +281,20 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26B0Init=D_800A26B0 \
             --defsym=D_800A26B4Init=D_800A26B4 \
             --defsym=_spu_keystat=D_800A229C \
+            --defsym=_svm_cur=D_800B9DC4 \
+            --defsym=spuVmMaxVoice=D_800B9C80 \
+            --defsym=_svm_spuBase=D_800A20B8 \
+            --defsym=_svm_okon1=D_800AD96C \
+            --defsym=_svm_okon2=D_800AD970 \
+            --defsym=_svm_okof1=D_800BEB98 \
+            --defsym=_svm_okof2=D_800BEB9C \
+            --defsym=_svm_voice=D_800AD3BC \
+            --defsym=_svm_envx_hist=D_800AD8A0 \
+            --defsym=_svm_sreg_buf=D_800AD224 \
+            --defsym=_svm_sreg_dirty=D_800AD3A4 \
+            --defsym=_svm_pg=D_800B9928 \
+            --defsym=_svm_tn=D_800B9950 \
+            --defsym=_svm_damper=D_800AFD98 \
             --defsym=_spu_inTransfer=D_800A26DC \
             --defsym=_spu_transferCallback=D_800A26E0 \
             --defsym=_spu_IRQCallback=D_800A26E4 \

@@ -6871,43 +6871,120 @@ void SsUtSetReverbDelay(short delay) {
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", SsUtSetVagAtr);
 
-#ifdef NON_MATCHING
-u8 SpuVmAllocDraft(s32) asm("SpuVmAlloc");
-u8 SpuVmAllocDraft(s32 arg0) {
-    struct SpuVoice {
-        s16 unk0;
-        s16 unk2;
-        s16 unk04;
-        u16 unk6;
-        s16 unk8;
-        char unka;
-        char unkb;
-        s16 note;
-        s16 unke;
-        s16 unk10;
-        s16 prog;
-        s16 tone;
-        s16 vabId;
-        s16 unk18;
-        u8 pad[1];
-        u8 unk1b;
-        s16 auto_vol;
-        s16 unk1e;
-        s16 unk20;
-        s16 unk22;
-        s16 start_vol;
-        s16 end_vol;
-        s16 auto_pan;
-        s16 unk2a;
-        s16 unk2c;
-        s16 unk2e;
-        s16 start_pan;
-        s16 end_pan;
-    };
-    extern u8 D_800AD3BC[];
-    extern u8 D_800B9C80[];
-    extern u8 D_800B9DD3[];
-    struct SpuVoice *voices;
+/* Voice manager state, after the Psy-Q 3.5 libsnd headers. */
+typedef struct ProgAtr {
+    u8 tones;
+    u8 mvol;
+    u8 prior;
+    u8 mode;
+    u8 mpan;
+    s8 reserved0;
+    s16 attr;
+    u32 reserved1;
+    u16 reserved2; /* even vag spu pointer */
+    u16 reserved3; /* odd vag spu pointer */
+} ProgAtr;
+
+typedef struct VagAtr {
+    u8 prior;
+    u8 mode;
+    u8 vol;
+    u8 pan;
+    u8 center;
+    u8 shift;
+    u8 min;
+    u8 max;
+    u8 vibW;
+    u8 vibT;
+    u8 porW;
+    u8 porT;
+    u8 pbmin;
+    u8 pbmax;
+    u8 reserved1;
+    u8 reserved2;
+    u16 adsr1;
+    u16 adsr2;
+    s16 prog;
+    s16 vag;
+    s16 reserved[4];
+} VagAtr;
+
+struct SpuVoice {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    u16 unk6;
+    s16 unk8;
+    s8 unkA;
+    s8 unkB;
+    s16 note;
+    s16 unkE;
+    s16 unk10;
+    s16 prog;
+    s16 tone;
+    s16 vabId;
+    s16 unk18;
+    u8 pad1A;
+    u8 unk1B;
+    s16 autoVol;
+    s16 unk1E;
+    s16 unk20;
+    s16 unk22;
+    s16 startVol;
+    s16 endVol;
+    s16 autoPan;
+    s16 unk2A;
+    s16 unk2C;
+    s16 unk2E;
+    s16 startPan;
+    s16 endPan;
+};
+
+struct SvmCur {
+    char field0;
+    char vabId;
+    char note;
+    char field3;
+    char voll;
+    char field5;
+    char program;
+    char fakeProgram;
+    char field8;
+    char field9;
+    char mvol;
+    char mpan;
+    char vagIdx;
+    char vol;
+    char pan;
+    char prior;
+    char centre;
+    u8 shift;
+    char mode;
+    char field13;
+    u8 seqSepNo;
+    u8 pad15;
+    s16 vagIdx16;
+    s16 voiceIdx;
+    s16 voice;
+    s16 regOff;
+    s16 toneOff;
+};
+
+extern struct SvmCur _svm_cur;
+extern struct SpuVoice _svm_voice[];
+extern s32 _svm_envx_hist[];
+extern s16 _svm_sreg_buf[];
+extern char _svm_sreg_dirty[];
+extern ProgAtr *_svm_pg;
+extern VagAtr *_svm_tn;
+extern s16 _svm_damper;
+extern u8 spuVmMaxVoice;
+extern void SpuSetNoiseVoice();
+
+/* Picks a free voice for a note, or steals the quietest lowest-priority one.
+ * Returns spuVmMaxVoice when none can be used. */
+u8 SpuVmAllocVoice(s32) asm("SpuVmAlloc");
+u8 SpuVmAllocVoice(s32 arg0) {
     u8 var_t2;
     u16 var_t0;
     u16 var_t3;
@@ -6916,34 +6993,33 @@ u8 SpuVmAllocDraft(s32 arg0) {
     u8 var_t1;
     u16 prior;
 
-    voices = (struct SpuVoice *)D_800AD3BC;
-
     channel = 99;
     var_t3 = -1;
     var_t2 = 0;
     var_t0 = 0;
-    prior = D_800B9DD3[0];
+    prior = _svm_cur.prior;
     var_t1 = 99;
-    for (cur_voice = 0; cur_voice < D_800B9C80[0]; cur_voice++) {
-        if (voices[cur_voice].unk1b == 0 && voices[cur_voice].unk6 == 0) {
+    for (cur_voice = 0; cur_voice < spuVmMaxVoice; cur_voice++) {
+        if (_svm_voice[cur_voice].unk1B == 0 &&
+            _svm_voice[cur_voice].unk6 == 0) {
             channel = cur_voice;
             break;
         }
-        if (voices[cur_voice].unk18 < prior) {
-            prior = voices[cur_voice].unk18;
+        if (_svm_voice[cur_voice].unk18 < prior) {
+            prior = _svm_voice[cur_voice].unk18;
             var_t1 = cur_voice;
-            var_t3 = voices[cur_voice].unk6;
-            var_t0 = voices[cur_voice].unk2;
+            var_t3 = _svm_voice[cur_voice].unk6;
+            var_t0 = _svm_voice[cur_voice].unk2;
             var_t2 = 1;
-        } else if (voices[cur_voice].unk18 == prior) {
+        } else if (_svm_voice[cur_voice].unk18 == prior) {
             var_t2 += 1;
-            if (voices[cur_voice].unk6 < var_t3) {
-                var_t0 = voices[cur_voice].unk2;
-                var_t3 = voices[cur_voice].unk6;
+            if (_svm_voice[cur_voice].unk6 < var_t3) {
+                var_t0 = _svm_voice[cur_voice].unk2;
+                var_t3 = _svm_voice[cur_voice].unk6;
                 var_t1 = cur_voice;
-            } else if (voices[cur_voice].unk6 == var_t3) {
-                if (var_t0 < voices[cur_voice].unk2) {
-                    var_t0 = voices[cur_voice].unk2;
+            } else if (_svm_voice[cur_voice].unk6 == var_t3) {
+                if (var_t0 < _svm_voice[cur_voice].unk2) {
+                    var_t0 = _svm_voice[cur_voice].unk2;
                     var_t1 = cur_voice;
                 }
             }
@@ -6951,26 +7027,23 @@ u8 SpuVmAllocDraft(s32 arg0) {
     }
     if (channel == 99) {
         if (var_t2 == 0) {
-            channel = D_800B9C80[0];
+            channel = spuVmMaxVoice;
         } else {
             channel = var_t1;
         }
     }
-    if (channel < D_800B9C80[0]) {
-        for (cur_voice = 0; cur_voice < D_800B9C80[0]; cur_voice++) {
-            voices[cur_voice].unk2++;
+    if (channel < spuVmMaxVoice) {
+        for (cur_voice = 0; cur_voice < spuVmMaxVoice; cur_voice++) {
+            _svm_voice[cur_voice].unk2++;
         }
-        voices[channel].unk2 = 0;
-        voices[channel].unk18 = D_800B9DD3[0];
-        if (voices[channel].unk1b == 2) {
+        _svm_voice[channel].unk2 = 0;
+        _svm_voice[channel].unk18 = _svm_cur.prior;
+        if (_svm_voice[channel].unk1B == 2) {
             SpuSetNoiseVoice(0, 0xFFFFFF);
         }
     }
     return channel;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmAlloc);
-#endif
 
 /* Matches (0 words) under GNU C 2.6.3-psx only. Retail's codegen needs these
  * spellings:
@@ -7081,55 +7154,32 @@ u16 pitch;
     ((u16 *)D_800BEB98)[2] = D_800BEB9C[0] & ~((u16 *)D_800AD96C)[2];
 }
 
-#ifdef NON_MATCHING
-/* Retry 2026-10-11: 536/532 bytes; slot offsets and signed division corrected. */
 void SpuVmDoAllocate(void) {
-    extern s16 D_800B9DDE[];
-    extern u8 D_800B9DCB[];
-    extern u8 D_800B9DD0[];
-    extern u16 D_800B9DDC[];
-    extern s32 D_800B9928[];
-    extern s32 D_800B9950[];
-    extern s32 D_800AD8A0[];
-    extern u8 D_800AD3A4[];
-    extern s16 D_800AD3C2[];
-    extern u16 D_800AD228[];
-    extern u16 D_800AFD98[];
     s32 i;
-    s32 toneIndex;
-    s32 progIndex;
-    s32 offset;
 
-    offset = D_800B9DDE[0] * 8;
-    toneIndex = D_800B9DD0[0] + D_800B9DCB[0] * 16;
-    D_800B9DDE[1] = offset;
-    D_800B9DDE[2] = toneIndex;
-    D_800AD3C2[D_800B9DDE[0] * 26] = 0x7FFF;
+    _svm_cur.regOff = _svm_cur.voice * 8;
+    _svm_cur.toneOff = _svm_cur.vagIdx + (_svm_cur.fakeProgram * 0x10);
+    _svm_voice[_svm_cur.voice].unk6 = 0x7FFF;
     for (i = 0; i < 0x10; i++) {
-        D_800AD8A0[i] &= ~(1 << D_800B9DDE[0]);
+        _svm_envx_hist[i] &= ~(1 << _svm_cur.voice);
     }
-    if ((D_800B9DDC[0] & 1) > 0) {
-        progIndex = ((s16)D_800B9DDC[0] - 1) / 2;
-        D_800AD228[D_800B9DDE[1] + 1] =
-            *(u16 *)((s32)D_800B9928[0] + progIndex * 16 + 0xC);
+    if ((_svm_cur.voiceIdx & 1) > 0) {
+        _svm_sreg_buf[_svm_cur.regOff + 3] =
+            _svm_pg[(_svm_cur.voiceIdx - 1) / 2].reserved2;
+        _svm_sreg_dirty[_svm_cur.voice] |= 8;
     } else {
-        progIndex = ((s16)D_800B9DDC[0] - 1) / 2;
-        D_800AD228[D_800B9DDE[1] + 1] =
-            *(u16 *)((s32)D_800B9928[0] + progIndex * 16 + 0xE);
+        _svm_sreg_buf[_svm_cur.regOff + 3] =
+            _svm_pg[(_svm_cur.voiceIdx - 1) / 2].reserved3;
+        _svm_sreg_dirty[_svm_cur.voice] |= 8;
     }
-    D_800AD3A4[D_800B9DDE[0]] |= 8;
-    D_800AD228[D_800B9DDE[1] + 2] =
-        *(u16 *)((s32)D_800B9950[0] +
-                 (D_800B9DCB[0] * 16 + D_800B9DD0[0]) * 32 + 0x10);
-    D_800AD228[D_800B9DDE[1] + 3] =
-        *(u16 *)((s32)D_800B9950[0] +
-                 (D_800B9DCB[0] * 16 + D_800B9DD0[0]) * 32 + 0x12) +
-        D_800AFD98[0];
-    D_800AD3A4[D_800B9DDE[0]] |= 0x30;
+
+    _svm_sreg_buf[_svm_cur.regOff + 4] =
+        _svm_tn[(_svm_cur.fakeProgram * 0x10) + _svm_cur.vagIdx].adsr1;
+    _svm_sreg_buf[_svm_cur.regOff + 5] =
+        _svm_tn[(_svm_cur.fakeProgram * 0x10) + _svm_cur.vagIdx].adsr2 +
+        _svm_damper;
+    _svm_sreg_dirty[_svm_cur.voice] |= 0x30;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmDoAllocate);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/psxsdk", vmNoiseOn);
 
@@ -7697,66 +7747,40 @@ u16 pan;
     return mask;
 }
 
-#ifdef NON_MATCHING
-s32 SpuVmKeyOffDraft(s16, s16, s16, u16) asm("SpuVmKeyOff");
-s32 SpuVmKeyOffDraft(s16 arg0, s16 vabId, s16 prog, u16 note) {
-    struct Voice {
-        s16 unk0;
-        s16 unk2;
-        s16 unk4;
-        u8 pad6[6];
-        s16 note;
-        s16 seq;
-        s16 unk10;
-        s16 prog;
-        s16 unk14;
-        s16 vabId;
-        u8 pad18[3];
-        u8 unk1b;
-        u8 pad1c[24];
-    };
-    extern struct Voice D_800AD3BC[];
-    extern u8 D_800B9C80[];
-    extern u16 D_800B9DDE[];
-    extern u16 D_800B9DDA[];
-    extern u8 D_800A20B8[];
-    extern u8 D_800BEB98[];
-    extern u8 D_800BEB9C[];
-    extern u16 D_800AD96C[];
-    extern u16 D_800AD970[];
-    extern u8 D_800BE998[];
-    extern u8 D_800BEBA0[];
-    extern u8 D_800AD8E4[];
-    extern u8 D_800AD974[];
-    u16 okon1;
-    u16 okon2;
-    u16 bitsLower;
+extern u16 *_svm_spuBase;
+extern u16 _svm_okon1;
+extern u16 _svm_okon2;
+extern u16 _svm_okof1;
+extern u16 _svm_okof2;
+
+static __inline__ u16 GetSvmVoice(void) {
+    return _svm_cur.voice;
+}
+
+/* Keys off every voice that plays this note of this program. Returns the
+ * number of voices found. */
+s32 SpuVmKeyOffVoice(s16, s16, s16, u16) asm("SpuVmKeyOff");
+s32 SpuVmKeyOffVoice(s16 arg0, s16 vabId, s16 prog, u16 note) {
     u16 bitsUpper;
+    u16 bitsLower;
     u8 voice;
-    u16 maskLow;
-    u16 maskUp;
     s32 count;
     u16 tempVoice;
-    u16 *spu;
 
-    voice = 0;
     count = 0;
-    for (; voice < D_800B9C80[0]; voice++) {
-        if ((((D_800AD3BC[voice].note == note) &&
-              (D_800AD3BC[voice].prog == prog)) &&
-             (D_800AD3BC[voice].seq == arg0)) &&
-            (D_800AD3BC[voice].vabId == vabId)) {
-            if (D_800AD3BC[voice].unk0 == 0xFF) {
-                D_800AD3BC[voice].unk1b = 0;
-                D_800AD3BC[voice].unk4 = 0;
-                spu = *(u16 **)D_800A20B8;
-                spu[202] = 0;
-                spu[203] = 0;
+    for (voice = 0; voice < spuVmMaxVoice; voice++) {
+        if ((_svm_voice[voice].note == note) &&
+            (_svm_voice[voice].prog == prog) &&
+            (_svm_voice[voice].unkE == arg0) &&
+            (_svm_voice[voice].vabId == vabId)) {
+            if (_svm_voice[voice].unk0 == 0xFF) {
+                _svm_voice[voice].unk1B = 0;
+                _svm_voice[voice].unk4 = 0;
+                _svm_spuBase[202] = 0;
+                _svm_spuBase[203] = 0;
             } else {
-                D_800B9DDE[0] = voice;
-                do {
-                } while (0);
-                tempVoice = *(u16 *)((s32)D_800B9DDA + 4);
+                _svm_cur.voice = voice;
+                tempVoice = GetSvmVoice();
                 if (tempVoice < 0x10) {
                     bitsLower = 1 << tempVoice;
                     bitsUpper = 0;
@@ -7764,27 +7788,22 @@ s32 SpuVmKeyOffDraft(s16 arg0, s16 vabId, s16 prog, u16 note) {
                     bitsLower = 0;
                     bitsUpper = 1 << (tempVoice - 0x10);
                 }
-                D_800AD3BC[tempVoice].unk1b = 0;
-                D_800AD3BC[tempVoice].unk4 = 0;
-                D_800AD3BC[tempVoice].unk0 = 0;
-                maskLow = *(u16 *)D_800BEB98 | bitsLower;
-                *(u16 *)(D_800BE998 + 512) = maskLow;
-                maskUp = *(u16 *)(D_800BEBA0 + -4) | bitsUpper;
-                *(u16 *)D_800BEB9C = maskUp;
-                okon1 = D_800AD96C[0] & ~*(u16 *)(D_800BE998 + 512);
-                ((u16 *)D_800AD8E4)[68] =
-                    D_800AD96C[0] & ~*(u16 *)(D_800BE998 + 512);
-                okon2 = D_800AD970[0] & ~*(u16 *)D_800BEB9C;
-                ((u16 *)D_800AD974)[-2] = okon2;
+
+                _svm_voice[tempVoice].unk1B = 0;
+                _svm_voice[tempVoice].unk4 = 0;
+                _svm_voice[tempVoice].unk0 = 0;
+
+                _svm_okof1 |= bitsLower;
+                _svm_okof2 |= bitsUpper;
+
+                _svm_okon1 &= ~_svm_okof1;
+                _svm_okon2 &= ~_svm_okof2;
             }
             count++;
         }
     }
     return count;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmKeyOff);
-#endif
 
 void SpuVmSeKeyOn(s16 vabId, s16 prog, u16 note, s32 arg3, u16 voll, u16 volr) {
     u16 pan;
