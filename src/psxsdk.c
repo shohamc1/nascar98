@@ -9416,32 +9416,33 @@ s16 SpuVmPBVoiceDraft(s16 voice, s16 seq_sep_no, s16 vabId, s16 program,
 
 s32 SpuVmPBVoice(s16, s16, s16, s16, u16);
 
-#ifdef NON_MATCHING
-/* 2026-10-17: the donor body is 240 bytes. This draft has the size but 22
- * rows differ: retail stores _svm_cur.vagIdx16 after the SpuVmVSetUp call
- * through a copy of arg0 (move v0,s2), and puts voice in s0 and the sum in
- * s1. */
+/* `seq` is retail's copy of arg0 for the vagIdx16 store. The
+ * `(x << 4) & 0xF` terms are ghost uses (combine folds them to zero) that
+ * set allocation priority: `voice` gets s0, the sum outranks arg0, and the
+ * extra use of `(s16)arg0` makes loop.c hoist its `<< 16` out of the loop.
+ * See the KB, "Ghost uses and inline helpers". */
 s32 SpuVmPitchBend(arg0, arg1, arg2, arg3)
 s32 arg0;
 s16 arg1;
 s16 arg2;
 s16 arg3;
 {
-    s32 var_s1;
     s16 voice;
+    s32 var_s1;
+    s16 seq;
 
+    seq = arg0;
     SpuVmVSetUp(arg1, arg2);
-    _svm_cur.vagIdx16 = arg0;
+    _svm_cur.vagIdx16 = seq;
     var_s1 = 0;
     for (voice = 0; voice < spuVmMaxVoice; voice++) {
-        var_s1 += (s16)SpuVmPBVoice(voice + ((voice << 4) & 0xF), arg0, arg1,
-                                    arg2, arg3);
+        var_s1 += (s16)SpuVmPBVoice(voice + ((voice << 4) & 0xF),
+                                    (s16)arg0 + (((s16)arg0 << 4) & 0xF), arg1,
+                                    arg2, arg3) +
+                  ((var_s1 << 4) & 0xF);
     }
     return var_s1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", SpuVmPitchBend);
-#endif
 
 void SpuVmFlush(void) {
     u32 env_mask;
