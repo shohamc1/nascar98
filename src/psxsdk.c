@@ -8397,46 +8397,17 @@ s16 SsUtGetProgAtr(s16 vabId, s16 progNum, u8 *progatrptr) {
     return -1;
 }
 
-typedef struct SpuVmProgEntry {
-    u32 word0;
-    u32 word4;
-    u8 reserved1;
-    u8 padding[7];
-} SpuVmProgEntry;
-extern u8 D_800B9DE4VSetUp[];
-extern s16 D_800B60A0VSetUp[];
-extern s32 D_800AFA98VSetUp[];
-extern s32 D_800AFAD8VSetUp[];
-extern s32 D_800AFD9CVSetUp[];
-extern u8 D_800B9DC5VSetUp[];
-extern u8 D_800B9DCAVSetUp[];
-extern s32 D_800B9950VSetUp[];
-extern s32 D_800B9930VSetUp[];
-extern s32 D_800B9928VSetUp[];
-extern u8 D_800B9DCBVSetUp[];
 s32 SpuVmVSetUp(s16 vabId, s16 prog) {
-    s32 programIndex;
-    u16 id;
-    register s32 vabVh asm("v1");
-    register s32 vabPg asm("a0");
-    s32 vabTn;
-    SpuVmProgEntry *programs;
-    id = vabId;
-    if (id >= 16 || D_800B9DE4VSetUp[vabId] != 1 ||
-        prog >= D_800B60A0VSetUp[0]) {
+    if (vabId < 0 || vabId >= 16 || _svm_vab_used[vabId] != 1 ||
+        prog >= kMaxPrograms) {
         return -1;
     }
-    vabVh = D_800AFAD8VSetUp[vabId];
-    vabPg = D_800AFA98VSetUp[vabId];
-    vabTn = D_800AFD9CVSetUp[vabId];
-    D_800B9DC5VSetUp[0] = vabId;
-    D_800B9DCAVSetUp[0] = prog;
-    D_800B9950VSetUp[0] = vabTn;
-    D_800B9930VSetUp[0] = vabVh;
-    D_800B9928VSetUp[0] = vabPg;
-    programs = (SpuVmProgEntry *)vabPg;
-    programIndex = prog;
-    D_800B9DCBVSetUp[0] = programs[programIndex].reserved1;
+    _svm_vh = _svm_vab_vh[vabId];
+    _svm_pg = _svm_vab_pg[vabId];
+    _svm_tn = _svm_vab_tn[vabId];
+    _svm_cur.vabId = vabId;
+    _svm_cur.program = prog;
+    _svm_cur.fakeProgram = _svm_pg[prog].reserved1;
     return 0;
 }
 
@@ -8899,10 +8870,10 @@ u16 note2pitch(void) {
     s16 pos;
     u16 var_a2;
     u16 var_v1;
-    new_var = (D_800B9DC6[0] + 60) - D_800B9DD4[0];
+    new_var = ((u8)_svm_cur.note + 60) - (u8)_svm_cur.centre;
     octave = new_var / 12;
     pos = new_var % 12;
-    var_a2 = D_800B9DD5[0] / 8;
+    var_a2 = _svm_cur.shift / 8;
     if (var_a2 > 15) {
         var_a2 = 15;
     }
@@ -10417,7 +10388,7 @@ extern s32 SpuVmVSetUp(s16, s16);
 extern s32 SpuVmPBVoice(s16, s16, s16, s16, u16);
 s16 SsUtPitchBend(s16 voice, s16 vabId, s16 prog, s16 note, s16 pbend) {
     SpuVmVSetUp(vabId, prog);
-    D_800B9DDA[0] = 0x21;
+    _svm_cur.vagIdx16 = 0x21;
     return -((SpuVmPBVoice(voice, 0x21, vabId, prog, pbend) << 16) == 0);
 }
 
