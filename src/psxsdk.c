@@ -2502,7 +2502,7 @@ s32 FntOpen(s32 x, s32 y, s32 w, s32 h, s32 isbg, s32 n) {
 #ifdef NON_MATCHING
 /* Draft from the retail asm (the 3.6 font has colour escapes and an
  * auto-width box, unlike the sotn 3.3 donor). Registers and frame match
- * retail (0x68); 202 rows against 201, all in instruction order. The zero
+ * retail (0x68); 200 rows against 201, all in instruction order. The zero
  * terms `(x << 4) & 0xF` are allocator levers: combine folds them away
  * after flow analysis, but they add references that keep max_x, auto_width
  * and line_break in registers and stop loop.c from reducing the sprite
@@ -2525,6 +2525,7 @@ u_long *FntFlush(s32 id) {
     s32 g;
     s32 b;
     s32 ch;
+    s32 step;
 
     r = 0x80;
     g = 0x80;
@@ -2547,6 +2548,7 @@ u_long *FntFlush(s32 id) {
     max_y = y + font->tile.h;
     auto_width = font->autoWidth;
     TermPrim(dr);
+    step = 8; /* an int, so the front end can't narrow `- 8` to 0xFFF8 */
     while (*buf != 0) {
         if (len == 0) {
             break;
@@ -2611,7 +2613,7 @@ u_long *FntFlush(s32 id) {
         AddPrim(dr, &font->tile);
         if (auto_width != 0) {
             font->tile.w = min_x - (u16)font->tile.x0;
-            font->tile.h = y - ((u16)font->tile.y0 - 8);
+            font->tile.h = y - ((u16)font->tile.y0 - step);
         }
     }
     DrawOTag((u_long *)dr);
@@ -6956,7 +6958,7 @@ typedef struct {
 } SdkVagAttr;
 #ifdef NON_MATCHING
 void _SsSndSetVabAttr(s16, s16, s16, SdkVagAttr, SsAdsr, s16, u8);
-/* Draft from the retail asm. Registers and the 0x108 frame match; one rows
+/* Draft from the retail asm. Registers and the 0x108 frame match; one row
  * differs (retail keeps a second `andi v1,s6,0xFF` in a delay slot). The
  * odd terms are allocator levers, not original code: `fine` and `coarse`
  * are retail's dead pitch computations (combine folds their uses, so they
