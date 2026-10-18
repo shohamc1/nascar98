@@ -1901,291 +1901,132 @@ u16 SetIntrMask(u16 arg0) {
     return mask;
 }
 
-ASM_FUNC(startIntr,
-         "    addiu      $sp, $sp, -0x18 # maspsx-keep\n"
-         "    sw         $s0, 0x10($sp) # maspsx-keep\n"
-         "    lui        $s0, %hi(D_8009BDC8) # maspsx-keep\n"
-         "    addiu      $s0, $s0, %lo(D_8009BDC8) # maspsx-keep\n"
-         "    sw         $ra, 0x14($sp) # maspsx-keep\n"
-         "    lhu        $v0, 0x0($s0) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    bnez       $v0, .L800775D0 # maspsx-keep\n"
-         "    addu      $v0, $zero, $zero # maspsx-keep\n"
-         "    lui        $v1, %hi(D_8009CE54) # maspsx-keep\n"
-         "    lw         $v1, %lo(D_8009CE54)($v1) # maspsx-keep\n"
-         "    lui        $v0, %hi(D_8009CE58) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CE58)($v0) # maspsx-keep\n"
-         "    lui        $a1, (0x33333333 >> 16) # maspsx-keep\n"
-         "    sh         $zero, 0x0($v0) # maspsx-keep\n"
-         "    lhu        $v0, 0x0($v0) # maspsx-keep\n"
-         "    ori        $a1, $a1, (0x33333333 & 0xFFFF) # maspsx-keep\n"
-         "    sh         $v0, 0x0($v1) # maspsx-keep\n"
-         "    lui        $v0, %hi(D_8009CE5C) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CE5C)($v0) # maspsx-keep\n"
-         "    addu       $a0, $s0, $zero # maspsx-keep\n"
-         "    sw         $a1, 0x0($v0) # maspsx-keep\n"
-         "    jal        memclr # maspsx-keep\n"
-         "    ori       $a1, $zero, 0x41A # maspsx-keep\n"
-         "    jal        setjmp # maspsx-keep\n"
-         "    addiu     $a0, $s0, 0x38 # maspsx-keep\n"
-         "    beqz       $v0, .L80077580 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    jal        trapIntr # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077580: # maspsx-keep\n"
-         "    lui        $s0, %hi(D_8009BE04) # maspsx-keep\n"
-         "    addiu      $s0, $s0, %lo(D_8009BE04) # maspsx-keep\n"
-         "    addiu      $a0, $s0, -0x4 # maspsx-keep\n"
-         "    addiu      $v0, $s0, 0xFDC # maspsx-keep\n"
-         "    jal        HookEntryInt # maspsx-keep\n"
-         "    sw        $v0, 0x0($s0) # maspsx-keep\n"
-         "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
-         "    jal        startIntrVSync # maspsx-keep\n"
-         "    sh        $v0, -0x3C($s0) # maspsx-keep\n"
-         "    lui        $v1, %hi(D_8009CE50) # maspsx-keep\n"
-         "    lw         $v1, %lo(D_8009CE50)($v1) # maspsx-keep\n"
-         "    jal        startIntrDMA # maspsx-keep\n"
-         "    sw        $v0, 0x14($v1) # maspsx-keep\n"
-         "    lui        $a0, %hi(D_8009CE50) # maspsx-keep\n"
-         "    lw         $a0, %lo(D_8009CE50)($a0) # maspsx-keep\n"
-         "    jal        _96_remove # maspsx-keep\n"
-         "    sw        $v0, 0x4($a0) # maspsx-keep\n"
-         "    jal        ExitCriticalSection # maspsx-keep\n"
-         "    addiu     $s0, $s0, -0x3C # maspsx-keep\n"
-         "    addu       $v0, $s0, $zero # maspsx-keep\n"
-         "    .L800775D0: # maspsx-keep\n"
-         "    lw         $ra, 0x14($sp) # maspsx-keep\n"
-         "    lw         $s0, 0x10($sp) # maspsx-keep\n"
-         "    addiu      $sp, $sp, 0x18 # maspsx-keep\n"
-         "    jr         $ra # maspsx-keep\n"
-         "    nop # maspsx-keep\n")
+typedef struct IntrEnv {
+    u16 initialized;
+    u16 inInterrupt;
+    Callback handlers[11];
+    u16 enabledMask;
+    u16 savedMask;
+    s32 savedPcr;
+    s32 buf[12];
+    s32 stack[1024];
+} IntrEnv;
+extern IntrEnv intrEnv;
+extern volatile u16 *i_mask;
+extern volatile u16 *g_InterruptMask;
+extern s32 intrTimeout;
+extern int printf(const char *, ...);
+extern void ReturnFromException(void);
+extern u8 D_80090448[];
+extern u8 D_80090464[];
+extern struct Callbacks *pCallbacks;
+extern void trapIntr(void);
+extern int setjmp(s32 *);
+extern Callback startIntrVSync(void);
+extern Callback startIntrDMA(void);
+extern void _96_remove(void);
+extern void HookEntryInt(void *);
+extern volatile s32 *d_pcr;
+extern void memclr(void *, size_t);
+
+void *startIntr(void) {
+    if (intrEnv.initialized != 0) {
+        return 0;
+    }
+    *i_mask = *g_InterruptMask = 0;
+    *d_pcr = 0x33333333;
+    memclr(&intrEnv, sizeof(intrEnv) / sizeof(s32));
+    if (setjmp(intrEnv.buf) != 0) {
+        trapIntr();
+    }
+    intrEnv.buf[1] = (s32)&intrEnv.stack[1004];
+    HookEntryInt(intrEnv.buf);
+    intrEnv.initialized = 1;
+    pCallbacks->VSyncCallbacks = (void *)startIntrVSync();
+    {
+        register struct Callbacks *cb asm("a0");
+        void *dma = startIntrDMA();
+        cb = pCallbacks;
+        cb->DMACallback = dma;
+    }
+    _96_remove();
+    ExitCriticalSection();
+    return &intrEnv;
+}
 
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090448);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090464);
 
-ASM_FUNC(trapIntr, "    addiu      $sp, $sp, -0x28 # maspsx-keep\n"
-                   "    sw         $s1, 0x14($sp) # maspsx-keep\n"
-                   "    lui        $s1, %hi(D_8009BDC8) # maspsx-keep\n"
-                   "    addiu      $s1, $s1, %lo(D_8009BDC8) # maspsx-keep\n"
-                   "    sw         $ra, 0x24($sp) # maspsx-keep\n"
-                   "    sw         $s4, 0x20($sp) # maspsx-keep\n"
-                   "    sw         $s3, 0x1C($sp) # maspsx-keep\n"
-                   "    sw         $s2, 0x18($sp) # maspsx-keep\n"
-                   "    sw         $s0, 0x10($sp) # maspsx-keep\n"
-                   "    lhu        $v0, 0x0($s1) # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    bnez       $v0, .L80077640 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    lui        $v0, %hi(D_8009CE54) # maspsx-keep\n"
-                   "    lw         $v0, %lo(D_8009CE54)($v0) # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    lhu        $a1, 0x0($v0) # maspsx-keep\n"
-                   "    lui        $a0, %hi(D_80090448) # maspsx-keep\n"
-                   "    addiu      $a0, $a0, %lo(D_80090448) # maspsx-keep\n"
-                   "    jal        printf # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    jal        ReturnFromException # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    .L80077640: # maspsx-keep\n"
-                   "    lui        $a0, %hi(D_8009CE54) # maspsx-keep\n"
-                   "    lw         $a0, %lo(D_8009CE54)($a0) # maspsx-keep\n"
-                   "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
-                   "    lui        $at, %hi(D_8009BDCA) # maspsx-keep\n"
-                   "    sh         $v0, %lo(D_8009BDCA)($at) # maspsx-keep\n"
-                   "    lui        $v0, %hi(D_8009BDF8) # maspsx-keep\n"
-                   "    lhu        $v0, %lo(D_8009BDF8)($v0) # maspsx-keep\n"
-                   "    lui        $v1, %hi(D_8009CE58) # maspsx-keep\n"
-                   "    lw         $v1, %lo(D_8009CE58)($v1) # maspsx-keep\n"
-                   "    lhu        $a0, 0x0($a0) # maspsx-keep\n"
-                   "    lhu        $v1, 0x0($v1) # maspsx-keep\n"
-                   "    and        $v0, $v0, $a0 # maspsx-keep\n"
-                   "    and        $s0, $v1, $v0 # maspsx-keep\n"
-                   "    beqz       $s0, .L80077710 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    ori        $s3, $zero, 0x1 # maspsx-keep\n"
-                   "    addiu      $s4, $s1, 0x4 # maspsx-keep\n"
-                   "    .L80077684: # maspsx-keep\n"
-                   "    beqz       $s0, .L800776E0 # maspsx-keep\n"
-                   "    addu      $s1, $zero, $zero # maspsx-keep\n"
-                   "    addu       $s2, $s4, $zero # maspsx-keep\n"
-                   "    .L80077690: # maspsx-keep\n"
-                   "    slti       $v0, $s1, 0xB # maspsx-keep\n"
-                   "    beqz       $v0, .L800776E0 # maspsx-keep\n"
-                   "    andi      $v0, $s0, 0x1 # maspsx-keep\n"
-                   "    beqz       $v0, .L800776CC # maspsx-keep\n"
-                   "    sllv      $v0, $s3, $s1 # maspsx-keep\n"
-                   "    lui        $v1, %hi(D_8009CE54) # maspsx-keep\n"
-                   "    lw         $v1, %lo(D_8009CE54)($v1) # maspsx-keep\n"
-                   "    nor        $v0, $zero, $v0 # maspsx-keep\n"
-                   "    sh         $v0, 0x0($v1) # maspsx-keep\n"
-                   "    lw         $v0, 0x0($s2) # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    beqz       $v0, .L800776CC # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    jalr       $v0 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    .L800776CC: # maspsx-keep\n"
-                   "    addiu      $s2, $s2, 0x4 # maspsx-keep\n"
-                   "    srl        $s0, $s0, 1 # maspsx-keep\n"
-                   "    andi       $v0, $s0, 0xFFFF # maspsx-keep\n"
-                   "    bnez       $v0, .L80077690 # maspsx-keep\n"
-                   "    addiu     $s1, $s1, 0x1 # maspsx-keep\n"
-                   "    .L800776E0: # maspsx-keep\n"
-                   "    lui        $a0, %hi(D_8009CE54) # maspsx-keep\n"
-                   "    lw         $a0, %lo(D_8009CE54)($a0) # maspsx-keep\n"
-                   "    lui        $v0, %hi(D_8009BDF8) # maspsx-keep\n"
-                   "    lhu        $v0, %lo(D_8009BDF8)($v0) # maspsx-keep\n"
-                   "    lui        $v1, %hi(D_8009CE58) # maspsx-keep\n"
-                   "    lw         $v1, %lo(D_8009CE58)($v1) # maspsx-keep\n"
-                   "    lhu        $a0, 0x0($a0) # maspsx-keep\n"
-                   "    lhu        $v1, 0x0($v1) # maspsx-keep\n"
-                   "    and        $v0, $v0, $a0 # maspsx-keep\n"
-                   "    and        $s0, $v1, $v0 # maspsx-keep\n"
-                   "    bnez       $s0, .L80077684 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    .L80077710: # maspsx-keep\n"
-                   "    lui        $a1, %hi(D_8009CE54) # maspsx-keep\n"
-                   "    lw         $a1, %lo(D_8009CE54)($a1) # maspsx-keep\n"
-                   "    lui        $a2, %hi(D_8009CE58) # maspsx-keep\n"
-                   "    lw         $a2, %lo(D_8009CE58)($a2) # maspsx-keep\n"
-                   "    lhu        $v0, 0x0($a1) # maspsx-keep\n"
-                   "    lhu        $v1, 0x0($a2) # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    and        $v0, $v0, $v1 # maspsx-keep\n"
-                   "    beqz       $v0, .L80077790 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    lui        $v0, %hi(D_8009CE60) # maspsx-keep\n"
-                   "    lw         $v0, %lo(D_8009CE60)($v0) # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    addiu      $v1, $v0, 0x1 # maspsx-keep\n"
-                   "    slti       $v0, $v0, 0x801 # maspsx-keep\n"
-                   "    lui        $at, %hi(D_8009CE60) # maspsx-keep\n"
-                   "    sw         $v1, %lo(D_8009CE60)($at) # maspsx-keep\n"
-                   "    bnez       $v0, .L80077798 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    lui        $a0, %hi(D_80090464) # maspsx-keep\n"
-                   "    addiu      $a0, $a0, %lo(D_80090464) # maspsx-keep\n"
-                   "    lhu        $a1, 0x0($a1) # maspsx-keep\n"
-                   "    lhu        $a2, 0x0($a2) # maspsx-keep\n"
-                   "    jal        printf # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    lui        $v0, %hi(D_8009CE54) # maspsx-keep\n"
-                   "    lw         $v0, %lo(D_8009CE54)($v0) # maspsx-keep\n"
-                   "    lui        $at, %hi(D_8009CE60) # maspsx-keep\n"
-                   "    sw         $zero, %lo(D_8009CE60)($at) # maspsx-keep\n"
-                   "    sh         $zero, 0x0($v0) # maspsx-keep\n"
-                   "    j          .L80077798 # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    .L80077790: # maspsx-keep\n"
-                   "    lui        $at, %hi(D_8009CE60) # maspsx-keep\n"
-                   "    sw         $zero, %lo(D_8009CE60)($at) # maspsx-keep\n"
-                   "    .L80077798: # maspsx-keep\n"
-                   "    lui        $at, %hi(D_8009BDCA) # maspsx-keep\n"
-                   "    sh         $zero, %lo(D_8009BDCA)($at) # maspsx-keep\n"
-                   "    jal        ReturnFromException # maspsx-keep\n"
-                   "    nop # maspsx-keep\n"
-                   "    lw         $ra, 0x24($sp) # maspsx-keep\n"
-                   "    lw         $s4, 0x20($sp) # maspsx-keep\n"
-                   "    lw         $s3, 0x1C($sp) # maspsx-keep\n"
-                   "    lw         $s2, 0x18($sp) # maspsx-keep\n"
-                   "    lw         $s1, 0x14($sp) # maspsx-keep\n"
-                   "    lw         $s0, 0x10($sp) # maspsx-keep\n"
-                   "    addiu      $sp, $sp, 0x28 # maspsx-keep\n"
-                   "    jr         $ra # maspsx-keep\n"
-                   "    nop # maspsx-keep\n")
+void trapIntr(void) {
+    s32 i;
+    u16 mask;
 
-ASM_FUNC(setIntr, "    addiu      $sp, $sp, -0x28 # maspsx-keep\n"
-                  "    sw         $s1, 0x14($sp) # maspsx-keep\n"
-                  "    addu       $s1, $a0, $zero # maspsx-keep\n"
-                  "    sw         $s2, 0x18($sp) # maspsx-keep\n"
-                  "    addu       $s2, $a1, $zero # maspsx-keep\n"
-                  "    lui        $a1, %hi(D_8009BDCC) # maspsx-keep\n"
-                  "    addiu      $a1, $a1, %lo(D_8009BDCC) # maspsx-keep\n"
-                  "    sll        $v0, $s1, 2 # maspsx-keep\n"
-                  "    addu       $a0, $v0, $a1 # maspsx-keep\n"
-                  "    sw         $ra, 0x24($sp) # maspsx-keep\n"
-                  "    sw         $s4, 0x20($sp) # maspsx-keep\n"
-                  "    sw         $s3, 0x1C($sp) # maspsx-keep\n"
-                  "    sw         $s0, 0x10($sp) # maspsx-keep\n"
-                  "    lw         $s4, 0x0($a0) # maspsx-keep\n"
-                  "    nop # maspsx-keep\n"
-                  "    beq        $s2, $s4, .L800778FC # maspsx-keep\n"
-                  "    addu      $v0, $s4, $zero # maspsx-keep\n"
-                  "    lhu        $v0, -0x4($a1) # maspsx-keep\n"
-                  "    nop # maspsx-keep\n"
-                  "    beqz       $v0, .L800778FC # maspsx-keep\n"
-                  "    addu      $v0, $s4, $zero # maspsx-keep\n"
-                  "    lui        $v0, %hi(D_8009CE58) # maspsx-keep\n"
-                  "    lw         $v0, %lo(D_8009CE58)($v0) # maspsx-keep\n"
-                  "    nop # maspsx-keep\n"
-                  "    lhu        $v1, 0x0($v0) # maspsx-keep\n"
-                  "    sh         $zero, 0x0($v0) # maspsx-keep\n"
-                  "    beqz       $s2, .L8007785C # maspsx-keep\n"
-                  "    andi      $s3, $v1, 0xFFFF # maspsx-keep\n"
-                  "    ori        $v1, $zero, 0x1 # maspsx-keep\n"
-                  "    sllv       $v1, $v1, $s1 # maspsx-keep\n"
-                  "    sw         $s2, 0x0($a0) # maspsx-keep\n"
-                  "    lhu        $v0, 0x2C($a1) # maspsx-keep\n"
-                  "    or         $s3, $s3, $v1 # maspsx-keep\n"
-                  "    or         $v0, $v0, $v1 # maspsx-keep\n"
-                  "    j          .L80077884 # maspsx-keep\n"
-                  "    sh        $v0, 0x2C($a1) # maspsx-keep\n"
-                  "    .L8007785C: # maspsx-keep\n"
-                  "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
-                  "    sllv       $v0, $v0, $s1 # maspsx-keep\n"
-                  "    nor        $v0, $zero, $v0 # maspsx-keep\n"
-                  "    sw         $zero, 0x0($a0) # maspsx-keep\n"
-                  "    lui        $v1, %hi(D_8009BDF8) # maspsx-keep\n"
-                  "    lhu        $v1, %lo(D_8009BDF8)($v1) # maspsx-keep\n"
-                  "    and        $s3, $s3, $v0 # maspsx-keep\n"
-                  "    and        $v1, $v1, $v0 # maspsx-keep\n"
-                  "    lui        $at, %hi(D_8009BDF8) # maspsx-keep\n"
-                  "    sh         $v1, %lo(D_8009BDF8)($at) # maspsx-keep\n"
-                  "    .L80077884: # maspsx-keep\n"
-                  "    bnez       $s1, .L800778A8 # maspsx-keep\n"
-                  "    ori       $v0, $zero, 0x4 # maspsx-keep\n"
-                  "    sltiu      $s0, $s2, 0x1 # maspsx-keep\n"
-                  "    jal        ChangeClearPAD # maspsx-keep\n"
-                  "    addu      $a0, $s0, $zero # maspsx-keep\n"
-                  "    ori        $a0, $zero, 0x3 # maspsx-keep\n"
-                  "    jal        ChangeClearRCnt # maspsx-keep\n"
-                  "    addu      $a1, $s0, $zero # maspsx-keep\n"
-                  "    ori        $v0, $zero, 0x4 # maspsx-keep\n"
-                  "    .L800778A8: # maspsx-keep\n"
-                  "    bne        $s1, $v0, .L800778C0 # maspsx-keep\n"
-                  "    ori       $v0, $zero, 0x5 # maspsx-keep\n"
-                  "    addu       $a0, $zero, $zero # maspsx-keep\n"
-                  "    jal        ChangeClearRCnt # maspsx-keep\n"
-                  "    sltiu     $a1, $s2, 0x1 # maspsx-keep\n"
-                  "    ori        $v0, $zero, 0x5 # maspsx-keep\n"
-                  "    .L800778C0: # maspsx-keep\n"
-                  "    bne        $s1, $v0, .L800778D8 # maspsx-keep\n"
-                  "    ori       $v0, $zero, 0x6 # maspsx-keep\n"
-                  "    ori        $a0, $zero, 0x1 # maspsx-keep\n"
-                  "    jal        ChangeClearRCnt # maspsx-keep\n"
-                  "    sltiu     $a1, $s2, 0x1 # maspsx-keep\n"
-                  "    ori        $v0, $zero, 0x6 # maspsx-keep\n"
-                  "    .L800778D8: # maspsx-keep\n"
-                  "    bne        $s1, $v0, .L800778E8 # maspsx-keep\n"
-                  "    ori       $a0, $zero, 0x2 # maspsx-keep\n"
-                  "    jal        ChangeClearRCnt # maspsx-keep\n"
-                  "    sltiu     $a1, $s2, 0x1 # maspsx-keep\n"
-                  "    .L800778E8: # maspsx-keep\n"
-                  "    lui        $v0, %hi(D_8009CE58) # maspsx-keep\n"
-                  "    lw         $v0, %lo(D_8009CE58)($v0) # maspsx-keep\n"
-                  "    nop # maspsx-keep\n"
-                  "    sh         $s3, 0x0($v0) # maspsx-keep\n"
-                  "    addu       $v0, $s4, $zero # maspsx-keep\n"
-                  "    .L800778FC: # maspsx-keep\n"
-                  "    lw         $ra, 0x24($sp) # maspsx-keep\n"
-                  "    lw         $s4, 0x20($sp) # maspsx-keep\n"
-                  "    lw         $s3, 0x1C($sp) # maspsx-keep\n"
-                  "    lw         $s2, 0x18($sp) # maspsx-keep\n"
-                  "    lw         $s1, 0x14($sp) # maspsx-keep\n"
-                  "    lw         $s0, 0x10($sp) # maspsx-keep\n"
-                  "    addiu      $sp, $sp, 0x28 # maspsx-keep\n"
-                  "    jr         $ra # maspsx-keep\n"
-                  "    nop # maspsx-keep\n")
+    if (intrEnv.initialized == 0) {
+        printf((char *)D_80090448, *i_mask);
+        ReturnFromException();
+    }
+    intrEnv.inInterrupt = 1;
+    mask = (intrEnv.enabledMask & *i_mask) & *g_InterruptMask;
+    while (mask != 0) {
+        for (i = 0; mask && i < 11; ++i, mask >>= 1) {
+            if (mask & 1) {
+                *i_mask = ~(1 << i);
+                if (intrEnv.handlers[i] != 0) {
+                    intrEnv.handlers[i]();
+                }
+            }
+        }
+        mask = (intrEnv.enabledMask & *i_mask) & *g_InterruptMask;
+    }
+    if (*i_mask & *g_InterruptMask) {
+        if (intrTimeout++ > 0x800) {
+            printf((char *)D_80090464, *i_mask, *g_InterruptMask);
+            intrTimeout = 0;
+            *i_mask = 0;
+        }
+    } else {
+        intrTimeout = 0;
+    }
+    intrEnv.inInterrupt = 0;
+    ReturnFromException();
+}
+
+Callback setIntr(s32 irq, Callback callback) {
+    Callback old;
+    u16 prev;
+    s32 mask;
+
+    old = intrEnv.handlers[irq];
+    if ((callback != old) && (intrEnv.initialized != 0)) {
+        prev = *g_InterruptMask;
+        *g_InterruptMask = 0;
+        mask = prev & 0xFFFF;
+        if (callback != 0) {
+            intrEnv.handlers[irq] = callback;
+            mask = mask | (1 << irq);
+            intrEnv.enabledMask |= (1 << irq);
+        } else {
+            intrEnv.handlers[irq] = 0;
+            mask = mask & ~(1 << irq);
+            intrEnv.enabledMask &= ~(1 << irq);
+        }
+        if (irq == 0) {
+            ChangeClearPAD(callback == 0);
+            ChangeClearRCnt(3, callback == 0);
+        }
+        if (irq == 4) {
+            ChangeClearRCnt(0, callback == 0);
+        }
+        if (irq == 5) {
+            ChangeClearRCnt(1, callback == 0);
+        }
+        if (irq == 6) {
+            ChangeClearRCnt(2, callback == 0);
+        }
+        *g_InterruptMask = mask;
+    }
+    return old;
+}
 
 void *stopIntr(void) {
     extern u8 D_8009BDC8[];
@@ -2278,39 +2119,17 @@ Callback startIntrVSync(void) {
     return setIntrVSync;
 }
 
-ASM_FUNC(trapIntrVSync,
-         "    lui        $v0, %hi(D_8009CE84) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CE84)($v0) # maspsx-keep\n"
-         "    addiu      $sp, $sp, -0x20 # maspsx-keep\n"
-         "    sw         $s1, 0x14($sp) # maspsx-keep\n"
-         "    addu       $s1, $zero, $zero # maspsx-keep\n"
-         "    sw         $s0, 0x10($sp) # maspsx-keep\n"
-         "    lui        $s0, %hi(D_8009CE64) # maspsx-keep\n"
-         "    addiu      $s0, $s0, %lo(D_8009CE64) # maspsx-keep\n"
-         "    sw         $ra, 0x18($sp) # maspsx-keep\n"
-         "    addiu      $v0, $v0, 0x1 # maspsx-keep\n"
-         "    lui        $at, %hi(D_8009CE84) # maspsx-keep\n"
-         "    sw         $v0, %lo(D_8009CE84)($at) # maspsx-keep\n"
-         "    lui        $v0, %hi(D_8009CE84) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CE84)($v0) # maspsx-keep\n"
-         "    .L80077B50: # maspsx-keep\n"
-         "    lw         $v0, 0x0($s0) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    beqz       $v0, .L80077B68 # maspsx-keep\n"
-         "    addiu     $s0, $s0, 0x4 # maspsx-keep\n"
-         "    jalr       $v0 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077B68: # maspsx-keep\n"
-         "    addiu      $s1, $s1, 0x1 # maspsx-keep\n"
-         "    slti       $v0, $s1, 0x8 # maspsx-keep\n"
-         "    bnez       $v0, .L80077B50 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    lw         $ra, 0x18($sp) # maspsx-keep\n"
-         "    lw         $s1, 0x14($sp) # maspsx-keep\n"
-         "    lw         $s0, 0x10($sp) # maspsx-keep\n"
-         "    addiu      $sp, $sp, 0x20 # maspsx-keep\n"
-         "    jr         $ra # maspsx-keep\n"
-         "    nop # maspsx-keep\n")
+void trapIntrVSync(void) {
+    int i;
+
+    Vcount += 1;
+    (void)Vcount;
+    for (i = 0; i < 8; i++) {
+        if (D_8009CE64[i] != 0) {
+            D_8009CE64[i]();
+        }
+    }
+}
 
 /* SPDX-License-Identifier: MIT */
 
@@ -2352,158 +2171,47 @@ Callback startIntrDMA(void) {
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090480);
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_8009049C);
 
-ASM_FUNC(trapIntrDMA,
-         "    lui        $v0, %hi(D_8009CE8C) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CE8C)($v0) # maspsx-keep\n"
-         "    addiu      $sp, $sp, -0x30 # maspsx-keep\n"
-         "    sw         $ra, 0x28($sp) # maspsx-keep\n"
-         "    sw         $s5, 0x24($sp) # maspsx-keep\n"
-         "    sw         $s4, 0x20($sp) # maspsx-keep\n"
-         "    sw         $s3, 0x1C($sp) # maspsx-keep\n"
-         "    sw         $s2, 0x18($sp) # maspsx-keep\n"
-         "    sw         $s1, 0x14($sp) # maspsx-keep\n"
-         "    sw         $s0, 0x10($sp) # maspsx-keep\n"
-         "    lw         $v0, 0x0($v0) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    srl        $v0, $v0, 24 # maspsx-keep\n"
-         "    andi       $s1, $v0, 0x7F # maspsx-keep\n"
-         "    beqz       $s1, .L80077D14 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    ori        $s4, $zero, 0x1 # maspsx-keep\n"
-         "    lui        $s3, (0xFFFFFF >> 16) # maspsx-keep\n"
-         "    ori        $s3, $s3, (0xFFFFFF & 0xFFFF) # maspsx-keep\n"
-         "    lui        $s5, %hi(D_8009CE90) # maspsx-keep\n"
-         "    addiu      $s5, $s5, %lo(D_8009CE90) # maspsx-keep\n"
-         "    .L80077C8C: # maspsx-keep\n"
-         "    beqz       $s1, .L80077CF0 # maspsx-keep\n"
-         "    addu      $s0, $zero, $zero # maspsx-keep\n"
-         "    addu       $s2, $s5, $zero # maspsx-keep\n"
-         "    .L80077C98: # maspsx-keep\n"
-         "    slti       $v0, $s0, 0x7 # maspsx-keep\n"
-         "    beqz       $v0, .L80077CF0 # maspsx-keep\n"
-         "    andi      $v0, $s1, 0x1 # maspsx-keep\n"
-         "    beqz       $v0, .L80077CE0 # maspsx-keep\n"
-         "    addiu     $v0, $s0, 0x18 # maspsx-keep\n"
-         "    lui        $a0, %hi(D_8009CE8C) # maspsx-keep\n"
-         "    lw         $a0, %lo(D_8009CE8C)($a0) # maspsx-keep\n"
-         "    sllv       $v0, $s4, $v0 # maspsx-keep\n"
-         "    lw         $v1, 0x0($a0) # maspsx-keep\n"
-         "    or         $v0, $v0, $s3 # maspsx-keep\n"
-         "    and        $v0, $v0, $v1 # maspsx-keep\n"
-         "    sw         $v0, 0x0($a0) # maspsx-keep\n"
-         "    lw         $v0, 0x0($s2) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    beqz       $v0, .L80077CE0 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    jalr       $v0 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077CE0: # maspsx-keep\n"
-         "    addiu      $s2, $s2, 0x4 # maspsx-keep\n"
-         "    srl        $s1, $s1, 1 # maspsx-keep\n"
-         "    bnez       $s1, .L80077C98 # maspsx-keep\n"
-         "    addiu     $s0, $s0, 0x1 # maspsx-keep\n"
-         "    .L80077CF0: # maspsx-keep\n"
-         "    lui        $v0, %hi(D_8009CE8C) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CE8C)($v0) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    lw         $v0, 0x0($v0) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    srl        $v0, $v0, 24 # maspsx-keep\n"
-         "    andi       $s1, $v0, 0x7F # maspsx-keep\n"
-         "    bnez       $s1, .L80077C8C # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077D14: # maspsx-keep\n"
-         "    lui        $a1, %hi(D_8009CE8C) # maspsx-keep\n"
-         "    lw         $a1, %lo(D_8009CE8C)($a1) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    lw         $v0, 0x0($a1) # maspsx-keep\n"
-         "    lui        $v1, (0xFF000000 >> 16) # maspsx-keep\n"
-         "    and        $v0, $v0, $v1 # maspsx-keep\n"
-         "    lui        $v1, (0x80000000 >> 16) # maspsx-keep\n"
-         "    beq        $v0, $v1, .L80077D4C # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    lw         $v0, 0x0($a1) # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    andi       $v0, $v0, 0x8000 # maspsx-keep\n"
-         "    beqz       $v0, .L80077D94 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077D4C: # maspsx-keep\n"
-         "    lui        $a0, %hi(D_80090480) # maspsx-keep\n"
-         "    addiu      $a0, $a0, %lo(D_80090480) # maspsx-keep\n"
-         "    lw         $a1, 0x0($a1) # maspsx-keep\n"
-         "    jal        printf # maspsx-keep\n"
-         "    addu      $s0, $zero, $zero # maspsx-keep\n"
-         "    .L80077D60: # maspsx-keep\n"
-         "    lui        $a0, %hi(D_8009049C) # maspsx-keep\n"
-         "    addiu      $a0, $a0, %lo(D_8009049C) # maspsx-keep\n"
-         "    addu       $a1, $s0, $zero # maspsx-keep\n"
-         "    lui        $v0, %hi(D_8009CEB0) # maspsx-keep\n"
-         "    lw         $v0, %lo(D_8009CEB0)($v0) # maspsx-keep\n"
-         "    sll        $v1, $s0, 4 # maspsx-keep\n"
-         "    addu       $v1, $v1, $v0 # maspsx-keep\n"
-         "    lw         $a2, 0x0($v1) # maspsx-keep\n"
-         "    jal        printf # maspsx-keep\n"
-         "    addiu     $s0, $s0, 0x1 # maspsx-keep\n"
-         "    slti       $v0, $s0, 0x7 # maspsx-keep\n"
-         "    bnez       $v0, .L80077D60 # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077D94: # maspsx-keep\n"
-         "    lw         $ra, 0x28($sp) # maspsx-keep\n"
-         "    lw         $s5, 0x24($sp) # maspsx-keep\n"
-         "    lw         $s4, 0x20($sp) # maspsx-keep\n"
-         "    lw         $s3, 0x1C($sp) # maspsx-keep\n"
-         "    lw         $s2, 0x18($sp) # maspsx-keep\n"
-         "    lw         $s1, 0x14($sp) # maspsx-keep\n"
-         "    lw         $s0, 0x10($sp) # maspsx-keep\n"
-         "    addiu      $sp, $sp, 0x30 # maspsx-keep\n"
-         "    jr         $ra # maspsx-keep\n"
-         "    nop # maspsx-keep\n")
+extern u8 D_80090480[];
+extern u8 D_8009049C[];
+extern volatile u32 *dicr;
+extern u32 *dmaBase;
 
-ASM_FUNC(setIntrDMA,
-         "    addu       $a2, $a0, $zero # maspsx-keep\n"
-         "    lui        $v1, %hi(D_8009CE90) # maspsx-keep\n"
-         "    addiu      $v1, $v1, %lo(D_8009CE90) # maspsx-keep\n"
-         "    sll        $v0, $a2, 2 # maspsx-keep\n"
-         "    addu       $v1, $v0, $v1 # maspsx-keep\n"
-         "    lw         $a3, 0x0($v1) # maspsx-keep\n"
-         "    addu       $a0, $a1, $zero # maspsx-keep\n"
-         "    beq        $a0, $a3, .L80077E5C # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    beqz       $a0, .L80077E24 # maspsx-keep\n"
-         "    lui       $v0, (0xFFFFFF >> 16) # maspsx-keep\n"
-         "    lui        $a1, %hi(D_8009CE8C) # maspsx-keep\n"
-         "    lw         $a1, %lo(D_8009CE8C)($a1) # maspsx-keep\n"
-         "    ori        $v0, $v0, (0xFFFFFF & 0xFFFF) # maspsx-keep\n"
-         "    sw         $a0, 0x0($v1) # maspsx-keep\n"
-         "    lw         $a0, 0x0($a1) # maspsx-keep\n"
-         "    addiu      $v1, $a2, 0x10 # maspsx-keep\n"
-         "    and        $a0, $a0, $v0 # maspsx-keep\n"
-         "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
-         "    sllv       $v0, $v0, $v1 # maspsx-keep\n"
-         "    lui        $v1, (0x800000 >> 16) # maspsx-keep\n"
-         "    or         $v0, $v0, $v1 # maspsx-keep\n"
-         "    or         $a0, $a0, $v0 # maspsx-keep\n"
-         "    sw         $a0, 0x0($a1) # maspsx-keep\n"
-         "    j          .L80077E5C # maspsx-keep\n"
-         "    nop # maspsx-keep\n"
-         "    .L80077E24: # maspsx-keep\n"
-         "    lui        $a1, %hi(D_8009CE8C) # maspsx-keep\n"
-         "    lw         $a1, %lo(D_8009CE8C)($a1) # maspsx-keep\n"
-         "    ori        $v0, $v0, (0xFFFFFF & 0xFFFF) # maspsx-keep\n"
-         "    sw         $zero, 0x0($v1) # maspsx-keep\n"
-         "    lw         $v1, 0x0($a1) # maspsx-keep\n"
-         "    addiu      $a0, $a2, 0x10 # maspsx-keep\n"
-         "    and        $v1, $v1, $v0 # maspsx-keep\n"
-         "    lui        $v0, (0x800000 >> 16) # maspsx-keep\n"
-         "    or         $v1, $v1, $v0 # maspsx-keep\n"
-         "    ori        $v0, $zero, 0x1 # maspsx-keep\n"
-         "    sllv       $v0, $v0, $a0 # maspsx-keep\n"
-         "    nor        $v0, $zero, $v0 # maspsx-keep\n"
-         "    and        $v1, $v1, $v0 # maspsx-keep\n"
-         "    sw         $v1, 0x0($a1) # maspsx-keep\n"
-         "    .L80077E5C: # maspsx-keep\n"
-         "    jr         $ra # maspsx-keep\n"
-         "    addu      $v0, $a3, $zero # maspsx-keep\n")
+void trapIntrDMA(void) {
+    u32 mask;
+    s32 i;
+
+    while ((mask = (*dicr >> 24) & 0x7F) != 0) {
+        for (i = 0; mask != 0 && i < 7; i++, mask >>= 1) {
+            if (mask & 1) {
+                *dicr &= (0xFFFFFF | (1 << (i + 24)));
+                if (D_8009CE90[i] != 0) {
+                    D_8009CE90[i]();
+                }
+            }
+        }
+    }
+
+    if ((*dicr & 0xFF000000) == 0x80000000 || *dicr & 0x8000) {
+        printf((char *)D_80090480, *dicr);
+        for (i = 0; i < 7; i++) {
+            printf((char *)D_8009049C, i, dmaBase[4 * i]);
+        }
+    }
+}
+
+Callback setIntrDMA(int index, Callback callback) {
+    Callback prev = D_8009CE90[index];
+    if (callback != prev) {
+        if (callback != 0) {
+            D_8009CE90[index] = callback;
+            *dicr = (*dicr & 0xFFFFFF) | 0x800000 | ((1 << (index + 16)));
+        } else {
+            D_8009CE90[index] = 0;
+            *dicr = ((*dicr & 0xFFFFFF) | 0x800000) & ~(1 << (index + 16));
+        }
+    }
+    return prev;
+}
 
 void memclr_80077E64(void *ptr, size_t size) {
     int *end;

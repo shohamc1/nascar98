@@ -399,6 +399,14 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=_spu_AllocBlockNum=D_800A2704 \
             --defsym=_spu_AllocLastNum=D_800A2708 \
             --defsym=_spu_rev_flag=D_800A2248 \
+            --defsym=intrEnv=D_8009BDC8 \
+            --defsym=i_mask=D_8009CE54 \
+            --defsym=g_InterruptMask=D_8009CE58 \
+            --defsym=d_pcr=D_8009CE5C \
+            --defsym=dicr=D_8009CE8C \
+            --defsym=dmaBase=D_8009CEB0 \
+            --defsym=pCallbacks=D_8009CE50 \
+            --defsym=intrTimeout=D_8009CE60 \
             --defsym=_spu_rev_reserve_wa=D_800A224C \
             --defsym=_spu_rev_offsetaddr=D_800A2250 \
             --defsym=_spu_mem_mode_plus=D_800A26D0 \
