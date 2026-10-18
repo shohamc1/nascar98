@@ -14217,14 +14217,6 @@ ok:
     *(s32 *)((u8 *)arg0 + 0x254) = old34;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80039274);
-
-extern s32 D_800A2EB4Absolute[];
-extern u8 *D_800A3878Absolute[];
-extern s32 D_800AE154[];
-extern s32 func_80039274(u8 *, u8 *, s32);
-extern void func_80039B74(s32 *, s32);
-
 typedef struct TrafficCar {
     s32 x, y;
     u8 unk8[0x88];
@@ -14237,13 +14229,90 @@ typedef struct TrafficCar {
     s8 unk203;
     u8 unk204[2];
     s8 lane;
-    u8 unk207[0x47];
+    u8 unk207[7];
+    s16 headingOffset;
+    u8 unk210[0x3E];
     s16 targetSegment;
-    u8 unk250[0x38];
+    s32 avoidX;
+    s32 avoidY;
+    u8 unk258[0x30];
     s16 unk288;
     u8 unk28A[0x156];
     struct TrafficCar *next;
 } TrafficCar;
+
+extern s32 D_800BE980[];
+
+s32 func_80039274(TrafficCar *car, TrafficCar *other, u8 side) {
+    s32 cosine;
+    s32 sine;
+    s32 oldX;
+    s32 oldY;
+    s32 result;
+    s32 y;
+    register s32 x asm("$3");
+    s32 newY;
+    u8 *section;
+    s16 segment;
+
+    segment = other->segment;
+    if (segment != -1) {
+        section = (u8 *)D_800BE980[0] + segment * 0x90;
+        if (MathGetAngleDelta(other->heading, *(u16 *)(section + 0x10)) < 0) {
+            result =
+                -MathGetAngleDelta(other->heading, *(u16 *)(section + 0x10));
+        } else {
+            result =
+                MathGetAngleDelta(other->heading, *(u16 *)(section + 0x10));
+        }
+        if (result < 60) {
+            result = (other->heading + other->headingOffset + 0x400) % 1023;
+        } else {
+            result = *(u16 *)(section + 0x10);
+        }
+        cosine = ((s32 **)D_800A3A2CAbsolute)[0][result];
+        sine = ((s32 **)D_800A3A34Absolute)[0][result];
+        if (side) {
+            x = (cosine * 1600 + sine * 350) >> 16;
+            y = (sine * 1600 - cosine * 350) >> 16;
+        } else {
+            x = (cosine * 1600 - sine * 350) >> 16;
+            y = (sine * 1600 + cosine * 350) >> 16;
+        }
+        oldX = other->x;
+        oldY = other->y;
+        x = oldX + x;
+        newY = oldY + y;
+        D_800A3734 = newY;
+        car->avoidY = newY;
+        D_800A3730 = x;
+        car->avoidX = x;
+        car->targetSegment = -1;
+        result = car->segment;
+        if (side) {
+            x = oldX + ((cosine * 3200 + sine * 350) >> 16);
+            y = oldY + ((sine * 3200 - cosine * 350) >> 16);
+        } else {
+            x = oldX + ((cosine * 3200 - sine * 350) >> 16);
+            y = oldY + ((sine * 3200 + cosine * 350) >> 16);
+        }
+        func_80024E90(x, y, &result, &oldX, &oldY);
+        if (result != -1) {
+            if (oldY == 1) {
+                return 0;
+            }
+            asm("");
+        }
+        return 1;
+    }
+    return 0;
+}
+
+extern s32 D_800A2EB4Absolute[];
+extern u8 *D_800A3878Absolute[];
+extern s32 D_800AE154[];
+extern s32 func_80039274(TrafficCar *, TrafficCar *, u8);
+extern void func_80039B74(s32 *, s32);
 
 s32 CarAvoidTraffic(TrafficCar *car, s32 keepTarget) {
     s32 maxDistance;
@@ -14346,7 +14415,7 @@ s32 CarAvoidTraffic(TrafficCar *car, s32 keepTarget) {
                             car->lane = value;
                             continue;
                         }
-                        backLimit = func_80039274((u8 *)car, (u8 *)other, 1);
+                        backLimit = func_80039274(car, other, 1);
                         if (car->lane > 0 && maxDistance == 0) {
                             backLimit = 1;
                         }
@@ -14356,7 +14425,7 @@ s32 CarAvoidTraffic(TrafficCar *car, s32 keepTarget) {
                             car->lane = value;
                             continue;
                         }
-                        backLimit = func_80039274((u8 *)car, (u8 *)other, 0);
+                        backLimit = func_80039274(car, other, 0);
                         if (car->lane < 0 && leftAllowed == 0) {
                             backLimit = 1;
                         }
