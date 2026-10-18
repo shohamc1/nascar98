@@ -3731,15 +3731,35 @@ s32 _otc(s32 arg0, s32 arg1) {
 extern s32 gpuClrBuf[];
 extern void _cwc(s32);
 
-#ifdef NON_MATCHING
-/* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
 /* Clears a frame buffer rectangle. */
 s32 _clr(RECT *arg0, s32 color) {
-    arg0->w = GPU_CLAMP(arg0->w, 0, (s16)gfxMaxW[0] - 1);
-    arg0->h = GPU_CLAMP(arg0->h, 0, (s16)gfxMaxH[0] - 1);
+    s32 w;
+    s32 h;
+    s32 m;
+    s32 n;
+    s32 rw;
+    s32 rh;
+    s32 *ptr;
+    w = arg0->w;
+    rw = w < 0 ? 0
+               : (
+                     {
+                         m = (s16)gfxMaxW[0] - 1;
+                         w > m ? m : w;
+                     });
+    arg0->w = rw;
+    h = arg0->h;
+    rh = h < 0 ? 0
+               : (
+                     {
+                         n = (s16)gfxMaxH[0] - 1;
+                         h > n ? n : h;
+                     });
+    arg0->h = rh;
 
     if ((arg0->x & 0x3F) || (arg0->w & 0x3F)) {
-        gpuClrBuf[0] = 0x07000000 | ((s32)&gpuClrBuf[8] & 0xFFFFFF);
+        ptr = &gpuClrBuf[8];
+        gpuClrBuf[0] = 0x07000000 | ((s32)ptr & 0xFFFFFF);
         gpuClrBuf[1] = 0xE3000000;
         gpuClrBuf[2] = 0xE4FFFFFF;
         gpuClrBuf[3] = 0xE5000000;
@@ -3763,9 +3783,6 @@ s32 _clr(RECT *arg0, s32 color) {
     _cwc(&gpuClrBuf[0]);
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", _clr);
-#endif
 
 #ifdef NON_MATCHING
 /* 2026-10-17: donor shape with retail's in-place clamp; the max size words read as volatile u16 give retail's lhu/sll/sra but the clamp temps allocate differently (about 60 rows off). */
