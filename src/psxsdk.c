@@ -3701,29 +3701,17 @@ u32 get_tw(RECT *tw) {
     return 0;
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-17: the type read as a volatile byte gives retail's lui/addiu/lbu/
- * andi head. The case blocks then differ (retail tests case 1 and case 2 in
- * order and cross-jumps the two "0x400 - w - x" tails into one) and the
- * result is 4 bytes long. */
 s32 get_dx(DISPENV *env) {
     switch (*(volatile u8 *)&gGfx.type) {
     case 1:
-        if (gGfx.reverse) {
-            return 0x400 - env->disp.w - env->disp.x;
-        }
+        return gGfx.reverse ? 0x400 - env->disp.x - env->disp.w : env->disp.x;
+    case 2:
+        return gGfx.reverse ? 0x400 - env->disp.x - env->disp.w / 2
+                            : env->disp.x / 2;
     default:
         return env->disp.x;
-    case 2:
-        if (gGfx.reverse) {
-            return 0x400 - env->disp.w / 2 - env->disp.x;
-        }
-        return env->disp.x / 2;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", get_dx);
-#endif
 
 /* SPDX-License-Identifier: MIT */
 
