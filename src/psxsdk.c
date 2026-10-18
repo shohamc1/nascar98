@@ -823,135 +823,49 @@ extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
 extern s32 CD_cw(u8, u8 *, u8 *, s32);
 extern s32 CD_sync(s32, u8 *);
-#ifdef NON_MATCHING
+extern CdlCB CD_cbsync;
+
+/* Sends a command, retrying up to four times. A command that takes a
+ * position first sends CdlSetloc. Returns 0 on success and -1 on failure. */
+static __inline__ s32 cd_cw(u8 com, u8 *param, u8 *result, s32 arg3) {
+    CdlCB old = CD_cbsync;
+    s32 count = 3;
+
+    do {
+        CD_cbsync = 0;
+        if (com != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
+            CD_cw(CdlNop, 0, 0, 0);
+        }
+        if (param == 0 || D_8009B9FC[com] == 0 ||
+            !CD_cw(CdlSetloc, param, result, 0)) {
+            CD_cbsync = old;
+            if (!CD_cw(com, param, result, arg3)) {
+                return 0;
+            }
+        }
+    } while (--count != -1);
+
+    CD_cbsync = old;
+    return -1;
+}
+
 int CdControl(u_char com, u_char *param, u_char *result) {
-    s32 count;
-    s32 c;
-    CdlCB old;
-    u32 *flag;
-    s32 status;
-
-    count = 3;
-    old = (CdlCB)D_8009BA7C[0];
-    asm("" : "=r"(count) : "0"(count));
-    c = com & 0xff;
-    {
-        u32 *base;
-        base = D_8009B9FC;
-        flag = base + c;
-    }
-    status = 0;
-again:
-    D_8009BA7C[0] = 0;
-    if (c != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
-        CD_cw(CdlNop, 0, 0, 0);
-    }
-    if (param == 0 || *flag == 0 || !CD_cw(CdlSetloc, param, result, 0)) {
-        D_8009BA7C[0] = (u32)old;
-        if (!CD_cw(com, param, result, 0)) {
-            goto done;
-        }
-    }
-    count--;
-    if (count != -1)
-        goto again;
-    D_8009BA7C[0] = (u32)old;
-    status = -1;
-done:
-    return status + 1;
+    return cd_cw(com, param, result, 0) == 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControl);
-#endif
 
 extern u32 D_8009BA7C[];
 extern u32 D_8009B9FC[];
 extern u8 D_8009BA8C[];
 extern s32 CD_cw(u8, u8 *, u8 *, s32);
 extern s32 CD_sync(s32, u8 *);
-#ifdef NON_MATCHING
 int CdControlF(u_char com, u_char *param) {
-    s32 count;
-    s32 c;
-    CdlCB old;
-    u32 *flag;
-    s32 status;
-
-    count = 3;
-    asm("" : "=r"(count) : "0"(count));
-    old = (CdlCB)D_8009BA7C[0];
-    c = com & 0xff;
-    {
-        u32 *base;
-        base = D_8009B9FC;
-        flag = base + c;
-    }
-    status = 0;
-again:
-    D_8009BA7C[0] = 0;
-    if (c != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
-        CD_cw(CdlNop, 0, 0, 0);
-    }
-    if (param == 0 || *flag == 0 || !CD_cw(CdlSetloc, param, 0, 0)) {
-        D_8009BA7C[0] = (u32)old;
-        if (!CD_cw(com, param, 0, 1)) {
-            goto done;
-        }
-    }
-    count--;
-    if (count != -1)
-        goto again;
-    D_8009BA7C[0] = (u32)old;
-    status = -1;
-done:
-    return status + 1;
+    return cd_cw(com, param, 0, 1) == 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", CdControlF);
-#endif
 
-extern u32 D_8009BA7C[];
-extern u32 D_8009B9FC[];
-extern u8 D_8009BA8C[];
-extern s32 CD_cw(u8, u8 *, u8 *, s32);
-extern s32 CD_sync(s32, u8 *);
 int CdControlB(u_char com, u_char *param, u_char *result) {
-    s32 count;
-    s32 c;
-    CdlCB old;
-    u32 *flag;
-    s32 status;
-
-    count = 3;
-    old = (CdlCB)D_8009BA7C[0];
-    asm("" : "=r"(count) : "0"(count));
-    c = com & 0xff;
-    {
-        u32 *base;
-        base = D_8009B9FC;
-        flag = base + c;
-    }
-    status = 0;
-again:
-    D_8009BA7C[0] = 0;
-    if (c != CdlNop && (D_8009BA8C[0] & CdlStatShellOpen)) {
-        CD_cw(CdlNop, 0, 0, 0);
-    }
-    if (param == 0 || *flag == 0 || !CD_cw(CdlSetloc, param, result, 0)) {
-        D_8009BA7C[0] = (u32)old;
-        if (!CD_cw(com, param, result, 0)) {
-            status = 0;
-            goto done;
-        }
-    }
-    count--;
-    if (count != -1)
-        goto again;
-    D_8009BA7C[0] = (u32)old;
-    status = -1;
-done:
-    if (status != 0)
+    if (cd_cw(com, param, result, 0)) {
         return 0;
+    }
     return CD_sync(CdlSync, result) == CdlComplete;
 }
 

@@ -281,6 +281,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26B0Init=D_800A26B0 \
             --defsym=D_800A26B4Init=D_800A26B4 \
             --defsym=_spu_keystat=D_800A229C \
+            --defsym=CD_cbsync=D_8009BA7C \
             --defsym=_spu_RXX=D_800A26AC \
             --defsym=_spu_tsa=D_800A26A8 \
             --defsym=_spu_transDir=D_800A26F8 \
