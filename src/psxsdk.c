@@ -4179,22 +4179,18 @@ extern char D_80090800[];
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090800);
 extern char D_80090834[];
 INCLUDE_RODATA("asm/nonmatchings/psxsdk", D_80090834);
-#ifdef NON_MATCHING
-/* 2026-10-17: retail loads the printf arguments in a different order and has 2 more rows than this draft */
-
 s32 get_alarm(void) {
     if (gpuAlarmEnd < VSync(-1) || gpuAlarmCount++ > 0xF0000) {
+        *GPU_STATUS;
         printf(D_80090800, (_qin - _qout) & 0x3F, *GPU_STATUS, *DMA2_CHCR,
                *DMA2_MADR);
-        printf(D_80090834, gpuLast.func, gpuLast.arg, gpuLast.arg2);
+        printf(D_80090834, *(volatile Callback *)&D_8009DB84[0], D_8009DB88[0],
+               D_8009DB8C[0]);
         _reset(1);
         return -1;
     }
     return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/psxsdk", get_alarm);
-#endif
 
 s32 _version(s32 mode) {
     *GPU_STATUS = 0x10000007;
