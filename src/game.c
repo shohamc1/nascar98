@@ -2636,7 +2636,72 @@ s32 MathFixedDivide(s32 numerator, s32 denominator) {
     return (quotient << 16) + numerator;
 }
 
-INCLUDE_ASM("asm/nonmatchings/game", func_80015EAC);
+void func_80015EAC(u8 *car) {
+    typedef struct {
+        s32 x;
+        s32 y;
+        s32 z;
+    } Vector3;
+    extern void func_800319D4(u8 *, s32);
+    extern void func_8001EEC4(u8 *);
+    extern void MatrixCombineState(void);
+    extern s32 *D_800A38AC;
+    extern s32 D_800A3798Absolute[], D_800A37ACAbsolute[], D_800A3784Absolute[];
+    extern s32 D_800A379CAbsolute[], D_800A37B4Absolute[], D_800A3790Absolute[];
+    extern s32 D_800A37A4Absolute[], D_800A37C4Absolute[], D_800A3794Absolute[];
+    extern MATRIX D_800A3A98, D_800A3AB8;
+    extern s16 D_800A3A98Half[] asm("D_800A3A98");
+    extern s16 D_800A3A9A[], D_800A3A9C[], D_800A3A9E[], D_800A3AA0[];
+    extern s16 D_800A3AA2[], D_800A3AA4[], D_800A3AA6[], D_800A3AA8[];
+    extern s16 D_800A3AB8Half[] asm("D_800A3AB8");
+    extern s16 D_800A3ABA[], D_800A3ABC[], D_800A3ABE[], D_800A3AC0[];
+    extern s16 D_800A3AC2[], D_800A3AC4[], D_800A3AC6[], D_800A3AC8[];
+    SVECTOR angles;
+    VECTOR position;
+    VECTOR partPosition; /* Preserve the original stack frame. */
+    VECTOR unused;       /* Preserve the original stack frame. */
+    VECTOR saved[3];
+    s32 flag;
+    s32 *camera;
+
+    angles.vx = *(s32 *)(car + 0) - D_800A38AC[0];
+    angles.vy = *(s32 *)(car + 4) - D_800A38AC[1];
+    angles.vz = *(s32 *)(car + 8) - D_800A38AC[2] - *(u16 *)(car + 0xFE);
+    *(Vector3 *)&saved[0] = *(Vector3 *)(car + 0x3C);
+    *(Vector3 *)&saved[1] = *(Vector3 *)(car + 0x48);
+    *(Vector3 *)&saved[2] = *(Vector3 *)(car + 0x54);
+    func_800319D4(car, 1);
+    func_8001EEC4(car);
+    MatrixCombineState();
+    D_800A3A98Half[0] = -D_800A3798Absolute[0] / 16;
+    D_800A3A9E[0] = -D_800A37ACAbsolute[0] / 16;
+    D_800A3AA4[0] = D_800A3784Absolute[0] / 16;
+    D_800A3A9A[0] = -D_800A379CAbsolute[0] / 16;
+    D_800A3AA0[0] = -D_800A37B4Absolute[0] / 16;
+    D_800A3AA6[0] = D_800A3790Absolute[0] / 16;
+    D_800A3A9C[0] = -D_800A37A4Absolute[0] / 16;
+    D_800A3AA2[0] = -D_800A37C4Absolute[0] / 16;
+    D_800A3AA8[0] = D_800A3794Absolute[0] / 16;
+    camera = D_800A38AC;
+    D_800A3AB8Half[0] = -camera[0x10] / 16;
+    D_800A3ABE[0] = -camera[0x11] / 16;
+    D_800A3AC4[0] = camera[0xF] / 16;
+    D_800A3ABA[0] = -camera[0x13] / 16;
+    D_800A3AC0[0] = -camera[0x14] / 16;
+    D_800A3AC6[0] = camera[0x12] / 16;
+    D_800A3ABC[0] = -camera[0x16] / 16;
+    D_800A3AC2[0] = -camera[0x17] / 16;
+    D_800A3AC8[0] = camera[0x15] / 16;
+    SetTransMatrix(&D_800A3AB8);
+    SetRotMatrix(&D_800A3AB8);
+    RotTrans(&angles, &position, &flag);
+    TransMatrix(&D_800A3A98, &position);
+    SetTransMatrix(&D_800A3A98);
+    SetRotMatrix(&D_800A3A98);
+    *(Vector3 *)(car + 0x3C) = *(Vector3 *)&saved[0];
+    *(Vector3 *)(car + 0x48) = *(Vector3 *)&saved[1];
+    *(Vector3 *)(car + 0x54) = *(Vector3 *)&saved[2];
+}
 
 extern long RotTransPers_nom();
 extern long RotTransPers3_nom();
