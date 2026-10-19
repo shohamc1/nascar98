@@ -159,22 +159,22 @@ extern char *strcpy(char *, const char *);
 void SetPolyFT4(POLY_FT4 *);
 extern u8 D_800A361C[];
 extern u8 D_800A3059[];
-s32 func_80041B7C(s32);
+s32 PadGetButtons(s32);
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
 void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -203,7 +203,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -222,7 +222,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -230,16 +230,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -247,7 +247,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -391,7 +391,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 *handle);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -416,7 +416,7 @@ void SoundStart(void);
 void SoundShutdown(void);
 void SoundEnd(void);
 void func_8003EFC8(void);
-void func_8003EFE8(void);
+void SoundFreeVabBody(void);
 void SoundInitTables(void);
 void func_8003F060(s32 arg0);
 void func_8003F0CC(s32 arg0);
@@ -425,7 +425,7 @@ void SoundReloadVab(s32 arg0);
 void func_8003F23C(void);
 void func_8003F25C(void);
 void func_8003F284(void);
-void func_8003F2AC(s32 arg0, s32 arg1);
+void SoundSetReverbDepth(s32 arg0, s32 arg1);
 void SoundOpenSequence(void);
 void SoundSetSequenceLoop(s8 loopCount);
 void SoundPauseSequence(void);
@@ -433,7 +433,7 @@ void SoundPlaySequence(s8 playCount, u8 playMode);
 void SoundReplaySequence(void);
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume);
 void SoundStopSequence(void);
-s32 func_8003F4FC(s32 arg0);
+s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
@@ -456,9 +456,9 @@ void func_8004195C(void);
 void func_80041A28(void);
 void func_80041AD0(void);
 void func_80041AF0(void);
-s32 func_80041B7C(s32 index);
+s32 PadGetButtons(s32 index);
 u16 func_80041B94(s32 index);
-u32 func_80041BAC(s32 arg0);
+u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
 void func_80041DEC(void);
@@ -498,7 +498,7 @@ void func_8004FF3C(void);
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_800508E4(void);
 void GraphicsSetColor(u8 red, u8 green, u8 blue);
-s32 func_80050940(u8 *str);
+s32 HudTextWidth(u8 *str);
 void func_800514EC(u8 arg0, u8 arg1, u8 arg2);
 void func_800524A0(u8 *arg0, s8 arg1);
 void func_80052E18(void);
@@ -680,7 +680,7 @@ s32 CardFormat(s32 second) {
         return format(gMemoryCardDevice2) & 0xFF;
 }
 
-void func_80059C2C(void) {
+void CardOpenEvents(void) {
     s32 event;
 
     EnterCriticalSection();
@@ -741,8 +741,8 @@ void CardCloseEvents(void) {
     ExitCriticalSection();
 }
 
-void func_80059DC4(void) {
-    func_80059C2C();
+void CardInit(void) {
+    CardOpenEvents();
     InitCARD(1);
     _card_auto(0);
     StartCARD();
@@ -750,7 +750,7 @@ void func_80059DC4(void) {
     ChangeClearPAD(0);
 }
 
-void func_80059E0C(void) {
+void CardStop(void) {
     extern void StopCARD(void);
 
     StopCARD();
@@ -814,7 +814,7 @@ s32 CardOpenFile(char *path, s32 flags) {
 
 extern void _new_card(void);
 extern void _card_read(s32, s32, s32);
-s32 func_8005A000(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
+s32 CardReadSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
     s32 channel;
     s32 sector;
     s32 offset;
@@ -850,7 +850,7 @@ success:
 }
 
 extern void _card_write(s32, s32, s32);
-s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
+s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
     s32 sector;
     u32 retries;
     s32 offset;
@@ -1182,7 +1182,7 @@ s16 func_8005A84C(void) {
     return *(s16 *)(D_800A35AC + 8);
 }
 
-s16 func_8005A8E0(s32 text) {
+s16 MenuStringWidth(s32 text) {
     s32 total;
     s32 idx;
     s32 glyphCount;
@@ -1225,7 +1225,7 @@ INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005A9F4);
    table (D_800A35AC) holds 10-byte records with the width at offset 6;
    D_800A3534 picks the scale (2 = 3/4, 4 = 9/10) and subtracts 1 per
    character when below 2. */
-s16 func_8005AEC8(u8 count, u8 *str) {
+s16 MenuPrefixWidth(u8 count, u8 *str) {
     s32 total;
     s32 i;
     s32 idx;
@@ -1262,7 +1262,7 @@ s16 func_8005AEC8(u8 count, u8 *str) {
     return total;
 }
 
-s16 func_8005AFF0(s8 arg0) {
+s16 MenuCharWidth(s8 arg0) {
     s32 index;
     s32 entry;
     s32 scaled;
@@ -1297,7 +1297,7 @@ s16 func_8005AFF0(s8 arg0) {
 s32 func_8005B0E4(s16 arg0, s32 arg1) {
     s32 limit;
 
-    limit = func_8005A8E0(arg1);
+    limit = MenuStringWidth(arg1);
     if (arg0 < limit) {
         return 0;
     }
@@ -1305,7 +1305,7 @@ s32 func_8005B0E4(s16 arg0, s32 arg1) {
 }
 
 #ifdef NON_MATCHING
-s32 func_8005B138(u8 *str) {
+s32 TextCountLines(u8 *str) {
     s32 count;
     u8 c;
 
@@ -1321,7 +1321,7 @@ s32 func_8005B138(u8 *str) {
     return count + 1;
 }
 #else
-s32 func_8005B138(u8 *str) {
+s32 TextCountLines(u8 *str) {
     s32 count;
 
     count = 0;
@@ -1366,7 +1366,7 @@ void func_8005B17C(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
 }
 
 extern u8 D_800A35EC;
-u8 *func_8005B2AC(void) {
+u8 *MenuObjAlloc(void) {
     u8 index;
     u8 *object;
     index = D_800A35EC++;
@@ -1901,7 +1901,7 @@ void func_8005C020(u8 *object, u8 *dest) {
             return;
         }
     }
-    func_80012EA8(id, dest);
+    TextFormatInt(id, dest);
 }
 
 void func_8005C0F4(u8 *object, s32 value) {
@@ -2166,12 +2166,12 @@ void func_8005C124(u8 menuId, u8 selRow) {
             }
             *(s16 *)(item + 0xE) = 2;
         }
-        *(s16 *)(item + 0x16) = func_8005A8E0(*(s32 *)(entry + 8));
+        *(s16 *)(item + 0x16) = MenuStringWidth(*(s32 *)(entry + 8));
         *(s16 *)(item + 0x18) = func_8005A84C();
         *(s16 *)(item + 0xA) = 0x131 - *(u16 *)(item + 0x16);
         *(s16 *)(item + 6) = x - *(u16 *)(item + 0x16);
         if ((menuId == 4 && i == 1) || (menuId == 0xB && (u32)(i - 2) < 5)) {
-            width = func_8005A8E0((s32)D_800A3330);
+            width = MenuStringWidth((s32)D_800A3330);
             *(s16 *)(item + 0xA) = *(u16 *)(item + 0xA) - width;
             slots[1][count] = y;
             slots[2][count] = x;
@@ -2236,7 +2236,7 @@ void func_8005C8D8(u8 index) {
         break;
     }
     func_8005A7B8(0, 0);
-    result = func_8005A8E0(*(s32 *)(prim + 8));
+    result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
     *(s16 *)(window + 0x16) = result;
     *(s16 *)(window + 6) = height;
@@ -2285,7 +2285,7 @@ extern u8 D_800A35C8;
 extern u8 D_800A35C9[];
 extern u8 D_800A3338[];
 extern char *strcat(char *, char *);
-extern u8 *func_80012EA8(s32, u8 *);
+extern u8 *TextFormatInt(s32, u8 *);
 void func_8005CBC8(s32 number) {
     u8 *buffer;
     s32 length;
@@ -2298,7 +2298,7 @@ void func_8005CBC8(s32 number) {
         length = 2;
     }
     D_800A35C9[length - 1] = 0;
-    func_80012EA8(number, buffer + length);
+    TextFormatInt(number, buffer + length);
     strcat(buffer, D_800A3338);
 }
 
@@ -2320,10 +2320,10 @@ void func_8005CC34(void) {
         length = 2;
     }
     D_800A35C9[length - 1] = 0;
-    func_80012EA8(number, buffer + length);
+    TextFormatInt(number, buffer + length);
     strcat(buffer, D_800A3338);
     func_8005A7B8(prim[1], prim[2]);
-    result = func_8005A8E0(*(s32 *)(prim + 8));
+    result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
     *(s16 *)(D_800A38F8 + 0x16) = result;
     *(s16 *)(D_800A38F8 + 6) = height;
@@ -2394,13 +2394,13 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
             length = 2;
         }
         D_800A35C9[length - 1] = 0;
-        func_80012EA8(value, buffer + length);
+        TextFormatInt(value, buffer + length);
         strcat(buffer, D_800A3338);
         strcpy(*((char **)(prim + 8)), (char *)buffer);
     } while (0);
     func_8005A7B8(prim[1], prim[2]);
     *((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)) =
-        func_8005A8E0(*((s32 *)(prim + 8)));
+        MenuStringWidth(*((s32 *)(prim + 8)));
     *((s16 *)(D_800BB9E4[id & 0xFF] + 6)) =
         0x131 - (*((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)));
     *((s16 *)(D_800BB9E4[id & 0xFF] + 0xA)) =

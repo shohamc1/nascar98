@@ -32,15 +32,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -80,7 +80,7 @@ Unk16 *func_8001E040(s32 i) {
     return &D_800A36CC[i];
 }
 
-void func_8001E050(s32 fileName) {
+void GraphicsLoadImageBank(s32 fileName) {
     extern s32 FileOpen(s32, void *);
     extern void GraphicsInit(void);
     extern u_long *FntFlush(s32);
@@ -145,7 +145,7 @@ void func_8001E050(s32 fileName) {
  * entries, then reloads it if the swap flag is set. The empty asm after
  * i = 0 pins the counter's allocation to a1 (the retail delay-slot move)
  * without blocking the branch delay-slot fill. */
-void func_8001E17C(s32 index) {
+void GraphicsSelectImageBank(s32 index) {
     extern void *D_800A368C;
     extern void *D_800A37E4;
     extern u16 D_800A3754;
@@ -814,7 +814,7 @@ void func_8001F198(void) {
     D_800A37B4 = a;
 }
 
-void func_8001F1D4(s32 *vec) {
+void MatrixRotateVector(s32 *vec) {
     s32 x, y, z;
     s32 a, b, c;
 
@@ -1000,7 +1000,7 @@ void func_8001F874(s32 *arg0) {
 
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-void func_8001F8C0(s32 *object) {
+void MatrixStoreToObject(s32 *object) {
     s32 value0, value1, value2, value3, value4, value5, value6, value7, value8;
     value0 = D_800A3784;
     value1 = D_800A3790;
@@ -1148,7 +1148,7 @@ s32 func_8001FB80(void *arg0) {
     return MathSqrt(dx * dx + dy * dy + dz * dz);
 }
 
-s32 func_8001FBDC(s32 x, s32 y, s32 z) {
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z) {
     s32 xSq;
     s32 ySq;
     s32 zSq;

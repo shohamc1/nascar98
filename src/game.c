@@ -59,7 +59,7 @@ int main(void) {
     DecDCTReset(0);
     SoundInitTables();
     PadInitBuffers();
-    func_80059DC4();
+    CardInit();
     CdInit();
     InitGeom();
     func_8005978C();
@@ -180,12 +180,12 @@ void GameRunSession(void) {
     extern void func_8002F5A4(void);
     extern void func_80012E00(void);
     extern void func_80014440(void);
-    extern void func_80024210(void);
+    extern void CdApplyMixVolume(void);
     extern void func_8002F2CC(void);
     extern void GraphicsSetClearColor(u32, u32, u32);
     extern void func_80045288(void);
     extern void func_80014A70(void);
-    extern void func_8001FC6C(void);
+    extern void ReplayAllocBuffer(void);
     extern void func_80041DEC(void);
     extern void func_80041AF0Run(s8) asm("func_80041AF0");
     extern void SystemInitCounter(void);
@@ -200,8 +200,8 @@ void GameRunSession(void) {
     extern void func_8003CF04(void);
     extern void func_80041A28(void);
     extern void GraphicsSetColor(s32, s32, s32);
-    extern s32 func_80050940(u8 *);
-    extern void func_80050028(u8 *, s16, s32, s8);
+    extern s32 HudTextWidth(u8 *);
+    extern void HudDrawText(u8 *, s16, s32, s8);
     extern void func_8001D778(s32, s32, s32, s32, s32, s32, s32, s32);
     extern void func_8003C1CC(void);
     extern void func_8003C528(void);
@@ -257,14 +257,14 @@ void GameRunSession(void) {
         }
         func_80014440();
     }
-    func_80024210();
+    CdApplyMixVolume();
     func_8002F2CC();
     GraphicsSetClearColor((u32)(D_800A3948 & 0x7C00) >> 7,
                           (u32)(D_800A3948 & 0x3E0) >> 2,
                           (D_800A3948 & 31) << 3);
     func_80045288();
     func_80014A70();
-    func_8001FC6C();
+    ReplayAllocBuffer();
     func_80041DEC();
     D_800A3884[0] = 1;
     if (D_800A2EB0Absolute[0] != -1) {
@@ -272,10 +272,10 @@ void GameRunSession(void) {
         do {
             func_80041AF0Run(0);
             if (D_800A2EA4Absolute[0] != 0) {
-                firstButtons = func_80041B7C(0);
-                buttons = firstButtons | func_80041B7C(1);
+                firstButtons = PadGetButtons(0);
+                buttons = firstButtons | PadGetButtons(1);
             } else {
-                buttons = func_80041B7C(0);
+                buttons = PadGetButtons(0);
             }
             D_800A33C8 = buttons;
         } while (!(buttons & 0x800));
@@ -394,9 +394,9 @@ void GameRunSession(void) {
         ClearOTagR((u_long *)(ot + (gOrderingTableBank << 12)), 0x400);
         GraphicsSetColor(255, 128, 64);
         bank ^= 1;
-        func_80050028(D_8009A400[0],
-                      (s16)((320 - func_80050940(D_8009A400[0])) << 15 >> 16),
-                      110, 0);
+        HudDrawText(D_8009A400[0],
+                    (s16)((320 - HudTextWidth(D_8009A400[0])) << 15 >> 16), 110,
+                    0);
         func_8001D778(0, 0, 320, 240, 0, 0, 0, 0);
         /* Keep the base operand first. */
         asm("addu %0, %0, %2"
@@ -552,7 +552,7 @@ void func_80012E28(void) {
 
 extern s32 strlen(char *);
 
-void func_80012E3C(u8 *arg0) {
+void TextReverseString(u8 *arg0) {
     s32 i;
     s32 j;
     u8 ch;
@@ -564,7 +564,7 @@ void func_80012E3C(u8 *arg0) {
     }
 }
 
-u8 *func_80012EA8(s32 value, u8 *buffer) {
+u8 *TextFormatInt(s32 value, u8 *buffer) {
     s32 count;
     s32 negative;
     s32 i;
@@ -595,7 +595,7 @@ u8 *func_80012EA8(s32 value, u8 *buffer) {
     return buffer;
 }
 
-u8 *func_80012F94(s32 value, u8 *buffer) {
+u8 *TextFormatLong(s32 value, u8 *buffer) {
     s32 count;
     s32 negative;
     s32 i;
@@ -766,10 +766,10 @@ void TrackLoad(u8 selectTrack) {
     extern s32 D_800A396C[];
     extern s32 D_800A3A74[];
     extern u32 func_800A2CE0;
-    extern NameWords D_800A2D24;
-    extern NameShort D_800A2D2C;
-    extern NameWords D_800A2D34;
-    extern NameWords D_800A2D3C;
+    extern NameWords gTrackNameJuniper;
+    extern NameShort gTrackNamePocono;
+    extern NameWords gTrackNameAtlanta;
+    extern NameWords gTrackNameBristol;
     extern u16 D_80090DC8[];
     extern u16 D_80090DCA[];
     extern u16 D_80090DCC[];
@@ -779,8 +779,8 @@ void TrackLoad(u8 selectTrack) {
     extern u16 D_80090DD4[];
     extern u16 D_80090DD6[];
     extern s32 func_80041D60(s32);
-    extern void func_80015A74(s32);
-    extern void func_8001E050(s32);
+    extern void TrackLoadFromFile(s32);
+    extern void GraphicsLoadImageBank(s32);
     extern void func_8003CA18(s32, s32);
     extern void func_800367DC(s32);
     extern s32 MathFixedDivide(s32, s32);
@@ -839,7 +839,7 @@ void TrackLoad(u8 selectTrack) {
             previousButtons = D_800A33C8;
             switch (track) {
             case 0:
-                *(NameWords *)trackName = D_800A2D24;
+                *(NameWords *)trackName = gTrackNameJuniper;
                 break;
             case 1:
                 __builtin_memcpy(trackName, sTrackNameSaltBasin, 11);
@@ -866,19 +866,19 @@ void TrackLoad(u8 selectTrack) {
                 __builtin_memcpy(trackName, sTrackNameWatkinsGlen, 13);
                 break;
             case 9:
-                __builtin_memcpy(trackName, &D_800A2D2C, 7);
+                __builtin_memcpy(trackName, &gTrackNamePocono, 7);
                 break;
             case 10:
                 __builtin_memcpy(trackName, sTrackNameTalladega, 10);
                 break;
             case 11:
-                *(NameWords *)trackName = D_800A2D34;
+                *(NameWords *)trackName = gTrackNameAtlanta;
                 break;
             case 12:
                 __builtin_memcpy(trackName, sTrackNameCharlotte, 10);
                 break;
             case 13:
-                *(NameWords *)trackName = D_800A2D3C;
+                *(NameWords *)trackName = gTrackNameBristol;
                 break;
             case 15:
                 __builtin_memcpy(trackName, sTrackNameSurfersParadise, 17);
@@ -946,8 +946,8 @@ void TrackLoad(u8 selectTrack) {
     switch (track) {
     case 1:
         D_800A3720 = 0xA8;
-        func_80015A74(0x41);
-        func_8001E050(0x42);
+        TrackLoadFromFile(0x41);
+        GraphicsLoadImageBank(0x42);
         func_8003CA18(STACK_BLOCK_801E0000, 0x43);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x44);
@@ -961,8 +961,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 4:
         D_800A3720 = 0xA9;
-        func_80015A74(0x47);
-        func_8001E050(0x48);
+        TrackLoadFromFile(0x47);
+        GraphicsLoadImageBank(0x48);
         func_8003CA18(STACK_BLOCK_801E0000, 0x49);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x4A);
@@ -974,8 +974,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 10:
         D_800A3720 = 0xAA;
-        func_80015A74(0x4D);
-        func_8001E050(0x4E);
+        TrackLoadFromFile(0x4D);
+        GraphicsLoadImageBank(0x4E);
         func_8003CA18(STACK_BLOCK_801E0000, 0x4F);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x50);
@@ -988,8 +988,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 7:
         D_800A3720 = 0xAB;
-        func_80015A74(0x53);
-        func_8001E050(0x54);
+        TrackLoadFromFile(0x53);
+        GraphicsLoadImageBank(0x54);
         func_8003CA18(STACK_BLOCK_801E0000, 0x55);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x56);
@@ -1002,8 +1002,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 15:
         D_800A3720 = 0xAC;
-        func_80015A74(0x59);
-        func_8001E050(0x5A);
+        TrackLoadFromFile(0x59);
+        GraphicsLoadImageBank(0x5A);
         func_8003CA18(STACK_BLOCK_801E0000, 0x5B);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x5C);
@@ -1016,8 +1016,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 13:
         D_800A3720 = 0xAD;
-        func_80015A74(0x5F);
-        func_8001E050(0x60);
+        TrackLoadFromFile(0x5F);
+        GraphicsLoadImageBank(0x60);
         func_8003CA18(STACK_BLOCK_801E0000, 0x61);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x62);
@@ -1029,8 +1029,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 8:
         D_800A3720 = 0xAE;
-        func_80015A74(0x65);
-        func_8001E050(0x66);
+        TrackLoadFromFile(0x65);
+        GraphicsLoadImageBank(0x66);
         func_8003CA18(STACK_BLOCK_801E0000, 0x67);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x68);
@@ -1045,8 +1045,8 @@ void TrackLoad(u8 selectTrack) {
         goto trackFlags;
     case 5:
         D_800A3720 = 0xAF;
-        func_80015A74(0x6B);
-        func_8001E050(0x6C);
+        TrackLoadFromFile(0x6B);
+        GraphicsLoadImageBank(0x6C);
         func_8003CA18(STACK_BLOCK_801E0000, 0x6D);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x6E);
@@ -1062,8 +1062,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 12:
         D_800A3720 = 0xB0;
-        func_80015A74(0x71);
-        func_8001E050(0x72);
+        TrackLoadFromFile(0x71);
+        GraphicsLoadImageBank(0x72);
         func_8003CA18(STACK_BLOCK_801E0000, 0x73);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x74);
@@ -1079,8 +1079,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 11:
         D_800A3720 = 0xB1;
-        func_80015A74(0x77);
-        func_8001E050(0x78);
+        TrackLoadFromFile(0x77);
+        GraphicsLoadImageBank(0x78);
         func_8003CA18(STACK_BLOCK_801E0000, 0x79);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x7A);
@@ -1094,8 +1094,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 14:
         D_800A3720 = 0xB2;
-        func_80015A74(0x7D);
-        func_8001E050(0x7E);
+        TrackLoadFromFile(0x7D);
+        GraphicsLoadImageBank(0x7E);
         func_8003CA18(STACK_BLOCK_801E0000, 0x7F);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x80);
@@ -1112,8 +1112,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 0:
         D_800A3720 = 0xB3;
-        func_80015A74(0x83);
-        func_8001E050(0x84);
+        TrackLoadFromFile(0x83);
+        GraphicsLoadImageBank(0x84);
         func_8003CA18(STACK_BLOCK_801E0000, 0x85);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x86);
@@ -1131,8 +1131,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 6:
         D_800A3720 = 0xB4;
-        func_80015A74(0x89);
-        func_8001E050(0x8A);
+        TrackLoadFromFile(0x89);
+        GraphicsLoadImageBank(0x8A);
         func_8003CA18(STACK_BLOCK_801E0000, 0x8B);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x8C);
@@ -1147,8 +1147,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 3:
         D_800A3720 = 0xB5;
-        func_80015A74(0x8F);
-        func_8001E050(0x90);
+        TrackLoadFromFile(0x8F);
+        GraphicsLoadImageBank(0x90);
         func_8003CA18(STACK_BLOCK_801E0000, 0x91);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x92);
@@ -1172,8 +1172,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 16:
         D_800A3720 = 0xB6;
-        func_80015A74(0x95);
-        func_8001E050(0x96);
+        TrackLoadFromFile(0x95);
+        GraphicsLoadImageBank(0x96);
         func_8003CA18(STACK_BLOCK_801E0000, 0x97);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x98);
@@ -1188,8 +1188,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 9:
         D_800A3720 = 0xB7;
-        func_80015A74(0x9B);
-        func_8001E050(0x9C);
+        TrackLoadFromFile(0x9B);
+        GraphicsLoadImageBank(0x9C);
         func_8003CA18(STACK_BLOCK_801E0000, 0x9D);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x9E);
@@ -1207,8 +1207,8 @@ void TrackLoad(u8 selectTrack) {
         break;
     case 2:
         D_800A3720 = 0xB8;
-        func_80015A74(0xA1);
-        func_8001E050(0xA2);
+        TrackLoadFromFile(0xA1);
+        GraphicsLoadImageBank(0xA2);
         func_8003CA18(STACK_BLOCK_801E0000, 0xA3);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0xA4);
@@ -1485,7 +1485,7 @@ void func_8001475C(void) {
     s32 one;
 
     if (D_800A2EA4w18c[0] == 0) {
-        D_800A33C0w18c = func_80041B7C(0);
+        D_800A33C0w18c = PadGetButtons(0);
         D_800A33C4w18c = 0;
         if (D_800A3A24w18c[0] == 0 && D_800A2EB0w18c[0] >= 0) {
             D_800A33C4w18c = 0;
@@ -1510,14 +1510,14 @@ void func_8001475C(void) {
         if (D_800A2EC8w18c[0] != 0) {
             if (D_800A3620w18c[0] != 0) {
                 D_800A33C0w18c = 0;
-                D_800A33C4w18c = func_80041B7C(1);
+                D_800A33C4w18c = PadGetButtons(1);
             } else {
-                D_800A33C0w18c = func_80041B7C(0);
+                D_800A33C0w18c = PadGetButtons(0);
                 D_800A33C4w18c = 0;
             }
         } else {
-            D_800A33C0w18c = func_80041B7C(0);
-            D_800A33C4w18c = func_80041B7C(1);
+            D_800A33C0w18c = PadGetButtons(0);
+            D_800A33C4w18c = PadGetButtons(1);
         }
     }
 b44done:
@@ -2394,7 +2394,7 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
     *(s16 *)(arg0 + 0x70) = 0;
 }
 
-void func_80015A74(s32 arg0) {
+void TrackLoadFromFile(s32 arg0) {
     extern s32 FileOpen(s32, void *);
     extern void TrackReadData(s32 *, s32);
     extern void FileClose(s32);

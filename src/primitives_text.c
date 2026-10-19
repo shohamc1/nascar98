@@ -27,7 +27,7 @@ s32 RandomScaledGet(s32 scale);
 /* Primitives and text. */
 
 extern s32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
-void func_80017D80(u8 *arg0) {
+void GraphicsAddPolyFT4(u8 *arg0) {
     extern s32 D_800A39C8[];
     POLY_FT4 *entry;
     u32 cursor;
@@ -183,7 +183,7 @@ void FontSetColor(s16 red, s16 green, s16 blue) {
 extern void func_800180C0(s8, s32, s32, s32);
 extern s16 D_800A2D88[];
 
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale) {
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale) {
     s16 *width;
     s16 *base;
     s8 *p;
@@ -222,7 +222,7 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
         text[0] = '0';
         text[1] = 0;
     }
-    func_80012EA8(minutes, (u8 *)text + len);
+    TextFormatInt(minutes, (u8 *)text + len);
     text[2] = ':';
     text[3] = 0;
     len = 3;
@@ -231,7 +231,7 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
         text[3] = '0';
         text[4] = 0;
     }
-    func_80012EA8(value, (u8 *)text + len);
+    TextFormatInt(value, (u8 *)text + len);
     text[5] = ':';
     text[6] = 0;
     len = 6;
@@ -240,7 +240,7 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
         text[6] = '0';
         text[7] = 0;
     }
-    func_80012EA8(hundredths, (u8 *)text + len);
+    TextFormatInt(hundredths, (u8 *)text + len);
     if (scale == 3) {
         func_80050028Text(text, (s16)x, (s16)y, 0);
         return;
@@ -335,7 +335,7 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
     }
 }
 
-asm(".globl func_80050028Text\nfunc_80050028Text = func_80050028");
+asm(".globl func_80050028Text\nfunc_80050028Text = HudDrawText");
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
     s8 text[24];
     s8 *p;
@@ -409,7 +409,7 @@ void func_800188B0(s32 pos, u8 mode, s32 x, s32 y, s32 scale) {
             text[indent] = 0;
         }
     }
-    func_80012EA8(value, text + indent);
+    TextFormatInt(value, text + indent);
     if (text[0] != 0) {
         i = 0;
         do {
@@ -443,7 +443,7 @@ void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale) {
         indent += 1;
         text[indent] = 0;
     }
-    func_80012EA8(value, text + indent);
+    TextFormatInt(value, text + indent);
     if (text[0] != 0) {
         i = 0;
         do {
@@ -465,7 +465,7 @@ void func_80018B18(s32 value, s32 x, s32 y, s32 scale) {
     value = (s16)value;
     start = text;
     text[0] = 0;
-    func_80012EA8(value, start);
+    TextFormatInt(value, start);
     pen = x;
     if (text[0] != 0) {
         base = D_800A2D88;
@@ -479,7 +479,7 @@ void func_80018B18(s32 value, s32 x, s32 y, s32 scale) {
     }
 }
 
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale) {
     s8 text[24];
     s8 *start;
     s16 *base;
@@ -489,7 +489,7 @@ void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
 
     start = text;
     text[0] = 0;
-    func_80012F94(value, start);
+    TextFormatLong(value, start);
     pen = x;
     if (text[0] != 0) {
         base = D_800A2D88;
@@ -1285,7 +1285,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     }
     numberArg = number;
     p = text;
-    func_80012EA8(numberArg, (u8 *)p + len);
+    TextFormatInt(numberArg, (u8 *)p + len);
     x = 8;
     if (text[0] != 0) {
         do {
@@ -1320,7 +1320,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     }
     numberArg = lapValue;
     p = text;
-    func_80012EA8(numberArg, (u8 *)p + len);
+    TextFormatInt(numberArg, (u8 *)p + len);
     x = 23;
     if (text[0] != 0) {
         do {
@@ -1334,7 +1334,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     numberArg = D_800A2EA8w15[0];
     text[0] = 0;
 
-    func_80012EA8((s16)numberArg, (u8 *)text);
+    TextFormatInt((s16)numberArg, (u8 *)text);
     x = 53;
     y = baseY;
     start = text;
@@ -1370,7 +1370,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     }
     numberArg = number;
     p = text;
-    func_80012EA8(numberArg, (u8 *)p + len);
+    TextFormatInt(numberArg, (u8 *)p + len);
     x = 34;
     if (text[0] != 0) {
         do {
@@ -1572,8 +1572,8 @@ extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
 extern void func_8004DF38(void);
 extern void MenuDrawTimingAndScoring(void);
 extern void GraphicsSetColor(s32, s32, s32);
-extern s32 func_80050940(u8 *);
-extern void func_80050028(u8 *, s32, s32, s8);
+extern s32 HudTextWidth(u8 *);
+extern void HudDrawText(u8 *, s32, s32, s8);
 extern void func_8001D778();
 extern void func_8001D638();
 extern void func_80044A1C();
@@ -1624,13 +1624,13 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
             /* Keep the signed byte index in one register. */
             asm("sll %0,%1,24\n\tsra %0,%0,24" : "=r"(index) : "r"(i));
             offset = index * 4;
-            x = (s16)(((u32)(158 - func_80050940(
+            x = (s16)(((u32)(158 - HudTextWidth(
                                        *(u8 **)(offset + (D_800A2EB0panel * 24 +
                                                           (s32)labels)))) >>
                        1) +
                       81);
             offset += D_800A2EB0panel * 24 + (s32)labels;
-            func_80050028(*(u8 **)offset, x, index * 12 + y, 0);
+            HudDrawText(*(u8 **)offset, x, index * 12 + y, 0);
             i++;
         } while ((s8)i < 2);
         i = 4;
@@ -1639,70 +1639,69 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
             /* Keep the signed byte index in one register. */
             asm("sll %0,%1,24\n\tsra %0,%0,24" : "=r"(index) : "r"(i));
             offset = index * 4;
-            x = (s16)(((u32)(158 - func_80050940(
+            x = (s16)(((u32)(158 - HudTextWidth(
                                        *(u8 **)(offset + (D_800A2EB0panel * 24 +
                                                           (s32)labels)))) >>
                        1) +
                       81);
             offset += D_800A2EB0panel * 24 + (s32)labels;
-            func_80050028(*(u8 **)offset, x, index * 12 + y, 0);
+            HudDrawText(*(u8 **)offset, x, index * 12 + y, 0);
             i++;
         } while ((s8)i < 6);
         if (D_800A2EB0panel == 2) {
             GraphicsSetColor(32, 32, 32);
         }
-        x = (s16)(((u32)(158 - func_80050940(D_8009AD68[D_800A2EB0panel][0])) >>
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009AD68[D_800A2EB0panel][0])) >>
                    1) +
                   81);
-        func_80050028(D_8009AD68[D_800A2EB0panel][0], x, y + 24, 0);
+        HudDrawText(D_8009AD68[D_800A2EB0panel][0], x, y + 24, 0);
         GraphicsSetColor(128, 128, 128);
         if (D_800A2EA4w15[0] != 0) {
             GraphicsSetColor(32, 32, 32);
         }
-        x = (s16)(((u32)(158 - func_80050940(D_8009AD6C[D_800A2EB0panel][0])) >>
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009AD6C[D_800A2EB0panel][0])) >>
                    1) +
                   81);
-        func_80050028(D_8009AD6C[D_800A2EB0panel][0], x, y + 36, 0);
+        HudDrawText(D_8009AD6C[D_800A2EB0panel][0], x, y + 36, 0);
         break;
     case 1:
         choices = D_8009ADA8;
         rowY = y;
         asm("" : "=r"(rowY) : "0"(rowY));
-        func_80050028(choices[0], 90, rowY, 0);
+        HudDrawText(choices[0], 90, rowY, 0);
         choices += 5;
         cursorY = 13;
-        x = (s16)(230 - func_80050940(choices[D_800A2F9Dpanel]));
-        func_80050028(choices[D_800A2F9Dpanel], x, rowY, 0);
+        x = (s16)(230 - HudTextWidth(choices[D_800A2F9Dpanel]));
+        HudDrawText(choices[D_800A2F9Dpanel], x, rowY, 0);
         func_8001D778(110, y + cursorY, D_800A3696Absolute[0], 8, 0, 0,
                       D_800A2F9Dpanel ? -128 : 0, 1);
         func_8001D778(109, y + 12, 102, 10, -1, -1, -1, 1);
         rowY2 = y + 24;
-        func_80050028(D_8009ADAC[D_800A306Dpanel], 90, rowY2, 0);
-        x = (s16)(230 - func_80050940(D_8009ADBC[D_800A2F9Cpanel]));
-        func_80050028(D_8009ADBC[D_800A2F9Cpanel], x, rowY2, 0);
+        HudDrawText(D_8009ADAC[D_800A306Dpanel], 90, rowY2, 0);
+        x = (s16)(230 - HudTextWidth(D_8009ADBC[D_800A2F9Cpanel]));
+        HudDrawText(D_8009ADBC[D_800A2F9Cpanel], x, rowY2, 0);
         func_8001D778(110, y + 37, D_800A3694Absolute[0], 8, 0, 0,
                       D_800A2F9Cpanel ? -128 : 0, 1);
         func_8001D778(109, y + 36, 102, 10, -1, -1, -1, 1);
         rowY3 = y + 48;
         volumeLabels = D_8009ADB4;
         asm("" : "=r"(volumeLabels) : "0"(volumeLabels));
-        func_80050028(volumeLabels[0], 90, rowY3, 0);
+        HudDrawText(volumeLabels[0], 90, rowY3, 0);
         volumeLimit = 8;
         volumeChoices = volumeLabels - 3;
         x = (s16)(230 -
-                  func_80050940(volumeChoices[volumeLimit - D_800A306Cpanel]));
-        func_80050028(volumeChoices[volumeLimit - D_800A306Cpanel], x, rowY3,
-                      0);
-        x = (s16)(((u32)(158 - func_80050940(volumeLabels[1])) >> 1) + 81);
-        func_80050028(volumeLabels[1], x, y + 60, 0);
+                  HudTextWidth(volumeChoices[volumeLimit - D_800A306Cpanel]));
+        HudDrawText(volumeChoices[volumeLimit - D_800A306Cpanel], x, rowY3, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(volumeLabels[1])) >> 1) + 81);
+        HudDrawText(volumeLabels[1], x, y + 60, 0);
         break;
     case 2:
-        x = (s16)(((u32)(158 - func_80050940(D_8009ADCC[0])) >> 1) + 81);
-        func_80050028(D_8009ADCC[0], x, y + 12, 0);
-        x = (s16)(((u32)(158 - func_80050940(D_8009ADD0)) >> 1) + 81);
-        func_80050028(D_8009ADD0, x, y + 36, 0);
-        x = (s16)(((u32)(158 - func_80050940(D_8009ADD4)) >> 1) + 81);
-        func_80050028(D_8009ADD4, x, y + 48, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009ADCC[0])) >> 1) + 81);
+        HudDrawText(D_8009ADCC[0], x, y + 12, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009ADD0)) >> 1) + 81);
+        HudDrawText(D_8009ADD0, x, y + 36, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009ADD4)) >> 1) + 81);
+        HudDrawText(D_8009ADD4, x, y + 48, 0);
         break;
     }
     func_80044A1C(81, y - 1, 158, 73, 0, 0, 0, 1);
@@ -1928,7 +1927,7 @@ void func_8001C34C(void) {
             return;
         }
         GraphicsSetColor(0xFF, 0x80, 0x40);
-        func_80050028(D_8009AE40nm[0], 0x76, 0x1E, 0);
+        HudDrawText(D_8009AE40nm[0], 0x76, 0x1E, 0);
         func_80044A1C(0x6E, 0x1A, 0x60, 0x12, 0, 0, 0, 1);
         return;
     }

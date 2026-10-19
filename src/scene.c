@@ -183,15 +183,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -220,7 +220,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -239,7 +239,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -247,16 +247,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -264,7 +264,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -408,7 +408,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(s32 handle);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 handle, s32 offset, s32 whence);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -433,7 +433,7 @@ void SoundStart(void);
 void SoundShutdown(void);
 void SoundEnd(void);
 void func_8003EFC8(void);
-void func_8003EFE8(void);
+void SoundFreeVabBody(void);
 void SoundInitTables(void);
 void func_8003F060(s32 arg0);
 void func_8003F0CC(s32 arg0);
@@ -442,7 +442,7 @@ void SoundReloadVab(s32 arg0);
 void func_8003F23C(void);
 void func_8003F25C(void);
 void func_8003F284(void);
-void func_8003F2AC(s32 arg0, s32 arg1);
+void SoundSetReverbDepth(s32 arg0, s32 arg1);
 void SoundOpenSequence(void);
 void SoundSetSequenceLoop(s8 loopCount);
 void SoundPauseSequence(void);
@@ -450,7 +450,7 @@ void SoundPlaySequence(s8 playCount, u8 playMode);
 void SoundReplaySequence(void);
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume);
 void SoundStopSequence(void);
-s32 func_8003F4FC(s32 arg0);
+s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
@@ -473,9 +473,9 @@ void func_8004195C(void);
 void func_80041A28(void);
 void func_80041AD0(void);
 void func_80041AF0(void);
-s32 func_80041B7C(s32 index);
+s32 PadGetButtons(s32 index);
 u16 func_80041B94(s32 index);
-u32 func_80041BAC(s32 arg0);
+u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
 void func_80041DEC(void);
@@ -692,7 +692,7 @@ void func_80044FF8(s32 arg0, s32 arg1) {
         D_800A33F0 = 0;
         *(volatile s32 *)&D_800A33F8 = 0x20;
         func_8003F564((s8)arg1, -(D_800A3880nm[0] != 0) & 7);
-        func_8003FDE8((s8)arg1, 0x7F, 0x7F);
+        SoundSetSlotVolume((s8)arg1, 0x7F, 0x7F);
         return;
     case 1:
         if (D_800A3404 >= D_80098184[0]) {
@@ -944,7 +944,7 @@ void SceneUpdateProjectiles(u8 *owner) {
         return;
     }
     player = *(s8 *)(owner + 0x20B);
-    if ((func_80041B7C(player) & 0x10) &&
+    if ((PadGetButtons(player) & 0x10) &&
         *(void (**)(u8 *))(owner + 0x354) != func_80025730 &&
         owner[0x268] == 0 && D_800A372C == 0) {
         pool = (Projectile *)(gProjectilePools[player] +
@@ -1979,7 +1979,7 @@ void func_800474A0(void) {
         if (count >= 0xA) {
             D_800A346C = 0;
         }
-        if ((func_80041B7C(0) & 0x10) != 0 && D_800A345C == 0) {
+        if ((PadGetButtons(0) & 0x10) != 0 && D_800A345C == 0) {
             D_800A3470 = 1;
         } else {
             D_800A3468 = 0;
@@ -2542,8 +2542,8 @@ extern void func_8004AFE0(s8, u16 *, u16 *);
 extern void func_800188B0(s32, s32, s32, s32, s32);
 extern void func_80044A1C(s16, s16, s16, s16, u8, u8, u8, u8);
 extern void GraphicsSetColor(u8, u8, u8);
-extern s16 HudTextWidth(u8 *) asm("func_80050940");
-extern void HudDrawText(char *, s32, s16, s32) asm("func_80050028");
+extern s16 HudTextWidthS16(u8 *) asm("HudTextWidth");
+extern void HudDrawTextS16(char *, s32, s16, s32) asm("HudDrawText");
 extern void func_80052FC4(s8);
 extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
 
@@ -2556,9 +2556,9 @@ extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
     {                                                                          \
         s16 w;                                                                 \
         s32 x;                                                                 \
-        w = HudTextWidth((u8 *)(text)[0]);                                     \
+        w = HudTextWidthS16((u8 *)(text)[0]);                                  \
         x = (0x140 - w) >> 1;                                                  \
-        HudDrawText((text)[0], x, yOffset + (ty), 0);                          \
+        HudDrawTextS16((text)[0], x, yOffset + (ty), 0);                       \
         func_80044A1C(x - 0xA, yOffset + (ty) - 1, w + 0x14, 0xD, 0, 0, 0, 1); \
     }
 
@@ -2689,18 +2689,18 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                 }
                 for (i = 0; i < car->unk3FD; i++) {
                     seg[i].b0 = 0xFF;
-                    func_80017D80((u8 *)&seg[i]);
+                    GraphicsAddPolyFT4((u8 *)&seg[i]);
                 }
                 for (i = car->unk3FD; i < 10; i++) {
                     seg[i].b0 = 0x40;
-                    func_80017D80((u8 *)&seg[i]);
+                    GraphicsAddPolyFT4((u8 *)&seg[i]);
                 }
                 tw = car->unk28C / 400;
                 tiles[1].x0 = tw + 0xD;
                 tiles[0].w = tw;
                 tiles[1].w = 0x28 - tw;
                 for (i = 0; i < 3; i++) {
-                    func_80017D80((u8 *)&tiles[i]);
+                    GraphicsAddPolyFT4((u8 *)&tiles[i]);
                 }
                 ang = (car->unk402 * 0x1F40) / 13250 + 0x3E8;
                 scaled = (s16)ang << 8;
@@ -2752,8 +2752,8 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                 D_800A7576[0] = pts[2].y;
                 D_800A7578[0] = pts[3].x;
                 D_800A757A[0] = pts[3].y;
-                func_80017D80((u8 *)D_800A756C - 8);
-                func_80017D80(needle);
+                GraphicsAddPolyFT4((u8 *)D_800A756C - 8);
+                GraphicsAddPolyFT4(needle);
                 count = D_800A3484[split];
                 prim = (u8 *)D_800A78C4[gOrderingTableBankAbsolute[0]];
             } else {
@@ -2768,8 +2768,8 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
             }
             layout = &D_8009927C[split];
             if (D_800A2EB0Absolute[0] == 2) {
-                func_8001832C(D_800A2FF4, layout->unk8, layout->unkA + yOffset,
-                              2);
+                FontDrawString(D_800A2FF4, layout->unk8, layout->unkA + yOffset,
+                               2);
                 sprintfHud(buf, D_800A2FF8, car->lap);
             } else {
                 func_80018B18(car->place,
@@ -2777,7 +2777,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                               layout->unkA + yOffset, 2);
                 sprintfHud(buf, D_800A2FFC, car->lap, D_800A2EA8[0]);
             }
-            func_8001832C(buf, layout->unkC, layout->unkE + yOffset, 2);
+            FontDrawString(buf, layout->unkC, layout->unkE + yOffset, 2);
             func_80018768((void *)(car->lap != 0 ? car->unk258 : 0x7FFFFFFF),
                           layout->unk10, layout->unk12 + yOffset, 2);
             func_80018768((void *)car->unk25C, layout->unk14,
@@ -4726,7 +4726,7 @@ typedef struct CarLink {
 
 extern s32 sprintfRow(char *, char *, ...) asm("sprintf");
 extern void func_80050028Row(char *, s32, s32, s32);
-asm(".globl func_80050028Row\nfunc_80050028Row = func_80050028");
+asm(".globl func_80050028Row\nfunc_80050028Row = HudDrawText");
 extern void func_8004FF90Row(s16, s32, s32, s32) asm("func_8004FF90");
 extern void func_80050670Row(s32, s32, s32, s32, s32) asm("func_80050670");
 
@@ -4954,7 +4954,7 @@ extern s32 D_800A34BC;
 extern s32 D_800A34C0;
 extern u8 *D_8009AE4C[];
 extern void func_80050028Lbl(char *, s16, s16, s8);
-asm(".globl func_80050028Lbl\nfunc_80050028Lbl = func_80050028");
+asm(".globl func_80050028Lbl\nfunc_80050028Lbl = HudDrawText");
 
 void func_8004E808(void) {
     if (D_800A349C < 0x3C) {
@@ -5092,7 +5092,7 @@ extern s16 D_800A8AB4First[];
 asm(".globl D_800A8AB4First\nD_800A8AB4First = D_800A8AB4");
 extern s16 D_800A8AB4Coords[][2] asm("D_800A8AB4");
 extern s16 D_800A8AB6Coords[][2] asm("D_800A8AB6");
-extern s32 func_80050940(u8 *);
+extern s32 HudTextWidth(u8 *);
 extern void MenuDrawLapStatistics(s8, s8);
 extern void func_8004FF90(s32, s32, s32, s8);
 
@@ -5116,22 +5116,22 @@ void MenuDrawTimingAndScoring(void) {
     sprintfHud(caption, D_8008D4F4, *(char **)(D_800A3554[0] + 0x34C),
                D_8009A3F8[0], D_8009A31C[D_800A2CE0[0]]);
     titleTable = D_8009AE70;
-    width = func_80050940((u8 *)titleTable[0]);
+    width = HudTextWidth((u8 *)titleTable[0]);
     /* Load the title before reusing the table register for screen width. */
     asm volatile("lw %0, 0(%1)"
                  : "=r"(title)
                  : "r"(titleTable), "m"(*titleTable));
     centeredX = 320;
     width = centeredX - width;
-    HudDrawText(title, (s16)(width >> 1), 20, 0);
-    width = func_80050940((u8 *)caption);
+    HudDrawTextS16(title, (s16)(width >> 1), 20, 0);
+    width = HudTextWidth((u8 *)caption);
     captionArg = caption;
     /* Form the caption address before updating its centered x value. */
     asm volatile("" : "=r"(centeredX) : "0"(centeredX), "r"(captionArg));
     centeredX -= width;
     /* Narrow and halve the x coordinate for the text renderer. */
     centeredX <<= 15;
-    HudDrawText(captionArg, (s16)(centeredX >> 16), 210, 0);
+    HudDrawTextS16(captionArg, (s16)(centeredX >> 16), 210, 0);
     func_8001D778(0, 0, 320, 35, 0, 0, 0, 0);
     func_8001D778(0, 205, 320, 35, 0, 0, 0, 0);
     GraphicsSetColor(128, 128, 128);
@@ -5164,8 +5164,8 @@ void MenuDrawTimingAndScoring(void) {
     D_800A8A84[0].y2 = D_80099231[track] + position[1] / scale + 21;
     D_800A8A84[0].x3 = 300 - D_80099230[track] - position[0] / scale + 3;
     D_800A8A84[0].y3 = D_80099231[track] + position[1] / scale + 21;
-    func_80017D80((u8 *)D_800A8A84);
-    HudDrawText(D_8009AE94[0], D_800A8AB4First[0], *(s16 *)D_800A8AB6, 0);
+    GraphicsAddPolyFT4((u8 *)D_800A8A84);
+    HudDrawTextS16(D_8009AE94[0], D_800A8AB4First[0], *(s16 *)D_800A8AB6, 0);
     lapCount = D_800992D0;
     i = 1;
     if (i < D_800992D0[D_800A2CE0[0]]) {
@@ -5295,7 +5295,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         for (i = 0; i < 2; i++) {
             sprintfRow(title, D_800A3048, D_8009AE98[i], D_8009AE98[-2]);
             func_80050028Row(
-                title, (s32)((320 - func_80050940((u8 *)title)) << 15) >> 16,
+                title, (s32)((320 - HudTextWidth((u8 *)title)) << 15) >> 16,
                 top, 2);
             top += 12;
         }
@@ -5332,7 +5332,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
             labelBase = D_8009AE98;
             label = &labelBase[setupIndex];
             footerY = top;
-            measuredWidth = func_80050940((u8 *)*label);
+            measuredWidth = HudTextWidth((u8 *)*label);
             valueBuffer = valueText;
             /* Keep the width result until the next pointer is ready. */
             asm(""
@@ -5340,7 +5340,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
                 : "0"(measuredWidth), "r"(valueBuffer));
             labelWidth = measuredWidth;
             x = (u32)(320 -
-                      ((u8)labelWidth + func_80050940((u8 *)valueBuffer))) >>
+                      ((u8)labelWidth + HudTextWidth((u8 *)valueBuffer))) >>
                 1;
             screenX = x;
             func_80050028Row(*label, screenX, footerY, 2);
@@ -5578,7 +5578,7 @@ extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
 extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
 extern u8 gTextColorNm asm("gTextColor.NON_MATCHING");
 extern void func_80050028Args(char *, s16, s16, s8);
-asm(".globl func_80050028Args\nfunc_80050028Args = func_80050028");
+asm(".globl func_80050028Args\nfunc_80050028Args = HudDrawText");
 extern s32 sprintfTextArgs(char *, char *, ...);
 asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s8 arg3) {
@@ -5608,7 +5608,7 @@ extern u8 D_800A8ADA[];
  * the two gTextColor paths share cellRightX so its sum isn't scheduled
  * late, the empty asm copies keep the x1/x3 stores on the right-edge
  * register, and lineH is pinned to s4 because y otherwise outranks it. */
-void func_80050028(u8 *text, s32 x, s32 yArg, s8 modeArg) {
+void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
     POLY_FT4 *prim;
     u8 *p;
     u8 *cp;
@@ -5704,7 +5704,7 @@ void func_80050028(u8 *text, s32 x, s32 yArg, s8 modeArg) {
                     asm("" : "=r"(x) : "0"(rightX));
                 }
                 *(s16 *)(p + 0xC) = lineH;
-                func_80017D80((u8 *)D_800A8AC4);
+                GraphicsAddPolyFT4((u8 *)D_800A8AC4);
                 i++;
             }
         }
@@ -5741,7 +5741,7 @@ void func_80050028(u8 *text, s32 x, s32 yArg, s8 modeArg) {
                 *(s16 *)(p - 0x6) = rightX;
                 *(s16 *)(p + 0xA) = rightX;
                 asm("" : "=r"(x) : "0"(rightX));
-                func_80017D80(p - 0x16);
+                GraphicsAddPolyFT4(p - 0x16);
                 i++;
             }
         }
@@ -5777,7 +5777,7 @@ void func_80050028(u8 *text, s32 x, s32 yArg, s8 modeArg) {
                 *(s16 *)(D_800A8ADA + 0x4) = yy;
                 *(s16 *)(D_800A8ADA + 0xA) = cellRightX;
                 *(s16 *)(D_800A8ADA + 0xC) = yy;
-                func_80017D80(D_800A8ADA - 0x16);
+                GraphicsAddPolyFT4(D_800A8ADA - 0x16);
                 i++;
             }
         }
@@ -5813,7 +5813,7 @@ void func_80050028(u8 *text, s32 x, s32 yArg, s8 modeArg) {
             *(s16 *)(p + 0xC) = lineH;
             asm("" : "=r"(x) : "0"(rightX));
             *(u8 *)(p + 0xF) = v3;
-            func_80017D80(p - 0x16);
+            GraphicsAddPolyFT4(p - 0x16);
             i++;
         }
     }
@@ -5836,7 +5836,7 @@ void GraphicsSetColor(u8 red, u8 green, u8 blue) {
 }
 
 extern u8 D_80098D16[];
-s32 func_80050940(u8 *str) {
+s32 HudTextWidth(u8 *str) {
     s32 sum;
     u8 c;
     s32 offset;
@@ -6533,14 +6533,14 @@ void SceneSkyFadeDraw(void) {
                     result = yStep + result;
                     shade += result;
                     D_800A8B8E[0] = shade;
-                    func_80017D80((u8 *)idx);
-                    func_80017D80((u8 *)secondPrimitive - 8);
+                    GraphicsAddPolyFT4((u8 *)idx);
+                    GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         D_800A3A3CAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
-                        func_80017D80((u8 *)idx);
-                        func_80017D80((u8 *)secondPrimitive - 8);
+                        GraphicsAddPolyFT4((u8 *)idx);
+                        GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
                         D_800A3A34Absolute[-27] =
@@ -6574,12 +6574,12 @@ void SceneSkyFadeDraw(void) {
                         D_800A8B66[0] = y1 + yBits;
                     }
                     argument = idx;
-                    func_80017D80((u8 *)argument);
+                    GraphicsAddPolyFT4((u8 *)argument);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         D_800A3A3CAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
-                        func_80017D80((u8 *)idx);
+                        GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
                         D_800A3A34Absolute[-27] =
@@ -6713,14 +6713,14 @@ void SceneSkyFadeDraw(void) {
                     result = yStep + result;
                     shade += result;
                     D_800A8B2A[0] = shade;
-                    func_80017D80((u8 *)idx);
-                    func_80017D80((u8 *)secondPrimitive - 8);
+                    GraphicsAddPolyFT4((u8 *)idx);
+                    GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         D_800A3A3CAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
-                        func_80017D80((u8 *)idx);
-                        func_80017D80((u8 *)secondPrimitive - 8);
+                        GraphicsAddPolyFT4((u8 *)idx);
+                        GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
                         D_800A3A34Absolute[-27] =
@@ -6754,12 +6754,12 @@ void SceneSkyFadeDraw(void) {
                         D_800A8B10[0] = x1 - xShift;
                         D_800A8B12[0] = y1 + yBits;
                     }
-                    func_80017D80((u8 *)argument);
+                    GraphicsAddPolyFT4((u8 *)argument);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         D_800A3A3CAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
-                        func_80017D80((u8 *)idx);
+                        GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
                         D_800A3A34Absolute[-27] =
@@ -6844,12 +6844,12 @@ void SceneSkyFadeDraw(void) {
     D_800A8B3E[0] = home.buf[5];
     D_800A8B40[0] = home.buf[6];
     D_800A8B42[0] = home.buf[7];
-    func_80017D80((u8 *)D_800A8B34 - 8);
+    GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
     func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
     if (D_800A2EA4Absolute[0] != 0) {
         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
         D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
-        func_80017D80((u8 *)D_800A8B34 - 8);
+        GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
         func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
         bank = gOrderingTableBankAbsolute[0] - 1;
         gOrderingTableBankSmall[0] = bank;
@@ -7491,11 +7491,11 @@ void ListSetFieldsAndEnableMainLoop(u8 *, s32, s32,
 void func_80014A40MainLoop(s32 arg0) asm("func_80014A40");
 void func_8003CC48MainLoop(void) asm("func_8003CC48");
 void func_8003CCE0MainLoop(s32 arg0) asm("func_8003CCE0");
-s32 func_8003F4FCMainLoop(s32 arg0) asm("func_8003F4FC");
+s32 func_8003F4FCMainLoop(s32 arg0) asm("SoundIsSlotActive");
 /* All loop sound arguments fit s8. Pins already hold their extended values. */
 void func_8003F564MainLoop(s32, s32) asm("func_8003F564");
 void func_8003F914MainLoop(s32) asm("func_8003F914");
-s32 func_80041B7CMainLoop(s32) asm("func_80041B7C");
+s32 func_80041B7CMainLoop(s32) asm("PadGetButtons");
 s32 func_8004229CMainLoop(s32 arg0) asm("func_8004229C");
 void func_80044FF8MainLoop(s32 arg0, s32 arg1) asm("func_80044FF8");
 void func_80055C78MainLoop() asm("func_80055C78");
@@ -10770,9 +10770,9 @@ void func_80057FC8(s32 hide) {
     SetGeomScreen(0x82);
 }
 
-s32 func_80041B7C(s32);
+s32 PadGetButtons(s32);
 void func_80058000(s32 index, s32 *out) {
-    *out = func_80041B7C(index & 0xFF);
+    *out = PadGetButtons(index & 0xFF);
 }
 
 extern s32 D_800A305C;
@@ -11175,7 +11175,7 @@ void func_80058D94(void) {
         }
         DrawOTag((OT_TYPE *)(D_800A39C8draw[0] + 0xC));
         func_80041AF0Scene(0);
-        pads = func_80041B7C(0);
+        pads = PadGetButtons(0);
         if (frame >= 0xB5) {
             if (D_800A2EB0Absolute[0] == -2) {
                 mask = ~prevPads & 0x9F0;

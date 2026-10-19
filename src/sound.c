@@ -140,15 +140,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -177,7 +177,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -196,7 +196,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -204,16 +204,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -221,7 +221,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -365,7 +365,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 *handle);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -403,7 +403,7 @@ extern s16 gSequenceId;
 extern s16 gVabId;
 extern u8 *gSequenceData;
 extern void SsVabClose(s16);
-extern s32 D_800A3A08;
+extern s32 gVabHead;
 void SoundShutdown(void) {
     if (gSequenceId != -1)
         SsSeqClose(gSequenceId);
@@ -411,9 +411,9 @@ void SoundShutdown(void) {
         SsVabClose(gVabId);
         gVabId = -1;
     }
-    if (D_800A3A08 != 0) {
-        HeapFree((void *)D_800A3A08);
-        D_800A3A08 = 0;
+    if (gVabHead != 0) {
+        HeapFree((void *)gVabHead);
+        gVabHead = 0;
     }
     if (gSequenceData != 0) {
         HeapFree((void *)gSequenceData);
@@ -434,11 +434,11 @@ void func_8003EFC8(void) {
     func_80080758();
 }
 
-extern void *D_800A3A00;
-void func_8003EFE8(void) {
-    if (D_800A3A00 != 0) {
-        HeapFree(D_800A3A00);
-        D_800A3A00 = 0;
+extern void *gVabBody;
+void SoundFreeVabBody(void) {
+    if (gVabBody != 0) {
+        HeapFree(gVabBody);
+        gVabBody = 0;
     }
 }
 
@@ -469,7 +469,7 @@ again:
     }
     gVabId = -1;
     gSequenceData = 0;
-    D_800A3A08 = 0;
+    gVabHead = 0;
     SoundLoadVab(arg0);
     D_800A3880 = 0;
 }
@@ -485,7 +485,7 @@ void func_8003F0CC(s32 arg0) {
     }
     gVabId = -1;
     gSequenceData = 0;
-    D_800A3A08 = 0;
+    gVabHead = 0;
     SoundReloadVab(arg0);
     D_800A3880 = 1;
 }
@@ -500,15 +500,15 @@ void SoundLoadVab(s32 arg0) {
     func_8003FA0C();
     if (gVabId != -1)
         SsVabClose(gVabId);
-    D_800A3A08 = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
+    gVabHead = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
     value = (s32)func_8003FFF0((void *)arg0, 0x80140000);
-    D_800A3A00 = (void *)value;
-    gVabId = SoundVabOpen(D_800A3A08, value);
+    gVabBody = (void *)value;
+    gVabId = SoundVabOpen(gVabHead, value);
 }
 #else
 extern s16 gVabId;
-extern void *D_800A3A00;
-extern s32 D_800A3A08;
+extern void *gVabBody;
+extern s32 gVabHead;
 extern s32 func_8003FFF0(void *, void *);
 extern s16 SoundVabOpen(void *, void *);
 extern void SsVabClose(s16);
@@ -522,10 +522,10 @@ void SoundLoadVab(s32 arg0) {
     if (gVabId != -1) {
         SsVabClose(gVabId);
     }
-    D_800A3A08 = func_8003FFF0((void *)(s32 *)arg0 + 1, 0);
+    gVabHead = func_8003FFF0((void *)(s32 *)arg0 + 1, 0);
     body = func_8003FFF0((void *)arg0, (void *)0x80140000);
-    D_800A3A00 = body;
-    gVabId = SoundVabOpen((void *)D_800A3A08, (void *)body);
+    gVabBody = body;
+    gVabId = SoundVabOpen((void *)gVabHead, (void *)body);
 }
 #endif
 
@@ -536,19 +536,19 @@ void SoundReloadVab(s32 arg0) {
     func_8003FA0C();
     if (gVabId != -1)
         SsVabClose(gVabId);
-    D_800A3A08 = (s32)func_8003FFF0((void *)arg0, 0);
+    gVabHead = (s32)func_8003FFF0((void *)arg0, 0);
     value = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
-    D_800A3A00 = (void *)value;
-    gVabId = SoundVabOpen(D_800A3A08, value);
-    if (D_800A3A00 != 0) {
-        HeapFree(D_800A3A00);
-        D_800A3A00 = 0;
+    gVabBody = (void *)value;
+    gVabId = SoundVabOpen(gVabHead, value);
+    if (gVabBody != 0) {
+        HeapFree(gVabBody);
+        gVabBody = 0;
     }
 }
 #else
 extern s16 gVabId;
-extern void *D_800A3A00;
-extern s32 D_800A3A08;
+extern void *gVabBody;
+extern s32 gVabHead;
 extern s32 func_8003FFF0(void *, void *);
 extern s16 SoundVabOpen(void *, void *);
 extern void SsVabClose(s16);
@@ -563,13 +563,13 @@ void SoundReloadVab(s32 arg0) {
     if (gVabId != -1) {
         SsVabClose(gVabId);
     }
-    D_800A3A08 = func_8003FFF0((void *)arg0, 0);
+    gVabHead = func_8003FFF0((void *)arg0, 0);
     body = func_8003FFF0((void *)(arg0 + 1), 0);
-    D_800A3A00 = body;
-    gVabId = SoundVabOpen((void *)D_800A3A08, (void *)body);
-    if (D_800A3A00 != 0) {
-        HeapFree((void *)D_800A3A00);
-        D_800A3A00 = 0;
+    gVabBody = body;
+    gVabId = SoundVabOpen((void *)gVabHead, (void *)body);
+    if (gVabBody != 0) {
+        HeapFree((void *)gVabBody);
+        gVabBody = 0;
     }
 }
 #endif
@@ -592,7 +592,7 @@ void func_8003F284(void) {
 
 extern u8 D_800A2F94;
 
-void func_8003F2AC(s32 arg0, s32 arg1) {
+void SoundSetReverbDepth(s32 arg0, s32 arg1) {
     SsUtSetReverbDepth((s16)((arg0 & 0xFF) * D_800A2F94 / 127),
                        (s16)((arg1 & 0xFF) * D_800A2F94 / 127));
 }
@@ -674,7 +674,7 @@ void SoundStopSequence(void) {
 
 extern s32 SpuGetKeyStatus(s32);
 
-s32 func_8003F4FC(s32 arg0) {
+s32 SoundIsSlotActive(s32 arg0) {
     s16 voice;
     s32 status;
 
@@ -840,7 +840,7 @@ s8 vol;
     }
 }
 
-void func_8003FDE8(s8 arg0, s32 arg1, s32 arg2) {
+void SoundSetSlotVolume(s8 arg0, s32 arg1, s32 arg2) {
     s16 voice;
     u16 volL;
     u16 volR;
@@ -1064,7 +1064,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     } else {
         if (func_8003702C(car, obj) >= 0x29) {
         fail:
-            func_8003FDE8((s8)arg2, 0, 0);
+            SoundSetSlotVolume((s8)arg2, 0, 0);
             return;
         }
     }
@@ -1081,7 +1081,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     dist = MathSqrt(sum + square);
     magic = 0x5D9F0000;
     if (dist >= 0x579) {
-        func_8003FDE8((s8)arg2, 0, 0);
+        SoundSetSlotVolume((s8)arg2, 0, 0);
         return;
     }
     magic = magic | 0x7391;
@@ -1130,7 +1130,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
         }
     }
     func_8003F564((s8)arg2, (s8)arg3);
-    func_8003FDE8((s8)arg2, (u8)vol2, (u8)vol1);
+    SoundSetSlotVolume((s8)arg2, (u8)vol2, (u8)vol1);
 }
 
 extern u8 D_800A2F9D;
@@ -1225,7 +1225,7 @@ void func_80040AC8(u8 *object) {
         func_8003F564((s8)id, 5);
         count1 = (count1 * 30 + 60) * vol >> 6;
         count2 = (count2 * 30 + 60) * vol >> 6;
-        func_8003FDE8((s8)id, count1 & 0xFF, count2 & 0xFF);
+        SoundSetSlotVolume((s8)id, count1 & 0xFF, count2 & 0xFF);
     } else {
         func_8003F914((s8)id);
     }
@@ -1234,7 +1234,7 @@ void func_80040AC8(u8 *object) {
         func_8003F564((s8)id, 7);
         count3 = (count3 * 30 + 60) * vol >> 6;
         count4 = (count4 * 30 + 60) * vol >> 6;
-        func_8003FDE8((s8)id, count3 & 0xFF, count4 & 0xFF);
+        SoundSetSlotVolume((s8)id, count3 & 0xFF, count4 & 0xFF);
     } else {
         func_8003F914((s8)id);
     }
@@ -1278,7 +1278,7 @@ void SoundUpdateCar(u8 *car) {
 
     if (D_800A2ED4[0] == 1) {
         for (i = 0; i < 5; i++) {
-            func_8003FDE8((s8)i, 0, 0);
+            SoundSetSlotVolume((s8)i, 0, 0);
         }
         for (i = 14; i < 18; i++) {
             func_8003F914((s8)i);
@@ -1299,7 +1299,7 @@ void SoundUpdateCar(u8 *car) {
                 }
             }
             decayVolume = (*(s8 *)(car + 0x3B8) * 4 + 31) & 0xFF;
-            func_8003FDE8((s8)id, decayVolume, decayVolume);
+            SoundSetSlotVolume((s8)id, decayVolume, decayVolume);
         }
         func_80040AC8(car);
         if (D_800A2F9D != 0) {
@@ -1363,12 +1363,12 @@ void SoundUpdateCar(u8 *car) {
             pitch = *(s16 *)(car + 0x3BA);
             if (car == D_800A3554[0]) {
                 func_8003FA84(0, (s8)pitch);
-                func_8003FDE8(0, volume & 0xFF, volume & 0xFF);
+                SoundSetSlotVolume(0, volume & 0xFF, volume & 0xFF);
             } else {
                 if (*(s16 *)(D_800A3554[0] + 0x3BA) >= 125 && pitch >= 125) {
                     pitch = 120;
                 }
-                func_8003FDE8(1, volume & 0xFF, volume & 0xFF);
+                SoundSetSlotVolume(1, volume & 0xFF, volume & 0xFF);
                 func_8003FA84(1, (s8)pitch);
             }
             i = 3;
@@ -1439,15 +1439,15 @@ extern u8 D_800A2FA8;
 
 void func_80041328(void) {
     if (D_800A2F9D == 0) {
-        func_8003FDE8(0, 0, 0);
+        SoundSetSlotVolume(0, 0, 0);
         if (D_800A2EA4[0] == 2) {
-            func_8003FDE8(1, 0, 0);
+            SoundSetSlotVolume(1, 0, 0);
         }
     } else if (D_800A2FA8 == 0) {
         D_800A2FA8 = 1;
-        func_8003FDE8(0, 0x38, 0x38);
+        SoundSetSlotVolume(0, 0x38, 0x38);
         if (D_800A2EA4[0] == 2) {
-            func_8003FDE8(1, 0x38, 0x38);
+            SoundSetSlotVolume(1, 0x38, 0x38);
         }
     }
 }
@@ -1457,7 +1457,7 @@ void func_800413C0(void) {
     if (D_800A2FA8) {
         D_800A2FA8 = 0;
         for (i = 0; i < 5; i++)
-            func_8003FDE8((s8)i, 0, 0);
+            SoundSetSlotVolume((s8)i, 0, 0);
     }
 }
 
@@ -1474,14 +1474,14 @@ void func_80041444(s32 arg0) {
     s32 i;
 
     for (i = 0; i < 0x14; i++) {
-        func_8003FDE8((s8)i, 0, 0);
+        SoundSetSlotVolume((s8)i, 0, 0);
     }
     if ((arg0 & 0xFF) != 0) {
-        func_8003FDE8(0x14, 0, 0);
-        func_8003FDE8(0x15, 0, 0);
+        SoundSetSlotVolume(0x14, 0, 0);
+        SoundSetSlotVolume(0x15, 0, 0);
     }
-    func_8003FDE8(0x16, 0, 0);
-    func_8003FDE8(0x17, 0, 0);
+    SoundSetSlotVolume(0x16, 0, 0);
+    SoundSetSlotVolume(0x17, 0, 0);
 }
 
 void func_800414E0(void *arg0, s32 arg1, s32 arg2) {
@@ -1497,7 +1497,7 @@ active:
     if (D_800A359C[0] != 0)
         return;
     func_8003F564((s8)arg1, (s8)arg2);
-    func_8003FDE8((s8)arg1, 0x72, 0x72);
+    SoundSetSlotVolume((s8)arg1, 0x72, 0x72);
 }
 
 void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -1649,7 +1649,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     slot = base + arg2;
     if (*slot == -1 || arg3 < timer - *slot) {
         func_8003F564(0x12, (s8)arg1);
-        func_8003FDE8(0x12, 0xFF, 0xFF);
+        SoundSetSlotVolume(0x12, 0xFF, 0xFF);
         *slot = timer;
     }
 }
@@ -1726,18 +1726,18 @@ void func_8004195C(void) {
     SsStart2();
     func_8003F284();
     func_8003F564(0, 0);
-    func_8003FDE8(0, 0, 0);
+    SoundSetSlotVolume(0, 0, 0);
     VSync(0);
     VSync(0);
     VSync(0);
     func_8003F564(1, 0xC);
-    func_8003FDE8(1, 0, 0);
+    SoundSetSlotVolume(1, 0, 0);
     func_8003F564(2, 0xD);
-    func_8003FDE8(2, 0, 0);
+    SoundSetSlotVolume(2, 0, 0);
     func_8003F564(3, 0xE);
-    func_8003FDE8(3, 0, 0);
+    SoundSetSlotVolume(3, 0, 0);
     func_8003F564(4, 0xF);
-    func_8003FDE8(4, 0, 0);
+    SoundSetSlotVolume(4, 0, 0);
 }
 
 extern void SsSetMute(s32);
@@ -1747,10 +1747,10 @@ void func_80041A28(void) {
 
     i = 0;
     do {
-        func_8003FDE8((s8)i, 0, 0);
+        SoundSetSlotVolume((s8)i, 0, 0);
         i++;
     } while (i < 5);
-    func_8003F2AC(0, 0);
+    SoundSetReverbDepth(0, 0);
     SoundSetSequenceVolume(0, 0);
     func_8003F23C();
     func_8003FA0C();

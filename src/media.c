@@ -156,7 +156,7 @@ typedef struct HeapBlock {
 extern s32 func_80037204(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 void SetPolyFT4(POLY_FT4 *);
-s32 func_80041B7C(s32);
+s32 PadGetButtons(s32);
 extern void func_8006DD28(u32 arg0, u32 arg1);
 extern void func_8006E484(u32 arg0, u32 arg1);
 extern void CardTestEvents(void);
@@ -293,15 +293,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -330,7 +330,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -349,7 +349,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -357,16 +357,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -374,7 +374,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -518,7 +518,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 *handle);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -543,7 +543,7 @@ void SoundStart(void);
 void SoundShutdown(void);
 void SoundEnd(void);
 void func_8003EFC8(void);
-void func_8003EFE8(void);
+void SoundFreeVabBody(void);
 void SoundInitTables(void);
 void func_8003F060(s32 arg0);
 void func_8003F0CC(s32 arg0);
@@ -552,7 +552,7 @@ void SoundReloadVab(s32 arg0);
 void func_8003F23C(void);
 void func_8003F25C(void);
 void func_8003F284(void);
-void func_8003F2AC(s32 arg0, s32 arg1);
+void SoundSetReverbDepth(s32 arg0, s32 arg1);
 void SoundOpenSequence(void);
 void SoundSetSequenceLoop(s8 loopCount);
 void SoundPauseSequence(void);
@@ -560,7 +560,7 @@ void SoundPlaySequence(s8 playCount, u8 playMode);
 void SoundReplaySequence(void);
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume);
 void SoundStopSequence(void);
-s32 func_8003F4FC(s32 arg0);
+s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
@@ -583,9 +583,9 @@ void func_8004195C(void);
 void func_80041A28(void);
 void func_80041AD0(void);
 void func_80041AF0(void);
-s32 func_80041B7C(s32 index);
+s32 PadGetButtons(s32 index);
 u16 func_80041B94(s32 index);
-u32 func_80041BAC(s32 arg0);
+u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
 void func_80041DEC(void);
@@ -625,7 +625,7 @@ void func_8004FF3C(void);
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_800508E4(void);
 void GraphicsSetColor(u8 red, u8 green, u8 blue);
-s32 func_80050940(u8 *str);
+s32 HudTextWidth(u8 *str);
 void func_800514EC(u8 arg0, u8 arg1, u8 arg2);
 void func_800524A0(u8 *arg0, s8 arg1);
 void func_80052E18(void);
@@ -673,14 +673,14 @@ s32 CardEnableEvents(void);
 s32 CardCheckStatus(s32 arg0, u8 arg1);
 s32 CardFindFirstFile(char *path, struct DIRENTRY *entry);
 s32 CardFormat(s32 second);
-void func_80059C2C(void);
+void CardOpenEvents(void);
 void CardCloseEvents(void);
-void func_80059DC4(void);
-void func_80059E0C(void);
+void CardInit(void);
+void CardStop(void);
 s32 func_80059F0C(s32 arg0);
 s32 CardOpenFile(char *path, s32 flags);
-s32 func_8005A000(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
-s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
+s32 CardReadSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
+s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
 s32 CardCountOtherFileBlocks(s32 arg0, char *name);
 s32 func_8005A294(void);
 void CardTestEvents(void);
@@ -694,11 +694,11 @@ void func_8005A804(u8 a, u8 b, u8 c);
 void func_8005A818(u8 first, u8 second, u8 third);
 void func_8005A82C(void);
 s16 func_8005A84C(void);
-s16 func_8005AFF0(s8 arg0);
+s16 MenuCharWidth(s8 arg0);
 s32 func_8005B0E4(s16 arg0, s32 arg1);
-s32 func_8005B138(u8 *str);
+s32 TextCountLines(u8 *str);
 void func_8005B17C(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay);
-u8 *func_8005B2AC(void);
+u8 *MenuObjAlloc(void);
 void func_8005B2F0(void);
 void func_8005B300(void);
 u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
@@ -724,7 +724,7 @@ void func_8005DF08(s32 a, s32 b, s32 c, u8 flag);
 void func_8005DF50(s32 arg0, s32 arg1, s32 arg2);
 void func_8005E3DC(void);
 void func_8005E408(void);
-void func_8005E43C(s32 value);
+void MenuFormatLapText(s32 value);
 void func_8005E47C(void);
 void func_8005E4A4(u8 *table);
 void func_8005E550(s32 arg0);
@@ -905,14 +905,14 @@ void func_8006EEE0(s32 arg0) {
     func_800596F4();
     do {
         func_80041AF0i(0);
-    } while (func_80041B7C(0) != 0);
+    } while (PadGetButtons(0) != 0);
     flag = 0;
     countdown = 0x384;
     do {
         RandomScaledGetVoid();
         VSync(0);
         func_80041AF0i(0);
-        buttons = func_80041B7C(0);
+        buttons = PadGetButtons(0);
         if ((buttons = buttons) & 0x800 || (buttons = buttons) & 0x40 ||
             countdown == 0) {
             flag = 1;
@@ -956,7 +956,7 @@ extern void func_80072750(void);
 extern void func_80072A34(void);
 extern s32 func_80072A5C(void);
 extern s32 func_80072AFC(u32);
-extern void func_80072CA8(u8 *);
+extern void AudioQueueAdpcm(u8 *);
 extern void AudioQueueStereoAdpcm(u8 *);
 extern void func_80070750(s32);
 extern void func_8007005C(void);
@@ -985,7 +985,7 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
     while (1) {
         if (i >= 4) {
             func_80041AF0Arg(0);
-            status = func_80041B7C(0);
+            status = PadGetButtons(0);
             if ((status & 0x840)) {
                 D_800A3904w16 = status;
                 result = 0;
@@ -1032,7 +1032,7 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
             case 0x61643230:
 
             case 0x61643231:
-                func_80072CA8(p);
+                AudioQueueAdpcm(p);
                 break;
 
             case 0x61753030:
@@ -1434,7 +1434,7 @@ void func_8007012C(void) {
 extern void SwEnterCriticalSection(void);
 extern void SwExitCriticalSection(void);
 
-void func_80070248(s32 arg0) {
+void MdecStreamShutdown(s32 arg0) {
     TILE tile;
     DRAWENV env;
     DISPENV disp;
@@ -1573,12 +1573,12 @@ s32 func_800703D0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
 extern u8 *D_800A33A8;
 extern u8 *D_800A33AC;
 extern u8 D_8009B800[];
-extern s32 func_80070798(u8 *first, u8 *second, u8 *table);
+extern s32 MdecBuildVlcLookup(u8 *first, u8 *second, u8 *table);
 void func_80070750(s32 arg) {
     if (arg != 0) {
-        func_80070798(D_800A33A8, D_800A33AC, (u8 *)arg);
+        MdecBuildVlcLookup(D_800A33A8, D_800A33AC, (u8 *)arg);
     } else {
-        func_80070798(D_800A33A8, D_800A33AC, D_8009B800);
+        MdecBuildVlcLookup(D_800A33A8, D_800A33AC, D_8009B800);
     }
 }
 
@@ -1587,7 +1587,7 @@ extern u8 D_8009B600[];
 
 /* Builds two decode lookup tables: for each code entry, fills 1 << (bits - len)
    slots with the code's length (u8 array) and value (u16 array after it). */
-s32 func_80070798(u8 *dst, u8 *dst2, u8 *src) {
+s32 MdecBuildVlcLookup(u8 *dst, u8 *dst2, u8 *src) {
     s32 pad[4];
     u8 *cursor;
     u16 *vals;
@@ -1808,7 +1808,7 @@ done:
 
 INCLUDE_ASM("asm/nonmatchings/media", func_80070A60);
 
-extern s32 *D_800A3500;
+extern s32 *gCdStream;
 
 void func_80070F40(u_char intr, u_char *result) {
     volatile s32 *stream;
@@ -1821,12 +1821,12 @@ void func_80070F40(u_char intr, u_char *result) {
     s32 pad;
 
     if (intr != CdlComplete) {
-        ((volatile s32 *)D_800A3500)[0x424 / 4] =
-            ((volatile s32 *)D_800A3500)[0x424 / 4] + 1;
-        ((volatile s32 *)D_800A3500)[0x424 / 4];
+        ((volatile s32 *)gCdStream)[0x424 / 4] =
+            ((volatile s32 *)gCdStream)[0x424 / 4] + 1;
+        ((volatile s32 *)gCdStream)[0x424 / 4];
         return;
     }
-    stream = (volatile s32 *)D_800A3500;
+    stream = (volatile s32 *)gCdStream;
     if ((u32)stream[0x424 / 4] < 2) {
         stream[0x424 / 4] = 0;
         if (stream[0x41C / 4] == 0)
@@ -1844,7 +1844,7 @@ void func_80070F40(u_char intr, u_char *result) {
                 stream[0x414 / 4] = intr;
             }
         }
-        stream = (volatile s32 *)D_800A3500;
+        stream = (volatile s32 *)gCdStream;
         stream[0x410 / 4] = stream[0x410 / 4] - 1;
         pad = stream[0x410 / 4];
         stream[0x408 / 4] = stream[0x408 / 4] + 3;
@@ -1875,7 +1875,7 @@ s32 func_800710D8(void) {
     s32 *lastRecord;
     s32 status;
 
-    stream = D_800A3500;
+    stream = gCdStream;
     status = stream[0x43C / 4];
     if (status != 0) {
         return status;
@@ -1887,7 +1887,7 @@ s32 func_800710D8(void) {
         if (stream[0x42C / 4] == 0) {
             stream[0x42C / 4] = (s32)record;
         }
-        base = D_800A3500;
+        base = gCdStream;
         record = (s32 *)base[0x430 / 4];
         record[0] = (u32)(record[0x10 / 4] + 0x7FF) >> 11;
         reset = (s32 *)base[0x430 / 4];
@@ -1902,7 +1902,7 @@ s32 func_800710D8(void) {
             base[0x448 / 4] = 0;
             base[0x44C / 4] = 0;
         }
-        last = D_800A3500;
+        last = gCdStream;
         last[0x434 / 4] += 1;
         lastRecord = (s32 *)last[0x430 / 4];
         lastRecord[0x34 / 4] = 0;
@@ -1914,7 +1914,7 @@ s32 func_800710D8(void) {
     } else {
         stream[0x43C / 4] = 2;
     }
-    return D_800A3500[0x43C / 4];
+    return gCdStream[0x43C / 4];
 }
 
 extern void bzero(void *, s32);
@@ -1969,7 +1969,7 @@ void CdUpdateStream(void) {
     void (*callback)(void);
     register CdlCB noCallback asm("a0");
 
-    initialStream = D_800A3500;
+    initialStream = gCdStream;
     if ((u32)initialStream[0x424 / 4] >= 2) {
         callback = (void (*)(void))initialStream[0x570 / 4];
         if (callback != 0) {
@@ -1978,7 +1978,7 @@ void CdUpdateStream(void) {
         completeStatus = CdlComplete;
         SwEnterCriticalSection();
         asm("" : : "r"(completeStatus));
-        stoppedStream = D_800A3500;
+        stoppedStream = gCdStream;
         noCallback = 0;
         asm("" : : "r"(noCallback));
         stoppedStream[0x410 / 4] = 0;
@@ -2013,12 +2013,12 @@ void CdUpdateStream(void) {
         SwEnterCriticalSection();
         CdSyncCallback(func_80070F40);
         CdReadyCallback(func_80070A60);
-        startedStream = D_800A3500;
+        startedStream = gCdStream;
         startedStream[0x41C / 4] = 1;
         startedStream[0x414 / 4] = 1;
         ((volatile s32 *)startedStream)[0x424 / 4] = 0;
         SwExitCriticalSection();
-        restartStream = D_800A3500;
+        restartStream = gCdStream;
         if (restartStream[0x414 / 4] != 0 && restartStream[0] != 0) {
             restartPosition = (u8 *)restartStream[0x430 / 4];
 
@@ -2027,13 +2027,13 @@ void CdUpdateStream(void) {
             restartPosition += 0x24;
             CdIntToPos(CdPosToInt(loc) + restartSector,
                        (CdlLOC *)restartPosition);
-            restartSeekStream = D_800A3500;
+            restartSeekStream = gCdStream;
             restartRecord = (s32 *)restartSeekStream[0x430 / 4];
             restartSeekStream[0x418 / 4] = 2;
             restartPosition = (u8 *)restartRecord + 0x24;
 
             SwEnterCriticalSection();
-            restartSeekQueue = (volatile s32 *)D_800A3500;
+            restartSeekQueue = (volatile s32 *)gCdStream;
             ((s32 *)restartSeekQueue)[restartSeekQueue[0x40C / 4]++ + 2] =
                 CdlSeekL;
             ((s32 *)restartSeekQueue)[restartSeekQueue[0x40C / 4]++ + 2] =
@@ -2049,7 +2049,7 @@ void CdUpdateStream(void) {
             } else {
                 SwExitCriticalSection();
             }
-            restartReadStream = D_800A3500;
+            restartReadStream = gCdStream;
             readBuffer = restartReadStream[1];
             restartReadRecord = (s32 *)restartReadStream[0x430 / 4];
             readSectors = restartReadStream[0];
@@ -2062,7 +2062,7 @@ void CdUpdateStream(void) {
                   "r"(readSectors)
                 : "memory");
             SwEnterCriticalSection();
-            restartReadQueue = (volatile s32 *)D_800A3500;
+            restartReadQueue = (volatile s32 *)gCdStream;
             ((s32 *)restartReadQueue)[restartReadQueue[0x40C / 4]++ + 2] =
                 CdlReadN;
             ((s32 *)restartReadQueue)[restartReadQueue[0x40C / 4]++ + 2] =
@@ -2079,17 +2079,17 @@ void CdUpdateStream(void) {
                 SwExitCriticalSection();
             }
         } else {
-            D_800A3500[0x414 / 4] = 0;
+            gCdStream[0x414 / 4] = 0;
         }
     }
-    serviceStream = D_800A3500;
+    serviceStream = gCdStream;
     if (serviceStream[0x414 / 4] == 0) {
         activeRecord = (s32 *)serviceStream[0x430 / 4];
         remainingSectors = activeRecord[0] - activeRecord[2];
         if (remainingSectors == 0) {
             func_800710D8();
         }
-        ringStream = D_800A3500;
+        ringStream = gCdStream;
         contiguousSectors = D_800A3510;
         availableSectors =
             (((volatile s32 *)ringStream)[0x440 / 4] + contiguousSectors) -
@@ -2114,14 +2114,14 @@ void CdUpdateStream(void) {
             readSectors = availableSectors;
         }
         if (readSectors != 0) {
-            refillPosition = (u8 *)D_800A3500[0x430 / 4];
+            refillPosition = (u8 *)gCdStream[0x430 / 4];
 
             refillSector = ((s32 *)refillPosition)[2];
             loc = (CdlLOC *)(refillPosition + 0xC);
             refillPosition += 0x24;
             CdIntToPos(CdPosToInt(loc) + refillSector,
                        (CdlLOC *)refillPosition);
-            refillSeekStream = D_800A3500;
+            refillSeekStream = gCdStream;
             refillRecord = (s32 *)refillSeekStream[0x430 / 4];
             refillSeekStream[0x44C / 4] =
                 refillSeekStream[0x448 / 4] + readSectors;
@@ -2136,7 +2136,7 @@ void CdUpdateStream(void) {
                 : "r"(refillRecord), "r"(refillPosition), "r"(refillSeekStream)
                 : "memory");
             SwEnterCriticalSection();
-            refillSeekQueue = (volatile s32 *)D_800A3500;
+            refillSeekQueue = (volatile s32 *)gCdStream;
             ((s32 *)refillSeekQueue)[refillSeekQueue[0x40C / 4]++ + 2] =
                 CdlSeekL;
             ((s32 *)refillSeekQueue)[refillSeekQueue[0x40C / 4]++ + 2] =
@@ -2152,7 +2152,7 @@ void CdUpdateStream(void) {
             } else {
                 SwExitCriticalSection();
             }
-            refillReadStream = D_800A3500;
+            refillReadStream = gCdStream;
 
             bufferRecord = (s32 *)refillReadStream[0x430 / 4];
             do {
@@ -2171,7 +2171,7 @@ void CdUpdateStream(void) {
             } while (0);
             asm("" : : "r"(readBuffer), "r"(readPosition) : "memory");
             SwEnterCriticalSection();
-            refillReadQueue = (volatile s32 *)D_800A3500;
+            refillReadQueue = (volatile s32 *)gCdStream;
             ((s32 *)refillReadQueue)[refillReadQueue[0x40C / 4]++ + 2] =
                 CdlReadN;
             ((s32 *)refillReadQueue)[refillReadQueue[0x40C / 4]++ + 2] =
@@ -2206,7 +2206,7 @@ void func_800718D4(s32 arg) {
     s32 *tailNode;
     s32 *current;
     s32 *after;
-    stream = D_800A3500;
+    stream = gCdStream;
     node = (s32 *)stream[0x42C / 4];
     do {
         offset = stream[0x444 / 4];
@@ -2230,14 +2230,14 @@ void func_800718D4(s32 arg) {
         stream[0x440 / 4] = oldBlocks + blocks;
     }
     CdUpdateStream();
-    after = D_800A3500;
+    after = gCdStream;
     current = (s32 *)after[0x42C / 4];
     if (current[0x4 / 4] == current[0x10 / 4]) {
         if (((s32 *)after[0x430 / 4]) != current) {
             if (after[0x444 / 4] != 0) {
                 after[0x440 / 4] += 1;
             }
-            tail = D_800A3500;
+            tail = gCdStream;
             tailNode = (s32 *)tail[0x430 / 4];
             tail[0x44C / 4] = 0;
             tail[0x42C / 4] = (s32)tailNode;
@@ -2246,9 +2246,9 @@ void func_800718D4(s32 arg) {
     }
 }
 
-s32 func_800719D4(void) {
-    return (D_800A3500[0x448 / 4] << 11) -
-           ((D_800A3500[0x440 / 4] << 11) + D_800A3500[0x444 / 4]);
+s32 CdStreamAvailable(void) {
+    return (gCdStream[0x448 / 4] << 11) -
+           ((gCdStream[0x440 / 4] << 11) + gCdStream[0x444 / 4]);
 }
 
 extern u32 D_800A3510w asm("D_800A3510.NON_MATCHING");
@@ -2272,17 +2272,17 @@ u8 *func_800719FC(s32 *arg0) {
     s32 *node;
     u32 third;
     u8 *result;
-    head = (s32 *)((volatile s32 *)D_800A3500)[0x42C / 4];
+    head = (s32 *)((volatile s32 *)gCdStream)[0x42C / 4];
     room = head[0x10 / 4] - head[0x4 / 4];
     *arg0 = ((*arg0) > room) ? (room) : (*arg0);
-    pre = (volatile s32 *)D_800A3500;
+    pre = (volatile s32 *)gCdStream;
     counter = 0;
     retries = 0;
     pre[0x448 / 4];
     pre[0x440 / 4];
     pre[0x444 / 4];
     for (;;) {
-        stream = (volatile s32 *)D_800A3500;
+        stream = (volatile s32 *)gCdStream;
         avail = (stream[0x448 / 4] << 11) -
                 ((stream[0x440 / 4] << 11) + stream[0x444 / 4]);
         if (avail < 0) {
@@ -2296,8 +2296,8 @@ u8 *func_800719FC(s32 *arg0) {
             if (counter > 4000000) {
                 stream[0x424 / 4] = stream[0x424 / 4] + 2;
             }
-            if (((volatile s32 *)D_800A3500)[0x414 / 4] != 0) {
-                if (((u32)((volatile s32 *)D_800A3500)[0x424 / 4]) < 2) {
+            if (((volatile s32 *)gCdStream)[0x414 / 4] != 0) {
+                if (((u32)((volatile s32 *)gCdStream)[0x424 / 4]) < 2) {
                     continue;
                 }
             }
@@ -2313,13 +2313,13 @@ u8 *func_800719FC(s32 *arg0) {
     }
 
     {
-        node = (s32 *)((volatile s32 *)D_800A3500)[0x42C / 4];
-        first = ((volatile s32 *)D_800A3500)[0x440 / 4];
-        second = ((volatile s32 *)D_800A3500)[0x444 / 4];
-        x = ((u32)(((volatile s32 *)D_800A3500)[0x440 / 4] + node[0x34 / 4])) %
+        node = (s32 *)((volatile s32 *)gCdStream)[0x42C / 4];
+        first = ((volatile s32 *)gCdStream)[0x440 / 4];
+        second = ((volatile s32 *)gCdStream)[0x444 / 4];
+        x = ((u32)(((volatile s32 *)gCdStream)[0x440 / 4] + node[0x34 / 4])) %
             D_800A3510w;
         w = ((u32)first) % D_800A3510w;
-        third = ((volatile s32 *)D_800A3500)[0x444 / 4];
+        third = ((volatile s32 *)gCdStream)[0x444 / 4];
         result = (u8 *)(node[0x30 / 4] + ((x << 11) + third));
         left = D_800A3510w - 1;
         tail = ((left - w) << 11) + 0x800;
@@ -2348,7 +2348,7 @@ void func_80071BE8(void) {
 
     timedOut = 0;
     i = 0;
-    if (D_800A3500[0x414 / 4] != 0) {
+    if (gCdStream[0x414 / 4] != 0) {
         do {
             VSync(0);
             i++;
@@ -2356,11 +2356,11 @@ void func_80071BE8(void) {
                 timedOut = 1;
                 break;
             }
-        } while (D_800A3500[0x414 / 4] != 0);
+        } while (gCdStream[0x414 / 4] != 0);
     }
     if (timedOut == 0) {
         i = 0;
-        if (D_800A3500[0] != 0) {
+        if (gCdStream[0] != 0) {
             do {
                 VSync(0);
                 i++;
@@ -2368,7 +2368,7 @@ void func_80071BE8(void) {
                     timedOut = 1;
                     break;
                 }
-            } while (D_800A3500[0] != 0);
+            } while (gCdStream[0] != 0);
         }
         if (timedOut == 0) {
             return;
@@ -2376,10 +2376,10 @@ void func_80071BE8(void) {
     }
     i = CdlComplete;
     SwEnterCriticalSection();
-    ((volatile s32 *)D_800A3500)[0x410 / 4] = 0;
-    ((volatile s32 *)D_800A3500)[0x408 / 4] = 0;
-    ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
-    ((volatile s32 *)D_800A3500)[0x41C / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x410 / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x408 / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x41C / 4] = 0;
     CdSyncCallback(0);
     CdReadyCallback(0);
     SwExitCriticalSection();
@@ -2408,14 +2408,14 @@ void func_80071BE8(void) {
     SwEnterCriticalSection();
     CdSyncCallback(func_80070F40);
     CdReadyCallback(func_80070A60);
-    D_800A3500[0x41C / 4] = 1;
-    D_800A3500[0x424 / 4] = 2;
-    ((volatile s32 *)D_800A3500)[0x414 / 4] = 0;
+    gCdStream[0x41C / 4] = 1;
+    gCdStream[0x424 / 4] = 2;
+    ((volatile s32 *)gCdStream)[0x414 / 4] = 0;
     SwExitCriticalSection();
 }
 
 extern s32 D_800A33B8, D_800A33BC;
-void func_80071DCC(s32 enable) {
+void CdStreamSetEnabled(s32 enable) {
     u8 mode;
     s32 enabled;
 
@@ -2424,26 +2424,26 @@ void func_80071DCC(s32 enable) {
         mode = CdlModeSpeed | CdlModeSize1;
         CdControlB(CdlSetmode, &mode, 0);
         SwEnterCriticalSection();
-        D_800A3500[0x410 / 4] = 0;
-        D_800A3500[0x408 / 4] = 0;
-        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+        gCdStream[0x410 / 4] = 0;
+        gCdStream[0x408 / 4] = 0;
+        ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
         D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
         D_800A33BC = (s32)CdReadyCallback(func_80070A60);
-        D_800A3500[0x420 / 4] = 1;
-        ((volatile s32 *)D_800A3500)[0x41C / 4] = 1;
+        gCdStream[0x420 / 4] = 1;
+        ((volatile s32 *)gCdStream)[0x41C / 4] = 1;
     } else {
         SwEnterCriticalSection();
-        enabled = D_800A3500[0x420 / 4];
-        D_800A3500[0x41C / 4] = 0;
-        D_800A3500[0x410 / 4] = 0;
-        D_800A3500[0x408 / 4] = 0;
-        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+        enabled = gCdStream[0x420 / 4];
+        gCdStream[0x41C / 4] = 0;
+        gCdStream[0x410 / 4] = 0;
+        gCdStream[0x408 / 4] = 0;
+        ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
         if (enabled != 0) {
             CdSyncCallback((void *)D_800A33B8);
             CdReadyCallback((void *)D_800A33BC);
             D_800A33B8 = 0;
             D_800A33BC = 0;
-            D_800A3500[0x420 / 4] = 0;
+            gCdStream[0x420 / 4] = 0;
         }
     }
     SwExitCriticalSection();
@@ -2461,7 +2461,7 @@ s32 func_80071EC0(s32 index, s32 base, s32 item) {
     return base + item * 56;
 }
 
-s32 func_80071EEC(s32 *mem, s32 arg1, s32 *src, u32 count) {
+s32 CdStreamInit(s32 *mem, s32 arg1, s32 *src, u32 count) {
     typedef struct {
         s32 w[6];
     } SixWords;
@@ -2484,7 +2484,7 @@ s32 func_80071EEC(s32 *mem, s32 arg1, s32 *src, u32 count) {
     (void)&pad2;
     bzero(mem, D_800A3514 + len + D_800A3518 * 56);
     temp = (s32)mem + 0x57C;
-    D_800A3500 = mem;
+    gCdStream = mem;
     D_800A3504 = temp;
     mem[0x570 / 4] = arg1;
     mem[0x414 / 4] = 0;
@@ -2514,55 +2514,55 @@ s32 func_80071EEC(s32 *mem, s32 arg1, s32 *src, u32 count) {
             goto again;
         }
     }
-    ((volatile s32 *)D_800A3500)[0x438 / 4] = count;
-    ((volatile s32 *)D_800A3500)[0x424 / 4] = 0;
-    ((volatile s32 *)D_800A3500)[0x428 / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x438 / 4] = count;
+    ((volatile s32 *)gCdStream)[0x424 / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x428 / 4] = 0;
     do {
     } while (0);
-    D_800A3500[0x574 / 4] = (s32)CdDataCallback(0);
-    D_800A3500[0x578 / 4] = (s32)CdReadCallback(0);
+    gCdStream[0x574 / 4] = (s32)CdDataCallback(0);
+    gCdStream[0x578 / 4] = (s32)CdReadCallback(0);
     func_800710D8();
     CdSync(0, 0);
     *(u8 *)&mode = CdlModeSpeed | CdlModeSize1;
     CdControlB(CdlSetmode, (u_char *)&mode, 0);
     SwEnterCriticalSection();
-    D_800A3500[0x410 / 4] = 0;
-    D_800A3500[0x408 / 4] = 0;
-    ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+    gCdStream[0x410 / 4] = 0;
+    gCdStream[0x408 / 4] = 0;
+    ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
     D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
     D_800A33BC = (s32)CdReadyCallback(func_80070A60);
-    D_800A3500[0x420 / 4] = 1;
-    ((volatile s32 *)D_800A3500)[0x41C / 4] = 1;
+    gCdStream[0x420 / 4] = 1;
+    ((volatile s32 *)gCdStream)[0x41C / 4] = 1;
     SwExitCriticalSection();
     return 1;
 }
 
-void func_800720D0(void) {
+void CdStreamShutdown(void) {
     s32 enabled;
     s32 pad[2];
 
-    if (D_800A3500[0x420 / 4] != 0) {
-        CdDataCallback((void *)D_800A3500[0x574 / 4]);
-        CdReadCallback((void *)D_800A3500[0x578 / 4]);
+    if (gCdStream[0x420 / 4] != 0) {
+        CdDataCallback((void *)gCdStream[0x574 / 4]);
+        CdReadCallback((void *)gCdStream[0x578 / 4]);
         SwEnterCriticalSection();
-        enabled = D_800A3500[0x420 / 4];
-        D_800A3500[0x41C / 4] = 0;
-        D_800A3500[0x410 / 4] = 0;
-        D_800A3500[0x408 / 4] = 0;
-        ((volatile s32 *)D_800A3500)[0x40C / 4] = 0;
+        enabled = gCdStream[0x420 / 4];
+        gCdStream[0x41C / 4] = 0;
+        gCdStream[0x410 / 4] = 0;
+        gCdStream[0x408 / 4] = 0;
+        ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
         if (enabled != 0) {
             CdSyncCallback((void *)D_800A33B8);
             CdReadyCallback((void *)D_800A33BC);
             D_800A33B8 = 0;
             D_800A33BC = 0;
-            D_800A3500[0x420 / 4] = 0;
+            gCdStream[0x420 / 4] = 0;
         }
         SwExitCriticalSection();
     }
 }
 
 extern volatile s32 *D_800A351C;
-void func_80072178(void) {
+void AudioTransferCallback(void) {
     u8 *src;
     s32 value;
     u32 i;
@@ -2605,7 +2605,7 @@ void func_80072178(void) {
 extern void SpuSetIRQ(s32);
 extern void SpuSetIRQAddr(s32);
 extern void SpuSetTransferStartAddr(s32);
-void func_800722D0(void) {
+void AudioIrqCallback(void) {
     u8 *src;
     s32 addr;
     s32 addr2;
@@ -2729,11 +2729,11 @@ void func_800722D0(void) {
     D_800A351C[0x7B40 / 4];
     SpuSetIRQAddr(D_800A351C[0x7B5C / 4] +
                   (D_800A351C[0x7B40 / 4] & 7) * 0x180);
-    SpuSetIRQCallback(func_800722D0);
+    SpuSetIRQCallback(AudioIrqCallback);
     SpuSetIRQ(1);
 }
 
-s32 func_8007270C(void) {
+s32 AudioVSyncCallback(void) {
     s32 result;
     result = D_800A351C[0x7B20 / 4];
     if (result != 0) {
@@ -2803,7 +2803,7 @@ void func_80072750(void) {
             } while (D_800A351C[0x7B48 / 4] != 0);
         }
         D_800A351C[0x7B48 / 4] = 3;
-        func_800722D0();
+        AudioIrqCallback();
         D_800A351C[0x7B48 / 4] = 0;
         D_800A351C[2] = 1;
     }
@@ -2894,7 +2894,7 @@ s32 func_80072BB0(s32 *size) {
 #define SWAP32(w)                                                              \
     (((w) >> 24) | (((w) >> 8) & 0xFF00) | (((w) & 0xFF00) << 8) | ((w) << 24))
 
-u32 func_80072BDC(u32 *header) {
+u32 AudioGetAdpcmSize(u32 *header) {
     u32 swapped;
     u32 size;
     u32 isAd2;
@@ -2912,7 +2912,7 @@ u32 func_80072BDC(u32 *header) {
     return size;
 }
 
-void func_80072CA8(u8 *block) {
+void AudioQueueAdpcm(u8 *block) {
     volatile u32 *pollState;
     volatile u32 *state;
     volatile u32 *tailState;
@@ -3205,7 +3205,7 @@ void func_80073A44(void) {
 
 extern void *SpuSetTransferCallback(void *);
 
-void func_80073AA4(void) {
+void AudioShutdown(void) {
     volatile s32 *field;
     volatile s32 *p;
     u32 i;
@@ -3244,7 +3244,7 @@ s32 func_80073BC8(void) {
     return 0xC00;
 }
 
-s32 func_80073BD0(void) {
+s32 AudioGetContextSize(void) {
     return 0x7B80;
 }
 
@@ -3252,8 +3252,8 @@ s32 func_80073BD8(void) {
     return D_800A351C[0x7B58 / 4];
 }
 
-s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
-                  s32 arg6) {
+s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
+              s32 arg6) {
     SpuVoiceAttr va;
     SpuCommonAttr ca;
     SpuCommonAttr *caarg;
@@ -3340,11 +3340,11 @@ s32 func_80073BEC(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     }
     SwEnterCriticalSection();
     D_800A351C[0x7B14 / 4] = (s32)SpuSetIRQCallback(0);
-    D_800A351C[0x7B18 / 4] = (s32)SpuSetTransferCallback(func_80072178);
+    D_800A351C[0x7B18 / 4] = (s32)SpuSetTransferCallback(AudioTransferCallback);
     D_800A351C[0x7B1C / 4] = arg6;
     if (arg6 != 0) {
         D_800A351C[0x7B10 / 4] =
-            (s32)((Callback (*)(Callback))VSyncCallback)(func_8007270C);
+            (s32)((Callback (*)(Callback))VSyncCallback)(AudioVSyncCallback);
     } else {
         D_800A351C[0x7B10 / 4] = 0;
     }

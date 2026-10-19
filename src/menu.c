@@ -168,7 +168,7 @@ extern u8 D_800BDD65[], D_800BDD66[], D_800BDD67[], D_800BDDC1[];
 extern u8 D_800BDDC2[], D_800BDDC3[];
 extern DRAWENV D_800BDD4C[];
 extern DISPENV D_800BDE04[];
-s32 func_80041B7C(s32);
+s32 PadGetButtons(s32);
 extern void CardTestEvents(void);
 extern void CardTestEvents(void), func_8005A414(void);
 extern void func_8005A818(u8, u8, u8);
@@ -204,7 +204,7 @@ typedef struct {
 extern u8 D_800A3988[];
 extern u8 D_800A3644[];
 extern char *strcat(char *, char *);
-extern u8 *func_80012EA8(s32, u8 *);
+extern u8 *TextFormatInt(s32, u8 *);
 extern u8 D_800A3078[], D_800A3988[];
 extern void func_8005C8D8(u8);
 extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
@@ -214,15 +214,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -251,7 +251,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -270,7 +270,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -278,16 +278,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -295,7 +295,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -439,7 +439,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 *handle);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -464,7 +464,7 @@ void SoundStart(void);
 void SoundShutdown(void);
 void SoundEnd(void);
 void func_8003EFC8(void);
-void func_8003EFE8(void);
+void SoundFreeVabBody(void);
 void SoundInitTables(void);
 void func_8003F060(s32 arg0);
 void func_8003F0CC(s32 arg0);
@@ -473,7 +473,7 @@ void SoundReloadVab(s32 arg0);
 void func_8003F23C(void);
 void func_8003F25C(void);
 void func_8003F284(void);
-void func_8003F2AC(s32 arg0, s32 arg1);
+void SoundSetReverbDepth(s32 arg0, s32 arg1);
 void SoundOpenSequence(void);
 void SoundSetSequenceLoop(s8 loopCount);
 void SoundPauseSequence(void);
@@ -481,7 +481,7 @@ void SoundPlaySequence(s8 playCount, u8 playMode);
 void SoundReplaySequence(void);
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume);
 void SoundStopSequence(void);
-s32 func_8003F4FC(s32 arg0);
+s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
@@ -504,9 +504,9 @@ void func_8004195C(void);
 void func_80041A28(void);
 void func_80041AD0(void);
 void func_80041AF0(void);
-s32 func_80041B7C(s32 index);
+s32 PadGetButtons(s32 index);
 u16 func_80041B94(s32 index);
-u32 func_80041BAC(s32 arg0);
+u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
 void func_80041DEC(void);
@@ -546,7 +546,7 @@ void func_8004FF3C(void);
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_800508E4(void);
 void GraphicsSetColor(u8 red, u8 green, u8 blue);
-s32 func_80050940(u8 *str);
+s32 HudTextWidth(u8 *str);
 void func_800514EC(u8 arg0, u8 arg1, u8 arg2);
 void func_800524A0(u8 *arg0, s8 arg1);
 void func_80052E18(void);
@@ -594,14 +594,14 @@ s32 CardEnableEvents(void);
 s32 CardCheckStatus(s32 arg0, u8 arg1);
 s32 CardFindFirstFile(char *path, struct DIRENTRY *entry);
 s32 CardFormat(s32 second);
-void func_80059C2C(void);
+void CardOpenEvents(void);
 void CardCloseEvents(void);
-void func_80059DC4(void);
-void func_80059E0C(void);
+void CardInit(void);
+void CardStop(void);
 s32 func_80059F0C(s32 arg0);
 s32 CardOpenFile(char *path, s32 flags);
-s32 func_8005A000(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
-s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
+s32 CardReadSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
+s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
 s32 CardCountOtherFileBlocks(s32 arg0, char *name);
 s32 func_8005A294(void);
 void CardTestEvents(void);
@@ -615,11 +615,11 @@ void func_8005A804(u8 a, u8 b, u8 c);
 void func_8005A818(u8 first, u8 second, u8 third);
 void func_8005A82C(void);
 s16 func_8005A84C(void);
-s16 func_8005AFF0(s8 arg0);
+s16 MenuCharWidth(s8 arg0);
 s32 func_8005B0E4(s16 arg0, s32 arg1);
-s32 func_8005B138(u8 *str);
+s32 TextCountLines(u8 *str);
 void func_8005B17C(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay);
-u8 *func_8005B2AC(void);
+u8 *MenuObjAlloc(void);
 void func_8005B2F0(void);
 void func_8005B300(void);
 u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
@@ -858,8 +858,8 @@ void func_8005E408(void) {
 }
 
 extern char D_800BA058[], D_800A333C[];
-void func_8005E43C(s32 value) {
-    func_80012EA8(value, D_800BA058);
+void MenuFormatLapText(s32 value) {
+    TextFormatInt(value, D_800BA058);
     strcat(D_800BA058, D_800A333C);
 }
 
@@ -1033,7 +1033,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (value < 3) {
         D_800A3814B[0] = 3;
     }
-    func_80012EA8(D_800A3814C[0], D_800BA058);
+    TextFormatInt(D_800A3814C[0], D_800BA058);
     strcat(D_800BA058B, D_800A333C);
     entry2 = (u8 *)D_800A3788;
     *(char **)(local + 8) = D_800BA058C;
@@ -1117,7 +1117,7 @@ extern s32 D_800A37D0;
 extern s32 D_800A3814;
 extern char D_800BA058[];
 extern char D_800A333C[];
-extern u8 *func_80012EA8(s32, u8 *);
+extern u8 *TextFormatInt(s32, u8 *);
 extern char *strcat(char *, char *);
 void func_8005EC5C(s32 arg0) {
     s32 value;
@@ -1127,7 +1127,7 @@ void func_8005EC5C(s32 arg0) {
     D_800A3814 = scaled;
     if (scaled < 3)
         D_800A3814 = 3;
-    func_80012EA8(D_800A3814, D_800BA058);
+    TextFormatInt(D_800A3814, D_800BA058);
     strcat(D_800BA058, D_800A333C);
 }
 #else
@@ -1144,13 +1144,13 @@ void func_8005EC5C(u8 arg0) {
     if (value < 3) {
         D_800A3814[0] = 3;
     }
-    func_80012EA8(D_800A3814Abs[0], D_800BA058);
+    TextFormatInt(D_800A3814Abs[0], D_800BA058);
     strcat(D_800BA058NM, D_800A333C);
 }
 
 #if 0
 /* w7g draft: everything matches except gcc CSEs the two D_800BA058
- * materializations across the func_80012EA8/strcat calls into
+ * materializations across the TextFormatInt/strcat calls into
  * callee-saved s0 (function 8 bytes short; asm("") does not block
  * cross-call cse). D_800A3814 is reached as D_800A37E8[11] (bss
  * neighbor of an already-array symbol; declaring D_800A3814 drifts
@@ -1164,7 +1164,7 @@ void func_8005EC5C(u8 arg0) {
     if (value < 3) {
         *(D_800A37E8 + 11) = 3;
     }
-    func_80012EA8(D_800A37E8[11], D_800BA058);
+    TextFormatInt(D_800A37E8[11], D_800BA058);
     strcat(D_800BA058, D_800A333C);
 }
 #endif
@@ -1210,7 +1210,7 @@ extern void func_80060008(u8);
  * the locals below (k2b is pinned to $19, the empty asm statements make the
  * primitive pointers function-wide). */
 void func_8005ED74(u8 arg0, u8 arg1) {
-    extern s32 func_8005A8EI(s32) asm("func_8005A8E0");
+    extern s32 func_8005A8EI(s32) asm("MenuStringWidth");
     register s32 k2b asm("$19");
     u8 ix1;
     u8 ix11;
@@ -2299,7 +2299,7 @@ void func_800606D4(void) {
         s32 x;
         s32 value;
         func_8005A7B8(2, 2);
-        value = (s16)func_8005A8E0(*p);
+        value = (s16)MenuStringWidth(*p);
         do {
             if (p != table) {
                 x = 0x70 - value;
@@ -2371,7 +2371,7 @@ void func_80060E94(s32 arg0) {
     func_8005A7B8(2, 2);
     value = D_8009A2B0[arg0 & 0xFF];
     D_800A3A68->child->value = value;
-    height = func_8005A8E0(value);
+    height = MenuStringWidth(value);
     centered = (0x78 - height) / 2;
     D_800A3A68->y = centered;
     D_800A3A68->height = (s16)height;
@@ -2400,7 +2400,7 @@ void func_80060F54(s32 arg0, s32 volume) {
     if (volume != 0) {
         x = arg0;
         D_800A2F94Lui = (x * 127) / 100;
-        func_8003FDE8(1, 0x7F, 0x7F);
+        SoundSetSlotVolume(1, 0x7F, 0x7F);
     } else {
         CdSetMixVolume(x);
     }
@@ -3113,7 +3113,7 @@ panelLoop:
                          "sb        $zero, 0x3($s0)\n"
                          "lui        $a0, %%hi(D_8009A314)\n"
                          "lw         $a0, %%lo(D_8009A314)($a0)\n"
-                         "jal        func_8005A8E0\n"
+                         "jal        MenuStringWidth\n"
                          "nop\n"
                          "addu       $v0, $v0, $s1\n"
                          "sh         $v0, 0x12($s6)\n"
@@ -4710,7 +4710,7 @@ void func_800631DC(s32 left, s32 top, s32 code) {
     }
     entry = D_800A3554[0];
     for (i = 0; i < 2; i++) {
-        node = func_8005B2AC();
+        node = MenuObjAlloc();
         mode = D_800A39E4[0];
         D_800A35E4[i] = node;
         *(s16 *)(node + 0) = 4;
@@ -5323,7 +5323,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
             x = h + 0x32;
         } else {
             if (i == 1 || (u32)(i - 4) < 2) {
-                y = func_8005B138(*(u8 **)(prim2 + 8)) * h;
+                y = TextCountLines(*(u8 **)(prim2 + 8)) * h;
             } else {
                 y = h;
             }
@@ -6277,7 +6277,7 @@ void func_80066730(void) {
         do {
             y16 = (s16)y;
             func_8005A9F4(p[0], 0x20, y16, 0, 0, 0, 0, 0);
-            ret = (s32)(s16)func_8005A8E0(p[0]);
+            ret = (s32)(s16)MenuStringWidth(p[0]);
             x = (s16)(ret + 0x20);
             switch (i) {
             case 0:
@@ -6380,9 +6380,9 @@ void func_80066B70(void) {
     u8 *env;
 
     D_800A365C = gPrimitiveCursor[0];
-    func_80050028(D_8009A400[0], 0x8C, 0xD6, 1);
+    HudDrawText(D_8009A400[0], 0x8C, 0xD6, 1);
     D_800A39F4 = gPrimitiveCursor2[0];
-    func_80050028(D_8009A400[10], 0x82, 0xF1, 1);
+    HudDrawText(D_8009A400[10], 0x82, 0xF1, 1);
     i = 0;
     height = 0xF0;
     flag = 8;
@@ -6655,7 +6655,7 @@ void func_8006733C(void) {
     if (DrawSync(1) == 0) {
         D_800A3930++;
         func_80041AF0Arg(0);
-        input = func_80041B7C(0);
+        input = PadGetButtons(0);
         if (input & 0x1000) {
             flag = 1;
         } else if (input & 0x4000) {

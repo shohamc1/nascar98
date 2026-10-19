@@ -72,15 +72,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -109,7 +109,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -128,7 +128,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -136,14 +136,14 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 
 s32 VectorGetMagnitude2D(void *arg0) {
     s32 dx;
@@ -169,7 +169,7 @@ extern s32 D_800A2DF0Small asm("D_800A2DF0.NON_MATCHING");
 extern s32 D_800A2DF4Small asm("D_800A2DF4.NON_MATCHING");
 extern s32 D_800A3A90Small asm("D_800A3A90.NON_MATCHING");
 
-void func_8001FC6C(void) {
+void ReplayAllocBuffer(void) {
     s32 count;
     void *ptr;
     s32 quotient;
@@ -1261,7 +1261,7 @@ extern void func_8003F564(s8, s8);
 extern void func_800229B8(void);
 extern void func_80044248(void);
 extern s32 func_8002482C(s32, s32, s32 *);
-extern u32 func_80041BAC(s32);
+extern u32 PadGetType(s32);
 extern void func_80052FC4(s8);
 extern void func_8005301C(void);
 extern void func_80041444(s32);
@@ -1350,8 +1350,8 @@ void func_80023074(void) {
                 }
                 SceneInitRoadStrip();
             }
-            if (func_80041BAC(D_800A3620) == 2) {
-                D_800A2DF8 = func_80041B7C(D_800A3620);
+            if (PadGetType(D_800A3620) == 2) {
+                D_800A2DF8 = PadGetButtons(D_800A3620);
             }
             D_800A397CSmall = 1;
             func_80052FC4(0);
@@ -1389,12 +1389,12 @@ void func_80023074(void) {
     if (FAR_VAR(u8, gFarFlag2F9D) == 0) {
         SsSetMute(0);
     }
-    D_800A2DF8 = func_80041B7C(D_800A3620);
+    D_800A2DF8 = PadGetButtons(D_800A3620);
     D_800A39F0 = 0;
 }
 
 extern void func_8003CCE0(s32);
-extern void func_80024210(void);
+extern void CdApplyMixVolume(void);
 extern void func_8002F86C(void *, s32);
 extern void func_80044FF8(s32, s32);
 extern s8 D_800A2D0CControl asm("D_800A2D0CAbsolute");
@@ -1471,7 +1471,7 @@ void func_80023454(void) {
     /* Keep retail's frame gap and the switch table's 8-byte alignment. */
     asm(".section .rodata\n\t.align 3\n\t.text" : : "m"(frameGap[0]));
     if (D_800A397CControl != 2) {
-        buttons = func_80041B7C(D_800A3620Control);
+        buttons = PadGetButtons(D_800A3620Control);
         if (!(D_800A2ED0Control & 0xC)) {
             buttonBits = ~D_800A2DF8Control;
             asm volatile(""
@@ -1754,7 +1754,7 @@ void func_80023454(void) {
                             } else {
                                 D_800A3694Control = 50;
                             }
-                            func_80024210();
+                            CdApplyMixVolume();
                             break;
                         case 4:
                             func_8003F564(10, 10);
@@ -1802,7 +1802,7 @@ void func_80023454(void) {
                                 }
                                 D_800A2F94Control =
                                     D_800A3696Control * 127 / 100;
-                                func_8003FDE8(10, 127, 127);
+                                SoundSetSlotVolume(10, 127, 127);
                             }
                             break;
                         case 3:
@@ -1829,7 +1829,7 @@ void func_80023454(void) {
                                     }
                                 }
                                 *volume = volumeResult;
-                                func_80024210();
+                                CdApplyMixVolume();
                                 func_8003F564(10, 10);
                             }
                             break;
@@ -1896,7 +1896,7 @@ void func_80023454(void) {
     }
 }
 
-void func_80024210(void) {
+void CdApplyMixVolume(void) {
     CdlATV vol;
 
     if (D_800A3038[0x35] == 0) {
@@ -2468,7 +2468,7 @@ void func_80025F40(u8 *arg0, s32 arg1) {
     pos[1] = *(s32 *)(entry + 8);
     pos[2] = 0x4B;
     func_8001EEC4Args(arg0, arg1 & 0xFF);
-    func_8001F1D4(pos);
+    MatrixRotateVector(pos);
     pos[0] += *(s32 *)(arg0 + 0);
     pos[1] += *(s32 *)(arg0 + 4);
     pos[2] += *(s32 *)(arg0 + 8);
@@ -3622,7 +3622,7 @@ s32 CarHandleWallCollision(void *object) {
                 workspace.effect[1] = corners->y;
                 workspace.effect[2] = 0x4B;
                 func_8001EEC4((s32 *)car);
-                func_8001F1D4(&workspace.effect[0]);
+                MatrixRotateVector(&workspace.effect[0]);
                 workspace.effect[0] += car->x;
                 workspace.effect[1] += car->y;
                 workspace.effect[2] += car->z;
@@ -3795,7 +3795,7 @@ s32 CarHandleWallCollision(void *object) {
                 workspace.effect[1] = corners2[1].y;
                 workspace.effect[2] = 0x4B;
                 func_8001EEC4((s32 *)car);
-                func_8001F1D4(&workspace.effect[0]);
+                MatrixRotateVector(&workspace.effect[0]);
                 workspace.effect[0] += car->x;
                 workspace.effect[1] += car->y;
                 workspace.effect[2] += car->z;
@@ -4669,7 +4669,7 @@ void func_80029994(u8 *arg0, s32 arg1) {
         pos[1] = *(s32 *)(entry + 8);
         pos[2] = *(s32 *)(entry + 0xC);
         func_8001EEC4((s32 *)arg0);
-        func_8001F1D4(pos);
+        MatrixRotateVector(pos);
         pos[0] += *(s32 *)(arg0 + 0);
         pos[1] += *(s32 *)(arg0 + 4);
         pos[2] += *(s32 *)(arg0 + 8);
@@ -7038,7 +7038,7 @@ extern u8 *D_800A3574_b[] asm("D_800A3570.NON_MATCHING");
 extern s32 D_800A3630_nm asm("D_800A3630.NON_MATCHING");
 extern s32 D_800A2F30_nm[] asm("D_800A2F30.NON_MATCHING");
 extern u8 D_800AE99C_nm[] asm("D_800AE99C.NON_MATCHING");
-extern void func_8001E17C();
+extern void GraphicsSelectImageBank();
 void func_8002DC2C(void) {
     u8 *entry;
     s32 cursor;
@@ -7054,7 +7054,7 @@ void func_8002DC2C(void) {
     D_800A3630_nm = 0x18;
     D_800A3758_b[1] = D_800A353C_c[1];
     func_8003CDBC(0xA7, (void *)STACK_BLOCK_801A0000);
-    func_8001E17C(6);
+    GraphicsSelectImageBank(6);
     D_800A2F30_nm[0] = 0;
     cursor = 0;
     for (page = 0, first = 0; page < 1; page++, first += 5) {
@@ -8919,7 +8919,7 @@ void func_80031264(u8 *object) {
                   *(u16 *)(object + 0x388) & 0x3FF);
     func_8001EC38((s32 *)object);
     MatrixCombineState();
-    func_8001F8C0((s32 *)object);
+    MatrixStoreToObject((s32 *)object);
 }
 
 void OuterProduct0(s32 *, s32 *, s32 *);

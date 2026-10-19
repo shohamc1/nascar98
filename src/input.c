@@ -141,15 +141,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -178,7 +178,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -197,7 +197,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -205,16 +205,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -222,7 +222,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -366,7 +366,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 *handle);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -391,7 +391,7 @@ void SoundStart(void);
 void SoundShutdown(void);
 void SoundEnd(void);
 void func_8003EFC8(void);
-void func_8003EFE8(void);
+void SoundFreeVabBody(void);
 void SoundInitTables(void);
 void func_8003F060(s32 arg0);
 void func_8003F0CC(s32 arg0);
@@ -400,7 +400,7 @@ void SoundReloadVab(s32 arg0);
 void func_8003F23C(void);
 void func_8003F25C(void);
 void func_8003F284(void);
-void func_8003F2AC(s32 arg0, s32 arg1);
+void SoundSetReverbDepth(s32 arg0, s32 arg1);
 void SoundOpenSequence(void);
 void SoundSetSequenceLoop(s8 loopCount);
 void SoundPauseSequence(void);
@@ -408,7 +408,7 @@ void SoundPlaySequence(s8 playCount, u8 playMode);
 void SoundReplaySequence(void);
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume);
 void SoundStopSequence(void);
-s32 func_8003F4FC(s32 arg0);
+s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
@@ -463,7 +463,7 @@ void func_80041AF0(void) {
 }
 
 extern u16 D_8008CA04U16[] asm("D_8008CA04");
-s32 func_80041B7C(s32 index) {
+s32 PadGetButtons(s32 index) {
     return D_8008CA04U16[index * 4];
 }
 
@@ -474,7 +474,7 @@ u16 func_80041B94(s32 index) {
 /* Wall: retail computes the nibble before the 0xFF branch and keeps it
  * in a0 with a final move v0,a0 on both paths; our shapes either go
  * branchless (xori/sltu/negu) or compute after the branch. */
-u32 func_80041BAC(s32 arg0) {
+u32 PadGetType(s32 arg0) {
     s32 temp;
     s32 result;
 

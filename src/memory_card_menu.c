@@ -162,7 +162,7 @@ extern s32 func_8003702C(u8 *, u8 *);
 extern s32 D_800A37D0[];
 extern char *strcpy(char *, const char *);
 void SetPolyFT4(POLY_FT4 *);
-s32 func_80041B7C(s32);
+s32 PadGetButtons(s32);
 extern void func_8006DD28(u32 arg0, u32 arg1);
 extern void func_8006E484(u32 arg0, u32 arg1);
 extern void CardTestEvents(void);
@@ -255,15 +255,15 @@ void RandomCountMark(void);
 s32 RandomSeedGet(void);
 void RandomSeedSet(s32 seed);
 s32 RandomScaledGet(s32 scale);
-void func_80017D80(u8 *arg0);
+void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
-void func_8001832C(s8 *text, s32 x, s32 y, s32 scale);
+void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
 void func_80018588(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_80018BD4(s32 value, s32 x, s32 y, s32 scale);
+void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
 void func_800197D4(s32 kind, s32 x, s32 y);
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
 void func_8001C34C(void);
@@ -292,7 +292,7 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_8001DF60(void);
 void func_8001DFC8(void);
 Unk16 *func_8001E040(s32 i);
-void func_8001E050(s32 fileName);
+void GraphicsLoadImageBank(s32 fileName);
 void func_8001E230(s32 arg0, s32 arg1);
 void GraphicsLoadImageWithXOffset(s32 xOffset);
 void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
@@ -311,7 +311,7 @@ void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
 void MatrixCombineState(void);
 void func_8001F198(void);
-void func_8001F1D4(s32 *vec);
+void MatrixRotateVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
@@ -319,16 +319,16 @@ void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void func_8001F8C0(s32 *object);
+void MatrixStoreToObject(s32 *object);
 void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
 s32 func_8001FB80(void *arg0);
-s32 func_8001FBDC(s32 x, s32 y, s32 z);
+s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 s32 VectorGetMagnitude2D(void *arg0);
-void func_8001FC6C(void);
+void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
@@ -336,7 +336,7 @@ void func_80022CA4(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
-void func_80024210(void);
+void CdApplyMixVolume(void);
 s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
 void func_80025454(s32 track);
@@ -480,7 +480,7 @@ void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 func_8003C8B4(void);
 s32 FileSeek(s32 *handle);
-void func_8003C8C8(u8 *string);
+void TextToUpper(u8 *string);
 void *FileLoadToHeap(s32 arg0);
 void func_8003CA18(s32 arg0, s32 arg1);
 void func_8003CC48(void);
@@ -505,7 +505,7 @@ void SoundStart(void);
 void SoundShutdown(void);
 void SoundEnd(void);
 void func_8003EFC8(void);
-void func_8003EFE8(void);
+void SoundFreeVabBody(void);
 void SoundInitTables(void);
 void func_8003F060(s32 arg0);
 void func_8003F0CC(s32 arg0);
@@ -514,7 +514,7 @@ void SoundReloadVab(s32 arg0);
 void func_8003F23C(void);
 void func_8003F25C(void);
 void func_8003F284(void);
-void func_8003F2AC(s32 arg0, s32 arg1);
+void SoundSetReverbDepth(s32 arg0, s32 arg1);
 void SoundOpenSequence(void);
 void SoundSetSequenceLoop(s8 loopCount);
 void SoundPauseSequence(void);
@@ -522,7 +522,7 @@ void SoundPlaySequence(s8 playCount, u8 playMode);
 void SoundReplaySequence(void);
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume);
 void SoundStopSequence(void);
-s32 func_8003F4FC(s32 arg0);
+s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
@@ -545,9 +545,9 @@ void func_8004195C(void);
 void func_80041A28(void);
 void func_80041AD0(void);
 void func_80041AF0(void);
-s32 func_80041B7C(s32 index);
+s32 PadGetButtons(s32 index);
 u16 func_80041B94(s32 index);
-u32 func_80041BAC(s32 arg0);
+u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
 void func_80041DEC(void);
@@ -587,7 +587,7 @@ void func_8004FF3C(void);
 void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_800508E4(void);
 void GraphicsSetColor(u8 red, u8 green, u8 blue);
-s32 func_80050940(u8 *str);
+s32 HudTextWidth(u8 *str);
 void func_800514EC(u8 arg0, u8 arg1, u8 arg2);
 void func_800524A0(u8 *arg0, s8 arg1);
 void func_80052E18(void);
@@ -635,14 +635,14 @@ s32 CardEnableEvents(void);
 s32 CardCheckStatus(s32 arg0, u8 arg1);
 s32 CardFindFirstFile(char *path, struct DIRENTRY *entry);
 s32 CardFormat(s32 second);
-void func_80059C2C(void);
+void CardOpenEvents(void);
 void CardCloseEvents(void);
-void func_80059DC4(void);
-void func_80059E0C(void);
+void CardInit(void);
+void CardStop(void);
 s32 func_80059F0C(s32 arg0);
 s32 CardOpenFile(char *path, s32 flags);
-s32 func_8005A000(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
-s32 func_8005A0F0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
+s32 CardReadSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
+s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
 s32 CardCountOtherFileBlocks(s32 arg0, char *name);
 s32 func_8005A294(void);
 void CardTestEvents(void);
@@ -656,11 +656,11 @@ void func_8005A804(u8 a, u8 b, u8 c);
 void func_8005A818(u8 first, u8 second, u8 third);
 void func_8005A82C(void);
 s16 func_8005A84C(void);
-s16 func_8005AFF0(s8 arg0);
+s16 MenuCharWidth(s8 arg0);
 s32 func_8005B0E4(s16 arg0, s32 arg1);
-s32 func_8005B138(u8 *str);
+s32 TextCountLines(u8 *str);
 void func_8005B17C(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay);
-u8 *func_8005B2AC(void);
+u8 *MenuObjAlloc(void);
 void func_8005B2F0(void);
 void func_8005B300(void);
 u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
@@ -686,7 +686,7 @@ void func_8005DF08(s32 a, s32 b, s32 c, u8 flag);
 void func_8005DF50(s32 arg0, s32 arg1, s32 arg2);
 void func_8005E3DC(void);
 void func_8005E408(void);
-void func_8005E43C(s32 value);
+void MenuFormatLapText(s32 value);
 void func_8005E47C(void);
 void func_8005E4A4(u8 *table);
 void func_8005E550(s32 arg0);
@@ -782,13 +782,13 @@ void func_80067F34(s32 arg0, s32 arg1) {
     func_8005A7B8S32(2, 3);
     strcpy(buf, D_8009A474[0]);
     strcat(buf, (char *)D_8009A31C[arg1 & 0xFF]);
-    w = func_8005A8E0((s32)buf);
+    w = MenuStringWidth((s32)buf);
     sum = (0x140 - w) / 2;
     obj->unk6 = sum;
     obj->unkA = sum;
     obj->unk12 = obj->unk6;
     next = obj->unk1C;
-    w = func_8005A8E0((s32)D_8009A474[0]);
+    w = MenuStringWidth((s32)D_8009A474[0]);
     {
         s32 hdrH;
         UnkPacket0C *pktH;
@@ -1198,7 +1198,7 @@ void func_80068CE4(void) {
     strcat(buf, D_8009A498[0]);
     /* After the call, so the li lands in the call's delay slot. */
     y = 0x39;
-    titleW = func_8005A8E0((s32)buf);
+    titleW = MenuStringWidth((s32)buf);
     titleX = (0x140 - titleW) / 2;
     tail->unk6 = titleX;
     tail->unkA = titleX;
@@ -1210,7 +1210,7 @@ void func_80068CE4(void) {
     titlePkt->unk3 = 0;
     titlePkt->unk4 = 0x32;
     tail->unk1A = 0x32;
-    titleW = func_8005A8E0((s32)D_800B9B54);
+    titleW = MenuStringWidth((s32)D_800B9B54);
     obj = func_8005BF8C(tail->unk6 + titleW, 0x2A);
     obj->unk1A = 0x32;
     value = (s32)D_8009A498[0];
@@ -1666,7 +1666,7 @@ void func_80069AFC(s32 arg0) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_80069C60);
-INCLUDE_RODATA("asm/nonmatchings/memory_card_menu", D_8008FC60);
+INCLUDE_RODATA("asm/nonmatchings/memory_card_menu", sCardFileName);
 
 extern char *D_800A35F4;
 extern char *D_800A3604;
@@ -1684,7 +1684,7 @@ void func_80069E88(void) {
 
 extern u8 D_800A3938;
 extern u8 D_800A3808;
-extern u8 D_800A337C;
+extern u8 gCardSlot;
 s32 CardCheckStatus(s32 arg0, u8 arg1);
 
 s32 func_80069EB8(void) {
@@ -1692,14 +1692,14 @@ s32 func_80069EB8(void) {
     u8 formatResult;
     u8 result;
 
-    status = CardCheckStatus(D_800A337C, 0);
+    status = CardCheckStatus(gCardSlot, 0);
     D_800A3938 = status;
     if (status == 1) {
         result = 1;
     } else if (status == 2) {
         result = 2;
     } else {
-        formatResult = CardFormat(D_800A337C);
+        formatResult = CardFormat(gCardSlot);
         if (formatResult != 0) {
             D_800A3808 = 0;
             return 1;
@@ -1715,10 +1715,10 @@ s32 func_80069F30(void) {
     u8 status;
 
     D_800A3808 = 0;
-    if (D_800A337C == 0xFF) {
+    if (gCardSlot == 0xFF) {
         slot = 0;
     } else {
-        slot = D_800A337C;
+        slot = gCardSlot;
     }
     status = CardCheckStatus(slot, 0);
     D_800A3938 = status;
@@ -1727,7 +1727,7 @@ s32 func_80069F30(void) {
         return 0;
     }
     if (status == 2) {
-        if (D_800A337C == 0xFF) {
+        if (gCardSlot == 0xFF) {
             status = CardCheckStatus(1, 0);
             D_800A3938 = status;
         }
@@ -1740,13 +1740,13 @@ s32 func_80069F30(void) {
             return 0;
         case 0:
         case 3:
-            D_800A337C = 1;
+            gCardSlot = 1;
             break;
         }
     } else {
-        D_800A337C = slot;
+        gCardSlot = slot;
     }
-    status = func_80059F0C(D_800A337C);
+    status = func_80059F0C(gCardSlot);
     D_800A3938 = status;
     if (status == 2) {
         D_800A3808 = 2;
@@ -1783,21 +1783,21 @@ s32 func_8006A080(void) {
         }
         if (status != 2) {
             count++;
-            D_800A337C = i;
+            gCardSlot = i;
         }
         i++;
     } while ((u8)i < 2);
     if ((count & 0xFF) == 2) {
-        D_800A337C = 0;
+        gCardSlot = 0;
     }
     D_800A3808 = 0;
     return count & 0xFF;
 }
 
-extern char D_8008FC60[];
+extern char sCardFileName[];
 extern s32 CardCountOtherFileBlocks(s32, char *);
 u8 CardGetOtherFileBlocks(void) {
-    return CardCountOtherFileBlocks(D_800A337C, D_8008FC60);
+    return CardCountOtherFileBlocks(gCardSlot, sCardFileName);
 }
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006A15C);
@@ -1819,12 +1819,12 @@ s32 func_8006AA70(void) {
     u8 *clear;
 
     D_800A3808 = 0;
-    if (D_800A337C == 0) {
+    if (gCardSlot == 0) {
         memcpy(path, D_800A3380, 6);
     } else {
         memcpy(path, D_800A3388, 6);
     }
-    strcat(path, D_8008FC60);
+    strcat(path, sCardFileName);
     result = CardFindFirstFile(path, &entry);
     created = 0;
     if ((result & 0xFF) == 0) {
@@ -1841,13 +1841,13 @@ s32 func_8006AA70(void) {
         }
     }
     if (created != 0) {
-        if ((func_8005A0F0((s32)&entry, 0, 4, D_800A337C, (s32)D_8009B1E4) &
+        if ((CardWriteSectors((s32)&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
              0xFF) == 0) {
             D_800A3808 = 8;
             return 0;
         }
     }
-    if ((func_8005A0F0((s32)&entry, 4, 0x16, D_800A337C, (s32)D_800A3604) &
+    if ((CardWriteSectors((s32)&entry, 4, 0x16, gCardSlot, (s32)D_800A3604) &
          0xFF) == 0) {
         D_800A3808 = 8;
         return 0;
@@ -1858,7 +1858,8 @@ s32 func_8006AA70(void) {
         clear[4] = 0;
         clear[0x14] = 0;
         clear[0x34] = 0;
-        if ((func_8005A0F0((s32)&entry, 0x1A, 3, D_800A337C, (s32)D_800A3A0C) &
+        if ((CardWriteSectors((s32)&entry, 0x1A, 3, gCardSlot,
+                              (s32)D_800A3A0C) &
              0xFF) == 0) {
             D_800A3808 = 8;
             return 0;
@@ -2662,7 +2663,7 @@ void func_8006C5E4(s32 arg0) {
 
     obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
     entry = &D_8009A4C0[arg0 & 0xFF];
-    value = func_8005A8E0(*entry);
+    value = MenuStringWidth(*entry);
     value = (0x78 - value) / 2;
     *(s32 *)(obj + 8) = *entry;
     *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
@@ -2683,7 +2684,7 @@ void func_8006C5E4(s32 arg0) {
     offset = arg0 & 0xFF;
     tbl = D_8009A4C0;
     entry = tbl + offset;
-    value = func_8005A8E0(*entry);
+    value = MenuStringWidth(*entry);
     elem = *entry;
     temp = 0x78 - value;
     node = D_800A3A10[0];
@@ -2810,17 +2811,17 @@ finish:
     return result;
 }
 
-extern s32 func_8005AEC8(u32, void *);
+extern s32 MenuPrefixWidth(u32, void *);
 /* Expand the cursor helper here and in its caller with the same byte types. */
 #define CARD_MENU_CURSOR_BODY(finish, font, size, index, text, cursor, result) \
     {                                                                          \
         func_8005A7B8(font, size);                                             \
         if (*text == 0) {                                                      \
-            *cursor = func_8005AFF0(0x20);                                     \
+            *cursor = MenuCharWidth(0x20);                                     \
             finish(0);                                                         \
         } else {                                                               \
-            result = func_8005AEC8(index, text);                               \
-            *cursor = func_8005AFF0(text[index]);                              \
+            result = MenuPrefixWidth(index, text);                             \
+            *cursor = MenuCharWidth(text[index]);                              \
             finish(result);                                                    \
         }                                                                      \
     }
@@ -2833,7 +2834,7 @@ void func_8006C9DC(void) {
     *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
 }
 
-extern s16 func_8005AFF0(s8);
+extern s16 MenuCharWidth(s8);
 
 /* Keep the raw decrement and the byte index in separate values. */
 void func_8006C9F8(void) {
@@ -2993,12 +2994,12 @@ charJoined:
     func_8005A7B8(2, 2);
     cursor = *((u8 *)(entry + 5));
     if ((*new_var2) == 0) {
-        *((s16 *)(entry + 0x16)) = func_8005AFF0(0x20);
+        *((s16 *)(entry + 0x16)) = MenuCharWidth(0x20);
         result = 0;
     } else {
-        func_8005AEC8(cursor, new_var);
+        MenuPrefixWidth(cursor, new_var);
         result = (*((s16 *)(entry + 0x16)) =
-                      func_8005AFF0(*((s8 *)(new_var + cursor))));
+                      MenuCharWidth(*((s8 *)(new_var + cursor))));
     }
     *((s16 *)(entry + 6)) = result + 0xA;
 }
@@ -3022,11 +3023,11 @@ void func_8006CE64(void) {
     entry = ((s8 *)D_800B0A2C) + ((index = D_800A358C) * 0x10);
     func_8005A7B8S32(2, 2);
     if ((*entry) == 0) {
-        *((s16 *)(obj + 0x16)) = func_8005AFF0(0x20);
+        *((s16 *)(obj + 0x16)) = MenuCharWidth(0x20);
         status = 0;
     } else {
-        status = func_8005AEC8(0, entry);
-        *((s16 *)(obj + 0x16)) = func_8005AFF0(*entry);
+        status = MenuPrefixWidth(0, entry);
+        *((s16 *)(obj + 0x16)) = MenuCharWidth(*entry);
     }
     *((s16 *)(obj + 6)) = status + 0xA;
 }
@@ -3071,11 +3072,11 @@ void func_8006CF90(u32 mode) {
     func_8005A7B8S32(2, 2);
     ch = *entry;
     if (ch == 0) {
-        *(u16 *)(st + 0x16) = func_8005AFF0(0x20);
+        *(u16 *)(st + 0x16) = MenuCharWidth(0x20);
         result = 0;
     } else {
-        result = func_8005AEC8(idx, entry);
-        *(u16 *)(st + 0x16) = func_8005AFF0(*(s8 *)(entry + idx));
+        result = MenuPrefixWidth(idx, entry);
+        *(u16 *)(st + 0x16) = MenuCharWidth(*(s8 *)(entry + idx));
     }
     *(u16 *)(st + 6) = result + 10;
 }
@@ -3156,7 +3157,7 @@ s32 func_8006D258(void) {
     u8 *paint;
 
     func_800599E4();
-    status = CardCheckStatus(D_800A337C, 1);
+    status = CardCheckStatus(gCardSlot, 1);
     func_800598C4();
     status &= 0xFF;
     if (status == 3) {
@@ -3426,7 +3427,7 @@ extern u8 *D_800A377C[];
 extern u8 D_800A3808;
 extern u8 *D_800A3908[];
 extern u8 D_800A3808;
-extern u8 D_800A337C;
+extern u8 gCardSlot;
 extern s32 D_8009AB80[];
 extern s32 D_8009AB00[];
 extern u8 *D_800A377C[];
@@ -3443,19 +3444,19 @@ void func_8006D8E8(s32 arg0) {
     menuId = D_800A3808;
     field20 = *((u8 **)(obj + 0x20));
     if (menuId == 0x1C) {
-        if (D_800A337C != 0) {
+        if (gCardSlot != 0) {
             menuId = 0x1D;
         } else {
             menuId = 0x1C;
         }
     } else if (menuId == 0x1E) {
-        if (D_800A337C != 0) {
+        if (gCardSlot != 0) {
             menuId = 0x1F;
         } else {
             menuId = 0x1E;
         }
     } else if (menuId == 0xD) {
-        if (D_800A337C != 0) {
+        if (gCardSlot != 0) {
             menuId = 0x1A;
         } else {
             menuId = 0x19;
@@ -3561,12 +3562,12 @@ void func_8006DA40(void) {
         idx = 0x1B;
     } else if (err == 0x1C) {
         idx = 0x1C;
-        if (D_800A337C == 1) {
+        if (gCardSlot == 1) {
             idx = 0x1D;
         }
     } else if (err == 0xD) {
         idx = 0x19;
-        if (D_800A337C == 1) {
+        if (gCardSlot == 1) {
             idx = 0x1A;
         }
     }
