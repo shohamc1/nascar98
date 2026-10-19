@@ -149,10 +149,10 @@ Near misses are where time goes. Follow these rules:
 - SDK functions whose Psy-Q source was assembly (BIOS table thunks,
   `syscall` trappers, COP0 and GTE coprocessor moves) are written as
   source, not kept as `INCLUDE_ASM`: the `ASM_FUNC` macro in
-  `src/psxsdk.c` for shapes no compiler emits (tail jumps, delay-slot
-  games), or plain C with the body in one `asm` string when the target
-  ends in `jr $ra; nop`. Transcribe each function's trailing nops from
-  its `.s` tail — they are retail's inter-function padding. See "SDK
+  `include/psxsdk_internal.h` for shapes no compiler emits (tail jumps,
+  delay-slot games), or plain C with the body in one `asm` string when
+  the target ends in `jr $ra; nop`. Transcribe each function's trailing
+  nops from its `.s` tail — they are retail's inter-function padding. See "SDK
   functions whose original source was asm" in `kb/psx/matching.md`.
 
 ## Name things as you learn them
@@ -241,8 +241,11 @@ builds schedule differently from retail, so use them for allocation and
 structure, not for instruction order. Don't change the default to fit one
 function.
 
-`src/psxsdk.c` is the exception: the Psy-Q libraries came from GNU C
-2.6.3, so `tools/cc1-263.sh` compiles that file, not `CC_VER`. The binary
+`src/psxsdk/` is the exception: the Psy-Q libraries came from GNU C
+2.6.3, so `tools/cc1-263.sh` compiles those files, not `CC_VER`. The
+directory holds one file per library: `crt0.c`, `libgcc.c`, `libapi.c`,
+`libcd.c`, `libetc.c`, `libgpu.c`, `libgs.c`, `libgte.c`, `libsnd.c`,
+`libspu.c`, `libc.c`, `libcard.c`, and `libpress.c`. The binary
 is Linux i386; the script runs it directly on x86 Linux and in Docker
 (`--platform linux/386`) everywhere else. `make tools` downloads it. Tune
 SDK C against 2.6.3. Spellings tuned for 2.7.2 often don't carry over; see

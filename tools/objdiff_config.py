@@ -12,8 +12,9 @@ import json
 import pathlib
 import sys
 
-# Objects that hold code, by progress category.
-SDK_C = "src/psxsdk.c"
+# Objects that hold code, by progress category: the Psy-Q libraries are
+# the files under src/psxsdk/.
+SDK_DIR = "psxsdk"
 
 # Data-only objects, tracked like sotn-decomp's asm data units. No .bss:
 # objdiff counts it as matched because it has no bytes to compare. The
@@ -38,7 +39,7 @@ def unit(src: pathlib.Path, category: str | None) -> dict:
 
 def main() -> None:
     units = [
-        unit(p, "sdk" if str(p) == SDK_C else "game")
+        unit(p, "sdk" if SDK_DIR in p.parts else "game")
         for p in sorted(pathlib.Path("src").rglob("*.c"))
     ] + [unit(pathlib.Path(s), None) for s in DATA_S]
     config = {

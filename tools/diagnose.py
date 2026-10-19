@@ -172,7 +172,7 @@ def find_offenders(syms: dict):
     label-delta quirks), per kb/psx/matching.md 'Length errors'."""
     offenders = {}
     for path in pathlib.Path("asm/nonmatchings").rglob("*.s"):
-        if path.parent.name == "psxsdk":
+        if "psxsdk" in path.parts:
             continue
         m = re.match(r"nonmatching (\w+), (0x[0-9A-Fa-f]+)",
                      path.read_text().splitlines()[0])

@@ -81,7 +81,19 @@ segments:
       # Psy-Q runtime and SDK libraries, from __SN_ENTRY_POINT on.
       # tools/psyq_sigs.py identifies the objects (libs 3.5, LIBSND and
       # LIBGTE 3.6).
-      - [0x6268C, c, psxsdk]
+      - [0x6268C, c, psxsdk/crt0]  # 0x80073E8C
+      - [0x6280C, c, psxsdk/libgcc]  # 0x8007400C
+      - [0x62ED8, c, psxsdk/libapi]  # 0x800746D8
+      - [0x631C0, c, psxsdk/libcd]  # 0x800749C0
+      - [0x6597C, c, psxsdk/libetc]  # 0x8007717C
+      - [0x666B8, c, psxsdk/libgpu]  # 0x80077EB8
+      - [0x6AA28, c, psxsdk/libgs]  # 0x8007C228
+      - [0x6AB0C, c, psxsdk/libgte]  # 0x8007C30C
+      - [0x6C51C, c, psxsdk/libsnd]  # 0x8007DD1C
+      - [0x764C0, c, psxsdk/libspu]  # 0x80087CC0
+      - [0x79F90, c, psxsdk/libc]  # 0x8008B790
+      - [0x7AA2C, c, psxsdk/libcard]  # 0x8008C22C
+      - [0x7AAF4, c, psxsdk/libpress]  # 0x8008C2F4
       # Game rodata, migrated per-function into asm/nonmatchings/game/.
       # 0x7E810 is 0x80090010: the first SDK division table (D_80090010);
       # the game/SDK rodata boundary is inferred, see kb/.
@@ -98,7 +110,14 @@ segments:
       - [0x7E1C0, .rodata, menu]  # 0x8008F9C0
       - [0x7E214, .rodata, memory_card_menu]  # 0x8008FA14
       - [0x7E470, .rodata, media]  # 0x8008FC70
-      - [0x7E810, .rodata, psxsdk]
+      - [0x7E810, .rodata, psxsdk/libgcc]  # 0x80090010
+      - [0x7E910, .rodata, psxsdk/libcd]  # 0x80090110
+      - [0x7EC04, .rodata, psxsdk/libetc]  # 0x80090404
+      - [0x7ECC4, .rodata, psxsdk/libgpu]  # 0x800904C4
+      - [0x7F04C, .rodata, psxsdk/libsnd]  # 0x8009084C
+      - [0x7F338, .rodata, psxsdk/libspu]  # 0x80090B38
+      - [0x7F440, .rodata, psxsdk/libc]  # 0x80090C40
+      - [0x7F51C, .rodata, psxsdk/libpress]  # 0x80090D1C
       # LIBPRESS strings end here; game data starts at 0x80090DC8.
       # This section boundary is inferred; see kb/ for the evidence.
       - [0x7F5C8, data, data]

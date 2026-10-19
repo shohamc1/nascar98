@@ -1,6 +1,6 @@
 # Reused Psy-Q C source
 
-Most C implementations in `psxsdk.c` come from
+Most C implementations in `src/psxsdk/` come from
 [Xeeynamo/sotn-decomp](https://github.com/Xeeynamo/sotn-decomp) at commit
 `d818995ec49ef76e3b1625a96f4360108b3168be`. The imported files are under
 `src/main/psxsdk/`: `libgpu`, `libcd`, `libc`, `libetc`, `libgte`, `libsnd`,

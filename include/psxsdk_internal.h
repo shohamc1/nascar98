@@ -197,4 +197,24 @@ static __inline__ u16 GetSvmVoice(void) {
     return _svm_cur.voice;
 }
 
+#define LOW(x) (*(u32 *)&(x))
+
+/* SDK functions whose Psy-Q source was assembly: BIOS table thunks and
+ * GTE coprocessor moves no compiler emits. The wrapper's label and
+ * epilogue are dropped by maspsx exactly as for INCLUDE_ASM (see
+ * include/include_asm.h); the "# maspsx-keep" lines are the function. */
+#define ASM_FUNC(name, body)                                                   \
+    void __maspsx_include_asm_hack_##name(void) {                              \
+        __asm__(".text # maspsx-keep\n"                                        \
+                "    .align 2 # maspsx-keep\n"                                 \
+                "    .globl " #name " # maspsx-keep\n"                         \
+                "    .ent " #name " # maspsx-keep\n"                           \
+                "    " #name ": # maspsx-keep\n"                               \
+                "    .set noat # maspsx-keep\n"                                \
+                "    .set noreorder # maspsx-keep\n" body                      \
+                "    .set reorder # maspsx-keep\n"                             \
+                "    .set at # maspsx-keep\n"                                  \
+                "    .end " #name " # maspsx-keep\n");                         \
+    }
+
 #endif

@@ -537,17 +537,6 @@ LDFLAGS += \
             --defsym=D_800A36E1Absolute=D_800A36E1 \
             --defsym=D_800A3A94Absolute=D_800A3A94
 
-# SDK C uses the game flags above. The Psy-Q libraries came from GNU C 2.6.3,
-# not the game's 2.7.2.SN.1: see "SDK compiler" in kb/psx/toolchain.md.
-# tools/cc1-263.sh runs it (Docker off x86 Linux).
-build/src/psxsdk.c.o: CC1 := tools/cc1-263.sh
-build/src/psxsdk.c.o: tools/cc1-263.sh
-
-# The Psy-Q libraries reach no global through $gp (the SDK range of the
-# retail EXE has no gp-relative access), so they came from -G0. Compile
-# psxsdk.c the same way: a plain `extern` scalar then loads with lui/lw.
-build/src/psxsdk.c.o: CFLAGS := $(subst -G$(GP_SIZE),-G0,$(CFLAGS))
-
 # src/globals.c owns the former .sdata range. splat emits no .sdata
 # collection for c subsegments, so compile with -G0: every literal lands
 # in .data, and the linker script places globals.c.o(.data) — the last
@@ -567,6 +556,18 @@ endif
 C_FILES := $(shell find src -name '*.c' 2>/dev/null)
 S_FILES := $(shell find asm -name '*.s' -not -path 'asm/nonmatchings/*' 2>/dev/null)
 O_FILES := $(C_FILES:%=build/%.o) $(S_FILES:%=build/%.o)
+
+# SDK C (src/psxsdk/) uses the game flags above. The Psy-Q libraries came
+# from GNU C 2.6.3, not the game's 2.7.2.SN.1: see "SDK compiler" in
+# kb/psx/toolchain.md. tools/cc1-263.sh runs it (Docker off x86 Linux).
+SDK_O_FILES := $(filter build/src/psxsdk/%,$(O_FILES))
+$(SDK_O_FILES): CC1 := tools/cc1-263.sh
+$(SDK_O_FILES): tools/cc1-263.sh
+
+# The Psy-Q libraries reach no global through $gp (the SDK range of the
+# retail EXE has no gp-relative access), so they came from -G0. Compile
+# them the same way: a plain `extern` scalar then loads with lui/lw.
+$(SDK_O_FILES): CFLAGS := $(subst -G$(GP_SIZE),-G0,$(CFLAGS))
 
 OBJDIFF := tools/bin/objdiff-cli
 OBJDIFF_VER := v3.8.2

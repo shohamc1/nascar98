@@ -8,8 +8,8 @@ here ignores the .rodata/.data/.bss shifts a size change causes.
 
     SDK=1 .venv/bin/python tools/quickdiff.py <tu.c> <func>
 
-SDK=1 picks the SDK compiler (GNU C 2.6.3, -mcpu=r3000) that src/psxsdk.c
-uses; CC1 and CPU override either choice.
+SDK=1 picks the SDK compiler (GNU C 2.6.3, -mcpu=r3000) that the files in
+src/psxsdk/ use; CC1 and CPU override either choice.
 """
 
 import glob
@@ -30,7 +30,7 @@ REGNAME = ("zero at v0 v1 a0 a1 a2 a3 t0 t1 t2 t3 t4 t5 t6 t7 s0 s1 s2 s3 s4 s5 
 
 
 def compile_tu(tu: str, obj: str) -> None:
-    sdk = "psxsdk.c" in tu or os.environ.get("SDK") == "1"
+    sdk = "psxsdk" in os.path.normpath(tu).split(os.sep) or os.environ.get("SDK") == "1"
     cc1 = os.environ.get("CC1") or (
         "tools/cc1-263.sh" if sdk else "tools/cc/2.7.2-psx-nascar98/cc1")
     cpu = os.environ.get("CPU") or ("r3000" if sdk else "r4000")
