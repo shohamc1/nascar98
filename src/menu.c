@@ -6752,7 +6752,132 @@ void func_800679C4(u8 arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80067AB4);
+void func_80067AB4(void) {
+    extern s32 D_8008CA4C[];
+    extern u8 *D_800A39C8Ptr[] asm("D_800A39C8");
+    extern u8 *D_8009A400[];
+    extern u8 *D_8009A428[];
+    extern DISPENV D_800BDE04[];
+    extern DRAWENV D_800BDD4C[];
+    extern volatile s32 D_800A3930;
+    extern volatile u16 D_800A3940;
+    extern u8 *D_800A3568;
+    extern s32 D_800A367C;
+    extern u8 *D_800A3970;
+    extern u16 *D_800A387C;
+    extern u16 *D_800A36BC;
+    extern u8 D_800A36A0;
+    extern u8 D_800A3884;
+    extern volatile u8 D_800A3360;
+    extern s32 GetGp(void);
+    extern void func_80058D08(s32);
+    s32 oldGp;
+    u16 *baseA;
+    u16 *baseB;
+    u16 *baseB2;
+    POLY_FT4 *quad;
+    POLY_FT4 *quad2;
+    s32 i;
+    s32 len;
+    u16 rawShift;
+    s8 shift;
+    u32 unused[4]; /* retail reserves 16 bytes of locals nothing touches */
+
+    oldGp = GetGp();
+    func_80058D08(D_8008CA4C[0]);
+    if (DrawSync(1) == 0) {
+        if (*(volatile u8 *)&D_800A3884 == 1) {
+            baseA = D_800A387C;
+            baseB = (u16 *)D_800A39C8Ptr[0];
+            len = strlen(D_8009A400[0]);
+            baseB2 = baseB + 0x2000;
+            i = 0;
+            if (len > 0) {
+                quad = (POLY_FT4 *)baseA;
+                i = 0;
+                do {
+                    quad->y0 = 0xF1;
+                    quad->y1 = 0xF1;
+                    quad->y2 = 0xF1;
+                    quad->y3 = 0xF1;
+                    if (quad < (POLY_FT4 *)baseB2) {
+                        quad++;
+                    } else {
+                        quad--;
+                    }
+                    i++;
+                } while (i < len);
+            }
+            baseA = D_800A36BC;
+            len = strlen(D_8009A428[0]);
+            if (len > 0) {
+                quad2 = (POLY_FT4 *)baseA;
+                i = 0;
+                do {
+                    quad2->y0 -= 0x1B;
+                    quad2->y1 -= 0x1B;
+                    quad2->y2 -= 0x1B;
+                    quad2->y3 -= 0x1B;
+                    if (baseA < baseB2) {
+                        quad2++;
+                        baseA += 0x14;
+                    } else {
+                        quad2--;
+                        baseA -= 0x14;
+                    }
+                    i++;
+                } while (i < len);
+            }
+            D_800A3884 = 2;
+        }
+        PutDispEnv(&D_800BDE04[D_800A36A0]);
+        PutDrawEnv(
+            (DRAWENV *)((s32)D_800BDD4C + (*(volatile u8 *)&D_800A36A0) * 92));
+        if (D_800A3940 != 0) {
+            u16 *base;
+            u16 *limit;
+            rawShift = D_800A3940;
+            asm volatile("" ::: "memory");
+            base = (u16 *)D_800A3568;
+            limit = (u16 *)D_800A367C;
+            shift = rawShift;
+            if (base < limit) {
+                POLY_FT4 *quad3;
+                quad3 = (POLY_FT4 *)base;
+                do {
+                    quad3->x0 += (s8)shift;
+                    quad3->x1 += (s8)shift;
+                    quad3->x2 += (s8)shift;
+                    quad3->x3 += (s8)shift;
+                    quad3++;
+                } while ((u16 *)quad3 < limit);
+            }
+            base = (u16 *)D_800A367C;
+            limit = (u16 *)D_800A3970;
+            if (base < limit) {
+                POLY_GT4 *quad4;
+                quad4 = (POLY_GT4 *)base;
+                do {
+                    quad4->x0 -= (s8)shift;
+                    quad4->x1 -= (s8)shift;
+                    quad4->x2 -= (s8)shift;
+                    quad4->x3 -= (s8)shift;
+                    quad4++;
+                } while ((u16 *)quad4 < limit);
+            }
+            if (D_800A3930 + (s16)D_800A3940 > 0) {
+                D_800A3940 = -D_800A3930;
+            } else {
+                D_800A3940 = D_800A3940 + (s16)D_800A3940 / 4;
+            }
+            D_800A3930 = D_800A3930 + (s16)D_800A3940;
+        }
+        DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0x1FC));
+        D_800A36A0 ^= 1;
+    }
+    D_800A3360 = 1;
+    asm("addu $gp, %0, $zero" : : "r"(oldGp));
+}
 
 /*
  * w4d: this TU position (after the func_80067AB4 slot) matches retail
