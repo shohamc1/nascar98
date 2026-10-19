@@ -4765,7 +4765,114 @@ void func_800631B4(void) {
     D_800A3984[0] = (s32)HeapAlloc(0xF00);
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_800631DC);
+extern u8 *D_800A35E4[];
+extern char *D_8009AC1C[];
+extern u8 *D_800A3868[];
+extern u8 *func_8005BF8C(s32, s32);
+extern u8 *func_8005B314(s32, s32, s32, s32, s32, u8, u8, u8, u8, u8);
+extern void func_80067EA4(struct UnkObject24 *, u8, u8, s32, u8, s32);
+extern u8 D_800A36E0[];
+
+void func_800631DC(s32 left, s32 top, s32 code) {
+    u8 *node;
+    u8 *entry;
+    s32 mode;
+    s32 base;
+    s32 x;
+    u8 *object;
+    s32 xoff;
+    s32 y;
+    s32 dx;
+    s32 dy;
+    s32 i;
+    s32 j;
+    register s32 k asm("$18");
+    u8 *packet;
+    s32 width;
+
+    func_8005A7B8(2, 2);
+    if (D_800A39E4[0] == 0xE) {
+        base = 0x9E;
+    } else {
+        base = 0x3A;
+    }
+    entry = D_800A3554[0];
+    for (i = 0; i < 2; i++) {
+        node = func_8005B2AC();
+        mode = D_800A39E4[0];
+        D_800A35E4[i] = node;
+        *(s16 *)(node + 0) = 4;
+        *(s16 *)(node + 0x6) = left;
+        *(s16 *)(node + 0xA) = top;
+        *(s16 *)(node + 0x8) = base;
+        *(s16 *)(node + 0xC) = base;
+        *(s16 *)(node + 0xE) = code;
+        *(s16 *)(node + 0x10) = 0;
+        if (mode != 0xE) {
+            base += 0x33;
+        }
+        *(u8 **)(node + 0x20) = entry;
+        entry = *(u8 **)(entry + 0x3E0);
+        if (mode == 7 || mode == 0xE) {
+            continue;
+        }
+        x = func_8005B0E4(0x64, (s32)D_8009AC1C[D_800A36E0[i]]) - 0x32;
+        object = func_8005BF8C(left + x, base - 6);
+        *(s16 *)(object + 0xA) = top + x;
+        *(s16 *)(object + 0x12) = x;
+        *(s16 *)(object + 0xE) = code;
+        func_80067EA4((struct UnkObject24 *)object, 2, 2,
+                      (s32)D_8009AC1C[D_800A36E0[i]], 0, 0);
+        *(u8 **)(node + 0x1C) = object;
+        node = object;
+        D_800A3868[i] = node;
+        width = 0x32;
+        for (j = 0; j < 4; j++) {
+            xoff = -0x32;
+            y = base - 9;
+            switch (j) {
+            case 0:
+                dx = 0;
+                dy = 0;
+                break;
+            case 1:
+                y = base - 2;
+                dx = 0;
+                dy = 0x29;
+                break;
+            case 2:
+                xoff = 0;
+                dx = 0x46;
+                dy = 0;
+                break;
+            case 3:
+                xoff = 0;
+                y = base - 2;
+                dx = 0x46;
+                dy = 0x29;
+                break;
+            }
+            object = func_8005B598(left + xoff, y, width, 7, 1, 1, 0);
+            packet = *(u8 **)(object + 0x20);
+            *(s16 *)(object + 0x12) = xoff;
+            *(s16 *)(object + 0xA) = top + xoff;
+            *(s16 *)(object + 0xE) = code;
+            func_8005B17C(packet, 9, dx, dy, width, 7);
+            *(u8 **)(node + 0x1C) = object;
+            node = object;
+        }
+        for (k = 0; k < 2; k++) {
+            object = func_8005B314(left - 0x32, base - 9, 0x64, 0xE, 0, 0x20,
+                                   0x20, 0x40, 1, 1);
+            *(s16 *)(object + 0x1A) = 3;
+            *(s16 *)(object + 0x12) = -0x32;
+            *(s16 *)(object + 0xA) = top - 0x32;
+            *(s16 *)(object + 0xE) = code;
+            *(u8 **)(node + 0x1C) = object;
+            node = object;
+        }
+    }
+}
 
 void func_80063538(s32 arg0, s32 arg1) {
     extern u8 *func_8005B474(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32,
