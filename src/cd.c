@@ -765,6 +765,7 @@ INCLUDE_ASM("asm/nonmatchings/cd", func_8003CF0C);
 
 extern s32 D_800A2F84nm asm("D_800A2F84.NON_MATCHING");
 extern void func_800414E0(void *, s32, s32);
+extern s32 func_80041B7C(s32);
 
 extern s32 D_800A3A04Lui asm("D_800A3A04Absolute");
 void func_8003D25C(u8 *object) {
@@ -963,7 +964,101 @@ void func_8003D6F8(u8 *object) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003D754);
+void func_8003D754(u8 *object) {
+    s32 buttons;
+
+    buttons = func_80041B7C(*(s8 *)(object + 0x20B));
+    if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x1000)) {
+        *(u8 *)(object + 0x26B) -= 1;
+        func_800414E0(object, 10, 6);
+    } else if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x4000)) {
+        *(u8 *)(object + 0x26B) += 1;
+        func_800414E0(object, 10, 6);
+    }
+    *(u8 *)(object + 0x26B) = (*(u8 *)(object + 0x26B) + 4) % 4;
+    if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x8000)) {
+        func_800414E0(object, 10, 6);
+        switch (*(u8 *)(object + 0x26B)) {
+        case 0:
+            if (*(u8 *)(object + 0x26A) & 1) {
+                *(u8 *)(object + 0x26A) &= 0xFE;
+            } else {
+                *(u8 *)(object + 0x26A) |= 1;
+            }
+            break;
+        case 1:
+            if (*(u8 *)(object + 0x26A) & 2) {
+                *(u8 *)(object + 0x26A) &= 0xFD;
+            } else {
+                *(u8 *)(object + 0x26A) |= 2;
+            }
+            break;
+        case 2:
+            if (*(s16 *)(object + 0x2AA) >= -7) {
+                *(u16 *)(object + 0x2A8) -= 1;
+                *(u16 *)(object + 0x2AA) -= 1;
+            }
+            break;
+        case 3:
+            if (*(s16 *)(object + 0x2A4) >= -7) {
+                *(u16 *)(object + 0x2A2) -= 1;
+                *(u16 *)(object + 0x2A4) -= 1;
+            }
+            break;
+        }
+        if (*(s16 *)(object + 0x2A2) < -16) {
+            *(s16 *)(object + 0x2A2) = -16;
+        }
+        if (*(s16 *)(object + 0x2A8) < -16) {
+            *(s16 *)(object + 0x2A8) = -16;
+        }
+    }
+    if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x2000)) {
+        func_800414E0(object, 10, 6);
+        switch (*(u8 *)(object + 0x26B)) {
+        case 0:
+            if (*(u8 *)(object + 0x26A) & 1) {
+                *(u8 *)(object + 0x26A) &= 0xFE;
+            } else {
+                *(u8 *)(object + 0x26A) |= 1;
+            }
+            break;
+        case 1:
+            if (*(u8 *)(object + 0x26A) & 2) {
+                *(u8 *)(object + 0x26A) &= 0xFD;
+            } else {
+                *(u8 *)(object + 0x26A) |= 2;
+            }
+            break;
+        case 2:
+            if (*(s16 *)(object + 0x2AA) < 8) {
+                *(u16 *)(object + 0x2A8) += 1;
+                *(u16 *)(object + 0x2AA) += 1;
+            }
+            break;
+        case 3:
+            if (*(s16 *)(object + 0x2A4) < 8) {
+                *(u16 *)(object + 0x2A2) += 1;
+                *(u16 *)(object + 0x2A4) += 1;
+            }
+            break;
+        }
+        if (*(s16 *)(object + 0x2A2) >= 17) {
+            *(s16 *)(object + 0x2A2) = 16;
+        }
+        if (*(s16 *)(object + 0x2A8) >= 17) {
+            *(s16 *)(object + 0x2A8) = 16;
+        }
+    }
+    *(u8 *)(object + 0x26A) &= 0xF3;
+    if (*(s16 *)(object + 0x2A2) != 0) {
+        *(u8 *)(object + 0x26A) |= 4;
+    }
+    if (*(s16 *)(object + 0x2A8) != 0) {
+        *(u8 *)(object + 0x26A) |= 8;
+    }
+    *(s32 *)(object + 0x238) = buttons;
+}
 
 s32 func_8003DAD0(s32 a, s32 b) {
     if (b >= D_800BE974[0]) {
