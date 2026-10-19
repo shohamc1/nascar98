@@ -837,7 +837,128 @@ void func_8006E484(u32 arg0, u32 arg1);
 INCLUDE_ASM("asm/nonmatchings/media", func_8006E770);
 INCLUDE_RODATA("asm/nonmatchings/media", D_8008FCA4);
 
+#ifdef NON_MATCHING
+extern void *D_800A3A24[];
+extern u8 D_800A307C[];
+extern u8 D_800AEE3C[];
+extern u8 D_800AEE3D[];
+extern u8 D_800AEE3E[];
+extern u16 func_80041BFC(u8 *);
+
+void func_8006EB18(u8 *obj) {
+    u8 scratch[0x500];
+    u8 *padState;
+    u8 id;
+    u8 type;
+    u8 sub;
+    u8 value;
+    u8 denom;
+    u8 rate;
+    s32 base9;
+    s32 idx;
+    s32 idx6;
+    s32 i;
+
+    id = obj[0x20B];
+    scratch[0x20B] = id;
+    func_80041BFC(scratch);
+    i = 0;
+    padState = scratch;
+    base9 = id * 9;
+    idx6 = base9 + 6;
+    for (; i < 3; i++) {
+        idx = base9 + i * 3;
+        type = ((u8 *)D_800A3A24)[id];
+        sub = D_800A307C[id];
+        switch ((u8)i) {
+        case 0:
+            if (type != 2 || (sub != 0 && sub != 2)) {
+                value = padState[0x3C6];
+            } else {
+                value = scratch[0x3C7];
+            }
+            break;
+        case 1:
+            if (type == 2 && sub != 0 && sub != 2) {
+                value = scratch[0x3C7];
+            } else {
+                value = scratch[0x3C6];
+            }
+            break;
+        case 2:
+            if (type == 2 && (u8)(sub - 2) < 2) {
+                value = (u8)~scratch[0x3C5];
+            } else {
+                value = scratch[0x3C5];
+            }
+            break;
+        }
+        if (i == 2) {
+            u8 target2;
+            target2 = D_800AEE3E[idx6];
+            if (value < target2 - 4) {
+                value = target2 - value;
+                denom = target2 - D_800AEE3C[idx6];
+                rate = value * 127 / denom;
+                if (rate >= 0x80) {
+                    rate = 0x7F;
+                }
+                obj[0x3C5] = -rate;
+            } else if (target2 + 4 < value) {
+                value = value - target2;
+                denom = D_800AEE3D[idx6] - target2;
+                rate = value * 127 / denom;
+                if (rate >= 0x80) {
+                    rate = 0x7F;
+                }
+                obj[0x3C5] = rate;
+            } else {
+                obj[0x3C5] = 0;
+            }
+        } else {
+            if (((s8 *)D_800A3A24)[id] >= 5) {
+                if (i == 0) {
+                    u8 target0;
+                    target0 = D_800AEE3E[base9];
+                    if (value < target0 - 4) {
+                        value = target0 - value;
+                    } else {
+                        value = 0;
+                    }
+                    denom = D_800AEE3E[idx] - D_800AEE3D[idx];
+                } else {
+                    u8 target1;
+                    target1 = D_800AEE3E[idx];
+                    if (target1 + 4 < value) {
+                        value = value - target1;
+                    } else {
+                        value = 0;
+                    }
+                    denom = D_800AEE3D[idx] - D_800AEE3E[idx];
+                }
+            } else {
+                if (value < 9) {
+                    value = 0;
+                }
+                denom = D_800AEE3D[idx] - D_800AEE3C[idx];
+            }
+            if (value > denom) {
+                value = denom;
+            }
+            rate = value * 255 / denom;
+            if (i == 0) {
+                obj[0x3C6] = rate;
+            } else {
+                obj[0x3C7] = rate;
+            }
+        }
+    }
+}
+
+
+#else
 INCLUDE_ASM("asm/nonmatchings/media", func_8006EB18);
+#endif
 
 extern u8 D_800AD984[];
 void func_8006EEBC(void) {
