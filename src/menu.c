@@ -5255,7 +5255,122 @@ void func_800641EC(void) {
     D_800A3358 = value;
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80064208);
+extern u8 D_800A3060[];
+extern s8 D_800A39FC;
+extern s8 D_800A3594;
+extern s8 D_800A3A14;
+extern u8 *D_800A3744[];
+extern u8 *D_800A3958[];
+extern u8 *D_800A38FC[];
+extern u8 *D_800A3900[];
+extern u8 *D_800A39A0[];
+extern u8 *D_800A35E0Alias[] asm("D_800A35E0Absolute");
+extern u8 func_8006AD0C(s8);
+extern void func_800645A4(s32, s32);
+struct UnkNode1C;
+extern void ListSetRangeFields(struct UnkNode1C *, s32, s32, s16);
+
+void func_80064208(void) {
+    u8 *tail;
+    u8 *node;
+    u8 *prim;
+    u8 *entry;
+    u8 *obj;
+    u8 **linkSlot;
+    s32 y;
+    s32 height;
+    s32 h;
+    s32 i;
+    s32 j;
+    s32 kind;
+    s32 kind2;
+    s32 k;
+    u8 idx;
+    if (D_800A3060[0] != 0) {
+        D_800A39FC = D_800A36E0[0];
+    } else {
+        D_800A39FC = RandomScaledGet(0x18);
+    }
+    D_800A3594 = func_8006AD0C(D_800A39FC);
+    for (i = 0; i < 2; i++) {
+        tail = func_8005B598(0x14, 0x41, 0x40, 0x48, 1, 1, 0);
+        D_800A3744[i] = tail;
+        *((s16 *)(tail + 0x12)) = 0x14;
+        node = func_8005BF8C(0x5F, 0x2D);
+        kind = D_800A39FC;
+        ((MenuObj *)node)->unk12 = 0x5F;
+        func_80067EA4((struct UnkObject24 *)node, 2, 3, D_8009AC1C[kind], 0, 0);
+        *((u8 **)(tail + 0x1C)) = node;
+        tail = node;
+        func_8005A7B8(2, 3);
+        height = func_8005A84C();
+        y = height + 0x32;
+        func_8005A7B8(2, 4);
+        height = func_8005A84C();
+        for (j = 0; j < 5; j++) {
+            node = func_8005BF8C(0x5F, y);
+            kind2 = D_800A39FC;
+            *((s16 *)(node + 0x12)) = 0x5F;
+            func_80067EA4((struct UnkObject24 *)node, 2, 4, D_8009AC1C[kind2],
+                          0, 0);
+            y += height;
+            *((u8 **)(tail + 0x1C)) = node;
+            tail = node;
+            if (j == 2) {
+                y += 5;
+            }
+        }
+
+        prim = func_8005B598(0x14, 0x2B, 0x40, 0xC, 1, 1, 0);
+        node = prim;
+        D_800A3958[i] = prim;
+        *((s16 *)(node + 0x12)) = 0x14;
+        *((u8 **)(tail + 0x1C)) = node;
+        prim = *((u8 **)(prim + 0x20));
+        func_8005B17C(prim, 2, 0, 0, 0x40, 0xC);
+        *((s16 *)(prim + 8)) = 0x14;
+        *((s16 *)(prim + 0xA)) = 0x2D;
+        *((s16 *)(prim + 0x10)) = 0x54;
+        *((s16 *)(prim + 0x12)) = 0x2D;
+        *((s16 *)(prim + 0x18)) = 0x14;
+        *((s16 *)(prim + 0x1A)) = 0x39;
+        *((s16 *)(prim + 0x20)) = 0x54;
+        *((s16 *)(prim + 0x22)) = 0x39;
+    }
+
+    for (k = 0; k < 2; k++) {
+        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        if (k == 0) {
+            D_800A3900[0] = tail;
+        } else {
+            *(linkSlot = (u8 **)(D_800A3900[0] + 0x1C)) = tail;
+        }
+        *((s16 *)(tail + 0x1A)) = 0x3FD;
+    }
+
+    idx = (u8)D_800A39FC;
+    D_800A3A14 = 0;
+    func_800645A4(0, idx);
+    entry = D_800A3744[D_800A3A14];
+    D_800A39A0[0] = 0;
+    D_800A38FC[0] = entry;
+    ListSetRangeFields((struct UnkNode1C *)entry, -0x140, 0, 2);
+    func_800631DC(-0x10C, 0x34, 2);
+    /* D_800A35E4[0] via the D_800A35E0 alias: a distinct symbol keeps the
+     * base load below from being shared with the height lookup. */
+    obj = D_800A35E0Alias[1];
+    h = *((s16 *)(D_800A35E4[D_800A3A14] + 0xA));
+    while (obj != 0) {
+        node = obj + 0xE;
+        *((s16 *)node) = 2;
+        obj[5] = 2;
+        *((s16 *)(obj + 6)) = (*((u16 *)(obj + 0x12))) - 0x10C;
+        *((s16 *)(obj + 0xA)) = (*((u16 *)(obj + 0x12))) + h;
+        obj = *(u8 **)(obj + 0x1C);
+    }
+
+    func_80063AE0(D_800A3A14, D_800A39FC);
+}
 
 extern u8 *D_800A3744[];
 extern u8 *D_800A3958[];
