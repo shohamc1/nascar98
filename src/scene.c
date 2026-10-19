@@ -6490,35 +6490,41 @@ extern u8 D_800A36FC;
 extern u8 D_800A3700;
 extern u8 D_80098D18[];
 extern POLY_FT4 D_800A8AC4[];
-extern POLY_FT4 D_800A8AC4nm[] asm("D_800A8AC4.NON_MATCHING");
 extern u8 D_800A8ADA[];
 
-#ifdef NON_MATCHING
-void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
+/* Draws TEXT with the glyph table at D_80098BD0, one POLY_FT4 per glyph.
+ * Retail's allocation needs a few odd spellings: the y and mode copies
+ * order the prologue moves, the s32 width keeps x first in `x + width`,
+ * the two gTextColor paths share cellRightX so its sum isn't scheduled
+ * late, the empty asm copies keep the x1/x3 stores on the right-edge
+ * register, and lineH is pinned to s4 because y otherwise outranks it. */
+void func_80050028(u8 *text, s32 x, s32 yArg, s8 modeArg) {
     extern u8 D_80098BD0[];
     POLY_FT4 *prim;
     u8 *p;
     u8 *cp;
     u8 *glyph;
     u16 w;
+    s32 width;
     u8 i;
-    s32 lineH;
-    s32 newX;
-    s32 rightX;
-    u8 v3;
+    s32 y;
+    s8 mode;
+    s32 lineH0;
+    register s32 lineH asm("$20");
     s32 tc;
     u8 color;
     s32 ySum;
-    s16 *x3p;
-    u8 *cp2;
-    s16 *x0p;
+    s32 cellRightX;
 
     i = 0;
+    y = yArg;
+    mode = modeArg;
     if (mode == 1) {
-        lineH = (u32)(*(s16 *)&D_80098D18[0] * 3) >> 2;
+        lineH0 = (u32)(*(s16 *)&D_80098D18[0] * 3) >> 2;
     } else {
-        lineH = *(u16 *)&D_80098D18[0];
+        lineH0 = *(u16 *)&D_80098D18[0];
     }
+    lineH = lineH0;
     if (mode >= 2) {
         u8 sr;
         u8 sg;
@@ -6541,16 +6547,18 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
             cp[1] = color;
             cp[2] = color;
         } while (0);
-        prim = D_800A8AC4nm;
+        prim = D_800A8AC4;
         SetSemiTrans(prim, 1);
         p = (u8 *)prim + 0x16;
         if (text[i] != 0) {
             lineH = y + lineH;
-            do {
+            while (text[i] != 0) {
+                u8 v3;
                 glyph = &D_80098BD0[text[i] * 10];
                 tc = GetTPage(0, 1, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
                 *(u16 *)p = tc;
-                w = *(u16 *)(glyph + 6);
+                width = *(u16 *)(glyph + 6);
+                w = width;
                 *(u8 *)(p - 0xA) = glyph[4];
                 *(u8 *)(p - 0x9) = glyph[5];
                 *(u8 *)(p - 0x2) = glyph[4] + w;
@@ -6562,32 +6570,34 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
                 v3 = glyph[5] + glyph[8];
                 *(u8 *)(p + 0xF) = v3;
                 if (tc != 0) {
-                    newX = x + ((tc - (s16)w) >> 1);
+                    s32 newX;
+
+                    newX = x + ((tc - (s16)width) >> 1);
                     x = x + tc;
-                    rightX = w + newX;
+                    cellRightX = width + newX;
                     *(s16 *)(p - 0xE) = newX;
                     *(s16 *)(p - 0xC) = y;
-                    *(s16 *)(p - 0x6) = rightX;
+                    *(s16 *)(p - 0x6) = cellRightX;
                     *(s16 *)(p - 0x4) = y;
                     *(s16 *)(p + 0x2) = newX;
                     *(s16 *)(p + 0x4) = lineH;
-                    x3p = (s16 *)(p + 0xA);
-                    *x3p = rightX;
+                    *(s16 *)(p + 0xA) = cellRightX;
                 } else {
-                    rightX = x + w;
+                    s32 rightX;
+                    rightX = x + width;
                     *(s16 *)(p - 0xE) = x;
                     *(s16 *)(p + 0x2) = x;
-                    x = rightX;
                     *(s16 *)(p - 0xC) = y;
                     *(s16 *)(p - 0x6) = rightX;
                     *(s16 *)(p - 0x4) = y;
                     *(s16 *)(p + 0x4) = lineH;
                     *(s16 *)(p + 0xA) = rightX;
+                    asm("" : "=r"(x) : "0"(rightX));
                 }
                 *(s16 *)(p + 0xC) = lineH;
                 func_80017D80((u8 *)D_800A8AC4);
                 i++;
-            } while (text[i] != 0);
+            }
         }
         D_800A8AC8[0] = D_800A34C8[0];
         D_800A8AC9[0] = D_800A34C8[1];
@@ -6598,7 +6608,8 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
     if (mode == 1) {
         if (text[i] != 0) {
             p = D_800A8ADA;
-            do {
+            while (text[i] != 0) {
+                s32 rightX;
                 glyph = &D_80098BD0[text[i] * 10];
                 *(u16 *)p =
                     GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
@@ -6611,70 +6622,69 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
                 *(u8 *)(p + 0xE) = glyph[4] + glyph[6];
                 *(u8 *)(p + 0xF) = glyph[5] + glyph[8];
                 rightX = x + ((*(s16 *)(glyph + 6) * 3) >> 2);
-                ySum = y + lineH;
-                x0p = (s16 *)(p - 0xE);
-                *x0p = x;
+                *(s16 *)(p - 0xE) = x;
                 *(s16 *)(p - 0xC) = y;
                 *(s16 *)(p - 0x4) = y;
                 *(s16 *)(p + 0x2) = x;
+                ySum = y + lineH;
                 *(s16 *)(p + 0x4) = ySum;
                 *(s16 *)(p + 0xC) = ySum;
-                x = rightX;
                 *(s16 *)(p - 0x6) = rightX;
                 *(s16 *)(p + 0xA) = rightX;
+                asm("" : "=r"(x) : "0"(rightX));
                 func_80017D80(p - 0x16);
                 i++;
-            } while (text[i] != 0);
+            }
         }
         return;
     }
     if (gTextColorS != 0) {
         if (text[i] != 0) {
-            do {
+            while (text[i] != 0) {
+                s32 newX;
+                s32 yy;
                 glyph = &D_80098BD0[text[i] * 10];
                 *(u16 *)D_800A8ADA =
                     GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
-                w = *(u16 *)(glyph + 6);
+                width = *(u16 *)(glyph + 6);
+                w = width;
                 *(u8 *)(D_800A8ADA - 0xA) = glyph[4];
                 *(u8 *)(D_800A8ADA - 0x9) = glyph[5];
                 *(u8 *)(D_800A8ADA - 0x2) = glyph[4] + w;
-                cp2 = D_800A8ADA;
                 *(u8 *)(D_800A8ADA - 0x1) = glyph[5];
                 *(u8 *)(D_800A8ADA + 0x6) = glyph[4];
                 *(u8 *)(D_800A8ADA + 0x7) = glyph[5] + glyph[8];
                 *(u8 *)(D_800A8ADA + 0xE) = glyph[4] + w;
                 *(u8 *)(D_800A8ADA + 0xF) = glyph[5] + glyph[8];
-                newX = x + ((gTextColorS - (s16)w) >> 1);
+                newX = x + ((gTextColorS - (s16)width) >> 1);
                 x = x + gTextColorS;
-                rightX = w + newX;
-                ySum = y + lineH;
+                cellRightX = width + newX;
                 *(s16 *)(D_800A8ADA - 0xC) = y;
                 *(s16 *)(D_800A8ADA - 0x4) = y;
-                *(s16 *)(cp2 - 0xE) = newX;
+                *(s16 *)(D_800A8ADA - 0xE) = newX;
                 *(s16 *)(D_800A8ADA + 0x2) = newX;
-                *(s16 *)(D_800A8ADA - 0x6) = rightX;
-                *(s16 *)(D_800A8ADA + 0x4) = ySum;
-                *(s16 *)(D_800A8ADA + 0xA) = rightX;
-                *(s16 *)(D_800A8ADA + 0xC) = ySum;
+                yy = y + lineH;
+                *(s16 *)(D_800A8ADA - 0x6) = cellRightX;
+                *(s16 *)(D_800A8ADA + 0x4) = yy;
+                *(s16 *)(D_800A8ADA + 0xA) = cellRightX;
+                *(s16 *)(D_800A8ADA + 0xC) = yy;
                 func_80017D80(D_800A8ADA - 0x16);
                 i++;
-            } while (text[i] != 0);
+            }
         }
         return;
     }
     if (text[i] != 0) {
-        if (i) {
-            lineH = y + lineH;
-            p = D_800A8ADA;
-        } else {
-            lineH = y + lineH;
-            p = D_800A8ADA;
-        }
-        do {
+        lineH = y + lineH;
+        p = D_800A8ADA;
+        while (text[i] != 0) {
+            s32 rightX;
+            u8 v3;
             glyph = &D_80098BD0[text[i] * 10];
             *(u16 *)p =
                 GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
-            w = *(u16 *)(glyph + 6);
+            width = *(u16 *)(glyph + 6);
+            w = width;
             *(u8 *)(p - 0xA) = glyph[4];
             *(u8 *)(p - 0x9) = glyph[5];
             *(u8 *)(p - 0x2) = glyph[4] + w;
@@ -6683,26 +6693,23 @@ void func_80050028(u8 *text, s32 x, s32 y, s8 mode) {
             *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
             *(u8 *)(p + 0xE) = glyph[4] + w;
             v3 = glyph[5] + glyph[8];
-            rightX = x + w;
+            rightX = x + width;
             *(s16 *)(p - 0xE) = x;
             *(s16 *)(p + 0x2) = x;
-            x = rightX;
             *(s16 *)(p - 0xC) = y;
             *(s16 *)(p - 0x6) = rightX;
             *(s16 *)(p - 0x4) = y;
             *(s16 *)(p + 0x4) = lineH;
             *(s16 *)(p + 0xA) = rightX;
             *(s16 *)(p + 0xC) = lineH;
+            asm("" : "=r"(x) : "0"(rightX));
             *(u8 *)(p + 0xF) = v3;
             func_80017D80(p - 0x16);
             i++;
-        } while (text[i] != 0);
+        }
     }
 }
 
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80050028);
-#endif
 INCLUDE_ASM("asm/nonmatchings/scene", func_80050670);
 
 void SetPolyFT4(POLY_FT4 *);
