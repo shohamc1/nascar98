@@ -1317,7 +1317,6 @@ s32 func_80014398(s32 arg0) {
     return (u32)prod / 100;
 }
 
-extern s32 D_800A2EB0Absolute[];
 extern void func_8003CAE8(s32);
 
 void func_80014440(void) {
@@ -1351,7 +1350,6 @@ extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
 extern u8 D_800A2EE4w15[] asm("D_800A2EE4.NON_MATCHING");
 extern u8 D_800A2EDBw15[] asm("D_800A2EDB.NON_MATCHING");
 extern u8 D_800A3074w15[] asm("D_800A3074.NON_MATCHING");
-extern u8 D_800A3073w15[] asm("D_800A3073.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
 extern u8 D_800B9DA4w15[] asm("D_800B9DA4.NON_MATCHING");
 extern u8 D_800BE70Cw15[] asm("D_800BE70C.NON_MATCHING");
@@ -2448,10 +2446,8 @@ void func_80015A74(s32 arg0) {
     extern s32 FileOpen(s32, void *);
     extern void TrackReadData(s32 *, s32);
     extern void FileClose(s32);
-    extern void SystemShowFatalError(char *);
     extern char D_8008CC7C[] __attribute__((aligned(4)));
     extern u8 D_800A2D48[];
-    extern s32 D_800BE970[];
     extern u8 D_800A2D4C[];
     s32 value0;
     value0 = FileOpen(arg0, D_800A2D48);
@@ -2678,7 +2674,6 @@ extern s32 D_800A2D60;
 extern s32 D_800A2D5C;
 extern s32 *D_800A2D64;
 
-extern void *HeapAlloc(u32);
 
 void func_8001636C(void) {
     s32 count;
@@ -2836,7 +2831,6 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
 #endif
 
-extern s32 D_800A2D5C;
 void func_80016724(s32 value, s32 *next, s32 size) {
     s32 *current;
     current = D_800A2D64;
@@ -2848,7 +2842,6 @@ void func_80016724(s32 value, s32 *next, s32 size) {
 extern s32 gOrderingTableBankAbsolute[];
 extern s32 D_800A2CF8[];
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-extern s32 D_800A2D5C;
 void func_80016744(u32 arg0) {
     s32 bank;
     u32 entries;

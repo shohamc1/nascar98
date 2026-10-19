@@ -10,137 +10,17 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 
-extern u8 D_800A2D0D;
-extern u8 D_800A2D0E;
-extern u8 D_800A2D0F;
-extern u8 D_800A39E4[];
-extern u8 D_800A39E4Absolute[];
-extern u8 D_800A39E4Absolute2[];
-extern s32 D_800A2EB8[];
 extern s32 D_800A2EC8[];
-extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A2EACAbsolute[];
-extern void func_80058D94(void);
-extern void func_800531B8(void);
-extern void GameRunSession(void);
-extern void func_80066B08(void);
-extern void func_800587A0(void);
-extern void func_80059DC4(void);
-extern void func_8005978C(void);
-extern void func_800535A0(void);
-extern s32 D_800A2CFC;
-extern s32 D_800A2D00;
-extern s32 D_800A2D04;
-extern s32 D_800A2D08;
-extern s32 D_800A3708;
-extern s32 D_800A370C;
-extern s32 D_800B9D54[];
-extern s32 D_800B9D58[];
-extern s32 D_800B9D5C[];
-extern s32 D_800B9D60[];
-extern void func_8001D220(s32, s32, s32, s32);
-extern u32 D_800A38A0;
-extern s8 D_800A2D10;
-extern void *D_800A3A8C;
-extern s32 strlen(char *);
-extern u8 gOrderingTables[];
-extern s32 gOrderingTableBank;
-extern void func_8001E7EC(void *, s32, s32);
-extern u8 D_800A39B0[];
-extern s32 D_800A36B4;
-extern s32 D_800A3948;
-extern u16 D_800A38C0[];
-extern void GsGetTimInfo(u8 *, u8 *);
-extern u16 D_80090ED8[];
-extern s32 D_80099590[];
-extern u8 D_800A3320Absolute[];
-extern u8 D_800A331CAbsolute[];
-extern u16 D_80090ED8[];
-extern s32 D_80099590[];
-extern u8 D_800A3320Absolute[];
-extern u8 D_800A331CAbsolute[];
-extern s32 D_800A2EB0Absolute[];
-extern void func_8003CAE8(s32);
-extern u8 D_800A364Cw15[] asm("D_800A364C.NON_MATCHING");
-extern s32 D_800A2EB0w15[] asm("D_800A2EB0.NON_MATCHING");
-extern s32 D_800A2E90w15[] asm("D_800A2E90.NON_MATCHING");
 extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
-extern s16 D_800A3696w15[] asm("D_800A3696.NON_MATCHING");
-extern s16 D_800A3694w15[] asm("D_800A3694.NON_MATCHING");
-extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
-extern u8 D_800A2F9Cw15[] asm("D_800A2F9C.NON_MATCHING");
-extern u8 D_800A2EDCw15[] asm("D_800A2EDC.NON_MATCHING");
 extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
-extern u8 D_800A2EE4w15[] asm("D_800A2EE4.NON_MATCHING");
-extern u8 D_800A2EDBw15[] asm("D_800A2EDB.NON_MATCHING");
-extern u8 D_800A3074w15[] asm("D_800A3074.NON_MATCHING");
-extern u8 D_800A3073w15[] asm("D_800A3073.NON_MATCHING");
-extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
-extern u8 D_800B9DA4w15[] asm("D_800B9DA4.NON_MATCHING");
-extern u8 D_800BE70Cw15[] asm("D_800BE70C.NON_MATCHING");
-extern s32 D_8008CA28[];
 extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
-extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
-extern s32 D_800A2EA4w18c[] asm("D_800A2EA4.NON_MATCHING");
-extern s8 D_800A3A24w18c[] asm("D_800A3A24.NON_MATCHING");
-extern s8 D_800A3A25w18c[] asm("D_800A3A25.NON_MATCHING");
-extern s32 D_800A2EB0w18c[] asm("D_800A2EB0.NON_MATCHING");
-extern u8 D_800A2EDAw18c[] asm("D_800A2EDA.NON_MATCHING");
 extern s8 D_800A3620w18c[] asm("D_800A3620.NON_MATCHING");
-extern s32 D_800A33CCw18c[] asm("D_800A33CC.NON_MATCHING");
-extern u32 D_800A33C0w18c asm("D_800A33C0.NON_MATCHING");
-extern u32 D_800A33C0addrw18c[];
-extern u32 D_800A33C4w18c asm("D_800A33C4.NON_MATCHING");
-extern u32 D_800A2D14w18c asm("D_800A2D14.NON_MATCHING");
-extern u32 D_800A2D18w18c asm("D_800A2D18.NON_MATCHING");
-extern u32 D_800A359Cw18c;
-extern u8 D_800A2D0Cw18c;
-extern u8 D_800A2D0Ew18c asm("D_800A2D0E.NON_MATCHING");
-extern u8 D_800A2D0Fw18c asm("D_800A2D0F.NON_MATCHING");
-extern s32 D_800A2EC8w18c[] asm("D_800A2EC8.NON_MATCHING");
-extern s32 func_80041B7C(s32);
-extern void func_80023074(void);
-extern u32 gPrimitiveCursorNonMatching asm("gPrimitiveCursor.NON_MATCHING");
-extern u32 gPrimitiveCursor_gp asm("gPrimitiveCursor.NON_MATCHING");
-extern u32 D_800A3570;
-extern s32 D_800A38F4;
-extern s32 D_800A2F10[];
-extern void *HeapAlloc(u32);
 extern void SystemShowFatalError(char *);
-extern void *D_800A3A40;
-extern void *D_800A39A4;
-extern s32 D_800BE970[];
-extern void *D_800BE97C[];
-extern s32 D_800BE984[];
-extern char D_8008CB94[];
-extern char D_8008CBB4[];
-extern char D_8008CBD0[];
-extern s32 D_800A2D44;
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
 extern s32 sprintf(char *, u8 *);
-extern u8 D_8008CC6C[];
-extern long RotTransPers_nom();
-extern long RotTransPers3_nom();
-extern void func_80033788();
-extern void func_8003379C();
-extern s32 D_800A2D60;
-extern s32 D_800A2D5C;
-extern s32 *D_800A2D64;
-extern void *HeapAlloc(u32);
-extern s32 D_800A2D5C;
 extern s32 gOrderingTableBankAbsolute[];
-extern s32 D_800A2CF8[];
-extern s32 D_800A2D5C;
 extern s32 MathMultiplyFixed16(s32, s32);
 
-extern s32 gRandomCount;
-extern s32 gRandomCountMark;
-extern s32 gRandomSeed;
-extern s32 gRandomSeed, gRandomCount;
-extern s32 gRandomCountMark;
-extern s32 gRandomSeed;
-extern s32 gRandomCount;
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
 void RandomCountMark(void);
@@ -392,7 +272,6 @@ extern u8 D_8008CCBC[];
 extern u8 D_8008CCD0[];
 extern u8 D_8008CCE0[];
 extern u8 D_8008CCF0[];
-extern s32 D_800A2EACAbsolute[];
 extern s32 sprintfArgs(s8 *, u8 *, ...);
 asm(".globl sprintfArgs\nsprintfArgs = sprintf");
 
@@ -463,7 +342,6 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
 }
 
 extern void func_80018588(void *, s32, s32);
-extern void func_80050028Text(s8 *, s16, s16, s8);
 asm(".globl func_80050028Text\nfunc_80050028Text = func_80050028");
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
     s8 text[24];
@@ -549,8 +427,6 @@ void func_800188B0(s32 pos, u8 mode, s32 x, s32 y, s32 scale) {
     }
 }
 
-extern void func_800180C0(s8, s32, s32, s32);
-extern s16 D_800A2D88[];
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale) {
     s8 text[24];
     s32 indent;
@@ -585,8 +461,6 @@ void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale) {
     }
 }
 
-extern void func_800180C0(s8, s32, s32, s32);
-extern s16 D_800A2D88[];
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale) {
     s8 text[24];
     s8 *start;
@@ -612,8 +486,6 @@ void func_80018B18(s32 value, s32 x, s32 y, s32 scale) {
     }
 }
 
-extern void func_800180C0(s8, s32, s32, s32);
-extern s16 D_800A2D88[];
 void func_80018BD4(s32 value, s32 x, s32 y, s32 scale) {
     s8 text[24];
     s8 *start;
@@ -1215,10 +1087,8 @@ panel:
 }
 
 extern u32 gPrimitiveCursor[];
-extern s32 D_800A2EC8[];
 extern s32 D_800A39C8[];
 extern s32 D_800A397CAbsolute[];
-extern s32 D_800A36D0Absolute[];
 
 /* Draws a 0x7F x 0x1F sprite quad from the 14-byte table at D_80090EFC.
    kind selects the table row (0 -> 0xC, 1 -> 0xD, 2 -> 0xB). */
@@ -1279,7 +1149,6 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
     }
 }
 
-extern s32 MathMultiplyFixed16(s32, s32);
 
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
     s32 num;
@@ -2050,7 +1919,6 @@ void func_8001BA94(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BDBC);
 
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
-extern s32 gOTBnm[] asm("gOrderingTableBank.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern u8 *D_8009AE40nm[] asm("D_8009AE40.NON_MATCHING");
@@ -2061,17 +1929,9 @@ extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
 extern u8 *D_800A3554small asm("D_800A3554.NON_MATCHING");
-extern s32 D_800A39C8nm[] asm("D_800A39C8.NON_MATCHING");
-extern s32 D_800A397CAbsolute[];
-extern s32 D_800A2E24Absolute[];
-extern s32 D_800A3A3CAbsolute[];
-extern s32 D_800A2EB0Absolute[];
-extern s32 D_800A2EACAbsolute[];
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
-extern s32 D_800A2EC0Absolute[];
 
-extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 void func_8001C34C(void) {
     s32 mode;
