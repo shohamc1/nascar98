@@ -7012,7 +7012,132 @@ void func_8002E230(void) {
     volatile s32 debugBuffer[16];
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002E240);
+extern void PushMatrix(void);
+extern void PopMatrix(void);
+extern void func_80033000(u8 *arg0, u8 *arg1, u8 *arg2);
+extern void func_80046184(u8 *arg0);
+extern void func_80032DEC(u8 *arg0, s32 arg1);
+extern void SceneUpdateProjectiles(u8 *arg0);
+extern void func_800345E0(void);
+extern void func_8003271C(s32 arg0);
+extern void func_800179AC(s32 arg0);
+extern s32 func_800346D0(s32 arg0);
+extern void func_80048568(void);
+extern s32 D_800A2F38[];
+extern s32 D_800A2D0CScene[] asm("D_800A2D0C.NON_MATCHING");
+extern s32 D_800A2D0CStore[] asm("D_800A2D0CAbsolute");
+extern s32 D_800A3A94Scene[] asm("D_800A3A94Absolute");
+extern u8 *D_800A3554Absolute[];
+extern u8 D_800A3A60RaceStep1[];
+extern u8 D_800A3075Frame[];
+extern s32 D_800A2F0CFrame;
+extern s32 D_800A2EC0;
+extern u8 D_80098234[];
+extern s32 D_800B9D74[];
+extern s32 D_800A397C[];
+extern s32 D_800A3A3C[];
+extern s32 D_800B9D60[];
+
+void func_8002E240(u8 *arg0, u8 *arg1, u8 *arg2, u8 *arg3) {
+    SVECTOR rotation;
+    VECTOR translation;
+    long flag[2];
+    MATRIX *matrix;
+    s32 *camera;
+    u8 *node;
+    u8 *child;
+    u8 *tail;
+    s32 count;
+    s32 depth;
+
+    camera = (s32 *)D_800A38AC[0];
+    count = 0;
+    tail = NULL;
+    rotation.vx = FAR_VAR(s32, gFarOffsetX) - camera[0] / 4;
+    rotation.vy = FAR_VAR(s32, gFarOffsetY) - camera[1] / 4;
+    rotation.vz = FAR_VAR(s32, gFarOffsetZ) - camera[2] / 4;
+    RotTrans(&rotation, &translation, flag);
+    matrix = (MATRIX *)D_80098234;
+    TransMatrix(matrix, &translation);
+    PushMatrix();
+    SetTransMatrix(matrix);
+    D_800A2F38[0] = 0;
+    node = arg1;
+    if (D_800A397C[0] == 2) {
+        if (arg1 != arg2) {
+            do {
+                ListDispatchCallbacks(node);
+                if (*(u16 *)(node + 0xE) == 0) {
+                    child = *(u8 **)(node + 0x74);
+                    D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
+                    if (D_800A3A3C[0] < ((s32 *)D_800A3554Absolute)[-1]) {
+                        depth =
+                            D_800A2EC0 -
+                            (((s32 *)D_800A3554Absolute)[-1] - D_800A3A3C[0]) +
+                            1;
+                    } else {
+                        depth = D_800A2EC0 -
+                                (((s32 *)D_800A3554Absolute)[-1] +
+                                 (D_800A3A94Scene[-1] - D_800A3A3C[0])) +
+                                1;
+                    }
+                    if (child != NULL) {
+                        do {
+                            if (*(s32 *)(child + 4) <= depth) {
+                                *(u8 **)(child + 0x30) = tail;
+                                tail = child + 8;
+                                count = count + 1;
+                            }
+                            child = *(u8 **)(child + 0x54);
+                        } while (child != NULL);
+                    }
+                }
+                node = *(u8 **)node;
+            } while (node != arg2);
+        }
+    } else {
+        if (arg1 != arg2) {
+            do {
+                ListDispatchCallbacks(node);
+                if (*(u16 *)(node + 0xE) == 0) {
+                    child = *(u8 **)(node + 0x74);
+                    D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
+                    if (child != NULL) {
+                        do {
+                            *(u8 **)(child + 0x30) = tail;
+                            tail = child + 8;
+                            child = *(u8 **)(child + 0x54);
+                            count = count + 1;
+                        } while (child != NULL);
+                    }
+                }
+                node = *(u8 **)node;
+            } while (node != arg2);
+        }
+    }
+    func_80033000(arg1, arg2, arg3);
+    if (D_800A3A60RaceStep1[0] != 0 && D_800A3075Frame[0] == 0) {
+        func_80046184(arg0);
+    }
+    if (count != 0) {
+        func_80032DEC(tail, count);
+    }
+    SceneUpdateProjectiles(arg0);
+    func_800345E0();
+    PopMatrix();
+    func_8003271C(0);
+    func_800179AC(0);
+    func_800346D0(D_800A2F0CFrame);
+    D_800B9D74[0] = GetRCnt(0xF2000001);
+    func_80048568();
+    if (arg1 != arg2) {
+        do {
+            *(u16 *)(arg1 + 0xE) = 0;
+            arg1 = *(u8 **)arg1;
+        } while (arg1 != arg2);
+    }
+    D_800B9D60[0] += GetRCnt(0xF2000001) - D_800B9D74[0];
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002E594);
 
