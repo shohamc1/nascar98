@@ -10,13 +10,14 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libcd.h>
+#include <psxsdk/libgte.h>
 
 void SetFogFar(s32 a, s32 h) {
     SetDQA(((-a) << 6) / h);
     SetDQB(0x01400000);
 }
 
-void SetFogNear(s32 a, s32 h) {
+void SetFogNear(long a, long h) {
     SetDQA(-(a * 0x140) / h);
     SetDQB(0x01400000);
 }
@@ -699,19 +700,6 @@ ASM_FUNC(ApplyMatrixLV, "lw $t0, 0x0($a0) # maspsx-keep\n"
                         "jr $ra # maspsx-keep\n"
                         "addu $v0, $a2, $zero # maspsx-keep\n")
 
-/* libgte.h cannot be included in this unit (its SetFogNear prototype
- * conflicts with the local one), so the GTE vector types are defined
- * here, before their first use. */
-typedef struct {
-    short vx, vy, vz;
-    short pad;
-} SVECTOR;
-
-typedef struct {
-    long vx, vy, vz;
-    long pad;
-} VECTOR;
-
 /* Applies the rotation part of the current rotation matrix to the
  * short vector v0 (mvmva with no translation vector) and stores the
  * long result in v1. Returns the third argument unchanged, exactly as
@@ -887,13 +875,6 @@ ASM_FUNC(PopMatrix, "lui $t6, %hi(D_8009DD6C) # maspsx-keep\n"
                     "jr $ra # maspsx-keep\n"
                     "nop # maspsx-keep\n")
 
-/* libgte.h cannot be included in this unit (its SetFogNear prototype
- * conflicts with the local one), so the GTE matrix type is defined here. */
-typedef struct {
-    short m[3][3];
-    long t[3];
-} MATRIX;
-
 void ReadRotMatrix(MATRIX *m) {
     __asm__("cfc2 $t0, $0\n\t"
             "cfc2 $t1, $1\n\t"
@@ -1059,13 +1040,6 @@ void SetTransMatrix(MATRIX *m) {
             "ctc2 $t1, $6\n\t"
             "ctc2 $t2, $7");
 }
-
-/* libgte.h cannot be included in this unit (its SetFogNear prototype
- * conflicts with the local one), so the GTE colour type is defined here. */
-typedef struct {
-    u8 r, g, b;
-    u8 cd;
-} CVECTOR;
 
 void SetVertex0(SVECTOR *v0) {
     __asm__ volatile("lwc2 $0, 0($a0)\n\t"
