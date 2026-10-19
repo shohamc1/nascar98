@@ -1548,7 +1548,98 @@ void func_80070248(s32 arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_800703D0);
+extern void bzero(void *, s32);
+extern u32 D_800A33B0[];
+
+s32 func_800703D0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
+                  s32 arg6) {
+    TILE tile;
+    s32 pos;
+    s32 i;
+
+    if (arg0 != 0) {
+        if (arg1 != 0 && arg2 != 0 && arg3 != 0) {
+            bzero(arg0, 0x130);
+            D_800A3398 = arg0;
+            DrawSync(0);
+            DecDCTinSync(0);
+            DecDCToutSync(0);
+            SetDispMask(0);
+            if (arg5 != 0) {
+                setBlockFill(&tile);
+                for (i = 0, pos = 0; i < 2; i++) {
+                    tile.y0 = 0;
+                    tile.h = 0xF0;
+                    tile.r0 = 0;
+                    tile.g0 = 0;
+                    tile.b0 = 0;
+                    tile.w = D_800A33A0 * 0xA0;
+                    tile.x0 = D_800A33A0 * pos;
+                    pos = pos + 0xA0;
+                    DrawSync(0);
+                    VSync(0);
+                    DrawPrim(&tile);
+                    DrawSync(0);
+                }
+            }
+            SetDefDrawEnv((DRAWENV *)((u8 *)D_800A3398 + 0x34), 0, 0, 0x140,
+                          0xF0);
+            SetDefDispEnv((DISPENV *)((u8 *)D_800A3398 + 0xEC), 0, 0, 0x140,
+                          0xF0);
+            SetDefDrawEnv((DRAWENV *)((u8 *)D_800A3398 + 0x90),
+                          D_800A33A0 * 0xA0, 0, 0x140, 0xF0);
+            SetDefDispEnv((DISPENV *)((u8 *)D_800A3398 + 0x100),
+                          D_800A33A0 * 0xA0, 0, 0x140, 0xF0);
+            if (D_800A339C == 1) {
+                *(u8 *)((u8 *)D_800A3398 + 0xFD) = 1;
+                *(u8 *)((u8 *)D_800A3398 + 0x111) = 1;
+            } else {
+                *(u8 *)((u8 *)D_800A3398 + 0xFD) = 0;
+                *(u8 *)((u8 *)D_800A3398 + 0x111) = 0;
+            }
+            *(u8 *)((u8 *)D_800A3398 + 0xFC) = 0;
+            *(u8 *)((u8 *)D_800A3398 + 0x110) = 0;
+            D_800A3398[0x114 / 4] = 0;
+            *(u16 *)((u8 *)D_800A3398 + 0xF6) = 0;
+            *(u16 *)((u8 *)D_800A3398 + 0x10A) = 0;
+            if (arg6 != 0) {
+                VSync(0);
+                PutDrawEnv(
+                    (DRAWENV *)((u8 *)D_800A3398 +
+                                ((1 - D_800A3398[0x114 / 4]) * 92 + 0x34)));
+                PutDispEnv(
+                    (DISPENV *)((u8 *)D_800A3398 +
+                                ((1 - D_800A3398[0x114 / 4]) * 20 + 0xEC)));
+                SetDispMask(1);
+            }
+            D_800A3398[0x28 / 4] = arg1;
+            D_800A3398[0x2C / 4] = arg2;
+            D_800A3398[0x24 / 4] = arg3;
+            DecDCTReset(0);
+            SwEnterCriticalSection();
+            D_800A3398[0x12C / 4] = arg4;
+            if (arg4 != 0) {
+                D_800A3398[0x120 / 4] = DecDCToutCallback(func_8006FAAC);
+                D_800A3398[0x124 / 4] = DecDCTinCallback(0);
+                D_800A3398[0x128 / 4] = DrawSyncCallback(0);
+                if (D_800A339C == 1) {
+                    D_800A33B0[0] = D_800A339C;
+                }
+            } else {
+                s32 cb;
+
+                D_800A3398[0x120 / 4] = DecDCToutCallback(0);
+                D_800A3398[0x124 / 4] = DecDCTinCallback(0);
+                cb = DrawSyncCallback(0);
+                D_800A33B0[0] = 0;
+                D_800A3398[0x128 / 4] = cb;
+            }
+            SwExitCriticalSection();
+            return 1;
+        }
+    }
+    return 0;
+}
 
 extern u8 *D_800A33A8;
 extern u8 *D_800A33AC;
