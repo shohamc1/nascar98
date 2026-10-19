@@ -467,7 +467,119 @@ void func_80042EC0(void) {
     func_80043D6C();
 }
 
+extern u8 D_800AD9B0r[] asm("D_800AD9B0");
+extern u8 D_800AD9B4r[] asm("D_800AD9B4");
+extern u8 D_800AD9B8r[] asm("D_800AD9B8");
+extern u8 D_800AD9BCr[] asm("D_800AD9BC");
+extern u8 D_800AD9BEr[] asm("D_800AD9BE");
+extern u8 D_800AD9C0r[] asm("D_800AD9C0");
+extern u8 D_800AD9C2r[] asm("D_800AD9C2");
+extern u8 D_800AD9C4r[] asm("D_800AD9C4");
+extern u8 D_800AD9C6r[] asm("D_800AD9C6");
+extern u8 D_800AD9C8r[] asm("D_800AD9C8");
+extern u8 D_800AD9CAr[] asm("D_800AD9CA");
+extern s8 D_800AD9CCr[] asm("D_800AD9CC");
+extern u8 D_800AD9CDr[] asm("D_800AD9CD");
+extern u8 D_800AD9CEr[] asm("D_800AD9CE");
+extern u8 D_800AD9D0r[] asm("D_800AD9D0");
+extern u8 D_800AD9D4r[] asm("D_800AD9D4");
+extern u8 D_800AD9D8r[] asm("D_800AD9D8");
+extern u8 D_800AD9DCr[] asm("D_800AD9DC");
+#ifdef NON_MATCHING
+void func_80042EFC(u8 *object, s32 idx) {
+    s32 i;
+    s32 j;
+    s32 off;
+    s32 off2;
+    s32 twenty;
+    s32 ninetysix;
+    s32 value;
+    s32 seed;
+    s32 scaled;
+    s32 prod;
+    s32 temp;
+    u8 *table;
+
+    for (i = 0, twenty = 20, ninetysix = 96; i < 5; i++) {
+        for (j = 0, off = 0; j < 0x28; j++, off += 0x30) {
+            if (D_800AD9CCr[off] == 0) {
+                break;
+            }
+        }
+        if (j >= 0x28) {
+            return;
+        }
+        table = *(u8 **)(*(u8 **)(object + 0x370) + 0x40);
+        asm("" : "=r"(idx) : "0"(idx));
+        off = j * 0x30;
+        D_800AD9CCr[off] = 1;
+        D_800AD9CDr[off] = 0xA;
+        D_800AD9CEr[off] = *(u16 *)(object + 0x1DE);
+        *(s32 *)(D_800AD9B0r + off) =
+            *(s32 *)object + *(s32 *)(table + idx * 0x18 + 4);
+        *(s32 *)(D_800AD9B4r + off) =
+            *(s32 *)(object + 4) + *(s32 *)(table + idx * 0x18 + 8);
+        *(s16 *)(D_800AD9CAr + off) = 0x1E;
+        *(s32 *)(D_800AD9B8r + off) =
+            *(s32 *)(object + 8) + *(s32 *)(table + idx * 0x18 + 0xC);
+        *(s32 *)(D_800AD9DCr + off) =
+            *(s32 *)(*(u8 **)(object + 0x370) + 0x40) + 0x90;
+        temp = *(s16 *)(object + 0x1E0);
+        *(s32 *)(D_800AD9D4r + off) = temp;
+        *(s32 *)(D_800AD9D0r + off) = temp;
+        if (idx < 5) {
+            temp = *(s32 *)(D_800AD9B8r + off);
+        } else {
+            temp = *(s32 *)(object + 8) + 0xF;
+        }
+        *(s16 *)(D_800AD9BEr + off) = temp;
+        value = (gRandomSeed16 * 0x6255) + 0x3619;
+        asm("andi %0, %1, 0xFFFF" : "=r"(seed) : "r"(value));
+        value &= 0xFFFF;
+        gRandomSeed16 = seed;
+        prod = seed * twenty;
+        off2 = j * 0x30;
+        *(s16 *)(D_800AD9BCr + off2) = 0;
+        value = (value * 0x6255) + 0x3619;
+        seed = value & 0xFFFF;
+        gRandomSeed16 = seed;
+        scaled = seed * ninetysix;
+        *(s16 *)(D_800AD9C0r + off2) = ((u32)prod >> 0x10) + 0x1E;
+        scaled = ((u32)scaled >> 0x10) + 0x400;
+        *(s16 *)(D_800AD9C2r + off2) =
+            (*(u16 *)(object + 0x114) + scaled) & 0x3FF;
+        temp = (*(s32 *)(object + 0x90) * 7) / 8 >> 16;
+        *(s16 *)(D_800AD9C4r + off2) = temp;
+        if (temp < 0x14) {
+            *(s16 *)(D_800AD9C4r + off2) = twenty;
+        }
+        *(s32 *)(D_800AD9D8r + off2) =
+            *(s32 *)(*(u8 **)(object + 0x370) + 0x38);
+        value = (gRandomSeed16 * 0x6255) + 0x3619;
+        asm("andi %0, %1, 0xFFFF" : "=r"(seed) : "r"(value));
+        gRandomSeed16 = seed;
+        asm volatile("" : : : "memory");
+        off = off2;
+        value &= 0xFFFF;
+        value = (value * 0x6255) + 0x3619;
+        seed = value & 0xFFFF;
+        gRandomSeed16 = seed;
+        *(s16 *)(D_800AD9C6r + off) = (u32)seed >> 4;
+        asm volatile("" : : : "memory");
+        value = (gRandomSeed16 * 0x6255) + 0x3619;
+        asm("andi %0, %1, 0xFFFF" : "=r"(seed) : "r"(value));
+        gRandomSeed16 = seed;
+        off = j * 0x30;
+        value &= 0xFFFF;
+        value = (value * 0x6255) + 0x3619;
+        seed = value & 0xFFFF;
+        *(s16 *)(D_800AD9C8r + off) = (u32)seed >> 4;
+        gRandomSeed16 = seed;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/effects", func_80042EFC);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/effects", func_800432C0);
 
