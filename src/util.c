@@ -9,10 +9,7 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
-
-extern s32 D_800A2EB8[];
-extern void SystemShowFatalError(char *);
-extern s32 gOrderingTableBankAbsolute[];
+#include "game.h"
 
 extern s32 *D_800A38AC;
 extern s32 D_800A3798[], D_800A37AC[], D_800A3784[];
@@ -24,7 +21,6 @@ extern s16 D_800A3AFA[], D_800A3AFC[], D_800A3AFE[], D_800A3B00[], D_800A3B02[],
     D_800A3B04[], D_800A3B06[], D_800A3B08[];
 extern u8 *D_800A3674[];
 extern u8 D_800A2ED8[], D_800A2DE0[], D_800A2EDA[];
-extern s32 D_800A2ED4[];
 extern u8 *D_800A2EA0[];
 extern s16 D_800A2D68;
 extern void func_8001EEC4(u8 *);
@@ -337,7 +333,6 @@ void RandomSeedSet(s32 seed) {
     gRandomCount = 0;
     gRandomCountMark = 0;
 }
-
 
 s32 RandomScaledGet(s32 scale) {
     s32 seed;

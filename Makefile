@@ -629,7 +629,7 @@ expected: check objdiff.json
 
 # Our headers only: include/psxsdk/ and include/types.h come from sotn-decomp.
 format:
-	clang-format -i $(C_FILES) include/common.h include/include_asm.h
+	clang-format -i $(C_FILES) include/common.h include/game.h include/include_asm.h
 
 report: objdiff.json $(EXE)
 	@test -d expected || $(MAKE) expected

@@ -9,21 +9,11 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
-extern s32 D_800A2EC8[];
 extern s32 strlen(char *);
 extern void func_8001E7EC(void *, s32, s32);
-extern void func_8003CAE8(s32);
-extern void *HeapAlloc(u32);
-extern void SystemShowFatalError(char *);
-extern void *D_800BE97C[];
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern void func_80033788();
-extern void func_8003379C();
-extern s32 MathMultiplyFixed16(s32, s32);
 
-extern void func_80018588(void *, s32, s32);
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -32,7 +22,6 @@ typedef struct DoublyLinkedNode {
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern void (*D_80091080[])(void *);
-extern void func_8003382C();
 typedef struct {
     u8 pad[16];
 } Unk16;
@@ -56,7 +45,6 @@ extern void func_80025730(u8 *);
 s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *D_800A3554[];
 void func_800229B8(void);
-extern void func_80022CA4(void);
 s32 func_800246C0(s32, s32, u8 *);
 s32 func_800246C0(s32, s32, u8 *);
 void func_80025594();
@@ -71,7 +59,6 @@ typedef struct {
 s32 func_8003702C(u8 *, u8 *);
 void func_800406D0(u8 *, u8 *, s32, s32);
 void func_80041848(u8 *, s32);
-extern void func_8003644C(s32, s32, s32, s32);
 typedef struct {
     u8 unk0[0x90];
     s32 unk90;
@@ -97,12 +84,7 @@ extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
 s32 func_8002CF24(u8 *, u8 *);
-extern void func_8003CDBC();
-extern void func_800323F0(s32, s32);
-extern void func_80032494(u8 *);
 void *HeapAlloc(u32);
-extern void func_80028754(u8 *, s32);
-extern void func_8002D3EC(u8 *);
 void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
 void func_80041A28(void);
@@ -119,10 +101,7 @@ typedef struct {
 } Vector3;
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
-extern void func_80025454(s32);
-extern s32 D_800B9F44[];
 void func_80025454(s32);
-extern s32 func_800337EC(void);
 typedef struct {
     s32 words[10];
 } Primitive40;
@@ -145,22 +124,13 @@ void func_80035274(void);
 void func_8002F0A8(u8 *);
 void func_80034D64(void);
 void func_80035720(u_long *);
-extern s32 D_800BE974[];
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s32);
 extern s32 D_800A39E0;
-extern void func_8003ABC0();
 extern void func_80025594(u8 *);
-extern void func_8003AA20();
-extern void func_8003A880();
-extern void func_8003A950();
-extern void func_8003AAEC();
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
-extern s32 D_800A2EA8[];
-extern s32 D_800AE1EC[];
-extern u8 D_800BE70C[];
 extern u8 D_800BE70C[], D_800B9DA4[];
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
@@ -559,7 +529,6 @@ void func_8003C8C8(u8 *string) {
     }
 }
 
-
 void *FileLoadToHeap(s32 arg0) {
     u8 pad[0x40];
     u8 result[8];
@@ -712,7 +681,6 @@ void CdStop(void) {
     CdControl(8, 0, 0);
 }
 
-
 extern char D_8008D188[];
 
 void func_8003CDBC(s32 arg0) {
@@ -764,8 +732,6 @@ void func_8003CF04(void) {
 INCLUDE_ASM("asm/nonmatchings/cd", func_8003CF0C);
 
 extern s32 D_800A2F84nm asm("D_800A2F84.NON_MATCHING");
-extern void func_800414E0(void *, s32, s32);
-extern s32 func_80041B7C(s32);
 
 extern s32 D_800A3A04Lui asm("D_800A3A04Absolute");
 void func_8003D25C(u8 *object) {
@@ -1107,7 +1073,6 @@ s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
 }
 
 extern void func_8003D754(u8 *);
-extern s32 func_800358EC(s32 *);
 extern void CarSteerTowardHeading(u8 *, s32);
 extern void func_80041564(u8 *, s32);
 extern s32 D_800A2EA8CarState[] asm("D_800A2EA8");
@@ -1997,4 +1962,3 @@ void func_8003EDA0(u8 *object) {
         *(s32 *)(object + 0x29C) = delta;
     }
 }
-

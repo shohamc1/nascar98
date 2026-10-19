@@ -9,20 +9,9 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
-extern void func_8001D220(s32, s32, s32, s32);
-extern void SystemShowFatalError(char *);
-extern void *D_800A3A40;
-extern void *D_800BE97C[];
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern long RotTransPers_nom();
-extern s32 gOrderingTableBankAbsolute[];
-
-extern void func_80018588(void *, s32, s32);
-extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
-extern s32 D_800A2EC0Absolute[];
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
 void RandomCountMark(void);
@@ -50,8 +39,7 @@ struct ListNode28 {
     ListNode28 *next;
 };
 
-void ListInsertBefore(ListNode28 **head, ListNode28 *node,
-                      ListNode28 *before) {
+void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before) {
     ListNode28 *current;
     ListNode28 *previous;
 
@@ -517,7 +505,6 @@ void func_8001CC7C(u8 *arg0) {
 }
 
 #endif
-extern s32 D_800A2EC8Absolute[];
 extern ListNode28 *D_800A3A40Absolute[];
 
 void func_8001CDDC(u8 *arg0) {
@@ -583,7 +570,6 @@ void func_8001CDDC(u8 *arg0) {
         *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0x200, 0);
     }
 }
-
 
 void func_8001CF38(u8 *arg0) {
     s32 pal;
@@ -661,8 +647,6 @@ void ListDispatchCallbacks(u8 *arg0) {
         node = *(u8 **)node;
     }
 }
-
-extern void func_8003382C();
 
 void func_8001D108(u8 *arg0) {
     s32 flags;

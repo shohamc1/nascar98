@@ -9,22 +9,11 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
-extern s32 D_800A2EC8[];
-extern s32 D_800A2EB0Absolute[];
-extern s32 D_800A2EACAbsolute[];
 extern void func_8001E7EC(void *, s32, s32);
-extern void *HeapAlloc(u32);
-extern void SystemShowFatalError(char *);
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern void func_80033788();
-extern void func_8003379C();
-extern s32 MathMultiplyFixed16(s32, s32);
 
-extern void func_80018588(void *, s32, s32);
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
-extern s32 D_800A2EC0Absolute[];
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -33,7 +22,6 @@ typedef struct DoublyLinkedNode {
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern void (*D_80091080[])(void *);
-extern void func_8003382C();
 typedef struct {
     u8 pad[16];
 } Unk16;
@@ -53,13 +41,10 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
     D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-extern s32 D_800A2E94[];
-extern s32 D_800A2ED4[];
 extern void func_80025730(u8 *);
 s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *D_800A3554[];
 void func_800229B8(void);
-extern void func_80022CA4(void);
 s32 func_800246C0(s32, s32, u8 *);
 s32 func_800246C0(s32, s32, u8 *);
 void func_80025594();
@@ -74,7 +59,6 @@ typedef struct {
 s32 func_8003702C(u8 *, u8 *);
 void func_800406D0(u8 *, u8 *, s32, s32);
 void func_80041848(u8 *, s32);
-extern void func_8003644C(s32, s32, s32, s32);
 typedef struct {
     u8 unk0[0x90];
     s32 unk90;
@@ -100,11 +84,7 @@ extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
 s32 func_8002CF24(u8 *, u8 *);
 extern void HeapFree(void *ptr);
-extern void func_8003CDBC();
-extern void func_800323F0(s32, s32);
-extern void func_80032494(u8 *);
 void *HeapAlloc(u32);
-extern void func_80028754(u8 *, s32);
 extern s32 D_800A359C[];
 void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
@@ -122,9 +102,7 @@ typedef struct {
 } Vector3;
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
-extern void func_80025454(s32);
 void func_80025454(s32);
-extern s32 func_800337EC(void);
 typedef struct {
     s32 words[10];
 } Primitive40;
@@ -149,18 +127,11 @@ void func_80034D64(void);
 void func_80035720(u_long *);
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s32);
-extern void func_8003ABC0();
 extern void func_80025594(u8 *);
-extern void func_8003AA20();
-extern void func_8003A880();
-extern void func_8003A950();
-extern void func_8003AAEC();
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
-extern s32 D_800A2EA4[];
 extern void FileRead();
-extern void func_800414E0(void *, s32, s32);
 extern s32 func_80029EF8(u8 *);
 extern u8 D_800A2F95;
 void SystemShowFatalError(char *message);
@@ -432,7 +403,6 @@ extern s16 gSequenceId;
 extern s16 gVabId;
 extern u8 *gSequenceData;
 extern void SsVabClose(s16);
-extern void SsEnd(void);
 extern s32 D_800A3A08;
 void SoundShutdown(void) {
     if (gSequenceId != -1)
@@ -484,7 +454,6 @@ void SoundInitTables(void) {
 
 extern s16 D_800B9E24[];
 extern u8 D_800A3880;
-extern void SoundLoadVab(s32);
 
 void func_8003F060(s32 arg0) {
     u8 i;
@@ -504,8 +473,6 @@ again:
     SoundLoadVab(arg0);
     D_800A3880 = 0;
 }
-
-extern void SoundReloadVab(s32);
 
 void func_8003F0CC(s32 arg0) {
     u8 i;
@@ -612,8 +579,6 @@ void func_8003F23C(void) {
     func_80082B70();
 }
 
-extern void func_80082B70(void);
-extern void func_8003F284(void);
 void func_8003F25C(void) {
     func_80082B70();
     func_8003F284();
@@ -632,7 +597,6 @@ void func_8003F2AC(s32 arg0, s32 arg1) {
                        (s16)((arg1 & 0xFF) * D_800A2F94 / 127));
 }
 
-extern s32 func_8003FFF0(void *, void *);
 void SoundOpenSequence(void) {
     u8 entry[32];
     u8 *sequence;
@@ -710,7 +674,6 @@ void SoundStopSequence(void) {
 
 extern s32 SpuGetKeyStatus(s32);
 
-
 s32 func_8003F4FC(s32 arg0) {
     s16 voice;
     s32 status;
@@ -729,8 +692,6 @@ s32 func_8003F4FC(s32 arg0) {
 INCLUDE_ASM("asm/nonmatchings/sound", func_8003F564);
 
 INCLUDE_ASM("asm/nonmatchings/sound", func_8003F914);
-
-extern void func_8003F914(s32);
 
 void func_8003FA0C(void) {
     u8 i;
@@ -898,7 +859,6 @@ void func_8003FDE8(s8 arg0, s32 arg1, s32 arg2) {
     }
 }
 
-
 void func_8003FEB8(void) {
     s8 keys[24];
     s8 *keyState;
@@ -1053,7 +1013,6 @@ extern u8 D_80098C00w16[] asm("D_80098C00.NON_MATCHING");
 extern u8 D_800A306Cw16[] asm("D_800A306C.NON_MATCHING");
 extern void func_8001F90C(s32, s32, s32, s16 *);
 extern void func_8003F564(s8, s8);
-extern void func_8003FDE8(s8, s32, s32);
 
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     extern u8 D_800A2F9DSmall;
@@ -1176,7 +1135,6 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
 
 extern u8 D_800A2F9D;
 extern u8 *D_800A3554nm[] asm("D_800A3554.NON_MATCHING");
-extern void func_8003FC0C(s32, s32, s32);
 
 void func_800409A0(u8 *object) {
     s32 id;
@@ -1508,7 +1466,6 @@ void func_80041414(void) {
     D_800A2F9C = !D_800A2F9C;
 }
 
-
 void func_8004142C(void) {
     D_800A2F9D = D_800A2F9D == 0;
 }
@@ -1527,7 +1484,6 @@ void func_80041444(s32 arg0) {
     func_8003FDE8(0x17, 0, 0);
 }
 
-
 void func_800414E0(void *arg0, s32 arg1, s32 arg2) {
     if (D_800A2F9D == 0) {
         if (D_800A2EC8[0] == 0)
@@ -1545,7 +1501,6 @@ active:
 }
 
 void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
-    extern u8 D_800A2EDC[];
     extern s32 D_800A397C[];
     extern u8 D_800A38B0[];
     extern s32 D_800A2E90[];
@@ -1722,7 +1677,6 @@ extern u8 D_80098BEE[];
 extern s32 D_800BE8A8[];
 extern s32 D_800A2FA0;
 extern s32 D_800A2EB8NM[] asm("D_800A2EB8.NON_MATCHING");
-extern void func_8003F060(s32);
 
 void func_80041850(void) {
     s32 val;
@@ -1768,7 +1722,6 @@ void func_80041850(void) {
     }
 }
 
-
 void func_8004195C(void) {
     SsStart2();
     func_8003F284();
@@ -1787,7 +1740,6 @@ void func_8004195C(void) {
     func_8003FDE8(4, 0, 0);
 }
 
-extern void SoundShutdown(void);
 extern void SsSetMute(s32);
 
 void func_80041A28(void) {

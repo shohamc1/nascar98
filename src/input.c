@@ -9,18 +9,10 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
 extern void func_8001E7EC(void *, s32, s32);
-extern s32 func_80041B7C(s32);
-extern void *HeapAlloc(u32);
-extern void SystemShowFatalError(char *);
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern void func_80033788();
-extern void func_8003379C();
-extern s32 MathMultiplyFixed16(s32, s32);
 
-extern void func_80018588(void *, s32, s32);
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -29,7 +21,6 @@ typedef struct DoublyLinkedNode {
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern void (*D_80091080[])(void *);
-extern void func_8003382C();
 typedef struct {
     u8 pad[16];
 } Unk16;
@@ -52,7 +43,6 @@ extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
 extern void func_80025730(u8 *);
 s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
 void func_800229B8(void);
-extern void func_80022CA4(void);
 s32 func_800246C0(s32, s32, u8 *);
 s32 func_800246C0(s32, s32, u8 *);
 void func_80025594();
@@ -67,7 +57,6 @@ typedef struct {
 s32 func_8003702C(u8 *, u8 *);
 void func_800406D0(u8 *, u8 *, s32, s32);
 void func_80041848(u8 *, s32);
-extern void func_8003644C(s32, s32, s32, s32);
 typedef struct {
     u8 unk0[0x90];
     s32 unk90;
@@ -92,11 +81,7 @@ extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
 s32 func_8002CF24(u8 *, u8 *);
-extern void func_8003CDBC();
-extern void func_800323F0(s32, s32);
-extern void func_80032494(u8 *);
 void *HeapAlloc(u32);
-extern void func_80028754(u8 *, s32);
 void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
 void func_80041A28(void);
@@ -113,9 +98,7 @@ typedef struct {
 } Vector3;
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
-extern void func_80025454(s32);
 void func_80025454(s32);
-extern s32 func_800337EC(void);
 typedef struct {
     s32 words[10];
 } Primitive40;
@@ -140,31 +123,17 @@ void func_80034D64(void);
 void func_80035720(u_long *);
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s32);
-extern void func_8003ABC0();
 extern void func_80025594(u8 *);
-extern void func_8003AA20();
-extern void func_8003A880();
-extern void func_8003A950();
-extern void func_8003AAEC();
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
 extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
-extern void func_800414E0(void *, s32, s32);
 extern s32 func_80029EF8(u8 *);
-extern void SoundLoadVab(s32);
-extern void SoundReloadVab(s32);
-extern s32 func_8003FFF0(void *, void *);
 extern s16 SoundVabOpen(void *, void *);
-extern void func_8003FA0C(void);
 void func_80082B70(void);
-extern void func_80082B70(void);
-extern void func_8003F284(void);
 extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
                         short rightVolume);
 extern void func_8001F90C(s32, s32, s32, s16 *);
-extern void func_8003F060(s32);
-extern void SoundShutdown(void);
 void func_80041AF0();
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
@@ -502,7 +471,6 @@ u16 func_80041B94(s32 index) {
     return D_8008CA04U16[index];
 }
 
-
 /* Wall: retail computes the nibble before the 0xFF branch and keeps it
  * in a0 with a final move v0,a0 on both paths; our shapes either go
  * branchless (xori/sltu/negu) or compute after the branch. */
@@ -523,7 +491,6 @@ u32 func_80041BAC(s32 arg0) {
 }
 
 extern u8 D_8008CA06[];
-extern void *D_800A3A24[];
 
 /* Retail keeps an empty 8-byte frame; `framePad` reproduces it. The `u16 mode`
  * keeps the nor result and the or-accumulator in separate registers, and the
@@ -591,7 +558,6 @@ void PadInitBuffers(void) {
     VSync(0);
 }
 
-
 s32 func_80041D60(void) {
     u16 pads[2];
     u8 *cursor;
@@ -616,7 +582,6 @@ s32 func_80041D60(void) {
 }
 
 extern u8 D_800A3A24Small;
-extern s8 D_800A3A25[];
 extern u8 D_800A3A26[];
 extern u8 D_800A3A27[];
 extern u32 D_8008CA2C[];
@@ -920,4 +885,3 @@ INCLUDE_ASM("asm/nonmatchings/input", func_800422C0);
 INCLUDE_ASM("asm/nonmatchings/input", func_80042508);
 
 INCLUDE_ASM("asm/nonmatchings/input", func_80042920);
-

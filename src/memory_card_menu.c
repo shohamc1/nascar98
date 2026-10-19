@@ -9,28 +9,15 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
-extern u8 D_800A39E4[];
-extern void func_80066B08(void);
-extern void func_80059DC4(void);
-extern void func_8005978C(void);
 extern s32 strlen(char *);
 extern void func_8001E7EC(void *, s32, s32);
-extern u8 D_800A331CAbsolute[];
 extern s16 D_800A3696w15[] asm("D_800A3696.NON_MATCHING");
 extern s16 D_800A3694w15[] asm("D_800A3694.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
 extern s8 D_800A3A24w18c[] asm("D_800A3A24.NON_MATCHING");
-extern s32 func_80041B7C(s32);
-extern void *HeapAlloc(u32);
-extern void SystemShowFatalError(char *);
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern void func_80033788();
-extern void func_8003379C();
-extern s32 MathMultiplyFixed16(s32, s32);
 
-extern void func_80018588(void *, s32, s32);
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -39,7 +26,6 @@ typedef struct DoublyLinkedNode {
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern void (*D_80091080[])(void *);
-extern void func_8003382C();
 extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[], D_800A3A3C[];
 typedef struct {
     u8 pad[16];
@@ -63,8 +49,6 @@ extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
 extern void func_80025730(u8 *);
 s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
 void func_800229B8(void);
-extern void func_80022CA4(void);
-extern s32 D_800A3668Absolute[];
 s32 func_800246C0(s32, s32, u8 *);
 s32 func_800246C0(s32, s32, u8 *);
 void func_80025594();
@@ -79,7 +63,6 @@ typedef struct {
 s32 func_8003702C(u8 *, u8 *);
 void func_800406D0(u8 *, u8 *, s32, s32);
 void func_80041848(u8 *, s32);
-extern void func_8003644C(s32, s32, s32, s32);
 typedef struct {
     u8 unk0[0x90];
     s32 unk90;
@@ -102,20 +85,11 @@ typedef struct SelectionState {
 extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
-extern void func_80044114(u8 *);
-extern u8 D_800A331C[];
 s32 func_8003702C(u8 *, u8 *);
 s32 func_8002CF24(u8 *, u8 *);
 extern void HeapFree(void *ptr);
-extern void func_8003CDBC();
-extern void func_800323F0(s32, s32);
-extern void func_80032494(u8 *);
 void *HeapAlloc(u32);
-extern u8 D_800A3068[];
-extern u8 D_800A3069[];
 extern s8 D_800A3860S8[] asm("D_800A3860");
-extern void func_80028754(u8 *, s32);
-extern u8 D_800A3860[][4];
 void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
 void func_80041A28(void);
@@ -132,9 +106,7 @@ typedef struct {
 } Vector3;
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
-extern void func_80025454(s32);
 void func_80025454(s32);
-extern s32 func_800337EC(void);
 typedef struct {
     s32 words[10];
 } Primitive40;
@@ -159,37 +131,21 @@ void func_80034D64(void);
 void func_80035720(u_long *);
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s32);
-extern void func_8003ABC0();
 extern void func_80025594(u8 *);
-extern void func_8003AA20();
-extern void func_8003A880();
-extern void func_8003A950();
-extern void func_8003AAEC();
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
-extern u8 *D_800A3854Absolute[];
-extern void func_800414E0(void *, s32, s32);
 extern s32 func_80029EF8(u8 *);
-extern void SoundLoadVab(s32);
-extern void SoundReloadVab(s32);
-extern s32 func_8003FFF0(void *, void *);
 extern s16 SoundVabOpen(void *, void *);
-extern void func_8003FA0C(void);
 extern void HeapFree(void *);
 void func_80082B70(void);
-extern void func_80082B70(void);
-extern void func_8003F284(void);
 extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
                         short rightVolume);
 extern void func_8001F90C(s32, s32, s32, s16 *);
-extern void func_8003F060(s32);
-extern void SoundShutdown(void);
 void func_80041AF0();
 void InitPAD(void *, s32, void *, s32);
 s32 StartPAD(void);
 s32 VSync(s32);
-extern void *D_800A3A24[];
 void func_80043D6C(void);
 extern void func_800328AC(void *arg0, s32 arg1);
 typedef struct {
@@ -204,34 +160,14 @@ extern s32 D_800A3A3C[];
 extern s32 func_80037204(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 extern s32 D_800A37D0[];
-extern void func_8004EA34(void);
 extern char *strcpy(char *, const char *);
 void SetPolyFT4(POLY_FT4 *);
-extern void func_8005E550(s32);
-extern void func_80057A9C(void);
-extern void func_8005A4E0(void);
-extern void func_8005A804(u8, u8, u8);
-extern void func_80059648(void);
-extern void func_800631B4(void);
-extern void func_80063E7C(void);
-extern void func_80064174(void);
-extern void func_80069744(void);
-extern void *func_80058094(s32, void **, s32);
-extern u8 D_800A36E1[];
-extern void func_8005E47C(void);
 s32 func_80041B7C(s32);
 extern void func_8006DD28(u32 arg0, u32 arg1);
 extern void func_8006E484(u32 arg0, u32 arg1);
-extern void CdSetMixVolume(s32);
 extern void CardTestEvents(void);
-extern void func_8005A414(void);
-extern s32 CardEnableEvents(void);
 extern void CardTestEvents(void), func_8005A414(void);
-extern s32 func_8005A294(void);
-extern void func_80059C2C(void);
-extern s32 CardWaitForEvent(void);
 extern void func_8005A818(u8, u8, u8);
-extern s16 func_8005A8E0(s32);
 typedef struct {
     u32 unk0[4];
 } UnkQuad;
@@ -246,9 +182,6 @@ typedef struct {
 } UnkPrim8;
 extern u8 *func_80057CCC(s32);
 extern u8 *func_80057D50(s32);
-extern void func_8005C020(u8 *, u8 *);
-extern void func_8005C0F4(u8 *, s32);
-extern void func_8005CF34(u8 *, u8, u8, u8, s32);
 typedef struct {
     u8 unk0;
     u8 unk1;
@@ -260,11 +193,7 @@ typedef struct {
     u8 unk1;
     u8 unk2;
 } Unk3;
-extern void func_8005A7B8(u8, u8);
 extern u8 D_800A36E0[];
-extern void func_80063694(u8, s16, s16, s16);
-extern void func_800636EC(u8, u8);
-extern void func_80063AE0(s32, s32);
 extern char *strcat(char *, char *);
 extern void func_8005C8D8(u8);
 typedef struct Df50Fields {
@@ -289,10 +218,6 @@ typedef struct PanelState {
     u8 pad18[8];
     PanelChild *child;
 } PanelState;
-extern u8 D_800AEE3E[];
-extern u8 D_800AEE3D[];
-extern char *D_8009AC1C[];
-extern void func_80063874(void);
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void TextureLoadTim(void *arg0);
 typedef struct UnkNode1C {
@@ -310,15 +235,10 @@ typedef struct UnkNode1C {
 extern void func_8005B688(u8 *first, u8 friction);
 extern void func_8005B8B8(u8 *first, s32 value);
 extern u8 D_800A305B[];
-extern void GraphicsInitDoubleBuffer(s32);
 extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
 extern s32 func_8005B0E4(s16, s32);
-extern s32 func_8005A9F4W();
 asm(".globl func_8005A9F4W");
 extern void func_80058D08(s32 gp);
-extern u8 D_800A3073[];
-extern void func_800663B0(void);
-extern void func_800669B8(void);
 typedef struct UnkPacket0C {
     u8 unk0, unk1, unk2, unk3;
     s32 unk4, unk8;
@@ -840,7 +760,6 @@ void func_80067F34(s32 arg0, s32 arg1) {
     } UnkTextObj67F34;
     extern char *D_8009A474[];
     extern s32 D_8009AC80[];
-    extern s32 D_800A3A54[];
     UnkTextObj67F34 *obj;
     UnkTextObj67F34 *next;
     u8 *name;
@@ -971,7 +890,6 @@ void func_800686FC(s32 arg0, s32 arg1) {
     extern u8 *D_800A3870;
     extern s8 D_800A3944;
     extern s8 D_800A39DC;
-    extern s32 D_800A3A54[];
     extern u8 *D_800A3900Ptr asm("D_800A3900.NON_MATCHING");
     extern u8 *D_800A360C;
     extern u8 *D_800A3858;
@@ -1986,7 +1904,6 @@ void func_8006ABF8(void) {
     D_800A3A58 = 0;
 }
 
-extern char D_800BB9B4[];
 void func_8006AC78(s32 arg0) {
     char *label;
     s32 mask;
@@ -2004,7 +1921,6 @@ void func_8006AC78(s32 arg0) {
     } while (index < 0x18);
 }
 
-extern u8 D_8009AD40[];
 u8 func_8006AD0C(u8 value) {
     s32 i;
     for (i = 0; i < 0x18; i++) {
@@ -2014,7 +1930,6 @@ u8 func_8006AD0C(u8 value) {
 }
 
 /* Memory card menu state. */
-
 
 s32 func_8006AD44(char *name) {
     s32 i;
@@ -2521,7 +2436,6 @@ void func_8006BB1C(void) {
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006BB1C);
 #endif
 
-
 void func_8006BD68(void) {
     u8 *dest;
     u8 *rec;
@@ -2779,7 +2693,6 @@ void func_8006C5E4(s32 arg0) {
 }
 
 #endif
-
 
 /* func_8006C700 expands this body twice, while func_8006C2D0 calls the
  * out-of-line copy, so both share one macro. */
@@ -3118,7 +3031,6 @@ void func_8006CE64(void) {
     *((s16 *)(obj + 6)) = status + 0xA;
 }
 
-
 void func_8006CF38(void) {
     if (D_800A358C < D_800A3968) {
         strcpy(D_800B0A2C + D_800A358C * 16, (char *)D_8009A31C[D_800A305B[0]]);
@@ -3193,7 +3105,6 @@ void func_8006D0F0(void) {
     func_800598C4();
 }
 
-
 /* The same 16-byte name slots as D_800B0A2C, typed with a 16-byte stride so
  * that gcc hoists the slot address out of the loop. */
 typedef struct {
@@ -3229,9 +3140,7 @@ s32 func_8006D178(void) {
 
 extern u8 D_800B9B73[];
 extern u8 D_800B9B74[];
-extern u8 D_800A3980[];
 extern void func_8006BB1C(void);
-extern void func_8006EEBC(void);
 
 s32 func_8006D258(void) {
     typedef struct {
@@ -3426,7 +3335,6 @@ void func_8006D684(u8 arg0) {
         } while (i < 2);
     } while (0);
 }
-
 
 void func_8006D708(u8 arg0, u8 arg1, u8 arg2) {
     u8 *rowB;
@@ -3727,7 +3635,6 @@ void func_8006DD28(u32 arg0, u32 arg1) {
     }
     D_800A36E4[(u8)arg0] = 1;
 }
-
 
 void func_8006DE68(u32 arg0, u32 mode) {
     if ((mode & 0xFF) == 2) {

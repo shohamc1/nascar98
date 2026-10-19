@@ -9,17 +9,13 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
-extern s32 D_800A2EC8[];
-extern s32 D_800A2EACAbsolute[];
 extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
 extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
 extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
 extern s8 D_800A3620w18c[] asm("D_800A3620.NON_MATCHING");
-extern void SystemShowFatalError(char *);
 extern s32 sprintf(char *, u8 *);
-extern s32 gOrderingTableBankAbsolute[];
-extern s32 MathMultiplyFixed16(s32, s32);
 
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
@@ -32,9 +28,7 @@ s32 RandomScaledGet(s32 scale);
 
 extern s32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
 void func_80017D80(u8 *arg0) {
-    extern u32 gPrimitiveCursor[];
     extern s32 D_800A39C8[];
-    extern s32 D_800A36D0Absolute[];
     POLY_FT4 *entry;
     u32 cursor;
 
@@ -341,7 +335,6 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
     }
 }
 
-extern void func_80018588(void *, s32, s32);
 asm(".globl func_80050028Text\nfunc_80050028Text = func_80050028");
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
     s8 text[24];
@@ -1086,9 +1079,7 @@ panel:
     } while (i < 20);
 }
 
-extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
-extern s32 D_800A397CAbsolute[];
 
 /* Draws a 0x7F x 0x1F sprite quad from the 14-byte table at D_80090EFC.
    kind selects the table row (0 -> 0xC, 1 -> 0xD, 2 -> 0xB). */
@@ -1148,7 +1139,6 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
         AddPrim((u8 *)D_800A39C8[0], poly);
     }
 }
-
 
 void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
     s32 num;
@@ -1216,7 +1206,6 @@ extern s16 D_800A2D8C;
 extern s16 D_800A2D8A;
 extern s8 D_8008CD00[];
 extern s8 *D_8009ADD8[];
-extern s32 D_800BE980[];
 extern void func_80025730(u8 *);
 extern s32 MathGetAngleDelta(s32, s32);
 
@@ -1823,13 +1812,8 @@ void func_8001B82C(u8 *obj, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B82C);
 #endif
 
-extern s32 D_801F3FF8[];
 extern s32 D_801F3FFC[];
-extern s32 D_800A2E94[];
 extern s32 D_800A2ED0[];
-extern s32 D_800A2CE0[];
-extern u8 D_80099230[];
-extern u8 D_80099231[];
 extern void *D_800A35E0;
 extern u8 *D_800A3554;
 extern void func_8001B82C(u8 *obj, s32 arg1);

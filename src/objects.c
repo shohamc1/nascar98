@@ -10,41 +10,17 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
-extern s32 D_800A2EB8[];
-extern s32 D_800A2EC8[];
-extern s32 D_800A2EB0Absolute[];
-extern s32 D_800A2EACAbsolute[];
-extern void SceneInitRoadStrip(void);
-extern s32 D_800B9D54[];
 extern s32 D_800B9D5C[];
-extern s32 gOrderingTableBank;
 extern void func_8001E7EC(void *, s32, s32);
 extern u16 D_800A38C0[];
 extern s32 D_800A2E90w15[] asm("D_800A2E90.NON_MATCHING");
 extern u8 D_800A2EE4w15[] asm("D_800A2EE4.NON_MATCHING");
-extern s32 D_8008CA28[];
 extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
-extern s32 func_80041B7C(s32);
-extern void func_80023074(void);
-extern s32 D_800A2F10[];
-extern void *HeapAlloc(u32);
-extern void SystemShowFatalError(char *);
-extern void *D_800BE97C[];
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern void func_80033788();
-extern void func_8003379C();
-extern s32 gOrderingTableBankAbsolute[];
-extern s32 D_800A2CF8[];
-extern s32 MathMultiplyFixed16(s32, s32);
 
-extern void func_80018588(void *, s32, s32);
-extern u32 gPrimitiveCursor[];
 extern s32 D_800A39C8[];
-extern s32 D_800A36D0Absolute[];
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
-extern s32 D_800A2E24Absolute[];
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 typedef struct ListNode28 ListNode28;
@@ -56,7 +32,6 @@ extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern ListNode28 *D_800A3A40Absolute[];
 extern void (*D_80091080[])(void *);
-extern void func_8003382C();
 typedef struct {
     u8 pad[16];
 } Unk16;
@@ -184,8 +159,6 @@ extern char D_8008CF28[];
 extern u32 D_800A38F4Abs[] asm("D_800A38F4.NON_MATCHING");
 extern s32 D_800A2DE4Small asm("D_800A2DE4.NON_MATCHING");
 extern s32 D_800A3A38Small asm("D_800A3A38.NON_MATCHING");
-extern s32 D_800A2E94[];
-extern s32 D_800A2ED4[];
 extern s32 D_800A37E8Small asm("D_800A37E8.NON_MATCHING");
 extern s32 D_800A3550Small asm("D_800A3550.NON_MATCHING");
 extern s32 D_800A3804Small asm("D_800A3804.NON_MATCHING");
@@ -1218,7 +1191,6 @@ void func_80022F48(void) {
     func_800229B8();
 }
 
-extern void func_80022CA4(void);
 void func_80022F80(void) {
     func_80022CA4();
     func_80022CA4();
@@ -1274,7 +1246,6 @@ void func_80022FB8(u8 *arg0, s32 arg1) {
 INCLUDE_ASM("asm/nonmatchings/objects", func_80023074);
 
 extern void func_8003CCE0(s32);
-extern void func_8003FDE8(s8, s32, s32);
 extern void func_80024210(void);
 extern void func_8002F86C(void *, s32);
 extern void func_80044FF8(s32, s32);
@@ -1777,9 +1748,6 @@ void func_80023454(void) {
     }
 }
 
-extern char D_800A3038[];
-extern s32 D_800A3668Absolute[];
-
 void func_80024210(void) {
     CdlATV vol;
 
@@ -2060,9 +2028,7 @@ void func_80025720(u8 *obj) {
 
 void func_80025730(u8 *obj) {
     extern u8 D_800A35F8[];
-    extern u8 *D_800A3960[];
     extern s16 D_800A3910[];
-    extern u8 D_800A2EDC[];
     extern void func_80042920();
     extern void func_8004419C(u8 *);
     s32 y;
@@ -2311,8 +2277,6 @@ scan:
     return 0;
 }
 
-extern void func_8003644C(s32, s32, s32, s32);
-
 void func_80025DD4(u8 *arg0, u8 *arg1) {
     s32 x;
     s32 y;
@@ -2405,8 +2369,6 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     }
 }
 
-extern s32 D_800A3A2CAbsolute2[];
-extern s32 D_800A3A34Absolute2[];
 extern s32 pairCosTable3[] asm("D_800A3A2CSmall");
 extern s32 pairSinTable3[] asm("D_800A3A34Small");
 extern s32 pairCosTable4[] asm("D_800A3A2C");
@@ -4141,7 +4103,6 @@ extern s32 D_800980A4[];
 extern s32 D_80098134[];
 extern u8 D_80098194[];
 extern u8 D_800981E4[];
-extern s32 D_800A2E78[];
 
 void func_80028754(u8 *arg0, s32 arg1) {
     extern s8 D_800A2E18;
@@ -4507,7 +4468,6 @@ Other:
 void func_800297D0(u8 *arg0) {
     extern void func_80031264(void);
     extern void func_800294A8(void *);
-    extern void func_800414E0(void *, s32, s32);
     extern s32 CarHandleWallCollision(void *);
     extern s32 D_800A2EC8NM[] asm("D_800A2EC8.NON_MATCHING");
 
@@ -4549,7 +4509,6 @@ void func_800298E0(s32 *car) {
     car[0x35] =
         MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[index], car[0x24]);
 }
-
 
 void func_80029994(u8 *arg0, s32 arg1) {
     s32 pos[3];
@@ -4751,9 +4710,6 @@ extern u8 D_800A2EE0w15f[] asm("D_800A2EE0.NON_MATCHING");
 extern u8 D_800A3764w15f[] asm("D_800A3764.NON_MATCHING");
 extern u8 D_800A372Cw15f[] asm("D_800A372C.NON_MATCHING");
 extern s16 D_800A35A4w15f[] asm("D_800A35A4.NON_MATCHING");
-extern s32 func_8006E770(u8);
-extern void func_8006EB18(u8 *);
-extern void func_80044114(u8 *);
 
 s32 func_80029EF8(u8 *obj) {
     s32 flags;
@@ -4851,7 +4807,6 @@ void func_8002A1D0(void) {
 }
 
 extern s32 D_800A35D4[];
-extern s32 D_800A2EA4[];
 extern s32 func_80029EF8();
 extern void func_8001FD44();
 
@@ -5200,10 +5155,8 @@ void CarUpdatePlayer(u8 *object) {
     }
 }
 
-extern u8 D_800A331C[];
 extern u8 D_800A331D[];
 extern u8 D_800A331F[];
-extern u8 D_800A3320[];
 extern u8 D_800A2E20[];
 extern s32 D_800A2E30;
 extern s32 D_800A2E38;
@@ -5655,7 +5608,6 @@ extern s32 func_8002AAF0(u8 *, VECTOR *, s32);
 extern void func_8002AF94(u8 *);
 extern void func_8002B9AC(u8 *, s32 *, s32 *);
 extern void func_8002D27C(u8 *);
-extern s32 func_800358EC(s32 *);
 extern s32 func_8003702C(u8 *, u8 *);
 
 #define CAR_OFFSET(field) ((u32) & ((CarDynamics *)0)->field)
@@ -6702,7 +6654,6 @@ void func_8002D27C(u8 *arg0) {
     }
 }
 
-extern s32 D_800A3984[];
 extern s32 D_800A2E84;
 u8 *func_8002D380(void) {
     s32 index;
@@ -6727,8 +6678,6 @@ void func_8002D3A8(u8 *object, s32 index) {
 
 extern s32 D_800A2E7Cgp asm("D_800A2E7C.NON_MATCHING");
 extern s32 D_800A2E80gp asm("D_800A2E80.NON_MATCHING");
-extern s32 D_800A2E64[];
-extern u8 D_800A3860[][4];
 
 void func_8002D3EC(u8 *arg0) {
     u8 *entry;
@@ -6941,10 +6890,7 @@ extern u8 *D_800A3574_b[] asm("D_800A3570.NON_MATCHING");
 extern s32 D_800A3630_nm asm("D_800A3630.NON_MATCHING");
 extern s32 D_800A2F30_nm[] asm("D_800A2F30.NON_MATCHING");
 extern u8 D_800AE99C_nm[] asm("D_800AE99C.NON_MATCHING");
-extern void func_8003CDBC();
 extern void func_8001E17C();
-extern void func_800323F0(s32, s32);
-extern void func_80032494(u8 *);
 void func_8002DC2C(void) {
     u8 *entry;
     s32 cursor;
@@ -6989,7 +6935,6 @@ void func_8002DC2C(void) {
     func_8001DFC8();
 }
 
-extern s32 D_800A2EB0;
 void *HeapAlloc(u32);
 
 s32 func_8002DDA0(void) {
@@ -7266,7 +7211,6 @@ void func_8002F0A8(u8 *arg0) {
     func_8002EEFC(arg0);
 }
 
-extern u8 D_800A2F9DAbsolute[];
 extern s32 D_800A2EACSmall;
 void func_8002F1A0(void) {
     u8 *node;
@@ -7307,16 +7251,12 @@ void func_8002F1A0(void) {
     }
 }
 
-extern u8 D_800A3068[];
-extern u8 D_800A3069[];
 extern s8 D_800A3860S8[] asm("D_800A3860");
 extern s8 D_800A3861[];
 extern s8 D_800A3862[];
 extern s8 D_800A3863[];
 extern s32 D_800A2E7C[];
 extern s32 D_800A2E80[];
-extern void func_80028754(u8 *, s32);
-extern void func_8002D3EC(u8 *);
 
 void func_8002F2CC(void) {
     u8 *node;
@@ -7479,7 +7419,6 @@ void func_8002F674(void) {
     extern s32 D_800A2F1C;
     extern s32 D_800A2F20;
     extern s32 D_800A2F24;
-    extern s32 D_800A3558[];
     extern s32 D_800A35E0[];
     extern u32 RandomGetScaled16(s32);
     s32 value;
@@ -8535,7 +8474,6 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
     return 0;
 }
 
-extern s32 D_800BE980[];
 s32 func_800309DC(s32, s32 *, s32 *);
 void func_80030CDC(s32 *query, s32 index) {
     s8 *node;
@@ -8605,8 +8543,6 @@ void func_80030D80(RaceObject *object, s32 *query) {
 extern s32 D_800A2F2C;
 extern s32 D_800A2F2CAbsolute[];
 extern s32 D_800A384CAbsolute[];
-extern u8 *D_800A3854Absolute[];
-extern s32 D_800AE844[];
 extern s32 D_800AE848[];
 extern s32 D_800AE84C[];
 extern s32 D_800B6094[];
@@ -9212,7 +9148,6 @@ extern s32 FileOpenCall32328(s32, void *) asm("FileOpen");
 extern s32 FileSeekCall32328(void *, s32, s32) asm("FileSeek");
 extern void FileReadCall32328(s32, s32, s32, s32) asm("FileRead");
 extern void FileCloseCall32328(s32) asm("FileClose");
-extern void func_80025454(s32);
 extern void ObjectLoadGeometry(ModelGeometry *, u8 *, s32);
 extern char D_8008D08C[];
 extern void *D_800A2F34[];
@@ -9245,7 +9180,6 @@ INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D08C);
  * materialization across the first call; the -87*4 delta folds into
  * the %lo displacement (0x36D0 - 0x15C = 0x3574).
  */
-extern s32 D_800B9F44[];
 void func_80025454(s32);
 void ObjectLoadGeometry(ModelGeometry *, u8 *, s32);
 void func_800323F0(s32 index, s32 arg1) {
@@ -9423,7 +9357,6 @@ u8 *func_80032760(u8 *obj, u8 *prim, s32 count) {
     return obj;
 }
 
-
 void func_800328AC(void *arg0, s32 arg1) {
     register s32 v0s asm("v0");
     u8 *ret;
@@ -9587,7 +9520,6 @@ void func_80032D94(s8 *object) {
     }
 }
 
-extern s32 func_800337EC(void);
 extern u32 D_800B022C[];
 extern s16 D_800AFE2C[];
 extern s32 D_800A2F38NM asm("D_800A2F38.NON_MATCHING");
@@ -10571,7 +10503,6 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
 }
 extern u32 gScratchpad[];
 extern s32 D_800A3640[];
-extern s32 D_800A2EA4Absolute[];
 extern u8 D_800A2ED8Abs[] asm("D_800A2ED8.NON_MATCHING");
 
 u32 func_800342D8(u32 *entry, u32 primCursor) {
@@ -10770,7 +10701,6 @@ s32 func_800346D0(s32 threshold) {
     PopMatrix();
     return D_800A2F38[0];
 }
-
 
 void func_80034834(void) {
     u8 *prim;
@@ -11364,7 +11294,6 @@ void func_80035E8C(s32 *src, s32 *outX, s32 *outY) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80035F28);
 
-extern u8 D_800A2ED9[];
 extern u8 D_800A2ED8Arr[];
 extern void func_80035F28(u8 *);
 
@@ -11868,7 +11797,6 @@ s32 func_80036F64(u8 *arg0, u8 *arg1, s32 arg2) {
     return arg2 < ((tA * dx - tB * dy) >> 16);
 }
 
-
 s32 func_80036FC8(s32 *a, s32 *b) {
     s32 index;
     s32 t1;
@@ -12124,10 +12052,8 @@ void func_80037130(u8 *object) {
 #endif
 
 extern s32 D_800A39E0[];
-extern s32 D_800BE974[];
 
 s32 func_80037204(u8 *obj) {
-    extern u8 *D_800A3960[];
     extern void *D_800BE980z[] asm("D_800BE980");
     u8 *node;
     s32 tmp;
@@ -14030,7 +13956,6 @@ typedef struct TrafficCar {
     struct TrafficCar *next;
 } TrafficCar;
 
-
 s32 func_80039274(TrafficCar *car, TrafficCar *other, u8 side) {
     s32 cosine;
     s32 sine;
@@ -14268,7 +14193,6 @@ s32 CarAvoidTraffic(TrafficCar *car, s32 keepTarget) {
     return 0;
 }
 
-
 void func_80039B74(s32 *arg0, s32 arg1) {
     u8 *obj = (u8 *)arg0;
     s16 idx;
@@ -14332,7 +14256,6 @@ s8 func_80039C68(u8 *arg0, s32 arg1, s32 arg2) {
              16) /
            250;
 }
-
 
 void func_80039CF4(void) {
     u8 *node;
@@ -14732,7 +14655,6 @@ void func_8003A54C(void) {
     func_80039CF4();
 }
 
-extern void func_8003ABC0();
 extern s16 D_80098254[];
 
 void func_8003A880(s32 car) {
@@ -14911,11 +14833,6 @@ void func_8003ABC0(u8 *object) {
     }
 }
 
-extern void func_8003AA20();
-extern void func_8003A880();
-extern void func_8003A950();
-extern void func_8003AAEC();
-
 void func_8003AC18(u8 *object, s32 arg1, s32 arg2, s32 arg3) {
     if (*(s16 *)(object + 0x1EC) == 1) {
         *(s16 *)(object + 0x1BC) = 0;
@@ -14946,7 +14863,6 @@ void func_8003AC18(u8 *object, s32 arg1, s32 arg2, s32 arg3) {
     }
 }
 
-extern s32 D_800A3558[];
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
@@ -15247,7 +15163,6 @@ void func_8003B464(void) {
     D_800A2F65 = 0;
 }
 
-
 s32 func_8003B5F8(s32 arg0, s32 arg1) {
     volatile s32 pad[2];
     register s32 t2 asm("t2");
@@ -15349,10 +15264,7 @@ void func_8003BCAC(void) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8003BDBC);
 
-extern s32 D_800A2EA8[];
 extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
-extern s32 D_800AE1EC[];
-extern u8 D_800BE70C[];
 extern u8 D_800B0B1C[];
 extern void func_8003BDBC(void);
 

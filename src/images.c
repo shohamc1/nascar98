@@ -9,15 +9,10 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
+#include "game.h"
 
 extern s32 func_8001E7EC(void *, s32, s32);
-extern void *HeapAlloc(u32);
-extern void SystemShowFatalError(char *);
-extern void ListPushFront(u8 *, u8 **, u8 **);
-extern void func_8001C668(void *, void *);
-extern s32 MathMultiplyFixed16(s32, s32);
 
-extern void func_80018588(void *, s32, s32);
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
 extern s32 gOTBnm[] asm("gOrderingTableBank.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
@@ -151,7 +146,6 @@ void func_8001E050(s32 fileName) {
  * i = 0 pins the counter's allocation to a1 (the retail delay-slot move)
  * without blocking the branch delay-slot fill. */
 void func_8001E17C(s32 index) {
-    extern s32 D_800B9F44[];
     extern void *D_800A368C;
     extern void *D_800A37E4;
     extern u16 D_800A3754;
@@ -724,7 +718,6 @@ void func_8001EEC4(s32 *arg0) {
     D_800A37C4 = i;
 }
 
-
 void MatrixCombineState(void) {
     s32 matrix21;
     s32 matrix22;
@@ -820,7 +813,6 @@ void func_8001F198(void) {
     D_800A37A4 = d;
     D_800A37B4 = a;
 }
-
 
 void func_8001F1D4(s32 *vec) {
     s32 x, y, z;
@@ -994,7 +986,6 @@ void func_8001F828(s32 *p) {
     p[14] = i;
 }
 
-
 void func_8001F874(s32 *arg0) {
     arg0[0x60 / 4] = (s32)D_800A36B0;
     arg0[0x6C / 4] = (s32)D_800A36B8;
@@ -1071,7 +1062,6 @@ void MatrixSaveState(void) {
     D_800AE884[0] = D_800A36DC;
     D_800AE888[0] = D_800A36E8;
 }
-
 
 void MatrixRestoreState(void) {
     D_800A36B0 = D_800AE868[0];
