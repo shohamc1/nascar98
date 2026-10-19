@@ -11145,7 +11145,154 @@ void func_80034C1C(void) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80034D64);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80035274);
+extern s32 D_800A2F44;
+extern s32 D_800A38B4;
+extern s32 D_800A38BC;
+extern s32 D_800A36A8;
+extern s32 D_800A36AC;
+extern void *D_800A2EA0[];
+extern s16 D_800B1ED8[], D_800B1EDA[], D_800B1EDC[], D_800B1EDE[];
+extern s16 D_800B1EE0[], D_800B1EE2[], D_800B1EE4[], D_800B1EE6[];
+extern u8 D_800B1ED0[];
+extern POLY_FT4 D_800AFB18Wall[] asm("D_800AFB18");
+extern u32 gPrimitiveCursorAdv1[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursorAdv2[] asm("gPrimitiveCursor");
+extern u32 gPrimitiveCursorAdv3[] asm("gPrimitiveCursor");
+
+void func_80035274(void) {
+    u8 *obj;
+    u8 *tpl;
+    POLY_FT4 *prim;
+    s32 x;
+    s32 w;
+    s32 ly;
+    s32 ry;
+    register s32 e1 asm("$3");
+    s32 e0;
+    register s32 rym2 asm("$6");
+    register u32 drawCursor asm("$4");
+    register POLY_FT4 *drawPrim asm("$7");
+    register POLY_FT4 *entry asm("$8");
+    register u32 cursorLoop asm("$3");
+    register u32 cursorEnd asm("$2");
+    register s32 yFixed asm("$18");
+    register s32 nextY asm("$6");
+    register s32 step asm("$2");
+    s32 y0v;
+    s32 y1t;
+    register s32 ytmp asm("$2");
+    register s32 dza asm("$4");
+    s32 dz;
+    s32 modq;
+    s32 offX;
+    register s32 offY asm("$23");
+    register s32 yInt asm("$19");
+    s32 scale;
+    s32 mod;
+    s32 idx;
+    register s32 nextIdx asm("$5");
+    s32 count;
+
+    obj = (u8 *)D_800A2EA0[0];
+    if (*(s16 *)(obj + 0x1EC) == 0 && *(s8 *)(obj + 0x20C) <= 0 &&
+        ((*(s32 *)(obj + 0x354) == (s32)func_80025730 && D_800A397C[0] != 2) ||
+         (D_800A397C[0] == 2 && *(s32 *)(obj + 0x388) != 0))) {
+        tpl = D_800B1ED0;
+        D_800B1ED8[0] = 0;
+        D_800B1EDA[0] = 0;
+        D_800B1EDC[0] = 0x140;
+        D_800B1EDE[0] = 0;
+        D_800B1EE0[0] = 0;
+        D_800B1EE2[0] = 0xF0;
+        D_800B1EE4[0] = 0x140;
+        D_800B1EE6[0] = 0xF0;
+        drawCursor = gPrimitiveCursor[0];
+        drawPrim = (POLY_FT4 *)drawCursor;
+        gPrimitiveCursorAdv1[0] = drawCursor + 0x28;
+        *drawPrim = *(POLY_FT4 *)tpl;
+        AddPrim((u8 *)D_800A39C8[0] + 0xFF8, drawPrim);
+        return;
+    }
+    ly = D_800A38B4;
+    ry = D_800A38BC;
+    x = -0x20;
+    w = 0x160;
+    e0 = 0;
+    e1 = 0;
+    offX = D_800A36A8;
+    offY = D_800A36AC;
+    yInt = ly - 2;
+    rym2 = ry - 2;
+    if (yInt < 0) {
+        e1 = yInt;
+        x = 0;
+    }
+    if (rym2 < 0) {
+        e0 = rym2;
+        w = 0x140;
+    }
+    D_800B1EE2[0] = yInt;
+    yInt = ly;
+    D_800B1ED8[0] = 0;
+    D_800B1EDA[0] = e1;
+    D_800B1EDC[0] = 0x140;
+    D_800B1EDE[0] = e0;
+    D_800B1EE0[0] = x;
+    D_800B1EE4[0] = w;
+    D_800B1EE6[0] = rym2;
+    scale = MathFixedDivide(ry - yInt, 0x180);
+    tpl = D_800B1ED0;
+    x = -0x20;
+    dz = D_800A2F44;
+    if (dz < 0) {
+        dza = dz + 0x7F;
+    } else {
+        dza = dz;
+    }
+    idx = dza >> 7;
+    mod = dz - (idx << 7);
+    x = x - mod;
+    count = 0;
+    ytmp = yInt << 16;
+    yFixed = ytmp - scale * mod;
+    yInt = yFixed >> 16;
+    do {
+        step = scale << 7;
+        nextY = yFixed + step;
+        prim = &D_800AFB18Wall[idx];
+        y0v = yInt + offY;
+        prim->x2 = x;
+        prim->y0 = y0v;
+        prim->x0 = x + offX;
+        prim->x1 = x + offX + 0x80;
+        y1t = offY;
+        prim->y1 = (nextY >> 16) + y1t;
+        prim->y2 = yInt;
+        prim->x3 = x + 0x80;
+        prim->y3 = nextY >> 16;
+        x = x + 0x80;
+        yFixed = nextY;
+        nextIdx = idx + 1;
+        modq = nextIdx;
+        if (nextIdx < 0) {
+            modq = idx + 4;
+        }
+        idx = modq >> 2;
+        mod = idx << 2;
+        idx = nextIdx - mod;
+        cursorLoop = gPrimitiveCursor[0];
+        entry = (POLY_FT4 *)cursorLoop;
+        gPrimitiveCursorAdv2[0] = (u32)entry + 0x28;
+        *entry = *prim;
+        AddPrim((u8 *)D_800A39C8[0] + 0xFF8, entry);
+        count++;
+    } while (yInt = yFixed >> 16, count < 6);
+    cursorEnd = gPrimitiveCursor[0];
+    gPrimitiveCursorAdv3[0] = cursorEnd + 0x28;
+    entry = (POLY_FT4 *)cursorEnd;
+    *entry = *(POLY_FT4 *)tpl;
+    AddPrim((u8 *)D_800A39C8[0] + 0xFF8, entry);
+}
 
 extern void *D_800A2EA0[];
 void func_80035274(void);
