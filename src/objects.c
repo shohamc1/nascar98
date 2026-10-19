@@ -1243,7 +1243,155 @@ void func_80022FB8(u8 *arg0, s32 arg1) {
     *(s32 *)(arg0 + 0x5C) = value2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80023074);
+extern u8 *D_800A3554Lui asm("D_800A3554Absolute");
+extern s32 D_800A2EA4Lui asm("D_800A2EA4Absolute");
+extern s32 D_800A2EC8Lui asm("D_800A2EC8Absolute");
+extern FarVar gFarFlag3A60 asm("D_800A3A60");
+extern FarVar gFarWord357C asm("D_800A357C");
+extern FarVar gFarWord357E asm("D_800A357E");
+extern FarVar gFarFlag306D asm("D_800A306D");
+extern FarVar gFarFlag2F9D asm("D_800A2F9D");
+extern s32 D_800A2ECC[];
+extern s32 D_800A2ED0[];
+extern s8 D_800A3620;
+extern s32 D_800A2DF8;
+extern u8 D_800A39F0;
+extern void func_8004B128(u8 *);
+extern void func_8003F564(s8, s8);
+extern void func_800229B8(void);
+extern void func_80044248(void);
+extern s32 func_8002482C(s32, s32, s32 *);
+extern u32 func_80041BAC(s32);
+extern void func_80052FC4(s8);
+extern void func_8005301C(void);
+extern void func_80041444(s32);
+extern void SsSetMute(u8);
+
+/* The plain D_800A2F58 and D_800A36A4 names carry a small .extern elsewhere
+ * in this file, which pulls every access through $gp. Separate lui views. */
+asm(".globl D_800A2F58Absolute2\nD_800A2F58Absolute2 = D_800A2F58\n"
+    ".globl D_800A36A4Absolute2\nD_800A36A4Absolute2 = D_800A36A4\n"
+    ".globl D_800A3554Absolute2\nD_800A3554Absolute2 = D_800A3554\n");
+extern u8 D_800A2F58Absolute2;
+extern s32 D_800A36A4Absolute2;
+extern u8 *D_800A3554Absolute2;
+
+void func_80023074(void) {
+    s32 mode;
+    s32 offset;
+
+    if (D_800A2F58Absolute2 != 0 && D_800A36A4Absolute2 >= 0x51) {
+        return;
+    }
+    mode = 1;
+    D_800A2ED4[0] = mode;
+    func_8004B128(D_800A3554Lui);
+    if (D_800A2EA4Lui != 0) {
+        func_8004B128(*(u8 **)(D_800A3554Lui + 0x3E0));
+    }
+    if (D_800A2EC8Lui != 0) {
+        mode = D_800A397CSmall;
+        if (mode == 2) {
+            func_8003F564(0xA, 0xB);
+            offset = D_800A3A90Small - 2;
+            D_800A3A3CSmall = (D_800A3550Small + offset) % D_800A3A90Small;
+            func_800229B8();
+            func_80044248();
+            {
+                u8 *car = D_800A3554Lui;
+                u8 copy;
+
+                copy = 0;
+                if (*(u8 *)(car + 0x268) == 0) {
+                    copy = *(u8 *)(car + 0x20D);
+                }
+                *(u8 *)(car + 0x20C) = copy;
+            }
+            *(s16 *)(D_800A3554Lui + 0x1E0) = func_8002482C(
+                *(s32 *)D_800A3554Lui, *(s32 *)(D_800A3554Lui + 4),
+                (s32 *)(D_800A3554Lui + 0x1F8));
+            func_8004B128(D_800A3554Lui);
+            {
+                u8 *car = D_800A3554Lui;
+                s32 split;
+
+                split = D_800A2EA4Lui;
+                *(s32 *)(car + 0x380) = *(s16 *)(car + 0x114);
+                if (split == mode) {
+                    u8 *other = *(u8 **)(car + 0x3E0);
+                    u8 copy;
+
+                    copy = 0;
+                    if (*(u8 *)(other + 0x268) == 0) {
+                        copy = *(u8 *)(other + 0x20D);
+                    }
+                    *(u8 *)(other + 0x20C) = copy;
+                    *(s16 *)(*(u8 **)(D_800A3554Lui + 0x3E0) + 0x1E0) =
+                        func_8002482C(
+                            *(s32 *)*(u8 **)(D_800A3554Lui + 0x3E0),
+                            *(s32 *)(*(u8 **)(D_800A3554Lui + 0x3E0) + 4),
+                            (s32 *)(*(u8 **)(D_800A3554Lui + 0x3E0) + 0x1F8));
+                    func_8004B128(*(u8 **)(D_800A3554Lui + 0x3E0));
+                    *(s32 *)(*(u8 **)(D_800A3554Lui + 0x3E0) + 0x380) =
+                        *(s16 *)(*(u8 **)(D_800A3554Lui + 0x3E0) + 0x114);
+                }
+            }
+            if (FAR_VAR(u8, gFarFlag3A60) != 0) {
+                u8 *car = D_800A3554Absolute2;
+                u16 word;
+                s32 split2;
+
+                word = FAR_VAR(u16, gFarWord357C);
+                split2 = D_800A2EA4Lui;
+                *(u16 *)(car + 0x1E0) = word;
+                if (split2 != 0) {
+                    *(u16 *)(*(u8 **)(car + 0x3E0) + 0x1E0) =
+                        FAR_VAR(u16, gFarWord357E);
+                }
+                SceneInitRoadStrip();
+            }
+            if (func_80041BAC(D_800A3620) == 2) {
+                D_800A2DF8 = func_80041B7C(D_800A3620);
+            }
+            D_800A397CSmall = 1;
+            func_80052FC4(0);
+        } else {
+            func_8005301C();
+        }
+        D_800A2ED0[0] = 0;
+        D_800A3680[0] = 1;
+        return;
+    }
+    D_800A2EC8[0] = mode;
+    D_800A2ECC[0] = 0;
+    D_800A2ED0[0] = 0;
+    {
+        u8 *car = D_800A3554Lui;
+
+        if (*(u8 *)(car + 0x268) == 0) {
+            *(u8 *)(car + 0x20D) = *(u8 *)(car + 0x20C);
+        }
+    }
+    if (D_800A2EA4Lui == 2) {
+        u8 *other = *(u8 **)(D_800A3554Lui + 0x3E0);
+
+        if (*(u8 *)(other + 0x268) == 0) {
+            *(u8 *)(other + 0x20D) = *(u8 *)(other + 0x20C);
+        }
+    }
+    offset = D_800A3A90Small - 1;
+    D_800A3A3CSmall = (D_800A3550Small + offset) % D_800A3A90Small;
+    func_80041444(0);
+    func_80052FC4(0);
+    if (FAR_VAR(u8, gFarFlag306D) == 0) {
+        func_8003CCE0(0);
+    }
+    if (FAR_VAR(u8, gFarFlag2F9D) == 0) {
+        SsSetMute(0);
+    }
+    D_800A2DF8 = func_80041B7C(D_800A3620);
+    D_800A39F0 = 0;
+}
 
 extern void func_8003CCE0(s32);
 extern void func_80024210(void);
