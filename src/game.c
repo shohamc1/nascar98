@@ -2656,7 +2656,6 @@ again:
     D_800A2D64 = (s32 *)tailp;
 }
 
-#ifdef NON_MATCHING
 void *func_800163E8(u8 *arg0, s32 arg1) {
     extern s32 gOrderingTableBankAbsolute[];
     u8 *polys[250];
@@ -2674,22 +2673,17 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     s32 scroll;
     s32 count;
     s32 cba;
-    s32 color;
-    s32 b0;
-    s32 b1;
-    s32 b2;
-    s32 r0;
-    s32 r1;
-    s32 r2;
-    s32 r3;
+    s32 clutY;
     s32 w0;
     s32 w1;
     s32 w2;
     s32 w3;
     s32 i;
     s32 off;
-    volatile s32 framePad[2];
-    u8 **new_var;
+    u8 **polyTable;
+    s32 pool;
+    s32 next;
+    s32 bank;
 
     obj = *(u8 **)(arg0 + 0x36C);
     poly = (u8 *)D_800A2D60;
@@ -2707,8 +2701,8 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     } else {
         clutOld = clutCur;
     }
-    r1 = 0x3F - (arg1 / 16);
-    clutNew = GetClut((arg1 % 16) * 16 + 0x300, r1);
+    clutY = 0x3F - (arg1 / 16);
+    clutNew = GetClut((arg1 % 16) * 16 + 0x300, clutY);
     if (arg1 < 0xC) {
         tpage = GetTPage(0, 0, (arg1 % 4) * 64 + 0x300, 0);
         scroll = (arg1 / 4) * 64;
@@ -2728,22 +2722,21 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         *(s32 *)(poly + 0x18) = w1;
         *(s32 *)(poly + 0x24) = w2;
         *(s32 *)(poly + 0x30) = w3;
-        color = *(s32 *)(src - 0x14);
-        r1 = *(u16 *)(poly + 0xE);
-        cba = r1;
-        b0 = color & 0xFF;
-        color >>= 8;
-        b1 = color & 0xFF;
-        color >>= 8;
-        b2 = color & 0xFF;
-        r0 = lut[b0];
-        r1 = lut[b1];
-        r2 = lut[b2];
-        r3 = lut[(color >> 8) & 0xFF];
-        *(s32 *)(poly + 0x4) = r0 | 0x3C000000;
-        *(s32 *)(poly + 0x10) = r1;
-        *(s32 *)(poly + 0x28) = r2;
-        *(s32 *)(poly + 0x1C) = r3;
+        w0 = *(s32 *)(src - 0x14);
+        cba = *(u16 *)(poly + 0xE);
+        w1 = w0 & 0xFF;
+        w0 >>= 8;
+        w2 = w0 & 0xFF;
+        w0 >>= 8;
+        w3 = w0 & 0xFF;
+        w1 = lut[w1];
+        w2 = lut[w2];
+        w3 = lut[w3];
+        w0 = lut[(w0 >> 8) & 0xFF];
+        *(s32 *)(poly + 0x4) = w1 | 0x3C000000;
+        *(s32 *)(poly + 0x10) = w2;
+        *(s32 *)(poly + 0x28) = w3;
+        *(s32 *)(poly + 0x1C) = w0;
         if (cba == clutOld) {
             *(u16 *)(poly + 0xE) = clutNew;
             *(u16 *)(poly + 0x1A) = tpage;
@@ -2757,27 +2750,26 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
             poly = *(u8 **)(poly + 0x34);
         }
     }
-    if (*(s16 *)(obj + 0x2C) > 0) {
+    i = 0;
+    if (i < *(s16 *)(obj + 0x2C)) {
         ot = (s32 *)(gOrderingTableBankAbsolute[0] * 0x30 + (s32)arg0 + 0x440);
-        new_var = polys;
-        i = 0;
+        polyTable = polys;
         off = 0;
         do {
-            ot[i] = new_var[*(s16 *)(*(u8 **)(obj + 0x40) + off + 0x10)];
+            ot[i] = polyTable[*(s16 *)(*(u8 **)(obj + 0x40) + off + 0x10)];
             off += 0x18;
             i++;
         } while (i < *(s16 *)(obj + 0x2C));
     }
-    i = *(s32 *)(poly + 0x34);
+    pool = D_800A2D5C;
+    next = *(s32 *)(poly + 0x34);
+    bank = gOrderingTableBankAbsolute[0];
     *(s32 *)(poly + 0x34) = 0;
-    D_800A2D5C -= count;
-    D_800A2D60 = i;
-    *(s32 *)(arg0 + gOrderingTableBankAbsolute[0] * 4 + 0x430) = (s32)poly;
+    D_800A2D5C = pool - count;
+    D_800A2D60 = next;
+    *(s32 *)(arg0 + bank * 4 + 0x430) = (s32)poly;
     return first;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/game", func_800163E8);
-#endif
 
 void func_80016724(s32 value, s32 *next, s32 size) {
     s32 *current;
