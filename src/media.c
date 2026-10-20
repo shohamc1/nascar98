@@ -837,76 +837,87 @@ void func_8006E484(u32 arg0, u32 arg1);
 INCLUDE_ASM("asm/nonmatchings/media", func_8006E770);
 INCLUDE_RODATA("asm/nonmatchings/media", D_8008FCA4);
 
-#ifdef NON_MATCHING
+/* One axis's calibration: the raw reading at each end and at rest. */
+typedef struct {
+    u8 min;
+    u8 max;
+    u8 center;
+} PadAxisCal;
+
 extern void *D_800A3A24[];
 extern u8 D_800A307C[];
-extern u8 D_800AEE3C[];
-extern u8 D_800AEE3D[];
-extern u8 D_800AEE3E[];
+extern PadAxisCal D_800AEE3C[][3];
 extern u16 func_80041BFC(u8 *);
 
+/* Reads one stick axis from a pad buffer. func_8006DF98 in
+ * memory_card_menu.c is the out-of-line copy of this function; retail
+ * inlines it here, which puts the buffer address in its own register for
+ * one arm and folds it into sp-relative loads for the rest. */
+static __inline__ u8 PadReadAxis(void *pad, s32 axis, s32 type, u8 subtype) {
+    u8 mode;
+
+    mode = axis;
+    switch (mode) {
+    case 0:
+        if ((u8)type == 2) {
+            if (subtype == 0 || subtype == 2) {
+                return ((u8 *)pad)[0x3C7];
+            }
+        }
+        return ((u8 *)pad)[0x3C6];
+    case 1:
+        if ((u8)type == 2) {
+            if (subtype == 0 || subtype == 2) {
+                return ((u8 *)pad)[0x3C6];
+            }
+            return ((u8 *)pad)[0x3C7];
+        }
+        return ((u8 *)pad)[0x3C6];
+    case 2:
+        if ((u8)type == mode) {
+            if ((u8)(subtype - 2) < 2) {
+                return (u8) ~((u8 *)pad)[0x3C5];
+            } else {
+                return ((u8 *)pad)[0x3C5];
+            }
+        } else {
+            return ((u8 *)pad)[0x3C5];
+        }
+    }
+}
+
+/* Converts the pad's three stick axes into signed (axis 2) and unsigned
+ * (axes 0 and 1) rates using the per-pad calibration table. Indexing the
+ * table by axis lets cse fold `i * 3` to a constant in the `i == 2` and
+ * `i == 0` arms, which loop.c then hoists after the constant 2. */
 void func_8006EB18(u8 *obj) {
     u8 scratch[0x500];
-    u8 *padState;
     u8 id;
-    u8 type;
-    u8 sub;
     u8 value;
     u8 denom;
     u8 rate;
-    s32 base9;
-    s32 idx;
-    s32 idx6;
     s32 i;
 
     id = obj[0x20B];
     scratch[0x20B] = id;
     func_80041BFC(scratch);
-    i = 0;
-    padState = scratch;
-    base9 = id * 9;
-    idx6 = base9 + 6;
-    for (; i < 3; i++) {
-        idx = base9 + i * 3;
-        type = ((u8 *)D_800A3A24)[id];
-        sub = D_800A307C[id];
-        switch ((u8)i) {
-        case 0:
-            if (type != 2 || (sub != 0 && sub != 2)) {
-                value = padState[0x3C6];
-            } else {
-                value = scratch[0x3C7];
-            }
-            break;
-        case 1:
-            if (type == 2 && sub != 0 && sub != 2) {
-                value = scratch[0x3C7];
-            } else {
-                value = scratch[0x3C6];
-            }
-            break;
-        case 2:
-            if (type == 2 && (u8)(sub - 2) < 2) {
-                value = (u8)~scratch[0x3C5];
-            } else {
-                value = scratch[0x3C5];
-            }
-            break;
-        }
+    for (i = 0; i < 3; i++) {
+        value = PadReadAxis(scratch, i, ((u8 *)D_800A3A24)[id], D_800A307C[id]);
         if (i == 2) {
-            u8 target2;
-            target2 = D_800AEE3E[idx6];
-            if (value < target2 - 4) {
-                value = target2 - value;
-                denom = target2 - D_800AEE3C[idx6];
+            u8 target;
+
+            target = D_800AEE3C[id][i].center;
+            if (value < target - 4) {
+                value = target - value;
+                denom = target - D_800AEE3C[id][i].min;
                 rate = value * 127 / denom;
                 if (rate >= 0x80) {
                     rate = 0x7F;
                 }
                 obj[0x3C5] = -rate;
-            } else if (target2 + 4 < value) {
-                value = value - target2;
-                denom = D_800AEE3D[idx6] - target2;
+            } else if (target + 4 < value) {
+                value = value - target;
+                denom = D_800AEE3C[id][i].max - target;
                 rate = value * 127 / denom;
                 if (rate >= 0x80) {
                     rate = 0x7F;
@@ -918,29 +929,31 @@ void func_8006EB18(u8 *obj) {
         } else {
             if (((s8 *)D_800A3A24)[id] >= 5) {
                 if (i == 0) {
-                    u8 target0;
-                    target0 = D_800AEE3E[base9];
-                    if (value < target0 - 4) {
-                        value = target0 - value;
+                    u8 target;
+
+                    target = D_800AEE3C[id][i].center;
+                    if (value < target - 4) {
+                        value = target - value;
                     } else {
                         value = 0;
                     }
-                    denom = D_800AEE3E[idx] - D_800AEE3D[idx];
+                    denom = D_800AEE3C[id][i].center - D_800AEE3C[id][i].max;
                 } else {
-                    u8 target1;
-                    target1 = D_800AEE3E[idx];
-                    if (target1 + 4 < value) {
-                        value = value - target1;
+                    u8 target;
+
+                    target = D_800AEE3C[id][i].center;
+                    if (target + 4 < value) {
+                        value = value - target;
                     } else {
                         value = 0;
                     }
-                    denom = D_800AEE3D[idx] - D_800AEE3E[idx];
+                    denom = D_800AEE3C[id][i].max - D_800AEE3C[id][i].center;
                 }
             } else {
                 if (value < 9) {
                     value = 0;
                 }
-                denom = D_800AEE3D[idx] - D_800AEE3C[idx];
+                denom = D_800AEE3C[id][i].max - D_800AEE3C[id][i].min;
             }
             if (value > denom) {
                 value = denom;
@@ -954,11 +967,6 @@ void func_8006EB18(u8 *obj) {
         }
     }
 }
-
-
-#else
-INCLUDE_ASM("asm/nonmatchings/media", func_8006EB18);
-#endif
 
 extern u8 D_800AD984[];
 void func_8006EEBC(void) {
