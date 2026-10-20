@@ -588,6 +588,7 @@ ListRemoveNodeWithTail = 0x8001C8BC; // type:func
 ListPushFrontDoublyLinked = 0x8001C950; // type:func
 ListDispatchCallbacks = 0x8001D098; // type:func
 GraphicsLoadImageWithXOffset = 0x8001E380; // type:func
+GraphicsInitScreen = 0x8001E3E0; // type:func
 GraphicsApplyDisplayEnvironments = 0x8001EB74; // type:func
 GraphicsPartitionWorkBuffers = 0x8001EBB4; // type:func
 MatrixSaveState = 0x8001F9D8; // type:func

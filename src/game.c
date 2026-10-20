@@ -166,7 +166,7 @@ void GameRunSession(void) {
     extern s32 D_800A2D00;
     extern DRAWENV D_800BDD4C[];
     extern DISPENV D_800BDE04[];
-    extern void func_8001E3E0(s32, s32, s32, s32);
+    extern void GraphicsInitScreen(s32, s32, s32, s32);
     extern void GraphicsPartitionWorkBuffers(void);
     extern void func_8002DDA0(void);
     extern void func_80041850(void);
@@ -231,7 +231,7 @@ void GameRunSession(void) {
     D_800A2F54[0] = 0;
     D_800A2EC4Absolute[0] = 0;
     VSync(0);
-    func_8001E3E0(320, 240, 160, 0);
+    GraphicsInitScreen(320, 240, 160, 0);
     bank = 0;
     GraphicsPartitionWorkBuffers();
     timeout = 1200;
