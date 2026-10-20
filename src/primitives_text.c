@@ -1723,16 +1723,6 @@ INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001AEDC);
 
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B3F0);
 
-#ifdef NON_MATCHING
-/* Parked 2026-10-12 at 600 (was 9500 first draft). Matched: div sequences,
- * head load order (bank term hoisted as its own statement is the permuter's),
- * the switch dispatch chain (beq 2 / slti 3 / beq 1 - gcc's balanced tree,
- * body order = source case order 1,2,3), D_800A2EB4[0] >= 2 polarity, and
- * the D_80090F30 tail via four asm-label aliases (2 u16 + 2 u8 reads).
- * Remaining: one head register permutation (y0 t1 vs retail t0, slot a0 vs
- * v1, bankOff v0 vs a0), the case-1 exit pair (j join; move a1,zero)
- * cross-jumped away, and the sh store order. Permuter floor 605; term
- * reorder, decl swaps, and case-1 assignment order all neutral. */
 extern s32 D_800A2EB4[];
 extern u8 *D_800A3554;
 extern u8 D_800B0B7C[];
@@ -1743,73 +1733,70 @@ extern u8 D_80090F30d[] asm("D_80090F30");
 extern u8 D_80090F30e[] asm("D_80090F30");
 extern void AddPrim(void *ot, void *p);
 void func_8001B82C(u8 *obj, s32 arg1) {
-    u8 *prim;
-    s32 y0;
-    s32 y1;
-    s32 uOff;
-    int new_var;
+    POLY_FT4 *prim;
+    s32 x;
+    s32 y;
+    u8 uOff;
     u32 width;
     s32 mode;
-    new_var = (gOrderingTableBankAbsolute[0] >> 1) * 0x3C0;
-    y0 = 0x12C - ((*((s32 *)obj)) / arg1);
-    y1 = ((*((s32 *)(obj + 4))) / arg1) - -0x12;
-    prim = new_var + (D_800B0B7C + ((*((s8 *)(obj + 0x376))) * 0x28));
-    if ((*((s16 *)(obj + 0x1EC))) == 0) {
-        width = 0xA;
+
+    x = 300 - *(s32 *)obj / arg1;
+    y = *(s32 *)(obj + 4) / arg1 + 18;
+    prim =
+        (POLY_FT4 *)(D_800B0B7C + (gOrderingTableBankAbsolute[0] >> 1) * 0x3C0 +
+                     *(s8 *)(obj + 0x376) * 0x28);
+    if (*(s16 *)(obj + 0x1EC) == 0) {
+        width = 10;
         if (D_800A2EB4[0] >= 2) {
-            uOff = ((*((s16 *)(obj + 0x1DE))) * 0x10) + 0x20;
+            uOff = *(s16 *)(obj + 0x1DE) * 16 + 32;
         } else {
-            uOff = 0x10;
+            uOff = 16;
         }
     } else {
-        mode = *((s8 *)(obj + 0x204));
+        mode = *(s8 *)(obj + 0x204);
         switch (mode) {
-        case 2:
-            width = 8;
-            if (((*((s8 *)(D_800A3554 + 0x204))) == 1) &&
-                (D_800A2EB4[0] == (*((s8 *)(D_800A3554 + 0x204))))) {
-                width = 0xA;
-            }
-            uOff = 0x30;
-            break;
-
         case 1:
-            width = 0xA;
+            width = 10;
             uOff = 0;
             break;
-
+        case 2:
+            width = 8;
+            if (*(s8 *)(D_800A3554 + 0x204) == 1 &&
+                D_800A2EB4[0] == *(s8 *)(D_800A3554 + 0x204)) {
+                width = 10;
+            }
+            uOff = 48;
+            break;
         case 3:
             width = 8;
-            uOff = 0x40;
+            uOff = 64;
             break;
-
         default:
             width = 6;
-            uOff = 0x60;
+            uOff = 96;
             break;
         }
     }
-    *((s16 *)(prim + 8)) = (y0 -= width >> 1);
-    y1 -= width >> 1;
-    *((s16 *)(prim + 0x10)) = y0 + width;
-    *((s16 *)(prim + 0x20)) = y0 + width;
-    *((s16 *)(prim + 0xA)) = y1;
-    *((s16 *)(prim + 0x12)) = y1;
-    *((s16 *)(prim + 0x18)) = y0;
-    *((s16 *)(prim + 0x1A)) = (*((s16 *)(prim + 0x22)) = y1 + width);
-    prim[0xC] = uOff + D_80090F2E[0];
-    prim[0xD] = D_80090F30b[0];
-    prim[0x14] = (uOff + D_80090F2E[0]) + 0xF;
-    prim[0x15] = D_80090F30c[0];
-    prim[0x1C] = uOff + D_80090F2E[0];
-    prim[0x1D] = D_80090F30d[0] + 0xF;
-    prim[0x24] = (uOff + D_80090F2E[0]) + 0xF;
-    prim[0x25] = D_80090F30e[0] + 0xF;
+    x -= width >> 1;
+    y -= width >> 1;
+    prim->x0 = x;
+    prim->y0 = y;
+    prim->x1 = x + width;
+    prim->y1 = y;
+    prim->x2 = x;
+    prim->y2 = y + width;
+    prim->x3 = x + width;
+    prim->y3 = y + width;
+    prim->u0 = uOff + D_80090F2E[0];
+    prim->v0 = D_80090F30b[0];
+    prim->u1 = uOff + D_80090F2E[0] + 15;
+    prim->v1 = D_80090F30c[0];
+    prim->u2 = uOff + D_80090F2E[0];
+    prim->v2 = D_80090F30d[0] + 15;
+    prim->u3 = uOff + D_80090F2E[0] + 15;
+    prim->v3 = D_80090F30e[0] + 15;
     AddPrim((void *)D_800A39C8[0], prim);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B82C);
-#endif
 
 extern s32 D_801F3FFC[];
 extern s32 D_800A2ED0[];
