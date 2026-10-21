@@ -4376,7 +4376,6 @@ void func_80062910(s32 arg0) {
     s32 cc;
     u8 *prim2;
     u8 *tab;
-    u8 *writeEnd;
 
     node = (u8 *)D_800A37D8[arg0 & 0xFF];
     while (*(u16 *)node != 1) {
@@ -4438,8 +4437,6 @@ void func_80062910(s32 arg0) {
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 7; j++) {
             node = *(u8 **)(node + 0x1C);
-            do {
-            } while (0);
             f = ((s8 *)D_800A3350)[(s8)c];
             tab = D_8009A4E0;
             cc = ((s8 *)D_800A307C)[(u8)arg0];
