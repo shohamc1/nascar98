@@ -467,119 +467,89 @@ void func_80042EC0(void) {
     func_80043D6C();
 }
 
-extern u8 D_800AD9B0r[] asm("D_800AD9B0");
-extern u8 D_800AD9B4r[] asm("D_800AD9B4");
-extern u8 D_800AD9B8r[] asm("D_800AD9B8");
-extern u8 D_800AD9BCr[] asm("D_800AD9BC");
-extern u8 D_800AD9BEr[] asm("D_800AD9BE");
-extern u8 D_800AD9C0r[] asm("D_800AD9C0");
-extern u8 D_800AD9C2r[] asm("D_800AD9C2");
-extern u8 D_800AD9C4r[] asm("D_800AD9C4");
-extern u8 D_800AD9C6r[] asm("D_800AD9C6");
-extern u8 D_800AD9C8r[] asm("D_800AD9C8");
-extern u8 D_800AD9CAr[] asm("D_800AD9CA");
-extern s8 D_800AD9CCr[] asm("D_800AD9CC");
-extern u8 D_800AD9CDr[] asm("D_800AD9CD");
-extern u8 D_800AD9CEr[] asm("D_800AD9CE");
-extern u8 D_800AD9D0r[] asm("D_800AD9D0");
-extern u8 D_800AD9D4r[] asm("D_800AD9D4");
-extern u8 D_800AD9D8r[] asm("D_800AD9D8");
-extern u8 D_800AD9DCr[] asm("D_800AD9DC");
-#ifdef NON_MATCHING
+typedef struct EffectPoint {
+    s32 unk0;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 unk10;
+    s32 unk14;
+} EffectPoint;
+
+typedef struct EffectSlot {
+    s32 x;
+    s32 y;
+    s32 z;
+    s16 unkC;
+    s16 unkE;
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    s8 active;
+    u8 unk1D;
+    u8 unk1E;
+    u8 pad1F;
+    s32 unk20;
+    s32 unk24;
+    s32 unk28;
+    s32 unk2C;
+} EffectSlot;
+
+extern EffectSlot gEffectSlots[] asm("D_800AD9B0");
+
 void func_80042EFC(u8 *object, s32 idx) {
     s32 i;
     s32 j;
-    s32 off;
-    s32 off2;
     s32 twenty;
     s32 ninetysix;
-    s32 value;
-    s32 seed;
-    s32 scaled;
-    s32 prod;
-    s32 temp;
-    u8 *table;
+    EffectPoint *table;
+    EffectPoint *entry;
 
     for (i = 0, twenty = 20, ninetysix = 96; i < 5; i++) {
-        for (j = 0, off = 0; j < 0x28; j++, off += 0x30) {
-            if (D_800AD9CCr[off] == 0) {
+        for (j = 0; j < 0x28; j++) {
+            if (gEffectSlots[j].active == 0) {
                 break;
             }
         }
         if (j >= 0x28) {
             return;
         }
-        table = *(u8 **)(*(u8 **)(object + 0x370) + 0x40);
-        asm("" : "=r"(idx) : "0"(idx));
-        off = j * 0x30;
-        D_800AD9CCr[off] = 1;
-        D_800AD9CDr[off] = 0xA;
-        D_800AD9CEr[off] = *(u16 *)(object + 0x1DE);
-        *(s32 *)(D_800AD9B0r + off) =
-            *(s32 *)object + *(s32 *)(table + idx * 0x18 + 4);
-        *(s32 *)(D_800AD9B4r + off) =
-            *(s32 *)(object + 4) + *(s32 *)(table + idx * 0x18 + 8);
-        *(s16 *)(D_800AD9CAr + off) = 0x1E;
-        *(s32 *)(D_800AD9B8r + off) =
-            *(s32 *)(object + 8) + *(s32 *)(table + idx * 0x18 + 0xC);
-        *(s32 *)(D_800AD9DCr + off) =
-            *(s32 *)(*(u8 **)(object + 0x370) + 0x40) + 0x90;
-        temp = *(s16 *)(object + 0x1E0);
-        *(s32 *)(D_800AD9D4r + off) = temp;
-        *(s32 *)(D_800AD9D0r + off) = temp;
+        table = *(EffectPoint **)(*(u8 **)(object + 0x370) + 0x40);
+        gEffectSlots[j].active = 1;
+        gEffectSlots[j].unk1D = 0xA;
+        gEffectSlots[j].unk1E = *(u16 *)(object + 0x1DE);
+        entry = &table[idx];
+        gEffectSlots[j].x = *(s32 *)object + entry->x;
+        gEffectSlots[j].y = *(s32 *)(object + 4) + entry->y;
+        gEffectSlots[j].z = *(s32 *)(object + 8) + entry->z;
+        gEffectSlots[j].unk1A = 0x1E;
+        gEffectSlots[j].unk20 = gEffectSlots[j].unk24 =
+            *(s16 *)(object + 0x1E0);
         if (idx < 5) {
-            temp = *(s32 *)(D_800AD9B8r + off);
+            gEffectSlots[j].unkE = gEffectSlots[j].z;
         } else {
-            temp = *(s32 *)(object + 8) + 0xF;
+            gEffectSlots[j].unkE = *(s32 *)(object + 8) + 0xF;
         }
-        *(s16 *)(D_800AD9BEr + off) = temp;
-        value = (gRandomSeed16 * 0x6255) + 0x3619;
-        asm("andi %0, %1, 0xFFFF" : "=r"(seed) : "r"(value));
-        value &= 0xFFFF;
-        gRandomSeed16 = seed;
-        prod = seed * twenty;
-        off2 = j * 0x30;
-        *(s16 *)(D_800AD9BCr + off2) = 0;
-        value = (value * 0x6255) + 0x3619;
-        seed = value & 0xFFFF;
-        gRandomSeed16 = seed;
-        scaled = seed * ninetysix;
-        *(s16 *)(D_800AD9C0r + off2) = ((u32)prod >> 0x10) + 0x1E;
-        scaled = ((u32)scaled >> 0x10) + 0x400;
-        *(s16 *)(D_800AD9C2r + off2) =
-            (*(u16 *)(object + 0x114) + scaled) & 0x3FF;
-        temp = (*(s32 *)(object + 0x90) * 7) / 8 >> 16;
-        *(s16 *)(D_800AD9C4r + off2) = temp;
-        if (temp < 0x14) {
-            *(s16 *)(D_800AD9C4r + off2) = twenty;
+        gEffectSlots[j].unkC = 0;
+        gEffectSlots[j].unk10 = RandomGetScaled16(twenty) + 0x1E;
+        gEffectSlots[j].unk12 =
+            (*(u16 *)(object + 0x114) + 0x400 + RandomGetScaled16(ninetysix)) &
+            0x3FF;
+        gEffectSlots[j].unk14 = (*(s32 *)(object + 0x90) * 7) / 8 >> 16;
+        if (gEffectSlots[j].unk14 < 0x14) {
+            gEffectSlots[j].unk14 = twenty;
         }
-        *(s32 *)(D_800AD9D8r + off2) =
-            *(s32 *)(*(u8 **)(object + 0x370) + 0x38);
-        value = (gRandomSeed16 * 0x6255) + 0x3619;
-        asm("andi %0, %1, 0xFFFF" : "=r"(seed) : "r"(value));
-        gRandomSeed16 = seed;
-        asm volatile("" : : : "memory");
-        off = off2;
-        value &= 0xFFFF;
-        value = (value * 0x6255) + 0x3619;
-        seed = value & 0xFFFF;
-        gRandomSeed16 = seed;
-        *(s16 *)(D_800AD9C6r + off) = (u32)seed >> 4;
-        asm volatile("" : : : "memory");
-        value = (gRandomSeed16 * 0x6255) + 0x3619;
-        asm("andi %0, %1, 0xFFFF" : "=r"(seed) : "r"(value));
-        gRandomSeed16 = seed;
-        off = j * 0x30;
-        value &= 0xFFFF;
-        value = (value * 0x6255) + 0x3619;
-        seed = value & 0xFFFF;
-        *(s16 *)(D_800AD9C8r + off) = (u32)seed >> 4;
-        gRandomSeed16 = seed;
+        gEffectSlots[j].unk28 = *(s32 *)(*(u8 **)(object + 0x370) + 0x38);
+        gEffectSlots[j].unk2C =
+            *(s32 *)(*(u8 **)(object + 0x370) + 0x40) + 0x90;
+        /* ABS evaluates its argument twice: two LCG steps per field. */
+        gEffectSlots[j].unk16 = ABS((s32)RandomGetScaled16(0x1000));
+        gEffectSlots[j].unk18 = ABS((s32)RandomGetScaled16(0x1000));
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/effects", func_80042EFC);
-#endif
 
 INCLUDE_ASM("asm/nonmatchings/effects", func_800432C0);
 
