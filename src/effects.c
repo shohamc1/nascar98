@@ -1022,7 +1022,93 @@ void func_800442C8(u8 *arg0, u8 *arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/effects", func_80044354);
+extern u8 *D_800A3878Pack asm("D_800A3878Absolute");
+
+/* One replay entry: position of an effect slot relative to its owner object
+   in 64-unit steps (dz in 32-unit steps), then the owner index in word bits
+   24-28 and the slot kind in bits 29-31. */
+typedef struct {
+    s8 dx;
+    s8 dy;
+    s8 dz;
+    u8 tag;
+} EffectPacked;
+
+/* Packs the active effect slots into at most ten entries: first the slots whose
+   kind isn't 10, then the kind-10 slots (stored as kind 4). A list that ends
+   before ten entries gets a zero word. The mask and kind locals keep the
+   constants in registers across both passes. */
+void func_80044354(EffectPacked *out) {
+    s32 count;
+    s32 i;
+    EffectSlot *slot;
+    u8 *object;
+    u32 clearOwner;
+    u32 clearKind;
+    s32 kindSpawned;
+    s32 field;
+    u32 word;
+
+    slot = gEffectSlots;
+    count = 0;
+    i = 0;
+    *(u32 *)out = 0;
+    kindSpawned = 10;
+    clearOwner = 0xE0FFFFFF;
+    clearKind = 0x1FFFFFFF;
+pass1:
+    if (slot->active != 0 && (s8)slot->unk1D != kindSpawned) {
+        object = D_800A3878Pack + (s8)slot->unk1E * 0x500;
+        out->dx = (slot->x - *(s32 *)object) / 64;
+        out->dy = (slot->y - *(s32 *)(object + 4)) / 64;
+        out->dz = slot->unkC / 32;
+        field = (s8)slot->unk1E;
+        word = *(u32 *)out;
+        word = (word & clearOwner) | ((field & 0x1F) << 24);
+        *(u32 *)out = word;
+        count++;
+        field = (s8)slot->unk1D;
+        word = (word & clearKind) | (field << 29);
+        *(u32 *)out = word;
+        out++;
+    }
+    i++;
+    if (i >= 40) {
+        slot = gEffectSlots;
+        i = 0;
+        if (count < 10) {
+            for (;;) {
+                if (slot->active != 0 && (s8)slot->unk1D == kindSpawned) {
+                    object = D_800A3878Pack + (s8)slot->unk1E * 0x500;
+                    out->dx = (slot->x - *(s32 *)object) / 64;
+                    out->dy = (slot->y - *(s32 *)(object + 4)) / 64;
+                    out->dz = slot->unkC / 32;
+                    field = (s8)slot->unk1E;
+                    word = *(u32 *)out;
+                    word = (word & clearOwner) | ((field & 0x1F) << 24);
+                    word = (word & clearKind) | 0x80000000;
+                    *(u32 *)out = word;
+                    out++;
+                    count++;
+                }
+                i++;
+                slot++;
+                if (i >= 40) {
+                    *(u32 *)out = 0;
+                    return;
+                }
+                if (count >= 10) {
+                    return;
+                }
+            }
+        }
+        return;
+    }
+    slot++;
+    if (count < 10) {
+        goto pass1;
+    }
+}
 
 void func_80044594(u8 *arg0) {
     u32 *wp;
