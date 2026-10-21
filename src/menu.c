@@ -4361,11 +4361,13 @@ void func_80062910(s32 arg0) {
     u8 *node;
     u8 *prim;
     s32 a;
-    u8 c;
+    s32 c;
+    u8 uc;
     s32 id;
     s32 off;
     s32 f;
     u8 *base;
+    u8 *chars;
     s32 fontId;
     s32 sel;
     s8 i;
@@ -4389,13 +4391,11 @@ void func_80062910(s32 arg0) {
         ((s8 *)D_800A308C)[arg0 & 0xFF] = ((s8 *)D_800A3A24)[arg0 & 0xFF];
     }
     idx = arg0 & 0xFF;
-    asm("" : "=r"(idx) : "0"(idx));
     a = ((s8 *)D_800A3A24)[idx];
     if (a != 0) {
         fontId = ((s8 *)D_800A3350)[a];
-        new_var = D_8009B00C;
-        base = new_var;
-        c = *(base + 7 * fontId + ((s8 *)D_800A307C)[idx]);
+        chars = D_8009B00C;
+        c = *(chars + 7 * fontId + ((s8 *)D_800A307C)[idx]);
     } else {
         c = D_800A3088[idx];
     }
@@ -4428,7 +4428,8 @@ void func_80062910(s32 arg0) {
     node[5] = !((s8 *)D_800A3A24)[arg0 & 0xFF];
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
-    *(s32 *)(*(u8 **)(node + 0x20) + 8) = ((s8 *)D_800A307C)[arg0 & 0xFF] + 1;
+    prim2 = *(u8 **)(node + 0x20);
+    *(s32 *)(prim2 + 8) = ((s8 *)D_800A307C)[arg0 & 0xFF] + 1;
     sel = ((s8 *)D_800A3A24)[arg0 & 0xFF];
     c = ((s8 *)D_800A3A24)[arg0 & 0xFF];
     if (sel == 0) {
@@ -5990,9 +5991,9 @@ void func_800658F0(void) {
     }
 }
 
-#ifdef NON_MATCHING
 void func_8006594C(s32 arg0, s32 arg1) {
-    extern u16 D_800A3A44;
+    extern volatile u16 D_800A3940;
+    extern s32 D_800A3538;
     extern s32 D_800A3540;
     extern u8 D_800A35B4;
     extern u32 *D_800A38C4;
@@ -6001,7 +6002,6 @@ void func_8006594C(s32 arg0, s32 arg1) {
     POLY_FT4 *quad;
     POLY_FT4 *walk2;
     u8 *primBase;
-    u8 *primWalk;
     s32 i;
 
     D_800A3A44 = D_800A3A44 + D_800A3940;
@@ -6032,7 +6032,7 @@ void func_8006594C(s32 arg0, s32 arg1) {
     }
     goto tailTest;
 earlyOut:
-    if ((s16)D_800A3940 >= 0x20) {
+    if ((s16)D_800A3940 < 0x20) {
         D_800A3940 = D_800A3940 + (s16)D_800A3940 / 2;
     }
 tailTest:
@@ -6047,8 +6047,7 @@ tailTest:
             quad->x2 += shift;
             quad->x3 += shift;
         }
-        for (quad = (POLY_FT4 *)D_800A3540; quad != (POLY_FT4 *)D_800A3970;
-             quad++) {
+        for (; quad != (POLY_FT4 *)D_800A3970; quad++) {
             quad->x0 -= shift;
             quad->x1 -= shift;
             quad->x2 -= shift;
@@ -6056,16 +6055,14 @@ tailTest:
         }
     } else {
         primBase = D_800A369C + D_800A3698 * 0x28;
-        if (primBase[7] == 0x28) {
-            primWalk = primBase + 7;
+        if (((POLY_F4 *)primBase)->code == 0x28) {
             do {
-                *(u16 *)(primWalk + 1) += shift;
-                *(u16 *)(primWalk + 5) += shift;
-                *(u16 *)(primWalk + 9) += shift;
-                *(u16 *)(primWalk + 0xD) += shift;
-                primWalk += 0x28;
+                ((POLY_F4 *)primBase)->x0 += shift;
+                ((POLY_F4 *)primBase)->x1 += shift;
+                ((POLY_F4 *)primBase)->x2 += shift;
+                ((POLY_F4 *)primBase)->x3 += shift;
                 primBase += 0x28;
-            } while (*primWalk == 0x28);
+            } while (((POLY_F4 *)primBase)->code == 0x28);
         }
         for (quad = (POLY_FT4 *)primBase; quad != (POLY_FT4 *)D_800A3970;
              quad++) {
@@ -6076,10 +6073,6 @@ tailTest:
         }
     }
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_8006594C);
-#endif
 
 /* The ", D_800A3940" and ", D_800A3778" tails below are reads of the just
  * stored volatile; retail reloads the byte/word after the store. */
