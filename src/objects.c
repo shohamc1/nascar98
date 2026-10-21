@@ -9,6 +9,7 @@
 #include "gte.h"
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
+#include <psxsdk/libc.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
 
@@ -5407,58 +5408,99 @@ s32 func_8002AEB0(u8 *arg0) {
     return value << 16;
 }
 
-#ifdef NON_MATCHING
-void func_8002AF94(u8 *arg0) {
+typedef struct {
+    u8 unk0[0x44];
+    s32 dragScale;
+    u8 unk48[0x40];
+    s32 driveScale;
+    u8 unk8C[0x4];
+    s32 speed;
+    u8 unk94[0x4];
+    s32 maxSpeed;
+    u8 unk9C[0x14];
+    s32 velocityX;
+    s32 velocityY;
+    u8 unkB8[0xC];
+    s32 frontVelocityX;
+    s32 frontVelocityY;
+    u8 unkCC[0x4];
+    s32 rearVelocityX;
+    s32 rearVelocityY;
+    u8 unkD8[0x1C];
+    u8 unkF4;
+    u8 unkF5[0x4];
+    u8 sliding;
+    u8 unkFA[0xA];
+    s16 movementHeading;
+    u8 unk106[0x6];
+    s16 unk10C;
+    s16 unk10E;
+    u8 unk110[0x4];
+    s16 heading;
+    u16 fineHeading;
+    u8 unk118[0xED];
+    s8 assistRank;
+    u8 unk206[0x8];
+    u16 steering;
+    u8 unk210[0x1C];
+    s32 speedBoost;
+    u8 unk230[0x8];
+    s32 flags;
+    u8 unk23C[0x50];
+    s32 unk28C;
+    u8 unk290[0x16];
+    s16 unk2A6;
+    u8 unk2A8[0x4];
+    s16 unk2AC;
+    u8 unk2AE[0x26];
+    s16 unk2D4;
+    u8 unk2D6[0x7E];
+    void (*callback)(u8 *);
+    u8 unk358[0x64];
+    s32 driveInput;
+    u8 unk3C0[0x24];
+    u8 *raceNode;
+    u8 unk3E8[0x28];
+    u8 reverseSpeed;
+} CarDynamics;
+
+void func_8002AF94(CarDynamics *car) {
     extern u8 *trigA asm("D_800A3A2CAbsolute");
     extern u8 *trigB asm("D_800A3A34Absolute");
     u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
     VECTOR front;
     VECTOR rear;
     s32 diff;
-    s32 absDiff;
-    s32 t;
     s32 index;
 
-    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
-    t = MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xC4));
-    t = t - MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xC8));
-    front.vx = t;
-    t = MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xC4));
-    t = t + MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xC8));
-    front.vy = t;
-    t = MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xD0));
-    t = t - MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xD4));
-    rear.vx = t;
-    t = MathMultiplyFixed16(((s32 *)trigB)[index], *(s32 *)(arg0 + 0xD0));
-    t = t + MathMultiplyFixed16(((s32 *)trigA)[index], *(s32 *)(arg0 + 0xD4));
-    rear.vy = t;
+    index = (0x400 - car->heading) & 0x3FF;
+    front.vx = MathMultiplyFixed16(((s32 *)trigA)[index], car->frontVelocityX) -
+               MathMultiplyFixed16(((s32 *)trigB)[index], car->frontVelocityY);
+    front.vy = MathMultiplyFixed16(((s32 *)trigB)[index], car->frontVelocityX) +
+               MathMultiplyFixed16(((s32 *)trigA)[index], car->frontVelocityY);
+    rear.vx = MathMultiplyFixed16(((s32 *)trigA)[index], car->rearVelocityX) -
+              MathMultiplyFixed16(((s32 *)trigB)[index], car->rearVelocityY);
+    rear.vy = MathMultiplyFixed16(((s32 *)trigB)[index], car->rearVelocityX) +
+              MathMultiplyFixed16(((s32 *)trigA)[index], car->rearVelocityY);
     diff = front.vx - rear.vx;
-    absDiff = diff;
-    if (diff < 0) {
-        absDiff = -diff;
-    }
-    if (absDiff > 0x50000) {
+    if (abs(diff) > 0x50000) {
         front.vx = front.vx + -diff * 4 / 10;
         rear.vx = rear.vx + diff * 6 / 10;
-        index = *(s16 *)(arg0 + 0x114);
-        t = MathMultiplyFixed16(((s32 *)trigA)[index], front.vx);
-        *(s32 *)(arg0 + 0xC4) =
-            t - MathMultiplyFixed16(((s32 *)trigB)[index], front.vy);
-        t = MathMultiplyFixed16(((s32 *)trigB)[index], front.vx);
-        *(s32 *)(arg0 + 0xC8) =
-            t + MathMultiplyFixed16(((s32 *)trigA)[index], front.vy);
-        t = MathMultiplyFixed16(((s32 *)trigA)[index], rear.vx);
-        *(s32 *)(arg0 + 0xD0) =
-            t - MathMultiplyFixed16(((s32 *)trigB)[index], rear.vy);
-        t = MathMultiplyFixed16(((s32 *)trigB)[index], rear.vx);
-        *(s32 *)(arg0 + 0xD4) =
-            t + MathMultiplyFixed16(((s32 *)trigA)[index], rear.vy);
+        index = car->heading;
+        car->frontVelocityX =
+            MathMultiplyFixed16(((s32 *)trigA)[index], front.vx) -
+            MathMultiplyFixed16(((s32 *)trigB)[index], front.vy);
+        car->frontVelocityY =
+            MathMultiplyFixed16(((s32 *)trigB)[index], front.vx) +
+            MathMultiplyFixed16(((s32 *)trigA)[index], front.vy);
+        car->rearVelocityX =
+            MathMultiplyFixed16(((s32 *)trigA)[index], rear.vx) -
+            MathMultiplyFixed16(((s32 *)trigB)[index], rear.vy);
+        car->rearVelocityY =
+            MathMultiplyFixed16(((s32 *)trigB)[index], rear.vx) +
+            MathMultiplyFixed16(((s32 *)trigA)[index], rear.vy);
     }
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002AF94);
-#endif
 
 extern s32 D_800A2E44nm asm("D_800A2E44.NON_MATCHING");
 extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
@@ -5695,65 +5737,10 @@ void func_8002BC88(u8 *arg0) {
     *(s32 *)(arg0 + 0x98) = val;
 }
 
-typedef struct {
-    u8 unk0[0x44];
-    s32 dragScale;
-    u8 unk48[0x40];
-    s32 driveScale;
-    u8 unk8C[0x4];
-    s32 speed;
-    u8 unk94[0x4];
-    s32 maxSpeed;
-    u8 unk9C[0x14];
-    s32 velocityX;
-    s32 velocityY;
-    u8 unkB8[0xC];
-    s32 frontVelocityX;
-    s32 frontVelocityY;
-    u8 unkCC[0x4];
-    s32 rearVelocityX;
-    s32 rearVelocityY;
-    u8 unkD8[0x1C];
-    u8 unkF4;
-    u8 unkF5[0x4];
-    u8 sliding;
-    u8 unkFA[0xA];
-    s16 movementHeading;
-    u8 unk106[0x6];
-    s16 unk10C;
-    s16 unk10E;
-    u8 unk110[0x4];
-    s16 heading;
-    u16 fineHeading;
-    u8 unk118[0xED];
-    s8 assistRank;
-    u8 unk206[0x8];
-    u16 steering;
-    u8 unk210[0x1C];
-    s32 speedBoost;
-    u8 unk230[0x8];
-    s32 flags;
-    u8 unk23C[0x50];
-    s32 unk28C;
-    u8 unk290[0x16];
-    s16 unk2A6;
-    u8 unk2A8[0x4];
-    s16 unk2AC;
-    u8 unk2AE[0x26];
-    s16 unk2D4;
-    u8 unk2D6[0x7E];
-    void (*callback)(u8 *);
-    u8 unk358[0x64];
-    s32 driveInput;
-    u8 unk3C0[0x24];
-    u8 *raceNode;
-    u8 unk3E8[0x28];
-    u8 reverseSpeed;
-} CarDynamics;
 extern s32 D_800A3598Physics[] asm("D_800A3598.NON_MATCHING");
 extern s32 D_800A453CPhysics[] asm("D_800A453C.NON_MATCHING");
 extern s32 func_8002AAF0(u8 *, VECTOR *, s32);
-extern void func_8002AF94(u8 *);
+extern void func_8002AF94(CarDynamics *);
 extern void func_8002B9AC(u8 *, s32 *, s32 *);
 extern void func_8002D27C(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
@@ -6632,7 +6619,7 @@ noSliding:
         newFineHeading += 3;
     }
     car->heading = (s16)(newFineHeading >> 2);
-    func_8002AF94((u8 *)car);
+    func_8002AF94(car);
     velocitySumX = ((s32)local.frontVelocity.vx) + ((s32)local.rearVelocity.vx);
     car->velocityX =
         (s32)(((s32)(velocitySumX + (velocitySumX >> 0x1F))) >> 0x11);
