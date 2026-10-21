@@ -5400,7 +5400,169 @@ s32 func_8002AAA0(s32 *car) {
     return total + weight;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002AAF0);
+extern s32 D_800A2E34;
+typedef struct {
+    u8 unk0[0x44];
+    s32 dragScale;
+    u8 unk48[0x40];
+    s32 driveScale;
+    u8 unk8C[0x4];
+    s32 speed;
+    u8 unk94[0x4];
+    s32 maxSpeed;
+    u8 unk9C[0x14];
+    s32 velocityX;
+    s32 velocityY;
+    u8 unkB8[0xC];
+    s32 frontVelocityX;
+    s32 frontVelocityY;
+    u8 unkCC[0x4];
+    s32 rearVelocityX;
+    s32 rearVelocityY;
+    u8 unkD8[0x1C];
+    u8 unkF4;
+    u8 unkF5[0x4];
+    u8 sliding;
+    u8 unkFA[0xA];
+    s16 movementHeading;
+    u8 unk106[0x4];
+    s16 unk10A;
+    s16 unk10C;
+    s16 unk10E;
+    u8 unk110[0x4];
+    s16 heading;
+    u16 fineHeading;
+    u8 unk118[0x8];
+    s16 unk120;
+    u8 unk122[0xA2];
+    s16 unk1C4;
+    u8 unk1C6[0x3F];
+    s8 assistRank;
+    u8 unk206[0x8];
+    u16 steering;
+    u8 unk210[0x8];
+    s32 unk218;
+    u8 unk21C[0x10];
+    s32 speedBoost;
+    u8 unk230[0x8];
+    s32 flags;
+    u8 unk23C[0x4];
+    s32 frontGrip;
+    s32 rearGrip;
+    u8 unk248[0x44];
+    s32 unk28C;
+    u8 unk290[0x10];
+    s16 unk2A0;
+    u8 unk2A2[0x4];
+    s16 unk2A6;
+    u8 unk2A8[0x4];
+    s16 unk2AC;
+    u8 unk2AE[0xA];
+    s32 unk2B8;
+    u8 unk2BC[0x18];
+    s16 unk2D4;
+    u8 unk2D6[0xA];
+    s32 unk2E0;
+    u8 unk2E4[0x18];
+    s16 unk2FC;
+    u8 unk2FE[0xA];
+    s32 unk308;
+    u8 unk30C[0x18];
+    s16 unk324;
+    u8 unk326[0xA];
+    s32 unk330;
+    u8 unk334[0x20];
+    void (*callback)(u8 *);
+    u8 unk358[0xA];
+    s16 unk362;
+    s16 unk364;
+    s16 unk366;
+    s16 unk368;
+    u8 unk36A[0x3A];
+    u16 unk3A4;
+    u8 unk3A6[0x16];
+    s32 driveInput;
+    u8 unk3C0[0x24];
+    u8 *raceNode;
+    u8 unk3E8[0x28];
+    u8 reverseSpeed;
+} CarDynamics;
+
+/* The steering field is u16 elsewhere; this function reads it signed. */
+#define CAR_STEER(car) (*(s16 *)&(car)->steering)
+
+/* Returns the yaw force. Callers pass a vector and a grip value that
+ * retail never reads. */
+s32 func_8002AAF0(CarDynamics *car, VECTOR *force, s32 grip) {
+    u32 unused[20]; /* retail reserves 80 bytes of locals nothing touches */
+    s32 speed;
+    s32 limit;
+    s32 delta;
+    int scaled; /* plain int: a typedef keeps ABS(scaled) > K from splitting */
+    s32 band;
+
+    speed = car->speed;
+    delta = 0;
+    if ((speed >> 16) < 100) {
+        car->unk218 = 0;
+        return 0;
+    }
+    limit = ((car->rearGrip * 100) >> 16) - 500;
+    if (CAR_STEER(car) != 0) {
+        delta =
+            ((CAR_STEER(car) * 2) / 5) *
+            (MathMultiplyFixed16(speed, (car->driveInput + 0x10000) / 2) >> 16);
+        if (CAR_STEER(car) > 0) {
+            delta += D_800A2E34;
+        } else {
+            delta -= D_800A2E34;
+        }
+        if (ABS(delta) > limit + 500) {
+            if (delta > 0) {
+                delta = limit + 500;
+            } else {
+                delta = -(limit + 500);
+            }
+        }
+        car->unk218 += delta;
+    }
+    if (car->unk218 > 0) {
+        if (CAR_STEER(car) < 0) {
+            limit *= 2;
+        }
+        car->unk218 -= limit;
+        if (car->unk218 < 0) {
+            car->unk218 = 0;
+        }
+    } else {
+        if (CAR_STEER(car) > 0) {
+            limit *= 2;
+        }
+        car->unk218 += limit;
+        if (car->unk218 > 0) {
+            car->unk218 = 0;
+        }
+    }
+    scaled = car->unk218 << 4;
+    if (ABS(scaled) > 0x96000) {
+        band = ABS(scaled) >> 10;
+        if (limit < delta) {
+            if (band < 630 || (band >= 701 && band < 780) ||
+                (band >= 901 && band < 1000)) {
+                car->unk1C4 = 1;
+            }
+        }
+        if (band > 1000) {
+            if (scaled > 0) {
+                scaled = 0xFA000;
+            } else {
+                scaled = -0xFA000;
+            }
+        }
+    }
+    return -scaled;
+}
+#undef CAR_STEER
 
 void func_8002AD20(s32 *car, s32 index) {
     s32 entryA;
@@ -5459,89 +5621,6 @@ s32 func_8002AEB0(u8 *arg0) {
     }
     return value << 16;
 }
-
-typedef struct {
-    u8 unk0[0x44];
-    s32 dragScale;
-    u8 unk48[0x40];
-    s32 driveScale;
-    u8 unk8C[0x4];
-    s32 speed;
-    u8 unk94[0x4];
-    s32 maxSpeed;
-    u8 unk9C[0x14];
-    s32 velocityX;
-    s32 velocityY;
-    u8 unkB8[0xC];
-    s32 frontVelocityX;
-    s32 frontVelocityY;
-    u8 unkCC[0x4];
-    s32 rearVelocityX;
-    s32 rearVelocityY;
-    u8 unkD8[0x1C];
-    u8 unkF4;
-    u8 unkF5[0x4];
-    u8 sliding;
-    u8 unkFA[0xA];
-    s16 movementHeading;
-    u8 unk106[0x4];
-    s16 unk10A;
-    s16 unk10C;
-    s16 unk10E;
-    u8 unk110[0x4];
-    s16 heading;
-    u16 fineHeading;
-    u8 unk118[0x8];
-    s16 unk120;
-    u8 unk122[0xE3];
-    s8 assistRank;
-    u8 unk206[0x8];
-    u16 steering;
-    u8 unk210[0x1C];
-    s32 speedBoost;
-    u8 unk230[0x8];
-    s32 flags;
-    u8 unk23C[0x4];
-    s32 frontGrip;
-    s32 rearGrip;
-    u8 unk248[0x44];
-    s32 unk28C;
-    u8 unk290[0x10];
-    s16 unk2A0;
-    u8 unk2A2[0x4];
-    s16 unk2A6;
-    u8 unk2A8[0x4];
-    s16 unk2AC;
-    u8 unk2AE[0xA];
-    s32 unk2B8;
-    u8 unk2BC[0x18];
-    s16 unk2D4;
-    u8 unk2D6[0xA];
-    s32 unk2E0;
-    u8 unk2E4[0x18];
-    s16 unk2FC;
-    u8 unk2FE[0xA];
-    s32 unk308;
-    u8 unk30C[0x18];
-    s16 unk324;
-    u8 unk326[0xA];
-    s32 unk330;
-    u8 unk334[0x20];
-    void (*callback)(u8 *);
-    u8 unk358[0xA];
-    s16 unk362;
-    s16 unk364;
-    s16 unk366;
-    s16 unk368;
-    u8 unk36A[0x3A];
-    u16 unk3A4;
-    u8 unk3A6[0x16];
-    s32 driveInput;
-    u8 unk3C0[0x24];
-    u8 *raceNode;
-    u8 unk3E8[0x28];
-    u8 reverseSpeed;
-} CarDynamics;
 
 void func_8002AF94(CarDynamics *car) {
     extern u8 *trigA asm("D_800A3A2CAbsolute");
@@ -5797,7 +5876,6 @@ void func_8002BC88(u8 *arg0) {
 
 extern s32 D_800A3598Physics[] asm("D_800A3598.NON_MATCHING");
 extern s32 D_800A453CPhysics[] asm("D_800A453C.NON_MATCHING");
-extern s32 func_8002AAF0(u8 *, VECTOR *, s32);
 extern void func_8002AF94(CarDynamics *);
 extern void func_8002B9AC(CarDynamics *, s32 *, s32 *);
 extern void func_8002D27C(u8 *);
@@ -6122,7 +6200,7 @@ void func_8002BD48(u8 *carBytes) {
     func_8002B9AC(car, &local.frontGrip, &local.rearGrip);
     averageGrip = (local.frontGrip + local.rearGrip) / 2;
     if (D_800A3598Physics[0] != 1) {
-        yawForce = func_8002AAF0((u8 *)car, &local.force, averageGrip);
+        yawForce = func_8002AAF0(car, &local.force, averageGrip);
     } else {
         yawForce = 0;
     }
