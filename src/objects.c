@@ -11413,13 +11413,10 @@ void func_8003587C(s32 arg0) {
     ((s32 *)D_800A2E24Absolute)[70] = 0x82;
 }
 
-#ifdef NON_MATCHING
-/* Parked 2026-10-12: the opening mult chain, the MathSqrt and MathFixedDivide
- * calls and the block order match retail (12 rows, 8 bytes short). Left: the
- * `li v0,0x200` constants and the angle register in the four quadrant arms.
- * `new_var = 0x200;` is a permuter find (315 against 855). The old note about
- * a mult-window wall no longer applies to this shape. */
-extern s32 D_800A38A4;
+/* D_800A38A4 is reached through $gp here but through lui in
+ * CarSteerTowardHeading, so this function uses a gp-sized alias. */
+extern s32 D_800A38A4Small;
+asm(".globl D_800A38A4Small\nD_800A38A4Small = D_800A38A4\n");
 extern u8 D_800A2F48;
 s32 func_800358EC(s32 *vec) {
     s32 len;
@@ -11428,10 +11425,9 @@ s32 func_800358EC(s32 *vec) {
     s32 ax;
     s32 ay;
     s32 angle;
-    int new_var;
 
     len = MathSqrt(vec[0] * vec[0] + vec[1] * vec[1]);
-    D_800A38A4 = len;
+    D_800A38A4Small = len;
     D_800A2F48 = 0;
     if (len < 5) {
         D_800A2F48 = 1;
@@ -11450,7 +11446,6 @@ s32 func_800358EC(s32 *vec) {
     } else if (-y > 0x10000) {
         y = -0x10001;
     }
-    new_var = 0x200;
     if (x >= 0 && y >= 0) {
         if (x >= y) {
             angle = ((u8 *)D_800A3668Absolute[0])[y >> 4];
@@ -11473,20 +11468,15 @@ s32 func_800358EC(s32 *vec) {
         }
         angle += 0x200;
     } else {
-        ax = -x;
-        ay = -y;
-        if (ax >= ay) {
-            angle = ((u8 *)D_800A3668Absolute[0])[ay >> 4] + 0x200;
+        if (-y <= -x) {
+            angle = ((u8 *)D_800A3668Absolute[0])[-y >> 4];
         } else {
-            angle = 0x100 - ((u8 *)D_800A3668Absolute[0])[ax >> 4];
-            angle += new_var;
+            angle = 0x100 - ((u8 *)D_800A3668Absolute[0])[-x >> 4];
         }
+        angle += 0x200;
     }
     return angle & 0x3FF;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_800358EC);
-#endif
 
 extern u16 D_80090F24[];
 extern u16 D_80091004[];
