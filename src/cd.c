@@ -1035,7 +1035,7 @@ s32 func_8003DAD0(s32 a, s32 b) {
     return !(a < b);
 }
 
-s32 func_8003DB18(s32 start, s32 end, s32 value) {
+__inline__ s32 func_8003DB18(s32 start, s32 end, s32 value) {
     s32 result;
     s32 offset;
     offset = D_800BE974[0];
@@ -1567,59 +1567,6 @@ updateMotion:
     }
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-11 (w3e): size exact 0x308, draft-unit diff 393 bytes
- * (from 6885 with size -32). Applied on top of the w2i state:
- * 1) THE THREADING FIX: `asm("" : : "r"(object));` inside the special-case
- *    arm right before `return 1;` blocks jump-threading and reproduces
- *    retail's `bnez v0,skip; nop; j epilogue; li v0,1` (size became exact).
- * 2) flag declared s32 (u8 adds an extra andi at 2 sites; retail 0x308 =
- *    s32 shape + the unthreaded arm).
- * 3) the arms' `value +=` reads the divisor through an in-function alias
- *    `extern s32 D_800BE974R[] asm("D_800BE974");` — retail reloads BE974
- *    for the += instead of reusing the div register.
- * 4) tail `pace - 2 + value` duplicated textually in both
- *    RandomScaledGet arms (retail hoists addiu into both).
- * Left (393 bytes, mostly register placement): first-half divisor in a3 vs
- * retail a0 (value a2 vs a1, end a1 vs v1, flag v1 vs a2/move-v0 cascade);
- * retail's BE974 reload sits BEFORE the start lh, ours inside the true arm;
- * second half: retail keeps `A39E0 - (A3820+7)` un-reassociated
- * (addiu a1,a1,7; subu) while ours folds to (A39E0-7)-A3820, and the
- * `sh 0x276` arm ordering differs. Permuter round from this exact-size
- * base is the next lever.
- * 2026-10-11 (w4d): 5405 -> 5240. (a) half2 now uses FRESH D_800BE974[0]
- * reads for both % divisors (the old `% newVar` kept the half1 divisor
- * pseudo live across half2 and pinned it in a3); (b) each `X + K` /
- * `A39E0 - (A3820 + K)` group is its own single-use named local
- * (t/u/w; +8 group is x) -- multi-use or inline spellings reassociate the
- * addiu onto the wrong operand. Half2 div/mfhi/addiu/subu chain now
- * matches retail exactly. Left: half1 A3560/A376C load regs v0/v1
- * swapped (shape right), mfhi a1/a2/v1 value+end placement, the BE974
- * reload still lands inside the true arm instead of before the start lh,
- * flag cascade (a2+andi vs v1 direct) and the tail s1/s2 swap +
- * `pace-2` addiu duplication.
- * 2026-10-11 (w5d): cc1 -dl/-dg decode of the half1 register map. Pool order
- * is [v1,a0,a1,a2,...] (v0 reserved for the return). Allocation order by
- * priority: flag(77) 12refs/26insns=1.385 -> v1; start(75) 12/30=1.2 -> a0;
- * value(74) 14/42=1.0 -> skips a1 because end's mfhi lands in a1 inside
- * value's range (the conflict self-reinforces) -> a2; end(76) 8/24=1.0 ->
- * a1. Retail = end->v1, start->a0, value->a1, flag->a2, which needs
- * end > start > value > flag in priority. Reaching it takes TWO zero-byte
- * changes at once: raise end above start (duplicate input-only barrier
- * after the end divmod: +2 refs -> 30/24=1.25) and drop flag below value
- * (split half1's cascade onto its own flag1 local: ~6 refs -> ~0.54;
- * half2 must keep the shared flag). Tried alone: output-tied ref-raiser on
- * end + flag1 split gave 8350 — the OUTPUT-tied form leaves a real `nop`
- * (maspsx keeps the move) and end still took a0 because flag1's v1 writes
- * sat inside end's range; permuter round 1 (18 min, 18k iters) found
- * output-2565-1: hoist `x = D_800BE974R[0];` before each half's start lh
- * and `value += x` in all four arms — 2565 in-unit but 6055/6835 in the
- * real TU (half2-only and half1-only bisects both worse); NOT transferred.
- * The priority cascade above remains the best lead.
- * 2026-10-11: computing the RandomScaledGet sum in x before the pace sum
- * reduces the full-TU linked diff from 372 to 371 bytes at 776 bytes.
- * Eight later shapes did not improve it. Both narrowing flag and declaring
- * ahead as s16 add 16 bytes. The assembly fallback remains active. */
 extern u8 D_800A372C[];
 extern s32 D_800A2CE0[];
 extern s32 D_800A2EA8[];
@@ -1629,101 +1576,60 @@ extern s32 D_800A376C;
 extern s32 D_800A3820;
 
 s32 func_8003E78C(u8 *object) {
-    extern s32 D_800BE974R[] asm("D_800BE974");
     s32 laps;
-    s32 value;
-    s32 start;
-    s32 end;
-    s32 flag;
-    s32 newVar;
-    s32 t;
-    s32 u;
-    s32 w;
-    s32 x;
-    s32 pace;
     s32 ahead;
+    u32 pace;
+    u8 adjustment;
+    s32 lead;
+    s32 lag;
+    s32 near;
+    s32 far;
 
     if (*(s16 *)(object + 0x288) != 0) {
         if (D_800A372C[0] != 0 && D_800A2CE0[0] == 3 &&
-            *(s16 *)(object + 0x1EC) == 0 && *(s16 *)(object + 0x1E0) >= 100) {
-            asm("" : : "r"(object));
+            *(s16 *)(object + 0x1EC) == 0 && *(s16 *)(object + 0x1E0) >= 100)
             return 1;
+        lead = D_800A3560 + 8;
+        lag = D_800A3820 + 0x14;
+        if (!(u8)func_8003DB18(*(s16 *)(object + 0x1E0),
+                               (D_800A39E0 - lag + D_800BE974[0]) %
+                                   D_800BE974[0],
+                               (D_800A376C + lead) % D_800BE974[0])) {
+            *(s16 *)(object + 0x288) = 0;
+            *(u16 *)(object + 0x284) = *(u16 *)(object + 0x284) + 1;
+            return 0;
         }
-        newVar = D_800BE974[0];
-        x = D_800A3560 + 8;
-        value = (x + D_800A376C) % newVar;
-        t = D_800A3820 + 0x14;
-        end = (D_800A39E0 - t + newVar) % newVar;
-        start = *(s16 *)(object + 0x1E0);
-        if (value < end) {
-            if (value >= start) {
-                value += D_800BE974R[0];
-                flag = 1;
-            } else {
-                value += D_800BE974R[0];
-                flag = 0;
-                if (start >= end)
-                    flag = value >= start;
-            }
-        } else {
-            flag = 0;
-            if (start >= end)
-                flag = value >= start;
-        }
-        if (flag != 0)
-            return 1;
-        *(s16 *)(object + 0x288) = 0;
-        *(u16 *)(object + 0x284) = *(u16 *)(object + 0x284) + 1;
-        return 0;
+        return 1;
     }
     laps = *(s16 *)(object + 0x1D6);
     if (laps < 2)
         return 0;
-    if (*(s16 *)(object + 0x276) == 0) {
-        if ((u32)laps >= (u32) * (s32 *)(object + 0x29C) ||
-            D_800A2EA8[0] < laps)
-            *(s16 *)(object + 0x276) = 1;
-        return 0;
+    if (*(s16 *)(object + 0x276) != 0) {
+        if (D_800A372C[0] != 0)
+            return 0;
+        near = D_800A3820 + 7;
+        far = D_800A3820 + 0xF;
+        if (!(u8)func_8003DB18(
+                *(s16 *)(object + 0x1E0),
+                (D_800A39E0 - far + D_800BE974[0]) % D_800BE974[0],
+                (D_800A39E0 - near + D_800BE974[0]) % D_800BE974[0]))
+            return 0;
+        ahead = *(s16 *)(object + 0x282);
+        pace = *(u32 *)(object + 0x29C);
+        adjustment = 2;
+        *(s16 *)(object + 0x288) = 1;
+        if (RandomScaledGet(5) < 0)
+            *(s32 *)(object + 0x29C) =
+                (pace - adjustment) + (ahead - RandomScaledGet(5));
+        else
+            *(s32 *)(object + 0x29C) =
+                (pace - adjustment) + (ahead + RandomScaledGet(5));
+        return 1;
     }
-    if (D_800A372C[0] != 0)
-        return 0;
-    u = D_800A3820 + 7;
-    value = (D_800A39E0 - u + D_800BE974[0]) % D_800BE974[0];
-    w = D_800A3820 + 0xF;
-    end = (D_800A39E0 - w + D_800BE974[0]) % D_800BE974[0];
-    start = *(s16 *)(object + 0x1E0);
-    if (value < end) {
-        if (value >= start) {
-            value += D_800BE974R[0];
-            flag = 1;
-        } else {
-            value += D_800BE974R[0];
-            flag = 0;
-            if (start >= end)
-                flag = value >= start;
-        }
-    } else {
-        flag = 0;
-        if (start >= end)
-            flag = value >= start;
-    }
-    if (flag == 0)
-        return 0;
-    *(s16 *)(object + 0x288) = 1;
-    ahead = *(s16 *)(object + 0x282);
-    pace = *(s32 *)(object + 0x29C);
-    if (RandomScaledGet(5) < 0) {
-        x = ahead - RandomScaledGet(5);
-        *(s32 *)(object + 0x29C) = pace - 2 + x;
-    } else {
-        x = ahead + RandomScaledGet(5);
-        *(s32 *)(object + 0x29C) = pace - 2 + x;
-    }
-    return 1;
+    if ((u32)laps >= (u32) * (s32 *)(object + 0x29C) || D_800A2EA8[0] < laps)
+        *(s16 *)(object + 0x276) = 1;
+    return 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003E78C);
-#endif
 
 void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
     s32 *entries;
@@ -1942,7 +1848,7 @@ extern s32 D_800A2F88;
 extern s32 RandomScaledGet(s32 scale);
 
 void func_8003EDA0(u8 *object) {
-    s32 pace;
+    u32 pace;
     s32 dist;
     s32 value;
     s32 delta;
@@ -1954,7 +1860,7 @@ void func_8003EDA0(u8 *object) {
     *(s16 *)(object + 0x282) = value;
     if (dist != 0) {
         adjustment = 2;
-        pace = *(s32 *)(object + 0x29C);
+        pace = *(u32 *)(object + 0x29C);
         if (RandomScaledGet(5) < 0)
             delta = (pace - adjustment) - RandomScaledGet(5);
         else
