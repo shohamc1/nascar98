@@ -11416,7 +11416,6 @@ void func_8003587C(s32 arg0) {
 /* D_800A38A4 is reached through $gp here but through lui in
  * CarSteerTowardHeading, so this function uses a gp-sized alias. */
 extern s32 D_800A38A4Small;
-asm(".globl D_800A38A4Small\nD_800A38A4Small = D_800A38A4\n");
 extern u8 D_800A2F48;
 s32 func_800358EC(s32 *vec) {
     s32 len;

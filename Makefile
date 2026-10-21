@@ -72,6 +72,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             -T build/undefined_syms_auto.txt -T build/undefined_funcs_auto.txt \
             -T build/fixed_addrs.ld \
             --defsym=D_800A2F68Small=D_800A2F68 \
+            --defsym=D_800A38A4Small=D_800A38A4 \
             --defsym=D_800A2E60Absolute=D_800A2E60 \
             --defsym=D_800A2EA8Absolute=D_800A2EA8 \
             --defsym=D_800A2EF4Absolute=D_800A2EF4 \
