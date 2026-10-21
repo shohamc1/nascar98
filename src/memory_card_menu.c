@@ -10,6 +10,7 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "pad_axis.h"
 
 extern s32 strlen(char *);
 extern void func_8001E7EC(void *, s32, s32);
@@ -3554,7 +3555,7 @@ void func_8006DCF0(void) {
 }
 
 extern u8 D_800AEE3C[];
-extern void func_8006E628(u32 arg0, u32 arg1, u32 arg2);
+extern void func_8006E628(s32 arg0, s32 arg1, u32 arg2);
 
 void func_8006DD28(u32 arg0, u32 arg1) {
     s32 i;
@@ -3775,4 +3776,30 @@ void func_8006E484(u32 arg0, u32 arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006E628);
+extern u16 func_80041BFC(u8 *);
+
+/* Samples pad arg0's three stick axes into the third byte of its
+ * calibration entries (D_800AEE3E). The K&R definition keeps retail's
+ * entry-move order: arg2's move comes first and the narrow parameters
+ * follow. `subtype` is a separate u8 local so the inlined PadReadAxis keeps
+ * its own copy of arg2. */
+/* clang-format off */
+void func_8006E628(arg0, arg1, arg2)
+u8 arg0;
+u8 arg1;
+u32 arg2;
+/* clang-format on */
+{
+    u8 scratch[0x500];
+    s32 i;
+    s32 q;
+    u8 subtype;
+
+    subtype = arg2;
+    scratch[0x20B] = arg0;
+    func_80041BFC(scratch);
+    for (i = 0; i < 3; i++) {
+        q = (u8)arg0 * 9 + i * 3;
+        D_800AEE3E[q] = PadReadAxis(scratch, i, arg1, subtype);
+    }
+}
