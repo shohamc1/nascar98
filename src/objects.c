@@ -1909,7 +1909,60 @@ void CdApplyMixVolume(void) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80024280);
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800246C0);
+extern s32 D_800A356C;
+
+typedef struct {
+    u16 base;
+    u16 lo;
+    u16 unk4;
+    u16 hi;
+    s32 scale;
+} CurveSeg;
+
+s32 func_800246C0(s32 arg0, s32 arg1, u8 *arg2) {
+    CurveSeg *seg;
+    s32 *pad;
+    s32 segCount;
+    s32 found;
+    s32 pos;
+    s32 k;
+    s32 i;
+    s32 value;
+
+    found = 0;
+    pad = (s32 *)SCRATCHPAD_BASE;
+    seg = (CurveSeg *)D_800A356C + *(u16 *)(arg2 + 8);
+    segCount = arg2[0xE];
+    for (i = segCount; i > 0; i--, seg++) {
+        if (arg1 >= seg->lo && arg1 < seg->hi) {
+            value = seg->base + ((seg->scale * (arg1 - seg->lo)) >> 16);
+            for (pos = 0; pos < found; pos++) {
+                if (value < pad[pos]) {
+                    break;
+                }
+            }
+            found++;
+            for (k = found - 1; pos < k; k--) {
+                pad[k] = pad[k - 1];
+            }
+            pad[pos] = value;
+        }
+    }
+    if (found >= 2) {
+        if (found & 1) {
+            return 0;
+        }
+        for (i = 0; i < found; i += 2) {
+            if (arg0 < pad[i]) {
+                return 0;
+            }
+            if (arg0 < pad[i + 1]) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 extern s32 D_800A2E08;
 extern s32 D_800A3838;
@@ -2006,7 +2059,6 @@ INCLUDE_ASM("asm/nonmatchings/objects", func_80024E90);
 extern s32 D_800A3A54Small;
 extern s32 D_800A2E14[];
 extern s32 D_800A3810;
-extern s32 D_800A356C;
 extern char D_8008CFC0[];
 extern s32 FileOpenCall(s32, void *) asm("FileOpen");
 extern s32 FileSeekCall(void *, s32, s32) asm("FileSeek");
