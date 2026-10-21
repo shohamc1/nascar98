@@ -691,7 +691,54 @@ s32 SoundIsSlotActive(s32 arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/sound", func_8003F564);
 
-INCLUDE_ASM("asm/nonmatchings/sound", func_8003F914);
+extern s8 SsUtKeyOffV(s16);
+
+/*
+ * game.h declares func_8003F914 as void, and callers must keep it that way.
+ * Retail tests the caller's leftover $v0 on entry: ret is never set.
+ */
+s8 func_8003F914Body(s32 arg0) asm("func_8003F914");
+s8 func_8003F914Body(s32 arg0) {
+    s8 ret;
+    s32 off;
+    s8 key;
+    s32 noVoice;
+    s32 mask;
+    s32 status;
+    s16 voice;
+
+    if (ret != 0x20) {
+        off = (s8)arg0 * 12;
+        voice = *(s16 *)((u8 *)D_800B9E24 + off);
+        noVoice = -1;
+        if (voice == noVoice) {
+            return 0;
+        }
+        key = SsUtKeyOffV(voice);
+        if (key == noVoice) {
+            do {
+                voice = *(s16 *)((u8 *)D_800B9E24 + off);
+                if (voice == key) {
+                    goto done;
+                }
+            } while (0);
+            mask = 1 << voice;
+            status = SpuGetKeyStatus(mask);
+            if (status == 2) {
+                VSync(0);
+                SpuGetKeyStatus(mask);
+                key = 0;
+            } else if (status != 0) {
+                goto done;
+            } else {
+                key = 0;
+            }
+        }
+        *(s16 *)((u8 *)D_800B9E24 + off) = -1;
+    done:
+        return key;
+    }
+}
 
 void func_8003FA0C(void) {
     u8 i;
