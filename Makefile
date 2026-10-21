@@ -467,6 +467,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
 # Addressing aliases for func_80023454.
 LDFLAGS += \
             --defsym=D_800A2D0CAbsolute=D_800A2D0C \
+            --defsym=D_800A2E94Absolute=D_800A2E94 \
             --defsym=D_800A2EB4Absolute=D_800A2EB4 \
             --defsym=D_800A2EC4Absolute=D_800A2EC4 \
             --defsym=D_800A2ECCAbsolute=D_800A2ECC \

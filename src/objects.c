@@ -6839,82 +6839,103 @@ void func_8002D3EC(u8 *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002D4CC);
 
-#ifdef NON_MATCHING
-/* 2026-10-11 parked at 1893 (fresh pure-C draft from Ghidra's retail decompile).
- * Semantics fully decoded: 0x500 pool entry (D_800A2E84 counter), func_8002D3A8-
- * style negative-index table setup, callback dispatch on arg0 (a0-only
- * func_8002DA30 call confirmed from retail), per-type tables via off = arg1*16.
- * Residual: retail folds each D_800A2E94 access into its own lui+%lo pair
- * (three single-use addresses) and materialises D_800A2EB4's read/write
- * separately; this gcc cse-shares the (symbol,0) address pseudo instead, and
- * allocates arg0 to s1 where retail has off (s1/s2 swap). Neighbor-symbol
- * spellings would need new symbol_addrs entries (image-shift risk). */
-void func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+typedef struct PoolObject {
+    u32 unk0;
+    u32 unk4;
+    u32 unk8;
+    u8 pad0C[0x1DE - 0x0C];
+    s16 unk1DE;
+    u8 pad1E0[0x1EC - 0x1E0];
+    s16 type;
+    u8 pad1EE[0x200 - 0x1EE];
+    u8 unk200;
+    u8 pad201[3];
+    u8 unk204;
+    u8 unk205;
+    u8 pad206[0x20B - 0x206];
+    u8 unk20B;
+    u8 pad20C[0x28A - 0x20C];
+    s16 unk28A;
+    u8 pad28C[0x350 - 0x28C];
+    u32 update;
+    u32 unk354;
+    u8 pad358[0x36C - 0x358];
+    u8 *unk36C;
+    u8 *unk370;
+    u8 unk374;
+    u8 pad375[0x3C9 - 0x375];
+    u8 unk3C9;
+    u8 pad3CA[0x500 - 0x3CA];
+} PoolObject;
+
+PoolObject *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_800A2E88;
-    extern s32 D_800A2E94[];
-    extern s32 D_800A2EB4[];
-    extern s32 D_800BE72C[];
-    extern s32 D_800BE730[];
-    extern s16 D_800BE738[];
+    extern s32 D_800A2E94Lui asm("D_800A2E94Absolute");
+    extern s32 D_800A2EB4Lui asm("D_800A2EB4Absolute");
+    extern struct {
+        u32 unk0;
+        u32 unk4;
+        u32 unk8;
+        s16 unkC;
+        s16 unkE;
+    } D_800BE72C[];
     extern void CarUpdatePlayer(u8 *);
     extern void func_800373B4(u8 *);
     extern void func_80029E34(void);
     extern void func_80025594(u8 *);
     extern void func_8002D4CC();
-    u8 *entry;
+    PoolObject *entry;
+    /* Retail stores the tail fields through the return register: obj is
+     * v0 from the copy on. No plain-C spelling found yet. */
+    register PoolObject *obj asm("$2");
     u8 *data;
     s32 index;
-    s32 off;
     s32 b;
     s32 w;
 
     index = D_800A2E84++;
-    entry = (u8 *)D_800A3984[0] + index * 0x500;
+    entry = (PoolObject *)((u8 *)D_800A3984[0] + index * 0x500);
     if (arg3 < 0) {
         arg3 = -arg3;
         data = D_800AE88C + arg3 * 0x44;
     } else {
         data = D_800AE88C;
     }
-    *(u8 **)(entry + 0x370) = data;
-    *(u8 **)(entry + 0x36C) = data;
-    entry[0x374] = 0;
-    entry[0x200] = arg3;
+    entry->unk370 = data;
+    entry->unk36C = data;
+    entry->unk374 = 0;
+    entry->unk200 = arg3;
     func_8002DA30((s32 *)entry);
-    *(s16 *)(entry + 0x1EC) = arg0;
+    entry->type = arg0;
     if (arg0 == 0) {
-        *(u32 *)(entry + 0x350) = (u32)CarUpdatePlayer;
-        D_800A2EB4[0] = D_800A2EB4[0] + 1;
+        entry->update = (u32)CarUpdatePlayer;
+        D_800A2EB4Lui = D_800A2EB4Lui + 1;
     } else if (arg0 == 1) {
-        *(u32 *)(entry + 0x350) = (u32)func_800373B4;
+        entry->update = (u32)func_800373B4;
     } else {
-        *(u32 *)(entry + 0x350) = (u32)func_80029E34;
+        entry->update = (u32)func_80029E34;
     }
-    *(u32 *)(entry + 0x354) = (u32)func_80025594;
-    off = arg1 * 16;
-    *(u32 *)(entry + 0) = *(u32 *)((u8 *)D_800BE72C + off);
-    *(u32 *)(entry + 4) = *(u32 *)((u8 *)D_800BE730 + off);
-    *(u32 *)(entry + 8) = 0;
+    entry->unk354 = (u32)func_80025594;
+    entry->unk0 = D_800BE72C[arg1].unk0;
+    entry->unk4 = D_800BE72C[arg1].unk4;
+    entry->unk8 = 0;
     if (arg0 == 0) {
-        b = D_800A2E88;
-        D_800A2E88 = b + 1;
-        entry[0x20B] = b;
+        entry->unk20B = D_800A2E88++;
     }
     func_8002D4CC(entry);
-    func_80028754(entry, 5);
-    func_80022FB8(entry, *(s16 *)((u8 *)D_800BE738 + off));
-    w = D_800A2E94[0];
+    func_80028754((u8 *)entry, 5);
+    func_80022FB8((u8 *)entry, D_800BE72C[arg1].unkC);
+    w = D_800A2E94Lui;
     b = arg1 + 1;
-    entry[0x204] = b;
-    entry[0x205] = b;
-    entry[0x3C9] = b;
-    *(s16 *)(entry + 0x28A) = arg2;
-    *(s16 *)(entry + 0x1DE) = w;
-    D_800A2E94[0] = D_800A2E94[0] + 1;
+    entry->unk204 = b;
+    entry->unk205 = b;
+    entry->unk3C9 = b;
+    obj = entry;
+    obj->unk28A = arg2;
+    obj->unk1DE = w;
+    D_800A2E94Lui = D_800A2E94Lui + 1;
+    return obj;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002D874);
-#endif
 
 void func_8002DA30(s32 *arg0) {
     arg0[0x3C / 4] = 0x10000;
