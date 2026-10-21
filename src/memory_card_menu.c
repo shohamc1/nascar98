@@ -3380,21 +3380,12 @@ again:
     }
 }
 
-#if 1
-/* permuter output-0-1 under test */
 extern u8 *D_800A3908[];
 extern u8 *D_800A377C[];
-extern u8 *D_800A3908[];
-extern u8 *D_800A377C[];
-extern u8 *D_800A377C[];
-extern u8 *D_800A377C[];
-extern u8 D_800A3808;
-extern u8 *D_800A3908[];
 extern u8 D_800A3808;
 extern u8 gCardSlot;
 extern s32 D_8009AB80[];
 extern s32 D_8009AB00[];
-extern u8 *D_800A377C[];
 extern u8 D_800A3770;
 extern void *D_800A3A24[];
 void func_8006D8E8(s32 arg0) {
@@ -3453,9 +3444,6 @@ void func_8006D8E8(s32 arg0) {
     }
     D_800A3770 = 1;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006D8E8);
-#endif
 
 extern u8 *D_8009AB00nm[] asm("D_8009AB00.NON_MATCHING");
 extern u8 *D_8009AB80nm[] asm("D_8009AB80.NON_MATCHING");
