@@ -5432,13 +5432,16 @@ typedef struct {
     u8 sliding;
     u8 unkFA[0xA];
     s16 movementHeading;
-    u8 unk106[0x6];
+    u8 unk106[0x4];
+    s16 unk10A;
     s16 unk10C;
     s16 unk10E;
     u8 unk110[0x4];
     s16 heading;
     u16 fineHeading;
-    u8 unk118[0xED];
+    u8 unk118[0x8];
+    s16 unk120;
+    u8 unk122[0xE3];
     s8 assistRank;
     u8 unk206[0x8];
     u16 steering;
@@ -5446,17 +5449,41 @@ typedef struct {
     s32 speedBoost;
     u8 unk230[0x8];
     s32 flags;
-    u8 unk23C[0x50];
+    u8 unk23C[0x4];
+    s32 frontGrip;
+    s32 rearGrip;
+    u8 unk248[0x44];
     s32 unk28C;
-    u8 unk290[0x16];
+    u8 unk290[0x10];
+    s16 unk2A0;
+    u8 unk2A2[0x4];
     s16 unk2A6;
     u8 unk2A8[0x4];
     s16 unk2AC;
-    u8 unk2AE[0x26];
+    u8 unk2AE[0xA];
+    s32 unk2B8;
+    u8 unk2BC[0x18];
     s16 unk2D4;
-    u8 unk2D6[0x7E];
+    u8 unk2D6[0xA];
+    s32 unk2E0;
+    u8 unk2E4[0x18];
+    s16 unk2FC;
+    u8 unk2FE[0xA];
+    s32 unk308;
+    u8 unk30C[0x18];
+    s16 unk324;
+    u8 unk326[0xA];
+    s32 unk330;
+    u8 unk334[0x20];
     void (*callback)(u8 *);
-    u8 unk358[0x64];
+    u8 unk358[0xA];
+    s16 unk362;
+    s16 unk364;
+    s16 unk366;
+    s16 unk368;
+    u8 unk36A[0x3A];
+    u16 unk3A4;
+    u8 unk3A6[0x16];
     s32 driveInput;
     u8 unk3C0[0x24];
     u8 *raceNode;
@@ -5629,13 +5656,11 @@ void func_8002B538(u8 *arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002B63C);
 
-#ifdef NON_MATCHING
-void func_8002B9AC(u8 *arg0, s32 *arg1, s32 *arg2) {
-    extern s32 func_8002B63C(u8 *, s32, s32);
+void func_8002B9AC(CarDynamics *car, s32 *frontGrip, s32 *rearGrip) {
+    extern s32 func_8002B63C(CarDynamics *, s32, s32);
     extern s32 MathFixedDivide(s32, s32);
-    extern u8 D_800A2E5B;
-    extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
-    s32 prod;
+    extern s8 D_800A2E5B;
+    s32 grip;
     s32 num;
     s32 cnt;
     s32 count;
@@ -5643,12 +5668,11 @@ void func_8002B9AC(u8 *arg0, s32 *arg1, s32 *arg2) {
     s32 ratio;
 
     D_800A2E5B = 0;
-    prod = func_8002B63C(arg0, *(s16 *)(arg0 + 0x362), 0);
-    prod = prod + func_8002B63C(arg0, *(s16 *)(arg0 + 0x364), 1);
-    prod = MathMultiplyFixed16(*(s32 *)(arg0 + 0x308) + *(s32 *)(arg0 + 0x330),
-                               prod);
-    count = *(s16 *)(arg0 + 0x2A0);
-    flags = *(u16 *)(arg0 + 0x3A4);
+    grip = func_8002B63C(car, car->unk362, 0);
+    grip = grip + func_8002B63C(car, car->unk364, 1);
+    grip = MathMultiplyFixed16(car->unk308 + car->unk330, grip);
+    count = car->unk2A0;
+    flags = car->unk3A4;
     cnt = count + 1;
     if (flags & 0x20) {
         cnt = count - 1;
@@ -5658,68 +5682,50 @@ void func_8002B9AC(u8 *arg0, s32 *arg1, s32 *arg2) {
     }
     num = cnt * D_800A2E38;
     if (cnt < -7) {
-        cnt = cnt + 7;
-        num = D_800A2E38 - D_800A2E38 * 8;
-        num = num + cnt * 20;
+        num = D_800A2E38 * -7 + (cnt + 7) * 20;
     }
-    prod = prod + MathMultiplyFixed16(prod, MathFixedDivide(num, 0x3E8));
-    *arg1 = prod;
-    prod = func_8002B63C(arg0, *(s16 *)(arg0 + 0x366), 2);
-    prod = prod + func_8002B63C(arg0, *(s16 *)(arg0 + 0x368), 3);
-    prod = MathMultiplyFixed16(*(s32 *)(arg0 + 0x2B8) + *(s32 *)(arg0 + 0x2E0),
-                               prod);
-    count = *(s16 *)(arg0 + 0x2A6);
-    flags = *(u16 *)(arg0 + 0x3A4);
+    grip = grip + MathMultiplyFixed16(grip, MathFixedDivide(num, 0x3E8));
+    *frontGrip = grip;
+    grip = func_8002B63C(car, car->unk366, 2);
+    grip = grip + func_8002B63C(car, car->unk368, 3);
+    grip = MathMultiplyFixed16(car->unk2B8 + car->unk2E0, grip);
+    if (D_800A2E5B == 4) {
+        func_80041848((u8 *)car, 3);
+    }
+    count = car->unk2A6;
     cnt = count + 1;
-    if (flags & 0x80) {
+    if (car->unk3A4 & 0x80) {
         cnt = count - 2;
     }
     num = cnt * D_800A2E3C;
     if (cnt < -7) {
-        cnt = cnt + 7;
-        num = D_800A2E3C - D_800A2E3C * 8;
-        num = num + cnt * 20;
+        num = D_800A2E3C * -7 + (cnt + 7) * 20;
     }
-    prod = prod + MathMultiplyFixed16(prod, MathFixedDivide(num, 0x3E8));
-    *arg2 = prod;
-    if (D_800A2E5B == 4) {
-        func_80041848(arg0, 3);
+    grip = grip + MathMultiplyFixed16(grip, MathFixedDivide(num, 0x3E8));
+    *rearGrip = grip;
+    car->unk10A = 0;
+    if (car->unk2FC != 0 || car->unk324 != 0) {
+        *frontGrip = 0;
     }
-    if (*(s16 *)(arg0 + 0x2FC) == 0) {
-        if (*(s16 *)(arg0 + 0x324) != 0) {
-            *arg1 = 0;
+    if (car->unk2AC != 0 || car->unk2D4 != 0) {
+        *rearGrip = 0;
+        if (car->flags & 0x40) {
+            car->unk10A += 0xFA0;
         }
     }
-    *(s16 *)(arg0 + 0x10A) = 0;
-    if (*(s16 *)(arg0 + 0x2AC) != 0) {
-        goto clearRear;
+    if (D_800A2EE4w15[0] != 0) {
+        ratio = MathFixedDivide((car->assistRank - 1) * 50 + 0x64, 0x64);
+        *frontGrip = MathMultiplyFixed16(*frontGrip, ratio);
+        ratio = MathFixedDivide((car->assistRank - 1) * 50 + 0x64, 0x64);
+        *rearGrip = MathMultiplyFixed16(*rearGrip, ratio);
     }
-    if (*(s16 *)(arg0 + 0x2D4) == 0) {
-        goto afterClear;
-    }
-clearRear:
-    *arg2 = 0;
-    if (*(s32 *)(arg0 + 0x238) & 0x40) {
-        *(u16 *)(arg0 + 0x10A) += 0xFA0;
-    }
-afterClear:
-    if (D_800A2EE4nm[0] != 0) {
-        ratio = MathFixedDivide((*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
-        *arg1 = MathMultiplyFixed16(*arg1, ratio);
-        ratio = MathFixedDivide((*(s8 *)(arg0 + 0x205) - 1) * 50 + 0x64, 0x64);
-        *arg2 = MathMultiplyFixed16(*arg2, ratio);
-    }
-    *(s32 *)(arg0 + 0x240) = *arg1;
-    *(s32 *)(arg0 + 0x244) = *arg2;
-    if (*(s16 *)(arg0 + 0x120) != 0) {
-        *arg1 = *arg1 / 2;
-        *arg2 = 0;
+    car->frontGrip = *frontGrip;
+    car->rearGrip = *rearGrip;
+    if (car->unk120 != 0) {
+        *frontGrip = *frontGrip / 2;
+        *rearGrip = 0;
     }
 }
-
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002B9AC);
-#endif
 
 extern s32 D_800A2E40;
 
@@ -5741,7 +5747,7 @@ extern s32 D_800A3598Physics[] asm("D_800A3598.NON_MATCHING");
 extern s32 D_800A453CPhysics[] asm("D_800A453C.NON_MATCHING");
 extern s32 func_8002AAF0(u8 *, VECTOR *, s32);
 extern void func_8002AF94(CarDynamics *);
-extern void func_8002B9AC(u8 *, s32 *, s32 *);
+extern void func_8002B9AC(CarDynamics *, s32 *, s32 *);
 extern void func_8002D27C(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 
@@ -6061,7 +6067,7 @@ void func_8002BD48(u8 *carBytes) {
     if (gripAngle >= 0xFF) {
         gripAngle = 0xFE;
     }
-    func_8002B9AC((u8 *)car, &local.frontGrip, &local.rearGrip);
+    func_8002B9AC(car, &local.frontGrip, &local.rearGrip);
     averageGrip = (local.frontGrip + local.rearGrip) / 2;
     if (D_800A3598Physics[0] != 1) {
         yawForce = func_8002AAF0((u8 *)car, &local.force, averageGrip);
