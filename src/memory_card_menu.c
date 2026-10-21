@@ -1514,7 +1514,7 @@ void func_800697EC(u8 mode) {
     func_8005DEDC(0x3E8);
 }
 
-s32 func_80069A90(s32 arg0) {
+inline u8 func_80069A90(s32 arg0) {
     switch (arg0 & 0xFF) {
     case 0:
     case 1:
@@ -1666,7 +1666,82 @@ void func_80069AFC(s32 arg0) {
     asm(".text");
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_80069C60);
+/* func_80069A90 is inline in the original: this function expands it (its
+ * switch table is jtbl_8008FBBC). `index` is a u8 copy of `group`; the first
+ * lookup reads `group`, the others read `index`. Each arm of the last test
+ * holds its own copy of the row setup, so the locals stay block-local. */
+void func_80069C60(s32 arg0) {
+    extern void *D_800A3914[];
+    extern u8 *D_800A3910f[] asm("D_800A3910");
+    extern u8 *D_800A3918n[] asm("D_800A3918");
+    extern s8 D_800A307C[];
+    extern s32 D_8009A2D4[];
+    extern s32 D_8009A2F4[];
+    s32 group;
+    u8 index;
+    s32 text;
+    u8 *obj;
+    group = func_80069A90(arg0);
+    index = group;
+    if (group == 0xFF) {
+        D_800A3914[0] = 0;
+        return;
+    }
+    func_8005A7B8S32(2, 2);
+    if ((((s8 *)D_800A3A24)[0] == 2) && (D_800A307C[0] != 6)) {
+        text = D_8009A2F4[group];
+    } else {
+        text = D_8009A2D4[index];
+    }
+    obj = (u8 *)func_8005BF8C(func_8005B0E4(0x140, text), 0xDC);
+    D_800A3914[0] = obj;
+    if (((arg0 & 0xFF) != 0xC) && ((u32)((arg0 - 9) & 0xFF) >= 2U) &&
+        ((u32)((arg0 - 0x10) & 0xFF) >= 2U)) {
+        *((s16 *)(obj + 0xE)) = 2;
+        *((u16 *)(obj + 6)) = *((u16 *)(obj + 6)) - 0x140;
+    }
+    {
+        u8 *fields = D_800A3910f[1];
+        u8 *next;
+        fields[2] = 0xFF;
+        next = D_800A3918n[-1];
+        *((s16 *)(fields + 0x1A)) = 0x32;
+        next[3] = 0x80;
+    }
+    ((u8 *)D_800A3914[0])[4] = 0x40;
+    if ((((s8 *)D_800A3A24)[0] == 2) && (D_800A307C[0] != 6)) {
+        u8 *rowA;
+        u8 *pktA;
+        s32 textA;
+        s32 timerA;
+        rowA = (u8 *)D_800A3914[0];
+        timerA = *((s16 *)(rowA + 0x1A));
+        textA = D_8009A2F4[index];
+        pktA = *((u8 **)(rowA + 0x20));
+        pktA[1] = 2;
+        pktA[2] = 2;
+        *((s32 *)(pktA + 8)) = textA;
+        pktA[3] = 0;
+        *((s32 *)(pktA + 4)) = timerA;
+        *((s16 *)(rowA + 0x1A)) = timerA;
+    } else {
+        u8 *rowB;
+        u8 *pktB;
+        s32 textB;
+        s32 timerB;
+        rowB = (u8 *)D_800A3914[0];
+        timerB = *((s16 *)(rowB + 0x1A));
+        textB = D_8009A2D4[index];
+        pktB = *((u8 **)(rowB + 0x20));
+        pktB[1] = 2;
+        pktB[2] = 2;
+        *((s32 *)(pktB + 8)) = textB;
+        pktB[3] = 0;
+        *((s32 *)(pktB + 4)) = timerB;
+        *((s16 *)(rowB + 0x1A)) = timerB;
+    }
+}
+
 INCLUDE_RODATA("asm/nonmatchings/memory_card_menu", sCardFileName);
 
 extern char *D_800A35F4;
