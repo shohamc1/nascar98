@@ -4357,6 +4357,8 @@ extern u8 D_8009B00C[];
 extern u8 D_8009B028[];
 
 #ifdef NON_MATCHING
+extern u8 D_8009B02A[];
+
 void func_80062910(s32 arg0) {
     u8 *node;
     u8 *prim;
@@ -4369,7 +4371,6 @@ void func_80062910(s32 arg0) {
     u8 *base;
     u8 *chars;
     s32 fontId;
-    s32 sel;
     s8 i;
     s8 j;
     s32 idx;
@@ -4403,15 +4404,15 @@ void func_80062910(s32 arg0) {
     D_800A3088[idx] = c;
     *(u16 *)(prim + 0xE) = GetClut(0x100, *(s16 *)&D_8009B028[off + 4]);
     *(u16 *)(prim + 0x16) =
-        GetTPage(1, 0, *(s16 *)&D_8009B028[off], *(s16 *)&D_8009B028[off + 2]);
+        GetTPage(1, 0, *(s16 *)&D_8009B028[off], *(s16 *)&D_8009B02A[off]);
     prim[0xC] = 0;
-    prim[0xD] = *(u16 *)&D_8009B028[off + 2];
+    prim[0xD] = *(u16 *)&D_8009B02A[off];
     prim[0x14] = *(u16 *)(node + 0x16);
-    prim[0x15] = *(u16 *)&D_8009B028[off + 2];
+    prim[0x15] = *(u16 *)&D_8009B02A[off];
     prim[0x1C] = 0;
-    prim[0x1D] = D_8009B028[off + 2] + node[0x18];
+    prim[0x1D] = D_8009B02A[off] + node[0x18];
     prim[0x24] = *(u16 *)(node + 0x16);
-    prim[0x25] = D_8009B028[off + 2] + node[0x18];
+    prim[0x25] = D_8009B02A[off] + node[0x18];
     node = *(u8 **)(node + 0x1C);
     prim = *(u8 **)(node + 0x20);
     if (id == 1 && (((s8 *)D_800A3A24)[arg0 & 0xFF] == 5 ||
@@ -4427,13 +4428,15 @@ void func_80062910(s32 arg0) {
     node[5] = !((s8 *)D_800A3A24)[arg0 & 0xFF];
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
-    prim2 = *(u8 **)(node + 0x20);
+    base = node;
+    prim2 = *(u8 **)(base + 0x20);
     *(s32 *)(prim2 + 8) = ((s8 *)D_800A307C)[arg0 & 0xFF] + 1;
-    sel = ((s8 *)D_800A3A24)[arg0 & 0xFF];
+    uc = ((s8 *)D_800A3A24)[arg0 & 0xFF];
     c = ((s8 *)D_800A3A24)[arg0 & 0xFF];
-    if (sel == 0) {
+    if (uc == 0) {
         c = D_800A308C[arg0 & 0xFF];
     }
+
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 7; j++) {
             node = *(u8 **)(node + 0x1C);
