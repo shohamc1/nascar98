@@ -447,7 +447,7 @@ s32 func_8004229C(s32 arg0);
 
 /* Scene effects and random numbers. */
 
-u32 RandomGetScaled16(s32 arg0) {
+__inline__ u32 RandomGetScaled16(s32 arg0) {
     s32 value0;
     value0 = ((gRandomSeed16 * 0x6255) + 0x3619) & 0xFFFF;
     gRandomSeed16 = value0;
@@ -747,135 +747,66 @@ void func_8004382C(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* 2026-10-12: permuter rounds 1-4 (2855 -> 1945 -> 1635 -> 1350 unit;
- * TU 5275 -> 2475 -> 2165 -> 1880), size exact. Remaining: loop register
- * rotations and the sw/mult store-block position (see walls row). The
- * empty frame trick and the asm-mult LCG recipe are in the walls row and
- * the 43D6C notes. */
-extern s32 D_800A2EB8[];
-extern s32 gRandomSeed16;
-extern s32 D_800A2EB8[];
-extern s32 gRandomSeed16;
-extern s32 D_800A2EB8[];
-extern s32 gRandomSeed16;
-extern s32 gRandomSeed16;
+typedef struct {
+    u16 x;
+    u16 y;
+    u16 z;
+    u8 pad[14];
+} FxVertex;
+
 void func_80043B68(u8 *object, s32 idx) {
     u8 *fx;
     u8 *row;
-    u8 *table;
-    u8 *entry;
-    u8 *prim;
-    u8 *prim4;
+    FxVertex *prim;
     s32 i;
-    s32 *new_var;
     s32 limit;
-    s32 count;
-    s32 dcheck;
-    s32 value;
-    s32 m1;
-    s32 r1;
-    s32 r2;
-    s32 r3;
-    s32 m2;
-    s32 m3;
+    s32 start;
     u16 flags;
     s32 base;
-    s32 start;
-    s32 scratch;
-    s32 *scratchp;
-    fx = *((u8 **)(object + 0x370));
-    if ((*((s8 *)(object + 0x3B6))) == 0) {
+    s32 dcheck;
+    u8 *table;
+    u8 *verts;
+
+    fx = *(u8 **)(object + 0x370);
+    if (*(s8 *)(object + 0x3B6) == 0) {
         return;
     }
-    if ((*((s8 *)(object + 0x200))) == 4) {
+    if (*(s8 *)(object + 0x200) == 4) {
         return;
     }
-    new_var = &scratch;
     row = object + idx;
-    count = (*((u8 *)(row + 0x3AE)) = (*((u8 *)(row + 0x3AE))) + 1);
-    if (((s8)count) >= 4) {
-        if (m1) {
-            *((u8 *)(row + 0x3AE)) = 3;
-        } else {
-            *((u8 *)(row + 0x3AE)) = 3;
-        }
+    if ((s8)++row[0x3AE] >= 4) {
+        row[0x3AE] = 3;
     }
-    flags = *((u16 *)(object + 0x3A4));
+    flags = *(u16 *)(object + 0x3A4);
     dcheck = D_800A2EB8[0];
-    *((u16 *)(object + 0x3A4)) = flags | 0x8000;
-    if (dcheck == 0) {
-        count = *((s8 *)(row + 0x3AE));
-        if (count == 3) {
-            if (idx == count) {
-                *((u16 *)(object + 0x3A4)) = flags | 0x8080;
-            } else {
-                *((u16 *)(object + 0x3A4)) =
-                    (flags | 0x8000) | (1 << (idx + 5));
-            }
+    *(u16 *)(object + 0x3A4) = flags | 0x8000;
+    if (dcheck == 0 && *(s8 *)(row + 0x3AE) == 3) {
+        if (idx == 3) {
+            *(u16 *)(object + 0x3A4) = flags | 0x8080;
+        } else {
+            *(u16 *)(object + 0x3A4) = flags | 0x8000 | (1 << (idx + 5));
         }
     }
-    base = *((s16 *)(fx + 0x2E));
-    table = *((u8 **)(fx + 0x40));
+    base = *(s16 *)(fx + 0x2E);
+    table = *(u8 **)(fx + 0x40);
     if (idx >= 0) {
-        base = base + idx;
-    } else if (entry) {
-        base = base - idx;
+        base += idx;
     } else {
-        base = base - idx;
+        base -= idx;
     }
-    entry = table + (base * 24);
-    start = *((s16 *)entry);
-    i = 0;
-    prim = (*((u8 **)(fx + 0x14))) + (start * 20);
-    limit = ((*((s16 *)(entry + 2))) - start) + 1;
-    scratchp = new_var;
-    if (limit > 0) {
-        register s32 five asm("t3");
-        do {
-            five = 5;
-            asm("" : "=r"(prim4) : "0"(prim4));
-            do {
-                value = (gRandomSeed16 * 0x6255) + 0x3619;
-                prim4 = prim + 4;
-                asm("andi %0, %1, 0xFFFF" : "=r"(m1) : "r"(value));
-                asm volatile("mult %0, %1" : : "r"(m1), "r"(five) : "lo", "hi");
-                gRandomSeed16 = m1;
-                asm volatile("mflo %0" : "=r"(r1));
-                asm volatile("" : : : "memory");
-                value &= 0xFFFF;
-                if (1) {
-                    value = (value * 0x6255) + 0x3619;
-                    asm("andi %0, %1, 0xFFFF" : "=r"(m2) : "r"(value));
-                    gRandomSeed16 = m2;
-                }
-                asm volatile("mult %0, %1" : : "r"(m2), "r"(five) : "lo", "hi");
-                asm volatile("mflo %0" : "=r"(r2));
-                asm volatile("" : : : "memory");
-                value &= 0xFFFF;
-                value = (value * 0x6255) + 0x3619;
-                m3 = value & 0xFFFF;
-                gRandomSeed16 = m3;
-                asm volatile("mult %0, %1" : : "r"(m3), "r"(five) : "lo", "hi");
-                asm volatile("mflo %0" : "=r"(r3));
-                *((u16 *)prim) = (*((u16 *)prim)) + (((u32)r1) >> 0x10);
-                *((u16 *)(prim4 - 2)) =
-                    (*((u16 *)(prim4 - 2))) + (((u32)r2) >> 0x10);
-                *((u16 *)prim4) = (*((u16 *)prim4)) + (((u32)r3) >> 0x10);
-                prim += 0x14;
-                prim4 += 0x14;
-                i++;
-            } while (i < limit);
-        } while (0);
+    row = table + base * 24;
+    start = *(s16 *)row;
+    verts = *(u8 **)(fx + 0x14);
+    limit = *(s16 *)(row + 2) - start + 1;
+    prim = (FxVertex *)(verts + start * 20);
+    for (i = 0; i < limit; i++) {
+        prim->x += (u8)RandomGetScaled16(5);
+        prim->y += (u8)RandomGetScaled16(5);
+        prim->z += (u8)RandomGetScaled16(5);
+        prim++;
     }
 }
-
-extern s32 gRandomSeed16;
-extern s32 gRandomSeed16;
-extern s32 gRandomSeed16;
-#else
-INCLUDE_ASM("asm/nonmatchings/effects", func_80043B68);
-#endif
 
 extern u8 D_800B1A24[];
 extern u8 D_800B1A25[];
