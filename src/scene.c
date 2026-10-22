@@ -11449,7 +11449,6 @@ u8 TableFindByte(u8 value) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_800587A0);
-INCLUDE_RODATA("asm/nonmatchings/scene", D_8008D738);
 
 /* func_80058D08: writes $gp directly; not expressible in C. */
 void func_80058D08(s32 gp) {

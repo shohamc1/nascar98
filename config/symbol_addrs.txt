@@ -941,3 +941,4 @@ gCardSlot = 0x800A337C;
 gCdStream = 0x800A3500;
 gVabBody = 0x800A3A00;
 gVabHead = 0x800A3A08;
+gMenuCreditsStar = 0x8008D738;
