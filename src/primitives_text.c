@@ -15,7 +15,7 @@ extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
 extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
 extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
 extern s8 D_800A3620w18c[] asm("D_800A3620.NON_MATCHING");
-extern s32 sprintf(char *, u8 *);
+extern s32 sprintf(char *, ...);
 
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
@@ -449,14 +449,16 @@ void TextFormatTime(void *timeValue, s32 flags, s32 buffer) {
 }
 
 asm(".globl func_80050028Text\nfunc_80050028Text = HudDrawText");
-void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
+__inline__ void func_80018768(void *arg0, s32 x, s32 y, s32 format) {
     s8 text[24];
     s8 *p;
     s16 *base;
     s16 *width;
     s8 *field;
     s32 pen;
+    s32 scale;
 
+    scale = format;
     TextFormatTime(arg0, scale, text);
     if (scale < 0) {
         scale = -scale;
@@ -2094,7 +2096,154 @@ void func_8001BA94(s32 arg0) {
     }
 }
 
+#ifdef NON_MATCHING
+extern s32 D_800A2E90[];
+extern s32 D_800A2E94[];
+extern s32 D_800A2EB0Absolute[];
+extern s32 D_800A3848;
+extern s32 D_800B0B1C[];
+extern u8 *D_8009AE04[];
+extern u8 *D_8009AE08[];
+extern u8 *D_8009ADF4[];
+extern s32 D_8009ADEC[];
+extern s32 D_8009ADF0[];
+extern char D_800A2DA8[];
+extern u8 gDriverOrder[];
+extern char *gDriverNames[];
+extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
+
+void func_8001BDBC(s32 reset) {
+    char text[64];
+    s32 slide;
+    s32 baseY;
+    s32 i;
+    s32 off;
+    void *node;
+    s32 *times;
+
+    if (D_800A2EB0Absolute[0] == 2) {
+        return;
+    }
+    if (reset != 0) {
+        D_800A3848 = 0;
+    } else {
+        D_800A3848 += 1;
+    }
+    if (D_800A3848 < 0x14) {
+        slide = (D_800A3848 * 0x14) - 0x140;
+        baseY = 0;
+    } else if (D_800A3848 < 0xA0) {
+        slide = (D_800A3848 * 0x14) - 0x140;
+        baseY = 0;
+    } else {
+        slide = (D_800A3848 * 0x14) - 0x140;
+        if (D_800A3848 >= 0x1D7) {
+            D_800A3848 = 0x1D6;
+        }
+        baseY = (0xA0 - D_800A3848) / 2;
+    }
+    gOrderingTableLui += 8;
+    i = 0;
+    do {
+        func_8001D778(0, 0, 0x140, 0xF0, 0, 0, 0, 1);
+        i += 1;
+    } while (i < 2);
+    off = slide;
+    gOrderingTableLui -= 8;
+    if (off > 0) {
+        off = 0;
+    }
+    GraphicsSetColor(0xFF, 0x80, 0x40);
+    if (D_800A2EB0Absolute[0] == 0) {
+        func_80050028Text(D_8009AE04[0], (s16)(off + 0x78), (s16)(baseY + 0x18),
+                          0);
+        node = D_800A35E0;
+        i = 0;
+        if (D_800A2E90[0] >= 0) {
+            times = D_800B0B1C;
+            do {
+                off = slide - ((i + 1) * 0x78);
+                if (off < -0x3E8) {
+                    off = -0x3E8;
+                }
+                if (off > 0) {
+                    off = 0;
+                }
+                if (!(i & 1)) {
+                    off = -off;
+                }
+                if (off == 0 && *(s16 *)((u8 *)node + 0x1EC) == 0 &&
+                    D_800A2E94[0] >= 3) {
+                    gOrderingTableLui += 4;
+                    func_8001D778(0, baseY + (i * 0xE) + 0x25, 0x140, 0xF, 0, 0,
+                                  -1, 1);
+                    gOrderingTableLui -= 4;
+                }
+                TextFormatInt(i + 1, text);
+                func_80050028Text(text, (s16)(off + 0x10),
+                                  (s16)(baseY + (i * 0xE) + 0x28), 0);
+                func_80050028Text(*(u8 **)((u8 *)node + 0x34C),
+                                  (s16)(off + 0x32),
+                                  (s16)(baseY + (i * 0xE) + 0x28), 0);
+                if (times[i] > -1) {
+                    if (i == 0) {
+                        func_80018768(D_800B0B1C[0], off + 0xD2,
+                                      baseY + (i * 0xE) + 0x28, -3);
+                    } else {
+                        func_80018768(times[i], off + 0xD2,
+                                      baseY + (i * 0xE) + 0x28, 3);
+                    }
+                } else if (times[i] != -1) {
+                    if (times[i] + 1 == -1) {
+                        sprintf(text, D_800A2DA8, -1, D_8009ADF0[0]);
+                    } else {
+                        sprintf(text, D_800A2DA8, times[i] + 1, D_8009ADEC[0]);
+                    }
+                    func_80050028Text(text, (s16)(off + 0xD2),
+                                      (s16)(baseY + (i * 0xE) + 0x28), 0);
+                } else {
+                    func_80050028Text(D_8009ADF4[0], (s16)(off + 0xD2),
+                                      (s16)(baseY + (i * 0xE) + 0x28), 0);
+                }
+                i++;
+                node = *(void **)((u8 *)*(void **)((u8 *)node + 0x3E8) + 8);
+            } while (D_800A2E90[0] >= i);
+        }
+    } else {
+        func_80050028Text(D_8009AE08[0], (s16)(off + 0x78), (s16)(baseY + 0x18),
+                          0);
+        i = 0;
+        do {
+            off = slide - ((i + 1) * 0x78);
+            if (off < -0x3E8) {
+                off = -0x3E8;
+            }
+            if (off > 0) {
+                off = 0;
+            }
+            if (!(i & 1)) {
+                off = -off;
+            }
+            if (off == 0 && i == *(s8 *)(gPlayerCar + 0x204) - 1) {
+                gOrderingTableLui += 4;
+                func_8001D778(0, baseY + (i * 0xE) + 0x25, 0x140, 0xF, 0, 0, -1,
+                              1);
+                gOrderingTableLui -= 4;
+            }
+            TextFormatInt(i + 1, text);
+            func_80050028Text(text, (s16)(off + 0x10),
+                              (s16)(baseY + (i * 0xE) + 0x28), 0);
+            func_80050028Text(gDriverNames[gDriverOrder[i]], (s16)(off + 0x32),
+                              (s16)(baseY + (i * 0xE) + 0x28), 0);
+            func_80050670(D_800B0B1C[i], (s16)(off + 0xD2),
+                          (s16)(baseY + (i * 0xE) + 0x28), 0, 1);
+            i++;
+        } while (i < 0x18);
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BDBC);
+#endif
 
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
