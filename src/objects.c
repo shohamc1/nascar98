@@ -9076,7 +9076,7 @@ void RaceUpdateFrame(void) {
     s32 currentLap;
     s32 lapLimit;
     s32 morePlayers;
-    register s16 playerIndex asm("s1");
+    s16 playerIndex;
     s16 nextPlayerIndex;
     s32 raceActive;
     s32 finishDelay;
@@ -9085,7 +9085,6 @@ void RaceUpdateFrame(void) {
     s32 replayFrames;
     s32 passedLap;
     s32 cameraMode;
-    register u16 savedSection asm("s1");
     u8 *playerCar;
     u8 *object;
 
@@ -9195,10 +9194,10 @@ void RaceUpdateFrame(void) {
                 func_80041444(1);
                 if (D_800A3A60RaceStep1[0] != 0) {
                     savedCar = gPlayerCarRaceStep3[0];
-                    savedSection = *(u16 *)(savedCar + 0x1E0);
+                    playerIndex = *(u16 *)(savedCar + 0x1E0);
                     *(u16 *)(savedCar + 0x1E0) = 0;
                     SceneInitRoadStrip();
-                    (*(u16 *)(gPlayerCarRaceStep5[0] + 0x1E0)) = savedSection;
+                    (*(u16 *)(gPlayerCarRaceStep5[0] + 0x1E0)) = playerIndex;
                 }
             }
         }

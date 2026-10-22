@@ -2794,7 +2794,7 @@ s32 func_800167BC(u8 *arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 hw;
     u32 ptr;
     s32 size;
-    register s32 extra asm("$3");
+    s32 extra;
     s32 bank2;
     s8 speed;
     s8 q;
@@ -2816,9 +2816,11 @@ s32 func_800167BC(u8 *arg0, s32 arg1, s32 arg2, s32 arg3) {
             extra = *(s32 *)(entries + 0x430);
             size = D_800A2D5C;
             *(s32 *)(ptr + 0x34) = oldEntry;
-            *(s32 *)(entries + 0x420) = 0;
-            D_800A2D64 = (s32 *)extra;
-            D_800A2D5C = size + hw;
+            do {
+                *(s32 *)(entries + 0x420) = 0;
+                D_800A2D64 = (s32 *)extra;
+                D_800A2D5C = size + hw;
+            } while (0);
         }
     }
     if (*(s8 *)((s32)arg0 + 0x374) == 4) {
