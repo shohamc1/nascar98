@@ -866,13 +866,13 @@ s32 func_8004229C(s32 arg0) {
     return var_v0;
 }
 
-#ifdef NON_MATCHING
 typedef struct BoxCorner {
     s16 sx, sy, sz, pad;
     s32 vx, vy, vz;
 } BoxCorner;
 extern BoxCorner D_800B1FF0[8];
 
+#ifdef NON_MATCHING
 void func_800422C0(u8 *obj) {
     s32 i;
     s32 height;
@@ -952,6 +952,109 @@ void func_800422C0(u8 *obj) {
 INCLUDE_ASM("asm/nonmatchings/input", func_800422C0);
 #endif
 
-INCLUDE_ASM("asm/nonmatchings/input", func_80042508);
+extern s32 D_800A3A2CAbsolute[];
+extern s32 D_800A3A34Absolute[];
+extern void func_800432C0(u8 *, s32);
+extern void func_80043B68(u8 *, s32);
+
+void func_80042508(u8 *obj) {
+    s32 i;
+    s32 best;
+    s32 bestIdx;
+    s32 t;
+    s32 x;
+    s32 z;
+    s32 idxA;
+    s32 idxB;
+    s32 idxC;
+    BoxCorner *c;
+    s32 *sinTab;
+    s32 *cosTab;
+
+    best = 0x7FFF;
+    bestIdx = 0;
+    sinTab = *(s32 **)D_800A3A2CAbsolute;
+    cosTab = *(s32 **)D_800A3A34Absolute;
+    idxA = *(s16 *)(obj + 0x388);
+    idxB = *(s16 *)(obj + 0x38A);
+    c = D_800B1FF0;
+    for (i = 0; i < 8; c++, i++) {
+        z = c->vz;
+        c->sx = c->vx;
+        c->sy = c->vy;
+        t = (sinTab[idxA] * c->sx - cosTab[idxA] * c->sy) >> 16;
+        x = (cosTab[idxA] * c->sx + sinTab[idxA] * c->sy) >> 16;
+        c->sz = (sinTab[idxB] * z - cosTab[idxB] * x) >> 16;
+        c->sy = (cosTab[idxB] * z + sinTab[idxB] * x) >> 16;
+        c->sx = t;
+        idxC = *(s16 *)(obj + 0x398);
+        z = ((sinTab[idxC] * c->sz - cosTab[idxC] * t) >> 16) + *(s32 *)obj;
+        c->sx = ((cosTab[idxC] * c->sz + sinTab[idxC] * t) >> 16) +
+                *(s32 *)(obj + 4);
+        c->sz = z;
+        if (c->sy < best) {
+            best = c->sy;
+            bestIdx = i;
+        }
+    }
+    if (best <= 0 && -best >= *(s16 *)(obj + 0x39A)) {
+        *(s16 *)(obj + 0x39A) = -best;
+        *(s16 *)(obj + 0x1C0) = 0;
+        *(u16 *)(obj + 0x396) |= 8;
+        if (RandomScaledGet(3) < 0) {
+            t = -RandomScaledGet(3);
+        } else {
+            t = RandomScaledGet(3);
+        }
+        if (ABS(*(s16 *)(obj + 0x394)) < 0x3C) {
+            t += 2;
+        }
+        switch (bestIdx % 4) {
+        case 3:
+            if (t == 0) {
+                func_800432C0(obj, 0);
+            }
+            if (t < 3) {
+                func_800432C0(obj, 5);
+            }
+            func_80043B68(obj, 0);
+            break;
+        case 2:
+            if (t == 0) {
+                func_800432C0(obj, 1);
+            }
+            if (t < 3) {
+                func_800432C0(obj, 6);
+            }
+            func_80043B68(obj, 1);
+            break;
+        case 1:
+            if (t == 0) {
+                func_800432C0(obj, 2);
+            }
+            if (t < 3) {
+                func_800432C0(obj, 7);
+            }
+            func_80043B68(obj, 2);
+            break;
+        case 0:
+            if (t == 0) {
+                func_800432C0(obj, 3);
+            }
+            if (t < 3) {
+                func_800432C0(obj, 7);
+            }
+            func_80043B68(obj, 3);
+            break;
+        }
+    } else {
+        *(s16 *)(obj + 0x1C0) = -1;
+        *(u16 *)(obj + 0x396) &= ~8;
+    }
+    for (i = 0; i < 4; i++) {
+        *(u16 *)(obj + 0x2AC + i * 0x28) = *(u16 *)(obj + 0x39A);
+        *(u16 *)(obj + 0x2B0 + i * 0x28) = 0;
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/input", func_80042920);
