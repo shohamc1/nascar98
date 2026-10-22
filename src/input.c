@@ -866,7 +866,91 @@ s32 func_8004229C(s32 arg0) {
     return var_v0;
 }
 
+#ifdef NON_MATCHING
+typedef struct BoxCorner {
+    s16 sx, sy, sz, pad;
+    s32 vx, vy, vz;
+} BoxCorner;
+extern BoxCorner D_800B1FF0[8];
+
+void func_800422C0(u8 *obj) {
+    s32 i;
+    s32 height;
+    s16 y;
+    BoxCorner *c;
+    s32 *pvx;
+    s32 *pvz;
+    BoxCorner *cb;
+    s32 *vxb;
+    s32 *vzb;
+    s32 k;
+
+    *(s16 *)(obj + 0x398) =
+        ABS(*(s16 *)(obj + 0x104) - *(s16 *)(obj + 0x114) + 0x400) & 0x3FF;
+    *(s16 *)(obj + 0x388) = 0;
+    *(s16 *)(obj + 0x38A) = 0;
+    *(s16 *)(obj + 0x39A) = *(u16 *)(obj + 0xFE) + 4;
+    *(s16 *)(obj + 0x38C) = RandomScaledGet(0x20);
+    if (*(s16 *)(obj + 0x38C) == 0) {
+        *(s16 *)(obj + 0x38C) = 1;
+    }
+    *(s16 *)(obj + 0x38E) = ABS(RandomScaledGet(0x20));
+    *(s16 *)(obj + 0x396) = 1;
+    *(s16 *)(obj + 0x394) = ABS(RandomScaledGet(0x32)) + 0x4B;
+    vxb = &D_800B1FF0[0].vx;
+    cb = D_800B1FF0;
+    vzb = (s32 *)cb + 4;
+    height = *(s16 *)(*(u8 **)(obj + 0x370) + 0x26);
+    for (i = 0, k = 0; i < 8; i++, k += 5) {
+        c = cb + i;
+        pvx = vxb + k;
+        pvz = vzb + i * 5;
+        switch (i) {
+        case 0:
+        case 4:
+            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1E);
+            *pvz = c->sz;
+            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x20);
+            *pvx = c->sx;
+            y = (i / 4) * height;
+            c->sy = y;
+            break;
+        case 1:
+        case 5:
+            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1E);
+            *pvz = c->sz;
+            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x22);
+            *pvx = c->sx;
+            y = (i / 4) * height;
+            c->sy = y;
+            break;
+        case 2:
+        case 6:
+            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1C);
+            *pvz = c->sz;
+            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x22);
+            *pvx = c->sx;
+            y = (i / 4) * height;
+            c->sy = y;
+            break;
+        case 3:
+        case 7:
+            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1C);
+            *pvz = c->sz;
+            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x20);
+            *pvx = c->sx;
+            y = (i / 4) * height;
+            c->sy = y;
+            break;
+        default:
+            continue;
+        }
+        D_800B1FF0[i].vy = y;
+    }
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/input", func_800422C0);
+#endif
 
 INCLUDE_ASM("asm/nonmatchings/input", func_80042508);
 
