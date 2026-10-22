@@ -17430,7 +17430,6 @@ __inline__ u8 CarIsAheadOnSection(RankCar *car, RankCar *other) {
     return distOther < distCar;
 }
 
-#ifdef NON_MATCHING
 /*
  * Sorts the car list into section order, then every 20 calls (or when
  * force is set) into race order: places, assist ranks, finish penalties,
@@ -17517,6 +17516,8 @@ void RaceUpdatePositions(u8 force) {
         if (D_800A2EF0Absolute == 0 && leader->penalty != 0) {
             D_800A2EF0Absolute = 1;
             func_80041848((u8 *)leader, 4);
+            /* Keep v0 explicit for Psy-Q's reload scratch choice. */
+            asm volatile("" : : : "v0");
         }
         player = gRankPlayerCar[0];
         if (D_800A2EB0Absolute[0] == 1) {
@@ -17557,9 +17558,6 @@ void RaceUpdatePositions(u8 force) {
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", RaceUpdatePositions);
-#endif
 
 extern void CarInitDefaults();
 extern s32 D_800BE72C[];
