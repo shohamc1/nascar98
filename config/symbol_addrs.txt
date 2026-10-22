@@ -864,9 +864,6 @@ sObjectFacesAllocationError = 0x8008D050; // force_not_migration:True
 sObjectOffsetsAllocationError = 0x8008D06C; // force_not_migration:True
 
 ObjectLoadGeometry = 0x80031D74; // type:func
-D_80090888 = 0x80090888; // force_not_migration:True
-D_8009084C = 0x8009084C; // force_not_migration:True
-D_80090864 = 0x80090864; // force_not_migration:True
 _SsSndPlay = 0x8008134C; // type:func
 D_80090334 = 0x80090334; // force_not_migration:True
 D_8009033C = 0x8009033C; // force_not_migration:True

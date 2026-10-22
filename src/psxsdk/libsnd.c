@@ -94,10 +94,8 @@ void SsSetSerialVol(short channel, short voll, short volr) {
     SpuSetCommonAttr(&attr);
 }
 
-extern char D_8009084C[];
-extern char D_80090864[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libsnd", D_8009084C);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libsnd", D_80090864);
+static const char sNotSeqDataMessage[] = "This is not SEQ Data.\n";
+static const char sOldSeqFormatMessage[] = "This is an old SEQ Data Format.\n";
 s32 _SsReadDeltaValue(s16, s16);
 
 s16 _SsInitSoundSeq(s16 arg0, s16 vab_id, u8 *addr) {
@@ -136,11 +134,11 @@ s16 _SsInitSoundSeq(s16 arg0, s16 vab_id, u8 *addr) {
     if ((*score->readPos == 'S') || (*score->readPos == 'p')) {
         score->readPos += 8;
         if (addr[7] != 1) {
-            printf(D_8009084C);
+            printf(sNotSeqDataMessage);
             return -1;
         }
     } else {
-        printf(D_80090864);
+        printf(sOldSeqFormatMessage);
         return 0;
     }
     score->unk4A = (*score->readPos++) << 8 | *score->readPos++;
@@ -172,8 +170,8 @@ s16 _SsInitSoundSeq(s16 arg0, s16 vab_id, u8 *addr) {
     return 0;
 }
 
-extern char D_80090888[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libsnd", D_80090888);
+static const char sSeqOpenFailedMessage[] =
+    "Can't Open Sequence data any more\n\n";
 s16 _SsInitSoundSeq(s16, s16, u8 *);
 
 s16 SsSeqOpen(u32 addr, s16 vab_id) {
@@ -182,7 +180,7 @@ s16 SsSeqOpen(u32 addr, s16 vab_id) {
     u8 found;
 
     if (_snd_openflag == 0xFFFFFFFF) {
-        printf(D_80090888);
+        printf(sSeqOpenFailedMessage);
         return -1;
     }
     bit_pos = 0;
