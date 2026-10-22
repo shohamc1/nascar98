@@ -10,9 +10,9 @@ This repository holds no game data. You must supply your own disc image.
 
 | Scope | Functions matched | Code bytes matched |
 | --- | --- | --- |
-| Game | 815 / 865 (94.22%) | 354,428 / 407,944 (86.88%) |
+| Game | 816 / 865 (94.34%) | 355,276 / 407,944 (87.09%) |
 | Psy-Q SDK | 530 / 530 (100.00%) | 101,316 / 101,316 (100.00%) |
-| Total | 1,345 / 1,395 (96.42%) | 455,744 / 509,260 (89.49%) |
+| Total | 1,346 / 1,395 (96.49%) | 456,592 / 509,260 (89.66%) |
 
 ## Build
 

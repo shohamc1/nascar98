@@ -729,7 +729,167 @@ void func_8003CEFC(void) {
 void func_8003CF04(void) {
 }
 
-INCLUDE_ASM("asm/nonmatchings/cd", func_8003CF0C);
+/* Car layout as far as func_8003CF0C reads it. The fields are struct members,
+ * not (u8 *) casts: a struct store lets sched hoist the gp load of D_800A376C
+ * above the 0x286/0x2A4/0x2AA stores, as retail does. */
+typedef struct CarStateObject {
+    s32 unk0;                      /* 0x000 */
+    s32 unk4;                      /* 0x004 */
+    s32 unk8;                      /* 0x008 */
+    u8 padC[0xED];                 /* 0x00C */
+    u8 unkF9;                      /* 0x0F9 */
+    s16 unkFA;                     /* 0x0FA */
+    u8 padFC[0x18];                /* 0x0FC */
+    s16 heading;                   /* 0x114 */
+    u8 pad116[0xA];                /* 0x116 */
+    s16 unk120;                    /* 0x120 */
+    u8 pad122[0xBE];               /* 0x122 */
+    s16 unk1E0;                    /* 0x1E0 */
+    u8 pad1E2[0xA];                /* 0x1E2 */
+    s16 unk1EC;                    /* 0x1EC */
+    u8 pad1EE[0x1D];               /* 0x1EE */
+    s8 slot;                       /* 0x20B */
+    u8 unk20C;                     /* 0x20C */
+    u8 unk20D;                     /* 0x20D */
+    u8 pad20E[0x2A];               /* 0x20E */
+    s32 unk238;                    /* 0x238 */
+    s32 unk23C;                    /* 0x23C */
+    u8 pad240[0x28];               /* 0x240 */
+    u8 unk268;                     /* 0x268 */
+    u8 unk269;                     /* 0x269 */
+    u8 unk26A;                     /* 0x26A */
+    u8 unk26B;                     /* 0x26B */
+    u8 pad26C[0x18];               /* 0x26C */
+    u16 unk284;                    /* 0x284 */
+    s16 unk286;                    /* 0x286 */
+    u8 pad288[0x18];               /* 0x288 */
+    u16 unk2A0;                    /* 0x2A0 */
+    s16 unk2A2;                    /* 0x2A2 */
+    s16 unk2A4;                    /* 0x2A4 */
+    u16 unk2A6;                    /* 0x2A6 */
+    s16 unk2A8;                    /* 0x2A8 */
+    s16 unk2AA;                    /* 0x2AA */
+    u8 pad2AC[0xA8];               /* 0x2AC */
+    void *unk354;                  /* 0x354 */
+    u8 pad358[0x8];                /* 0x358 */
+    u16 unk360;                    /* 0x360 */
+    u8 pad362[0x1E];               /* 0x362 */
+    s32 unk380;                    /* 0x380 */
+    u8 pad384[0x35];               /* 0x384 */
+    u8 unk3B9;                     /* 0x3B9 */
+    u8 pad3BA[0x26];               /* 0x3BA */
+    struct CarStateObject *unk3E0; /* 0x3E0 */
+} CarStateObject;
+extern void func_80030D80(CarStateObject *, s32 *);
+extern s32 PadGetButtons(s32);
+extern s32 RandomScaledGet(s32);
+extern void func_8004FF3C(void);
+extern void func_80052FC4(s32);
+extern s32 D_800A376C;
+extern u8 D_800A38B0Lui[] asm("D_800A38B0");
+extern u16 D_800A35D0Lui[] asm("D_800A35D0");
+extern u16 D_800A2EC4Lui[] asm("D_800A2EC4");
+extern s32 D_800A2EC4Sw[] asm("D_800A2EC4");
+extern CarStateObject *D_800A3554Car[] asm("D_800A3554");
+extern s32 D_800A3680Lui[] asm("D_800A3680");
+extern s32 D_800A2EAC[];
+extern s8 D_800A3564Lui[] asm("D_800A3564");
+extern u8 D_800A35D4Lui[] asm("D_800A35D4");
+extern s32 D_800A2EA4[];
+extern s32 D_800A2CE0[];
+
+void func_8003CF0C(CarStateObject *object) {
+    s32 query[3];
+    s32 buttons;
+    s32 heading;
+    s16 segment; /* s16 local: reserves the 8-byte phantom frame slot */
+    u16 value;
+    CarStateObject *player;
+
+    if (object->unk360 == 0) {
+        query[0] = object->unk0;
+        query[1] = object->unk4;
+        query[2] = object->unk8;
+        func_80030D80(object, query);
+    }
+    if (object->unk360 == 4) {
+        if (object->unk268 == 0) {
+            if (object->unk1EC == 0) {
+                object->unk20D = object->unk20C;
+                if (D_800A38B0Lui[0] != 0) {
+                    value = D_800A35D0Lui[0];
+                } else {
+                    value = D_800A2EC4Lui[0];
+                }
+                object->unk286 = value;
+                object->unk2A4 = object->unk2A0 + 8;
+                object->unk2AA = object->unk2A6 + 8;
+                if (ABS(func_800370B8(object->unk1E0, D_800A376C)) < 5) {
+                    object->unk269 = 0xFF;
+                }
+                object->unk238 = PadGetButtons(object->slot);
+                buttons = func_80029EF8((u8 *)object);
+                object->unkF9 = 0;
+                object->unk3B9 = 0;
+                player = D_800A3554Car[0];
+                object->unk23C = buttons;
+                object->unk120 = 0;
+                if (object == player) {
+                    func_80052FC4(1);
+                } else if (D_800A2EA4[0] != 0 && object == player->unk3E0) {
+                    func_80052FC4(2);
+                }
+                D_800A3680Lui[0] = 1;
+                if (D_800A2CE0[0] == 3) {
+                    segment = object->unk1E0;
+                    if (segment < 0x10 || (u16)(segment - 0x47) < 0xE) {
+                        object->unk269 = 0xFF;
+                    } else if (segment >= 0x65) {
+                        object->unk269 = 2;
+                    }
+                }
+            }
+            if (object->unk268 == 0 && object->unk1EC == 1) {
+                if (object->unk354 != (void *)func_80025594) {
+                    object->unk354 = (void *)func_80025594;
+                }
+                object->unkFA += RandomScaledGet(3);
+                if (object->unkFA <= 0) {
+                    object->unkFA = 1;
+                }
+            }
+        }
+        if (object->unk1EC == 0 && D_800A2EAC[0] == 0) {
+            object->unk20C = 0;
+            D_800A2EC4Sw[0] = 0;
+        }
+        if (object->unk268 == 0) {
+            D_800A3564Lui[0] = 1;
+        }
+        object->unk268 = 1;
+    } else {
+        if (object->unk268 == 1 && object->unk1EC == 0) {
+            if (D_800A35D4Lui[0] == 0) {
+                D_800A2EC4Sw[0] = object->unk286;
+            }
+            heading = object->heading;
+            object->unk20C = object->unk20D;
+            object->unk380 = heading;
+            object->unk284 += 1;
+            D_800A3680Lui[0] = 1;
+            func_8004FF3C();
+        }
+        if (object->unk268 != 0) {
+            D_800A3564Lui[0] = 1;
+        }
+        object->unk268 = 0;
+        object->unk269 = 0;
+        object->unk26B = 0;
+        object->unk26A = 3;
+        object->unk2A2 = 0;
+        object->unk2A8 = 0;
+    }
+}
 
 extern s32 D_800A2F84nm asm("D_800A2F84.NON_MATCHING");
 
