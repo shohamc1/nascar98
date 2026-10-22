@@ -2420,14 +2420,14 @@ void func_80025370(s32 arg0) {
     int headerSize;
     s32 cursor;
     s32 row0;
-    register s32 row1 asm("$16");
-    register s32 row1Shift asm("$3");
+    s32 row1;
+    s32 row1Shift;
     handle = FileOpenCall(arg0, D_800A2E14);
     if (handle == 0) {
         SystemShowFatalError(D_8008CFC0);
     }
-    total = FileSeekCall(handle, 0, 2);
-    asm volatile("" : : "r"(total));
+    row1 = FileSeekCall(handle, 0, 2);
+    total = row1;
     FileSeekCall(handle, 0, 0);
     D_800A3A54Small = (RAM_RESOURCE_BOUNDARY - total) | RAM_CACHED_BASE;
     FileRead(D_800A3A54Small, 1, total, handle);

@@ -3103,9 +3103,10 @@ s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     SpuCommonAttr ca;
     SpuCommonAttr *caarg;
     u32 off;
-    register s32 voice asm("$16");
+    s32 voice;
     s32 addr;
     u8 val;
+    u32 rawVoice;
     s32 base;
 
     if (arg0 == 0) {
@@ -3159,7 +3160,8 @@ s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     va.rr = 0;
     va.sl = 0xF;
     SpuSetVoiceAttr(&va);
-    voice = D_800A351C[0x7B68 / 4];
+    rawVoice = D_800A351C[0x7B68 / 4];
+    voice = rawVoice;
     addr = (base = D_800A351C[0x7B60 / 4]);
     {
         asm volatile("addiu %0, $sp, 0x50" : "=r"(caarg));
