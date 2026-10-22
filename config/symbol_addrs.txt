@@ -859,13 +859,10 @@ MenuDrawStatistics = 0x8004DF38; // type:func
 MenuDrawTimingAndScoring = 0x8004EBE4; // type:func
 MenuDrawLapStatistics = 0x8004F158; // type:func
 
-sSprintfUpperDigits = 0x80090C40; // force_not_migration:True
 
-sSprintfLowerDigits = 0x80090C54; // force_not_migration:True
 
 gSprintfDefaultFormat = 0x800A2B8C;
 
-gLibgccClzTable = 0x80090010; // force_not_migration:True
 GameRunSession = 0x800122D8; // type:func
 
 SoundUpdateCar = 0x80040CF4; // type:func

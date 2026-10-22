@@ -82,10 +82,8 @@ typedef struct SprintfFormat {
 extern SprintfFormat gSprintfDefaultFormat[];
 extern void *memchr(const void *, s32, s32);
 extern void *memmove(u8 *, u8 *, s32);
-extern u8 sSprintfUpperDigits[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libc", sSprintfUpperDigits);
-extern u8 sSprintfLowerDigits[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libc", sSprintfLowerDigits);
+static const char sSprintfUpperDigits[] = "0123456789ABCDEF";
+static const char sSprintfLowerDigits[] = "0123456789abcdef";
 
 s32 sprintf(char *out, char *f, ...) {
     char buf[0x200];
