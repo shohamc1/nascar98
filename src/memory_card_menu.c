@@ -1604,20 +1604,16 @@ void __maspsx_include_asm_hack_jtblpad_80068CE4() {
             "    .section .text # maspsx-keep\n");
 }
 
-/* Builds the championship standings table: rows sorted by points
- * (D_800B9B84), with rank, driver name, points and gap to the leader,
- * and a highlight bar behind the player's row. Parked: the i loop's
- * invariants (D_800B9B84, &order[-1]) are hoisted out of it here but stay
- * inside it in retail; see "Unsolved walls" in kb/psx/matching.md. */
-#ifdef NON_MATCHING
-static __inline__ void MenuSetText(UnkTextObj *obj, s32 text, s32 flag) {
+/* Builds the championship standings table: rank, driver name, points,
+ * gap to the leader, and a highlight behind the player's row. */
+static __inline__ void MenuSetText(UnkTextObj *obj, s32 text, s32 flag, s32 two,
+                                   s32 three) {
     UnkPacket0C *pkt;
     s32 h;
-
     pkt = obj->unk20;
     h = obj->unk1A;
-    pkt->unk1 = 2;
-    pkt->unk2 = 3;
+    pkt->unk1 = two;
+    pkt->unk2 = three;
     pkt->unk8 = text;
     pkt->unk3 = flag;
     pkt->unk4 = h;
@@ -1639,9 +1635,12 @@ void CardMenuCreateStandingsTable(void) {
     UnkTextObj *tail;
     UnkTextObj *mine;
     UnkPacket0C *pkt;
-    char buf[0x40];
-    u8 order[24];
-    char pad[0x28];
+    struct {
+        char buf[0x3F];
+        u8 previous;
+        u8 order[24];
+    } rows;
+    char pad[0x30];
     s32 value;
     s32 flag;
     s32 h;
@@ -1653,7 +1652,14 @@ void CardMenuCreateStandingsTable(void) {
     s32 y;
     s32 i;
     s32 j;
-
+    s32 one;
+    s32 two;
+    s32 three;
+    /* Keep these address loads inside the row loop. */
+    register s16 *scores asm("s6");
+    u8 *previousBase;
+    u8 *previous;
+    s32 rowScore;
     for (i = 0; i < 2; i++) {
         tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (i == 0) {
@@ -1663,6 +1669,8 @@ void CardMenuCreateStandingsTable(void) {
         }
         tail->unk1A = 0x3FD;
     }
+
+    one = 1;
     tail = func_8005BF8C(0, 0x2A);
     sMenuHead[0] = tail;
     func_8005A7B8S32(2, 3);
@@ -1670,109 +1678,131 @@ void CardMenuCreateStandingsTable(void) {
     tail->unk6 = h;
     tail->unkA = h;
     tail->unk1A = 0x32;
-    MenuSetText(tail, (s32)D_8009A490[0], 0);
-
+    MenuSetText(tail, (s32)D_8009A490[0], 0, 2, 3);
     if (D_800B9B84[0] == 0) {
         obj = func_8005BF8C(func_8005B0E4(0x140, (s32)D_8009A494[0]), 0x66);
         obj->unk12 = 0;
         obj->unk1A = 0x32;
-        MenuSetText(obj, (s32)D_8009A494[0], 0);
+        MenuSetText(obj, (s32)D_8009A494[0], 0, 2, 3);
         sMenuList[0] = obj;
     } else {
         for (i = 23; i >= 0; i--) {
-            order[i] = i;
+            rows.order[i] = i;
         }
+
         for (i = 0; i < 23; i++) {
-            cur = D_800B9B84[order[i]];
+            cur = D_800B9B84[rows.order[i]];
             bestScore = 0;
             for (j = i + 1; j < 24; j++) {
-                if (bestScore < D_800B9B84[order[j]]) {
-                    bestScore = D_800B9B84[order[j]];
+                if (bestScore < D_800B9B84[rows.order[j]]) {
+                    bestScore = D_800B9B84[rows.order[j]];
                     best = j;
                 }
             }
-            if (cur < bestScore) {
-                tmp = order[i];
-                order[i] = order[best];
-                order[best] = tmp;
+
+            if (bestScore > cur) {
+                tmp = rows.order[i];
+                rows.order[i] = rows.order[best];
+                rows.order[best] = tmp;
             }
         }
+
+        two = 2;
+        three = 3;
         y = 0;
         for (i = 0; i < 24; i++) {
-            for (j = 0; j < 4; j++) {
+            j = 0;
+            previousBase = (u8 *)&rows + 0x3F;
+            previous = previousBase + i;
+            scores = D_800B9B84;
+            for (; j < 4; j++) {
+                /* Keep the list tail live across the object call. */
+                asm("" : : "r"(tail));
                 obj = func_8005BF8C(D_8009B1D4[j], y);
-                if (i == 0 && j == 0) {
+                if ((i == 0) && (j == 0)) {
                     sMenuList[0] = obj;
                 } else {
                     tail->unk1C = obj;
                 }
                 obj->unk1A = 0;
-                if (j != 1) {
+                flag = one;
+                if (j != flag) {
                     obj->unk0 = 5;
                 }
                 flag = 0;
-                switch (j) {
-                case 0:
-                    value = 1;
-                    if (i != 0) {
-                        value = i + 1;
-                        if (D_800B9B84[order[i]] == D_800B9B84[order[i - 1]]) {
-                            value = 0;
-                        }
-                    }
-                    flag = 1;
-                    break;
-                case 1:
-                    value = (s32)gDriverNames[order[i]];
-                    if (strcmp((char *)value, D_800B9B54) == 0) {
-                        D_800A374C[0] = i;
-                        mine = obj;
-                        if (i != 0 &&
-                            D_800B9B84[order[i]] == D_800B9B84[order[i - 1]]) {
-                            for (m = i - 1; m >= 0; m--) {
-                                if (D_800B9B84[order[i]] !=
-                                    D_800B9B84[order[m]]) {
-                                    break;
-                                }
-                            }
-                            if (m < 0) {
-                                D_800A374C[0] = 0;
-                            } else {
-                                D_800A374C[0] = m + 1;
-                            }
-                        }
-                    }
-                    break;
-                case 2:
-                    value = D_800B9B84[order[i]];
-                    flag = 1;
-                    break;
-                case 3:
-                    flag = 1;
-                    if (i == 0) {
-                        value = 0;
-                    } else {
-                        value = D_800B9B84[order[i]] - D_800B9B84[order[0]];
-                    }
-                    break;
+                if (j == one)
+                    goto nameColumn;
+                if (j < 2) {
+                    if (j == 0)
+                        goto rankColumn;
+                    goto setColumnText;
                 }
+                if (j == two)
+                    goto pointsColumn;
+                if (j == three)
+                    goto gapColumn;
+                goto setColumnText;
+            rankColumn:
+                value = 1;
+                if (i != 0) {
+                    value = i + 1;
+                    if (scores[rows.order[i]] == scores[*previous]) {
+                        value = 0;
+                    }
+                }
+                flag = 1;
+                goto setColumnText;
+            nameColumn:
+                value = (s32)gDriverNames[rows.order[i]];
+                if (strcmp((char *)value, D_800B9B54) == 0) {
+                    D_800A374C[0] = i;
+                    mine = obj;
+                    if ((i != 0) &&
+                        (scores[rows.order[i]] == scores[*previous])) {
+                        rowScore = scores[rows.order[i]];
+                        for (m = i - 1; m >= 0; m--) {
+                            if (rowScore != scores[rows.order[m]]) {
+                                break;
+                            }
+                        }
+
+                        if (m < 0) {
+                            D_800A374C[0] = 0;
+                        } else {
+                            D_800A374C[0] = m + 1;
+                        }
+                    }
+                }
+                goto setColumnText;
+            pointsColumn:
+                value = scores[rows.order[i]];
+                flag = 1;
+                goto setColumnText;
+            gapColumn:
+                flag = 1;
+                if (i == 0) {
+                    value = 0;
+                } else {
+                    value = scores[rows.order[i]] - scores[rows.order[0]];
+                }
+            setColumnText:
+
                 tail = obj;
-                MenuSetText(obj, value, flag);
+                MenuSetText(obj, value, flag, two, three);
             }
+
             if (i == 23) {
                 D_800A3918 = obj;
             }
             y += 0xF;
         }
+
         obj = func_8005B314(0, mine->unk8 - 2, 0x140, 0xF, 0, 0, 0, 0xFF, 1, 1);
         obj->unk1A = mine->unk1A + 2;
         tail->unk1C = obj;
     }
     func_8005DEDC(0x3E8);
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", CardMenuCreateStandingsTable);
-#endif
 
 typedef struct UnkBlockOffsets {
     s32 unk0;
