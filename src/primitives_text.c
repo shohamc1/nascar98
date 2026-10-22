@@ -1659,7 +1659,43 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     gFontColorBlue = 128;
 }
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001A4D4);
+extern u8 *D_8009AE50[];
+extern void GraphicsSetColor(s32, s32, s32);
+extern void HudDrawText(u8 *, s32, s32, s8);
+extern void func_8001D778();
+extern void func_8001D638();
+extern void func_80044A1C();
+void func_8001A4D4(void *unused, s32 selection, u8 flags, s32 y) {
+    s8 i;
+    s32 cursorY;
+
+    GraphicsSetColor(128, 128, 128);
+    i = 0;
+    do {
+        HudDrawText(D_8009AE50[i], 90, (s16)(y + 40 + i * 12), 0);
+        i++;
+    } while (i < 4);
+    if (flags & 1) {
+        func_8001D778(83, y + 39, 154, 1, -128, -128, -1, 1);
+        func_8001D778(82, y + 40, 156, 1, -128, -128, -1, 1);
+        func_8001D778(81, y + 41, 158, 10, -128, -128, -1, 1);
+    }
+    if (flags & 2) {
+        func_8001D778(81, y + 51, 158, 12, -128, -128, -1, 1);
+    }
+    if (flags & 4) {
+        func_8001D778(81, y + 63, 158, 12, -128, -128, -1, 1);
+    }
+    if (flags & 8) {
+        func_8001D778(81, y + 75, 158, 11, -128, -128, -1, 1);
+        func_8001D778(82, y + 86, 156, 1, -128, -128, -1, 1);
+        func_8001D778(83, y + 87, 154, 1, -128, -128, -1, 1);
+    }
+    func_80044A1C(81, (s16)(y + 40), 158, 48, 0, 0, 0, 1);
+    cursorY = selection * 12;
+    func_8001D638(79, y + 45 + cursorY, 0, 5);
+    func_8001D638(240, y + 45 + cursorY, 1, 5);
+}
 
 extern u8 *D_8009AD60[][6];
 extern u8 *D_8009AD68[][6];
@@ -1682,12 +1718,7 @@ extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
 extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
 extern void func_8004DF38(void);
 extern void MenuDrawTimingAndScoring(void);
-extern void GraphicsSetColor(s32, s32, s32);
 extern s32 HudTextWidth(u8 *);
-extern void HudDrawText(u8 *, s32, s32, s8);
-extern void func_8001D778();
-extern void func_8001D638();
-extern void func_80044A1C();
 void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     s32 frameExtent[2];
     s32 y;
