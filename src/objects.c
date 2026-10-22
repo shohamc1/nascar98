@@ -12010,7 +12010,7 @@ void func_80035B20(void) {
     } while (i < 0x18);
 }
 
-void func_80035E8C(s32 *src, s32 *outX, s32 *outY) {
+__inline__ void func_80035E8C(s32 *src, s32 *outX, s32 *outY) {
     s32 value;
 
     value = MathFixedDivide(src[0], src[2]);
@@ -12020,10 +12020,58 @@ void func_80035E8C(s32 *src, s32 *outX, s32 *outY) {
         (MathMultiplyFixed16(value & -0x10, 0xD00000) >> 16) + D_800A2F3C[0];
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80035F28);
+/* Draws one spark entry as a POLY_FT4: the quad's four corners are the
+ * entry position (+0x14) offset by +-dx and +0..dy in camera space, each
+ * run through the inline func_80035E8C projection; the OT slot comes from
+ * the z depth. Entries with a nonzero +0x22 flag shrink with their age. */
+s32 func_80035F28(u8 *p) {
+    POLY_FT4 *prim;
+    Vec3 vec;
+    s32 sx, sy;
+    s32 dx, dy;
+
+    prim = (POLY_FT4 *)(p + (gOrderingTableBankAbsolute[0] * 0x28 + 0x28));
+    if (*(s16 *)(p + 0x22) != 0) {
+        dx = *(s16 *)(p + 0x24) * (0x23 - *(s16 *)(p + 0x20)) / 10;
+        dy = *(s16 *)(p + 0x26) * (0x23 - *(s16 *)(p + 0x20)) / 10;
+    } else {
+        dx = *(s16 *)(p + 0x24);
+        dy = *(s16 *)(p + 0x26);
+    }
+    vec = *(Vec3 *)(p + 0x14);
+    vec.x -= dx;
+    vec.y += dy;
+    func_80035E8C(&vec.x, &sx, &sy);
+    prim->x0 = sx;
+    prim->y0 = sy;
+    vec = *(Vec3 *)(p + 0x14);
+    vec.x += dx;
+    vec.y += dy;
+    func_80035E8C(&vec.x, &sx, &sy);
+    prim->x1 = sx;
+    prim->y1 = sy;
+    vec = *(Vec3 *)(p + 0x14);
+    vec.x += dx;
+    func_80035E8C(&vec.x, &sx, &sy);
+    prim->x3 = sx;
+    prim->y3 = sy;
+    vec = *(Vec3 *)(p + 0x14);
+    vec.x -= dx;
+    func_80035E8C(&vec.x, &sx, &sy);
+    prim->x2 = sx;
+    prim->y2 = sy;
+    sx = (vec.z >> 6) - 8;
+    if (sx < 5) {
+        sx = 5;
+    }
+    if (sx > 0x320) {
+        sx = 0x320;
+    }
+    AddPrim((void *)(D_800A39C8[0] + sx * 4), prim);
+    return 1;
+}
 
 extern u8 D_800A2ED8Arr[];
-extern void func_80035F28(u8 *);
 
 asm(".globl D_800A2ED8Arr\nD_800A2ED8Arr = D_800A2ED8");
 
