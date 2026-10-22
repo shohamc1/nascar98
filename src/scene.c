@@ -1848,7 +1848,7 @@ void SceneUpdateRoadStrip(u8 *car) {
             s32 length;
             s32 cameraZ;
             register SVECTOR *point asm("a0");
-            register s32 pointOffset asm("a0");
+            register s32 pointOffset;
 
             count = 0;
             sectionIndex = D_800A3440[slot] - D_800A3438;
@@ -10041,7 +10041,7 @@ void func_80053D40(void) {
                                     register s32 blockedModeDown asm("v0");
                                     register s32 cardModeDown asm("v0");
                                     register s32 rawModeDown asm("a0");
-                                    register s32 modeDown asm("v1");
+                                    register s32 modeDown;
                                     blockedModeDown = 0x21;
                                     asm(""
                                         : "=r"(blockedModeDown)
@@ -10270,23 +10270,11 @@ void func_80053D40(void) {
                                                                 [index];
                                                         countMinusOne =
                                                             variantCount - 1;
-                                                        asm(""
-                                                            :
-                                                            : "r"(variantValue),
-                                                              "r"(countMinusOne));
                                                         variantValue +=
                                                             countMinusOne;
-                                                        asm(""
-                                                            :
-                                                            : "r"(
-                                                                variantValue));
                                                         variantRemainder =
                                                             variantValue %
                                                             variantCount;
-                                                        asm(""
-                                                            :
-                                                            : "r"(
-                                                                variantRemainder));
                                                         gPadLayoutMainLoopSite72
                                                             [index] =
                                                                 variantRemainder;

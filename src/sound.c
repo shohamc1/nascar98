@@ -1620,7 +1620,7 @@ void SoundUpdateCar(u8 *car) {
             if (*(s16 *)(car + 0x108) >= 7001 && D_800A2EC8[0] == 0 &&
                 RandomGetScaled16((s16)(*(s16 *)(car + 0x108) / 1000)) == 0) {
                 /* Retail also keeps this unused signed high product. */
-                register s32 magic asm("a0");
+                register s32 magic;
                 u16 highRpm;
                 highRpm = *(u16 *)(car + 0x108);
                 shiftedRpm = (u32)highRpm << 16;

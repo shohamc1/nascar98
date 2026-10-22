@@ -4495,7 +4495,6 @@ panelLoop:
                 asm volatile("" : "=r"(currentNode) : "0"(node));
                 red = 0xFF;
                 green = 0x80;
-                asm("" : : "r"(red), "r"(green));
                 primitive[4] = red;
                 primitive[5] = green;
                 primitive[6] = blue;
@@ -4530,7 +4529,6 @@ panelLoop:
                  : "=r"(previousPanelByte)
                  : "m"(panelIndex.value));
     nextPanel = previousPanelByte + 1;
-    asm("" : : "r"(nextPanel));
     panelIndex.value = nextPanel;
     if (panelIndex.value < D_800A3644[0] + 1) {
         goto panelLoop;

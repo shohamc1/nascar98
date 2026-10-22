@@ -4724,7 +4724,6 @@ s32 CarHandleWallCollision(void *object) {
                     }
                     if (value0 == 0) {
                         callbackCar = car;
-                        asm("" : "=r"(callbackCar) : "0"(callbackCar));
                         effectWheel2 = 3;
                     longitudinalEffect:
                         func_80043B68(callbackCar, effectWheel2);
@@ -4734,7 +4733,6 @@ s32 CarHandleWallCollision(void *object) {
         }
         car->collisionPending = 0;
     done:
-        asm volatile("" : : "r"(impulse));
         return 1;
     }
 }
@@ -7375,7 +7373,7 @@ noSliding:
     if (car->flags & 0x40) {
         if (D_800A2EB8[0] == 0) {
             if (MathGetAngleDelta(car->heading, car->movementHeading) < 0) {
-                register s32 deadDeltaReturn asm("v0");
+                register s32 deadDeltaReturn;
                 deadDeltaReturn =
                     MathGetAngleDelta(car->heading, car->movementHeading);
                 /* End the previous s0 lifetime before the negative result. */
@@ -7526,10 +7524,8 @@ noSliding:
         yawDenominator += 3;
     }
     tableIndex = angleDelta << 2;
-    asm("" : : "r"(tableIndex));
     turnLimit = tableIndex + 16;
     tableIndex = yawDenominator >> 2;
-    asm("" : : "r"(tableIndex), "r"(turnTorque));
     turnDelta = turnTorque / tableIndex;
     if (turnLimit >= 0x41) {
         turnLimit = 0x40;
@@ -7547,7 +7543,6 @@ noSliding:
         }
     }
     newFineHeading = ((car->fineHeading + turnDelta) + 0x1000) & 0xFFF;
-    asm("" : "=r"(newFineHeading) : "0"(newFineHeading));
     car->fineHeading = (u16)newFineHeading;
     if (newFineHeading < 0) {
         newFineHeading += 3;
@@ -7570,7 +7565,6 @@ noSliding:
     car->movementHeading = func_800358EC((s32 *)(((u8 *)car) + 0xB0));
     gripBase = car->heading;
     tableIndex = 1024;
-    asm volatile("" : : "r"(gripBase), "r"(tableIndex));
     cosRow = (s32 *)gFarCosTable.unk[0];
     tableIndex = (tableIndex - gripBase) & 1023;
     tableIndex <<= 2;
@@ -7625,7 +7619,6 @@ noSliding:
     }
     speedCap = car->maxSpeed;
     forwardSpeedFixed = forwardSpeedLocal << 0x10;
-    asm("" : : "r"(speedCap), "r"(forwardSpeedFixed));
     car->speed = forwardSpeedFixed;
     if (speedCap < forwardSpeedFixed) {
         car->speed = speedCap;
@@ -9455,7 +9448,6 @@ void RaceUpdateFrame(void) {
             if (D_800A2EB0RaceStep != 1) {
                 currentLap = (*(s16 *)(object + 0x1D6));
                 /* Keep the current-lap read before the lap-limit read. */
-                asm("" : : "r"(currentLap) : "memory");
                 lapLimit = D_800A2EA8RaceStep;
                 if (currentLap == lapLimit) {
                     if (D_800A38E0RaceStep1[0] != 0) {
@@ -9492,7 +9484,6 @@ void RaceUpdateFrame(void) {
         } while (object != NULL);
     }
     /* Retain the retail byte mask after the active-state test. */
-    asm("" : "=r"(raceActive) : "0"(raceActive));
     activeMask = raceActive & 0xFF;
     if ((activeMask == 0) && (D_800A2EB0RaceStep >= 0)) {
         D_800A2EACRaceStep = 0x78;
@@ -10130,7 +10121,7 @@ s32 func_800309DC(s32 arg0, s32 *object, s32 *query) {
         }
         {
             s32 endY;
-            register s32 span asm("$2");
+            register s32 span;
             s32 endZ;
 
             z0 = pointB->vz;
@@ -11763,8 +11754,8 @@ void func_80033000(u8 *arg0, u8 *arg1, u8 *arg2) {
  */
 void func_80033704(s16 *out) {
     register s32 v1 asm("v1");
-    register s32 a2 asm("a2");
-    register s32 test asm("v0");
+    register s32 a2;
+    register s32 test;
     s32 a3;
     s32 a1;
     s32 neg;
@@ -11776,7 +11767,6 @@ void func_80033704(s16 *out) {
     out[1] = a3;
     out[2] = a2;
     if (a2 < 0) {
-        asm("");
         a2 = 0;
     }
     asm(".L80033724:");
@@ -11816,7 +11806,7 @@ void func_80033788(u8 *arg0) {
 
 void func_8003379C(u8 *arg0, u8 *arg1, u8 *arg2) {
     register u32 depthA asm("$3");
-    register u32 depthB asm("$2");
+    register u32 depthB;
 
     /* Retail stores SXY0/1/2 and SZ1/2/3 >> 2 for three vertices after
      * a RotTransPers3; the depth registers rotate v1/v0/v1. */
@@ -11886,8 +11876,8 @@ out:
 
 void func_8003382C(s16 *out) {
     register s32 v1 asm("v1");
-    register s32 a2 asm("a2");
-    register s32 test asm("v0");
+    register s32 a2;
+    register s32 test;
     s32 a3;
     s32 a1;
     s32 neg;
@@ -12990,7 +12980,7 @@ void func_80035274(void) {
     s32 scale;
     s32 mod;
     s32 idx;
-    register s32 nextIdx asm("$5");
+    register s32 nextIdx;
     s32 count;
 
     obj = (u8 *)D_800A2EA0[0];
@@ -14481,8 +14471,8 @@ void func_800373B4(u8 *object) {
     register void *tempA03 asm("$4");
     register void *tempA08 asm("$4");
     register void *tempA09 asm("$4");
-    register u8 *overlappingCar asm("$17");
-    register void *tempV02 asm("$2");
+    register u8 *overlappingCar;
+    register void *tempV02;
 
     car = object;
     asm("" : "=r"(car) : "0"(car) : "memory");
@@ -15290,7 +15280,6 @@ void func_800373B4(u8 *object) {
                                                  : "$2", "$3", "$4", "memory");
                                 }
                             }
-                            asm volatile("" : : "r"(followAllowed));
                             pressureTimerValue = *(s8 *)(car + 0x205);
                         pressureTimerCheck:
                             tempV19 = pressureTimerValue;

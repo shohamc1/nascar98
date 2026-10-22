@@ -214,8 +214,8 @@ void GameRunSession(void) {
     u8 *ot;
     u8 *tables;
     u8 *secondTables;
-    register s32 mode asm("v1");
-    register s32 checkValue asm("v0");
+    register s32 mode;
+    register s32 checkValue;
     s32 sync;
     s32 bank;
     s32 timeout;
@@ -289,10 +289,8 @@ void GameRunSession(void) {
     tables = gOrderingTables;
     secondTables = tables + 0x1000;
     /* Keep the table bases before the timing-pointer assignment. */
-    asm("" : : "r"(tables), "r"(secondTables) : "s3");
     timings = &D_800B9D58Run;
     /* Keep the timing base at its first field. */
-    asm("" : : "r"(timings));
     D_800A2D0C = 0;
     D_800A359C = 0;
     D_800A33D0 = 0;
@@ -404,7 +402,6 @@ void GameRunSession(void) {
             : "0"(ot), "r"(gOrderingTableBank << 12));
         DrawOTag((u_long *)(ot + 0xFFC));
         /* Keep the table pointer across the GPU call. */
-        asm("" : : "r"(ot));
         DrawSync(0);
         VSync(0);
         PutDrawEnv(&D_800BDD4C[bank]);

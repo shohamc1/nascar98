@@ -1944,7 +1944,7 @@ extern s32 D_800AE84C[];
  * `adjust` local keeps the D_800AE84C address ahead of the walker copies. */
 void func_8003ECB8(u8 *object) {
     u8 *current;
-    register u8 *base asm("$11");
+    register u8 *base;
     s32 id;
     s32 depth;
     s32 i;

@@ -3481,7 +3481,7 @@ void func_8006C668(s32 start, s32 arg1);
  * steps the cursor, scrolling the row window when it reaches the edge. */
 void func_8006C2D0(s32 arg0) {
     s32 i;
-    register u8 *node asm("a0");
+    register u8 *node;
     u8 *entry;
     u8 *s;
     u8 *sentinel;
