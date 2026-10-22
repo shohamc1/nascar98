@@ -811,6 +811,7 @@ AudioQueueStereoAdpcm = 0x80073100; // type:func
 
 RaceUpdateFrame = 0x8002F910; // type:func
 SceneDrawView = 0x8002E594; // type:func
+CarKeepOnTrack = 0x8002E9AC; // type:func
 FileLoadBlock = 0x8003FFF0; // type:func
 FileLoadOffsetTable = 0x80058094; // type:func
 PadReadObjectState = 0x80041BFC; // type:func

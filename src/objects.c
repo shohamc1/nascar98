@@ -8651,10 +8651,127 @@ void SceneDrawView(u8 *arg0) {
     func_8004382C();
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002E9AC);
+void func_80031264(u8 *object);
+
+/* Pulls a car whose corners left the track 250 units toward the centre of
+ * its section (dx, dz is the car-to-section vector, dist its length). If a
+ * corner still finds no surface, puts the car back at its last position and
+ * stops it. */
+static __inline__ void CarPullOntoTrack(u8 *car, s32 dx, s32 dz, s32 dist) {
+    s32 idx;
+    u8 *obj;
+    s32 *cosTable;
+    s32 *sinTable;
+    VECTOR unused;
+
+    obj = car;
+    if (dist == 0) {
+        dist = 1;
+    }
+    *(s32 *)(car + 0x0) =
+        ((MathFixedDivide(dx, dist) * 250) >> 16) + *(s32 *)(car + 0xC);
+    *(s32 *)(car + 0x4) =
+        ((MathFixedDivide(dz, dist) * 250) >> 16) + *(s32 *)(car + 0x10);
+    *(u16 *)(car + 0x1E0) = *(s32 *)(car + 0x1F8) = *(s32 *)(car + 0x1F4);
+    func_80031264(car);
+    if (*(s16 *)(car + 0x1E2) == -1 || *(s16 *)(car + 0x1E4) == -1) {
+        *(s16 *)(car + 0x1E0) = -1;
+    }
+    if (*(u16 *)(car + 0x362) == 0 || *(u16 *)(car + 0x364) == 0 ||
+        *(u16 *)(car + 0x366) == 0 || *(u16 *)(car + 0x368) == 0) {
+        *(s32 *)(obj + 0x0) = *(s32 *)(obj + 0xC);
+        *(s32 *)(obj + 0x4) = *(s32 *)(obj + 0x10);
+        func_80031264(obj);
+        idx = (*(s16 *)(obj + 0x104) + 0x200) & 0x3FF;
+        cosTable = COS_TABLE;
+        sinTable = SIN_TABLE;
+        *(s32 *)(obj + 0xB4) = 0;
+        *(s32 *)(obj + 0xB0) = 0;
+        *(s32 *)(obj + 0xC4) = (cosTable[idx] - sinTable[idx]) * 100;
+        *(s32 *)(obj + 0xC8) = (sinTable[idx] + cosTable[idx]) * 100;
+        *(s32 *)(obj + 0xD0) = (cosTable[idx] - sinTable[idx]) * 100;
+        *(s32 *)(obj + 0xD4) = (sinTable[idx] + cosTable[idx]) * 100;
+    }
+}
+
+/* Keeps a car's track section current. The camera car looks its section up
+ * from its position; other cars whose corners lost the track surface are
+ * pulled back toward the centre of their section. */
+void CarKeepOnTrack(u8 *car) {
+    s32 dx;
+    s32 dz;
+    s32 dist;
+    s32 heading;
+    u8 *camera;
+
+    camera = (u8 *)D_800A38AC[0];
+    if (car != camera) {
+        *(u16 *)(camera + 0x1E0) = *(u16 *)(car + 0x1E0);
+        if (*(s8 *)(car + 0x375) == 0) {
+            func_80031264(car);
+            if (D_800A2EC8Small != 0) {
+                *(u16 *)(car + 0x1E0) = *(s32 *)(car + 0x1F8);
+            } else if (*(u16 *)(car + 0x362) == 0 ||
+                       *(u16 *)(car + 0x364) == 0 ||
+                       *(u16 *)(car + 0x366) == 0 ||
+                       *(u16 *)(car + 0x368) == 0 ||
+                       *(s16 *)(car + 0x1E0) == -1) {
+                dx = ((TrackRacer *)gTrackSections[0])[*(s32 *)(car + 0x1F4)]
+                         .unk14 -
+                     *(s32 *)(car + 0xC);
+                dz = ((TrackRacer *)gTrackSections[0])[*(s32 *)(car + 0x1F4)]
+                         .unk18 -
+                     *(s32 *)(car + 0x10);
+                CarPullOntoTrack(car, dx, dz, MathSqrt(dx * dx + dz * dz));
+                *(s8 *)(car + 0x375) = 0;
+                return;
+            }
+        }
+        *(s8 *)(car + 0x375) = 0;
+        if (D_800A2EC8Small == 0 &&
+            (*(s16 *)(car + 0x1E2) == -1 || *(s16 *)(car + 0x1E4) == -1 ||
+             *(s16 *)(car + 0x1E0) == -1)) {
+            dx =
+                ((TrackRacer *)gTrackSections[0])[*(s32 *)(car + 0x1F4)].unk14 -
+                *(s32 *)(car + 0xC);
+            dz =
+                ((TrackRacer *)gTrackSections[0])[*(s32 *)(car + 0x1F4)].unk18 -
+                *(s32 *)(car + 0x10);
+            dist = MathSqrt(dx * dx + dz * dz);
+            if (dist == 0) {
+                dist = 1;
+            }
+            *(s32 *)(car + 0x0) =
+                ((MathFixedDivide(dx, dist) * 250) >> 16) + *(s32 *)(car + 0xC);
+            *(s32 *)(car + 0x4) = ((MathFixedDivide(dz, dist) * 250) >> 16) +
+                                  *(s32 *)(car + 0x10);
+            heading =
+                *(u16 *)((u8 *)&((TrackRacer *)
+                                     gTrackSections[0])[*(s32 *)(car + 0x1F4)] +
+                         0x10);
+            *(u16 *)(car + 0x114) = heading;
+            *(u16 *)(car + 0x1E0) = *(s32 *)(car + 0x1F8) =
+                *(s32 *)(car + 0x1F4);
+            *(u16 *)(car + 0x116) = heading * 4;
+            func_80031264(car);
+            if (*(s16 *)(car + 0x1E2) == -1 || *(s16 *)(car + 0x1E4) == -1) {
+                *(s32 *)(car + 0x0) = *(s32 *)(car + 0xC);
+                *(s32 *)(car + 0x4) = *(s32 *)(car + 0x10);
+                if (*(s16 *)(car + 0x1EC) == 1) {
+                    *(s32 *)(car + 0x90) -= *(s32 *)(car + 0x90) >> 2;
+                }
+                *(u16 *)(car + 0x1E0) = *(s32 *)(car + 0x1F8) =
+                    *(s32 *)(car + 0x1F4);
+                func_80031264(car);
+            }
+        }
+    } else {
+        *(u16 *)((u8 *)D_800A38AC[0] + 0x1E0) = func_8002482C(
+            *(s32 *)(car + 0x0), *(s32 *)(car + 0x4), (s32 *)(car + 0x1F8));
+    }
+}
 
 extern u8 *gCarList;
-extern void func_8002E9AC(s32 arg0);
 
 void func_8002EE88(void) {
     u8 *node;
@@ -8662,12 +8779,12 @@ void func_8002EE88(void) {
     node = gCarList;
     if (D_800A2EC8Small != 0) {
         while (node != 0) {
-            func_8002E9AC((s32)node);
+            CarKeepOnTrack(node);
             node = *(u8 **)(node + 0x3E0);
         }
     } else if (node != 0) {
         do {
-            func_8002E9AC((s32)node);
+            CarKeepOnTrack(node);
             node = *(u8 **)(node + 0x3E0);
         } while (node != 0);
     }
@@ -9195,7 +9312,7 @@ void RaceUpdateFrame(void) {
         if (D_800A2EC8RaceStep != 0) {
             if (object != NULL) {
             pausedList:
-                func_8002E9AC(object);
+                CarKeepOnTrack(object);
                 object = (*(u8 **)(object + 0x3E0));
                 if (object != NULL) {
                     goto pausedList;
@@ -9203,7 +9320,7 @@ void RaceUpdateFrame(void) {
             }
         } else if (object != NULL) {
         pausedListAfterChange:
-            func_8002E9AC(object);
+            CarKeepOnTrack(object);
             object = (*(u8 **)(object + 0x3E0));
             if (object != NULL) {
                 goto pausedListAfterChange;
@@ -9250,7 +9367,7 @@ void RaceUpdateFrame(void) {
     if (D_800A2EC8RaceStep != 0) {
         if (object != NULL) {
         postUpdateList:
-            func_8002E9AC(object);
+            CarKeepOnTrack(object);
             object = (*(u8 **)(object + 0x3E0));
             if (object != NULL) {
                 goto postUpdateList;
@@ -9258,7 +9375,7 @@ void RaceUpdateFrame(void) {
         }
     } else if (object != NULL) {
         do {
-            func_8002E9AC(object);
+            CarKeepOnTrack(object);
             object = (*(u8 **)(object + 0x3E0));
         } while (object != NULL);
     }
