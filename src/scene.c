@@ -7717,7 +7717,144 @@ void func_8005301C(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_800531B8);
+extern u8 D_800A3058;
+extern u8 D_800A3060;
+extern u8 D_800A3061;
+extern u8 D_800A3694;
+extern u8 D_800A3950;
+extern u8 D_800A3644;
+extern u8 D_800A39E4Small;
+extern s32 D_800A37EC;
+extern u16 *D_800A35F0;
+extern s32 D_800A305C;
+extern RECT D_800A3710[2];
+extern RECT D_800A3710Small asm("D_800A3710");
+extern s32 D_800A36B4w6c[] asm("D_800A36B4");
+extern u8 D_800A3A58Lui asm("D_800A3A58Absolute");
+extern s32 D_800A335C[];
+extern u8 D_800A3884[];
+extern s32 D_800A39C8Absolute[];
+
+void func_80057FC8(s32 hide);
+void func_8006D4C8(s32, s32);
+void func_800596F4(void);
+void SsStart2(void);
+void func_80041AF0FrontEnd(s32) asm("func_80041AF0");
+void func_80053D40(void);
+void func_80064C14(void);
+void func_80014A40(s32);
+s32 func_8005B0E4(s16, u8 *);
+void func_8005A9F4(u8 *, s16, s16, u8, u8, s32, u8, u8);
+void func_80066730(void);
+void func_80064E6C(void);
+void func_80066A24FrontEnd(s32) asm("func_80066A24");
+void func_80057BFC(void);
+void func_8005957C(void);
+void func_80058030(void);
+void func_80058148(void);
+
+/* Front-end session: set up, run the menu loop func_80053D40, tear down. */
+void func_800531B8(void) {
+    s32 pad[2]; /* unused: retail's frame has 8 spare bytes */
+    s32 buttons;
+    s32 bank;
+    u8 *ot;
+
+    if (D_800A3058 != 0) {
+        func_8003F0CC(3);
+    }
+    D_800A3058 = 1;
+    func_80057FC8(0);
+    if (D_800A3060 != 0 && D_800A3061 != 0) {
+        if (D_800A3A58Lui != 0) {
+            func_8006D4C8(0, 0);
+        }
+        if (D_800A3A58Lui >= 2) {
+            func_8006D4C8(1, 1);
+        }
+        D_800A3061 = 0;
+    }
+    func_800539F0();
+    func_800596F4();
+    SsStart2();
+    SsSetMVol(0x7F, 0x7F);
+    CdSetMixVolume(D_800A3694);
+    if (D_800A335C[0] == 0) {
+        if (D_800A3950 != 0xF9) {
+            GraphicsInitDoubleBufferSwapped();
+        }
+    } else {
+        D_800A3884[0] = 1;
+        do {
+            func_8003CC48();
+            func_80041AF0FrontEnd(0);
+            buttons = PadGetButtons(0);
+            if (D_800A3644 != 0) {
+                if (buttons & 0x800) {
+                    break;
+                }
+                buttons = PadGetButtons(1);
+            }
+        } while (!(buttons & 0x800));
+        func_80066B08();
+    }
+    if (D_800A39E4Small == 0xC) {
+        SetDispMask(0);
+    }
+    TextureLoadTim(D_800A37EC);
+    D_800A3710[0] = *(RECT *)&D_800A39B0[0];
+    D_800A35F0 = (u16 *)D_800A36B4w6c[0];
+    func_80053D40();
+    func_80063AE0(0, 0);
+    func_80063AE0(1, 1);
+    if (D_800A39E4Small != 0xF8 && D_800A39E4Small != 0xFD &&
+        D_800A2EB0Absolute[0] != 2) {
+        func_80064C14();
+    }
+    if (D_800A39E4Small == 0xFD) {
+        func_80063AE0(0, 0);
+        func_80063AE0(1, 1);
+        DrawSync(0);
+        func_8005957C();
+        bank = D_800A305C == 0;
+        ot = gOrderingTables + (bank << 12);
+        D_800A305C = bank;
+        gOrderingTableBankAbsolute[0] = bank;
+        D_800A39C8[0] = (s32)ot;
+        ClearOTagR((OT_TYPE *)ot, 0x400);
+        func_80014A40((u8)D_800A305C);
+        func_8005A7B8(1, 1);
+        func_8005B0E4(0x140, D_8009A400[0]);
+        func_8005A9F4(D_8009A400[0], func_8005B0E4(0x140, D_8009A400[0]), 0x78,
+                      0, 0, 0, 0, 0);
+        func_80058030();
+        D_800A3710Small.x = -(D_800A305C != 0) & 0x140;
+        LoadImage(D_800A3710, (u_long *)D_800A35F0);
+        DrawOTag((OT_TYPE *)(D_800A39C8Absolute[0] + 0xFFC));
+        D_800A305C = D_800A305C == 0;
+        func_80058030();
+    } else if (D_800A39E4Small != 0xF8) {
+        func_80058148();
+    }
+    CdStop();
+    if (D_800A3058 != 0) {
+        SsSetMVol(0, 0);
+        func_8003FA0C();
+        SoundShutdown();
+        VSync(0);
+    }
+    if (D_800A2EB0Absolute[0] == 2) {
+        func_80066730();
+        func_80057BFC();
+    } else {
+        func_80057BFC();
+        if (D_800A39E4Small != 0xFD) {
+            D_800A39E4Small = 0x80;
+            func_80064E6C();
+        }
+    }
+    func_80066A24FrontEnd(D_800A2EB0Absolute[0]);
+}
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_800535A0);
 
