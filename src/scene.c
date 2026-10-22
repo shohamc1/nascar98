@@ -8738,7 +8738,7 @@ void func_800606D4MainLoop(void) asm("func_800606D4");
 void func_80060FD8MainLoop(void) asm("func_80060FD8");
 void func_80063C34MainLoop(u8, u8) asm("func_80063C34");
 void func_80064208MainLoop(void) asm("func_80064208");
-void func_80068220MainLoop(s32) asm("func_80068220");
+void CardMenuCreateRecordTableMainLoop(s32) asm("CardMenuCreateRecordTable");
 void func_80068CE4MainLoop(void) asm("func_80068CE4");
 void func_800691D4MainLoop(void) asm("func_800691D4");
 void func_800697ECMainLoop(s32) asm("func_800697EC");
@@ -8949,7 +8949,7 @@ void func_80053D40(void) {
                 }
                 func_800598C4MainLoop();
             }
-            func_80068220MainLoop((s32)D_800A305BMainLoop);
+            CardMenuCreateRecordTableMainLoop((s32)D_800A305BMainLoop);
         } else if (argument0 == 0xA) {
             func_80068CE4MainLoop();
         } else if (argument0 == 0xC) {

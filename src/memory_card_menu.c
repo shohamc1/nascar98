@@ -885,7 +885,242 @@ void func_80067F34(s32 arg0, s32 arg1) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_80068220);
+void CardMenuCreateRecordTable(u8 track) {
+    typedef struct UnkTextObj68220 {
+        s16 unk0;
+        u8 unk2;
+        u8 unk3;
+        u8 unk4;
+        u8 unk5;
+        s16 unk6;
+        s16 unk8;
+        s16 unkA;
+        u8 unkC[6];
+        s16 unk12;
+        u8 unk14[6];
+        s16 unk1A;
+        struct UnkTextObj68220 *unk1C;
+        UnkPacket0C *unk20;
+    } UnkTextObj68220;
+    extern char *D_8009A474[];
+    extern s8 D_800A3944;
+    extern s8 D_800A39DC;
+    extern u8 *D_800A3870;
+    extern u8 D_800A3894;
+    extern u8 *D_800A37D4;
+    extern s16 MenuStringWidth(s32 text);
+    extern UnkTextObj68220 *func_8005B314(s32, s32, s32, s32, s32, s32, s32,
+                                          s32, s32, s32);
+    extern UnkTextObj68220 *func_8005BF8C(s32, s32);
+    extern s32 D_8009A478[];
+    extern s16 D_8009B1AC[];
+    extern s16 D_8009B1BA[];
+    extern s32 D_8009A48C[];
+    extern u8 D_800A3A58Lui asm("D_800A3A58Absolute");
+    extern UnkTextObj68220 *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
+    /* Sized, so [0] goes through $gp; [page] needs the lui alias. */
+    extern UnkTextObj68220 *D_800A360C[2];
+    extern UnkTextObj68220 *D_800A360CArr[] asm("D_800A360C.NON_MATCHING");
+    extern UnkTextObj68220 *D_800A3858Arr[] asm("D_800A3858.NON_MATCHING");
+    extern UnkTextObj68220 *D_800A3918Arr[] asm("D_800A3918.NON_MATCHING");
+    UnkTextObj68220 *tail;
+    UnkTextObj68220 *obj;
+    s32 i;
+    s32 j;
+    s32 page;
+    s32 y;
+    s32 w;
+    s32 colX;
+    s32 x;
+    char buf[0x40];
+
+    i = 0;
+    do {
+        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        if (i == 0) {
+            D_800A3900Obj = tail;
+        } else {
+            D_800A3900Obj->unk1C = tail;
+        }
+        tail->unk1A = 0x3FD;
+        i++;
+    } while (i < 2);
+
+    if (D_800A3A58Lui == 0) {
+        tail = func_8005BF8C(0x64, 0x66);
+        D_800A360C[0] = tail;
+        tail->unk12 = 0;
+        tail->unk1A = 0x32;
+        {
+            s32 str;
+            UnkPacket0C *pkt;
+            str = D_8009A48C[0];
+            pkt = tail->unk20;
+            pkt->unk1 = 2;
+            pkt->unk2 = 3;
+            pkt->unk8 = str;
+            pkt->unk3 = 0;
+            pkt->unk4 = 0x32;
+            tail->unk1A = 0x32;
+        }
+        return;
+    }
+
+    for (page = 0; page < 2; page++) {
+        tail = func_8005BF8C(0, 0x2A);
+        D_800A360CArr[page] = tail;
+        func_8005A7B8S32(2, 3);
+        strcpy(buf, D_8009A474[0]);
+        strcat(buf, (char *)D_8009A31C[track]);
+        w = (s16)MenuStringWidth((s32)buf);
+        x = (0x140 - w) / 2;
+        tail->unk6 = x;
+        tail->unkA = x;
+        tail->unk1A = 0x32;
+        tail->unk2 = 0x80;
+        tail->unk3 = 0x80;
+        tail->unk4 = 0xC0;
+        {
+            s32 hdr;
+            s32 str;
+            UnkPacket0C *pkt;
+            hdr = tail->unk1A;
+            str = (s32)D_8009A474[0];
+            pkt = tail->unk20;
+            pkt->unk1 = 2;
+            pkt->unk2 = 3;
+            pkt->unk8 = str;
+            pkt->unk3 = 0;
+            pkt->unk4 = hdr;
+            tail->unk1A = hdr;
+        }
+        w = (s16)MenuStringWidth((s32)D_8009A474[0]);
+        obj = func_8005BF8C(tail->unk6 + w, 0x2A);
+        obj->unk12 = obj->unk6;
+        obj->unk1A = 0x32;
+        obj->unk2 = 0x80;
+        obj->unk3 = 0x80;
+        obj->unk4 = 0xC0;
+        {
+            s32 str;
+            UnkPacket0C *pkt;
+            s32 hdr;
+            str = D_8009A31C[track];
+            pkt = obj->unk20;
+            hdr = obj->unk1A;
+            pkt->unk1 = 2;
+            pkt->unk2 = 3;
+            pkt->unk8 = str;
+            pkt->unk3 = 0;
+            pkt->unk4 = hdr;
+            obj->unk1A = hdr;
+        }
+        tail->unk1C = obj;
+        tail = obj;
+
+        /* Column headings, alternating between two rows and colours. */
+        for (i = 0; i < 5; i++) {
+            colX = D_8009B1BA[i];
+            if (!(i & 1)) {
+                y = 0x39;
+            } else {
+                y = 0x48;
+            }
+            obj = func_8005BF8C(colX, y);
+            obj->unk12 = colX;
+            obj->unk1A = 0x32;
+            if (i & 1) {
+                obj->unk2 = 0xFF;
+                obj->unk3 = 0x80;
+                obj->unk4 = 0x40;
+            } else {
+                obj->unk2 = 0xC8;
+                obj->unk3 = 0x40;
+                obj->unk4 = 0x20;
+            }
+            {
+                s32 str;
+                UnkPacket0C *pkt;
+                s32 hdr;
+                str = D_8009A478[i];
+                pkt = obj->unk20;
+                hdr = obj->unk1A;
+                pkt->unk1 = 2;
+                pkt->unk2 = 3;
+                pkt->unk8 = str;
+                pkt->unk3 = 0;
+                pkt->unk4 = hdr;
+                obj->unk1A = hdr;
+            }
+            tail->unk1C = obj;
+            tail = obj;
+        }
+
+        /* One row of six cells per saved record. */
+        y = 0;
+        for (i = 0; i < D_800A3A58Lui; i++, y += 15) {
+            for (j = 0; j < 6; j++) {
+                obj = func_8005BF8C(D_8009B1AC[j], y);
+                if (i == 0 && j == 0) {
+                    D_800A3858Arr[page] = obj;
+                } else {
+                    tail->unk1C = obj;
+                }
+                obj->unk12 = obj->unk6;
+                obj->unk1A = 0;
+                switch (j) {
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    obj->unk0 = 5;
+                    if (j & 1) {
+                        obj->unk2 = 0xC8;
+                        obj->unk3 = 0x40;
+                        obj->unk4 = 0x20;
+                    } else {
+                        obj->unk2 = 0xFF;
+                        obj->unk3 = 0x80;
+                        obj->unk4 = 0x40;
+                    }
+                    break;
+                case 5:
+                    obj->unk0 = 6;
+                    obj->unk2 = 0xC8;
+                    obj->unk3 = 0x40;
+                    obj->unk4 = 0x20;
+                    break;
+                }
+                {
+                    u8 flag;
+                    UnkPacket0C *pkt;
+                    s32 hdr;
+                    flag = (j != 0 && j != 5);
+                    pkt = obj->unk20;
+                    hdr = obj->unk1A;
+                    pkt->unk1 = 2;
+                    pkt->unk2 = 3;
+                    pkt->unk8 = 0;
+                    pkt->unk3 = flag;
+                    pkt->unk4 = hdr;
+                    obj->unk1A = hdr;
+                }
+                tail = obj;
+            }
+            if (i == D_800A3A58Lui - 1) {
+                D_800A3918Arr[page] = tail;
+            }
+        }
+    }
+
+    func_80067F34(0, track);
+    D_800A3944 = 0;
+    D_800A39DC = 0;
+    D_800A3870 = 0;
+    D_800A3894 = track;
+    D_800A37D4 = D_800A360C[0];
+    func_8005DEDC(1000);
+}
 
 void func_800686FC(s32 arg0, s32 arg1) {
     extern s32 D_800A3914[];
