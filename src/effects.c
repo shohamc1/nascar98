@@ -551,7 +551,101 @@ void func_80042EFC(u8 *object, s32 idx) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/effects", func_800432C0);
+extern u8 D_800A2EE0[];
+
+void func_800432C0(u8 *object, s32 idx) {
+    s32 i;
+    EffectPoint *entry;
+    u8 *info;
+    s32 slot;
+    s32 unk28;
+    s32 gate;
+    s32 speed;
+    s32 flag;
+
+    if (*(s8 *)(object + 0x3B6) == 0) {
+        return;
+    }
+    if (*(s8 *)(object + 0x200) == 4) {
+        return;
+    }
+    if (idx >= 4) {
+        if (*(s32 *)(object + 0x90) > 0) {
+            func_80042EFC(object, idx);
+        }
+        return;
+    }
+    for (i = 0; i < 0x28; i++) {
+        if (gEffectSlots[i].active == 0) {
+            break;
+        }
+    }
+    if (i >= 0x28) {
+        return;
+    }
+    info = *(u8 **)(object + 0x370);
+    if (idx >= *(s16 *)(info + 0x2E)) {
+        return;
+    }
+    entry = (EffectPoint *)(*(u8 **)(info + 0x40) + idx * 24);
+    slot = *(s16 *)((u8 *)entry + 0x14);
+    if (slot == 0) {
+        return;
+    }
+    if (idx >= 8) {
+        return;
+    }
+    if (*(s8 *)(object + slot + 0x3A5) == 0) {
+        return;
+    }
+    *(u16 *)(object + 0x3A4) |= 1 << idx;
+    *(u8 *)(object + idx + 0x3A6) = 0;
+    gEffectSlots[i].active = 1;
+    gEffectSlots[i].unk1D = idx;
+    gEffectSlots[i].unk1E = *(u16 *)(object + 0x1DE);
+    gEffectSlots[i].x = *(s32 *)object + entry->x;
+    gEffectSlots[i].y = *(s32 *)(object + 4) + entry->y;
+    gEffectSlots[i].z = *(s32 *)(object + 8) + entry->z;
+    gEffectSlots[i].unk1A = 0xC8;
+    gEffectSlots[i].unk20 = gEffectSlots[i].unk24 = *(s16 *)(object + 0x1E0);
+    if (idx < 5) {
+        gEffectSlots[i].unkE = gEffectSlots[i].z;
+    } else {
+        gEffectSlots[i].unkE = *(s32 *)(object + 8) + 0xF;
+    }
+    gEffectSlots[i].unkC = 0;
+    gEffectSlots[i].unk10 = RandomGetScaled16(0x32) + 0x23;
+    gEffectSlots[i].unk12 =
+        (*(u16 *)(object + 0x114) + 0x400 + RandomGetScaled16(0x60)) & 0x3FF;
+    if (idx < 5) {
+        speed = *(s16 *)(object + 0x92);
+        flag = D_800A2EE0[0];
+        gEffectSlots[i].unk14 = speed;
+        if (flag != 0 && *(u8 *)(object + 0x3B7) == 0) {
+            *(u8 *)(object + 0x3B7) = 0x3C;
+        }
+        if (*(u8 *)(object + 0xF5) != 0) {
+            func_80041848(object, 7);
+        }
+    } else {
+        gEffectSlots[i].unk14 = (*(s32 *)(object + 0x90) * 7) / 8 >> 16;
+    }
+    if (gEffectSlots[i].unk14 < 0x14) {
+        gEffectSlots[i].unk14 = 0x14;
+    }
+    unk28 = *(s32 *)(*(u8 **)(object + 0x370) + 0x38);
+    gate = D_8008CA28[0];
+    gEffectSlots[i].unk2C = (s32)entry;
+    gEffectSlots[i].unk16 = 0;
+    gEffectSlots[i].unk18 = 0;
+    gEffectSlots[i].unk28 = unk28;
+    if (gate == 0) {
+        func_80029994(object, idx);
+    }
+    if (*(s32 *)(object + 0x90) > 0) {
+        func_80042EFC(object, idx);
+    }
+}
 
 extern void PushMatrix(void);
 extern void PopMatrix(void);
@@ -939,7 +1033,6 @@ void func_80043F7C(u8 *arg0, s16 *arg1) {
     }
 }
 
-extern u8 D_800A2EE0[];
 extern u8 *D_800A3960w17[] asm("D_800A3960.NON_MATCHING");
 
 void func_80044114(u8 *arg0) {
