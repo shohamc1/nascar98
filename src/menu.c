@@ -4498,11 +4498,9 @@ void func_80062874(s32 arg0, s32 arg1) {
 extern u8 D_800A307C[];
 extern u8 D_800A3088[];
 extern u8 D_800A3350[];
-extern u8 D_8009A4E0[];
+extern s32 D_8009A4E0[][7][14];
 extern u8 D_8009B00C[];
 extern u8 D_8009B028[];
-
-#ifdef NON_MATCHING
 extern u8 D_8009B02A[];
 
 void func_80062910(s32 arg0) {
@@ -4511,18 +4509,16 @@ void func_80062910(s32 arg0) {
     s32 a;
     s32 c;
     u8 uc;
+    s32 ghost;
     s32 id;
     s32 off;
     s32 f;
-    u8 *base;
     u8 *chars;
     s32 fontId;
     s8 i;
     s8 j;
     s32 idx;
-    s32 cc;
     u8 *prim2;
-    u8 *tab;
 
     node = (u8 *)D_800A37D8[arg0 & 0xFF];
     while (*(u16 *)node != 1) {
@@ -4574,31 +4570,28 @@ void func_80062910(s32 arg0) {
     node[5] = !((s8 *)D_800A3A24)[arg0 & 0xFF];
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
-    base = node;
-    prim2 = *(u8 **)(base + 0x20);
+    prim2 = *(u8 **)(node + 0x20);
     *(s32 *)(prim2 + 8) = ((s8 *)D_800A307C)[arg0 & 0xFF] + 1;
     uc = ((s8 *)D_800A3A24)[arg0 & 0xFF];
     c = ((s8 *)D_800A3A24)[arg0 & 0xFF];
+    ghost = c;
     if (uc == 0) {
         c = D_800A308C[arg0 & 0xFF];
     }
+    /* Both terms are zero; combine folds them after flow, so `ghost` stays
+       a dead copy that fills the bnez slot. */
+    c = c + ((ghost << 24) & 0xFF) + ((ghost << 25) & 0x1FF);
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 7; j++) {
             node = *(u8 **)(node + 0x1C);
             f = ((s8 *)D_800A3350)[(s8)c];
-            tab = D_8009A4E0;
-            cc = ((s8 *)D_800A307C)[(u8)arg0];
             prim2 = *(u8 **)(node + 0x20);
-            base = 392 * f + tab;
-            base = base + 56 * cc;
-            *(s32 *)(prim2 + 8) = *(s32 *)(base + (7 * i + j) * 4);
+            *(s32 *)(prim2 + 8) =
+                D_8009A4E0[f][((s8 *)D_800A307C)[(u8)arg0]][7 * i + j];
         }
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/menu", func_80062910);
-#endif
 
 s32 ListHasClearFlags(u8 *node) {
     while (node != 0) {
