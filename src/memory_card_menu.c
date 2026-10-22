@@ -1963,7 +1963,100 @@ s32 func_8006A15C(u8 arg0) {
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006A3E0);
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006A7C8);
+extern s32 D_800A35B0;
+extern u8 D_800A3A58;
+extern void func_8006B464(void);
+s32 func_8006A7C8(u8 arg0) {
+    u8 slot;
+    u8 status;
+    u16 c;
+    s32 i;
+    u8 *row;
+    char path[0x40];
+    struct DIRENTRY entry;
+
+    D_800A3A58 = 0;
+    D_800A3808 = 0;
+    if (gCardSlot == 0xFF) {
+        slot = 0;
+    } else {
+        slot = gCardSlot;
+    }
+    status = CardCheckStatus(slot, 0);
+    D_800A3938 = status;
+    if (status == 1) {
+        D_800A3808 = 1;
+        return 0;
+    }
+    if (status == 2) {
+        if (gCardSlot == 0xFF) {
+            status = CardCheckStatus(1, 0);
+            D_800A3938 = status;
+        }
+        switch (D_800A3938) {
+        case 1:
+            D_800A3808 = 1;
+            return 0;
+        case 2:
+            D_800A3808 = 2;
+            return 1;
+        case 0:
+        case 3:
+            gCardSlot = 1;
+            break;
+        }
+    } else {
+        gCardSlot = slot;
+    }
+    status = func_80059F0C(gCardSlot);
+    D_800A3938 = status;
+    if (gCardSlot == 0) {
+        memcpy(path, D_800A3380, 6);
+    } else {
+        memcpy(path, D_800A3388, 6);
+    }
+    strcat(path, sCardFileName);
+    if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
+        return 1;
+    }
+    if ((CardReadSectors((s32)&entry, 4, 1, gCardSlot, (s32)D_800A366C) &
+         0xFF) == 0) {
+        return 1;
+    }
+    c = *(u8 *)D_800A3978;
+    if ((u8)c == 0xFF) {
+        return 1;
+    }
+    if (c != 0 && (c < 0x20 || c > 0x5A)) {
+        D_800A3808 = 0xB;
+        if ((CardDeleteFile(path) & 0xFF) == 0) {
+            D_800A3808 = 0xC;
+        }
+        return 0;
+    }
+    D_800A35B0 = (s32)D_800A366C;
+    if ((CardReadSectors((s32)&entry, 5, 0x15, gCardSlot,
+                         (s32)D_800A366C + 0x80) &
+         0xFF) != 0) {
+        D_800A3A58 = 0;
+        D_800A3604 = (char *)D_800A35B0;
+        D_800A35F4 = (char *)D_800A35B0 + 0xC;
+        row = (u8 *)D_800A35F4;
+        for (i = 0; i < 12; i++) {
+            if ((u8)(row[0] + 1) >= 2) {
+                D_800A3A58++;
+            }
+            row += 0xE8;
+        }
+        if (arg0 != 0) {
+            func_8006B464();
+        }
+    } else {
+        D_800A3808 = 7;
+        return 0;
+    }
+    return 1;
+}
 
 s32 func_8006AA70(void) {
     extern s32 D_800A3380[2];
