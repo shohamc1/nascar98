@@ -991,3 +991,4 @@ CardMenuCreateRecordTable = 0x80068220; // type:func
 CardMenuCreateStandingsTable = 0x800691D4; // type:func
 CarIsAheadOnSection = 0x8003B5F8; // type:func
 RaceUpdatePositions = 0x8003B6DC; // type:func
+CameraUpdateHorizon = 0x80034D64; // type:func

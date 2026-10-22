@@ -9867,7 +9867,7 @@ void GraphicsDrawRaceViews(void) {
     SetTransMatrix(&rotation);
     SetRotMatrix(&rotation);
     func_8002EEFC(focusCar);
-    func_80034D64();
+    CameraUpdateHorizon();
     previousCount = D_800A2E98Frame;
     D_800A2EBCFrame = 0;
     D_800A37B0Frame = previousCount;
@@ -12777,7 +12777,7 @@ extern s32 D_800A3784Absolute[], D_800A3790Absolute[], D_800A3794Absolute[];
 extern s32 D_800A3798Absolute[], D_800A379CAbsolute[], D_800A37A4Absolute[];
 extern s32 D_800A37ACAbsolute[], D_800A37B4Absolute[], D_800A37C4Absolute[];
 
-void func_80034C1C(void) {
+__inline__ void func_80034C1C(void) {
     s32 a;
     s32 b;
     s32 c;
@@ -12819,7 +12819,7 @@ extern s32 D_800A36E8Absolute[];
 extern s32 D_800A3790Absolute[], D_800A3798Absolute[], D_800A379CAbsolute[],
     D_800A37A4Absolute[], D_800A37B4Absolute[], D_800A3794Absolute[],
     D_800A3784Absolute[], D_800A37ACAbsolute[], D_800A37C4Absolute[];
-void func_80034CFC(void) {
+__inline__ void func_80034CFC(void) {
     D_800A3790Absolute[0] = 0;
     D_800A3798Absolute[0] = 0;
     D_800A379CAbsolute[0] = 0x10000;
@@ -12832,21 +12832,118 @@ void func_80034CFC(void) {
 }
 
 #ifdef NON_MATCHING
-void func_80034C1C(void) {
-    D_800A3794[0] = 0;
-    D_800A37A4[0] = 0;
-    D_800A37AC[0] = 0;
-    D_800A37B4[0] = 0;
-    D_800A37C4[0] = 0x10000;
-    D_800A3784[0] = D_800A36B0;
-    D_800A3790[0] = D_800A36B8;
-    D_800A3798[0] = -D_800A36C8;
-    D_800A379C[0] = D_800A36D0;
+extern s32 D_800A36D4Absolute[];
+extern s32 D_800A2F3C[];
+extern s32 D_800A2F40;
+extern s32 D_800A2F44;
+extern s32 D_800A33DC;
+extern s32 D_800A38B4;
+extern s32 D_800A38BC;
+extern s32 D_800A36A8;
+extern s32 D_800A36AC;
+void CameraUpdateHorizon(void) {
+    s32 vec[3];
+    s32 a;
+    s32 b;
+    s32 dx;
+    s32 dy;
+    s32 y;
+    s32 yaw;
+
+    vec[0] = 0x7530;
+    vec[1] = 0;
+    vec[2] = 0;
+    func_80034CFC();
+    MatrixRotateVector(vec);
+    a = MathSqrt(vec[0] * vec[0] + vec[2] * vec[2]);
+    if (a == 0) {
+        a = 1;
+    }
+    b = (vec[2] << 8) / a;
+    D_800A2F40 = D_800A2F3C[0] - b;
+    if (D_800A2F3C[0] > 0x78) {
+        D_800A2F40 += 6;
+    }
+    a = D_800A36D0Absolute[-2] - (D_800A36D0Absolute[-2] >> 2);
+    y = D_800A36D0Absolute[0] - (D_800A36D0Absolute[0] >> 2);
+    D_800A2F40 += 0xA;
+    b = D_800A36D4Absolute[0] - (D_800A36D4Absolute[0] >> 2);
+    a = MathSqrt(a * a + y * y);
+    if (a == 0) {
+        a = 1;
+    }
+    a = 0xA0 - (a >> 8);
+    D_800A38B4 = a;
+    D_800A38BC = D_800A2F40 + (b >> 8);
+    dy = D_800A2F40 - D_800A38BC;
+    if (a != 0xA0) {
+        dx = 0xA0 - a;
+        a = MathFixedDivide(dy, dx);
+        D_800A38B4 = D_800A2F40 - (MathMultiplyFixed16(a, 0xC00000) >> 16);
+        D_800A38BC = D_800A38B4 + (MathMultiplyFixed16(a, 0x1800000) >> 16);
+        if (dy != 0) {
+            b = MathSqrt(dx * dx + dy * dy);
+            a = MathFixedDivide(dx, b);
+            D_800A36A8 =
+                -(MathMultiplyFixed16(-MathFixedDivide(dy, b), 0x580000) >> 16);
+            if (MathMultiplyFixed16(a, 0x580000) < 0) {
+                yaw = MathMultiplyFixed16(a, 0x580000) >> 16;
+            } else {
+                yaw = -(MathMultiplyFixed16(a, 0x580000) >> 16);
+            }
+        } else {
+            yaw = -0x58;
+            D_800A36A8 = 0;
+        }
+        D_800A36AC = yaw;
+    } else {
+        D_800A38BC = 0;
+        D_800A38B4 = 0;
+    }
+    vec[0] = 0x7530;
+    vec[1] = 0;
+    vec[2] = 0;
+    func_80034C1C();
+    MatrixRotateVector(vec);
+    dx = a = MathSqrt(vec[0] * vec[0] + vec[1] * vec[1]);
+    a = MathFixedDivide(vec[0], dx);
+    y = MathFixedDivide(-vec[1], dx);
+    if (y > 0x10000) {
+        y = 0xFFFF;
+    } else if (-y > 0x10000) {
+        y = -0x10001;
+    }
+    if (a >= 0 && y >= 0) {
+        if (a >= y) {
+            b = ((u8 *)D_800A3668Absolute[0])[y >> 4];
+        } else {
+            b = 0x100 - ((u8 *)D_800A3668Absolute[0])[a >> 4];
+        }
+    } else if (a < 0 && y >= 0) {
+        if (-a >= y) {
+            b = 0x200 - ((u8 *)D_800A3668Absolute[0])[y >> 4];
+        } else {
+            b = ((u8 *)D_800A3668Absolute[0])[-a >> 4] + 0x100;
+        }
+    } else if (a >= 0 && y < 0) {
+        if (a >= -y) {
+            b = 0x200 - ((u8 *)D_800A3668Absolute[0])[-y >> 4];
+        } else {
+            b = ((u8 *)D_800A3668Absolute[0])[a >> 4] + 0x100;
+        }
+    } else {
+        if (-y <= -a) {
+            b = ((u8 *)D_800A3668Absolute[0])[-y >> 4];
+        } else {
+            b = 0x100 - ((u8 *)D_800A3668Absolute[0])[-a >> 4];
+        }
+    }
+    D_800A33DC = b;
+    D_800A2F44 = b * 2 % 0x200;
 }
 #else
+INCLUDE_ASM("asm/nonmatchings/objects", CameraUpdateHorizon);
 #endif
-
-INCLUDE_ASM("asm/nonmatchings/objects", func_80034D64);
 
 extern s32 D_800A2F44;
 extern s32 D_800A38B4;
@@ -13017,14 +13114,14 @@ typedef struct {
 } Data3554;
 
 extern s32 D_800A2F3C[];
-void func_80034D64(void);
+void CameraUpdateHorizon(void);
 void func_80035274(void);
 
 void func_800356A8(s32 arg0) {
     void *value0;
 
     D_800A2F3C[0] = 0x3C;
-    func_80034D64();
+    CameraUpdateHorizon();
     if (arg0 == 0) {
         value0 = gPlayerCar[0];
     } else {
@@ -13086,7 +13183,7 @@ void func_80035720(u_long *ot) {
 extern u8 D_800A2DE1[];
 extern s32 D_800A2E9C[];
 void func_8002F0A8(u8 *);
-void func_80034D64(void);
+void CameraUpdateHorizon(void);
 void func_80035720(u_long *);
 void func_8003587C(s32 arg0) {
     /* second stores to each symbol go through existing defsym
@@ -13097,7 +13194,7 @@ void func_8003587C(s32 arg0) {
     func_8002F0A8(D_800A2E9C[0]);
     ((u8 *)D_800A2E24Absolute)[-0x43] = 0;
     D_800A2F3C[0] = 0x23;
-    func_80034D64();
+    CameraUpdateHorizon();
     func_80035720(arg0);
     ((s32 *)D_800A2E24Absolute)[70] = 0x82;
 }

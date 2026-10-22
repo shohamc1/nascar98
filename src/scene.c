@@ -134,10 +134,10 @@ typedef struct {
     u8 pad[0x3E0];
     void *unk3E0;
 } Data3554;
-void func_80034D64(void);
+void CameraUpdateHorizon(void);
 void func_80035274(void);
 void func_8002F0A8(u8 *);
-void func_80034D64(void);
+void CameraUpdateHorizon(void);
 void func_80035720(u_long *);
 void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s32);
