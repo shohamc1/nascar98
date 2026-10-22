@@ -7973,7 +7973,12 @@ typedef struct PoolObject {
     u32 unk0;
     u32 unk4;
     u32 unk8;
-    u8 pad0C[0x1DE - 0x0C];
+    u8 pad0C[0xFA - 0x0C];
+    s16 unkFA;
+    u8 padFC[0x10A - 0xFC];
+    s16 unk10A;
+    u8 pad10C[0x1DC - 0x10C];
+    s16 unk1DC;
     s16 unk1DE;
     u8 pad1E0[0x1EC - 0x1E0];
     s16 type;
@@ -7984,18 +7989,28 @@ typedef struct PoolObject {
     u8 unk205;
     u8 pad206[0x20B - 0x206];
     u8 unk20B;
-    u8 pad20C[0x28A - 0x20C];
+    u8 unk20C;
+    u8 pad20D[0x248 - 0x20D];
+    s16 unk248;
+    u8 pad24A[0x28A - 0x24A];
     s16 unk28A;
-    u8 pad28C[0x350 - 0x28C];
+    s32 unk28C;
+    u8 pad290[0x34C - 0x290];
+    char *name;
     u32 update;
     u32 unk354;
     u8 pad358[0x36C - 0x358];
     u8 *unk36C;
     u8 *unk370;
     u8 unk374;
-    u8 pad375[0x3C9 - 0x375];
+    u8 pad375;
+    u8 driver;
+    u8 pad377[0x3C9 - 0x377];
     u8 unk3C9;
-    u8 pad3CA[0x500 - 0x3CA];
+    u8 pad3CA[0x3DC - 0x3CA];
+    struct PoolObject *prev;
+    struct PoolObject *next;
+    u8 pad3E4[0x500 - 0x3E4];
 } PoolObject;
 
 PoolObject *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -8234,7 +8249,134 @@ s32 func_8002DDA0(void) {
     return D_800A3984[0] == 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002DDD8);
+void RaceSpawnCars(void) {
+    extern s32 D_800A2E84Lui asm("D_800A2E84Absolute");
+    extern s32 D_800A2E88Lui asm("D_800A2E88Absolute");
+    extern s32 D_800A2EB4Small;
+    extern s32 D_800A2EA4Small;
+    extern s32 D_800A2E94Small;
+    extern s32 D_800A2E90Small;
+    extern s32 D_800A2E9CSmall;
+    extern u8 D_800A2EDA;
+    extern u8 D_800A2EDB;
+    extern u8 *gCarList;
+    extern u8 *gPlayerCarLui asm("gPlayerCarAbsolute");
+    extern u8 gPlayerDriverLui asm("gPlayerDriverAbsolute");
+    extern u8 gPlayerDriver[];
+    extern char *const gDriverNamesC[] asm("gDriverNames");
+    extern s32 D_800A38AC[];
+    extern u8 D_800B9DA4[];
+    extern void func_80029E34(void);
+    PoolObject *car;
+    PoolObject *prev;
+    u8 *table;
+    s32 i;
+    s32 driver;
+    s32 lap;
+    s32 pos;
+    s32 half;
+    s32 slot;
+    s32 delta;
+
+    func_8002DC2C();
+    D_800A2E84Lui = 0;
+    D_800A2EB4Small = 0;
+    car = func_8002D874(-1, 0, 0, -1);
+    car->unk20C = 4;
+    table = D_800B9DA4;
+    car->update = (u32)func_80029E34;
+    D_800A3558[0] = (s32)car;
+    D_800A38AC[0] = (s32)car;
+    car->prev = NULL;
+    D_800A2E94Small = 0;
+    prev = car;
+    if (D_800A2EA4Small == 2) {
+        D_800A2E90Small = 0;
+    }
+    D_800A2E88Lui = 0;
+    if (D_800A2EB0 <= 0) {
+        for (i = 0; i < 24; i++) {
+            car[i].unk1DC = 0;
+        }
+    }
+    slot = gPlayerDriverLui * 5;
+    lap = 0;
+    gPlayerCarLui = NULL;
+    if (D_800A2EDA != 0) {
+        car = func_8002D874(1, table[0], 0x1B, slot);
+        car->unk248 = 0x3C;
+        car->unk20C = 4;
+        car->unkFA = 0;
+        car->unk20B = 0;
+        car->unk10A = 5000;
+    } else {
+        car = func_8002D874(0, table[gPlayerDriverLui], 0x1B, slot);
+        car->unkFA = 0;
+        car->name = gDriverNamesC[gPlayerDriverLui];
+    }
+    car->unk1DC = lap;
+    car->driver = gPlayerDriver[0];
+    prev->next = car;
+    car->prev = prev;
+    gCarList = (u8 *)car;
+    D_800A2E9CSmall = (s32)car;
+    gPlayerCarLui = (u8 *)car;
+    prev = car;
+    if (D_800A2EA4Small == 2) {
+        car = func_8002D874(0, table[gPlayerDriver[1]], 0x18,
+                            gPlayerDriver[1] * 5);
+        car->name = gDriverNamesC[gPlayerDriver[1]];
+        car->driver = gPlayerDriver[1];
+        prev->next = car;
+        car->prev = prev;
+        prev = car;
+        if (D_800A2EDB != 0) {
+            D_800A2E90Small = 6;
+        }
+    }
+    driver = 0;
+    if (D_800A2EB0 <= 0) {
+        for (i = 0; i < D_800A2E90Small; driver++) {
+            if (D_800A2EA4Small == 2) {
+                driver = gDriverOrder[i];
+            } else if (driver == gPlayerDriver[0]) {
+                continue;
+            }
+            car = func_8002D874(1, table[driver], 0, (driver % 24) * 5);
+            car->unk1DC = lap;
+            car->driver = driver;
+            car->name = gDriverNamesC[driver];
+            half = (table[driver] + i) / 2;
+            delta = RandomScaledGet(half / 4 + 3) + 2;
+            car->unkFA = half + delta;
+            if (car->unkFA < 2) {
+                car->unkFA = 2;
+            }
+            if (i >= 21) {
+                car->unkFA += RandomScaledGet(12);
+            }
+            car->unk248 = car->unkFA * 10 + 20;
+            pos = car->unk28C;
+            car->unk28A = i % 15 + 6;
+            car->unk28C = (RandomScaledGet(4000) < 0)
+                              ? pos + RandomScaledGet(4000)
+                              : pos - RandomScaledGet(4000);
+            i++;
+            car->unk10A = car->unkFA * 50;
+            prev->next = car;
+            car->prev = prev;
+            prev = car;
+        }
+        if (D_800A2EA4Small == 2) {
+            if (D_800A2E90Small == 6) {
+                D_800A2E90Small = 7;
+            } else {
+                D_800A2E90Small = 1;
+            }
+        }
+    }
+    car->next = NULL;
+}
 
 void func_8002E228(void) {
 }
@@ -8781,7 +8923,7 @@ void func_8002F514(void) {
     func_80035B20();
     func_80042EC0();
     func_80034990();
-    func_8002DDD8();
+    RaceSpawnCars();
     D_800A2EF8 = 0;
     D_800A2EFC = 0;
     D_800A2F00 = 0;

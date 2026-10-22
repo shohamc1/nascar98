@@ -120,6 +120,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3320Absolute=D_800A3320 \
             --defsym=D_800A3668Absolute=D_800A3668 \
             --defsym=D_800A2E84Absolute=D_800A2E84 \
+            --defsym=D_800A2E88Absolute=D_800A2E88 \
             --defsym=D_800A39A4Absolute=D_800A39A4 \
             --defsym=D_800A3A40Absolute=D_800A3A40 \
             --defsym=gStandingsNameXAbsolute=gStandingsNameX \
@@ -156,6 +157,10 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A39E4Small=D_800A39E4 \
             --defsym=D_800A39E4Absolute=D_800A39E4 \
             --defsym=D_800A2E9CSmall=D_800A2E9C \
+            --defsym=D_800A2E90Small=D_800A2E90 \
+            --defsym=D_800A2E94Small=D_800A2E94 \
+            --defsym=D_800A2EA4Small=D_800A2EA4 \
+            --defsym=D_800A2EB4Small=D_800A2EB4 \
             --defsym=D_800A305BSmall=D_800A305B \
             --defsym=gPlayerDriverSmall=gPlayerDriver \
             --defsym=D_800A37F0Absolute=D_800A37F0 \

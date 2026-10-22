@@ -970,3 +970,4 @@ gVideoSuzuka1 = 0x8008FCA4;
 MenuDrawLoadScreen = 0x80067598; // type:func
 gTrackNames = 0x8009A360;
 gDriverNames = 0x8009AC1C;
+RaceSpawnCars = 0x8002DDD8; // type:func
