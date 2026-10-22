@@ -5818,7 +5818,50 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Wall: every opcode matches, but gcc gives `ms` s0 and `secs` s1; retail
+ * has secs s0 and ms s1. See "Unsolved walls" in kb/psx/matching.md. The
+ * strings are literals so the draft links; a match needs INCLUDE_RODATA for
+ * D_8008D500, D_8008D50C and D_8008D51C. */
+void func_80050670(s32 time, s16 x, s16 y, s8 color, u8 mode) {
+    char buf[16];
+    s32 hours;
+    s32 mins;
+    s32 secs;
+    s32 ms;
+
+    hours = 0;
+    gTextColor = (color == 1) ? 6 : 9;
+    if (time == 0x7FFFFFFF) {
+        HudDrawText("--:--:---", x, y, color);
+        gTextColor = 0;
+        return;
+    }
+    if ((s8)mode == 1) {
+        hours = time / 576000;
+        ms = (time - time / 160 * 160) * 1000 / 160;
+        mins = time / 9600 - hours * 60;
+        secs = time / 160;
+        secs = secs - time / 9600 * 60;
+    } else {
+        mins = time / 1200;
+        secs = time / 20 - mins * 60;
+        ms = (time - time / 20 * 20) * 50;
+    }
+    if ((s8)mode == 2) {
+        ms = ms / 100 * 100 + RandomScaledGet(100);
+    }
+    if (hours != 0) {
+        sprintfRow(buf, "%02d:%02d:%02d", hours, mins, secs);
+    } else {
+        sprintfRow(buf, "%02d:%02d:%03d", mins, secs, ms);
+    }
+    HudDrawText(buf, x, y, color);
+    gTextColor = 0;
+}
+#else
 INCLUDE_ASM("asm/nonmatchings/scene", func_80050670);
+#endif
 
 void SetPolyFT4(POLY_FT4 *);
 extern s16 D_800A8AD2[];
