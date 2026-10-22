@@ -2755,16 +2755,139 @@ void func_8006BD68(void) {
     } while (i < 0x11);
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006BF74);
+extern s32 D_8009A4C0[];
+extern u8 D_800A3A10Obj[] asm("D_800A3A10");
+extern u8 *D_800A3908[];
+extern u8 *D_800A377C[];
+extern u8 D_800A358C;
+extern u8 D_800A3770;
+
+/* Builds the card file-list screen: a centred title (D_8009A4C0[0]), a
+ * four-row frame, two backdrop panels, seven name rows from D_800B0A2C and
+ * two scroll markers. Every object is chained through unk1C.
+ *
+ * The title store goes through a plain u8 array (D_800A3A10Obj) and the
+ * title reads are struct members: sched1 can then sink the store below the
+ * argument loads, as in retail. */
+void func_8006BF74(void) {
+    s32 i;
+    s32 x;
+    s32 y;
+    s32 h;
+    UnkTextObj *prev;
+    u8 *node;
+    u8 *pkt;
+    u8 *obj;
+
+    func_8005A7B8(2, 2);
+    y = 0x3C;
+    x = MenuStringWidth(D_8009A4C0[0]);
+    x = (0x78 - x) / 2;
+    prev = func_8005BF8C(x, 0x43);
+    prev->unk1A = 7;
+    prev->unk12 = x;
+    i = 0;
+    *(UnkTextObj **)D_800A3A10Obj = prev;
+    func_80067EA4((UnkObject24 *)prev, 2, 2, D_8009A4C0[0], 0, prev->unk1A);
+    do {
+        node = func_8005B598(0, y, 0x78, 0x18, 9, 1, 0);
+        prev->unk1C = (UnkTextObj *)node;
+        pkt = *(u8 **)(node + 0x20);
+        *(s16 *)(node + 0xE) = 2;
+        *(s16 *)(node + 0x6) = -0x78;
+        *(s16 *)(node + 0x10) = 0;
+        switch (i) {
+        case 0:
+            h = 0;
+            break;
+        case 1:
+        case 2:
+            h = 0xC;
+            break;
+        case 3:
+            h = 0x18;
+            break;
+        }
+        func_8005B17C(pkt, 9, 0, h, *(u16 *)(node + 0x16),
+                      *(u16 *)(node + 0x18));
+        i += 1;
+        y += *(s16 *)(node + 0x18);
+        prev = (UnkTextObj *)node;
+    } while (i < 4);
+    y = 0x3C;
+    i = 0;
+    do {
+        obj = (u8 *)func_8005B314(0, y, 0x78, 0x60, 0, 0x20, 0x20, 0x40, 1, 1);
+        *(s16 *)(obj + 0x6) = -0x78;
+        *(s16 *)(obj + 0xE) = 2;
+        *(s16 *)(obj + 0x1A) = 0xA;
+        prev->unk1C = (UnkTextObj *)obj;
+        prev = (UnkTextObj *)obj;
+        i += 1;
+    } while (i < 2);
+    y = 0x55;
+    i = 0;
+    do {
+        obj = (u8 *)func_8005BF8C(0, y);
+        *(s16 *)(obj + 0x1A) = 2;
+        func_80067EA4((UnkObject24 *)obj, 2, 2, (s32)(D_800B0A2C + i * 0x10), 0,
+                      *(s16 *)(obj + 0x1A));
+        *(s16 *)(obj + 0x12) = 0xB;
+        *(s16 *)(obj + 0xE) = 2;
+        *(s16 *)(obj + 0x6) = -0x6E;
+        if (i == 0) {
+            D_800A3908[0] = obj;
+        }
+        prev->unk1C = (UnkTextObj *)obj;
+        prev = (UnkTextObj *)obj;
+        i += 1;
+        y += 9;
+    } while (i < 7);
+    i = 0;
+    D_800A358C = D_800A3968;
+    do {
+        s32 width;
+        s32 height;
+        s32 red;
+        s32 green;
+        s32 blue;
+
+        if (i == 0) {
+            height = 9;
+            width = 0x64;
+            red = 0;
+            green = 0;
+            blue = 0xFF;
+            y = 0x54;
+        } else {
+            height = 2;
+            width = 8;
+            red = 0xC0;
+            green = 0xC0;
+            blue = 0xC0;
+            y = 0x5E;
+        }
+        obj = (u8 *)func_8005B314(0, y, width, height, 0, red, green, blue,
+                                  i == 0, 1);
+        if (i == 0) {
+            D_800A377C[0] = obj;
+        }
+        prev->unk1C = (UnkTextObj *)obj;
+        *(s16 *)(obj + 0xE) = 2;
+        *(s16 *)(obj + 0x1A) = 3;
+        if (i != 0) {
+            *(s16 *)(obj + 0x1A) = -1;
+        }
+        prev = (UnkTextObj *)obj;
+        i += 1;
+        *(s16 *)(obj + 0x12) = 0xA;
+        *(s16 *)(obj + 0x6) = -0x6E;
+    } while (i < 2);
+    D_800A3770 = 0;
+}
 
 extern char *D_8009A31CStr[] asm("D_8009A31C.NON_MATCHING");
 extern s32 D_8009A4D8[];
-extern u8 D_800A3770;
-extern u8 *D_800A3908[];
-extern u8 *D_800A377C[];
-extern char D_800B0A2C[];
-extern u8 D_800A358C;
-extern u8 D_800A3968;
 void func_8006C668(s32 start, s32 arg1);
 
 /* Card-menu mode switch (D_800A39E4 == 0x28) or cursor step: arg0 nonzero
