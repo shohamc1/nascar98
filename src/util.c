@@ -276,7 +276,85 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/util", func_8001775C);
+void func_8001775C(u8 *arg0, s32 x, s32 y, s32 z) {
+    SVECTOR rot;
+    MATRIX m1, m2, m3;
+    VECTOR trans[3];
+    s32 flag;
+    s32 depth;
+    u8 *model;
+    s32 i;
+    u8 *entry;
+    MATRIX *m3Ptr;
+
+    depth = *(s16 *)(*(u8 **)(arg0 + 0x36C) + 0x2A);
+    model = *(u8 **)(*(u8 **)(arg0 + 0x36C) + 0x38);
+    rot.vx = 0x400;
+    rot.vy = 0;
+    rot.vz = *(u16 *)(arg0 + 0x20E);
+    RotMatrix(&rot, &m1);
+    m1.t[0] = x;
+    m1.t[1] = y;
+    m1.t[2] = z;
+    SetTransMatrix(&m1);
+    SetRotMatrix(&m1);
+    for (i = 0; i < *(s16 *)(*(u8 **)(arg0 + 0x36C) + 0x2C); i++) {
+        m3Ptr = &m3;
+        entry = *(u8 **)(*(u8 **)(arg0 + 0x36C) + 0x40) + i * 0x18;
+        if (*(s16 *)(entry + 0x14) >= 0) {
+            if (*(s16 *)(entry + 0x14) != 10) {
+                PushMatrix();
+                rot.vx = *(s32 *)(entry + 4);
+                rot.vy = *(s32 *)(entry + 8);
+                rot.vz = *(s32 *)(entry + 0xC);
+                RotTrans(&rot, &trans[1], &flag);
+                if (*(s16 *)(entry + 0x14) < 5) {
+                    rot.vx = 0;
+                    rot.vy = 0;
+                    rot.vz = 0;
+                    RotMatrix(&rot, &m2);
+                }
+                switch ((s16)(*(u16 *)(entry + 0x14) - 1)) {
+                case 0:
+                case 1:
+                    rot.vx = 0;
+                    rot.vy = 0;
+                    rot.vz = 0;
+                    RotMatrix(&rot, m3Ptr);
+                    MulMatrix2(m3Ptr, &m2);
+                    goto common;
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    rot.vx = 0;
+                    rot.vy = 0;
+                    rot.vz = 0;
+                    RotMatrix(&rot, &m2);
+                case 2:
+                case 3:
+                default:
+                common:
+                    MulMatrix0(&m1, &m2, m3Ptr);
+                    TransMatrix(m3Ptr, &trans[1]);
+                    SetTransMatrix(m3Ptr);
+                    SetRotMatrix(m3Ptr);
+                    func_800328AC(model + *(s16 *)(entry + 0x10) * 44,
+                                  *(s16 *)(entry + 0x12));
+                    depth -= *(s16 *)(entry + 0x12);
+                    PopMatrix();
+                    break;
+                case 4:
+                    depth -= *(s16 *)(entry + 0x12);
+                    PopMatrix();
+                    break;
+                }
+            }
+        }
+    }
+    func_800328AC(model, depth);
+    asm(".rdata\n.long 0\n.text");
+}
 
 INCLUDE_ASM("asm/nonmatchings/util", func_800179AC);
 
