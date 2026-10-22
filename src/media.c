@@ -2321,7 +2321,6 @@ done:
 
 extern s32 *gCdStream;
 
-#ifdef NON_MATCHING
 /* CD ready callback: on each data-ready interrupt, copy the sector into the
  * stream buffer, or re-seek and re-read when the drive returned the wrong
  * sector. */
@@ -2330,7 +2329,7 @@ extern volatile u32 *D_800A33B4;
 extern s32 D_800A3510;
 #define STREAM ((volatile s32 *)gCdStream)
 
-void CdStreamReadyCallback(u_char intr, u_char *result) {
+void CdStreamReadyCallback(u8 intr, u8 *result) {
     CdlLOC loc[8];
     s32 *record;
     CdlLOC *loc2;
@@ -2342,10 +2341,12 @@ void CdStreamReadyCallback(u_char intr, u_char *result) {
     s32 limit;
     s32 avail;
     s32 contiguous;
-    s32 base;
+    register s32 base asm("a0");
     s32 size;
     s32 n;
     s32 test;
+    register s32 availReg asm("t1");
+    register s32 contiguousReg asm("a0");
     volatile s32 *stream;
 
     if (intr != CdlDataReady) {
@@ -2435,9 +2436,14 @@ void CdStreamReadyCallback(u_char intr, u_char *result) {
     limit = record[0] - (((volatile s32 *)record)[2] + pos);
     used = stream[0x448 / 4] + pos;
     size = D_800A3510;
-    n = stream[0x440 / 4] + size - used;
+    n = used;
+    n = stream[0x440 / 4] + size - n;
     contiguous = size - (u32)used % size;
     avail = n;
+    availReg = avail;
+    contiguousReg = contiguous;
+    /* Keep the minimum operands in the retail registers. */
+    asm("" : : "r"(availReg), "r"(contiguousReg));
     test = avail < contiguous;
     if (test) {
         n = avail;
@@ -2449,9 +2455,11 @@ void CdStreamReadyCallback(u_char intr, u_char *result) {
     }
     if (limit != 0) {
         base = record[0x30 / 4];
-        if (stream[1] == base + (size << 11)) {
-            stream[1] = base;
-        }
+        do {
+            if (stream[1] == base + (size << 11)) {
+                stream[1] = base;
+            }
+        } while (0);
         STREAM[0] = limit;
         return;
     }
@@ -2462,9 +2470,6 @@ error:
     STREAM[0x414 / 4] = 0;
 }
 #undef STREAM
-#else
-INCLUDE_ASM("asm/nonmatchings/media", CdStreamReadyCallback);
-#endif
 
 void func_80070F40(u_char intr, u_char *result) {
     volatile s32 *stream;
