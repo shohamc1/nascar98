@@ -1187,7 +1187,7 @@ void func_80022F80(void) {
     ReplayStepBack();
 }
 
-void func_80022FB8(u8 *arg0, s32 arg1) {
+s32 func_80022FB8(u8 *arg0, s32 arg1) {
     s32 value;
     s16 shortValue;
     s32 value0;
@@ -7834,7 +7834,7 @@ PoolObject *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     PoolObject *entry;
     /* Retail stores the tail fields through the return register: obj is
      * v0 from the copy on. No plain-C spelling found yet. */
-    register PoolObject *obj asm("$2");
+    PoolObject *obj;
     u8 *data;
     s32 index;
     s32 b;
@@ -17159,6 +17159,7 @@ void RaceUpdatePositions(u8 force) {
     DoublyLinkedNode *last = NULL;
     s32 place = 1;
     s32 assist = 1;
+    u32 raceTime;
     s32 i;
     RankCar *car;
     RankCar *best;
@@ -17234,15 +17235,13 @@ void RaceUpdatePositions(u8 force) {
         if (D_800A2EF0Absolute == 0 && leader->penalty != 0) {
             D_800A2EF0Absolute = 1;
             func_80041848((u8 *)leader, 4);
-            /* Keep v0 explicit for Psy-Q's reload scratch choice. */
-            asm volatile("" : : : "v0");
         }
         player = gRankPlayerCar[0];
         if (D_800A2EB0Absolute[0] == 1) {
             i = 0;
             racer = player;
             for (; i < 23; i++) {
-                if (D_800AE1EC[i] >= racer->time) {
+                if (D_800AE1EC[i] >= (raceTime = racer->time)) {
                     break;
                 }
             }
@@ -17515,8 +17514,8 @@ void func_8003C1CC(void) {
                 if (mode == 2) {
                     if (*(u8 *)(car + 0xF4) != 0) {
                         if (*(s16 *)(car + 0x1D6) == 0) {
-                            dst = (u8 *)(off + (s32)base);
-                            asm volatile("" : "=r"(dst) : "0"(dst));
+                            slot = (s32)base;
+                            dst = (u8 *)(off + slot);
                             *(s32 *)dst =
                                 -*(s16 *)((u8 *)D_800A35E0[0] + 0x1D6);
                             goto tailSkip;

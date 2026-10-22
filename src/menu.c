@@ -4193,7 +4193,7 @@ void func_80062F6C(s32 arg0, s32 arg1) {
     s32 offset;
     s32 **entry;
     s32 b42;
-    register s32 b43 asm("a0");
+    s32 b43;
     s32 val;
     s32 lim;
     s32 base2;
@@ -4220,15 +4220,17 @@ void func_80062F6C(s32 arg0, s32 arg1) {
         switch (i) {
         case 0:
             b42 = D_800AEE42[base9];
-            b43 = D_800AEE43[base9];
-            lim = 0x80;
-            val = lim - b42;
-            val = (val * 103) >> 8;
-            y = b43 - 0x80;
-            if (val >= 0x68) {
-                val = 0x67;
-            }
-            y = (y * 103) >> 8;
+            do {
+                b43 = D_800AEE43[base9];
+                lim = 0x80;
+                val = lim - b42;
+                val = (val * 103) >> 8;
+                y = b43 - 0x80;
+                if (val >= 0x68) {
+                    val = 0x67;
+                }
+                y = (y * 103) >> 8;
+            } while (0);
             if (y >= 0x68) {
                 y = 0x67;
             }

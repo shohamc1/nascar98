@@ -1273,11 +1273,9 @@ s32 func_80014398(s32 arg0) {
     value = source - value;
     scale = D_800A331CAbsolute[0] + 0xC8;
     scale = scale / 3;
-    /* Rank anchor: two extra refs keep value in v1 without folding the
-     * final product into it, so the product reloads into v0. Emits nothing. */
-    asm("" : "=r"(value) : "0"(value));
     prod = value * (0xC8 - scale);
-    return (u32)prod / 100;
+    value = (u32)prod / 100;
+    return value;
 }
 
 void func_80014440(void) {

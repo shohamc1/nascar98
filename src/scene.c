@@ -12006,19 +12006,14 @@ void func_80058D94(void) {
                 } else {
                     D_800A39E4Small = 0;
                 }
-                prevPads = pads;
             } else {
                 if (frame >= 0x709) {
                     done = 1;
                     D_800A39E4Small = 0xFE;
                 }
-                prevPads = pads;
             }
-        } else {
-            prevPads = pads;
         }
-        /* Keep the loop flag live across the pad-state update. */
-        asm("" : "=r"(done) : "0"(done), "r"(done));
+        prevPads = pads;
     } while ((done & 0xFF) == 0);
     if (D_800A39E4Small == 0xFE) {
         func_8005957C();

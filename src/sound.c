@@ -1580,7 +1580,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     }
 }
 
-void func_80041848(u8 *arg0, s32 arg1) {
+s32 func_80041848(u8 *arg0, s32 arg1) {
 }
 
 /* Sound startup and shutdown. */

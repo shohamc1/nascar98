@@ -1715,9 +1715,8 @@ extern s32 D_800A3508;
 extern s32 D_800A350C;
 s32 func_800710D8(void) {
     s32 *stream;
-    register s32 *base asm("a0");
+    s32 *base;
     u32 index;
-    s32 *record;
     s32 *reset;
     s32 *last;
     s32 *lastRecord;
@@ -1730,14 +1729,14 @@ s32 func_800710D8(void) {
     }
     index = stream[0x434 / 4];
     if (index < (u32)stream[0x438 / 4]) {
-        record = (s32 *)(D_800A3504 + index * 0x38);
-        stream[0x430 / 4] = (s32)record;
+        last = (s32 *)(D_800A3504 + index * 0x38);
+        stream[0x430 / 4] = (s32)last;
         if (stream[0x42C / 4] == 0) {
-            stream[0x42C / 4] = (s32)record;
+            stream[0x42C / 4] = (s32)last;
         }
         base = gCdStream;
-        record = (s32 *)base[0x430 / 4];
-        record[0] = (u32)(record[0x10 / 4] + 0x7FF) >> 11;
+        last = (s32 *)base[0x430 / 4];
+        last[0] = (u32)(last[0x10 / 4] + 0x7FF) >> 11;
         reset = (s32 *)base[0x430 / 4];
         reset[1] = 0;
         reset = (s32 *)base[0x430 / 4];
