@@ -913,6 +913,7 @@ SoundFreeVabBody = 0x8003EFE8; // type:func
 SoundSetReverbDepth = 0x8003F2AC; // type:func
 SoundIsSlotActive = 0x8003F4FC; // type:func
 SoundSetSlotVolume = 0x8003FDE8; // type:func
+SoundUpdateOpponentVoice = 0x80040260; // type:func
 PadGetButtons = 0x80041B7C; // type:func
 PadGetType = 0x80041BAC; // type:func
 HudDrawText = 0x80050028; // type:func

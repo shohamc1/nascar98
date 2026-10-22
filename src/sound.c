@@ -1202,12 +1202,123 @@ void func_800401B8(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/sound", func_80040260);
-
 extern s32 D_800BE890w16[] asm("D_800BE890.NON_MATCHING");
 extern u8 D_80098C00w16[] asm("D_80098C00.NON_MATCHING");
 extern u8 D_800A306Cw16[] asm("D_800A306C.NON_MATCHING");
 extern void func_8001F90C(s32, s32, s32, s16 *);
+
+void SoundUpdateOpponentVoice(u8 *car, s32 id) {
+    s32 camX;
+    s32 camY;
+    s32 camZ;
+    s32 level;
+    s32 dy;
+    s32 dist;
+    u8 *obj;
+    s32 dx;
+    s32 prev;
+    s32 delta;
+    u8 first;
+    s32 rate;
+    s32 pitch;
+    s32 pan;
+    s32 q;
+    s16 out[2];
+
+    first = 0;
+    camX = *(s32 *)(car + 0);
+    camY = *(s32 *)(car + 4);
+    camZ = *(s32 *)(car + 8);
+    obj = (u8 *)D_80098D00[id - 1];
+    if (D_800A2FA4B[id - 1] > 0) {
+        D_800A2FA4B[id - 1]--;
+    }
+    if (obj == NULL) {
+        SoundSetSlotVolume(id, 0, 0);
+        return;
+    }
+    if (ABS(func_8003702C(car, obj)) > 0x28) {
+        goto silence;
+    }
+    dx = (*(s32 *)(obj + 0) - camX) >> 4;
+    dy = (*(s32 *)(obj + 4) - camY) >> 4;
+    dist = (*(s32 *)(obj + 8) - camZ) >> 4;
+    dist = MathSqrt(dx * dx + dy * dy + dist * dist);
+    if (dist >= 0x579) {
+    silence:
+        SoundSetSlotVolume(id, 0, 0);
+        D_80098D00[id - 1] = 0;
+        return;
+    }
+    prev = D_800BE988[id - 1];
+    if (prev == -1) {
+        delta = 0;
+        first = 1;
+    } else {
+        delta = dist - prev;
+    }
+    D_800BE988[id - 1] = dist;
+    rate = (MathFixedDivide(delta * 100, 50) >> 16) + 100;
+    level = dist * 255 / 1400;
+    if (level >= 0x100) {
+        level = 0xFF;
+    }
+    pitch = (*(s16 *)(obj + 0x108) + *(s16 *)(obj + 0x10A)) / 110;
+    if (first) {
+        *(s16 *)(obj + 0x3BA) = pitch;
+    }
+    pitch = (pitch + *(s16 *)(obj + 0x3BA) + *(s16 *)(obj + 0x3BA) +
+             *(s16 *)(obj + 0x3BA)) /
+            4;
+    *(s16 *)(obj + 0x3BA) = pitch;
+    pitch = MathFixedDivide(pitch * 110, rate) >> 16;
+    if (pitch >= 0x80) {
+        pitch = 0x7F;
+    }
+    func_8003FA84((s8)id, (s8)pitch);
+    if (first) {
+        SoundSetSlotVolume(id, 0, 0);
+        return;
+    }
+    func_8001F90C((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
+    level = D_80098C00w16[level];
+    if (out[0] < 0) {
+        level = level * 10 / 8;
+    }
+    pan = out[1];
+    if (pan > 0) {
+        q = MathFixedDivide(pan, dist);
+        dx = (((q + 0x10000) << 1) * level / 3) >> 16;
+        dy = (((0x10000 - q) << 1) * level / 3) >> 16;
+    } else {
+        if (pan < 0) {
+            pan = -pan;
+        }
+        q = MathFixedDivide(pan, dist);
+        dy = (((q + 0x10000) << 1) * level / 3) >> 16;
+        dx = (((0x10000 - q) << 1) * level / 3) >> 16;
+    }
+    if (dx >= 0x80) {
+        dx = 0x7F;
+    }
+    if (dx < 0) {
+        dx = 0;
+    }
+    if (dy >= 0x80) {
+        dy = 0x7F;
+    }
+    if (dy < 0) {
+        dy = 0;
+    }
+    if (D_800A306Cw16[0] != 0) {
+        if (dy < dx) {
+            dy = dx;
+        } else {
+            dx = dy;
+        }
+    }
+    SoundSetSlotVolume(id, dx & 0xFF, dy & 0xFF);
+}
 
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     extern u8 D_800A2F9DSmall;
@@ -1443,7 +1554,7 @@ typedef struct SoundCarLink {
 
 void SoundUpdateCar(u8 *car) {
     extern u32 RandomGetScaled16(s32);
-    extern void func_80040260(u8 *, s32);
+    extern void SoundUpdateOpponentVoice(u8 *, s32);
     extern void func_800400D8Pair(u8 *, u8 *) asm("func_800400D8");
     extern s8 D_800A354F[];
     s32 i;
@@ -1621,10 +1732,10 @@ void SoundUpdateCar(u8 *car) {
                     }
                 }
             channelsReady:
-                func_80040260(car, 1);
-                func_80040260(car, 2);
-                func_80040260(car, 3);
-                func_80040260(car, 4);
+                SoundUpdateOpponentVoice(car, 1);
+                SoundUpdateOpponentVoice(car, 2);
+                SoundUpdateOpponentVoice(car, 3);
+                SoundUpdateOpponentVoice(car, 4);
             }
         }
     }
