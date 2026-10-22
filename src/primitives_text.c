@@ -371,12 +371,12 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
     }
 }
 
-extern u8 D_8008CC9C[];
-extern u8 D_8008CCA8[];
-extern u8 D_8008CCBC[];
-extern u8 D_8008CCD0[];
-extern u8 D_8008CCE0[];
-extern u8 D_8008CCF0[];
+extern u8 gTimeInvalidText[];
+extern u8 gTimeFormatSignedHms[];
+extern u8 gTimeFormatSignedMinSecMs[];
+extern u8 gTimeFormatSignedSecMs[];
+extern u8 gTimeFormatHms[];
+extern u8 gTimeFormatMinSecMs[];
 extern s32 sprintfArgs(s8 *, u8 *, ...);
 asm(".globl sprintfArgs\nsprintfArgs = sprintf");
 
@@ -407,7 +407,7 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
         asm("");
     }
     if (time == 0x7FFFFFFF) {
-        *(TimeText10 *)out = *(TimeText10 *)D_8008CC9C;
+        *(TimeText10 *)out = *(TimeText10 *)gTimeInvalidText;
         return;
     }
     blank = noSign;
@@ -433,16 +433,18 @@ void func_80018588(void *timeValue, s32 flags, s32 buffer) {
     millis = msShift - msSign;
     if (mode != 0) {
         if (hours != 0) {
-            sprintfArgs(out, D_8008CCA8, sign, hours, minutes, seconds);
+            sprintfArgs(out, gTimeFormatSignedHms, sign, hours, minutes,
+                        seconds);
         } else if (minutes != 0) {
-            sprintfArgs(out, D_8008CCBC, sign, minutes, seconds, millis);
+            sprintfArgs(out, gTimeFormatSignedMinSecMs, sign, minutes, seconds,
+                        millis);
         } else {
-            sprintfArgs(out, D_8008CCD0, sign, seconds, millis);
+            sprintfArgs(out, gTimeFormatSignedSecMs, sign, seconds, millis);
         }
     } else if (hours != 0) {
-        sprintfArgs(out, D_8008CCE0, hours, minutes, seconds);
+        sprintfArgs(out, gTimeFormatHms, hours, minutes, seconds);
     } else {
-        sprintfArgs(out, D_8008CCF0, minutes, seconds, millis);
+        sprintfArgs(out, gTimeFormatMinSecMs, minutes, seconds, millis);
     }
 }
 
@@ -1315,7 +1317,7 @@ void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
 
 extern s16 D_800A2D8C;
 extern s16 D_800A2D8A;
-extern s8 D_8008CD00[];
+extern s8 gTimeBlankText[];
 extern s8 *D_8009ADD8[];
 extern void func_80025730(u8 *);
 extern s32 MathGetAngleDelta(s32, s32);
@@ -1532,7 +1534,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
         } else {
             x = 258;
             y = 159 - yOffset;
-            string = D_8008CD00;
+            string = gTimeBlankText;
             if (*string != 0) {
                 p = string;
                 do {
