@@ -5594,6 +5594,15 @@ s32 func_8002AAA0(s32 *car) {
 }
 
 extern s32 D_800A2E34;
+/* One 0x28-byte record per wheel, starting at car + 0x2AC. */
+typedef struct {
+    s16 unk0;
+    u8 unk2[0x2];
+    s16 unk4;
+    u8 unk6[0x6];
+    s32 unkC;
+    u8 unk10[0x18];
+} Wheel;
 typedef struct {
     u8 unk0[0x44];
     s32 dragScale;
@@ -5649,22 +5658,8 @@ typedef struct {
     u8 unk2A2[0x4];
     s16 unk2A6;
     u8 unk2A8[0x4];
-    s16 unk2AC;
-    u8 unk2AE[0xA];
-    s32 unk2B8;
-    u8 unk2BC[0x18];
-    s16 unk2D4;
-    u8 unk2D6[0xA];
-    s32 unk2E0;
-    u8 unk2E4[0x18];
-    s16 unk2FC;
-    u8 unk2FE[0xA];
-    s32 unk308;
-    u8 unk30C[0x18];
-    s16 unk324;
-    u8 unk326[0xA];
-    s32 unk330;
-    u8 unk334[0x20];
+    Wheel wheel[4];
+    u8 unk34C[0x8];
     void (*callback)(u8 *);
     u8 unk358[0xA];
     s16 unk362;
@@ -5978,10 +5973,99 @@ void func_8002B538(u8 *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002B63C);
+/* Wheel grip ratio on a surface. The wheel records at car + 0x2AC are read
+ * through car->wheel[] but the jitter stores go through a pointer to
+ * car + idx * 0x28, as retail does. */
+s32 func_8002B63C(CarDynamics *car, s16 surface, s32 idx) {
+    extern s32 MathFixedDivide(s32, s32);
+    extern s32 RandomScaledGet(s32);
+    extern void func_80029994(u8 *, s32);
+    extern u8 D_800A2E5A;
+    extern u8 D_800A2E5B;
+    s32 scale;
+    s32 range;
+    u8 *wheelBase;
+
+    if (surface != 0) {
+        if (surface == 5 && car->speed > 0x15E0000 &&
+            FAR_VAR(s32, gFarMode2CE0) != 0xB) {
+            if (idx >= 2) {
+                car->rearVelocityX = MathMultiplyFixed16(
+                    car->rearVelocityX, MathFixedDivide(0x3F, 0x40));
+                car->rearVelocityY = MathMultiplyFixed16(
+                    car->rearVelocityY, MathFixedDivide(0x3F, 0x40));
+                return MathFixedDivide(1, 4);
+            }
+            car->frontVelocityX = MathMultiplyFixed16(
+                car->frontVelocityX, MathFixedDivide(0x3F, 0x40));
+            car->frontVelocityY = MathMultiplyFixed16(
+                car->frontVelocityY, MathFixedDivide(0x3F, 0x40));
+            return MathFixedDivide(1, 2);
+        }
+        if (surface == 2) {
+            D_800A2E5B++;
+            if (car->speed > 0x140000) {
+                func_80029994((u8 *)car, idx);
+            }
+            if (D_800A2E5A) {
+                scale = MathFixedDivide(0x63, 0x64);
+            } else {
+                scale = 0x10000;
+            }
+            if (idx >= 2) {
+                if (surface != 3 && car->speed > 0x640000) {
+                    car->rearVelocityX =
+                        MathMultiplyFixed16(car->rearVelocityX, scale);
+                    car->rearVelocityY =
+                        MathMultiplyFixed16(car->rearVelocityY, scale);
+                    if (D_800A2E5A && car->speed > 0x12C0000) {
+                        range = car->speed >> 20;
+                        if (car->wheel[idx].unk4 == 0) {
+                            wheelBase = (u8 *)car + idx * 0x28;
+                            if (RandomScaledGet(range) + 4 < 0) {
+                                *(s16 *)(wheelBase + 0x2B0) =
+                                    -(RandomScaledGet(car->speed >> 20) + 4);
+                            } else {
+                                *(s16 *)(wheelBase + 0x2B0) =
+                                    RandomScaledGet(car->speed >> 20) + 4;
+                            }
+                            if (car->wheel[idx].unk4 > 14) {
+                                car->wheel[idx].unk4 = 14;
+                            }
+                        }
+                    }
+                }
+                return MathFixedDivide(1, 4);
+            }
+            if (surface != 3 && car->speed > 0x640000) {
+                car->frontVelocityX =
+                    MathMultiplyFixed16(car->frontVelocityX, scale);
+                car->frontVelocityY =
+                    MathMultiplyFixed16(car->frontVelocityY, scale);
+                if (D_800A2E5A && car->speed > 0x12C0000) {
+                    range = car->speed >> 20;
+                    if (car->wheel[idx].unk4 == 0) {
+                        wheelBase = (u8 *)car + idx * 0x28;
+                        if (RandomScaledGet(range) + 4 < 0) {
+                            *(s16 *)(wheelBase + 0x2B0) =
+                                -(RandomScaledGet(car->speed >> 20) + 4);
+                        } else {
+                            *(s16 *)(wheelBase + 0x2B0) =
+                                RandomScaledGet(car->speed >> 20) + 4;
+                        }
+                        if (car->wheel[idx].unk4 > 14) {
+                            car->wheel[idx].unk4 = 14;
+                        }
+                    }
+                }
+            }
+            return MathFixedDivide(1, 3);
+        }
+    }
+    return MathFixedDivide(1, 2);
+}
 
 void func_8002B9AC(CarDynamics *car, s32 *frontGrip, s32 *rearGrip) {
-    extern s32 func_8002B63C(CarDynamics *, s32, s32);
     extern s32 MathFixedDivide(s32, s32);
     extern s8 D_800A2E5B;
     s32 grip;
@@ -5994,7 +6078,7 @@ void func_8002B9AC(CarDynamics *car, s32 *frontGrip, s32 *rearGrip) {
     D_800A2E5B = 0;
     grip = func_8002B63C(car, car->unk362, 0);
     grip = grip + func_8002B63C(car, car->unk364, 1);
-    grip = MathMultiplyFixed16(car->unk308 + car->unk330, grip);
+    grip = MathMultiplyFixed16(car->wheel[2].unkC + car->wheel[3].unkC, grip);
     count = car->unk2A0;
     flags = car->unk3A4;
     cnt = count + 1;
@@ -6012,7 +6096,7 @@ void func_8002B9AC(CarDynamics *car, s32 *frontGrip, s32 *rearGrip) {
     *frontGrip = grip;
     grip = func_8002B63C(car, car->unk366, 2);
     grip = grip + func_8002B63C(car, car->unk368, 3);
-    grip = MathMultiplyFixed16(car->unk2B8 + car->unk2E0, grip);
+    grip = MathMultiplyFixed16(car->wheel[0].unkC + car->wheel[1].unkC, grip);
     if (D_800A2E5B == 4) {
         func_80041848((u8 *)car, 3);
     }
@@ -6028,10 +6112,10 @@ void func_8002B9AC(CarDynamics *car, s32 *frontGrip, s32 *rearGrip) {
     grip = grip + MathMultiplyFixed16(grip, MathFixedDivide(num, 0x3E8));
     *rearGrip = grip;
     car->unk10A = 0;
-    if (car->unk2FC != 0 || car->unk324 != 0) {
+    if (car->wheel[2].unk0 != 0 || car->wheel[3].unk0 != 0) {
         *frontGrip = 0;
     }
-    if (car->unk2AC != 0 || car->unk2D4 != 0) {
+    if (car->wheel[0].unk0 != 0 || car->wheel[1].unk0 != 0) {
         *rearGrip = 0;
         if (car->flags & 0x40) {
             car->unk10A += 0xFA0;
@@ -6094,8 +6178,8 @@ typedef char CheckCarSpeedBoost[(CAR_OFFSET(speedBoost) == 0x22C) ? 1 : -1];
 typedef char CheckCarFlags[(CAR_OFFSET(flags) == 0x238) ? 1 : -1];
 typedef char CheckCarLoad[(CAR_OFFSET(unk28C) == 0x28C) ? 1 : -1];
 typedef char CheckCarGrip[(CAR_OFFSET(unk2A6) == 0x2A6) ? 1 : -1];
-typedef char CheckCarFrontGrip[(CAR_OFFSET(unk2AC) == 0x2AC) ? 1 : -1];
-typedef char CheckCarRearGrip[(CAR_OFFSET(unk2D4) == 0x2D4) ? 1 : -1];
+typedef char CheckCarFrontGrip[(CAR_OFFSET(wheel[0].unk0) == 0x2AC) ? 1 : -1];
+typedef char CheckCarRearGrip[(CAR_OFFSET(wheel[1].unk0) == 0x2D4) ? 1 : -1];
 typedef char CheckCarCallback[(CAR_OFFSET(callback) == 0x354) ? 1 : -1];
 typedef char CheckCarDriveInput[(CAR_OFFSET(driveInput) == 0x3BC) ? 1 : -1];
 typedef char CheckCarRaceNode[(CAR_OFFSET(raceNode) == 0x3E4) ? 1 : -1];
@@ -6533,10 +6617,10 @@ noSliding:
     do {
         local.force.vy = 0;
         local.force.vx = 0;
-        frontDriveDisabled = car->unk2AC;
+        frontDriveDisabled = car->wheel[0].unk0;
         asm volatile("" : "=r"(driveForce) : "r"(frontDriveDisabled));
         driveForce = 0;
-        if ((frontDriveDisabled != 0) || (car->unk2D4 != 0)) {
+        if ((frontDriveDisabled != 0) || (car->wheel[1].unk0 != 0)) {
             local.rearGrip = 0;
         } else {
             driveForce = MathMultiplyFixed16(car->driveScale, car->driveInput);
