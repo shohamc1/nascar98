@@ -776,7 +776,7 @@ void func_80045288(void) {
     void func_80052E18(void);
     void func_80046258(void);
     void HudInitPrims(void);
-    void func_8004E700(void);
+    void HudInitLapSplits(void);
     void func_80048118(void);
     void func_8004F880(void);
     void HudInitRacePrims(void);
@@ -840,7 +840,7 @@ void func_80045288(void) {
         func_80046258();
     }
     HudInitPrims();
-    func_8004E700();
+    HudInitLapSplits();
     func_80048118();
     func_8004F880();
     HudInitRacePrims();
@@ -5310,17 +5310,102 @@ void MenuDrawStatistics(void) {
     func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004E294);
+typedef struct LapSplit {
+    s32 section;
+    s32 best;
+} LapSplit;
 
-extern s8 D_800992D0[];
-extern s32 D_800A8A2C[];
-extern s32 D_800A8A30[];
-extern s8 D_800A3498;
-extern s8 D_800A349C;
-extern s8 D_800A34A8;
-extern s16 D_800A34A0;
-extern s16 D_800A34A4;
-void func_8004E700(void) {
+extern s8 gTrackSplitCount[];
+extern LapSplit gLapSplits[];
+extern s8 gLapSplitIndex;
+extern s8 gLapSplitPanelY;
+extern u8 gLapSplitShowDelta;
+extern s16 gLapSplitMinPos;
+extern s16 gLapSplitHoldTimer;
+extern s32 gLapSplitDelta;
+extern s32 gLapSplitTime;
+extern s32 gLapSplitBest;
+extern char *D_8009AE44[];
+extern char *D_8009AE48[];
+extern void func_8004FCF4(void);
+extern void func_8004E808(void);
+extern void HudDrawTextLap(char *, s16, s16, s8) asm("HudDrawText");
+extern void func_80050670Lap(s32, s16, s16, s8, s8) asm("func_80050670");
+
+void HudDrawLapSplit(void) {
+    extern u8 D_800A3688;
+    s32 pos;
+    s32 time;
+    s32 track;
+    s16 delay;
+
+    pos = *(s16 *)(gPlayerCar[0] + 0x1D6) * gTrackSectionCount[0] +
+          *(s16 *)(gPlayerCar[0] + 0x1E0);
+    if (pos >= gLapSplits[gLapSplitIndex].section) {
+        func_8004FCF4();
+        gLapSplitTime = time = *(s32 *)(gPlayerCar[0] + 0x258);
+        gLapSplitBest = gLapSplits[gLapSplitIndex].best;
+        gLapSplitDelta = time - gLapSplitBest;
+        gLapSplits[gLapSplitIndex].section += gTrackSectionCount[0];
+        if (time < gLapSplits[gLapSplitIndex].best) {
+            gLapSplits[gLapSplitIndex].best = time;
+        }
+        track = D_800A2CE0[0];
+        gLapSplitIndex = (gLapSplitIndex + 1) % gTrackSplitCount[track];
+        if (pos > gLapSplitMinPos) {
+            delay = 40;
+            if (track == 3) {
+                delay = 20;
+            }
+            gLapSplitHoldTimer = delay;
+        }
+        gLapSplitShowDelta = 1;
+    }
+    if (D_800A3688 == 0) {
+        return;
+    }
+    if (D_800A2EB0Absolute[0] == 0) {
+        func_8004E808();
+    }
+    if (D_800A3688 == 0 || pos <= gLapSplitMinPos) {
+        return;
+    }
+    if (gLapSplitHoldTimer != 0) {
+        gLapSplitHoldTimer--;
+    } else if (pos >= gLapSplits[gLapSplitIndex].section - 20) {
+        if (gLapSplitPanelY > 0) {
+            gLapSplitPanelY -= 4;
+        }
+    } else if (gLapSplitPanelY < 60) {
+        gLapSplitPanelY += 4;
+    } else {
+        gLapSplitShowDelta = 0;
+        return;
+    }
+    if (*(u8 *)(gPlayerCar[0] + 0x268) != 0) {
+        return;
+    }
+    GraphicsSetColor(0x80, 0x80, 0xC0);
+    HudDrawTextLap(D_8009AE44[0], 0x5A, gLapSplitPanelY + 0xB9, 0);
+    HudDrawTextLap(D_8009AE48[0], 0x5A, gLapSplitPanelY + 0xC3, 0);
+    GraphicsSetColor(0x80, 0xC0, 0x80);
+    if (gLapSplitShowDelta != 0) {
+        func_80050670Lap(gLapSplitBest, 0x87, gLapSplitPanelY + 0xB9, 0, 1);
+        func_80050670Lap(gLapSplitTime, 0x87, gLapSplitPanelY + 0xC3, 0, 1);
+        func_80050670Lap(gLapSplitDelta < 0 ? -gLapSplitDelta : gLapSplitDelta,
+                         0x87, gLapSplitPanelY + 0xCD, 0, 1);
+        HudDrawTextLap(gLapSplitDelta < 0 ? D_800A3034 : D_800A3038, 0x7D,
+                       gLapSplitPanelY + 0xCD, 0);
+    } else {
+        func_80050670Lap(gLapSplits[gLapSplitIndex].best, 0x87,
+                         gLapSplitPanelY + 0xB9, 0, 1);
+        func_80050670Lap(*(s32 *)(gPlayerCar[0] + 0x258), 0x87,
+                         gLapSplitPanelY + 0xC3, 0, 1);
+    }
+    func_80044A1C(0x55, gLapSplitPanelY + 0xB4, 0x87, 0x28, 0, 0, 0, 1);
+}
+
+void HudInitLapSplits(void) {
     s32 idx;
     s32 *q;
     s8 *p;
@@ -5330,11 +5415,11 @@ void func_8004E700(void) {
     s8 i;
 
     idx = D_800A2CE0[0];
-    D_800A34A8 = 0;
-    D_800A3498 = 0;
-    D_800A34A4 = 0;
-    D_800A349C = 0x3C;
-    p = D_800992D0;
+    gLapSplitShowDelta = 0;
+    gLapSplitIndex = 0;
+    gLapSplitHoldTimer = 0;
+    gLapSplitPanelY = 0x3C;
+    p = gTrackSplitCount;
     i = 0;
     if (p[idx] > 0) {
         q = &gTrackSectionCount[0];
@@ -5345,15 +5430,15 @@ void func_8004E700(void) {
         /* The do-while (0) doubles the refs of the loop locals, which swaps
          * the a0/a1/a2 and t0/t1 allocation to retail's. */
         do {
-            D_800A8A2C[i * 2] = base + base * (i + 1) / *(s8 *)(idx + pm);
-            D_800A8A30[i * 2] = inf;
+            gLapSplits[i].section = base + base * (i + 1) / *(s8 *)(idx + pm);
+            gLapSplits[i].best = inf;
             i++;
             if (i < *(s8 *)(idx + pm)) {
                 goto loop;
             }
         } while (0);
     }
-    D_800A34A0 = gTrackSectionCount[0] * 2 + 1;
+    gLapSplitMinPos = gTrackSectionCount[0] * 2 + 1;
 }
 
 extern u8 D_800A34AC;
@@ -5367,7 +5452,7 @@ extern void func_80050028Lbl(char *, s16, s16, s8);
 asm(".globl func_80050028Lbl\nfunc_80050028Lbl = HudDrawText");
 
 void func_8004E808(void) {
-    if (D_800A349C < 0x3C) {
+    if (gLapSplitPanelY < 0x3C) {
         return;
     }
     if (D_800A34B0 != 0) {
@@ -5573,9 +5658,9 @@ void MenuDrawTimingAndScoring(void) {
     D_800A8A84[0].y3 = D_80099231[track] + position[1] / scale + 21;
     GraphicsAddPolyFT4((u8 *)D_800A8A84);
     HudDrawTextS16(D_8009AE94[0], D_800A8AB4First[0], *(s16 *)D_800A8AB6, 0);
-    lapCount = D_800992D0;
+    lapCount = gTrackSplitCount;
     i = 1;
-    if (i < D_800992D0[D_800A2CE0[0]]) {
+    if (i < gTrackSplitCount[D_800A2CE0[0]]) {
         loopLapCount = (s32)lapCount;
     drawLapMarker:
         func_8004FF90(i, D_800A8AB4Coords[i][0], D_800A8AB6Coords[i][0], 0);
@@ -5630,7 +5715,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     }
     func_80050028Row(title, 20, top, 2);
     y = top + 24;
-    for (i = 1; i < D_800992D0[D_800A2CE0[0]]; i++) {
+    for (i = 1; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
         textY = y;
         func_80050028Row(D_8009AE74[0], 20, textY, 0);
         func_8004FF90(i, 60, textY, 0);
@@ -5641,7 +5726,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     switch (mode) {
     case 0:
         func_80050028Row(D_8009AE7C[0], 215, top, 3);
-        for (i = 0; i < D_800992D0[D_800A2CE0[0]]; i++) {
+        for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
             func_80050670Row(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x10), 215, y,
                              3, 1);
             y += 12;
@@ -5650,14 +5735,14 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         textY = y;
         func_80050028Row(D_8009AE80[0], 20, textY, 3);
         lapData = D_800A8A74[lap];
-        lapData += D_800992D0[D_800A2CE0[0]] * 4;
+        lapData += gTrackSplitCount[D_800A2CE0[0]] * 4;
         func_80050670Row(*(s32 *)(lapData + 0x1C), 215, textY, 3, 1);
         break;
     case 1: {
         s32 speedValue;
 
         func_80050028Row(D_8009AE84[0], 215, top, 3);
-        for (i = 0; i < D_800992D0[D_800A2CE0[0]]; i++) {
+        for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
             speed = *(s16 *)(D_800A8A74[lap] + i * 2 + 6);
             if (speed == 0x7FFF) {
                 func_80050028Row(D_8009AE90[0], 215, y, 3);
@@ -5690,7 +5775,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     }
     case 2:
         func_80050028Row(D_8009AE8C[0], 215, top, 3);
-        for (i = 0; i < D_800992D0[D_800A2CE0[0]]; i++) {
+        for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
             func_80050670Row(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x20), 215, y,
                              3, 1);
             y += 12;
@@ -5826,7 +5911,7 @@ void func_8004F880(void) {
     D_800A8AB0[0] = HeapAlloc(0xC0);
     for (i = 0; i < 4; i++) {
         lim = 0x7FFF;
-        pb = D_800992D0;
+        pb = gTrackSplitCount;
         do {
             stride = i * 0x30;
             *(u8 *)(stride + (s32)D_800A8AB0[0]) = 0x7F;
@@ -5857,8 +5942,8 @@ void func_8004F880(void) {
     x = D_801F3FF8[0];
     D_800A34C4 = x * 4;
     idx = D_800A2CE0[0];
-    p = D_800992D0;
-    if (D_800992D0[idx] > 0) {
+    p = gTrackSplitCount;
+    if (gTrackSplitCount[idx] > 0) {
         i = 0;
         q = &gTrackSectionCount[0];
         pm = (s32)p;
@@ -5929,9 +6014,9 @@ void func_8004FCF4(void) {
     s8 i;
     s8 j;
 
-    entry = (u8 *)(D_800A3498 * 4 + (s32)D_800A8A80[0]);
+    entry = (u8 *)(gLapSplitIndex * 4 + (s32)D_800A8A80[0]);
     slot = (LapTimeSlot *)(entry + 0x10);
-    if (D_800A3498 == 0) {
+    if (gLapSplitIndex == 0) {
         lapTime = *(s32 *)(gPlayerCar[0] + 0x258);
     } else {
         lapTime = *(s32 *)(gPlayerCar[0] + 0x258) - *(s32 *)(entry + 0x1C);
@@ -5939,24 +6024,24 @@ void func_8004FCF4(void) {
     car = gPlayerCar[0];
     slot->lapTime = lapTime;
     speed = *(s16 *)(car + 0x92);
-    *(s16 *)(D_800A3498 * 2 + D_800A8A80[0] + 6) = speed;
-    ((LapTotalSlot *)(D_800A3498 * 4 + D_800A8A80[0]))->unk20 =
+    *(s16 *)(gLapSplitIndex * 2 + D_800A8A80[0] + 6) = speed;
+    ((LapTotalSlot *)(gLapSplitIndex * 4 + D_800A8A80[0]))->unk20 =
         *(s32 *)(car + 0x258);
-    if (D_800A3498 == D_800992D0[*(s32 *)(void *)D_800A2CE0] - 1) {
+    if (gLapSplitIndex == gTrackSplitCount[*(s32 *)(void *)D_800A2CE0] - 1) {
         if (D_800A3688 != 0 && D_800A2EB0Absolute[0] == 0) {
             D_800A34B0 = *(s32 *)(void *)D_800A2CE0 == 3 ? 0x28 : 0x32;
         }
         sum = 0;
         i = 0;
-        if (D_800992D0[D_800A2CE0[0]] > 0) {
+        if (gTrackSplitCount[D_800A2CE0[0]] > 0) {
             do {
                 sum += *(u16 *)(i * 2 + D_800A8A80[0] + 6);
                 i++;
-            } while (i < D_800992D0[D_800A2CE0[0]]);
+            } while (i < gTrackSplitCount[D_800A2CE0[0]]);
         }
         ((LapAvgSlot *)D_800A8A80[0])->unk2 =
-            (s16)sum / D_800992D0[D_800A2CE0[0]];
-        idx = D_800A3498;
+            (s16)sum / gTrackSplitCount[D_800A2CE0[0]];
+        idx = gLapSplitIndex;
         for (i = 0; i < 3; i++) {
             j = i + 1;
             if (j < 4) {

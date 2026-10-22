@@ -16858,7 +16858,7 @@ extern s16 D_800A3910Lap asm("D_800A3910Absolute");
 extern u8 *gTrackSectionsLap asm("gTrackSections");
 extern void func_8003EDA0(u8 *);
 extern void func_8003CEFC(void);
-extern void func_8004E294(void);
+extern void HudDrawLapSplit(void);
 extern void func_8004FF3C(void);
 extern void func_8003B464(void);
 
@@ -16951,7 +16951,7 @@ void RaceUpdateLapProgress(void) {
             }
             if (*(s16 *)(car + 0x1EC) == 0) {
                 noPlayerLap = 0;
-                func_8004E294();
+                HudDrawLapSplit();
                 func_8004FF3C();
                 if (D_800A2EA8Lap >= *(s16 *)(car + 0x1D6)) {
                     if (*(s8 *)(car + 0x204) == 2) {
@@ -17000,7 +17000,7 @@ void RaceUpdateLapProgress(void) {
         car = *(u8 **)(car + 0x3E0);
     }
     if ((noPlayerLap & 255) && D_800A2EACLap == 0) {
-        func_8004E294();
+        HudDrawLapSplit();
     }
     func_8003B6DC(0);
     car = gCarListControl;
