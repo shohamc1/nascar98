@@ -891,6 +891,7 @@ ReplayReadEffects = 0x80044594; // type:func
 
 CarPlaceOnStartingGrid = 0x80039DDC; // type:func
 
+CdStreamReadyCallback = 0x80070A60; // type:func
 CdUpdateStream = 0x800711F0; // type:func
 
 CarUpdatePlayer = 0x8002A2F8; // type:func

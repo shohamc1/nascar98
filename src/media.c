@@ -2322,9 +2322,152 @@ done:
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_80070A60);
-
 extern s32 *gCdStream;
+
+#ifdef NON_MATCHING
+/* CD ready callback: on each data-ready interrupt, copy the sector into the
+ * stream buffer, or re-seek and re-read when the drive returned the wrong
+ * sector. */
+extern u32 D_800A33B0Small;
+extern volatile u32 *D_800A33B4;
+extern s32 D_800A3510;
+#define STREAM ((volatile s32 *)gCdStream)
+
+void CdStreamReadyCallback(u_char intr, u_char *result) {
+    CdlLOC loc[8];
+    s32 *record;
+    CdlLOC *loc2;
+    u8 *position;
+    s32 sector;
+    s32 pos;
+    s32 i;
+    s32 used;
+    s32 limit;
+    s32 avail;
+    s32 contiguous;
+    s32 base;
+    s32 size;
+    s32 n;
+    s32 test;
+    volatile s32 *stream;
+
+    if (intr != CdlDataReady) {
+        ++STREAM[0x424 / 4];
+        return;
+    }
+    if ((u32)STREAM[0x424 / 4] >= 2) {
+        return;
+    }
+    STREAM[0x424 / 4] = 0;
+    if (STREAM[0x414 / 4] != 2) {
+        return;
+    }
+    if (STREAM[0] == 0) {
+        return;
+    }
+    if (D_800A33B0Small != 0) {
+        i = 0;
+        while (*D_800A33B4 & 0x1000000) {
+            if (++i == 0x10001) {
+                break;
+            }
+        }
+    }
+    if (STREAM[1] & 3) {
+        goto error;
+    }
+    CdGetSector(loc, 3);
+    CdDataSync(0);
+    pos = CdPosToInt(loc);
+    position = (u8 *)gCdStream[0x430 / 4];
+    loc2 = (CdlLOC *)(position + 0xC);
+    sector = ((s32 *)position)[2];
+    position += 0x24;
+    CdIntToPos(CdPosToInt(loc2) + sector, (CdlLOC *)position);
+    if (CdPosToInt((CdlLOC *)((s32 *)gCdStream[0x430 / 4] + 9)) != pos) {
+        CdGetSector((void *)gCdStream[1], 0x200);
+        CdDataSync(0);
+        CdGetSector(gCdStream + 0x458 / 4, 0x46);
+        CdDataSync(0);
+        position = (u8 *)gCdStream[0x430 / 4];
+        loc2 = (CdlLOC *)(position + 0xC);
+        sector = ((s32 *)position)[2];
+        position += 0x24;
+        CdIntToPos(CdPosToInt(loc2) + sector, (CdlLOC *)position);
+        ++STREAM[0x428 / 4];
+        STREAM[0x418 / 4] = 2;
+        STREAM[0x414 / 4] = 1;
+        position = (u8 *)gCdStream[0x430 / 4] + 0x24;
+        ((s32 *)STREAM)[STREAM[0x40C / 4]++ + 2] = CdlSeekL;
+        ((s32 *)STREAM)[STREAM[0x40C / 4]++ + 2] = (s32)position;
+        ((s32 *)STREAM)[STREAM[0x40C / 4]++ + 2] = 0;
+        STREAM[0x40C / 4] = (u32)STREAM[0x40C / 4] % 48;
+        ++STREAM[0x410 / 4];
+        if (STREAM[0x410 / 4] == 1) {
+            while (CdControlF(CdlSeekL, position) == 0) {
+            }
+        }
+        STREAM[0x450 / 4] = gCdStream[1];
+        STREAM[0x454 / 4] = gCdStream[0];
+        position = (u8 *)gCdStream[0x430 / 4] + 0x24;
+        ((s32 *)STREAM)[STREAM[0x40C / 4]++ + 2] = CdlReadN;
+        ((s32 *)STREAM)[STREAM[0x40C / 4]++ + 2] = (s32)position;
+        ((s32 *)STREAM)[STREAM[0x40C / 4]++ + 2] = 0;
+        STREAM[0x40C / 4] = (u32)STREAM[0x40C / 4] % 48;
+        ++STREAM[0x410 / 4];
+        if (STREAM[0x410 / 4] == 1) {
+            while (CdControlF(CdlReadN, position) == 0) {
+            }
+        }
+        return;
+    }
+    CdGetSector((void *)gCdStream[1], 0x200);
+    CdDataSync(0);
+    CdGetSector(gCdStream + 0x458 / 4, 0x46);
+    CdDataSync(0);
+    stream = STREAM;
+    --stream[0];
+    stream[1] += 0x800;
+    ++((volatile s32 *)((s32 *)stream)[0x430 / 4])[2];
+    ++stream[0x448 / 4];
+    if (stream[0] != 0) {
+        return;
+    }
+    record = (s32 *)stream[0x430 / 4];
+    pos = stream[0];
+    limit = record[0] - (((volatile s32 *)record)[2] + pos);
+    used = stream[0x448 / 4] + pos;
+    size = D_800A3510;
+    n = stream[0x440 / 4] + size - used;
+    contiguous = size - (u32)used % size;
+    avail = n;
+    test = avail < contiguous;
+    if (test) {
+        n = avail;
+    } else {
+        n = contiguous;
+    }
+    if (n < limit) {
+        limit = n;
+    }
+    if (limit != 0) {
+        base = record[0x30 / 4];
+        if (stream[1] == base + (size << 11)) {
+            stream[1] = base;
+        }
+        STREAM[0] = limit;
+        return;
+    }
+    stream[0] = 0;
+    stream[0x414 / 4] = 0;
+    return;
+error:
+    STREAM[0x414 / 4] = 0;
+}
+#undef STREAM
+#else
+INCLUDE_ASM("asm/nonmatchings/media", CdStreamReadyCallback);
+#endif
 
 void func_80070F40(u_char intr, u_char *result) {
     volatile s32 *stream;
@@ -2435,7 +2578,7 @@ s32 func_800710D8(void) {
 
 extern void bzero(void *, s32);
 extern void func_80070F40(u8, u8 *);
-extern void func_80070A60(u8, u8 *);
+extern void CdStreamReadyCallback(u8, u8 *);
 extern s32 D_800A3510;
 
 void CdUpdateStream(void) {
@@ -2528,7 +2671,7 @@ void CdUpdateStream(void) {
         CdControlB(CdlSetmode, &mode, 0);
         SwEnterCriticalSection();
         CdSyncCallback(func_80070F40);
-        CdReadyCallback(func_80070A60);
+        CdReadyCallback(CdStreamReadyCallback);
         startedStream = gCdStream;
         startedStream[0x41C / 4] = 1;
         startedStream[0x414 / 4] = 1;
@@ -2849,7 +2992,7 @@ u8 *func_800719FC(s32 *arg0) {
 }
 
 extern void func_80070F40(u_char, u_char *);
-extern void func_80070A60(u_char, u_char *);
+extern void CdStreamReadyCallback(u_char, u_char *);
 
 void func_80071BE8(void) {
     u8 param[0x20];
@@ -2923,7 +3066,7 @@ void func_80071BE8(void) {
     CdControlB(CdlSetmode, (u_char *)&mode, 0);
     SwEnterCriticalSection();
     CdSyncCallback(func_80070F40);
-    CdReadyCallback(func_80070A60);
+    CdReadyCallback(CdStreamReadyCallback);
     gCdStream[0x41C / 4] = 1;
     gCdStream[0x424 / 4] = 2;
     ((volatile s32 *)gCdStream)[0x414 / 4] = 0;
@@ -2944,7 +3087,7 @@ void CdStreamSetEnabled(s32 enable) {
         gCdStream[0x408 / 4] = 0;
         ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
         D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
-        D_800A33BC = (s32)CdReadyCallback(func_80070A60);
+        D_800A33BC = (s32)CdReadyCallback(CdStreamReadyCallback);
         gCdStream[0x420 / 4] = 1;
         ((volatile s32 *)gCdStream)[0x41C / 4] = 1;
     } else {
@@ -3046,7 +3189,7 @@ s32 CdStreamInit(s32 *mem, s32 arg1, s32 *src, u32 count) {
     gCdStream[0x408 / 4] = 0;
     ((volatile s32 *)gCdStream)[0x40C / 4] = 0;
     D_800A33B8 = (s32)CdSyncCallback(func_80070F40);
-    D_800A33BC = (s32)CdReadyCallback(func_80070A60);
+    D_800A33BC = (s32)CdReadyCallback(CdStreamReadyCallback);
     gCdStream[0x420 / 4] = 1;
     ((volatile s32 *)gCdStream)[0x41C / 4] = 1;
     SwExitCriticalSection();
