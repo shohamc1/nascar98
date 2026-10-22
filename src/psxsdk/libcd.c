@@ -20,12 +20,51 @@ int CdGetToc(u8 *toc) {
 }
 
 extern s32 CD_debug;
-extern char D_80090110[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090110);
-extern char D_80090120[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090120);
-extern char D_8009013C[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_8009013C);
+static const char sCdGetToc2TrackFormat[] = "track=%d,%d\n";
+static const char sCdGetToc2TimeFormat[] = "CdGetToc2: %02x:%02x:00\n";
+static const char sCdGetToc2ErrorMessage[] = "CdGetToc2: error\n";
+static const char sCdInitFailedMessage[] = "CdInit: Init failed\n";
+/* Command and interrupt names. The .data tables that index them hold
+ * the addresses, so the definition order here is the retail byte order. */
+static const char sNone[] = "none";
+static const char sCdlReadS[] = "CdlReadS";
+static const char sCdlSeekP[] = "CdlSeekP";
+static const char sCdlSeekL[] = "CdlSeekL";
+static const char sCdlGetTD[] = "CdlGetTD";
+static const char sCdlGetTN[] = "CdlGetTN";
+static const char sCdlGetlocP[] = "CdlGetlocP";
+static const char sCdlGetlocL[] = "CdlGetlocL";
+static const char sUnknownCommand[] = "?";
+static const char sCdlSetmode[] = "CdlSetmode";
+static const char sCdlSetfilter[] = "CdlSetfilter";
+static const char sCdlDemute[] = "CdlDemute";
+static const char sCdlMute[] = "CdlMute";
+static const char sCdlReset[] = "CdlReset";
+static const char sCdlPause[] = "CdlPause";
+static const char sCdlStop[] = "CdlStop";
+static const char sCdlStandby[] = "CdlStandby";
+static const char sCdlReadN[] = "CdlReadN";
+static const char sCdlBackword[] = "CdlBackword";
+static const char sCdlForward[] = "CdlForward";
+static const char sCdlPlay[] = "CdlPlay";
+static const char sCdlSetloc[] = "CdlSetloc";
+static const char sCdlNop[] = "CdlNop";
+static const char sCdlSync[] = "CdlSync";
+static const char sDiskError[] = "DiskError";
+static const char sDataEnd[] = "DataEnd";
+static const char sAcknowledge[] = "Acknowledge";
+static const char sComplete[] = "Complete";
+static const char sDataReady[] = "DataReady";
+static const char sNoIntr[] = "NoIntr";
+static const char sCdTimeoutPrefix[] = "CD timeout: ";
+static const char sCdTimeoutFormat[] = "%s:(%s) Sync=%s, Ready=%s\n";
+static const char sDiskErrorPrefix[] = "DiskError: ";
+static const char sDiskErrorFormat[] = "com=%s,code=(%02x:%02x)\n";
+static const char sUnknownIntrMessage[] = "CDROM: unknown intr";
+static const char sIntrFormat[] = "(%d)\n";
+/* Retail has one zero word here: the jump table that follows is 8-byte
+ * aligned within its object. No code reads it. */
+asm(".rdata\n.long 0\n.text");
 
 /* One counter i runs both loops and n = i - 1 is a separate pseudo, as in
  * retail. The `(first << 4) & 0xF` term is zero (combine folds it after flow
@@ -52,7 +91,7 @@ int CdGetToc2(int session, CdlLOC *table) {
         first = (a >> 4) * 10 + (a & 0xF);
         last = (b >> 4) * 10 + (b & 0xF);
         if (CD_debug >= 2) {
-            printf(D_80090110, first, last);
+            printf(sCdGetToc2TrackFormat, first, last);
         }
         param[0] = 0;
         if (CdControlB(CdlGetTD, param, result) != 0) {
@@ -77,7 +116,8 @@ int CdGetToc2(int session, CdlLOC *table) {
             n = i - 1;
             if (CD_debug >= 2) {
                 for (i = 0; i <= n; i++) {
-                    printf(D_80090120, table[i].minute, table[i].second);
+                    printf(sCdGetToc2TimeFormat, table[i].minute,
+                           table[i].second);
                 }
             }
             CdSyncCallback(old);
@@ -86,7 +126,7 @@ int CdGetToc2(int session, CdlLOC *table) {
     }
 fail:
     if (CD_debug != 0) {
-        printf(D_8009013C);
+        printf(sCdGetToc2ErrorMessage);
     }
     CdSyncCallback(old);
     return 0;
@@ -99,8 +139,6 @@ extern void func_80074C98(void);
 extern void func_80074CC0(void);
 extern void func_80074CE8(void);
 extern int printf(const char *, ...);
-extern char D_80090150[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090150);
 int CdInit(void) {
     s32 retry;
     retry = 4;
@@ -109,7 +147,7 @@ again:
         retry--;
         if (retry != -1)
             goto again;
-        printf(D_80090150);
+        printf(sCdInitFailedMessage);
         return 0;
     }
     CdSyncCallback((CdlCB)func_80074C98);
@@ -117,9 +155,6 @@ again:
     CdReadCallback((CdlCB)func_80074CE8);
     return 1;
 }
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090168);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800902AC);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800902BC);
 
 /* SPDX-License-Identifier: MIT */
 
@@ -227,11 +262,10 @@ int CdSetDebug(int level) {
 /* SPDX-License-Identifier: MIT */
 
 extern char *D_8009BAA0[];
-extern char D_80090168[];
 
 char *CdComstr(unsigned char com) {
     if (com > 0x1B) {
-        return D_80090168;
+        return sNone;
     }
     return D_8009BAA0[com];
 }
@@ -239,11 +273,10 @@ char *CdComstr(unsigned char com) {
 /* SPDX-License-Identifier: MIT */
 
 extern char *D_8009BB20[];
-extern char D_80090168[];
 
 char *CdIntstr(u8 intr) {
     if (intr > 6) {
-        return D_80090168;
+        return sNone;
     }
     return D_8009BB20[intr];
 }
@@ -386,10 +419,6 @@ int CdPosToInt(CdlLOC *p) {
            DECODE_BCD(sector) - 150;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800902D8);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800902E4);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090300);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090314);
 extern u32 D_8009BD40[];
 extern u32 D_8009BD44[];
 extern u32 D_8009BD48[];
@@ -406,10 +435,6 @@ extern u8 D_8009BD5A[];
 extern u8 D_800A8CB8[];
 extern u8 D_800A8CC0[];
 extern u8 D_800A8CC8[];
-extern char D_800902D8[];
-extern char D_800902E4[];
-extern char D_80090300[];
-extern char D_80090314[];
 
 typedef char Result_t[8];
 
@@ -468,10 +493,6 @@ static __inline__ void CD_memcpy(void *_dst, void *_src, u32 _size) {
 
 extern s32 CD_cmdAck[];
 extern s32 CD_cmdStat[];
-extern char D_800902D8[];
-extern char D_800902E4[];
-extern char D_80090300[];
-extern char D_80090314[];
 
 s32 getintr(void) {
     volatile char nReg;
@@ -517,9 +538,9 @@ s32 getintr(void) {
                       CdlStatShellOpen);
     }
     if (nReg == 5) {
-        puts(D_800902D8);
+        puts(sDiskErrorPrefix);
         if (CD_debug > 0) {
-            printf(D_800902E4, CD_comstr[CD_com], CD_status, CD_status1);
+            printf(sDiskErrorFormat, CD_comstr[CD_com], CD_status, CD_status1);
         }
     }
     switch (nReg) {
@@ -561,8 +582,8 @@ s32 getintr(void) {
         CD_memcpy(&CD_resultReady, &buf, sizeof(Result_t));
         return 6;
     default:
-        puts(D_80090300);
-        printf(D_80090314, nReg);
+        puts(sUnknownIntrMessage);
+        printf(sIntrFormat, nReg);
         return 0;
     }
 }
@@ -574,14 +595,11 @@ static __inline__ void CD_setAlarm(char *name) {
     ((Alarm_t *)&Alarm)->unk8 = name;
 }
 
-extern char D_800902AC[];
-extern char D_800902BC[];
-
 static __inline__ s32 CD_getAlarm(void) {
     if (((Alarm_t *)&Alarm)->unk0 < VSync(-1) ||
         ((Alarm_t *)&Alarm)->unk4++ > 0x3C0000) {
-        puts(D_800902AC);
-        printf(D_800902BC, ((Alarm_t *)&Alarm)->unk8, CD_comstr[CD_com],
+        puts(sCdTimeoutPrefix);
+        printf(sCdTimeoutFormat, ((Alarm_t *)&Alarm)->unk8, CD_comstr[CD_com],
                CD_intrstr[Intr.sync], CD_intrstr[Intr.ready]);
         CD_flush();
         return -1;

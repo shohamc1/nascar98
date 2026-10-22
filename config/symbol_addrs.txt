@@ -764,14 +764,9 @@ D_800A26E0 = 0x800A26E0;
 D_800A26C0 = 0x800A26C0;
 D_800A26AC = 0x800A26AC;
 D_800A26B0 = 0x800A26B0;
-D_800902D8 = 0x800902D8; // force_not_migration:True
-D_800902E4 = 0x800902E4; // force_not_migration:True
-D_80090300 = 0x80090300; // force_not_migration:True
-D_80090314 = 0x80090314; // force_not_migration:True
 D_800906C4 = 0x800906C4; // force_not_migration:True
 D_80090788 = 0x80090788; // force_not_migration:True
 D_800906F4 = 0x800906F4; // force_not_migration:True
-D_80090150 = 0x80090150; // force_not_migration:True
 D_800905C8 = 0x800905C8; // force_not_migration:True
 D_800905E4 = 0x800905E4; // force_not_migration:True
 D_80090600 = 0x80090600; // force_not_migration:True
@@ -884,9 +879,6 @@ D_80090598 = 0x80090598; // force_not_migration:True
 D_800905B0 = 0x800905B0; // force_not_migration:True
 D_800905BC = 0x800905BC; // force_not_migration:True
 D_800907E8 = 0x800907E8; // force_not_migration:True
-D_80090110 = 0x80090110; // force_not_migration:True
-D_80090120 = 0x80090120; // force_not_migration:True
-D_8009013C = 0x8009013C; // force_not_migration:True
 
 // Names from the 2026-10 naming survey.
 TextReverseString = 0x80012E3C; // type:func
