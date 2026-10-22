@@ -57,7 +57,9 @@ s32 VSync(s32 mode) {
 }
 
 extern s32 D_8009CE84[];
-extern char D_80090404[];
+static const char sVSyncTimeoutMessage[] = "VSync: timeout\n";
+static const char sIntrId[] =
+    "$Id: intr.c,v 1.73 1995/11/10 05:29:40 suzu Exp $";
 
 void v_wait(int mode, int time) {
     volatile int timeout[2];
@@ -65,14 +67,13 @@ void v_wait(int mode, int time) {
     timeout[0] = time << 15;
     while (Vcount < mode) {
         if (timeout[0]-- == 0) {
-            puts(D_80090404);
+            puts(sVSyncTimeoutMessage);
             ChangeClearPAD(0);
             ChangeClearRCnt(3, 0);
             return;
         }
     }
 }
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libetc", D_80090404);
 
 ASM_FUNC(ChangeClearRCnt, "    addiu $t2, $zero, 0xC0 # maspsx-keep\n"
                           "    jr $t2 # maspsx-keep\n"
@@ -148,8 +149,8 @@ extern volatile u16 *g_InterruptMask;
 extern s32 intrTimeout;
 extern int printf(const char *, ...);
 extern void ReturnFromException(void);
-extern u8 D_80090448[];
-extern u8 D_80090464[];
+static const char sUnexpectedInterruptFormat[] = "unexpected interrupt(%04x)\n";
+static const char sInterruptTimeoutFormat[] = "intr timeout(%04x:%04x)\n";
 extern struct Callbacks *pCallbacks;
 extern void trapIntr(void);
 extern int setjmp(s32 *);
@@ -185,15 +186,12 @@ void *startIntr(void) {
     return &intrEnv;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libetc", D_80090448);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libetc", D_80090464);
-
 void trapIntr(void) {
     s32 i;
     u16 mask;
 
     if (intrEnv.initialized == 0) {
-        printf((char *)D_80090448, *i_mask);
+        printf((char *)sUnexpectedInterruptFormat, *i_mask);
         ReturnFromException();
     }
     intrEnv.inInterrupt = 1;
@@ -211,7 +209,7 @@ void trapIntr(void) {
     }
     if (*i_mask & *g_InterruptMask) {
         if (intrTimeout++ > 0x800) {
-            printf((char *)D_80090464, *i_mask, *g_InterruptMask);
+            printf((char *)sInterruptTimeoutFormat, *i_mask, *g_InterruptMask);
             intrTimeout = 0;
             *i_mask = 0;
         }
@@ -399,11 +397,12 @@ Callback startIntrDMA(void) {
     return setIntrDMA;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libetc", D_80090480);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libetc", D_8009049C);
+static const char sDmaBusErrorFormat[] = "DMA bus error: code=%08x\n";
+static const char sDmaMadrFormat[] = "MADR[%d]=%08x\n";
+static const char sHexDigits[] = "0123456789ABCDEF";
+/* Retail pads this object's .rodata with one zero word. No code reads it. */
+asm(".rdata\n.long 0\n.text");
 
-extern u8 D_80090480[];
-extern u8 D_8009049C[];
 extern volatile u32 *dicr;
 extern u32 *dmaBase;
 
@@ -423,9 +422,9 @@ void trapIntrDMA(void) {
     }
 
     if ((*dicr & 0xFF000000) == 0x80000000 || *dicr & 0x8000) {
-        printf((char *)D_80090480, *dicr);
+        printf((char *)sDmaBusErrorFormat, *dicr);
         for (i = 0; i < 7; i++) {
-            printf((char *)D_8009049C, i, dmaBase[4 * i]);
+            printf((char *)sDmaMadrFormat, i, dmaBase[4 * i]);
         }
     }
 }

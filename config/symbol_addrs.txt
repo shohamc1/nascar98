@@ -701,7 +701,6 @@ D_8008D0CC = 0x8008D0CC; // force_not_migration:True
 
 // Parked draft support: preserve rodata when its C body is enabled.
 D_8008CFE0 = 0x8008CFE0; // force_not_migration:True
-D_80090404 = 0x80090404; // force_not_migration:True
 D_80090698 = 0x80090698; // force_not_migration:True
 
 // MDEC tables and command packets, checked through DecDCTGetEnv/PutEnv.
@@ -731,10 +730,6 @@ gStandingsNameX = 0x800A2FE5; // x of the standings driver-name column
 gStandingsLapX = 0x800A2FE6; // x of the standings lap column
 gStandingsTimeX = 0x800A2FE7; // x of the standings time or gap column
 gTextColor = 0x800A37F4; // text colour index read by HudDrawText (0 or 9 in HudDrawStandings)
-D_80090448 = 0x80090448; // force_not_migration:True
-D_80090464 = 0x80090464; // force_not_migration:True
-D_80090480 = 0x80090480; // force_not_migration:True
-D_8009049C = 0x8009049C; // force_not_migration:True
 D_80000004 = 0x80000004; // absolute:True fixed_address
 RAM_RESOURCE_BOUNDARY = 0x001F4000; // absolute:True fixed_address
 D_800B9928 = 0x800B9928;
