@@ -1115,7 +1115,6 @@ s32 func_8006E770(u8 arg0) {
     }
     return flags;
 }
-INCLUDE_RODATA("asm/nonmatchings/media", D_8008FCA4);
 
 /* One axis's calibration: the raw reading at each end and at rest. */
 typedef struct {
