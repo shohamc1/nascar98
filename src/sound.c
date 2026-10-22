@@ -43,7 +43,7 @@ extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
 s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
-extern u8 *D_800A3554[];
+extern u8 *gPlayerCar[];
 void ReplayStepForward(void);
 s32 TrackTestPointInSection(s32, s32, u8 *);
 s32 TrackTestPointInSection(s32, s32, u8 *);
@@ -452,7 +452,7 @@ void SoundInitTables(void) {
     SsSetTickMode(1);
 }
 
-extern s16 D_800B9E24[];
+extern s16 gSoundSlots[];
 extern u8 D_800A3880;
 
 void func_8003F060(s32 arg0) {
@@ -462,7 +462,7 @@ void func_8003F060(s32 arg0) {
     i = 0;
     value = -1;
 again:
-    D_800B9E24[i * 6] = value;
+    gSoundSlots[i * 6] = value;
     i++;
     if (i < 24) {
         goto again;
@@ -481,7 +481,7 @@ void func_8003F0CC(s32 arg0) {
     for (i = 0; i < 24; i++) {
         off = i;
         off = off * 12;
-        *(s16 *)((u8 *)D_800B9E24 + off) = -1;
+        *(s16 *)((u8 *)gSoundSlots + off) = -1;
     }
     gVabId = -1;
     gSequenceData = 0;
@@ -678,7 +678,7 @@ s32 SoundIsSlotActive(s32 arg0) {
     s16 voice;
     s32 status;
 
-    voice = D_800B9E24[(s8)arg0 * 6];
+    voice = gSoundSlots[(s8)arg0 * 6];
     if (voice != -1) {
         status = SpuGetKeyStatus(1 << voice);
         if (status == 1) {
@@ -701,7 +701,7 @@ extern s8 SoundStopSlotBody(s32) asm("SoundStopSlot");
 /*
  * SoundPlaySlot(id, type) starts sound `type` on voice slot `id` (**guess**).
  * It frees the slot first, picks the VAB program, tone and note from `type`,
- * keys the voice on and records the result in the D_800B9E24 table (six
+ * keys the voice on and records the result in the gSoundSlots table (six
  * halfwords per slot: voice, type, tone, note, note, 0). The key-status
  * test is an inline helper in the original, and its u8 result is why retail
  * has an `andi` after it.
@@ -734,7 +734,7 @@ s8 type;
     if (type == 0x20) {
         return;
     }
-    voice = D_800B9E24[(s8)id * 6];
+    voice = gSoundSlots[(s8)id * 6];
     if (voice != -1) {
         if (SoundIsVoiceOn(voice)) {
             tone = SoundStopSlotBody((s8)id);
@@ -823,7 +823,7 @@ s8 type;
             note = D_80098BEC[tone];
         }
     }
-    voice = D_800B9E24[(s8)id * 6] =
+    voice = gSoundSlots[(s8)id * 6] =
         SsUtKeyOnV((s8)id, gVabId, prog, tone, note, 0, vol, vol);
     if (voice == -1) {
         return;
@@ -831,13 +831,13 @@ s8 type;
     for (i = 0; i < 24; i++) {
         if (i != id) {
             row = i * 12;
-            if (*(s16 *)((u8 *)D_800B9E24 + row) == voice) {
-                *(s16 *)((u8 *)D_800B9E24 + row) = -1;
+            if (*(s16 *)((u8 *)gSoundSlots + row) == voice) {
+                *(s16 *)((u8 *)gSoundSlots + row) = -1;
             }
         }
     }
     off = (s8)id * 12;
-    SsUtSetVVol(*(s16 *)((u8 *)D_800B9E24 + off), vol, vol);
+    SsUtSetVVol(*(s16 *)((u8 *)gSoundSlots + off), vol, vol);
     *(s16 *)((u8 *)D_800B9E28 + off) = tone;
     *(s16 *)((u8 *)D_800B9E26h + off) = type;
     *(s16 *)((u8 *)D_800B9E2A + off) = note;
@@ -863,7 +863,7 @@ s8 SoundStopSlotBody(s32 arg0) {
 
     if (ret != 0x20) {
         off = (s8)arg0 * 12;
-        voice = *(s16 *)((u8 *)D_800B9E24 + off);
+        voice = *(s16 *)((u8 *)gSoundSlots + off);
         noVoice = -1;
         if (voice == noVoice) {
             return 0;
@@ -871,7 +871,7 @@ s8 SoundStopSlotBody(s32 arg0) {
         key = SsUtKeyOffV(voice);
         if (key == noVoice) {
             do {
-                voice = *(s16 *)((u8 *)D_800B9E24 + off);
+                voice = *(s16 *)((u8 *)gSoundSlots + off);
                 if (voice == key) {
                     goto done;
                 }
@@ -888,7 +888,7 @@ s8 SoundStopSlotBody(s32 arg0) {
                 key = 0;
             }
         }
-        *(s16 *)((u8 *)D_800B9E24 + off) = -1;
+        *(s16 *)((u8 *)gSoundSlots + off) = -1;
     done:
         return key;
     }
@@ -902,7 +902,7 @@ void func_8003FA0C(void) {
     i = 0;
     value = -1;
 again:
-    voice = D_800B9E24[i * 6];
+    voice = gSoundSlots[i * 6];
     if (voice != value) {
         SoundStopSlot((s8)i);
     }
@@ -924,7 +924,7 @@ s8 pitch;
     s32 v;
     s32 note;
 
-    va = D_800B9E24[(s8)id * 6];
+    va = gSoundSlots[(s8)id * 6];
     if (va == -1) {
         return;
     }
@@ -987,7 +987,7 @@ s8 vol;
     s32 v;
     s32 note;
 
-    va = D_800B9E24[(s8)id * 6];
+    va = gSoundSlots[(s8)id * 6];
     if (va == -1) {
         return;
     }
@@ -1046,7 +1046,7 @@ void SoundSetSlotVolume(s8 arg0, s32 arg1, s32 arg2) {
     u16 volL;
     u16 volR;
 
-    voice = D_800B9E24[(s8)arg0 * 6];
+    voice = gSoundSlots[(s8)arg0 * 6];
     if (voice != -1) {
         volL = ((arg1 & 0xFF) * D_800A2F94) / 127;
         volR = ((arg2 & 0xFF) * D_800A2F94) / 127;
@@ -1072,7 +1072,7 @@ void func_8003FEB8(void) {
     noVoice = -1;
     keyState = keys;
 again:
-    voice = D_800B9E24[i * 6];
+    voice = gSoundSlots[i * 6];
     if (voice != noVoice && keyState[voice] == 3) {
         SoundStopSlot(i);
     }
@@ -1329,7 +1329,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
 }
 
 extern u8 D_800A2F9D;
-extern u8 *D_800A3554nm[] asm("D_800A3554.NON_MATCHING");
+extern u8 *gPlayerCarnm[] asm("gPlayerCar.NON_MATCHING");
 
 void func_800409A0(u8 *object) {
     s32 id;
@@ -1338,7 +1338,7 @@ void func_800409A0(u8 *object) {
     if (D_800A2F9D == 0) {
         return;
     }
-    if (object == D_800A3554[0]) {
+    if (object == gPlayerCar[0]) {
         id = 0x14;
     } else {
         id = 0x15;
@@ -1349,7 +1349,7 @@ void func_800409A0(u8 *object) {
     if (*(s8 *)(object + 0x3B8) == 0) {
         /* A second name for the player table keeps cse from sharing the
          * address register across the call; the local reads it once. */
-        player = D_800A3554nm[0];
+        player = gPlayerCarnm[0];
         if (object == player) {
             SoundPlaySlot(0x14, 2);
         } else if (object == *(u8 **)(player + 0x3E0) && D_800A2EA4[0] == 2) {
@@ -1483,7 +1483,7 @@ void SoundUpdateCar(u8 *car) {
     if (D_800A2EACAbsolute[0] == 0 || D_800A2EACAbsolute[0] >= 3) {
         if (D_800A2EC8[0] == 0 && *(s8 *)(car + 0x3B8) > 0) {
             id = 20;
-            if (car != D_800A3554[0]) {
+            if (car != gPlayerCar[0]) {
                 id = 21;
             }
             if (*(s8 *)(car + 0x3B9) == 0) {
@@ -1556,11 +1556,11 @@ void SoundUpdateCar(u8 *car) {
                 *(s16 *)(car + 0x3BA) = 127;
             }
             pitch = *(s16 *)(car + 0x3BA);
-            if (car == D_800A3554[0]) {
+            if (car == gPlayerCar[0]) {
                 func_8003FA84(0, (s8)pitch);
                 SoundSetSlotVolume(0, volume & 0xFF, volume & 0xFF);
             } else {
-                if (*(s16 *)(D_800A3554[0] + 0x3BA) >= 125 && pitch >= 125) {
+                if (*(s16 *)(gPlayerCar[0] + 0x3BA) >= 125 && pitch >= 125) {
                     pitch = 120;
                 }
                 SoundSetSlotVolume(1, volume & 0xFF, volume & 0xFF);
@@ -1717,7 +1717,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (D_800A397C[0] == 2) {
         return;
     }
-    if (*(u8 *)(D_800A3554[0] + 0xF4) == 0 && D_800A2EA4[0] == 0) {
+    if (*(u8 *)(gPlayerCar[0] + 0xF4) == 0 && D_800A2EA4[0] == 0) {
         return;
     }
     timer = D_800A2EC0Absolute[0];

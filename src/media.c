@@ -14,7 +14,7 @@
 
 extern void func_8001E7EC(void *, s32, s32);
 
-extern s32 D_800A39C8[];
+extern s32 gOrderingTable[];
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -656,7 +656,7 @@ void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 TableFindByte(u8 value);
+u8 RaceFindGridPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -835,12 +835,12 @@ void func_8006DD28(u32 arg0, u32 arg1);
 void func_8006DE68(u32 arg0, u32 mode);
 void func_8006E484(u32 arg0, u32 arg1);
 
-extern void *D_800A3A24[];
-extern u8 D_800A307C[];
+extern void *gPadType[];
+extern u8 gPadLayout[];
 
 /* Maps the raw button word of pad `arg0` onto the game's action bits. The
- * mapping depends on the pad type (`D_800A3A24`) and on the layout selected
- * for that pad (`D_800A307C`). Modes that share a prefix share a switch arm
+ * mapping depends on the pad type (`gPadType`) and on the layout selected
+ * for that pad (`gPadLayout`). Modes that share a prefix share a switch arm
  * and finish with a `mode` test; cross-jumping merges the repeated tails. */
 s32 PadMapButtons(u8 arg0) {
     u8 padType;
@@ -848,8 +848,8 @@ s32 PadMapButtons(u8 arg0) {
     s32 flags;
     s32 buttons;
 
-    padType = ((u8 *)D_800A3A24)[arg0];
-    mode = D_800A307C[arg0];
+    padType = ((u8 *)gPadType)[arg0];
+    mode = gPadLayout[arg0];
     flags = 0;
     buttons = PadGetButtons(arg0);
     if (padType == 2) {
@@ -1135,7 +1135,7 @@ void func_8006EB18(u8 *obj) {
     scratch[0x20B] = id;
     func_80041BFC(scratch);
     for (i = 0; i < 3; i++) {
-        value = PadReadAxis(scratch, i, ((u8 *)D_800A3A24)[id], D_800A307C[id]);
+        value = PadReadAxis(scratch, i, ((u8 *)gPadType)[id], gPadLayout[id]);
         if (i == 2) {
             u8 target;
 
@@ -1160,7 +1160,7 @@ void func_8006EB18(u8 *obj) {
                 obj[0x3C5] = 0;
             }
         } else {
-            if (((s8 *)D_800A3A24)[id] >= 5) {
+            if (((s8 *)gPadType)[id] >= 5) {
                 if (i == 0) {
                     u8 target;
 
@@ -1218,7 +1218,7 @@ extern s32 D_800A36B4nm[] asm("D_800A36B4.NON_MATCHING");
 extern u8 D_800A3578[];
 extern s32 D_8009A2E0[];
 extern s32 D_8009A300[];
-extern s8 D_800A3A24Absolute[];
+extern s8 gPadTypeAbsolute[];
 extern s32 RandomScaledGetVoid(void);
 extern void func_80041AF0i(s32);
 asm(".globl RandomScaledGetVoid\nRandomScaledGetVoid = RandomScaledGet");
@@ -1253,15 +1253,15 @@ void func_8006EEE0(s32 arg0) {
         PutDrawEnv(&draw);
     }
     DrawSync(0);
-    ClearOTagR((OT_TYPE *)D_800A39C8[0], 0x400);
+    ClearOTagR((OT_TYPE *)gOrderingTable[0], 0x400);
     func_8005A7B8(2, 2);
-    if (D_800A3A24Absolute[0] == 2) {
+    if (gPadTypeAbsolute[0] == 2) {
         textId = D_8009A300[0];
     } else {
         textId = D_8009A2E0[0];
     }
     func_8005A9F4(textId, 0x131, 0xD8, 1, 0, 0, 0, 0);
-    DrawOTag((OT_TYPE *)(D_800A39C8[0] + 0xC));
+    DrawOTag((OT_TYPE *)(gOrderingTable[0] + 0xC));
     PutDispEnv(&disp);
     SetDispMask(1);
     func_800596F4();

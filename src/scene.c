@@ -17,10 +17,10 @@ extern void func_8001E7EC(void *, s32, s32);
 extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
 extern s32 sprintf(char *, u8 *);
 
-extern s32 D_800A39C8[];
+extern s32 gOrderingTable[];
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
-extern s32 D_800A39C8nm[] asm("D_800A39C8.NON_MATCHING");
-extern s32 D_800A3A3CAbsolute[];
+extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
+extern s32 gReplayIndexAbsolute[];
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 typedef struct ListNode28 ListNode28;
@@ -31,7 +31,8 @@ typedef struct DoublyLinkedNode {
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern void (*D_80091080[])(void *);
-extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[], D_800A3A3C[];
+extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[],
+    gReplayIndex[];
 typedef struct {
     u8 pad[16];
 } Unk16;
@@ -55,7 +56,7 @@ extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
 extern u8 D_800A3680[];
 extern void func_80025730(u8 *);
 s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
-extern u8 *D_800A3554[];
+extern u8 *gPlayerCar[];
 void ReplayStepForward(void);
 s32 TrackTestPointInSection(s32, s32, u8 *);
 s32 TrackTestPointInSection(s32, s32, u8 *);
@@ -148,7 +149,7 @@ void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
 extern s32 D_800A35E0[];
 extern void CarInitDefaults();
-extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
+extern u8 *gCarListnm[] asm("gCarList.NON_MATCHING");
 extern void FileRead();
 extern u8 D_800A2F9CAbsolute[];
 extern s32 func_80029EF8(u8 *);
@@ -501,7 +502,7 @@ void HeapFree(void *ptr);
 void func_80044A1C(s16 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4, u8 arg5,
                    u8 arg6, u8 arg7);
 
-extern u8 *D_800A3878NM[] asm("D_800A3878.NON_MATCHING");
+extern u8 *gCarListNM[] asm("gCarList.NON_MATCHING");
 extern SVECTOR D_800992E4[];
 extern SVECTOR D_800992EC[];
 extern SVECTOR D_800992F4[];
@@ -514,9 +515,9 @@ void func_80044BCC(s32 arg0) {
     s32 otz;
     u32 *ot;
 
-    ot = (u32 *)(D_800A39C8[0] + 0x20);
+    ot = (u32 *)(gOrderingTable[0] + 0x20);
     prim = (u8 *)gPrimitiveCursor[0];
-    typeIndex = *(s8 *)(D_800A3878NM[0] + arg0 * 0x500 + 0x376);
+    typeIndex = *(s8 *)(gCarListNM[0] + arg0 * 0x500 + 0x376);
     gte_ldv3(D_800992E4, D_800992EC, D_800992F4);
     gte_rtpt();
     SetPolyFT3((POLY_FT3 *)prim);
@@ -584,7 +585,7 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
     register s32 w3 asm("$12");
     register s32 masked asm("$2");
 
-    otBase = (s32)D_800A39C8[0] + 0x20;
+    otBase = (s32)gOrderingTable[0] + 0x20;
     prim = (u8 *)gPrimitiveCursor[0];
     rgb = arg2;
     count = arg1;
@@ -800,7 +801,7 @@ void func_80045288(void) {
     if (D_800A2EA4[0] != 0) {
         flag = 2;
     }
-    obj = D_800A3554[0];
+    obj = gPlayerCar[0];
     v = D_800A2FCC;
     x = *(s32 *)(obj + 0x3E0);
     D_800A3424 = flag;
@@ -889,7 +890,7 @@ typedef struct TrackQuad {
     struct TrackQuad *next;
 } TrackQuad;
 
-/* One 0x90-byte entry of the array at D_800BE980. */
+/* One 0x90-byte entry of the array at gTrackSections. */
 typedef struct {
     u8 pad0[0x10];
     u16 angle;
@@ -916,11 +917,11 @@ s32 CarGetTrackSide(u8 *car, s16 offset) {
     s32 dot;
     s32 result;
 
-    entry =
-        (TrackSectionEntry *)((u8 *)D_800BE980[0] + ((*(s16 *)(car + 0x1E0) +
-                                                      offset + D_800BE974[0]) %
-                                                     D_800BE974[0]) *
-                                                        0x90);
+    entry = (TrackSectionEntry *)((u8 *)gTrackSections[0] +
+                                  ((*(s16 *)(car + 0x1E0) + offset +
+                                    gTrackSectionCount[0]) %
+                                   gTrackSectionCount[0]) *
+                                      0x90);
     i = 0;
     for (node = entry->firstQuad; node != NULL; node = node->next) {
         quads[i] = node;
@@ -1010,7 +1011,7 @@ extern u8 D_800A372C;
 extern u8 gProjectileMode[] asm("D_800A2F58");
 extern s8 gProjectileWriteIndex[] asm("D_800A342C");
 extern s32 gProjectilePools[] asm("D_800A3430");
-extern u8 *gProjectileCars[] asm("D_800A3878");
+extern u8 *gProjectileCars[] asm("gCarList");
 extern s32 gProjectileOriginX asm("D_800AE844");
 extern s32 gProjectileOriginY asm("D_800AE848");
 extern s32 gProjectileOriginZ asm("D_800AE84C");
@@ -1144,7 +1145,7 @@ void SceneUpdateProjectiles(u8 *owner) {
                 vertexIndex++;
             } while (vertexIndex < 4);
             renderCount = 1;
-            ot = (u32 *)D_800A39C8[0];
+            ot = (u32 *)gOrderingTable[0];
             prim = (POLY_FT4 *)gPrimitiveCursor[0];
             drawQuad =
                 (ProjectileQuad *)(effectIndex * 0x80 + (u32)pool + 0x10);
@@ -1328,7 +1329,7 @@ void func_80045F70(void) {
 
 extern s8 D_800A343C;
 extern s8 *D_800A3444[];
-extern s32 D_800BE980v asm("D_800BE980");
+extern s32 gTrackSectionsv asm("gTrackSections");
 
 void func_80046184(s8 *arg0) {
     s8 *base;
@@ -1346,7 +1347,7 @@ void func_80046184(s8 *arg0) {
     for (n = 1, i = 1, tail = base + 4; i < count; i++) {
         entry = (s8 *)(i * 0x58 + (s32)base);
         id = *(s16 *)entry;
-        p = (u8 *)(id * 0x90 + D_800BE980v);
+        p = (u8 *)(id * 0x90 + gTrackSectionsv);
         flag = *(u16 *)(p + 0xE);
         if (flag != 0) {
             *(s32 *)(tail + 0x28) = (s32)(entry + 4);
@@ -1426,10 +1427,10 @@ void func_80046258(void) {
     }
     *(u16 *)(object + 0x118) = 0;
     *(u16 *)(object + 0x1EC) = 2;
-    for (i = 0; i < D_800BE974[0]; i++) {
+    for (i = 0; i < gTrackSectionCount[0]; i++) {
         objectPtr = object;
         pointPtr = point;
-        angle = *(u16 *)((u8 *)D_800BE980[0] + i * 0x90 + 0x10);
+        angle = *(u16 *)((u8 *)gTrackSections[0] + i * 0x90 + 0x10);
         *(u16 *)(object + 0x114) = angle;
         *(u16 *)(object + 0x116) = angle * 4;
         for (j = 0; j < 2; j++) {
@@ -1442,7 +1443,7 @@ void func_80046258(void) {
             func_80030F24(objectPtr, pointPtr, 0, dist, 0);
             heights[j] = point[2];
         }
-        *(s32 *)((u8 *)D_800BE980[0] + i * 0x90 + 0x1C) =
+        *(s32 *)((u8 *)gTrackSections[0] + i * 0x90 + 0x1C) =
             ((heights[0] + 0x4000) << 0x10) | (heights[1] + 0x4000);
     }
     SceneInitRoadStrip();
@@ -1532,14 +1533,15 @@ void SceneInitRoadStrip(void) {
             if (slot != 0) {
                 car = D_800A3428;
             } else {
-                car = D_800A3554[0];
+                car = gPlayerCar[0];
             }
             section = *(u16 *)(car + 0x1E0);
             lookBehind = D_800A3438;
             *sectionPtr = section;
-            sectionPosition = ((s16)section + lookBehind - 1) % D_800BE974[0];
+            sectionPosition =
+                ((s16)section + lookBehind - 1) % gTrackSectionCount[0];
             count = D_800A343C;
-            node = (SceneRoadNode *)D_800BE980[0] + sectionPosition;
+            node = (SceneRoadNode *)gTrackSections[0] + sectionPosition;
             index = 0;
             if (count > 0) {
                 s32 slotBits;
@@ -1568,7 +1570,7 @@ void SceneInitRoadStrip(void) {
                     rotation.vx = 0;
                     rotationPtr = &rotation;
                     asm("" : : "r"(rotationPtr));
-                    nodes = (SceneRoadNode *)D_800BE980[0];
+                    nodes = (SceneRoadNode *)gTrackSections[0];
                     sectionValue = (s16)section;
                     rotation.vy = nodes[sectionValue].angle * 4;
                     sectionIndex = sectionValue;
@@ -1610,12 +1612,12 @@ void SceneInitRoadStrip(void) {
                             cameraZ = origin[2];
                             if (side) {
                                 z = ((SceneRoadNode *)
-                                         D_800BE980[0])[sectionIndex]
+                                         gTrackSections[0])[sectionIndex]
                                         .height0 -
                                     0x4000;
                             } else {
                                 z = ((SceneRoadNode *)
-                                         D_800BE980[0])[sectionIndex]
+                                         gTrackSections[0])[sectionIndex]
                                         .height1 -
                                     0x4000;
                             }
@@ -1674,12 +1676,12 @@ void SceneInitRoadStrip(void) {
                             cameraZ = origin[2];
                             if (side) {
                                 z = ((SceneRoadNode *)
-                                         D_800BE980[0])[nextSectionIndex]
+                                         gTrackSections[0])[nextSectionIndex]
                                         .height0 -
                                     0x4000;
                             } else {
                                 z = ((SceneRoadNode *)
-                                         D_800BE980[0])[nextSectionIndex]
+                                         gTrackSections[0])[nextSectionIndex]
                                         .height1 -
                                     0x4000;
                             }
@@ -1759,9 +1761,9 @@ void SceneUpdateRoadStrip(u8 *car) {
         PushMatrix();
         if (ABS(distance) >= 14) {
             if (distance > 0) {
-                distance -= D_800BE974[0];
+                distance -= gTrackSectionCount[0];
             } else {
-                distance += D_800BE974[0];
+                distance += gTrackSectionCount[0];
             }
         }
         if (distance > 0) {
@@ -1772,13 +1774,14 @@ void SceneUpdateRoadStrip(u8 *car) {
             s32 cameraZ;
 
             count = 0;
-            node = (SceneRoadNode *)D_800BE980[0] +
-                   (D_800A3440[slot] + D_800A3438) % D_800BE974[0];
+            node = (SceneRoadNode *)gTrackSections[0] +
+                   (D_800A3440[slot] + D_800A3438) % gTrackSectionCount[0];
             while (count < distance) {
                 section = node->section;
                 rotation.vx = 0;
                 rotation.vy =
-                    ((SceneRoadNode *)D_800BE980[0])[(s16)section].angle * 4;
+                    ((SceneRoadNode *)gTrackSections[0])[(s16)section].angle *
+                    4;
                 rotation.vz = 0;
                 RotMatrix(&rotation, &D_8009931C);
                 SetRotMatrix(&D_8009931C);
@@ -1815,11 +1818,11 @@ void SceneUpdateRoadStrip(u8 *car) {
                     point->vy = y;
                     cameraZ = origin[2];
                     if (side) {
-                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
                                 .height0 -
                             0x4000;
                     } else {
-                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
                                 .height1 -
                             0x4000;
                     }
@@ -1854,16 +1857,17 @@ void SceneUpdateRoadStrip(u8 *car) {
             sectionIndex = D_800A3440[slot] - D_800A3438;
             /* Keep the subtraction separate from the length decrement. */
             asm("" : "=r"(sectionIndex) : "0"(sectionIndex));
-            length = D_800BE974[0];
+            length = gTrackSectionCount[0];
             lastSection = length - 1;
-            node = (SceneRoadNode *)D_800BE980[0] +
+            node = (SceneRoadNode *)gTrackSections[0] +
                    (sectionIndex + lastSection) % length;
             distance = -distance;
             while (count < distance) {
                 section = node->section;
                 rotation.vx = 0;
                 rotation.vy =
-                    ((SceneRoadNode *)D_800BE980[0])[(s16)section].angle * 4;
+                    ((SceneRoadNode *)gTrackSections[0])[(s16)section].angle *
+                    4;
                 rotation.vz = 0;
                 RotMatrix(&rotation, &D_8009931C);
                 SetRotMatrix(&D_8009931C);
@@ -1899,11 +1903,11 @@ void SceneUpdateRoadStrip(u8 *car) {
                     point->vy = y;
                     cameraZ = origin[2];
                     if (side) {
-                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
                                 .height0 -
                             0x4000;
                     } else {
-                        z = ((SceneRoadNode *)D_800BE980[0])[(s16)section]
+                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
                                 .height1 -
                             0x4000;
                     }
@@ -2060,7 +2064,7 @@ void func_800474A0(void) {
         D_800A3470 = 0;
     } else {
         if (D_800A345C < 0xA) {
-            car = D_800A3554[0];
+            car = gPlayerCar[0];
             place = *(s16 *)(car + 0x10C);
             if (place != 0) {
                 row = car + place * 24;
@@ -2287,7 +2291,7 @@ void func_800474A0(void) {
             prim = (u8 *)gPrimitiveCursor[0];
             node = D_800A45F0 + (s16)loopIdx * 6048;
             primCount = 0x48;
-            otBaseW = D_800A39C8[0];
+            otBaseW = gOrderingTable[0];
             primNext = prim + 0x10;
             do {
                 verts = (SVECTOR **)(node + 0x18);
@@ -2315,10 +2319,10 @@ void func_800474A0(void) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80048118);
 
-extern s32 D_800A3550[];
+extern s32 gReplayHead[];
 extern s32 D_800A397C[];
-extern s32 D_800A3A3C[];
-extern s32 D_800A3A90[];
+extern s32 gReplayIndex[];
+extern s32 gReplayLength[];
 extern s16 D_800A35A4w40;
 extern u8 *D_800A347C;
 extern void *D_800A3728;
@@ -2326,19 +2330,20 @@ extern u8 CarDrawModel(u8 *, s32);
 extern s32 func_80037204(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 extern void func_8004875C(void);
-extern u8 *D_800A3554again[];
-asm(".globl D_800A3554again\nD_800A3554again = D_800A3554");
+extern u8 *gPlayerCaragain[];
+asm(".globl gPlayerCaragain\ngPlayerCaragain = gPlayerCar");
 asm(".globl D_800A35A4w40\nD_800A35A4w40 = D_800A35A4");
 
 void func_80048568(void) {
     s32 target;
 
     if (D_800A397C[0] == 2) {
-        if (D_800A3A3C[0] < D_800A3550[0]) {
-            target = D_800A2EC0nm[0] - (D_800A3550[0] - D_800A3A3C[0]) + 1;
+        if (gReplayIndex[0] < gReplayHead[0]) {
+            target = D_800A2EC0nm[0] - (gReplayHead[0] - gReplayIndex[0]) + 1;
         } else {
             target = D_800A2EC0nm[0] -
-                     (D_800A3550[0] + (D_800A3A90[0] - D_800A3A3C[0])) + 1;
+                     (gReplayHead[0] + (gReplayLength[0] - gReplayIndex[0])) +
+                     1;
         }
         if (target >= *(s32 *)(D_800A347C + 0xC) &&
             *(s32 *)(D_800A347C + 0x10) >= target) {
@@ -2352,13 +2357,13 @@ void func_80048568(void) {
                 *(s32 *)(D_800A347C + 0x10) = D_800A2EC0nm[0];
             }
         } else {
-            if (func_8003702C((u8 *)D_800A3728, D_800A3554[0]) < 0) {
-                if (-func_8003702C((u8 *)D_800A3728, D_800A3554again[0]) >=
+            if (func_8003702C((u8 *)D_800A3728, gPlayerCar[0]) < 0) {
+                if (-func_8003702C((u8 *)D_800A3728, gPlayerCaragain[0]) >=
                     0x19) {
                     goto fail;
                 }
             } else {
-                if (func_8003702C((u8 *)D_800A3728, D_800A3554again[0]) >=
+                if (func_8003702C((u8 *)D_800A3728, gPlayerCaragain[0]) >=
                     0x19) {
                 fail:
                     func_8004875C();
@@ -2382,7 +2387,7 @@ void func_80048700(void) {
 }
 
 void func_8004875C(void) {
-    extern s32 D_800BE980[];
+    extern s32 gTrackSections[];
     extern void func_80031264(u8 * object);
     extern void func_80037130(u8 * object);
     extern s32 MathMultiplyFixed16(s32, s32);
@@ -2396,8 +2401,8 @@ void func_8004875C(void) {
     u8 *w;
     s32 e;
 
-    val = *(u16 *)((u8 *)D_800BE980[0] + *(s16 *)(D_800A3728 + 0x1E0) * 0x90 +
-                   0x10);
+    val = *(u16 *)((u8 *)gTrackSections[0] +
+                   *(s16 *)(D_800A3728 + 0x1E0) * 0x90 + 0x10);
     *(u16 *)(D_800A3728 + 0x114) = val;
     *(u16 *)(D_800A3728 + 0x104) = val;
     *(u16 *)(D_800A3728 + 0x116) = *(u16 *)(D_800A3728 + 0x114) * 4;
@@ -2529,7 +2534,7 @@ void RaceUpdateCrashTrigger(void) {
     }
     if (gCrashCar == NULL || D_800A2ED4[0] != 0) {
         if (D_800A397C[0] == 2 && gCrashCar == NULL &&
-            D_800A3A3C[0] == D_800A3804Nm[0]) {
+            gReplayIndex[0] == D_800A3804Nm[0]) {
             row = D_800B8648;
             for (i = 0; i < 24; i++) {
                 row->unk20 = 0;
@@ -2613,7 +2618,7 @@ void func_80048C90(void) {
             idx = (s8)raw;
         } while (buf[idx] != 0);
         count = raw;
-        node = D_800A3878nm[0];
+        node = gCarListnm[0];
         for (j = 0; j < idx; j++) {
             node = *(u8 **)(node + 0x3E0);
         }
@@ -2727,7 +2732,7 @@ typedef struct HudNode {
 } HudNode;
 
 extern s16 D_800A38E4[];
-extern s32 D_800A39C8Absolute[];
+extern s32 gOrderingTableAbsolute[];
 extern s32 D_800A39C4nm[] asm("D_800A39C4.NON_MATCHING");
 extern s32 D_800A39CCnm[] asm("D_800A39CC.NON_MATCHING");
 extern s32 D_800A2E50[];
@@ -2779,8 +2784,8 @@ extern void func_80052FC4(s8);
 extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
 
 /* Value that D_800A3480 follows, the field at 0x20E of the car in
- * D_800A3554. */
-#define HUD_STEER_TARGET (((HudCar *)D_800A3554[0])->unk20E)
+ * gPlayerCar. */
+#define HUD_STEER_TARGET (((HudCar *)gPlayerCar[0])->unk20E)
 
 /* Centred warning text with a box behind it. */
 #define HUD_MESSAGE(text, ty)                                                  \
@@ -2907,9 +2912,9 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
     if (D_800A2EACAbsolute[0] == 0 && D_800A2ED0Hud[0] == 0 &&
         D_800A397C[0] != 2) {
         if (car->unk209 != 0) {
-            D_800A39C8Absolute[0] = D_800A39C8[0] + 4;
+            gOrderingTableAbsolute[0] = gOrderingTable[0] + 4;
             if (split) {
-                if (car == (HudCar *)D_800A3554[0]) {
+                if (car == (HudCar *)gPlayerCar[0]) {
                     seg = D_800A757C;
                     needle = D_800A78D4;
                     tiles = D_800A7924;
@@ -2994,7 +2999,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
             }
             FontSetColor(0x80, 0x80, 0x40);
             for (i = 0; i < count; i++) {
-                AddPrim((void *)D_800A39C8[0], prim);
+                AddPrim((void *)gOrderingTable[0], prim);
                 prim += 0x28;
             }
             layout = &D_8009927C[split];
@@ -3019,13 +3024,13 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                 func_80018B18(car->unk10C + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
             } else {
-                D_800A39C8Absolute[0] = D_800A39C8nm[0] + 0x2C;
+                gOrderingTableAbsolute[0] = gOrderingTablenm[0] + 0x2C;
                 FontSetColor(0x40, 0x40, 0x40);
                 func_80018B18(car->unk10C + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
                 D_800A39CCnm[-1] = D_800A39C4nm[1] - 0x2C;
             }
-            D_800A39C8Absolute[0] = D_800A39C8[0] - 4;
+            gOrderingTableAbsolute[0] = gOrderingTable[0] - 4;
         }
         if (D_800A2EC8[0] == 0) {
             if (D_800A2EDC[0] != 0 && car->unkF4 != 0 &&
@@ -3081,8 +3086,8 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                     }
                     if (ABS(MathGetAngleDelta(
                             car->unk114,
-                            ((HudNode *)D_800BE980[0])[car->unk1E0].unk10)) >
-                        0x120) {
+                            ((HudNode *)gTrackSections[0])[car->unk1E0]
+                                .unk10)) > 0x120) {
                         GraphicsSetColor(0xFF, 0x40, 0x40);
                         HUD_MESSAGE(D_8009AE00, 0xD2);
                         func_80041564Hud(car, 0x25);
@@ -3652,7 +3657,7 @@ void HudDrawDashboard(void) {
             gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
             entry = (POLY_FT4 *)raw;
             *entry = *prim;
-            AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+            AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
             next = i + 1;
             i = next;
             asm("" : "=r"(next) : "0"(next));
@@ -3679,7 +3684,7 @@ void HudDrawDashboard(void) {
                 s64 wideProduct;
 
                 /* Scale the tachometer angle by 585/13250 or 658/13250. */
-                car = D_800A3554[0];
+                car = gPlayerCar[0];
                 rpm = *(s16 *)(car + 0x402);
                 if (*(u8 *)(car + 0xF6) != 0 ||
                     *(s16 *)(car + 0x10C) == *(s16 *)(car + 0x110)) {
@@ -3715,10 +3720,10 @@ void HudDrawDashboard(void) {
                 if (D_800A2ED4[0] == 0) {
                     if (RandomScaledGet(2)) {
                         productY = -RandomScaledGet(
-                            *(s32 *)(D_800A3554[0] + 0x90) >> 20);
+                            *(s32 *)(gPlayerCar[0] + 0x90) >> 20);
                     } else {
                         productY = RandomScaledGet(
-                            *(s32 *)(D_800A3554[0] + 0x90) >> 20);
+                            *(s32 *)(gPlayerCar[0] + 0x90) >> 20);
                     }
                     productY += 0x300;
                     D_800A3494 = productY;
@@ -3738,7 +3743,7 @@ void HudDrawDashboard(void) {
                 s64 wideProduct;
 
                 /* Scale speed by 768/16000 for the speedometer angle. */
-                speed = *(s32 *)(D_800A3554[0] + 0x28C);
+                speed = *(s32 *)(gPlayerCar[0] + 0x28C);
                 factor = 0x10624DD3;
                 scaledSpeed = speed * 768;
                 asm("mult %1,%2"
@@ -3757,7 +3762,7 @@ void HudDrawDashboard(void) {
                 break;
             }
             case 3:
-                angles[0] = ((s32)(D_800A3554[0][0x3FD] << 24) >> 21) + 0x2D8;
+                angles[0] = ((s32)(gPlayerCar[0][0x3FD] << 24) >> 21) + 0x2D8;
                 break;
             }
             vertex = 0;
@@ -3892,7 +3897,7 @@ void HudDrawDashboard(void) {
             dest = (u8 *)gHudPrimitiveCursor;
             count = 36;
             source = D_800A7995;
-            ot = (u32 *)D_800A39C8[0];
+            ot = (u32 *)gOrderingTable[0];
             out = dest + 0x18;
             do {
                 p0 = *(SVECTOR **)(source + 0x17);
@@ -3944,7 +3949,7 @@ void HudDrawDashboard(void) {
             gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
             entry = (POLY_FT4 *)raw;
             *entry = *prim;
-            AddPrim((void *)(D_800A39C8[0] + 8), entry);
+            AddPrim((void *)(gOrderingTable[0] + 8), entry);
             next = i + 1;
             i = next;
             asm("" : "=r"(next) : "0"(next));
@@ -3962,7 +3967,7 @@ void HudDrawDashboard(void) {
             gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
             entry = (POLY_FT4 *)raw;
             *entry = *prim;
-            AddPrim((void *)(D_800A39C8[0] + 16), entry);
+            AddPrim((void *)(gOrderingTable[0] + 16), entry);
             next = i + 1;
             i = next;
             asm("" : "=r"(next) : "0"(next));
@@ -3980,7 +3985,7 @@ void HudDrawDashboard(void) {
             gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
             entry = (POLY_FT4 *)raw;
             *entry = *prim;
-            AddPrim((void *)(D_800A39C8[0] + 16), entry);
+            AddPrim((void *)(gOrderingTable[0] + 16), entry);
             next = i + 1;
             i = next;
             asm("" : "=r"(next) : "0"(next));
@@ -4129,7 +4134,7 @@ void HudDrawDashboard(void) {
                             gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
                             entry = (POLY_FT4 *)raw;
                             *entry = *prim;
-                            AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+                            AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
                         }
                     }
                 }
@@ -4180,7 +4185,7 @@ copyHud5:
         prim = (POLY_FT4 *)(copyOffset + sourceBase);
         gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
         *copyDest = *prim;
-        AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+        AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
         next = i + 1;
         i = next;
         asm("" : "=r"(next) : "0"(next));
@@ -4218,7 +4223,7 @@ copyHud6:
         prim = (POLY_FT4 *)(copyOffset + sourceBase);
         gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
         *copyDest = *prim;
-        AddPrim((void *)(D_800A39C8[0] + 0x10), entry);
+        AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
         next = i + 1;
         i = next;
         asm("" : "=r"(next) : "0"(next));
@@ -4984,15 +4989,15 @@ void HudDrawStandings(s8 arg0, s32 y) {
             gTextColor = 9;
             textY = (u8)y;
             func_80050028Row(text, gStandingsPlaceX + 3, textY, 0);
-            if (carIndex == ((Car *)D_800A3554[0])->place) {
+            if (carIndex == ((Car *)gPlayerCar[0])->place) {
                 if (selected == 0 && D_800A2EACAbsolute[0] == 0) {
                     gTextColor = 0;
-                    func_80050028Row(((Car *)D_800A3554[0])->name,
+                    func_80050028Row(((Car *)gPlayerCar[0])->name,
                                      gStandingsNameX, textY, 0);
                     gTextColor = 9;
-                    func_8004FF90Row(((Car *)D_800A3554[0])->lap,
+                    func_8004FF90Row(((Car *)gPlayerCar[0])->lap,
                                      gStandingsLapX + 8, textY, 0);
-                    func_80050670Row(((Car *)D_800A3554[0])->unk25C,
+                    func_80050670Row(((Car *)gPlayerCar[0])->unk25C,
                                      gStandingsTimeX, textY, 0, 1);
                     func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
                     if (row == 15) {
@@ -5007,8 +5012,8 @@ void HudDrawStandings(s8 arg0, s32 y) {
                                carIndex);
                     func_80050028Row(text, gStandingsPlaceX + 3, (u8)y, 0);
                 }
-                if (carIndex == ((Car *)D_800A3554[0])->place &&
-                    D_800A2EA8[0] >= ((Car *)D_800A3554[0])->lap) {
+                if (carIndex == ((Car *)gPlayerCar[0])->place &&
+                    D_800A2EA8[0] >= ((Car *)gPlayerCar[0])->lap) {
                     goto skipBlank;
                 }
             }
@@ -5017,22 +5022,22 @@ void HudDrawStandings(s8 arg0, s32 y) {
             gTextColor = 0;
             limit = (u8)arg0 + 1;
             index = rowStart;
-            if (((Car *)D_800A3554[0])->place < limit &&
+            if (((Car *)gPlayerCar[0])->place < limit &&
                 D_800A2EACAbsolute[0] == 0) {
                 index = rowStart - 1;
             }
             textY = (u8)y;
-            func_80050028Row(gDriverNames[D_800BE70C[index]], gStandingsNameX,
+            func_80050028Row(gDriverNames[gGridOrder[index]], gStandingsNameX,
                              textY, 0);
-            if (carIndex == ((Car *)D_800A3554[0])->place &&
-                ((Car *)D_800A3554[0])->lap < 2) {
+            if (carIndex == ((Car *)gPlayerCar[0])->place &&
+                ((Car *)gPlayerCar[0])->lap < 2) {
                 func_80050028Row(D_8009ADF4[0], gStandingsTimeX, textY, 0);
             } else {
                 func_80050670Row(D_800AE1EC[index], gStandingsTimeX, (u8)y, 0,
                                  1);
             }
             if (D_800A2EACAbsolute[0] != 0 &&
-                carIndex == ((Car *)D_800A3554[0])->place) {
+                carIndex == ((Car *)gPlayerCar[0])->place) {
                 func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
             rowStart++;
@@ -5085,10 +5090,12 @@ void HudDrawStandings(s8 arg0, s32 y) {
                     func_80050670Row(entry->unk260, gStandingsTimeX, textY, 0,
                                      0);
                 } else {
-                    gap = (s16)(((((Car *)D_800A35E0[0])->lap * D_800BE974[0] +
+                    gap = (s16)(((((Car *)D_800A35E0[0])->lap *
+                                      gTrackSectionCount[0] +
                                   ((Car *)D_800A35E0[0])->unk1E0) -
-                                 (entry->lap * D_800BE974[0] + entry->unk1E0)) /
-                                D_800BE974[0]);
+                                 (entry->lap * gTrackSectionCount[0] +
+                                  entry->unk1E0)) /
+                                gTrackSectionCount[0]);
                     gTextColor = 9;
                     if (gap > 0) {
                         func_80050028Row(D_800A3034, gStandingsTimeX - 10,
@@ -5131,7 +5138,7 @@ void HudDrawStandings(s8 arg0, s32 y) {
 
 extern u8 D_800A3590;
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern char D_8008D4F4[];
 extern char *D_8009A31C[];
 extern s32 HudTextWidth(u8 *);
@@ -5165,7 +5172,7 @@ void MenuDrawStatistics(void) {
     HudDrawStandingsRow(top, y);
     if (D_800A2EA4[0] != 0) {
         gOrderingTableBankLui += 1;
-        D_800A39C8Lui += 0x1004;
+        gOrderingTableLui += 0x1004;
         if (D_800A2E94[0] >= 3) {
             HudDrawStandingsRow(7, 1);
         }
@@ -5176,7 +5183,7 @@ void MenuDrawStatistics(void) {
         func_8001D778(0, 0, 320, 120, 0, 0, 0, 1);
         func_8001D778(0, 0, 320, 120, 0, 0, 0, 1);
         gOrderingTableBankLui -= 1;
-        D_800A39C8Lui -= 0x1004;
+        gOrderingTableLui -= 0x1004;
     }
     func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
     func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
@@ -5209,7 +5216,7 @@ void func_8004E700(void) {
     p = D_800992D0;
     i = 0;
     if (p[idx] > 0) {
-        q = &D_800BE974[0];
+        q = &gTrackSectionCount[0];
         pm = (s32)p;
         inf = 0x7FFFFFFF;
     loop:
@@ -5225,7 +5232,7 @@ void func_8004E700(void) {
             }
         } while (0);
     }
-    D_800A34A0 = D_800BE974[0] * 2 + 1;
+    D_800A34A0 = gTrackSectionCount[0] * 2 + 1;
 }
 
 extern u8 D_800A34AC;
@@ -5259,7 +5266,7 @@ void func_8004E808(void) {
     if ((s8)D_800A34AC < 0x3C) {
         D_800A34AC = (s8)D_800A34AC + 4;
     display:
-        if (*(u8 *)(D_800A3554[0] + 0x268) == 0) {
+        if (*(u8 *)(gPlayerCar[0] + 0x268) == 0) {
             GraphicsSetColor(0x80, 0x80, 0xC0);
             func_80050028Lbl((char *)D_8009AE4C[0], 0x50, (s8)D_800A34AC + 0xB9,
                              0);
@@ -5306,10 +5313,10 @@ void func_8004EA34(void) {
     s32 t2;
 
     e0 = (u8 *)D_800A35E0[0];
-    len = D_800BE974[0];
+    len = gTrackSectionCount[0];
     e01d6 = *(s16 *)(e0 + 0x1D6);
     asm volatile("mult\t%0, %1" : : "r"(e01d6), "r"(len));
-    car = D_800A3554[0];
+    car = gPlayerCar[0];
     car1d6 = *(s16 *)(car + 0x1D6);
     asm volatile("mflo %0" : "=r"(prod1));
     asm volatile("mult\t%0, %1" : : "r"(car1d6), "r"(len));
@@ -5332,9 +5339,9 @@ void func_8004EA34(void) {
             D_800A34B4 = (s32)strtok((char *)0, D_800A303C);
         }
         asm volatile("" : : : "memory");
-        if (*(s32 *)(D_800A3554[0] + 0x3E8) != 0) {
-            e0 = *(u8 **)(*(u8 **)(D_800A3554[0] + 0x3E8) + 8);
-            len = D_800BE974[0];
+        if (*(s32 *)(gPlayerCar[0] + 0x3E8) != 0) {
+            e0 = *(u8 **)(*(u8 **)(gPlayerCar[0] + 0x3E8) + 8);
+            len = gTrackSectionCount[0];
             other1d6 = *(s16 *)(e0 + 0x1D6);
             asm volatile("mult\t%0, %1" : : "r"(other1d6), "r"(len));
             otherdist = *(s16 *)(e0 + 0x1E0);
@@ -5343,8 +5350,8 @@ void func_8004EA34(void) {
                          : "0"(otherdist));
             if (refDist - otherdist < len) {
                 rel = *(s32 *)(e0 + 0x264);
-                if (*(s8 *)(D_800A3554[0] + 0x204) != 1) {
-                    rel -= *(s32 *)(D_800A3554[0] + 0x264);
+                if (*(s8 *)(gPlayerCar[0] + 0x204) != 1) {
+                    rel -= *(s32 *)(gPlayerCar[0] + 0x264);
                 }
                 name2 = *(char **)(e0 + 0x34C);
                 D_800A34C0 = rel;
@@ -5392,7 +5399,7 @@ void MenuDrawTimingAndScoring(void) {
     u8 i;
 
     GraphicsSetColor(128, 128, 192);
-    sprintfHud(caption, D_8008D4F4, *(char **)(D_800A3554[0] + 0x34C),
+    sprintfHud(caption, D_8008D4F4, *(char **)(gPlayerCar[0] + 0x34C),
                D_8009A3F8[0], D_8009A31C[D_800A2CE0[0]]);
     titleTable = D_8009AE70;
     width = HudTextWidth((u8 *)titleTable[0]);
@@ -5432,7 +5439,7 @@ void MenuDrawTimingAndScoring(void) {
         D_800A3700 = 0;
         D_800A3924 = D_800A3614;
     }
-    position = (s32 *)D_800A3554[0];
+    position = (s32 *)gPlayerCar[0];
     scale = D_800A34C4;
     track = D_800A2CE0[0] * 2;
     D_800A8A84[0].x0 = 300 - D_80099230[track] - position[0] / scale - 3;
@@ -5534,7 +5541,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
             if (speed == 0x7FFF) {
                 func_80050028Row(D_8009AE90[0], 215, y, 3);
             } else {
-                if (D_800A3554[0][0xF7]) {
+                if (gPlayerCar[0][0xF7]) {
                     speedValue = speed * 292 / 550;
                 } else {
                     speedValue = speed * 210 / 550;
@@ -5550,7 +5557,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         if (speed == 0x7FFF) {
             func_80050028Row(D_8009AE90[0], 215, textY, 3);
         } else {
-            if (D_800A3554[0][0xF7]) {
+            if (gPlayerCar[0][0xF7]) {
                 speedValue = speed * 292 / 550;
             } else {
                 speedValue = speed * 210 / 550;
@@ -5732,20 +5739,20 @@ void func_8004F880(void) {
     p = D_800992D0;
     if (D_800992D0[idx] > 0) {
         i = 0;
-        q = &D_800BE974[0];
+        q = &gTrackSectionCount[0];
         pm = (s32)p;
         w = (x << 18) >> 16;
     loopM:
         *(u16 *)(D_800A8AB4 + i * 4) =
             0x12C - D_80099230[idx * 2] -
-            *(s32 *)((u8 *)D_800BE980[0] +
+            *(s32 *)((u8 *)gTrackSections[0] +
                      (i * q[0] / *(s8 *)(idx + pm)) * 0x90 + 0x14) /
                 w -
             4;
         uvBase = q[0];
         *(u16 *)(D_800A8AB6 + i * 4) =
             D_80099231[idx * 2] +
-            *(s32 *)((u8 *)D_800BE980[0] +
+            *(s32 *)((u8 *)gTrackSections[0] +
                      (i * uvBase / *(s8 *)(idx + pm)) * 0x90 + 0x18) /
                 w +
             0xE;
@@ -5768,7 +5775,7 @@ void func_8004F880(void) {
     D_800A8AA8[0] = tim->u + 0x6F;
     D_800A8AA9[0] = (u8)tim->v + 0xF;
     D_800A8A9A[0] = GetTPage(tim->tpage, 0, tim->tpx, tim->tpy);
-    car = D_800A3554[0];
+    car = gPlayerCar[0];
     *(u16 *)(car + 0x2A4) = *(u16 *)(car + 0x2A0) + 8;
     *(u16 *)(car + 0x2AA) = *(u16 *)(car + 0x2A6) + 8;
 }
@@ -5804,11 +5811,11 @@ void func_8004FCF4(void) {
     entry = (u8 *)(D_800A3498 * 4 + (s32)D_800A8A80[0]);
     slot = (LapTimeSlot *)(entry + 0x10);
     if (D_800A3498 == 0) {
-        lapTime = *(s32 *)(D_800A3554[0] + 0x258);
+        lapTime = *(s32 *)(gPlayerCar[0] + 0x258);
     } else {
-        lapTime = *(s32 *)(D_800A3554[0] + 0x258) - *(s32 *)(entry + 0x1C);
+        lapTime = *(s32 *)(gPlayerCar[0] + 0x258) - *(s32 *)(entry + 0x1C);
     }
-    car = D_800A3554[0];
+    car = gPlayerCar[0];
     slot->lapTime = lapTime;
     speed = *(s16 *)(car + 0x92);
     *(s16 *)(D_800A3498 * 2 + D_800A8A80[0] + 6) = speed;
@@ -5848,9 +5855,9 @@ void func_8004FCF4(void) {
 
 extern u8 *D_800A8A80[];
 void func_8004FF3C(void) {
-    D_800A8A80[0][0] = *(u16 *)(D_800A3554[0] + 0x2AA);
-    D_800A8A80[0][1] = *(u16 *)(D_800A3554[0] + 0x2A4);
-    *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(D_800A3554[0] + 0x1D6);
+    D_800A8A80[0][0] = *(u16 *)(gPlayerCar[0] + 0x2AA);
+    D_800A8A80[0][1] = *(u16 *)(gPlayerCar[0] + 0x2A4);
+    *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(gPlayerCar[0] + 0x1D6);
 }
 
 extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
@@ -6199,14 +6206,14 @@ void HudUpdateFlagOverlay(void) {
     if (D_800A2EFCLui[0] != 0) {
         if (D_800A35D4 == 0) {
             if (D_800A372C == 0 || D_800A3764 != 0) {
-                D_800A3414 = D_800A3554[0][0x209];
-                D_800A3554[0][0x209] = (s8)D_800A3554[0][0x209] > 0;
+                D_800A3414 = gPlayerCar[0][0x209];
+                gPlayerCar[0][0x209] = (s8)gPlayerCar[0][0x209] > 0;
                 if (D_800A2EA4[0] != 0) {
                     D_800A3418 = D_800A3428[0x209];
                     D_800A3428[0x209] = (s8)D_800A3428[0x209] > 0;
                 }
-                if (D_800A3554[0][0x268] != 0) {
-                    D_800A35D0 = *(s16 *)(D_800A3554[0] + 0x286);
+                if (gPlayerCar[0][0x268] != 0) {
+                    D_800A35D0 = *(s16 *)(gPlayerCar[0] + 0x286);
                 } else {
                     D_800A35D0 = D_800A2EC4Lui[0];
                 }
@@ -6238,15 +6245,15 @@ void HudUpdateFlagOverlay(void) {
             if (D_800A34D4 == 0) {
                 switch (D_800A2F00Lui[0]) {
                 case 1:
-                    car = D_800A3554[0];
+                    car = gPlayerCar[0];
                     func_80041564(car, D_800A35A4 != 0 ? 0x2B : 0x21);
                     break;
                 case 2:
-                    car = D_800A3554[0];
+                    car = gPlayerCar[0];
                     func_80041564(car, 0x22);
                     break;
                 case 3:
-                    car = D_800A3554[0];
+                    car = gPlayerCar[0];
                     if (car[0xF4] != 0) {
                         func_80041564(car, 0x2A);
                     }
@@ -6266,11 +6273,11 @@ void HudUpdateFlagOverlay(void) {
     } else if (D_800A35D4 != 0) {
         D_800A35D4 = 0;
         if (D_800A2EACAbsolute[0] == 0 && D_800A372C == 0) {
-            D_800A3554[0][0x209] = D_800A3414;
+            gPlayerCar[0][0x209] = D_800A3414;
             if (D_800A2EA4[0] != 0) {
                 D_800A3428[0x209] = D_800A3418;
             }
-            if (D_800A3554[0][0x268] == 0) {
+            if (gPlayerCar[0][0x268] == 0) {
                 D_800A2EC4Lui[0] = D_800A35D0;
             }
         }
@@ -6353,35 +6360,35 @@ void func_800511E4(void) {
     D_800A8B90[0] = x + 0x20;
     D_800A8B91[0] = y + 0x18;
     D_800A8AEC[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[2] + 0x600)) >>
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[2] + 0x600)) >>
          0x10) +
         0x122;
     D_800A8AEE[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[4] + 0x600)) >>
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[4] + 0x600)) >>
          0x10) +
         0x3C;
     D_800A8AF0[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[2] + 0x600)) >>
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[2] + 0x600)) >>
          0x10) +
         0x122;
     D_800A8AF2[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[4] + 0x600)) >>
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[4] + 0x600)) >>
          0x10) +
         0x3C;
     D_800A8AF4[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[2] + 0xA00)) >>
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[2] + 0xA00)) >>
          0x10) +
         0x122;
     D_800A8AF6[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)D_800A3A24[4] + 0xA00)) >>
+        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[4] + 0xA00)) >>
          0x10) +
         0x3C;
     D_800A8AF8[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[2] + 0xA00)) >>
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[2] + 0xA00)) >>
          0x10) +
         0x122;
     D_800A8AFA[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)D_800A3A24[4] + 0xA00)) >>
+        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[4] + 0xA00)) >>
          0x10) +
         0x3C;
 }
@@ -6472,7 +6479,7 @@ void func_8005157C(void) {
     s32 pos;
 
     car = (QueueCar *)D_800A35E0[0];
-    playerDist = (car->lap - 1) * D_800BE974[0] + car->unk1E0;
+    playerDist = (car->lap - 1) * gTrackSectionCount[0] + car->unk1E0;
     ahead = 0;
     linked = 0;
     behind = 0;
@@ -6510,7 +6517,7 @@ void func_8005157C(void) {
                         D_800A3A64 = car;
                     }
                 } else if (playerDist <
-                           car->lap * D_800BE974[0] + car->unk1E0) {
+                           car->lap * gTrackSectionCount[0] + car->unk1E0) {
                     car->unk3FE = -1;
                     car->unk3FF = -1;
                     arr[ahead * 2] = car;
@@ -6534,7 +6541,7 @@ void func_8005157C(void) {
         car = car->unk3F4->next;
     }
     if (D_800A3A64 == 0) {
-        D_800A3A64 = (QueueCar *)D_800A3554[0];
+        D_800A3A64 = (QueueCar *)gPlayerCar[0];
     }
     car = D_800A3A64;
     pos = 0;
@@ -6959,7 +6966,7 @@ void SceneSkyFadeDraw(void) {
                     GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        D_800A3A3CAbsolute[-29] =
+                        gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
@@ -6999,7 +7006,7 @@ void SceneSkyFadeDraw(void) {
                     GraphicsAddPolyFT4((u8 *)argument);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        D_800A3A3CAbsolute[-29] =
+                        gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
@@ -7139,7 +7146,7 @@ void SceneSkyFadeDraw(void) {
                     GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        D_800A3A3CAbsolute[-29] =
+                        gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
@@ -7179,7 +7186,7 @@ void SceneSkyFadeDraw(void) {
                     GraphicsAddPolyFT4((u8 *)argument);
                     if (D_800A2EA4Absolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        D_800A3A3CAbsolute[-29] =
+                        gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
@@ -7270,7 +7277,7 @@ void SceneSkyFadeDraw(void) {
     func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
     if (D_800A2EA4Absolute[0] != 0) {
         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-        D_800A3A3CAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
+        gReplayIndexAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
         GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
         func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
         bank = gOrderingTableBankAbsolute[0] - 1;
@@ -7525,9 +7532,11 @@ loop2:
         *(u16 *)(tex2 + 0x3E) = *(u16 *)(entry + 0x18) = coords[1][1];
         *(u16 *)(tex2 + 0x40) = *(u16 *)(entry + 0x1A) = coords[2][1];
         if (*(s16 *)tex2 != -1) {
-            node = *(u8 **)((u8 *)D_800BE980[0] + *(s16 *)tex2 * 0x90 + 0x74);
+            node =
+                *(u8 **)((u8 *)gTrackSections[0] + *(s16 *)tex2 * 0x90 + 0x74);
             if (*(u8 **)(node + 0x54) == 0) {
-                *(u8 **)((u8 *)D_800BE980[0] + *(s16 *)tex2 * 0x90 + 0x74) = 0;
+                *(u8 **)((u8 *)gTrackSections[0] + *(s16 *)tex2 * 0x90 + 0x74) =
+                    0;
             } else {
                 while (*(u8 **)(*(u8 **)(node + 0x54) + 0x54) != 0) {
                     node = *(u8 **)(node + 0x54);
@@ -7549,8 +7558,8 @@ loop2:
             asm volatile("");
             *(u16 *)slot = owner;
             *(u8 **)(slot + 0x54) =
-                *(u8 **)((u8 *)D_800BE980[0] + key * 0x90 + 0x74);
-            *(u8 **)((u8 *)D_800BE980[0] + key * 0x90 + 0x74) = slot;
+                *(u8 **)((u8 *)gTrackSections[0] + key * 0x90 + 0x74);
+            *(u8 **)((u8 *)gTrackSections[0] + key * 0x90 + 0x74) = slot;
         }
         if (*(u16 *)(entry + 0x22) == 2) {
             if (entry[0x24] != 0) {
@@ -7652,11 +7661,11 @@ void func_80052E18(void) {
         i++;
     } while (i < 100);
     i = 0;
-    while (i < D_800BE974[0]) {
-        *(s32 *)((u8 *)D_800BE980[0] + i * 0x90 + 0x74) = 0;
+    while (i < gTrackSectionCount[0]) {
+        *(s32 *)((u8 *)gTrackSections[0] + i * 0x90 + 0x74) = 0;
         i++;
     }
-    p = D_800A3878NM[0];
+    p = gCarListNM[0];
     while (p != 0) {
         for (i = 0; i < 4; i++) {
             entry = p + i * 0x28;
@@ -7686,7 +7695,7 @@ void func_8005301C(void) {
     if (D_800A2F9Dw15[0] == 0) {
         return;
     }
-    obj = D_800A3554[0];
+    obj = gPlayerCar[0];
     if (*(s8 *)(obj + 0x3B9) != 0) {
         func_8003FC0C(
             0x14, (s8)(*(s16 *)(obj + 0x92) * 8 / *(s16 *)(obj + 0x9A) + 0x2C),
@@ -7702,7 +7711,7 @@ void func_8005301C(void) {
     if (D_800A2EA4Absolute[0] == 0) {
         return;
     }
-    obj = *(u8 **)(D_800A3554[0] + 0x3E0);
+    obj = *(u8 **)(gPlayerCar[0] + 0x3E0);
     if (*(s8 *)(obj + 0x3B9) != 0) {
         func_8003FC0C(
             0x15, (s8)(*(s16 *)(obj + 0x92) * 8 / *(s16 *)(obj + 0x9A) + 0x2C),
@@ -7733,7 +7742,7 @@ extern s32 D_800A36B4w6c[] asm("D_800A36B4");
 extern u8 D_800A3A58Lui asm("D_800A3A58Absolute");
 extern s32 D_800A335C[];
 extern u8 D_800A3884[];
-extern s32 D_800A39C8Absolute[];
+extern s32 gOrderingTableAbsolute[];
 
 void func_80057FC8(s32 hide);
 void func_8006D4C8(s32, s32);
@@ -7820,7 +7829,7 @@ void MenuRunFrontEnd(void) {
         ot = gOrderingTables + (bank << 12);
         D_800A305C = bank;
         gOrderingTableBankAbsolute[0] = bank;
-        D_800A39C8[0] = (s32)ot;
+        gOrderingTable[0] = (s32)ot;
         ClearOTagR((OT_TYPE *)ot, 0x400);
         func_80014A40((u8)D_800A305C);
         func_8005A7B8(1, 1);
@@ -7830,7 +7839,7 @@ void MenuRunFrontEnd(void) {
         func_80058030();
         D_800A3710Small.x = -(D_800A305C != 0) & 0x140;
         LoadImage(D_800A3710, (u_long *)D_800A35F0);
-        DrawOTag((OT_TYPE *)(D_800A39C8Absolute[0] + 0xFFC));
+        DrawOTag((OT_TYPE *)(gOrderingTableAbsolute[0] + 0xFFC));
         D_800A305C = D_800A305C == 0;
         func_80058030();
     } else if (D_800A39E4Small != 0xF8) {
@@ -7972,10 +7981,10 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "D_800A3608.MainLoop = D_800A3608\n"
         "D_800A3644.MainLoop = D_800A3644\n"
         "D_800A3690.MainLoop = D_800A3690\n"
-        "D_800A36E0.MainLoop = D_800A36E0\n"
+        "gPlayerDriver.MainLoop = gPlayerDriver\n"
         "D_800A3710.MainLoop = D_800A3710\n"
         "D_800A3724.MainLoop = D_800A3724\n"
-        "D_800A3808.MainLoop = D_800A3808\n"
+        "gCardMenuMessage.MainLoop = gCardMenuMessage\n"
         "D_800A3928.MainLoop = D_800A3928\n"
         "D_800A3950.MainLoop = D_800A3950\n"
         "D_800A3968.MainLoop = D_800A3968\n"
@@ -7993,31 +8002,31 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "D_800A3685.MainLoop7 = D_800A3685\n"
         "gOrderingTables.MainLoop8 = gOrderingTables\n"
         "gOrderingTableBank.MainLoop9 = gOrderingTableBank\n"
-        "D_800A39C8.MainLoop10 = D_800A39C8\n"
-        "D_800A39C8.MainLoop11 = D_800A39C8\n"
+        "gOrderingTable.MainLoop10 = gOrderingTable\n"
+        "gOrderingTable.MainLoop11 = gOrderingTable\n"
         "D_800A3685.MainLoop12 = D_800A3685\n"
         "D_800A37D8.MainLoop13 = D_800A37D8\n"
         "D_800A37DC.MainLoop14 = D_800A37DC\n"
         "D_800A3684.MainLoop15 = D_800A3684\n"
-        "D_800A3A24.MainLoop16 = D_800A3A24\n"
+        "gPadType.MainLoop16 = gPadType\n"
         "D_800A3684.MainLoop17 = D_800A3684\n"
-        "D_800A3A24.MainLoop18 = D_800A3A24\n"
-        "D_800A307C.MainLoop19 = D_800A307C\n"
-        "D_800A3A24.MainLoop20 = D_800A3A24\n"
+        "gPadType.MainLoop18 = gPadType\n"
+        "gPadLayout.MainLoop19 = gPadLayout\n"
+        "gPadType.MainLoop20 = gPadType\n"
         "D_800A3888.MainLoop21 = D_800A3888\n"
         "D_800A3684.MainLoop22 = D_800A3684\n"
-        "D_800A307C.MainLoop23 = D_800A307C\n"
-        "D_800A3A24.MainLoop24 = D_800A3A24\n"
+        "gPadLayout.MainLoop23 = gPadLayout\n"
+        "gPadType.MainLoop24 = gPadType\n"
         "D_800A3888.MainLoop25 = D_800A3888\n"
         "D_800A3684.MainLoop26 = D_800A3684\n"
         "D_800A36E4.MainLoop27 = D_800A36E4\n"
         "D_800A3685.MainLoop28 = D_800A3685\n"
         "D_800A37F8.MainLoop29 = D_800A37F8\n"
         "D_800A3684.MainLoop30 = D_800A3684\n"
-        "D_800A3A24.MainLoop31 = D_800A3A24\n"
-        "D_800A307C.MainLoop32 = D_800A307C\n"
-        "D_800A3A24.MainLoop33 = D_800A3A24\n"
-        "D_800A3808.MainLoop51 = D_800A3808\n"
+        "gPadType.MainLoop31 = gPadType\n"
+        "gPadLayout.MainLoop32 = gPadLayout\n"
+        "gPadType.MainLoop33 = gPadType\n"
+        "gCardMenuMessage.MainLoop51 = gCardMenuMessage\n"
         "D_800A3770.MainLoop57 = D_800A3770\n"
         "D_800A3770.MainLoop58 = D_800A3770\n"
         "D_800A38E8.MainLoop59 = D_800A38E8\n"
@@ -8029,17 +8038,17 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "D_800A3988.MainLoop65 = D_800A3988\n"
         "D_800A3988.MainLoop66 = D_800A3988\n"
         "D_800A3684.MainLoop67 = D_800A3684\n"
-        "D_800A3A24.MainLoop68 = D_800A3A24\n"
+        "gPadType.MainLoop68 = gPadType\n"
         "D_800A3684.MainLoop69 = D_800A3684\n"
         "D_800A3080.MainLoop70 = D_800A3080\n"
-        "D_800A3A24.MainLoop71 = D_800A3A24\n"
-        "D_800A307C.MainLoop72 = D_800A307C\n"
+        "gPadType.MainLoop71 = gPadType\n"
+        "gPadLayout.MainLoop72 = gPadLayout\n"
         "D_800A3684.MainLoop73 = D_800A3684\n"
-        "D_800A3A24.MainLoop74 = D_800A3A24\n"
+        "gPadType.MainLoop74 = gPadType\n"
         "D_800A3684.MainLoop75 = D_800A3684\n"
-        "D_800A307C.MainLoop76 = D_800A307C\n"
+        "gPadLayout.MainLoop76 = gPadLayout\n"
         "D_800A3080.MainLoop77 = D_800A3080\n"
-        "D_800A3A24.MainLoop78 = D_800A3A24\n"
+        "gPadType.MainLoop78 = gPadType\n"
         "D_800A3A25.MainLoop79 = D_800A3A25\n"
         "D_800A3059.MainLoopPostUp = D_800A3059\n"
         "D_800A3059.MainLoopPostDown = D_800A3059\n");
@@ -8149,10 +8158,10 @@ extern u32 *D_800A35F0MainLoop asm("D_800A35F0.MainLoop");
 extern u8 D_800A3608MainLoop asm("D_800A3608.MainLoop");
 extern u8 D_800A3644MainLoop asm("D_800A3644.MainLoop");
 extern u16 D_800A3690MainLoop[] asm("D_800A3690.MainLoop");
-extern u8 D_800A36E0MainLoop asm("D_800A36E0.MainLoop");
+extern u8 gPlayerDriverMainLoop asm("gPlayerDriver.MainLoop");
 extern s16 D_800A3710MainLoop asm("D_800A3710.MainLoop");
 extern u8 D_800A3724MainLoop asm("D_800A3724.MainLoop");
-extern u8 D_800A3808MainLoop[] asm("D_800A3808.MainLoop");
+extern u8 gCardMenuMessageMainLoop[] asm("gCardMenuMessage.MainLoop");
 extern u8 D_800A3928MainLoop asm("D_800A3928.MainLoop");
 extern u8 D_800A3950MainLoop asm("D_800A3950.MainLoop");
 extern u8 D_800A3968MainLoop[] asm("D_800A3968.MainLoop");
@@ -8171,31 +8180,31 @@ extern u8 D_800A3685MainLoopSite7[] asm("D_800A3685.MainLoop7");
 extern u8 gOrderingTablesMainLoopSite8[] asm("gOrderingTables.MainLoop8");
 extern s32
     gOrderingTableBankMainLoopSite9[] asm("gOrderingTableBank.MainLoop9");
-extern u32 *D_800A39C8MainLoopSite10[] asm("D_800A39C8.MainLoop10");
-extern u32 *D_800A39C8MainLoopSite11[] asm("D_800A39C8.MainLoop11");
+extern u32 *gOrderingTableMainLoopSite10[] asm("gOrderingTable.MainLoop10");
+extern u32 *gOrderingTableMainLoopSite11[] asm("gOrderingTable.MainLoop11");
 extern u8 D_800A3685MainLoopSite12[] asm("D_800A3685.MainLoop12");
 extern u8 *D_800A37D8MainLoopSite13[] asm("D_800A37D8.MainLoop13");
 extern u8 *D_800A37DCMainLoopSite14[] asm("D_800A37DC.MainLoop14");
 extern u8 D_800A3684MainLoopSite15[] asm("D_800A3684.MainLoop15");
-extern s8 D_800A3A24MainLoopSite16[] asm("D_800A3A24.MainLoop16");
+extern s8 gPadTypeMainLoopSite16[] asm("gPadType.MainLoop16");
 extern u8 D_800A3684MainLoopSite17[] asm("D_800A3684.MainLoop17");
-extern s8 D_800A3A24MainLoopSite18[] asm("D_800A3A24.MainLoop18");
-extern s8 D_800A307CMainLoopSite19[] asm("D_800A307C.MainLoop19");
-extern s8 D_800A3A24MainLoopSite20[] asm("D_800A3A24.MainLoop20");
+extern s8 gPadTypeMainLoopSite18[] asm("gPadType.MainLoop18");
+extern s8 gPadLayoutMainLoopSite19[] asm("gPadLayout.MainLoop19");
+extern s8 gPadTypeMainLoopSite20[] asm("gPadType.MainLoop20");
 extern u8 *D_800A3888MainLoopSite21[] asm("D_800A3888.MainLoop21");
 extern u8 D_800A3684MainLoopSite22[] asm("D_800A3684.MainLoop22");
-extern s8 D_800A307CMainLoopSite23[] asm("D_800A307C.MainLoop23");
-extern s8 D_800A3A24MainLoopSite24[] asm("D_800A3A24.MainLoop24");
+extern s8 gPadLayoutMainLoopSite23[] asm("gPadLayout.MainLoop23");
+extern s8 gPadTypeMainLoopSite24[] asm("gPadType.MainLoop24");
 extern u8 *D_800A3888MainLoopSite25[] asm("D_800A3888.MainLoop25");
 extern u8 D_800A3684MainLoopSite26[] asm("D_800A3684.MainLoop26");
 extern u8 D_800A36E4MainLoopSite27[] asm("D_800A36E4.MainLoop27");
 extern u8 D_800A3685MainLoopSite28[] asm("D_800A3685.MainLoop28");
 extern u8 *D_800A37F8MainLoopSite29[] asm("D_800A37F8.MainLoop29");
 extern u8 D_800A3684MainLoopSite30[] asm("D_800A3684.MainLoop30");
-extern s8 D_800A3A24MainLoopSite31[] asm("D_800A3A24.MainLoop31");
-extern s8 D_800A307CMainLoopSite32[] asm("D_800A307C.MainLoop32");
-extern s8 D_800A3A24MainLoopSite33[] asm("D_800A3A24.MainLoop33");
-extern u8 D_800A3808MainLoopSite51[] asm("D_800A3808.MainLoop51");
+extern s8 gPadTypeMainLoopSite31[] asm("gPadType.MainLoop31");
+extern s8 gPadLayoutMainLoopSite32[] asm("gPadLayout.MainLoop32");
+extern s8 gPadTypeMainLoopSite33[] asm("gPadType.MainLoop33");
+extern u8 gCardMenuMessageMainLoopSite51[] asm("gCardMenuMessage.MainLoop51");
 extern u8 D_800A3770MainLoopSite57[] asm("D_800A3770.MainLoop57");
 extern u8 D_800A3770MainLoopSite58[] asm("D_800A3770.MainLoop58");
 extern u8 D_800A38E8MainLoopSite59[] asm("D_800A38E8.MainLoop59");
@@ -8207,17 +8216,17 @@ extern u8 D_800A38E8MainLoopSite64[] asm("D_800A38E8.MainLoop64");
 extern u8 D_800A3988MainLoopSite65[] asm("D_800A3988.MainLoop65");
 extern u8 D_800A3988MainLoopSite66[] asm("D_800A3988.MainLoop66");
 extern u8 D_800A3684MainLoopSite67[] asm("D_800A3684.MainLoop67");
-extern s8 D_800A3A24MainLoopSite68[] asm("D_800A3A24.MainLoop68");
+extern s8 gPadTypeMainLoopSite68[] asm("gPadType.MainLoop68");
 extern u8 D_800A3684MainLoopSite69[] asm("D_800A3684.MainLoop69");
 extern s8 D_800A3080MainLoopSite70[] asm("D_800A3080.MainLoop70");
-extern s8 D_800A3A24MainLoopSite71[] asm("D_800A3A24.MainLoop71");
-extern s8 D_800A307CMainLoopSite72[] asm("D_800A307C.MainLoop72");
+extern s8 gPadTypeMainLoopSite71[] asm("gPadType.MainLoop71");
+extern s8 gPadLayoutMainLoopSite72[] asm("gPadLayout.MainLoop72");
 extern u8 D_800A3684MainLoopSite73[] asm("D_800A3684.MainLoop73");
-extern s8 D_800A3A24MainLoopSite74[] asm("D_800A3A24.MainLoop74");
+extern s8 gPadTypeMainLoopSite74[] asm("gPadType.MainLoop74");
 extern u8 D_800A3684MainLoopSite75[] asm("D_800A3684.MainLoop75");
-extern s8 D_800A307CMainLoopSite76[] asm("D_800A307C.MainLoop76");
+extern s8 gPadLayoutMainLoopSite76[] asm("gPadLayout.MainLoop76");
 extern s8 D_800A3080MainLoopSite77[] asm("D_800A3080.MainLoop77");
-extern s8 D_800A3A24MainLoopSite78[] asm("D_800A3A24.MainLoop78");
+extern s8 gPadTypeMainLoopSite78[] asm("gPadType.MainLoop78");
 extern s8 D_800A3A25MainLoopSite79[] asm("D_800A3A25.MainLoop79");
 extern u8 D_800A3059MainLoopPostUp asm("D_800A3059.MainLoopPostUp");
 extern u8 D_800A3059MainLoopPostDown asm("D_800A3059.MainLoopPostDown");
@@ -8372,7 +8381,7 @@ void func_80053D40(void) {
         case 2:
         case 8:
             index = 0;
-            D_800A3980MainLoop = func_8006AD0CMainLoop(D_800A36E0MainLoop);
+            D_800A3980MainLoop = func_8006AD0CMainLoop(gPlayerDriverMainLoop);
             D_800A3981MainLoopSite5[0] =
                 func_8006AD0CMainLoop(D_800A36E1MainLoopSite4[0]);
             currentPadCursor = &newPad[0];
@@ -8468,7 +8477,7 @@ void func_80053D40(void) {
                     (nextBufferIndex << 0xC) + gOrderingTablesMainLoopSite8;
                 D_800A305CMainLoop = nextBufferIndex;
                 gOrderingTableBankMainLoopSite9[0] = nextBufferIndex;
-                D_800A39C8MainLoopSite10[0] = orderingTable;
+                gOrderingTableMainLoopSite10[0] = orderingTable;
                 ClearOTagRMainLoop(orderingTable, 0x400);
                 func_80014A40MainLoop((s32)(u8)D_800A305CMainLoop);
                 func_80057DFCMainLoop();
@@ -8485,7 +8494,7 @@ void func_80053D40(void) {
                 D_800A3710MainLoop = -(D_800A305CMainLoop != 0) & 0x140;
                 LoadImageMainLoop(&D_800A3710MainLoop, D_800A35F0MainLoop);
                 DrawOTagMainLoop(
-                    (u32 *)((u8 *)D_800A39C8MainLoopSite11[0] + 0xFFC));
+                    (u32 *)((u8 *)gOrderingTableMainLoopSite11[0] + 0xFFC));
                 if (displayPhase == 0) {
                     displayPhase = 1;
                 }
@@ -8544,7 +8553,7 @@ void func_80053D40(void) {
                     index = 0;
                     sequenceCursor = &playerUnlockSteps[0];
                     asm("" : "=r"(sequenceCursor) : "0"(sequenceCursor));
-                    selectionCursor = &D_800A36E0MainLoop;
+                    selectionCursor = &gPlayerDriverMainLoop;
                     asm("" : "=r"(selectionCursor) : "0"(selectionCursor));
                 readPlayerUnlockSequence:
                     if ((index != one) || (D_800A3644MainLoop != 0)) {
@@ -8651,22 +8660,21 @@ void func_80053D40(void) {
                                         D_800A3684MainLoopSite15[index];
                                     if (transitionPhase == 0) {
                                         SoundPlaySlotMainLoop(0, 3);
-                                        if (func_8004229CMainLoop((
-                                                s32)(u8)D_800A3A24MainLoopSite16
-                                                                      [index]) &
+                                        if (func_8004229CMainLoop(
+                                                (s32)(u8)gPadTypeMainLoopSite16
+                                                    [index]) &
                                             0xFF) {
                                             func_80062874MainLoop(index, 1);
                                             D_800A3684MainLoopSite17[index] =
                                                 one;
                                             func_8006DE68MainLoop(
                                                 (u32)index,
-                                                (u32)(u8)
-                                                    D_800A3A24MainLoopSite18
-                                                        [index]);
+                                                (u32)(u8)gPadTypeMainLoopSite18
+                                                    [index]);
                                             func_80062F04MainLoop(
                                                 index,
-                                                D_800A3A24MainLoopSite20[index],
-                                                D_800A307CMainLoopSite19
+                                                gPadTypeMainLoopSite20[index],
+                                                gPadLayoutMainLoopSite19
                                                     [index]);
                                             animationStartX = -0x140;
                                             animationNodeSlot =
@@ -8699,8 +8707,8 @@ void func_80053D40(void) {
                                         PadCalibrateCenterMainLoop(
                                             (u32)index,
                                             (u32)(u8)
-                                                D_800A3A24MainLoopSite24[index],
-                                            (u32)(u8)D_800A307CMainLoopSite23
+                                                gPadTypeMainLoopSite24[index],
+                                            (u32)(u8)gPadLayoutMainLoopSite23
                                                 [index]);
                                         func_80062874MainLoop(index, 0);
                                         animationEndX = 0x140;
@@ -8733,18 +8741,17 @@ void func_80053D40(void) {
                                                 0x140, 4);
                                         }
                                     }
-                                } else if ((func_8004229CMainLoop((
-                                                s32)(u8)D_800A3A24MainLoopSite31
-                                                                      [index]) &
+                                } else if ((func_8004229CMainLoop(
+                                                (s32)(u8)gPadTypeMainLoopSite31
+                                                    [index]) &
                                             0xFF) &&
                                            (D_800A3684MainLoopSite30[index] ==
                                             one)) {
                                     PadCalibrateRangeMainLoop(
                                         (u32)index,
+                                        (u32)(u8)gPadTypeMainLoopSite33[index],
                                         (u32)(u8)
-                                            D_800A3A24MainLoopSite33[index],
-                                        (u32)(u8)
-                                            D_800A307CMainLoopSite32[index]);
+                                            gPadLayoutMainLoopSite32[index]);
                                 }
                             }
                             {
@@ -8833,7 +8840,8 @@ void func_80053D40(void) {
                                             }
                                             goto finishInput;
                                         confirmExitStatus:
-                                            exitPhase = D_800A3808MainLoop[0];
+                                            exitPhase =
+                                                gCardMenuMessageMainLoop[0];
                                             asm(""
                                                 : "=r"(exitPhase)
                                                 : "0"(exitPhase));
@@ -8881,7 +8889,7 @@ void func_80053D40(void) {
                                                 goto finishInput;
                                             }
                                             func_8006C5E4MainLoop(2);
-                                            D_800A3808MainLoop[0] = 0x15;
+                                            gCardMenuMessageMainLoop[0] = 0x15;
                                             CardMenuShowMessageMainLoop(0);
                                             animateX = -0x78;
                                             animateY = 0;
@@ -8897,7 +8905,7 @@ void func_80053D40(void) {
                                         } else if (D_800A3059MainLoop == 0 &&
                                                    D_800A3950MainLoop != 0) {
                                             func_8006C5E4MainLoop(4);
-                                            D_800A3808MainLoop[0] = 0x18;
+                                            gCardMenuMessageMainLoop[0] = 0x18;
                                             CardMenuShowMessageMainLoop(0);
                                             animateX = -0x78;
                                             animateY = 0;
@@ -8963,7 +8971,7 @@ void func_80053D40(void) {
                                         D_800A39E4MainLoop = 0x23;
                                         func_8006CF38MainLoop();
                                         func_8006C9F8MainLoop();
-                                        D_800A3808MainLoop[0] = 0;
+                                        gCardMenuMessageMainLoop[0] = 0;
                                         func_80069AFCMainLoop(
                                             D_800A39E4MainLoop);
                                         goto finishInput;
@@ -8989,26 +8997,26 @@ void func_80053D40(void) {
                                                     SoundStopSlotMainLoop(0);
                                                 } else {
                                                     func_8006C9DCMainLoop();
-                                                    if (D_800A3808MainLoop[0] ==
-                                                        0) {
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == 0) {
                                                         if (func_8006D0C0MainLoop() ==
                                                             one) {
                                                             goto refreshCardMenu;
                                                         }
-                                                        if (D_800A3808MainLoop
+                                                        if (gCardMenuMessageMainLoop
                                                                 [0] == 0) {
                                                             goto updateCardStatus;
                                                         }
                                                     }
-                                                    if (D_800A3808MainLoop[0] ==
-                                                        0x10) {
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == 0x10) {
                                                     updateCardStatus:
                                                         func_800599E4MainLoop();
                                                         if (!(func_80069F30MainLoop() &
                                                               0xFF)) {
                                                             CardMenuShowMessageMainLoop(
                                                                 0);
-                                                            if (D_800A3808MainLoop
+                                                            if (gCardMenuMessageMainLoop
                                                                     [0] !=
                                                                 mode13) {
                                                                 D_800A3928MainLoop =
@@ -9016,13 +9024,13 @@ void func_80053D40(void) {
                                                             }
                                                         }
                                                         func_800598C4MainLoop();
-                                                        if (D_800A3808MainLoop
+                                                        if (gCardMenuMessageMainLoop
                                                                 [0] == mode13) {
                                                             goto finishInput;
                                                         }
                                                     }
-                                                    if (D_800A3808MainLoop[0] ==
-                                                        mode13) {
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == mode13) {
                                                         SoundStopSlotMainLoop(
                                                             0);
                                                         goto playBackSound;
@@ -9052,12 +9060,12 @@ void func_80053D40(void) {
                                         }
                                         goto finishInput;
                                     confirmStageZero:
-                                        D_800A3808MainLoop[0] = 0x17;
+                                        gCardMenuMessageMainLoop[0] = 0x17;
                                         cardOperation = 0;
                                         goto startCardOperation;
                                     confirmStageOne:
                                         if (func_8006D258MainLoop() == one) {
-                                            D_800A3808MainLoop[0] = 0x12;
+                                            gCardMenuMessageMainLoop[0] = 0x12;
                                         }
                                         D_800A3928MainLoop = two;
                                     refreshCardMenu:
@@ -9093,7 +9101,8 @@ void func_80053D40(void) {
                                         if (D_800A3950MainLoop == 0xFB) {
                                             SoundPlaySlotMainLoop(0, 4);
                                             D_800A39E4MainLoop = 0x26;
-                                            D_800A3808MainLoopSite51[0] = 0x16;
+                                            gCardMenuMessageMainLoopSite51[0] =
+                                                0x16;
                                             CardMenuShowMessageMainLoop(0);
                                             func_8006C5E4MainLoop(3);
                                             func_8006C598MainLoop(-0x78, 0, 2);
@@ -9121,7 +9130,8 @@ void func_80053D40(void) {
                                     asm("" : : "r"(cancelMode));
                                     switch (cancelMode) {
                                     case 0xFC:
-                                        if (D_800A3808MainLoop[0] != two &&
+                                        if (gCardMenuMessageMainLoop[0] !=
+                                                two &&
                                             D_800A3928MainLoop == 0) {
                                             register s32 cardStatus asm("v0");
                                             SoundPlaySlotMainLoop(0, 3);
@@ -9135,7 +9145,8 @@ void func_80053D40(void) {
                                                 cardStatus = 0x13;
                                             }
                                             asm("" : : "r"(cardStatus));
-                                            D_800A3808MainLoop[0] = cardStatus;
+                                            gCardMenuMessageMainLoop[0] =
+                                                cardStatus;
                                             func_800598C4MainLoop();
                                             cardOperation = 1;
                                         startCardOperation:
@@ -9146,15 +9157,17 @@ void func_80053D40(void) {
                                         break;
                                     case 0x23:
                                         if (D_800A3928MainLoop == 0) {
-                                            if (D_800A3808MainLoop[0] ==
+                                            if (gCardMenuMessageMainLoop[0] ==
                                                     mode13 ||
-                                                (u32)(D_800A3808MainLoop[0] -
+                                                (u32)(gCardMenuMessageMainLoop
+                                                          [0] -
                                                       0x19) < 2U) {
                                                 SoundPlaySlotMainLoop(0, 3);
                                                 func_800599E4MainLoop();
                                                 if (!(func_80069EB8MainLoop() &
                                                       0xFF)) {
-                                                    D_800A3808MainLoop[0] = 4;
+                                                    gCardMenuMessageMainLoop
+                                                        [0] = 4;
                                                     CardMenuShowMessageMainLoop(
                                                         0);
                                                     D_800A3928MainLoop = one;
@@ -9162,8 +9175,8 @@ void func_80053D40(void) {
                                                 } else {
                                                     func_800598C4MainLoop();
                                                 checkCardMenuReady:
-                                                    if (D_800A3808MainLoop[0] ==
-                                                        0) {
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == 0) {
                                                         func_8006D0F0MainLoop();
                                                         CardMenuShowMessageMainLoop(
                                                             0);
@@ -9613,7 +9626,7 @@ void func_80053D40(void) {
                                             (padBits &
                                              ((u16)~oldPad[index] & 0x8000))) {
                                             if (!(func_8004229CMainLoop(
-                                                      (u8)D_800A3A24MainLoopSite68
+                                                      (u8)gPadTypeMainLoopSite68
                                                           [index]) &
                                                   0xFF) ||
                                                 D_800A3684MainLoopSite67
@@ -9636,14 +9649,14 @@ void func_80053D40(void) {
                                                                 "v1");
                                                         variantCount =
                                                             D_800A3080MainLoopSite70
-                                                                [D_800A3A24MainLoopSite71
+                                                                [gPadTypeMainLoopSite71
                                                                      [index]];
                                                         asm(""
                                                             :
                                                             : "r"(
                                                                 variantCount));
                                                         variantValue =
-                                                            D_800A307CMainLoopSite72
+                                                            gPadLayoutMainLoopSite72
                                                                 [index];
                                                         countMinusOne =
                                                             variantCount - 1;
@@ -9664,7 +9677,7 @@ void func_80053D40(void) {
                                                             :
                                                             : "r"(
                                                                 variantRemainder));
-                                                        D_800A307CMainLoopSite72
+                                                        gPadLayoutMainLoopSite72
                                                             [index] =
                                                                 variantRemainder;
                                                     }
@@ -9688,7 +9701,7 @@ void func_80053D40(void) {
                                             (padBits &
                                              ((u16)~oldPad[index] & 0x2000))) {
                                             if (!(func_8004229CMainLoop(
-                                                      (u8)D_800A3A24MainLoopSite74
+                                                      (u8)gPadTypeMainLoopSite74
                                                           [index]) &
                                                   0xFF) ||
                                                 D_800A3684MainLoopSite73
@@ -9696,12 +9709,12 @@ void func_80053D40(void) {
                                                 if (D_800A3684MainLoopSite75
                                                         [index] == 0) {
                                                     SoundPlaySlotMainLoop(0, 2);
-                                                    D_800A307CMainLoopSite76[index] =
-                                                        (D_800A307CMainLoopSite76
+                                                    gPadLayoutMainLoopSite76[index] =
+                                                        (gPadLayoutMainLoopSite76
                                                              [index] +
                                                          1) %
                                                         D_800A3080MainLoopSite77
-                                                            [D_800A3A24MainLoopSite78
+                                                            [gPadTypeMainLoopSite78
                                                                  [index]];
                                                 }
                                             }
@@ -9772,7 +9785,7 @@ void func_80053D40(void) {
 
 void func_80055AA4(u8 arg0, s32 arg1) {
     extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");
-    extern u8 D_800A36E0[];
+    extern u8 gPlayerDriver[];
     extern char *gDriverNamesR[] asm("gDriverNames.NON_MATCHING");
     u8 other;
     u8 val;
@@ -9793,10 +9806,10 @@ void func_80055AA4(u8 arg0, s32 arg1) {
             D_800A3980[arg0] = val;
         }
     }
-    D_800A36E0[arg0] = D_8009AD40[D_800A3980[arg0]];
-    func_800636EC(arg0, D_800A36E0[arg0]);
-    func_80063AE0(arg0, D_800A36E0[arg0]);
-    strcpy(&D_800BB9B4[arg0 * 24], gDriverNamesR[D_800A36E0[arg0]]);
+    gPlayerDriver[arg0] = D_8009AD40[D_800A3980[arg0]];
+    func_800636EC(arg0, gPlayerDriver[arg0]);
+    func_80063AE0(arg0, gPlayerDriver[arg0]);
+    strcpy(&D_800BB9B4[arg0 * 24], gDriverNamesR[gPlayerDriver[arg0]]);
 }
 
 /* The repeated label aliases keep gcc from caching addresses that retail
@@ -10564,7 +10577,7 @@ void func_80056C84(s32 arg0, s32 arg1) {
     }
 }
 
-extern u8 D_800A36E0Small;
+extern u8 gPlayerDriverSmall;
 extern u8 D_800A361C;
 extern u8 D_800A305BSmall;
 void func_80056F04(s32 arg0) {
@@ -10592,7 +10605,7 @@ void func_80056F04(s32 arg0) {
         func_8005E644(D_800A305BSmall, -0x78, 2, flag);
         func_8005DF08(-0x78, 0, 2, flag);
         func_800631DC(-0x3C, 0x3C, 2);
-        func_80063AE0(0, D_800A36E0Small);
+        func_80063AE0(0, gPlayerDriverSmall);
         func_80063AE0(1, D_800A36E1[0]);
         switch (D_800A39E4Small) {
         case 2:
@@ -10607,10 +10620,10 @@ void func_80056F04(s32 arg0) {
     }
 }
 
-extern u8 D_800A3808a[] asm("D_800A3808.NON_MATCHING");
-extern u8 D_800A3808b[] asm("D_800A3814.NON_MATCHING");
-extern u8 D_800A3808c[] asm("D_800A380C.NON_MATCHING");
-extern u8 D_800A3808d[] asm("D_800A3810.NON_MATCHING");
+extern u8 gCardMenuMessagea[] asm("gCardMenuMessage.NON_MATCHING");
+extern u8 gCardMenuMessageb[] asm("D_800A3814.NON_MATCHING");
+extern u8 gCardMenuMessagec[] asm("D_800A380C.NON_MATCHING");
+extern u8 gCardMenuMessaged[] asm("D_800A3810.NON_MATCHING");
 extern u8 D_800A3968a[] asm("D_800A3968.NON_MATCHING");
 extern u8 D_800A3950nm asm("D_800A3950.NON_MATCHING");
 
@@ -10621,7 +10634,7 @@ void func_80057008(s32 arg0) {
     extern void func_8006BD68(void);
     extern u8 D_800A3928;
 
-    if (D_800A3808a[0] == 2 || !(arg0 & 0xFF)) {
+    if (gCardMenuMessagea[0] == 2 || !(arg0 & 0xFF)) {
         CardMenuShowMessage(0);
         m2 = D_800A3059;
         D_800A3928 = 1;
@@ -10638,18 +10651,18 @@ void func_80057008(s32 arg0) {
         if (D_800A3059 == 2) {
             func_8006BD68();
             D_800A3928 = 0;
-            D_800A3808b[-12] = 0;
+            gCardMenuMessageb[-12] = 0;
             D_800A39E4Small = 0x22;
             func_8006C5E4(0);
         } else if (D_800A3059 == 1) {
             if (D_800A3968a[0] == 0) {
-                D_800A3808c[-4] = 0x14;
+                gCardMenuMessagec[-4] = 0x14;
                 CardMenuShowMessage(0);
                 D_800A3928 = 2;
                 D_800A39E4Small = 0x24;
                 func_8006C5E4(1);
             } else {
-                D_800A3808d[-8] = 0;
+                gCardMenuMessaged[-8] = 0;
                 D_800A39E4Small = 0x24;
                 if (D_800A3950nm == 0) {
                     D_800A3928 = 1;
@@ -10693,7 +10706,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
     extern u8 D_800A3064;
     extern u8 D_800A3065;
     extern u8 D_800A374C;
-    extern u8 D_800A36E0[];
+    extern u8 gPlayerDriver[];
     extern s32 D_800AE178[];
     extern u8 D_800AD974[];
     extern u8 D_800AD974Other[] asm("D_800AD974");
@@ -10775,7 +10788,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
                 next = 4;
             } else {
                 for (i = 0; i < D_800A3644NM + 1; i++) {
-                    found = func_8006AD44(gDriverNames[D_800A36E0[i]]);
+                    found = func_8006AD44(gDriverNames[gPlayerDriver[i]]);
                     if (found != 0xFF) {
                         func_8006D424(i, found);
                     }
@@ -10817,7 +10830,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             default:
                 next = 0;
                 selection = 1;
-                found = func_8006AD44(gDriverNames[D_800A36E0Small]);
+                found = func_8006AD44(gDriverNames[gPlayerDriverSmall]);
                 if (found != 0xFF) {
                     func_8006D424(0, found);
                 } else {
@@ -10839,8 +10852,8 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             D_800A305BSmall = 0;
             next = 4;
             func_8006BA68();
-            D_800B9B73[0] = D_800A36E0Small;
-            strcpy(D_800B9B73 - 31, gDriverNames[D_800A36E0Small]);
+            D_800B9B73[0] = gPlayerDriverSmall;
+            strcpy(D_800B9B73 - 31, gDriverNames[gPlayerDriverSmall]);
         }
         break;
     case 5:
@@ -11319,7 +11332,7 @@ void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     SetDefDrawEnv((DRAWENV *)D_800A8C14, arg1, arg2, arg3, arg4);
     env = D_800A8B94 + arg0 * 0x40;
     SetDrawEnv((DR_ENV *)env, (DRAWENV *)D_800A8C14);
-    ot = (u32 *)D_800A39C8[0];
+    ot = (u32 *)gOrderingTable[0];
     AddPrim(ot + arg5, env);
 }
 
@@ -11390,7 +11403,7 @@ void func_80058148(void) {
     extern u8 D_800A3A60w45[] asm("D_800A3A60.NON_MATCHING");
     extern u8 D_800A3688w45[] asm("D_800A3688.NON_MATCHING");
     extern u8 D_800A36E4w45[] asm("D_800A36E4.NON_MATCHING");
-    extern u8 D_800A3A24w45[] asm("D_800A3A24.NON_MATCHING");
+    extern u8 gPadTypew45[] asm("gPadType.NON_MATCHING");
     s32 i;
 
     D_800A2EA8w45[0] = D_800A3814w45S;
@@ -11421,11 +11434,11 @@ void func_80058148(void) {
         D_800A3688w45[0] = 0;
     }
     for (i = 0; i < D_800A3644w45 + 1; i++) {
-        if ((func_8004229C(D_800A3A24w45[i]) & 0xFF) != 0) {
+        if ((func_8004229C(gPadTypew45[i]) & 0xFF) != 0) {
             if (D_800A36E4w45[i] != 0) {
-                func_8006E484(i, (s8)D_800A3A24w45[i]);
+                func_8006E484(i, (s8)gPadTypew45[i]);
             } else {
-                func_8006DD28(i & 0xFF, D_800A3A24w45[i]);
+                func_8006DD28(i & 0xFF, gPadTypew45[i]);
             }
         } else {
             func_8006DD28(i & 0xFF, 2);
@@ -11449,12 +11462,12 @@ extern s32 D_800AEB34[];
 s32 func_80014398(s32 arg0);
 
 /* Builds the qualifying order for a track: random times, the players at the
- * back, then a selection sort by time. D_800A36E0 is read as a 2-byte array
+ * back, then a selection sort by time. gPlayerDriver is read as a 2-byte array
  * so its loads stay behind the D_800AEB34 stores, as in retail.
  */
 void RaceBuildQualifyingGrid(s32 track) {
     extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
-    extern u8 D_800A36E0Pair[2] asm("D_800A36E0Small");
+    extern u8 gPlayerDriverPair[2] asm("gPlayerDriverSmall");
     extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");
     GridEntry entries[24];
     GridEntry tmp;
@@ -11473,7 +11486,7 @@ void RaceBuildQualifyingGrid(s32 track) {
 
     for (i = 0; i < 24; i++) {
         entries[i].id = D_800993D0[track][i];
-        if (entries[i].id == D_800A36E0Pair[0]) {
+        if (entries[i].id == gPlayerDriverPair[0]) {
             index0 = i;
         }
         if (entries[i].id == D_800A36E1Lui) {
@@ -11503,7 +11516,7 @@ void RaceBuildQualifyingGrid(s32 track) {
         }
     }
     for (i = 0; i < 24; i++) {
-        D_800BE70C[i] = entries[i].id;
+        gGridOrder[i] = entries[i].id;
         D_800B9DA4[entries[i].id] = i;
     }
     record = func_80014398(track);
@@ -11523,35 +11536,35 @@ void RaceBuildQualifyingGrid(s32 track) {
         times[i] = base + offset;
     }
     for (i = 0; i < 23; i++) {
-        D_800AEB34[D_800BE70C[i]] = times[i];
+        D_800AEB34[gGridOrder[i]] = times[i];
         D_800AE1EC[i] = times[i];
     }
     if (D_800A3644 != 0 && D_800A3073NM != 0) {
         if (RandomScaledGet(50) >= 26) {
             D_800B9DA4[D_800A36E1Lui] = 6;
-            D_800B9DA4[D_800A36E0Pair[0]] = 7;
-            D_800BE70C[6] = D_800A36E1Lui;
-            D_800BE70C[7] = D_800A36E0Pair[0];
+            D_800B9DA4[gPlayerDriverPair[0]] = 7;
+            gGridOrder[6] = D_800A36E1Lui;
+            gGridOrder[7] = gPlayerDriverPair[0];
         } else {
-            D_800B9DA4[D_800A36E0Pair[0]] = 6;
+            D_800B9DA4[gPlayerDriverPair[0]] = 6;
             D_800B9DA4[D_800A36E1Lui] = 7;
-            D_800BE70C[6] = D_800A36E0Pair[0];
-            D_800BE70C[7] = D_800A36E1Lui;
+            gGridOrder[6] = gPlayerDriverPair[0];
+            gGridOrder[7] = D_800A36E1Lui;
         }
         D_800AEB34[D_800A36E1Lui] = 0x7FFFFFFF;
-        D_800AEB34[D_800A36E0Pair[0]] = 0x7FFFFFFF;
+        D_800AEB34[gPlayerDriverPair[0]] = 0x7FFFFFFF;
         D_800AE1EC[7] = 0x7FFFFFFF;
         D_800AE1EC[6] = 0x7FFFFFFF;
     } else {
-        D_800AEB34[D_800BE70C[23]] = 0x7FFFFFFF;
+        D_800AEB34[gGridOrder[23]] = 0x7FFFFFFF;
         D_800AE1EC[23] = 0x7FFFFFFF;
     }
 }
 
-u8 TableFindByte(u8 value) {
+u8 RaceFindGridPosition(u8 value) {
     s32 i;
     for (i = 0; i < 24; i++) {
-        if (D_800BE70C[i] == value) {
+        if (gGridOrder[i] == value) {
             return i;
         }
     }
@@ -11604,8 +11617,8 @@ extern u8 *D_800A34FC;
 extern u16 *D_800A35F0;
 extern RECT D_800A3710[2];
 extern RECT D_800A3710Small asm("D_800A3710");
-extern s32 D_800A39C8store[] asm("D_800A39C8");
-extern s32 D_800A39C8draw[] asm("D_800A39C8");
+extern s32 gOrderingTablestore[] asm("gOrderingTable");
+extern s32 gOrderingTabledraw[] asm("gOrderingTable");
 extern DISPENV D_800BDE18put[] asm("D_800BDE18");
 extern s32 D_800A3904[];
 extern u8 D_800A3A48;
@@ -11792,7 +11805,7 @@ void func_80058D94(void) {
         ot = gOrderingTables + (bank << 12);
         D_800A305C = bank;
         gOrderingTableBankAbsolute[0] = bank;
-        D_800A39C8store[0] = (s32)ot;
+        gOrderingTablestore[0] = (s32)ot;
         ClearOTagR((OT_TYPE *)ot, 4);
         if ((fade << 24) != 0) {
             fade = fade - 1;
@@ -11828,7 +11841,7 @@ void func_80058D94(void) {
                     toggle = toggle ^ 1;
                 }
                 if (toggle != 0) {
-                    AddPrim((void *)D_800A39C8[0], D_800A34FC);
+                    AddPrim((void *)gOrderingTable[0], D_800A34FC);
                 }
             }
         }
@@ -11841,7 +11854,7 @@ void func_80058D94(void) {
         if ((fade << 24) != 0) {
             continue;
         }
-        DrawOTag((OT_TYPE *)(D_800A39C8draw[0] + 0xC));
+        DrawOTag((OT_TYPE *)(gOrderingTabledraw[0] + 0xC));
         func_80041AF0Scene(0);
         pads = PadGetButtons(0);
         if (frame >= 0xB5) {
@@ -11909,7 +11922,7 @@ void func_80058D94(void) {
  *   A2EB0Absolute[-0x74] in the arm) or gcc hoists the address into s0
  * - store the arm call result DIRECTLY (`D[...] = RandomScaledGet(0x10);`)
  *   or gcc keeps the old value alive in v1 (`move v1,v0`, bne flipped)
- * - tail: seed=D_800A36E0 (lbu gp), A2EA4/A2EDC/A2EE0 as u8 arrays
+ * - tail: seed=gPlayerDriver (lbu gp), A2EA4/A2EDC/A2EE0 as u8 arrays
  *   (lui), A38F0/A3A60 as u8 arrays (lui), A3064/A3065/A3718 scalar
  *   (gp); u8 arrays DO get lui here, do not cast them (cast form
  *   segfaults cc1 at this TU position)
@@ -11923,7 +11936,7 @@ extern u8 D_800A3A60[];
 extern u8 D_800A3064;
 extern u8 D_800A3065;
 extern u8 D_800A3718;
-extern u8 D_800A36E0;
+extern u8 gPlayerDriver;
 void func_8005957C(void) {
     s32 value;
     u8 seed;
@@ -11935,7 +11948,7 @@ void func_8005957C(void) {
     if (value == 0x10) {
         D_800A2EB0Absolute[-0x74] = RandomScaledGet(0x10);
     }
-    seed = D_800A36E0;
+    seed = gPlayerDriver;
     D_800A2EA4[0] = 0;
     D_800A2EDC[0] = 0;
     D_800A2EE0[0] = 1;
@@ -11954,7 +11967,7 @@ extern u8 D_800A3A60NM[] asm("D_800A3A60.NON_MATCHING");
 extern u8 D_800A3064NM asm("D_800A3064.NON_MATCHING");
 extern u8 D_800A3065NM asm("D_800A3065.NON_MATCHING");
 extern u8 D_800A3718NM asm("D_800A3718.NON_MATCHING");
-extern u8 D_800A36E0NM asm("D_800A36E0.NON_MATCHING");
+extern u8 gPlayerDriverNM asm("gPlayerDriver.NON_MATCHING");
 void func_8005957C(void) {
     s32 value;
     u8 seed;
@@ -11966,7 +11979,7 @@ void func_8005957C(void) {
     if (value == 0x10) {
         D_800A2EB0Absolute[-0x74] = RandomScaledGet(0x10);
     }
-    seed = D_800A36E0NM;
+    seed = gPlayerDriverNM;
     D_800A2EA4NM[0] = 0;
     D_800A2EDCNM[0] = 0;
     D_800A2EE0NM[0] = 1;

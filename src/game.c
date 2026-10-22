@@ -140,7 +140,7 @@ void GameRunSession(void) {
     extern s32 D_800A33D0;
     extern s32 D_800A33CC;
     extern u8 D_800A2EDAAbsolute[] asm("D_800A2EDA");
-    extern void *D_800A39C8;
+    extern void *gOrderingTable;
     extern u8 *D_800A3A8C;
     extern u32 D_800A3570;
     extern u32 gPrimitiveCursorRun asm("gPrimitiveCursor.NON_MATCHING");
@@ -302,11 +302,11 @@ void GameRunSession(void) {
             D_800A2D0C = 1;
         }
         bank = bank == 0;
-        D_800A39C8 = (u8 *)((bank << 13) + (u32)tables);
+        gOrderingTable = (u8 *)((bank << 13) + (u32)tables);
         gOrderingTableBank = bank * 2;
         D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
         gPrimitiveCursorRun = D_800A3570;
-        ClearOTagR((u_long *)D_800A39C8, 0x400);
+        ClearOTagR((u_long *)gOrderingTable, 0x400);
         ClearOTagR(
             (u_long *)((u8 *)((gOrderingTableBank << 12) + (u32)secondTables)),
             0x400);
@@ -433,7 +433,7 @@ void GameRunSession(void) {
                 ClearOTagR(
                     (u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
                     0x400);
-                D_800A39C8 = gOrderingTables + (gOrderingTableBank << 12);
+                gOrderingTable = gOrderingTables + (gOrderingTableBank << 12);
                 MenuDrawLoadScreen();
                 goto finishDisplay;
             }
@@ -738,7 +738,7 @@ void TrackLoad(u8 selectTrack) {
         s16 second;
         s8 last;
     } NameShort;
-    extern void *D_800A39C8;
+    extern void *gOrderingTable;
     extern s32 D_800A2DE4[];
     extern s32 D_800A2E1C[];
     extern s8 D_800A2E20[];
@@ -818,8 +818,8 @@ void TrackLoad(u8 selectTrack) {
         do {
             bank = bank == 0;
             gOrderingTableBank = bank * 2;
-            D_800A39C8 = gOrderingTables + (bank << 13);
-            ClearOTagR((u_long *)D_800A39C8, 0x400);
+            gOrderingTable = gOrderingTables + (bank << 13);
+            ClearOTagR((u_long *)gOrderingTable, 0x400);
             ClearOTagR((u_long *)(gOrderingTables + 0x1000 +
                                   (gOrderingTableBank << 12)),
                        0x400);
@@ -1239,7 +1239,7 @@ void TrackLoad(u8 selectTrack) {
         baseSpeed = D_80090DCE[offset - 3];
         product = baseSpeed * quotient;
     }
-    scaled = D_80090DD2[offset] * D_800BE974[0];
+    scaled = D_80090DD2[offset] * gTrackSectionCount[0];
     setting0 = D_80090DD4[offset];
     setting1 = D_80090DD6[offset];
     D_800A2E60[0] = setting0;
@@ -1313,7 +1313,7 @@ extern u8 D_800A2EDBw15[] asm("D_800A2EDB.NON_MATCHING");
 extern u8 D_800A3074w15[] asm("D_800A3074.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
 extern u8 D_800B9DA4w15[] asm("D_800B9DA4.NON_MATCHING");
-extern u8 D_800BE70Cw15[] asm("D_800BE70C.NON_MATCHING");
+extern u8 gGridOrderw15[] asm("gGridOrder.NON_MATCHING");
 extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
 extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
@@ -1336,7 +1336,7 @@ void func_800144B4(void) {
     s32 c3;
     s32 c1;
     mode = 0;
-    be70c = D_800BE70Cw15;
+    be70c = gGridOrderw15;
     if (D_800A364Cw15[-8] == 1) {
         mode = D_800A2EB0w15[0] != (-1);
     }
@@ -1452,7 +1452,7 @@ dispatchDone:
 }
 
 extern s32 D_800A2EA4w18c[] asm("D_800A2EA4.NON_MATCHING");
-extern s8 D_800A3A24w18c[] asm("D_800A3A24.NON_MATCHING");
+extern s8 gPadTypew18c[] asm("gPadType.NON_MATCHING");
 extern s8 D_800A3A25w18c[] asm("D_800A3A25.NON_MATCHING");
 extern s32 D_800A2EB0w18c[] asm("D_800A2EB0.NON_MATCHING");
 extern u8 D_800A2EDAw18c[] asm("D_800A2EDA.NON_MATCHING");
@@ -1483,18 +1483,18 @@ void func_8001475C(void) {
     if (D_800A2EA4w18c[0] == 0) {
         D_800A33C0w18c = PadGetButtons(0);
         D_800A33C4w18c = 0;
-        if (D_800A3A24w18c[0] == 0 && D_800A2EB0w18c[0] >= 0) {
+        if (gPadTypew18c[0] == 0 && D_800A2EB0w18c[0] >= 0) {
             D_800A33C4w18c = 0;
             D_800A33C0w18c = 0;
             if (D_800A2EC8w18c[0] == 0) {
                 func_80023074();
             }
         }
-    } else if ((D_800A3A24w18c[0] == 0 || D_800A3A25w18c[0] == 0) &&
+    } else if ((gPadTypew18c[0] == 0 || D_800A3A25w18c[0] == 0) &&
                D_800A2EB0w18c[0] >= 0) {
         D_800A33C4w18c = 0;
         D_800A33C0w18c = 0;
-        if (D_800A3A24w18c[0] == 0) {
+        if (gPadTypew18c[0] == 0) {
             D_800A3620w18c[0] = 0;
         } else {
             D_800A3620w18c[0] = 1;

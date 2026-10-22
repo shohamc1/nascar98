@@ -358,7 +358,7 @@ void CarDrawPreviewModel(u8 *arg0, s32 x, s32 y, s32 z) {
 
 extern s32 D_800A2EC4Lui asm("D_800A2EC4Absolute");
 extern s32 D_800A2EA4Lui asm("D_800A2EA4Absolute");
-extern u32 D_800A3878Lui asm("D_800A3878Absolute");
+extern u32 gCarListLui asm("gCarListAbsolute");
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 extern s32 D_800A2D6C, D_800A3818, D_800A2D5C;
 extern s32 *D_800A2D64;
@@ -397,12 +397,12 @@ void CarDrawAll(void) {
     if (D_800A2EC4Lui == 0) {
         bankFlag = D_800A2EA4Lui == 0;
     }
-    for (car = D_800A3878Lui; car != 0; car = *(u32 *)(car + 0x3E0)) {
+    for (car = gCarListLui; car != 0; car = *(u32 *)(car + 0x3E0)) {
         released = 0;
         slot = *(s16 *)(car + 0x1E2);
         if (slot != -1 && *(s16 *)(car + 0x1E4) != -1 &&
-            *(u16 *)((carState = (u8 *)D_800BE980[0] + slot * 0x90) + 0xE) ==
-                1 &&
+            *(u16 *)((carState = (u8 *)gTrackSections[0] + slot * 0x90) +
+                     0xE) == 1 &&
             *(s32 *)(car + 0x36C) != 0 && *(s8 *)(car + 0x374) < 4) {
             D_800A3818 = 0x808080;
             if (func_800167BC((u8 *)car) & 0xFF) {

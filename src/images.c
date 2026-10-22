@@ -17,7 +17,7 @@ extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
 extern s32 gOTBnm[] asm("gOrderingTableBank.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
-extern s32 D_800A39C8nm[] asm("D_800A39C8.NON_MATCHING");
+extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -362,7 +362,7 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
         u8 *ot1000;
         u8 *ot1FFC;
 
-        D_800A39C8nm[0] = (s32)arg0;
+        gOrderingTablenm[0] = (s32)arg0;
         func_8003565C(0);
         ot1000 = (u8 *)arg0 + 0x1000;
         D_800A39C4w15[1] = (s32)ot1000;
@@ -383,7 +383,7 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
         u8 *ot1000;
         u8 *ot1FFC;
 
-        D_800A39C8nm[0] = (s32)arg0;
+        gOrderingTablenm[0] = (s32)arg0;
         func_8003565C(0);
         ot1000 = (u8 *)arg0 + 0x1000;
         func_8003587C(ot1000);

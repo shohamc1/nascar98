@@ -127,7 +127,7 @@ extern void func_80025594(u8 *);
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
-extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
+extern u8 *gCarListnm[] asm("gCarList.NON_MATCHING");
 extern s32 func_80029EF8(u8 *);
 extern s16 SoundVabOpen(void *, void *);
 void func_80082B70(void);
@@ -507,7 +507,7 @@ u16 func_80041BFC(u8 *arg0) {
         return 0;
     }
     data = *(u32 *)((u8 *)D_8008CA08 + bank * 8);
-    if (((s8 *)D_800A3A24)[bank] == 2) {
+    if (((s8 *)gPadType)[bank] == 2) {
         arg0[0x3C6] = data >> 8;
         arg0[0x3C7] = data >> 0x10;
         arg0[0x3C5] = data;
@@ -581,7 +581,7 @@ s32 func_80041D60(void) {
     return ((u32)pads[1] << 16) | pads[0];
 }
 
-extern u8 D_800A3A24Small;
+extern u8 gPadTypeSmall;
 extern u8 D_800A3A26[];
 extern u8 D_800A3A27[];
 extern u32 D_8008CA2C[];
@@ -617,7 +617,7 @@ void func_80041DEC(void) {
             padType = padType >> 12;
         }
     } while (0);
-    D_800A3A24Small = padType;
+    gPadTypeSmall = padType;
     padWord = D_800B9E00[0];
     do {
         padType = padWord & 0xF000;
@@ -627,14 +627,14 @@ void func_80041DEC(void) {
             padType = padType >> 12;
         }
     } while (0);
-    node = D_800A3878nm[0];
+    node = gCarListnm[0];
     D_800A3A25[0] = padType;
     D_800A3A26[0] = 0;
     D_800A3A27[0] = 0;
     if (node != 0) {
         do {
             if (*(s16 *)(node + 0x1EC) == 0) {
-                node[0x3C4] = ((u8 *)D_800A3A24)[*(s8 *)(node + 0x20B)];
+                node[0x3C4] = ((u8 *)gPadType)[*(s8 *)(node + 0x20B)];
             }
             node = *(u8 **)(node + 0x3E0);
         } while (node != 0);
@@ -707,12 +707,12 @@ void func_80041F54(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
         w2 = *(u32 *)((u16 *)w + 2);
         hs = ((u16 *)w)[1];
         swap = ~(((hs & 0xFF) << 8) | (hs >> 8));
-        ((s8 *)D_800A3A24)[i] = (word & 0xF000) >> 12;
+        ((s8 *)gPadType)[i] = (word & 0xF000) >> 12;
         out = swap;
         if ((word & 0xFF) == 0xFF) {
-            ((s8 *)D_800A3A24)[i] = 0;
+            ((s8 *)gPadType)[i] = 0;
         }
-        type = ((s8 *)D_800A3A24)[i];
+        type = ((s8 *)gPadType)[i];
         if (type == 2) {
             b1 = (w2 & 0xFF00) >> 8;
             b2 = (w2 & mask2) >> 16;
@@ -766,7 +766,7 @@ void func_800420D8(u32 *input, u32 flags, u16 *output) {
 
     asm volatile("" : "=r"(current) : "0"((u8 *)input));
     settingPtr = current;
-    mode = (u8 *)D_800A3A24;
+    mode = (u8 *)gPadType;
     settingPtr += 2;
     do {
         setting = *(u16 *)settingPtr;

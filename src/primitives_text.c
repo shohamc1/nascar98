@@ -28,7 +28,7 @@ s32 RandomScaledGet(s32 scale);
 
 extern s32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
 void GraphicsAddPolyFT4(u8 *arg0) {
-    extern s32 D_800A39C8[];
+    extern s32 gOrderingTable[];
     POLY_FT4 *entry;
     u32 cursor;
 
@@ -36,7 +36,7 @@ void GraphicsAddPolyFT4(u8 *arg0) {
     gPrimitiveCursorLui = cursor + 0x28;
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)arg0;
-    AddPrim((u8 *)D_800A39C8[0], entry);
+    AddPrim((u8 *)gOrderingTable[0], entry);
 }
 
 void func_80017E08(void) {
@@ -176,7 +176,7 @@ void FontDrawGlyph(s32 ch, s32 x, s32 y, s32 page) {
     extern s16 D_800A2D78[];
     extern s16 D_800A2D80[];
     extern u8 D_800BA064[];
-    extern s32 D_800A39C8[];
+    extern s32 gOrderingTable[];
     s32 w;
     s32 h;
     s8 tile;
@@ -283,7 +283,7 @@ void FontDrawGlyph(s32 ch, s32 x, s32 y, s32 page) {
     ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
     prim = (POLY_FT4 *)cursor;
     *prim = *(POLY_FT4 *)src;
-    AddPrim((u8 *)D_800A39C8[0], prim);
+    AddPrim((u8 *)gOrderingTable[0], prim);
 }
 
 void FontSetColor(s16 red, s16 green, s16 blue) {
@@ -1192,7 +1192,7 @@ panel:
     } while (i < 20);
 }
 
-extern s32 D_800A39C8[];
+extern s32 gOrderingTable[];
 
 /* Draws a 0x7F x 0x1F sprite quad from the 14-byte table at D_80090EFC.
    kind selects the table row (0 -> 0xC, 1 -> 0xD, 2 -> 0xB). */
@@ -1249,7 +1249,7 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
         poly->v2 = D_80090EFC[index].colV + 0x20;
         poly->u3 = D_80090EFC[index].colU + 0x7F;
         poly->v3 = D_80090EFC[index].colV + 0x20;
-        AddPrim((u8 *)D_800A39C8[0], poly);
+        AddPrim((u8 *)gOrderingTable[0], poly);
     }
 }
 
@@ -1600,17 +1600,17 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             if (*(s16 *)(car + 0x1E0) == -1)
                 break;
             if (MathGetAngleDelta(*(s16 *)(car + 0x114),
-                                  *(u16 *)(D_800BE980[0] +
+                                  *(u16 *)(gTrackSections[0] +
                                            *(s16 *)(car + 0x1E0) * 144 + 16)) <
                 0) {
                 if (-MathGetAngleDelta(*(s16 *)(car + 0x114),
-                                       *(u16 *)(D_800BE980[0] +
+                                       *(u16 *)(gTrackSections[0] +
                                                 *(s16 *)(car + 0x1E0) * 144 +
                                                 16)) < 300)
                     goto next;
             } else {
                 if (MathGetAngleDelta(*(s16 *)(car + 0x114),
-                                      *(u16 *)(D_800BE980[0] +
+                                      *(u16 *)(gTrackSections[0] +
                                                *(s16 *)(car + 0x1E0) * 144 +
                                                16)) < 300)
                     goto next;
@@ -1649,7 +1649,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             asm("" : "=r"(copyTo) : "r"(copyFrom), "0"(copyTo));
             *copyTo = *copyFrom;
 
-            AddPrim((u8 *)D_800A39C8[0], prim);
+            AddPrim((u8 *)gOrderingTable[0], prim);
             break;
         }
     next:
@@ -1717,7 +1717,7 @@ extern u8 D_800A2F9Cpanel asm("D_800A2F9CAbsolute");
 extern u8 D_800A2F9Dpanel asm("D_800A2F9DAbsolute");
 extern u8 D_800A306Cpanel asm("D_800A306CAbsolute");
 extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
-extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern void MenuDrawStatistics(void);
 extern void MenuDrawTimingAndScoring(void);
 extern s32 HudTextWidth(u8 *);
@@ -1754,7 +1754,7 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     if (D_800A2EA4w15[0] != 0) {
         y = 20;
         if (D_800A3620w18c[0] != 0) {
-            D_800A39C8Lui += 0x1004;
+            gOrderingTableLui += 0x1004;
         } else {
             y = 30;
         }
@@ -1857,7 +1857,7 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     MenuDrawArrow(arrowArg, cursorY, 0, 5);
     MenuDrawArrow(arrowX | 160, cursorY, 1, 5);
     if (D_800A3620w18c[0] != 0) {
-        D_800A39C8Lui -= 0x1004;
+        gOrderingTableLui -= 0x1004;
     }
     /* Compiler control: preserve the retail frame extent. */
     asm("" : "=m"(frameExtent));
@@ -1868,7 +1868,7 @@ INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001AEDC);
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B3F0);
 
 extern s32 D_800A2EB4[];
-extern u8 *D_800A3554;
+extern u8 *gPlayerCar;
 extern u8 D_800B0B7C[];
 extern u8 D_80090F2E[];
 extern u16 D_80090F30b[] asm("D_80090F30");
@@ -1905,8 +1905,8 @@ void func_8001B82C(u8 *obj, s32 arg1) {
             break;
         case 2:
             width = 8;
-            if (*(s8 *)(D_800A3554 + 0x204) == 1 &&
-                D_800A2EB4[0] == *(s8 *)(D_800A3554 + 0x204)) {
+            if (*(s8 *)(gPlayerCar + 0x204) == 1 &&
+                D_800A2EB4[0] == *(s8 *)(gPlayerCar + 0x204)) {
                 width = 10;
             }
             uOff = 48;
@@ -1939,13 +1939,13 @@ void func_8001B82C(u8 *obj, s32 arg1) {
     prim->v2 = D_80090F30d[0] + 15;
     prim->u3 = uOff + D_80090F2E[0] + 15;
     prim->v3 = D_80090F30e[0] + 15;
-    AddPrim((void *)D_800A39C8[0], prim);
+    AddPrim((void *)gOrderingTable[0], prim);
 }
 
 extern s32 D_801F3FFC[];
 extern s32 D_800A2ED0[];
 extern void *D_800A35E0;
-extern u8 *D_800A3554;
+extern u8 *gPlayerCar;
 extern void func_8001B82C(u8 *obj, s32 arg1);
 void func_8001BA94(s32 arg0) {
     s32 shade;
@@ -1977,11 +1977,11 @@ void func_8001BA94(s32 arg0) {
     off = D_801F3FF8[0] * 4;
     count = D_801F3FFC[0];
     if (mode == 0) {
-        func_8001B82C(D_800A3554, off);
+        func_8001B82C(gPlayerCar, off);
         if (D_800A2E94[0] >= 2) {
             node = D_800A35E0;
             for (i = 0; i < D_800A2E94[0]; i++) {
-                if (node != D_800A3554) {
+                if (node != gPlayerCar) {
                     func_8001B82C(node, off);
                 }
                 node = *(u8 **)(*(s32 *)(node + 0x3E8) + 8);
@@ -2015,7 +2015,7 @@ void func_8001BA94(s32 arg0) {
             prim = (POLY_FT4 *)cursor;
             gPrimitiveCursorLui = cursor + 0x28;
             *prim = *(POLY_FT4 *)tile;
-            AddPrim((void *)D_800A39C8[0], prim);
+            AddPrim((void *)gOrderingTable[0], prim);
             *(u32 *)(tile + 8) = xy0;
             *(u32 *)(tile + 0xC) = xy1;
             *(u32 *)(tile + 0x10) = xy2;
@@ -2024,7 +2024,7 @@ void func_8001BA94(s32 arg0) {
             tile[5] = 0;
             tile[6] = 0;
         } else {
-            AddPrim((void *)D_800A39C8[0], tile);
+            AddPrim((void *)gOrderingTable[0], tile);
         }
         tile += 0x18;
     }
@@ -2042,7 +2042,7 @@ extern u8 D_800A2D0Cnm[] asm("D_800A2D0C.NON_MATCHING");
 extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
-extern u8 *D_800A3554small asm("D_800A3554.NON_MATCHING");
+extern u8 *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 
@@ -2083,20 +2083,20 @@ void func_8001C34C(void) {
     }
     mode = 2;
     if (D_800A2EA4nm[0] == mode) {
-        func_8001AEDC(D_800A3554small, -0xA);
-        HudDrawCar(D_800A3554small, -0x6E);
-        prim = *(s32 *)(D_800A3554small + 0x3E0);
+        func_8001AEDC(gPlayerCarsmall, -0xA);
+        HudDrawCar(gPlayerCarsmall, -0x6E);
+        prim = *(s32 *)(gPlayerCarsmall + 0x3E0);
         gOrderingTableBankLui = gOrderingTableBankLui + 1;
-        D_800A39C8Lui = D_800A39C8Lui + 0x1004;
+        gOrderingTableLui = gOrderingTableLui + 0x1004;
         func_8001AEDC(prim, -0x14);
-        HudDrawCar(*(s32 *)(D_800A3554small + 0x3E0), -0x7D);
+        HudDrawCar(*(s32 *)(gPlayerCarsmall + 0x3E0), -0x7D);
         gOrderingTableBankLui = gOrderingTableBankLui - 1;
-        D_800A39C8Lui = D_800A39C8Lui - 0x1004;
+        gOrderingTableLui = gOrderingTableLui - 0x1004;
         return;
     }
-    func_8001AEDC(D_800A3554small, 0);
-    HudDrawCar(D_800A3554small, 0);
-    if (*(s8 *)(D_800A3554small + 0x209) == mode) {
+    func_8001AEDC(gPlayerCarsmall, 0);
+    HudDrawCar(gPlayerCarsmall, 0);
+    if (*(s8 *)(gPlayerCarsmall + 0x209) == mode) {
         func_8001BA94(0);
     }
 }

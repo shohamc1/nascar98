@@ -15,7 +15,7 @@
 extern s32 strlen(char *);
 extern void func_8001E7EC(void *, s32, s32);
 
-extern s32 D_800A39C8[];
+extern s32 gOrderingTable[];
 extern s32 D_800A3A2CAbsolute[];
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
@@ -46,7 +46,7 @@ extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
 s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
-extern u8 *D_800A3554[];
+extern u8 *gPlayerCar[];
 void ReplayStepForward(void);
 s32 TrackTestPointInSection(s32, s32, u8 *);
 s32 TrackTestPointInSection(s32, s32, u8 *);
@@ -162,7 +162,7 @@ extern s32 func_80037204(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 extern s32 D_800A37D0[];
 void SetPolyFT4(POLY_FT4 *);
-extern u8 D_800A3808b[] asm("D_800A3814.NON_MATCHING");
+extern u8 gCardMenuMessageb[] asm("D_800A3814.NON_MATCHING");
 extern u8 D_800BDD62[], D_800BDDBE[], D_800BDDC0[], D_800BDD64[];
 extern u8 D_800BDD65[], D_800BDD66[], D_800BDD67[], D_800BDDC1[];
 extern u8 D_800BDDC2[], D_800BDDC3[];
@@ -576,7 +576,7 @@ void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 TableFindByte(u8 value);
+u8 RaceFindGridPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -1137,7 +1137,7 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
     s32 depth;
 
     cursor = (u8 *)gPrimitiveCursor[0];
-    ot = (s32 *)D_800A39C8[0];
+    ot = (s32 *)gOrderingTable[0];
     if (mode & 0xFF) {
         x = 0xA0;
         y = 0x64;
@@ -1286,7 +1286,7 @@ void func_8005EC5C(u8 arg0) {
     s32 value;
 
     value = *(s16 *)&D_8009AF84[(arg0 & 0xFF) * 2] * D_800A37D0[0] / 100;
-    *(s32 *)&D_800A3808b[0] = value;
+    *(s32 *)&gCardMenuMessageb[0] = value;
     if (value < 3) {
         D_800A3814[0] = 3;
     }
@@ -4568,7 +4568,7 @@ void func_80062874(s32 arg0, s32 arg1) {
     }
 }
 
-extern u8 D_800A307C[];
+extern u8 gPadLayout[];
 extern u8 D_800A3088[];
 extern u8 D_800A3350[];
 extern s32 D_8009A4E0[][7][14];
@@ -4598,19 +4598,19 @@ void MenuUpdatePadPicture(s32 arg0) {
         node = *(u8 **)(node + 0x1C);
     }
     prim = *(u8 **)(node + 0x20);
-    if (((s8 *)D_800A3A24)[arg0 & 0xFF] != ((s8 *)D_800A308C)[arg0 & 0xFF] &&
-        ((s8 *)D_800A3A24)[arg0 & 0xFF] != 0) {
-        ((s8 *)D_800A307C)[arg0 & 0xFF] = 0;
+    if (((s8 *)gPadType)[arg0 & 0xFF] != ((s8 *)D_800A308C)[arg0 & 0xFF] &&
+        ((s8 *)gPadType)[arg0 & 0xFF] != 0) {
+        ((s8 *)gPadLayout)[arg0 & 0xFF] = 0;
     }
-    if (((s8 *)D_800A3A24)[arg0 & 0xFF] != 0) {
-        ((s8 *)D_800A308C)[arg0 & 0xFF] = ((s8 *)D_800A3A24)[arg0 & 0xFF];
+    if (((s8 *)gPadType)[arg0 & 0xFF] != 0) {
+        ((s8 *)D_800A308C)[arg0 & 0xFF] = ((s8 *)gPadType)[arg0 & 0xFF];
     }
     idx = arg0 & 0xFF;
-    a = ((s8 *)D_800A3A24)[idx];
+    a = ((s8 *)gPadType)[idx];
     if (a != 0) {
         fontId = ((s8 *)D_800A3350)[a];
         chars = D_8009B00C;
-        c = *(chars + 7 * fontId + ((s8 *)D_800A307C)[idx]);
+        c = *(chars + 7 * fontId + ((s8 *)gPadLayout)[idx]);
     } else {
         c = D_800A3088[idx];
     }
@@ -4630,23 +4630,23 @@ void MenuUpdatePadPicture(s32 arg0) {
     prim[0x25] = D_8009B02A[off] + node[0x18];
     node = *(u8 **)(node + 0x1C);
     prim = *(u8 **)(node + 0x20);
-    if (id == 1 && (((s8 *)D_800A3A24)[arg0 & 0xFF] == 5 ||
-                    ((s8 *)D_800A3A24)[arg0 & 0xFF] == 7)) {
-        prim[4] = -(((s8 *)D_800A3A24)[arg0 & 0xFF] == 7);
-        prim[5] = -(((s8 *)D_800A3A24)[arg0 & 0xFF] == 5);
+    if (id == 1 && (((s8 *)gPadType)[arg0 & 0xFF] == 5 ||
+                    ((s8 *)gPadType)[arg0 & 0xFF] == 7)) {
+        prim[4] = -(((s8 *)gPadType)[arg0 & 0xFF] == 7);
+        prim[5] = -(((s8 *)gPadType)[arg0 & 0xFF] == 5);
         prim[6] = 0;
         node[5] = 1;
     } else {
         node[5] = 0;
     }
     node = *(u8 **)(node + 0x1C);
-    node[5] = !((s8 *)D_800A3A24)[arg0 & 0xFF];
+    node[5] = !((s8 *)gPadType)[arg0 & 0xFF];
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
     prim2 = *(u8 **)(node + 0x20);
-    *(s32 *)(prim2 + 8) = ((s8 *)D_800A307C)[arg0 & 0xFF] + 1;
-    uc = ((s8 *)D_800A3A24)[arg0 & 0xFF];
-    c = ((s8 *)D_800A3A24)[arg0 & 0xFF];
+    *(s32 *)(prim2 + 8) = ((s8 *)gPadLayout)[arg0 & 0xFF] + 1;
+    uc = ((s8 *)gPadType)[arg0 & 0xFF];
+    c = ((s8 *)gPadType)[arg0 & 0xFF];
     ghost = c;
     if (uc == 0) {
         c = D_800A308C[arg0 & 0xFF];
@@ -4661,7 +4661,7 @@ void MenuUpdatePadPicture(s32 arg0) {
             f = ((s8 *)D_800A3350)[(s8)c];
             prim2 = *(u8 **)(node + 0x20);
             *(s32 *)(prim2 + 8) =
-                D_8009A4E0[f][((s8 *)D_800A307C)[(u8)arg0]][7 * i + j];
+                D_8009A4E0[f][((s8 *)gPadLayout)[(u8)arg0]][7 * i + j];
         }
     }
 }
@@ -4896,7 +4896,7 @@ extern u8 *D_800A3868[];
 extern u8 *func_8005BF8C(s32, s32);
 extern u8 *func_8005B314(s32, s32, s32, s32, s32, u8, u8, u8, u8, u8);
 extern void func_80067EA4(struct UnkObject24 *, u8, u8, s32, u8, s32);
-extern u8 D_800A36E0[];
+extern u8 gPlayerDriver[];
 
 void func_800631DC(s32 left, s32 top, s32 code) {
     u8 *node;
@@ -4921,7 +4921,7 @@ void func_800631DC(s32 left, s32 top, s32 code) {
     } else {
         base = 0x3A;
     }
-    entry = D_800A3554[0];
+    entry = gPlayerCar[0];
     for (i = 0; i < 2; i++) {
         node = MenuObjAlloc();
         mode = D_800A39E4[0];
@@ -4941,13 +4941,13 @@ void func_800631DC(s32 left, s32 top, s32 code) {
         if (mode == 7 || mode == 0xE) {
             continue;
         }
-        x = func_8005B0E4(0x64, (s32)gDriverNames[D_800A36E0[i]]) - 0x32;
+        x = func_8005B0E4(0x64, (s32)gDriverNames[gPlayerDriver[i]]) - 0x32;
         object = func_8005BF8C(left + x, base - 6);
         *(s16 *)(object + 0xA) = top + x;
         *(s16 *)(object + 0x12) = x;
         *(s16 *)(object + 0xE) = code;
         func_80067EA4((struct UnkObject24 *)object, 2, 2,
-                      (s32)gDriverNames[D_800A36E0[i]], 0, 0);
+                      (s32)gDriverNames[gPlayerDriver[i]], 0, 0);
         *(u8 **)(node + 0x1C) = object;
         node = object;
         D_800A3868[i] = node;
@@ -5357,7 +5357,7 @@ void func_80063E7C(void) {
     *(s32 *)(entry + 4) = 0;
     *(s32 *)(prev1 + 0x3E0) = (s32)entry;
     *(s32 *)(entry + 0x3DC) = (s32)prev1;
-    D_800A3554[0] = entry;
+    gPlayerCar[0] = entry;
     prev2 = entry;
     entry = func_8002D874(0, 1, 0x18, -1);
     i = 0;
@@ -5436,7 +5436,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
                 }
                 result = v1 - ((v0 >> 0xC) << 0xC);
             } else {
-                result = *(u16 *)(D_800A3554[0] + 0x20E);
+                result = *(u16 *)(gPlayerCar[0] + 0x20E);
             }
             *(s16 *)(obj + 0x20E) = result;
         }
@@ -5500,7 +5500,7 @@ void func_80064208(void) {
     s32 k;
     u8 idx;
     if (D_800A3060[0] != 0) {
-        D_800A39FC = D_800A36E0[0];
+        D_800A39FC = gPlayerDriver[0];
     } else {
         D_800A39FC = RandomScaledGet(0x18);
     }
@@ -5512,7 +5512,8 @@ void func_80064208(void) {
         node = func_8005BF8C(0x5F, 0x2D);
         kind = D_800A39FC;
         ((MenuObj *)node)->unk12 = 0x5F;
-        func_80067EA4((struct UnkObject24 *)node, 2, 3, gDriverNames[kind], 0, 0);
+        func_80067EA4((struct UnkObject24 *)node, 2, 3, gDriverNames[kind], 0,
+                      0);
         *((u8 **)(tail + 0x1C)) = node;
         tail = node;
         func_8005A7B8(2, 3);
@@ -5794,7 +5795,7 @@ void func_80064C14(void) {
     extern s32 D_800A367C;
 
     D_800A38C4 = (u32 *)gOrderingTables;
-    D_800A39C8[0] = gOrderingTables;
+    gOrderingTable[0] = gOrderingTables;
     D_800A39D8 = gOrderingTables + 0x20;
     D_800A369C = gOrderingTables + 0x13A8;
     if (D_800A2EB0Absolute[0] == 0) {
@@ -5931,10 +5932,10 @@ extern u8 *D_8009A3ECLui asm("D_8009A3EC");
 extern u8 *D_8009ACE0[];
 extern s32 D_800AEB34[];
 extern u8 *D_8009A42C[];
-extern u8 D_800A36E0Lui asm("D_800A36E0Absolute");
+extern u8 gPlayerDriverLui asm("gPlayerDriverAbsolute");
 extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");
 extern u8 D_800A3644Lui asm("D_800A3644Absolute");
-extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern volatile u16 D_800A3A44;
 extern volatile s16 D_800A3A44Signed asm("D_800A3A44");
 extern volatile s16 D_800A3940Signed asm("D_800A3940");
@@ -5968,11 +5969,11 @@ void func_80065058(u8 id, s32 shift) {
     height = id * 2;
     for (i = 0; i < 2; i++) {
         slots[i] = 0xFF;
-        if (D_800BE70C[height + i] == D_800A36E0Lui) {
+        if (gGridOrder[height + i] == gPlayerDriverLui) {
             slots[n - 1] = i;
             n++;
         }
-        if (D_800A3644Lui != 0 && D_800BE70C[height + i] == D_800A36E1Lui) {
+        if (D_800A3644Lui != 0 && gGridOrder[height + i] == D_800A36E1Lui) {
             slots[n - 1] = i;
             n++;
         }
@@ -6061,7 +6062,7 @@ void func_80065058(u8 id, s32 shift) {
     leftX = xOffset + 0x17;
     height = id * 2;
     for (i = 0; i < 2; i++) {
-        color = D_800BE70C[height + i];
+        color = gGridOrder[height + i];
         prim = (u8 *)func_80065040();
         SetPolyFT4((POLY_FT4 *)prim);
         func_80064AB4(prim, color);
@@ -6089,7 +6090,7 @@ void func_80065058(u8 id, s32 shift) {
     D_800A3568 = (u8 *)D_800A367C;
     func_8005A7B8(2, 4);
     func_8005A818(0x80, 0x80, 0xC0);
-    D_800A39C8Lui += 4;
+    gOrderingTableLui += 4;
     if (D_800A3950[0] == 0xFB || D_800A3950[0] == 3) {
         func_8005A9F4((s32)gTrackNames[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
                       0);
@@ -6117,8 +6118,8 @@ void func_80065058(u8 id, s32 shift) {
         if (i == 0) {
             x0 = 0x17;
         }
-        color = D_800BE70C[height + i];
-        if (color == D_800A36E0Lui) {
+        color = gGridOrder[height + i];
+        if (color == gPlayerDriverLui) {
             r2 = 0xC0;
             g2 = 0x80;
             b2 = 0x40;
@@ -6145,7 +6146,7 @@ void func_80065058(u8 id, s32 shift) {
             func_8005A9F4((s32)D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
         }
     }
-    D_800A39C8Lui -= 4;
+    gOrderingTableLui -= 4;
     end = (u8 *)D_800A367C;
     D_800A3970 = end;
     if (xOffset != 0) {
@@ -6443,7 +6444,7 @@ void MenuDrawCarPickPair(s32 arg0) {
         } else {
             shift = 0;
         }
-        color = D_800A36E0[i];
+        color = gPlayerDriver[i];
         prim = (POLY_FT4 *)func_80065040();
         SetPolyFT4(prim);
         func_80064AB4((u8 *)prim, color);
@@ -6620,7 +6621,7 @@ void *func_8006654C(void *queue, s32 arg1) {
             ((u16 *)dst)[10] = x + 0x20;
             ((u16 *)dst)[11] = bottomY;
             x += 0x20;
-            AddPrim(((u8 *)(orderTable = D_800A39C8)[0]) + offset, dst);
+            AddPrim(((u8 *)(orderTable = gOrderingTable)[0]) + offset, dst);
             i += 1;
         } while (i < 0xA);
         row += 1;
@@ -6629,7 +6630,7 @@ void *func_8006654C(void *queue, s32 arg1) {
     return (void *)cursor;
 }
 
-extern u8 *D_800A39C8Ptr[] asm("D_800A39C8");
+extern u8 *gOrderingTablePtr[] asm("gOrderingTable");
 extern u8 *D_8009A404[];
 extern u8 *D_8009A430[];
 extern u8 *D_8009A414[];
@@ -6662,7 +6663,7 @@ void func_80066730(void) {
     table = D_8009A404;
     q = table + 2;
     for (page = 0; page < 2; page++) {
-        ClearOTagR((u32 *)D_800A39C8Ptr[0], 0x3FF);
+        ClearOTagR((u32 *)gOrderingTablePtr[0], 0x3FF);
         func_80014A40(0);
         func_8006654C((void *)0, 0x3FC);
         MenuDrawModel(0, 0, 1);
@@ -6698,7 +6699,7 @@ void func_80066730(void) {
         a0v = (s32)pp[0];
         a1v = (s16)raw;
         func_8005A9F4W(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
-        DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0xFFC));
+        DrawOTag((u32 *)(gOrderingTablePtr[0] + 0xFFC));
         DrawSync(0);
         if (page == 0) {
             PutDrawEnv(&D_800BDD4C[0]);
@@ -6814,12 +6815,12 @@ void func_80066B70(void) {
 
 extern u32 gPrimitiveCursor2[] asm("gPrimitiveCursor");
 extern u32 D_800A3570Absolute[];
-extern u8 *gOtMenuStore[] asm("D_800A39C8");
-extern u8 *gOtMenuBase[] asm("D_800A39C8");
-extern u8 *gOtMenuLow[] asm("D_800A39C8");
-extern u8 *gOtMenuMid[] asm("D_800A39C8");
-extern u8 *gOtMenuHigh[] asm("D_800A39C8");
-extern u8 *gOtMenuGhost[] asm("D_800A39C8");
+extern u8 *gOtMenuStore[] asm("gOrderingTable");
+extern u8 *gOtMenuBase[] asm("gOrderingTable");
+extern u8 *gOtMenuLow[] asm("gOrderingTable");
+extern u8 *gOtMenuMid[] asm("gOrderingTable");
+extern u8 *gOtMenuHigh[] asm("gOrderingTable");
+extern u8 *gOtMenuGhost[] asm("gOrderingTable");
 extern u16 *D_800A389C[];
 extern u16 *D_800A3898;
 extern u16 *D_800A387C;
@@ -6945,7 +6946,7 @@ void func_8006709C(u8 arg0) {
     if (D_800A3644[0] != 0) {
         return;
     }
-    base = (u16 *)D_800A39C8Ptr[0];
+    base = (u16 *)gOrderingTablePtr[0];
     limit = D_800A3898;
     if (base + 8 < limit) {
         POLY_FT4 *quad;
@@ -6989,7 +6990,7 @@ void func_80067228(void) {
     u32 unused[4]; /* retail reserves 16 bytes of locals nothing touches */
 
     baseA = D_800A387C;
-    baseB = (u16 *)D_800A39C8Ptr[0];
+    baseB = (u16 *)gOrderingTablePtr[0];
     len = strlen(D_8009A400[0]);
     baseB2 = baseB + 0x2000;
     i = 0;
@@ -7068,7 +7069,7 @@ void func_8006733C(void) {
         }
         if (*(volatile u8 *)&D_800A3884 == 1) {
             baseA = D_800A387C;
-            baseB = (u16 *)D_800A39C8Ptr[0];
+            baseB = (u16 *)gOrderingTablePtr[0];
             len = strlen(D_8009A400[0]);
             baseB2 = baseB + 0x2000;
             i = 0;
@@ -7111,7 +7112,7 @@ void func_8006733C(void) {
         PutDispEnv(&D_800BDE04[D_800A36A0]);
         PutDrawEnv(
             (DRAWENV *)((s32)D_800BDD4C + (*(volatile u8 *)&D_800A36A0) * 92));
-        DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0xC));
+        DrawOTag((u32 *)(gOrderingTablePtr[0] + 0xC));
         D_800A36A0 ^= 1;
     }
     D_800A3360 = 1;
@@ -7123,7 +7124,7 @@ extern volatile u16 D_800A3940;
 extern u8 D_800A3364[];
 extern u32 D_800A3570Lui asm("D_800A3570Absolute");
 extern u32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
-extern u8 *D_800A3554Lui asm("D_800A3554Absolute");
+extern u8 *gPlayerCarLui asm("gPlayerCarAbsolute");
 extern void func_800168F8(u8 *, s32);
 
 void MenuDrawLoadScreen(void) {
@@ -7140,26 +7141,26 @@ void MenuDrawLoadScreen(void) {
     func_80066B70();
     textCursor = gPrimitiveCursorLui;
     HudDrawText(gTrackNames[D_800A305B[0]], 0x14, 0x23, 0);
-    HudDrawText(gDriverNames[D_800A36E0[0]], 0xA0, 0xB0, 0);
+    HudDrawText(gDriverNames[gPlayerDriver[0]], 0xA0, 0xB0, 0);
     HudDrawText(D_8009A400[34], 0xA0, 0xBE, 0);
     HudDrawText(D_800A3364, 0xE0, 0xBE, 0);
-    func_80018588(*(void **)(D_800A3554Lui + 0x25C), 0, (s32)buf);
+    TextFormatTime(*(void **)(gPlayerCarLui + 0x25C), 0, (s32)buf);
     gTextColorLui[0] = 9;
     HudDrawText((u8 *)buf + 1, 0xEA, 0xBE, 0);
     SetGeomOffset(0xAA, 0x1E);
-    D_800A3554Lui[0x20C] = 1;
-    func_8002EEFC(D_800A3554Lui);
-    car = D_800A3554Lui;
+    gPlayerCarLui[0x20C] = 1;
+    func_8002EEFC(gPlayerCarLui);
+    car = gPlayerCarLui;
     *(s32 *)(car + 0) = 0;
     *(s32 *)(car + 4) = 0;
     *(s32 *)(car + 8) = 0;
     *(u16 *)(car + 0x20E) = 0xA00;
     func_8003271C(0);
-    func_800168F8(*(u8 **)(D_800A3554Lui + 0x36C),
-                  (s8)(*(s8 *)(D_800A3554Lui + 0x200) / 5));
+    func_800168F8(*(u8 **)(gPlayerCarLui + 0x36C),
+                  (s8)(*(s8 *)(gPlayerCarLui + 0x200) / 5));
     end = gPrimitiveCursorLui;
-    func_8001775C(D_800A3554Lui, 0, 0x15E, 0x320);
-    D_800A39C8Lui = (s32)gOrderingTables;
+    CarDrawPreviewModel(gPlayerCarLui, 0, 0x15E, 0x320);
+    gOrderingTableLui = (s32)gOrderingTables;
     ClearOTagR((u_long *)gOrderingTables, 0x80);
     ft4 = (POLY_FT4 *)(gOrderingTables + 0x208);
     for (src = D_800A3570Lui; src < end; src += sizeof(POLY_FT4)) {
@@ -7178,7 +7179,7 @@ void MenuDrawLoadScreen(void) {
             ft4->x3 -= 0x140;
         }
         setRGB0(ft4, 0x80, 0x80, 0xC0);
-        AddPrim((u_long *)D_800A39C8Lui, ft4);
+        AddPrim((u_long *)gOrderingTableLui, ft4);
         ft4++;
     }
     gt4 = (POLY_GT4 *)ft4;
@@ -7187,7 +7188,7 @@ void MenuDrawLoadScreen(void) {
     prim = gt4;
     while (end < gPrimitiveCursorLui) {
         *gt4 = *(POLY_GT4 *)end;
-        AddPrim((u_long *)D_800A39C8Lui + depth, gt4);
+        AddPrim((u_long *)gOrderingTableLui + depth, gt4);
         gt4++;
         end += sizeof(POLY_GT4);
         prim->x0 += 0x140;
@@ -7202,7 +7203,7 @@ void MenuDrawLoadScreen(void) {
     }
     D_800A3970 = (u8 *)gt4;
     D_800A3898 = func_8006654C(gt4, 0x7E);
-    DrawOTag((u_long *)(D_800A39C8Lui + 0x1FC));
+    DrawOTag((u_long *)(gOrderingTableLui + 0x1FC));
     DrawSync(0);
     SetDispMask(1);
     *(volatile u8 *)&D_800A3884 = 0;
@@ -7249,7 +7250,7 @@ void func_800679C4(u8 arg0) {
 
 void func_80067AB4(void) {
     extern s32 D_8008CA4C[];
-    extern u8 *D_800A39C8Ptr[] asm("D_800A39C8");
+    extern u8 *gOrderingTablePtr[] asm("gOrderingTable");
     extern u8 *D_8009A428[];
     extern DISPENV D_800BDE04[];
     extern DRAWENV D_800BDD4C[];
@@ -7282,7 +7283,7 @@ void func_80067AB4(void) {
     if (DrawSync(1) == 0) {
         if (*(volatile u8 *)&D_800A3884 == 1) {
             baseA = D_800A387C;
-            baseB = (u16 *)D_800A39C8Ptr[0];
+            baseB = (u16 *)gOrderingTablePtr[0];
             len = strlen(D_8009A400[0]);
             baseB2 = baseB + 0x2000;
             i = 0;
@@ -7366,7 +7367,7 @@ void func_80067AB4(void) {
             }
             D_800A3930 = D_800A3930 + (s16)D_800A3940;
         }
-        DrawOTag((u32 *)(D_800A39C8Ptr[0] + 0x1FC));
+        DrawOTag((u32 *)(gOrderingTablePtr[0] + 0x1FC));
         D_800A36A0 ^= 1;
     }
     D_800A3360 = 1;

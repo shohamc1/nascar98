@@ -11,7 +11,7 @@
 #include <psxsdk/kernel.h>
 #include "game.h"
 
-extern s32 D_800A39C8[];
+extern s32 gOrderingTable[];
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
 void RandomCountMark(void);
@@ -695,12 +695,13 @@ void func_8001D1B0(s32 *destination, s32 *source) {
     destination[9] = second;
 }
 
-extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[], D_800A3A3C[];
+extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[],
+    gReplayIndex[];
 void func_8001D1E4(void) {
     D_800A2DEC[0] = 0;
     D_800A2DF0[0] = 1;
     D_800A37E8[0] = 0;
-    D_800A3A3C[0] = 0;
+    gReplayIndex[0] = 0;
     D_800A397C[0] = 1;
 }
 
@@ -793,7 +794,7 @@ void DebugDrawMeterBar(s32 value, s32 scale, s32 y, s32 colorIdx) {
     D_800A35C0[1] = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)bar;
-    AddPrim((u8 *)D_800A39C8[0], entry);
+    AddPrim((u8 *)gOrderingTable[0], entry);
     one = 1;
     four = 4;
     quot2 = one / four;
@@ -845,7 +846,7 @@ void DebugDrawMeterBar(s32 value, s32 scale, s32 y, s32 colorIdx) {
         D_800A35C0[1] = cursor2 + sizeof(POLY_FT4);
         entry2 = (POLY_FT4 *)cursor2;
         *entry2 = *(POLY_FT4 *)mark;
-        AddPrim((u8 *)D_800A39C8[0], entry2);
+        AddPrim((u8 *)gOrderingTable[0], entry2);
         x += step;
     }
 }
@@ -899,7 +900,7 @@ color:
     D_800A35C0[1] = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)prim;
-    AddPrim((u8 *)D_800A39C8[0], entry);
+    AddPrim((u8 *)gOrderingTable[0], entry);
 }
 extern POLY_FT4 D_800A3C6C[];
 extern u32 D_800A35C0[];
@@ -939,7 +940,7 @@ void func_8001D778(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
     D_800A35C0[1] = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *prim;
-    AddPrim((u8 *)D_800A39C8[0], entry);
+    AddPrim((u8 *)gOrderingTable[0], entry);
 }
 
 extern POLY_F4 D_800A3D0C[];
@@ -965,7 +966,7 @@ void func_8001D914(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
     poly->r0 = r;
     poly->g0 = g;
     poly->b0 = b;
-    AddPrim((u8 *)D_800A39C8[0], poly);
+    AddPrim((u8 *)gOrderingTable[0], poly);
 }
 
 extern POLY_F4 D_800A3F4C[];

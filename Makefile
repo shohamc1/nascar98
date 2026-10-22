@@ -88,12 +88,12 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3654Absolute=D_800A3654 \
             --defsym=D_800A367CAbsolute=D_800A367C \
             --defsym=D_800A305BAbsolute=D_800A305B \
-            --defsym=D_800A39C8Absolute=D_800A39C8 \
+            --defsym=gOrderingTableAbsolute=gOrderingTable \
             --defsym=gPrimitiveCursorAbsolute=gPrimitiveCursor \
             --defsym=D_800A3570Absolute=D_800A3570 \
             --defsym=D_800A2F94Absolute=D_800A2F94 \
             --defsym=D_800A3A04Absolute=D_800A3A04 \
-            --defsym=D_800A3A38Absolute=D_800A3A38 \
+            --defsym=gReplayBufferAbsolute=gReplayBuffer \
             --defsym=D_800A3848Absolute=D_800A3848 \
             --defsym=D_800A3574Absolute=D_800A3574 \
             --defsym=D_800A3A2CAbsolute2=D_800A3A2C \
@@ -102,8 +102,8 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3378Small=D_800A3378 \
             --defsym=D_800A397CSmall=D_800A397C \
             --defsym=D_800A397CAbsolute=D_800A397C \
-            --defsym=D_800A3A3CSmall=D_800A3A3C \
-            --defsym=D_800A3A3CAbsolute=D_800A3A3C \
+            --defsym=gReplayIndexSmall=gReplayIndex \
+            --defsym=gReplayIndexAbsolute=gReplayIndex \
             --defsym=D_800A3A2CSmall=D_800A3A2C \
             --defsym=D_800A3A2CAbsolute=D_800A3A2C \
             --defsym=D_800A3A34Small=D_800A3A34 \
@@ -151,13 +151,13 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A36E8Absolute=D_800A36E8 \
             --defsym=D_800A2DF0Absolute=D_800A2DF0 \
             --defsym=D_800A2DF4Absolute=D_800A2DF4 \
-            --defsym=D_800A3A24Small=D_800A3A24 \
-            --defsym=D_800A3A24Absolute=D_800A3A24 \
+            --defsym=gPadTypeSmall=gPadType \
+            --defsym=gPadTypeAbsolute=gPadType \
             --defsym=D_800A39E4Small=D_800A39E4 \
             --defsym=D_800A39E4Absolute=D_800A39E4 \
             --defsym=D_800A2E9CSmall=D_800A2E9C \
             --defsym=D_800A305BSmall=D_800A305B \
-            --defsym=D_800A36E0Small=D_800A36E0 \
+            --defsym=gPlayerDriverSmall=gPlayerDriver \
             --defsym=D_800A37F0Absolute=D_800A37F0 \
             --defsym=D_800A37F0Absolute2=D_800A37F0 \
             --defsym=D_800A3830Absolute=D_800A3830 \
@@ -458,7 +458,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3073.NON_MATCHING=D_800A3073 \
             --defsym=D_800A3074.NON_MATCHING=D_800A3074 \
             --defsym=D_800A3078.NON_MATCHING=D_800A3078 \
-            --defsym=D_800A307C.NON_MATCHING=D_800A307C \
+            --defsym=gPadLayout.NON_MATCHING=gPadLayout \
             --defsym=D_800A308C.NON_MATCHING=D_800A308C \
             --defsym=gOrderingTableBank.NON_MATCHING=gOrderingTableBank \
             --defsym=func_800A2CE0=D_800A2CE0 \
@@ -480,7 +480,7 @@ LDFLAGS += \
             --defsym=D_800A2FC8Absolute=D_800A2FC8 \
             --defsym=D_800A306CAbsolute=D_800A306C \
             --defsym=D_800A306DAbsolute=D_800A306D \
-            --defsym=D_800A3554Absolute=D_800A3554 \
+            --defsym=gPlayerCarAbsolute=gPlayerCar \
             --defsym=D_800A3590Absolute=D_800A3590 \
             --defsym=D_800A35A8Absolute=D_800A35A8 \
             --defsym=D_800A3614Absolute=D_800A3614 \
@@ -490,10 +490,10 @@ LDFLAGS += \
             --defsym=D_800A36FCAbsolute=D_800A36FC \
             --defsym=D_800A3700Absolute=D_800A3700 \
             --defsym=D_800A380CAbsolute=D_800A380C \
-            --defsym=D_800A3878Absolute=D_800A3878 \
+            --defsym=gCarListAbsolute=gCarList \
             --defsym=D_800A3924Absolute=D_800A3924 \
             --defsym=D_800A3644Absolute=D_800A3644 \
-            --defsym=D_800A36E0Absolute=D_800A36E0 \
+            --defsym=gPlayerDriverAbsolute=gPlayerDriver \
             --defsym=D_800A36E1Absolute=D_800A36E1 \
             --defsym=D_800A3A94Absolute=D_800A3A94
 

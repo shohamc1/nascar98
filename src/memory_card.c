@@ -14,7 +14,7 @@
 
 extern void func_8001E7EC(void *, s32, s32);
 
-extern s32 D_800A39C8[];
+extern s32 gOrderingTable[];
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -528,7 +528,7 @@ void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 TableFindByte(u8 value);
+u8 RaceFindGridPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -1594,7 +1594,7 @@ void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
     if (semiTrans != 0xFF) {
         SetSemiTrans(poly, semiTrans);
     }
-    AddPrim(D_800A39C8[0] + index * 4, poly);
+    AddPrim(gOrderingTable[0] + index * 4, poly);
 }
 
 typedef struct {
@@ -1679,7 +1679,8 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                         *(u16 *)(prim + 0x22) =
                             *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
                     }
-                    AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, prim);
+                    AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4,
+                            prim);
                     break;
                 }
                 case 2: {
@@ -1732,7 +1733,8 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                     if (semiTrans != 0xFF) {
                         SetSemiTrans(poly, semiTrans);
                     }
-                    AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, poly);
+                    AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4,
+                            poly);
                     break;
                 }
                 case 7:
@@ -1797,7 +1799,8 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                     if (semiTrans != 0xFF) {
                         SetSemiTrans(poly, semiTrans);
                     }
-                    AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, poly);
+                    AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4,
+                            poly);
                     break;
 
                 case 0:
@@ -2245,7 +2248,7 @@ void func_8005C8D8(u8 index) {
 
 extern u8 *D_800AE294[];
 extern u8 *D_800AE298[];
-extern u8 D_800A36E0[];
+extern u8 gPlayerDriver[];
 s32 func_8005CA4C(void) {
     s32 i;
     u8 *prim;
@@ -2267,10 +2270,10 @@ s32 func_8005CA4C(void) {
                 *(u16 *)((u8 *)D_800AE290[i] + 0xC);
         }
         D_800A3644[0] = 1;
-        if (D_800A36E0[0] == D_800A36E0[1]) {
-            D_800A36E1[0] = (D_800A36E0[0] + 1) % 24;
+        if (gPlayerDriver[0] == gPlayerDriver[1]) {
+            D_800A36E1[0] = (gPlayerDriver[0] + 1) % 24;
             func_800636EC(1, D_800A36E1[0]);
-            func_80063AE0(1, D_800A36E0[1]);
+            func_80063AE0(1, gPlayerDriver[1]);
         }
         func_80063694(1, -0x3C, *(s16 *)(D_800A35E8[0] + 0xA), 2);
     }
@@ -2897,7 +2900,7 @@ s32 func_8005DCF0(void) {
                 *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
             *(u16 *)((u8 *)poly + 0x22) =
                 *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
-            AddPrim(D_800A39C8[0] + *(s16 *)(object + 0x1A) * 4, poly);
+            AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4, poly);
         }
         i--;
     } while (i != 0);

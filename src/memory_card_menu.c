@@ -17,7 +17,7 @@ extern void func_8001E7EC(void *, s32, s32);
 extern s16 D_800A3696w15[] asm("D_800A3696.NON_MATCHING");
 extern s16 D_800A3694w15[] asm("D_800A3694.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
-extern s8 D_800A3A24w18c[] asm("D_800A3A24.NON_MATCHING");
+extern s8 gPadTypew18c[] asm("gPadType.NON_MATCHING");
 
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
@@ -27,7 +27,8 @@ typedef struct DoublyLinkedNode {
 extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 extern void func_8001ED84(s32 *vec);
 extern void (*D_80091080[])(void *);
-extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[], D_800A3A3C[];
+extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[],
+    gReplayIndex[];
 typedef struct {
     u8 pad[16];
 } Unk16;
@@ -157,7 +158,7 @@ extern void func_80036540(void);
 typedef struct HeapBlock {
     u32 size; /* payload size in bytes; bit 0 set while the block is free */
 } HeapBlock;
-extern s32 D_800A3A3C[];
+extern s32 gReplayIndex[];
 extern s32 func_80037204(u8 *);
 extern s32 func_8003702C(u8 *, u8 *);
 extern s32 D_800A37D0[];
@@ -194,7 +195,7 @@ typedef struct {
     u8 unk1;
     u8 unk2;
 } Unk3;
-extern u8 D_800A36E0[];
+extern u8 gPlayerDriver[];
 extern char *strcat(char *, char *);
 extern void func_8005C8D8(u8);
 typedef struct Df50Fields {
@@ -618,7 +619,7 @@ void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
 void *func_80058094(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 TableFindByte(u8 value);
+u8 RaceFindGridPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -1384,7 +1385,7 @@ extern s32 D_800A3370, D_800A3374, D_800A3378Small;
 void func_80069744(void) {
     s32 block;
 
-    block = (s32)func_80058094(0xB, (void **)D_800A3A24 + 3, 0);
+    block = (s32)func_80058094(0xB, (void **)gPadType + 3, 0);
     D_800A336C = (void *)block;
     if (block != 0) {
         D_800A3370 = block + D_800A3A30->unk0;
@@ -1560,7 +1561,7 @@ void __maspsx_include_asm_hack_jtblpad_80069A90() {
 
 void func_80069AFC(s32 arg0) {
     extern void *D_800A3914[];
-    extern s8 D_800A307C[];
+    extern s8 gPadLayout[];
     extern s32 D_8009A2D4[];
     extern s32 D_8009A2F4[];
     u8 group8;
@@ -1647,7 +1648,7 @@ void func_80069AFC(s32 arg0) {
         }
     }
     func_8005A7B8S32(2, 2);
-    if (((s8 *)D_800A3A24)[0] == 2) {
+    if (((s8 *)gPadType)[0] == 2) {
         value = func_8005B0E4(0x140, D_8009A2F4[index]);
     } else {
         value = func_8005B0E4(0x140, D_8009A2D4[index]);
@@ -1656,7 +1657,7 @@ void func_80069AFC(s32 arg0) {
     *((s16 *)(obj + 6)) = value;
     *((s16 *)(obj + 0x1A)) = 0x32;
     child = *((u8 **)(obj + 0x20));
-    if ((((s8 *)D_800A3A24)[0] == 2) && (D_800A307C[0] != 6)) {
+    if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
         *((s32 *)(child + 8)) = D_8009A2F4[index];
     } else {
         *((s32 *)(child + 8)) = D_8009A2D4[index];
@@ -1674,7 +1675,7 @@ void MenuCreateItemRow(s32 arg0) {
     extern void *D_800A3914[];
     extern u8 *D_800A3910f[] asm("D_800A3910");
     extern u8 *D_800A3918n[] asm("D_800A3918");
-    extern s8 D_800A307C[];
+    extern s8 gPadLayout[];
     extern s32 D_8009A2D4[];
     extern s32 D_8009A2F4[];
     s32 group;
@@ -1688,7 +1689,7 @@ void MenuCreateItemRow(s32 arg0) {
         return;
     }
     func_8005A7B8S32(2, 2);
-    if ((((s8 *)D_800A3A24)[0] == 2) && (D_800A307C[0] != 6)) {
+    if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
         text = D_8009A2F4[group];
     } else {
         text = D_8009A2D4[index];
@@ -1709,7 +1710,7 @@ void MenuCreateItemRow(s32 arg0) {
         next[3] = 0x80;
     }
     ((u8 *)D_800A3914[0])[4] = 0x40;
-    if ((((s8 *)D_800A3A24)[0] == 2) && (D_800A307C[0] != 6)) {
+    if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
         u8 *rowA;
         u8 *pktA;
         s32 textA;
@@ -1757,7 +1758,7 @@ void func_80069E88(void) {
 }
 
 extern u8 D_800A3938;
-extern u8 D_800A3808;
+extern u8 gCardMenuMessage;
 extern u8 gCardSlot;
 s32 CardCheckStatus(s32 arg0, u8 arg1);
 
@@ -1775,12 +1776,12 @@ s32 func_80069EB8(void) {
     } else {
         formatResult = CardFormat(gCardSlot);
         if (formatResult != 0) {
-            D_800A3808 = 0;
+            gCardMenuMessage = 0;
             return 1;
         }
         result = 4;
     }
-    D_800A3808 = result;
+    gCardMenuMessage = result;
     return 0;
 }
 
@@ -1788,7 +1789,7 @@ s32 func_80069F30(void) {
     u8 slot;
     u8 status;
 
-    D_800A3808 = 0;
+    gCardMenuMessage = 0;
     if (gCardSlot == 0xFF) {
         slot = 0;
     } else {
@@ -1797,7 +1798,7 @@ s32 func_80069F30(void) {
     status = CardCheckStatus(slot, 0);
     D_800A3938 = status;
     if (status == 1) {
-        D_800A3808 = 1;
+        gCardMenuMessage = 1;
         return 0;
     }
     if (status == 2) {
@@ -1807,10 +1808,10 @@ s32 func_80069F30(void) {
         }
         switch (D_800A3938) {
         case 1:
-            D_800A3808 = 1;
+            gCardMenuMessage = 1;
             return 0;
         case 2:
-            D_800A3808 = 2;
+            gCardMenuMessage = 2;
             return 0;
         case 0:
         case 3:
@@ -1823,15 +1824,15 @@ s32 func_80069F30(void) {
     status = func_80059F0C(gCardSlot);
     D_800A3938 = status;
     if (status == 2) {
-        D_800A3808 = 2;
+        gCardMenuMessage = 2;
         return 0;
     }
     if (status == 1) {
-        D_800A3808 = 3;
+        gCardMenuMessage = 3;
         return 0;
     }
     if (status == 3) {
-        D_800A3808 = 0xD;
+        gCardMenuMessage = 0xD;
         return 0;
     }
     return 1;
@@ -1852,7 +1853,7 @@ s32 func_8006A080(void) {
         D_800A3938 = result;
         status = result & 0xFF;
         if (status == 1) {
-            D_800A3808 = status;
+            gCardMenuMessage = status;
             return 0;
         }
         if (status != 2) {
@@ -1864,7 +1865,7 @@ s32 func_8006A080(void) {
     if ((count & 0xFF) == 2) {
         gCardSlot = 0;
     }
-    D_800A3808 = 0;
+    gCardMenuMessage = 0;
     return count & 0xFF;
 }
 
@@ -1891,11 +1892,11 @@ s32 CardLoadNameList(u8 arg0) {
 
     slot = arg0 == 0xFF ? 0 : arg0;
     D_800A3968 = 0;
-    D_800A3808 = 0;
+    gCardMenuMessage = 0;
     status = CardCheckStatus(slot, 0);
     D_800A3938 = status;
     if (status == 1) {
-        D_800A3808 = 1;
+        gCardMenuMessage = 1;
         return 0;
     }
     if (status == 2) {
@@ -1905,10 +1906,10 @@ s32 CardLoadNameList(u8 arg0) {
         }
         switch (D_800A3938) {
         case 1:
-            D_800A3808 = 1;
+            gCardMenuMessage = 1;
             return 0;
         case 2:
-            D_800A3808 = 2;
+            gCardMenuMessage = 2;
             return 1;
         case 0:
         case 3:
@@ -1931,16 +1932,16 @@ s32 CardLoadNameList(u8 arg0) {
     }
     if ((CardReadSectors((s32)&entry, 0x1A, 1, gCardSlot, (s32)D_800A3A0C) &
          0xFF) == 0) {
-        D_800A3808 = 7;
+        gCardMenuMessage = 7;
         return 0;
     }
     D_800A3968 = *(s32 *)D_800A3A0C;
     count = D_800A3968;
     if (count >= 0x10) {
         D_800A3968 = 0;
-        D_800A3808 = 0xB;
+        gCardMenuMessage = 0xB;
         if ((CardDeleteFile(path) & 0xFF) == 0) {
-            D_800A3808 = 0xC;
+            gCardMenuMessage = 0xC;
         }
         return 0;
     }
@@ -1953,7 +1954,7 @@ s32 CardLoadNameList(u8 arg0) {
             strcpy(D_800B0A2C + i * 0x10, src + i * 0x13C);
         }
     } else {
-        D_800A3808 = 7;
+        gCardMenuMessage = 7;
         return 0;
     }
     return 1;
@@ -1979,9 +1980,9 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
     u8 *p;
     SaveSlot *slots;
 
-    D_800A3808 = 0;
+    gCardMenuMessage = 0;
     if ((CardCountOtherFileBlocks(gCardSlot, gCardFileName) & 0xFF) == 0xF) {
-        D_800A3808 = 0x1E;
+        gCardMenuMessage = 0x1E;
         return 0;
     }
     if (gCardSlot == 0) {
@@ -1993,17 +1994,17 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
         fd = CardOpenFile(path, 0x200);
         if (fd == -1) {
-            D_800A3808 = 5;
+            gCardMenuMessage = 5;
             return 0;
         }
         CardCloseFile(fd);
         if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
-            D_800A3808 = 0xA;
+            gCardMenuMessage = 0xA;
             return 0;
         }
         if ((CardWriteSectors((s32)&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
              0xFF) == 0) {
-            D_800A3808 = 8;
+            gCardMenuMessage = 8;
             return 0;
         }
         if (D_800A3A58 == 0) {
@@ -2018,7 +2019,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
             }
         }
         if (D_800A3978 == 0) {
-            D_800A3808 = 0xE;
+            gCardMenuMessage = 0xE;
             return 0;
         }
         if (D_800A3A58 == 0) {
@@ -2041,7 +2042,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
         if ((CardWriteSectors((s32)&entry, 4, 0x16, gCardSlot,
                               (s32)D_800A366C) &
              0xFF) == 0) {
-            D_800A3808 = 8;
+            gCardMenuMessage = 8;
             return 0;
         }
     }
@@ -2056,7 +2057,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
     if ((CardWriteSectors((s32)&entry, 0x1A, sectors, gCardSlot,
                           (s32)D_800A3A0C) &
          0xFF) == 0) {
-        D_800A3808 = 8;
+        gCardMenuMessage = 8;
         return 0;
     }
     return 1;
@@ -2074,7 +2075,7 @@ s32 func_8006A7C8(u8 arg0) {
     struct DIRENTRY entry;
 
     D_800A3A58 = 0;
-    D_800A3808 = 0;
+    gCardMenuMessage = 0;
     if (gCardSlot == 0xFF) {
         slot = 0;
     } else {
@@ -2083,7 +2084,7 @@ s32 func_8006A7C8(u8 arg0) {
     status = CardCheckStatus(slot, 0);
     D_800A3938 = status;
     if (status == 1) {
-        D_800A3808 = 1;
+        gCardMenuMessage = 1;
         return 0;
     }
     if (status == 2) {
@@ -2093,10 +2094,10 @@ s32 func_8006A7C8(u8 arg0) {
         }
         switch (D_800A3938) {
         case 1:
-            D_800A3808 = 1;
+            gCardMenuMessage = 1;
             return 0;
         case 2:
-            D_800A3808 = 2;
+            gCardMenuMessage = 2;
             return 1;
         case 0:
         case 3:
@@ -2126,9 +2127,9 @@ s32 func_8006A7C8(u8 arg0) {
         return 1;
     }
     if (c != 0 && (c < 0x20 || c > 0x5A)) {
-        D_800A3808 = 0xB;
+        gCardMenuMessage = 0xB;
         if ((CardDeleteFile(path) & 0xFF) == 0) {
-            D_800A3808 = 0xC;
+            gCardMenuMessage = 0xC;
         }
         return 0;
     }
@@ -2150,7 +2151,7 @@ s32 func_8006A7C8(u8 arg0) {
             func_8006B464();
         }
     } else {
-        D_800A3808 = 7;
+        gCardMenuMessage = 7;
         return 0;
     }
     return 1;
@@ -2168,7 +2169,7 @@ s32 func_8006AA70(void) {
     s32 result;
     u8 *clear;
 
-    D_800A3808 = 0;
+    gCardMenuMessage = 0;
     if (gCardSlot == 0) {
         memcpy(path, D_800A3380, 6);
     } else {
@@ -2180,26 +2181,26 @@ s32 func_8006AA70(void) {
     if ((result & 0xFF) == 0) {
         fd = CardOpenFile(path, 0x200);
         if (fd == -1) {
-            D_800A3808 = 5;
+            gCardMenuMessage = 5;
             return 0;
         }
         CardCloseFile(fd);
         created = 1;
         if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
-            D_800A3808 = 0xA;
+            gCardMenuMessage = 0xA;
             return 0;
         }
     }
     if (created != 0) {
         if ((CardWriteSectors((s32)&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
              0xFF) == 0) {
-            D_800A3808 = 8;
+            gCardMenuMessage = 8;
             return 0;
         }
     }
     if ((CardWriteSectors((s32)&entry, 4, 0x16, gCardSlot, (s32)D_800A3604) &
          0xFF) == 0) {
-        D_800A3808 = 8;
+        gCardMenuMessage = 8;
         return 0;
     }
     if (created != 0) {
@@ -2211,7 +2212,7 @@ s32 func_8006AA70(void) {
         if ((CardWriteSectors((s32)&entry, 0x1A, 3, gCardSlot,
                               (s32)D_800A3A0C) &
              0xFF) == 0) {
-            D_800A3808 = 8;
+            gCardMenuMessage = 8;
             return 0;
         }
     }
@@ -2265,7 +2266,7 @@ void func_8006AC78(s32 arg0) {
     do {
         label = gDriverNames[index];
         if (strcmp(D_800BB9B4 + mask * 0x18, label) == 0) {
-            D_800A36E0[mask] = index;
+            gPlayerDriver[mask] = index;
             return;
         }
         index += 1;
@@ -2300,8 +2301,8 @@ s32 func_8006AD44(char *name) {
 
 extern u8 D_800A3068w17[] asm("D_800A3068.NON_MATCHING");
 extern u8 D_800A3069w17[] asm("D_800A3069.NON_MATCHING");
-extern u8 D_800A3A24w17[] asm("D_800A3A24.NON_MATCHING");
-extern u8 D_800A307Cw17[] asm("D_800A307C.NON_MATCHING");
+extern u8 gPadTypew17[] asm("gPadType.NON_MATCHING");
+extern u8 gPadLayoutw17[] asm("gPadLayout.NON_MATCHING");
 extern u8 D_800BBA24w17[] asm("D_800BBA24.NON_MATCHING");
 
 void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
@@ -2417,8 +2418,8 @@ outer:
         goto outer;
     }
 
-    D_800A35F4[0x1A] = D_800A3A24w17[arg0];
-    D_800A35F4[0x1B] = D_800A307Cw17[arg0];
+    D_800A35F4[0x1A] = gPadTypew17[arg0];
+    D_800A35F4[0x1B] = gPadLayoutw17[arg0];
 }
 
 typedef struct {
@@ -2508,8 +2509,8 @@ outer:
     slotM = slot & 0xFF;
     D_800A35F4[slotM * 0xE8 + 0x19] =
         D_800A3068w17[driver * 2] | (D_800A3069w17[driver * 2] << 1);
-    D_800A35F4[slotM * 0xE8 + 0x1A] = D_800A3A24w17[driver];
-    D_800A35F4[slotM * 0xE8 + 0x1B] = D_800A307Cw17[driver];
+    D_800A35F4[slotM * 0xE8 + 0x1A] = gPadTypew17[driver];
+    D_800A35F4[slotM * 0xE8 + 0x1B] = gPadLayoutw17[driver];
 }
 
 extern u8 D_800BBA24[];
@@ -2618,7 +2619,7 @@ void func_8006B5BC(void) {
 extern s32 D_800B0B1C[];
 extern s32 D_800B0B1CNM[] asm("D_800B0B1C.NON_MATCHING");
 
-void CardUpdateTrackRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
+void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
     CardMoveRecord buf;
     u8 *p;
     char *name;
@@ -2640,10 +2641,10 @@ void CardUpdateTrackRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
     i = arg1;
     if (i >= 0) {
         top = i;
-        p = D_800A36E0 + i;
+        p = gPlayerDriver + i;
         do {
             isNew = 0;
-            idx = TableFindByte(*p);
+            idx = RaceFindGridPosition(*p);
             name = gDriverNames[*p];
             if (D_800A3A58 == 0) {
                 slot = 0xFF;
@@ -2791,7 +2792,7 @@ void func_8006BB1C(void) {
     extern u8 D_800A3071NM[] asm("D_800A3071.NON_MATCHING");
     extern u8 D_800A3072[];
     extern u8 D_800A308C[];
-    extern u8 D_800A307C[];
+    extern u8 gPadLayout[];
     extern s32 D_800A37D0[];
     extern u8 D_800A2F94[];
     extern u8 D_800A2F95[];
@@ -2800,7 +2801,7 @@ void func_8006BB1C(void) {
     flags = D_800B9B75[0];
     v74 = D_800B9B74[0];
     v82 = D_800B9B82[0];
-    D_800A36E0[0] = level;
+    gPlayerDriver[0] = level;
     level = flags & 3;
     D_800A305B[0] = v74;
     D_800A306F[0] = (flags >> 2) & 1;
@@ -2830,11 +2831,11 @@ void func_8006BB1C(void) {
         D_800A331C[i] = D_800B9B79[i];
     }
 
-    if (D_800B9B7F[0] == D_800A3A24w18c[0]) {
-        D_800A308C[0] = D_800A3A24w18c[0];
-        D_800A307C[0] = D_800B9B80[0];
+    if (D_800B9B7F[0] == gPadTypew18c[0]) {
+        D_800A308C[0] = gPadTypew18c[0];
+        gPadLayout[0] = D_800B9B80[0];
     } else {
-        D_800A307C[0] = 0;
+        gPadLayout[0] = 0;
     }
 
     rec = D_800B9B81;
@@ -2883,7 +2884,7 @@ void func_8006BD68(void) {
     extern u8 D_800A3071R[] asm("D_800A3071.NON_MATCHING");
     extern u8 D_800A3072R[] asm("D_800A3072.NON_MATCHING");
     extern u8 D_800A3075[];
-    extern u8 D_800A307C[];
+    extern u8 gPadLayout[];
     extern u16 D_800A3694R[] asm("D_800A3694.NON_MATCHING");
     extern u16 D_800A3696[];
     extern u8 D_800B9B44[];
@@ -2901,7 +2902,7 @@ void func_8006BD68(void) {
 
     dest = D_800B9B44;
     strcpy((char *)dest, D_8009A31CStr[D_800A305B[0]]);
-    strcpy((char *)dest + 0x10, gDriverNames[D_800A36E0[0]]);
+    strcpy((char *)dest + 0x10, gDriverNames[gPlayerDriver[0]]);
     D_800B9B73[0] = D_800A36E1[-1];
     D_800B9B74[0] = D_800A305BR[0];
     D_800B9B75[0] =
@@ -2920,8 +2921,8 @@ void func_8006BD68(void) {
     } while (i < 6);
     i = 0;
     rec = D_800B9B7F;
-    rec[0] = D_800A3A24w17[0];
-    D_800B9B80[0] = D_800A307C[0];
+    rec[0] = gPadTypew17[0];
+    D_800B9B80[0] = gPadLayout[0];
     D_800B9B81[0] = D_800A37D0[0];
     srcRow = (s32)D_800BBA24;
     dstRow = (s32)rec + 0x35;
@@ -3604,10 +3605,10 @@ void func_8006CF90(u32 mode) {
     *(u16 *)(st + 6) = result + 10;
 }
 
-extern u8 D_800A358C, D_800A3968, D_800A3808;
+extern u8 D_800A358C, D_800A3968, gCardMenuMessage;
 s32 func_8006D0C0(void) {
     if (D_800A358C < D_800A3968) {
-        D_800A3808 = 16;
+        gCardMenuMessage = 16;
         return 1;
     } else {
         return 0;
@@ -3623,7 +3624,7 @@ void func_8006D0F0(void) {
     strcpy(D_800B9B44, &D_800B0A2C[D_800A358C * 16]);
     func_800599E4();
     if ((CardWriteSaveSlot(D_800B9B44, isCurrent, D_800A358C) & 0xFF) == 1) {
-        D_800A3808 = 0x11;
+        gCardMenuMessage = 0x11;
     }
     func_800598C4();
 }
@@ -3683,11 +3684,11 @@ s32 func_8006D258(void) {
     func_800598C4();
     status &= 0xFF;
     if (status == 3) {
-        D_800A3808 = 0xF;
+        gCardMenuMessage = 0xF;
         return 0;
     }
     if (status != 0) {
-        D_800A3808 = 1;
+        gCardMenuMessage = 1;
         return 0;
     }
     rec = (SaveRec *)(D_800A3A0C + 4);
@@ -3699,8 +3700,8 @@ s32 func_8006D258(void) {
     func_8005E4A4(paint);
     func_8005ED04(D_800A305BR2[0]);
     func_8005EC5C(D_800A305BR3[0]);
-    D_800A36E0[0] = D_800B9B73[0];
-    func_80063AE0(0, D_800A36E0[0]);
+    gPlayerDriver[0] = D_800B9B73[0];
+    func_80063AE0(0, gPlayerDriver[0]);
     func_800636EC(0, D_800A36E1[-1]);
     for (i = 0; i < 0x18; i++) {
         if (D_800A36E1w15[-1] == D_8009AD40[i]) {
@@ -3709,7 +3710,7 @@ s32 func_8006D258(void) {
         }
     }
     D_800A3980[0] = match;
-    strcpy(D_800BB9B4, gDriverNames[D_800A36E0[0]]);
+    strcpy(D_800BB9B4, gDriverNames[gPlayerDriver[0]]);
     func_8006EEBC();
     return 1;
 }
@@ -3773,9 +3774,9 @@ outer:
 extern u8 D_800BBA24_nm[] asm("D_800BBA24.NON_MATCHING");
 extern u8 D_800A3068_nm[] asm("D_800A3068.NON_MATCHING");
 extern u8 D_800A3069_nm[] asm("D_800A3069.NON_MATCHING");
-extern u8 D_800A307C_nm[] asm("D_800A307C.NON_MATCHING");
+extern u8 gPadLayout_nm[] asm("gPadLayout.NON_MATCHING");
 extern u8 D_800A308C_nm[] asm("D_800A308C.NON_MATCHING");
-extern s8 D_800A3A24_nm[] asm("D_800A3A24.NON_MATCHING");
+extern s8 gPadType_nm[] asm("gPadType.NON_MATCHING");
 void func_8006D4C8(u8 arg0, u8 arg1) {
     u8 i;
     u8 j;
@@ -3809,11 +3810,11 @@ outer:
     D_800A3068_nm[arg0 * 2] = bit;
     D_800A3069_nm[arg0 * 2] =
         (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x19] >> 1) & 1;
-    if (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1A] == D_800A3A24_nm[arg0]) {
-        D_800A307C_nm[arg0] = ((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1B];
-        D_800A308C_nm[arg0] = ((u8 *)D_800A3A24_nm)[arg0];
+    if (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1A] == gPadType_nm[arg0]) {
+        gPadLayout_nm[arg0] = ((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1B];
+        D_800A308C_nm[arg0] = ((u8 *)gPadType_nm)[arg0];
     } else {
-        D_800A307C_nm[arg0] = 0;
+        gPadLayout_nm[arg0] = 0;
     }
 }
 
@@ -3903,7 +3904,7 @@ again:
         goto again;
     }
     if (arg2 != 0) {
-        name = gDriverNames[D_800A36E0[arg0]];
+        name = gDriverNames[gPlayerDriver[arg0]];
         if (D_800A3A58 == 0) {
             match = 0xFF;
         } else {
@@ -3940,12 +3941,12 @@ again:
 
 extern u8 *D_800A3908[];
 extern u8 *D_800A377C[];
-extern u8 D_800A3808;
+extern u8 gCardMenuMessage;
 extern u8 gCardSlot;
 extern s32 D_8009AB80[];
 extern s32 D_8009AB00[];
 extern u8 D_800A3770;
-extern void *D_800A3A24[];
+extern void *gPadType[];
 void CardMenuShowMessage(s32 arg0) {
     u8 *obj;
     u8 *field20;
@@ -3954,7 +3955,7 @@ void CardMenuShowMessage(s32 arg0) {
     s32 val;
     s32 val2;
     obj = D_800A3908[0];
-    menuId = D_800A3808;
+    menuId = gCardMenuMessage;
     field20 = *((u8 **)(obj + 0x20));
     if (menuId == 0x1C) {
         if (gCardSlot != 0) {
@@ -3975,7 +3976,7 @@ void CardMenuShowMessage(s32 arg0) {
             menuId = 0x19;
         }
     }
-    if (((s8 *)D_800A3A24)[0] == 2) {
+    if (((s8 *)gPadType)[0] == 2) {
         *((s32 *)(field20 + 8)) = D_8009AB80[menuId];
     } else {
         *((s32 *)(field20 + 8)) = D_8009AB00[menuId];
@@ -4066,7 +4067,7 @@ void func_8006DA40(void) {
         i += 1;
     } while (i < 2);
     node = (u8 *)func_8005BF8C(0x71, 0x55);
-    err = D_800A3808;
+    err = gCardMenuMessage;
     *((s16 *)(node + 0x1A)) = 2;
     if (err == 2) {
         idx = 0x1B;
@@ -4081,7 +4082,7 @@ void func_8006DA40(void) {
             idx = 0x1A;
         }
     }
-    if (D_800A3A24_nm[0] == 2) {
+    if (gPadType_nm[0] == 2) {
         func_80067EA4((UnkObject24 *)node, 2, 2, (s32)D_8009AB80nm[idx], 0,
                       *((s16 *)(node + 0x1A)));
     } else {
@@ -4097,7 +4098,7 @@ void func_8006DA40(void) {
 
 void func_8006DCF0(void) {
     func_8005B688(D_800A3A10[0], 1);
-    func_8005B8B8(((void **)D_800A3A3C)[-11], 0xFF);
+    func_8005B8B8(((void **)gReplayIndex)[-11], 0xFF);
 }
 
 extern u8 D_800AEE3C[];
@@ -4108,12 +4109,12 @@ void func_8006DD28(u32 arg0, u32 arg1) {
     s32 m;
     u32 n;
     s32 pos;
-    extern u8 D_800A307C[];
+    extern u8 gPadLayout[];
     extern u8 D_800A36E4[];
 
     m = (u8)arg0;
     n = (u8)arg1;
-    PadCalibrateCenter(m, n, D_800A307C[m]);
+    PadCalibrateCenter(m, n, gPadLayout[m]);
     pos = (m << 3) + m;
     for (i = 0; i < 3; i++) {
         if (i == 2) {
