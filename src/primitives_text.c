@@ -1865,7 +1865,71 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
 
 INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001AEDC);
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001B3F0);
+/* Draws one 16x24 replay button quad at (x, y) and queues a copy. */
+static inline void ReplayDrawButton(POLY_FT4 *poly, s16 x, s16 y) {
+    POLY_FT4 *prim;
+    u32 cursor;
+
+    cursor = gPrimitiveCursor[0];
+    gPrimitiveCursorLui = cursor + 0x28;
+    prim = (POLY_FT4 *)cursor;
+    setXYWH(poly, x, y, 16, 24);
+    *prim = *poly;
+    AddPrim((u8 *)gOrderingTable[0], prim);
+}
+
+/* Draws the instant-replay control buttons. A set bit in D_800A2DFC
+   picks the lit variant, six quads before the unlit one. */
+void ReplayDrawControls(void) {
+    extern u32 D_800A2DFC[];
+    extern POLY_FT4 D_800BC4AC[];
+    extern POLY_FT4 D_800BC4FC[];
+    extern POLY_FT4 D_800BC4D4[];
+    extern POLY_FT4 D_800BC524[];
+    extern POLY_FT4 D_800BC45C[];
+    POLY_FT4 *poly;
+    s32 x;
+    s32 y;
+    s16 buttonX;
+
+    if (D_800A3620w18c[0] != 0) {
+        gOrderingTableLui += 0x1004;
+        x = -10;
+        y = -10;
+    } else {
+        x = -10;
+        y = 0;
+    }
+    buttonX = x + 60;
+    poly = D_800BC4AC;
+    if (D_800A2DFC[0] & 1) {
+        poly -= 6;
+    }
+    ReplayDrawButton(poly, buttonX, y + 20);
+    buttonX = x + 40;
+    poly = D_800BC4FC;
+    if (D_800A2DFC[0] & 2) {
+        poly -= 6;
+    }
+    ReplayDrawButton(poly, buttonX, y + 35);
+    buttonX = x + 80;
+    poly = D_800BC4D4;
+    if (D_800A2DFC[0] & 4) {
+        poly -= 6;
+    }
+    ReplayDrawButton(poly, buttonX, y + 35);
+    buttonX = x + 60;
+    poly = D_800BC524;
+    if (D_800A2DFC[0] & 8) {
+        poly -= 6;
+    }
+    ReplayDrawButton(poly, buttonX, y + 50);
+    buttonX = x + 20;
+    ReplayDrawButton(D_800BC45C, buttonX, y + 35);
+    if (D_800A3620w18c[0] != 0) {
+        gOrderingTableLui -= 0x1004;
+    }
+}
 
 extern s32 D_800A2EB4[];
 extern u8 *gPlayerCar;
@@ -2073,7 +2137,7 @@ void func_8001C34C(void) {
     }
     if (D_800A2EC8nm[0] != 0) {
         if (D_800A397CAbsolute[0] == 2) {
-            func_8001B3F0();
+            ReplayDrawControls();
         } else {
             MenuDrawPausePanel((void *)0x80010000, D_800A2ECCnm[0],
                                D_800A2ED0nm[0]);
