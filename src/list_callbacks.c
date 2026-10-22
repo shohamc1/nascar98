@@ -707,7 +707,148 @@ void func_8001D1E4(void) {
 void func_8001D218(void) {
 }
 
-INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D220);
+extern s32 D_800A2DB0;
+extern s32 D_800A2DB4;
+extern POLY_F4 D_800A3BBC[];
+extern POLY_F3 D_800A3B58[];
+extern u32 D_800A35C0[];
+
+/* Draws a horizontal gauge: one POLY_F4 bar, colorIdx 0 to 3 for green, red,
+   yellow or blue, whose length is value / (scale * 4) of 250 pixels, then five
+   POLY_F3 markers a quarter of 250 pixels apart. A negative value repeats the
+   previous one. The bar cycles through four buffers. */
+void func_8001D220(s32 value, s32 scale, s32 y, s32 colorIdx) {
+    POLY_F4 *bar;
+    POLY_F3 *mark;
+    POLY_FT4 *entry;
+    u32 cursor;
+    POLY_FT4 *entry2;
+    u32 cursor2;
+    s32 den;
+    s32 quot;
+    s32 rem;
+    s32 fixed;
+    s32 step;
+    s32 x;
+    s32 i;
+    s32 one;
+    s32 four;
+    s32 quot2;
+    s32 fixed2;
+
+    bar = &D_800A3BBC[D_800A2DB0];
+    D_800A2DB0 = D_800A2DB0 + 1;
+    if (D_800A2DB0 >= 4) {
+        D_800A2DB0 = 0;
+    }
+    if (value < 0) {
+        value = D_800A2DB4;
+    } else {
+        D_800A2DB4 = value;
+    }
+    den = scale * 4;
+    if (den == 0) {
+        fixed = 0x7FFFFFFF;
+    } else {
+        scale = den;
+        quot = value / scale;
+        rem = value % scale;
+        rem = (rem << 15) / scale;
+        rem <<= 1;
+        fixed = (quot << 16) + rem;
+    }
+    step = MathMultiplyFixed16(fixed, 0xFA0000) >> 16;
+    SetPolyF4(bar);
+    bar->x0 = 0x1E;
+    bar->y0 = y;
+    bar->x1 = step + 0x1E;
+    bar->y1 = y;
+    bar->x2 = 0x1E;
+    bar->y2 = y + 5;
+    bar->x3 = step + 0x1E;
+    bar->y3 = y + 5;
+    switch (colorIdx) {
+    case 1:
+        bar->r0 = 0xFF;
+        bar->g0 = 0;
+        bar->b0 = 0;
+        break;
+    case 0:
+        bar->r0 = 0;
+        bar->g0 = 0xFF;
+        bar->b0 = 0;
+        break;
+    case 2:
+        bar->r0 = 0xFF;
+        bar->g0 = 0xFF;
+        bar->b0 = 0;
+        break;
+    case 3:
+        bar->r0 = 0;
+        bar->g0 = 0;
+        bar->b0 = 0xFF;
+        break;
+    }
+    cursor = gPrimitiveCursor[0];
+    D_800A35C0[1] = cursor + sizeof(POLY_FT4);
+    entry = (POLY_FT4 *)cursor;
+    *entry = *(POLY_FT4 *)bar;
+    AddPrim((u8 *)D_800A39C8[0], entry);
+    one = 1;
+    four = 4;
+    quot2 = one / four;
+    rem = one % four;
+    rem <<= 15;
+    rem /= four;
+    rem <<= 1;
+    fixed2 = (quot2 << 16) + rem;
+    step = MathMultiplyFixed16(fixed2, 0xFA0000) >> 16;
+    x = 0x1E;
+    y = y - 1;
+    for (i = 0; i < 5; i++) {
+        mark = &D_800A3B58[i];
+        SetPolyF3(mark);
+        mark->x0 = x;
+        mark->y0 = y;
+        mark->x1 = x - 4;
+        mark->y1 = y - 4;
+        mark->x2 = x + 4;
+        mark->y2 = y - 4;
+        switch (i) {
+        case 0:
+            mark->r0 = 0;
+            mark->g0 = 0xFF;
+            mark->b0 = 0;
+            break;
+        case 1:
+            mark->r0 = 0x80;
+            mark->g0 = 0xFF;
+            mark->b0 = 0;
+            break;
+        case 2:
+            mark->r0 = 0xFF;
+            mark->g0 = 0xFF;
+            mark->b0 = 0;
+            break;
+        case 3:
+            mark->r0 = 0xFF;
+            mark->g0 = 0x80;
+            mark->b0 = 0;
+            break;
+        case 4:
+            mark->r0 = 0xFF;
+            mark->g0 = 0;
+            mark->b0 = 0;
+            break;
+        }
+        cursor2 = gPrimitiveCursor[0];
+        D_800A35C0[1] = cursor2 + sizeof(POLY_FT4);
+        entry2 = (POLY_FT4 *)cursor2;
+        *entry2 = *(POLY_FT4 *)mark;
+        AddPrim((u8 *)D_800A39C8[0], entry2);
+        x += step;
+    }
+}
 
 extern POLY_F3 D_800A3C1C[];
 extern u32 D_800A35C0[];
