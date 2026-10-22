@@ -927,6 +927,7 @@ TextFormatInt = 0x80012EA8; // type:func
 TextFormatLong = 0x80012F94; // type:func
 TrackLoadFromFile = 0x80015A74; // type:func
 GraphicsAddPolyFT4 = 0x80017D80; // type:func
+FontDrawGlyph = 0x800180C0; // type:func
 FontDrawString = 0x8001832C; // type:func
 FontDrawNumber = 0x80018BD4; // type:func
 GraphicsLoadImageBank = 0x8001E050; // type:func

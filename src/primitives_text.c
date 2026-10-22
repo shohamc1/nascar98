@@ -171,16 +171,127 @@ void func_80017E08(void) {
     } while (++i < 0xC);
 }
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_800180C0);
-
 extern s16 gFontColorRed, gFontColorGreen, gFontColorBlue;
+void FontDrawGlyph(s32 ch, s32 x, s32 y, s32 page) {
+    extern s16 D_800A2D78[];
+    extern s16 D_800A2D80[];
+    extern u8 D_800BA064[];
+    extern s32 D_800A39C8[];
+    s32 w;
+    s32 h;
+    s8 tile;
+    u8 *src;
+    s32 pageOffset;
+    s32 tileAddr;
+    POLY_FT4 *prim;
+    s32 cursor;
+
+    w = D_800A2D78[page];
+    h = D_800A2D80[page];
+    if ((u8)(ch - 0x30) >= 0xA) {
+        if (page != 1) {
+            if ((s8)ch == ':') {
+                tile = 0xA;
+            } else if ((s8)ch == '-') {
+                tile = 0xB;
+            } else {
+                return;
+            }
+        } else {
+            if ((u8)(ch - 0x61) < 0x1A) {
+                tile = ch - 0x61;
+            } else if ((u8)(ch - 0x41) < 0x1A) {
+                tile = ch - 0x41;
+            } else {
+                switch ((s8)(ch - 0x21)) {
+                case '.' - 0x21:
+                    tile = 0x25;
+                    break;
+                case ',' - 0x21:
+                    tile = 0x26;
+                    break;
+                case '-' - 0x21:
+                    tile = 0x27;
+                    break;
+                case '+' - 0x21:
+                    tile = 0x28;
+                    break;
+                case '#' - 0x21:
+                    tile = 0x29;
+                    break;
+                case ':' - 0x21:
+                    tile = 0x2A;
+                    break;
+                case '&' - 0x21:
+                    tile = 0x2B;
+                    break;
+                case '?' - 0x21:
+                    tile = 0x2C;
+                    break;
+                case '*' - 0x21:
+                    tile = 0x2D;
+                    break;
+                case '(' - 0x21:
+                    tile = 0x2E;
+                    break;
+                case ')' - 0x21:
+                    tile = 0x2F;
+                    break;
+                case '$' - 0x21:
+                    tile = 0x30;
+                    break;
+                case '@' - 0x21:
+                    tile = 0x31;
+                    break;
+                case '!' - 0x21:
+                    tile = 0x32;
+                    break;
+                case '"' - 0x21:
+                    tile = 0x33;
+                    break;
+                case '\'' - 0x21:
+                    tile = 0x34;
+                    break;
+                default:
+                    tile = 0x1A;
+                    break;
+                }
+            }
+        }
+    } else {
+        if (page == 1) {
+            tile = ch - 0x15;
+        } else {
+            tile = ch - 0x30;
+        }
+    }
+    pageOffset = page * 0x870;
+    tileAddr = tile * 0x28 + (s32)D_800BA064;
+    src = (u8 *)(pageOffset + tileAddr);
+    *(s16 *)(src + 8) = x;
+    *(s16 *)(src + 0xA) = y;
+    *(s16 *)(src + 0x10) = x + w;
+    *(s16 *)(src + 0x12) = y;
+    *(s16 *)(src + 0x18) = x;
+    *(s16 *)(src + 0x1A) = y + h;
+    *(s16 *)(src + 0x20) = x + w;
+    *(s16 *)(src + 0x22) = y + h;
+    src[4] = gFontColorRed;
+    src[5] = gFontColorGreen;
+    src[6] = gFontColorBlue;
+    cursor = gPrimitiveCursor[0];
+    ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
+    prim = (POLY_FT4 *)cursor;
+    *prim = *(POLY_FT4 *)src;
+    AddPrim((u8 *)D_800A39C8[0], prim);
+}
+
 void FontSetColor(s16 red, s16 green, s16 blue) {
     gFontColorRed = red;
     gFontColorGreen = green;
     gFontColorBlue = blue;
 }
 
-extern void func_800180C0(s8, s32, s32, s32);
 extern s16 D_800A2D88[];
 
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale) {
@@ -193,7 +304,7 @@ void FontDrawString(s8 *text, s32 x, s32 y, s32 scale) {
         width = base + scale;
         p = text;
         do {
-            func_800180C0(*p, x, y, scale);
+            FontDrawGlyph(*p, x, y, scale);
             x += *width;
             p++;
         } while (*p != 0);
@@ -253,7 +364,7 @@ void func_800183C0(s32 time, s32 x, s32 y, s32 scale) {
         /* Reuse the seconds local for the glyph cursor. */
         value = (s32)p;
         do {
-            func_800180C0(*(s8 *)value, pen, y, scale);
+            FontDrawGlyph(*(s8 *)value, pen, y, scale);
             pen += *width;
             value++;
         } while (*(s8 *)value != 0);
@@ -359,7 +470,7 @@ void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
         width = base + scale;
         field = p;
         do {
-            func_800180C0(*field, pen, y, scale);
+            FontDrawGlyph(*field, pen, y, scale);
             pen += *width;
             field++;
         } while (*field != 0);
@@ -413,7 +524,7 @@ void func_800188B0(s32 pos, u8 mode, s32 x, s32 y, s32 scale) {
     if (text[0] != 0) {
         i = 0;
         do {
-            func_800180C0(text[i], x, y, scale);
+            FontDrawGlyph(text[i], x, y, scale);
             x += D_800A2D88[scale];
             i++;
         } while (text[i] != 0);
@@ -447,7 +558,7 @@ void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale) {
     if (text[0] != 0) {
         i = 0;
         do {
-            func_800180C0(text[i], x, y, scale);
+            FontDrawGlyph(text[i], x, y, scale);
             x += D_800A2D88[scale];
             i++;
         } while (text[i] != 0);
@@ -472,7 +583,7 @@ void func_80018B18(s32 value, s32 x, s32 y, s32 scale) {
         width = base + scale;
         p = start;
         do {
-            func_800180C0(*p, pen, y, scale);
+            FontDrawGlyph(*p, pen, y, scale);
             pen += *width;
             p++;
         } while (*p != 0);
@@ -496,7 +607,7 @@ void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale) {
         width = base + scale;
         p = start;
         do {
-            func_800180C0(*p, pen, y, scale);
+            FontDrawGlyph(*p, pen, y, scale);
             pen += *width;
             p++;
         } while (*p != 0);
@@ -1289,7 +1400,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     x = 8;
     if (text[0] != 0) {
         do {
-            func_800180C0(*p, x, y, 2);
+            FontDrawGlyph(*p, x, y, 2);
             p++;
             x += D_800A2D8C;
         } while (*p != 0);
@@ -1324,13 +1435,13 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     x = 23;
     if (text[0] != 0) {
         do {
-            func_800180C0(*p, x, y, 2);
+            FontDrawGlyph(*p, x, y, 2);
             p++;
             x += D_800A2D8C;
         } while (*p != 0);
     }
     baseY = 135 - yOffset;
-    func_800180C0('-', 47, baseY, 2);
+    FontDrawGlyph('-', 47, baseY, 2);
     numberArg = D_800A2EA8w15[0];
     text[0] = 0;
 
@@ -1341,7 +1452,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     if (text[0] != 0) {
         p = start;
         do {
-            func_800180C0(*p, x, y, 2);
+            FontDrawGlyph(*p, x, y, 2);
             p++;
             x += D_800A2D8C;
         } while (*p != 0);
@@ -1374,12 +1485,12 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     x = 34;
     if (text[0] != 0) {
         do {
-            func_800180C0(*p, x, y, 2);
+            FontDrawGlyph(*p, x, y, 2);
             p++;
             x += D_800A2D8C;
         } while (*p != 0);
     }
-    func_800180C0((s8)(*(u8 *)(car + 0x10C) + '1'), 60, 190 - yOffset, 2);
+    FontDrawGlyph((s8)(*(u8 *)(car + 0x10C) + '1'), 60, 190 - yOffset, 2);
     if (hideTimes == 0) {
         helperTime = *(void **)(car + 0x258);
         helperMode = 2;
@@ -1394,7 +1505,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             glyphWidth = (s16 *)&D_800A2EACAbsolute[-72];
             p = start;
             do {
-                func_800180C0(*p, x, y, scale);
+                FontDrawGlyph(*p, x, y, scale);
                 p++;
                 x += *glyphWidth;
             } while (*p != 0);
@@ -1413,7 +1524,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
                 glyphWidth = (s16 *)&D_800A2EACAbsolute[-72];
                 p = start;
                 do {
-                    func_800180C0(*p, x, y, scale);
+                    FontDrawGlyph(*p, x, y, scale);
                     p++;
                     x += *glyphWidth;
                 } while (*p != 0);
@@ -1425,7 +1536,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             if (*string != 0) {
                 p = string;
                 do {
-                    func_800180C0(*p, x, y, 2);
+                    FontDrawGlyph(*p, x, y, 2);
                     p++;
                     x += D_800A2D8C;
                 } while (*p != 0);
@@ -1518,7 +1629,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             if (*string != 0) {
                 p = string;
                 do {
-                    func_800180C0(*p, x, y, 1);
+                    FontDrawGlyph(*p, x, y, 1);
                     p++;
                     x += D_800A2D8A;
                 } while (*p != 0);
