@@ -5006,8 +5006,8 @@ void func_800645A4(s32 arg0, s32 arg1) {
     u = remainder & 0x1F80;
     u += 0x140;
     *(s16 *)(prim + 0x16) = GetTPage(1, 0, u, y);
-    /* Keep the mask on idx instead of CSE substituting the original arg1. */
-    asm("andi %0,%1,3" : "=r"(q) : "r"(idx));
+    /* Shift pair keeps the mask on idx; CSE would use arg1. */
+    q = (idx << 30) >> 30;
     u = q << 6;
     prim[0xC] = u;
     prim[0xD] = y;

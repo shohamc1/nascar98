@@ -350,7 +350,7 @@ void func_800420D8(u32 *input, u32 flags, u16 *output) {
     u32 outputState;
     s8 modeValue;
 
-    asm volatile("" : "=r"(current) : "0"((u8 *)input));
+    current = (u8 *)input;
     settingPtr = current;
     mode = (u8 *)gPadType;
     settingPtr += 2;
