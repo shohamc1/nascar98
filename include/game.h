@@ -146,7 +146,7 @@ extern s32 PadGetButtons(s32);
 extern void func_80044114(u8 *);
 extern void func_8004EA34(void);
 extern void MenuRunFrontEnd(void);
-extern void func_800535A0(void);
+extern void GameInitDefaults(void);
 extern void func_80057A9C(void);
 extern void *FileLoadOffsetTable(s32, void **, s32);
 extern void func_800587A0(void);

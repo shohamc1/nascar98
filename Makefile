@@ -641,3 +641,14 @@ distclean: clean
 # Absolute scalar loads for model geometry scales.
 LDFLAGS += --defsym=D_800A353CAbsolute=D_800A353C \
            --defsym=D_800A3758Absolute=D_800A3758
+
+# GameInitDefaults: $gp stores to array-declared globals, lui stores to
+# globals inside the small-data window.
+LDFLAGS += --defsym=D_800A3980Small=D_800A3980 \
+           --defsym=D_800A37D0Small=D_800A37D0 \
+           --defsym=D_800A3694Small=D_800A3694 \
+           --defsym=D_800A3981Absolute=D_800A3981 \
+           --defsym=D_800A3968Absolute=D_800A3968 \
+           --defsym=D_800A35F4Absolute=D_800A35F4 \
+           --defsym=gCardSlotAbsolute=gCardSlot \
+           --defsym=gCardMenuMessageAbsolute=gCardMenuMessage

@@ -7986,7 +7986,171 @@ void MenuRunFrontEnd(void) {
     func_80066A24FrontEnd(D_800A2EB0Absolute[0]);
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_800535A0);
+/* Called once at boot: resets the player names, volumes, and option
+ * defaults, then loads the save table when a memory card holds one. */
+void GameInitDefaults(void) {
+    extern u8 D_800BBA24[2][17][4];
+    extern u8 D_800B0A2C[];
+    extern u8 D_800A36E4[];
+    extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");
+    extern u8 D_800A3980Small;
+    extern u8 D_800A3981Lui asm("D_800A3981Absolute");
+    extern u8 D_800A3658;
+    extern u8 gPlayerDriverSmall;
+    extern s16 D_800A3694Small;
+    extern s16 D_800A3696Lui asm("D_800A3696Absolute");
+    extern u8 D_800A2F94Lui asm("D_800A2F94Absolute");
+    extern u8 D_800A2F95Lui asm("D_800A2F95Absolute");
+    extern u8 D_800A305BSmall;
+    extern s32 D_800A37D0Small;
+    extern u8 D_800A306F;
+    extern u8 D_800A3968Lui asm("D_800A3968Absolute");
+    extern u8 gCardSlotLui asm("gCardSlotAbsolute");
+    extern u8 gCardMenuMessageLui asm("gCardMenuMessageAbsolute");
+    extern u8 D_800A3A48;
+    extern char *D_800A35F4Lui asm("D_800A35F4Absolute");
+    extern void func_80069E88(void);
+    extern void func_8006ABF8(void);
+    extern void func_8006BA68(void);
+    extern void func_800599E4(void);
+    extern void func_800598C4(void);
+    extern u8 func_8006A080(void);
+    extern u8 CardResolveSlot(void);
+    extern u8 CardGetOtherFileBlocks(void);
+    extern u8 CardLoadSaveTable(u8);
+    extern void func_8006AC78(s32);
+    extern u8 func_8006AD0C(u8);
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 offset;
+    u8 ok;
+    u8 value;
+    u8 *flags;
+
+    D_800A36E1Lui = 1;
+    D_800A3980Small = 8;
+    D_800A3658 = 0;
+    gPlayerDriverSmall = 0;
+    D_800A3981Lui = 0xE;
+    D_800A3644 = 0;
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 17; j++) {
+            for (k = 3; k >= 0; k--) {
+                D_800BBA24[i][j][k] = ' ';
+            }
+        }
+    }
+    for (i = 0; i < 2; i++) {
+        for (j = 3; j >= 0; j--) {
+            D_800A3860[i][j] = ' ';
+        }
+    }
+    strcpy(D_800BB9B4, gDriverNames[gPlayerDriverSmall]);
+    strcpy(&D_800BB9B4[0x18], gDriverNames[D_800A36E1Lui]);
+    D_800A3694Small = 65;
+    D_800A3696Lui = 50;
+    D_800A2F94Lui = 0x20;
+    D_800A2F95Lui = 1;
+    D_800A305BSmall = 0;
+    D_800A37D0Small = 3;
+    D_800A306F = 0;
+    for (offset = 14 * 0x18; offset >= 0; offset -= 0x18) {
+        D_800B0A2C[offset] = 0;
+    }
+    D_800A3968Lui = 0;
+    /* i holds the "card full" block count from here on. */
+    i = 15;
+    func_80069E88();
+    ok = 0;
+    func_8006ABF8();
+    value = 1;
+    func_8006BA68();
+    D_800A3060 = 0;
+    D_800A3061 = value;
+    func_800599E4();
+    switch (func_8006A080()) {
+    case 0:
+        gCardMenuMessageLui = 2;
+        D_800A3A48 = 0xFC;
+        break;
+    case 1:
+        if (!CardResolveSlot()) {
+            if (gCardMenuMessageLui == 0xD) {
+                D_800A3A48 = 0xFC;
+            }
+        } else if (CardGetOtherFileBlocks() == i) {
+            gCardMenuMessageLui = 0x1C;
+            D_800A3A48 = 0xFC;
+        } else {
+            ok = 1;
+        }
+        break;
+    case 2:
+        if (!CardResolveSlot()) {
+            gCardSlotLui = value;
+            value = gCardMenuMessageLui;
+            if (!CardResolveSlot()) {
+                if (gCardMenuMessageLui == 0xD) {
+                    gCardSlotLui = 0;
+                    D_800A3A48 = 0xFC;
+                }
+            } else if (CardGetOtherFileBlocks() == i) {
+                if (value == 0xD) {
+                    gCardSlotLui = 0;
+                    gCardMenuMessageLui = 0xD;
+                } else {
+                    gCardMenuMessageLui = 0x1C;
+                }
+                D_800A3A48 = 0xFC;
+            } else {
+                ok = 1;
+            }
+        } else if (CardGetOtherFileBlocks() == i) {
+            gCardSlotLui = value;
+            if (!CardResolveSlot()) {
+                if (gCardMenuMessageLui != 0xD) {
+                    gCardSlotLui = 0;
+                    gCardMenuMessageLui = 0x1C;
+                }
+                D_800A3A48 = 0xFC;
+            } else if (CardGetOtherFileBlocks() == i) {
+                gCardMenuMessageLui = 0x1C;
+                gCardSlotLui = 0;
+                D_800A3A48 = 0xFC;
+            } else {
+                ok = 1;
+            }
+        } else {
+            ok = 1;
+        }
+        break;
+    }
+    if (ok) {
+        if (CardLoadSaveTable(1) == 1) {
+            if (D_800A3A58Lui != 0) {
+                strcpy(D_800BB9B4, D_800A35F4Lui);
+                func_8006AC78(0);
+                D_800A3980Small = func_8006AD0C(gPlayerDriverSmall);
+                D_800A3060 = 1;
+            }
+            if (D_800A3A58Lui >= 2) {
+                strcpy(&D_800BB9B4[0x18], D_800A35F4Lui + 0xE8);
+                func_8006AC78(1);
+                D_800A3981Lui = func_8006AD0C(D_800A36E1Lui);
+            }
+        }
+        D_800A3A48 = 0;
+        D_800A3950 = 0;
+    }
+    i = 1;
+    func_800598C4();
+    flags = D_800A36E4;
+    for (; i >= 0; i--) {
+        flags[i] = 0;
+    }
+    D_800A39E4Small = 0xF9;
+}
 
 extern void SceneInitPrimPools(void);
 extern s32 D_800A37EC;

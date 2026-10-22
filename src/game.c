@@ -63,7 +63,7 @@ int main(void) {
     CdInit();
     InitGeom();
     func_8005978C();
-    func_800535A0();
+    GameInitDefaults();
     while (1) {
         if (D_800A39E4[0] == mode) {
             func_80058D94();

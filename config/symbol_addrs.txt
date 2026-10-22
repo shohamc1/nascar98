@@ -844,6 +844,7 @@ EffectSpawnAtCarPoint = 0x800432C0; // type:func
 EffectSpawnParticles = 0x80042EFC; // type:func
 DebugDrawMeterBar = 0x8001D220; // type:func
 MenuRunFrontEnd = 0x800531B8; // type:func
+GameInitDefaults = 0x800535A0; // type:func
 CarUpdateEngineRpm = 0x80028980; // type:func
 TrackSampleSection = 0x80024B08; // type:func
 TrackFindSection = 0x80024E90; // type:func
