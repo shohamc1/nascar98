@@ -2517,7 +2517,94 @@ void func_8006B5BC(void) {
     D_800A3604Vol[0xA] = D_800A37D0[0];
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006B6B8);
+extern s32 D_800B0B1C[];
+extern s32 D_800B0B1CNM[] asm("D_800B0B1C.NON_MATCHING");
+
+void func_8006B6B8(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
+    CardMoveRecord buf;
+    u8 *p;
+    char *name;
+    s32 i;
+    s32 top;
+    s32 j;
+    s32 n;
+    s32 value;
+    s32 flags;
+    u8 slot;
+    u8 idx;
+    u8 isNew;
+
+    func_800599E4();
+    if (func_80069F30() & 0xFF) {
+        func_8006A7C8(0);
+    }
+    func_800598C4();
+    i = arg1;
+    if (i >= 0) {
+        top = i;
+        p = D_800A36E0 + i;
+        do {
+            isNew = 0;
+            idx = TableFindByte(*p);
+            name = D_8009AC1C[*p];
+            if (D_800A3A58 == 0) {
+                slot = 0xFF;
+            } else {
+                j = 0;
+                while (j < D_800A3A58) {
+                    if (strcmp(name, D_800A35F4 + j * 0xE8) == 0) {
+                        slot = j;
+                        goto found;
+                    }
+                    j++;
+                }
+                slot = 0xFF;
+            }
+        found:
+            if (slot == 0xFF) {
+                isNew = 1;
+            }
+            if (arg2 != 0 && top != 0) {
+                value = 0x7FFFFFFF;
+            } else {
+                value = D_800AE1EC[idx];
+            }
+            if (top != 0) {
+                if (arg3 != 0) {
+                    flags = 2;
+                } else {
+                    flags = 8;
+                }
+            } else {
+                flags = 0x18;
+            }
+            if (isNew) {
+                func_8006ADC4(i, D_8009AC1C[*p], D_800A305B[0], idx, value,
+                              arg0, D_800B0B1C[idx] == -1, flags);
+            } else {
+                func_8006B1CC(i, slot, D_800A305B[0], idx, value, arg0,
+                              D_800B0B1CNM[idx] == -1, flags);
+                if (slot != 0) {
+                    buf = ((CardMoveRecord *)D_800A35F4)[slot];
+                    n = slot - 1;
+                    while (n >= 0) {
+                        ((CardMoveRecord *)D_800A35F4)[n + 1] =
+                            ((CardMoveRecord *)D_800A35F4)[n];
+                        n--;
+                    }
+                    *(CardMoveRecord *)D_800A35F4 = buf;
+                }
+            }
+            i--;
+            p--;
+        } while (i >= 0);
+    }
+    func_8006B5BC();
+    func_800599E4();
+    func_80069F30();
+    func_8006AA70();
+    func_800598C4();
+}
 
 extern u8 D_800B9B6E[];
 extern u8 D_800B9B6F[];
