@@ -90,6 +90,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A305BAbsolute=D_800A305B \
             --defsym=gOrderingTableAbsolute=gOrderingTable \
             --defsym=gPrimitiveCursorAbsolute=gPrimitiveCursor \
+            --defsym=gTextColorAbsolute=gTextColor \
             --defsym=D_800A3570Absolute=D_800A3570 \
             --defsym=D_800A2F94Absolute=D_800A2F94 \
             --defsym=D_800A3A04Absolute=D_800A3A04 \

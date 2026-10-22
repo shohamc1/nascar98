@@ -584,6 +584,7 @@ MatrixBuildRotationFromTransform = 0x80015BF8; // type:func
 SystemShowFatalError = 0x80017C5C; // type:func
 HudDrawCarPanel = 0x80019C10; // type:func
 MenuDrawPausePanel = 0x8001A778; // type:func
+HudDrawPitMenu = 0x8001AEDC; // type:func
 ReplayDrawControls = 0x8001B3F0; // type:func
 FontSetColor = 0x80018318; // type:func
 FontDrawPaddedNumber = 0x80018A04; // type:func

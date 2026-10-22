@@ -1865,7 +1865,109 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     asm("" : "=m"(frameExtent));
 }
 
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001AEDC);
+extern s32 D_800A2EAC[];
+extern u8 D_800A2D98[];
+extern u8 D_800A2DA0[];
+extern u8 D_800A2DA4[];
+extern u8 gTextColorAbs asm("gTextColorAbsolute");
+
+/* Draws the pit-stop menu for a car in the pits: the rear spoiler (+0x2AA)
+ * and wedge (+0x2A4) settings as signed half-unit "%i.%i" readouts, the fuel
+ * time (+0x27E), the four row labels, highlight boxes for the chosen services
+ * (+0x26A bits) and the cursor arrows for row +0x26B. */
+void HudDrawPitMenu(u8 *car, s32 y) {
+    u8 text[0x18];
+    s32 wedgeY;
+    s16 value;
+    s8 i;
+    s32 fuelTime;
+    s32 setting;
+    s32 spoiler;
+
+    if (D_800A2EC8[0] != 0) {
+        return;
+    }
+    if (D_800A2EAC[0] != 0) {
+        return;
+    }
+    if (D_800A2EE0w15[0] == 0 && (*(s32 *)(car + 0x3A4) & 0x100F)) {
+        return;
+    }
+    if (car[0x268] == 0) {
+        return;
+    }
+    if (car[0x269] == 2) {
+        return;
+    }
+    if (car[0x269] == 0xFF) {
+        return;
+    }
+    GraphicsSetColor(0x80, 0xC0, 0x80);
+
+    setting = *(s16 *)(car + 0x2AA);
+    value = setting;
+    if (setting >= 0) {
+        i = value;
+    } else {
+        i = -value;
+    }
+    sprintfArgs((s8 *)text, D_800A2D98, i >> 1, (i % 2) * 5);
+    HudDrawText(text, 0xD2, (s16)(y + 0x40), 0);
+
+    setting = *(s16 *)(car + 0x2A4);
+    value = setting;
+    if (setting >= 0) {
+        i = value;
+    } else {
+        i = -value;
+    }
+    sprintfArgs((s8 *)text, D_800A2D98, i >> 1, (i % 2) * 5);
+    wedgeY = (s16)(y + 0x4C);
+    HudDrawText(text, 0xD2, wedgeY, 0);
+
+    spoiler = *(s16 *)(car + 0x2AA);
+    gTextColorAbs = 9;
+    HudDrawText(spoiler < 0 ? D_800A2DA0 : D_800A2DA4, 0xC8, (s16)(y + 0x40),
+                0);
+    HudDrawText(*(s16 *)(car + 0x2A4) < 0 ? D_800A2DA0 : D_800A2DA4, 0xC8,
+                wedgeY, 0);
+
+    fuelTime = *(s16 *)(car + 0x27E);
+    if (fuelTime > 0) {
+        HudDrawTime(fuelTime, 0x78, (s16)(y + 0x64), 0, 2);
+        func_80044A1C(0x6E, (s16)(y + 0x63), 0x64, 0xC, 0, 0, 0, 1);
+    }
+
+    gTextColorAbs = 0;
+    GraphicsSetColor(0x80, 0x80, 0x80);
+
+    i = 0;
+    do {
+        HudDrawText(D_8009AE50[i], 0x5A, (s16)(y + 0x28 + i * 12), 0);
+        i++;
+    } while (i < 4);
+    if (car[0x26A] & 1) {
+        func_8001D778(0x53, y + 0x27, 0x9A, 1, 0x40, 0x40, -0x80, 1);
+        func_8001D778(0x52, y + 0x28, 0x9C, 1, 0x40, 0x40, -0x80, 1);
+        func_8001D778(0x51, y + 0x29, 0x9E, 10, 0x40, 0x40, -0x80, 1);
+    }
+    if (car[0x26A] & 2) {
+        func_8001D778(0x51, y + 0x33, 0x9E, 12, 0x40, 0x40, -0x80, 1);
+    }
+    if (car[0x26A] & 8) {
+        func_8001D778(0x51, y + 0x3F, 0x9E, 12, 0x40, 0x40, -0x80, 1);
+    }
+    if (car[0x26A] & 4) {
+        func_8001D778(0x51, y + 0x4B, 0x9E, 11, 0x40, 0x40, -0x80, 1);
+        func_8001D778(0x52, y + 0x56, 0x9C, 1, 0x40, 0x40, -0x80, 1);
+        func_8001D778(0x53, y + 0x57, 0x9A, 1, 0x40, 0x40, -0x80, 1);
+    }
+    func_80044A1C(0x51, (s16)(y + 0x27), 0x9E, 0x31, 0, 0, 0, 1);
+    if (car[0x269] < 2) {
+        MenuDrawArrow(0x4F, y + 0x2D + car[0x26B] * 12, 0, 5);
+        MenuDrawArrow(0xF0, y + 0x2D + car[0x26B] * 12, 1, 5);
+    }
+}
 
 /* Draws one 16x24 replay button quad at (x, y) and queues a copy. */
 static inline void ReplayDrawButton(POLY_FT4 *poly, s16 x, s16 y) {
@@ -2296,18 +2398,18 @@ void func_8001C34C(void) {
     }
     mode = 2;
     if (D_800A2EA4nm[0] == mode) {
-        func_8001AEDC(gPlayerCarsmall, -0xA);
+        HudDrawPitMenu(gPlayerCarsmall, -0xA);
         HudDrawCar(gPlayerCarsmall, -0x6E);
         prim = *(s32 *)(gPlayerCarsmall + 0x3E0);
         gOrderingTableBankLui = gOrderingTableBankLui + 1;
         gOrderingTableLui = gOrderingTableLui + 0x1004;
-        func_8001AEDC(prim, -0x14);
+        HudDrawPitMenu(prim, -0x14);
         HudDrawCar(*(s32 *)(gPlayerCarsmall + 0x3E0), -0x7D);
         gOrderingTableBankLui = gOrderingTableBankLui - 1;
         gOrderingTableLui = gOrderingTableLui - 0x1004;
         return;
     }
-    func_8001AEDC(gPlayerCarsmall, 0);
+    HudDrawPitMenu(gPlayerCarsmall, 0);
     HudDrawCar(gPlayerCarsmall, 0);
     if (*(s8 *)(gPlayerCarsmall + 0x209) == mode) {
         func_8001BA94(0);
