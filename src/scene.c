@@ -2331,7 +2331,133 @@ void func_800488A4(u8 *object) {
     state[0x401] = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_800488B8);
+typedef struct CrashBox {
+    u8 unk0[4];
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    u8 unk10[0x1C - 0x10];
+    s32 unk1C;
+    s32 unk20;
+    s32 unk24;
+} CrashBox;
+
+typedef struct CrashCar {
+    s32 x;
+    s32 y;
+    s32 z;
+    u8 unkC[0x90 - 0xC];
+    s32 unk90;
+    s32 unk94;
+    s32 unk98;
+    u8 unk9C[0xF4 - 0x9C];
+    u8 unkF4;
+    u8 unkF5[0x1EC - 0xF5];
+    s16 unk1EC;
+    u8 unk1EE[0x268 - 0x1EE];
+    u8 unk268;
+    u8 unk269[0x276 - 0x269];
+    s16 unk276;
+    u8 unk278[0x370 - 0x278];
+    struct {
+        u8 unk0[0x40];
+        CrashBox *box;
+    } *unk370;
+    u8 unk374[0x38A - 0x374];
+    s16 unk38A;
+    u8 unk38C[0x3A4 - 0x38C];
+    u16 unk3A4;
+    u8 unk3A6[0x414 - 0x3A6];
+    s32 unk414;
+} CrashCar;
+
+typedef struct {
+    u8 unk0[0x20];
+    s16 unk20;
+    u8 unk22[0xC8 - 0x22];
+} Unk800B8648;
+
+extern CrashCar *D_800A7550p[] asm("D_800A7550");
+extern CrashCar *gCrashCar asm("D_800A3960");
+extern u8 D_800A35F8;
+extern u8 D_800A35FC;
+extern s32 D_800A2F50Absolute[];
+extern s32 D_800A3804Nm[] asm("D_800A3804.NON_MATCHING");
+extern Unk800B8648 D_800B8648[];
+
+void func_800488B8(void) {
+    s32 pos[3];
+    s8 i;
+    CrashCar *car;
+    CrashBox *box;
+    Unk800B8648 *row;
+
+    if (D_800A35FC != 0 &&
+        D_800A2EC0Absolute[0] == D_800A2EC0Absolute[0] / 200 * 200 &&
+        D_800A2EC8[0] == 0) {
+        if (gCrashCar == NULL) {
+            if (D_800A372C == 0) {
+                for (i = 0; i < D_800A35FC; i++) {
+                    car = D_800A7550p[i];
+                    if (car->unk414 != -1) {
+                        if (car->unk268 == 0) {
+                            if (car->unk414 != 0) {
+                                car->unk414 -= 1;
+                            } else if (car->unk1EC != 0
+                                           ? D_800A2F50Absolute[0] * 9 / 10 <
+                                                 *(s16 *)((u8 *)car + 0x92)
+                                           : car->unk98 - 0xA0000 <
+                                                 car->unk90) {
+                                D_800A35F8 = 1;
+                                car->unk414 = -1;
+                                car->unk276 = 1;
+                                car->unk3A4 |= 0x1000;
+                                func_80041848((u8 *)car, 13);
+                                gCrashCar = car;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (gCrashCar == NULL || D_800A2ED4[0] != 0) {
+        if (D_800A397C[0] == 2 && gCrashCar == NULL &&
+            D_800A3A3C[0] == D_800A3804Nm[0]) {
+            row = D_800B8648;
+            for (i = 0; i < 24; i++) {
+                row->unk20 = 0;
+                row++;
+            }
+        }
+    } else {
+        if (gCrashCar->unkF4 == 0) {
+            gCrashCar = NULL;
+            return;
+        }
+        if (D_800A397C[0] == 2 &&
+            (gCrashCar->unk90 != 0 || gCrashCar->unk38A != 0x200)) {
+            row = D_800B8648;
+            for (i = 0; i < 24; i++) {
+                row->unk20 = 0;
+                row++;
+            }
+            if (gCrashCar->unk38A != 0x200) {
+                return;
+            }
+        }
+        box = gCrashCar->unk370->box;
+        pos[0] = (box->unk4 + box->unk1C) >> 1;
+        pos[1] = (box->unk8 + box->unk20) >> 1;
+        pos[2] = (box->unkC + box->unk24) >> 1;
+        func_8001EEC4((s32 *)gCrashCar);
+        MatrixRotateVector(pos);
+        pos[0] += gCrashCar->x + RandomScaledGet(200) - 100;
+        pos[1] += gCrashCar->y + RandomScaledGet(200) - 100;
+        pos[2] += gCrashCar->z + 100;
+        func_8003644C(D_800A35F8 == 1 ? 2 : 1, pos[0], pos[1], pos[2]);
+    }
+}
 
 extern u8 D_800A38F0;
 extern u8 D_800A35FCnm asm("D_800A35FC.NON_MATCHING");
