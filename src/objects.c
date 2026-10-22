@@ -1095,11 +1095,91 @@ void func_8002267C(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_800229B8);
-
-extern u8 *D_800A3554[];
 extern u8 *D_800A3878w15[] asm("D_800A3878.NON_MATCHING");
 extern u8 *D_800A3960w15[] asm("D_800A3960.NON_MATCHING");
+extern u8 *D_800A3554[];
+
+void func_800229B8(void) {
+    u8 *node;
+    u8 *baseAddr;
+    register s32 next asm("a0");
+    register u8 *rec asm("a1");
+    s32 count;
+    s32 offset;
+    u32 bits;
+    u32 w2;
+    register u16 val asm("v1");
+    s32 v90;
+    s32 t114;
+    s32 i;
+
+    count = D_800A3A3CSmall;
+    D_800A3A3CSmall = (count + 1) % D_800A3A90Small;
+    if (D_800A3A3CSmall == D_800A3550Small) {
+        D_800A3A3CSmall = count;
+        D_800A2ED4[0] = 1;
+        func_80052FC4(0);
+        return;
+    }
+    count = D_800A3A3CSmall * (D_800A2E94[0] + 6);
+    node = D_800A3878w15[0];
+    if (node != 0) {
+        offset = count * 20;
+        do {
+            if (*(s16 *)(node + 0x1EC) >= 0) {
+                rec = (u8 *)D_800A3A38Small;
+                rec = (u8 *)(offset + (s32)rec);
+                *(s32 *)(node + 0) = *(s32 *)rec;
+                *(s32 *)(node + 4) = *(s32 *)(rec + 4);
+                func_800442C8(node);
+                val = *(u16 *)(u8 *)(offset + D_800A3A38Small + 0xE);
+                *(u8 *)(node + 0x410) = val & 0x7F;
+                baseAddr = (u8 *)D_800A3A38Small;
+                v90 = (val >> 7) << 17;
+                *(s32 *)(node + 0x90) = v90;
+                bits = *(s32 *)(u8 *)(offset + (s32)baseAddr + 8);
+                *(s16 *)(node + 0x116) = (bits >> 22) * 4;
+                val = bits >> 22;
+                *(s16 *)(node + 0x20E) = ((bits >> 14) & 0xFF) - 0x80;
+                *(s16 *)(node + 0x10C) = (bits & 0x3F) >> 4;
+                *(u8 *)(node + 0x3B9) = (bits & 0xF) >> 3;
+                *(u8 *)(node + 0xF9) = (bits & 7) >> 2;
+                *(s16 *)(node + 0x102) = val;
+                *(s16 *)(node + 0x114) = val;
+                if ((bits & 3) == 1) {
+                    D_800A3960w15[0] = D_800A3554[0];
+                } else if ((bits & 3) == 2) {
+                    D_800A3960w15[0] = *(u8 **)(D_800A3554[0] + 0x3E0);
+                } else {
+                    D_800A3960w15[0] = 0;
+                }
+                w2 = *(s32 *)(u8 *)(offset + D_800A3A38Small + 0x10);
+                *(s16 *)(node + 0xFE) = ((w2 >> 20) - 0x800) * 2;
+                for (i = 0; i < 4; i++) {
+                    *(s16 *)(node + 0x2AC + i * 0x28) = *(u16 *)(node + 0xFE);
+                }
+                t114 = *(s16 *)(node + 0x114);
+                *(s16 *)(node + 0x388) = (w2 << 12) >> 22;
+                *(s16 *)(node + 0x38A) = w2 & 0x3FF;
+                func_8001F2C4(t114, 0, 0);
+                func_8001F828((s32 *)node);
+                func_8001F874((s32 *)node);
+                *(s32 *)(node + 0x228) = 0;
+                *(s16 *)(node + 0x104) = *(u16 *)(node + 0x114);
+                func_80028980(node);
+                offset += 0x14;
+                count += 1;
+            }
+            node = *(u8 **)(node + 0x3E0);
+        } while (node != 0);
+    }
+    next = (D_800A3A3CSmall + 1) % D_800A3A90Small;
+    if (next == D_800A3550Small) {
+        D_800A2ED4[0] = 1;
+    }
+    func_8003667C((u8 *)D_800A3A38Small + count * 20);
+    func_80044594((u8 *)D_800A3A38Small + (count * 20 + 0x50));
+}
 
 void func_80022CA4(void) {
     u8 *node;
