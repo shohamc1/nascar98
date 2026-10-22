@@ -11436,7 +11436,115 @@ void func_80058148(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8005833C);
+typedef struct {
+    s8 id;
+    s32 time;
+} GridEntry;
+
+extern u8 D_800993D0[][24];
+extern u8 D_800B9DA4[];
+extern s32 D_800AEB34[];
+s32 func_80014398(s32 arg0);
+
+/* Builds the qualifying order for a track: random times, the players at the
+ * back, then a selection sort by time. D_800A36E0 is read as a 2-byte array
+ * so its loads stay behind the D_800AEB34 stores, as in retail.
+ */
+void func_8005833C(s32 track) {
+    extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
+    extern u8 D_800A36E0Pair[2] asm("D_800A36E0Small");
+    extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");
+    GridEntry entries[24];
+    GridEntry tmp;
+    s32 times[24];
+    s32 i;
+    s32 j;
+    s32 best;
+    s32 cur;
+    s32 bestIndex;
+    s32 record;
+    s32 base;
+    s32 step;
+    s32 offset;
+    s32 index0;
+    s32 index1;
+
+    for (i = 0; i < 24; i++) {
+        entries[i].id = D_800993D0[track][i];
+        if (entries[i].id == D_800A36E0Pair[0]) {
+            index0 = i;
+        }
+        if (entries[i].id == D_800A36E1Lui) {
+            index1 = i;
+        }
+    }
+    for (i = 0; i < 24; i++) {
+        entries[i].time = (30 - i) * 10 + RandomScaledGet(100);
+    }
+    entries[index0].time = 0;
+    if (D_800A3644 != 0) {
+        entries[index1].time = 1;
+    }
+    for (i = 0; i < 23; i++) {
+        cur = entries[i].time;
+        best = 0;
+        for (j = i + 1; j < 24; j++) {
+            if (best < entries[j].time) {
+                best = entries[j].time;
+                bestIndex = j;
+            }
+        }
+        if (cur < best) {
+            tmp = entries[i];
+            entries[i] = entries[bestIndex];
+            entries[bestIndex] = tmp;
+        }
+    }
+    for (i = 0; i < 24; i++) {
+        D_800BE70C[i] = entries[i].id;
+        D_800B9DA4[entries[i].id] = i;
+    }
+    record = func_80014398(track);
+    if (RandomScaledGet(32) < 0) {
+        base = record + RandomScaledGet(32);
+    } else {
+        base = record - RandomScaledGet(32);
+    }
+    offset = 0;
+    step = base / 100;
+    for (i = 0; i < 23; i++) {
+        if (RandomScaledGet(step) < 0) {
+            offset = offset - RandomScaledGet(step) + 1;
+        } else {
+            offset = offset + RandomScaledGet(step) + 1;
+        }
+        times[i] = base + offset;
+    }
+    for (i = 0; i < 23; i++) {
+        D_800AEB34[D_800BE70C[i]] = times[i];
+        D_800AE1EC[i] = times[i];
+    }
+    if (D_800A3644 != 0 && D_800A3073NM != 0) {
+        if (RandomScaledGet(50) >= 26) {
+            D_800B9DA4[D_800A36E1Lui] = 6;
+            D_800B9DA4[D_800A36E0Pair[0]] = 7;
+            D_800BE70C[6] = D_800A36E1Lui;
+            D_800BE70C[7] = D_800A36E0Pair[0];
+        } else {
+            D_800B9DA4[D_800A36E0Pair[0]] = 6;
+            D_800B9DA4[D_800A36E1Lui] = 7;
+            D_800BE70C[6] = D_800A36E0Pair[0];
+            D_800BE70C[7] = D_800A36E1Lui;
+        }
+        D_800AEB34[D_800A36E1Lui] = 0x7FFFFFFF;
+        D_800AEB34[D_800A36E0Pair[0]] = 0x7FFFFFFF;
+        D_800AE1EC[7] = 0x7FFFFFFF;
+        D_800AE1EC[6] = 0x7FFFFFFF;
+    } else {
+        D_800AEB34[D_800BE70C[23]] = 0x7FFFFFFF;
+        D_800AE1EC[23] = 0x7FFFFFFF;
+    }
+}
 
 u8 TableFindByte(u8 value) {
     s32 i;
