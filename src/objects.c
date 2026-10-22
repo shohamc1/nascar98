@@ -7434,7 +7434,154 @@ void func_8002D3EC(u8 *arg0) {
     } while (i < 4);
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002D4CC);
+void func_8002D4CC(u8 *arg0) {
+    s32 i;
+    s32 cameraMode;
+    s32 flag;
+
+    *(s32 *)(arg0 + 0x1FC) = ((ABS(RandomScaledGet(0x80)) + 0x40) << 16) |
+                             ((ABS(RandomScaledGet(0x80)) + 0x40) << 8) |
+                             (ABS(RandomScaledGet(0x80)) + 0x40);
+    *(s32 *)(arg0 + 0x88) = 0x30000;
+    *(s32 *)(arg0 + 0x8C) = 0x20000;
+    *(s32 *)(arg0 + 0x98) = 0x640000;
+    *(s16 *)(arg0 + 0x1CA) = 0x14;
+    *(s16 *)(arg0 + 0x1CC) = 0x14;
+    *(s32 *)(arg0 + 0x84) = 0;
+    *(s32 *)(arg0 + 0x94) = 0;
+    *(s32 *)(arg0 + 0x90) = 0;
+    *(s32 *)(arg0 + 0xB8) = 0;
+    *(s32 *)(arg0 + 0xB4) = 0;
+    *(s32 *)(arg0 + 0xB0) = 0;
+    *(s16 *)(arg0 + 0x1C8) = 0;
+    *(s16 *)(arg0 + 0x1C6) = 0;
+    *(s16 *)(arg0 + 0x1D4) = 0;
+    *(s16 *)(arg0 + 0x1D2) = 0;
+    *(s16 *)(arg0 + 0x1D0) = 0;
+    *(s16 *)(arg0 + 0x1CE) = 0;
+    *(s16 *)(arg0 + 0x1C2) = 0;
+    *(s16 *)(arg0 + 0x1C0) = 0;
+    *(s16 *)(arg0 + 0x1BE) = 0;
+    *(s16 *)(arg0 + 0x1BC) = 0;
+    *(s16 *)(arg0 + 0x1BA) = 0;
+    *(s16 *)(arg0 + 0x1B8) = 0;
+    *(s16 *)(arg0 + 0x1B6) = 0;
+    *(s16 *)(arg0 + 0x1B4) = 0;
+    *(s8 *)(arg0 + 0x358) = 1;
+    *(s8 *)(arg0 + 0xF4) = 1;
+    *(s8 *)(arg0 + 0xF5) = 0;
+    *(s16 *)(arg0 + 0x360) = 0;
+    *(s16 *)(arg0 + 0x368) = 0;
+    *(s16 *)(arg0 + 0x366) = 0;
+    *(s16 *)(arg0 + 0x364) = 0;
+    *(s16 *)(arg0 + 0x362) = 0;
+    *(s8 *)(arg0 + 0x206) = -1;
+    *(s8 *)(arg0 + 0xF6) = 1;
+    *(s8 *)(arg0 + 0xF7) = 1;
+    /* sched1 barrier: retail schedules this global read right here */
+    do {
+    } while (0);
+    flag = D_800A2EA4Lui;
+    *(s16 *)(arg0 + 0x1E0) = -1;
+    *(s32 *)(arg0 + 0x1F8) = -1;
+    *(s32 *)(arg0 + 0x1F4) = -1;
+    *(s16 *)(arg0 + 0x1D8) = 1;
+    *(s16 *)(arg0 + 0x110) = 3;
+    *(s16 *)(arg0 + 0x1EA) = 0;
+    *(s16 *)(arg0 + 0x1D6) = 0;
+    *(s32 *)(arg0 + 0x264) = 0;
+    *(s32 *)(arg0 + 0x260) = 0;
+    *(s32 *)(arg0 + 0x258) = 0;
+    *(s32 *)(arg0 + 0x25C) = 0x7FFFFFFF;
+    *(s16 *)(arg0 + 0x10A) = 0;
+    *(s16 *)(arg0 + 0x108) = 0;
+    *(s16 *)(arg0 + 0x10C) = 0;
+    *(s16 *)(arg0 + 0x112) = 0x2BC;
+    cameraMode = flag != 0 ? 1 : 2;
+    *(s16 *)(arg0 + 0x210) = 0x1A4;
+    *(s8 *)(arg0 + 0x209) = cameraMode;
+    *(s8 *)(arg0 + 0x207) = 0;
+    *(s8 *)(arg0 + 0x208) = 0;
+    *(s8 *)(arg0 + 0x20A) = 0;
+    *(s16 *)(arg0 + 0x20E) = 0;
+    *(s16 *)(arg0 + 0x212) = 0;
+    *(s8 *)(arg0 + 0x20C) = 1;
+    *(s16 *)(arg0 + 0x214) = 0;
+    *(s32 *)(arg0 + 0x218) = 0;
+    *(s32 *)(arg0 + 0x21C) = 0x1F40;
+    *(s16 *)(arg0 + 0x24C) = 0;
+    *(s16 *)(arg0 + 0x24A) = 0;
+    *(s16 *)(arg0 + 0x248) = 0;
+    *(s16 *)(arg0 + 0x118) = 0;
+    *(s16 *)(arg0 + 0x114) = 0;
+    *(s16 *)(arg0 + 0x104) = 0;
+    *(s16 *)(arg0 + 0x100) = 0;
+    *(s16 *)(arg0 + 0xFC) = 0;
+    *(s32 *)(arg0 + 0xC8) = 0;
+    *(s32 *)(arg0 + 0xC4) = 0;
+    *(s32 *)(arg0 + 0xD4) = 0;
+    *(s32 *)(arg0 + 0xD0) = 0;
+    *(s8 *)(arg0 + 0xF9) = 0;
+    *(s8 *)(arg0 + 0xF8) = 0;
+    *(s8 *)(arg0 + 0x375) = 0;
+    *(s32 *)(arg0 + 0x37C) = 0;
+    *(s16 *)(arg0 + 0x38A) = 0;
+    *(s16 *)(arg0 + 0x388) = 0;
+    *(s16 *)(arg0 + 0xFE) = 0;
+    *(s32 *)(arg0 + 0x228) = 0;
+    *(s16 *)(arg0 + 0x120) = 0;
+    *(s16 *)(arg0 + 0x11E) = 0;
+    *(s16 *)(arg0 + 0x11C) = 0;
+    *(s32 *)(arg0 + 0x22C) = 0;
+    *(s8 *)(arg0 + 0x3B9) = 0;
+    *(s8 *)(arg0 + 0x3B8) = 0;
+    *(s8 *)(arg0 + 0x26B) = 0;
+    *(s8 *)(arg0 + 0x26A) = 0;
+    *(s8 *)(arg0 + 0x269) = 0;
+    *(s8 *)(arg0 + 0x268) = 0;
+    for (i = 14; i >= 0; i--) {
+        *(s16 *)(arg0 + 0x26C + i * 2) = 0;
+    }
+    *(s32 *)(arg0 + 0x29C) = 0;
+    *(s32 *)(arg0 + 0x298) = 0;
+    *(s32 *)(arg0 + 0x294) = 0;
+    *(s32 *)(arg0 + 0x28C) = 0x3E80;
+    *(s32 *)(arg0 + 0x290) = 0x7D000;
+    *(s16 *)(arg0 + 0x2A0) = 0;
+    *(s16 *)(arg0 + 0x2A6) = 0;
+    *(s16 *)(arg0 + 0x2A8) = 0;
+    *(s16 *)(arg0 + 0x2A2) = 0;
+    *(s32 *)(arg0 + 0x3A0) = 0;
+    for (i = 0; i < 4; i++) {
+        *(s16 *)(arg0 + i * 0x28 + 0x2AC) = 0;
+        *(s16 *)(arg0 + i * 0x28 + 0x2B6) = 0x7FFF;
+    }
+    *(s8 *)(arg0 + 0x3B6) = D_800A2EDC[0];
+    *(s16 *)(arg0 + 0x3A4) = 0;
+    for (i = 0; i < 8; i++) {
+        *(s8 *)(arg0 + i + 0x3A6) = 1;
+        *(s8 *)(arg0 + i + 0x3AE) = 0;
+    }
+    *(s32 *)(arg0 + 0x234) = D_800A2E7Cgp;
+    func_8002D3EC(arg0);
+    if (D_800A2EB8[0] == 0) {
+        *(s16 *)(arg0 + 0x10A) = 0x3E8;
+    }
+    *(s16 *)(arg0 + 0x24E) = -1;
+    *(s32 *)(arg0 + 0x3CC) = 0;
+    *(s32 *)(arg0 + 0x3D0) = 0;
+    *(s8 *)(arg0 + 0x3CA) = 0;
+    *(s8 *)(arg0 + 0x3FC) = 0;
+    *(s8 *)(arg0 + 0x3FD) = 0;
+    *(s16 *)(arg0 + 0x402) = 0x2EE0;
+    *(s8 *)(arg0 + 0x410) = 0;
+    *(s16 *)(arg0 + 0x41A) = 0;
+    *(s8 *)(arg0 + 0x418) = 0;
+    for (i = 0; i < 4; i++) {
+        *(s8 *)(arg0 + i + 0x41C) = -1;
+        *(s32 *)(arg0 + i * 4 + 0x420) = 0;
+    }
+}
 
 typedef struct PoolObject {
     u32 unk0;
