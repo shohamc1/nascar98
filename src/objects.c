@@ -10960,7 +10960,6 @@ void ModelDrawFt4List(u8 *arg0, s32 count) {
     u32 *otBase;
     u32 stale;
     u32 code;
-    register u8 *vp asm("a2");
     register u8 *vpNext asm("t1");
     register s32 flag asm("t4");
     register s32 w4 asm("t1");
@@ -10973,20 +10972,15 @@ void ModelDrawFt4List(u8 *arg0, s32 count) {
     s32 *vc;
     u32 flagMask;
     s32 doubleSided;
-    register u8 *next asm("a3");
     register u8 *p18a asm("a2");
     register u8 *p18b asm("t3");
     u8 *base;
     register u32 mask asm("v1");
-    register s32 sh0 asm("v0");
     s32 ix;
-    register s32 off asm("v0");
     u32 val;
     register u32 mask2 asm("a0");
     u32 code2;
     register s32 tst asm("v0");
-    register s32 sh asm("v1");
-    register s32 idx asm("t4");
     u32 *otEntry;
     s32 *v0p;
 
@@ -10997,9 +10991,9 @@ void ModelDrawFt4List(u8 *arg0, s32 count) {
     flagMask = 0x6000;
     if (count-- > 0) {
         stale = flag & 0x6000;
-        sh0 = flag >> 2;
-        sh0 = sh0 << 2;
-        otBase = (u32 *)(sh0 + (s32)ot);
+        tst = flag >> 2;
+        tst = tst << 2;
+        otBase = (u32 *)(tst + (s32)ot);
         code = 0x09000000;
         p18a = prim + 0x18;
         do {
@@ -11049,10 +11043,10 @@ void ModelDrawFt4List(u8 *arg0, s32 count) {
         code2 = 0x09000000;
         p18b = prim + 0x18;
         do {
-            vp = vpNext;
-            va = *(s32 **)(vp + 0);
-            vb = *(s32 **)(vp + 4);
-            vc = *(s32 **)(vp + 8);
+            p18a = vpNext;
+            va = *(s32 **)(p18a + 0);
+            vb = *(s32 **)(p18a + 4);
+            vc = *(s32 **)(p18a + 8);
             gte_ldv3(va, vb, vc);
             w4 = *(s32 *)(obj + 4);
             w8 = *(s32 *)(obj + 8);
@@ -11068,7 +11062,7 @@ void ModelDrawFt4List(u8 *arg0, s32 count) {
             tst = flag & flagMask;
             if (tst == 0) {
                 gte_op(nclip);
-                v0p = *(s32 **)(vp + 0xC);
+                v0p = *(s32 **)(p18a + 0xC);
                 w4 = v0p[0];
                 w8 = v0p[1];
                 gte_mfc2_nonop(flag, 24);
@@ -11084,34 +11078,34 @@ void ModelDrawFt4List(u8 *arg0, s32 count) {
                 }
             }
         skip:
-            next = *(u8 **)(obj + 0x28);
-            vpNext = next + 0x18;
+            w8 = *(s32 *)(obj + 0x28);
+            vpNext = (u8 *)w8 + 0x18;
             goto advance;
         draw:
             gte_op(avsz3);
-            next = *(u8 **)(obj + 0x28);
-            vpNext = next + 0x18;
+            w8 = *(s32 *)(obj + 0x28);
+            vpNext = (u8 *)w8 + 0x18;
             gte_mfc2_nonop(flag, 7);
             *(s32 *)(p18b + 4) = w10;
             *(s32 *)(p18b + 0xC) = w14;
             gte_op(rtps);
-            sh = flag >> 2;
-            idx = sh + *(s8 *)(obj + 1);
-            if (idx > 0x3B6) {
-                idx = 0x3B6;
+            mask = flag >> 2;
+            flag = mask + *(s8 *)(obj + 1);
+            if (flag > 0x3B6) {
+                flag = 0x3B6;
             }
-            off = idx << 2;
-            off = off + (s32)ot;
-            val = *(u32 *)off;
+            tst = flag << 2;
+            tst = tst + (s32)ot;
+            val = *(u32 *)tst;
             mask2 = 0xFFFFFF;
             val = val | code2;
             *(u32 *)prim = val;
-            *(u32 *)off = (u32)prim & mask2;
+            *(u32 *)tst = (u32)prim & mask2;
             gte_stsxy(p18b);
             p18b += 0x28;
             prim += 0x28;
         advance:
-            obj = next;
+            obj = (u8 *)w8;
         } while (obj != NULL);
     }
     gPrimitiveCursor[0] = (u32)prim;
@@ -11139,11 +11133,8 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
     register s32 w4 asm("v1");
     s32 w8;
     register s32 wC asm("v0");
-    register s32 n0 asm("v1");
-    register s32 n1 asm("a0");
-    register s32 old asm("a0");
-    register s32 tmpa1 asm("a1");
-    register s32 sh asm("v1");
+    s32 old;
+    s32 tmpa1;
     s32 base;
     u8 *obj;
     register u8 *prim18 asm("s1");
@@ -11154,8 +11145,6 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
     s32 entryCount;
     s16 *zCursor;
     register u8 *otBase40;
-    register s32 shifted asm("v0");
-    register s32 aligned asm("v0");
     s32 mask;
     s32 diff;
     register s32 guard asm("a2");
@@ -11173,11 +11162,11 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
     tmpa1 = (s32)gOrderingTable[0];
     otBase40 = (u8 *)tmpa1 + 0x40;
     base = (s32)D_800B022C;
-    sh = old * 4;
-    objCursor = (u32 *)(sh + base);
-    sh = old * 2;
+    w4 = old * 4;
+    objCursor = (u32 *)(w4 + base);
+    w4 = old * 2;
     base = (s32)D_800AFE2C;
-    zCursor = (s16 *)(sh + base);
+    zCursor = (s16 *)(w4 + base);
     entryCount = old;
     if (guard > 0) {
         prim18 = prim + 0x18;
@@ -11195,14 +11184,14 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
             *(s32 *)(prim18 - 4) = wC;
             gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
             normal = *(s32 **)(obj + 0x24);
-            n0 = normal[0];
-            n1 = normal[1];
+            w4 = normal[0];
+            old = normal[1];
             gte_op(avsz3);
             *(s32 *)(prim18 + 4) = w10;
             *(s32 *)(prim18 + 0xC) = w14;
             gte_mfc2_nonop(otz, 7);
-            gte_mtc2(n0, 0);
-            gte_mtc2(n1, 1);
+            gte_mtc2(w4, 0);
+            gte_mtc2(old, 1);
             if (otz < 0x9B) {
                 gte_op(rtps);
                 if (func_800337EC() != 0 && entryCount < 0x1FF) {
@@ -11211,8 +11200,8 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
                         entryCount = entryCount + 1;
                         *objCursor = (u32)obj;
                         objCursor = objCursor + 1;
-                        shifted = otz << 2;
-                        *zCursor = shifted;
+                        wC = otz << 2;
+                        *zCursor = wC;
                         zCursor = zCursor + 1;
                     }
                     goto nextObj;
@@ -11220,10 +11209,11 @@ void func_80032DEC(u8 *arg0, s32 arg1) {
             }
             gte_op(rtps);
             tmpa1 = *(s8 *)(obj + 1);
-            aligned = (otz >> 2) << 2;
-            aligned = aligned + (s32)otBase40;
+            wC = (otz >> 2) << 2;
+            wC = wC + (s32)otBase40;
             mask = 0xFF0000;
-            tmpa1 = tmpa1 * 4 + aligned;
+            tmpa1 = tmpa1 << 2;
+            tmpa1 = tmpa1 + wC;
             *(u32 *)prim = *(u32 *)tmpa1 | 0x09000000;
             mask = mask | 0xFFFF;
             *(u32 *)tmpa1 = (u32)prim & mask;
@@ -12733,7 +12723,6 @@ void func_80035274(void) {
     register s32 step asm("$2");
     s32 y0v;
     s32 y1t;
-    register s32 ytmp asm("$2");
     s32 dza;
     s32 dz;
     s32 modq;
@@ -12806,8 +12795,8 @@ void func_80035274(void) {
     mod = dz - (idx << 7);
     x = x - mod;
     count = 0;
-    ytmp = yInt << 16;
-    yFixed = ytmp - scale * mod;
+    step = yInt << 16;
+    yFixed = step - scale * mod;
     yInt = yFixed >> 16;
     do {
         step = scale << 7;
@@ -15775,7 +15764,6 @@ void func_800390A0(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 var_a0;
     s32 x;
     s32 y;
-    register s32 newY asm("v0");
     s32 old30;
     s32 old34;
     s8 check;
@@ -15822,12 +15810,11 @@ ok:
     y = *(s32 *)((u8 *)arg1 + 4);
     if ((arg2 & 0xFF) == 0) {
         D_800A3730 = x + var_a3;
-        newY = y + var_a0;
+        *(volatile s32 *)&D_800A3734 = y + var_a0;
     } else {
         D_800A3730 = x - var_a3;
-        newY = y - var_a0;
+        *(volatile s32 *)&D_800A3734 = y - var_a0;
     }
-    *(volatile s32 *)&D_800A3734 = newY;
     old30 = *(volatile s32 *)&D_800A3730;
     old34 = *(volatile s32 *)&D_800A3734;
     D_800A3730 = var_a3;
@@ -16256,7 +16243,6 @@ void CarPlaceOnStartingGrid(void) {
     s32 retryX;
     s32 retryY;
     s8 gridRow;
-    s32 side;
     u8 savedFlag;
     u8 *car;
 
@@ -16277,14 +16263,7 @@ void CarPlaceOnStartingGrid(void) {
         do {
             gridRow = (*(s8 *)(car + 0x204));
             section = lastGridSection - (gridRow * spacing);
-            if (gridRow & 1) {
-                /* Preserve the two branch delay slots. */
-                asm("" : : "r"(car));
-                side = 1;
-            } else {
-                side = -1;
-            }
-            (*(s8 *)(car + 0x206)) = side;
+            (*(s8 *)(car + 0x206)) = (gridRow & 1) ? 1 : -1;
             if (D_800A2EB0Absolute[0] > 0) {
                 (*(s8 *)(car + 0x206)) = 0;
             }
