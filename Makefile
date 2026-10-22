@@ -522,6 +522,7 @@ endif
 endif
 
 C_FILES := $(shell find src -name '*.c' 2>/dev/null)
+H_FILES := $(wildcard include/*.h include/psxsdk/*.h)
 S_FILES := $(shell find asm -name '*.s' -not -path 'asm/nonmatchings/*' 2>/dev/null)
 O_FILES := $(C_FILES:%=build/%.o) $(S_FILES:%=build/%.o)
 
@@ -571,7 +572,7 @@ build/fixed_addrs.ld: config/symbol_addrs.txt tools/fixed_addrs.py
 	@mkdir -p build
 	$(PYTHON) tools/fixed_addrs.py --ld $< > $@
 
-build/%.c.o: %.c $(LD_SCRIPT) build/fixed_addrs.h
+build/%.c.o: %.c $(H_FILES) $(LD_SCRIPT) build/fixed_addrs.h
 	@mkdir -p $(@D)
 	set -o pipefail; $(CPP) $(CPPFLAGS) $< | $(CC1) $(CFLAGS) | $(MASPSX) | $(AS) $(ASFLAGS) -G$(GP_SIZE) -o $@
 
@@ -597,7 +598,10 @@ expected: check objdiff.json
 
 # Our headers only: include/psxsdk/ and include/types.h come from sotn-decomp.
 format:
-	clang-format -i $(C_FILES) include/common.h include/game.h include/include_asm.h
+	clang-format -i $(C_FILES) include/common.h include/game.h include/include_asm.h \
+	  include/cd.h include/graphics.h include/input.h include/list.h \
+	  include/menu.h include/menu_obj.h include/objects.h include/scene.h \
+	  include/sound.h include/util.h
 
 report: objdiff.json $(EXE)
 	@test -d expected || $(MAKE) expected

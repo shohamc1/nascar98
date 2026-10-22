@@ -10,6 +10,8 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "graphics.h"
+#include "util.h"
 
 extern s32 func_8001E7EC(void *, s32, s32);
 
@@ -18,62 +20,12 @@ extern s32 gOTBnm[] asm("gOrderingTableBank.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
 extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
-typedef struct ListNode28 ListNode28;
-typedef struct DoublyLinkedNode {
-    struct DoublyLinkedNode *next;
-    struct DoublyLinkedNode *previous;
-} DoublyLinkedNode;
-extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
-extern void func_8001ED84(s32 *vec);
-extern void (*D_80091080[])(void *);
-void SystemShowFatalError(char *message);
-u32 MathSqrt(u32 value);
-void RandomCountMark(void);
-s32 RandomSeedGet(void);
-void RandomSeedSet(s32 seed);
-s32 RandomScaledGet(s32 scale);
-void GraphicsAddPolyFT4(u8 *arg0);
-void FontSetColor(s16 red, s16 green, s16 blue);
-void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
-void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
-void func_80018848(void *arg0, s32 arg1, s32 arg2);
-void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_800197D4(s32 kind, s32 x, s32 y);
-void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
-void func_8001C34C(void);
-void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before);
-void ListRemoveNode(ListNode28 **head, ListNode28 *target);
-void func_8001C668(void *arg0, void *arg1);
-void ListPushFront(u8 *node, u8 **head, u8 **tail);
-void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
-                            ListNode28 **tail);
-void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
-                               DoublyLinkedNode **first);
-void func_8001C99C(u8 *arg0);
-void func_8001CAB8(u8 *arg0);
-void func_8001CBD4(u8 *arg0);
-void func_8001CC7C(u8 *arg0);
-void func_8001CDDC(u8 *arg0);
-void func_8001CF38(u8 *arg0);
-void ListDispatchCallbacks(u8 *arg0);
-void func_8001D108(u8 *arg0);
-void func_8001D1B0(s32 *destination, s32 *source);
-void func_8001D1E4(void);
-void func_8001D218(void);
 void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
                    u8 arg6, s32 arg7);
 void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
-void func_8001DF60(void);
-void func_8001DFC8(void);
 
 /* Images and matrix state. */
 
-typedef struct {
-    u8 pad[16];
-} Unk16;
 extern Unk16 *D_800A36CC;
 
 Unk16 *func_8001E040(s32 i) {
@@ -401,8 +353,6 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
     }
 }
 
-extern s32 D_800A2DC8;
-
 void GraphicsSetGeomOffsetForMode(s32 geomOffsetX, s32 mode) {
     switch (mode) {
     case 0:
@@ -478,16 +428,6 @@ void func_8001EBE8(s32 *p) {
     D_800A36E8 = i;
 }
 
-extern s32 D_800A36B0;
-extern s32 D_800A36B8;
-extern s32 D_800A36C0;
-extern s32 D_800A36C8;
-extern s32 D_800A36D0;
-extern s32 D_800A36D4;
-extern s32 D_800A36D8;
-extern s32 D_800A36DC;
-extern s32 D_800A36E8;
-
 void func_8001EC38(s32 *arg0) {
     D_800A36B0 = arg0[0x3C / 4];
     D_800A36B8 = arg0[0x48 / 4];
@@ -500,8 +440,6 @@ void func_8001EC38(s32 *arg0) {
     D_800A36E8 = arg0[0x5C / 4];
 }
 
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 void func_8001EC88(s32 *a, s32 *b, s32 *c) {
     s32 value0, value1, value2, value3, value4, value5, value6, value7, value8;
     value0 = a[0];
@@ -583,9 +521,6 @@ void func_8001ED4C(s32 *p) {
     p[0x58 / 4] = d;
     p[0x50 / 4] = a;
 }
-
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 
 void func_8001ED84(s32 *vec) {
     s32 x, y, z;
@@ -766,8 +701,6 @@ void MatrixRotateVector(s32 *vec) {
     vec[2] = c;
 }
 
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2) {
     s32 *matrixA;
     s32 *matrixB;
@@ -798,8 +731,6 @@ void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2) {
     D_800A36E8 = MathMultiplyFixed16(value12, matrixA[arg2]);
 }
 
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 void func_8001F440(s32 arg0, s32 arg1, s32 arg2) {
     s32 *matrixA;
     s32 *matrixB;
@@ -828,9 +759,6 @@ void func_8001F440(s32 arg0, s32 arg1, s32 arg2) {
     D_800A37B4 = -row0 - MathMultiplyFixed16(cross11, value20);
     D_800A37C4 = MathMultiplyFixed16(value12, matrixA[arg2]);
 }
-
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB) {
     s32 valueA;
@@ -899,8 +827,6 @@ void func_8001F728(s32 arg0) {
            MathMultiplyFixed16(D_800A36E8, z);
 }
 
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 void func_8001F828(s32 *p) {
     s32 a, b, c, d, e, f, g, h, i;
     a = D_800A36B0;
@@ -935,8 +861,6 @@ void func_8001F874(s32 *arg0) {
     arg0[0x80 / 4] = (s32)D_800A36E8;
 }
 
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 void MatrixStoreToObject(s32 *object) {
     s32 value0, value1, value2, value3, value4, value5, value6, value7, value8;
     value0 = D_800A3784;

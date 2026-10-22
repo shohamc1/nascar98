@@ -10,6 +10,8 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "graphics.h"
+#include "util.h"
 
 extern s32 *D_800A38AC;
 extern s32 D_800A3798[], D_800A37AC[], D_800A3784[];
@@ -20,11 +22,11 @@ extern MATRIX D_800A3AF8, D_800A3B18, D_800A3B38;
 extern s16 D_800A3AFA[], D_800A3AFC[], D_800A3AFE[], D_800A3B00[], D_800A3B02[],
     D_800A3B04[], D_800A3B06[], D_800A3B08[];
 extern u8 *D_800A3674[];
-extern u8 D_800A2ED8[], D_800A2DE0[], D_800A2EDA[];
+extern u8 D_800A2ED8[];
+extern u8 D_800A2EDA[];
 extern u8 *D_800A2EA0[];
 extern s16 D_800A2D68;
 extern void func_8001EEC4(u8 *);
-extern void MatrixCombineState(void);
 extern void func_80043F7C(u8 *, u8 *);
 extern s32 func_80016ACC(u8 *, s16 *);
 extern void func_80015EAC(u8 *);
@@ -360,11 +362,10 @@ extern s32 D_800A2EC4Lui asm("D_800A2EC4Absolute");
 extern s32 D_800A2EA4Lui asm("D_800A2EA4Absolute");
 extern u32 gCarListLui asm("gCarListAbsolute");
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-extern s32 D_800A2D6C, D_800A3818, D_800A2D5C;
-extern s32 *D_800A2D64;
+extern s32 D_800A2D6C;
+extern s32 D_800A3818;
 extern s32 func_800167BC(u8 *);
 extern s32 func_80014AC8(s32);
-extern void func_800168F8(u8 *, s32);
 
 /* Draw every car in the list, or release the ones that were skipped. */
 void CarDrawAll(void) {
@@ -509,7 +510,6 @@ s32 RandomSeedGet(void) {
     return gRandomSeed;
 }
 
-extern s32 gRandomSeed, gRandomCount;
 void RandomSeedSet(s32 seed) {
     gRandomSeed = seed;
     gRandomCount = 0;

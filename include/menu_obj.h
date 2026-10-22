@@ -1,3 +1,8 @@
+#ifndef MENU_OBJ_H
+#define MENU_OBJ_H
+
+#include "common.h"
+
 typedef struct MenuObj {
     s16 unk0;
     u8 unk2;
@@ -18,3 +23,5 @@ typedef struct MenuObj {
     struct MenuObj *unk1C;
     u8 *unk20;
 } MenuObj;
+
+#endif /* MENU_OBJ_H */

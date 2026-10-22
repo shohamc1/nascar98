@@ -12,9 +12,14 @@
 #include <psxsdk/libc.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "cd.h"
+#include "graphics.h"
+#include "list.h"
+#include "objects.h"
+#include "scene.h"
+#include "sound.h"
+#include "util.h"
 
-extern s32 D_800B9D5C[];
-extern void func_8001E7EC(void *, s32, s32);
 extern u16 D_800A38C0[];
 extern s32 D_800A2E90w15[] asm("D_800A2E90.NON_MATCHING");
 extern u8 D_800A2EE4w15[] asm("D_800A2EE4.NON_MATCHING");
@@ -22,7 +27,6 @@ extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
 extern s32 gOrderingTable[];
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
-extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 typedef struct RoadSection {
     struct RoadSection *prev;
@@ -32,128 +36,24 @@ typedef struct RoadSection {
     u8 unk10[0x80];
 } RoadSection;
 
-typedef struct ListNode28 ListNode28;
-typedef struct DoublyLinkedNode {
-    struct DoublyLinkedNode *next;
-    struct DoublyLinkedNode *previous;
-} DoublyLinkedNode;
-extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
-extern void func_8001ED84(s32 *vec);
 extern ListNode28 *D_800A3A40Absolute[];
-extern void (*D_80091080[])(void *);
-typedef struct {
-    u8 pad[16];
-} Unk16;
 extern s32 D_800A2EC4w15[] asm("D_800A2EC4.NON_MATCHING");
-extern u8 *D_800A3668, *D_800A384C, *D_800A3854, *D_800A3A2C, *D_800A3A34;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A36B0;
-extern s32 D_800A36B8;
-extern s32 D_800A36C8;
-extern s32 D_800A36D0;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A3784;
-extern s32 D_800A3790;
-extern s32 D_800A3794;
-extern s32 D_800A3798;
-extern s32 D_800A379C;
-extern s32 D_800A37A4;
-extern s32 D_800A37AC;
-extern s32 D_800A37B4;
-extern s32 D_800A37C4;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-void SystemShowFatalError(char *message);
-u32 MathSqrt(u32 value);
-void RandomCountMark(void);
-s32 RandomSeedGet(void);
-void RandomSeedSet(s32 seed);
-s32 RandomScaledGet(s32 scale);
-void GraphicsAddPolyFT4(u8 *arg0);
-void FontSetColor(s16 red, s16 green, s16 blue);
-void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
-void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
-void func_80018848(void *arg0, s32 arg1, s32 arg2);
-void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_800197D4(s32 kind, s32 x, s32 y);
-void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
-void func_8001C34C(void);
-void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before);
-void ListRemoveNode(ListNode28 **head, ListNode28 *target);
-void func_8001C668(void *arg0, void *arg1);
-void ListPushFront(u8 *node, u8 **head, u8 **tail);
-void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
-                            ListNode28 **tail);
-void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
-                               DoublyLinkedNode **first);
-void func_8001C99C(u8 *arg0);
-void func_8001CAB8(u8 *arg0);
-void func_8001CBD4(u8 *arg0);
-void func_8001CC7C(u8 *arg0);
-void func_8001CDDC(u8 *arg0);
-void func_8001CF38(u8 *arg0);
-void ListDispatchCallbacks(u8 *arg0);
+extern u8 *D_800A3A2C;
+extern u8 *D_800A3A34;
 void func_8001D108(RoadSection *arg0);
-void func_8001D1B0(s32 *destination, s32 *source);
 void func_8001D1E4(void);
-void func_8001D218(void);
-void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7);
-void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
-void func_8001DF60(void);
-void func_8001DFC8(void);
-Unk16 *func_8001E040(s32 i);
-void GraphicsLoadImageBank(s32 fileName);
-void func_8001E230(s32 arg0, s32 arg1);
-void GraphicsLoadImageWithXOffset(s32 xOffset);
-void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
-void GraphicsSetGeomOffsetForMode(s32 geomOffsetX, s32 mode);
-void GraphicsSetClearColor(u8 r, u8 g, u8 b);
-void GraphicsApplyDisplayEnvironments(void);
-void GraphicsPartitionWorkBuffers(void);
-void func_8001EBE8(s32 *p);
-void func_8001EC38(s32 *arg0);
-void func_8001EC88(s32 *a, s32 *b, s32 *c);
-void func_8001ECD8(void);
-void func_8001ED14(s32 *p);
 void func_8001ED4C(s32 *p);
-void func_8001ED84(s32 *vec);
-void func_8001EE74(s32 *arg0);
 void func_8001EEC4(s32 *arg0);
-void MatrixCombineState(void);
 void func_8001F198(void);
-void MatrixRotateVector(s32 *vec);
-void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
-void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
 void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void func_8001F874(s32 *arg0);
-void MatrixStoreToObject(s32 *object);
-void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
-void MatrixSaveState(void);
-void MatrixRestoreState(void);
 void func_8001FAC0(u8 *arg0, s32 index);
 void func_8001FB28(u8 *arg0, s32 index);
-s32 func_8001FB80(void *arg0);
-s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
 
+extern s32 D_800A3A2CAbsolute[];
 s32 VectorGetMagnitude2D(void *arg0) {
     s32 dx;
     s32 dy;
@@ -293,9 +193,6 @@ void func_8001FDD0(RaceObject *cam, RaceObject *car) {
     func_8001F728((s32)&cam->rot[2]);
 }
 
-s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
-s32 MathMultiplyFixed16(s32, s32); /* extern */
-
 void func_8001FF3C(u8 *arg0, u8 *arg1) {
     s32 sp18;
     s32 sp1C;
@@ -356,9 +253,6 @@ typedef struct {
     u8 unk24[0x6C];
 } TrackRacer;
 
-s32 MathFixedDivide(s32 numerator, s32 denominator);
-s32 MathGetAngleDelta(s32 arg0, s32 arg1);
-void func_8002DA30(s32 *arg0);
 extern s32 D_800A2DCCSmall asm("D_800A2DCC.NON_MATCHING");
 extern s32 D_800A2DD0Small asm("D_800A2DD0.NON_MATCHING");
 extern s32 D_800A2DD4Small asm("D_800A2DD4.NON_MATCHING");
@@ -1353,7 +1247,6 @@ extern s32 D_800A2DF8;
 extern u8 D_800A39F0;
 extern void func_8004B128(u8 *);
 extern void SoundPlaySlot(s8, s8);
-extern void ReplayStepForward(void);
 extern void func_80044248(void);
 extern s32 func_8002482C(s32, s32, s32 *);
 extern u32 PadGetType(s32);
@@ -1489,10 +1382,8 @@ void func_80023074(void) {
     D_800A39F0 = 0;
 }
 
-extern void func_8003CCE0(s32);
 extern void CdApplyMixVolume(void);
 extern void func_8002F86C(void *, s32);
-extern void func_80044FF8(s32, s32);
 extern s8 D_800A2D0CControl asm("D_800A2D0CAbsolute");
 extern s32 D_800A2DF8Control asm("D_800A2DF8");
 extern s32 D_800A2EA4Control asm("D_800A2EA4Absolute");
@@ -2176,8 +2067,6 @@ s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2) {
     return -1;
 }
 
-s32 TrackTestPointInSection(s32, s32, u8 *);
-
 s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2) {
     s32 index;
     s32 remaining;
@@ -2517,7 +2406,6 @@ s32 TrackFindSection(s32 x, s32 y, s32 *indexPtr, s32 *outZ, s32 *outType) {
 
 extern s32 D_800A3A54Small;
 extern s32 D_800A2E14[];
-extern s32 D_800A3810;
 extern char D_8008CFC0[];
 extern s32 FileOpenCall(s32, void *) asm("FileOpen");
 extern s32 FileSeekCall(void *, s32, s32) asm("FileSeek");
@@ -2764,14 +2652,6 @@ void func_80025730(u8 *obj) {
     *(s32 *)(obj + 0x354) = (s32)func_80025594;
 }
 
-typedef struct {
-    u8 unk0[0x1EC];
-    s16 unk1EC;
-    u8 unk1EE[0x12];
-    s8 unk200;
-    u8 unk201[0x153];
-    void (*callback)(void);
-} Batch0CallbackObject;
 void ObjectSetCallbackIfAllowed(Batch0CallbackObject *object,
                                 void (*callback)(void)) {
     if (((object->unk1EC != 1) || (callback != func_80025730)) &&
@@ -2811,8 +2691,6 @@ s32 func_80025938(u8 *arg0, u8 *arg1) {
 }
 
 s32 func_8003702C(u8 *, u8 *);
-void func_800406D0(u8 *, u8 *, s32, s32);
-void func_80041848(u8 *, s32);
 
 s32 func_80025A38(u8 *arg0) {
     u8 *other;
@@ -5073,10 +4951,6 @@ void func_80028D80(u8 *arg0) {
         *(s32 *)(node + 0x90) + (scale + (*(s32 *)(node + 0x22C) >> 4));
 }
 
-typedef struct {
-    u8 unk0[0x90];
-    s32 unk90;
-} UnkObject90;
 void func_80028F98(UnkObject90 *object) {
     object->unk90 -= 0x40000;
 }
@@ -5443,7 +5317,6 @@ void func_80029994(u8 *arg0, s32 arg1) {
     }
 }
 
-extern void func_8001FAC0(u8 *, s32);
 extern s32 D_800A2E1C;
 
 void func_80029A78(u8 *car) {
@@ -5536,7 +5409,6 @@ void func_80029CB4(s32 *arg0) {
     }
 }
 
-extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 void func_80029DA8(s32 *car) {
     volatile s32 debugBuffer[16];
@@ -5573,7 +5445,6 @@ void func_80029E3C(void) {
  * local-alloc reference counts; the second asm is a zero-byte anchor that
  * keeps the v0/v1 handout on the 0x18/0x1C pair like retail. */
 extern s32 D_800A38AC[];
-extern void func_8001F728(s32 arg0);
 
 void func_80029E44(void) {
     s32 *sourceRow;
@@ -5714,7 +5585,7 @@ afterStatus:
     return flags;
 }
 
-extern s32 D_800A2E1C, D_800A2E24;
+extern s32 D_800A2E24;
 void func_8002A1D0(void) {
     D_800A2E24 = 0x1EF0000 - (D_800A2E1C - 3) * 0x30000;
 }
@@ -6675,7 +6546,6 @@ extern s32 D_800A453CPhysics[] asm("D_800A453C.NON_MATCHING");
 extern void func_8002AF94(CarDynamics *);
 extern void func_8002B9AC(CarDynamics *, s32 *, s32 *);
 extern void func_8002D27C(u8 *);
-extern s32 func_8003702C(u8 *, u8 *);
 
 #define CAR_OFFSET(field) ((u32) & ((CarDynamics *)0)->field)
 typedef char CheckVectorSize[(sizeof(VECTOR) == 16) ? 1 : -1];
@@ -7680,7 +7550,6 @@ s32 CarTestDraft(u8 *arg0, u8 *arg1) {
     return 0;
 }
 
-s32 func_8003702C(u8 *, u8 *);
 s32 CarTestDraft(u8 *, u8 *);
 
 void func_8002D16C(u8 *arg0) {
@@ -8229,8 +8098,6 @@ void func_8002DC2C(void) {
     func_8001DFC8();
 }
 
-void *HeapAlloc(u32);
-
 s32 func_8002DDA0(void) {
     s32 size;
 
@@ -8382,10 +8249,8 @@ extern void PushMatrix(void);
 extern void PopMatrix(void);
 extern void func_80033000(u8 *arg0, u8 *arg1, u8 *arg2);
 extern void func_80046184(u8 *arg0);
-extern void func_80032DEC(u8 *arg0, s32 arg1);
 extern void SceneUpdateProjectiles(u8 *arg0);
 extern void func_800345E0(void);
-extern void func_8003271C(s32 arg0);
 extern void CarDrawAll(s32 arg0);
 extern s32 func_800346D0(s32 arg0);
 extern void func_80048568(void);
@@ -8401,7 +8266,6 @@ extern s32 D_800A2EC0;
 extern u8 D_80098234[];
 extern s32 D_800B9D74[];
 extern s32 D_800A397C[];
-extern s32 gReplayIndex[];
 extern s32 D_800B9D60[];
 
 void func_8002E240(u8 *arg0, u8 *arg1, u8 *arg2, u8 *arg3) {
@@ -8514,16 +8378,12 @@ extern u8 D_800A2EDAFrame;
 /* A one-element array: its store orders behind the culled-flag stores. */
 extern s32 D_800A2F04Frame[1];
 extern s32 D_800A2F08Frame;
-extern s32 D_800A2F0CFrame;
 extern s32 D_800A2F10Frame;
 extern u8 *D_800A3674Frame;
-extern u8 D_800A3075Frame[];
-extern u8 D_800A3A60RaceStep1[];
 extern s32 D_800A359C[];
 extern s32 D_800A2D50[];
 extern s32 D_800B9D58[];
 extern s32 D_800B9D78[];
-extern s32 D_800A38AC[];
 void SceneUpdateRoadStrip(u8 *car);
 void HudDrawDashboard(void);
 void func_8004382C(void);
@@ -9012,9 +8872,7 @@ void func_8002F454(void) {
 }
 
 extern MATRIX D_800A4548[];
-extern s32 D_800A359C[];
 extern s32 D_800A2F68[];
-extern s32 D_800A2EC0;
 extern s32 D_800A2EF8;
 extern s32 D_800A2EFC;
 extern s32 D_800A2F00;
@@ -9050,7 +8908,6 @@ void func_8002F5A4(void) {
     RaceUpdatePositions(1);
 }
 
-void func_80041A28(void);
 void exit();
 void func_8002F5CC(void) {
     func_80041A28();
@@ -9167,7 +9024,6 @@ void func_8002F674(void) {
 }
 
 extern u8 D_800A35FC[];
-void RaceUpdatePositions(u8 force);
 void func_8003B464(void);
 void func_8003C1CC(void);
 void func_8003C3FC(void);
@@ -9268,7 +9124,6 @@ extern u8 D_800A38E0RaceStep2[];
 extern s32 D_800A397CRaceStep1[];
 extern u8 D_800A39F8RaceStep1[];
 extern u8 D_800A39F8RaceStep2[];
-extern u8 D_800A3A60RaceStep1[];
 extern u8 D_800A3A94RaceStep1[];
 extern u8 D_800A3A94RaceStep2[];
 extern s32 D_800A2EA8RaceStepRepeat;
@@ -9713,22 +9568,13 @@ asm(".globl D_800A2E8CFrame\nD_800A2E8CFrame = D_800A2E8C\n"
     ".globl gOrderingTableFrame4Read\ngOrderingTableFrame4Read = gOrderingTable\n"
     ".globl gOrderingTableFrame5Read\ngOrderingTableFrame5Read = gOrderingTable\n"
     ".globl gOrderingTableFrame8Read\ngOrderingTableFrame8Read = gOrderingTable\n");
-extern s32 D_800A2E8CFrame;
 extern s32 D_800A2E98Frame;
 extern u8 *D_800A2E9CFrame;
 extern u8 *D_800A2EA0Frame;
-extern s32 D_800A2EA4Frame;
 extern s32 D_800A2EBCFrame;
 extern s32 D_800A2EC0Frame;
 extern s32 D_800A2EC4Frame;
-extern s32 D_800A2EC8Frame;
-extern u8 D_800A2ED8Frame;
 extern s8 D_800A2ED9Frame;
-extern u8 D_800A2EDAFrame;
-extern s32 D_800A2F08Frame;
-extern s32 D_800A2F0CFrame;
-extern s32 D_800A2F10Frame;
-extern u8 D_800A3075Frame[];
 extern u8 *gPlayerCarFrame[];
 extern u8 *D_800A3558Frame[];
 extern s32 D_800A3774Frame;
@@ -10220,8 +10066,6 @@ extern s32 D_800A2F2C;
 extern s32 D_800A2F2CAbsolute[];
 extern s32 D_800A384CAbsolute[];
 extern s32 D_800AE848[];
-extern s32 D_800AE84C[];
-extern s32 D_800B6094[];
 u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     s32 point[3];
     s32 outX;
@@ -10294,18 +10138,9 @@ void func_800311B4(s32 x, s32 y, s32 z, s32 *out) {
     out[2] = MathFixedDivide(z, length);
 }
 
-typedef struct {
-    s32 x;
-    s32 y;
-    s32 z;
-} Vector3;
-
-extern s32 D_800A397C[];
 void func_800319D4(u8 *, s32);
-void func_8001F198(void);
 u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
 extern s16 func_8002482Cs16(s32, s32, void *) asm("func_8002482C");
-void func_8001F5BC(s32, s32, s32);
 typedef struct {
     u8 pad[0x1C];
     s16 unk1C;
@@ -10851,8 +10686,6 @@ void func_80032328(s32 arg0) {
  * materialization across the first call; the -87*4 delta folds into
  * the %lo displacement (0x36D0 - 0x15C = 0x3574).
  */
-void func_80025454(s32);
-void ObjectLoadGeometry(ModelGeometry *, u8 *, s32);
 void func_800323F0(s32 index, s32 arg1) {
     ObjectLoadGeometry((ModelGeometry *)D_800A3574Lui,
                        *(u8 **)(D_800B9F44 + index), arg1);
@@ -10861,7 +10694,6 @@ void func_800323F0(s32 index, s32 arg1) {
     D_800A2D4D[0] = 0;
 }
 
-void ObjectLoadGeometry(ModelGeometry *, u8 *, s32);
 void func_80032450(s32 first, s32 second) {
     ObjectLoadGeometry((ModelGeometry *)D_800A3574[0], (u8 *)first, second);
     D_800A2D4C[0] = 1;
@@ -10899,8 +10731,6 @@ void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag) {
     *primitive = tag | *orderingTable;
     *orderingTable = (u32)primitive & 0xFFFFFF;
 }
-
-extern u8 D_800A2DE0[];
 
 u8 *func_80032544(u8 *obj, s32 count) {
     u8 *prim;
@@ -12511,8 +12341,6 @@ void func_800345E0(void) {
     } while (i < 3);
 }
 
-extern s32 D_800A2F38[];
-
 extern u32 D_800A3570Lui asm("D_800A3570Absolute");
 extern u32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
 s32 func_800346D0(s32 threshold) {
@@ -12764,8 +12592,8 @@ void func_80034B90(u8 *prim) {
 }
 
 extern s32 D_800A3784Absolute[], D_800A3790Absolute[], D_800A3794Absolute[];
-extern s32 D_800A3798Absolute[], D_800A379CAbsolute[], D_800A37A4Absolute[];
-extern s32 D_800A37ACAbsolute[], D_800A37B4Absolute[], D_800A37C4Absolute[];
+extern s32 D_800A3798Absolute[];
+extern s32 D_800A379CAbsolute[];
 
 __inline__ void func_80034C1C(void) {
     s32 a;
@@ -12789,9 +12617,6 @@ __inline__ void func_80034C1C(void) {
 }
 
 extern s32 D_800A36D4Absolute[];
-extern s32 D_800A3784Absolute[], D_800A3790Absolute[], D_800A3794Absolute[],
-    D_800A3798Absolute[], D_800A379CAbsolute[], D_800A37A4Absolute[],
-    D_800A37ACAbsolute[], D_800A37B4Absolute[], D_800A37C4Absolute[];
 void func_80034C94(void) {
     D_800A3784Absolute[0] = 0x10000;
     D_800A3790Absolute[0] = 0;
@@ -12806,9 +12631,6 @@ void func_80034C94(void) {
 
 extern s32 D_800A36C0Absolute[];
 extern s32 D_800A36E8Absolute[];
-extern s32 D_800A3790Absolute[], D_800A3798Absolute[], D_800A379CAbsolute[],
-    D_800A37A4Absolute[], D_800A37B4Absolute[], D_800A3794Absolute[],
-    D_800A3784Absolute[], D_800A37ACAbsolute[], D_800A37C4Absolute[];
 __inline__ void func_80034CFC(void) {
     D_800A3790Absolute[0] = 0;
     D_800A3798Absolute[0] = 0;
@@ -12821,7 +12643,6 @@ __inline__ void func_80034CFC(void) {
     D_800A37C4Absolute[0] = D_800A36E8Absolute[0];
 }
 
-extern s32 D_800A36D4Absolute[];
 extern s32 D_800A2F3C[];
 extern s32 D_800A2F40;
 extern s32 D_800A2F44;
@@ -12946,11 +12767,6 @@ void CameraUpdateHorizon(void) {
     D_800A2F44 = b * 2 % 0x200;
 }
 
-extern s32 D_800A2F44;
-extern s32 D_800A38B4;
-extern s32 D_800A38BC;
-extern s32 D_800A36A8;
-extern s32 D_800A36AC;
 extern void *D_800A2EA0[];
 extern s16 D_800B1ED8[], D_800B1EDA[], D_800B1EDC[], D_800B1EDE[];
 extern s16 D_800B1EE0[], D_800B1EE2[], D_800B1EE4[], D_800B1EE6[];
@@ -13095,7 +12911,6 @@ void func_80035274(void) {
     AddPrim((u8 *)gOrderingTable[0] + 0xFF8, entry);
 }
 
-extern void *D_800A2EA0[];
 void func_80035274(void);
 void func_8003565C(s32 arg0) {
     u8 *value;
@@ -13114,9 +12929,7 @@ typedef struct {
     void *unk3E0;
 } Data3554;
 
-extern s32 D_800A2F3C[];
 void CameraUpdateHorizon(void);
-void func_80035274(void);
 
 void func_800356A8(s32 arg0) {
     void *value0;
@@ -13132,8 +12945,6 @@ void func_800356A8(s32 arg0) {
     func_80035274();
     D_800A2F3C[0] = 0x46;
 }
-
-extern s32 D_800A2F44;
 
 void func_80035720(u_long *ot) {
     s32 value;
@@ -13184,7 +12995,6 @@ void func_80035720(u_long *ot) {
 extern u8 D_800A2DE1[];
 extern s32 D_800A2E9C[];
 void func_8002F0A8(u8 *);
-void CameraUpdateHorizon(void);
 void func_80035720(u_long *);
 void func_8003587C(s32 arg0) {
     /* second stores to each symbol go through existing defsym
@@ -13943,7 +13753,6 @@ s32 func_80036FC8(s32 *a, s32 *b) {
 }
 
 #ifdef NON_MATCHING
-extern s32 gTrackSectionCount[];
 s32 func_8003702C(u8 *objectA, u8 *objectB) {
     s32 limit;
     s32 diff;
@@ -13991,7 +13800,6 @@ s32 func_8003702C(u8 *objectA, u8 *objectB) {
  * showed +0x18 drift while this draft was active -- self-inflicted
  * wrong length, not a split problem.
  */
-extern s32 gTrackSectionCount[];
 
 s32 func_8003702C(s32 arg0, s32 arg1) {
     s32 diff;
@@ -14029,8 +13837,6 @@ s32 func_8003702C(s32 arg0, s32 arg1) {
 }
 #endif
 
-extern s32 gTrackSectionCount[];
-
 s32 func_8003702C(u8 *objectA, u8 *objectB) {
     s32 limit;
     s32 diff;
@@ -14063,7 +13869,6 @@ s32 func_8003702C(u8 *objectA, u8 *objectB) {
 #endif
 
 #ifdef NON_MATCHING
-extern s32 gTrackSectionCount[];
 s32 func_800370B8(s32 a, s32 b) {
     s32 limit;
     s32 diff;
@@ -14093,7 +13898,6 @@ s32 func_800370B8(s32 a, s32 b) {
     return b - a;
 }
 #else
-extern s32 gTrackSectionCount[];
 
 s32 func_800370B8(s32 a, s32 b) {
     s32 limit;
@@ -14135,7 +13939,6 @@ s32 func_800370B8(s32 a, s32 b) {
  * Products map 0xB0=prod(0x60), 0xB4=prod(0x6C), 0xB8=prod(0x78);
  * the volatile reloads of 0xB0/B4/B8 before the adds are exact.
  */
-void func_8001FAC0(u8 *, s32);
 void func_8001FB28(u8 *, s16);
 void func_80037130(u8 *object) {
     s32 prod0;
@@ -14162,8 +13965,6 @@ void func_80037130(u8 *object) {
     *(s32 *)(object + 0x8) = sum2;
 }
 #else
-void func_8001FAC0(u8 *, s32);
-void func_8001FB28(u8 *, s32);
 void func_80037130(u8 *object) {
     *(s16 *)(object + 0x116) = *(s16 *)(object + 0x114) * 4;
     func_8001FAC0(object, *(s16 *)(object + 0x114) * 4);
@@ -14282,17 +14083,13 @@ extern s32 D_800A36A4373B4;
 extern u8 *D_800A3728373B4[];
 extern u8 D_800A372C373B4[];
 extern s8 D_800A3764373B4[];
-extern u8 *D_800A37C0373B4[];
 extern u8 *gCarList373B4[];
 extern s16 D_800A3910373B4[];
 extern u8 *D_800A3960373B4[];
 extern s32 *D_800A3A2C373B4[];
 extern s32 *D_800A3A34373B4[];
 extern u8 *D_800A3A64373B4[];
-extern u8 *D_800AE154373B4[];
-extern s32 D_800B1EA8373B4[];
 extern s32 gTrackSectionCount373B4[];
-extern u8 *gTrackSections373B4[];
 extern s32 func_800A2CE0373B4[];
 extern s32 MathFixedDivide373B4(s32, s32) asm("MathFixedDivide");
 extern s32 MathMultiplyFixed16373B4(s32, s32) asm("MathMultiplyFixed16");
@@ -15964,7 +15761,6 @@ void func_800373B4(u8 *object) {
     }
 }
 
-extern s32 func_8002482C(s32, s32, s32 *);
 void func_8003AA20(s32 car);
 void func_8003ABC0(u8 *object);
 
@@ -16202,7 +15998,6 @@ extern s32 D_800A2EB4Absolute[];
 extern u8 *gCarListAbsolute[];
 extern s32 D_800AE154[];
 extern s32 func_80039274(TrafficCar *, TrafficCar *, u8);
-extern void func_80039B74(s32 *, s32);
 
 s32 CarAvoidTraffic(TrafficCar *car, s32 keepTarget) {
     s32 maxDistance;
@@ -16680,8 +16475,6 @@ void CarPlaceOnStartingGrid(void) {
 extern s32 D_800A2F00nm[] asm("D_800A2F00.NON_MATCHING");
 extern s32 D_800A2EFCnm[] asm("D_800A2EFC.NON_MATCHING");
 extern s16 D_800A3910nm[] asm("D_800A3910.NON_MATCHING");
-extern void func_800373B4(u8 *);
-extern void func_8002A1FC(u8 *);
 
 void func_8003A440(void) {
     u8 *node;
@@ -16725,7 +16518,6 @@ void func_8003A440(void) {
 extern void func_80041564(u8 *, s32);
 extern void func_800294A8(void *);
 extern void CarUpdateState(u8 *);
-extern u8 *gPlayerCarAbsolute[];
 extern u32 D_800A2F50;
 extern u8 D_800A39F8nm[] asm("D_800A39F8.NON_MATCHING");
 extern u8 D_800A38B8nm[] asm("D_800A38B8.NON_MATCHING");
@@ -17042,8 +16834,6 @@ void func_8003AC18(u8 *object, s32 arg1, s32 arg2, s32 arg3) {
 }
 
 void func_800390A0(s32, s32, s32, s32);
-void FontDrawPaddedNumber(s32, s32, s32, s32);
-void func_8003644C(s32, s32, s32, s32);
 struct Unk_8003AD08 {
     s32 unk0;
     s32 unk4;
@@ -17073,8 +16863,6 @@ extern u8 *gTrackSectionsLap asm("gTrackSections");
 extern void func_8003EDA0(u8 *);
 extern void func_8003CEFC(void);
 extern void HudDrawLapSplit(void);
-extern void func_8004FF3C(void);
-extern void func_8003B464(void);
 
 void RaceUpdateLapProgress(void) {
     u8 *car;
@@ -17393,7 +17181,6 @@ extern s32 D_800A2F60;
 extern RankCar *gRankCarList[] asm("gCarListAbsolute");
 extern RankCar *gRankPlayerCar[] asm("gPlayerCarAbsolute");
 extern s32 D_800A2EA8Absolute[];
-extern s32 D_800A2EB4Absolute[];
 extern u8 D_800A2EF0Absolute asm("D_800A2EF0Absolute");
 extern u8 D_800A306DAbsolute[];
 
@@ -17560,11 +17347,10 @@ void RaceUpdatePositions(u8 force) {
 }
 
 extern void CarInitDefaults();
-extern s32 D_800BE72C[];
 extern s32 D_800BE730[];
 extern s16 D_800BE738[];
-extern s32 D_800A2F60;
 
+extern s32 D_800BE72C[];
 void func_8003BCAC(void) {
     s32 count;
     s32 offset;

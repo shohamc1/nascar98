@@ -10,19 +10,16 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "objects.h"
+#include "scene.h"
+#include "graphics.h"
+#include "util.h"
 
 extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
 extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
 extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
 extern s8 D_800A3620w18c[] asm("D_800A3620.NON_MATCHING");
 extern s32 sprintf(char *, ...);
-
-void SystemShowFatalError(char *message);
-u32 MathSqrt(u32 value);
-void RandomCountMark(void);
-s32 RandomSeedGet(void);
-void RandomSeedSet(s32 seed);
-s32 RandomScaledGet(s32 scale);
 
 /* Primitives and text. */
 
@@ -1322,7 +1319,6 @@ extern s16 D_800A2D8A;
 extern s8 gTimeBlankText[];
 extern s8 *D_8009ADD8[];
 extern void func_80025730(u8 *);
-extern s32 MathGetAngleDelta(s32, s32);
 
 /* Draw the car place, laps, speed, times, and panel primitives. */
 void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
@@ -1702,7 +1698,6 @@ void MenuDrawPauseListPanel(void *unused, s32 selection, u8 flags, s32 y) {
 }
 
 extern u8 *D_8009AD60[][6];
-extern u8 *D_8009AD68[][6];
 extern u8 *D_8009AD6C[][6];
 extern u8 *D_8009ADA8[];
 extern u8 *D_8009ADAC[];
@@ -1722,7 +1717,6 @@ extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
 extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern void MenuDrawStatistics(void);
 extern void MenuDrawTimingAndScoring(void);
-extern s32 HudTextWidth(u8 *);
 void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     s32 frameExtent[2];
     s32 y;
@@ -2035,10 +2029,7 @@ void ReplayDrawControls(void) {
     }
 }
 
-extern s32 D_800A2EB4[];
 extern u8 *gPlayerCar;
-extern u8 D_800B0B7C[];
-extern u8 D_80090F2E[];
 extern u16 D_80090F30b[] asm("D_80090F30");
 extern u16 D_80090F30c[] asm("D_80090F30");
 extern u8 D_80090F30d[] asm("D_80090F30");
@@ -2113,7 +2104,6 @@ void func_8001B82C(u8 *obj, s32 arg1) {
 extern s32 D_801F3FFC[];
 extern s32 D_800A2ED0[];
 extern void *D_800A35E0;
-extern u8 *gPlayerCar;
 extern void func_8001B82C(u8 *obj, s32 arg1);
 void func_8001BA94(s32 arg0) {
     s32 shade;
@@ -2199,8 +2189,6 @@ void func_8001BA94(s32 arg0) {
 }
 
 extern s32 D_800A2E90[];
-extern s32 D_800A2E94[];
-extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A3848;
 extern s32 D_800B0B1C[];
 extern void HudDrawTime(s32, s16, s16, s8, u8);
@@ -2210,9 +2198,6 @@ extern u8 *D_8009ADF4[];
 extern s32 D_8009ADEC[];
 extern s32 D_8009ADF0[];
 extern char D_800A2DA8[];
-extern u8 gDriverOrder[];
-extern char *gDriverNames[];
-extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 
 void MenuDrawResults(s32 reset) {
     char text[64];
@@ -2359,10 +2344,10 @@ extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
 extern u8 *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
-extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
 
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
+extern s32 D_800A3A2CAbsolute[];
 void func_8001C34C(void) {
     s32 mode;
     s32 value;

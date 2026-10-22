@@ -624,6 +624,9 @@ u8 *TextFormatLong(s32 value, u8 *buffer) {
 }
 
 #include <psxsdk/kernel.h>
+#include "util.h"
+#include "graphics.h"
+#include "list.h"
 /* Counter and frame control. */
 
 void SystemInitCounter(void) {
@@ -1659,19 +1662,21 @@ extern s32 FileSeek(s32, s32, s32);
 extern s32 FileRead(void *, s32, s32, s32);
 extern s32 sprintf(char *, char *, ...);
 extern void func_8001D218(char *, ...);
-extern s32 RandomScaledGet(s32);
 extern s32 func_800157B0(s16 *, void *, u8 *);
 extern void func_80015870(u8 *, void *);
 extern void func_80015930(u8 *, void *, s32);
 extern s32 D_800A2F80[], D_800A39E0[], D_800A376C[];
-extern s32 D_800BE72C[], D_800B1348[], D_800B134C[], D_800B1350[];
-extern s32 D_800AE848[], D_800AE84C[];
+extern s32 D_800B1348[];
+extern s32 D_800B134C[];
+extern s32 D_800B1350[];
+extern s32 D_800AE848[];
 extern char gTrackInitMessage[];
 extern char gTrackReadVerticesMessage[];
 extern char gTrackReadFacesMessage[];
 extern char gTrackFaceErrorFormat[];
 extern char gTrackReadSuccessMessage[];
 
+extern s32 D_800BE72C[];
 void TrackReadData(s32 *trackData, s32 file) {
     register TrackResource *resource asm("s7");
     /* Only the first byte is accessed in the retail function. */
@@ -2597,8 +2602,6 @@ void func_80016298(s16 *arg0, u8 *arg1) {
 }
 
 extern s32 D_800A2D60;
-extern s32 D_800A2D5C;
-extern s32 *D_800A2D64;
 
 void func_8001636C(void) {
     s32 count;

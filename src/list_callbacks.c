@@ -10,30 +10,14 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "graphics.h"
+#include "list.h"
+#include "util.h"
 
 extern s32 gOrderingTable[];
-void SystemShowFatalError(char *message);
-u32 MathSqrt(u32 value);
-void RandomCountMark(void);
-s32 RandomSeedGet(void);
-void RandomSeedSet(s32 seed);
-s32 RandomScaledGet(s32 scale);
-void GraphicsAddPolyFT4(u8 *arg0);
-void FontSetColor(s16 red, s16 green, s16 blue);
-void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
-void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
-void func_80018848(void *arg0, s32 arg1, s32 arg2);
-void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_800197D4(s32 kind, s32 x, s32 y);
-void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
-void func_8001C34C(void);
 
 /* Lists and callbacks. */
 
-typedef struct ListNode28 ListNode28;
 struct ListNode28 {
     u8 unk0[0x28];
     ListNode28 *next;
@@ -260,10 +244,6 @@ void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
     }
 }
 
-typedef struct DoublyLinkedNode {
-    struct DoublyLinkedNode *next;
-    struct DoublyLinkedNode *previous;
-} DoublyLinkedNode;
 void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
                                DoublyLinkedNode **first) {
     if (*first == NULL) {
@@ -279,8 +259,6 @@ void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
     }
 }
 
-extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
-extern void func_8001ED84(s32 *vec);
 void func_8001C99C(u8 *arg0) {
     s32 i;
     s32 *vec;
@@ -370,9 +348,7 @@ void func_8001CBD4(u8 *arg0) {
    0x40 at +8/+0xC and reuse the variable for 0xBF); (c) the != 0 arm is the
    fall-through; (d) if-arm +0xD/+0x15 store c (0x78), +9/+0x11 store 0;
    (e) gOTB test must be `!= 0` with the 0-arg call as fall-through. */
-extern s32 D_800A2EC8Absolute[];
 extern ListNode28 *D_800A3A40Absolute[];
-extern s32 gOrderingTableBankAbsolute[];
 
 /* Sets up a shade-tex primitive (0x2C entry) from the D_800A3A40 pool:
    entry +0xE tpage, +0xA clut (first arm only), +8..+0x15 palette bytes. */
@@ -436,7 +412,6 @@ void func_8001CC7C(u8 *arg0) {
     }
 }
 #else
-extern s32 D_800A2EC8Absolute[];
 extern ListNode28 *D_800A3A40Absolute[];
 
 void func_8001CC7C(u8 *arg0) {
@@ -695,8 +670,10 @@ void func_8001D1B0(s32 *destination, s32 *source) {
     destination[9] = second;
 }
 
-extern s32 D_800A2DEC[], D_800A2DF0[], D_800A37E8[], D_800A397C[],
-    gReplayIndex[];
+extern s32 D_800A2DEC[];
+extern s32 D_800A2DF0[];
+extern s32 D_800A37E8[];
+extern s32 D_800A397C[];
 void func_8001D1E4(void) {
     D_800A2DEC[0] = 0;
     D_800A2DF0[0] = 1;
@@ -852,7 +829,6 @@ void DebugDrawMeterBar(s32 value, s32 scale, s32 y, s32 colorIdx) {
 }
 
 extern POLY_F3 D_800A3C1C[];
-extern u32 D_800A35C0[];
 
 /* Draws the selection triangle: apex at (x, y) and base at x +/-
    twice the size, pointing left for dir 0 and right for dir 1. Any
@@ -903,7 +879,6 @@ color:
     AddPrim((u8 *)gOrderingTable[0], entry);
 }
 extern POLY_FT4 D_800A3C6C[];
-extern u32 D_800A35C0[];
 void func_8001D778(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
                    s32 semiTrans) {
     POLY_FT4 *prim;
@@ -996,9 +971,6 @@ void func_8001DA48(u8 *ot, s32 x, s32 y, s32 w, s32 h) {
     AddPrim(ot, poly);
 }
 
-typedef struct {
-    u8 pad[16];
-} Unk16;
 extern Unk16 *func_8001E040(s32);
 extern void func_80032D94(s8 *);
 

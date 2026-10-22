@@ -10,350 +10,22 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "objects.h"
+#include "scene.h"
+#include "sound.h"
+#include "util.h"
 
 extern s32 strlen(char *);
-extern void func_8001E7EC(void *, s32, s32);
 
-typedef struct ListNode28 ListNode28;
-typedef struct DoublyLinkedNode {
-    struct DoublyLinkedNode *next;
-    struct DoublyLinkedNode *previous;
-} DoublyLinkedNode;
-extern void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
-extern void func_8001ED84(s32 *vec);
-extern void (*D_80091080[])(void *);
-typedef struct {
-    u8 pad[16];
-} Unk16;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
-    D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
-    D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
-extern void func_80025730(u8 *);
-s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *gPlayerCar[];
-void ReplayStepForward(void);
-s32 TrackTestPointInSection(s32, s32, u8 *);
-s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
-typedef struct {
-    u8 unk0[0x1EC];
-    s16 unk1EC;
-    u8 unk1EE[0x12];
-    s8 unk200;
-    u8 unk201[0x153];
-    void (*callback)(void);
-} Batch0CallbackObject;
-s32 func_8003702C(u8 *, u8 *);
-void func_800406D0(u8 *, u8 *, s32, s32);
-void func_80041848(u8 *, s32);
-typedef struct {
-    u8 unk0[0x90];
-    s32 unk90;
-} UnkObject90;
-void func_80028D80(u8 *);
-typedef struct {
-    u8 pad0[0xF6];
-    u8 state;
-    u8 padF7[0x15];
-    u16 count;
-} Counter;
-typedef struct SelectionState {
-    u8 pad0[0xF6];
-    u8 unkF6;
-    u8 padF7[0x11];
-    s16 selectedValue;
-    u8 pad10A[2];
-    s16 selectionIndex;
-} SelectionState;
-extern void func_8001FAC0(u8 *, s32);
 extern s32 D_800A3A04nm[] asm("D_800A3A04.NON_MATCHING");
-extern void func_80029CB4(s32 *arg0);
-extern void func_80039B74(s32 *arg0, s32 arg1);
-s32 func_8003702C(u8 *, u8 *);
-s32 CarTestDraft(u8 *, u8 *);
-void *HeapAlloc(u32);
-void CarPlaceOnStartingGrid(void);
-void func_80041A28(void);
-void exit();
-void func_8003B464(void);
-void func_8003C1CC(void);
-void func_8003C3FC(void);
-s32 func_800309DC(s32, s32 *, s32 *);
-typedef struct {
-    s32 x;
-    s32 y;
-    s32 z;
-} Vector3;
-void OuterProduct0(s32 *, s32 *, s32 *);
-void VectorNormal(s32 *, s32 *, s32);
-void func_80025454(s32);
-typedef struct {
-    s32 words[10];
-} Primitive40;
-typedef struct {
-    s32 words[4];
-} Primitive10;
-extern s32 D_800A3784Absolute[], D_800A3790Absolute[], D_800A3794Absolute[],
-    D_800A3798Absolute[], D_800A379CAbsolute[], D_800A37A4Absolute[],
-    D_800A37ACAbsolute[], D_800A37B4Absolute[], D_800A37C4Absolute[];
-extern s32 D_800A3790Absolute[], D_800A3798Absolute[], D_800A379CAbsolute[],
-    D_800A37A4Absolute[], D_800A37B4Absolute[], D_800A3794Absolute[],
-    D_800A3784Absolute[], D_800A37ACAbsolute[], D_800A37C4Absolute[];
-void func_80035274(void);
-typedef struct {
-    u8 pad[0x3E0];
-    void *unk3E0;
-} Data3554;
-void CameraUpdateHorizon(void);
-void func_80035274(void);
-void func_8002F0A8(u8 *);
-void CameraUpdateHorizon(void);
-void func_80035720(u_long *);
-void func_8001FAC0(u8 *, s32);
-void func_8001FB28(u8 *, s32);
 extern s32 D_800A39E0;
 extern void func_80025594(u8 *);
-void func_800390A0(s32, s32, s32, s32);
-void FontDrawPaddedNumber(s32, s32, s32, s32);
-void func_8003644C(s32, s32, s32, s32);
-extern u8 gDriverOrder[], D_800B9DA4[];
-void SystemShowFatalError(char *message);
-u32 MathSqrt(u32 value);
-void RandomCountMark(void);
-s32 RandomSeedGet(void);
-void RandomSeedSet(s32 seed);
-s32 RandomScaledGet(s32 scale);
-void GraphicsAddPolyFT4(u8 *arg0);
-void FontSetColor(s16 red, s16 green, s16 blue);
-void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
-void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
-void func_80018848(void *arg0, s32 arg1, s32 arg2);
-void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void FontDrawNumber(s32 value, s32 x, s32 y, s32 scale);
-void func_800197D4(s32 kind, s32 x, s32 y);
-void func_80019A00(s16 arg0, u8 *arg1, s32 arg2);
-void func_8001C34C(void);
-void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before);
-void ListRemoveNode(ListNode28 **head, ListNode28 *target);
-void func_8001C668(void *arg0, void *arg1);
-void ListPushFront(u8 *node, u8 **head, u8 **tail);
-void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
-                            ListNode28 **tail);
-void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
-                               DoublyLinkedNode **first);
-void func_8001C99C(u8 *arg0);
-void func_8001CAB8(u8 *arg0);
-void func_8001CBD4(u8 *arg0);
-void func_8001CC7C(u8 *arg0);
-void func_8001CDDC(u8 *arg0);
-void func_8001CF38(u8 *arg0);
-void ListDispatchCallbacks(u8 *arg0);
-void func_8001D108(u8 *arg0);
-void func_8001D1B0(s32 *destination, s32 *source);
-void func_8001D1E4(void);
-void func_8001D218(void);
-void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7);
-void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
-void func_8001DF60(void);
-void func_8001DFC8(void);
-Unk16 *func_8001E040(s32 i);
-void GraphicsLoadImageBank(s32 fileName);
-void func_8001E230(s32 arg0, s32 arg1);
-void GraphicsLoadImageWithXOffset(s32 xOffset);
-void func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
-void GraphicsSetGeomOffsetForMode(s32 geomOffsetX, s32 mode);
-void GraphicsSetClearColor(u8 r, u8 g, u8 b);
-void GraphicsApplyDisplayEnvironments(void);
-void GraphicsPartitionWorkBuffers(void);
-void func_8001EBE8(s32 *p);
-void func_8001EC38(s32 *arg0);
-void func_8001EC88(s32 *a, s32 *b, s32 *c);
-void func_8001ECD8(void);
-void func_8001ED14(s32 *p);
-void func_8001ED4C(s32 *p);
-void func_8001ED84(s32 *vec);
-void func_8001EE74(s32 *arg0);
-void func_8001EEC4(s32 *arg0);
-void MatrixCombineState(void);
-void func_8001F198(void);
-void MatrixRotateVector(s32 *vec);
-void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
-void func_8001F440(s32 arg0, s32 arg1, s32 arg2);
-void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
-void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
-void func_8001F728(s32 arg0);
-void func_8001F828(s32 *p);
-void func_8001F874(s32 *arg0);
-void MatrixStoreToObject(s32 *object);
-void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
-void MatrixSaveState(void);
-void MatrixRestoreState(void);
-void func_8001FAC0(u8 *arg0, s32 index);
-void func_8001FB28(u8 *arg0, s32 index);
-s32 func_8001FB80(void *arg0);
-s32 VectorGetMagnitude3D(s32 x, s32 y, s32 z);
-s32 VectorGetMagnitude2D(void *arg0);
-void ReplayAllocBuffer(void);
-void func_8001FD44(u8 *arg0);
-s32 MathMultiplyFixed16(s32, s32); /* extern */
-void func_8001FF3C(u8 *arg0, u8 *arg1);
-void ReplayStepBack(void);
-void func_80022F48(void);
-void func_80022F80(void);
-void func_80022FB8(u8 *arg0, s32 arg1);
-void CdApplyMixVolume(void);
-s32 func_8002482C(s32 arg0, s32 arg1, s32 *arg2);
-s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2);
-void func_80025454(s32 track);
-void func_80025594(u8 *object);
-void func_800255A0(u8 *arg0);
-void func_80025614(u8 *arg0);
-void func_80025720(u8 *obj);
-void func_80025730(u8 *obj);
-void ObjectSetCallbackIfAllowed(Batch0CallbackObject *object,
-                                void (*callback)(void));
-s32 func_80025938(u8 *arg0, u8 *arg1);
-s32 func_80025A38(u8 *arg0);
-void func_80025DD4(u8 *arg0, u8 *arg1);
-void func_80025F40(u8 *arg0, s32 arg1);
-void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5);
-s32 func_800270F4(void *arg0, s32 arg1);
-s32 MathGetAngleDelta(s32 arg0, s32 arg1);
-void func_80028754(u8 *arg0, s32 arg1);
-void func_80028D80(u8 *arg0);
-void func_80028F98(UnkObject90 *object);
-void func_80028FAC(void *object);
-void func_80028FCC(u8 *arg0);
-void SelectionStepForward(Counter *selection);
-void SelectionStepBackward(SelectionState *selection);
-void func_80029450(s32 *p);
-void func_800297D0(u8 *arg0);
+extern u8 D_800B9DA4[];
 void func_800298E0(s32 *car);
-void func_80029994(u8 *arg0, s32 arg1);
-void func_80029A78(u8 *car);
-void func_80029CB4(s32 *arg0);
-void func_80029DA8(s32 *car);
-void func_80029E2C(void);
-void func_80029E34(void);
-void func_80029E3C(void);
 s32 func_80029EF8(u8 *obj);
-void func_8002A1D0(void);
-void func_8002A954(void);
-s32 func_8002AAA0(s32 *car);
-void func_8002AD20(s32 *car, s32 index);
-void func_8002ADE0(s32 *car, s32 arg1);
-void func_8002B258(u8 *arg0);
-void func_8002B538(u8 *arg0);
-void func_8002BC88(u8 *arg0);
-s32 func_8002CF1C(void);
-void func_8002D16C(u8 *arg0);
-void func_8002D27C(u8 *arg0);
-u8 *func_8002D380(void);
-void func_8002D3A8(u8 *object, s32 index);
-void func_8002DA30(s32 *arg0);
-void func_8002DA80(void);
-void func_8002DC2C(void);
-s32 func_8002DDA0(void);
-void func_8002E228(void);
-void func_8002E230(void);
-void func_8002EE88(void);
-void func_8002EEFC(u8 *arg0);
-void func_8002F0A8(u8 *arg0);
-void func_8002F1A0(void);
-void func_8002F2CC(void);
-void func_8002F454(void);
-void func_8002F514(void);
-void func_8002F5A4(void);
-void func_8002F5CC(void);
-void func_8002F5F4(void);
-void func_8002F66C(void);
-void func_8002F674(void);
-void func_8002F86C(void *arg0, s32 arg1);
-void func_80030CDC(s32 *query, s32 index);
-void func_800311B4(s32 x, s32 y, s32 z, s32 *out);
-void func_80031874(u8 *quad, s32 *normal);
-void func_80032328(s32 arg0);
-void func_800323F0(s32 index, s32 arg1);
-void func_80032450(s32 first, s32 second);
-void func_80032494(u8 *object);
-void GraphicsLinkPrimitive(u32 *orderingTable, u32 *primitive);
-void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag);
-u8 *func_80032544(u8 *arg0, s32 arg1);
-void func_8003271C(s32 arg0);
-u8 *func_80032760(u8 *arg0, u8 *arg1, s32 arg2);
-void func_800328AC(void *arg0, s32 arg1);
-s32 func_80032A90(u8 *arg0);
-void func_80032D94(s8 *object);
-void func_80032DEC(u8 *arg0, s32 arg1);
-void func_80033000(u8 *arg0, u8 *arg1, u8 *arg2);
-void func_80033704(s16 *out);
-void func_80033780(void *arg0);
-void func_80033788(u8 *arg0);
-void func_8003379C(u8 *arg0, u8 *arg1, u8 *arg2);
-s32 MathMultiplyFixed16(s32 arg0, s32 arg1);
-s32 func_800337EC(void);
-void func_8003382C(s16 *out);
-void func_800338A4(s32 *dst, s32 *src);
-s32 func_800338D8(u16 *object);
-u32 func_800342D8(u32 *entry, u32 primCursor);
-void func_800345E0(void);
-s32 func_800346D0(s32 threshold);
-void func_80034834(void);
-void func_80034990(void);
-void func_80034B90(u8 *prim);
-void func_80034C1C(void);
-void func_80034C94(void);
-void func_80034CFC(void);
-void func_8003565C(s32 arg0);
-void func_800356A8(s32 arg0);
-void func_80035720(u_long *ot);
-void func_8003587C(s32 arg0);
-void func_80035E8C(s32 *src, s32 *outX, s32 *outY);
-void func_80036264(void);
-void func_8003644C(s32 index, s32 arg1, s32 arg2, s32 arg3);
-void func_800364C4(void);
-void func_80036540(void);
-void func_800365B8(s32 *out);
-void func_8003667C(u32 *list);
-void func_800367DC(void);
-s32 func_80036F64(u8 *arg0, u8 *arg1, s32 arg2);
-s32 func_80036FC8(s32 *a, s32 *b);
-s32 func_8003702C(u8 *objectA, u8 *objectB);
 s32 func_800370B8(s32 a, s32 b);
-void func_80037130(u8 *object);
-s32 func_80037204(u8 *obj);
-s32 func_80039008(u8 *arg0, u8 *arg1);
-void func_800390A0(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
-void func_80039B74(s32 *arg0, s32 arg1);
-s8 func_80039C68(u8 *arg0, s32 arg1, s32 arg2);
-void func_80039CF4(void);
-void func_8003A440(void);
-void func_8003A880(s32 car);
-void func_8003A950(s32 car);
-void func_8003AA20(s32 car);
-void func_8003AAEC(s32 car);
-void func_8003ABC0(u8 *object);
-void func_8003AC18(u8 *object, s32 arg1, s32 arg2, s32 arg3);
-void func_8003AD08(struct Unk_8003AD08 *arg0);
-void func_8003B464(void);
-void func_8003BCAC(void);
-void func_8003C1CC(void);
 
 /* CD control and streaming. */
 
@@ -774,9 +446,6 @@ typedef struct CarStateObject {
     struct CarStateObject *unk3E0; /* 0x3E0 */
 } CarStateObject;
 extern void func_80030D80(CarStateObject *, s32 *);
-extern s32 PadGetButtons(s32);
-extern s32 RandomScaledGet(s32);
-extern void func_8004FF3C(void);
 extern void func_80052FC4(s32);
 extern s32 D_800A376C;
 extern u8 D_800A38B0Lui[] asm("D_800A38B0");
@@ -788,8 +457,6 @@ extern s32 D_800A3680Lui[] asm("D_800A3680");
 extern s32 D_800A2EAC[];
 extern s8 D_800A3564Lui[] asm("D_800A3564");
 extern u8 D_800A35D4Lui[] asm("D_800A35D4");
-extern s32 D_800A2EA4[];
-extern s32 D_800A2CE0[];
 
 void CarUpdateState(CarStateObject *object) {
     s32 query[3];
@@ -984,8 +651,6 @@ void func_8003D25C(u8 *object) {
         }
     }
 }
-
-extern s32 func_80029EF8(u8 *);
 
 void func_8003D528(u8 *object) {
     s32 result;
@@ -1721,11 +1386,7 @@ updateMotion:
 }
 
 extern u8 D_800A372C[];
-extern s32 D_800A2CE0[];
-extern s32 D_800A2EA8[];
-extern s32 gTrackSectionCount[];
 extern s32 D_800A3560;
-extern s32 D_800A376C;
 extern s32 D_800A3820;
 
 s32 func_8003E78C(u8 *object) {
@@ -1937,7 +1598,6 @@ void func_8003EBD0(u8 *object, s32 index) {
 }
 
 extern u8 D_800A387C[];
-extern s32 D_800AE84C[];
 
 /* The two pins put base and the src walker in retail's registers. The
  * opaque dst copy keeps cse from copying it out of src, and the explicit
@@ -1998,8 +1658,6 @@ void func_8003ECB8(u8 *object) {
 }
 
 extern s32 D_800A2F88;
-
-extern s32 RandomScaledGet(s32 scale);
 
 void func_8003EDA0(u8 *object) {
     u32 pace;
