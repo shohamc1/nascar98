@@ -2714,7 +2714,7 @@ void func_80025730(u8 *obj) {
             i--;
             p -= 0x28;
         } while (i >= 0);
-        func_800422C0(obj);
+        CarInitTumble(obj);
         D_800A35F8[0] = 2;
         D_800A3960[0] = obj;
         D_800A3910[0] = 0x7FFF;

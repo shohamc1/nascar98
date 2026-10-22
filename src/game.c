@@ -206,7 +206,7 @@ void GameRunSession(void) {
     extern void func_8003C1CC(void);
     extern void func_8003C528(void);
     extern void MenuDrawLoadScreen(void);
-    extern void func_8001BDBC(s32);
+    extern void MenuDrawResults(s32);
     extern void func_80066CFC(void);
     extern void func_80067DFC(void);
     extern void SystemStopCounterAfterVSync(void);
@@ -447,7 +447,7 @@ void GameRunSession(void) {
         gPrimitiveCursorRun = D_800A3570;
         ClearOTagR((u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
                    0x400);
-        func_8001BDBC(D_800A359C >= 540);
+        MenuDrawResults(D_800A359C >= 540);
         func_80066CFC();
     finishDisplay:
         func_80067DFC();

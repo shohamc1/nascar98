@@ -869,18 +869,16 @@ typedef struct BoxCorner {
 } BoxCorner;
 extern BoxCorner D_800B1FF0[8];
 
-#ifdef NON_MATCHING
-void func_800422C0(u8 *obj) {
+void CarInitTumble(u8 *obj) {
     s32 i;
-    s32 height;
+    register s32 height asm("t1");
     s16 y;
-    BoxCorner *c;
-    s32 *pvx;
-    s32 *pvz;
-    BoxCorner *cb;
+    register BoxCorner *c asm("a1");
+    register s32 *pvx asm("t0");
+    register s32 *pvz asm("a3");
+    register BoxCorner *cb asm("v0");
     s32 *vxb;
     s32 *vzb;
-    s32 k;
 
     *(s16 *)(obj + 0x398) =
         ABS(*(s16 *)(obj + 0x104) - *(s16 *)(obj + 0x114) + 0x400) & 0x3FF;
@@ -894,14 +892,17 @@ void func_800422C0(u8 *obj) {
     *(s16 *)(obj + 0x38E) = ABS(RandomScaledGet(0x20));
     *(s16 *)(obj + 0x396) = 1;
     *(s16 *)(obj + 0x394) = ABS(RandomScaledGet(0x32)) + 0x4B;
-    vxb = &D_800B1FF0[0].vx;
+    i = 0;
     cb = D_800B1FF0;
-    vzb = (s32 *)cb + 4;
+    vxb = &cb->vx;
+    vzb = &cb->vz;
     height = *(s16 *)(*(u8 **)(obj + 0x370) + 0x26);
-    for (i = 0, k = 0; i < 8; i++, k += 5) {
-        c = cb + i;
-        pvx = vxb + k;
-        pvz = vzb + i * 5;
+    pvx = vxb;
+    c = cb;
+    pvz = vzb;
+    for (; i < 8; pvx += 5, c++, pvz += 5, i++) {
+        /* Keep the byte-offset induction register ahead of the switch index. */
+        asm("" : : "r"(i * 20));
         switch (i) {
         case 0:
         case 4:
@@ -945,9 +946,6 @@ void func_800422C0(u8 *obj) {
         D_800B1FF0[i].vy = y;
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/input", func_800422C0);
-#endif
 
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];

@@ -2198,12 +2198,12 @@ void func_8001BA94(s32 arg0) {
     }
 }
 
-#ifdef NON_MATCHING
 extern s32 D_800A2E90[];
 extern s32 D_800A2E94[];
 extern s32 D_800A2EB0Absolute[];
 extern s32 D_800A3848;
 extern s32 D_800B0B1C[];
+extern void HudDrawTime(s32, s16, s16, s8, u8);
 extern u8 *D_8009AE04[];
 extern u8 *D_8009AE08[];
 extern u8 *D_8009ADF4[];
@@ -2214,7 +2214,7 @@ extern u8 gDriverOrder[];
 extern char *gDriverNames[];
 extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 
-void func_8001BDBC(s32 reset) {
+void MenuDrawResults(s32 reset) {
     char text[64];
     s32 slide;
     s32 baseY;
@@ -2222,6 +2222,8 @@ void func_8001BDBC(s32 reset) {
     s32 off;
     void *node;
     s32 *times;
+    s32 *timeBase;
+    s32 rowY;
 
     if (D_800A2EB0Absolute[0] == 2) {
         return;
@@ -2255,14 +2257,16 @@ void func_8001BDBC(s32 reset) {
     if (off > 0) {
         off = 0;
     }
+    timeBase = D_800B0B1C;
     GraphicsSetColor(0xFF, 0x80, 0x40);
     if (D_800A2EB0Absolute[0] == 0) {
         func_80050028Text(D_8009AE04[0], (s16)(off + 0x78), (s16)(baseY + 0x18),
                           0);
         node = D_800A35E0;
         i = 0;
+        timeBase = D_800B0B1C;
         if (D_800A2E90[0] >= 0) {
-            times = D_800B0B1C;
+            times = timeBase;
             do {
                 off = slide - ((i + 1) * 0x78);
                 if (off < -0x3E8) {
@@ -2289,7 +2293,7 @@ void func_8001BDBC(s32 reset) {
                                   (s16)(baseY + (i * 0xE) + 0x28), 0);
                 if (times[i] > -1) {
                     if (i == 0) {
-                        func_80018768(D_800B0B1C[0], off + 0xD2,
+                        func_80018768(timeBase[0], off + 0xD2,
                                       baseY + (i * 0xE) + 0x28, -3);
                     } else {
                         func_80018768(times[i], off + 0xD2,
@@ -2327,9 +2331,9 @@ void func_8001BDBC(s32 reset) {
                 off = -off;
             }
             if (off == 0 && i == *(s8 *)(gPlayerCar + 0x204) - 1) {
+                rowY = baseY + i * 0xE;
                 gOrderingTableLui += 4;
-                func_8001D778(0, baseY + (i * 0xE) + 0x25, 0x140, 0xF, 0, 0, -1,
-                              1);
+                func_8001D778(0, rowY + 0x25, 0x140, 0xF, 0, 0, -1, 1);
                 gOrderingTableLui -= 4;
             }
             TextFormatInt(i + 1, text);
@@ -2337,15 +2341,12 @@ void func_8001BDBC(s32 reset) {
                               (s16)(baseY + (i * 0xE) + 0x28), 0);
             func_80050028Text(gDriverNames[gDriverOrder[i]], (s16)(off + 0x32),
                               (s16)(baseY + (i * 0xE) + 0x28), 0);
-            func_80050670(D_800B0B1C[i], (s16)(off + 0xD2),
-                          (s16)(baseY + (i * 0xE) + 0x28), 0, 1);
+            HudDrawTime(timeBase[i], (s16)(off + 0xD2),
+                        (s16)(baseY + (i * 0xE) + 0x28), 0, 1);
             i++;
         } while (i < 0x18);
     }
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/primitives_text", func_8001BDBC);
-#endif
 
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
@@ -2379,7 +2380,7 @@ void func_8001C34C(void) {
     }
     value = D_800A359Cnm[0];
     if (value != 0) {
-        func_8001BDBC(value >= 0x21C);
+        MenuDrawResults(value >= 0x21C);
         if (D_800A3848small < 0xA1) {
             return;
         }
