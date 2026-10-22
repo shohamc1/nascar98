@@ -660,6 +660,9 @@ USER_RAM_TOP = 0x80140000; // absolute:True fixed_address
 
 // Data labels tracked so guarded drafts can reference them directly (wave 6-8 requests).
 D_8008CFC0 = 0x8008CFC0; // force_not_migration:True
+gHudTimeInvalidText = 0x8008D500; // force_not_migration:True
+gHudTimeFormatHms = 0x8008D50C; // force_not_migration:True
+gHudTimeFormatMinSecMs = 0x8008D51C; // force_not_migration:True
 D_800A2DEC = 0x800A2DEC;
 D_800A2DF0 = 0x800A2DF0;
 D_800A2DF4 = 0x800A2DF4;
@@ -918,6 +921,7 @@ SoundUpdateOpponentVoice = 0x80040260; // type:func
 PadGetButtons = 0x80041B7C; // type:func
 PadGetType = 0x80041BAC; // type:func
 HudDrawText = 0x80050028; // type:func
+HudDrawTime = 0x80050670; // type:func
 HudTextWidth = 0x80050940; // type:func
 MenuFormatLapText = 0x8005E43C; // type:func
 MenuDrawModel = 0x8005E8EC; // type:func

@@ -5180,7 +5180,7 @@ extern s32 sprintfRow(char *, char *, ...) asm("sprintf");
 extern void func_80050028Row(char *, s32, s32, s32);
 asm(".globl func_80050028Row\nfunc_80050028Row = HudDrawText");
 extern void func_8004FF90Row(s16, s32, s32, s32) asm("func_8004FF90");
-extern void func_80050670Row(s32, s32, s32, s32, s32) asm("func_80050670");
+extern void HudDrawTimeRow(s32, s32, s32, s32, s32) asm("HudDrawTime");
 
 void HudDrawStandings(s8 arg0, s32 y) {
     char text[8];
@@ -5213,8 +5213,8 @@ void HudDrawStandings(s8 arg0, s32 y) {
                     gTextColor = 9;
                     func_8004FF90Row(((Car *)gPlayerCar[0])->lap,
                                      gStandingsLapX + 8, textY, 0);
-                    func_80050670Row(((Car *)gPlayerCar[0])->unk25C,
-                                     gStandingsTimeX, textY, 0, 1);
+                    HudDrawTimeRow(((Car *)gPlayerCar[0])->unk25C,
+                                   gStandingsTimeX, textY, 0, 1);
                     func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
                     if (row == 15) {
                         return;
@@ -5249,8 +5249,7 @@ void HudDrawStandings(s8 arg0, s32 y) {
                 ((Car *)gPlayerCar[0])->lap < 2) {
                 func_80050028Row(D_8009ADF4[0], gStandingsTimeX, textY, 0);
             } else {
-                func_80050670Row(D_800AE1EC[index], gStandingsTimeX, (u8)y, 0,
-                                 1);
+                HudDrawTimeRow(D_800AE1EC[index], gStandingsTimeX, (u8)y, 0, 1);
             }
             if (D_800A2EACAbsolute[0] != 0 &&
                 carIndex == ((Car *)gPlayerCar[0])->place) {
@@ -5301,10 +5300,9 @@ void HudDrawStandings(s8 arg0, s32 y) {
                 textY = (u8)y;
                 func_80050028Row(text, gStandingsLapX - 4, textY, 0);
                 if (entry->lap == 0) {
-                    func_80050670Row(0x7FFFFFFF, gStandingsTimeX, textY, 0, 0);
+                    HudDrawTimeRow(0x7FFFFFFF, gStandingsTimeX, textY, 0, 0);
                 } else if (entry == (Car *)D_800A35E0[0]) {
-                    func_80050670Row(entry->unk260, gStandingsTimeX, textY, 0,
-                                     0);
+                    HudDrawTimeRow(entry->unk260, gStandingsTimeX, textY, 0, 0);
                 } else {
                     gap = (s16)(((((Car *)D_800A35E0[0])->lap *
                                       gTrackSectionCount[0] +
@@ -5333,8 +5331,8 @@ void HudDrawStandings(s8 arg0, s32 y) {
                     } else {
                         func_80050028Row(D_800A3038, gStandingsTimeX - 10,
                                          textY, 0);
-                        func_80050670Row(entry->unk264, gStandingsTimeX, textY,
-                                         0, 1);
+                        HudDrawTimeRow(entry->unk264, gStandingsTimeX, textY, 0,
+                                       1);
                     }
                 }
             }
@@ -5425,7 +5423,7 @@ extern char *D_8009AE48[];
 extern void func_8004FCF4(void);
 extern void func_8004E808(void);
 extern void HudDrawTextLap(char *, s16, s16, s8) asm("HudDrawText");
-extern void func_80050670Lap(s32, s16, s16, s8, s8) asm("func_80050670");
+extern void HudDrawTimeLap(s32, s16, s16, s8, s8) asm("HudDrawTime");
 
 void HudDrawLapSplit(void) {
     extern u8 D_800A3688;
@@ -5485,17 +5483,17 @@ void HudDrawLapSplit(void) {
     HudDrawTextLap(D_8009AE48[0], 0x5A, gLapSplitPanelY + 0xC3, 0);
     GraphicsSetColor(0x80, 0xC0, 0x80);
     if (gLapSplitShowDelta != 0) {
-        func_80050670Lap(gLapSplitBest, 0x87, gLapSplitPanelY + 0xB9, 0, 1);
-        func_80050670Lap(gLapSplitTime, 0x87, gLapSplitPanelY + 0xC3, 0, 1);
-        func_80050670Lap(gLapSplitDelta < 0 ? -gLapSplitDelta : gLapSplitDelta,
-                         0x87, gLapSplitPanelY + 0xCD, 0, 1);
+        HudDrawTimeLap(gLapSplitBest, 0x87, gLapSplitPanelY + 0xB9, 0, 1);
+        HudDrawTimeLap(gLapSplitTime, 0x87, gLapSplitPanelY + 0xC3, 0, 1);
+        HudDrawTimeLap(gLapSplitDelta < 0 ? -gLapSplitDelta : gLapSplitDelta,
+                       0x87, gLapSplitPanelY + 0xCD, 0, 1);
         HudDrawTextLap(gLapSplitDelta < 0 ? D_800A3034 : D_800A3038, 0x7D,
                        gLapSplitPanelY + 0xCD, 0);
     } else {
-        func_80050670Lap(gLapSplits[gLapSplitIndex].best, 0x87,
-                         gLapSplitPanelY + 0xB9, 0, 1);
-        func_80050670Lap(*(s32 *)(gPlayerCar[0] + 0x258), 0x87,
-                         gLapSplitPanelY + 0xC3, 0, 1);
+        HudDrawTimeLap(gLapSplits[gLapSplitIndex].best, 0x87,
+                       gLapSplitPanelY + 0xB9, 0, 1);
+        HudDrawTimeLap(*(s32 *)(gPlayerCar[0] + 0x258), 0x87,
+                       gLapSplitPanelY + 0xC3, 0, 1);
     }
     func_80044A1C(0x55, gLapSplitPanelY + 0xB4, 0x87, 0x28, 0, 0, 0, 1);
 }
@@ -5575,14 +5573,14 @@ void func_8004E808(void) {
             if (D_800A34BC != 0) {
                 func_80050028Lbl((char *)D_800A34B4, 0x50,
                                  (s8)D_800A34AC + 0xC3, 0);
-                func_80050670((void *)D_800A34BC, 0x96,
-                              (s16)((s8)D_800A34AC + 0xC3), 0, 1);
+                HudDrawTime((void *)D_800A34BC, 0x96,
+                            (s16)((s8)D_800A34AC + 0xC3), 0, 1);
             }
             if (D_800A34C0 != 0) {
                 func_80050028Lbl((char *)D_800A34B8, 0x50,
                                  (s8)D_800A34AC + 0xCD, 0);
-                func_80050670((void *)D_800A34C0, 0x96,
-                              (s16)((s8)D_800A34AC + 0xCD), 0, 1);
+                HudDrawTime((void *)D_800A34C0, 0x96,
+                            (s16)((s8)D_800A34AC + 0xCD), 0, 1);
             }
             func_80044A1C(0x4B, (s8)D_800A34AC + 0xB4, 0xA0, 0x28, 0, 0, 0, 1);
         }
@@ -5822,8 +5820,8 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     case 0:
         func_80050028Row(D_8009AE7C[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            func_80050670Row(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x10), 215, y,
-                             3, 1);
+            HudDrawTimeRow(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x10), 215, y, 3,
+                           1);
             y += 12;
         }
         y += 6;
@@ -5831,7 +5829,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         func_80050028Row(D_8009AE80[0], 20, textY, 3);
         lapData = D_800A8A74[lap];
         lapData += gTrackSplitCount[D_800A2CE0[0]] * 4;
-        func_80050670Row(*(s32 *)(lapData + 0x1C), 215, textY, 3, 1);
+        HudDrawTimeRow(*(s32 *)(lapData + 0x1C), 215, textY, 3, 1);
         break;
     case 1: {
         s32 speedValue;
@@ -5871,8 +5869,8 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     case 2:
         func_80050028Row(D_8009AE8C[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            func_80050670Row(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x20), 215, y,
-                             3, 1);
+            HudDrawTimeRow(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x20), 215, y, 3,
+                           1);
             y += 12;
         }
         break;
@@ -6406,12 +6404,20 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Wall: every opcode matches, but gcc gives `ms` s0 and `secs` s1; retail
- * has secs s0 and ms s1. See "Unsolved walls" in kb/psx/matching.md. The
- * strings are literals so the draft links; a match needs INCLUDE_RODATA for
- * D_8008D500, D_8008D50C and D_8008D51C. */
-void func_80050670(s32 time, s16 x, s16 y, s8 color, u8 mode) {
+INCLUDE_RODATA("asm/nonmatchings/scene", gHudTimeInvalidText);
+
+INCLUDE_RODATA("asm/nonmatchings/scene", gHudTimeFormatHms);
+
+INCLUDE_RODATA("asm/nonmatchings/scene", gHudTimeFormatMinSecMs);
+
+extern char gHudTimeInvalidText[];
+extern char gHudTimeFormatHms[];
+extern char gHudTimeFormatMinSecMs[];
+
+/* Draws a race time at (x, y). Mode 1 counts 160 ticks per second and can
+ * show hours; other modes count 20 ticks per second. Mode 2 randomises the
+ * last two millisecond digits. */
+void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode) {
     char buf[16];
     s32 hours;
     s32 mins;
@@ -6421,35 +6427,31 @@ void func_80050670(s32 time, s16 x, s16 y, s8 color, u8 mode) {
     hours = 0;
     gTextColor = (color == 1) ? 6 : 9;
     if (time == 0x7FFFFFFF) {
-        HudDrawText("--:--:---", x, y, color);
+        HudDrawText(gHudTimeInvalidText, x, y, color);
         gTextColor = 0;
         return;
     }
     if ((s8)mode == 1) {
         hours = time / 576000;
-        ms = (time - time / 160 * 160) * 1000 / 160;
-        mins = time / 9600 - hours * 60;
-        secs = time / 160;
-        secs = secs - time / 9600 * 60;
+        ms = time % 160 * 1000 / 160;
+        mins = time / 9600 % 60;
+        secs = time / 160 % 60;
     } else {
         mins = time / 1200;
-        secs = time / 20 - mins * 60;
-        ms = (time - time / 20 * 20) * 50;
+        secs = time / 20 % 60;
+        ms = time % 20 * 50;
     }
     if ((s8)mode == 2) {
         ms = ms / 100 * 100 + RandomScaledGet(100);
     }
     if (hours != 0) {
-        sprintfRow(buf, "%02d:%02d:%02d", hours, mins, secs);
+        sprintfRow(buf, gHudTimeFormatHms, hours, mins, secs);
     } else {
-        sprintfRow(buf, "%02d:%02d:%03d", mins, secs, ms);
+        sprintfRow(buf, gHudTimeFormatMinSecMs, mins, secs, ms);
     }
     HudDrawText(buf, x, y, color);
     gTextColor = 0;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/scene", func_80050670);
-#endif
 
 void SetPolyFT4(POLY_FT4 *);
 extern s16 D_800A8AD2[];
