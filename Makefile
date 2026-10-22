@@ -223,8 +223,6 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A26D4Init=D_800A26D4 \
             --defsym=D_800A26D8Init=D_800A26D8 \
             --defsym=D_800A26E8Init=D_800A26E8 \
-            --defsym=D_80090B38Init=D_80090B38 \
-            --defsym=D_80090B48Init=D_80090B48 \
             --defsym=_spu_keystat=D_800A229C \
             --defsym=CD_cbsync=D_8009BA7C \
             --defsym=_spu_RXX=D_800A26AC \

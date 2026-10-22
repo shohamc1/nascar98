@@ -104,8 +104,6 @@ s32 _spu_reset(void) {
     return 0;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libspu", D_80090B38);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libspu", D_80090B48);
 typedef struct SpuInitRegs {
     volatile u16 voice[24][8];
     volatile u16 mainVol[2];
@@ -136,8 +134,6 @@ extern s32 D_800A26D0Init[];
 extern s32 D_800A26D4Init[];
 extern s32 D_800A26D8Init[];
 extern u16 D_800A26E8Init[];
-extern char D_80090B38Init[];
-extern char D_80090B48Init[];
 extern s32 D_800A26F8Init[];
 extern s32 D_800A26A0Init[];
 extern s32 D_800A26C0Init[];
@@ -189,7 +185,7 @@ s32 _spu_init(s32 hotInit) {
         count = D_800A26A4[0] + 1;
         D_800A26A4Init[0] = count;
         if (count > 5000) {
-            printf(D_80090B38Init, D_80090B48Init);
+            printf("SPU:T/O [%s]\n", "wait (reset)");
         } else if (D_800A26ACInitRegs[0]->spustat & 0x7FF) {
             goto waitSpu;
         }
@@ -288,11 +284,6 @@ s32 _spu_init(s32 hotInit) {
     return 0;
 }
 
-extern char D_80090B58[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libspu", D_80090B58);
-extern char D_80090B6C[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libspu", D_80090B6C);
-extern char D_80090B38[];
 extern s32 _spu_timeout;
 extern u16 _spu_tsa;
 
@@ -330,7 +321,7 @@ s32 _spu_writeByIO(u8 *addr, u32 size) {
         while (_spu_RXX->rxx.spustat & 0x400) {
             _spu_timeout++;
             if (_spu_timeout > 5000) {
-                printf(D_80090B38, D_80090B58);
+                printf("SPU:T/O [%s]\n", "wait (wrdy H -> L)");
                 break;
             }
         }
@@ -346,7 +337,7 @@ s32 _spu_writeByIO(u8 *addr, u32 size) {
     while (spustat_cur != spustat) {
         _spu_timeout++;
         if (_spu_timeout > 5000) {
-            printf(D_80090B38, D_80090B6C);
+            printf("SPU:T/O [%s]\n", "wait (dmaf clear/W)");
             return;
         }
         spustat_cur = _spu_RXX->rxx.spustat & 0x7FF;
@@ -1366,8 +1357,6 @@ ASM_FUNC(WaitEvent, "    addiu $t2, $zero, 0xB0 # maspsx-keep\n"
                     "    addiu $t1, $zero, 0xA # maspsx-keep\n"
                     "    nop # maspsx-keep\n")
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libspu", D_80090B80);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libspu", D_80090BA0);
 typedef struct SpuIRQPrefix {
     u8 pad[0x1AA];
     u16 control;
@@ -1376,8 +1365,6 @@ typedef union SpuIRQUnion {
     volatile SpuIRQPrefix rxx;
 } SpuIRQUnion;
 extern SpuIRQUnion *D_800A26ACIRQ[];
-extern char D_80090B80[];
-extern char D_80090BA0[];
 extern s32 printf(const char *, ...);
 s32 SpuSetIRQ(s32 arg0) {
     u16 value;
@@ -1392,7 +1379,7 @@ s32 SpuSetIRQ(s32 arg0) {
         while (spu->rxx.control & 0x40) {
             i++;
             if (i > 0xF00) {
-                printf(D_80090B80);
+                printf("SPU: time out: wait (IRQ/ON)");
                 return -1;
             }
             spu = D_800A26ACIRQ[0];
@@ -1407,7 +1394,7 @@ s32 SpuSetIRQ(s32 arg0) {
         while ((spu->rxx.control & 0x40) == 0) {
             i++;
             if (i > 0xF00) {
-                printf(D_80090BA0);
+                printf("SPU: time out: wait (IRQ/OFF)");
                 return -1;
             }
             spu = D_800A26ACIRQ[0];
