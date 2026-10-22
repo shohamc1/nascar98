@@ -970,3 +970,5 @@ gLapSplitTime = 0x800A340C;
 gLapSplitBest = 0x800A3410;
 gLapSplits = 0x800A8A2C;
 gTrackSplitCount = 0x800992D0;
+SceneInitHandModel = 0x80048118; // type:func
+gHandSegments = 0x800A45F0;

@@ -777,7 +777,7 @@ void func_80045288(void) {
     void func_80046258(void);
     void HudInitPrims(void);
     void HudInitLapSplits(void);
-    void func_80048118(void);
+    void SceneInitHandModel(void);
     void func_8004F880(void);
     void HudInitRacePrims(void);
     void func_80048700(void);
@@ -841,7 +841,7 @@ void func_80045288(void) {
     }
     HudInitPrims();
     HudInitLapSplits();
-    func_80048118();
+    SceneInitHandModel();
     func_8004F880();
     HudInitRacePrims();
     func_80048700();
@@ -1951,7 +1951,7 @@ extern u8 D_800A3474;
 extern u16 D_80099254[];
 extern u16 D_80099256[];
 extern u16 D_80099258[];
-extern u8 D_800A45F0[];
+extern u8 gHandSegments[];
 extern u8 D_800A46A0[];
 extern u8 D_800A46A2[];
 extern u8 D_800A46A4[];
@@ -2235,8 +2235,8 @@ void func_800474A0(void) {
                 s1v = (s16)segIdx;
             vtxLoopA:
                 do {
-                    rec =
-                        s4Off + D_800A45F0 + s1v * 336 + ((s16)s2v * 20 + 0xB0);
+                    rec = s4Off + gHandSegments + s1v * 336 +
+                          ((s16)s2v * 20 + 0xB0);
                     vec.vx = *(u32 *)(rec + 8);
                     vec.vy = *(u32 *)(rec + 0xC);
                     vec.vz = *(u32 *)(rec + 0x10);
@@ -2254,8 +2254,8 @@ void func_800474A0(void) {
                 s1v = (s16)segIdx;
             vtxLoopB:
                 do {
-                    rec =
-                        s4Off + D_800A45F0 + s1v * 336 + ((s16)s2v * 20 + 0xB0);
+                    rec = s4Off + gHandSegments + s1v * 336 +
+                          ((s16)s2v * 20 + 0xB0);
                     vec.vx = *(u32 *)(rec + 8);
                     vec.vy = *(u32 *)(rec + 0xC);
                     if ((u16)(s2v - 2) < 2 || (u16)(s2v - 6) < 2) {
@@ -2289,7 +2289,7 @@ void func_800474A0(void) {
             ;
         } else {
             prim = (u8 *)gPrimitiveCursor[0];
-            node = D_800A45F0 + (s16)loopIdx * 6048;
+            node = gHandSegments + (s16)loopIdx * 6048;
             primCount = 0x48;
             otBaseW = gOrderingTable[0];
             primNext = prim + 0x10;
@@ -2317,7 +2317,102 @@ void func_800474A0(void) {
     } while (loopIdx < 2);
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80048118);
+extern s32 D_800A7544;
+extern s32 D_800A7548;
+extern s32 D_800A754C;
+
+typedef struct {
+    SVECTOR s;
+    s32 lx;
+    s32 ly;
+    s32 lz;
+} HandVertex;
+
+typedef struct HandFace {
+    POLY_F4 poly;
+    HandVertex *verts[4];
+    struct HandFace *next;
+} HandFace;
+
+typedef struct {
+    HandFace faces[4];
+    HandVertex verts[8];
+} HandSegment;
+
+void SceneInitHandModel(void) {
+    s8 faceVerts[6][4] = {
+        {1, 0, 2, 3}, {0, 4, 6, 2}, {5, 1, 3, 7},
+        {4, 5, 7, 6}, {0, 1, 5, 4}, {3, 2, 6, 7},
+    };
+    s16 segSize[18][4][3] = {
+        {{-76, -80, 6}, {-60, -80, 6}, {-76, -20, 12}, {-60, -20, 12}},
+        {{-2, -20, 3}, {8, -20, 3}, {-2, -10, 4}, {0, 0, 6}},
+        {{8, -20, 3}, {18, -20, 3}, {0, 0, 6}, {16, 0, 6}},
+        {{2, -20, 3}, {4, -10, 4}, {0, 0, 6}, {4, -1, 5}},
+        {{0, -9, 4}, {6, -11, 3}, {0, 0, 5}, {6, -6, 3}},
+        {{0, -5, 3}, {4, -7, 3}, {0, 0, 3}, {5, -4, 3}},
+        {{0, -6, 3}, {4, -6, 3}, {0, 0, 3}, {5, 0, 3}},
+        {{-5, -8, 3}, {-1, -8, 3}, {-5, 0, 3}, {0, 0, 3}},
+        {{0, -10, 3}, {4, -10, 3}, {0, 0, 3}, {5, 0, 3}},
+        {{-5, -8, 3}, {-1, -8, 3}, {-5, 0, 3}, {0, 0, 3}},
+        {{0, -4, 3}, {4, -4, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{0, -6, 3}, {4, -6, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{0, -6, 3}, {4, -6, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{0, -6, 3}, {4, -6, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{1, -4, 3}, {4, -4, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{1, -4, 3}, {4, -4, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{1, -4, 3}, {4, -4, 3}, {0, 0, 3}, {4, 0, 3}},
+        {{0, -4, 3}, {3, -4, 3}, {0, 0, 3}, {4, 0, 3}},
+    };
+    HandFace *prev;
+    s8 i;
+    s8 j;
+    s8 k;
+    s8 m;
+    HandSegment *seg;
+    HandFace *face;
+
+    prev = NULL;
+    D_800A7548 = 100;
+    D_800A7544 = 0;
+    D_800A754C = 0;
+    D_800A3464 = 0x1C0;
+    D_800A3474 = 0;
+    D_800A3470 = 0;
+    D_800A346C = 0;
+    D_800A3468 = 0;
+    D_800A3460 = 0;
+    D_800A345C = 0;
+    for (i = 1; i >= 0; i--) {
+        for (j = 17; j >= 0; j--) {
+            seg = &((HandSegment(*)[18])gHandSegments)[i][j];
+            for (k = 3; k >= 0; k--) {
+                face = &seg->faces[k];
+                SetPolyF4((u8 *)face);
+                face->next = prev;
+                prev = face;
+                prev->poly.r0 = 8;
+                prev->poly.g0 = 8;
+                prev->poly.b0 = 8;
+                ((u8 *)&prev->poly)[1] = 2;
+            }
+            for (k = 0; k < 4; k++) {
+                for (m = 0; m < 4; m++) {
+                    seg->faces[k].verts[m] = &seg->verts[faceVerts[k][m]];
+                }
+            }
+            for (k = 0; k < 4; k++) {
+                m = k + 4;
+                seg->verts[k].lx = seg->verts[k].s.vx = seg->verts[m].lx =
+                    seg->verts[m].s.vx = (i ? -1 : 1) * (segSize[j][k][0] << 1);
+                seg->verts[k].ly = seg->verts[k].s.vy = seg->verts[m].ly =
+                    seg->verts[m].s.vy = segSize[j][k][1] << 1;
+                seg->verts[k].lz = seg->verts[k].s.vz = 0;
+                seg->verts[m].lz = seg->verts[m].s.vz = segSize[j][k][2] << 1;
+            }
+        }
+    }
+}
 
 extern s32 gReplayHead[];
 extern s32 D_800A397C[];
