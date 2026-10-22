@@ -9845,7 +9845,178 @@ done:
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80032AE4);
+/*
+ * Handwritten-GTE textured quad renderer (POLY_FT4, 0x28 bytes): rtpt on
+ * three vertices, rtps on the fourth, linked into the ordering table at
+ * D_800A39C8[0] + 0x40. The first loop walks `count` objects through the
+ * next pointer at +0x28 and tests a stale $t4 (retail's bug: the flag
+ * test and the ordering-table base read $t4 before the loop sets it).
+ * The second loop walks the rest of the list until the next pointer is
+ * NULL, does the real flag and nclip checks, and clamps the table index.
+ */
+void func_80032AE4(u8 *arg0, s32 count) {
+    u8 *obj;
+    u8 *prim;
+    u8 *ot;
+    u32 *otBase;
+    u32 stale;
+    u32 code;
+    register u8 *vp asm("a2");
+    register u8 *vpNext asm("t1");
+    register s32 flag asm("t4");
+    register s32 w4 asm("t1");
+    register s32 w8 asm("a3");
+    s32 wC;
+    s32 w10;
+    s32 w14;
+    s32 *va;
+    s32 *vb;
+    s32 *vc;
+    u32 flagMask;
+    s32 doubleSided;
+    register u8 *next asm("a3");
+    register u8 *p18a asm("a2");
+    register u8 *p18b asm("t3");
+    u8 *base;
+    register u32 mask asm("v1");
+    register s32 sh0 asm("v0");
+    s32 ix;
+    register s32 off asm("v0");
+    u32 val;
+    register u32 mask2 asm("a0");
+    u32 code2;
+    register s32 tst asm("v0");
+    register s32 sh asm("v1");
+    register s32 idx asm("t4");
+    u32 *otEntry;
+    s32 *v0p;
+
+    prim = (u8 *)gPrimitiveCursor[0];
+    base = (u8 *)D_800A39C8[0];
+    ot = base + 0x40;
+    obj = arg0;
+    flagMask = 0x6000;
+    if (count-- > 0) {
+        stale = flag & 0x6000;
+        sh0 = flag >> 2;
+        sh0 = sh0 << 2;
+        otBase = (u32 *)(sh0 + (s32)ot);
+        code = 0x09000000;
+        p18a = prim + 0x18;
+        do {
+            va = *(s32 **)(obj + 0x18);
+            vb = *(s32 **)(obj + 0x1C);
+            vc = *(s32 **)(obj + 0x20);
+            gte_ldv3(va, vb, vc);
+            w4 = *(s32 *)(obj + 4);
+            w8 = *(s32 *)(obj + 8);
+            gte_op(rtpt);
+            wC = *(s32 *)(obj + 0xC);
+            w10 = *(s32 *)(obj + 0x10);
+            w14 = *(s32 *)(obj + 0x14);
+            *(s32 *)(p18a - 4) = wC;
+            *(s32 *)(p18a - 0x14) = w4;
+            *(s32 *)(p18a - 0xC) = w8;
+            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
+            gte_cfc2_nonop(flag, 31);
+            if (stale == 0) {
+                v0p = *(s32 **)(obj + 0x24);
+                w4 = v0p[0];
+                w8 = v0p[1];
+                gte_op(avsz3);
+                *(s32 *)(p18a + 4) = w10;
+                *(s32 *)(p18a + 0xC) = w14;
+                gte_mfc2_nonop(flag, 7);
+                gte_mtc2(w4, 0);
+                gte_mtc2(w8, 1);
+                gte_rtps();
+                ix = *(s8 *)(obj + 1);
+                ix = ix << 2;
+                ix = ix + (s32)otBase;
+                otEntry = (u32 *)ix;
+                *(u32 *)prim = *otEntry | code;
+                mask = 0xFFFFFF;
+                *otEntry = (u32)prim & mask;
+                gte_stsxy(p18a);
+                p18a += 0x28;
+                prim += 0x28;
+            }
+            obj = *(u8 **)(obj + 0x28);
+        } while (count-- > 0);
+    }
+    doubleSided = D_800A2DE0[0];
+    vpNext = obj + 0x18;
+    if (obj != NULL) {
+        code2 = 0x09000000;
+        p18b = prim + 0x18;
+        do {
+            vp = vpNext;
+            va = *(s32 **)(vp + 0);
+            vb = *(s32 **)(vp + 4);
+            vc = *(s32 **)(vp + 8);
+            gte_ldv3(va, vb, vc);
+            w4 = *(s32 *)(obj + 4);
+            w8 = *(s32 *)(obj + 8);
+            gte_op(rtpt);
+            wC = *(s32 *)(obj + 0xC);
+            w10 = *(s32 *)(obj + 0x10);
+            w14 = *(s32 *)(obj + 0x14);
+            *(s32 *)(p18b - 0x14) = w4;
+            *(s32 *)(p18b - 0xC) = w8;
+            *(s32 *)(p18b - 4) = wC;
+            gte_cfc2_nonop(flag, 31);
+            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
+            tst = flag & flagMask;
+            if (tst == 0) {
+                gte_op(nclip);
+                v0p = *(s32 **)(vp + 0xC);
+                w4 = v0p[0];
+                w8 = v0p[1];
+                gte_mfc2_nonop(flag, 24);
+                gte_mtc2(w4, 0);
+                gte_mtc2(w8, 1);
+                if (doubleSided != 0) {
+                    if (flag < 0) {
+                        goto skip;
+                    }
+                    goto draw;
+                } else if (flag <= 0) {
+                    goto draw;
+                }
+            }
+        skip:
+            next = *(u8 **)(obj + 0x28);
+            vpNext = next + 0x18;
+            goto advance;
+        draw:
+            gte_op(avsz3);
+            next = *(u8 **)(obj + 0x28);
+            vpNext = next + 0x18;
+            gte_mfc2_nonop(flag, 7);
+            *(s32 *)(p18b + 4) = w10;
+            *(s32 *)(p18b + 0xC) = w14;
+            gte_op(rtps);
+            sh = flag >> 2;
+            idx = sh + *(s8 *)(obj + 1);
+            if (idx > 0x3B6) {
+                idx = 0x3B6;
+            }
+            off = idx << 2;
+            off = off + (s32)ot;
+            val = *(u32 *)off;
+            mask2 = 0xFFFFFF;
+            val = val | code2;
+            *(u32 *)prim = val;
+            *(u32 *)off = (u32)prim & mask2;
+            gte_stsxy(p18b);
+            p18b += 0x28;
+            prim += 0x28;
+        advance:
+            obj = next;
+        } while (obj != NULL);
+    }
+    gPrimitiveCursor[0] = (u32)prim;
+}
 
 void func_80032D94(s8 *object) {
     if ((u8)object[0x12] == 4) {
