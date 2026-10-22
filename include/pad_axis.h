@@ -12,7 +12,7 @@ typedef struct {
 
 /* Reads one stick axis from a pad buffer. func_8006DF98 in
  * memory_card_menu.c is the out-of-line copy of this function; retail
- * inlines it into func_8006E07C, func_8006E628 and func_8006EB18, which
+ * inlines it into PadCalibrateRange, PadCalibrateCenter and func_8006EB18, which
  * puts the buffer address in its own register for one arm and folds it
  * into sp-relative loads for the rest. The u8 `type` lets cse drop the
  * redundant zero-extension when a caller has already tested the type. */

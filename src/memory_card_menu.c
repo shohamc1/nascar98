@@ -48,10 +48,10 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -87,7 +87,7 @@ extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 extern void HeapFree(void *ptr);
 void *HeapAlloc(u32);
 extern s8 D_800A3860S8[] asm("D_800A3860");
@@ -259,7 +259,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -333,7 +333,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -564,7 +564,7 @@ void func_8004419C(u8 *object);
 void func_800441C8(void);
 void func_80044248(void);
 void func_800442C8(u8 *arg0, u8 *arg1);
-void func_80044594(u8 *arg0);
+void ReplayReadEffects(u8 *arg0);
 void HeapInit(void);
 void HeapResetInitFlag(void);
 void *HeapAlloc(u32 size);
@@ -1670,7 +1670,7 @@ void func_80069AFC(s32 arg0) {
  * switch table is jtbl_8008FBBC). `index` is a u8 copy of `group`; the first
  * lookup reads `group`, the others read `index`. Each arm of the last test
  * holds its own copy of the row setup, so the locals stay block-local. */
-void func_80069C60(s32 arg0) {
+void MenuCreateItemRow(s32 arg0) {
     extern void *D_800A3914[];
     extern u8 *D_800A3910f[] asm("D_800A3910");
     extern u8 *D_800A3918n[] asm("D_800A3918");
@@ -1879,7 +1879,7 @@ extern u8 D_800A3968;
 extern s32 D_800A3380[2];
 extern s32 D_800A3388[2];
 extern void *memcpy(void *, const void *, size_t);
-s32 func_8006A15C(u8 arg0) {
+s32 CardLoadNameList(u8 arg0) {
     u8 slot;
     u8 status;
     u32 count;
@@ -1962,7 +1962,7 @@ s32 func_8006A15C(u8 arg0) {
 extern u8 D_800A3A58;
 extern char D_8009B1E4[];
 
-s32 func_8006A3E0(char *record, u8 overwrite, u8 index) {
+s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
     typedef struct {
         s32 words[0x3A];
     } SaveEntry;
@@ -2618,7 +2618,7 @@ void func_8006B5BC(void) {
 extern s32 D_800B0B1C[];
 extern s32 D_800B0B1CNM[] asm("D_800B0B1C.NON_MATCHING");
 
-void func_8006B6B8(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
+void CardUpdateTrackRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
     CardMoveRecord buf;
     u8 *p;
     char *name;
@@ -2954,7 +2954,7 @@ extern u8 D_800A3770;
  * The title store goes through a plain u8 array (D_800A3A10Obj) and the
  * title reads are struct members: sched1 can then sink the store below the
  * argument loads, as in retail. */
-void func_8006BF74(void) {
+void CardMenuBuildFileList(void) {
     s32 i;
     s32 x;
     s32 y;
@@ -3622,7 +3622,7 @@ void func_8006D0F0(void) {
     isCurrent = D_800A358C < D_800A3968;
     strcpy(D_800B9B44, &D_800B0A2C[D_800A358C * 16]);
     func_800599E4();
-    if ((func_8006A3E0(D_800B9B44, isCurrent, D_800A358C) & 0xFF) == 1) {
+    if ((CardWriteSaveSlot(D_800B9B44, isCurrent, D_800A358C) & 0xFF) == 1) {
         D_800A3808 = 0x11;
     }
     func_800598C4();
@@ -3946,7 +3946,7 @@ extern s32 D_8009AB80[];
 extern s32 D_8009AB00[];
 extern u8 D_800A3770;
 extern void *D_800A3A24[];
-void func_8006D8E8(s32 arg0) {
+void CardMenuShowMessage(s32 arg0) {
     u8 *obj;
     u8 *field20;
     u8 *end;
@@ -4101,7 +4101,7 @@ void func_8006DCF0(void) {
 }
 
 extern u8 D_800AEE3C[];
-extern void func_8006E628(s32 arg0, s32 arg1, u32 arg2);
+extern void PadCalibrateCenter(s32 arg0, s32 arg1, u32 arg2);
 
 void func_8006DD28(u32 arg0, u32 arg1) {
     s32 i;
@@ -4113,7 +4113,7 @@ void func_8006DD28(u32 arg0, u32 arg1) {
 
     m = (u8)arg0;
     n = (u8)arg1;
-    func_8006E628(m, n, D_800A307C[m]);
+    PadCalibrateCenter(m, n, D_800A307C[m]);
     pos = (m << 3) + m;
     for (i = 0; i < 3; i++) {
         if (i == 2) {
@@ -4238,9 +4238,9 @@ extern PadAxisCal gPadAxisCal[][3] asm("D_800AEE3C");
  * for every axis. Types above 4 update one bound per axis, found by switching
  * on the axis; each case folds to a constant offset into the record. Other
  * types only call the two refresh functions. The K&R definition and the
- * `subtype` local follow func_8006E628. */
+ * `subtype` local follow PadCalibrateCenter. */
 /* clang-format off */
-void func_8006E07C(arg0, arg1, arg2)
+void PadCalibrateRange(arg0, arg1, arg2)
 u8 arg0;
 u8 arg1;
 u32 arg2;
@@ -4401,7 +4401,7 @@ extern u16 func_80041BFC(u8 *);
  * follow. `subtype` is a separate u8 local so the inlined PadReadAxis keeps
  * its own copy of arg2. */
 /* clang-format off */
-void func_8006E628(arg0, arg1, arg2)
+void PadCalibrateCenter(arg0, arg1, arg2)
 u8 arg0;
 u8 arg1;
 u32 arg2;

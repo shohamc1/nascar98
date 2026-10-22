@@ -43,10 +43,10 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -82,7 +82,7 @@ extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 extern void HeapFree(void *ptr);
 void *HeapAlloc(u32);
 void CarPlaceOnStartingGrid(void);
@@ -138,7 +138,7 @@ void func_80082B70(void);
 extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
                         short rightVolume);
 extern void func_8001F90C(s32, s32, s32, s16 *);
-extern void func_8003F564(s8, s8);
+extern void SoundPlaySlot(s8, s8);
 extern void SsSetMute(s32);
 void func_80041AF0();
 void InitPAD(void *, s32, void *, s32);
@@ -297,7 +297,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -371,7 +371,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -602,7 +602,7 @@ void func_8004419C(u8 *object);
 void func_800441C8(void);
 void func_80044248(void);
 void func_800442C8(u8 *arg0, u8 *arg1);
-void func_80044594(u8 *arg0);
+void ReplayReadEffects(u8 *arg0);
 void HeapInit(void);
 void HeapResetInitFlag(void);
 void *HeapAlloc(u32 size);
@@ -842,7 +842,7 @@ extern u8 D_800A307C[];
  * mapping depends on the pad type (`D_800A3A24`) and on the layout selected
  * for that pad (`D_800A307C`). Modes that share a prefix share a switch arm
  * and finish with a `mode` test; cross-jumping merges the repeated tails. */
-s32 func_8006E770(u8 arg0) {
+s32 PadMapButtons(u8 arg0) {
     u8 padType;
     u8 mode;
     s32 flags;
@@ -1283,7 +1283,7 @@ void func_8006EEE0(s32 arg0) {
         }
     } while (flag == 0);
     HeapFree(heap);
-    func_8003F564(0, 3);
+    SoundPlaySlot(0, 3);
 }
 
 void func_8006F128(s32 arg0) {

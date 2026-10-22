@@ -35,7 +35,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);

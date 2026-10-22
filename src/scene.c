@@ -54,11 +54,11 @@ extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern u8 D_800A3680[];
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *D_800A3554[];
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -94,7 +94,7 @@ extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 extern void HeapFree(void *ptr);
 void *HeapAlloc(u32);
 extern s32 D_800A37B4Absolute[];
@@ -147,7 +147,7 @@ void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
 extern s32 D_800A35E0[];
-extern void func_8002D4CC();
+extern void CarInitDefaults();
 extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
 extern void FileRead();
 extern u8 D_800A2F9CAbsolute[];
@@ -158,7 +158,7 @@ void func_80082B70(void);
 extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
                         short rightVolume);
 extern void func_8001F90C(s32, s32, s32, s16 *);
-extern void func_8003F564(s8, s8);
+extern void SoundPlaySlot(s8, s8);
 void func_80041AF0();
 void InitPAD(void *, s32, void *, s32);
 s32 StartPAD(void);
@@ -186,7 +186,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -260,7 +260,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -491,7 +491,7 @@ void func_8004419C(u8 *object);
 void func_800441C8(void);
 void func_80044248(void);
 void func_800442C8(u8 *arg0, u8 *arg1);
-void func_80044594(u8 *arg0);
+void ReplayReadEffects(u8 *arg0);
 void HeapInit(void);
 void HeapResetInitFlag(void);
 void *HeapAlloc(u32 size);
@@ -691,7 +691,7 @@ void func_80044FF8(s32 arg0, s32 arg1) {
         D_800A33F4 = 0;
         D_800A33F0 = 0;
         *(volatile s32 *)&D_800A33F8 = 0x20;
-        func_8003F564((s8)arg1, -(D_800A3880nm[0] != 0) & 7);
+        SoundPlaySlot((s8)arg1, -(D_800A3880nm[0] != 0) & 7);
         SoundSetSlotVolume((s8)arg1, 0x7F, 0x7F);
         return;
     case 1:
@@ -741,7 +741,7 @@ void func_80044FF8(s32 arg0, s32 arg1) {
         func_8003FA84((s8)arg1, D_800A33F8);
         return;
     case 2:
-        func_8003F914((s8)arg1);
+        SoundStopSlot((s8)arg1);
         return;
     }
 }
@@ -903,7 +903,7 @@ typedef struct {
 /* Sorts the quads of one track section across the track and returns +1 or
  * -1 for the side of the dividing line between the middle two that the car
  * is on. Returns 0 if the section doesn't hold four quads. */
-s32 func_80045480(u8 *car, s16 offset) {
+s32 CarGetTrackSide(u8 *car, s16 offset) {
     s32 lateral[4];
     TrackQuad *quads[4];
     s32 center[4][2];
@@ -1064,7 +1064,7 @@ void SceneUpdateProjectiles(u8 *owner) {
         pool->position.z = *(s32 *)(owner + 8);
         gProjectileWriteIndex[player] =
             (gProjectileWriteIndex[player] + 1) % 10;
-        func_8003F564(10, 9);
+        SoundPlaySlot(10, 9);
     }
     pool = (Projectile *)gProjectilePools[player];
     effectIndex = 0;
@@ -2368,14 +2368,14 @@ void func_80048568(void) {
     }
 }
 
-extern void func_8002D4CC(u8 *);
+extern void CarInitDefaults(u8 *);
 
 void func_80048700(void) {
     D_800A3728 = 0;
     D_800A347C = HeapAlloc(0x500);
     *(s16 *)(D_800A347C + 0x1EC) = 2;
     func_8002DA30((s32 *)D_800A347C);
-    func_8002D4CC(D_800A347C);
+    CarInitDefaults(D_800A347C);
     func_8002D3A8(D_800A347C, -4);
     *(s32 *)(D_800A347C + 0x10) = -1;
     *(s32 *)(D_800A347C + 0xC) = -1;
@@ -2491,7 +2491,7 @@ extern s32 D_800A2F50Absolute[];
 extern s32 D_800A3804Nm[] asm("D_800A3804.NON_MATCHING");
 extern Unk800B8648 D_800B8648[];
 
-void func_800488B8(void) {
+void RaceUpdateCrashTrigger(void) {
     s32 pos[3];
     s8 i;
     CrashCar *car;
@@ -3061,7 +3061,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                     HUD_MESSAGE(D_8009ADFC, 0xB4);
                     if (car->unkF4 != 0 && car->unk90 == 0) {
                         car->unk414 = -1;
-                        func_8003F914((s8)(car->unk20B * 2 + 0xE));
+                        SoundStopSlot((s8)(car->unk20B * 2 + 0xE));
                         func_80041564Hud(car, 0x44);
                         car->unkF4 = 0;
                     }
@@ -6193,7 +6193,7 @@ extern u8 *D_800A3428;
 void SceneSkyFadeDraw(void);
 void func_800514EC(u8, u8, u8);
 
-void func_8005098C(void) {
+void HudUpdateFlagOverlay(void) {
     u8 *car;
 
     if (D_800A2EFCLui[0] != 0) {
@@ -7671,11 +7671,11 @@ void func_80052E18(void) {
 
 void func_80052FC4(s8 arg0) {
     if (arg0 < 2) {
-        func_8003F914(0x14);
+        SoundStopSlot(0x14);
         D_800A34EC = 0;
     }
     if (!(arg0 & 1)) {
-        func_8003F914(0x15);
+        SoundStopSlot(0x15);
         D_800A34F0 = 0;
     }
 }
@@ -7692,11 +7692,11 @@ void func_8005301C(void) {
             0x14, (s8)(*(s16 *)(obj + 0x92) * 8 / *(s16 *)(obj + 0x9A) + 0x2C),
             0);
         if (*(u8 *)&D_800A34EC == 0) {
-            func_8003F564(0x14, 2);
+            SoundPlaySlot(0x14, 2);
             D_800A34EC = 1;
         }
     } else if (*(u8 *)&D_800A34EC != 0) {
-        func_8003F914(0x14);
+        SoundStopSlot(0x14);
         D_800A34EC = 0;
     }
     if (D_800A2EA4Absolute[0] == 0) {
@@ -7708,11 +7708,11 @@ void func_8005301C(void) {
             0x15, (s8)(*(s16 *)(obj + 0x92) * 8 / *(s16 *)(obj + 0x9A) + 0x2C),
             0);
         if (*(u8 *)&D_800A34F0 == 0) {
-            func_8003F564(0x15, 2);
+            SoundPlaySlot(0x15, 2);
             D_800A34F0 = 1;
         }
     } else if (*(u8 *)&D_800A34F0 != 0) {
-        func_8003F914(0x15);
+        SoundStopSlot(0x15);
         D_800A34F0 = 0;
     }
 }
@@ -7754,7 +7754,7 @@ void func_80058030(void);
 void func_80058148(void);
 
 /* Front-end session: set up, run the menu loop func_80053D40, tear down. */
-void func_800531B8(void) {
+void MenuRunFrontEnd(void) {
     s32 pad[2]; /* unused: retail's frame has 8 spare bytes */
     s32 buttons;
     s32 bank;
@@ -8052,8 +8052,8 @@ void func_8003CC48MainLoop(void) asm("func_8003CC48");
 void func_8003CCE0MainLoop(s32 arg0) asm("func_8003CCE0");
 s32 func_8003F4FCMainLoop(s32 arg0) asm("SoundIsSlotActive");
 /* All loop sound arguments fit s8. Pins already hold their extended values. */
-void func_8003F564MainLoop(s32, s32) asm("func_8003F564");
-void func_8003F914MainLoop(s32) asm("func_8003F914");
+void SoundPlaySlotMainLoop(s32, s32) asm("SoundPlaySlot");
+void SoundStopSlotMainLoop(s32) asm("SoundStopSlot");
 s32 func_80041B7CMainLoop(s32) asm("PadGetButtons");
 s32 func_8004229CMainLoop(s32 arg0) asm("func_8004229C");
 void func_80044FF8MainLoop(s32 arg0, s32 arg1) asm("func_80044FF8");
@@ -8122,19 +8122,19 @@ void func_80068220MainLoop(s32) asm("func_80068220");
 void func_80068CE4MainLoop(void) asm("func_80068CE4");
 void func_800691D4MainLoop(void) asm("func_800691D4");
 void func_800697ECMainLoop(s32) asm("func_800697EC");
-void func_80069C60MainLoop(u8) asm("func_80069C60");
+void MenuCreateItemRowMainLoop(u8) asm("MenuCreateItemRow");
 s32 func_80069F30MainLoop(void) asm("func_80069F30");
-s32 func_8006A15CMainLoop(s32) asm("func_8006A15C");
+s32 CardLoadNameListMainLoop(s32) asm("CardLoadNameList");
 void func_8006A7C8MainLoop(s32) asm("func_8006A7C8");
-void func_8006BF74MainLoop(void) asm("func_8006BF74");
+void CardMenuBuildFileListMainLoop(void) asm("CardMenuBuildFileList");
 s32 func_8006C700MainLoop(s32, s32) asm("func_8006C700");
 void func_8006C9F8MainLoop(void) asm("func_8006C9F8");
 void func_8006CB80MainLoop(s32) asm("func_8006CB80");
 s32 func_8006D178MainLoop(void) asm("func_8006D178");
-void func_8006D8E8MainLoop(s32) asm("func_8006D8E8");
-void func_8006E07CMainLoop(u32, u32, u32) asm("func_8006E07C");
-void func_8006E628MainLoop(u32, u32, u32) asm("func_8006E628");
-void func_8005833CMainLoop(u8) asm("func_8005833C");
+void CardMenuShowMessageMainLoop(s32) asm("CardMenuShowMessage");
+void PadCalibrateRangeMainLoop(u32, u32, u32) asm("PadCalibrateRange");
+void PadCalibrateCenterMainLoop(u32, u32, u32) asm("PadCalibrateCenter");
+void RaceBuildQualifyingGridMainLoop(u8) asm("RaceBuildQualifyingGrid");
 void func_8005C124MainLoop(u8, u8) asm("func_8005C124");
 extern s8 D_800A2F9CMainLoop[] asm("D_800A2F9C.MainLoop");
 extern u8 D_800A3059MainLoop asm("D_800A3059.MainLoop");
@@ -8342,7 +8342,7 @@ void func_80053D40(void) {
             func_80056C84MainLoop(argument0, activePlayer);
             func_8005C124MainLoop(D_800A39E4MainLoop, D_800A3059MainLoop);
         }
-        func_80069C60MainLoop(D_800A39E4MainLoop);
+        MenuCreateItemRowMainLoop(D_800A39E4MainLoop);
         func_80056F04MainLoop((s32)D_800A39E4MainLoop);
         switch (D_800A39E4MainLoop) {
         case 0:
@@ -8363,7 +8363,7 @@ void func_80053D40(void) {
             if (D_800A3950MainLoop == 0xFB) {
             case 1:
                 index = 0;
-                func_8006BF74MainLoop();
+                CardMenuBuildFileListMainLoop();
                 currentPadCursor = &newPad[0];
             } else {
                 goto resetPadArray;
@@ -8398,7 +8398,7 @@ void func_80053D40(void) {
             goto resetPadArray;
         case 3:
         case 6:
-            func_8005833CMainLoop(D_800A305BMainLoop);
+            RaceBuildQualifyingGridMainLoop(D_800A305BMainLoop);
         default:
         initializePads:
             index = 0;
@@ -8530,7 +8530,7 @@ void func_80053D40(void) {
                             if (padBits0 & 0x2000) {
                                 D_800A3076MainLoop = one;
                                 func_80063180MainLoop(1);
-                                func_8003F564MainLoop(0, 8);
+                                SoundPlaySlotMainLoop(0, 8);
                                 goto resetUnlockStep;
                             }
                         sequenceDone:;
@@ -8650,7 +8650,7 @@ void func_80053D40(void) {
                                     transitionPhase =
                                         D_800A3684MainLoopSite15[index];
                                     if (transitionPhase == 0) {
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         if (func_8004229CMainLoop((
                                                 s32)(u8)D_800A3A24MainLoopSite16
                                                                       [index]) &
@@ -8695,8 +8695,8 @@ void func_80053D40(void) {
                                             goto updateSelectionPanel;
                                         }
                                     } else if (transitionPhase == one) {
-                                        func_8003F564MainLoop(0, 3);
-                                        func_8006E628MainLoop(
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        PadCalibrateCenterMainLoop(
                                             (u32)index,
                                             (u32)(u8)
                                                 D_800A3A24MainLoopSite24[index],
@@ -8739,7 +8739,7 @@ void func_80053D40(void) {
                                             0xFF) &&
                                            (D_800A3684MainLoopSite30[index] ==
                                             one)) {
-                                    func_8006E07CMainLoop(
+                                    PadCalibrateRangeMainLoop(
                                         (u32)index,
                                         (u32)(u8)
                                             D_800A3A24MainLoopSite33[index],
@@ -8768,7 +8768,7 @@ void func_80053D40(void) {
 
                                         if ((u32)(D_800A39E4MainLoop - 0x10) >=
                                             2U) {
-                                            func_8003F564MainLoop(0, 3);
+                                            SoundPlaySlotMainLoop(0, 3);
                                         }
                                     } else {
                                         confirmPivot = 0x24;
@@ -8851,12 +8851,12 @@ void func_80053D40(void) {
                                                 : "r"(exitChannel),
                                                   "r"(exitTone));
                                             screenResult = 1;
-                                            func_8003F564MainLoop(exitChannel,
+                                            SoundPlaySlotMainLoop(exitChannel,
                                                                   exitTone);
                                             goto finishInput;
                                         }
                                     confirmMode1:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         if ((D_800A3059MainLoop == two &&
                                              D_800A3950MainLoop != 0) ||
                                             D_800A3059MainLoop == one) {
@@ -8868,7 +8868,8 @@ void func_80053D40(void) {
                                                 menuCode = 1;
                                             } else {
                                                 menuCode =
-                                                    func_8006A15CMainLoop(0xFF);
+                                                    CardLoadNameListMainLoop(
+                                                        0xFF);
                                             }
                                             func_80057008MainLoop(menuCode &
                                                                   0xFF);
@@ -8881,7 +8882,7 @@ void func_80053D40(void) {
                                             }
                                             func_8006C5E4MainLoop(2);
                                             D_800A3808MainLoop[0] = 0x15;
-                                            func_8006D8E8MainLoop(0);
+                                            CardMenuShowMessageMainLoop(0);
                                             animateX = -0x78;
                                             animateY = 0;
                                             animateStep = 2;
@@ -8897,7 +8898,7 @@ void func_80053D40(void) {
                                                    D_800A3950MainLoop != 0) {
                                             func_8006C5E4MainLoop(4);
                                             D_800A3808MainLoop[0] = 0x18;
-                                            func_8006D8E8MainLoop(0);
+                                            CardMenuShowMessageMainLoop(0);
                                             animateX = -0x78;
                                             animateY = 0;
                                             animateStep = 2;
@@ -8919,7 +8920,7 @@ void func_80053D40(void) {
                                     confirmMode5:
                                         if ((u32)(D_800A3059MainLoop - 2) <
                                             2U) {
-                                            func_8003F564MainLoop(0, 3);
+                                            SoundPlaySlotMainLoop(0, 3);
                                             if (D_800A3059MainLoop == 3) {
                                                 func_80044FF8MainLoop(0, 1);
                                                 func_8003CCE0MainLoop(0);
@@ -8937,7 +8938,7 @@ void func_80053D40(void) {
                                         }
                                         goto finishInput;
                                     confirmMode21:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         func_80060F10MainLoop(0, -0x78, -2);
                                         D_800A39E4MainLoop = 5;
                                         func_80069AFCMainLoop(5);
@@ -8947,9 +8948,9 @@ void func_80053D40(void) {
                                         }
                                         goto finishInput;
                                     confirmMode28:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         func_800599E4MainLoop();
-                                        cardMenuCode = func_8006A15CMainLoop(
+                                        cardMenuCode = CardLoadNameListMainLoop(
                                             D_800A358CMainLoop[0]);
                                         D_800A39E4MainLoop = one;
                                         func_80057008MainLoop(cardMenuCode &
@@ -8958,7 +8959,7 @@ void func_80053D40(void) {
                                         func_80057160MainLoop(0);
                                         goto finishInput;
                                     confirmMode22:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         D_800A39E4MainLoop = 0x23;
                                         func_8006CF38MainLoop();
                                         func_8006C9F8MainLoop();
@@ -8982,10 +8983,10 @@ void func_80053D40(void) {
                                             goto finishInput;
                                         confirmScan:
                                             {
-                                                func_8003F564MainLoop(0, 3);
+                                                SoundPlaySlotMainLoop(0, 3);
                                                 if (func_8006D178MainLoop() ==
                                                     0) {
-                                                    func_8003F914MainLoop(0);
+                                                    SoundStopSlotMainLoop(0);
                                                 } else {
                                                     func_8006C9DCMainLoop();
                                                     if (D_800A3808MainLoop[0] ==
@@ -9005,7 +9006,7 @@ void func_80053D40(void) {
                                                         func_800599E4MainLoop();
                                                         if (!(func_80069F30MainLoop() &
                                                               0xFF)) {
-                                                            func_8006D8E8MainLoop(
+                                                            CardMenuShowMessageMainLoop(
                                                                 0);
                                                             if (D_800A3808MainLoop
                                                                     [0] !=
@@ -9022,7 +9023,7 @@ void func_80053D40(void) {
                                                     }
                                                     if (D_800A3808MainLoop[0] ==
                                                         mode13) {
-                                                        func_8003F914MainLoop(
+                                                        SoundStopSlotMainLoop(
                                                             0);
                                                         goto playBackSound;
                                                     }
@@ -9032,7 +9033,7 @@ void func_80053D40(void) {
                                             goto finishInput;
                                         }
                                     confirmMode24:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         menuPhase = D_800A3928MainLoop;
                                         asm(""
                                             : "=r"(menuPhase)
@@ -9060,7 +9061,7 @@ void func_80053D40(void) {
                                         }
                                         D_800A3928MainLoop = two;
                                     refreshCardMenu:
-                                        func_8006D8E8MainLoop(0);
+                                        CardMenuShowMessageMainLoop(0);
                                         goto finishInput;
                                     confirmStageTwo:
                                         func_8006C598MainLoop(0, -0x78, -2);
@@ -9069,16 +9070,16 @@ void func_80053D40(void) {
                                         }
                                         goto finishMainMenuReturn;
                                     confirmMode25:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         func_8006C598MainLoop(0, -0x78, -2);
                                         screenResult = 1;
                                         D_800A39E4MainLoop = screenResult;
                                         goto finishInput;
                                     confirmMode26:
-                                        func_8003F564MainLoop(0, 3);
+                                        SoundPlaySlotMainLoop(0, 3);
                                         func_8006C598MainLoop(0, -0x78, -2);
                                         D_800A39E4MainLoop = 7;
-                                        func_8005833CMainLoop(
+                                        RaceBuildQualifyingGridMainLoop(
                                             D_800A305BMainLoop);
                                         screenResult = 0xFF;
                                         goto finishInput;
@@ -9090,10 +9091,10 @@ void func_80053D40(void) {
                                     if (D_800A39E4MainLoop == 7) {
 
                                         if (D_800A3950MainLoop == 0xFB) {
-                                            func_8003F564MainLoop(0, 4);
+                                            SoundPlaySlotMainLoop(0, 4);
                                             D_800A39E4MainLoop = 0x26;
                                             D_800A3808MainLoopSite51[0] = 0x16;
-                                            func_8006D8E8MainLoop(0);
+                                            CardMenuShowMessageMainLoop(0);
                                             func_8006C5E4MainLoop(3);
                                             func_8006C598MainLoop(-0x78, 0, 2);
                                         }
@@ -9102,7 +9103,7 @@ void func_80053D40(void) {
                                             (s32)D_800A39E4MainLoop,
                                             (s32)D_800A3950MainLoop);
                                         if (screenResult & 0xFF) {
-                                            func_8003F564MainLoop(0, 4);
+                                            SoundPlaySlotMainLoop(0, 4);
 
                                         } else {
                                             goto storePadStates;
@@ -9123,7 +9124,7 @@ void func_80053D40(void) {
                                         if (D_800A3808MainLoop[0] != two &&
                                             D_800A3928MainLoop == 0) {
                                             register s32 cardStatus asm("v0");
-                                            func_8003F564MainLoop(0, 3);
+                                            SoundPlaySlotMainLoop(0, 3);
                                             func_800599E4MainLoop();
                                             func_80069F30MainLoop();
                                             cardStatus =
@@ -9138,7 +9139,7 @@ void func_80053D40(void) {
                                             func_800598C4MainLoop();
                                             cardOperation = 1;
                                         startCardOperation:
-                                            func_8006D8E8MainLoop(
+                                            CardMenuShowMessageMainLoop(
                                                 cardOperation);
                                             D_800A3928MainLoop = one;
                                         }
@@ -9149,12 +9150,13 @@ void func_80053D40(void) {
                                                     mode13 ||
                                                 (u32)(D_800A3808MainLoop[0] -
                                                       0x19) < 2U) {
-                                                func_8003F564MainLoop(0, 3);
+                                                SoundPlaySlotMainLoop(0, 3);
                                                 func_800599E4MainLoop();
                                                 if (!(func_80069EB8MainLoop() &
                                                       0xFF)) {
                                                     D_800A3808MainLoop[0] = 4;
-                                                    func_8006D8E8MainLoop(0);
+                                                    CardMenuShowMessageMainLoop(
+                                                        0);
                                                     D_800A3928MainLoop = one;
                                                     func_80069AFCMainLoop(0xA);
                                                 } else {
@@ -9163,7 +9165,7 @@ void func_80053D40(void) {
                                                     if (D_800A3808MainLoop[0] ==
                                                         0) {
                                                         func_8006D0F0MainLoop();
-                                                        func_8006D8E8MainLoop(
+                                                        CardMenuShowMessageMainLoop(
                                                             0);
                                                         D_800A3928MainLoop =
                                                             one;
@@ -9185,7 +9187,7 @@ void func_80053D40(void) {
                                             :
                                             : "r"(returnChannel),
                                               "r"(actionSound));
-                                        func_8003F564MainLoop(returnChannel,
+                                        SoundPlaySlotMainLoop(returnChannel,
                                                               actionSound);
                                         func_8006C598MainLoop(0, -0x78, -2);
                                     finishMainMenuReturn:
@@ -9197,12 +9199,12 @@ void func_80053D40(void) {
                                         goto playBackSound;
                                     case 0x25:
                                     case 0x27:
-                                        func_8003F564MainLoop(0, 4);
+                                        SoundPlaySlotMainLoop(0, 4);
                                         func_8006C598MainLoop(0, -0x78, -2);
                                         D_800A39E4MainLoop = one;
                                         break;
                                     case 0x26:
-                                        func_8003F564MainLoop(0, 4);
+                                        SoundPlaySlotMainLoop(0, 4);
                                         func_8006C598MainLoop(0, -0x78, -2);
                                         D_800A39E4MainLoop = 7;
                                         break;
@@ -9280,7 +9282,7 @@ void func_80053D40(void) {
                                                             D_800A39E4MainLoop ==
                                                                 0x22) &
                                                         0xFF) {
-                                                        func_8003F564MainLoop(
+                                                        SoundPlaySlotMainLoop(
                                                             0, 0);
 
                                                     } else {
@@ -9289,7 +9291,7 @@ void func_80053D40(void) {
                                                     goto finishInput;
                                                 }
                                             } else {
-                                                func_8003F564MainLoop(0, 0);
+                                                SoundPlaySlotMainLoop(0, 0);
                                                 wrappedItemUp =
                                                     D_800A3059MainLoop;
                                                 if (wrappedItemUp == 0) {
@@ -9477,7 +9479,7 @@ void func_80053D40(void) {
                                                                 D_800A39E4MainLoop ==
                                                                     0x22) &
                                                             0xFF) {
-                                                            func_8003F564MainLoop(
+                                                            SoundPlaySlotMainLoop(
                                                                 0, 1);
 
                                                         } else {
@@ -9486,7 +9488,7 @@ void func_80053D40(void) {
                                                         goto finishInput;
                                                     }
                                                 } else {
-                                                    func_8003F564MainLoop(0, 1);
+                                                    SoundPlaySlotMainLoop(0, 1);
                                                     if ((D_800A3059MainLoop &
                                                          0xFF) ==
                                                         (D_800A38E8MainLoopSite64
@@ -9618,7 +9620,7 @@ void func_80053D40(void) {
                                                         [index] != one) {
                                                 if (D_800A3684MainLoopSite69
                                                         [index] == 0) {
-                                                    func_8003F564MainLoop(0, 2);
+                                                    SoundPlaySlotMainLoop(0, 2);
                                                     {
                                                         register s32
                                                             variantCount asm(
@@ -9693,7 +9695,7 @@ void func_80053D40(void) {
                                                         [index] != one) {
                                                 if (D_800A3684MainLoopSite75
                                                         [index] == 0) {
-                                                    func_8003F564MainLoop(0, 2);
+                                                    SoundPlaySlotMainLoop(0, 2);
                                                     D_800A307CMainLoopSite76[index] =
                                                         (D_800A307CMainLoopSite76
                                                              [index] +
@@ -10035,13 +10037,13 @@ dispatch:
                     D_800A37D0NM = 3;
                 } else {
                     D_800A37D0NM = value;
-                    func_8003F564(0, 2);
+                    SoundPlaySlot(0, 2);
                 }
             } else {
                 value = D_800A37D0NM + D_800A37F0;
                 if (value < 0x65) {
                     D_800A37D0NM = value;
-                    func_8003F564(0, 2);
+                    SoundPlaySlot(0, 2);
                 } else {
                     D_800A37D0NM = 0x64;
                 }
@@ -10233,7 +10235,7 @@ dispatch:
             if ((s8)D_800A3860Signed[arg5][(arg1 & 0xFF) - 2] < 0) {
                 D_800A3860Signed[arg5][(arg1 & 0xFF) - 2] = 0;
             } else {
-                func_8003F564(0, 2);
+                SoundPlaySlot(0, 2);
             }
             D_800A3860Signed[arg5][(arg1 & 0xFF) - 2] =
                 (s8)D_800A3860Signed[arg5][(arg1 & 0xFF) - 2] / 4 * 4;
@@ -10248,7 +10250,7 @@ dispatch:
                 if ((s8)D_800A3860Signed[arg5][(arg1 & 0xFF) - 2] >= 0x40) {
                     D_800A3860Signed[arg5][(arg1 & 0xFF) - 2] = 0x3F;
                 }
-                func_8003F564(0, 2);
+                SoundPlaySlot(0, 2);
             }
         }
         func_80060008(arg5);
@@ -10282,7 +10284,7 @@ dispatch:
                                2);
             func_80063694KR(D_800A3A14R6[0], -0x10C, 0x34, 2);
         }
-        func_8003F564(0, 2);
+        SoundPlaySlot(0, 2);
         return;
     case 9:
         if (D_800A3A58NM[0] == 0) {
@@ -10331,7 +10333,7 @@ dispatch:
     default:
         return;
     }
-    func_8003F564(0, 2);
+    SoundPlaySlot(0, 2);
 }
 
 s32 func_80056B0C(s32 arg0, s32 arg1) {
@@ -10613,14 +10615,14 @@ extern u8 D_800A3968a[] asm("D_800A3968.NON_MATCHING");
 extern u8 D_800A3950nm asm("D_800A3950.NON_MATCHING");
 
 void func_80057008(s32 arg0) {
-    extern void func_8006D8E8(s32);
+    extern void CardMenuShowMessage(s32);
     extern void func_8006C5E4(s32);
     s32 m2;
     extern void func_8006BD68(void);
     extern u8 D_800A3928;
 
     if (D_800A3808a[0] == 2 || !(arg0 & 0xFF)) {
-        func_8006D8E8(0);
+        CardMenuShowMessage(0);
         m2 = D_800A3059;
         D_800A3928 = 1;
         if (m2 == 1) {
@@ -10642,7 +10644,7 @@ void func_80057008(s32 arg0) {
         } else if (D_800A3059 == 1) {
             if (D_800A3968a[0] == 0) {
                 D_800A3808c[-4] = 0x14;
-                func_8006D8E8(0);
+                CardMenuShowMessage(0);
                 D_800A3928 = 2;
                 D_800A39E4Small = 0x24;
                 func_8006C5E4(1);
@@ -11450,7 +11452,7 @@ s32 func_80014398(s32 arg0);
  * back, then a selection sort by time. D_800A36E0 is read as a 2-byte array
  * so its loads stay behind the D_800AEB34 stores, as in retail.
  */
-void func_8005833C(s32 track) {
+void RaceBuildQualifyingGrid(s32 track) {
     extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
     extern u8 D_800A36E0Pair[2] asm("D_800A36E0Small");
     extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");

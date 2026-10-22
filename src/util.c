@@ -276,7 +276,7 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
     return 1;
 }
 
-void func_8001775C(u8 *arg0, s32 x, s32 y, s32 z) {
+void CarDrawPreviewModel(u8 *arg0, s32 x, s32 y, s32 z) {
     SVECTOR rot;
     MATRIX m1, m2, m3;
     VECTOR trans[3];
@@ -367,7 +367,7 @@ extern s32 func_80014AC8(s32);
 extern void func_800168F8(u8 *, s32);
 
 /* Draw every car in the list, or release the ones that were skipped. */
-void func_800179AC(void) {
+void CarDrawAll(void) {
     u32 car;
     s32 released;
     s32 bankFlag;

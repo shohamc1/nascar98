@@ -21,7 +21,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -717,7 +717,7 @@ extern u32 D_800A35C0[];
    yellow or blue, whose length is value / (scale * 4) of 250 pixels, then five
    POLY_F3 markers a quarter of 250 pixels apart. A negative value repeats the
    previous one. The bar cycles through four buffers. */
-void func_8001D220(s32 value, s32 scale, s32 y, s32 colorIdx) {
+void DebugDrawMeterBar(s32 value, s32 scale, s32 y, s32 colorIdx) {
     POLY_F4 *bar;
     POLY_F3 *mark;
     POLY_FT4 *entry;
@@ -856,7 +856,7 @@ extern u32 D_800A35C0[];
 /* Draws the selection triangle: apex at (x, y) and base at x +/-
    twice the size, pointing left for dir 0 and right for dir 1. Any
    other dir leaves the SetPolyF3 template's vertices alone. */
-void func_8001D638(s32 x, s32 y, s32 dir, s32 size) {
+void MenuDrawArrow(s32 x, s32 y, s32 dir, s32 size) {
     POLY_F3 *prim;
     POLY_FT4 *entry;
     u32 cursor;

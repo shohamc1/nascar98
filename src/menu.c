@@ -45,11 +45,11 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *D_800A3554[];
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -85,7 +85,7 @@ extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 extern void HeapFree(void *ptr);
 void *HeapAlloc(u32);
 extern s32 D_800A38AC[];
@@ -217,7 +217,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -291,7 +291,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -522,7 +522,7 @@ void func_8004419C(u8 *object);
 void func_800441C8(void);
 void func_80044248(void);
 void func_800442C8(u8 *arg0, u8 *arg1);
-void func_80044594(u8 *arg0);
+void ReplayReadEffects(u8 *arg0);
 void HeapInit(void);
 void HeapResetInitFlag(void);
 void *HeapAlloc(u32 size);
@@ -2190,7 +2190,7 @@ static inline void MenuObjDrawText(u8 *window, u8 code, u8 first, u8 second,
     }
 }
 
-void func_800602E8(s8 arg0, u8 arg1) {
+void MenuDrawLevelBars(s8 arg0, u8 arg1) {
     s32 i;
     s32 j;
     s32 first;
@@ -3546,7 +3546,7 @@ panelLoop:
         {
             register s32 textureOffset asm("$20");
             textureOffset = 0;
-            func_80062910((u8)panelIndex.value);
+            MenuUpdatePadPicture((u8)panelIndex.value);
             /* Keep the texture cases, leaf calls, UV reloads, and links. */
             asm volatile(".set\tnoreorder\n"
                          "lw         $t4, %7\n"
@@ -4576,7 +4576,7 @@ extern u8 D_8009B00C[];
 extern u8 D_8009B028[];
 extern u8 D_8009B02A[];
 
-void func_80062910(s32 arg0) {
+void MenuUpdatePadPicture(s32 arg0) {
     u8 *node;
     u8 *prim;
     s32 a;
@@ -5388,7 +5388,7 @@ void func_80063E7C(void) {
  * range so global allocation ranks the three parameters arg2, arg1, arg0,
  * handing them s1, s2, s3 like retail. */
 void func_8003271C(s32 arg0);
-void func_8001775C(void *arg0, s32 arg1, s32 arg2, s32 arg3);
+void CarDrawPreviewModel(void *arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     u8 *entry;
     u8 *obj;
@@ -5424,7 +5424,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
             } else {
                 func_8003271C(0);
             }
-            func_8001775C(obj, 0, 0xFA, 0x44C);
+            CarDrawPreviewModel(obj, 0, 0xFA, 0x44C);
             if (!(arg0 & 0xFF) || (arg2 & 0xFF) || D_800A39E4[0] == 0xE) {
                 asm("" : : "r"(arg1));
                 t = *(s16 *)(obj + 0x20E);
@@ -5866,7 +5866,7 @@ void func_80064E6C(void) {
     extern u8 D_800A35DC;
     extern void func_80065058(s32, s32);
     extern void func_80065F80(void);
-    extern void func_80066080(s32);
+    extern void MenuDrawCarPickPair(s32);
     u8 **base;
 
     ClearOTagR(D_800A38C4, 4);
@@ -5891,7 +5891,7 @@ void func_80064E6C(void) {
     D_800A367C = (s32)(D_800A369C + D_800A3698 * 0x28);
     if (D_800A3644[0] != 0 && D_800A3073[0] == 0) {
         func_80065F80();
-        func_80066080(1);
+        MenuDrawCarPickPair(1);
     } else {
         func_80065838(1);
         D_800A3778 = 0;
@@ -6137,7 +6137,7 @@ void func_80065058(u8 id, s32 shift) {
         if (D_800A2EB0Absolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
             func_8005A9F4((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
-            func_80018588((void *)D_800AEB34[color], -1, entry);
+            TextFormatTime((void *)D_800AEB34[color], -1, entry);
             func_8005A9F4((s32)entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
         }
         if (D_800A2EB0Absolute[0] == 0 && height == 0 && i == 0) {
@@ -6427,7 +6427,7 @@ extern s32 D_800A3540;
 extern u8 *D_8009A3F4[];
 extern u8 *D_8009A3F8;
 extern u8 D_800A305BLui asm("D_800A305BAbsolute");
-void func_80066080(s32 arg0) {
+void MenuDrawCarPickPair(s32 arg0) {
     s32 i;
     s32 shift;
     s32 x;
@@ -6508,7 +6508,7 @@ void func_800663B0(void) {
     extern u8 D_800A3760;
     extern volatile u8 D_800A3360;
     extern void func_8006594C(s32, s32);
-    extern void func_80066080(s32);
+    extern void MenuDrawCarPickPair(s32);
     s32 oldGp;
     u8 *walk;
     char *text;
@@ -6543,7 +6543,7 @@ void func_800663B0(void) {
                     walk += 0x28;
                 }
                 D_800A367C = D_800A3538;
-                func_80066080(0);
+                MenuDrawCarPickPair(0);
                 DrawOTag(D_800A38C4 + 3);
                 DrawSync(0);
                 D_800A3884 = 2;

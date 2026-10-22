@@ -69,7 +69,7 @@ int main(void) {
             func_80058D94();
         }
         if (((D_800A39E4Absolute[0] + 3) & 0xFFU) >= 2U) {
-            func_800531B8();
+            MenuRunFrontEnd();
             HeapResetInitFlag();
         }
         GameRunSession();
@@ -509,12 +509,12 @@ extern s32 D_800B9D5C;
 extern s32 D_800B9D60;
 
 void func_80012C30(void) {
-    func_8001D220(D_800A370C - D_800A3708, 0xF0, 0x14, 0);
-    func_8001D220(D_800A2D00, 0xF0, 0x14, 3);
-    func_8001D220(D_800B9D54[0], 0xF0, 0x23, 0);
-    func_8001D220(D_800B9D58 + D_800B9D54[0], 0xF0, 0x23, 2);
-    func_8001D220(D_800B9D60 + D_800B9D58 + D_800B9D54[0], 0xF0, 0x23, 3);
-    func_8001D220(D_800B9D5C, 0xF0, 0x23, 1);
+    DebugDrawMeterBar(D_800A370C - D_800A3708, 0xF0, 0x14, 0);
+    DebugDrawMeterBar(D_800A2D00, 0xF0, 0x14, 3);
+    DebugDrawMeterBar(D_800B9D54[0], 0xF0, 0x23, 0);
+    DebugDrawMeterBar(D_800B9D58 + D_800B9D54[0], 0xF0, 0x23, 2);
+    DebugDrawMeterBar(D_800B9D60 + D_800B9D58 + D_800B9D54[0], 0xF0, 0x23, 3);
+    DebugDrawMeterBar(D_800B9D5C, 0xF0, 0x23, 1);
     D_800A2CFC = 0;
     D_800A2D00 = 0;
     D_800A2D04 = 0;

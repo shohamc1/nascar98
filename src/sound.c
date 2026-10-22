@@ -42,11 +42,11 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *D_800A3554[];
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -82,7 +82,7 @@ extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 extern void HeapFree(void *ptr);
 void *HeapAlloc(u32);
 extern s32 D_800A359C[];
@@ -143,7 +143,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -217,7 +217,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -696,10 +696,10 @@ extern s16 D_800B9E2C[];
 extern s16 D_800B9E2E[];
 extern u8 D_80098BF8[];
 extern u8 D_80098BEC[];
-extern s8 func_8003F914Body(s32) asm("func_8003F914");
+extern s8 SoundStopSlotBody(s32) asm("SoundStopSlot");
 
 /*
- * func_8003F564(id, type) starts sound `type` on voice slot `id` (**guess**).
+ * SoundPlaySlot(id, type) starts sound `type` on voice slot `id` (**guess**).
  * It frees the slot first, picks the VAB program, tone and note from `type`,
  * keys the voice on and records the result in the D_800B9E24 table (six
  * halfwords per slot: voice, type, tone, note, note, 0). The key-status
@@ -716,7 +716,7 @@ static inline u8 SoundIsVoiceOn(s32 voice) {
     return 1;
 }
 
-void func_8003F564(id, type) s8 id;
+void SoundPlaySlot(id, type) s8 id;
 s8 type;
 {
     u8 tone;
@@ -737,7 +737,7 @@ s8 type;
     voice = D_800B9E24[(s8)id * 6];
     if (voice != -1) {
         if (SoundIsVoiceOn(voice)) {
-            tone = func_8003F914Body((s8)id);
+            tone = SoundStopSlotBody((s8)id);
         }
     }
     if ((s8)tone == -1) {
@@ -848,11 +848,11 @@ s8 type;
 extern s8 SsUtKeyOffV(s16);
 
 /*
- * game.h declares func_8003F914 as void, and callers must keep it that way.
+ * game.h declares SoundStopSlot as void, and callers must keep it that way.
  * Retail tests the caller's leftover $v0 on entry: ret is never set.
  */
-s8 func_8003F914Body(s32 arg0) asm("func_8003F914");
-s8 func_8003F914Body(s32 arg0) {
+s8 SoundStopSlotBody(s32 arg0) asm("SoundStopSlot");
+s8 SoundStopSlotBody(s32 arg0) {
     s8 ret;
     s32 off;
     s8 key;
@@ -904,7 +904,7 @@ void func_8003FA0C(void) {
 again:
     voice = D_800B9E24[i * 6];
     if (voice != value) {
-        func_8003F914((s8)i);
+        SoundStopSlot((s8)i);
     }
     i++;
     if (i < 24) {
@@ -1074,7 +1074,7 @@ void func_8003FEB8(void) {
 again:
     voice = D_800B9E24[i * 6];
     if (voice != noVoice && keyState[voice] == 3) {
-        func_8003F914(i);
+        SoundStopSlot(i);
     }
     i++;
     if (i < 0x18) {
@@ -1324,7 +1324,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
             vol2 = vol1;
         }
     }
-    func_8003F564((s8)arg2, (s8)arg3);
+    SoundPlaySlot((s8)arg2, (s8)arg3);
     SoundSetSlotVolume((s8)arg2, (u8)vol2, (u8)vol1);
 }
 
@@ -1351,9 +1351,9 @@ void func_800409A0(u8 *object) {
          * address register across the call; the local reads it once. */
         player = D_800A3554nm[0];
         if (object == player) {
-            func_8003F564(0x14, 2);
+            SoundPlaySlot(0x14, 2);
         } else if (object == *(u8 **)(player + 0x3E0) && D_800A2EA4[0] == 2) {
-            func_8003F564(0x15, 2);
+            SoundPlaySlot(0x15, 2);
         }
     }
     *(u8 *)(object + 0x3B9) = 1;
@@ -1417,21 +1417,21 @@ void func_80040AC8(u8 *object) {
         }
     }
     if (count1 | count2) {
-        func_8003F564((s8)id, 5);
+        SoundPlaySlot((s8)id, 5);
         count1 = (count1 * 30 + 60) * vol >> 6;
         count2 = (count2 * 30 + 60) * vol >> 6;
         SoundSetSlotVolume((s8)id, count1 & 0xFF, count2 & 0xFF);
     } else {
-        func_8003F914((s8)id);
+        SoundStopSlot((s8)id);
     }
     id++;
     if (count3 | count4) {
-        func_8003F564((s8)id, 7);
+        SoundPlaySlot((s8)id, 7);
         count3 = (count3 * 30 + 60) * vol >> 6;
         count4 = (count4 * 30 + 60) * vol >> 6;
         SoundSetSlotVolume((s8)id, count3 & 0xFF, count4 & 0xFF);
     } else {
-        func_8003F914((s8)id);
+        SoundStopSlot((s8)id);
     }
 }
 
@@ -1476,7 +1476,7 @@ void SoundUpdateCar(u8 *car) {
             SoundSetSlotVolume((s8)i, 0, 0);
         }
         for (i = 14; i < 18; i++) {
-            func_8003F914((s8)i);
+            SoundStopSlot((s8)i);
         }
         return;
     }
@@ -1490,7 +1490,7 @@ void SoundUpdateCar(u8 *car) {
                 *(s8 *)(car + 0x3B8) -= 3;
                 if (*(s8 *)(car + 0x3B8) <= 0) {
                     *(s8 *)(car + 0x3B8) = 0;
-                    func_8003F914((s8)id);
+                    SoundStopSlot((s8)id);
                 }
             }
             decayVolume = (*(s8 *)(car + 0x3B8) * 4 + 31) & 0xFF;
@@ -1691,7 +1691,7 @@ void func_800414E0(void *arg0, s32 arg1, s32 arg2) {
 active:
     if (D_800A359C[0] != 0)
         return;
-    func_8003F564((s8)arg1, (s8)arg2);
+    SoundPlaySlot((s8)arg1, (s8)arg2);
     SoundSetSlotVolume((s8)arg1, 0x72, 0x72);
 }
 
@@ -1843,7 +1843,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     base = D_800BE86C;
     slot = base + arg2;
     if (*slot == -1 || arg3 < timer - *slot) {
-        func_8003F564(0x12, (s8)arg1);
+        SoundPlaySlot(0x12, (s8)arg1);
         SoundSetSlotVolume(0x12, 0xFF, 0xFF);
         *slot = timer;
     }
@@ -1923,18 +1923,18 @@ void func_80041850(void) {
 void func_8004195C(void) {
     SsStart2();
     func_8003F284();
-    func_8003F564(0, 0);
+    SoundPlaySlot(0, 0);
     SoundSetSlotVolume(0, 0, 0);
     VSync(0);
     VSync(0);
     VSync(0);
-    func_8003F564(1, 0xC);
+    SoundPlaySlot(1, 0xC);
     SoundSetSlotVolume(1, 0, 0);
-    func_8003F564(2, 0xD);
+    SoundPlaySlot(2, 0xD);
     SoundSetSlotVolume(2, 0, 0);
-    func_8003F564(3, 0xE);
+    SoundPlaySlot(3, 0xE);
     SoundSetSlotVolume(3, 0, 0);
-    func_8003F564(4, 0xF);
+    SoundPlaySlot(4, 0xF);
     SoundSetSlotVolume(4, 0, 0);
 }
 

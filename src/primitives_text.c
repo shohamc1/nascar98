@@ -380,7 +380,7 @@ extern u8 gTimeFormatMinSecMs[];
 extern s32 sprintfArgs(s8 *, u8 *, ...);
 asm(".globl sprintfArgs\nsprintfArgs = sprintf");
 
-void func_80018588(void *timeValue, s32 flags, s32 buffer) {
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer) {
     register s32 time asm("a3");
     s32 noSign;
     register s32 blank asm("v0");
@@ -457,7 +457,7 @@ void func_80018768(void *arg0, s32 x, s32 y, s32 scale) {
     s8 *field;
     s32 pen;
 
-    func_80018588(arg0, scale, text);
+    TextFormatTime(arg0, scale, text);
     if (scale < 0) {
         scale = -scale;
     }
@@ -1499,7 +1499,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
         helperBuffer = (s32)text;
         asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
         y = 135 - yOffset;
-        func_80018588(helperTime, helperMode, helperBuffer);
+        TextFormatTime(helperTime, helperMode, helperBuffer);
         x = 252;
         scale = 2;
         start = text;
@@ -1518,7 +1518,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             helperBuffer = (s32)text;
             asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
             y = 159 - yOffset;
-            func_80018588(helperTime, helperMode, helperBuffer);
+            TextFormatTime(helperTime, helperMode, helperBuffer);
             x = 252;
             scale = 2;
             start = text;
@@ -1665,9 +1665,9 @@ extern u8 *D_8009AE50[];
 extern void GraphicsSetColor(s32, s32, s32);
 extern void HudDrawText(u8 *, s32, s32, s8);
 extern void func_8001D778();
-extern void func_8001D638();
+extern void MenuDrawArrow();
 extern void func_80044A1C();
-void func_8001A4D4(void *unused, s32 selection, u8 flags, s32 y) {
+void MenuDrawPauseListPanel(void *unused, s32 selection, u8 flags, s32 y) {
     s8 i;
     s32 cursorY;
 
@@ -1695,8 +1695,8 @@ void func_8001A4D4(void *unused, s32 selection, u8 flags, s32 y) {
     }
     func_80044A1C(81, (s16)(y + 40), 158, 48, 0, 0, 0, 1);
     cursorY = selection * 12;
-    func_8001D638(79, y + 45 + cursorY, 0, 5);
-    func_8001D638(240, y + 45 + cursorY, 1, 5);
+    MenuDrawArrow(79, y + 45 + cursorY, 0, 5);
+    MenuDrawArrow(240, y + 45 + cursorY, 1, 5);
 }
 
 extern u8 *D_8009AD60[][6];
@@ -1854,8 +1854,8 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     cursorY = selection * 12;
     rowBias = y + 5;
     cursorY += rowBias;
-    func_8001D638(arrowArg, cursorY, 0, 5);
-    func_8001D638(arrowX | 160, cursorY, 1, 5);
+    MenuDrawArrow(arrowArg, cursorY, 0, 5);
+    MenuDrawArrow(arrowX | 160, cursorY, 1, 5);
     if (D_800A3620w18c[0] != 0) {
         D_800A39C8Lui -= 0x1004;
     }
@@ -2079,7 +2079,7 @@ void func_8001C34C(void) {
                                D_800A2ED0nm[0]);
         }
     } else {
-        func_8005098C();
+        HudUpdateFlagOverlay();
     }
     mode = 2;
     if (D_800A2EA4nm[0] == mode) {

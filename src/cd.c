@@ -42,11 +42,11 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
 extern u8 *D_800A3554[];
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -83,7 +83,7 @@ extern s32 D_800A3A04nm[] asm("D_800A3A04.NON_MATCHING");
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 void *HeapAlloc(u32);
 void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
@@ -141,7 +141,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -215,7 +215,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -725,7 +725,7 @@ void func_8003CEFC(void) {
 void func_8003CF04(void) {
 }
 
-/* Car layout as far as func_8003CF0C reads it. The fields are struct members,
+/* Car layout as far as CarUpdateState reads it. The fields are struct members,
  * not (u8 *) casts: a struct store lets sched hoist the gp load of D_800A376C
  * above the 0x286/0x2A4/0x2AA stores, as retail does. */
 typedef struct CarStateObject {
@@ -794,7 +794,7 @@ extern u8 D_800A35D4Lui[] asm("D_800A35D4");
 extern s32 D_800A2EA4[];
 extern s32 D_800A2CE0[];
 
-void func_8003CF0C(CarStateObject *object) {
+void CarUpdateState(CarStateObject *object) {
     s32 query[3];
     s32 buttons;
     s32 heading;

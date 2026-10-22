@@ -41,10 +41,10 @@ extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
 extern s32 D_800A3784, D_800A3790, D_800A3794, D_800A3798, D_800A379C,
     D_800A37A4, D_800A37AC, D_800A37B4, D_800A37C4;
 extern void func_80025730(u8 *);
-s32 func_80024E90(s32, s32, s32 *, s32 *, s32 *);
-void func_800229B8(void);
-s32 func_800246C0(s32, s32, u8 *);
-s32 func_800246C0(s32, s32, u8 *);
+s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
+void ReplayStepForward(void);
+s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, u8 *);
 void func_80025594();
 typedef struct {
     u8 unk0[0x1EC];
@@ -80,7 +80,7 @@ extern void func_8001FAC0(u8 *, s32);
 extern void func_80029CB4(s32 *arg0);
 extern void func_80039B74(s32 *arg0, s32 arg1);
 s32 func_8003702C(u8 *, u8 *);
-s32 func_8002CF24(u8 *, u8 *);
+s32 CarTestDraft(u8 *, u8 *);
 void *HeapAlloc(u32);
 void CarPlaceOnStartingGrid(void);
 void func_8003B6DC(s32);
@@ -144,7 +144,7 @@ s32 RandomScaledGet(s32 scale);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);
 void FontDrawString(s8 *text, s32 x, s32 y, s32 scale);
-void func_80018588(void *timeValue, s32 flags, s32 buffer);
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer);
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018848(void *arg0, s32 arg1, s32 arg2);
 void FontDrawPaddedNumber(s32 value, s32 x, s32 y, s32 scale);
@@ -218,7 +218,7 @@ void ReplayAllocBuffer(void);
 void func_8001FD44(u8 *arg0);
 s32 MathMultiplyFixed16(s32, s32); /* extern */
 void func_8001FF3C(u8 *arg0, u8 *arg1);
-void func_80022CA4(void);
+void ReplayStepBack(void);
 void func_80022F48(void);
 void func_80022F80(void);
 void func_80022FB8(u8 *arg0, s32 arg1);
@@ -954,10 +954,10 @@ INCLUDE_ASM("asm/nonmatchings/input", func_800422C0);
 
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
-extern void func_800432C0(u8 *, s32);
+extern void EffectSpawnAtCarPoint(u8 *, s32);
 extern void func_80043B68(u8 *, s32);
 
-void func_80042508(u8 *obj) {
+void CarCheckGroundContact(u8 *obj) {
     s32 i;
     s32 best;
     s32 bestIdx;
@@ -1012,37 +1012,37 @@ void func_80042508(u8 *obj) {
         switch (bestIdx % 4) {
         case 3:
             if (t == 0) {
-                func_800432C0(obj, 0);
+                EffectSpawnAtCarPoint(obj, 0);
             }
             if (t < 3) {
-                func_800432C0(obj, 5);
+                EffectSpawnAtCarPoint(obj, 5);
             }
             func_80043B68(obj, 0);
             break;
         case 2:
             if (t == 0) {
-                func_800432C0(obj, 1);
+                EffectSpawnAtCarPoint(obj, 1);
             }
             if (t < 3) {
-                func_800432C0(obj, 6);
+                EffectSpawnAtCarPoint(obj, 6);
             }
             func_80043B68(obj, 1);
             break;
         case 1:
             if (t == 0) {
-                func_800432C0(obj, 2);
+                EffectSpawnAtCarPoint(obj, 2);
             }
             if (t < 3) {
-                func_800432C0(obj, 7);
+                EffectSpawnAtCarPoint(obj, 7);
             }
             func_80043B68(obj, 2);
             break;
         case 0:
             if (t == 0) {
-                func_800432C0(obj, 3);
+                EffectSpawnAtCarPoint(obj, 3);
             }
             if (t < 3) {
-                func_800432C0(obj, 7);
+                EffectSpawnAtCarPoint(obj, 7);
             }
             func_80043B68(obj, 3);
             break;
