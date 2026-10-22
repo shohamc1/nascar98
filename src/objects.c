@@ -6838,7 +6838,56 @@ s32 func_8002CF1C(void) {
     return 2000;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002CF24);
+extern s16 D_800A38E4;
+typedef struct {
+    s32 x, y, z;
+} Delta3;
+
+s32 func_8002CF24(u8 *arg0, u8 *arg1) {
+    extern u8 *trigA asm("D_800A3A2CAbsolute");
+    extern u8 *trigB asm("D_800A3A34Absolute");
+    /* A struct member is not a plain decl, so fold hoists one load of the
+     * limit above each ABS split. */
+    extern struct {
+        s32 dist;
+    } cull asm("D_800A2E50");
+    Delta3 delta;
+    u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
+    Delta3 rot;
+    s32 index;
+
+    delta.x = *(s32 *)arg1 - *(s32 *)arg0;
+    delta.y = *(s32 *)(arg1 + 4) - *(s32 *)(arg0 + 4);
+    delta.z = *(s32 *)(arg1 + 8) - *(s32 *)(arg0 + 8);
+    if (ABS(delta.x) > cull.dist) {
+        return 0;
+    }
+    if (ABS(delta.y) > cull.dist) {
+        return 0;
+    }
+    if (ABS(delta.z) > cull.dist) {
+        return 0;
+    }
+    rot = delta;
+    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
+    delta.x = (MathMultiplyFixed16(((s32 *)trigA)[index], rot.x << 16) -
+               MathMultiplyFixed16(((s32 *)trigB)[index], rot.y << 16)) >>
+              16;
+    delta.y = (MathMultiplyFixed16(((s32 *)trigB)[index], rot.x << 16) +
+               MathMultiplyFixed16(((s32 *)trigA)[index], rot.y << 16)) >>
+              16;
+    if (*(s16 *)(*(s32 *)(arg0 + 0x370) + 0x22) * 2 > ABS(delta.y)) {
+        if (ABS(delta.x) < cull.dist) {
+            if (delta.x > 0) {
+                *(s32 *)(arg0 + 0x22C) =
+                    MathFixedDivide(cull.dist - delta.x, D_800A2E58);
+                D_800A38E4 = ABS(delta.x);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 s32 func_8003702C(u8 *, u8 *);
 s32 func_8002CF24(u8 *, u8 *);
