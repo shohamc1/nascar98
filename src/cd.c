@@ -418,10 +418,12 @@ void FileClose(void) {
  * buf is pinned `register s32 buf asm("s2");` with the birth moved
  * after DrawSync(0) (permuter find): that orders the s2 save/move pair
  * before s4's in the mult->mflo window. */
-extern char D_8008D110[];
-extern char D_8008D144[];
-extern char D_8008D16C[];
-extern char D_8008D178[];
+static const char sChecksumFailureFormat[] =
+    "Checksum Failure!\nChecksum   = %x\nCheckvalue = %x\n";
+static const char sFileInfoFormat[] =
+    "File Info:\nStart ADDR: %x\nFile No: %d\n";
+static const char sFileSizeFormat[] = "Size: %d\n";
+static const char sFileLocationFormat[] = "Location: %d\n";
 extern s32 D_80098348nm[] asm("D_80098348.NON_MATCHING");
 extern s32 D_80098344nm[] asm("D_80098344.NON_MATCHING");
 extern s32 D_80098340w4[] asm("D_80098340.NON_MATCHING");
@@ -485,21 +487,16 @@ retry:
             goto retry;
         }
         GraphicsInit();
-        FntPrint(D_8008D110, D_80098348fp[D_800A37CC * 3], total);
-        FntPrint(D_8008D144, buf & 0x7FFFFFFF, D_800A37CC);
-        FntPrint(D_8008D16C, D_80098344nm[D_800A37CC * 3]);
-        FntPrint(D_8008D178, D_80098340w4[D_800A37CC * 3] + 0x13C);
+        FntPrint(sChecksumFailureFormat, D_80098348fp[D_800A37CC * 3], total);
+        FntPrint(sFileInfoFormat, buf & 0x7FFFFFFF, D_800A37CC);
+        FntPrint(sFileSizeFormat, D_80098344nm[D_800A37CC * 3]);
+        FntPrint(sFileLocationFormat, D_80098340w4[D_800A37CC * 3] + 0x13C);
         FntFlush(-1);
         while (1) {
         }
     }
     return status;
 }
-
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D110);
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D144);
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D16C);
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D178);
 
 s32 func_8003C8B4(void) {
     return 0;
@@ -681,7 +678,7 @@ void CdStop(void) {
     CdControl(8, 0, 0);
 }
 
-extern char D_8008D188[];
+static const char sInputOpenError[] = "Input file couldn't be opened!";
 
 void func_8003CDBC(s32 arg0) {
     u8 pad[0x40];
@@ -707,7 +704,7 @@ void func_8003CDBC(s32 arg0) {
     D_800A37CC = arg0;
     D_800A45AC[0] = value;
     if (pos == NULL) {
-        SystemShowFatalError(D_8008D188);
+        SystemShowFatalError(sInputOpenError);
     }
     posValue = D_800A45AC[0];
     base = (0x1F4000 - posValue) | RAM_CACHED_BASE;
@@ -719,9 +716,8 @@ void func_8003CDBC(s32 arg0) {
     }
 }
 
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D188);
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D1A8);
-INCLUDE_RODATA("asm/nonmatchings/cd", D_8008D1C4);
+const char gSsVabOpenHeadFailedMessage[] = "SsVabOpenHead: Open failed\n";
+const char gSsVabTransBodyFailedMessage[] = "SsVabTransBody: failed\n";
 
 void func_8003CEFC(void) {
 }

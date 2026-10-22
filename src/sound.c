@@ -1082,8 +1082,8 @@ again:
     }
 }
 
-extern char D_8008D1A8[];
-extern char D_8008D1C4[];
+extern const char gSsVabOpenHeadFailedMessage[];
+extern const char gSsVabTransBodyFailedMessage[];
 
 s16 SoundVabOpen(void *arg0, void *arg1) {
     s16 vabId;
@@ -1091,14 +1091,14 @@ s16 SoundVabOpen(void *arg0, void *arg1) {
 
     vabId = SsVabOpenHead(arg0, -1);
     if (vabId == -1) {
-        SystemShowFatalError(D_8008D1A8);
+        SystemShowFatalError(gSsVabOpenHeadFailedMessage);
     } else {
         result = SsVabTransBody(arg1, vabId);
         if (result == vabId) {
             SsVabTransCompleted(1);
             return result;
         }
-        SystemShowFatalError(D_8008D1C4);
+        SystemShowFatalError(gSsVabTransBodyFailedMessage);
     }
     return -1;
 }
@@ -1108,8 +1108,8 @@ s16 SoundVabOpen(void *arg0, void *arg1) {
  * buffer in both arms keeps the allocation in arg1's register and keeps the
  * first guard's branch on the second test.
  */
-extern char D_8008D1DC[];
-extern char D_8008D1F8[];
+static const char sSoundOpenError[] = "unable to open sound file";
+static const char sSoundMemoryError[] = "Insufficient memory to load sound";
 extern char D_800A2F98[];
 
 s32 func_8003FFF0(void *arg0, void *arg1) {
@@ -1120,7 +1120,7 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
 
     handle = FileOpen(arg0, D_800A2F98);
     if (handle == NULL) {
-        SystemShowFatalError(D_8008D1DC);
+        SystemShowFatalError(sSoundOpenError);
     }
     size = ((s32 (*)(void *, s32, s32))FileSeek)(handle, 0, 2);
     ((s32 (*)(void *, s32, s32))FileSeek)(handle, 0, 0);
@@ -1132,17 +1132,12 @@ s32 func_8003FFF0(void *arg0, void *arg1) {
         buffer = arg1;
     }
     if (buffer == NULL) {
-        SystemShowFatalError(D_8008D1F8);
+        SystemShowFatalError(sSoundMemoryError);
     }
     FileRead((s32)buffer, 1, size, handle);
     ((void (*)(s32))FileClose)((s32)handle);
     return (s32)buffer;
 }
-INCLUDE_RODATA("asm/nonmatchings/sound", D_8008D1DC);
-INCLUDE_RODATA("asm/nonmatchings/sound", D_8008D1F8);
-INCLUDE_RODATA("asm/nonmatchings/sound", D_8008D21C);
-INCLUDE_RODATA("asm/nonmatchings/sound", D_8008D228);
-INCLUDE_RODATA("asm/nonmatchings/sound", D_8008D234);
 
 extern s32 D_80098D00[];
 extern u8 D_800A354C[];
@@ -1868,9 +1863,12 @@ void func_80041848(u8 *arg0, s32 arg1) {
  * for-loop body in the same function compiled fine. Also reproducible:
  * the crash follows the statement stream, not one statement. Parked as
  * assembly. */
-extern u8 D_8008D21C[];
-extern u8 D_8008D228[];
-extern u8 D_8008D234[];
+static const char sSoundPathIndy1[] = "snd/indy1";
+static const char sSoundPathIndy2[] = "snd/indy2";
+static const char sSoundPathIndy3[] = "snd/indy3";
+/* Retail has one zero word here: the jump table that follows is 8-byte
+ * aligned within its object. No code reads it. */
+asm(".rdata\n.long 0\n.text");
 extern u8 D_80098BEC[];
 extern u8 D_80098BED[];
 extern u8 D_80098BEE[];
@@ -1905,13 +1903,13 @@ void func_80041850(void) {
         }
         switch (t) {
         case 0:
-            msg = (s32)D_8008D21C;
+            msg = (s32)sSoundPathIndy1;
             break;
         case 1:
-            msg = (s32)D_8008D228;
+            msg = (s32)sSoundPathIndy2;
             break;
         case 2:
-            msg = (s32)D_8008D234;
+            msg = (s32)sSoundPathIndy3;
             break;
         default:
             return;

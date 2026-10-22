@@ -689,12 +689,6 @@ D_800B0A2C = 0x800B0A2C;
 // files until inlined into their functions' source.
 D_8008CC6C = 0x8008CC6C; // force_not_migration:True
 D_8008CC7C = 0x8008CC7C; // force_not_migration:True
-D_8008D1A8 = 0x8008D1A8; // force_not_migration:True
-D_8008D1C4 = 0x8008D1C4; // force_not_migration:True
-D_8008D110 = 0x8008D110; // force_not_migration:True
-D_8008D144 = 0x8008D144; // force_not_migration:True
-D_8008D16C = 0x8008D16C; // force_not_migration:True
-D_8008D178 = 0x8008D178; // force_not_migration:True
 D_80090560 = 0x80090560; // force_not_migration:True
 D_800906D8 = 0x800906D8; // force_not_migration:True
 D_8009071C = 0x8009071C; // force_not_migration:True
@@ -705,15 +699,9 @@ RAM_CACHED_BASE = 0x80000000; // absolute:True fixed_address
 D_8008D08C = 0x8008D08C; // force_not_migration:True
 D_8008D0AC = 0x8008D0AC; // force_not_migration:True
 D_8008D0CC = 0x8008D0CC; // force_not_migration:True
-D_8008D188 = 0x8008D188; // force_not_migration:True
 
 // Parked draft support: preserve rodata when its C body is enabled.
 D_8008CFE0 = 0x8008CFE0; // force_not_migration:True
-D_8008D1DC = 0x8008D1DC; // force_not_migration:True
-D_8008D1F8 = 0x8008D1F8; // force_not_migration:True
-D_8008D21C = 0x8008D21C; // force_not_migration:True
-D_8008D228 = 0x8008D228; // force_not_migration:True
-D_8008D234 = 0x8008D234; // force_not_migration:True
 D_80090404 = 0x80090404; // force_not_migration:True
 D_80090698 = 0x80090698; // force_not_migration:True
 
