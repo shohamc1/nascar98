@@ -2269,7 +2269,163 @@ s32 func_80024B08(s32 arg0, s32 arg1, SecRec *arg2) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80024E90);
+static inline s32 SectionSample(s32 x, s32 y, SecRec *sec) {
+    CurveSeg *seg;
+    GroupRec *group;
+    s32 groupCount;
+    s32 i;
+    s32 found;
+    s32 x0;
+    s32 z0;
+    s32 x1;
+    s32 z1;
+    s32 zf;
+
+    seg = (CurveSeg *)D_800A356C + sec->segIndex;
+    group = (GroupRec *)D_800A3810 + sec->groupIndex;
+    for (groupCount = sec->groupCount; groupCount > 0; groupCount--, group++) {
+        found = 0;
+        for (i = group->count; i > 0; i--, seg++) {
+            if (y < seg->lo || y >= seg->hi) {
+                continue;
+            }
+            x1 = seg->base + ((seg->scale * (y - seg->lo)) >> 16);
+            if (found == 0) {
+                s32 a;
+                s32 b;
+                s32 za;
+                s32 zb;
+
+                x0 = x1;
+                a = seg->zLo * 2;
+                b = seg->zHi * 2;
+                za = a + sec->base;
+                zb = b + sec->base;
+                if (seg->hi == seg->lo) {
+                    z0 = za;
+                } else {
+                    z0 = za + ((zb - za) * (y - seg->lo)) / (seg->hi - seg->lo);
+                }
+                found = 1;
+                continue;
+            }
+            if (x1 < x0) {
+                s32 lo;
+                s32 hi;
+                s32 a;
+                s32 b;
+                s32 za;
+                s32 zb;
+
+                if (x >= x1 && x < x0) {
+                    D_800A2E10 = group->unk0;
+                    a = seg->zLo * 2;
+                    lo = seg->lo;
+                    b = seg->zHi * 2;
+                    hi = seg->hi;
+                    za = a + sec->base;
+                    zb = b + sec->base;
+                    if (hi == lo) {
+                        z1 = za;
+                    } else {
+                        z1 = za + ((zb - za) * (y - lo)) / (hi - lo);
+                    }
+                    if (x0 == x1) {
+                        zf = z1;
+                    } else {
+                        zf = z1 + ((z0 - z1) * (x - x1)) / (x0 - x1);
+                    }
+                    D_800B6094[0] = group->a * 4;
+                    D_800B6094[1] = group->b * 4;
+                    D_800B6094[2] = group->c * 4;
+                    D_800A2E0C = zf;
+                    return 1;
+                } else {
+                    seg += i;
+                    break;
+                }
+            } else {
+                s32 lo;
+                s32 hi;
+                s32 a;
+                s32 b;
+                s32 za;
+                s32 zb;
+
+                if (x >= x0 && x < x1) {
+                    D_800A2E10 = group->unk0;
+                    a = seg->zLo * 2;
+                    lo = seg->lo;
+                    b = seg->zHi * 2;
+                    hi = seg->hi;
+                    za = a + sec->base;
+                    zb = b + sec->base;
+                    if (hi == lo) {
+                        z1 = za;
+                    } else {
+                        z1 = za + ((zb - za) * (y - lo)) / (hi - lo);
+                    }
+                    if (x1 == x0) {
+                        zf = z0;
+                    } else {
+                        zf = z0 + ((z1 - z0) * (x - x0)) / (x1 - x0);
+                    }
+                    D_800B6094[0] = group->a * 4;
+                    D_800B6094[1] = group->b * 4;
+                    D_800B6094[2] = group->c * 4;
+                    D_800A2E0C = zf;
+                    return 1;
+                } else {
+                    seg += i;
+                    break;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+s32 func_80024E90(s32 x, s32 y, s32 *indexPtr, s32 *outZ, s32 *outType) {
+    s32 index;
+    s32 remaining;
+    u8 *entry;
+    s32 count;
+
+    count = D_800A2E08;
+    x = x / 4;
+    y = y / 4;
+    index = *indexPtr;
+    if (index == -1) {
+        index = 0;
+    }
+    D_800A2E0C = 0;
+    remaining = count;
+    entry = (u8 *)D_800A3838 + (index * 0x10);
+    if (remaining > 0) {
+        do {
+            if (index >= count) {
+                index = 0;
+                entry = (u8 *)D_800A3838;
+            }
+            if (x >= *(u16 *)(entry + 0) && *(u16 *)(entry + 4) >= x &&
+                y >= *(u16 *)(entry + 2) && *(u16 *)(entry + 6) >= y &&
+                (SectionSample(x, y, (SecRec *)entry) & 0xFF) != 0) {
+                *indexPtr = index;
+                *outZ = D_800A2E0C;
+                *outType = D_800A2E10;
+                if (index == count) {
+                    index = 0;
+                }
+                return index;
+            }
+            remaining -= 1;
+            index += 1;
+            entry += 0x10;
+        } while (remaining > 0);
+    }
+    *indexPtr = -1;
+    return -1;
+}
 
 extern s32 D_800A3A54Small;
 extern s32 D_800A2E14[];
