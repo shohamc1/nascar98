@@ -4764,7 +4764,149 @@ void func_80028754(u8 *arg0, s32 arg1) {
     (void)&pad;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80028980);
+typedef struct {
+    s32 unk0;
+    s32 start;
+    s32 end;
+    s32 low;
+    s32 high;
+    s32 unk14;
+} CurveSegment;
+
+typedef struct {
+    u8 unk0[0x90];
+    s32 unk90;
+    u8 unk94[4];
+    s32 unk98;
+    u8 unk9C[0xF6 - 0x9C];
+    u8 unkF6;
+    u8 unkF7[0x108 - 0xF7];
+    s16 unk108;
+    s16 unk10A;
+    s16 unk10C;
+    u8 unk10E[0x124 - 0x10E];
+    CurveSegment segments[1];
+    u8 unk13C[0x268 - 0x13C];
+    u8 unk268;
+    u8 unk269[0x3CA - 0x269];
+    s8 unk3CA;
+} CurveObject;
+
+void func_8002ADE0(s32 *, s32);
+extern s32 D_800A397CLui asm("D_800A397CAbsolute");
+
+void func_80028980(CurveObject *obj) {
+    extern CurveSegment *D_800A3990;
+    extern s8 D_800A2E18;
+    s32 total;
+    s32 i;
+    s32 prev;
+    s32 sect;
+    s32 quot;
+
+    total = obj->unk98;
+    if (obj->unk90 < 0) {
+        obj->unk10C = 0;
+        obj->unk108 = 10;
+        return;
+    } else {
+        D_800A3990 = obj->segments;
+        if (D_800A2EC8Lui != 0) {
+            obj->unk3CA = 0;
+        }
+        if (obj->unk3CA > 0) {
+            obj->unk3CA = obj->unk3CA - 1;
+        }
+        if ((obj->unkF6 != 0 || D_800A2F58Absolute2 != 0 || obj->unk268 != 0 ||
+             FAR_VAR(s32, gFarBlend2EAC) != 0) &&
+            obj->unk3CA == 0) {
+            prev = obj->unk10C;
+            for (i = 0; i < D_800A2E18; i++) {
+                if (obj->unk90 >= D_800A3990[i].start &&
+                    obj->unk90 < D_800A3990[i].end) {
+                    obj->unk10C = i;
+                    if (i == D_800A2E18 - 1) {
+                        quot = MathFixedDivide(
+                            D_800A3990[i].high - D_800A3990[i].low,
+                            (total - D_800A3990[i].start) >> 16);
+                    } else {
+                        quot = MathFixedDivide(
+                            D_800A3990[i].high - D_800A3990[i].low,
+                            (D_800A3990[i].end - D_800A3990[i].start) >> 16);
+                    }
+                    obj->unk108 =
+                        (MathMultiplyFixed16(quot, obj->unk90 -
+                                                       D_800A3990[i].start) >>
+                         16) +
+                        D_800A3990[i].low;
+                    if (prev < i) {
+                        obj->unk3CA = 0x14;
+                    }
+                    return;
+                }
+                if (i == D_800A2E18 - 1) {
+                    quot =
+                        MathFixedDivide(D_800A3990[i].high - D_800A3990[i].low,
+                                        (total - D_800A3990[i].start) >> 16);
+                    obj->unk108 =
+                        (MathMultiplyFixed16(quot, obj->unk90 -
+                                                       D_800A3990[i].start) >>
+                         16) +
+                        D_800A3990[i].low;
+                    if (D_800A2F58Absolute2 != 0) {
+                        obj->unk10C = i;
+                        if (prev < i) {
+                            obj->unk3CA = 0x14;
+                        }
+                    }
+                    return;
+                }
+            }
+            obj->unk108 = D_800A3990[D_800A2E18 - 1].high;
+            return;
+        } else {
+            sect = obj->unk10C;
+            if (obj->unk90 < D_800A3990[sect].start) {
+                obj->unk108 = MathMultiplyFixed16(
+                                  MathFixedDivide(D_800A3990[sect].low,
+                                                  D_800A3990[sect].start >> 16),
+                                  obj->unk90) >>
+                              16;
+                return;
+            } else if (obj->unk90 < D_800A3990[sect].end) {
+                if (sect == D_800A2E18 - 1) {
+                    quot = MathFixedDivide(
+                        D_800A3990[sect].high - D_800A3990[sect].low,
+                        (total - D_800A3990[sect].start) >> 16);
+                } else {
+                    quot = MathFixedDivide(
+                        D_800A3990[sect].high - D_800A3990[sect].low,
+                        (D_800A3990[sect].end - D_800A3990[sect].start) >> 16);
+                }
+                obj->unk108 = (MathMultiplyFixed16(
+                                   quot, obj->unk90 - D_800A3990[sect].start) >>
+                               16) +
+                              D_800A3990[sect].low;
+                return;
+            } else if (sect == D_800A2E18 - 1) {
+                quot = MathFixedDivide(D_800A3990[sect].high -
+                                           D_800A3990[sect].low,
+                                       (total - D_800A3990[sect].start) >> 16);
+                obj->unk108 = (MathMultiplyFixed16(
+                                   quot, obj->unk90 - D_800A3990[sect].start) >>
+                               16) +
+                              D_800A3990[sect].low;
+                return;
+            } else {
+                if (D_800A397CLui != 2) {
+                    func_8002ADE0((s32 *)obj, 0x50000);
+                }
+                obj->unk108 = D_800A3990[sect].high;
+                return;
+            }
+        }
+    }
+}
 
 void func_80028D80(u8 *arg0) {
     u8 *node;
@@ -4851,7 +4993,6 @@ void func_80028F98(UnkObject90 *object) {
     object->unk90 -= 0x40000;
 }
 
-extern void func_80028980(void *);
 void func_80028FAC(void *object) {
     func_80028980(object);
 }
