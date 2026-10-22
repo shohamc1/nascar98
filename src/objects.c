@@ -14314,7 +14314,57 @@ void func_800373B4(u8 *object) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80038D78);
+extern s32 func_8002482C(s32, s32, s32 *);
+void func_8003AA20(s32 car);
+void func_8003ABC0(u8 *object);
+
+void func_80038D78(u8 *arg0) {
+    int val;
+
+    if (*(u8 *)(arg0 + 0x268) == 0 && *(s16 *)(arg0 + 0x288) == 0) {
+        val =
+            ((*(s16 *)(arg0 + 0x104) - *(s16 *)(arg0 + 0x114)) + 0x400) & 0x3FF;
+        if (val > 0x200) {
+            val = 0x400 - val;
+        }
+        if (ABS(val) > 0x19) {
+            func_80029994(arg0, ABS(RandomScaledGet(4)));
+        }
+        func_80031264(arg0);
+        *(u8 *)(arg0 + 0x375) = 1;
+        val = 0;
+        if (ABS(func_8003702C(arg0, D_800A3554Lui)) < 0x19) {
+            val = 1;
+        }
+        if (D_800A2EA4Lui == 2) {
+            if (ABS(func_8003702C(arg0, *(u8 **)(D_800A3554Lui + 0x3E0))) <
+                0x19) {
+                val = 1;
+            }
+        }
+        if (val != 0 && func_80025A38(arg0) != 0) {
+            *(s16 *)(arg0 + 0x1E0) = func_8002482C(
+                *(s32 *)(arg0 + 0), *(s32 *)(arg0 + 4), (s32 *)(arg0 + 0x1F8));
+        }
+        if (*(s16 *)(arg0 + 0x1E0) == -1) {
+            func_80031264(arg0);
+            if (*(s32 *)(arg0 + 0x354) == (s32)func_8003AA20) {
+                ObjectSetCallbackIfAllowed((Batch0CallbackObject *)arg0,
+                                           func_8003ABC0);
+            }
+            *(u8 *)(arg0 + 0xF5) = 1;
+            CarHandleWallCollision(arg0);
+            *(u8 *)(arg0 + 0xF5) = 0;
+            if (D_800A2EACControl != 0 && *(s16 *)(arg0 + 0x1EC) == 0) {
+                *(u8 *)(arg0 + 0xF4) = 2;
+                *(s32 *)(arg0 + 0x90) = 0;
+                func_80028980(arg0);
+                *(s32 *)(arg0 + 0) = *(s32 *)(arg0 + 0xC);
+                *(s32 *)(arg0 + 4) = *(s32 *)(arg0 + 0x10);
+            }
+        }
+    }
+}
 
 s32 func_80039008(u8 *arg0, u8 *arg1) {
     extern s32 func_8003702C();
