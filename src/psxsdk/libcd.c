@@ -630,15 +630,10 @@ static __inline__ void CD_callback(void) {
 }
 
 extern char D_80090334[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090334);
 extern char D_8009033C[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_8009033C);
 extern char D_80090348[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090348);
 extern char D_80090350[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090350);
 extern char D_80090360[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_80090360);
 
 s32 CD_sync(s32 mode, u8 *result) {
     s32 i;
@@ -851,9 +846,7 @@ void CD_initintr(void) {
 }
 
 extern char D_8009039C[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_8009039C);
 extern char D_800903A8[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800903A8);
 
 s32 CD_init(void) {
     puts(D_8009039C);
@@ -901,7 +894,6 @@ s32 CD_init(void) {
 }
 
 extern char D_800903B4[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800903B4);
 
 s32 CD_datasync(s32 mode) {
     s32 ret;
@@ -984,7 +976,6 @@ typedef struct {
 extern volatile cdreadStruct CD_read;
 extern CdlCB CD_ReadCallbackFunc;
 extern char D_800903C0[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800903C0);
 extern s32 cd_read_retry(s32);
 
 void cb_read(u8 arg0, u8 *result) {
@@ -1027,9 +1018,7 @@ void cb_read(u8 arg0, u8 *result) {
 }
 
 extern char D_800903D8[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800903D8);
 extern char D_800903F0[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libcd", D_800903F0);
 
 s32 cd_read_retry(s32 retry) {
     char mode;

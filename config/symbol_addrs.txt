@@ -855,17 +855,6 @@ sObjectOffsetsAllocationError = 0x8008D06C; // force_not_migration:True
 
 ObjectLoadGeometry = 0x80031D74; // type:func
 _SsSndPlay = 0x8008134C; // type:func
-D_80090334 = 0x80090334; // force_not_migration:True
-D_8009033C = 0x8009033C; // force_not_migration:True
-D_80090348 = 0x80090348; // force_not_migration:True
-D_80090350 = 0x80090350; // force_not_migration:True
-D_80090360 = 0x80090360; // force_not_migration:True
-D_8009039C = 0x8009039C; // force_not_migration:True
-D_800903A8 = 0x800903A8; // force_not_migration:True
-D_800903B4 = 0x800903B4; // force_not_migration:True
-D_800903C0 = 0x800903C0; // force_not_migration:True
-D_800903D8 = 0x800903D8; // force_not_migration:True
-D_800903F0 = 0x800903F0; // force_not_migration:True
 D_8009064C = 0x8009064C; // force_not_migration:True
 D_8009066C = 0x8009066C; // force_not_migration:True
 D_80090680 = 0x80090680; // force_not_migration:True

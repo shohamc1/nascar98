@@ -100,6 +100,7 @@ segments:
       # Data-only translation units: rodata runs that follow jump tables.
       - [0x7B250, c, menu_text]
       - [0x7B250, c, media_paths]
+      - [0x7B250, c, psxsdk/libcd_rodata]
       - [0x7B250, .rodata, game]
       - [0x7B52C, .rodata, util]  # 0x8008CD2C
       - [0x7B57C, .rodata, primitives_text]  # 0x8008CD7C
@@ -117,6 +118,7 @@ segments:
       - [0x7E4A4, .rodata, media_paths]  # 0x8008FCA4
       - [0x7E810, .rodata, psxsdk/libgcc]  # 0x80090010
       - [0x7E910, .rodata, psxsdk/libcd]  # 0x80090110
+      - [0x7EB34, .rodata, psxsdk/libcd_rodata]  # 0x80090334
       - [0x7EC04, .rodata, psxsdk/libetc]  # 0x80090404
       - [0x7ECC4, .rodata, psxsdk/libgpu]  # 0x800904C4
       - [0x7F04C, .rodata, psxsdk/libsnd]  # 0x8009084C
