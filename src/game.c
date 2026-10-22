@@ -80,7 +80,7 @@ int main(void) {
             exitCode = D_800A2D0F;
             D_800A39E4Absolute2[0] = mode;
             if (exitCode != 0) {
-                func_800587A0();
+                RaceRecordSessionResult();
                 exitCode = -2;
             } else {
                 exitCode = -3;
@@ -89,7 +89,7 @@ int main(void) {
             D_800A2D0E = 0;
             D_800A2D0F = 0;
         } else {
-            func_800587A0();
+            RaceRecordSessionResult();
         }
     }
 }

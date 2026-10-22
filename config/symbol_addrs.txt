@@ -571,6 +571,8 @@ ColorPack555 = 0x80059614; // type:func
 SoundSetMasterVolume = 0x8006FA7C; // type:func
 ListPushFront = 0x8001C88C; // type:func
 RaceFindDriverPosition = 0x80058768; // type:func
+RaceRecordSessionResult = 0x800587A0; // type:func
+gSeasonTrackResults = 0x800B9BB8;
 D_8008CA04 = 0x8008CA04; // u16 table, not executable code
 gScratchpad = 0x1F800000; // absolute:True allow_duplicated:True CPU scratchpad RAM
 

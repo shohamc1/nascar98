@@ -12174,7 +12174,7 @@ void RaceBuildQualifyingGrid(s32 track) {
     }
 }
 
-u8 RaceFindDriverPosition(u8 value) {
+__inline__ u8 RaceFindDriverPosition(u8 value) {
     s32 i;
     for (i = 0; i < 24; i++) {
         if (gDriverOrder[i] == value) {
@@ -12184,7 +12184,129 @@ u8 RaceFindDriverPosition(u8 value) {
     return 255;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_800587A0);
+extern u8 D_800A3950;
+extern u8 D_800A3718;
+extern u8 D_800A3059;
+extern u8 D_800A3644;
+extern u8 D_800A3074;
+extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
+extern u8 D_800A305BSmall;
+extern u8 gPlayerDriverPair[2] asm("gPlayerDriverSmall");
+extern u8 D_800A39E4Small;
+extern u8 D_800B9B70[], D_800B9B71[], D_800B9B72[], D_800B9B6E[], D_800B9B6F[];
+typedef struct {
+    s16 qualifyPlace;
+    s16 finishPlace;
+    u32 bestTime;
+    s32 unk8;
+} SeasonTrackResult;
+extern SeasonTrackResult gSeasonTrackResults[];
+extern u16 D_800B9B84[];
+extern s32 D_800B0B1C[], D_800AEB34[], D_800995D4[];
+extern u8 D_800B9DA4[];
+extern void func_8006D634(u8);
+extern void func_8006D708(s32, u8, s32);
+
+void RaceRecordSessionResult(void) {
+    s32 i;
+    u8 pos;
+    s32 m;
+
+    if (D_800A2EB0Absolute[0] >= 0) {
+        for (i = 0; i < 2; i++) {
+            func_8006D708(i, D_800A305BSmall,
+                          D_800A3950 == 3 || D_800A3950 == 0xFB);
+        }
+    }
+
+    switch (D_800A2EB0Absolute[0]) {
+    case -2:
+    case -1:
+        D_800A3950 = 0xFE;
+        D_800A39E4Small = 0xF9;
+        D_800A3059 = 0;
+        gPlayerDriverPair[0] = D_800A3718;
+        break;
+    case 0:
+        if (D_800A3950 == 6 || D_800A3950 == 0xFA) {
+            D_800B9B72[0]++;
+            pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
+            if (D_800B0B1C[pos] == -1) {
+                gSeasonTrackResults[D_800A305BSmall].finishPlace = -1;
+            } else {
+                gSeasonTrackResults[D_800A305BSmall].finishPlace = pos + 1;
+                D_800B9B71[0]++;
+            }
+            if (D_800AE1EC[pos] <
+                gSeasonTrackResults[D_800A305BSmall].bestTime) {
+                gSeasonTrackResults[D_800A305BSmall].bestTime = D_800AE1EC[pos];
+            }
+            if (pos == 0) {
+                D_800B9B6E[0]++;
+            }
+            if (pos < 5) {
+                D_800B9B6F[0]++;
+            }
+            if (pos < 10) {
+                D_800B9B70[0]++;
+            }
+            for (i = 0; i < 24; i++) {
+                D_800B9B84[gDriverOrder[i]] += D_800995D4[i];
+            }
+            if (D_800A305BSmall < 17) {
+                D_800A305BSmall++;
+                if (D_800A305BSmall < 17) {
+                    func_8006D634(D_800A305BSmall);
+                }
+            }
+            D_800A39E4Small = 12;
+            D_800A3950 = 12;
+            D_800A3059 = 5;
+        } else if (D_800A3950 == 3 || D_800A3950 == 0xFB) {
+            CardUpdateDriverRecords(0, D_800A3644 != 0, D_800A3074,
+                                    D_800A3644 != 0 && D_800A3073NM == 0);
+            D_800A39E4Small = 3;
+            D_800A3950 = 3;
+            D_800A3059 = 0;
+        }
+        break;
+    case 1:
+        D_800A39E4Small = 7;
+        if (D_800A3950 == 6) {
+            gSeasonTrackResults[D_800A305BSmall].qualifyPlace =
+                D_800B9DA4[gPlayerDriverPair[0]] + 1;
+            pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
+            if (D_800AE1EC[pos] <
+                gSeasonTrackResults[D_800A305BSmall].bestTime) {
+                gSeasonTrackResults[D_800A305BSmall].bestTime = D_800AE1EC[pos];
+            }
+            D_800A3950 = 0xFA;
+        } else if (D_800A3950 == 3) {
+            D_800A3950 = 0xFB;
+            CardUpdateDriverRecords(1, 0, 0);
+        }
+        D_800A3059 = 0;
+        pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
+        D_800AEB34[gPlayerDriverPair[0]] = D_800B0B1C[pos];
+        break;
+    case 2:
+        if (D_800A3950 == 6) {
+            pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
+            if (D_800AE1EC[pos] <
+                gSeasonTrackResults[D_800A305BSmall].bestTime) {
+                gSeasonTrackResults[D_800A305BSmall].bestTime = D_800AE1EC[pos];
+            }
+            D_800A39E4Small = 6;
+            D_800A3059 = 1;
+        } else {
+            CardUpdateDriverRecords(2, 0, 0);
+            D_800A39E4Small = 3;
+            D_800A3950 = 3;
+            D_800A3059 = 2;
+        }
+        break;
+    }
+}
 
 /* func_80058D08: writes $gp directly; not expressible in C. */
 void func_80058D08(s32 gp) {
