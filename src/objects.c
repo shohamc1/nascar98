@@ -9051,10 +9051,10 @@ void func_8002F514(void) {
 }
 
 void CarPlaceOnStartingGrid(void);
-void func_8003B6DC(s32);
+void RaceUpdatePositions(u8 force);
 void func_8002F5A4(void) {
     CarPlaceOnStartingGrid();
-    func_8003B6DC(1);
+    RaceUpdatePositions(1);
 }
 
 void func_80041A28(void);
@@ -9174,14 +9174,14 @@ void func_8002F674(void) {
 }
 
 extern u8 D_800A35FC[];
-void func_8003B6DC(s32 arg0);
+void RaceUpdatePositions(u8 force);
 void func_8003B464(void);
 void func_8003C1CC(void);
 void func_8003C3FC(void);
 
 void func_8002F86C(void *arg0, s32 arg1) {
 
-    func_8003B6DC(1);
+    RaceUpdatePositions(1);
     func_8003B464();
     if (arg1 != 2) {
         D_800A2EAC = arg1;
@@ -9425,7 +9425,7 @@ void RaceUpdateFrame(void) {
         do {
             if ((*(s16 *)(object + 0x1EC)) == 0) {
                 if (D_800A2EA8RaceStep < (*(s16 *)(object + 0x1D6))) {
-                    func_8003B6DC(1);
+                    RaceUpdatePositions(1);
                     finishDelay = 0x78;
                     func_8003B464();
                     D_800A2EACRaceStep = finishDelay;
@@ -17119,7 +17119,7 @@ void RaceUpdateLapProgress(void) {
     if ((noPlayerLap & 255) && D_800A2EACLap == 0) {
         HudDrawLapSplit();
     }
-    func_8003B6DC(0);
+    RaceUpdatePositions(0);
     car = gCarListControl;
     oldProgress = D_800A2F68Lap;
     while (car != 0) {
@@ -17244,66 +17244,225 @@ void func_8003B464(void) {
     D_800A2F65 = 0;
 }
 
-s32 func_8003B5F8(s32 arg0, s32 arg1) {
-    volatile s32 pad[2];
-    register s32 t2 asm("t2");
-    s32 p2;
-    register s32 v0 asm("v0");
-    register s32 v1 asm("v1");
-    register s32 a0 asm("a0");
-    register s32 a1 asm("a1");
-    register s32 a2 asm("a2");
-    register s32 a3 asm("a3");
+/* One 0x90-byte entry of gTrackSections, as the running order reads it. */
+typedef struct {
+    u8 unk0[0x10];
+    u16 heading;
+    u8 unk12[2];
+    s32 x;
+    s32 z;
+    u8 unk1C[0x90 - 0x1C];
+} RankSection;
 
-    v1 = *(s16 *)((u8 *)arg0 + 0x1E0);
-    if (arg0 == arg1) {
+/* The car fields the running order reads and writes. */
+typedef struct RankCar RankCar;
+struct RankCar {
+    s32 posX;
+    s32 posZ;
+    u8 unk8[0x1D6 - 8];
+    s16 lap;
+    u8 unk1D8[0x1E0 - 0x1D8];
+    s16 section;
+    u8 unk1E2[0x1EC - 0x1E2];
+    s16 unk1EC;
+    u8 unk1EE[0x1F0 - 0x1EE];
+    s32 key;
+    s32 lastSection;
+    u8 unk1F8[0x204 - 0x1F8];
+    s8 place;
+    u8 assist;
+    u8 unk206[0x25C - 0x206];
+    u32 time;
+    u8 unk260[0x268 - 0x260];
+    u8 unk268;
+    u8 unk269[0x3CC - 0x269];
+    s32 penalty;
+    s32 unk3D0;
+    u8 unk3D4[0x3E0 - 0x3D4];
+    RankCar *next;
+    DoublyLinkedNode order;
+    RankCar *orderCar;
+    DoublyLinkedNode sectionLink;
+    RankCar *sectionCar;
+};
+
+/* A list node followed by the car that owns it. */
+typedef struct {
+    DoublyLinkedNode link;
+    RankCar *car;
+} RankLink;
+
+extern s32 D_800A2F60;
+extern RankCar *gRankCarList[] asm("gCarListAbsolute");
+extern RankCar *gRankPlayerCar[] asm("gPlayerCarAbsolute");
+extern s32 D_800A2EA8Absolute[];
+extern s32 D_800A2EB4Absolute[];
+extern u8 D_800A2EF0Absolute asm("D_800A2EF0Absolute");
+extern u8 D_800A306DAbsolute[];
+
+/* Returns nonzero when car is further along its track section than other. */
+__inline__ u8 CarIsAheadOnSection(RankCar *car, RankCar *other) {
+    s32 unused[2];
+    s32 section;
+    RankSection *sec;
+    s32 angle;
+    s32 cs;
+    s32 sn;
+    s32 dx;
+    s32 dz;
+    s32 distCar;
+    s32 distOther;
+
+    section = car->section;
+    if (car == other) {
         return 0;
     }
-    if (v1 == -1) {
+    if (section == -1) {
         return 0;
     }
-    a1 = gTrackSections[0];
-    v0 = (v1 << 3) + v1;
-    v0 = v0 << 4;
-    a1 = a1 + v0;
-    a0 = *(u16 *)((u8 *)a1 + 0x10);
-    v1 = D_800A3A2CAbsolute[0];
-    v0 = 0x400;
-    a2 = *(s32 *)((u8 *)a1 + 0x14);
-    v0 = v0 - a0;
-    v0 = v0 & 0x3FF;
-    v0 = v0 << 2;
-    v1 = v0 + v1;
-    asm volatile("" : : "r"(v1));
-    a0 = *(s32 *)((u8 *)arg0 + 0);
-    a3 = *(s32 *)(u8 *)v1;
-    v1 = a0 - a2;
-    asm volatile("mult\t%0, %1" : : "r"(a3), "r"(v1) : "hi", "lo");
-    v1 = D_800A3A34Absolute[0];
-    a0 = *(s32 *)((u8 *)a1 + 0x18);
-    v0 = v0 + v1;
-    v1 = *(s32 *)((u8 *)arg0 + 4);
-    a1 = *(s32 *)(u8 *)v0;
-    asm volatile("mflo\t%0" : "=r"(t2) : : "lo");
-    v0 = v1 - a0;
-    asm volatile("mult\t%0, %1" : : "r"(a1), "r"(v0) : "hi", "lo");
-    v0 = *(s32 *)((u8 *)arg1 + 0);
-    asm volatile("mflo\t%0" : "=r"(p2) : : "lo");
-    v1 = v0 - a2;
-    asm volatile("mult\t%0, %1" : : "r"(a3), "r"(v1) : "hi", "lo");
-    v0 = *(s32 *)((u8 *)arg1 + 4);
-    asm volatile("mflo\t%0" : "=r"(a2) : : "lo");
-    v0 = v0 - a0;
-    asm volatile("mult\t%0, %1" : : "r"(a1), "r"(v0) : "hi", "lo");
-    v1 = t2 - p2;
-    v1 = v1 >> 16;
-    asm volatile("mflo\t%0" : "=r"(a3) : : "lo");
-    v0 = a2 - a3;
-    v0 = v0 >> 16;
-    return v0 < v1;
+    sec = &((RankSection *)gTrackSections[0])[section];
+    angle = (0x400 - sec->heading) & 0x3FF;
+    cs = ((s32 **)D_800A3A2CAbsolute)[0][angle];
+    sn = ((s32 **)D_800A3A34Absolute)[0][angle];
+    dx = car->posX - sec->x;
+    dz = car->posZ - sec->z;
+    distCar = (cs * dx - sn * dz) >> 16;
+    dx = other->posX - sec->x;
+    dz = other->posZ - sec->z;
+    distOther = (cs * dx - sn * dz) >> 16;
+    return distOther < distCar;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8003B6DC);
+#ifdef NON_MATCHING
+/*
+ * Sorts the car list into section order, then every 20 calls (or when
+ * force is set) into race order: places, assist ranks, finish penalties,
+ * the leader, and the player's position-change voice cues.
+ */
+void RaceUpdatePositions(u8 force) {
+    s32 prevPlace[2];
+    DoublyLinkedNode *first = NULL;
+    DoublyLinkedNode *last = NULL;
+    s32 place = 1;
+    s32 assist = 1;
+    s32 i;
+    RankCar *car;
+    RankCar *best;
+    RankCar *other;
+    RankCar *leader;
+    RankCar *player;
+    RankCar *racer;
+
+    if (D_800A2EB0Absolute[0] == 2) {
+        return;
+    }
+    for (car = gRankCarList[0]; car != NULL; car = car->next) {
+        if (car->section == -1) {
+            car->key = car->lastSection;
+        } else {
+            car->key = car->section;
+        }
+    }
+    first = NULL;
+    last = NULL;
+    for (car = gRankCarList[0]; car != NULL; car = car->next) {
+        best = gRankCarList[0];
+        for (other = best; other != NULL; other = other->next) {
+            if (other->key > best->key) {
+                best = other;
+            }
+        }
+        best->key = -1;
+        best->sectionCar = best;
+        ListPushFrontDoublyLinked(&best->sectionLink, &first, &last);
+    }
+    first->next = last;
+    last->previous = first;
+    if (++D_800A2F60 >= 20 || force) {
+        D_800A2F60 = 0;
+        D_800A2F65 = 1;
+        prevPlace[0] = gRankPlayerCar[0]->place;
+        if (D_800A2EA4nm[0] != 0) {
+            prevPlace[1] = gRankPlayerCar[0]->next->place;
+        }
+        first = NULL;
+        last = NULL;
+        for (car = gRankCarList[0]; car != NULL; car = car->next) {
+            car->key = (car->lap + 1) * 1000 + car->section + car->penalty;
+        }
+        for (car = gRankCarList[0]; car != NULL; car = car->next) {
+            best = gRankCarList[0];
+            for (other = best; other != NULL; other = other->next) {
+                if (other->key > best->key) {
+                    best = other;
+                } else if (other->key == best->key && other->key != 0) {
+                    if (CarIsAheadOnSection(other, best)) {
+                        best = other;
+                    }
+                }
+            }
+            if ((D_800A2EA8Absolute[0] < best->lap ||
+                 D_800A2EACAbsolute[0] > 0) &&
+                best->penalty == 0) {
+                best->penalty = (30 - place) * 100000;
+            }
+            best->place = place++;
+            best->key = 0;
+            if (best->unk1EC == 0) {
+                best->assist = assist++;
+            }
+            best->orderCar = best;
+            ListPushFrontDoublyLinked(&best->order, &first, &last);
+        }
+        leader = ((RankLink *)first)->car;
+        last->previous = NULL;
+        D_800A35E0[0] = (s32)leader;
+        if (D_800A2EF0Absolute == 0 && leader->penalty != 0) {
+            D_800A2EF0Absolute = 1;
+            func_80041848((u8 *)leader, 4);
+        }
+        player = gRankPlayerCar[0];
+        if (D_800A2EB0Absolute[0] == 1) {
+            i = 0;
+            racer = player;
+            for (; i < 23; i++) {
+                if (D_800AE1EC[i] >= racer->time) {
+                    break;
+                }
+            }
+            racer->place = i + 1;
+            if (prevPlace[0] != 1) {
+                racer = gRankPlayerCar[0];
+                if (racer->place == 1) {
+                    func_80041564((u8 *)racer, 0x45);
+                }
+            }
+        } else {
+            for (assist = 0; assist < D_800A2EB4Absolute[0]; assist++) {
+                if (prevPlace[assist] != 1 && player->place == 1 &&
+                    player->unk3D0 == 0) {
+                    func_80041564((u8 *)player, 0x24);
+                } else if (player->place < prevPlace[assist] &&
+                           prevPlace[assist] < 16) {
+                    if ((D_800A306DAbsolute[0] != 0 ||
+                         player->place < prevPlace[assist] - 1) &&
+                        ((RankLink *)player->order.previous)->car->unk268 ==
+                            0) {
+                        func_80041564((u8 *)player, 0x26);
+                    }
+                } else if (prevPlace[assist] < player->place) {
+                    func_80041848((u8 *)player, 0x4C);
+                } else if (prevPlace[assist] < player->place - 1) {
+                    func_80041848((u8 *)player, 0x4D);
+                }
+                player = player->next;
+            }
+        }
+    }
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/objects", RaceUpdatePositions);
+#endif
 
 extern void CarInitDefaults();
 extern s32 D_800BE72C[];
@@ -17340,7 +17499,7 @@ void func_8003BCAC(void) {
     D_800A2F60 = 0x14;
     func_8001D1E4();
     D_800A2EACAbsolute[0] = 0;
-    func_8003B6DC(1);
+    RaceUpdatePositions(1);
 }
 
 typedef struct FinishCar FinishCar;
@@ -17380,7 +17539,7 @@ extern s32 D_800A37D0[];
 extern u32 func_80014398(s32 arg0);
 
 /*
- * Stages every car's lap and section so func_8003B6DC ranks the field the
+ * Stages every car's lap and section so RaceUpdatePositions ranks the field the
  * way the race ended, then restores the saved values and gives the cars that
  * didn't finish a time. Guess; the placeholder name stays.
  */
@@ -17435,7 +17594,7 @@ void RaceSetFinishOrder(void) {
         car = car->next;
     }
     if (D_800A2EA8Lap < D_800A35E0Finish->lap) {
-        func_8003B6DC(1);
+        RaceUpdatePositions(1);
         car = gCarListFinish;
         for (i = 0; car != 0; i++) {
             car->section = section[i];
@@ -17453,7 +17612,7 @@ void RaceSetFinishOrder(void) {
             }
             car = car->next;
         }
-        func_8003B6DC(1);
+        RaceUpdatePositions(1);
         car = gCarListFinish;
         for (i = 0; car != 0; i++) {
             car->section = section[i];

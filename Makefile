@@ -117,6 +117,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2EACAbsolute=D_800A2EAC \
             --defsym=D_800A2EC0Absolute=D_800A2EC0 \
             --defsym=D_800A2EB0Absolute=D_800A2EB0 \
+            --defsym=D_800A2EF0Absolute=D_800A2EF0 \
             --defsym=D_800A2E24Absolute=D_800A2E24 \
             --defsym=D_800A331CAbsolute=D_800A331C \
             --defsym=D_800A3320Absolute=D_800A3320 \
