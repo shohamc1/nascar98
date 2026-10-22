@@ -87,6 +87,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3678Absolute=D_800A3678 \
             --defsym=D_800A3654Absolute=D_800A3654 \
             --defsym=D_800A367CAbsolute=D_800A367C \
+            --defsym=D_800A305BAbsolute=D_800A305B \
             --defsym=D_800A39C8Absolute=D_800A39C8 \
             --defsym=gPrimitiveCursorAbsolute=gPrimitiveCursor \
             --defsym=D_800A3570Absolute=D_800A3570 \

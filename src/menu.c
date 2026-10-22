@@ -5724,6 +5724,7 @@ extern u8 D_800A36E1Lui asm("D_800A36E1Absolute");
 extern u8 D_800A3644Lui asm("D_800A3644Absolute");
 extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
 extern volatile u16 D_800A3A44;
+extern volatile s16 D_800A3A44Signed asm("D_800A3A44");
 extern volatile s16 D_800A3940Signed asm("D_800A3940");
 extern volatile u8 D_800A3760;
 extern u8 *D_800A3568;
@@ -6210,7 +6211,84 @@ void func_80065F80(void) {
     D_800A3884 = 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80066080);
+extern s32 D_800A3540;
+extern u8 *D_8009A3F4[];
+extern u8 *D_8009A3F8;
+extern u8 D_800A305BLui asm("D_800A305BAbsolute");
+void func_80066080(s32 arg0) {
+    s32 i;
+    s32 shift;
+    s32 x;
+    u8 color;
+    POLY_FT4 *prim;
+
+    for (i = 0; i < 2; i++) {
+        if ((arg0 & 0xFF) != 0) {
+            shift = -0x140;
+            if (i != 0) {
+                shift = 0x140;
+            }
+        } else {
+            shift = 0;
+        }
+        color = D_800A36E0[i];
+        prim = (POLY_FT4 *)func_80065040();
+        SetPolyFT4(prim);
+        func_80064AB4((u8 *)prim, color);
+        if (i == 0) {
+            prim->x0 = shift + 0x3E;
+            prim->y0 = 0x66;
+            prim->x1 = shift + 0x7E;
+            prim->y1 = 0x66;
+            prim->x2 = shift + 0x3E;
+            prim->y2 = 0xAE;
+            prim->x3 = shift + 0x7E;
+            prim->y3 = 0xAE;
+        } else {
+            prim->x0 = shift + 0xCC;
+            prim->y0 = 0x66;
+            prim->x1 = shift + 0x10C;
+            prim->y1 = 0x66;
+            prim->x2 = shift + 0xCC;
+            prim->y2 = 0xAE;
+            prim->x3 = shift + 0x10C;
+            prim->y3 = 0xAE;
+            D_800A3540 = (s32)prim;
+        }
+        AddPrim((u8 *)D_800A38C4 + 8, (u8 *)prim);
+        D_800A3568 = (u8 *)D_800A367C;
+        x = 0xA5;
+        if (i == 0) {
+            x = 0x17;
+        }
+        func_8005A818(0x80, 0x80, 0xC0);
+        func_8005A9F4((s32)D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
+        func_8005A9F4((s32)D_8009AC1C[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
+        D_800A3970 = (u8 *)D_800A367C;
+        if (shift != 0) {
+            for (prim = (POLY_FT4 *)D_800A3568; prim != (POLY_FT4 *)D_800A3970;
+                 prim++) {
+                prim->x0 += shift;
+                prim->x1 += shift;
+                prim->x2 += shift;
+                prim->x3 += shift;
+            }
+        }
+    }
+    x = func_8005B0E4(0x140, (s32)D_8009A3F4[0]);
+    func_8005A9F4((s32)D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
+    x = func_8005B0E4(0x140, (s32)D_8009A3F8);
+    func_8005A9F4((s32)D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
+    x = func_8005B0E4(0x140, (s32)D_8009A360[D_800A305BLui]);
+    func_8005A9F4((s32)D_8009A360[D_800A305BLui], x, 0x4D, 0, 0, 0, 0, 0);
+    D_800A3940Signed = 2;
+    if ((arg0 & 0xFF) != 0) {
+        D_800A3A44Signed = -0x140;
+    } else {
+        D_800A3A44 = 0;
+    }
+    D_800A3760 = 1;
+}
 
 void func_800663B0(void) {
     extern s32 D_8008CA4C[];
