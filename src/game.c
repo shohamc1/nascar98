@@ -210,7 +210,7 @@ void GameRunSession(void) {
     extern void func_80066CFC(void);
     extern void func_80067DFC(void);
     extern void SystemStopCounterAfterVSync(void);
-    register SessionTiming *timings asm("s3");
+    SessionTiming *timings;
     u8 *ot;
     u8 *tables;
     u8 *secondTables;
@@ -2069,10 +2069,6 @@ void TrackReadData(s32 *trackData, s32 file) {
     i = 0;
     if (count > 0) {
         data = objectData;
-        asm volatile(""
-                     : "=g"(spillPad0), "=g"(spillPad1), "=g"(spillPad2),
-                       "=g"(spillPad3), "=g"(spillPad4), "=g"(spillPad5),
-                       "=g"(spillPad6));
         specialFaceColor = 0x4A4A4A;
         nextObjectOffset = 0x90;
         prevObjectOffset = -0x90;

@@ -3748,53 +3748,53 @@ s32 CarHandleWallCollision(void *object) {
         s32 effect[3];
         s32 reserved2;
     } workspace;
-    register ContactCorner *corners asm("$3");
-    register ContactCorner *corners2 asm("$3");
+    ContactCorner *corners;
+    ContactCorner *corners2;
     ContactPoint *wallPoint;
-    register ContactRegion *region asm("$16");
-    register TrackContact *nearestContact asm("$17");
+    ContactRegion *region;
+    TrackContact *nearestContact;
     register TrackContact *contact asm("$19");
-    register s32 heading asm("$5");
-    register s32 impulse asm("$22");
+    s32 heading;
+    s32 impulse;
     s32 trackIndex;
     register s32 effectValue asm("$3");
     register s32 effectValue2 asm("$3");
-    register s32 *forwardSinEntry asm("$5");
-    register s32 *normalSinEntry asm("$5");
+    s32 *forwardSinEntry;
+    s32 *normalSinEntry;
     register s32 *forwardCosEntry asm("$3");
     register s32 *normalCosEntry asm("$3");
-    register s32 positiveDelta asm("$4");
+    s32 positiveDelta;
     s32 firstProjection;
     register s32 shiftedPoint asm("$5");
     register s32 angleLoss asm("$3");
     s32 coefficient;
     register s32 yVelocity asm("$3");
     register s32 halfProduct asm("$2");
-    register s32 halfSign asm("$5");
+    s32 halfSign;
     register s32 frontCoefficient asm("$2");
-    register s32 carHeading asm("$2");
+    s32 carHeading;
     register s32 tailSpeed asm("$6");
     register s32 tailSpeed2 asm("$2");
     register s32 basisValue asm("$4");
-    register s32 shapeExtent asm("$2");
-    register ContactRegion *regionBase asm("$3");
+    s32 shapeExtent;
+    ContactRegion *regionBase;
     register s32 *sinSubtract asm("$4");
-    register ContactTrack *track asm("$4");
+    ContactTrack *track;
     register s32 rowOffset asm("$2");
     register s32 originX asm("$3");
     register s32 originY asm("$2");
-    register s32 speedQuarter asm("$4");
-    register ContactCar *callbackCar asm("$4");
+    s32 speedQuarter;
+    ContactCar *callbackCar;
     s32 impulseX;
     register s32 normalAddress asm("$3");
     register s32 rearNormalAddress asm("$5");
     s32 secondProjection;
-    register ContactShape *shape asm("$3");
-    register s32 shapeWidth asm("$3");
+    ContactShape *shape;
+    s32 shapeWidth;
     register s32 projectedVelocity asm("$2");
-    register s32 *cosTable asm("$6");
+    s32 *cosTable;
     register s32 *sinTable asm("$5");
-    register s32 *rearCosTable asm("$7");
+    s32 *rearCosTable;
     register s32 *rearSinTable asm("$6");
     register void (*nextCallback)(u8 *) asm("$4");
     register s32 value0 asm("$16");
@@ -3803,7 +3803,7 @@ s32 CarHandleWallCollision(void *object) {
     register s32 value5 asm("$21");
     register s32 regionCount asm("$23");
     s32 sumX;
-    register s32 reverseHeading3 asm("$2");
+    s32 reverseHeading3;
     register s32 reverseHeading4 asm("$2");
     register s32 reverseHeading5 asm("$2");
     register s32 reverseHeading6 asm("$2");
@@ -3813,40 +3813,40 @@ s32 CarHandleWallCollision(void *object) {
     s32 dy;
     register s32 previousSpeed asm("$2");
     s32 nextSpeed;
-    register s32 reverseHeading asm("$2");
+    s32 reverseHeading;
     register s32 reverseHeading2 asm("$2");
-    register s32 headingDelta asm("$3");
-    register s32 normalAngleSum asm("$3");
+    s32 headingDelta;
+    s32 normalAngleSum;
     s32 speedLimit;
-    register s32 normalImpulse asm("$4");
-    register s32 normalImpulse2 asm("$4");
-    register s32 normalImpulse3 asm("$4");
-    register s32 normalImpulse4 asm("$4");
+    s32 normalImpulse;
+    s32 normalImpulse2;
+    s32 normalImpulse3;
+    s32 normalImpulse4;
     register s32 normalImpulse5 asm("$4");
     register s32 currentY asm("$5");
-    register s32 absDy asm("$5");
+    s32 absDy;
     register s32 angleDifference asm("$5");
-    register s32 effectWheel asm("$5");
-    register s32 effectWheel2 asm("$5");
+    s32 effectWheel;
+    s32 effectWheel2;
     s32 centerX;
-    register s32 squareX asm("$4");
-    register s32 remainingRegions asm("$19");
+    s32 squareX;
+    s32 remainingRegions;
     register s32 roundedDistance2 asm("$2");
     s32 leftFrontEffect;
     s32 leftRearEffect;
-    register s32 normalHeading2 asm("$2");
+    s32 normalHeading2;
     s32 roundedX;
     s32 roundedY;
-    register s32 normalHeading3 asm("$2");
-    register s32 lightImpact asm("$2");
-    register s32 normalHeading4 asm("$2");
+    s32 normalHeading3;
+    s32 lightImpact;
+    s32 normalHeading4;
     register s32 currentX asm("$2");
     register s32 roundedHeadingDelta asm("$2");
     register s32 roundedNormalAngle asm("$2");
     register s32 roundedDistance asm("$2");
     s32 rightFrontEffect;
     s32 rightRearEffect;
-    register s32 normalHeading asm("$2");
+    s32 normalHeading;
     register s32 regionResult asm("$3");
     register s32 impactSpeed asm("$3");
     register u32 distance asm("$4");
@@ -3865,7 +3865,6 @@ s32 CarHandleWallCollision(void *object) {
     }
     {
         /* All four contact flags can retain the incoming impulse register. */
-        asm("" : "=r"(impulse));
         track = FAR_VAR(ContactTrack *, gFarTrack);
         rowOffset = trackIndex * 0x90;
         rowOffset = (s32)track + rowOffset;
@@ -3936,7 +3935,6 @@ s32 CarHandleWallCollision(void *object) {
         workspace.point[1] =
             ((wallPoint->y + FAR_VAR(s32, gFarOffsetY)) * 4) - car->y;
         headingDelta = contact->heading;
-        asm volatile("" : "=r"(headingDelta) : "0"(headingDelta) : "memory");
         carHeading = car->heading;
         headingDelta -= carHeading;
         positiveDelta = headingDelta + 0x400;
@@ -3957,11 +3955,9 @@ s32 CarHandleWallCollision(void *object) {
         angleDifference = value0;
         if (value0 >= 0x201) {
             projectedVelocity = 0x400;
-            asm("" : "=r"(projectedVelocity) : "0"(projectedVelocity));
             angleDifference = projectedVelocity - value0;
         }
         carHeading = car->heading;
-        asm("" : "=r"(carHeading) : "0"(carHeading));
         normalAngleSum = value0 + carHeading;
         roundedNormalAngle = normalAngleSum;
         if (normalAngleSum < 0) {
@@ -3972,7 +3968,6 @@ s32 CarHandleWallCollision(void *object) {
         value0 = normalAngleSum - roundedNormalAngle;
         projectedVelocity = 0x400 - value0;
         value0 = projectedVelocity & 0x3FF;
-        asm volatile("" : "=r"(value0) : "0"(value0) : "memory");
         if (angleDifference < 0x8C) {
             previousSpeed = car->speed;
             car->unk20E = 0;
@@ -4048,7 +4043,7 @@ s32 CarHandleWallCollision(void *object) {
                 asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
                 if (car->frontRightContact == 0) {
                     s32 impulseX;
-                    register s32 normalCoefficient asm("$2");
+                    s32 normalCoefficient;
 
                     reverseHeading = (0x400 - value1) & 0x3FF;
                     cosTable = gContactCosTable;
@@ -4071,7 +4066,6 @@ s32 CarHandleWallCollision(void *object) {
                         normalImpulse += 3;
                     }
                     normalCoefficient = normalAddress + (s32)cosTable;
-                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
                     normalCoefficient = *(volatile s32 *)normalCoefficient;
                     impulse = normalImpulse >> 2;
                     impulseX = normalCoefficient * impulse;
@@ -4092,13 +4086,9 @@ s32 CarHandleWallCollision(void *object) {
                 }
                 if (car->rearRightContact == 0) {
                     s32 impulseX;
-                    register s32 normalCoefficient asm("$2");
+                    s32 normalCoefficient;
 
                     reverseHeading2 = 0x400;
-                    asm volatile(""
-                                 : "=r"(reverseHeading2)
-                                 : "0"(reverseHeading2)
-                                 : "memory");
                     reverseHeading2 = (reverseHeading2 - value1) & 0x3FF;
                     cosTable = gContactCosTable;
                     sinTable = gContactSinTable;
@@ -4119,7 +4109,6 @@ s32 CarHandleWallCollision(void *object) {
                         normalImpulse2 += 3;
                     }
                     normalCoefficient = normalAddress + (s32)cosTable;
-                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
                     normalCoefficient = *(volatile s32 *)normalCoefficient;
                     impulse = normalImpulse2 >> 2;
                     impulseX = normalCoefficient * impulse;
@@ -4136,7 +4125,6 @@ s32 CarHandleWallCollision(void *object) {
                     }
                     if (impulse >= 0x33) {
                         callbackCar = car;
-                        asm("" : "=r"(callbackCar) : "0"(callbackCar));
                         effectWheel = 2;
                         goto sideEffect;
                     }
@@ -4206,7 +4194,7 @@ s32 CarHandleWallCollision(void *object) {
                 asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
                 if (car->frontLeftContact == 0) {
                     s32 impulseX;
-                    register s32 normalCoefficient asm("$2");
+                    s32 normalCoefficient;
 
                     reverseHeading3 = (0x400 - value1) & 0x3FF;
                     cosTable = gContactCosTable;
@@ -4228,7 +4216,6 @@ s32 CarHandleWallCollision(void *object) {
                         normalImpulse3 += 3;
                     }
                     normalCoefficient = normalAddress + (s32)cosTable;
-                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
                     normalCoefficient = *(volatile s32 *)normalCoefficient;
                     impulse = normalImpulse3 >> 2;
                     impulseX = normalCoefficient * impulse;
@@ -4249,13 +4236,9 @@ s32 CarHandleWallCollision(void *object) {
                 }
                 if (car->rearLeftContact == 0) {
                     s32 impulseX;
-                    register s32 normalCoefficient asm("$2");
+                    s32 normalCoefficient;
 
                     reverseHeading4 = 0x400;
-                    asm volatile(""
-                                 : "=r"(reverseHeading4)
-                                 : "0"(reverseHeading4)
-                                 : "memory");
                     reverseHeading4 = (reverseHeading4 - value1) & 0x3FF;
                     cosTable = gContactCosTable;
                     sinTable = gContactSinTable;
@@ -4276,7 +4259,6 @@ s32 CarHandleWallCollision(void *object) {
                         normalImpulse4 += 3;
                     }
                     normalCoefficient = normalAddress + (s32)cosTable;
-                    asm("" : "=r"(normalCoefficient) : "0"(normalCoefficient));
                     normalCoefficient = *(volatile s32 *)normalCoefficient;
                     impulse = normalImpulse4 >> 2;
                     impulseX = normalCoefficient * impulse;
@@ -4293,7 +4275,6 @@ s32 CarHandleWallCollision(void *object) {
                     }
                     if (impulse >= 0x33) {
                         callbackCar = car;
-                        asm("" : "=r"(callbackCar) : "0"(callbackCar));
                         effectWheel = 3;
                     sideEffect:
                         func_80043B68(callbackCar, effectWheel);
@@ -4303,7 +4284,6 @@ s32 CarHandleWallCollision(void *object) {
             value5 = car->x;
             value4 = car->y;
             regionHome = &car->regionIndex;
-            asm("" : "=r"(regionHome) : "0"(regionHome));
             car->collisionPending = 0;
             regionCount = D_800A2E08;
             roundedX = value5;
@@ -4323,7 +4303,6 @@ s32 CarHandleWallCollision(void *object) {
             remainingRegions = regionCount;
             regionBase = (ContactRegion *)D_800A3838;
             rowOffset = value1 << 4;
-            asm("" : "=r"(rowOffset) : "0"(rowOffset));
             region = (ContactRegion *)((s32)regionBase + rowOffset);
             if (remainingRegions > 0) {
             findRegion:
@@ -4374,7 +4353,6 @@ s32 CarHandleWallCollision(void *object) {
             asm("" : "=r"(forwardCosEntry) : "0"(forwardCosEntry));
             sinSubtract = gContactSinTable;
             forwardSinEntry = (s32 *)((heading << 2) + (s32)sinSubtract);
-            asm("" : "=r"(forwardSinEntry) : "0"(forwardSinEntry));
             car->frontVelocityX -= *forwardCosEntry * impulse;
             car->frontVelocityY -= *forwardSinEntry * impulse;
             car->rearVelocityX -= *forwardCosEntry * impulse;
@@ -4411,10 +4389,6 @@ s32 CarHandleWallCollision(void *object) {
             value1 = normalHeading3 & 0x3FF;
             asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
             reverseHeading5 = 0x400;
-            asm volatile(""
-                         : "=r"(reverseHeading5)
-                         : "0"(reverseHeading5)
-                         : "memory");
             reverseHeading5 = (reverseHeading5 - value1) & 0x3FF;
             cosTable = gContactCosTable;
             sinTable = gContactSinTable;
@@ -4441,7 +4415,6 @@ s32 CarHandleWallCollision(void *object) {
             if (car->frontRightContact == 0) {
                 normalAddress = value1 << 2;
                 frontCoefficient = normalAddress + (s32)cosTable;
-                asm("" : "=r"(frontCoefficient) : "0"(frontCoefficient));
                 frontCoefficient = *(volatile s32 *)frontCoefficient;
                 car->frontVelocityX += frontCoefficient * impulse;
                 car->frontVelocityY +=
@@ -4485,14 +4458,12 @@ s32 CarHandleWallCollision(void *object) {
                         EffectSpawnAtCarPoint(car, 1);
                     }
                     EffectSpawnAtCarPoint(car, 6);
-                    asm("" : "=r"(impulse) : "0"(impulse));
                     lightImpact = impulse < 0x65;
                 } else {
                     lightImpact = impulse < 0x65;
                 }
                 if (lightImpact == 0) {
                     callbackCar = car;
-                    asm("" : "=r"(callbackCar) : "0"(callbackCar));
                     effectWheel2 = 1;
                     goto longitudinalEffect;
                 }
@@ -4526,12 +4497,7 @@ s32 CarHandleWallCollision(void *object) {
                 normalHeading4 = contact->heading + 0x100;
             }
             value1 = normalHeading4 & 0x3FF;
-            asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
             reverseHeading6 = 0x400;
-            asm volatile(""
-                         : "=r"(reverseHeading6)
-                         : "0"(reverseHeading6)
-                         : "memory");
             reverseHeading6 = (reverseHeading6 - value1) & 0x3FF;
             rearCosTable = gContactCosTable;
             rearSinTable = gContactSinTable;
@@ -5680,7 +5646,7 @@ void CarUpdatePlayer(u8 *object) {
     s32 turnWork;
     s32 headingInput;
     s32 analogProduct;
-    register s32 incomingS1 asm("s1");
+    s32 incomingS1;
     s32 steeringLimit;
     s32 cameraQuotientInput;
     s32 headingQuotientInput;
@@ -5698,7 +5664,6 @@ void CarUpdatePlayer(u8 *object) {
 
     car = object;
     /* Preserve the unused retail frame and the caller argument reloads. */
-    asm("" : : "r"(car), "m"(frameScratch[0]) : "a0");
     if (D_800A2EC8PlayerStep[0] != 0) {
         func_80023454();
         return;
@@ -5742,7 +5707,6 @@ void CarUpdatePlayer(u8 *object) {
     (*(void (**)(u8 *))(car + 0x354))(car);
     /* Retail keeps incoming s1 when unkF8 is nonzero. Earlier calls
      * preserve s1. Capture that register input before using C locals. */
-    asm("" : "=r"(incomingS1));
     steeringLimit = incomingS1;
     D_800A2E24PlayerStep = 0x01EF0000 - ((D_800A2E1CPlayerStep - 3) * 0x30000);
     unkF8 = *(u8 *)(car + 0xF8);
@@ -6576,7 +6540,7 @@ typedef char CheckCarReverseSpeed[(CAR_OFFSET(reverseSpeed) == 0x410) ? 1 : -1];
 #undef CAR_OFFSET
 
 void func_8002BD48(u8 *carBytes) {
-    register CarDynamics *car asm("s2");
+    CarDynamics *car;
     struct {
         VECTOR force;
         VECTOR axleVelocity;
@@ -6605,27 +6569,27 @@ void func_8002BD48(u8 *carBytes) {
     s64 velocityMultiplyState;
     s64 heightMultiplyState;
     s64 slideMultiplyState;
-    register s32 initialDriverLoad asm("a0");
-    register s32 initialDivisor asm("a1");
-    register s32 slideYawDivisor asm("v0");
+    s32 initialDriverLoad;
+    s32 initialDivisor;
+    s32 slideYawDivisor;
     register s32 forwardSpeed asm("s1");
     s32 averageGrip;
     s32 fixedValue;
     register s32 gripBase asm("v1");
-    register s32 assist asm("v0");
+    s32 assist;
     register s32 initialYaw asm("t0");
     register s32 rearHeading asm("s0");
     register s32 limitedRearHeading asm("s0");
-    register s32 speedHigh asm("s1");
+    s32 speedHigh;
     s32 rearDriveHeading;
-    register s32 *cosRow asm("a1");
-    register s32 *sinRow asm("v0");
+    s32 *cosRow;
+    s32 *sinRow;
     s32 velocityX;
-    register s32 speedCap asm("a0");
-    register s32 frontLongitudinalSpeed asm("a1");
-    register s32 rearLongitudinalSpeed asm("a1");
+    s32 speedCap;
+    s32 frontLongitudinalSpeed;
+    s32 rearLongitudinalSpeed;
     register s32 rearDragValue asm("t1");
-    register s32 baseSpeed asm("s0");
+    s32 baseSpeed;
     register s32 frontDrag asm("s0");
     register s32 frontInverseHeading asm("s0");
     s32 frontXLocal;
@@ -6633,15 +6597,15 @@ void func_8002BD48(u8 *carBytes) {
     register s32 limitedFrontHeading asm("s0");
     s32 limitedFrontXProduct;
     s32 limitedFrontYProduct;
-    register s32 rearIndex asm("s0");
+    s32 rearIndex;
     s32 rearYProduct;
-    register s32 rearFourthProduct asm("v0");
+    s32 rearFourthProduct;
     register s32 frontGripValue asm("a0");
     register s32 rearGripValue asm("a1");
     register s32 ratioHigh asm("t1");
-    register s32 rearPositiveGrip asm("a0");
-    register s32 firstCos asm("a0");
-    register s32 frontXValue asm("a1");
+    s32 rearPositiveGrip;
+    s32 firstCos;
+    s32 frontXValue;
     s32 rearXProduct;
     s32 rearYProductAfter;
     register s32 rearDrag asm("s0");
@@ -6650,48 +6614,48 @@ void func_8002BD48(u8 *carBytes) {
     s32 rearYLocal;
     s32 limitedRearXProduct;
     s32 limitedRearYProduct;
-    register s32 frontOffset asm("s0");
+    s32 frontOffset;
     s32 frontYProduct;
-    register s32 frontYBefore asm("s0");
+    s32 frontYBefore;
     register s32 firstRandomRange asm("s0");
     register s32 frontHeading asm("s0");
     s32 frontXProduct;
     s32 frontYProductAfter;
-    register s32 frontXProductBefore asm("s1");
+    s32 frontXProductBefore;
     register s32 frontXBefore asm("s1");
-    register s32 rearXProductBefore asm("s1");
+    s32 rearXProductBefore;
     register s32 rearXBefore asm("s1");
     register s32 gripCos asm("s4");
     register s32 sideState asm("s7");
     s32 leaderDistance;
     s32 reverseSpeed;
     register s32 forwardSpeedFixed asm("v0");
-    register s32 driveThreshold asm("v0");
-    register s32 driveInputValue asm("v1");
+    s32 driveThreshold;
+    s32 driveInputValue;
     s32 limitedFrontX;
     s32 limitedRearX;
     register s32 tableIndex asm("v0");
     s32 dragScale;
     s32 rearLateralSpeed;
     register s32 turnTorque asm("v1");
-    register s32 torqueReturn asm("v0");
-    register s32 distanceAdjusted asm("a0");
-    register s32 frontDriveScale asm("a0");
-    register s32 rearDriveScale asm("a0");
-    register s32 frontDriveDisabled asm("v0");
-    register s32 frictionLimit asm("v0");
-    register s32 headingValue asm("v0");
+    s32 torqueReturn;
+    s32 distanceAdjusted;
+    s32 frontDriveScale;
+    s32 rearDriveScale;
+    s32 frontDriveDisabled;
+    s32 frictionLimit;
+    s32 headingValue;
     register s32 cosBase asm("v1");
     register s32 frontDragValue asm("t0");
     s32 longitudinalDifference;
-    register s32 yawDenominator asm("a0");
+    s32 yawDenominator;
     s32 frontSin;
     s32 rearSin;
     s32 yawForce;
-    register s32 deltaMagnitude asm("s0");
+    s32 deltaMagnitude;
     register s32 angleDelta asm("s6");
     register s32 gripAngle asm("s0");
-    register s32 secondRandomRange asm("s0");
+    s32 secondRandomRange;
     s32 frontDriveHeading;
     register s32 turnDelta asm("s0");
     register s32 frontFriction asm("s1");
@@ -6701,7 +6665,7 @@ void func_8002BD48(u8 *carBytes) {
     register s32 rearDriveMagnitude asm("s1");
     register s32 rearDragLimit asm("s1");
     register s32 turnMultiplier asm("s1");
-    register s32 driveForce asm("s3");
+    s32 driveForce;
     register s32 speedLimit asm("s5");
     register s32 turnLimit asm("s6");
     s32 dragTerm;
@@ -6712,7 +6676,7 @@ void func_8002BD48(u8 *carBytes) {
     s32 newFineHeading;
     register s32 assistRankMinusOne asm("v1");
     s32 turnScale;
-    register s32 forwardSpeedLocal asm("v1");
+    s32 forwardSpeedLocal;
     register s32 assistScale asm("v0");
     register s32 assistBoost asm("t1");
     u32 velocitySumX;
@@ -6799,11 +6763,8 @@ void func_8002BD48(u8 *carBytes) {
                     distanceAdjusted = 0;
                 }
                 assistRankMinusOne = car->assistRank - 1;
-                asm("" : "=r"(assistRankMinusOne) : "0"(assistRankMinusOne));
                 assistScale = assistRankMinusOne * 20;
-                asm("" : "=r"(assistScale) : "0"(assistScale));
                 assistBoost = assistScale * distanceAdjusted;
-                asm("" : "=r"(assistBoost) : "0"(assistBoost));
                 speedLimit += assistBoost;
             } else {
                 assistRankMinusOne = car->assistRank - 1;
@@ -6840,7 +6801,6 @@ void func_8002BD48(u8 *carBytes) {
     local.frontForward = frontXBefore;
     local.axleVelocity.vx = frontXBefore;
     thirdTableAddress = frontOffset + gFarSinTable.unk[0];
-    asm("" : : "r"(thirdTableAddress));
     frontYProduct =
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->frontVelocityX);
     frontYBefore =
@@ -6872,7 +6832,6 @@ void func_8002BD48(u8 *carBytes) {
     }
     tableIndex = gripAngle << 2;
     tableIndex += gFarCosTable.unk[0];
-    asm("" : : "r"(tableIndex));
     gripCos = *((s32 *)tableIndex);
     if (MathMultiplyFixed16(local.frontGrip, gripCos) < 0) {
         frontGripMagnitude = -MathMultiplyFixed16(local.frontGrip, gripCos);
@@ -6955,7 +6914,6 @@ void func_8002BD48(u8 *carBytes) {
                 func_80029994((u8 *)car, 1);
             }
             slideYawDivisor = D_800A2E5C;
-            asm("" : "=r"(slideYawDivisor) : "0"(slideYawDivisor));
             car->sliding = 1;
             local.yawDivisor = slideYawDivisor / 2;
         }
@@ -6975,9 +6933,7 @@ noSliding:
         }
     }
     frontLongitudinalSpeed = local.axleVelocity.vx;
-    asm volatile("" : : "r"(frontLongitudinalSpeed));
     frontDragValue = local.drag;
-    asm("" : : "r"(frontDragValue));
     frontLongitudinalSpeed += frontDragValue;
     local.axleVelocity.vx = frontLongitudinalSpeed;
     local.axleVelocity.vy += frontFriction;
@@ -6988,7 +6944,6 @@ noSliding:
     asm("andi %0,%1,1023" : "=r"(frontHeading) : "r"(headingValue));
     tableOffset = frontHeading << 2;
     cosBase = tableOffset + cosBase;
-    asm("" : : "r"(cosBase));
     frontXProduct =
         MathMultiplyFixed16(*((s32 *)cosBase), local.axleVelocity.vx);
     car->frontVelocityX =
@@ -7115,7 +7070,6 @@ noSliding:
             MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
                                 local.axleVelocity.vy);
         gripBase = gFarSinTable.unk[0];
-        asm("" : : "r"(gripBase));
         car->frontVelocityX = limitedFrontXProduct - fixedValue;
         frontXValue = local.axleVelocity.vx;
         asm("addu %0,%1,%0"
@@ -7134,12 +7088,10 @@ noSliding:
     asm volatile("" : : "r"(headingValue), "r"(frontXValue));
     cosBase = gFarCosTable.unk[0];
     initialYaw = 1024;
-    asm("" : "=r"(initialYaw) : "0"(initialYaw));
     headingValue = initialYaw - headingValue;
     asm("andi %0,%1,1023" : "=r"(rearIndex) : "r"(headingValue));
     rearIndex <<= 2;
     cosBase = rearIndex + cosBase;
-    asm("" : : "r"(cosBase));
     rearXProductBefore = MathMultiplyFixed16(*((s32 *)cosBase), frontXValue);
     rearXBefore =
         rearXProductBefore -
@@ -7148,7 +7100,6 @@ noSliding:
     local.rearForward = rearXBefore;
     local.axleVelocity.vx = rearXBefore;
     thirdTableAddress = rearIndex + gFarSinTable.unk[0];
-    asm("" : : "r"(thirdTableAddress));
     rearYProduct =
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->rearVelocityX);
     rearFourthProduct = MathMultiplyFixed16(
@@ -7159,7 +7110,6 @@ noSliding:
     local.axleVelocity.vy = sideState;
     rearGripValue = local.rearGrip;
     frontGripValue = local.frontGrip;
-    asm("" : : "r"(rearGripValue), "r"(frontGripValue));
     if (rearGripValue < frontGripValue) {
         /* Scale yaw by the grip difference, with a limit of 2000.
          * yawForce = yawForce * min((frontGrip - rearGrip) / 170, 2000)
@@ -7196,7 +7146,6 @@ noSliding:
     local.axleVelocity.vy = rearLateralSpeed;
     if (rearLateralSpeed > 0) {
         rearPositiveGrip = *((volatile s32 *)&local.rearGrip);
-        asm("" : : "r"(rearPositiveGrip));
         rearFriction = -rearLateralSpeed;
         if (rearLateralSpeed >= rearPositiveGrip) {
             rearFriction = -rearPositiveGrip;
@@ -7213,9 +7162,7 @@ noSliding:
             local.axleVelocity.vx, MathFixedDivide(0x1F, 0x20));
     }
     rearLongitudinalSpeed = local.axleVelocity.vx;
-    asm volatile("" : : "r"(rearLongitudinalSpeed));
     rearDragValue = local.drag;
-    asm("" : : "r"(rearDragValue));
     rearLongitudinalSpeed += rearDragValue;
     local.axleVelocity.vx = rearLongitudinalSpeed;
     local.axleVelocity.vy += rearFriction;
@@ -7226,7 +7173,6 @@ noSliding:
     fixedValue = MathMultiplyFixed16(
         *((s32 *)(tableOffset + gFarSinTable.unk[0])), local.axleVelocity.vy);
     gripBase = gFarSinTable.unk[0];
-    asm("" : : "r"(gripBase));
     car->rearVelocityX = rearXProduct - fixedValue;
     frontXValue = local.axleVelocity.vx;
     asm("addu %0,%1,%0"
@@ -7247,7 +7193,6 @@ noSliding:
                 deadDeltaReturn =
                     MathGetAngleDelta(car->heading, car->movementHeading);
                 /* End the previous s0 lifetime before the negative result. */
-                asm volatile("" : "=r"(deltaMagnitude));
                 deltaMagnitude = -deadDeltaReturn;
             } else {
                 deltaMagnitude =
@@ -7270,7 +7215,6 @@ noSliding:
             rearDriveMagnitude = driveForce;
             rearDriveHeading = car->heading;
         }
-        asm("" : : "r"(rearDriveMagnitude));
         local.force.vx = MathMultiplyFixed16(
             rearDriveMagnitude, ((s32 *)gFarCosTable.unk[0])[rearDriveHeading]);
         rearSin = ((s32 *)gFarSinTable.unk[0])[rearDriveHeading];
@@ -7383,12 +7327,8 @@ noSliding:
         turnMultiplier = 0x10000;
     }
     initialYaw = local.frontSide;
-    asm("" : : "r"(initialYaw));
     torqueReturn = MathMultiplyFixed16(initialYaw - sideState, turnMultiplier);
     yawDenominator = local.yawDivisor;
-    asm volatile(""
-                 : "=r"(turnTorque)
-                 : "r"(torqueReturn), "r"(yawDenominator));
     turnTorque = torqueReturn;
     if (yawDenominator < 0) {
         yawDenominator += 3;
@@ -9135,7 +9075,7 @@ void RaceUpdateFrame(void) {
     u8 *savedCar;
     s32 currentLap;
     s32 lapLimit;
-    register s32 morePlayers asm("v0");
+    s32 morePlayers;
     register s16 playerIndex asm("s1");
     s16 nextPlayerIndex;
     s32 raceActive;
@@ -11787,31 +11727,31 @@ extern u32 *gSubdivisionOt[] asm("gScratchpad+24");
 
 u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
                                   s32 recursionLevel) {
-    register SubdivisionVertex *grid asm("s0");
+    SubdivisionVertex *grid;
     register u8 *prim asm("t5");
-    register s32 level asm("s2");
+    s32 level;
     s32 limit;
     register SubdivisionVertex *row1 asm("t3");
     register SubdivisionVertex *row2 asm("t2");
     register SubdivisionVertex *center asm("t1");
     register SubdivisionVertex *right asm("t0");
     register s32 work0 asm("v0");
-    register s32 work1 asm("v1");
+    s32 work1;
     register s32 work2 asm("a0");
     register s32 work3 asm("a1");
-    register s32 work4 asm("a2");
-    register s32 work5 asm("a3");
-    register s32 work6 asm("t0");
-    register s32 work7 asm("t1");
-    register s32 w0 asm("v0");
-    register s32 w1 asm("v1");
-    register s32 w2 asm("a3");
-    register s32 w3 asm("t0");
-    register s32 w4 asm("t1");
-    register s32 w5 asm("t2");
+    s32 work4;
+    s32 work5;
+    s32 work6;
+    s32 work7;
+    s32 w0;
+    s32 w1;
+    s32 w2;
+    s32 w3;
+    s32 w4;
+    s32 w5;
     register s32 w6 asm("t3");
-    register s32 w7 asm("t4");
-    register u32 word0 asm("v1");
+    s32 w7;
+    u32 word0;
     register u32 word1 asm("a0");
     register u32 word2 asm("a1");
     register u32 word3 asm("a2");
@@ -11819,8 +11759,8 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     register u32 word5 asm("t0");
     register u32 *ot asm("t1");
     register u32 mask asm("t2");
-    register u16 uv asm("v0");
-    register SubdivisionVertex *mid asm("a1");
+    u16 uv;
+    SubdivisionVertex *mid;
     register u8 *packet asm("v0");
     grid = vertices;
     asm("" : : "r"(grid) : "t5");
@@ -11842,7 +11782,6 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     work0 += work2;
     work2 = grid[0].z;
     work4 += work6;
-    asm volatile("" : "=r"(work4) : "0"(work4) : "memory");
     work4 >>= 1;
     grid[1].v = work4;
     work4 = grid[2].v;
@@ -11863,7 +11802,6 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     work0 = grid[2].y;
     work2 >>= 1;
     work1 += work5;
-    asm volatile("" : "=r"(work1) : "0"(work1) : "memory");
     grid[1].z = work2;
     work2 = grid[6].y;
     work5 = grid[6].u;
@@ -11884,7 +11822,6 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     work0 += work1;
     work1 = grid[2].u;
     work7 = grid[8].x;
-    asm volatile("" : : "r"(work7) : "memory");
     work4 += work6;
     work4 >>= 1;
     work0 >>= 1;
@@ -12784,21 +12721,21 @@ void func_80035274(void) {
     s32 w;
     s32 ly;
     s32 ry;
-    register s32 e1 asm("$3");
+    s32 e1;
     s32 e0;
     register s32 rym2 asm("$6");
     register u32 drawCursor asm("$4");
-    register POLY_FT4 *drawPrim asm("$7");
-    register POLY_FT4 *entry asm("$8");
+    POLY_FT4 *drawPrim;
+    POLY_FT4 *entry;
     register u32 cursorLoop asm("$3");
-    register u32 cursorEnd asm("$2");
-    register s32 yFixed asm("$18");
+    u32 cursorEnd;
+    s32 yFixed;
     register s32 nextY asm("$6");
     register s32 step asm("$2");
     s32 y0v;
     s32 y1t;
     register s32 ytmp asm("$2");
-    register s32 dza asm("$4");
+    s32 dza;
     s32 dz;
     s32 modq;
     s32 offX;
@@ -14120,45 +14057,45 @@ __asm__(
 
 /* Update AI route speed, pace following, nearby lanes, and steering. */
 void func_800373B4(u8 *object) {
-    register u8 *car asm("$18");
-    register u8 *middleOther asm("$4");
+    u8 *car;
+    u8 *middleOther;
     register u32 middleOne asm("$9");
-    register s32 middleFlag asm("$2");
-    register s32 middleRandomLimit asm("$4");
+    s32 middleFlag;
+    s32 middleRandomLimit;
 
     register s32 collisionCarX asm("$7");
     register s32 collisionCarY asm("$8");
-    register s32 collisionArgument0 asm("$4");
+    s32 collisionArgument0;
     register s32 collisionArgument1 asm("$5");
     register s32 collisionNeighborY asm("$6");
     register s32 collisionTableBase asm("$3");
-    register s32 collisionTableOffset asm("$16");
-    register s32 collisionReturn asm("$2");
-    register s32 collisionWidthCopy asm("$4");
-    register s32 collisionNeighborOrder asm("$3");
-    register s32 collisionCarOrder asm("$2");
+    s32 collisionTableOffset;
+    s32 collisionReturn;
+    s32 collisionWidthCopy;
+    s32 collisionNeighborOrder;
+    s32 collisionCarOrder;
 
-    register u32 active asm("$2");
-    register s32 paceMatch asm("$19");
-    register s32 paceCarGap asm("$6");
-    register s32 paceDistance asm("$16");
+    u32 active;
+    s32 paceMatch;
+    s32 paceCarGap;
+    s32 paceDistance;
     register s32 paceBase asm("$9");
     register u32 trackCenterFlag asm("$9");
-    register u32 peerFollowFlag asm("$2");
-    register s32 pressureTimerValue asm("$2");
-    register s32 standingTest asm("$2");
-    register s32 paceTimer asm("$2");
-    register s32 timerBase asm("$6");
-    register s32 tireAge2 asm("$3");
-    register s32 counterScale asm("$3");
-    register s32 speedResult asm("$2");
-    register u8 *playerCar asm("$2");
-    register s32 slowDelta asm("$3");
-    register u32 routeRaceMode asm("$2");
+    u32 peerFollowFlag;
+    s32 pressureTimerValue;
+    s32 standingTest;
+    s32 paceTimer;
+    s32 timerBase;
+    s32 tireAge2;
+    s32 counterScale;
+    s32 speedResult;
+    u8 *playerCar;
+    s32 slowDelta;
+    u32 routeRaceMode;
     register u32 routeLeftFlag asm("$3");
     register s32 routeDenominator asm("$5");
     s64 multiplierState;
-    register s32 routeSelection asm("$7");
+    s32 routeSelection;
     struct {
         s32 delta[3];
         s32 reserved1C;
@@ -14185,41 +14122,41 @@ void func_800373B4(u8 *object) {
     } workspace;
 
     void (*tempV118)(u8 *, s32);
-    register s32 tempA22 asm("$6");
-    register s32 tempV114 asm("$3");
-    register s32 tailMinusOne asm("$2");
-    register s32 tailSegment asm("$4");
-    register s32 tailRouteLength asm("$7");
+    s32 tempA22;
+    s32 tempV114;
+    s32 tailMinusOne;
+    s32 tailSegment;
+    s32 tailRouteLength;
     register s32 tailTargetValue asm("$9");
-    register u8 *tailCarArg asm("$4");
+    u8 *tailCarArg;
     register s32 tailPositionZ asm("$5");
 
-    register s32 varV04 asm("$2");
+    s32 varV04;
     register s32 tempA012 asm("$4");
-    register s32 tempA02 asm("$4");
-    register s32 tempS0 asm("$16");
-    register s32 tempS03 asm("$16");
-    register s32 lateralSinProduct asm("$16");
-    register s32 longitudinalGap asm("$16");
-    register s32 deltaX asm("$20");
-    register s32 reverseAngle asm("$21");
+    s32 tempA02;
+    s32 tempS0;
+    s32 tempS03;
+    s32 lateralSinProduct;
+    s32 longitudinalGap;
+    s32 deltaX;
+    s32 reverseAngle;
     register s32 deltaY asm("$22");
     register s32 lateralGap asm("$2");
     register s32 tempV018 asm("$2");
-    register s32 tempV020 asm("$2");
-    register s32 tempV021 asm("$2");
-    register s32 tempV03 asm("$2");
-    register s32 tempV04 asm("$2");
+    s32 tempV020;
+    s32 tempV021;
+    s32 tempV03;
+    s32 tempV04;
     register s32 tempV112 asm("$3");
     register s32 tempV113 asm("$3");
-    register s32 tempV115 asm("$3");
+    s32 tempV115;
     register s32 tempV116 asm("$3");
-    register s32 tempV117 asm("$3");
-    register s32 tempV16 asm("$3");
-    register s32 tempV17 asm("$3");
+    s32 tempV117;
+    s32 tempV16;
+    s32 tempV17;
     register s32 varA0 asm("$4");
-    register s32 varA02 asm("$4");
-    register s32 varA1 asm("$5");
+    s32 varA02;
+    s32 varA1;
     register s32 varA12 asm("$5");
     register s32 varA13 asm("$5");
     register s32 varA14 asm("$5");
@@ -14227,63 +14164,62 @@ void func_800373B4(u8 *object) {
     register s32 varA16 asm("$5");
     register s32 varA17 asm("$5");
     register s32 varA18 asm("$5");
-    register s32 varA19 asm("$5");
+    s32 varA19;
     s32 nearbyLaneMask;
     register s32 overlapIndex asm("$19");
-    register s32 blockedLaneMask asm("$21");
-    register s32 paceGap asm("$22");
-    register s32 nearbyCount asm("$23");
+    s32 blockedLaneMask;
+    s32 paceGap;
+    s32 nearbyCount;
     register s32 varV0 asm("$2");
     register s32 varV011 asm("$2");
-    register s32 overlapOffset asm("$2");
-    register s32 varV016 asm("$2");
+    s32 overlapOffset;
+    s32 varV016;
     register s32 varV017 asm("$2");
     register s32 varV02 asm("$2");
-    register s32 varV03 asm("$2");
-    register s32 varV06 asm("$2");
+    s32 varV03;
+    s32 varV06;
     register s32 varV07 asm("$2");
-    register s32 varV1 asm("$3");
-    register s32 varV13 asm("$3");
-    register s32 varV14 asm("$3");
-    register s32 varV15 asm("$3");
-    register s32 varV17 asm("$3");
+    s32 varV1;
+    s32 varV13;
+    s32 varV14;
+    s32 varV15;
+    s32 varV17;
     register s32 tempA07 asm("$4");
-    register s8 tempV0 asm("$2");
-    register s32 tempV010 asm("$2");
-    register s32 tempV011 asm("$2");
-    register s8 tempV014 asm("$2");
-    register s8 tempV017 asm("$2");
-    register s32 tempV09 asm("$2");
-    register s32 tempV13 asm("$3");
-    register s32 tempV18 asm("$3");
+    s8 tempV0;
+    s32 tempV010;
+    s32 tempV011;
+    s8 tempV014;
+    s8 tempV017;
+    s32 tempV09;
+    s32 tempV13;
+    s32 tempV18;
     register s32 tempV19 asm("$3");
-    register s32 desiredLane asm("$19");
-    register s32 varV012 asm("$2");
-    register u16 tempA13 asm("$5");
+    s32 desiredLane;
+    s32 varV012;
+    u16 tempA13;
     u8 **tempA1;
-    register u8 *aheadOfFollowingCar asm("$16");
-    register u8 *followingCar asm("$17");
-    register u8 *paceLeader asm("$17");
+    u8 *aheadOfFollowingCar;
+    u8 *followingCar;
+    u8 *paceLeader;
     register u8 *forwardNeighbor asm("$17");
     register u8 *backwardNeighbor asm("$17");
-    register u8 *blockingCar asm("$17");
+    u8 *blockingCar;
     register u8 *paceAheadCar asm("$17");
-    register u8 tempA06 asm("$4");
-    register u8 tempV015 asm("$2");
-    register u8 tempV016 asm("$2");
+    u8 tempA06;
+    u8 tempV015;
+    u8 tempV016;
     register u8 followAllowed asm("$20");
     register s32 varV08 asm("$2");
     register s32 varV09 asm("$2");
-    register u8 varV12 asm("$3");
+    u8 varV12;
     register s32 varV16 asm("$3");
-    register void *tempA03 asm("$4");
-    register void *tempA08 asm("$4");
-    register void *tempA09 asm("$4");
+    void *tempA03;
+    void *tempA08;
+    void *tempA09;
     register u8 *overlappingCar;
     register void *tempV02;
 
     car = object;
-    asm("" : "=r"(car) : "0"(car) : "memory");
     workspace.nearby = D_8008D0F8;
     asm volatile("lbu\t%0,0xF4(%1)" : "=r"(active) : "r"(car) : "memory");
     asm volatile("addu\t%0,$0,$0\n\taddu\t%1,$0,$0\n\taddu\t%2,$0,$0"
@@ -14478,7 +14414,6 @@ void func_800373B4(u8 *object) {
                 varV0 = 0x96 - varA0;
                 varV0 <<= 1;
                 asm("addu\t%0,%1,%2" : "=r"(varV0) : "r"(varV1), "r"(varV0));
-                asm volatile("" : : "r"(varV0));
                 speedResult = MathMultiplyFixed16373B4(
                     *(s32 *)(car + 0x84),
                     MathFixedDivide373B4(varV0, routeDenominator << 3));
@@ -14671,9 +14606,7 @@ void func_800373B4(u8 *object) {
                         : "=r"(varV06)
                         : "r"(paceMatch));
                     if (varV06 != 0) {
-                        asm volatile("" : : : "memory");
                         if (D_800A3670373B4[0] != 0) {
-                            asm volatile("" : : : "memory");
                             *(u8 *)(car + 0x401) = followAllowed;
                         } else {
                             peerFollowFlag = *(u8 *)(paceLeader + 0x401);
@@ -14726,7 +14659,6 @@ void func_800373B4(u8 *object) {
                     } else {
                         (*(s16 *)((u8 *)car + 0x102)) = 1;
                     }
-                    asm volatile("" : : "r"(tempA13));
                     ObjectSetCallbackIfAllowed373B4(car, func_8003AA20373B4);
                 }
                 (*(u8 *)((u8 *)car + 0x3B7)) =

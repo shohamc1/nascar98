@@ -1329,7 +1329,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     register s32 helperMode asm("a1");
     register s32 helperBuffer asm("a2");
     register POLY_FT4 *copyFrom asm("a2");
-    register POLY_FT4 *copyTo asm("a3");
+    POLY_FT4 *copyTo;
     register u8 *copyEnd asm("t1");
     register s32 numberArg asm("a0");
     s32 shiftedLap;
@@ -1640,7 +1640,6 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             cursor = gPrimitiveCursor[0];
             copyFrom = (POLY_FT4 *)quad;
             copyEnd = (u8 *)copyFrom + 32;
-            asm("" : : "r"(copyEnd));
             asm("" : "=r"(prim) : "0"(cursor));
             copyTo = prim;
             gPrimitiveCursorLui = (u32)prim + 40;
@@ -1856,7 +1855,6 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
         gOrderingTableLui -= 0x1004;
     }
     /* Compiler control: preserve the retail frame extent. */
-    asm("" : "=m"(frameExtent));
 }
 
 extern s32 D_800A2EAC[];

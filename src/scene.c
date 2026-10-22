@@ -1118,11 +1118,11 @@ void SceneInitRoadStrip(void) {
                 base = (s8 **)(slotOffset - -(u32)base);
                 firstSlot = firstBase + slotIndex;
                 do {
-                    register s32 sectionValue asm("v1");
+                    s32 sectionValue;
                     register s8 *quadBase asm("a2");
                     SceneRoadNode *nodes;
                     register SVECTOR *rotationPtr asm("a0");
-                    register SceneRoadNode *previousNode asm("v0");
+                    SceneRoadNode *previousNode;
 
                     previousNode = node->prev;
                     section = node->section;
@@ -1130,7 +1130,6 @@ void SceneInitRoadStrip(void) {
                     quadBase = *base;
                     rotation.vx = 0;
                     rotationPtr = &rotation;
-                    asm("" : : "r"(rotationPtr));
                     nodes = (SceneRoadNode *)gTrackSections[0];
                     sectionValue = (s16)section;
                     rotation.vy = nodes[sectionValue].angle * 4;
@@ -1329,7 +1328,7 @@ void SceneUpdateRoadStrip(u8 *car) {
         }
         if (distance > 0) {
             /* Keep the offset and address in the same register. */
-            register SVECTOR *point asm("a1");
+            SVECTOR *point;
             register s32 pointOffset asm("a1");
             s32 *origin;
             s32 cameraZ;
@@ -2952,7 +2951,7 @@ void HudInitRacePrims(void) {
     u8 *prim;
     u8 *p3;
     u8 *p4;
-    register u8 *f4base asm("$22");
+    u8 *f4base;
     s32 tileIndex;
     s32 tileBytes;
     s32 tileX;
@@ -8372,9 +8371,9 @@ void func_80053D40(void) {
     s32 newPad[2];
     s32 oldPad[2];
     u8 playerUnlockSteps[2];
-    register s32 one asm("s3");
-    register s32 two asm("s5");
-    register s32 mode13 asm("s6");
+    s32 one;
+    s32 two;
+    s32 mode13;
     u8 exitLoop;
     u8 displayPhase;
     s32 idleFrames;
@@ -8386,12 +8385,12 @@ void func_80053D40(void) {
     register s32 *currentPadCursor asm("s2");
     s32 argument0;
     s32 menuPhase;
-    register s32 animateX asm("a0");
-    register s32 animateY asm("a1");
-    register s32 animateStep asm("a2");
+    s32 animateX;
+    s32 animateY;
+    s32 animateStep;
     register u8 **animationNodeSlot asm("v0");
     s32 padBits;
-    register s32 previousPadInverse asm("a3");
+    s32 previousPadInverse;
     s32 nextIdleFrames;
     s32 cardMenuCode;
     s32 nextBufferIndex;
@@ -8404,19 +8403,19 @@ void func_80053D40(void) {
     s32 cardOperation;
     s32 menuDirection;
     s32 activePlayer;
-    register s32 index asm("s0");
-    register s32 player asm("s2");
-    register s32 screenResult asm("s4");
+    s32 index;
+    s32 player;
+    s32 screenResult;
     register s32 unlockStep asm("s7");
     s32 unlockDirectionBits;
     s32 dialogScreen;
-    register s32 actionSound asm("a1");
+    s32 actionSound;
     register s32 returnChannel asm("a0");
     u32 *orderingTable;
     u8 *screenTable;
     register u8 *sequenceCursor asm("s1");
-    register u8 *selectionCursor asm("s2");
-    register s32 screenResultByte asm("s1");
+    u8 *selectionCursor;
+    s32 screenResultByte;
     u8 pulseTick;
     u8 transitionPhase;
     u8 nextItemUp;
@@ -8430,7 +8429,7 @@ void func_80053D40(void) {
     u8 itemCursorDown;
     u8 secondPlayerEnabled;
     u8 menuCode;
-    register s32 wrappedItemUp asm("v0");
+    s32 wrappedItemUp;
 
     playerUnlockSteps[0] = 0;
     playerUnlockSteps[1] = 0;
@@ -8445,15 +8444,13 @@ void func_80053D40(void) {
     }
     activePlayer = 0;
     func_8005E4A4MainLoop(screenTable);
-    asm("" : "=r"(activePlayer) : "0"(activePlayer));
     one = 1;
     two = 2;
-    asm("" : : "r"(one), "r"(two));
     D_800A3608MainLoop = 0;
     exitLoop = 0;
     do {
         {
-            register s32 randomScale asm("a0");
+            s32 randomScale;
             /* The original call retains the incoming a0 and ignores the result. */
             asm("" : "=r"(randomScale));
             RandomScaledGetMainLoop(randomScale);
@@ -8504,7 +8501,6 @@ void func_80053D40(void) {
             func_8005ED74MainLoop(argument0, secondPlayerEnabled);
             /* End the old register lifetime before setting the pad index. */
             asm volatile("" : "=r"(index));
-            asm volatile("" : : : "memory");
             index = 0;
             if (D_800A3950MainLoop == 0xFB) {
             case 1:
@@ -8533,7 +8529,6 @@ void func_80053D40(void) {
             func_80060FD8MainLoop();
             /* End the old register lifetime before setting the pad index. */
             asm volatile("" : "=r"(index));
-            asm volatile("" : : : "memory");
             D_800A3684MainLoopSmall = 0;
             index = 0;
             if (D_800A3644MainLoop != 0) {
@@ -8555,7 +8550,6 @@ void func_80053D40(void) {
             break;
         }
         previousPadCursor = &oldPad[0];
-        asm("" : "=r"(currentPadCursor) : "0"(currentPadCursor));
     readInitialPads:
         func_80058000MainLoop(index & 0xFF, previousPadCursor);
         *currentPadCursor = 0;
@@ -8574,12 +8568,8 @@ void func_80053D40(void) {
             displayPhase = 0xFF;
             SetDispMaskMainLoop(1);
         }
-        asm(""
-            : "=r"(screenResult), "=r"(unlockStep)
-            : "0"(screenResult), "1"(unlockStep));
         if (!(screenResult & 0xFF)) {
             mode13 = 13;
-            asm("" : : "r"(mode13));
             do {
                 func_8003CC48MainLoop();
                 nextIdleFrames = idleFrames + 1;
@@ -8598,8 +8588,8 @@ void func_80053D40(void) {
                     }
                     {
                         register s32 pulseValue asm("v1");
-                        register s32 magnitude asm("v0");
-                        register s32 intensity asm("a0");
+                        s32 magnitude;
+                        s32 intensity;
                         pulseValue = D_800A305AMainLoop;
                         /* Intensity is 64 + 8 * abs(pulseValue - 10), modulo 256. */
                         asm(".set\tnoreorder\n\tnop\n\taddiu\t%0,%2,-10\n\tbgez\t%0,1f\n\tsll\t%0,%0,3\n\tori\t%0,$zero,10\n\tsubu\t%0,%0,%2\n\tsll\t%0,%0,3\n1:\n\taddiu\t%0,%0,64\n\tandi\t%1,%0,255"
@@ -8689,9 +8679,7 @@ void func_80053D40(void) {
                            (D_800A3059MainLoop == one)) {
                     index = 0;
                     sequenceCursor = &playerUnlockSteps[0];
-                    asm("" : "=r"(sequenceCursor) : "0"(sequenceCursor));
                     selectionCursor = &gPlayerDriverMainLoop;
-                    asm("" : "=r"(selectionCursor) : "0"(selectionCursor));
                 readPlayerUnlockSequence:
                     if ((index != one) || (D_800A3644MainLoop != 0)) {
                         selection = *selectionCursor;
@@ -8816,9 +8804,6 @@ void func_80053D40(void) {
                                             animationStartX = -0x140;
                                             animationNodeSlot =
                                                 D_800A3888MainLoopSite21;
-                                            asm(""
-                                                : "=r"(animationNodeSlot)
-                                                : "0"(animationNodeSlot));
                                             animationNodeSlot =
                                                 (u8 **)((index * 4) +
                                                         (u32)animationNodeSlot);
@@ -8851,9 +8836,6 @@ void func_80053D40(void) {
                                         animationEndX = 0x140;
                                         animationNodeSlot =
                                             D_800A3888MainLoopSite25;
-                                        asm(""
-                                            : "=r"(animationNodeSlot)
-                                            : "0"(animationNodeSlot));
                                         animationNodeSlot =
                                             (u8 **)((index * 4) +
                                                     (u32)animationNodeSlot);
@@ -8902,8 +8884,8 @@ void func_80053D40(void) {
                                     : "m"(oldPad[0]), "m"(newPad[0]));
                                 if (currentPadZero &
                                     ((u16)previousPadInverse & 0x40)) {
-                                    register s32 confirmPivot asm("v0");
-                                    register s32 confirmMode asm("v1");
+                                    s32 confirmPivot;
+                                    s32 confirmMode;
                                     screenResult = func_80056B5CMainLoop(
                                         (s32)D_800A3059MainLoop,
                                         (s32)D_800A39E4MainLoop,
@@ -8918,7 +8900,6 @@ void func_80053D40(void) {
                                         confirmPivot = 0x24;
                                         asm("" : : "r"(confirmPivot));
                                         confirmMode = D_800A39E4MainLoop;
-                                        asm("" : : "r"(confirmMode));
                                         if (confirmMode == confirmPivot) {
                                             goto confirmMode24;
                                         }
@@ -8963,11 +8944,10 @@ void func_80053D40(void) {
                                         }
                                     confirmModeFC:
                                         {
-                                            register s32 exitPhase asm("v0");
-                                            register s32 exitChannel asm("a0");
-                                            register s32 exitTone asm("a1");
+                                            s32 exitPhase;
+                                            s32 exitChannel;
+                                            s32 exitTone;
                                             exitPhase = D_800A3928MainLoop;
-                                            asm("" : : "r"(exitPhase));
                                             if (exitPhase == 0) {
                                                 goto confirmExitStatus;
                                             }
@@ -8979,9 +8959,6 @@ void func_80053D40(void) {
                                         confirmExitStatus:
                                             exitPhase =
                                                 gCardMenuMessageMainLoop[0];
-                                            asm(""
-                                                : "=r"(exitPhase)
-                                                : "0"(exitPhase));
                                             exitChannel = 0;
                                             if (exitPhase != mode13) {
                                                 goto confirmExitSound;
@@ -8991,10 +8968,6 @@ void func_80053D40(void) {
                                         confirmExitSound:
                                             exitTone = 3;
                                         confirmExit:
-                                            asm(""
-                                                :
-                                                : "r"(exitChannel),
-                                                  "r"(exitTone));
                                             screenResult = 1;
                                             SoundPlaySlotMainLoop(exitChannel,
                                                                   exitTone);
@@ -9031,12 +9004,6 @@ void func_80053D40(void) {
                                             animateX = -0x78;
                                             animateY = 0;
                                             animateStep = 2;
-                                            asm(""
-                                                : "=r"(animateX),
-                                                  "=r"(animateY),
-                                                  "=r"(animateStep)
-                                                : "0"(animateX), "1"(animateY),
-                                                  "2"(animateStep));
                                             dialogScreen = 0x25;
                                             goto showConfirmDialog;
                                         } else if (D_800A3059MainLoop == 0 &&
@@ -9047,12 +9014,6 @@ void func_80053D40(void) {
                                             animateX = -0x78;
                                             animateY = 0;
                                             animateStep = 2;
-                                            asm(""
-                                                : "=r"(animateX),
-                                                  "=r"(animateY),
-                                                  "=r"(animateStep)
-                                                : "0"(animateX), "1"(animateY),
-                                                  "2"(animateStep));
                                             dialogScreen = 0x27;
                                         showConfirmDialog:
                                             D_800A39E4MainLoop = dialogScreen;
@@ -9114,9 +9075,8 @@ void func_80053D40(void) {
                                         goto finishInput;
                                     confirmMode23:
                                         {
-                                            register s32 scanPhase asm("v0");
+                                            s32 scanPhase;
                                             scanPhase = D_800A3928MainLoop;
-                                            asm("" : : "r"(scanPhase));
                                             returnChannel = 0;
                                             if (scanPhase == 0) {
                                                 goto confirmScan;
@@ -9180,9 +9140,6 @@ void func_80053D40(void) {
                                     confirmMode24:
                                         SoundPlaySlotMainLoop(0, 3);
                                         menuPhase = D_800A3928MainLoop;
-                                        asm(""
-                                            : "=r"(menuPhase)
-                                            : "0"(menuPhase));
                                         if (menuPhase == one) {
                                             goto confirmStageOne;
                                         }
@@ -9259,18 +9216,17 @@ void func_80053D40(void) {
                                 }
                                 if (currentPadZero &
                                     ((u16)previousPadInverse & 0x80)) {
-                                    register s32 cancelPivot asm("v0");
-                                    register s32 cancelMode asm("v1");
+                                    s32 cancelPivot;
+                                    s32 cancelMode;
                                     cancelPivot = 0x25;
                                     asm("" : : "r"(cancelPivot));
                                     cancelMode = D_800A39E4MainLoop;
-                                    asm("" : : "r"(cancelMode));
                                     switch (cancelMode) {
                                     case 0xFC:
                                         if (gCardMenuMessageMainLoop[0] !=
                                                 two &&
                                             D_800A3928MainLoop == 0) {
-                                            register s32 cardStatus asm("v0");
+                                            s32 cardStatus;
                                             SoundPlaySlotMainLoop(0, 3);
                                             func_800599E4MainLoop();
                                             CardResolveSlotMainLoop();
@@ -9281,7 +9237,6 @@ void func_80053D40(void) {
                                             } else {
                                                 cardStatus = 0x13;
                                             }
-                                            asm("" : : "r"(cardStatus));
                                             gCardMenuMessageMainLoop[0] =
                                                 cardStatus;
                                             func_800598C4MainLoop();
@@ -9334,10 +9289,6 @@ void func_80053D40(void) {
                                         returnChannel = 0;
                                         actionSound = 4;
                                     returnMainMenu:
-                                        asm(""
-                                            :
-                                            : "r"(returnChannel),
-                                              "r"(actionSound));
                                         SoundPlaySlotMainLoop(returnChannel,
                                                               actionSound);
                                         func_8006C598MainLoop(0, -0x78, -2);
@@ -9363,7 +9314,6 @@ void func_80053D40(void) {
                                     goto finishInput;
                                 }
                                 /* End the old register lifetime before setting the pad index. */
-                                asm volatile("" : "=r"(index));
                                 index = player & 0xFF;
                                 padBits = newPad[index];
                                 if (padBits &
@@ -9376,14 +9326,11 @@ void func_80053D40(void) {
                                 }
                                 if (padBits & 0x1000) {
                                     register s32 padEdgeUp asm("v0");
-                                    register s32 blockedModeUp asm("v0");
-                                    register s32 cardModeUp asm("v0");
+                                    s32 blockedModeUp;
+                                    s32 cardModeUp;
                                     register s32 rawModeUp asm("a0");
-                                    register s32 modeUp asm("v1");
+                                    s32 modeUp;
                                     blockedModeUp = 0x21;
-                                    asm(""
-                                        : "=r"(blockedModeUp)
-                                        : "0"(blockedModeUp));
                                     /* Retain the raw mode byte and its comparison value. */
                                     asm volatile(
                                         "lbu\t%0,D_800A39E4.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
@@ -9397,7 +9344,6 @@ void func_80053D40(void) {
                                         if (((u32)(rawModeUp - 9) < 2U) ||
                                             (modeUp == 0xC) ||
                                             ((u32)(rawModeUp - 0x10) < 2U)) {
-                                            asm("" : : "r"(rawModeUp));
                                             func_80068AC4MainLoop(newPad[0],
                                                                   oldPad[0], 1);
 
@@ -9419,9 +9365,6 @@ void func_80053D40(void) {
                                             goto moveCardCursor;
                                         }
                                         padEdgeUp = previousPadInverse & 0x1000;
-                                        asm(""
-                                            : "=r"(padEdgeUp)
-                                            : "0"(padEdgeUp));
                                         if (currentPadZero & padEdgeUp) {
                                             if ((modeUp == 0x22) ||
                                                 (modeUp == 0x24) ||
@@ -9453,7 +9396,6 @@ void func_80053D40(void) {
                                                 } else {
                                                     wrappedItemUp -= 1;
                                                 }
-                                                asm("" : : "r"(wrappedItemUp));
                                                 D_800A3059MainLoop =
                                                     wrappedItemUp;
                                                 asm volatile(
@@ -9566,14 +9508,11 @@ void func_80053D40(void) {
                                 }
                                 if (padBits & 0x4000) {
                                     register s32 padEdgeDown asm("v0");
-                                    register s32 blockedModeDown asm("v0");
-                                    register s32 cardModeDown asm("v0");
+                                    s32 blockedModeDown;
+                                    s32 cardModeDown;
                                     register s32 rawModeDown asm("a0");
                                     register s32 modeDown;
                                     blockedModeDown = 0x21;
-                                    asm(""
-                                        : "=r"(blockedModeDown)
-                                        : "0"(blockedModeDown));
                                     /* Retain the raw mode byte and its comparison value. */
                                     asm volatile(
                                         "lbu\t%0,D_800A39E4.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
@@ -9588,7 +9527,6 @@ void func_80053D40(void) {
                                         if (((u32)(rawModeDown - 9) < 2U) ||
                                             (modeDown == 0xC) ||
                                             ((u32)(rawModeDown - 0x10) < 2U)) {
-                                            asm("" : : "r"(rawModeDown));
                                             func_80068AC4MainLoop(newPad[0],
                                                                   oldPad[0], 0);
 
@@ -9616,9 +9554,6 @@ void func_80053D40(void) {
                                         } else {
                                             padEdgeDown =
                                                 previousPadInverse & 0x4000;
-                                            asm(""
-                                                : "=r"(padEdgeDown)
-                                                : "0"(padEdgeDown));
                                             if (currentPadZero & padEdgeDown) {
                                                 if ((modeDown == 0x22) ||
                                                     (modeDown == 0x24) ||
@@ -9773,26 +9708,14 @@ void func_80053D40(void) {
                                                         [index] == 0) {
                                                     SoundPlaySlotMainLoop(0, 2);
                                                     {
-                                                        register s32
-                                                            variantCount asm(
-                                                                "a0");
-                                                        register s32
-                                                            variantValue asm(
-                                                                "v0");
-                                                        register s32
-                                                            countMinusOne asm(
-                                                                "v1");
-                                                        register s32
-                                                            variantRemainder asm(
-                                                                "v1");
+                                                        s32 variantCount;
+                                                        s32 variantValue;
+                                                        s32 countMinusOne;
+                                                        s32 variantRemainder;
                                                         variantCount =
                                                             D_800A3080MainLoopSite70
                                                                 [gPadTypeMainLoopSite71
                                                                      [index]];
-                                                        asm(""
-                                                            :
-                                                            : "r"(
-                                                                variantCount));
                                                         variantValue =
                                                             gPadLayoutMainLoopSite72
                                                                 [index];

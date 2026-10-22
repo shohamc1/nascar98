@@ -2066,15 +2066,15 @@ void func_80060FD8(void) {
         s32 sixth;
     } labelArgs;
     register u8 *currentNode asm("$22");
-    register u8 *previousNode asm("$21");
+    u8 *previousNode;
     MenuRowList rowList;
     MenuCounterHome panelIndex;
-    register s8 backgroundIndex asm("$23");
-    register s8 borderIndex asm("$23");
-    register s8 textIndex asm("$23");
-    register s32 panelState asm("$18");
-    register s8 rowSide asm("$23");
-    register s8 rowItem asm("$18");
+    s8 backgroundIndex;
+    s8 borderIndex;
+    s8 textIndex;
+    s32 panelState;
+    s8 rowSide;
+    s8 rowItem;
     MenuWordHome packetWidth;
     MenuWordHome packetHeight;
     MenuWordHome textureRow;
@@ -2084,10 +2084,10 @@ void func_80060FD8(void) {
     MenuWordHome markerPanel;
     MenuWordHome triangleOffset;
     MenuWordHome shadeHome;
-    register s32 backgroundShade asm("$6");
+    s32 backgroundShade;
     register s32 textCenterX asm("$17");
-    register s32 initialShade asm("$3");
-    register u32 panelMode asm("$4");
+    s32 initialShade;
+    u32 panelMode;
     register s32 textLeftX asm("$19");
     s64 callAccumulator;
     register s32 panelTableBase asm("$12");
@@ -2097,7 +2097,7 @@ void func_80060FD8(void) {
     {
         register u32 initialIndex asm("$4");
         register u8 *cell asm("$16");
-        register s32 centered asm("$2");
+        s32 centered;
         initialIndex = D_800A35EC;
         rowList = *(MenuRowList *)D_800A3348;
         /* These slots reproduce observed compiler spill homes.
@@ -2181,7 +2181,7 @@ void func_80060FD8(void) {
                      : "memory");
     }
     {
-        register s32 condition asm("$2");
+        s32 condition;
         asm volatile("addiu $v0,$a0,1\n"
                      ".set\treorder\n"
                      : "=r"(condition)
@@ -2199,13 +2199,12 @@ void func_80060FD8(void) {
 panelLoop:
     {
         {
-            register u8 *node asm("$16");
+            u8 *node;
             register u8 *primitive asm("$17");
-            register s32 panelNumber asm("$18");
-            register s32 panelByteOffset asm("$19");
-            register s32 packetMode asm("$2");
-            register s32 loopCondition asm("$2");
-            asm volatile("" : : "m"(colorHome.value));
+            s32 panelNumber;
+            s32 panelByteOffset;
+            s32 packetMode;
+            s32 loopCondition;
             asm volatile(".set\tnoreorder\n"
                          "lbu $t3,%4\n"
                          "addu $s7,$zero,$zero\n"
@@ -2331,9 +2330,9 @@ panelLoop:
             } while (loopCondition != 0);
         }
         {
-            register s32 borderYBase asm("$19");
-            register s32 tone asm("$17");
-            register s32 loopCondition asm("$2");
+            s32 borderYBase;
+            s32 tone;
+            s32 loopCondition;
 
             asm volatile(".set\tnoreorder\n"
                          "lbu        $t4, 0x20($sp)\n"
@@ -2470,7 +2469,7 @@ panelLoop:
             } while (loopCondition != 0);
         }
         {
-            register s32 textWord asm("$5");
+            s32 textWord;
             /* Header texture and two black quads share allocation registers. */
             asm volatile(".set\tnoreorder\n"
                          "ori        $a1, $zero, 0x74\n"
@@ -2671,7 +2670,7 @@ panelLoop:
         textLeftX = textCenterX - 5;
     loopC:
         {
-            register u8 *cell asm("$16");
+            u8 *cell;
             /* Text object and cell pools must be loaded independently. */
             asm volatile(".set\tnoreorder\n"
                          "lbu        $a0, D_800A35EC\n"
@@ -2759,7 +2758,7 @@ panelLoop:
                          : "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9",
                            "$10", "$11", "$31", "memory");
             {
-                register s32 loopCondition asm("$2");
+                s32 loopCondition;
                 asm volatile("addiu $v0,$s7,1\n"
                              "addu $s7,$v0,$zero\n"
                              "sll $v0,$v0,24\n"
@@ -2776,14 +2775,14 @@ panelLoop:
         }
 
         {
-            register s32 rowPanelIndex asm("$5");
-            register s32 panelTimes20 asm("$10");
-            register s32 rowX asm("$9");
-            register s32 rowY asm("$8");
-            register s32 rowMode asm("$6");
-            register s32 rowAlign asm("$7");
-            register s32 rowCondition asm("$3");
-            register s32 sideCondition asm("$2");
+            s32 rowPanelIndex;
+            s32 panelTimes20;
+            s32 rowX;
+            s32 rowY;
+            s32 rowMode;
+            s32 rowAlign;
+            s32 rowCondition;
+            s32 sideCondition;
             /* The copied row list starts at the verified local home sp+0x18. */
             asm volatile(".set\tnoreorder\n"
                          "lbu        $t4, %3\n"
@@ -3705,18 +3704,18 @@ panelLoop:
         {
             register s32 colorS asm("$19");
             register s32 panelValue asm("$20");
-            register s32 initialRow asm("$23");
+            s32 initialRow;
             register s8 initialColumn asm("$18");
             register s32 triangleRow asm("$23");
-            register s32 nextRow asm("$2");
+            s32 nextRow;
             s8 triangleColumn;
             s32 rowX;
             register s32 widthDelta asm("$5");
-            register s32 allocateMode asm("$4");
+            s32 allocateMode;
             register s32 nodeBlue asm("$12");
-            register u8 *node asm("$16");
+            u8 *node;
             register u8 *primitive asm("$17");
-            register u8 *panelNode asm("$2");
+            u8 *panelNode;
             asm volatile(".set\tnoreorder\n"
                          "lw\t$t4, 0x40($sp)\n"
                          "lbu\t$t3, 0x20($sp)\n"
@@ -3737,7 +3736,6 @@ panelLoop:
                 asm("" : : "r"(initialColumn));
                 triangleColumn = initialColumn;
                 panelTableBase = panelValue * 4;
-                asm("" : : "r"(panelTableBase));
                 triangleOffset.value = panelTableBase;
                 do {
                     widthDelta = triangleColumn != 0 ? 3 : -3;
@@ -3817,20 +3815,19 @@ panelLoop:
                     triangleColumn++;
                 } while (triangleColumn < 2);
                 nextRow = triangleRow + 1;
-                asm("" : : "r"(nextRow));
                 triangleRow = nextRow;
                 asm("" : "=r"(nextRow) : "0"(nextRow));
             } while ((s8)nextRow < 2);
         }
         {
-            register s32 colorS asm("$18");
+            s32 colorS;
             register s32 xpos asm("$20");
             register s32 blue asm("$19");
             register s8 initialArrowIndex asm("$23");
             s8 arrowIndex;
             register s32 heightDelta asm("$5");
-            register s32 allocateMode asm("$4");
-            register u8 *node asm("$16");
+            s32 allocateMode;
+            u8 *node;
             register u8 *primitive asm("$17");
             register s32 red asm("$12");
             register s32 green asm("$11");

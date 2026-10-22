@@ -1325,7 +1325,6 @@ void SoundUpdateCar(u8 *car) {
                     one = 1;
                     minusOne = -1;
                     five = 5;
-                    asm("" : : "r"(one), "r"(minusOne), "r"(five));
                     fade = D_800A2FA4B;
                     handles = D_800BE988;
                     positions = D_80098D00;

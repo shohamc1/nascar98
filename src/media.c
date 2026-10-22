@@ -1534,7 +1534,7 @@ void CdStreamReadyCallback(u8 intr, u8 *result) {
     s32 n;
     s32 test;
     register s32 availReg asm("t1");
-    register s32 contiguousReg asm("a0");
+    s32 contiguousReg;
     volatile s32 *stream;
 
     if (intr != CdlDataReady) {
@@ -1631,7 +1631,6 @@ void CdStreamReadyCallback(u8 intr, u8 *result) {
     availReg = avail;
     contiguousReg = contiguous;
     /* Keep the minimum operands in the retail registers. */
-    asm("" : : "r"(availReg), "r"(contiguousReg));
     test = avail < contiguous;
     if (test) {
         n = avail;
