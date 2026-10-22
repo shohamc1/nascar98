@@ -412,7 +412,7 @@ s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
-s32 func_8003FFF0(void *arg0, void *arg1);
+s32 FileLoadBlock(void *arg0, void *arg1);
 void func_800400D8(s32 arg0);
 void func_800401B8(void);
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3);
@@ -495,7 +495,7 @@ extern u8 D_8008CA06[];
 /* Retail keeps an empty 8-byte frame; `framePad` reproduces it. The `u16 mode`
  * keeps the nor result and the or-accumulator in separate registers, and the
  * 0x3C8 store sits in both arms so jump2 cross-jumps only the final sb. */
-u16 func_80041BFC(u8 *arg0) {
+u16 PadReadObjectState(u8 *arg0) {
     s32 bank;
     u32 data;
     u16 pad;
@@ -593,7 +593,7 @@ extern u32 D_8008CA40[];
 extern u32 D_8008CA44[];
 extern u32 D_8008CA48[];
 
-void func_80041DEC(void) {
+void PadRefreshTypes(void) {
     u32 padWord;
     u32 padType;
     u8 *node;

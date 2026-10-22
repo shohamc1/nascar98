@@ -220,7 +220,7 @@ typedef struct PanelState {
     u8 pad18[8];
     PanelChild *child;
 } PanelState;
-void *func_80058094(s32 arg0, void **arg1, s32 arg2);
+void *FileLoadOffsetTable(s32 arg0, void **arg1, s32 arg2);
 void TextureLoadTim(void *arg0);
 typedef struct UnkNode1C {
     u8 unk0[6];
@@ -528,7 +528,7 @@ s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
-s32 func_8003FFF0(void *arg0, void *arg1);
+s32 FileLoadBlock(void *arg0, void *arg1);
 void func_800400D8(s32 arg0);
 void func_800401B8(void);
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3);
@@ -552,7 +552,7 @@ u16 func_80041B94(s32 index);
 u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
-void func_80041DEC(void);
+void PadRefreshTypes(void);
 void func_80042218(u16 *src, s32 *acc, u32 *dst);
 s32 func_8004229C(s32 arg0);
 u32 RandomGetScaled16(s32 arg0);
@@ -597,7 +597,8 @@ void func_80052FC4(s8 arg0);
 void func_8005301C(void);
 void func_800539F0(void);
 void func_80055AA4(u8 arg0, s32 arg1);
-void func_80055C78(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4, u8 arg5);
+void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
+                            u8 arg5);
 s32 func_80056B0C(s32 arg0, s32 arg1);
 s32 func_80056B5C(s32 arg0, s32 arg1, s32 arg2);
 void func_80056C84(s32 arg0, s32 arg1);
@@ -617,9 +618,9 @@ void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5);
 void func_80057FC8(s32 hide);
 void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
-void *func_80058094(s32 arg0, void **arg1, s32 arg2);
+void *FileLoadOffsetTable(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 RaceFindGridPosition(u8 value);
+u8 RaceFindDriverPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -1385,7 +1386,7 @@ extern s32 D_800A3370, D_800A3374, D_800A3378Small;
 void func_80069744(void) {
     s32 block;
 
-    block = (s32)func_80058094(0xB, (void **)gPadType + 3, 0);
+    block = (s32)FileLoadOffsetTable(0xB, (void **)gPadType + 3, 0);
     D_800A336C = (void *)block;
     if (block != 0) {
         D_800A3370 = block + D_800A3A30->unk0;
@@ -1559,7 +1560,7 @@ void __maspsx_include_asm_hack_jtblpad_80069A90() {
             "    .section .text # maspsx-keep\n");
 }
 
-void func_80069AFC(s32 arg0) {
+void MenuUpdateItemRow(s32 arg0) {
     extern void *D_800A3914[];
     extern s8 gPadLayout[];
     extern s32 D_8009A2D4[];
@@ -1785,7 +1786,7 @@ s32 func_80069EB8(void) {
     return 0;
 }
 
-s32 func_80069F30(void) {
+s32 CardResolveSlot(void) {
     u8 slot;
     u8 status;
 
@@ -2065,7 +2066,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
 
 extern s32 D_800A35B0;
 extern void func_8006B464(void);
-s32 func_8006A7C8(u8 arg0) {
+s32 CardLoadSaveTable(u8 arg0) {
     u8 slot;
     u8 status;
     u16 c;
@@ -2634,8 +2635,8 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
     u8 isNew;
 
     func_800599E4();
-    if (func_80069F30() & 0xFF) {
-        func_8006A7C8(0);
+    if (CardResolveSlot() & 0xFF) {
+        CardLoadSaveTable(0);
     }
     func_800598C4();
     i = arg1;
@@ -2644,7 +2645,7 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
         p = gPlayerDriver + i;
         do {
             isNew = 0;
-            idx = RaceFindGridPosition(*p);
+            idx = RaceFindDriverPosition(*p);
             name = gDriverNames[*p];
             if (D_800A3A58 == 0) {
                 slot = 0xFF;
@@ -2700,7 +2701,7 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
     }
     func_8006B5BC();
     func_800599E4();
-    func_80069F30();
+    CardResolveSlot();
     func_8006AA70();
     func_800598C4();
 }
@@ -4254,7 +4255,7 @@ u32 arg2;
 
     subtype = arg2;
     scratch[0x20B] = arg0;
-    func_80041BFC(scratch);
+    PadReadObjectState(scratch);
     if (arg1 == 2) {
         u8 value;
 
@@ -4394,7 +4395,7 @@ void func_8006E484(u32 arg0, u32 arg1) {
     }
 }
 
-extern u16 func_80041BFC(u8 *);
+extern u16 PadReadObjectState(u8 *);
 
 /* Samples pad arg0's three stick axes into the third byte of its
  * calibration entries (D_800AEE3E). The K&R definition keeps retail's
@@ -4415,7 +4416,7 @@ u32 arg2;
 
     subtype = arg2;
     scratch[0x20B] = arg0;
-    func_80041BFC(scratch);
+    PadReadObjectState(scratch);
     for (i = 0; i < 3; i++) {
         q = (u8)arg0 * 9 + i * 3;
         D_800AEE3E[q] = PadReadAxis(scratch, i, arg1, subtype);

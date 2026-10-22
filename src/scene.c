@@ -455,7 +455,7 @@ s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
-s32 func_8003FFF0(void *arg0, void *arg1);
+s32 FileLoadBlock(void *arg0, void *arg1);
 void func_800400D8(s32 arg0);
 void func_800401B8(void);
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3);
@@ -479,7 +479,7 @@ u16 func_80041B94(s32 index);
 u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
-void func_80041DEC(void);
+void PadRefreshTypes(void);
 void func_80042218(u16 *src, s32 *acc, u32 *dst);
 s32 func_8004229C(s32 arg0);
 u32 RandomGetScaled16(s32 arg0);
@@ -5027,7 +5027,7 @@ void HudDrawStandings(s8 arg0, s32 y) {
                 index = rowStart - 1;
             }
             textY = (u8)y;
-            func_80050028Row(gDriverNames[gGridOrder[index]], gStandingsNameX,
+            func_80050028Row(gDriverNames[gDriverOrder[index]], gStandingsNameX,
                              textY, 0);
             if (carIndex == ((Car *)gPlayerCar[0])->place &&
                 ((Car *)gPlayerCar[0])->lap < 2) {
@@ -7867,7 +7867,7 @@ void MenuRunFrontEnd(void) {
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_800535A0);
 
-extern void func_80057AE4(void);
+extern void SceneInitPrimPools(void);
 extern s32 D_800A37EC;
 extern u8 D_800A3724NM asm("D_800A3724.NON_MATCHING");
 extern u8 D_800A305ANM asm("D_800A305A.NON_MATCHING");
@@ -7882,13 +7882,13 @@ void func_800539F0(void) {
     D_800A37EC = (s32)HeapAlloc(0x26000);
     func_8003CA18(D_800A37EC, 5);
     func_8005E550(6);
-    func_80057AE4();
+    SceneInitPrimPools();
     i = 0;
     func_800631B4();
     func_80063E7C();
     func_80057A9C();
     func_8005A4E0();
-    base = func_80058094(9, &table, 0);
+    base = FileLoadOffsetTable(9, &table, 0);
     TextureLoadTim(base + ((s32 *)table)[0xB]);
     DrawSync(0);
     TextureLoadTim(base + ((s32 *)table)[6]);
@@ -8066,7 +8066,7 @@ void SoundStopSlotMainLoop(s32) asm("SoundStopSlot");
 s32 func_80041B7CMainLoop(s32) asm("PadGetButtons");
 s32 func_8004229CMainLoop(s32 arg0) asm("func_8004229C");
 void func_80044FF8MainLoop(s32 arg0, s32 arg1) asm("func_80044FF8");
-void func_80055C78MainLoop() asm("func_80055C78");
+void MenuHandleOptionsInputMainLoop() asm("MenuHandleOptionsInput");
 s32 func_80056B0CMainLoop(s32 arg0, s32 arg1) asm("func_80056B0C");
 s32 func_80056B5CMainLoop(s32 arg0, s32 arg1, s32 arg2) asm("func_80056B5C");
 void func_80056C84MainLoop(s32 arg0, s32 arg1) asm("func_80056C84");
@@ -8096,7 +8096,7 @@ void func_80063180MainLoop(s32 enabled) asm("func_80063180");
 void func_80063770MainLoop(u8 index) asm("func_80063770");
 void func_80063AE0MainLoop(s32, s32) asm("func_80063AE0");
 void func_80068AC4MainLoop(s32 arg0, s32 arg1, s32 arg2) asm("func_80068AC4");
-void func_80069AFCMainLoop(s32 arg0) asm("func_80069AFC");
+void MenuUpdateItemRowMainLoop(s32 arg0) asm("MenuUpdateItemRow");
 s32 func_80069EB8MainLoop(void) asm("func_80069EB8");
 s32 func_8006A080MainLoop(void) asm("func_8006A080");
 u8 func_8006AD0CMainLoop(u8 value) asm("func_8006AD0C");
@@ -8132,9 +8132,9 @@ void func_80068CE4MainLoop(void) asm("func_80068CE4");
 void func_800691D4MainLoop(void) asm("func_800691D4");
 void func_800697ECMainLoop(s32) asm("func_800697EC");
 void MenuCreateItemRowMainLoop(u8) asm("MenuCreateItemRow");
-s32 func_80069F30MainLoop(void) asm("func_80069F30");
+s32 CardResolveSlotMainLoop(void) asm("CardResolveSlot");
 s32 CardLoadNameListMainLoop(s32) asm("CardLoadNameList");
-void func_8006A7C8MainLoop(s32) asm("func_8006A7C8");
+void CardLoadSaveTableMainLoop(s32) asm("CardLoadSaveTable");
 void CardMenuBuildFileListMainLoop(void) asm("CardMenuBuildFileList");
 s32 func_8006C700MainLoop(s32, s32) asm("func_8006C700");
 void func_8006C9F8MainLoop(void) asm("func_8006C9F8");
@@ -8333,8 +8333,8 @@ void func_80053D40(void) {
         } else if (argument0 == 9) {
             if (*D_800A3A58MainLoopSite3 == 0) {
                 func_800599E4MainLoop();
-                if (func_80069F30MainLoop() & 0xFF) {
-                    func_8006A7C8MainLoop(0);
+                if (CardResolveSlotMainLoop() & 0xFF) {
+                    CardLoadSaveTableMainLoop(0);
                 }
                 func_800598C4MainLoop();
             }
@@ -8942,14 +8942,14 @@ void func_80053D40(void) {
                                                 D_800A3059MainLoop - 2);
                                             func_80060F10MainLoop(-0x78, 0, 2);
                                             D_800A39E4MainLoop = 0x21;
-                                            func_80069AFCMainLoop(0x21);
+                                            MenuUpdateItemRowMainLoop(0x21);
                                         }
                                         goto finishInput;
                                     confirmMode21:
                                         SoundPlaySlotMainLoop(0, 3);
                                         func_80060F10MainLoop(0, -0x78, -2);
                                         D_800A39E4MainLoop = 5;
-                                        func_80069AFCMainLoop(5);
+                                        MenuUpdateItemRowMainLoop(5);
                                         if (D_800A3059MainLoop == 3) {
                                             func_80044FF8MainLoop(2, 1);
                                             func_800596F4MainLoop();
@@ -8972,7 +8972,7 @@ void func_80053D40(void) {
                                         func_8006CF38MainLoop();
                                         func_8006C9F8MainLoop();
                                         gCardMenuMessageMainLoop[0] = 0;
-                                        func_80069AFCMainLoop(
+                                        MenuUpdateItemRowMainLoop(
                                             D_800A39E4MainLoop);
                                         goto finishInput;
                                     confirmMode23:
@@ -9012,7 +9012,7 @@ void func_80053D40(void) {
                                                             [0] == 0x10) {
                                                     updateCardStatus:
                                                         func_800599E4MainLoop();
-                                                        if (!(func_80069F30MainLoop() &
+                                                        if (!(CardResolveSlotMainLoop() &
                                                               0xFF)) {
                                                             CardMenuShowMessageMainLoop(
                                                                 0);
@@ -9136,7 +9136,7 @@ void func_80053D40(void) {
                                             register s32 cardStatus asm("v0");
                                             SoundPlaySlotMainLoop(0, 3);
                                             func_800599E4MainLoop();
-                                            func_80069F30MainLoop();
+                                            CardResolveSlotMainLoop();
                                             cardStatus =
                                                 func_80069EB8MainLoop() & 0xFF;
                                             if (cardStatus == 0) {
@@ -9171,7 +9171,8 @@ void func_80053D40(void) {
                                                     CardMenuShowMessageMainLoop(
                                                         0);
                                                     D_800A3928MainLoop = one;
-                                                    func_80069AFCMainLoop(0xA);
+                                                    MenuUpdateItemRowMainLoop(
+                                                        0xA);
                                                 } else {
                                                     func_800598C4MainLoop();
                                                 checkCardMenuReady:
@@ -9182,7 +9183,7 @@ void func_80053D40(void) {
                                                             0);
                                                         D_800A3928MainLoop =
                                                             one;
-                                                        func_80069AFCMainLoop(
+                                                        MenuUpdateItemRowMainLoop(
                                                             0xA);
                                                     }
                                                 }
@@ -9205,7 +9206,7 @@ void func_80053D40(void) {
                                         func_8006C598MainLoop(0, -0x78, -2);
                                     finishMainMenuReturn:
                                         D_800A39E4MainLoop = one;
-                                        func_80069AFCMainLoop(1);
+                                        MenuUpdateItemRowMainLoop(1);
                                         break;
                                     case 0x22:
                                     case 0x28:
@@ -9685,12 +9686,12 @@ void func_80053D40(void) {
                                             }
                                         } else if (D_800A39E4MainLoop == two &&
                                                    D_800A3059MainLoop == one) {
-                                            func_80055C78MainLoop(
+                                            MenuHandleOptionsInputMainLoop(
                                                 2, 1, 1, newPad[player & 0xFF],
                                                 oldPad[player & 0xFF],
                                                 player & 0xFF);
                                         } else {
-                                            func_80055C78MainLoop(
+                                            MenuHandleOptionsInputMainLoop(
                                                 D_800A39E4MainLoop,
                                                 D_800A3059MainLoop, 1,
                                                 newPad[0], oldPad[0],
@@ -9720,12 +9721,12 @@ void func_80053D40(void) {
                                             }
                                         } else if (D_800A39E4MainLoop == two &&
                                                    D_800A3059MainLoop == one) {
-                                            func_80055C78MainLoop(
+                                            MenuHandleOptionsInputMainLoop(
                                                 2, 1, 0, newPad[player & 0xFF],
                                                 oldPad[player & 0xFF],
                                                 player & 0xFF);
                                         } else {
-                                            func_80055C78MainLoop(
+                                            MenuHandleOptionsInputMainLoop(
                                                 D_800A39E4MainLoop,
                                                 D_800A3059MainLoop, 0,
                                                 newPad[0], oldPad[0],
@@ -9817,7 +9818,8 @@ void func_80055AA4(u8 arg0, s32 arg1) {
  * func_80055AA4 calls. func_80063694KR is unprototyped on purpose: retail
  * passes its first argument without narrowing it to u8.
  */
-void func_80055C78(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4, u8 arg5) {
+void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
+                            u8 arg5) {
     extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");
     extern u8 D_800A3988NM asm("D_800A3988.NON_MATCHING");
     extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
@@ -10683,7 +10685,7 @@ void func_80057160(s32 arg0) {
     extern void func_8006C2D0(s32);
     extern void func_8006CB40(void);
     extern void func_80063770(u8);
-    extern void func_80069AFC(u8);
+    extern void MenuUpdateItemRow(u8);
     s32 result;
 
     D_800A3704 = 1;
@@ -10697,7 +10699,7 @@ void func_80057160(s32 arg0) {
         func_8006CB40();
     }
     func_80063770(0);
-    func_80069AFC(D_800A39E4Small);
+    MenuUpdateItemRow(D_800A39E4Small);
 }
 
 u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
@@ -11080,7 +11082,7 @@ extern s32 D_800A3780;
 extern s32 D_800A35B8;
 extern s32 D_800A3544;
 extern s32 D_800A38EC;
-void func_80057AE4(void) {
+void SceneInitPrimPools(void) {
     POLY_FT4 *poly;
     POLY_F4 *shade;
     u32 count;
@@ -11359,7 +11361,7 @@ void func_80058030(void) {
  * return the buffer. The loop notes from do/while (0) double the weight of
  * the HeapAlloc references, which ranks size ahead of sector for the saved
  * registers, as in retail. */
-void *func_80058094(s32 fileId, void **outTable, s32 buf) {
+void *FileLoadOffsetTable(s32 fileId, void **outTable, s32 buf) {
     extern s32 D_800A3090[];
     s32 size;
     s32 sector;
@@ -11516,7 +11518,7 @@ void RaceBuildQualifyingGrid(s32 track) {
         }
     }
     for (i = 0; i < 24; i++) {
-        gGridOrder[i] = entries[i].id;
+        gDriverOrder[i] = entries[i].id;
         D_800B9DA4[entries[i].id] = i;
     }
     record = func_80014398(track);
@@ -11536,35 +11538,35 @@ void RaceBuildQualifyingGrid(s32 track) {
         times[i] = base + offset;
     }
     for (i = 0; i < 23; i++) {
-        D_800AEB34[gGridOrder[i]] = times[i];
+        D_800AEB34[gDriverOrder[i]] = times[i];
         D_800AE1EC[i] = times[i];
     }
     if (D_800A3644 != 0 && D_800A3073NM != 0) {
         if (RandomScaledGet(50) >= 26) {
             D_800B9DA4[D_800A36E1Lui] = 6;
             D_800B9DA4[gPlayerDriverPair[0]] = 7;
-            gGridOrder[6] = D_800A36E1Lui;
-            gGridOrder[7] = gPlayerDriverPair[0];
+            gDriverOrder[6] = D_800A36E1Lui;
+            gDriverOrder[7] = gPlayerDriverPair[0];
         } else {
             D_800B9DA4[gPlayerDriverPair[0]] = 6;
             D_800B9DA4[D_800A36E1Lui] = 7;
-            gGridOrder[6] = gPlayerDriverPair[0];
-            gGridOrder[7] = D_800A36E1Lui;
+            gDriverOrder[6] = gPlayerDriverPair[0];
+            gDriverOrder[7] = D_800A36E1Lui;
         }
         D_800AEB34[D_800A36E1Lui] = 0x7FFFFFFF;
         D_800AEB34[gPlayerDriverPair[0]] = 0x7FFFFFFF;
         D_800AE1EC[7] = 0x7FFFFFFF;
         D_800AE1EC[6] = 0x7FFFFFFF;
     } else {
-        D_800AEB34[gGridOrder[23]] = 0x7FFFFFFF;
+        D_800AEB34[gDriverOrder[23]] = 0x7FFFFFFF;
         D_800AE1EC[23] = 0x7FFFFFFF;
     }
 }
 
-u8 RaceFindGridPosition(u8 value) {
+u8 RaceFindDriverPosition(u8 value) {
     s32 i;
     for (i = 0; i < 24; i++) {
-        if (gGridOrder[i] == value) {
+        if (gDriverOrder[i] == value) {
             return i;
         }
     }

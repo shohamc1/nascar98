@@ -186,7 +186,7 @@ void GameRunSession(void) {
     extern void func_80045288(void);
     extern void func_80014A70(void);
     extern void ReplayAllocBuffer(void);
-    extern void func_80041DEC(void);
+    extern void PadRefreshTypes(void);
     extern void func_80041AF0Run(s8) asm("func_80041AF0");
     extern void SystemInitCounter(void);
     extern void func_8004195C(void);
@@ -265,7 +265,7 @@ void GameRunSession(void) {
     func_80045288();
     func_80014A70();
     ReplayAllocBuffer();
-    func_80041DEC();
+    PadRefreshTypes();
     D_800A3884[0] = 1;
     if (D_800A2EB0Absolute[0] != -1) {
         D_800A33C8 = 0;
@@ -1313,7 +1313,7 @@ extern u8 D_800A2EDBw15[] asm("D_800A2EDB.NON_MATCHING");
 extern u8 D_800A3074w15[] asm("D_800A3074.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
 extern u8 D_800B9DA4w15[] asm("D_800B9DA4.NON_MATCHING");
-extern u8 gGridOrderw15[] asm("gGridOrder.NON_MATCHING");
+extern u8 gDriverOrderw15[] asm("gDriverOrder.NON_MATCHING");
 extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
 extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
@@ -1336,7 +1336,7 @@ void func_800144B4(void) {
     s32 c3;
     s32 c1;
     mode = 0;
-    be70c = gGridOrderw15;
+    be70c = gDriverOrderw15;
     if (D_800A364Cw15[-8] == 1) {
         mode = D_800A2EB0w15[0] != (-1);
     }

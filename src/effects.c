@@ -417,7 +417,7 @@ s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
-s32 func_8003FFF0(void *arg0, void *arg1);
+s32 FileLoadBlock(void *arg0, void *arg1);
 void func_800400D8(s32 arg0);
 void func_800401B8(void);
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3);
@@ -441,7 +441,7 @@ u16 func_80041B94(s32 index);
 u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
-void func_80041DEC(void);
+void PadRefreshTypes(void);
 void func_80042218(u16 *src, s32 *acc, u32 *dst);
 s32 func_8004229C(s32 arg0);
 

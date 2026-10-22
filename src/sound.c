@@ -500,8 +500,8 @@ void SoundLoadVab(s32 arg0) {
     func_8003FA0C();
     if (gVabId != -1)
         SsVabClose(gVabId);
-    gVabHead = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
-    value = (s32)func_8003FFF0((void *)arg0, 0x80140000);
+    gVabHead = (s32)FileLoadBlock((void *)(arg0 + 1), 0);
+    value = (s32)FileLoadBlock((void *)arg0, 0x80140000);
     gVabBody = (void *)value;
     gVabId = SoundVabOpen(gVabHead, value);
 }
@@ -509,7 +509,7 @@ void SoundLoadVab(s32 arg0) {
 extern s16 gVabId;
 extern void *gVabBody;
 extern s32 gVabHead;
-extern s32 func_8003FFF0(void *, void *);
+extern s32 FileLoadBlock(void *, void *);
 extern s16 SoundVabOpen(void *, void *);
 extern void SsVabClose(s16);
 extern void func_8003FA0C(void);
@@ -522,8 +522,8 @@ void SoundLoadVab(s32 arg0) {
     if (gVabId != -1) {
         SsVabClose(gVabId);
     }
-    gVabHead = func_8003FFF0((void *)(s32 *)arg0 + 1, 0);
-    body = func_8003FFF0((void *)arg0, (void *)0x80140000);
+    gVabHead = FileLoadBlock((void *)(s32 *)arg0 + 1, 0);
+    body = FileLoadBlock((void *)arg0, (void *)0x80140000);
     gVabBody = body;
     gVabId = SoundVabOpen((void *)gVabHead, (void *)body);
 }
@@ -536,8 +536,8 @@ void SoundReloadVab(s32 arg0) {
     func_8003FA0C();
     if (gVabId != -1)
         SsVabClose(gVabId);
-    gVabHead = (s32)func_8003FFF0((void *)arg0, 0);
-    value = (s32)func_8003FFF0((void *)(arg0 + 1), 0);
+    gVabHead = (s32)FileLoadBlock((void *)arg0, 0);
+    value = (s32)FileLoadBlock((void *)(arg0 + 1), 0);
     gVabBody = (void *)value;
     gVabId = SoundVabOpen(gVabHead, value);
     if (gVabBody != 0) {
@@ -549,7 +549,7 @@ void SoundReloadVab(s32 arg0) {
 extern s16 gVabId;
 extern void *gVabBody;
 extern s32 gVabHead;
-extern s32 func_8003FFF0(void *, void *);
+extern s32 FileLoadBlock(void *, void *);
 extern s16 SoundVabOpen(void *, void *);
 extern void SsVabClose(s16);
 extern void HeapFree(void *);
@@ -563,8 +563,8 @@ void SoundReloadVab(s32 arg0) {
     if (gVabId != -1) {
         SsVabClose(gVabId);
     }
-    gVabHead = func_8003FFF0((void *)arg0, 0);
-    body = func_8003FFF0((void *)(arg0 + 1), 0);
+    gVabHead = FileLoadBlock((void *)arg0, 0);
+    body = FileLoadBlock((void *)(arg0 + 1), 0);
     gVabBody = body;
     gVabId = SoundVabOpen((void *)gVabHead, (void *)body);
     if (gVabBody != 0) {
@@ -601,7 +601,7 @@ void SoundOpenSequence(void) {
     u8 entry[32];
     u8 *sequence;
     s16 id;
-    sequence = func_8003FFF0(entry, 0);
+    sequence = FileLoadBlock(entry, 0);
     gSequenceData = sequence;
     if (sequence != 0) {
         id = SsSeqOpen(sequence, gVabId);
@@ -1112,7 +1112,7 @@ static const char sSoundOpenError[] = "unable to open sound file";
 static const char sSoundMemoryError[] = "Insufficient memory to load sound";
 extern char D_800A2F98[];
 
-s32 func_8003FFF0(void *arg0, void *arg1) {
+s32 FileLoadBlock(void *arg0, void *arg1) {
     void *buffer;
     void *handle;
     s32 padded;

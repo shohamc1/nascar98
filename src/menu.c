@@ -485,7 +485,7 @@ s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
-s32 func_8003FFF0(void *arg0, void *arg1);
+s32 FileLoadBlock(void *arg0, void *arg1);
 void func_800400D8(s32 arg0);
 void func_800401B8(void);
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3);
@@ -509,7 +509,7 @@ u16 func_80041B94(s32 index);
 u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
-void func_80041DEC(void);
+void PadRefreshTypes(void);
 void func_80042218(u16 *src, s32 *acc, u32 *dst);
 s32 func_8004229C(s32 arg0);
 u32 RandomGetScaled16(s32 arg0);
@@ -554,7 +554,8 @@ void func_80052FC4(s8 arg0);
 void func_8005301C(void);
 void func_800539F0(void);
 void func_80055AA4(u8 arg0, s32 arg1);
-void func_80055C78(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4, u8 arg5);
+void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
+                            u8 arg5);
 s32 func_80056B0C(s32 arg0, s32 arg1);
 s32 func_80056B5C(s32 arg0, s32 arg1, s32 arg2);
 void func_80056C84(s32 arg0, s32 arg1);
@@ -574,9 +575,9 @@ void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5);
 void func_80057FC8(s32 hide);
 void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
-void *func_80058094(s32 arg0, void **arg1, s32 arg2);
+void *FileLoadOffsetTable(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 RaceFindGridPosition(u8 value);
+u8 RaceFindDriverPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -943,7 +944,7 @@ void func_8005E550(s32 arg0) {
     void *result;
     u8 i;
 
-    result = func_80058094(arg0, &table, 0);
+    result = FileLoadOffsetTable(arg0, &table, 0);
     D_800A3954 = result;
     for (i = 0; i < 0x11; i++) {
         D_800AE178[i] = result + ((s32 *)table)[i];
@@ -5174,7 +5175,7 @@ void func_80063874(void) {
     s32 first;
     s32 second;
 
-    D_800A36F4_w42 = (s32)func_80058094(7, &table, SCRATCH_TOP);
+    D_800A36F4_w42 = (s32)FileLoadOffsetTable(7, &table, SCRATCH_TOP);
     if (D_800A3658_w42[0] == 0) {
         func_8001E230(8, STACK_BLOCK_801A0000 + 0x1A000);
         head = D_800A37E4_w42[0];
@@ -5443,7 +5444,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     } while (0);
 }
 
-void *func_80058094(s32 arg0, void **arg1, s32 arg2);
+void *FileLoadOffsetTable(s32 arg0, void **arg1, s32 arg2);
 void TextureLoadTim(void *arg0);
 
 void func_80064174(void) {
@@ -5451,7 +5452,7 @@ void func_80064174(void) {
     s32 *offsets;
     s32 i;
 
-    data = func_80058094(10, (void **)&offsets, 0);
+    data = FileLoadOffsetTable(10, (void **)&offsets, 0);
     for (i = 0; i < 0x18; i++) {
         TextureLoadTim((u8 *)data + offsets[i]);
     }
@@ -5865,7 +5866,7 @@ void func_80064E6C(void) {
     extern u8 *D_8009A414[];
     extern u8 D_800A3778;
     extern u8 D_800A35DC;
-    extern void func_80065058(s32, s32);
+    extern void MenuDrawCarPick(s32, s32);
     extern void func_80065F80(void);
     extern void MenuDrawCarPickPair(s32);
     u8 **base;
@@ -5896,7 +5897,7 @@ void func_80064E6C(void) {
     } else {
         func_80065838(1);
         D_800A3778 = 0;
-        func_80065058(*(volatile u8 *)&D_800A3778, 1);
+        MenuDrawCarPick(*(volatile u8 *)&D_800A3778, 1);
         if (D_800A3644[0] != 0 && D_800A3073[0] != 0) {
             D_800A35DC = 3;
         } else {
@@ -5943,7 +5944,7 @@ extern volatile u8 D_800A3760;
 extern u8 *D_800A3568;
 extern u8 *D_800A3970;
 extern u32 *D_800A38C4;
-void func_80065058(u8 id, s32 shift) {
+void MenuDrawCarPick(u8 id, s32 shift) {
     u8 entry[0x40];
     u8 slots[2];
     s32 n;
@@ -5969,11 +5970,11 @@ void func_80065058(u8 id, s32 shift) {
     height = id * 2;
     for (i = 0; i < 2; i++) {
         slots[i] = 0xFF;
-        if (gGridOrder[height + i] == gPlayerDriverLui) {
+        if (gDriverOrder[height + i] == gPlayerDriverLui) {
             slots[n - 1] = i;
             n++;
         }
-        if (D_800A3644Lui != 0 && gGridOrder[height + i] == D_800A36E1Lui) {
+        if (D_800A3644Lui != 0 && gDriverOrder[height + i] == D_800A36E1Lui) {
             slots[n - 1] = i;
             n++;
         }
@@ -6062,7 +6063,7 @@ void func_80065058(u8 id, s32 shift) {
     leftX = xOffset + 0x17;
     height = id * 2;
     for (i = 0; i < 2; i++) {
-        color = gGridOrder[height + i];
+        color = gDriverOrder[height + i];
         prim = (u8 *)func_80065040();
         SetPolyFT4((POLY_FT4 *)prim);
         func_80064AB4(prim, color);
@@ -6118,7 +6119,7 @@ void func_80065058(u8 id, s32 shift) {
         if (i == 0) {
             x0 = 0x17;
         }
-        color = gGridOrder[height + i];
+        color = gDriverOrder[height + i];
         if (color == gPlayerDriverLui) {
             r2 = 0xC0;
             g2 = 0x80;
@@ -6299,7 +6300,7 @@ void func_80065C3C(void) {
     extern u8 D_800A3884;
     extern volatile u8 D_800A3360;
     extern void func_8006594C(s32, s32);
-    extern void func_80065058(u8, s32);
+    extern void MenuDrawCarPick(u8, s32);
     s32 oldGp;
     u8 *walk;
     char *text;
@@ -6337,7 +6338,7 @@ void func_80065C3C(void) {
                     }
                     D_800A367C =
                         (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
-                    func_80065058(D_800A3778, 0);
+                    MenuDrawCarPick(D_800A3778, 0);
                     D_800A3884 = 2;
                 }
             } else {
@@ -6373,7 +6374,7 @@ void func_80065C3C(void) {
                     }
                     D_800A367C =
                         (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
-                    func_80065058(D_800A3778, 1);
+                    MenuDrawCarPick(D_800A3778, 1);
                 }
             }
         }

@@ -210,7 +210,7 @@ typedef struct PanelState {
     u8 pad18[8];
     PanelChild *child;
 } PanelState;
-void *func_80058094(s32 arg0, void **arg1, s32 arg2);
+void *FileLoadOffsetTable(s32 arg0, void **arg1, s32 arg2);
 void TextureLoadTim(void *arg0);
 typedef struct UnkNode1C {
     u8 unk0[6];
@@ -565,7 +565,7 @@ s32 SoundIsSlotActive(s32 arg0);
 void func_8003FA0C(void);
 void func_8003FEB8(void);
 s16 SoundVabOpen(void *arg0, void *arg1);
-s32 func_8003FFF0(void *arg0, void *arg1);
+s32 FileLoadBlock(void *arg0, void *arg1);
 void func_800400D8(s32 arg0);
 void func_800401B8(void);
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3);
@@ -589,7 +589,7 @@ u16 func_80041B94(s32 index);
 u32 PadGetType(s32 arg0);
 void PadInitBuffers(void);
 s32 func_80041D60(void);
-void func_80041DEC(void);
+void PadRefreshTypes(void);
 void func_80042218(u16 *src, s32 *acc, u32 *dst);
 s32 func_8004229C(s32 arg0);
 u32 RandomGetScaled16(s32 arg0);
@@ -634,7 +634,8 @@ void func_80052FC4(s8 arg0);
 void func_8005301C(void);
 void func_800539F0(void);
 void func_80055AA4(u8 arg0, s32 arg1);
-void func_80055C78(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4, u8 arg5);
+void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
+                            u8 arg5);
 s32 func_80056B0C(s32 arg0, s32 arg1);
 s32 func_80056B5C(s32 arg0, s32 arg1, s32 arg2);
 void func_80056C84(s32 arg0, s32 arg1);
@@ -654,9 +655,9 @@ void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5);
 void func_80057FC8(s32 hide);
 void func_80058000(s32 index, s32 *out);
 void func_80058030(void);
-void *func_80058094(s32 arg0, void **arg1, s32 arg2);
+void *FileLoadOffsetTable(s32 arg0, void **arg1, s32 arg2);
 void func_80058148(void);
-u8 RaceFindGridPosition(u8 value);
+u8 RaceFindDriverPosition(u8 value);
 void func_80058D08(s32 gp);
 void func_80058D14(u16 *src, u16 *dst, s32 arg2);
 void func_80058D8C(void);
@@ -792,7 +793,7 @@ void func_80069744(void);
 void func_800697B4(void);
 s32 func_80069A90(s32 arg0);
 void __maspsx_include_asm_hack_jtblpad_80069A90();
-void func_80069AFC(s32 arg0);
+void MenuUpdateItemRow(s32 arg0);
 void func_80069E88(void);
 s32 func_80069EB8(void);
 s32 func_8006A080(void);
@@ -1117,7 +1118,7 @@ s32 PadMapButtons(u8 arg0) {
 }
 
 extern PadAxisCal D_800AEE3C[][3];
-extern u16 func_80041BFC(u8 *);
+extern u16 PadReadObjectState(u8 *);
 
 /* Converts the pad's three stick axes into signed (axis 2) and unsigned
  * (axes 0 and 1) rates using the per-pad calibration table. Indexing the
@@ -1133,7 +1134,7 @@ void func_8006EB18(u8 *obj) {
 
     id = obj[0x20B];
     scratch[0x20B] = id;
-    func_80041BFC(scratch);
+    PadReadObjectState(scratch);
     for (i = 0; i < 3; i++) {
         value = PadReadAxis(scratch, i, ((u8 *)gPadType)[id], gPadLayout[id]);
         if (i == 2) {

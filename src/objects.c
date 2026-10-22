@@ -17189,7 +17189,7 @@ void func_8003C1CC(void) {
             out3 = (s32 *)base;
             off = 0;
             out2 = D_800AE1EC;
-            out1 = gGridOrder;
+            out1 = gDriverOrder;
             idx = 1;
             do {
                 car = gCarListnm[0];
@@ -17271,7 +17271,7 @@ void func_8003C3FC(void) {
     s32 count;
     s32 i;
 
-    bytes = gGridOrder;
+    bytes = gDriverOrder;
     words = D_800AE1EC;
     func_8002F454();
     limit = *(s32 *)(gPlayerCar[0] + 0x25C);

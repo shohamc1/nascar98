@@ -131,7 +131,7 @@ extern void func_80025594(u8 *);
 void func_800390A0(s32, s32, s32, s32);
 void FontDrawPaddedNumber(s32, s32, s32, s32);
 void func_8003644C(s32, s32, s32, s32);
-extern u8 gGridOrder[], D_800B9DA4[];
+extern u8 gDriverOrder[], D_800B9DA4[];
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
 void RandomCountMark(void);
@@ -365,7 +365,7 @@ void func_8003C528(void) {
     s32 value;
     index = gPlayerCar[0][0x376];
     value = *(s32 *)(gPlayerCar[0] + 0x25C);
-    gGridOrder[0] = index;
+    gDriverOrder[0] = index;
     D_800AE1EC[0] = value;
     D_800B9DA4[index & 0xFF] = 0;
 }
