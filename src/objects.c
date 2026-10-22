@@ -155,8 +155,7 @@ s32 VectorGetMagnitude2D(void *arg0) {
     return MathSqrt(dx * dx + dy * dy);
 }
 
-INCLUDE_RODATA("asm/nonmatchings/objects", D_8008CF28);
-extern char D_8008CF28[];
+static const char sReplayAllocError[] = "Error: No memory for instant replay!";
 extern u32 D_800A38F4Abs[] asm("D_800A38F4.NON_MATCHING");
 extern s32 D_800A2DE4Small asm("D_800A2DE4.NON_MATCHING");
 extern s32 D_800A3A38Small asm("D_800A3A38.NON_MATCHING");
@@ -180,7 +179,7 @@ void ReplayAllocBuffer(void) {
     ptr = HeapAlloc(count * 20);
     D_800A3A38Small = (s32)ptr;
     if (ptr == 0) {
-        SystemShowFatalError(D_8008CF28);
+        SystemShowFatalError(sReplayAllocError);
     }
     quotient = D_800A2DE4Small / (D_800A2E94[0] + 6);
     D_800A37E8Small = 0;

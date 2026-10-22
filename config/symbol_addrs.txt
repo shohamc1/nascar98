@@ -657,7 +657,6 @@ USER_RAM_TOP = 0x80140000; // absolute:True fixed_address
 
 // Data labels tracked so guarded drafts can reference them directly (wave 6-8 requests).
 D_8008CFC0 = 0x8008CFC0; // force_not_migration:True
-D_8008CF28 = 0x8008CF28; // force_not_migration:True
 D_800A2DEC = 0x800A2DEC;
 D_800A2DF0 = 0x800A2DF0;
 D_800A2DF4 = 0x800A2DF4;
