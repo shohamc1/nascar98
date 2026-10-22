@@ -686,22 +686,11 @@ D_800A3A0C = 0x800A3A0C;
 D_800B0A2C = 0x800B0A2C;
 // Strings owned by already-decompiled functions; keep as orphan rodata
 // files until inlined into their functions' source.
-D_8008CC6C = 0x8008CC6C; // force_not_migration:True
-D_8008CC7C = 0x8008CC7C; // force_not_migration:True
-D_80090560 = 0x80090560; // force_not_migration:True
-D_800906D8 = 0x800906D8; // force_not_migration:True
-D_8009071C = 0x8009071C; // force_not_migration:True
-D_80090728 = 0x80090728; // force_not_migration:True
-D_8009073C = 0x8009073C; // force_not_migration:True
 SCRATCHPAD_BASE = 0x1F800000; // absolute:True fixed_address allow_duplicated:True
 RAM_CACHED_BASE = 0x80000000; // absolute:True fixed_address
-D_8008D08C = 0x8008D08C; // force_not_migration:True
-D_8008D0AC = 0x8008D0AC; // force_not_migration:True
-D_8008D0CC = 0x8008D0CC; // force_not_migration:True
 
 // Parked draft support: preserve rodata when its C body is enabled.
 D_8008CFE0 = 0x8008CFE0; // force_not_migration:True
-D_80090698 = 0x80090698; // force_not_migration:True
 
 // MDEC tables and command packets, checked through DecDCTGetEnv/PutEnv.
 gMdecLumaQuantTable = 0x800A2BA0;
@@ -764,14 +753,6 @@ D_800A26E0 = 0x800A26E0;
 D_800A26C0 = 0x800A26C0;
 D_800A26AC = 0x800A26AC;
 D_800A26B0 = 0x800A26B0;
-D_800906C4 = 0x800906C4; // force_not_migration:True
-D_80090788 = 0x80090788; // force_not_migration:True
-D_800906F4 = 0x800906F4; // force_not_migration:True
-D_800905C8 = 0x800905C8; // force_not_migration:True
-D_800905E4 = 0x800905E4; // force_not_migration:True
-D_80090600 = 0x80090600; // force_not_migration:True
-D_8009060C = 0x8009060C; // force_not_migration:True
-D_80090770 = 0x80090770; // force_not_migration:True
 D_800A26BC = 0x800A26BC;
 D_800A26A4 = 0x800A26A4;
 D_800A26C8 = 0x800A26C8;
@@ -794,7 +775,6 @@ D_800A2700 = 0x800A2700;
 CarHandlePairCollision = 0x800261F8; // type:func
 RaceUpdateLapProgress = 0x8003AD94; // type:func
 CarHandleWallCollision = 0x80027174; // type:func
-D_8008D0F8 = 0x8008D0F8; // force_not_migration:True
 
 sTrackNameSaltBasin = 0x8008CA50; // force_not_migration:True
 sTrackNameWillowLane = 0x8008CA5C; // force_not_migration:True
@@ -817,11 +797,6 @@ CarDrawModel = 0x80016CD8; // type:func
 HudInitRacePrims = 0x8004A510; // type:func
 
 TrackReadData = 0x80014BEC; // type:func
-sTrackInitMessage = 0x8008CBF8; // force_not_migration:True
-sTrackReadVerticesMessage = 0x8008CC10; // force_not_migration:True
-sTrackReadFacesMessage = 0x8008CC28; // force_not_migration:True
-sTrackFaceErrorFormat = 0x8008CC3C; // force_not_migration:True
-sTrackReadSuccessMessage = 0x8008CC50; // force_not_migration:True
 
 SceneUpdateProjectiles = 0x80045864; // type:func
 
@@ -849,25 +824,9 @@ CdUpdateStream = 0x800711F0; // type:func
 
 CarUpdatePlayer = 0x8002A2F8; // type:func
 
-sObjectVectorsAllocationError = 0x8008D030; // force_not_migration:True
-sObjectFacesAllocationError = 0x8008D050; // force_not_migration:True
-sObjectOffsetsAllocationError = 0x8008D06C; // force_not_migration:True
 
 ObjectLoadGeometry = 0x80031D74; // type:func
 _SsSndPlay = 0x8008134C; // type:func
-D_8009064C = 0x8009064C; // force_not_migration:True
-D_8009066C = 0x8009066C; // force_not_migration:True
-D_80090680 = 0x80090680; // force_not_migration:True
-D_800907B4 = 0x800907B4; // force_not_migration:True
-D_800907CC = 0x800907CC; // force_not_migration:True
-D_80090800 = 0x80090800; // force_not_migration:True
-D_80090834 = 0x80090834; // force_not_migration:True
-D_80090570 = 0x80090570; // force_not_migration:True
-D_80090588 = 0x80090588; // force_not_migration:True
-D_80090598 = 0x80090598; // force_not_migration:True
-D_800905B0 = 0x800905B0; // force_not_migration:True
-D_800905BC = 0x800905BC; // force_not_migration:True
-D_800907E8 = 0x800907E8; // force_not_migration:True
 
 // Names from the 2026-10 naming survey.
 TextReverseString = 0x80012E3C; // type:func
@@ -920,7 +879,6 @@ AudioQueueAdpcm = 0x80072CA8; // type:func
 AudioShutdown = 0x80073AA4; // type:func
 AudioGetContextSize = 0x80073BD0; // type:func
 AudioInit = 0x80073BEC; // type:func
-sCardFileName = 0x8008FC60; // force_not_migration:True
 __heapbase = 0x8009B9C4;
 gTrackNameJuniper = 0x800A2D24;
 gTrackNamePocono = 0x800A2D2C;

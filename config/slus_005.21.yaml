@@ -101,11 +101,17 @@ segments:
       - [0x7B250, c, menu_text]
       - [0x7B250, c, media_paths]
       - [0x7B250, c, psxsdk/libcd_rodata]
+      - [0x7B250, c, game_rodata]
+      - [0x7B250, c, objects_rodata]
+      - [0x7B250, c, memory_card_menu_rodata]
+      - [0x7B250, c, psxsdk/libgpu_rodata]
       - [0x7B250, .rodata, game]
+      - [0x7B394, .rodata, game_rodata]  # 0x8008CB94
       - [0x7B52C, .rodata, util]  # 0x8008CD2C
       - [0x7B57C, .rodata, primitives_text]  # 0x8008CD7C
       - [0x7B714, .rodata, list_callbacks]  # 0x8008CF14
       - [0x7B728, .rodata, objects]  # 0x8008CF28
+      - [0x7B830, .rodata, objects_rodata]  # 0x8008D030
       - [0x7B910, .rodata, cd]  # 0x8008D110
       - [0x7B9DC, .rodata, sound]  # 0x8008D1DC
       - [0x7BAE4, .rodata, input]  # 0x8008D2E4
@@ -114,6 +120,7 @@ segments:
       - [0x7E128, .rodata, memory_card]  # 0x8008F928
       - [0x7E1C0, .rodata, menu]  # 0x8008F9C0
       - [0x7E214, .rodata, memory_card_menu]  # 0x8008FA14
+      - [0x7E460, .rodata, memory_card_menu_rodata]  # 0x8008FC60
       - [0x7E470, .rodata, media]  # 0x8008FC70
       - [0x7E4A4, .rodata, media_paths]  # 0x8008FCA4
       - [0x7E810, .rodata, psxsdk/libgcc]  # 0x80090010
@@ -121,6 +128,7 @@ segments:
       - [0x7EB34, .rodata, psxsdk/libcd_rodata]  # 0x80090334
       - [0x7EC04, .rodata, psxsdk/libetc]  # 0x80090404
       - [0x7ECC4, .rodata, psxsdk/libgpu]  # 0x800904C4
+      - [0x7ED48, .rodata, psxsdk/libgpu_rodata]  # 0x80090548
       - [0x7F04C, .rodata, psxsdk/libsnd]  # 0x8009084C
       - [0x7F338, .rodata, psxsdk/libspu]  # 0x80090B38
       - [0x7F440, .rodata, psxsdk/libc]  # 0x80090C40

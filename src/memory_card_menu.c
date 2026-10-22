@@ -1742,8 +1742,6 @@ void func_80069C60(s32 arg0) {
     }
 }
 
-INCLUDE_RODATA("asm/nonmatchings/memory_card_menu", sCardFileName);
-
 extern char *D_800A35F4;
 extern char *D_800A3604;
 extern char *D_800A366C;
@@ -1870,10 +1868,10 @@ s32 func_8006A080(void) {
     return count & 0xFF;
 }
 
-extern char sCardFileName[];
+extern char gCardFileName[];
 extern s32 CardCountOtherFileBlocks(s32, char *);
 u8 CardGetOtherFileBlocks(void) {
-    return CardCountOtherFileBlocks(gCardSlot, sCardFileName);
+    return CardCountOtherFileBlocks(gCardSlot, gCardFileName);
 }
 
 extern char D_800B0A2C[];
@@ -1927,7 +1925,7 @@ s32 func_8006A15C(u8 arg0) {
     } else {
         memcpy(path, D_800A3388, 6);
     }
-    strcat(path, sCardFileName);
+    strcat(path, gCardFileName);
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
         return 1;
     }
@@ -1982,7 +1980,7 @@ s32 func_8006A3E0(char *record, u8 overwrite, u8 index) {
     SaveSlot *slots;
 
     D_800A3808 = 0;
-    if ((CardCountOtherFileBlocks(gCardSlot, sCardFileName) & 0xFF) == 0xF) {
+    if ((CardCountOtherFileBlocks(gCardSlot, gCardFileName) & 0xFF) == 0xF) {
         D_800A3808 = 0x1E;
         return 0;
     }
@@ -1991,7 +1989,7 @@ s32 func_8006A3E0(char *record, u8 overwrite, u8 index) {
     } else {
         memcpy(path, D_800A3388, 6);
     }
-    strcat(path, sCardFileName);
+    strcat(path, gCardFileName);
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
         fd = CardOpenFile(path, 0x200);
         if (fd == -1) {
@@ -2115,7 +2113,7 @@ s32 func_8006A7C8(u8 arg0) {
     } else {
         memcpy(path, D_800A3388, 6);
     }
-    strcat(path, sCardFileName);
+    strcat(path, gCardFileName);
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
         return 1;
     }
@@ -2176,7 +2174,7 @@ s32 func_8006AA70(void) {
     } else {
         memcpy(path, D_800A3388, 6);
     }
-    strcat(path, sCardFileName);
+    strcat(path, gCardFileName);
     result = CardFindFirstFile(path, &entry);
     created = 0;
     if ((result & 0xFF) == 0) {

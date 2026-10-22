@@ -10163,8 +10163,8 @@ extern s32 D_800A353CLui asm("D_800A353CAbsolute");
 extern s32 D_800A3758Lui asm("D_800A3758Absolute");
 extern s32 D_800A2F30;
 extern ModelVector *D_800AE130[];
-extern char sObjectVectorsAllocationError[], sObjectFacesAllocationError[],
-    sObjectOffsetsAllocationError[];
+extern char gObjectVectorsAllocationError[], gObjectFacesAllocationError[],
+    gObjectOffsetsAllocationError[];
 
 void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
     ModelFace *faceTable[1436];
@@ -10207,7 +10207,7 @@ void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
     if (reuse == -1) {
         vector = HeapAlloc((vectorCount + 2) * sizeof(ModelVector));
         if (vector == NULL) {
-            SystemShowFatalError(sObjectVectorsAllocationError);
+            SystemShowFatalError(gObjectVectorsAllocationError);
         }
         model->vectors = vector;
         D_800AE130[D_800A2F30++] = vector;
@@ -10217,13 +10217,13 @@ void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
     }
     faces = HeapAlloc(faceCount * sizeof(ModelFace));
     if (faces == NULL) {
-        SystemShowFatalError(sObjectFacesAllocationError);
+        SystemShowFatalError(gObjectFacesAllocationError);
     }
     model->faceStorage = faces;
     if (offsetCount != 0) {
         model->offsets = HeapAlloc(offsetCount * sizeof(ModelOffset));
         if (model->offsets == NULL) {
-            SystemShowFatalError(sObjectOffsetsAllocationError);
+            SystemShowFatalError(gObjectOffsetsAllocationError);
         }
     } else {
         model->offsets = NULL;
@@ -10336,9 +10336,6 @@ void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
         }
     }
 }
-INCLUDE_RODATA("asm/nonmatchings/objects", sObjectVectorsAllocationError);
-INCLUDE_RODATA("asm/nonmatchings/objects", sObjectFacesAllocationError);
-INCLUDE_RODATA("asm/nonmatchings/objects", sObjectOffsetsAllocationError);
 
 extern s32 FileOpenCall32328(s32, void *) asm("FileOpen");
 extern s32 FileSeekCall32328(void *, s32, s32) asm("FileSeek");
@@ -10367,8 +10364,6 @@ void func_80032328(s32 arg0) {
     D_800A2D4D[0] = 0;
     FileCloseCall32328(handle);
 }
-
-INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D08C);
 
 /*
  * The second D_800A3574 read goes through the D_800A36D0Absolute
@@ -13147,9 +13142,6 @@ void func_800367DC(void) {
     FileCloseCall367DC((s32)handle);
 }
 
-INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0AC);
-INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0CC);
-
 extern s32 D_800A2F4C;
 extern u8 D_800A2F58;
 extern u8 D_800A372C[];
@@ -13673,8 +13665,6 @@ s32 func_80037204(u8 *obj) {
     }
     return 1;
 }
-
-INCLUDE_RODATA("asm/nonmatchings/objects", D_8008D0F8);
 
 typedef struct {
     u8 *cars[6];

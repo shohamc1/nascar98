@@ -559,9 +559,6 @@ int FntPrint(const char *fmt, ...) {
     return font->unk28;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090548);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090560);
-
 u_short GetTPage(int tp, int abr, int x, int y) {
     int t, last;
     if (GetGraphType() == 1 || GetGraphType() == 2) {
@@ -805,15 +802,10 @@ s32 MargePrim(void *p0, void *p1) {
 
 extern char D_80090548[];
 extern char D_80090570[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090570);
 extern char D_80090588[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090588);
 extern char D_80090598[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090598);
 extern char D_800905B0[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800905B0);
 extern char D_800905BC[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800905BC);
 
 void DumpDrawEnv(DRAWENV *env) {
     GPU_printf(D_80090570, env->clip.x, env->clip.y, env->clip.w, env->clip.h);
@@ -840,11 +832,6 @@ extern char D_800905E4[];
 extern char D_80090600[];
 extern char D_8009060C[];
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800905C8);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800905E4);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090600);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_8009060C);
-
 void DumpDispEnv(DISPENV *env) {
     ((DebugPrintf)gDispPrintfRead1[0])(D_800905C8, env->disp.x, env->disp.y,
                                        env->disp.w, env->disp.h);
@@ -855,9 +842,7 @@ void DumpDispEnv(DISPENV *env) {
 }
 
 extern char D_8009064C[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_8009064C);
 extern char D_8009066C[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_8009066C);
 extern char D_8009DA48[];
 extern u16 D_8009DB10[][2];
 extern u16 D_8009DB24[][2];
@@ -887,7 +872,6 @@ s32 ResetGraph(s32 level) {
 }
 
 extern char D_80090680[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090680);
 
 s32 SetGraphReverse(s32 mode) {
     s32 old = gGfx.reverse;
@@ -922,14 +906,11 @@ int SetGraphDebug(int level) {
     return old;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090698);
-
 extern u32 D_8009DA88[];
 extern u32 D_8009DA8C[];
 extern u8 D_8009DA91[];
 extern u8 D_8009DA92[];
 extern char D_800906C4[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800906C4);
 int SetGraphQueue(int mode) {
     u8 previousMode;
     previousMode = D_8009DA91[0];
@@ -943,8 +924,6 @@ int SetGraphQueue(int mode) {
     }
     return previousMode;
 }
-
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800906D8);
 
 extern u8 D_8009DA90[];
 
@@ -981,7 +960,6 @@ extern u32 D_8009DA88[];
 extern u32 D_8009DA8C[];
 extern u8 D_8009DA92[];
 extern char D_800906F4[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800906F4);
 void SetDispMask(s32 mode) {
     s32 command;
     u32 *gpu;
@@ -1007,18 +985,6 @@ int DrawSync(int mode) {
         ((void (*)())D_8009DA8C[0])(D_80090708, mode);
     }
     return ((int (*)())((u32 *)D_8009DA88[0])[15])(mode);
-}
-
-/* "DrawSync(%d)..." string, in chunk form until it is split out by splat. */
-void __maspsx_include_asm_hack_D_80090708(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "nonmatching D_80090708 # maspsx-keep\n"
-            "dlabel D_80090708 # maspsx-keep\n"
-            "    .asciz \"DrawSync(%d)...\\n\" # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "enddlabel D_80090708 # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
 }
 
 extern u8 D_8009DA92[];
@@ -1059,10 +1025,6 @@ void checkRECT(RECT *r, RECT *rect) {
     }
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_8009071C);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090728);
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_8009073C);
-
 extern char D_80090740[];
 extern u32 D_8009DA88[];
 
@@ -1070,18 +1032,6 @@ int ClearImage(RECT *rect, u_char r, u_char g, u_char b) {
     checkRECT((RECT *)D_80090740, rect);
     return ((int (*)())((u32 *)D_8009DA88[0])[2])(
         ((u32 *)D_8009DA88[0])[3], rect, 8, (b << 16) | (g << 8) | r);
-}
-
-/* "ClearImage" string, in chunk form until it is split out by splat. */
-void __maspsx_include_asm_hack_D_80090740(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "nonmatching D_80090740 # maspsx-keep\n"
-            "dlabel D_80090740 # maspsx-keep\n"
-            "    .asciz \"ClearImage\" # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "enddlabel D_80090740 # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
 }
 
 extern char D_8009074C[];
@@ -1093,36 +1043,12 @@ int LoadImage(RECT *rect, u_long *p) {
                                                   rect, 8, p);
 }
 
-/* "LoadImage" string, in chunk form until it is split out by splat. */
-void __maspsx_include_asm_hack_D_8009074C(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "nonmatching D_8009074C # maspsx-keep\n"
-            "dlabel D_8009074C # maspsx-keep\n"
-            "    .asciz \"LoadImage\" # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "enddlabel D_8009074C # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
-}
-
 extern char D_80090758[];
 
 int StoreImage(RECT *rect, u_long *p) {
     checkRECT((RECT *)D_80090758, rect);
     return ((int (*)())((u32 *)D_8009DA88[0])[2])(((u32 *)D_8009DA88[0])[7],
                                                   rect, 8, p);
-}
-
-/* "StoreImage" string, in chunk form until it is split out by splat. */
-void __maspsx_include_asm_hack_D_80090758(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "nonmatching D_80090758 # maspsx-keep\n"
-            "dlabel D_80090758 # maspsx-keep\n"
-            "    .asciz \"StoreImage\" # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "enddlabel D_80090758 # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
 }
 
 extern char D_80090764[];
@@ -1146,19 +1072,6 @@ int MoveImage(RECT *rect, int x, int y) {
     return ((int (*)())cmd[2])(cmd[6], D_8009DB40 - 2, 20, 0);
 }
 
-/* "MoveImage" string, in chunk form until it is split out by splat. */
-void __maspsx_include_asm_hack_D_80090764(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "nonmatching D_80090764 # maspsx-keep\n"
-            "dlabel D_80090764 # maspsx-keep\n"
-            "    .asciz \"MoveImage\" # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "enddlabel D_80090764 # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
-}
-
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090770);
 extern u32 D_8009DA8C[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DB4C[];
@@ -1190,7 +1103,6 @@ extern u32 D_8009DA8C[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DB4C[];
 extern char D_80090788[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090788);
 OT_TYPE *ClearOTagR(OT_TYPE *ot, int n) {
     if (D_8009DA92[0] >= 2) {
         ((int (*)(const char *, ...))D_8009DA8C[0])(D_80090788, ot, n);
@@ -1222,21 +1134,8 @@ void DrawOTag(OT_TYPE *ot) {
                                             0);
 }
 
-/* "DrawOTag(%08x)..." string, in chunk form until it is split out by splat. */
-void __maspsx_include_asm_hack_D_800907A0(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "nonmatching D_800907A0 # maspsx-keep\n"
-            "dlabel D_800907A0 # maspsx-keep\n"
-            "    .asciz \"DrawOTag(%08x)...\\n\" # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "enddlabel D_800907A0 # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
-}
-
 extern void *memcpy();
 extern char D_800907B4[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800907B4);
 
 DRAWENV *PutDrawEnv(DRAWENV *env) {
     s32 size;
@@ -1255,7 +1154,6 @@ DRAWENV *PutDrawEnv(DRAWENV *env) {
 }
 
 extern char D_800907CC[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800907CC);
 
 void DrawOTagEnv(OT_TYPE *ot, DRAWENV *env) {
     s32 size;
@@ -1284,7 +1182,6 @@ DRAWENV *GetDrawEnv(DRAWENV *env) {
 }
 
 extern char D_800907E8[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_800907E8);
 extern s32 get_dx();
 
 DISPENV *PutDispEnv(DISPENV *env) {
@@ -2173,9 +2070,7 @@ void set_alarm(void) {
 }
 
 extern char D_80090800[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090800);
 extern char D_80090834[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libgpu", D_80090834);
 s32 get_alarm(void) {
     if (gpuAlarmEnd < VSync(-1) || gpuAlarmCount++ > 0xF0000) {
         *GPU_STATUS;

@@ -1250,10 +1250,6 @@ void TrackLoad(u8 selectTrack) {
     func_800A2CE0 = track;
 }
 
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CB94);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBB4);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CBD0);
-
 extern u16 D_80090ED8[];
 extern s32 D_80099590[];
 extern u8 D_800A3320Absolute[];
@@ -1673,16 +1669,11 @@ extern void func_80015930(u8 *, void *, s32);
 extern s32 D_800A2F80[], D_800A39E0[], D_800A376C[];
 extern s32 D_800BE72C[], D_800B1348[], D_800B134C[], D_800B1350[];
 extern s32 D_800AE848[], D_800AE84C[];
-extern char sTrackInitMessage[];
-INCLUDE_RODATA("asm/nonmatchings/game", sTrackInitMessage);
-extern char sTrackReadVerticesMessage[];
-INCLUDE_RODATA("asm/nonmatchings/game", sTrackReadVerticesMessage);
-extern char sTrackReadFacesMessage[];
-INCLUDE_RODATA("asm/nonmatchings/game", sTrackReadFacesMessage);
-extern char sTrackFaceErrorFormat[];
-INCLUDE_RODATA("asm/nonmatchings/game", sTrackFaceErrorFormat);
-extern char sTrackReadSuccessMessage[];
-INCLUDE_RODATA("asm/nonmatchings/game", sTrackReadSuccessMessage);
+extern char gTrackInitMessage[];
+extern char gTrackReadVerticesMessage[];
+extern char gTrackReadFacesMessage[];
+extern char gTrackFaceErrorFormat[];
+extern char gTrackReadSuccessMessage[];
 
 void TrackReadData(s32 *trackData, s32 file) {
     register TrackResource *resource asm("s7");
@@ -1834,7 +1825,7 @@ void TrackReadData(s32 *trackData, s32 file) {
                    "g"(sectionHeader), "m"(resource->vertexCount));
     nodeCount =
         (s32)((u32)(sectionHeaderData - nodeDataStart) * nodeScale) >> 2;
-    initText = sTrackInitMessage;
+    initText = gTrackInitMessage;
     asm("" : "=r"(initText) : "0"(initText));
     data = fileData + (s32)vertexOffset;
     diskFace = fileData + (s32)faceOffset;
@@ -1866,7 +1857,7 @@ void TrackReadData(s32 *trackData, s32 file) {
     allocatedObjects = HeapAlloc(resource->objectCount * 0x90);
     objectData = allocatedObjects;
     resource->objects = allocatedObjects;
-    func_8001D218(sTrackReadVerticesMessage);
+    func_8001D218(gTrackReadVerticesMessage);
     boundLimit = 0x7FFF0000;
     outputVertices = resource->vertices;
     boundLimit |= 0xFFFF;
@@ -1956,7 +1947,7 @@ void TrackReadData(s32 *trackData, s32 file) {
         } while (i < vertexCount);
     }
     i = 0;
-    func_8001D218(sTrackReadFacesMessage);
+    func_8001D218(gTrackReadFacesMessage);
     scratch[0] = 0;
     vertices = resource->vertices;
     if (faceCount > 0) {
@@ -1972,7 +1963,7 @@ void TrackReadData(s32 *trackData, s32 file) {
             *(u8 *)((u8 *)face + (18)) = count;
             if ((u32)count >= 5U) {
                 faceCodeSave = faceCode;
-                sprintf((char *)errorText, sTrackFaceErrorFormat, i);
+                sprintf((char *)errorText, gTrackFaceErrorFormat, i);
                 GraphicsRenderFrame((s32)errorText);
             }
             *(s32 *)((u8 *)face + (4)) =
@@ -2258,19 +2249,8 @@ copyStart:
         if (i < D_800A2F80[0])
             goto readSection;
     }
-    func_8001D218(sTrackReadSuccessMessage);
+    func_8001D218(gTrackReadSuccessMessage);
 }
-
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC6C);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC7C);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CC9C);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCA8);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCBC);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCD0);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCE0);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CCF0);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CD00);
-INCLUDE_RODATA("asm/nonmatchings/game", D_8008CD0C);
 
 extern s32 D_800A2D44;
 
