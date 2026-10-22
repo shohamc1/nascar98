@@ -1994,7 +1994,8 @@ extern s32 D_800A356C;
 typedef struct {
     u16 base;
     u16 lo;
-    u16 unk4;
+    u8 zHi;
+    u8 zLo;
     u16 hi;
     s32 scale;
 } CurveSeg;
@@ -2132,7 +2133,141 @@ s32 func_80024980(s32 arg0, s32 arg1, s32 *arg2) {
     return -1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80024B08);
+extern s32 D_800A3810;
+extern u32 D_800A2E0C;
+extern u32 D_800A2E10;
+extern s32 D_800B6094[];
+
+typedef struct {
+    u8 unk0;
+    u8 count;
+    s16 a;
+    s16 b;
+    s16 c;
+} GroupRec;
+
+typedef struct {
+    u8 pad0[8];
+    u16 segIndex;
+    u16 groupIndex;
+    s16 base;
+    u8 unkE;
+    u8 groupCount;
+} SecRec;
+
+s32 func_80024B08(s32 arg0, s32 arg1, SecRec *arg2) {
+    CurveSeg *seg;
+    GroupRec *group;
+    s32 groupCount;
+    s32 i;
+    s32 found;
+    s32 x0;
+    s32 z0;
+    s32 x1;
+    s32 z1;
+
+    seg = (CurveSeg *)D_800A356C + arg2->segIndex;
+    group = (GroupRec *)D_800A3810 + arg2->groupIndex;
+    for (groupCount = arg2->groupCount; groupCount > 0; groupCount--, group++) {
+        found = 0;
+        for (i = group->count; i > 0; i--, seg++) {
+            if (arg1 < seg->lo || arg1 >= seg->hi) {
+                continue;
+            }
+            x1 = seg->base + ((seg->scale * (arg1 - seg->lo)) >> 16);
+            if (found == 0) {
+                s32 a;
+                s32 b;
+                s32 za;
+                s32 zb;
+
+                x0 = x1;
+                a = seg->zLo * 2;
+                b = seg->zHi * 2;
+                za = a + arg2->base;
+                zb = b + arg2->base;
+                if (seg->hi == seg->lo) {
+                    z0 = za;
+                } else {
+                    z0 = za +
+                         ((zb - za) * (arg1 - seg->lo)) / (seg->hi - seg->lo);
+                }
+                found = 1;
+                continue;
+            }
+            if (x1 < x0) {
+                s32 lo;
+                s32 hi;
+                s32 a;
+                s32 b;
+                s32 za;
+                s32 zb;
+
+                if (arg0 >= x1 && arg0 < x0) {
+                    D_800A2E10 = group->unk0;
+                    a = seg->zLo * 2;
+                    b = seg->zHi * 2;
+                    za = a + arg2->base;
+                    zb = b + arg2->base;
+                    lo = seg->lo;
+                    hi = seg->hi;
+                    if (hi != lo) {
+                        z1 = za + ((zb - za) * (arg1 - lo)) / (hi - lo);
+                    } else {
+                        z1 = za;
+                    }
+                    if (x0 != x1) {
+                        z1 += ((z0 - z1) * (arg0 - x1)) / (x0 - x1);
+                    }
+                    D_800B6094[0] = group->a * 4;
+                    D_800B6094[1] = group->b * 4;
+                    D_800B6094[2] = group->c * 4;
+                    D_800A2E0C = z1;
+                    return 1;
+                } else {
+                    seg += i;
+                    break;
+                }
+            } else {
+                s32 lo;
+                s32 hi;
+                s32 a;
+                s32 b;
+                s32 za;
+                s32 zb;
+
+                if (arg0 >= x0 && arg0 < x1) {
+                    D_800A2E10 = group->unk0;
+                    a = seg->zLo * 2;
+                    b = seg->zHi * 2;
+                    za = a + arg2->base;
+                    zb = b + arg2->base;
+                    lo = seg->lo;
+                    hi = seg->hi;
+                    if (hi != lo) {
+                        z1 = za + ((zb - za) * (arg1 - lo)) / (hi - lo);
+                    } else {
+                        z1 = za;
+                    }
+                    if (x1 == x0) {
+                        z1 = z0;
+                    } else {
+                        z1 = z0 + ((z1 - z0) * (arg0 - x0)) / (x1 - x0);
+                    }
+                    D_800B6094[0] = group->a * 4;
+                    D_800B6094[1] = group->b * 4;
+                    D_800B6094[2] = group->c * 4;
+                    D_800A2E0C = z1;
+                    return 1;
+                } else {
+                    seg += i;
+                    break;
+                }
+            }
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_80024E90);
 
