@@ -8791,7 +8791,7 @@ void func_8002F1A0(void) {
         return;
     }
     func_80041AF0(0);
-    if ((func_80050D1C() & 0xFF) == 0) {
+    if ((RaceUpdateCaution() & 0xFF) == 0) {
         node = gCarList;
         if (node != NULL) {
             do {
@@ -9222,7 +9222,7 @@ void RaceUpdateFrame(void) {
         func_80028FCC(gCarListRaceStep);
     } else {
         func_80041AF0(0);
-        if (!(func_80050D1C() & 0xFF)) {
+        if (!(RaceUpdateCaution() & 0xFF)) {
             object = gCarListRaceStep;
             if (object != NULL) {
                 do {

@@ -854,6 +854,7 @@ SoundPlaySlot = 0x8003F564; // type:func
 SoundStopSlot = 0x8003F914; // type:func
 RaceUpdateCrashTrigger = 0x800488B8; // type:func
 HudUpdateFlagOverlay = 0x8005098C; // type:func
+RaceUpdateCaution = 0x80050D1C; // type:func
 MenuDrawCarPickPair = 0x80066080; // type:func
 MenuCreateItemRow = 0x80069C60; // type:func
 CardUpdateDriverRecords = 0x8006B6B8; // type:func

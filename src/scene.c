@@ -6588,7 +6588,151 @@ void HudUpdateFlagOverlay(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80050D1C);
+extern u8 D_800A39F8, D_800A38B8, D_800A3420;
+extern u8 D_800A3564u asm("D_800A3564");
+extern u8 *D_800A3A64Car asm("D_800A3A64");
+extern u8 *gPlayerCarLui asm("gPlayerCarAbsolute");
+extern u8 *gCarListLui asm("gCarListAbsolute");
+extern s32 D_800A2F00Sw[] asm("D_800A2F00");
+extern void CarUpdateState(u8 *);
+extern void func_800373B4(u8 *);
+extern void func_8002A1FC(u8 *);
+void func_8005157C(void);
+
+typedef struct CautionCar {
+    u8 unk0[0x120];
+    s16 unk120;
+    u8 unk122[0x3FC - 0x122];
+    u8 unk3FC;
+    u8 unk3FD[0x410 - 0x3FD];
+    u8 unk410;
+} CautionCar;
+
+/* Runs the caution period. While D_800A3764 is set it starts the yellow
+ * flag on the first frame, then updates every car and returns 1 until all
+ * cars are settled and the 600-frame timer runs out. Afterwards it counts
+ * down to the green flag. Returns 0 when racing runs normally. */
+s32 RaceUpdateCaution(void) {
+    u8 *car;
+    s8 side;
+    s8 sideAhead;
+    u8 done;
+    s16 count;
+
+    if (D_800A3764 != 0) {
+        if (D_800A39F8 == 0) {
+            CautionCar *player;
+
+            D_800A3564u = 1;
+            D_800A34DC = 1;
+            player = (CautionCar *)gPlayerCarLui;
+            player->unk410 = 0;
+            player->unk120 = 0;
+            ((CautionCar *)gPlayerCarLui)->unk3FC = 0;
+            side = CarGetTrackSide(gPlayerCarLui, 0);
+            if (side == 1) {
+                *(s16 *)(gPlayerCarLui + 0x288) = 1;
+            } else {
+                sideAhead = CarGetTrackSide(gPlayerCarLui, 5);
+                if (sideAhead == 1) {
+                    if (side == 0 &&
+                        (s8)CarGetTrackSide(gPlayerCarLui, 2) == sideAhead) {
+                        D_800A38B8 = 1;
+                    }
+                    if (*(u16 *)(gPlayerCarLui + 0x360) == 5) {
+                        *(s16 *)(gPlayerCarLui + 0x288) = 1;
+                    }
+                } else {
+                    *(s16 *)(gPlayerCarLui + 0x288) = 0;
+                }
+            }
+            gPlayerCarLui[0xF9] = 0;
+            D_800A2F00Sw[0] = 3;
+            D_800A3420 = gPlayerCarLui[0xF6];
+            gPlayerCarLui[0xF6] = 1;
+            func_80052FC4(0);
+            D_800A35A4 = 600;
+            D_800A39F8 = 1;
+            D_800A38B0 = 1;
+            D_800A372C = 1;
+        } else {
+            D_800A35A4--;
+        }
+        if (D_800A38B8 != 0 && (s8)CarGetTrackSide(gPlayerCarLui, 0) != 0) {
+            D_800A38B8 = 0;
+        }
+        D_800A2EFCSw[0] = 1;
+        if (gPlayerCarLui[0x268] == 0) {
+            func_8002A1FC(gPlayerCarLui);
+        }
+        if (D_800A3564u != 0) {
+            func_8005157C();
+        }
+        done = 1;
+        for (car = D_800A3A64Car; car != NULL; car = *(u8 **)(car + 0x404)) {
+            CarUpdateState(car);
+            func_800373B4(car);
+            if (car[0xF4] != 0 && (*(u16 *)(car + 0x3A4) & 0xF) != 0) {
+                done = 0;
+            }
+            if (ABS(MathGetAngleDelta(*(s16 *)(car + 0x114),
+                                      *(u16 *)((u8 *)gTrackSections[0] +
+                                               *(s16 *)(car + 0x1E0) * 0x90 +
+                                               0x10))) > 0x40) {
+                D_800A3564u = 1;
+            }
+        }
+        func_80028FCC(gCarListLui);
+        func_8002AD20((s32 *)gPlayerCarLui, *(s16 *)(gPlayerCarLui + 0x114));
+        if (done && D_800A35A4 <= 0) {
+            D_800A3764 = 0;
+            D_800A2EFCSw[0] = 0;
+            D_800A38B8 = 0;
+        }
+        return 1;
+    }
+    if (D_800A39F8 != 0) {
+        D_800A35A4 = 100;
+        D_800A39F8 = 0;
+    }
+    count = D_800A35A4;
+    if (count != 0) {
+        if (count == 0x50) {
+            D_800A2EFCSw[0] = count;
+            D_800A2F00Sw[0] = 1;
+        }
+        D_800A35A4 = count - 1;
+        if (D_800A35A4 > 0x28) {
+            if (D_800A3564u != 0) {
+                func_8005157C();
+            }
+            for (car = D_800A3A64Car; car != NULL;
+                 car = *(u8 **)(car + 0x404)) {
+                CarUpdateState(car);
+                if (car != gPlayerCarLui) {
+                    func_800373B4(car);
+                } else if (D_800A35A4 < 0x32) {
+                    car[0xF6] = D_800A3420;
+                    (*(void (**)(u8 *))(car + 0x350))(car);
+                } else {
+                    func_800373B4(car);
+                    func_8002AD20((s32 *)gPlayerCarLui,
+                                  *(s16 *)(gPlayerCarLui + 0x114));
+                }
+            }
+            func_80028FCC(gCarListLui);
+            return 1;
+        }
+        D_800A372C = 0;
+        if (D_800A35A4 == 0) {
+            D_800A38B0 = 0;
+        }
+    }
+    if (D_800A3910 > 0) {
+        D_800A3910--;
+    }
+    return 0;
+}
 
 extern u8 D_800A39F8, D_800A3764, D_800A38B0, D_800A372C, D_800A38B8,
     D_800A35D4, D_800A38E0, D_800A3A94;
