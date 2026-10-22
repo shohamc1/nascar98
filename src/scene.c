@@ -3098,7 +3098,128 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004A0C4);
+extern u8 D_800A2ED8[];
+extern u16 D_800A348C;
+extern POLY_FT4 D_800A789C[];
+extern TILE D_800A7984[];
+extern u8 D_800A2FD4[4];
+extern u32 gGlareCursorLui asm("gPrimitiveCursorAbsolute");
+extern s32 D_800AE84C[];
+extern s32 D_800A38AC[];
+extern s32 MathFixedDivide(s32 numerator, s32 denominator);
+
+void SceneDrawSunGlare(HudCar *car) {
+    VECTOR sunDir;
+    MATRIX unused;
+    SVECTOR sun;
+    SVECTOR flare[3];
+    VECTOR screen;
+    s32 flag;
+    s16 angle;
+    s16 glare;
+    s16 depth;
+    s8 i;
+    s32 x;
+    s32 y;
+    s32 size;
+    POLY_FT4 *wash;
+    u32 cursor;
+    POLY_FT4 *prim;
+    u32 entry;
+
+    if (D_800A359C[0] != 0 || D_800A2EA4[0] != 0 || D_800A2ED8[0] != 0) {
+        return;
+    }
+    func_8001EC38((s32 *)D_800A38AC[0]);
+    sunDir.vx = 0x400;
+    sunDir.vy = 0;
+    sunDir.vz = 0;
+    func_8001ED84((s32 *)&sunDir);
+    angle = 0x3FF - func_800358EC((s32 *)&sunDir);
+    D_800A348C = angle;
+    if (D_800A2CE0[0] == 3 && D_800A3A60gp != 0) {
+        return;
+    }
+    if (car->unk20C != 6) {
+        if (angle < 0x200) {
+            glare = 0xFF - angle;
+        } else {
+            glare = angle - 0x301;
+        }
+    } else {
+        glare = 0;
+    }
+    if (glare <= 0) {
+        return;
+    }
+    if (car->unk20C == 0) {
+        D_800A7984[0].r0 = glare;
+        D_800A7984[0].g0 = glare;
+        D_800A7984[0].b0 = glare;
+        cursor = gPrimitiveCursor[0];
+        gGlareCursorLui = cursor + sizeof(POLY_FT4);
+        wash = (POLY_FT4 *)cursor;
+        *wash = *(POLY_FT4 *)D_800A7984;
+        AddPrim((void *)(gOrderingTable[0] + 8), wash);
+    }
+    glare >>= 1;
+    sun.vx = D_800AE844[0];
+    sun.vy = 0;
+    sun.vz = D_800AE84C[0] + 10000;
+    RotTrans(&sun, &screen, &flag);
+    depth = screen.vz - 200;
+    flare[0].vx = screen.vx >> 8;
+    flare[0].vy = screen.vy >> 8;
+    flare[0].vz = (depth >> 8) + 200;
+    flare[1].vx = screen.vx >> 9;
+    flare[1].vy = screen.vy >> 9;
+    flare[1].vz = (depth >> 9) + 200;
+    flare[2].vx = -(screen.vx >> 10);
+    flare[2].vy = -(screen.vy >> 10);
+    flare[2].vz = -(depth >> 10) + 200;
+    for (i = 0; i < 3; i++) {
+        x = (MathMultiplyFixed16(
+                 MathFixedDivide(flare[i].vx, flare[i].vz) & ~0xF, 0xD00000) >>
+             16) +
+            0xA0;
+        y = (MathMultiplyFixed16(
+                 MathFixedDivide(flare[i].vy, flare[i].vz) & ~0xF, 0xD00000) >>
+             16) +
+            0x78;
+        size = (i + 3) * 4;
+        if (i == 0) {
+            D_800A789C[0].r0 = glare;
+            D_800A789C[0].g0 = 0;
+            D_800A789C[0].b0 = 0;
+        } else if (i == 1) {
+            D_800A789C[0].r0 = glare;
+            D_800A789C[0].g0 = glare >> 1;
+            D_800A789C[0].b0 = 0;
+        } else {
+            D_800A789C[0].r0 = glare;
+            D_800A789C[0].g0 = glare;
+            D_800A789C[0].b0 = 0;
+        }
+        /* Always true, but retail keeps the copy end inside the loop. */
+        if (flare != NULL) {
+            D_800A789C[0].x0 = x - size;
+            D_800A789C[0].y0 = (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size);
+            D_800A789C[0].x1 = x - size + size * 2;
+            D_800A789C[0].y1 = (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size);
+            D_800A789C[0].x2 = x - size;
+            D_800A789C[0].y2 =
+                (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size) + size * 2;
+            D_800A789C[0].x3 = x - size + size * 2;
+            D_800A789C[0].y3 =
+                (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size) + size * 2;
+        }
+        entry = gGlareCursorLui;
+        gGlareCursorLui = entry + sizeof(POLY_FT4);
+        prim = (POLY_FT4 *)entry;
+        *prim = D_800A789C[0];
+        AddPrim((void *)(gOrderingTable[0] + 8), prim);
+    }
+}
 
 typedef struct {
     u16 tpx;

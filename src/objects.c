@@ -8392,7 +8392,7 @@ extern s32 D_800A38AC[];
 void SceneUpdateRoadStrip(u8 *car);
 void HudDrawDashboard(void);
 void func_8004382C(void);
-void func_8004A0C4(u8 *car);
+void SceneDrawSunGlare(u8 *car);
 void func_80036264(void);
 
 /* Draws the road for one car's view: narrows the clip limits in the split
@@ -8452,7 +8452,7 @@ void SceneDrawView(u8 *arg0) {
     if (D_800A2ED8Frame == 0) {
         if ((D_800A3075Frame[0] == 0 && *(s8 *)(arg0 + 0x20C) == 0) ||
             D_800A2EDAFrame != 0) {
-            func_8004A0C4(arg0);
+            SceneDrawSunGlare(arg0);
         }
         if (*(s8 *)(arg0 + 0x20C) == 0) {
             HudDrawDashboard();
