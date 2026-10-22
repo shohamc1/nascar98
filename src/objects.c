@@ -16863,11 +16863,152 @@ void func_8003BCAC(void) {
     func_8003B6DC(1);
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8003BDBC);
+typedef struct FinishCar FinishCar;
+typedef struct StandingsLink {
+    u8 unk0[8];
+    FinishCar *next;
+} StandingsLink;
+
+/* Partial car layout: the fields the race-finish ordering touches. */
+struct FinishCar {
+    u8 unk0[0xF4];
+    u8 unkF4;
+    u8 unkF5[0x1D6 - 0xF5];
+    s16 lap;
+    u8 unk1D8[0x1E0 - 0x1D8];
+    s16 section;
+    u8 unk1E2[0x1EC - 0x1E2];
+    s16 unk1EC;
+    u8 unk1EE[0x204 - 0x1EE];
+    s8 place;
+    u8 unk205[0x260 - 0x205];
+    s32 unk260;
+    u32 unk264;
+    u8 unk268[0x3A4 - 0x268];
+    u16 unk3A4;
+    u8 unk3A6[0x3E0 - 0x3A6];
+    FinishCar *next;
+    u8 unk3E4[4];
+    StandingsLink *standings;
+};
+
+extern FinishCar *D_800A3878Finish asm("D_800A3878Absolute");
+extern FinishCar *D_800A35E0Finish asm("D_800A35E0Absolute");
+extern u8 D_800A2EDCFinish asm("D_800A2EDCAbsolute");
+extern u8 D_800A2EE0Finish asm("D_800A2EE0Absolute");
+extern s32 D_800A37D0[];
+extern u32 func_80014398(s32 arg0);
+
+/*
+ * Stages every car's lap and section so func_8003B6DC ranks the field the
+ * way the race ended, then restores the saved values and gives the cars that
+ * didn't finish a time. Guess; the placeholder name stays.
+ */
+void func_8003BDBC(void) {
+    s32 section[24];
+    u8 held[24];
+    FinishCar *car;
+    u32 limit;
+    u32 elapsed;
+    s32 i;
+    s32 delta;
+
+    car = D_800A3878Finish;
+    elapsed = 0;
+    i = 0;
+    if (car != 0) {
+        do {
+            section[i] = car->section;
+            held[i] = car->unkF4;
+            i++;
+            if ((D_800A2EDCFinish != 0 && D_800A2EE0Finish == 0 &&
+                 (car->unk3A4 & 0xF)) ||
+                (car->unk3A4 & 0x1000)) {
+                car->unkF4 = 0;
+            }
+            car = car->next;
+        } while (car != 0);
+    }
+    car = D_800A3878Finish;
+    if (car->unk1EC == 0) {
+        do {
+            car->section = 0x1E - car->place;
+            if (D_800A2EACControl == 0) {
+                car->lap -= 2;
+                if (car->lap < 0) {
+                    car->lap = 0;
+                }
+                car->unkF4 = 0;
+            }
+            car = car->next;
+        } while (car->unk1EC == 0);
+        car = D_800A3878Finish;
+    }
+    while (car != 0) {
+        if (car->unk1EC == 1 && car->unkF4 == 0) {
+            car->lap -= 2;
+            if (car->lap < 0) {
+                car->lap = 0;
+            }
+            car->section = 0;
+        }
+        car = car->next;
+    }
+    if (D_800A2EA8Lap < D_800A35E0Finish->lap) {
+        func_8003B6DC(1);
+        car = D_800A3878Finish;
+        for (i = 0; car != 0; i++) {
+            car->section = section[i];
+            if (car->unk1EC != 0) {
+                car->unkF4 = held[i];
+            }
+            car = car->next;
+        }
+    } else {
+        car = D_800A3878Finish;
+        while (car != 0) {
+            if (car->unk1EC == 1 && car->unkF4 != 0) {
+                car->lap = D_800A2EA8Lap + 1;
+                car->section = (0x1E - car->place) * 2 + RandomScaledGet(0xC);
+            }
+            car = car->next;
+        }
+        func_8003B6DC(1);
+        car = D_800A3878Finish;
+        for (i = 0; car != 0; i++) {
+            car->section = section[i];
+            if (car->unk1EC != 0) {
+                car->unkF4 = held[i];
+            }
+            car = car->next;
+        }
+        limit = func_80014398(D_800A2CE0[0]);
+        if (limit == 0) {
+            limit = 0xFA0;
+        }
+        car = D_800A35E0Finish;
+        while (car != 0) {
+            if (car->place == 1) {
+                car->unk260 = limit * D_800A2EA8Lap * 10 / 72 +
+                              RandomScaledGet(D_800A2EA8Lap * 0x28);
+            } else {
+                delta = RandomScaledGet(D_800A37D0[0] * 0xC) + 1;
+                elapsed += delta;
+                car->unk264 = elapsed;
+                if (limit < elapsed) {
+                    car->lap -= elapsed / limit + 1;
+                }
+            }
+            if (car->standings == 0) {
+                break;
+            }
+            car = car->standings->next;
+        }
+    }
+}
 
 extern u8 *D_800A3878nm[] asm("D_800A3878.NON_MATCHING");
 extern u8 D_800B0B1C[];
-extern void func_8003BDBC(void);
 
 void func_8003C1CC(void) {
     u8 *car;
