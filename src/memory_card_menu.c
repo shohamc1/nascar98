@@ -4232,7 +4232,78 @@ u8 func_8006DF98(void *arg0, s32 arg1, s32 arg2, u8 arg3) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006E07C);
+/* The calibration table as PadAxisCal records, 9 bytes per pad. */
+extern PadAxisCal gPadAxisCal[][3] asm("D_800AEE3C");
+
+/* Widens the calibration range of pad arg0 with a fresh reading of each stick
+ * axis (arg1 is the pad type, arg2 the subtype). Type 2 tracks min and max
+ * for every axis. Types above 4 update one bound per axis, found by switching
+ * on the axis; each case folds to a constant offset into the record. Other
+ * types only call the two refresh functions. The K&R definition and the
+ * `subtype` local follow func_8006E628. */
+/* clang-format off */
+void func_8006E07C(arg0, arg1, arg2)
+u8 arg0;
+u8 arg1;
+u32 arg2;
+/* clang-format on */
+{
+    u8 scratch[0x500];
+    u8 axes[3];
+    u8 subtype;
+    s32 i;
+
+    subtype = arg2;
+    scratch[0x20B] = arg0;
+    func_80041BFC(scratch);
+    if (arg1 == 2) {
+        u8 value;
+
+        for (i = 0; i < 3; i++) {
+            value = PadReadAxis(scratch, i, arg1, subtype);
+            axes[i] = value;
+            if (value < gPadAxisCal[arg0][i].min) {
+                gPadAxisCal[arg0][i].min = value;
+            }
+            if (gPadAxisCal[arg0][i].max < axes[i]) {
+                gPadAxisCal[arg0][i].max = axes[i];
+            }
+        }
+    } else if (arg1 > 4) {
+        u8 value;
+
+        for (i = 0; i < 3; i++) {
+            value = PadReadAxis(scratch, i, arg1, subtype);
+            axes[i] = value;
+            switch (i) {
+            case 0:
+                if (axes[0] < gPadAxisCal[arg0][0].center) {
+                    if (axes[0] < gPadAxisCal[arg0][0].max) {
+                        gPadAxisCal[arg0][0].max = axes[0];
+                    }
+                }
+                break;
+            case 1:
+                if (gPadAxisCal[arg0][1].center < axes[1]) {
+                    if (gPadAxisCal[arg0][1].max < axes[1]) {
+                        gPadAxisCal[arg0][1].max = axes[1];
+                    }
+                }
+                break;
+            case 2:
+                if (axes[2] < gPadAxisCal[arg0][2].min) {
+                    gPadAxisCal[arg0][2].min = axes[2];
+                }
+                if (gPadAxisCal[arg0][2].max < axes[2]) {
+                    gPadAxisCal[arg0][2].max = axes[2];
+                }
+                break;
+            }
+        }
+    }
+    func_80062D38(arg0, arg1, axes);
+    func_80062F6C(arg0, arg1);
+}
 
 void func_8006E484(u32 arg0, u32 arg1) {
     s32 i;

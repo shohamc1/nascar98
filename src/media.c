@@ -1116,13 +1116,6 @@ s32 func_8006E770(u8 arg0) {
     return flags;
 }
 
-/* One axis's calibration: the raw reading at each end and at rest. */
-typedef struct {
-    u8 min;
-    u8 max;
-    u8 center;
-} PadAxisCal;
-
 extern PadAxisCal D_800AEE3C[][3];
 extern u16 func_80041BFC(u8 *);
 

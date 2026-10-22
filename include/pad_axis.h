@@ -3,12 +3,20 @@
 
 #include "common.h"
 
+/* One axis's calibration: the raw reading at each end and at rest. */
+typedef struct {
+    u8 min;
+    u8 max;
+    u8 center;
+} PadAxisCal;
+
 /* Reads one stick axis from a pad buffer. func_8006DF98 in
  * memory_card_menu.c is the out-of-line copy of this function; retail
- * inlines it into func_8006E628 and func_8006EB18, which puts the buffer
- * address in its own register for one arm and folds it into sp-relative
- * loads for the rest. */
-static __inline__ u8 PadReadAxis(void *pad, s32 axis, s32 type, u8 subtype) {
+ * inlines it into func_8006E07C, func_8006E628 and func_8006EB18, which
+ * puts the buffer address in its own register for one arm and folds it
+ * into sp-relative loads for the rest. The u8 `type` lets cse drop the
+ * redundant zero-extension when a caller has already tested the type. */
+static __inline__ u8 PadReadAxis(void *pad, s32 axis, u8 type, u8 subtype) {
     u8 mode;
 
     mode = axis;
