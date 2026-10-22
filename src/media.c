@@ -835,7 +835,286 @@ void func_8006DD28(u32 arg0, u32 arg1);
 void func_8006DE68(u32 arg0, u32 mode);
 void func_8006E484(u32 arg0, u32 arg1);
 
-INCLUDE_ASM("asm/nonmatchings/media", func_8006E770);
+extern void *D_800A3A24[];
+extern u8 D_800A307C[];
+
+/* Maps the raw button word of pad `arg0` onto the game's action bits. The
+ * mapping depends on the pad type (`D_800A3A24`) and on the layout selected
+ * for that pad (`D_800A307C`). Modes that share a prefix share a switch arm
+ * and finish with a `mode` test; cross-jumping merges the repeated tails. */
+s32 func_8006E770(u8 arg0) {
+    u8 padType;
+    u8 mode;
+    s32 flags;
+    s32 buttons;
+
+    padType = ((u8 *)D_800A3A24)[arg0];
+    mode = D_800A307C[arg0];
+    flags = 0;
+    buttons = PadGetButtons(arg0);
+    if (padType == 2) {
+        switch (mode) {
+        case 0:
+        case 2:
+        case 4:
+            if (buttons & 4) {
+                flags |= 4;
+            }
+            if (buttons & 8) {
+                flags |= 0x10;
+            }
+            if (buttons & 0x1000) {
+                flags |= 1;
+            }
+            if (buttons & 0x4000) {
+                flags |= 2;
+            }
+            break;
+        case 1:
+        case 3:
+        case 5:
+        case 6:
+            if (buttons & 4) {
+                flags |= 2;
+            }
+            if (buttons & 8) {
+                flags |= 1;
+            }
+            if (buttons & 0x20) {
+                flags |= 0x10;
+            }
+            if (buttons & 0x10) {
+                flags |= 4;
+            }
+            break;
+        }
+    } else if (padType == 4) {
+        asm(".rdata");
+        asm(".long 0");
+        asm(".text");
+        if (buttons & 0x8000) {
+            flags = 0x8000;
+        }
+        if (buttons & 0x2000) {
+            flags |= 0x200;
+        }
+        if (buttons & 0x1000) {
+            flags |= 0x800;
+        }
+        if (buttons & 0x4000) {
+            flags |= 0x1000;
+        }
+        switch (mode) {
+        case 0:
+        case 1:
+            if (buttons & 1) {
+                flags |= 0x10;
+            }
+            if (buttons & 4) {
+                flags |= 4;
+            }
+            if (buttons & 2) {
+                flags |= 1;
+            }
+            if (buttons & 8) {
+                flags |= 2;
+            }
+            if (mode == 0) {
+                if (buttons & 0x20) {
+                    flags |= 0x10;
+                }
+                if (buttons & 0x40) {
+                    flags |= 0x40;
+                }
+                if (buttons & 0x80) {
+                    flags |= 0x80;
+                }
+            } else {
+                if (buttons & 0x20) {
+                    flags |= 0x40;
+                }
+                if (buttons & 0x40) {
+                    flags |= 0x80;
+                }
+                if (buttons & 0x80) {
+                    flags |= 0x10;
+                }
+            }
+            break;
+        case 2:
+        case 3:
+            if (buttons & 1) {
+                flags |= 0x10;
+            }
+            if (buttons & 4) {
+                flags |= 2;
+            }
+            if (buttons & 2) {
+                flags |= 4;
+            }
+            if (buttons & 8) {
+                flags |= 1;
+            }
+            if (buttons & 0x10) {
+                flags |= 4;
+            }
+            if (mode == 2) {
+                if (buttons & 0x20) {
+                    flags |= 0x10;
+                }
+                if (buttons & 0x40) {
+                    flags |= 0x40;
+                }
+                if (buttons & 0x80) {
+                    flags |= 0x80;
+                }
+            } else {
+                if (buttons & 0x20) {
+                    flags |= 0x40;
+                }
+                if (buttons & 0x40) {
+                    flags |= 0x80;
+                }
+                if (buttons & 0x80) {
+                    flags |= 0x10;
+                }
+            }
+            break;
+        case 4:
+            if (buttons & 1) {
+                flags |= 4;
+            }
+            if (buttons & 4) {
+                flags |= 0x10;
+            }
+            if (buttons & 2) {
+                flags |= 2;
+            }
+            if (buttons & 8) {
+                flags |= 1;
+            }
+            if (buttons & 0x10) {
+                flags |= 4;
+            }
+            if (buttons & 0x20) {
+                flags |= 0x10;
+            }
+            if (buttons & 0x40) {
+                flags |= 0x40;
+            }
+            if (buttons & 0x80) {
+                flags |= 0x80;
+            }
+            break;
+        }
+    } else if (padType == 5) {
+        switch (mode) {
+        case 0:
+        case 1:
+            if (mode == 0) {
+                if (buttons & 1) {
+                    flags = 2;
+                }
+                if (buttons & 4) {
+                    flags |= 4;
+                }
+                if (buttons & 2) {
+                    flags |= 1;
+                }
+                if (buttons & 8) {
+                    flags |= 0x10;
+                }
+            } else {
+                if (buttons & 1) {
+                    flags = 0x10;
+                }
+                if (buttons & 4) {
+                    flags |= 4;
+                }
+                if (buttons & 2) {
+                    flags |= 2;
+                }
+                if (buttons & 8) {
+                    flags |= 1;
+                }
+            }
+            if (buttons & 0x10) {
+                flags |= 4;
+            }
+            if (buttons & 0x20) {
+                flags |= 0x80;
+            }
+            if (buttons & 0x40) {
+                flags |= 0x40;
+            }
+            if (buttons & 0x80) {
+                flags |= 0x80;
+            }
+            break;
+        case 2:
+            if (buttons & 1) {
+                flags = 4;
+            }
+            if (buttons & 4) {
+                flags |= 0x10;
+            }
+            if (buttons & 2) {
+                flags |= 2;
+            }
+            if (buttons & 8) {
+                flags |= 1;
+            }
+            if (buttons & 0x20) {
+                flags |= 4;
+            }
+            if (buttons & 0x40) {
+                flags |= 0x10;
+            }
+            break;
+        }
+    } else if (padType == 7) {
+        if (mode == 0) {
+            if (buttons & 1) {
+                flags = 2;
+            }
+            if (buttons & 4) {
+                flags |= 4;
+            }
+            if (buttons & 2) {
+                flags |= 1;
+            }
+            if (buttons & 8) {
+                flags |= 0x10;
+            }
+        } else {
+            if (buttons & 1) {
+                flags = 0x10;
+            }
+            if (buttons & 4) {
+                flags |= 4;
+            }
+            if (buttons & 2) {
+                flags |= 2;
+            }
+            if (buttons & 8) {
+                flags |= 1;
+            }
+        }
+        if (buttons & 0x10) {
+            flags |= 4;
+        }
+        if (buttons & 0x20) {
+            flags |= 0x80;
+        }
+        if (buttons & 0x40) {
+            flags |= 0x40;
+        }
+        if (buttons & 0x80) {
+            flags |= 0x80;
+        }
+    }
+    return flags;
+}
 INCLUDE_RODATA("asm/nonmatchings/media", D_8008FCA4);
 
 /* One axis's calibration: the raw reading at each end and at rest. */
@@ -845,8 +1124,6 @@ typedef struct {
     u8 center;
 } PadAxisCal;
 
-extern void *D_800A3A24[];
-extern u8 D_800A307C[];
 extern PadAxisCal D_800AEE3C[][3];
 extern u16 func_80041BFC(u8 *);
 
