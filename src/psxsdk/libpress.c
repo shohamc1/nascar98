@@ -121,11 +121,10 @@ s32 DecDCToutCallback(void (*func)(void)) {
     return (s32)DMACallback(1, func);
 }
 
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libpress", D_80090D1C);
 extern volatile u32 *D_800A2CD8[];
 extern volatile u32 *D_800A2CB8[];
 extern u32 D_800A2CAC[];
-extern char D_80090D1C[];
+static const char sMdecResetBadOptionFormat[] = "MDEC_rest:bad option(%d)\n";
 void MDEC_reset(s32 mode) {
     switch (mode) {
     case 0:
@@ -144,7 +143,7 @@ void MDEC_reset(s32 mode) {
         *D_800A2CD8[0] = 0x60000000;
         break;
     default:
-        printf(D_80090D1C, mode);
+        printf(sMdecResetBadOptionFormat, mode);
         break;
     }
 }
@@ -183,7 +182,7 @@ void MDEC_out(u32 *buf, u32 size) {
 
 extern int timeout(char *name);
 extern volatile u32 *D_800A2CD8[];
-extern char D_80090D38[];
+static const char sMdecInSyncName[] = "MDEC_in_sync";
 
 s32 MDEC_in_sync(void) {
     volatile s32 i;
@@ -193,7 +192,7 @@ s32 MDEC_in_sync(void) {
         do {
             i = i - 1;
             if (i == -1) {
-                timeout(D_80090D38);
+                timeout(sMdecInSyncName);
                 return -1;
             }
         } while (*D_800A2CD8[0] & 0x20000000);
@@ -201,20 +200,8 @@ s32 MDEC_in_sync(void) {
     return 0;
 }
 
-/* Carries the "MDEC_in_sync" rodata cell (0x80090D38) until the string gets
- * its own carrier .s via make split; then this becomes
- * INCLUDE_RODATA("asm/nonmatchings/psxsdk/libpress", D_80090D38). */
-void __maspsx_include_asm_hack_D_80090D38(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "    .globl D_80090D38 # maspsx-keep\n"
-            "D_80090D38: # maspsx-keep\n"
-            "    .asciz \"MDEC_in_sync\" # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
-}
-
 extern volatile u32 *D_800A2CB8[];
-extern char D_80090D48[];
+static const char sMdecOutSyncName[] = "MDEC_out_sync";
 
 s32 MDEC_out_sync(void) {
     volatile s32 i;
@@ -224,7 +211,7 @@ s32 MDEC_out_sync(void) {
         do {
             i = i - 1;
             if (i == -1) {
-                timeout(D_80090D48);
+                timeout(sMdecOutSyncName);
                 return -1;
             }
         } while (*D_800A2CB8[0] & 0x01000000);
@@ -232,24 +219,11 @@ s32 MDEC_out_sync(void) {
     return 0;
 }
 
-/* Carries the "MDEC_out_sync" rodata cell (0x80090D48) until the string gets
- * its own carrier .s via make split; then this becomes
- * INCLUDE_RODATA("asm/nonmatchings/psxsdk/libpress", D_80090D48). */
-void __maspsx_include_asm_hack_D_80090D48(void) {
-    __asm__(".section .rodata # maspsx-keep\n"
-            "    .align 2 # maspsx-keep\n"
-            "    .globl D_80090D48 # maspsx-keep\n"
-            "D_80090D48: # maspsx-keep\n"
-            "    .asciz \"MDEC_out_sync\" # maspsx-keep\n"
-            "    .section .text # maspsx-keep\n");
-}
-
-extern char D_80090D58[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libpress", D_80090D58);
-extern char D_80090D80[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libpress", D_80090D80);
-extern char D_80090DB8[];
-INCLUDE_RODATA("asm/nonmatchings/psxsdk/libpress", D_80090DB8);
+static const char sTimeoutDmaFormat[] =
+    "\t DMA=(%d,%d), ADDR=(0x%08x->0x%08x)\n";
+static const char sTimeoutFifoFormat[] =
+    "\t FIFO=(%d,%d),BUSY=%d,DREQ=(%d,%d),RGB24=%d,STP=%d\n";
+static const char sTimeoutNameFormat[] = "%s timeout:\n";
 extern volatile u32 *mdec1;
 extern volatile u32 *d0_chcr;
 extern volatile u32 *d1_chcr;
@@ -259,13 +233,13 @@ extern volatile u32 *d1_madr;
 int timeout(char *funcName) {
     u32 temp_s0;
 
-    printf(D_80090DB8, funcName);
+    printf(sTimeoutNameFormat, funcName);
     temp_s0 = *mdec1;
 
-    printf(D_80090D58, (*d0_chcr >> 0x18) & 1, (*d1_chcr >> 0x18) & 1, *d0_madr,
-           *d1_madr);
+    printf(sTimeoutDmaFormat, (*d0_chcr >> 0x18) & 1, (*d1_chcr >> 0x18) & 1,
+           *d0_madr, *d1_madr);
 
-    printf(D_80090D80, ~temp_s0 >> 0x1F, (temp_s0 >> 0x1E) & 1,
+    printf(sTimeoutFifoFormat, ~temp_s0 >> 0x1F, (temp_s0 >> 0x1E) & 1,
            (temp_s0 >> 0x1D) & 1, (temp_s0 >> 0x1C) & 1, (temp_s0 >> 0x1B) & 1,
            (temp_s0 >> 0x19) & 1, (temp_s0 >> 0x17) & 1);
 
