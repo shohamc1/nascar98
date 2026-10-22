@@ -689,7 +689,161 @@ s32 SoundIsSlotActive(s32 arg0) {
     return 0;
 }
 
-INCLUDE_ASM("asm/nonmatchings/sound", func_8003F564);
+extern s16 D_800B9E26h[] asm("D_800B9E26");
+extern s16 D_800B9E28[];
+extern s16 D_800B9E2A[];
+extern s16 D_800B9E2C[];
+extern s16 D_800B9E2E[];
+extern u8 D_80098BF8[];
+extern u8 D_80098BEC[];
+extern s8 func_8003F914Body(s32) asm("func_8003F914");
+
+/*
+ * func_8003F564(id, type) starts sound `type` on voice slot `id` (**guess**).
+ * It frees the slot first, picks the VAB program, tone and note from `type`,
+ * keys the voice on and records the result in the D_800B9E24 table (six
+ * halfwords per slot: voice, type, tone, note, note, 0). The key-status
+ * test is an inline helper in the original, and its u8 result is why retail
+ * has an `andi` after it.
+ */
+static inline u8 SoundIsVoiceOn(s32 voice) {
+    s32 status;
+
+    status = SpuGetKeyStatus(1 << voice);
+    if (status != 1 && status == 0) {
+        return 0;
+    }
+    return 1;
+}
+
+void func_8003F564(id, type) s8 id;
+s8 type;
+{
+    u8 tone;
+    u8 prog;
+    u8 note;
+    u8 vol;
+    u8 fixedVol;
+    u8 i;
+    s32 v;
+    s32 off;
+    s32 row;
+    s16 voice;
+
+    tone = 0;
+    if (type == 0x20) {
+        return;
+    }
+    voice = D_800B9E24[(s8)id * 6];
+    if (voice != -1) {
+        if (SoundIsVoiceOn(voice)) {
+            tone = func_8003F914Body((s8)id);
+        }
+    }
+    if ((s8)tone == -1) {
+        return;
+    }
+    vol = D_800A2F94;
+    if (D_800A3880 != 0) {
+        v = (s8)type;
+        if (v == 7) {
+            prog = 0xF;
+            tone = 0;
+            note = 0x37;
+        } else if (v == 8) {
+            prog = 1;
+            tone = 0;
+            note = 0x30;
+            vol = 0x7F;
+        } else {
+            prog = 0;
+            tone = type;
+            note = D_80098BF8[(u8)type];
+            vol = 0x64;
+        }
+    } else {
+        v = (s8)type;
+        if (v >= 0x40) {
+            prog = 0xA;
+            tone = type - 0x40;
+            if (v == 0x42) {
+                note = 0x30;
+            } else {
+                note = 0x2E;
+            }
+        } else if (v >= 0x20) {
+            note = 0x3C;
+            if (v >= 0x2C) {
+                switch (v) {
+                case 0x2C:
+                    prog = 0x24;
+                    break;
+                case 0x2D:
+                    prog = 0x26;
+                    break;
+                case 0x29:
+                    prog = 0x29;
+                    break;
+                default:
+                    break;
+                }
+                tone = 1;
+                prog -= 0x20;
+            } else if (v >= 0x2A) {
+                switch (v) {
+                case 0x2A:
+                    prog = 0x12;
+                    break;
+                case 0x2B:
+                    prog = 0x13;
+                    break;
+                default:
+                    break;
+                }
+                tone = 0;
+            } else {
+                prog = type - 0x20;
+                tone = 0;
+                if (v == 0x28) {
+                    note = 0x2E;
+                }
+            }
+        } else {
+            if ((u8)(type - 0xC) < 4) {
+                prog = 0x1A - type;
+                tone = 0;
+            } else {
+                fixedVol = (u8)(type - 9) < 3;
+                prog = 0xF;
+                tone = type;
+                if (fixedVol) {
+                    vol = 0x64;
+                }
+            }
+            note = D_80098BEC[tone];
+        }
+    }
+    voice = D_800B9E24[(s8)id * 6] =
+        SsUtKeyOnV((s8)id, gVabId, prog, tone, note, 0, vol, vol);
+    if (voice == -1) {
+        return;
+    }
+    for (i = 0; i < 24; i++) {
+        if (i != id) {
+            row = i * 12;
+            if (*(s16 *)((u8 *)D_800B9E24 + row) == voice) {
+                *(s16 *)((u8 *)D_800B9E24 + row) = -1;
+            }
+        }
+    }
+    off = (s8)id * 12;
+    SsUtSetVVol(*(s16 *)((u8 *)D_800B9E24 + off), vol, vol);
+    *(s16 *)((u8 *)D_800B9E28 + off) = tone;
+    *(s16 *)((u8 *)D_800B9E26h + off) = type;
+    *(s16 *)((u8 *)D_800B9E2A + off) = note;
+    *(s16 *)((u8 *)D_800B9E2C + off) = note;
+    *(s16 *)((u8 *)D_800B9E2E + off) = 0;
+}
 
 extern s8 SsUtKeyOffV(s16);
 
@@ -1059,7 +1213,6 @@ extern s32 D_800BE890w16[] asm("D_800BE890.NON_MATCHING");
 extern u8 D_80098C00w16[] asm("D_80098C00.NON_MATCHING");
 extern u8 D_800A306Cw16[] asm("D_800A306C.NON_MATCHING");
 extern void func_8001F90C(s32, s32, s32, s16 *);
-extern void func_8003F564(s8, s8);
 
 void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     extern u8 D_800A2F9DSmall;
