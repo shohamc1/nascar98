@@ -184,7 +184,7 @@ extern void func_80069744(void);
 extern s32 PadMapButtons(u8);
 extern void func_8006EB18(u8 *);
 extern void func_8006EEBC(void);
-extern s32 func_8006F9C4(s32, s32, s32);
+extern s32 MoviePlayFile(s32, s32, s32);
 extern void func_80082B70(void);
 
 #endif /* GAME_H */

@@ -1239,7 +1239,7 @@ void func_8006EEE0(s32 arg0) {
 
     idx = arg0 * 2;
     heap = FileLoadToHeap(idx + 0xE);
-    func_8006F9C4(idx + 0xF, 2, 0);
+    MoviePlayFile(idx + 0xF, 2, 0);
     SetDispMask(0);
     TextureLoadTim(heap);
     rect = *(RECT *)&D_800A39B0[0];
@@ -1294,7 +1294,7 @@ void func_8006F128(s32 arg0) {
         func_8003CCE0(0);
         D_800A2F9CLui = 0;
     }
-    func_8006F9C4((arg0 & 0xFF) + 0x3A, 0, 0);
+    MoviePlayFile((arg0 & 0xFF) + 0x3A, 0, 0);
     func_800596F4();
     CdSetMixVolume(((u8 *)D_800A3694Absolute)[0]);
 }
@@ -1307,7 +1307,7 @@ void func_8006F194(s32 arg) {
         func_8003CCE0(0);
         D_800A2F9CLui = 0;
     }
-    func_8006F9C4((arg & 0xFF) + 0xC, 0, 0);
+    MoviePlayFile((arg & 0xFF) + 0xC, 0, 0);
     func_800596F4();
     CdSetMixVolume(D_800A3694AbsoluteU8[0]);
 }
@@ -1437,7 +1437,160 @@ done:
     return result;
 }
 
-INCLUDE_ASM("asm/nonmatchings/media", func_8006F4DC);
+extern long SpuMalloc(long size);
+extern void SpuFree(unsigned long addr);
+extern void func_80072A48(void);
+extern s32 MdecBuildVlcLookup(u8 *first, u8 *second, u8 *table);
+extern s32 CdStreamInit();
+extern s32 AudioInit();
+extern s32 func_800703D0();
+extern void CdStreamShutdown(void);
+extern void AudioShutdown(void);
+extern s32 AudioGetContextSize(void);
+extern void MdecStreamShutdown(s32);
+extern void func_800700F8(void);
+extern s32 func_80070124(void);
+extern void func_8007012C(void);
+extern s32 func_80071EC0(s32, s32, s32);
+extern void func_80072A20(s32);
+extern s32 func_80072B4C(void);
+extern s32 func_80073BC8(void);
+extern u8 gPlayerDriver[];
+extern u8 D_800A3397;
+extern u8 D_800A39BC;
+s32 MoviePlay(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
+              s32 arg6, s32 arg7) {
+    RECT rect;
+    u8 result;
+    void *frameBuf;
+    void *vlcBuf;
+    void *vlcTable;
+    void *mdecBuf;
+    void *cdBuf;
+    void *audioCtx;
+    s32 spuBuf0;
+    s32 spuBuf1;
+    s32 tries;
+
+    rect.x = 0x100;
+    rect.y = 0x139;
+    rect.h = 7;
+    rect.w = 0x40;
+    MoveImage(&rect, 0x2C0, 0x19B);
+    rect.x = 0x100;
+    rect.y = 0x1D0;
+    rect.h = 0x18;
+    rect.w = 0x40;
+    MoveImage(&rect, 0x2C0, 0x1D0);
+    rect.x = 0x100;
+    rect.y = 0x1FF;
+    rect.h = 1;
+    rect.w = 0x10;
+    MoveImage(&rect, 0x2C0, 0x1FF);
+    DrawSync(0);
+    if (D_800A39BC == 0) {
+        func_80063AE0(0, 0);
+        func_80063AE0(1, 1);
+        DrawSync(0);
+    }
+    rect.x = 0x280;
+    rect.y = 0;
+    rect.h = 0x100;
+    rect.w = 0x140;
+    MoveImage(&rect, 0, 0x100);
+    DrawSync(0);
+    frameBuf = HeapAlloc(0x20D00);
+    if (frameBuf != NULL) {
+        vlcBuf = HeapAlloc(0x6000);
+        if (vlcBuf != NULL) {
+            vlcTable = HeapAlloc(0x600);
+            if (vlcTable != NULL) {
+                MdecBuildVlcLookup(vlcBuf, vlcTable, NULL);
+                func_800700F8();
+                mdecBuf = HeapAlloc(func_80070124());
+                if (mdecBuf != NULL) {
+                    if (func_800703D0(mdecBuf, frameBuf,
+                                      (u8 *)frameBuf + 0xF000,
+                                      (u8 *)frameBuf + 0x1E000, 1, arg5, 1)) {
+                        cdBuf = HeapAlloc(func_80071EC0(arg6, 0x4400, arg1));
+                        if (cdBuf != NULL) {
+                            if (CdStreamInit(cdBuf, func_80072A48, arg0, arg1,
+                                             0x800)) {
+                                audioCtx = HeapAlloc(AudioGetContextSize());
+                                if (audioCtx != NULL) {
+                                    spuBuf0 = SpuMalloc(func_80073BC8());
+                                    if (spuBuf0 != 0) {
+                                        spuBuf1 = SpuMalloc(func_80073BC8());
+                                        if (spuBuf1 != 0) {
+                                            if (AudioInit(audioCtx, 0x400000,
+                                                          spuBuf0, 0x800000,
+                                                          spuBuf1, arg2, 1)) {
+                                                func_80072A20(0);
+                                                result = func_8006F200(
+                                                    arg3, arg4, arg6 * arg7);
+                                                tries = 3;
+                                                while (func_80072B4C() &&
+                                                       tries > 0) {
+                                                    VSync(0);
+                                                    tries--;
+                                                }
+                                                AudioShutdown();
+                                            }
+                                            SpuFree(spuBuf1);
+                                        }
+                                        SpuFree(spuBuf0);
+                                    }
+                                    HeapFree(audioCtx);
+                                }
+                                CdStreamShutdown();
+                            }
+                            HeapFree(cdBuf);
+                        }
+                        MdecStreamShutdown(result);
+                    }
+                    HeapFree(mdecBuf);
+                }
+                HeapFree(vlcTable);
+            }
+            HeapFree(vlcBuf);
+        }
+        HeapFree(frameBuf);
+    }
+    rect.x = 0;
+    rect.y = 0x100;
+    rect.h = 0x100;
+    rect.w = 0x140;
+    MoveImage(&rect, 0x280, 0);
+    DrawSync(0);
+    rect.x = 0x2C0;
+    rect.y = 0x19B;
+    rect.h = 7;
+    rect.w = 0x40;
+    MoveImage(&rect, 0x100, 0x139);
+    rect.x = 0x2C0;
+    rect.y = 0x1D0;
+    rect.h = 0x18;
+    rect.w = 0x40;
+    MoveImage(&rect, 0x100, 0x1D0);
+    rect.x = 0x2C0;
+    rect.y = 0x1FF;
+    rect.h = 1;
+    rect.w = 0x10;
+    MoveImage(&rect, 0x100, 0x1FF);
+    DrawSync(0);
+    if (D_800A39BC == 0) {
+        func_80063A28();
+        DrawSync(0);
+        func_80063AE0(0, gPlayerDriver[0]);
+        DrawSync(0);
+        func_80063AE0(1, gPlayerDriver[1]);
+        DrawSync(0);
+    }
+    if (D_800A3397 != 1) {
+        func_8007012C();
+    }
+    return result;
+}
 
 extern void CD_initvol(void);
 /* Sound output and video. */
@@ -1452,8 +1605,8 @@ void SoundInitOutput(void) {
 extern u8 D_800A3394[];
 extern u8 D_800A3397;
 extern u8 D_800A39BC;
-extern s32 func_8006F4DC(s32, s32, s32, s32, s32, s32, s32, s32);
-s32 func_8006F9C4(s32 arg0, s32 arg1, s32 arg2) {
+extern s32 MoviePlay(s32, s32, s32, s32, s32, s32, s32, s32);
+s32 MoviePlayFile(s32 arg0, s32 arg1, s32 arg2) {
     volatile s32 pad[14];
     void *handle;
 
@@ -1464,7 +1617,7 @@ s32 func_8006F9C4(s32 arg0, s32 arg1, s32 arg2) {
     handle = FileOpen(arg0, D_800A3394);
     D_800A3397 = (u8)arg1;
     D_800A39BC = (u8)arg2;
-    return func_8006F4DC((s32)handle, 1, 0x800, 0, 0xA, 1, 0xC8, 0x400) & 0xFF;
+    return MoviePlay((s32)handle, 1, 0x800, 0, 0xA, 1, 0xC8, 0x400) & 0xFF;
 }
 
 extern void SpuSetCommonAttr(SpuCommonAttr *);

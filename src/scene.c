@@ -12203,9 +12203,9 @@ void func_80058D94(void) {
     xy[17] = 0xD1;
     if (cond == 0) {
         SsStart2();
-        frame = func_8006F9C4(1, 0, 1);
+        frame = MoviePlayFile(1, 0, 1);
         if ((frame & 0xFF) != 0 || (D_800A3904[0] & 0x800) <= 0) {
-            frame = func_8006F9C4(2, 1, 1);
+            frame = MoviePlayFile(2, 1, 1);
         }
         SsEnd();
     }
