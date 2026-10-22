@@ -2689,7 +2689,7 @@ void func_80025720(u8 *obj) {
 void func_80025730(u8 *obj) {
     extern u8 D_800A35F8[];
     extern s16 D_800A3910[];
-    extern void func_80042920();
+    extern void CarUpdateTumble();
     extern void func_8004419C(u8 *);
     s32 y;
     s32 value;
@@ -2731,10 +2731,10 @@ void func_80025730(u8 *obj) {
         return;
     case 1:
     case 2:
-        func_80042920(obj);
+        CarUpdateTumble(obj);
         return;
     case 4:
-        func_80042920(obj);
+        CarUpdateTumble(obj);
         if (*(u8 *)(obj + 0x268) != 0 && D_800A2EDC[0] != 0) {
             func_8004419C(obj);
             return;
