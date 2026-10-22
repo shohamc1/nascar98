@@ -709,8 +709,57 @@ void func_8001D218(void) {
 
 INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D220);
 
-INCLUDE_ASM("asm/nonmatchings/list_callbacks", func_8001D638);
+extern POLY_F3 D_800A3C1C[];
+extern u32 D_800A35C0[];
 
+/* Draws the selection triangle: apex at (x, y) and base at x +/-
+   twice the size, pointing left for dir 0 and right for dir 1. Any
+   other dir leaves the SetPolyF3 template's vertices alone. */
+void func_8001D638(s32 x, s32 y, s32 dir, s32 size) {
+    POLY_F3 *prim;
+    POLY_FT4 *entry;
+    u32 cursor;
+    s32 width;
+    s32 x2;
+    s32 y1;
+
+    width = size << 1;
+    prim = &D_800A3C1C[gOrderingTableBankAbsolute[0]];
+    SetPolyF3(prim);
+    switch (dir) {
+    case 0:
+        x2 = x - width;
+        prim->x0 = x;
+        y1 = y - size;
+        prim->x1 = x2;
+        prim->x2 = x2;
+        prim->y0 = y;
+        prim->y1 = y1;
+        prim->y2 = y + size;
+        break;
+    case 1:
+        x2 = x + width;
+        prim->x0 = x;
+        y1 = y - size;
+        prim->x1 = x2;
+        prim->x2 = x2;
+        prim->y0 = y;
+        prim->y1 = y1;
+        prim->y2 = y + size;
+        break;
+    default:
+        goto color;
+    }
+color:
+    prim->r0 = 0xFF;
+    prim->g0 = 0;
+    prim->b0 = 0;
+    cursor = gPrimitiveCursor[0];
+    D_800A35C0[1] = cursor + sizeof(POLY_FT4);
+    entry = (POLY_FT4 *)cursor;
+    *entry = *(POLY_FT4 *)prim;
+    AddPrim((u8 *)D_800A39C8[0], entry);
+}
 extern POLY_FT4 D_800A3C6C[];
 extern u32 D_800A35C0[];
 void func_8001D778(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
