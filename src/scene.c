@@ -878,7 +878,113 @@ fin:
     D_800A34E0 = 0x7FFFFFFF;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_80045480);
+extern s32 D_800A2F84[];
+
+/* One track surface quad. The vertices hold ground-plane x in vx and z in
+ * vy. */
+typedef struct TrackQuad {
+    u8 pad0[0x16];
+    s16 angle;
+    SVECTOR *vertex[4];
+    struct TrackQuad *next;
+} TrackQuad;
+
+/* One 0x90-byte entry of the array at D_800BE980. */
+typedef struct {
+    u8 pad0[0x10];
+    u16 angle;
+    u8 pad12[2];
+    s32 x;
+    s32 z;
+    u8 pad1C[0xC];
+    TrackQuad *firstQuad;
+} TrackSectionEntry;
+
+/* Sorts the quads of one track section across the track and returns +1 or
+ * -1 for the side of the dividing line between the middle two that the car
+ * is on. Returns 0 if the section doesn't hold four quads. */
+s32 func_80045480(u8 *car, s16 offset) {
+    s32 lateral[4];
+    TrackQuad *quads[4];
+    s32 center[4][2];
+    s32 origin[2];
+    TrackSectionEntry *entry;
+    TrackQuad *node;
+    s8 i, j;
+    s32 tmp;
+    s32 sinValue, cosValue;
+    s32 dot;
+    s32 result;
+
+    entry =
+        (TrackSectionEntry *)((u8 *)D_800BE980[0] + ((*(s16 *)(car + 0x1E0) +
+                                                      offset + D_800BE974[0]) %
+                                                     D_800BE974[0]) *
+                                                        0x90);
+    i = 0;
+    for (node = entry->firstQuad; node != NULL; node = node->next) {
+        quads[i] = node;
+        center[i][0] = node->vertex[0]->vx + node->vertex[1]->vx +
+                       node->vertex[2]->vx + node->vertex[3]->vx +
+                       D_800AE844[0] * 4;
+        center[i][1] = node->vertex[0]->vy + node->vertex[1]->vy +
+                       node->vertex[2]->vy + node->vertex[3]->vy +
+                       D_800AE844[1] * 4;
+        i++;
+    }
+    if (i != 4) {
+        return 0;
+    }
+    origin[0] = entry->x;
+    origin[1] = entry->z;
+    i = 0;
+    sinValue = ((s32 *)D_800A3A2CAbsolute[0])[0x3FF - entry->angle];
+    cosValue = ((s32 *)D_800A3A34Absolute[0])[0x3FF - entry->angle];
+    do {
+        lateral[i] =
+            (MathMultiplyFixed16(cosValue, (center[i][0] - origin[0]) << 16) +
+             MathMultiplyFixed16(sinValue, (center[i][1] - origin[1]) << 16)) >>
+            16;
+        i++;
+    } while (i < 4);
+    /* node and tmp double as the swap temporaries. */
+    for (i = 0; i < 3; i++) {
+        for (j = i + 1; j < 4; j++) {
+            if (lateral[j] < lateral[i]) {
+                node = quads[i];
+                quads[i] = quads[j];
+                quads[j] = node;
+                tmp = lateral[i];
+                lateral[i] = lateral[j];
+                lateral[j] = tmp;
+                tmp = center[i][0];
+                center[i][0] = center[j][0];
+                center[j][0] = tmp;
+                tmp = center[i][1];
+                center[i][1] = center[j][1];
+                center[j][1] = tmp;
+            }
+        }
+    }
+    tmp = 0x3FF - ((quads[1]->angle + quads[2]->angle) / 2);
+    dot = (MathMultiplyFixed16(((s32 *)D_800A3A34Absolute[0])[tmp],
+                               (*(s32 *)car - center[1][0]) << 16) +
+           MathMultiplyFixed16(((s32 *)D_800A3A2CAbsolute[0])[tmp],
+                               (*(s32 *)(car + 4) - center[1][1]) << 16)) >>
+          16;
+    if (D_800A2F84[0] != 0) {
+        result = -1;
+        if (dot < 0) {
+            result = 1;
+        }
+    } else {
+        result = -1;
+        if (dot > 0) {
+            result = 1;
+        }
+    }
+    return result;
+}
 
 typedef struct {
     u32 tag;
