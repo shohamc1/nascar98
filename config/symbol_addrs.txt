@@ -948,6 +948,7 @@ PadGetType = 0x80041BAC; // type:func
 HudDrawText = 0x80050028; // type:func
 HudTextWidth = 0x80050940; // type:func
 MenuFormatLapText = 0x8005E43C; // type:func
+MenuDrawModel = 0x8005E8EC; // type:func
 CardOpenEvents = 0x80059C2C; // type:func
 CardInit = 0x80059DC4; // type:func
 CardStop = 0x80059E0C; // type:func

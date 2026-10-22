@@ -1109,7 +1109,153 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     *(u16 *)((u8 *)D_800A3740 + 0xE) = arg2;
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_8005E8EC);
+extern s32 D_800A3344;
+extern u16 D_8009AFA8[];
+extern MATRIX D_800A8C70;
+extern u8 D_800A305B[];
+/* One model face: three corner vertices plus a fourth, 32 bytes. The pad
+ * halfword of each vertex holds the face colour (v[0..2]) or the
+ * semi-transparency flag (v[3]). */
+typedef struct {
+    SVECTOR v[4];
+} ModelQuad;
+
+/* Draws the spinning model that sits in a menu window as one POLY_F4 per
+ * face. arg0 advances the spin angle, semiTrans forces semi-transparency, and
+ * mode picks the full-screen camera (non-zero) or the window at D_800A3634. */
+void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
+    SVECTOR angles;
+    VECTOR trans;
+    s32 *ot;
+    u8 *cursor;
+    u8 *tmpl;
+    ModelQuad *q;
+    s32 i;
+    s32 otz;
+    s32 x;
+    s32 y;
+    s32 depth;
+
+    cursor = (u8 *)gPrimitiveCursor[0];
+    ot = (s32 *)D_800A39C8[0];
+    if (mode & 0xFF) {
+        x = 0xA0;
+        y = 0x64;
+        depth = 0xC8;
+        switch (D_800A305B[0]) {
+        case 1:
+            x = 0x9B;
+            depth = 0x12C;
+            break;
+        case 4:
+            depth = 0x12C;
+            y = 0x73;
+            break;
+        case 10:
+            x = 0xA0;
+            break;
+        case 7:
+        case 11:
+            depth = 0x12C;
+            y = 0x6E;
+            if (D_800A305B[0] != 0xB) {
+                break;
+            }
+        case 9:
+        set69:
+            y = 0x69;
+            break;
+        case 12:
+            x = 0x96;
+            goto set69;
+        case 14:
+            depth = 0xFA;
+        case 2:
+        case 3:
+        case 5:
+        case 13:
+        case 15:
+            y = 0x6E;
+            break;
+        case 16:
+            x = 0x96;
+            y = 0x64;
+            break;
+        }
+        SetGeomOffset(x, y);
+        angles.vy = D_8009AFA8[D_800A305B[0]];
+        angles.vx = 0x4B0;
+        angles.vz = 0;
+    } else if (cursor) {
+        /* The two arms are identical: cross-jumping merges them. The copy
+         * lengthens otz's live range so the allocator ranks it below i and q,
+         * as in the original. */
+        SetGeomOffset(*(s16 *)((u8 *)D_800A3634 + 6),
+                      *(s16 *)((u8 *)D_800A3634 + 8));
+        angles.vy = D_800A3344;
+        angles.vx = 0xC8;
+        angles.vz = 0;
+    } else {
+        SetGeomOffset(*(s16 *)((u8 *)D_800A3634 + 6),
+                      *(s16 *)((u8 *)D_800A3634 + 8));
+        angles.vy = D_800A3344;
+        angles.vx = 0xC8;
+        angles.vz = 0;
+    }
+    RotMatrix(&angles, &D_800A8C70);
+    SetRotMatrix(&D_800A8C70);
+    if (arg0 & 0xFF) {
+        if (depth) { /* identical arms, see above */
+            D_800A3344 = (D_800A3344 + 0x10) % 0x1000;
+        } else {
+            D_800A3344 = (D_800A3344 + 0x10) % 0x1000;
+        }
+    }
+    trans.vx = 0;
+    trans.vy = 0;
+    if (mode & 0xFF) {
+        trans.vz = depth;
+    } else {
+        trans.vz = 0x1C2;
+    }
+    TransMatrix(&D_800A8C70, &trans);
+    SetTransMatrix(&D_800A8C70);
+    q = (ModelQuad *)D_800A393C;
+    tmpl = D_800A399C[0];
+    for (i = 0; i < D_800A38DC; i++) {
+        gte_ldv3c(&q->v[0]);
+        gte_rtpt();
+        if ((semiTrans & 0xFF) == 0) {
+            SetSemiTrans(tmpl, q->v[3].pad);
+        } else {
+            SetSemiTrans(tmpl, 1);
+        }
+        gte_avsz3();
+        asm volatile("mfc2 %0, $7" : "=r"(otz) : "0"(otz));
+        if (q->v[3].pad != 0) {
+            otz += 0x10;
+        }
+        if (q->v[0].pad == 0 && q->v[1].pad == 0x46 && q->v[2].pad == 0x9A) {
+            if (mode & 0xFF) {
+                continue;
+            }
+            otz -= 0x20;
+        }
+        if (otz < 0) {
+            otz = 0;
+        }
+        gte_stsxy3(tmpl + 8, tmpl + 0xC, tmpl + 0x10);
+        gte_ldv0(&q->v[3]);
+        gte_rtps();
+        gte_stsxy(tmpl + 0x14);
+        *(POLY_F4 *)cursor = *(POLY_F4 *)tmpl;
+        AddPrim((u8 *)ot + ((otz >> 2) << 2), cursor);
+        q++;
+        tmpl += 0x18;
+        cursor += 0x18;
+    }
+    gPrimitiveCursor[0] = (u32)cursor;
+}
 
 #ifdef NON_MATCHING
 extern u16 D_8009AF84[];
@@ -6453,7 +6599,7 @@ void func_80066730(void) {
         ClearOTagR((u32 *)D_800A39C8Ptr[0], 0x3FF);
         func_80014A40(0);
         func_8006654C((void *)0, 0x3FC);
-        func_8005E8EC(0, 0, 1);
+        MenuDrawModel(0, 0, 1);
         func_8005A7B8S32(2, 4);
         func_8005A818(0x80, 0x80, 0xC0);
         y = 0xA0;

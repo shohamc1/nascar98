@@ -168,7 +168,7 @@ extern void func_8005C0F4(u8 *, s32);
 extern void func_8005CF34(u8 *, u8, u8, u8, s32);
 extern void func_8005E47C(void);
 extern void func_8005E550(s32);
-extern void func_8005E8EC(s32, s32, s32);
+extern void MenuDrawModel(s32, s32, s32);
 extern void func_80062910(s32);
 extern void func_800631B4(void);
 extern void func_80063694(u8, s16, s16, s16);

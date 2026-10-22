@@ -2622,7 +2622,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         active = 1;
         if ((mode & 0xFF) == 2)
             active = selection != 2;
-        func_8005E8EC(1, active, 0);
+        MenuDrawModel(1, active, 0);
         func_8005B688(D_800A3740, 1);
         {
             u8 *drawWindow;
