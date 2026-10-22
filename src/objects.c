@@ -12821,7 +12821,6 @@ __inline__ void func_80034CFC(void) {
     D_800A37C4Absolute[0] = D_800A36E8Absolute[0];
 }
 
-#ifdef NON_MATCHING
 extern s32 D_800A36D4Absolute[];
 extern s32 D_800A2F3C[];
 extern s32 D_800A2F40;
@@ -12862,17 +12861,32 @@ void CameraUpdateHorizon(void) {
     if (a == 0) {
         a = 1;
     }
-    a = 0xA0 - (a >> 8);
-    D_800A38B4 = a;
-    D_800A38BC = D_800A2F40 + (b >> 8);
-    dy = D_800A2F40 - D_800A38BC;
+    {
+        s32 horizonOffset;
+        register s32 horizonEnd asm("v1");
+        horizonOffset = b >> 8;
+        a = 0xA0 - (a >> 8);
+        D_800A38B4 = a;
+        horizonEnd = D_800A2F40 + horizonOffset;
+        /* Keep the sum separate from its shifted input. */
+        asm("" : "=&r"(horizonEnd) : "0"(horizonEnd), "r"(horizonOffset));
+        D_800A38BC = horizonEnd;
+        dy = D_800A2F40 - horizonEnd;
+    }
     if (a != 0xA0) {
         dx = 0xA0 - a;
         a = MathFixedDivide(dy, dx);
         D_800A38B4 = D_800A2F40 - (MathMultiplyFixed16(a, 0xC00000) >> 16);
         D_800A38BC = D_800A38B4 + (MathMultiplyFixed16(a, 0x1800000) >> 16);
         if (dy != 0) {
-            b = MathSqrt(dx * dx + dy * dy);
+            {
+                /* Keep both square results in their result registers. */
+                register s32 dxSquared asm("v0");
+                register s32 dySquared asm("v1");
+                dxSquared = dx * dx;
+                dySquared = dy * dy;
+                b = MathSqrt(dxSquared + dySquared);
+            }
             a = MathFixedDivide(dx, b);
             D_800A36A8 =
                 -(MathMultiplyFixed16(-MathFixedDivide(dy, b), 0x580000) >> 16);
@@ -12931,9 +12945,6 @@ void CameraUpdateHorizon(void) {
     D_800A33DC = b;
     D_800A2F44 = b * 2 % 0x200;
 }
-#else
-INCLUDE_ASM("asm/nonmatchings/objects", CameraUpdateHorizon);
-#endif
 
 extern s32 D_800A2F44;
 extern s32 D_800A38B4;
