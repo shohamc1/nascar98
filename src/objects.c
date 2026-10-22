@@ -4639,11 +4639,124 @@ void SelectionStepBackward(SelectionState *selection) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80029150);
+typedef struct {
+    u8 unk0[0x50];
+    s32 unk50;
+    u8 unk54[0x10];
+    s32 unk64;
+    u8 unk68[0x8];
+    s32 unk70;
+    u8 unk74[0x8];
+    s32 unk7C;
+    u8 unk80[0x10];
+    s32 speed;
+    u8 unk94[0x1C];
+    s32 velocityX;
+    s32 velocityY;
+    s32 velocityZ;
+    u8 unkBC[0x108];
+    s16 unk1C4;
+    u8 unk1C6[0x4A];
+    s16 unk210;
+    s16 unk212;
+    u8 unk214[0x4];
+    s32 unk218;
+    s32 unk21C;
+    u8 unk220[0x142];
+    u16 unk362;
+    u16 unk364;
+    u16 unk366;
+    u16 unk368;
+} CarMotion;
 
-extern void func_80029150(s32 *);
+/* The high half of speed, read as a signed halfword. */
+#define CAR_SPEED_INT(car) (((s16 *)&(car)->speed)[1])
+
+extern void func_8002BD48(u8 *carBytes);
+extern s32 func_8002CF1C();
+extern s32 D_800A3598[];
+/* Separate symbol view preserves the retail lui access. */
+asm(".globl D_800A2E30Motion\nD_800A2E30Motion = D_800A2E30\n");
+extern s32 D_800A2E30Motion[];
+
+void func_80029150(CarMotion *car) {
+    s32 vec[3];
+    s32 unused[64]; /* retail reserves 256 bytes of locals nothing touches */
+    s32 base;
+    s32 slope;
+    s32 speed;
+    s32 force;
+    s32 drag;
+    s32 brake;
+    s32 slow;
+    s32 step;
+    s32 offset;
+
+    func_8002BD48((u8 *)car);
+    if (D_800A3598[0] == 1) {
+        base = MathMultiplyFixed16(car->unk50, 0x1C000000) >> 16;
+        slope = car->unk212;
+        speed = CAR_SPEED_INT(car);
+        if (slope == 0) {
+            force = 0;
+        } else if (slope < 0) {
+            force =
+                speed * speed * car->unk210 / ((-14 - slope) * 1000 - 14000);
+        } else {
+            force = speed * speed * car->unk210 / ((14 - slope) * 1000 + 14000);
+        }
+        if ((car->unk218 > 0 && force < 0) || (car->unk218 < 0 && force > 0)) {
+            force *= 2;
+        }
+        offset = D_800A2E30Motion[0];
+        car->unk218 = car->unk218 + (force + base);
+        if (force == 0) {
+            offset *= 2;
+        }
+        if (car->unk218 > 0) {
+            car->unk218 -= offset;
+            if (car->unk218 < 0) {
+                car->unk218 = 0;
+            }
+        } else if (car->unk218 < 0) {
+            car->unk218 += offset;
+            if (car->unk218 > 0) {
+                car->unk218 = 0;
+            }
+        }
+        car->unk21C = func_8002CF1C(car->unk362);
+        car->unk21C = car->unk21C + func_8002CF1C(car->unk364);
+        car->unk21C = car->unk21C + func_8002CF1C(car->unk366);
+        car->unk21C = car->unk21C + func_8002CF1C(car->unk368);
+        drag = 0;
+        if (car->unk218 > 0) {
+            drag = car->unk218 - car->unk21C;
+            if (drag < 0) {
+                drag = 0;
+            }
+        } else if (car->unk218 < 0) {
+            drag = car->unk218 + car->unk21C;
+            if (drag > 0) {
+                drag = 0;
+            }
+        }
+        brake = abs(drag / 256);
+        slow = (brake << 16) / 16;
+        asm(""); /* keeps the division's shift ahead of the later arithmetic */
+        car->speed -= slow;
+        step = (-drag / 200) << 16;
+        car->unk1C4 = (step < 0 ? -step : step) >> 14;
+        vec[0] = MathMultiplyFixed16(car->unk64, step) >> 16;
+        vec[1] = MathMultiplyFixed16(car->unk70, step) >> 16;
+        vec[2] = MathMultiplyFixed16(car->unk7C, step) >> 16;
+        car->velocityX += vec[0];
+        car->velocityY += vec[1];
+        car->velocityZ += vec[2];
+    }
+}
+
 void func_80029450(s32 *p) {
-    func_80029150(p);
+    func_80029150((CarMotion *)p);
     p[0] += p[0xB0 / 4];
     p[1] += p[0xB4 / 4];
     p[2] += p[0xB8 / 4];
@@ -4915,7 +5028,7 @@ void func_80029DA8(s32 *car) {
     func_8002D16C(car);
     func_8002B538(car);
     func_80029A78(car);
-    func_80029150(car);
+    func_80029150((CarMotion *)car);
     a = car[0] + car[0x2C];
     b = car[1] + car[0x2D];
     c = car[2] + car[0x2E];
@@ -5422,7 +5535,7 @@ void CarUpdatePlayer(u8 *object) {
     func_8002D16C(car);
     func_8002B538(car);
     func_80029A78(car);
-    func_80029150(car);
+    func_80029150((CarMotion *)car);
     positionX = *(s32 *)(car + 0) + *(s32 *)(car + 0xB0);
     positionY = *(s32 *)(car + 4) + *(s32 *)(car + 0xB4);
     positionZ = *(s32 *)(car + 8) + *(s32 *)(car + 0xB8);
