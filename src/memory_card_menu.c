@@ -1876,7 +1876,90 @@ u8 CardGetOtherFileBlocks(void) {
     return CardCountOtherFileBlocks(gCardSlot, sCardFileName);
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006A15C);
+extern char D_800B0A2C[];
+extern u8 D_800A3968;
+extern s32 D_800A3380[2];
+extern s32 D_800A3388[2];
+extern void *memcpy(void *, const void *, size_t);
+s32 func_8006A15C(u8 arg0) {
+    u8 slot;
+    u8 status;
+    u32 count;
+    u8 sectors;
+    s32 i;
+    char *src;
+    char path[0x40];
+    struct DIRENTRY entry;
+
+    slot = arg0 == 0xFF ? 0 : arg0;
+    D_800A3968 = 0;
+    D_800A3808 = 0;
+    status = CardCheckStatus(slot, 0);
+    D_800A3938 = status;
+    if (status == 1) {
+        D_800A3808 = 1;
+        return 0;
+    }
+    if (status == 2) {
+        if (arg0 == 0xFF) {
+            status = CardCheckStatus(1, 0);
+            D_800A3938 = status;
+        }
+        switch (D_800A3938) {
+        case 1:
+            D_800A3808 = 1;
+            return 0;
+        case 2:
+            D_800A3808 = 2;
+            return 1;
+        case 0:
+        case 3:
+            gCardSlot = 1;
+            break;
+        }
+    } else {
+        gCardSlot = slot;
+    }
+    status = func_80059F0C(gCardSlot);
+    D_800A3938 = status;
+    if (gCardSlot == 0) {
+        memcpy(path, D_800A3380, 6);
+    } else {
+        memcpy(path, D_800A3388, 6);
+    }
+    strcat(path, sCardFileName);
+    if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
+        return 1;
+    }
+    if ((CardReadSectors((s32)&entry, 0x1A, 1, gCardSlot, (s32)D_800A3A0C) &
+         0xFF) == 0) {
+        D_800A3808 = 7;
+        return 0;
+    }
+    D_800A3968 = *(s32 *)D_800A3A0C;
+    count = D_800A3968;
+    if (count >= 0x10) {
+        D_800A3968 = 0;
+        D_800A3808 = 0xB;
+        if ((CardDeleteFile(path) & 0xFF) == 0) {
+            D_800A3808 = 0xC;
+        }
+        return 0;
+    }
+    sectors = (count * 0x13C + 0x83) >> 7;
+    if ((CardReadSectors((s32)&entry, 0x1A, sectors, gCardSlot,
+                         (s32)D_800A3A0C) &
+         0xFF) != 0) {
+        src = D_800A3A0C + 4;
+        for (i = 0; i < D_800A3968; i++) {
+            strcpy(D_800B0A2C + i * 0x10, src + i * 0x13C);
+        }
+    } else {
+        D_800A3808 = 7;
+        return 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006A3E0);
 
