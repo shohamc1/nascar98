@@ -1961,10 +1961,110 @@ s32 func_8006A15C(u8 arg0) {
     return 1;
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_8006A3E0);
+extern u8 D_800A3A58;
+extern char D_8009B1E4[];
+
+s32 func_8006A3E0(char *record, u8 overwrite, u8 index) {
+    typedef struct {
+        s32 words[0x3A];
+    } SaveEntry;
+    typedef struct {
+        s32 words[0x4F];
+    } SaveSlot;
+    char path[0x40];
+    struct DIRENTRY entry;
+    SaveEntry blank;
+    u8 sectors;
+    s32 fd;
+    s32 i;
+    s32 j;
+    u8 *p;
+    SaveSlot *slots;
+
+    D_800A3808 = 0;
+    if ((CardCountOtherFileBlocks(gCardSlot, sCardFileName) & 0xFF) == 0xF) {
+        D_800A3808 = 0x1E;
+        return 0;
+    }
+    if (gCardSlot == 0) {
+        memcpy(path, D_800A3380, 6);
+    } else {
+        memcpy(path, D_800A3388, 6);
+    }
+    strcat(path, sCardFileName);
+    if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
+        fd = CardOpenFile(path, 0x200);
+        if (fd == -1) {
+            D_800A3808 = 5;
+            return 0;
+        }
+        CardCloseFile(fd);
+        if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
+            D_800A3808 = 0xA;
+            return 0;
+        }
+        if ((CardWriteSectors((s32)&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
+             0xFF) == 0) {
+            D_800A3808 = 8;
+            return 0;
+        }
+        if (D_800A3A58 == 0) {
+            ((s8 *)&blank)[0] = -1;
+            for (j = 0; j < 17; j++) {
+                p = (u8 *)&blank + j * 0xC;
+                p[0x1D] = 0;
+                p[0x1E] = 0;
+                p[0x1F] = 0;
+                p[0x1C] = 0;
+                *(s32 *)&p[0x20] = 0x7FFFFFFF;
+            }
+        }
+        if (D_800A3978 == 0) {
+            D_800A3808 = 0xE;
+            return 0;
+        }
+        if (D_800A3A58 == 0) {
+            D_800A366C[0] = 0;
+            D_800A366C[1] = 0;
+            D_800A366C[2] = 0;
+            D_800A366C[3] = 0;
+            for (i = 0; i < 6; i++) {
+                (D_800A366C + i)[4] = 0;
+            }
+            D_800A366C[0xA] = 0;
+            D_800A366C[0xB] = 0;
+            for (i = 0; i < 12; i++) {
+                *(SaveEntry *)(D_800A3978 + i * 0xE8) = blank;
+                if (i == 0) {
+                    ((u8 *)&blank)[0] = 0;
+                }
+            }
+        }
+        if ((CardWriteSectors((s32)&entry, 4, 0x16, gCardSlot,
+                              (s32)D_800A366C) &
+             0xFF) == 0) {
+            D_800A3808 = 8;
+            return 0;
+        }
+    }
+    slots = (SaveSlot *)(D_800A3A0C + 4);
+    if (overwrite != 0) {
+        slots[index] = *(SaveSlot *)record;
+    } else {
+        *(s32 *)D_800A3A0C = ++D_800A3968;
+        slots[D_800A3968 - 1] = *(SaveSlot *)record;
+    }
+    sectors = (D_800A3968 * 0x13C + 0x83) >> 7;
+    if ((CardWriteSectors((s32)&entry, 0x1A, sectors, gCardSlot,
+                          (s32)D_800A3A0C) &
+         0xFF) == 0) {
+        D_800A3808 = 8;
+        return 0;
+    }
+    return 1;
+}
 
 extern s32 D_800A35B0;
-extern u8 D_800A3A58;
 extern void func_8006B464(void);
 s32 func_8006A7C8(u8 arg0) {
     u8 slot;
@@ -3517,7 +3617,6 @@ s32 func_8006D0C0(void) {
 }
 
 extern char D_800B9B44[];
-extern s32 func_8006A3E0(char *, s32, u8);
 extern void func_800599E4(void);
 extern void func_800598C4(void);
 void func_8006D0F0(void) {
