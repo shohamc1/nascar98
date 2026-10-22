@@ -2159,7 +2159,80 @@ void func_80060008(u8 arg0) {
     } while (diff < 4);
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_800602E8);
+/* Same body as func_8005CF34. Retail emits it out of line there and inlines
+ * it at each call site below; the inline parameter copies place the moves
+ * in the loop. */
+static inline void MenuObjDrawText(u8 *window, u8 code, u8 first, u8 second,
+                                   s32 textId) {
+    u8 *prim;
+
+    prim = *(u8 **)(window + 0x20);
+    func_8005A7B8(prim[1], prim[2]);
+    prim[0] = code;
+    if (textId == 0) {
+        textId = *(s32 *)(prim + 8);
+    }
+    if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
+        func_8005A818(window[2], window[3], window[4]);
+    } else if (prim[1] == 2) {
+        func_8005A818(0xFF, 0x80, 0x40);
+    } else {
+        func_8005A818(0, 0, 0);
+    }
+    if (D_800A39E4[0] == 0xD) {
+        func_8005A9F4(textId,
+                      (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
+                      (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+                      prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+    } else {
+        func_8005A9F4(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
+                      prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+    }
+}
+
+void func_800602E8(s8 arg0, u8 arg1) {
+    s32 i;
+    s32 j;
+    s32 first;
+    s8 sel;
+    u32 level;
+    u32 scale;
+    u8 *node;
+    u8 *window;
+    u8 *prim;
+
+    sel = arg0 - 2;
+    for (i = 0; i < 4; i++) {
+        level = D_800A3860[arg1][(u8)i];
+        scale = ((((level << 1) + level) << 2) + level) >> 3;
+        if (scale == 0) {
+            scale = 1;
+        }
+        *(s16 *)(*(u8 **)(D_800B9980[(u8)i] + 0x1C) + 0x16) = scale;
+        func_8005B8B8(D_800B996C[i], 0xFF);
+        func_8005B8B8(D_800B9980[i], i != sel);
+        first = i != sel;
+        for (j = 0; j < 3; j++) {
+            window = D_800BB9F4[i * 3 + j];
+            prim = *(u8 **)(window + 0x20);
+            if (i == sel) {
+                *(s32 *)(prim + 4) = 0;
+            } else {
+                *(s32 *)(prim + 4) = 0x3ED;
+            }
+            MenuObjDrawText(window, 0, first, 0, 0);
+        }
+    }
+    func_8005B8B8(D_800A39ACPtr, 0xFF);
+    for (i = 0; i < 4; i++) {
+        func_8005B8B8(D_800B60B8[i], 0xFF);
+        MenuObjDrawText(D_800AE168[i], 0, 0, 0, 0);
+    }
+    node = *(u8 **)(D_800AE168[3] + 0x1C);
+    if (node != 0) {
+        func_8005B8B8(node, 0xFF);
+    }
+}
 
 extern u8 *D_800A3A68Store asm("D_800A3A68");
 extern s32 D_8009A2B0[];
