@@ -8740,7 +8740,8 @@ void func_80063C34MainLoop(u8, u8) asm("func_80063C34");
 void func_80064208MainLoop(void) asm("func_80064208");
 void CardMenuCreateRecordTableMainLoop(s32) asm("CardMenuCreateRecordTable");
 void func_80068CE4MainLoop(void) asm("func_80068CE4");
-void func_800691D4MainLoop(void) asm("func_800691D4");
+void CardMenuCreateStandingsTableMainLoop(void) asm(
+    "CardMenuCreateStandingsTable");
 void func_800697ECMainLoop(s32) asm("func_800697EC");
 void MenuCreateItemRowMainLoop(u8) asm("MenuCreateItemRow");
 s32 CardResolveSlotMainLoop(void) asm("CardResolveSlot");
@@ -8953,7 +8954,7 @@ void func_80053D40(void) {
         } else if (argument0 == 0xA) {
             func_80068CE4MainLoop();
         } else if (argument0 == 0xC) {
-            func_800691D4MainLoop();
+            CardMenuCreateStandingsTableMainLoop();
         } else if (argument0 == 0xE) {
             func_80064208MainLoop();
         } else if ((u32)(D_800A39E4MainLoop - 0x10) < 2U) {

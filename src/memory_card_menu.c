@@ -1607,7 +1607,175 @@ void __maspsx_include_asm_hack_jtblpad_80068CE4() {
             "    .section .text # maspsx-keep\n");
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card_menu", func_800691D4);
+/* Builds the championship standings table: rows sorted by points
+ * (D_800B9B84), with rank, driver name, points and gap to the leader,
+ * and a highlight bar behind the player's row. Parked: the i loop's
+ * invariants (D_800B9B84, &order[-1]) are hoisted out of it here but stay
+ * inside it in retail; see "Unsolved walls" in kb/psx/matching.md. */
+#ifdef NON_MATCHING
+static __inline__ void MenuSetText(UnkTextObj *obj, s32 text, s32 flag) {
+    UnkPacket0C *pkt;
+    s32 h;
+
+    pkt = obj->unk20;
+    h = obj->unk1A;
+    pkt->unk1 = 2;
+    pkt->unk2 = 3;
+    pkt->unk8 = text;
+    pkt->unk3 = flag;
+    pkt->unk4 = h;
+    obj->unk1A = h;
+}
+
+void CardMenuCreateStandingsTable(void) {
+    extern s16 D_800B9B84[];
+    extern char D_800B9B54[];
+    extern char *D_8009A490[];
+    extern char *D_8009A494[];
+    extern s32 D_8009B1D4[];
+    extern s8 D_800A374C[];
+    extern UnkTextObj *D_800A3900;
+    extern UnkTextObj *sMenuHead[2] asm("D_800A360C");
+    extern UnkTextObj *sMenuList[2] asm("D_800A3858");
+    extern UnkTextObj *D_800A3918;
+    UnkTextObj *obj;
+    UnkTextObj *tail;
+    UnkTextObj *mine;
+    UnkPacket0C *pkt;
+    char buf[0x40];
+    u8 order[24];
+    char pad[0x28];
+    s32 value;
+    s32 flag;
+    s32 h;
+    s32 m;
+    s32 best;
+    s16 bestScore;
+    s16 cur;
+    u8 tmp;
+    s32 y;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 2; i++) {
+        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        if (i == 0) {
+            D_800A3900 = tail;
+        } else {
+            D_800A3900->unk1C = tail;
+        }
+        tail->unk1A = 0x3FD;
+    }
+    tail = func_8005BF8C(0, 0x2A);
+    sMenuHead[0] = tail;
+    func_8005A7B8S32(2, 3);
+    h = (0x140 - MenuStringWidth((s32)D_8009A490[0])) / 2;
+    tail->unk6 = h;
+    tail->unkA = h;
+    tail->unk1A = 0x32;
+    MenuSetText(tail, (s32)D_8009A490[0], 0);
+
+    if (D_800B9B84[0] == 0) {
+        obj = func_8005BF8C(func_8005B0E4(0x140, (s32)D_8009A494[0]), 0x66);
+        obj->unk12 = 0;
+        obj->unk1A = 0x32;
+        MenuSetText(obj, (s32)D_8009A494[0], 0);
+        sMenuList[0] = obj;
+    } else {
+        for (i = 23; i >= 0; i--) {
+            order[i] = i;
+        }
+        for (i = 0; i < 23; i++) {
+            cur = D_800B9B84[order[i]];
+            bestScore = 0;
+            for (j = i + 1; j < 24; j++) {
+                if (bestScore < D_800B9B84[order[j]]) {
+                    bestScore = D_800B9B84[order[j]];
+                    best = j;
+                }
+            }
+            if (cur < bestScore) {
+                tmp = order[i];
+                order[i] = order[best];
+                order[best] = tmp;
+            }
+        }
+        y = 0;
+        for (i = 0; i < 24; i++) {
+            for (j = 0; j < 4; j++) {
+                obj = func_8005BF8C(D_8009B1D4[j], y);
+                if (i == 0 && j == 0) {
+                    sMenuList[0] = obj;
+                } else {
+                    tail->unk1C = obj;
+                }
+                obj->unk1A = 0;
+                if (j != 1) {
+                    obj->unk0 = 5;
+                }
+                flag = 0;
+                switch (j) {
+                case 0:
+                    value = 1;
+                    if (i != 0) {
+                        value = i + 1;
+                        if (D_800B9B84[order[i]] == D_800B9B84[order[i - 1]]) {
+                            value = 0;
+                        }
+                    }
+                    flag = 1;
+                    break;
+                case 1:
+                    value = (s32)gDriverNames[order[i]];
+                    if (strcmp((char *)value, D_800B9B54) == 0) {
+                        D_800A374C[0] = i;
+                        mine = obj;
+                        if (i != 0 &&
+                            D_800B9B84[order[i]] == D_800B9B84[order[i - 1]]) {
+                            for (m = i - 1; m >= 0; m--) {
+                                if (D_800B9B84[order[i]] !=
+                                    D_800B9B84[order[m]]) {
+                                    break;
+                                }
+                            }
+                            if (m < 0) {
+                                D_800A374C[0] = 0;
+                            } else {
+                                D_800A374C[0] = m + 1;
+                            }
+                        }
+                    }
+                    break;
+                case 2:
+                    value = D_800B9B84[order[i]];
+                    flag = 1;
+                    break;
+                case 3:
+                    flag = 1;
+                    if (i == 0) {
+                        value = 0;
+                    } else {
+                        value = D_800B9B84[order[i]] - D_800B9B84[order[0]];
+                    }
+                    break;
+                }
+                tail = obj;
+                MenuSetText(obj, value, flag);
+            }
+            if (i == 23) {
+                D_800A3918 = obj;
+            }
+            y += 0xF;
+        }
+        obj = func_8005B314(0, mine->unk8 - 2, 0x140, 0xF, 0, 0, 0, 0xFF, 1, 1);
+        obj->unk1A = mine->unk1A + 2;
+        tail->unk1C = obj;
+    }
+    func_8005DEDC(0x3E8);
+}
+#else
+INCLUDE_ASM("asm/nonmatchings/memory_card_menu", CardMenuCreateStandingsTable);
+#endif
 
 typedef struct UnkBlockOffsets {
     s32 unk0;

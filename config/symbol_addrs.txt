@@ -988,3 +988,4 @@ gHandSegments = 0x800A45F0;
 MoviePlay = 0x8006F4DC; // type:func
 MoviePlayFile = 0x8006F9C4; // type:func
 CardMenuCreateRecordTable = 0x80068220; // type:func
+CardMenuCreateStandingsTable = 0x800691D4; // type:func
