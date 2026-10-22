@@ -12,7 +12,7 @@ extern u8 D_80090F2E[];
 extern u8 D_80099230[];
 extern u8 D_80099231[];
 extern u8 *D_8009A400[];
-extern char *D_8009AC1C[];
+extern char *gDriverNames[];
 extern u8 D_8009AD40[];
 extern u8 D_8009AEAA[];
 extern u8 D_8009AEAE[];

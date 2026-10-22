@@ -4941,13 +4941,13 @@ void func_800631DC(s32 left, s32 top, s32 code) {
         if (mode == 7 || mode == 0xE) {
             continue;
         }
-        x = func_8005B0E4(0x64, (s32)D_8009AC1C[D_800A36E0[i]]) - 0x32;
+        x = func_8005B0E4(0x64, (s32)gDriverNames[D_800A36E0[i]]) - 0x32;
         object = func_8005BF8C(left + x, base - 6);
         *(s16 *)(object + 0xA) = top + x;
         *(s16 *)(object + 0x12) = x;
         *(s16 *)(object + 0xE) = code;
         func_80067EA4((struct UnkObject24 *)object, 2, 2,
-                      (s32)D_8009AC1C[D_800A36E0[i]], 0, 0);
+                      (s32)gDriverNames[D_800A36E0[i]], 0, 0);
         *(u8 **)(node + 0x1C) = object;
         node = object;
         D_800A3868[i] = node;
@@ -5092,7 +5092,7 @@ void func_800636EC(u8 index, u8 kind) {
 
     node = D_800A3868[index];
     object = *(u8 **)(node + 0x20);
-    *(u8 **)(object + 8) = D_8009AC1C[kind];
+    *(u8 **)(object + 8) = gDriverNames[kind];
     func_8005A7B8(object[1], object[2]);
     value = func_8005B0E4(0x64, *(s32 *)(object + 8));
     *(s16 *)(node + 6) = value + 0xA;
@@ -5512,7 +5512,7 @@ void func_80064208(void) {
         node = func_8005BF8C(0x5F, 0x2D);
         kind = D_800A39FC;
         ((MenuObj *)node)->unk12 = 0x5F;
-        func_80067EA4((struct UnkObject24 *)node, 2, 3, D_8009AC1C[kind], 0, 0);
+        func_80067EA4((struct UnkObject24 *)node, 2, 3, gDriverNames[kind], 0, 0);
         *((u8 **)(tail + 0x1C)) = node;
         tail = node;
         func_8005A7B8(2, 3);
@@ -5524,7 +5524,7 @@ void func_80064208(void) {
             node = func_8005BF8C(0x5F, y);
             kind2 = D_800A39FC;
             *((s16 *)(node + 0x12)) = 0x5F;
-            func_80067EA4((struct UnkObject24 *)node, 2, 4, D_8009AC1C[kind2],
+            func_80067EA4((struct UnkObject24 *)node, 2, 4, gDriverNames[kind2],
                           0, 0);
             y += height;
             *((u8 **)(tail + 0x1C)) = node;
@@ -5636,7 +5636,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
     for (i = 0; i < 6; i++) {
         prim2 = *(u8 **)(node + 0x20);
         if (i == 0) {
-            *(u8 **)(prim2 + 8) = D_8009AC1C[idx];
+            *(u8 **)(prim2 + 8) = gDriverNames[idx];
         } else {
             str = (u8 *)(D_800A3358 + offset);
             *(u8 **)(prim2 + 8) = str;
@@ -5922,7 +5922,7 @@ inline s32 func_80065040(void) {
 
 extern u8 D_800A3950[];
 extern u8 D_800A305B[];
-extern u8 *D_8009A360[];
+extern u8 *gTrackNames[];
 extern u8 *D_8009A3A4[];
 extern u8 *D_8009A3E8[];
 extern u8 *D_8009A41C[];
@@ -6091,7 +6091,7 @@ void func_80065058(u8 id, s32 shift) {
     func_8005A818(0x80, 0x80, 0xC0);
     D_800A39C8Lui += 4;
     if (D_800A3950[0] == 0xFB || D_800A3950[0] == 3) {
-        func_8005A9F4((s32)D_8009A360[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
+        func_8005A9F4((s32)gTrackNames[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
                       0);
     } else {
         func_8005A9F4((s32)D_8009A3A4[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
@@ -6133,7 +6133,7 @@ void func_80065058(u8 id, s32 shift) {
         }
         func_8005A818(r2, g2, b2);
         func_8005A9F4((s32)D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
-        func_8005A9F4((s32)D_8009AC1C[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0, 0);
+        func_8005A9F4((s32)gDriverNames[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0, 0);
         if (D_800A2EB0Absolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
             func_8005A9F4((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
@@ -6475,7 +6475,7 @@ void func_80066080(s32 arg0) {
         }
         func_8005A818(0x80, 0x80, 0xC0);
         func_8005A9F4((s32)D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
-        func_8005A9F4((s32)D_8009AC1C[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
+        func_8005A9F4((s32)gDriverNames[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
         D_800A3970 = (u8 *)D_800A367C;
         if (shift != 0) {
             for (prim = (POLY_FT4 *)D_800A3568; prim != (POLY_FT4 *)D_800A3970;
@@ -6491,8 +6491,8 @@ void func_80066080(s32 arg0) {
     func_8005A9F4((s32)D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
     x = func_8005B0E4(0x140, (s32)D_8009A3F8);
     func_8005A9F4((s32)D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
-    x = func_8005B0E4(0x140, (s32)D_8009A360[D_800A305BLui]);
-    func_8005A9F4((s32)D_8009A360[D_800A305BLui], x, 0x4D, 0, 0, 0, 0, 0);
+    x = func_8005B0E4(0x140, (s32)gTrackNames[D_800A305BLui]);
+    func_8005A9F4((s32)gTrackNames[D_800A305BLui], x, 0x4D, 0, 0, 0, 0, 0);
     D_800A3940Signed = 2;
     if ((arg0 & 0xFF) != 0) {
         D_800A3A44Signed = -0x140;
@@ -6671,7 +6671,7 @@ void func_80066730(void) {
         y = 0xA0;
         i = 0;
         p = table;
-        func_8005A9F4(D_8009A360[D_800A305B[0]], 0x20, 0x23, 0, 0, 0, 0, 0);
+        func_8005A9F4(gTrackNames[D_800A305B[0]], 0x20, 0x23, 0, 0, 0, 0, 0);
         do {
             y16 = (s16)y;
             func_8005A9F4(p[0], 0x20, y16, 0, 0, 0, 0, 0);
@@ -7118,7 +7118,98 @@ void func_8006733C(void) {
     asm("addu $gp, %0, $zero" : : "r"(oldGp));
 }
 
-INCLUDE_ASM("asm/nonmatchings/menu", func_80067598);
+extern u8 gTextColorLui[] asm("gTextColor");
+extern volatile u16 D_800A3940;
+extern u8 D_800A3364[];
+extern u32 D_800A3570Lui asm("D_800A3570Absolute");
+extern u32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
+extern u8 *D_800A3554Lui asm("D_800A3554Absolute");
+extern void func_800168F8(u8 *, s32);
+
+void MenuDrawLoadScreen(void) {
+    char buf[16];
+    u32 textCursor;
+    u32 src;
+    POLY_FT4 *ft4;
+    u32 end;
+    s32 depth;
+    POLY_GT4 *gt4;
+    u8 *car;
+    POLY_GT4 *prim;
+
+    func_80066B70();
+    textCursor = gPrimitiveCursorLui;
+    HudDrawText(gTrackNames[D_800A305B[0]], 0x14, 0x23, 0);
+    HudDrawText(gDriverNames[D_800A36E0[0]], 0xA0, 0xB0, 0);
+    HudDrawText(D_8009A400[34], 0xA0, 0xBE, 0);
+    HudDrawText(D_800A3364, 0xE0, 0xBE, 0);
+    func_80018588(*(void **)(D_800A3554Lui + 0x25C), 0, (s32)buf);
+    gTextColorLui[0] = 9;
+    HudDrawText((u8 *)buf + 1, 0xEA, 0xBE, 0);
+    SetGeomOffset(0xAA, 0x1E);
+    D_800A3554Lui[0x20C] = 1;
+    func_8002EEFC(D_800A3554Lui);
+    car = D_800A3554Lui;
+    *(s32 *)(car + 0) = 0;
+    *(s32 *)(car + 4) = 0;
+    *(s32 *)(car + 8) = 0;
+    *(u16 *)(car + 0x20E) = 0xA00;
+    func_8003271C(0);
+    func_800168F8(*(u8 **)(D_800A3554Lui + 0x36C),
+                  (s8)(*(s8 *)(D_800A3554Lui + 0x200) / 5));
+    end = gPrimitiveCursorLui;
+    func_8001775C(D_800A3554Lui, 0, 0x15E, 0x320);
+    D_800A39C8Lui = (s32)gOrderingTables;
+    ClearOTagR((u_long *)gOrderingTables, 0x80);
+    ft4 = (POLY_FT4 *)(gOrderingTables + 0x208);
+    for (src = D_800A3570Lui; src < end; src += sizeof(POLY_FT4)) {
+        *ft4 = *(POLY_FT4 *)src;
+        if (src == D_800A365C) {
+            D_800A387C = (u16 *)ft4;
+        } else if (src == D_800A39F4) {
+            D_800A36BC = (u16 *)ft4;
+        } else if (src >= textCursor) {
+            if (src == textCursor) {
+                D_800A3568 = (u8 *)ft4;
+            }
+            ft4->x0 -= 0x140;
+            ft4->x1 -= 0x140;
+            ft4->x2 -= 0x140;
+            ft4->x3 -= 0x140;
+        }
+        setRGB0(ft4, 0x80, 0x80, 0xC0);
+        AddPrim((u_long *)D_800A39C8Lui, ft4);
+        ft4++;
+    }
+    gt4 = (POLY_GT4 *)ft4;
+    D_800A367C = (s32)gt4;
+    depth = 0x78;
+    prim = gt4;
+    while (end < gPrimitiveCursorLui) {
+        *gt4 = *(POLY_GT4 *)end;
+        AddPrim((u_long *)D_800A39C8Lui + depth, gt4);
+        gt4++;
+        end += sizeof(POLY_GT4);
+        prim->x0 += 0x140;
+        prim->x1 += 0x140;
+        prim->x2 += 0x140;
+        prim->x3 += 0x140;
+        prim++;
+        depth--;
+        if (depth == 0) {
+            depth = 1;
+        }
+    }
+    D_800A3970 = (u8 *)gt4;
+    D_800A3898 = func_8006654C(gt4, 0x7E);
+    DrawOTag((u_long *)(D_800A39C8Lui + 0x1FC));
+    DrawSync(0);
+    SetDispMask(1);
+    *(volatile u8 *)&D_800A3884 = 0;
+    D_800A3930 = -0x140;
+    D_800A3940 = 4;
+    D_800A36A0 = 1;
+}
 
 void func_800679C4(u8 arg0) {
     s32 shift;
@@ -7329,7 +7420,7 @@ u8 func_80067ECC(char *name) {
     s32 i;
 
     for (i = 0; i < 0x18; i++) {
-        if (strcmp(name, D_8009AC1C[i]) == 0) {
+        if (strcmp(name, gDriverNames[i]) == 0) {
             break;
         }
     }

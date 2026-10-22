@@ -205,7 +205,7 @@ void GameRunSession(void) {
     extern void func_8001D778(s32, s32, s32, s32, s32, s32, s32, s32);
     extern void func_8003C1CC(void);
     extern void func_8003C528(void);
-    extern void func_80067598(void);
+    extern void MenuDrawLoadScreen(void);
     extern void func_8001BDBC(s32);
     extern void func_80066CFC(void);
     extern void func_80067DFC(void);
@@ -434,7 +434,7 @@ void GameRunSession(void) {
                     (u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
                     0x400);
                 D_800A39C8 = gOrderingTables + (gOrderingTableBank << 12);
-                func_80067598();
+                MenuDrawLoadScreen();
                 goto finishDisplay;
             }
             goto hideDisplay;

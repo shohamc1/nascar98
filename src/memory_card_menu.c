@@ -822,7 +822,7 @@ void func_80067F34(s32 arg0, s32 arg1) {
                 switch (j) {
                 case 0:
                     k = 0;
-                    entry = (u8 *)D_8009AC1C;
+                    entry = (u8 *)gDriverNames;
                     name = (u8 *)(i * 0xE8) +
                            (u32) * (u8 **)((u8 *)D_800A3668Absolute - 0x74);
                     do {
@@ -2263,7 +2263,7 @@ void func_8006AC78(s32 arg0) {
     index = 0;
     mask = arg0 & 0xFF;
     do {
-        label = D_8009AC1C[index];
+        label = gDriverNames[index];
         if (strcmp(D_800BB9B4 + mask * 0x18, label) == 0) {
             D_800A36E0[mask] = index;
             return;
@@ -2644,7 +2644,7 @@ void func_8006B6B8(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
         do {
             isNew = 0;
             idx = TableFindByte(*p);
-            name = D_8009AC1C[*p];
+            name = gDriverNames[*p];
             if (D_800A3A58 == 0) {
                 slot = 0xFF;
             } else {
@@ -2677,7 +2677,7 @@ void func_8006B6B8(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
                 flags = 0x18;
             }
             if (isNew) {
-                func_8006ADC4(i, D_8009AC1C[*p], D_800A305B[0], idx, value,
+                func_8006ADC4(i, gDriverNames[*p], D_800A305B[0], idx, value,
                               arg0, D_800B0B1C[idx] == -1, flags);
             } else {
                 func_8006B1CC(i, slot, D_800A305B[0], idx, value, arg0,
@@ -2901,7 +2901,7 @@ void func_8006BD68(void) {
 
     dest = D_800B9B44;
     strcpy((char *)dest, D_8009A31CStr[D_800A305B[0]]);
-    strcpy((char *)dest + 0x10, D_8009AC1C[D_800A36E0[0]]);
+    strcpy((char *)dest + 0x10, gDriverNames[D_800A36E0[0]]);
     D_800B9B73[0] = D_800A36E1[-1];
     D_800B9B74[0] = D_800A305BR[0];
     D_800B9B75[0] =
@@ -3709,7 +3709,7 @@ s32 func_8006D258(void) {
         }
     }
     D_800A3980[0] = match;
-    strcpy(D_800BB9B4, D_8009AC1C[D_800A36E0[0]]);
+    strcpy(D_800BB9B4, gDriverNames[D_800A36E0[0]]);
     func_8006EEBC();
     return 1;
 }
@@ -3903,7 +3903,7 @@ again:
         goto again;
     }
     if (arg2 != 0) {
-        name = D_8009AC1C[D_800A36E0[arg0]];
+        name = gDriverNames[D_800A36E0[arg0]];
         if (D_800A3A58 == 0) {
             match = 0xFF;
         } else {

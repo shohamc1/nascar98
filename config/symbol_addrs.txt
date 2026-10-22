@@ -891,3 +891,6 @@ gVabBody = 0x800A3A00;
 gVabHead = 0x800A3A08;
 gMenuCreditsStar = 0x8008D738;
 gVideoSuzuka1 = 0x8008FCA4;
+MenuDrawLoadScreen = 0x80067598; // type:func
+gTrackNames = 0x8009A360;
+gDriverNames = 0x8009AC1C;

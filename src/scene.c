@@ -5022,7 +5022,7 @@ void HudDrawStandings(s8 arg0, s32 y) {
                 index = rowStart - 1;
             }
             textY = (u8)y;
-            func_80050028Row(D_8009AC1C[D_800BE70C[index]], gStandingsNameX,
+            func_80050028Row(gDriverNames[D_800BE70C[index]], gStandingsNameX,
                              textY, 0);
             if (carIndex == ((Car *)D_800A3554[0])->place &&
                 ((Car *)D_800A3554[0])->lap < 2) {
@@ -9771,7 +9771,7 @@ void func_80053D40(void) {
 void func_80055AA4(u8 arg0, s32 arg1) {
     extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");
     extern u8 D_800A36E0[];
-    extern char *D_8009AC1CR[] asm("D_8009AC1C.NON_MATCHING");
+    extern char *gDriverNamesR[] asm("gDriverNames.NON_MATCHING");
     u8 other;
     u8 val;
 
@@ -9794,7 +9794,7 @@ void func_80055AA4(u8 arg0, s32 arg1) {
     D_800A36E0[arg0] = D_8009AD40[D_800A3980[arg0]];
     func_800636EC(arg0, D_800A36E0[arg0]);
     func_80063AE0(arg0, D_800A36E0[arg0]);
-    strcpy(&D_800BB9B4[arg0 * 24], D_8009AC1CR[D_800A36E0[arg0]]);
+    strcpy(&D_800BB9B4[arg0 * 24], gDriverNamesR[D_800A36E0[arg0]]);
 }
 
 /* The repeated label aliases keep gcc from caching addresses that retail
@@ -10773,7 +10773,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
                 next = 4;
             } else {
                 for (i = 0; i < D_800A3644NM + 1; i++) {
-                    found = func_8006AD44(D_8009AC1C[D_800A36E0[i]]);
+                    found = func_8006AD44(gDriverNames[D_800A36E0[i]]);
                     if (found != 0xFF) {
                         func_8006D424(i, found);
                     }
@@ -10815,7 +10815,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             default:
                 next = 0;
                 selection = 1;
-                found = func_8006AD44(D_8009AC1C[D_800A36E0Small]);
+                found = func_8006AD44(gDriverNames[D_800A36E0Small]);
                 if (found != 0xFF) {
                     func_8006D424(0, found);
                 } else {
@@ -10838,7 +10838,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             next = 4;
             func_8006BA68();
             D_800B9B73[0] = D_800A36E0Small;
-            strcpy(D_800B9B73 - 31, D_8009AC1C[D_800A36E0Small]);
+            strcpy(D_800B9B73 - 31, gDriverNames[D_800A36E0Small]);
         }
         break;
     case 5:
