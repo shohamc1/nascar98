@@ -356,7 +356,111 @@ void func_8001775C(u8 *arg0, s32 x, s32 y, s32 z) {
     asm(".rdata\n.long 0\n.text");
 }
 
-INCLUDE_ASM("asm/nonmatchings/util", func_800179AC);
+extern s32 D_800A2EC4Lui asm("D_800A2EC4Absolute");
+extern s32 D_800A2EA4Lui asm("D_800A2EA4Absolute");
+extern u32 D_800A3878Lui asm("D_800A3878Absolute");
+extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
+extern s32 D_800A2D6C, D_800A3818, D_800A2D5C;
+extern s32 *D_800A2D64;
+extern s32 func_800167BC(u8 *);
+extern s32 func_80014AC8(s32);
+extern void func_800168F8(u8 *, s32);
+
+/* Draw every car in the list, or release the ones that were skipped. */
+void func_800179AC(void) {
+    u32 car;
+    s32 released;
+    s32 bankFlag;
+    s32 slot;
+    s32 bank;
+    u32 entries;
+    s32 oldEntry;
+    s32 value;
+    s32 offset;
+    s32 hw;
+    u32 ptr;
+    s32 size;
+    s32 extra;
+    s32 bank2;
+    u32 entries2;
+    s32 oldEntry2;
+    s32 value2;
+    s32 offset2;
+    s32 hw2;
+    u32 ptr2;
+    s32 size2;
+    s32 extra2;
+    u8 *carState;
+
+    D_800A2D6C = 1;
+    bankFlag = 0;
+    if (D_800A2EC4Lui == 0) {
+        bankFlag = D_800A2EA4Lui == 0;
+    }
+    for (car = D_800A3878Lui; car != 0; car = *(u32 *)(car + 0x3E0)) {
+        released = 0;
+        slot = *(s16 *)(car + 0x1E2);
+        if (slot != -1 && *(s16 *)(car + 0x1E4) != -1 &&
+            *(u16 *)((carState = (u8 *)D_800BE980[0] + slot * 0x90) + 0xE) ==
+                1 &&
+            *(s32 *)(car + 0x36C) != 0 && *(s8 *)(car + 0x374) < 4) {
+            D_800A3818 = 0x808080;
+            if (func_800167BC((u8 *)car) & 0xFF) {
+                if (func_80014AC8(*(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
+                    func_800168F8(*(u8 **)(car + 0x36C),
+                                  (s8)((s8) * (u8 *)(car + 0x200) / 5));
+                    CarDrawModel((u8 *)car, 0);
+                }
+                continue;
+            }
+            released = 1;
+            if (CarDrawModel((u8 *)car, 1) & 0xFF) {
+                *(u8 *)(car + 0x358) = 1;
+            } else {
+                *(u8 *)(car + 0x358) = 0;
+            }
+        }
+        if (released == 0) {
+            bank = gOrderingTableBankLui;
+            entries = (bank << 2) + car;
+            oldEntry = *(s32 *)(entries + 0x420);
+            if (oldEntry != 0) {
+                value = *(s8 *)(car + bank + 0x41C);
+                offset = value * 0x44 + *(s32 *)(car + 0x370);
+                hw = *(s16 *)(offset + 0x2A);
+                ptr = (u32)D_800A2D64;
+                size = D_800A2D5C;
+                extra = *(s32 *)(entries + 0x430);
+                *(s32 *)(ptr + 0x34) = oldEntry;
+                D_800A2D64 = (s32 *)extra;
+                *(s32 *)(entries + 0x420) = 0;
+                D_800A2D5C = size + hw;
+            }
+            *(s8 *)(car + gOrderingTableBankLui + 0x41C) = -1;
+        }
+        if (bankFlag != 0) {
+            bank2 = gOrderingTableBankLui + 1;
+            entries2 = (bank2 << 2) + car;
+            oldEntry2 = *(s32 *)(entries2 + 0x420);
+            gOrderingTableBankLui = bank2;
+            if (oldEntry2 != 0) {
+                value2 = *(s8 *)(car + bank2 + 0x41C);
+                offset2 = value2 * 0x44 + *(s32 *)(car + 0x370);
+                hw2 = *(s16 *)(offset2 + 0x2A);
+                ptr2 = (u32)D_800A2D64;
+                size2 = D_800A2D5C;
+                extra2 = *(s32 *)(entries2 + 0x430);
+                *(s32 *)(ptr2 + 0x34) = oldEntry2;
+                D_800A2D64 = (s32 *)extra2;
+                *(s32 *)(entries2 + 0x420) = 0;
+                D_800A2D5C = size2 + hw2;
+            }
+            *(s8 *)(car + gOrderingTableBankLui + 0x41C) = -1;
+            gOrderingTableBankLui--;
+        }
+    }
+    D_800A2D6C = 0;
+}
 
 /* Fatal error display. */
 
