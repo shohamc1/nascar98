@@ -241,7 +241,9 @@ typedef struct {
 
 extern u8 D_800A3680[];
 extern void func_80025730(u8 *);
-void func_8001FD44(RaceObject *car) {
+
+/* Steps a car to its next camera view. ReplayHandleInput inlines it three times. */
+static __inline__ void CameraCycleMode(RaceObject *car) {
     s32 count;
 
     if (car == NULL) {
@@ -258,6 +260,10 @@ void func_8001FD44(RaceObject *car) {
         car->cameraMode = 0;
     }
     D_800A3680[0] = 1;
+}
+
+void func_8001FD44(RaceObject *car) {
+    CameraCycleMode(car);
 }
 
 void func_8001FDD0(RaceObject *cam, RaceObject *car) {
@@ -1996,7 +2002,80 @@ void CdApplyMixVolume(void) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_80024280);
+extern s32 D_800A2DFC;
+extern s32 gReplayPrevButtons;
+extern s32 gReplayPrevButtons2;
+extern void func_80041328(void);
+extern void func_800413C0(void);
+
+void ReplayHandleInput(void) {
+    s32 buttons;
+
+    D_800A2ED4[0] = 0;
+    buttons = PadGetButtons(D_800A3620);
+    D_800A2DFC = 0;
+    if ((buttons & 0x100) ||
+        (((s8 *)gPadType)[D_800A3620] == 2 && (buttons & 0x800))) {
+        D_800A2DF8 = buttons;
+        func_80023074();
+        return;
+    }
+    if (buttons & 0x40) {
+        D_800A2DFC = 8;
+        func_80041328();
+        func_8005301C();
+        ReplayStepForward();
+    } else if (buttons & 0x80) {
+        D_800A2DFC = 2;
+        func_80041328();
+        func_8005301C();
+        ReplayStepBack();
+        ReplayStepBack();
+        ReplayStepBack();
+        ReplayStepBack();
+    } else if (buttons & 0x10) {
+        D_800A2DFC = 1;
+        func_80041328();
+        func_8005301C();
+        ReplayStepForward();
+        ReplayStepForward();
+        ReplayStepForward();
+        ReplayStepForward();
+    } else {
+        func_800413C0();
+        func_80052FC4(0);
+        D_800A2ED4[0] = 1;
+    }
+    if (buttons & ((u16)~gReplayPrevButtons & 0x20)) {
+        D_800A2DFC = 4;
+        if (PadGetButtons(D_800A3620) & 0x20) {
+            SoundPlaySlot(0xA, 0xB);
+            CameraCycleMode(D_800A3620 != 0
+                                ? *(RaceObject **)(gPlayerCar[0] + 0x3E0)
+                                : (RaceObject *)gPlayerCar[0]);
+        }
+        if (D_800A2EA4[0] != 0) {
+            if (PadGetButtons(1) & 0x20) {
+                SoundPlaySlot(0xA, 0xB);
+                CameraCycleMode(*(RaceObject **)(gPlayerCar[0] + 0x3E0));
+            }
+        }
+    }
+    gReplayPrevButtons = buttons;
+    if (D_800A2EA4[0] != 0) {
+        buttons = PadGetButtons(D_800A3620 == 0);
+        if (buttons & ((u16)~gReplayPrevButtons2 & 0x20)) {
+            D_800A2DFC = 4;
+            if (PadGetButtons(D_800A3620 == 0) & 0x20) {
+                SoundPlaySlot(0xA, 0xB);
+                CameraCycleMode(D_800A3620 == 0
+                                    ? *(RaceObject **)(gPlayerCar[0] + 0x3E0)
+                                    : (RaceObject *)gPlayerCar[0]);
+            }
+        }
+        gReplayPrevButtons2 = buttons;
+    }
+}
 
 extern s32 D_800A356C;
 
@@ -8968,7 +9047,7 @@ void RaceUpdateFrame(void) {
     if (D_800A2EC8RaceStep != 0) {
         func_80023454RaceStep(playerCar);
         if (D_800A397CRaceStep1[0] == 2) {
-            func_80024280();
+            ReplayHandleInput();
         }
         object = gCarListRaceStep;
         if (D_800A2EC8RaceStep != 0) {
