@@ -1220,7 +1220,126 @@ s16 MenuStringWidth(s32 text) {
     return total;
 }
 
-INCLUDE_ASM("asm/nonmatchings/memory_card", func_8005A9F4);
+/* Draws a string as one POLY_FT4 per glyph, starting at (x, y). The glyph
+   templates (D_800A3750) and metrics (D_800A35AC) come from the font loaded
+   by the function above; D_800A3534 picks the scale (2 = 3/4 with its own
+   CLUT, 4 = 9/10). '\n' returns to x and moves down one line. center
+   right-aligns the string to end at x, shade picks the tint, semi sets
+   semi-transparency, and advance replaces the glyph width when non-zero. */
+void MenuDrawString(s32 text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
+                    u8 semi, u8 advance) {
+    s16 penX;
+    s32 i;
+    u16 clut;
+    u16 limit;
+    POLY_FT4 *prim;
+    POLY_FT4 *tmpl;
+    u8 *glyph;
+    s16 idx;
+    s32 w;
+    s32 h;
+    u8 ch;
+    s16 lineH;
+
+    limit = *(u16 *)D_800A35A0;
+    limit += 0x20;
+    if (center) {
+        penX = x - MenuStringWidth(text);
+    } else {
+        penX = x;
+    }
+    if (D_800A3534 == 2) {
+        clut = GetClut(0x100, 0x1FF);
+    }
+    i = 0;
+    if (((u8 *)text)[0] != 0) {
+        do {
+            ch = ((u8 *)text)[i];
+            if (ch == '\n') {
+                penX = x;
+                if (D_800A3534 == 2) {
+                    lineH = *(s16 *)(D_800A35AC + 8) * 3 / 4;
+                } else if (D_800A3534 == 4) {
+                    lineH = *(s16 *)(D_800A35AC + 8) * 9 / 10;
+                } else {
+                    lineH = *(s16 *)(D_800A35AC + 8);
+                }
+                y += lineH;
+                i++;
+            } else {
+                if (ch >= 0x20 && ch < limit) {
+                    idx = ch - 0x20;
+                } else {
+                    idx = 0;
+                }
+                tmpl = (POLY_FT4 *)D_800A3750 + idx;
+                glyph = (u8 *)D_800A35AC + idx * 10;
+                if (D_800A3534 == 2) {
+                    h = *(s16 *)(glyph + 8) * 3 / 4;
+                    w = *(s16 *)(glyph + 6) * 3 / 4;
+                } else if (D_800A3534 == 4) {
+                    h = *(s16 *)(glyph + 8) * 9 / 10;
+                    w = *(s16 *)(glyph + 6) * 9 / 10;
+                } else {
+                    h = *(s16 *)(glyph + 8);
+                    w = *(s16 *)(glyph + 6);
+                }
+                if (penX + w >= 0 && penX < 0x140 && y + h >= 0 && y < 0xF0) {
+                    prim = (POLY_FT4 *)func_80057CCC(0);
+                    *prim = *tmpl;
+                    if (D_800A3534 == 2) {
+                        prim->clut = clut;
+                    }
+                    SetSemiTrans(prim, semi);
+                    prim->x0 = penX;
+                    prim->y0 = y;
+                    prim->x1 = penX + w;
+                    prim->y1 = y;
+                    prim->x2 = penX;
+                    prim->y2 = y + h;
+                    prim->x3 = penX + w;
+                    prim->y3 = y + h;
+                    if (shade == 3) {
+                        SetShadeTex(prim, 0);
+                        prim->r0 = D_800A37C8 >> 2;
+                        prim->g0 = D_800A37A8 >> 2;
+                        prim->b0 = D_800A378C >> 2;
+                    } else if (shade == 2) {
+                        SetShadeTex(prim, 0);
+                        prim->r0 = 0x40;
+                        prim->g0 = 0x40;
+                        prim->b0 = 0x40;
+                    } else if (shade == 1) {
+                        SetShadeTex(prim, 0);
+                        prim->r0 = D_800A37C8;
+                        prim->g0 = D_800A37A8;
+                        prim->b0 = D_800A378C;
+                    } else {
+                        SetShadeTex(prim, 1);
+                    }
+                    if ((D_800A364C != 0 || D_800A3624 != 0 ||
+                         D_800A3618 != 0) &&
+                        shade == 0) {
+                        SetShadeTex(prim, 0);
+                        prim->r0 = D_800A364C;
+                        prim->g0 = D_800A3624;
+                        prim->b0 = D_800A3618;
+                    }
+                    AddPrim((u8 *)gOrderingTable[0] + otz * 4, prim);
+                }
+                if (advance != 0) {
+                    penX = advance + penX;
+                } else {
+                    penX += w;
+                }
+                if (D_800A3534 < 2) {
+                    penX--;
+                }
+                i++;
+            }
+        } while (((u8 *)text)[i] != 0);
+    }
+}
 
 /* Sums the glyph widths of the first count characters of str. The glyph
    table (D_800A35AC) holds 10-byte records with the width at offset 6;
@@ -2437,7 +2556,7 @@ void func_8005CEDC(void) {
 }
 
 #ifdef NON_MATCHING
-extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
     register u8 *prim asm("s3");
 
@@ -2455,17 +2574,17 @@ void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
         func_8005A818(0, 0, 0);
     }
     if (D_800A39E4[0] == 0xD) {
-        func_8005A9F4(textId,
-                      (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-                      (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
-                      prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId,
+                       (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
+                       (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
     } else {
-        func_8005A9F4(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
-                      prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
+                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
     }
 }
 #else
-extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
     u8 *prim;
     s32 id;
@@ -2485,13 +2604,14 @@ void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
         func_8005A818(0, 0, 0);
     }
     if (D_800A39E4[0] == 0xD) {
-        func_8005A9F4(id, (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-                      (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
-                      prim[3], prim[0], *(s32 *)(prim + 4), first & 0xFF,
-                      second & 0xFF);
+        MenuDrawString(
+            id, (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
+            (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)), prim[3],
+            prim[0], *(s32 *)(prim + 4), first & 0xFF, second & 0xFF);
     } else {
-        func_8005A9F4(id, *(s16 *)(window + 6), *(s16 *)(window + 8), prim[3],
-                      prim[0], *(s32 *)(prim + 4), first & 0xFF, second & 0xFF);
+        MenuDrawString(id, *(s16 *)(window + 6), *(s16 *)(window + 8), prim[3],
+                       prim[0], *(s32 *)(prim + 4), first & 0xFF,
+                       second & 0xFF);
     }
 }
 
@@ -2603,17 +2723,17 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                     func_8005A818(0, 0, 0);
                 }
                 if (D_800A39E4[0] == 0xD) {
-                    func_8005A9F4(
+                    MenuDrawString(
                         drawId,
                         (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
                         (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
                         drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
                         drawFirst & 0xFF, 0);
                 } else {
-                    func_8005A9F4(drawId, *(s16 *)(window + 6),
-                                  *(s16 *)(window + 8), drawPrim[3],
-                                  drawPrim[0], *(s32 *)(drawPrim + 4),
-                                  drawFirst & 0xFF, 0);
+                    MenuDrawString(drawId, *(s16 *)(window + 6),
+                                   *(s16 *)(window + 8), drawPrim[3],
+                                   drawPrim[0], *(s32 *)(drawPrim + 4),
+                                   drawFirst & 0xFF, 0);
                 }
             }
         }
@@ -2646,17 +2766,17 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 func_8005A818(0, 0, 0);
             }
             if (D_800A39E4[0] == 0xD) {
-                func_8005A9F4(drawId,
-                              (s16)(*(u16 *)(drawWindow + 6) +
-                                    *(u16 *)(drawWindow + 0x12)),
-                              (s16)(*(u16 *)(drawWindow + 8) +
-                                    *(u16 *)(drawWindow + 0x14)),
-                              drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
-                              1, 0);
+                MenuDrawString(drawId,
+                               (s16)(*(u16 *)(drawWindow + 6) +
+                                     *(u16 *)(drawWindow + 0x12)),
+                               (s16)(*(u16 *)(drawWindow + 8) +
+                                     *(u16 *)(drawWindow + 0x14)),
+                               drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
+                               1, 0);
             } else {
-                func_8005A9F4(drawId, *(s16 *)(drawWindow + 6),
-                              *(s16 *)(drawWindow + 8), drawPrim[3],
-                              drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
+                MenuDrawString(drawId, *(s16 *)(drawWindow + 6),
+                               *(s16 *)(drawWindow + 8), drawPrim[3],
+                               drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
             }
         }
         func_8005B688(D_800A3788, 1);
@@ -2678,17 +2798,17 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 func_8005A818(0, 0, 0);
             }
             if (D_800A39E4[0] == 0xD) {
-                func_8005A9F4(drawId,
-                              (s16)(*(u16 *)(drawWindow + 6) +
-                                    *(u16 *)(drawWindow + 0x12)),
-                              (s16)(*(u16 *)(drawWindow + 8) +
-                                    *(u16 *)(drawWindow + 0x14)),
-                              drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
-                              1, 0);
+                MenuDrawString(drawId,
+                               (s16)(*(u16 *)(drawWindow + 6) +
+                                     *(u16 *)(drawWindow + 0x12)),
+                               (s16)(*(u16 *)(drawWindow + 8) +
+                                     *(u16 *)(drawWindow + 0x14)),
+                               drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
+                               1, 0);
             } else {
-                func_8005A9F4(drawId, *(s16 *)(drawWindow + 6),
-                              *(s16 *)(drawWindow + 8), drawPrim[3],
-                              drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
+                MenuDrawString(drawId, *(s16 *)(drawWindow + 6),
+                               *(s16 *)(drawWindow + 8), drawPrim[3],
+                               drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
             }
         }
         if ((mode & 0xFF) != 7 || second == 0) {

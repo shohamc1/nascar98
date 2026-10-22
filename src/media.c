@@ -189,7 +189,7 @@ typedef struct {
     u8 unk2;
 } Unk3;
 extern void func_8005C8D8(u8);
-extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
 typedef struct Df50Fields {
     u8 pad0[5];
     s8 unk5;
@@ -227,7 +227,7 @@ typedef struct UnkNode1C {
 extern void func_8005B688(u8 *first, u8 friction);
 extern void func_8005B8B8(u8 *first, s32 value);
 extern s32 func_8005B0E4(s16, s32);
-asm(".globl func_8005A9F4W");
+asm(".globl MenuDrawStringW");
 extern void func_80058D08(s32 gp);
 typedef struct UnkPacket0C {
     u8 unk0, unk1, unk2, unk3;
@@ -1261,7 +1261,7 @@ void func_8006EEE0(s32 arg0) {
     } else {
         textId = D_8009A2E0[0];
     }
-    func_8005A9F4(textId, 0x131, 0xD8, 1, 0, 0, 0, 0);
+    MenuDrawString(textId, 0x131, 0xD8, 1, 0, 0, 0, 0);
     DrawOTag((OT_TYPE *)(gOrderingTable[0] + 0xC));
     PutDispEnv(&disp);
     SetDispMask(1);

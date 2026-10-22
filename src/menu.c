@@ -207,7 +207,7 @@ extern char *strcat(char *, char *);
 extern u8 *TextFormatInt(s32, u8 *);
 extern u8 D_800A3078[], D_800A3988[];
 extern void func_8005C8D8(u8);
-extern void func_8005A9F4(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
 void SystemShowFatalError(char *message);
 u32 MathSqrt(u32 value);
 void RandomCountMark(void);
@@ -2181,13 +2181,13 @@ static inline void MenuObjDrawText(u8 *window, u8 code, u8 first, u8 second,
         func_8005A818(0, 0, 0);
     }
     if (D_800A39E4[0] == 0xD) {
-        func_8005A9F4(textId,
-                      (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-                      (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
-                      prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId,
+                       (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
+                       (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
     } else {
-        func_8005A9F4(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
-                      prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
+                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
     }
 }
 
@@ -5878,16 +5878,16 @@ void func_80064E6C(void) {
     func_8005A7B8(2, 4);
     func_8005A818(0x80, 0x80, 0xC0);
     base = D_8009A400;
-    func_8005A9F4((s32)*base, (s16)func_8005B0E4(0x140, (s32)*base), 0xC8, 0, 0,
-                  0, 0, 0);
+    MenuDrawString((s32)*base, (s16)func_8005B0E4(0x140, (s32)*base), 0xC8, 0,
+                   0, 0, 0, 0);
     if (D_800A2EB0Absolute[0] == 0) {
-        func_8005A9F4((s32)D_8009A3EC[1],
-                      (s16)func_8005B0E4(0x140, (s32)D_8009A3F0[0]), 0xC8, 0, 0,
-                      0, 0, 0);
+        MenuDrawString((s32)D_8009A3EC[1],
+                       (s16)func_8005B0E4(0x140, (s32)D_8009A3F0[0]), 0xC8, 0,
+                       0, 0, 0, 0);
     } else {
-        func_8005A9F4((s32)D_8009A414[1],
-                      (s16)func_8005B0E4(0x140, (s32)D_8009A418[0]), 0xC8, 0, 0,
-                      0, 0, 0);
+        MenuDrawString((s32)D_8009A414[1],
+                       (s16)func_8005B0E4(0x140, (s32)D_8009A418[0]), 0xC8, 0,
+                       0, 0, 0, 0);
     }
     ClearOTagR(D_800A38C4, 4);
     D_800A367C = (s32)(D_800A369C + D_800A3698 * 0x28);
@@ -6093,16 +6093,16 @@ void MenuDrawCarPick(u8 id, s32 shift) {
     func_8005A818(0x80, 0x80, 0xC0);
     gOrderingTableLui += 4;
     if (D_800A3950[0] == 0xFB || D_800A3950[0] == 3) {
-        func_8005A9F4((s32)gTrackNames[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
-                      0);
+        MenuDrawString((s32)gTrackNames[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
+                       0);
     } else {
-        func_8005A9F4((s32)D_8009A3A4[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
-                      0);
+        MenuDrawString((s32)D_8009A3A4[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
+                       0);
     }
     if (D_800A2EB0Absolute[0] == 0) {
-        func_8005A9F4((s32)D_8009A3E8[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
+        MenuDrawString((s32)D_8009A3E8[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
     } else {
-        func_8005A9F4((s32)D_8009A41C[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
+        MenuDrawString((s32)D_8009A41C[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
     }
     if (id + 1 >= 0xA) {
         D_8009A3ECLui[4] = 0x31;
@@ -6112,7 +6112,7 @@ void MenuDrawCarPick(u8 id, s32 shift) {
         D_8009A3ECLui[4] = id + 0x31;
         D_8009A3ECLui[5] = 0;
     }
-    func_8005A9F4((s32)D_8009A3EC[0], 0xFC, 0x4D, 0, 0, 0, 0, 0);
+    MenuDrawString((s32)D_8009A3EC[0], 0xFC, 0x4D, 0, 0, 0, 0, 0);
     height = id * 2;
     for (i = 0; i < 2; i++) {
         x0 = 0xA5;
@@ -6134,17 +6134,18 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             b2 = 0xC0;
         }
         func_8005A818(r2, g2, b2);
-        func_8005A9F4((s32)D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
-        func_8005A9F4((s32)gDriverNames[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0, 0);
+        MenuDrawString((s32)D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
+        MenuDrawString((s32)gDriverNames[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0,
+                       0);
         if (D_800A2EB0Absolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
-            func_8005A9F4((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
+            MenuDrawString((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
             TextFormatTime((void *)D_800AEB34[color], -1, entry);
-            func_8005A9F4((s32)entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
+            MenuDrawString((s32)entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
         }
         if (D_800A2EB0Absolute[0] == 0 && height == 0 && i == 0) {
-            func_8005A9F4((s32)D_8009A3EC[13], x0 + 0x59, 0x61, 0, 0, 0, 0, 0);
-            func_8005A9F4((s32)D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
+            MenuDrawString((s32)D_8009A3EC[13], x0 + 0x59, 0x61, 0, 0, 0, 0, 0);
+            MenuDrawString((s32)D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
         }
     }
     gOrderingTableLui -= 4;
@@ -6387,8 +6388,8 @@ void func_80065C3C(void) {
 
 extern void func_8005A818(u8 arg0, u8 arg1, u8 arg2);
 extern s32 func_8005B0E4(s16 arg0, s32 arg1);
-extern void func_8005A9F4(s32 arg0, s16 arg1, s16 arg2, u8 arg3, u8 arg4,
-                          s32 arg5, u8 arg6, u8 arg7);
+extern void MenuDrawString(s32 arg0, s16 arg1, s16 arg2, u8 arg3, u8 arg4,
+                           s32 arg5, u8 arg6, u8 arg7);
 extern u8 *D_8009A3FC[];
 extern s32 D_800A3538;
 extern u8 D_800A3884;
@@ -6406,8 +6407,8 @@ void func_80065F80(void) {
     entry = D_8009A3FC;
     D_800A38D8 = (u8 *)D_800A367C;
     *(volatile u8 *)&D_800A35B4 = strlen((char *)entry[0]);
-    func_8005A9F4((s32)entry[0], func_8005B0E4(0x140, (s32)entry[0]), 0x7F, 0,
-                  0, 0, 0, 0);
+    MenuDrawString((s32)entry[0], func_8005B0E4(0x140, (s32)entry[0]), 0x7F, 0,
+                   0, 0, 0, 0);
     ClearOTagR(D_800A38C4, 4);
     ptr = D_800A369C;
     str = D_8009A400[0];
@@ -6476,8 +6477,8 @@ void MenuDrawCarPickPair(s32 arg0) {
             x = 0x17;
         }
         func_8005A818(0x80, 0x80, 0xC0);
-        func_8005A9F4((s32)D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
-        func_8005A9F4((s32)gDriverNames[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
+        MenuDrawString((s32)D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
+        MenuDrawString((s32)gDriverNames[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
         D_800A3970 = (u8 *)D_800A367C;
         if (shift != 0) {
             for (prim = (POLY_FT4 *)D_800A3568; prim != (POLY_FT4 *)D_800A3970;
@@ -6490,11 +6491,11 @@ void MenuDrawCarPickPair(s32 arg0) {
         }
     }
     x = func_8005B0E4(0x140, (s32)D_8009A3F4[0]);
-    func_8005A9F4((s32)D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
+    MenuDrawString((s32)D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
     x = func_8005B0E4(0x140, (s32)D_8009A3F8);
-    func_8005A9F4((s32)D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
+    MenuDrawString((s32)D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
     x = func_8005B0E4(0x140, (s32)gTrackNames[D_800A305BLui]);
-    func_8005A9F4((s32)gTrackNames[D_800A305BLui], x, 0x4D, 0, 0, 0, 0, 0);
+    MenuDrawString((s32)gTrackNames[D_800A305BLui], x, 0x4D, 0, 0, 0, 0, 0);
     D_800A3940Signed = 2;
     if ((arg0 & 0xFF) != 0) {
         D_800A3A44Signed = -0x140;
@@ -6641,8 +6642,8 @@ extern DISPENV D_800BDE18[];
 extern void *func_8006654C(void *, s32);
 extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
 extern s32 func_8005B0E4(s16, s32);
-asm(".globl func_8005A9F4W");
-asm("func_8005A9F4W = func_8005A9F4");
+asm(".globl MenuDrawStringW");
+asm("MenuDrawStringW = MenuDrawString");
 
 void func_80066730(void) {
     u8 **table;
@@ -6673,19 +6674,20 @@ void func_80066730(void) {
         y = 0xA0;
         i = 0;
         p = table;
-        func_8005A9F4(gTrackNames[D_800A305B[0]], 0x20, 0x23, 0, 0, 0, 0, 0);
+        MenuDrawString(gTrackNames[D_800A305B[0]], 0x20, 0x23, 0, 0, 0, 0, 0);
         do {
             y16 = (s16)y;
-            func_8005A9F4(p[0], 0x20, y16, 0, 0, 0, 0, 0);
+            MenuDrawString(p[0], 0x20, y16, 0, 0, 0, 0, 0);
             ret = (s32)(s16)MenuStringWidth(p[0]);
             x = (s16)(ret + 0x20);
             switch (i) {
             case 0:
-                func_8005A9F4(q[D_8009B198[D_800A305B[0]]], x, y16, 0, 0, 0, 0,
-                              0);
+                MenuDrawString(q[D_8009B198[D_800A305B[0]]], x, y16, 0, 0, 0, 0,
+                               0);
                 break;
             case 1:
-                func_8005A9F4(D_8009A430[D_800A305B[0]], x, y16, 0, 0, 0, 0, 0);
+                MenuDrawString(D_8009A430[D_800A305B[0]], x, y16, 0, 0, 0, 0,
+                               0);
                 break;
             }
             y += 0xF;
@@ -6699,7 +6701,7 @@ void func_80066730(void) {
         raw = func_8005B0E4(0x140, (s32)pp[0]);
         a0v = (s32)pp[0];
         a1v = (s16)raw;
-        func_8005A9F4W(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
+        MenuDrawStringW(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
         DrawOTag((u32 *)(gOrderingTablePtr[0] + 0xFFC));
         DrawSync(0);
         if (page == 0) {

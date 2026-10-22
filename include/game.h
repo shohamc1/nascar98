@@ -162,7 +162,7 @@ extern void func_8005A544(u8, u8);
 extern void func_8005A7B8(u8, u8);
 extern void func_8005A804(u8, u8, u8);
 extern s16 MenuStringWidth(s32);
-extern s32 func_8005A9F4W();
+extern s32 MenuDrawStringW();
 extern void func_8005C020(u8 *, u8 *);
 extern void func_8005C0F4(u8 *, s32);
 extern void func_8005CF34(u8 *, u8, u8, u8, s32);

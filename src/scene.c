@@ -8198,7 +8198,7 @@ void func_80053D40(void);
 void func_80064C14(void);
 void func_80014A40(s32);
 s32 func_8005B0E4(s16, u8 *);
-void func_8005A9F4(u8 *, s16, s16, u8, u8, s32, u8, u8);
+void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void func_80066730(void);
 void func_80064E6C(void);
 void func_80066A24FrontEnd(s32) asm("func_80066A24");
@@ -8279,8 +8279,8 @@ void MenuRunFrontEnd(void) {
         func_80014A40((u8)D_800A305C);
         func_8005A7B8(1, 1);
         func_8005B0E4(0x140, D_8009A400[0]);
-        func_8005A9F4(D_8009A400[0], func_8005B0E4(0x140, D_8009A400[0]), 0x78,
-                      0, 0, 0, 0, 0);
+        MenuDrawString(D_8009A400[0], func_8005B0E4(0x140, D_8009A400[0]), 0x78,
+                       0, 0, 0, 0, 0);
         func_80058030();
         D_800A3710Small.x = -(D_800A305C != 0) & 0x140;
         LoadImage(D_800A3710, (u_long *)D_800A35F0);

@@ -927,6 +927,7 @@ CardStop = 0x80059E0C; // type:func
 CardReadSectors = 0x8005A000; // type:func
 CardWriteSectors = 0x8005A0F0; // type:func
 MenuStringWidth = 0x8005A8E0; // type:func
+MenuDrawString = 0x8005A9F4; // type:func
 MenuPrefixWidth = 0x8005AEC8; // type:func
 MenuCharWidth = 0x8005AFF0; // type:func
 TextCountLines = 0x8005B138; // type:func

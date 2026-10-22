@@ -239,7 +239,7 @@ extern void func_8005B8B8(u8 *first, s32 value);
 extern u8 D_800A305B[];
 extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
 extern s32 func_8005B0E4(s16, s32);
-asm(".globl func_8005A9F4W");
+asm(".globl MenuDrawStringW");
 extern void func_80058D08(s32 gp);
 typedef struct UnkPacket0C {
     u8 unk0, unk1, unk2, unk3;
