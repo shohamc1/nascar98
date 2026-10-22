@@ -466,7 +466,7 @@ void func_80041414(void);
 void func_8004142C(void);
 void func_80041444(s32 arg0);
 void func_800414E0(void *arg0, s32 arg1, s32 arg2);
-void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
+void func_80041564(u8 *arg0, s32 arg1);
 void func_80041848(u8 *arg0, s32 arg1);
 void func_80041850(void);
 void func_8004195C(void);
@@ -5946,12 +5946,112 @@ s32 HudTextWidth(u8 *str) {
     return sum;
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8005098C);
+extern s32 D_800A2EFCLui[] asm("D_800A2EFC");
+extern s32 D_800A2EFCSw[] asm("D_800A2EFC");
+extern s32 D_800A2F00Lui[] asm("D_800A2F00");
+extern s32 D_800A2EC4Lui[] asm("D_800A2EC4");
+extern s8 D_800A34D4;
+extern u8 D_800A3764, D_800A38B0, D_800A372C, D_800A35D4;
+extern u8 D_800A3414, D_800A3418, D_800A341C;
+extern s32 D_800A35D0;
+extern s16 D_800A3910, D_800A35A4, D_800A34D8;
+extern u8 D_800A34DC;
+extern u8 D_800A8B30[], D_800A8B31[], D_800A8B32[];
+extern u8 *D_800A3428;
+void SceneSkyFadeDraw(void);
+void func_800514EC(u8, u8, u8);
+
+void func_8005098C(void) {
+    u8 *car;
+
+    if (D_800A2EFCLui[0] != 0) {
+        if (D_800A35D4 == 0) {
+            if (D_800A372C == 0 || D_800A3764 != 0) {
+                D_800A3414 = D_800A3554[0][0x209];
+                D_800A3554[0][0x209] = (s8)D_800A3554[0][0x209] > 0;
+                if (D_800A2EA4[0] != 0) {
+                    D_800A3418 = D_800A3428[0x209];
+                    D_800A3428[0x209] = (s8)D_800A3428[0x209] > 0;
+                }
+                if (D_800A3554[0][0x268] != 0) {
+                    D_800A35D0 = *(s16 *)(D_800A3554[0] + 0x286);
+                } else {
+                    D_800A35D0 = D_800A2EC4Lui[0];
+                }
+                D_800A2EC4Lui[0] = 0;
+            }
+            D_800A34D8 = 0x258;
+            D_800A35D4 = 1;
+            D_800A8B30[0] = 0x10;
+            D_800A8B31[0] = 0x10;
+            D_800A8B32[0] = 0x10;
+            D_800A34DC = 1;
+            D_800A341C = 1;
+            switch (D_800A2F00Lui[0]) {
+            case 1:
+                func_800514EC(0, 0xC0, 0);
+                break;
+            case 2:
+                func_800514EC(0xFF, 0xFF, 0xFF);
+                break;
+            case 3:
+                func_800514EC(0xFF, 0xFF, 0);
+                break;
+            }
+            if (D_800A3910 == 0) {
+                D_800A3910 = -1;
+            }
+        }
+        if (D_800A341C != 0) {
+            if (D_800A34D4 == 0) {
+                switch (D_800A2F00Lui[0]) {
+                case 1:
+                    car = D_800A3554[0];
+                    func_80041564(car, D_800A35A4 != 0 ? 0x2B : 0x21);
+                    break;
+                case 2:
+                    car = D_800A3554[0];
+                    func_80041564(car, 0x22);
+                    break;
+                case 3:
+                    car = D_800A3554[0];
+                    if (car[0xF4] != 0) {
+                        func_80041564(car, 0x2A);
+                    }
+                    break;
+                }
+                D_800A341C = 0;
+            }
+        }
+        if (D_800A34D4 > 0) {
+            D_800A34D4 -= 4;
+        }
+        SceneSkyFadeDraw();
+        D_800A2EFCSw[0] = D_800A2EFCLui[0] - 1;
+    } else if (D_800A34D4 < 0x50) {
+        D_800A34D4 += 4;
+        SceneSkyFadeDraw();
+    } else if (D_800A35D4 != 0) {
+        D_800A35D4 = 0;
+        if (D_800A2EACAbsolute[0] == 0 && D_800A372C == 0) {
+            D_800A3554[0][0x209] = D_800A3414;
+            if (D_800A2EA4[0] != 0) {
+                D_800A3428[0x209] = D_800A3418;
+            }
+            if (D_800A3554[0][0x268] == 0) {
+                D_800A2EC4Lui[0] = D_800A35D0;
+            }
+        }
+        if (D_800A3910 == -1 && D_800A2EACAbsolute[0] == 0 && D_800A38B0 == 0) {
+            D_800A3910 = 0;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_80050D1C);
 
-extern u8 D_800A34D4, D_800A39F8, D_800A3764, D_800A38B0, D_800A372C,
-    D_800A38B8, D_800A35D4, D_800A38E0, D_800A3A94;
+extern u8 D_800A39F8, D_800A3764, D_800A38B0, D_800A372C, D_800A38B8,
+    D_800A35D4, D_800A38E0, D_800A3A94;
 extern s16 D_800A3910, D_800A35A4;
 extern u8 D_800A8AFC[], D_800A8B14[], D_800A8B2C[];
 extern POLY_FT4 D_800A8B44[], D_800A8B6C[];
