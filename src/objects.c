@@ -24,6 +24,14 @@ extern s32 D_800A39C8[];
 extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
 extern s32 D_800A3A2CAbsolute[];
 extern s32 D_800A3A34Absolute[];
+typedef struct RoadSection {
+    struct RoadSection *prev;
+    struct RoadSection *next;
+    u8 unk8[6];
+    u16 culled;
+    u8 unk10[0x80];
+} RoadSection;
+
 typedef struct ListNode28 ListNode28;
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
@@ -100,7 +108,7 @@ void func_8001CC7C(u8 *arg0);
 void func_8001CDDC(u8 *arg0);
 void func_8001CF38(u8 *arg0);
 void ListDispatchCallbacks(u8 *arg0);
-void func_8001D108(u8 *arg0);
+void func_8001D108(RoadSection *arg0);
 void func_8001D1B0(s32 *destination, s32 *source);
 void func_8001D1E4(void);
 void func_8001D218(void);
@@ -8280,7 +8288,144 @@ void func_8002E240(u8 *arg0, u8 *arg1, u8 *arg2, u8 *arg3) {
     D_800B9D60[0] += GetRCnt(0xF2000001) - D_800B9D74[0];
 }
 
-INCLUDE_ASM("asm/nonmatchings/objects", func_8002E594);
+extern s32 D_800A2E8CFrame;
+extern s32 D_800A2EA4Frame;
+extern s32 D_800A2EC8Frame;
+extern s32 D_800A2ED0Frame;
+extern u8 D_800A2ED8Frame;
+extern u8 D_800A2EDAFrame;
+/* A one-element array: its store orders behind the culled-flag stores. */
+extern s32 D_800A2F04Frame[1];
+extern s32 D_800A2F08Frame;
+extern s32 D_800A2F0CFrame;
+extern s32 D_800A2F10Frame;
+extern u8 *D_800A3674Frame;
+extern u8 D_800A3075Frame[];
+extern u8 D_800A3A60RaceStep1[];
+extern s32 D_800A359C[];
+extern s32 D_800A2D50[];
+extern s32 D_800B9D58[];
+extern s32 D_800B9D78[];
+extern s32 D_800A38AC[];
+void SceneUpdateRoadStrip(u8 *car);
+void HudDrawDashboard(void);
+void func_8004382C(void);
+void func_8004A0C4(u8 *car);
+void func_80036264(void);
+
+/* Draws the road for one car's view: narrows the clip limits in the split
+ * modes, walks the track sections ahead of and behind the car, projects each
+ * with func_8001D108 until one is off screen, then hands the visible run
+ * to func_8002E240. */
+void SceneDrawView(u8 *arg0) {
+    MATRIX matrix;
+    SVECTOR rotation;
+    VECTOR translation;
+    long flag[2];
+    RoadSection *current;
+    RoadSection *back;
+    RoadSection *ahead;
+    s32 *camera;
+    s32 index;
+    s32 margin;
+    s32 i;
+
+    if ((D_800A2EC8Frame != 0 && (D_800A2ED0Frame & 0xC)) ||
+        D_800A359C[0] != 0) {
+        margin = 0x2BC;
+        if (D_800A2EA4Frame == 2) {
+            margin = 0xFA;
+        }
+        D_800A2F10Frame -= margin;
+        D_800A2F0CFrame -= margin;
+        D_800A2F08Frame -= 0x64;
+        margin += 0x96;
+        if (0xABE - margin < D_800A2F10Frame) {
+            D_800A2F10Frame = 0xABE - margin;
+        }
+        margin -= 0x96;
+        if (0xABE - margin < D_800A2F0CFrame) {
+            D_800A2F0CFrame = 0xABE - margin;
+        }
+    }
+    if (D_800A3A60RaceStep1[0] != 0) {
+        SceneUpdateRoadStrip(arg0);
+    }
+    D_800A3674Frame = arg0;
+    D_800B9D78[0] = GetRCnt(0xF2000001);
+    index = *(s16 *)((u8 *)D_800A38AC[0] + 0x1E0);
+    if (index == -1) {
+        index = 0;
+    }
+    current = (RoadSection *)FAR_VAR(u8 *, gFarTrack) + index;
+    back = current->prev;
+    ahead = current;
+    func_80036264();
+    camera = (s32 *)D_800A38AC[0];
+    rotation.vx = FAR_VAR(s32, gFarOffsetX) - camera[0] / 4;
+    rotation.vy = FAR_VAR(s32, gFarOffsetY) - camera[1] / 4;
+    rotation.vz = FAR_VAR(s32, gFarOffsetZ) - camera[2] / 4;
+    RotTrans(&rotation, &translation, flag);
+    TransMatrix(&matrix, &translation);
+    if (D_800A2ED8Frame == 0) {
+        if ((D_800A3075Frame[0] == 0 && *(s8 *)(arg0 + 0x20C) == 0) ||
+            D_800A2EDAFrame != 0) {
+            func_8004A0C4(arg0);
+        }
+        if (*(s8 *)(arg0 + 0x20C) == 0) {
+            HudDrawDashboard();
+        }
+    }
+    PushMatrix();
+    SetTransMatrix(&matrix);
+    MatrixSaveState();
+    if (D_800A2ED8Frame != 0) {
+        for (i = 0; i <= D_800A2E8CFrame; i++) {
+            func_8001D108(ahead);
+            if (ahead->culled != 0) {
+                ahead = ahead->next;
+                func_8001D108(ahead);
+                ahead = ahead->next;
+                break;
+            }
+            ahead = ahead->next;
+        }
+    } else {
+        for (i = 0; i <= D_800A2E8CFrame; i++) {
+            func_8001D108(ahead);
+            if (ahead->culled != 0 && i >= 9) {
+                ahead = ahead->next;
+                func_8001D108(ahead);
+                ahead = ahead->next;
+                break;
+            }
+            ahead = ahead->next;
+        }
+    }
+    for (i = 0; i <= D_800A2E8CFrame; i++) {
+        func_8001D108(back);
+        if (i >= 9 && back->culled != 0) {
+            back = back->prev;
+            func_8001D108(back);
+            back = back->prev;
+            break;
+        }
+        back = back->prev;
+    }
+    MatrixRestoreState();
+    PopMatrix();
+    current->prev->culled = current->next->culled = 0;
+    current->culled = 0;
+    current->prev->prev->culled = current->next->next->culled = 0;
+    ahead = ahead->prev;
+    D_800A2D50[0] = 0;
+    D_800A2F04Frame[0] = 0;
+    back = back->next;
+    ahead = ahead->prev;
+    D_800B9D58[0] += GetRCnt(0xF2000001) - D_800B9D78[0];
+    func_8002E240(arg0, (u8 *)ahead, (u8 *)back, (u8 *)current);
+    func_8004382C();
+}
 
 INCLUDE_ASM("asm/nonmatchings/objects", func_8002E9AC);
 
@@ -9170,6 +9315,9 @@ asm(".globl D_800A2E8CFrame\nD_800A2E8CFrame = D_800A2E8C\n"
     ".globl D_800A2ED8Frame\nD_800A2ED8Frame = D_800A2ED8\n"
     ".globl D_800A2ED9Frame\nD_800A2ED9Frame = D_800A2ED9\n"
     ".globl D_800A2EDAFrame\nD_800A2EDAFrame = D_800A2EDA\n"
+    ".globl D_800A2ED0Frame\nD_800A2ED0Frame = D_800A2ED0\n"
+    ".globl D_800A2F04Frame\nD_800A2F04Frame = D_800A2F04\n"
+    ".globl D_800A3674Frame\nD_800A3674Frame = D_800A3674\n"
     ".globl D_800A2F08Frame\nD_800A2F08Frame = D_800A2F08\n"
     ".globl D_800A2F0CFrame\nD_800A2F0CFrame = D_800A2F0C\n"
     ".globl D_800A2F10Frame\nD_800A2F10Frame = D_800A2F10\n"
@@ -9397,7 +9545,7 @@ void GraphicsDrawRaceViews(void) {
         D_800A2E8CFrame = 0x23;
         GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame1[0] == 0, 0);
         D_800A2F3CFrame1[0] = 0x46;
-        func_8002E594(D_800A3554Frame[0]);
+        SceneDrawView(D_800A3554Frame[0]);
         car = D_800A3558Frame[0];
         if (car != NULL) {
             do {
@@ -9447,7 +9595,7 @@ void GraphicsDrawRaceViews(void) {
         D_800A2F3CFrame2[0] = 0x3C;
         gOrderingTableBankFrame3[0] = bank;
         D_800A39C8Frame2[0] = secondTable;
-        func_8002E594(drawCar);
+        SceneDrawView(drawCar);
         D_800A2ED9Frame = 0;
         bankAfterDraw = gOrderingTableBankFrame4[0] - 1;
         gOrderingTableBankFrame5[0] = bankAfterDraw;
@@ -9462,7 +9610,7 @@ void GraphicsDrawRaceViews(void) {
         D_800A2E8CFrame = 0x23;
         GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame6[0] == 0, 3);
         D_800A2F3CFrame4[0] = 0x82;
-        func_8002E594(D_800A3554Frame[0]);
+        SceneDrawView(D_800A3554Frame[0]);
         insetCar = D_800A3558Frame[0];
         if (insetCar != NULL) {
             do {
@@ -9515,7 +9663,7 @@ void GraphicsDrawRaceViews(void) {
         gOrderingTableBankFrame8[0] = gOrderingTableBankFrame8Read[0] + 1;
         D_800A39C8Frame4[0] = D_800A39C8Frame4Read[0] + 0x1000;
         func_8002FFB8(1);
-        func_8002E594(D_800A2E9CFrame);
+        SceneDrawView(D_800A2E9CFrame);
         bankAfterInset = gOrderingTableBankFrame9[0] - 1;
         gOrderingTableBankFrame10[0] = bankAfterInset;
         D_800A39C8Frame5[0] = D_800A39C8Frame5Read[0] - 0x1000;
@@ -9530,7 +9678,7 @@ void GraphicsDrawRaceViews(void) {
         D_800A2E8CFrame = D_800A3774Frame + 0x32;
         tableOffset = D_800A39C8Frame6[0] + 0x28;
         D_800A39C8Frame7[0] = tableOffset;
-        func_8002E594(focusCar);
+        SceneDrawView(focusCar);
         D_800A39C8Frame8[0] = D_800A39C8Frame8Read[0] - 0x28;
     }
     D_800B9D5CFrame[0] = GetRCnt(RCntCNT1) - D_800B9D5CFrame[0];

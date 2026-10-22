@@ -817,6 +817,7 @@ SoundUpdateCar = 0x80040CF4; // type:func
 AudioQueueStereoAdpcm = 0x80073100; // type:func
 
 RaceUpdateFrame = 0x8002F910; // type:func
+SceneDrawView = 0x8002E594; // type:func
 
 CarPlaceOnStartingGrid = 0x80039DDC; // type:func
 
