@@ -4897,7 +4897,58 @@ void HudDrawStandings(s8 arg0, s32 y) {
     }
 }
 
-INCLUDE_ASM("asm/nonmatchings/scene", func_8004DF38);
+extern u8 D_800A3590;
+extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
+extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
+extern char D_8008D4F4[];
+extern char *D_8009A31C[];
+extern s32 HudTextWidth(u8 *);
+extern u8 *D_8009AD68[][6];
+extern char *D_8009AE60[];
+extern char *D_8009ADDC[];
+extern u8 gStandingsPlaceXRow[] asm("gStandingsPlaceX");
+extern void HudDrawStandingsRow(u8, u8) asm("HudDrawStandings");
+
+void MenuDrawStatistics(void) {
+    char text[40];
+    u8 top;
+    u8 y;
+    u8 i;
+
+    top = (s8)D_800A3590 / 12;
+    GraphicsSetColor(128, 128, 192);
+    sprintfHud(text, D_8008D4F4, D_8009AD68[D_800A2EB0Absolute[0]][0],
+               D_8009AE60[0], D_8009A31C[D_800A2CE0[0]]);
+    if (D_800A2EA4[0] == 0) {
+        HudDrawTextS16(text, (s16)((320 - HudTextWidth((u8 *)text)) >> 1), 210,
+                       0);
+    }
+    for (i = 0; i < 4; i++) {
+        HudDrawTextS16(D_8009ADDC[i], gStandingsPlaceXRow[i], 20, 0);
+    }
+    y = 37 - (s8)D_800A3590 % 12;
+    func_8001D778(0, 0, 320, 35, 0, 0, 0, 0);
+    func_8001D778(0, 205, 320, 35, 0, 0, 0, 0);
+    GraphicsSetColor(128, 128, 128);
+    HudDrawStandingsRow(top, y);
+    if (D_800A2EA4[0] != 0) {
+        gOrderingTableBankLui += 1;
+        D_800A39C8Lui += 0x1004;
+        if (D_800A2E94[0] >= 3) {
+            HudDrawStandingsRow(7, 1);
+        }
+        GraphicsSetColor(128, 128, 192);
+        HudDrawTextS16(text, (s16)((320 - HudTextWidth((u8 *)text)) >> 1), 90,
+                       0);
+        func_8001D778(0, 85, 320, 35, 0, 0, 0, 0);
+        func_8001D778(0, 0, 320, 120, 0, 0, 0, 1);
+        func_8001D778(0, 0, 320, 120, 0, 0, 0, 1);
+        gOrderingTableBankLui -= 1;
+        D_800A39C8Lui -= 0x1004;
+    }
+    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
+    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
+}
 
 INCLUDE_ASM("asm/nonmatchings/scene", func_8004E294);
 
@@ -5073,8 +5124,6 @@ void func_8004EA34(void) {
     }
 }
 
-extern char D_8008D4F4[];
-extern char *D_8009A31C[];
 extern char *D_8009A3F8[];
 extern char *D_8009AE70[];
 extern POLY_FT4 D_800A8A84[];
@@ -5091,7 +5140,6 @@ extern s16 D_800A8AB4First[];
 asm(".globl D_800A8AB4First\nD_800A8AB4First = D_800A8AB4");
 extern s16 D_800A8AB4Coords[][2] asm("D_800A8AB4");
 extern s16 D_800A8AB6Coords[][2] asm("D_800A8AB6");
-extern s32 HudTextWidth(u8 *);
 extern void MenuDrawLapStatistics(s8, s8);
 extern void func_8004FF90(s32, s32, s32, s8);
 

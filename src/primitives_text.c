@@ -1716,7 +1716,7 @@ extern u8 D_800A2F9Dpanel asm("D_800A2F9DAbsolute");
 extern u8 D_800A306Cpanel asm("D_800A306CAbsolute");
 extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
 extern s32 D_800A39C8Lui asm("D_800A39C8Absolute");
-extern void func_8004DF38(void);
+extern void MenuDrawStatistics(void);
 extern void MenuDrawTimingAndScoring(void);
 extern s32 HudTextWidth(u8 *);
 void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
@@ -1742,7 +1742,7 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     y = 40;
     arrowX = 80;
     if (flags & 8) {
-        func_8004DF38();
+        MenuDrawStatistics();
         return;
     }
     if (flags & 4) {
