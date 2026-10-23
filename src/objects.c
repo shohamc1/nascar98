@@ -3604,8 +3604,8 @@ s32 CarHandleWallCollision(void *object) {
     ContactCorner *corners2;
     SVECTOR *wallPoint;
     ContactRegion *region;
-    TrackQuad *nearestContact;
-    register TrackQuad *contact asm("$19");
+    Face *nearestContact;
+    register Face *contact asm("$19");
     s32 heading;
     s32 impulse;
     s32 trackIndex;
@@ -3720,7 +3720,7 @@ s32 CarHandleWallCollision(void *object) {
         track = FAR_VAR(TrackSection *, gFarTrack);
         rowOffset = trackIndex * 0x90;
         rowOffset = (s32)track + rowOffset;
-        contact = *(TrackQuad **)(rowOffset + 0x28);
+        contact = *(Face **)(rowOffset + 0x28);
         if (contact == NULL) {
             contact = track->firstQuad;
         }
@@ -9839,7 +9839,7 @@ void func_80031264(Car *object) {
 
 void OuterProduct0(s32 *, s32 *, s32 *);
 void VectorNormal(s32 *, s32 *, s32);
-void func_80031874(u8 *quad, s32 *normal) {
+void func_80031874(Face *quad, s32 *normal) {
     s32 vecA[3];
     s32 vecB[3];
     s32 cross[3];
@@ -9848,19 +9848,19 @@ void func_80031874(u8 *quad, s32 *normal) {
     s32 crossZ;
     u8 *back;
 
-    if ((quad == NULL) || ((*(u8 *)(quad + 0x13) & 0x20) != 0)) {
+    if ((quad == NULL) || ((quad->flags & 0x20) != 0)) {
         normal[0] = 0;
         normal[1] = 0;
         normal[2] = 0x10000;
         return;
     }
-    back = quad + 0x1C;
-    vecA[0] = *(s16 *)(*(u8 **)(quad + 0x20) + 0) - *(s16 *)(*(u8 **)back + 0);
-    vecA[1] = *(s16 *)(*(u8 **)(quad + 0x20) + 2) - *(s16 *)(*(u8 **)back + 2);
-    vecA[2] = *(s16 *)(*(u8 **)(quad + 0x20) + 4) - *(s16 *)(*(u8 **)back + 4);
-    vecB[0] = *(s16 *)(*(u8 **)(quad + 0x18) + 0) - *(s16 *)(*(u8 **)back + 0);
-    vecB[1] = *(s16 *)(*(u8 **)(quad + 0x18) + 2) - *(s16 *)(*(u8 **)back + 2);
-    vecB[2] = *(s16 *)(*(u8 **)(quad + 0x18) + 4) - *(s16 *)(*(u8 **)back + 4);
+    back = (u8 *)&quad->vertex[1];
+    vecA[0] = quad->vertex[2]->vx - *(s16 *)(*(u8 **)back + 0);
+    vecA[1] = quad->vertex[2]->vy - *(s16 *)(*(u8 **)back + 2);
+    vecA[2] = quad->vertex[2]->vz - *(s16 *)(*(u8 **)back + 4);
+    vecB[0] = quad->vertex[0]->vx - *(s16 *)(*(u8 **)back + 0);
+    vecB[1] = quad->vertex[0]->vy - *(s16 *)(*(u8 **)back + 2);
+    vecB[2] = quad->vertex[0]->vz - *(s16 *)(*(u8 **)back + 4);
     OuterProduct0(vecA, vecB, cross);
     crossX = cross[0];
     crossY = cross[1];
@@ -10285,7 +10285,7 @@ void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag) {
     *orderingTable = (u32)primitive & 0xFFFFFF;
 }
 
-u8 *func_80032544(u8 *entry, s32 remaining) {
+u8 *func_80032544(Face *entry, s32 remaining) {
     POLY_F4 *prim;
     u32 *ot;
     s32 gte;
@@ -10294,8 +10294,7 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
     ot = (u32 *)(gOrderingTable[0] + 0x20);
     prim = (POLY_F4 *)((u8 *)gPrimitiveCursor[0]);
     while (remaining > 0) {
-        gte_ldv3(*(s32 **)(entry + 0x18), *(s32 **)(entry + 0x1C),
-                 *(s32 **)(entry + 0x20));
+        gte_ldv3(entry->vertex[0], entry->vertex[1], (s32 *)entry->vertex[2]);
         gte_rtpt();
         SetPolyF4(prim);
         SetSemiTrans(prim, 1);
@@ -10319,9 +10318,9 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
     draw:
         gte_avsz3();
         gte_mfc2(gte, 7);
-        gte += *(s8 *)(entry + 1) * 4;
-        gte_stsxy3((u8 *)prim + 8, (u8 *)prim + 0xC, (u8 *)prim + 0x14);
-        gte_ldv0(*(s32 **)(entry + 0x24));
+        gte += entry->kind * 4;
+        gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
+        gte_ldv0(entry->vertex[3]);
         gte_rtps();
         gte_stsxy((u8 *)prim + 0x10);
         otEntry = (u32 *)(((gte >> 4) << 2) + (s32)ot);
@@ -10330,7 +10329,7 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
         prim++;
     next:
         remaining--;
-        entry += 0x2C;
+        entry++;
     }
     gPrimitiveCursor[0] = (u32)prim;
     prim = (POLY_F4 *)entry;
@@ -10360,7 +10359,7 @@ void ScratchpadFillPattern(s32 arg0) {
  * backface cull on nclip gated by the D_800A2DE0 double-sided flag, then
  * link one primitive into the ordering table at gOrderingTable[0] + 0x20.
  */
-u8 *func_80032760(u8 *entry, u8 *primitive, s32 remaining) {
+u8 *func_80032760(Face *entry, u8 *primitive, s32 remaining) {
     u8 *ot;
     u32 doubleSided;
     s32 gte;
@@ -10373,10 +10372,9 @@ u8 *func_80032760(u8 *entry, u8 *primitive, s32 remaining) {
     doubleSided = D_800A2DE0[0];
     flagMask = 0x66000;
     while (remaining > 0) {
-        gte_ldv3(*(s32 **)(entry + 0x18), *(s32 **)(entry + 0x1C),
-                 *(s32 **)(entry + 0x20));
+        gte_ldv3(entry->vertex[0], entry->vertex[1], (s32 *)entry->vertex[2]);
         gte_rtpt();
-        depthBias = *(s8 *)(entry + 1) * 4;
+        depthBias = entry->kind * 4;
         nextPrim = *(u8 **)(primitive + 0x34);
         gte_ReadFlag(gte);
         if (gte & flagMask) {
@@ -10395,7 +10393,7 @@ u8 *func_80032760(u8 *entry, u8 *primitive, s32 remaining) {
     draw:
         gte_op(avsz3);
         gte_stsxy3(primitive + 8, primitive + 0x14, primitive + 0x2C);
-        gte_ldv0(*(s32 **)(entry + 0x24));
+        gte_ldv0(entry->vertex[3]);
         gte_mfc2(gte, 7);
         gte = (gte + depthBias) >> 4;
         gte_op(rtps);
@@ -10405,7 +10403,7 @@ u8 *func_80032760(u8 *entry, u8 *primitive, s32 remaining) {
         gte_stsxy(primitive + 0x20);
     next:
         remaining--;
-        entry += 0x2C;
+        entry++;
         primitive = nextPrim;
     }
     return entry;
@@ -10567,9 +10565,9 @@ done:
  * The second loop walks the rest of the list until the next pointer is
  * NULL, does the real flag and nclip checks, and clamps the table index.
  */
-void ModelDrawFt4List(u8 *firstObject, s32 remaining) {
-    u8 *obj;
-    u8 *prim;
+void ModelDrawFt4List(Face *firstObject, s32 remaining) {
+    Face *obj;
+    POLY_FT4 *prim;
     u8 *ot;
     u32 *otBase;
     u32 stale;
@@ -10609,25 +10607,25 @@ void ModelDrawFt4List(u8 *firstObject, s32 remaining) {
         tst = tst << 2;
         otBase = (u32 *)(tst + (s32)ot);
         code = 0x09000000;
-        p18a = prim + 0x18;
+        p18a = (u8 *)&prim->x2;
         do {
-            va = *(s32 **)(obj + 0x18);
-            vb = *(s32 **)(obj + 0x1C);
-            vc = *(s32 **)(obj + 0x20);
+            va = (s32 *)obj->vertex[0];
+            vb = (s32 *)obj->vertex[1];
+            vc = (s32 *)obj->vertex[2];
             gte_ldv3(va, vb, vc);
-            w4 = *(s32 *)(obj + 4);
-            w8 = *(s32 *)(obj + 8);
+            w4 = (s32)obj->rgbCode;
+            w8 = (s32)obj->uvClut;
             gte_op(rtpt);
-            wC = *(s32 *)(obj + 0xC);
-            w10 = *(s32 *)(obj + 0x10);
-            w14 = *(s32 *)(obj + 0x14);
+            wC = (s32)obj->uvTpage;
+            w10 = *(s32 *)&obj->uv2;
+            w14 = *(s32 *)&obj->uv3;
             *(s32 *)(p18a - 4) = wC;
             *(s32 *)(p18a - 0x14) = w4;
             *(s32 *)(p18a - 0xC) = w8;
-            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
+            gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
             gte_cfc2_nonop(flag, 31);
             if (stale == 0) {
-                v0p = *(s32 **)(obj + 0x24);
+                v0p = (s32 *)obj->vertex[3];
                 w4 = v0p[0];
                 w8 = v0p[1];
                 gte_op(avsz3);
@@ -10637,7 +10635,7 @@ void ModelDrawFt4List(u8 *firstObject, s32 remaining) {
                 gte_mtc2(w4, 0);
                 gte_mtc2(w8, 1);
                 gte_rtps();
-                ix = *(s8 *)(obj + 1);
+                ix = obj->kind;
                 ix = ix << 2;
                 ix = ix + (s32)otBase;
                 otEntry = (u32 *)ix;
@@ -10646,33 +10644,33 @@ void ModelDrawFt4List(u8 *firstObject, s32 remaining) {
                 *otEntry = (u32)prim & mask;
                 gte_stsxy(p18a);
                 p18a += 0x28;
-                prim += 0x28;
+                prim++;
             }
-            obj = *(u8 **)(obj + 0x28);
+            obj = obj->next;
         } while (remaining-- > 0);
     }
     doubleSided = D_800A2DE0[0];
-    vpNext = obj + 0x18;
+    vpNext = (u8 *)obj->vertex;
     if (obj != NULL) {
         code2 = 0x09000000;
-        p18b = prim + 0x18;
+        p18b = (u8 *)&prim->x2;
         do {
             p18a = vpNext;
             va = *(s32 **)(p18a + 0);
             vb = *(s32 **)(p18a + 4);
             vc = *(s32 **)(p18a + 8);
             gte_ldv3(va, vb, vc);
-            w4 = *(s32 *)(obj + 4);
-            w8 = *(s32 *)(obj + 8);
+            w4 = (s32)obj->rgbCode;
+            w8 = (s32)obj->uvClut;
             gte_op(rtpt);
-            wC = *(s32 *)(obj + 0xC);
-            w10 = *(s32 *)(obj + 0x10);
-            w14 = *(s32 *)(obj + 0x14);
+            wC = (s32)obj->uvTpage;
+            w10 = *(s32 *)&obj->uv2;
+            w14 = *(s32 *)&obj->uv3;
             *(s32 *)(p18b - 0x14) = w4;
             *(s32 *)(p18b - 0xC) = w8;
             *(s32 *)(p18b - 4) = wC;
             gte_cfc2_nonop(flag, 31);
-            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
+            gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
             tst = flag & flagMask;
             if (tst == 0) {
                 gte_op(nclip);
@@ -10692,19 +10690,19 @@ void ModelDrawFt4List(u8 *firstObject, s32 remaining) {
                 }
             }
         skip:
-            w8 = *(s32 *)(obj + 0x28);
+            w8 = (s32)obj->next;
             vpNext = (u8 *)w8 + 0x18;
             goto advance;
         draw:
             gte_op(avsz3);
-            w8 = *(s32 *)(obj + 0x28);
+            w8 = (s32)obj->next;
             vpNext = (u8 *)w8 + 0x18;
             gte_mfc2_nonop(flag, 7);
             *(s32 *)(p18b + 4) = w10;
             *(s32 *)(p18b + 0xC) = w14;
             gte_op(rtps);
             mask = flag >> 2;
-            flag = mask + *(s8 *)(obj + 1);
+            flag = mask + obj->kind;
             if (flag > 0x3B6) {
                 flag = 0x3B6;
             }
@@ -10717,7 +10715,7 @@ void ModelDrawFt4List(u8 *firstObject, s32 remaining) {
             *(u32 *)tst = (u32)prim & mask2;
             gte_stsxy(p18b);
             p18b += 0x28;
-            prim += 0x28;
+            prim++;
         advance:
             obj = (u8 *)w8;
         } while (obj != NULL);
@@ -10743,14 +10741,14 @@ extern u32 D_800B022C[];
 extern s16 D_800AFE2C[];
 extern s32 D_800A2F38NM asm("D_800A2F38.NON_MATCHING");
 
-void func_80032DEC(u8 *firstObject, s32 objectCount) {
+void func_80032DEC(Face *firstObject, s32 objectCount) {
     register s32 w4 asm("v1");
     s32 w8;
     register s32 wC asm("v0");
     s32 old;
     s32 tmpa1;
     s32 base;
-    u8 *obj;
+    Face *obj;
     register u8 *prim18 asm("s1");
     u8 *prim;
     register s32 otz asm("s3");
@@ -10785,19 +10783,18 @@ void func_80032DEC(u8 *firstObject, s32 objectCount) {
     if (guard > 0) {
         prim18 = prim + 0x18;
         do {
-            gte_ldv3(*(s32 **)(obj + 0x18), *(s32 **)(obj + 0x1C),
-                     *(s32 **)(obj + 0x20));
-            w4 = *(s32 *)(obj + 0x4);
-            w8 = *(s32 *)(obj + 0x8);
+            gte_ldv3(obj->vertex[0], obj->vertex[1], (s32 *)obj->vertex[2]);
+            w4 = (s32)obj->rgbCode;
+            w8 = (s32)obj->uvClut;
             gte_op(rtpt);
-            wC = *(s32 *)(obj + 0xC);
-            w10 = *(s32 *)(obj + 0x10);
-            w14 = *(s32 *)(obj + 0x14);
+            wC = (s32)obj->uvTpage;
+            w10 = *(s32 *)&obj->uv2;
+            w14 = *(s32 *)&obj->uv3;
             *(s32 *)(prim18 - 0xC) = w8;
             *(s32 *)(prim18 - 0x14) = w4;
             *(s32 *)(prim18 - 4) = wC;
             gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
-            normal = *(s32 **)(obj + 0x24);
+            normal = (s32 *)obj->vertex[3];
             w4 = normal[0];
             old = normal[1];
             gte_op(avsz3);
@@ -10809,7 +10806,7 @@ void func_80032DEC(u8 *firstObject, s32 objectCount) {
             if (otz < 0x9B) {
                 gte_op(rtps);
                 if (func_800337EC() != 0 && entryCount < 0x1FF) {
-                    otz = otz + *(s8 *)(obj + 1);
+                    otz = otz + obj->kind;
                     if (otz >= 0) {
                         entryCount = entryCount + 1;
                         *objCursor = (u32)obj;
@@ -10822,7 +10819,7 @@ void func_80032DEC(u8 *firstObject, s32 objectCount) {
                 }
             }
             gte_op(rtps);
-            tmpa1 = *(s8 *)(obj + 1);
+            tmpa1 = obj->kind;
             wC = (otz >> 2) << 2;
             wC = wC + (s32)otBase40;
             mask = 0xFF0000;
@@ -10835,7 +10832,7 @@ void func_80032DEC(u8 *firstObject, s32 objectCount) {
             prim18 = prim18 + 0x28;
             prim = prim + 0x28;
         nextObj:
-            obj = *(u8 **)(obj + 0x28);
+            obj = obj->next;
         } while (count-- > 0);
     }
     gPrimitiveCursor[0] = (u32)prim;
@@ -10863,14 +10860,14 @@ extern s32 D_800A396CNM asm("D_800A396C.NON_MATCHING");
  * vertex, and the next object's vertex list. */
 void func_80033000(TrackSection *endB, TrackSection *endA,
                    TrackSection *firstA) {
-    u8 *prim;
+    POLY_FT4 *prim;
     TrackSection *listA;
     TrackSection *listB;
     s32 count;
     u32 *otCursor;
     s16 *zCursor;
     TrackSection *group;
-    register u8 *obj asm("s0");
+    register Face *obj asm("s0");
     POLY_F4 *poly;
     s32 i;
     s32 n;
@@ -10938,11 +10935,11 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     poly = (POLY_F4 *)prim;
                     gte_rtpt();
                     if (i == 2) {
-                        *(s32 *)(prim + 4) = D_800A394CNM;
+                        *(s32 *)&prim->r0 = D_800A394CNM;
                     } else if (i & 1) {
-                        *(s32 *)(prim + 4) = D_800A3A74NM;
+                        *(s32 *)&prim->r0 = D_800A3A74NM;
                     } else {
-                        *(s32 *)(prim + 4) = D_800A396CNM;
+                        *(s32 *)&prim->r0 = D_800A396CNM;
                     }
                     SetPolyF4(poly);
                     gte_cfc2_nonop(otz, 31);
@@ -10972,7 +10969,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     *(u32 *)prim = ot[otz >> 2] | 0x05000000;
                     ot[otz >> 2] = (u32)prim & 0xFFFFFF;
                     gte_stsxy((u8 *)poly + 0x10);
-                    prim = prim + 0x28;
+                    prim++;
                 }
                 mode = 0;
                 group->culled = 1;
@@ -10981,31 +10978,30 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                 obj = group->unk20;
                 count = count + n;
                 while (n-- > 0) {
-                    gte_ldv3(*(u8 **)(obj + 0x18), *(u8 **)(obj + 0x1C),
-                             *(u8 **)(obj + 0x20));
-                    word0 = *(s32 *)(obj + 4);
-                    word1 = *(s32 *)(obj + 8);
+                    gte_ldv3(obj->vertex[0], obj->vertex[1], obj->vertex[2]);
+                    word0 = (s32)obj->rgbCode;
+                    word1 = (s32)obj->uvClut;
                     gte_op(rtpt);
-                    wC = *(s32 *)(obj + 0xC);
-                    w10 = *(s32 *)(obj + 0x10);
-                    w14 = *(s32 *)(obj + 0x14);
-                    *(s32 *)(prim + 0x14) = wC;
-                    *(s32 *)(prim + 4) = word0;
-                    *(s32 *)(prim + 0xC) = word1;
-                    gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
-                    vec = *(u8 **)(obj + 0x24);
+                    wC = (s32)obj->uvTpage;
+                    w10 = *(s32 *)&obj->uv2;
+                    w14 = *(s32 *)&obj->uv3;
+                    *(s32 *)&prim->u1 = wC;
+                    *(s32 *)&prim->r0 = word0;
+                    *(s32 *)&prim->u0 = word1;
+                    gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
+                    vec = (u8 *)obj->vertex[3];
                     word0 = *(s32 *)vec;
                     word1 = *(s32 *)(vec + 4);
                     gte_op(avsz3);
-                    *(s32 *)(prim + 0x1C) = w10;
-                    *(s32 *)(prim + 0x24) = w14;
+                    *(s32 *)&prim->u2 = w10;
+                    *(s32 *)&prim->u3 = w14;
                     gte_mfc2_nonop(otz, 7);
                     gte_mtc2(word0, 0);
                     gte_mtc2(word1, 1);
                     if (otz < 0x9B) {
                         gte_op(rtps);
                         if (func_800337EC() != 0) {
-                            otz = otz + *(s8 *)(obj + 1) * 2;
+                            otz = otz + obj->kind * 2;
                             if (otz >= 0) {
                                 *otCursor++ = (u32)obj;
                                 *zCursor++ = otz << 2;
@@ -11014,36 +11010,36 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                         }
                     }
                     gte_op(rtps);
-                    otz = (otz >> 2) + *(s8 *)(obj + 1);
+                    otz = (otz >> 2) + obj->kind;
                     if (otz >= 0x3B7) {
                         otz = 0x3B6;
                     }
                     *(u32 *)prim = ot[otz] | 0x09000000;
                     ot[otz] = (u32)prim & 0xFFFFFF;
-                    gte_stsxy(prim + 0x18);
-                    prim = prim + 0x28;
+                    gte_stsxy(&prim->x2);
+                    prim++;
                 next1:
-                    obj = *(u8 **)(obj + 0x28);
+                    obj = obj->next;
                 }
                 /* n now holds the backface-cull mode. */
                 n = D_800A2DE0[0];
-                word0 = (s32)(obj + 0x18);
+                word0 = (s32)((u8 *)obj->vertex);
                 while (obj != 0) {
                     count++;
                     verts = (u8 *)word0;
                     gte_ldv3(*(u8 **)verts, *(u8 **)(verts + 4),
                              *(u8 **)(verts + 8));
-                    word0 = *(s32 *)(obj + 4);
-                    word1 = *(s32 *)(obj + 8);
+                    word0 = (s32)obj->rgbCode;
+                    word1 = (s32)obj->uvClut;
                     gte_op(rtpt);
-                    wC = *(s32 *)(obj + 0xC);
-                    w10 = *(s32 *)(obj + 0x10);
-                    w14 = *(s32 *)(obj + 0x14);
-                    *(s32 *)(prim + 4) = word0;
-                    *(s32 *)(prim + 0xC) = word1;
-                    *(s32 *)(prim + 0x14) = wC;
+                    wC = (s32)obj->uvTpage;
+                    w10 = *(s32 *)&obj->uv2;
+                    w14 = *(s32 *)&obj->uv3;
+                    *(s32 *)&prim->r0 = word0;
+                    *(s32 *)&prim->u0 = word1;
+                    *(s32 *)&prim->u1 = wC;
                     gte_cfc2_nonop(otz, 31);
-                    gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
+                    gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
                     if (otz & 0x6000) {
                         goto skip;
                     }
@@ -11051,8 +11047,8 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     vec = *(u8 **)(verts + 0xC);
                     word0 = *(s32 *)vec;
                     word1 = *(s32 *)(vec + 4);
-                    *(s32 *)(prim + 0x1C) = w10;
-                    *(s32 *)(prim + 0x24) = w14;
+                    *(s32 *)&prim->u2 = w10;
+                    *(s32 *)&prim->u3 = w14;
                     gte_mfc2_nonop(otz, 24);
                     gte_mtc2(word0, 0);
                     gte_mtc2(word1, 1);
@@ -11065,18 +11061,18 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     }
                     goto draw;
                 skip:
-                    word1 = *(s32 *)(obj + 0x28);
+                    word1 = (s32)obj->next;
                     word0 = word1 + 0x18;
                     goto next2;
                 draw:
                     gte_op(avsz3);
-                    word1 = *(s32 *)(obj + 0x28);
+                    word1 = (s32)obj->next;
                     word0 = word1 + 0x18;
                     gte_mfc2(otz, 7);
                     if (otz < 0x9B) {
                         gte_op(rtps);
                         if (func_800337EC() != 0) {
-                            otz = otz + *(s8 *)(obj + 1);
+                            otz = otz + obj->kind;
                             if (otz >= 0) {
                                 *otCursor++ = (u32)obj;
                                 *zCursor++ = otz << 2;
@@ -11085,15 +11081,15 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                         }
                     }
                     gte_op(rtps);
-                    otz = (otz >> 2) + *(s8 *)(obj + 1);
+                    otz = (otz >> 2) + obj->kind;
                     if (otz < 0x4B1) {
                         if (otz >= 0x3B7) {
                             otz = 0x3B6;
                         }
                         *(u32 *)prim = ot[otz] | 0x09000000;
                         ot[otz] = (u32)prim & 0xFFFFFF;
-                        gte_stsxy(prim + 0x18);
-                        prim = prim + 0x28;
+                        gte_stsxy(&prim->x2);
+                        prim++;
                     }
                 next2:
                     obj = (u8 *)word1;

@@ -4,15 +4,24 @@
 #include "common.h"
 #include <psxsdk/libgte.h>
 
-/* A road quad in a section's list: four vertices and its facing. */
-typedef struct TrackQuad {
-    u8 unk0[0x13];
-    u8 flags;               /* 0x13 */
-    u8 unk14[2];
-    s16 angle;              /* 0x16 */
-    SVECTOR *vertex[4];     /* 0x18 */
-    struct TrackQuad *next; /* 0x28 */
-} TrackQuad;
+/* A model or road face: the colour and texture words copied into its
+ * POLY_FT4, four vertex pointers and the next face. Collision code keeps
+ * flags in the pad byte of uv2 and the facing angle in the pad of uv3. */
+typedef struct Face {
+    u8 unk0;
+    s8 kind; /* 0x01 */
+    u8 unk2[2];
+    u32 rgbCode;        /* 0x04: r, g, b and the GPU code */
+    u32 uvClut;         /* 0x08 */
+    u32 uvTpage;        /* 0x0C */
+    u16 uv2;            /* 0x10 */
+    u8 unk12;
+    u8 flags;           /* 0x13 */
+    u16 uv3;            /* 0x14 */
+    s16 angle;          /* 0x16 */
+    SVECTOR *vertex[4]; /* 0x18 */
+    struct Face *next;  /* 0x28 */
+} Face;
 
 /* A 0x90-byte track section. gTrackSections[0] points to the array, and
  * prev and next link each section to its neighbours. */
@@ -31,7 +40,7 @@ typedef struct TrackSection {
     s16 height1;                 /* 0x1E */
     u8 *unk20;                   /* 0x20 */
     u8 unk24[4];
-    struct TrackQuad *firstQuad; /* 0x28 */
+    struct Face *firstQuad; /* 0x28 */
     u8 unk2C[4];
     u8 *callbacks; /* 0x30: nodes run by ListDispatchCallbacks */
     s16 unk34;

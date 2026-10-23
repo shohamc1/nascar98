@@ -1782,7 +1782,7 @@ void TrackReadData(s32 *trackData, s32 file) {
     u8 *allocatedObjects;
     u8 *node;
     u8 *objectFaceIndices;
-    u8 *face;
+    Face *face;
     u8 *nodeDataStart;
     u8 *sectionObject;
     u8 *unusedCursor;
@@ -1974,8 +1974,8 @@ void TrackReadData(s32 *trackData, s32 file) {
             *(s32 *)((u8 *)face + (4)) =
                 (s32) * (s32 *)((u8 *)faceFields + (5));
             byteValue = *(u8 *)(faceFields - 18);
-            *(u8 *)(face + 19) = 0;
-            *(u8 *)(face + 2) = byteValue;
+            face->flags = 0;
+            face->unk2[0] = byteValue;
             *(u16 *)((u8 *)face + (22)) =
                 (u16) * (s16 *)((u8 *)faceFields + (3));
             if (*(s8 *)((u8 *)faceFields + (-16)) != 0) {
@@ -2009,15 +2009,15 @@ void TrackReadData(s32 *trackData, s32 file) {
                 faceMode = (s16) * (s16 *)((u8 *)faceFields + (3));
                 switch (faceMode) {
                 case 1:
-                    modeFlags = *(u8 *)(face + 19) | 8;
+                    modeFlags = face->flags | 8;
                     break;
                 case 2:
-                    modeFlags = *(u8 *)(face + 19) | 0x28;
+                    modeFlags = face->flags | 0x28;
                     break;
                 default:
                     goto faceFlagsDone;
                 }
-                *(u8 *)(face + 19) = modeFlags;
+                face->flags = modeFlags;
             }
         faceFlagsDone:
             vertexSlot = 0;

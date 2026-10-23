@@ -464,11 +464,11 @@ extern s32 D_800A2F84[];
  * is on. Returns 0 if the section doesn't hold four quads. */
 s32 CarGetTrackSide(Car *car, s16 offset) {
     s32 lateral[4];
-    TrackQuad *quads[4];
+    Face *quads[4];
     s32 center[4][2];
     s32 origin[2];
     TrackSection *entry;
-    TrackQuad *node;
+    Face *node;
     s8 i, j;
     s32 tmp;
     s32 sinValue, cosValue;

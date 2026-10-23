@@ -31,9 +31,9 @@ extern void func_80043F7C(Car *, u8 *);
 extern s32 func_80016ACC(Car *, s16 *);
 extern void func_80015EAC(Car *);
 extern void func_80025730(void);
-extern void func_80032760(u8 *entry, u8 *primitive, s32 remaining);
+extern void func_80032760(Face *entry, u8 *primitive, s32 remaining);
 extern void func_800328AC(void *objects, s32 count);
-extern void func_80032544(u8 *entry, s32 remaining);
+extern void func_80032544(Face *entry, s32 remaining);
 
 u8 CarDrawModel(Car *car, s32 drawMode) {
     SVECTOR angles;
