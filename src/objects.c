@@ -13721,22 +13721,22 @@ extern void ObjectSetCallbackIfAllowed373B4(u8 *, void (*)(void)) asm(
     "ObjectSetCallbackIfAllowed");
 extern s32 RandomScaledGet373B4(s32) asm("RandomScaledGet");
 extern void
-MatrixSetRotationFromAngle373B4(u8 *, s32) asm("MatrixSetRotationFromAngle");
-extern void func_8001FB28373B4(u8 *, s16) asm("func_8001FB28");
+MatrixSetRotationFromAngle373B4(Car *, s32) asm("MatrixSetRotationFromAngle");
+extern void func_8001FB28373B4(Car *, s16) asm("func_8001FB28");
 extern void func_80029CB4373B4(u8 *) asm("func_80029CB4");
 extern void func_8002A1D0373B4(u8 *) asm("func_8002A1D0");
 extern void func_8002BC88373B4(u8 *) asm("func_8002BC88");
-extern void func_8002D16C373B4(u8 *) asm("func_8002D16C");
+extern void func_8002D16C373B4(Car *) asm("func_8002D16C");
 extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
-extern void CarSteerTowardHeading373B4(u8 *, s32) asm("CarSteerTowardHeading");
-extern s32 func_8003702C373B4(u8 *, u8 *) asm("func_8003702C");
-extern s32 func_80037204373B4(u8 *) asm("func_80037204");
-extern s32 CarAvoidTraffic373B4(u8 *, s32) asm("CarAvoidTraffic");
-extern void func_8003DBA8373B4(u8 *) asm("func_8003DBA8");
+extern void CarSteerTowardHeading373B4(Car *, s32) asm("CarSteerTowardHeading");
+extern s32 func_8003702C373B4(Car *, Car *) asm("func_8003702C");
+extern s32 func_80037204373B4(Car *) asm("func_80037204");
+extern s32 CarAvoidTraffic373B4(Car *, s32) asm("CarAvoidTraffic");
+extern void func_8003DBA8373B4(Car *) asm("func_8003DBA8");
 extern u8 func_8003E78C373B4(u8 *) asm("func_8003E78C");
-extern void func_80044114373B4(u8 *) asm("func_80044114");
-extern s8 CarGetTrackSide373B4(u8 *, s32) asm("CarGetTrackSide");
-extern void SceneSetCameraTarget373B4(u8 *) asm("SceneSetCameraTarget");
+extern void func_80044114373B4(Car *) asm("func_80044114");
+extern s8 CarGetTrackSide373B4(Car *, s32) asm("CarGetTrackSide");
+extern void SceneSetCameraTarget373B4(Car *) asm("SceneSetCameraTarget");
 extern void CarResetMotionCounters373B4(void) asm("CarResetMotionCounters");
 extern void func_80025730373B4(void) asm("func_80025730");
 extern void func_8003AA20373B4(void) asm("func_8003AA20");
@@ -13746,7 +13746,7 @@ __asm__(
 /* Update AI route speed, pace following, nearby lanes, and steering. */
 void func_800373B4(Car *object) {
     Car *car;
-    u8 *middleOther;
+    Car *middleOther;
     register u32 middleOne asm("$9");
     s32 middleFlag;
     s32 middleRandomLimit;
@@ -13886,13 +13886,13 @@ void func_800373B4(Car *object) {
     s32 varV012;
     u16 tempA13;
     u8 **tempA1;
-    u8 *aheadOfFollowingCar;
-    u8 *followingCar;
-    u8 *paceLeader;
+    Car *aheadOfFollowingCar;
+    Car *followingCar;
+    Car *paceLeader;
     register Car *forwardNeighbor asm("$17");
     register Car *backwardNeighbor asm("$17");
-    u8 *blockingCar;
-    register u8 *paceAheadCar asm("$17");
+    Car *blockingCar;
+    register Car *paceAheadCar asm("$17");
     u8 tempA06;
     u8 tempV015;
     u8 tempV016;
@@ -14198,14 +14198,15 @@ void func_800373B4(Car *object) {
                     followAllowed = 0;
                     goto paceLevelCheck;
                 paceNextCar:
-                    paceLeader = *(u8 **)(*(u8 **)(paceLeader + 0x3F0) + 8);
-                    varV04 = *(s16 *)(paceLeader + 0x288);
+                    paceLeader =
+                        *(u8 **)((u8 *)paceLeader->sectionLink.node.next + 8);
+                    varV04 = paceLeader->unk26C[14];
                 paceLevelCheck:
                     if (varV04 != 0)
                         goto paceNextCar;
-                    if (*(u16 *)(paceLeader + 0x3A4) & 0xF)
+                    if (paceLeader->unk3A4 & 0xF)
                         goto paceNextCar;
-                    if (*(void (**)(void))(paceLeader + 0x354) !=
+                    if (*(void (**)(void))((u8 *)paceLeader + 0x354) !=
                         CarResetMotionCounters373B4)
                         goto paceNextCar;
                     tempS0 = func_8003702C373B4(paceLeader, car);
@@ -14286,7 +14287,7 @@ void func_800373B4(Car *object) {
                         if (D_800A3670373B4[0] != 0) {
                             car->unk401 = followAllowed;
                         } else {
-                            peerFollowFlag = *(u8 *)(paceLeader + 0x401);
+                            peerFollowFlag = (u8)paceLeader->unk401;
                             varV12 = 0;
                             if (peerFollowFlag != 0) {
                                 varV12 = followAllowed;
@@ -14317,7 +14318,7 @@ void func_800373B4(Car *object) {
                             if (paceDistance != 0)
                                 varA02 = 9;
                             car->speed = MathMultiplyFixed16373B4(
-                                *(s32 *)(paceLeader + 0x90),
+                                paceLeader->speed,
                                 MathFixedDivide373B4(varA02, 10));
                         }
                     }
@@ -14607,7 +14608,7 @@ void func_800373B4(Car *object) {
                     if (tempA08 != NULL) {
                         followingCar = (*(u8 **)((u8 *)tempA08 + 8));
                         followAllowed = 1;
-                        if ((*(s16 *)((u8 *)followingCar + 0x1EC)) == 0) {
+                        if ((followingCar->type) == 0) {
                             if (func_8003702C373B4(followingCar, car) < 0) {
                                 varA15 = -func_8003702C373B4(followingCar, car);
                             } else {
@@ -14716,8 +14717,7 @@ void func_800373B4(Car *object) {
                             : "=r"(middleOther)
                             :
                             : "memory");
-                        if ((middleOther != NULL) &&
-                            (*(s16 *)(middleOther + 0x1EC) != 0)) {
+                        if ((middleOther != NULL) && (middleOther->type != 0)) {
                             if (func_8003702C373B4(middleOther, car) < 0) {
                                 asm volatile(
                                     "lui %0,%%hi(D_800A3960)\n\tlw %0,%%lo(D_800A3960)(%0)"
@@ -15178,7 +15178,7 @@ void func_800373B4(Car *object) {
             collisionPaceResume:
                 asm("slti %0,%1,2" : "=r"(tempV018) : "r"(varA17));
                 if (tempV018 != 0) {
-                    tempA012 = (*(s32 *)((u8 *)paceAheadCar + 0x90));
+                    tempA012 = (paceAheadCar->speed);
                     if (tempA012 > 0x640000) {
                         tempV018 = tempA012 + 0xFFFB0000;
                         (car->speed) = tempV018;
