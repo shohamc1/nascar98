@@ -625,7 +625,7 @@ void func_80044114(Car *arg0) {
             *(volatile s16 *)&arg0->wheel[i].unk0 = 0;
             *(volatile s16 *)&arg0->wheel[i].effect = 0;
         }
-        *(volatile s16 *)&arg0->unk10C = 0;
+        *(volatile s16 *)&arg0->gearIndex = 0;
     }
     if (arg0 == gCrashCar[0]) {
         D_800A3960w17[0] = 0;

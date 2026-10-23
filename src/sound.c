@@ -884,7 +884,7 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
     if (level >= 0x100) {
         level = 0xFF;
     }
-    pitch = (obj->unk108 + obj->unk10A) / 110;
+    pitch = (obj->rpm + obj->unk10A) / 110;
     if (first) {
         obj->unk3BA = pitch;
     }
@@ -1224,22 +1224,22 @@ void SoundUpdateCar(Car *car) {
         }
         func_80040AC8(car);
         if (D_800A2F9D != 0) {
-            rpm = (u16)car->unk108;
+            rpm = (u16)car->rpm;
             pitch = ((s16)rpm + car->unk10A) / 100;
             if ((s16)rpm >= 2001 && car->speed <= 0x95FFFF &&
                 D_800A2EC8[0] == 0 &&
                 RandomGetScaled16((s16)((s16)rpm / 1000)) == 0) {
-                pitch -= pitch / (s16)(car->unk108 / 1700);
+                pitch -= pitch / (s16)(car->rpm / 1700);
             }
             /* Retail keeps this unused filter calculation. */
             blend = pitch + car->unk3BA + car->unk3BA + car->unk3BA + 3;
             asm("" : : "r"(blend) : "memory");
-            if (car->unk108 >= 7001 && D_800A2EC8[0] == 0 &&
-                RandomGetScaled16((s16)(car->unk108 / 1000)) == 0) {
+            if (car->rpm >= 7001 && D_800A2EC8[0] == 0 &&
+                RandomGetScaled16((s16)(car->rpm / 1000)) == 0) {
                 /* Retail also keeps this unused signed high product. */
                 register s32 magic;
                 u16 highRpm;
-                highRpm = (u16)car->unk108;
+                highRpm = (u16)car->rpm;
                 shiftedRpm = (u32)highRpm << 16;
                 asm("" : "=r"(shiftedRpm) : "0"(shiftedRpm) : "v0");
                 sample = shiftedRpm >> 16;
@@ -1265,7 +1265,7 @@ void SoundUpdateCar(Car *car) {
                 car->unk1CA = 127;
             }
             volume = car->unk1CA;
-            pitch = (car->unk108 + car->unk10A) / 110 - 32;
+            pitch = (car->rpm + car->unk10A) / 110 - 32;
             if (car->unk3CA >= 18) {
                 pitch = 78;
             }

@@ -1515,7 +1515,6 @@ void func_800474A0(void) {
     s32 vyVal;
     s32 multTmp;
     Car *car;
-    u8 *row;
     s32 place;
     s32 c8val;
     s8 count;
@@ -1598,15 +1597,14 @@ void func_800474A0(void) {
     } else {
         if (D_800A345C < 0xA) {
             car = gPlayerCar[0];
-            place = car->unk10C;
+            place = car->gearIndex;
             if (place != 0) {
-                row = (u8 *)car + place * 24;
-                if (car->unk108 < *(s32 *)(row + 0x130) + 0x3E8) {
+                if (car->rpm < car->gear[place].lowRpm + 0x3E8) {
                     D_800A346C = 1;
                     goto afterCounter;
                 }
             }
-            if (place < 3 && car->unk108 >= 0x2EE1) {
+            if (place < 3 && car->rpm >= 0x2EE1) {
                 D_800A346C = 1;
             }
         }
@@ -2375,10 +2373,10 @@ void HudDrawCar(Car *car, s16 yOffset) {
         }
         if (D_800A372C != 0 && (u8)car->unk401 != 0) {
             car->unk402 =
-                car->unk402 <= car->unk108 - 0x64
+                car->unk402 <= car->rpm - 0x64
                     ? car->unk402 + 0x64
-                    : (car->unk402 >= car->unk108 + 0x64 ? car->unk402 - 0x64
-                                                         : car->unk108);
+                    : (car->unk402 >= car->rpm + 0x64 ? car->unk402 - 0x64
+                                                      : car->rpm);
             car->unk40C = car->speed - 0x10000 >= car->unk40C
                               ? car->unk40C + 0x10000
                               : (car->unk40C >= car->speed + 0x10000
@@ -2386,10 +2384,10 @@ void HudDrawCar(Car *car, s16 yOffset) {
                                      : car->speed);
         } else {
             car->unk402 =
-                car->unk402 <= car->unk108 - 0x3E8
+                car->unk402 <= car->rpm - 0x3E8
                     ? car->unk402 + 0x3E8
-                    : (car->unk402 >= car->unk108 + 0x3E8 ? car->unk402 - 0x3E8
-                                                          : car->unk108);
+                    : (car->unk402 >= car->rpm + 0x3E8 ? car->unk402 - 0x3E8
+                                                       : car->rpm);
             car->unk40C = car->speed - 0x140000 >= car->unk40C
                               ? car->unk40C + 0x140000
                               : (car->unk40C >= car->speed + 0x140000
@@ -2469,7 +2467,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                 }
                 ang = (car->unk402 * 0x1F40) / 13250 + 0x3E8;
                 scaled = (s16)ang << 8;
-                idx = (car->unkF6 != 0 || car->unk10C == car->unk110 ||
+                idx = (car->unkF6 != 0 || car->gearIndex == car->unk110 ||
                                ((u8 *)D_800A2F9DAbsolute)[-0x45] != 0
                            ? scaled / 10000
                            : scaled / 9000) +
@@ -2551,12 +2549,12 @@ void HudDrawCar(Car *car, s16 yOffset) {
             if (split) {
                 func_800188B0(car->unk40C, car->unkF7, layout->unk0,
                               layout->unk2 + yOffset, 2);
-                func_80018B18(car->unk10C + 1, layout->unk18,
+                func_80018B18(car->gearIndex + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
             } else {
                 gOrderingTableAbsolute[0] = gOrderingTablenm[0] + 0x2C;
                 FontSetColor(0x40, 0x40, 0x40);
-                func_80018B18(car->unk10C + 1, layout->unk18,
+                func_80018B18(car->gearIndex + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
                 D_800A39CCnm[-1] = D_800A39C4nm[1] - 0x2C;
             }
@@ -3248,7 +3246,7 @@ void func_8004B128(Car *arg0) {
         value = 0xA;
     }
     arg0->unk3FD = value;
-    arg0->unk402 = (u16)arg0->unk108;
+    arg0->unk402 = (u16)arg0->rpm;
 }
 
 /* These calls keep the preceding result in the delay slot. */
@@ -3336,7 +3334,7 @@ void HudDrawDashboard(void) {
                 /* Scale the tachometer angle by 585/13250 or 658/13250. */
                 car = gPlayerCar[0];
                 rpm = car->unk402;
-                if (car->unkF6 != 0 || car->unk10C == car->unk110) {
+                if (car->unkF6 != 0 || car->gearIndex == car->unk110) {
                     trueFactor = 0x9E468F35;
                     numerator = rpm * 585;
                     asm("mult %2,%3\n\tmfhi %0"
@@ -7239,7 +7237,7 @@ void func_800525A8(Car *arg0, s8 arg1) {
         }
         side2 = 1;
         if (d < 0x40) {
-            ((u8 *)arg0)[0x31C] = 0;
+            arg0->wheel[2].unk20 = 0;
             return;
         }
         side1 = 1;
@@ -7251,7 +7249,7 @@ void func_800525A8(Car *arg0, s8 arg1) {
         }
         side1 = 1;
         if (d < 0x40) {
-            ((u8 *)arg0)[0x344] = 0;
+            arg0->wheel[3].unk20 = 0;
             return;
         }
         side2 = -1;

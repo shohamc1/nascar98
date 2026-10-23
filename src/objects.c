@@ -889,7 +889,7 @@ extern Car *gPlayerCarRecord[] asm("gPlayerCar.NON_MATCHING");
 void func_8002267C(void) {
     Car *node;
     s32 base;
-    u8 *curCar;
+    Car *curCar;
     Car *car;
     u8 *rec;
     u32 bits;
@@ -914,7 +914,7 @@ void func_8002267C(void) {
                        ((node->unk3AE[0] & 3) << 12) |
                        ((node->unk3AE[1] & 3) << 10) |
                        ((node->unk3AE[2] & 3) << 8) |
-                       ((node->unk3AE[3] & 3) << 6) | (node->unk10C << 4) |
+                       ((node->unk3AE[3] & 3) << 6) | (node->gearIndex << 4) |
                        ((s8)node->unk3B9 << 3) | (node->sliding << 2);
                 if (curCar == car) {
                     bits |= 1;
@@ -1004,7 +1004,7 @@ void ReplayStepForward(void) {
                 node->fineHeading = (bits >> 22) * 4;
                 val = bits >> 22;
                 node->steering = ((bits >> 14) & 0xFF) - 0x80;
-                node->unk10C = (bits & 0x3F) >> 4;
+                node->gearIndex = (bits & 0x3F) >> 4;
                 node->unk3B9 = (bits & 0xF) >> 3;
                 node->sliding = (bits & 7) >> 2;
                 node->unk102 = val;
@@ -1090,7 +1090,7 @@ void ReplayStepBack(void) {
                 node->fineHeading = (bits >> 22) * 4;
                 val = bits >> 22;
                 node->steering = ((bits >> 14) & 0xFF) - 0x80;
-                node->unk10C = (bits & 0x3F) >> 4;
+                node->gearIndex = (bits & 0x3F) >> 4;
                 node->unk3B9 = (bits & 0xF) >> 3;
                 node->sliding = (bits & 7) >> 2;
                 node->unk102 = val;
@@ -2533,7 +2533,7 @@ void func_80025730(Car *obj) {
     s32 value;
     s32 dist;
     s32 i;
-    u8 *current;
+    Car *current;
     u8 *p;
 
     obj->flags &= 0xFFFF7D3F;
@@ -4547,39 +4547,11 @@ void func_80028754(u8 *arg0, s32 arg1) {
     (void)&pad;
 }
 
-typedef struct {
-    s32 unk0;
-    s32 start;
-    s32 end;
-    s32 low;
-    s32 high;
-    s32 unk14;
-} CurveSegment;
-
-typedef struct {
-    u8 unk0[0x90];
-    s32 unk90;
-    u8 unk94[4];
-    s32 unk98;
-    u8 unk9C[0xF6 - 0x9C];
-    u8 unkF6;
-    u8 unkF7[0x108 - 0xF7];
-    s16 unk108;
-    s16 unk10A;
-    s16 unk10C;
-    u8 unk10E[0x124 - 0x10E];
-    CurveSegment segments[1];
-    u8 unk13C[0x268 - 0x13C];
-    u8 unk268;
-    u8 unk269[0x3CA - 0x269];
-    s8 unk3CA;
-} CurveObject;
-
 void CarAddVelocityAlongHeading(Car *, s32);
 extern s32 D_800A397CLui asm("D_800A397CAbsolute");
 
-void CarUpdateEngineRpm(CurveObject *obj) {
-    extern CurveSegment *D_800A3990;
+void CarUpdateEngineRpm(Car *obj) {
+    extern Gear *D_800A3990;
     extern s8 D_800A2E18;
     s32 total;
     s32 i;
@@ -4587,13 +4559,13 @@ void CarUpdateEngineRpm(CurveObject *obj) {
     s32 sect;
     s32 quot;
 
-    total = obj->unk98;
-    if (obj->unk90 < 0) {
-        obj->unk10C = 0;
-        obj->unk108 = 10;
+    total = obj->maxSpeed;
+    if (obj->speed < 0) {
+        obj->gearIndex = 0;
+        obj->rpm = 10;
         return;
     } else {
-        D_800A3990 = obj->segments;
+        D_800A3990 = obj->gear;
         if (D_800A2EC8Lui != 0) {
             obj->unk3CA = 0;
         }
@@ -4603,41 +4575,43 @@ void CarUpdateEngineRpm(CurveObject *obj) {
         if ((obj->unkF6 != 0 || D_800A2F58Absolute2 != 0 || obj->unk268 != 0 ||
              FAR_VAR(s32, gFarBlend2EAC) != 0) &&
             obj->unk3CA == 0) {
-            prev = obj->unk10C;
+            prev = obj->gearIndex;
             for (i = 0; i < D_800A2E18; i++) {
-                if (obj->unk90 >= D_800A3990[i].start &&
-                    obj->unk90 < D_800A3990[i].end) {
-                    obj->unk10C = i;
+                if (obj->speed >= D_800A3990[i].startSpeed &&
+                    obj->speed < D_800A3990[i].endSpeed) {
+                    obj->gearIndex = i;
                     if (i == D_800A2E18 - 1) {
                         quot = MathFixedDivide(
-                            D_800A3990[i].high - D_800A3990[i].low,
-                            (total - D_800A3990[i].start) >> 16);
+                            D_800A3990[i].highRpm - D_800A3990[i].lowRpm,
+                            (total - D_800A3990[i].startSpeed) >> 16);
                     } else {
-                        quot = MathFixedDivide(
-                            D_800A3990[i].high - D_800A3990[i].low,
-                            (D_800A3990[i].end - D_800A3990[i].start) >> 16);
+                        quot = MathFixedDivide(D_800A3990[i].highRpm -
+                                                   D_800A3990[i].lowRpm,
+                                               (D_800A3990[i].endSpeed -
+                                                D_800A3990[i].startSpeed) >>
+                                                   16);
                     }
-                    obj->unk108 =
-                        (MathMultiplyFixed16(quot, obj->unk90 -
-                                                       D_800A3990[i].start) >>
+                    obj->rpm =
+                        (MathMultiplyFixed16(
+                             quot, obj->speed - D_800A3990[i].startSpeed) >>
                          16) +
-                        D_800A3990[i].low;
+                        D_800A3990[i].lowRpm;
                     if (prev < i) {
                         obj->unk3CA = 0x14;
                     }
                     return;
                 }
                 if (i == D_800A2E18 - 1) {
-                    quot =
-                        MathFixedDivide(D_800A3990[i].high - D_800A3990[i].low,
-                                        (total - D_800A3990[i].start) >> 16);
-                    obj->unk108 =
-                        (MathMultiplyFixed16(quot, obj->unk90 -
-                                                       D_800A3990[i].start) >>
+                    quot = MathFixedDivide(
+                        D_800A3990[i].highRpm - D_800A3990[i].lowRpm,
+                        (total - D_800A3990[i].startSpeed) >> 16);
+                    obj->rpm =
+                        (MathMultiplyFixed16(
+                             quot, obj->speed - D_800A3990[i].startSpeed) >>
                          16) +
-                        D_800A3990[i].low;
+                        D_800A3990[i].lowRpm;
                     if (D_800A2F58Absolute2 != 0) {
-                        obj->unk10C = i;
+                        obj->gearIndex = i;
                         if (prev < i) {
                             obj->unk3CA = 0x14;
                         }
@@ -4645,46 +4619,51 @@ void CarUpdateEngineRpm(CurveObject *obj) {
                     return;
                 }
             }
-            obj->unk108 = D_800A3990[D_800A2E18 - 1].high;
+            obj->rpm = D_800A3990[D_800A2E18 - 1].highRpm;
             return;
         } else {
-            sect = obj->unk10C;
-            if (obj->unk90 < D_800A3990[sect].start) {
-                obj->unk108 = MathMultiplyFixed16(
-                                  MathFixedDivide(D_800A3990[sect].low,
-                                                  D_800A3990[sect].start >> 16),
-                                  obj->unk90) >>
-                              16;
+            sect = obj->gearIndex;
+            if (obj->speed < D_800A3990[sect].startSpeed) {
+                obj->rpm =
+                    MathMultiplyFixed16(
+                        MathFixedDivide(D_800A3990[sect].lowRpm,
+                                        D_800A3990[sect].startSpeed >> 16),
+                        obj->speed) >>
+                    16;
                 return;
-            } else if (obj->unk90 < D_800A3990[sect].end) {
+            } else if (obj->speed < D_800A3990[sect].endSpeed) {
                 if (sect == D_800A2E18 - 1) {
                     quot = MathFixedDivide(
-                        D_800A3990[sect].high - D_800A3990[sect].low,
-                        (total - D_800A3990[sect].start) >> 16);
+                        D_800A3990[sect].highRpm - D_800A3990[sect].lowRpm,
+                        (total - D_800A3990[sect].startSpeed) >> 16);
                 } else {
-                    quot = MathFixedDivide(
-                        D_800A3990[sect].high - D_800A3990[sect].low,
-                        (D_800A3990[sect].end - D_800A3990[sect].start) >> 16);
+                    quot = MathFixedDivide(D_800A3990[sect].highRpm -
+                                               D_800A3990[sect].lowRpm,
+                                           (D_800A3990[sect].endSpeed -
+                                            D_800A3990[sect].startSpeed) >>
+                                               16);
                 }
-                obj->unk108 = (MathMultiplyFixed16(
-                                   quot, obj->unk90 - D_800A3990[sect].start) >>
-                               16) +
-                              D_800A3990[sect].low;
+                obj->rpm =
+                    (MathMultiplyFixed16(
+                         quot, obj->speed - D_800A3990[sect].startSpeed) >>
+                     16) +
+                    D_800A3990[sect].lowRpm;
                 return;
             } else if (sect == D_800A2E18 - 1) {
-                quot = MathFixedDivide(D_800A3990[sect].high -
-                                           D_800A3990[sect].low,
-                                       (total - D_800A3990[sect].start) >> 16);
-                obj->unk108 = (MathMultiplyFixed16(
-                                   quot, obj->unk90 - D_800A3990[sect].start) >>
-                               16) +
-                              D_800A3990[sect].low;
+                quot = MathFixedDivide(
+                    D_800A3990[sect].highRpm - D_800A3990[sect].lowRpm,
+                    (total - D_800A3990[sect].startSpeed) >> 16);
+                obj->rpm =
+                    (MathMultiplyFixed16(
+                         quot, obj->speed - D_800A3990[sect].startSpeed) >>
+                     16) +
+                    D_800A3990[sect].lowRpm;
                 return;
             } else {
                 if (D_800A397CLui != 2) {
                     CarAddVelocityAlongHeading(obj, 0x50000);
                 }
-                obj->unk108 = D_800A3990[sect].high;
+                obj->rpm = D_800A3990[sect].highRpm;
                 return;
             }
         }
@@ -4698,8 +4677,8 @@ void func_80028D80(Car *object) {
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
     s16 mode;
     s32 idx;
-    u8 *base;
-    u8 *row;
+    Gear *base;
+    Gear *row;
     s32 scale;
     s32 cur;
     s32 lim;
@@ -4721,21 +4700,21 @@ void func_80028D80(Car *object) {
         }
         return;
     }
-    idx = node->unk10C;
-    base = (u8 *)node + 0x124;
+    idx = node->gearIndex;
+    base = node->gear;
     D_800A3990 = base;
-    row = (u8 *)(idx * 0x18 + (s32)base);
-    scale = *(s32 *)row;
+    row = (Gear *)(idx * 0x18 + (s32)base);
+    scale = row->ratio;
     if (node->unkF6 == 0) {
         cur = node->speed;
-        lim = *(s32 *)(row + 4);
+        lim = row->startSpeed;
         if (cur < lim) {
             if ((lim >> 16) != 0) {
                 scale = MathMultiplyFixed16(
                     scale, MathFixedDivide((cur >> 16) + 0x50, lim >> 16));
             }
         } else {
-            v1 = *(s32 *)(row + 8);
+            v1 = row->endSpeed;
             if (v1 < cur) {
                 scale = MathMultiplyFixed16(
                     scale, MathFixedDivide(0x10, ((cur - v1) >> 16) + 0x10));
@@ -4744,7 +4723,7 @@ void func_80028D80(Car *object) {
             }
         }
     } else {
-        v1 = *(s32 *)(base + (s32)D_800A2E18 * 0x18 - 0x10);
+        v1 = base[D_800A2E18 - 1].endSpeed;
         cur = node->speed;
         if (v1 < cur) {
             scale = MathMultiplyFixed16(
@@ -6583,7 +6562,7 @@ void func_8002BD48(Car *carBytes) {
     car->sliding = 0;
     if (((((car->unkF4 != 0) && (car->callback != func_80025730)) &&
           (car->flags & 0x40)) &&
-         (car->unk10C == 0))) {
+         (car->gearIndex == 0))) {
         driveInputValue = car->driveInput;
         asm("li %0,0xC000" : "=r"(driveThreshold) : "r"(driveInputValue));
         if (driveInputValue <= driveThreshold) {
@@ -7416,8 +7395,8 @@ void CarInitDefaults(Car *car) {
     car->unk258 = 0;
     car->time = 0x7FFFFFFF;
     car->unk10A = 0;
-    car->unk108 = 0;
-    car->unk10C = 0;
+    car->rpm = 0;
+    car->gearIndex = 0;
     car->unk112 = 0x2BC;
     cameraMode = flag != 0 ? 1 : 2;
     car->unk210 = 0x1A4;
@@ -16419,7 +16398,7 @@ void RaceUpdateLapProgress(void) {
             if (!(D_800A2EC0Lap & 31)) {
                 /* Compiler control: reserve the shared time temporary. */
                 asm("" : "=r"(lapTime));
-                fuel = car->unk108 / D_800A2E60Lap;
+                fuel = car->rpm / D_800A2E60Lap;
             }
             if (car->lap == 2) {
                 car->unk294 += fuel;

@@ -1134,7 +1134,7 @@ void func_8003DBA8(Car *object) {
         ringV1 = D_800A2EACCarState[0];
         object->speed = 0;
         object->unk84 = 0;
-        object->unk108 = 0;
+        object->rpm = 0;
         ringResult += 1;
         object->unk26C[9] = ringResult;
         if (ringV1 == 0) {

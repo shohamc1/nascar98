@@ -1554,7 +1554,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
         barQuad = quad;
         switch (i) {
         case 2:
-            func_80019A00(car->unk108, quad, bank);
+            func_80019A00(car->rpm, quad, bank);
             goto queue;
         case 8:
             if (car->wheel[0].unkC > 0xCE400)

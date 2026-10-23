@@ -29,6 +29,17 @@ typedef struct {
     s16 unk26;
 } Wheel;
 
+/* One 0x18-byte gear record, six from car + 0x124, filled from the
+ * gear-ratio setup tables (D_800980A4) by func_80028754. */
+typedef struct {
+    s32 ratio;      /* 0x00: drive scale in this gear */
+    s32 startSpeed; /* 0x04: the gear covers startSpeed to endSpeed */
+    s32 endSpeed;   /* 0x08 */
+    s32 lowRpm;     /* 0x0C: rpm at startSpeed */
+    s32 highRpm;    /* 0x10: rpm at endSpeed */
+    s32 index;      /* 0x14 */
+} Gear;
+
 /* The collision outline a car points to at 0x370. */
 typedef struct ContactCorner {
     u8 unk0[4];
@@ -92,9 +103,9 @@ typedef struct Car {
     s16 unk102; /* 0x102 */
     s16 movementHeading; /* 0x104 */
     u8 unk106[0x2];
-    s16 unk108; /* 0x108 */
+    s16 rpm; /* 0x108 */
     s16 unk10A; /* 0x10A */
-    s16 unk10C; /* 0x10C */
+    s16 gearIndex; /* 0x10C */
     s16 unk10E; /* 0x10E */
     s16 unk110; /* 0x110 */
     s16 unk112; /* 0x112 */
@@ -105,7 +116,8 @@ typedef struct Car {
     s16 unk11C; /* 0x11C */
     s16 unk11E; /* 0x11E */
     s16 unk120; /* 0x120 */
-    u8 unk122[0x92];
+    u8 unk122[0x2];
+    Gear gear[6]; /* 0x124 */
     s16 unk1B4; /* 0x1B4 */
     s16 unk1B6; /* 0x1B6 */
     s16 unk1B8; /* 0x1B8 */
