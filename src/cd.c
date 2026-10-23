@@ -850,13 +850,13 @@ extern s32 gSessionTypeCarState[] asm("gSessionType");
 extern u8 D_800A2EE0CarState[] asm("D_800A2EE0");
 extern s32 D_800A2F4CCarState[] asm("D_800A2F4C");
 extern Car *gPlayerCarCarState[] asm("gPlayerCar");
-extern u8 *D_800A3960CarState[] asm("D_800A3960");
+extern Car *D_800A3960CarState[] asm("gCrashCar");
 extern s32 D_800A39E0CarState asm("D_800A39E0");
 extern s32 D_800A3A04CarState[] asm("D_800A3A04");
 extern s32 gTrackSectionCountCarState[] asm("gTrackSectionCount");
 extern u8 *gTrackSectionsCarState[] asm("gTrackSections");
 
-extern u8 *D_800A3960CarStateStore[] asm("D_800A3960");
+extern Car *D_800A3960CarStateStore[] asm("gCrashCar");
 extern s32 D_800A3A04CarStateStore[] asm("D_800A3A04");
 void func_8003DBA8(Car *object) {
     s32 delta[3];

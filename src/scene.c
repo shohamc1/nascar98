@@ -319,7 +319,7 @@ void SoundRunSlotEnvelope(s32 arg0, s32 arg1) {
 extern s32 D_800A3960gp;
 extern u8 D_800A35F8gp;
 extern u8 D_800A3A60gp;
-asm(".globl D_800A3960gp\nD_800A3960gp = D_800A3960");
+asm(".globl D_800A3960gp\nD_800A3960gp = gCrashCar");
 asm(".globl D_800A35F8gp\nD_800A35F8gp = D_800A35F8");
 asm(".globl D_800A3A60gp\nD_800A3A60gp = D_800A3A60");
 
@@ -879,7 +879,7 @@ extern s8 D_800A343C;
 extern s8 *D_800A3444[];
 extern s32 gTrackSectionsv asm("gTrackSections");
 
-void SceneLinkLiveEntries(s8 *arg0) {
+void SceneLinkLiveEntries(Car *car) {
     s8 *base;
     s8 *entry;
     s8 *tail;
@@ -891,7 +891,7 @@ void SceneLinkLiveEntries(s8 *arg0) {
     u8 *p;
 
     count = D_800A343C;
-    base = D_800A3444[arg0[0x20B]];
+    base = D_800A3444[car->slot];
     for (n = 1, i = 1, tail = base + 4; i < count; i++) {
         entry = (s8 *)(i * 0x58 + (s32)base);
         id = *(s16 *)entry;
@@ -2080,7 +2080,7 @@ typedef struct {
 } Unk800B8648;
 
 extern Car *D_800A7550p[] asm("D_800A7550");
-extern Car *gCrashCar asm("D_800A3960");
+extern Car *gCrashCarSmall asm("gCrashCar");
 extern u8 D_800A35F8;
 extern u8 D_800A35FC;
 extern s32 D_800A2F50Absolute[];
@@ -2097,7 +2097,7 @@ void RaceUpdateCrashTrigger(void) {
     if (D_800A35FC != 0 &&
         D_800A2EC0Absolute[0] == D_800A2EC0Absolute[0] / 200 * 200 &&
         D_800A2EC8[0] == 0) {
-        if (gCrashCar == NULL) {
+        if (gCrashCarSmall == NULL) {
             if (D_800A372C == 0) {
                 for (i = 0; i < D_800A35FC; i++) {
                     car = D_800A7550p[i];
@@ -2115,7 +2115,7 @@ void RaceUpdateCrashTrigger(void) {
                                 car->unk26C[5] = 1;
                                 car->unk3A4 |= 0x1000;
                                 func_80041848(car, 13);
-                                gCrashCar = car;
+                                gCrashCarSmall = car;
                             }
                         }
                     }
@@ -2123,8 +2123,8 @@ void RaceUpdateCrashTrigger(void) {
             }
         }
     }
-    if (gCrashCar == NULL || D_800A2ED4[0] != 0) {
-        if (D_800A397C[0] == 2 && gCrashCar == NULL &&
+    if (gCrashCarSmall == NULL || D_800A2ED4[0] != 0) {
+        if (D_800A397C[0] == 2 && gCrashCarSmall == NULL &&
             gReplayIndex[0] == D_800A3804Nm[0]) {
             row = D_800B8648;
             for (i = 0; i < 24; i++) {
@@ -2133,30 +2133,30 @@ void RaceUpdateCrashTrigger(void) {
             }
         }
     } else {
-        if (gCrashCar->unkF4 == 0) {
-            gCrashCar = NULL;
+        if (gCrashCarSmall->unkF4 == 0) {
+            gCrashCarSmall = NULL;
             return;
         }
         if (D_800A397C[0] == 2 &&
-            (gCrashCar->speed != 0 || gCrashCar->unk38A != 0x200)) {
+            (gCrashCarSmall->speed != 0 || gCrashCarSmall->unk38A != 0x200)) {
             row = D_800B8648;
             for (i = 0; i < 24; i++) {
                 row->unk20 = 0;
                 row++;
             }
-            if (gCrashCar->unk38A != 0x200) {
+            if (gCrashCarSmall->unk38A != 0x200) {
                 return;
             }
         }
-        box = (CrashBox *)gCrashCar->shape->corners;
+        box = (CrashBox *)gCrashCarSmall->shape->corners;
         pos[0] = (box->unk4 + box->unk1C) >> 1;
         pos[1] = (box->unk8 + box->unk20) >> 1;
         pos[2] = (box->unkC + box->unk24) >> 1;
-        func_8001EEC4(gCrashCar);
+        func_8001EEC4(gCrashCarSmall);
         MatrixRotateVector(pos);
-        pos[0] += gCrashCar->pos.x + RandomScaledGet(200) - 100;
-        pos[1] += gCrashCar->pos.y + RandomScaledGet(200) - 100;
-        pos[2] += gCrashCar->pos.z + 100;
+        pos[0] += gCrashCarSmall->pos.x + RandomScaledGet(200) - 100;
+        pos[1] += gCrashCarSmall->pos.y + RandomScaledGet(200) - 100;
+        pos[2] += gCrashCarSmall->pos.z + 100;
         func_8003644C(D_800A35F8 == 1 ? 2 : 1, pos[0], pos[1], pos[2]);
     }
 }

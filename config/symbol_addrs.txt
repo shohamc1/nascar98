@@ -1382,3 +1382,4 @@ MenuCreateFlatRect = 0x8005B314; // type:func
 MenuCreateFlatTriangle = 0x8005B474; // type:func
 MenuCreateTexturedRect = 0x8005B598; // type:func
 MenuCreateTextObject = 0x8005BF8C; // type:func
+gCrashCar = 0x800A3960;

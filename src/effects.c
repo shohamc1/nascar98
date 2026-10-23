@@ -609,7 +609,7 @@ void func_80043F7C(Car *arg0, s16 *arg1) {
     }
 }
 
-extern u8 *D_800A3960w17[] asm("D_800A3960.NON_MATCHING");
+extern Car *D_800A3960w17[] asm("gCrashCar.NON_MATCHING");
 
 void func_80044114(Car *arg0) {
     s32 i;
@@ -627,7 +627,7 @@ void func_80044114(Car *arg0) {
         }
         *(volatile s16 *)&arg0->unk10C = 0;
     }
-    if (arg0 == D_800A3960[0]) {
+    if (arg0 == gCrashCar[0]) {
         D_800A3960w17[0] = 0;
     }
 }

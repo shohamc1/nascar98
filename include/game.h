@@ -63,7 +63,7 @@ extern u8 D_800A3860[][4];
 extern MenuObj *D_800A38A8;
 extern MenuObj *D_800A38FC[];
 extern MenuObj *D_800A392C;
-extern u8 *D_800A3960[];
+extern Car *gCrashCar[];
 extern s32 D_800A397CAbsolute[];
 extern u8 D_800A3980[];
 extern s32 D_800A3984[];
