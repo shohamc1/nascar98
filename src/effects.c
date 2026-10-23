@@ -394,7 +394,7 @@ typedef struct {
     u8 pad[14];
 } FxVertex;
 
-void func_80043B68(u8 *object, s32 idx) {
+void func_80043B68(Car *object, s32 idx) {
     u8 *fx;
     u8 *row;
     FxVertex *prim;
@@ -407,25 +407,25 @@ void func_80043B68(u8 *object, s32 idx) {
     u8 *table;
     u8 *verts;
 
-    fx = *(u8 **)(object + 0x370);
-    if (*(s8 *)(object + 0x3B6) == 0) {
+    fx = (u8 *)object->shape;
+    if (object->unk3B6 == 0) {
         return;
     }
-    if (*(s8 *)(object + 0x200) == 4) {
+    if (object->mode == 4) {
         return;
     }
-    row = object + idx;
+    row = (u8 *)object + idx;
     if ((s8)++row[0x3AE] >= 4) {
         row[0x3AE] = 3;
     }
-    flags = *(u16 *)(object + 0x3A4);
+    flags = object->unk3A4;
     dcheck = D_800A2EB8[0];
-    *(u16 *)(object + 0x3A4) = flags | 0x8000;
+    object->unk3A4 = flags | 0x8000;
     if (dcheck == 0 && *(s8 *)(row + 0x3AE) == 3) {
         if (idx == 3) {
-            *(u16 *)(object + 0x3A4) = flags | 0x8080;
+            object->unk3A4 = flags | 0x8080;
         } else {
-            *(u16 *)(object + 0x3A4) = flags | 0x8000 | (1 << (idx + 5));
+            object->unk3A4 = flags | 0x8000 | (1 << (idx + 5));
         }
     }
     base = *(s16 *)(fx + 0x2E);

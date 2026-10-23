@@ -538,7 +538,7 @@ void CarInitTumble(u8 *car) {
 
 extern s32 D_800A3A34Absolute[];
 extern void EffectSpawnAtCarPoint(Car *, s32);
-extern void func_80043B68(u8 *, s32);
+extern void func_80043B68(Car *, s32);
 
 extern s32 D_800A3A2CAbsolute[];
 void CarCheckGroundContact(Car *car) {
@@ -642,7 +642,7 @@ void CarCheckGroundContact(Car *car) {
 
 extern s32 D_800A3A34Small[];
 
-void CarUpdateTumble(u8 *car) {
+void CarUpdateTumble(Car *car) {
     s32 heading;
     s32 t;
     s32 i;
@@ -650,115 +650,116 @@ void CarUpdateTumble(u8 *car) {
     s32 d;
 
     CarCheckGroundContact(car);
-    if (!(*(u16 *)(car + 0x396) & 8)) {
-        *(s16 *)(car + 0x39A) += *(s16 *)(car + 0x394);
-        *(s16 *)(car + 0x394) -= 8;
-        *(s32 *)(car + 0x90) -= 0x8000;
-        if (*(s32 *)(car + 0x90) < 0) {
-            *(s32 *)(car + 0x90) = 0;
+    if (!(*(u16 *)((u8 *)car + 0x396) & 8)) {
+        *(s16 *)((u8 *)car + 0x39A) += *(s16 *)((u8 *)car + 0x394);
+        *(s16 *)((u8 *)car + 0x394) -= 8;
+        *(s32 *)&car->speed -= 0x8000;
+        if (*(s32 *)&car->speed < 0) {
+            *(s32 *)&car->speed = 0;
         }
     } else {
-        if (*(s32 *)(car + 0x90) < 0x320000 ||
-            ABS(*(s16 *)(car + 0x394)) < 0x14) {
-            if (*(u16 *)(car + 0x396) & 1) {
-                *(u16 *)(car + 0x396) = (*(u16 *)(car + 0x396) & ~1) | 2;
+        if (*(s32 *)&car->speed < 0x320000 ||
+            ABS(*(s16 *)((u8 *)car + 0x394)) < 0x14) {
+            if (*(u16 *)((u8 *)car + 0x396) & 1) {
+                *(u16 *)((u8 *)car + 0x396) =
+                    (*(u16 *)((u8 *)car + 0x396) & ~1) | 2;
             }
         }
-        *(s16 *)(car + 0x394) = -*(s16 *)(car + 0x394) / 2 - 10;
-        *(s16 *)(car + 0x39A) += *(s16 *)(car + 0x394);
-        if (*(u16 *)(car + 0x396) & 1) {
-            r = *(s16 *)(car + 0x388) % 512;
-            heading = *(s16 *)(car + 0x398);
+        *(s16 *)((u8 *)car + 0x394) = -*(s16 *)((u8 *)car + 0x394) / 2 - 10;
+        *(s16 *)((u8 *)car + 0x39A) += *(s16 *)((u8 *)car + 0x394);
+        if (*(u16 *)((u8 *)car + 0x396) & 1) {
+            r = *(s16 *)&car->unk388 % 512;
+            heading = *(s16 *)((u8 *)car + 0x398);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[r],
-                                    *(s32 *)(car + 0x90) / 3);
+                                    *(s32 *)&car->speed / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[heading], t);
-            *(s16 *)(car + 0x38C) = t >> 16;
-            if (*(u16 *)(car + 0x38A) > 0x100 &&
-                *(u16 *)(car + 0x38A) < 0x300) {
-                *(s16 *)(car + 0x38C) = -*(s16 *)(car + 0x38C);
+            *(s16 *)((u8 *)car + 0x38C) = t >> 16;
+            if (*(u16 *)&car->unk38A > 0x100 && *(u16 *)&car->unk38A < 0x300) {
+                *(s16 *)((u8 *)car + 0x38C) = -*(s16 *)((u8 *)car + 0x38C);
             }
-            r = *(s16 *)(car + 0x38A) % 512;
+            r = *(s16 *)&car->unk38A % 512;
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Small)[r],
-                                    *(s32 *)(car + 0x90) / 3);
+                                    *(s32 *)&car->speed / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[heading], t);
-            *(s16 *)(car + 0x38E) = t >> 16;
-            *(s32 *)(car + 0x90) = *(s32 *)(car + 0x90) * 9 / 10;
-            if (*(s32 *)(car + 0x90) < 0) {
-                *(s32 *)(car + 0x90) = 0;
+            *(s16 *)((u8 *)car + 0x38E) = t >> 16;
+            *(s32 *)&car->speed = *(s32 *)&car->speed * 9 / 10;
+            if (*(s32 *)&car->speed < 0) {
+                *(s32 *)&car->speed = 0;
             }
         }
     }
-    if (*(u16 *)(car + 0x396) & 3) {
-        *(u16 *)(car + 0x388) =
-            (*(u16 *)(car + 0x388) + *(u16 *)(car + 0x38C) + 0x400) & 0x3FF;
-        *(u16 *)(car + 0x38A) =
-            (*(u16 *)(car + 0x38A) + *(u16 *)(car + 0x38E) + 0x400) & 0x3FF;
-        if (*(u16 *)(car + 0x396) & 8) {
+    if (*(u16 *)((u8 *)car + 0x396) & 3) {
+        *(u16 *)&car->unk388 =
+            (*(u16 *)&car->unk388 + *(u16 *)((u8 *)car + 0x38C) + 0x400) &
+            0x3FF;
+        *(u16 *)&car->unk38A =
+            (*(u16 *)&car->unk38A + *(u16 *)((u8 *)car + 0x38E) + 0x400) &
+            0x3FF;
+        if (*(u16 *)((u8 *)car + 0x396) & 8) {
             SoundPlaySlotAtVolume(car, 6, 1);
         }
     }
-    if (*(u16 *)(car + 0x396) & 2) {
-        r = *(u16 *)(car + 0x388) & 0x1FF;
+    if (*(u16 *)((u8 *)car + 0x396) & 2) {
+        r = *(u16 *)&car->unk388 & 0x1FF;
         d = r - 0x100;
         if (d > 0x40 || (d > -0x40 && d < 0)) {
-            *(s16 *)(car + 0x390) = *(u16 *)(car + 0x388) - r + 0x200;
-            *(s16 *)(car + 0x38C) = 1;
+            *(s16 *)((u8 *)car + 0x390) = *(u16 *)&car->unk388 - r + 0x200;
+            *(s16 *)((u8 *)car + 0x38C) = 1;
         } else {
-            *(s16 *)(car + 0x390) = *(u16 *)(car + 0x388) - r;
-            *(s16 *)(car + 0x38C) = -1;
+            *(s16 *)((u8 *)car + 0x390) = *(u16 *)&car->unk388 - r;
+            *(s16 *)((u8 *)car + 0x38C) = -1;
         }
-        r = *(u16 *)(car + 0x38A) & 0x1FF;
+        r = *(u16 *)&car->unk38A & 0x1FF;
         if (r > 0x100) {
-            *(s16 *)(car + 0x392) = *(u16 *)(car + 0x38A) - r + 0x200;
-            *(s16 *)(car + 0x38E) = 1;
+            *(s16 *)((u8 *)car + 0x392) = *(u16 *)&car->unk38A - r + 0x200;
+            *(s16 *)((u8 *)car + 0x38E) = 1;
         } else {
-            *(s16 *)(car + 0x392) = *(u16 *)(car + 0x38A) - r;
-            *(s16 *)(car + 0x38E) = -1;
+            *(s16 *)((u8 *)car + 0x392) = *(u16 *)&car->unk38A - r;
+            *(s16 *)((u8 *)car + 0x38E) = -1;
         }
-        *(u16 *)(car + 0x396) = (*(u16 *)(car + 0x396) & ~2) | 4;
+        *(u16 *)((u8 *)car + 0x396) = (*(u16 *)((u8 *)car + 0x396) & ~2) | 4;
     }
-    if (*(u16 *)(car + 0x396) & 4) {
-        *(s16 *)(car + 0x388) += *(s16 *)(car + 0x38C) / 2;
-        if ((*(s16 *)(car + 0x38C) > 0 &&
-             *(s16 *)(car + 0x388) >= *(s16 *)(car + 0x390)) ||
-            (*(s16 *)(car + 0x38C) <= 0 &&
-             *(s16 *)(car + 0x388) <= *(s16 *)(car + 0x390))) {
-            *(s16 *)(car + 0x38C) = 0;
-            *(s16 *)(car + 0x388) = *(s16 *)(car + 0x390) & 0x3FF;
-        } else if (*(s16 *)(car + 0x38C) > 0) {
-            *(s16 *)(car + 0x38C) += 1;
+    if (*(u16 *)((u8 *)car + 0x396) & 4) {
+        *(s16 *)&car->unk388 += *(s16 *)((u8 *)car + 0x38C) / 2;
+        if ((*(s16 *)((u8 *)car + 0x38C) > 0 &&
+             *(s16 *)&car->unk388 >= *(s16 *)((u8 *)car + 0x390)) ||
+            (*(s16 *)((u8 *)car + 0x38C) <= 0 &&
+             *(s16 *)&car->unk388 <= *(s16 *)((u8 *)car + 0x390))) {
+            *(s16 *)((u8 *)car + 0x38C) = 0;
+            *(s16 *)&car->unk388 = *(s16 *)((u8 *)car + 0x390) & 0x3FF;
+        } else if (*(s16 *)((u8 *)car + 0x38C) > 0) {
+            *(s16 *)((u8 *)car + 0x38C) += 1;
         } else {
-            *(s16 *)(car + 0x38C) -= 1;
+            *(s16 *)((u8 *)car + 0x38C) -= 1;
         }
-        *(s16 *)(car + 0x38A) += *(s16 *)(car + 0x38E) / 2;
-        if ((*(s16 *)(car + 0x38E) > 0 &&
-             *(s16 *)(car + 0x38A) >= *(s16 *)(car + 0x392)) ||
-            (*(s16 *)(car + 0x38E) <= 0 &&
-             *(s16 *)(car + 0x38A) <= *(s16 *)(car + 0x392))) {
-            *(s16 *)(car + 0x38E) = 0;
-            *(s16 *)(car + 0x38A) = *(s16 *)(car + 0x392) & 0x3FF;
-        } else if (*(s16 *)(car + 0x38E) > 0) {
-            *(s16 *)(car + 0x38E) += 1;
+        *(s16 *)&car->unk38A += *(s16 *)((u8 *)car + 0x38E) / 2;
+        if ((*(s16 *)((u8 *)car + 0x38E) > 0 &&
+             *(s16 *)&car->unk38A >= *(s16 *)((u8 *)car + 0x392)) ||
+            (*(s16 *)((u8 *)car + 0x38E) <= 0 &&
+             *(s16 *)&car->unk38A <= *(s16 *)((u8 *)car + 0x392))) {
+            *(s16 *)((u8 *)car + 0x38E) = 0;
+            *(s16 *)&car->unk38A = *(s16 *)((u8 *)car + 0x392) & 0x3FF;
+        } else if (*(s16 *)((u8 *)car + 0x38E) > 0) {
+            *(s16 *)((u8 *)car + 0x38E) += 1;
         } else {
-            *(s16 *)(car + 0x38E) -= 1;
+            *(s16 *)((u8 *)car + 0x38E) -= 1;
         }
-        d = *(s16 *)(car + 0x390) & 0x3FF;
-        heading = *(s16 *)(car + 0x392) & 0x3FF;
-        if (*(s16 *)(car + 0x388) == d && *(s16 *)(car + 0x38A) == heading) {
-            if (!D_800A2EDC[0] || d + heading == 0 ||
-                *(s16 *)(car + 0x1EC) == 1) {
-                *(s16 *)(car + 0x1BC) = 3;
+        d = *(s16 *)((u8 *)car + 0x390) & 0x3FF;
+        heading = *(s16 *)((u8 *)car + 0x392) & 0x3FF;
+        if (*(s16 *)&car->unk388 == d && *(s16 *)&car->unk38A == heading) {
+            if (!D_800A2EDC[0] || d + heading == 0 || *(s16 *)&car->type == 1) {
+                *(s16 *)&car->unk1BC = 3;
                 for (i = 0; i < 4; i++) {
-                    *(s16 *)(car + 0x2B0 + i * 0x28) =
-                        *(s16 *)(car + 0x394) / 2;
+                    *(s16 *)((u8 *)car + 0x2B0 + i * 0x28) =
+                        *(s16 *)((u8 *)car + 0x394) / 2;
                 }
                 return;
             }
-            if (*(s16 *)(car + 0x1BC) != 4) {
-                *(u8 *)(car + 0x3B7) = 0x14;
+            if (*(s16 *)&car->unk1BC != 4) {
+                *(u8 *)&car->unk3B7 = 0x14;
             }
-            *(s16 *)(car + 0x1BC) = 4;
+            *(s16 *)&car->unk1BC = 4;
         }
     }
-    CarSetVelocityFromHeading((s32 *)car, *(s16 *)(car + 0x104));
+    CarSetVelocityFromHeading((s32 *)car, *(s16 *)&car->movementHeading);
 }

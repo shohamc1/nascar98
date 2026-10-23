@@ -4877,7 +4877,7 @@ void SelectionStepBackward(SelectionState *selection) {
 /* The high half of speed, read as a signed halfword. */
 #define CAR_SPEED_INT(car) (((s16 *)&(car)->speed)[1])
 
-extern void func_8002BD48(u8 *carBytes);
+extern void func_8002BD48(Car *carBytes);
 extern s32 func_8002CF1C();
 extern s32 D_800A3598[];
 /* Separate symbol view preserves the retail lui access. */
@@ -6300,7 +6300,7 @@ typedef char CheckCarRaceNode[(CAR_OFFSET(order.node.next) == 0x3E4) ? 1 : -1];
 typedef char CheckCarReverseSpeed[(CAR_OFFSET(reverseSpeed) == 0x410) ? 1 : -1];
 #undef CAR_OFFSET
 
-void func_8002BD48(u8 *carBytes) {
+void func_8002BD48(Car *carBytes) {
     Car *car;
     struct {
         VECTOR force;
@@ -10946,7 +10946,7 @@ extern s32 D_800A396CNM asm("D_800A396C.NON_MATCHING");
 void func_80033000(Car *endB, Car *endA, Car *firstA) {
     u8 *prim;
     Car *listA;
-    u8 *listB;
+    Car *listB;
     s32 count;
     u32 *otCursor;
     s16 *zCursor;
@@ -10985,7 +10985,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
         do {
             if (counter & 1) {
                 if (listA == endA) {
-                    listB = *(u8 **)(listB + 4);
+                    listB = *(u8 **)((u8 *)listB + 4);
                     group = listB;
                 } else {
                     listA = *(u8 **)listA;
@@ -10993,7 +10993,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 }
             } else {
                 if (listB != endB) {
-                    listB = *(u8 **)(listB + 4);
+                    listB = *(u8 **)((u8 *)listB + 4);
                     group = listB;
                 } else {
                     listA = *(u8 **)listA;
