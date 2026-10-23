@@ -971,7 +971,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
         w32 = (s16)bsw;
         h32 = (s16)h16u;
         asm volatile("mult %0, %1" : : "r"(w32), "r"(h32) : "lo", "hi");
-        outp = (u_long *)st2->imageBuffer;
+        outp = st2->imageBuffer;
         asm volatile("mflo %0" : "=r"(prod2));
         DecDCTout(outp, prod2 / 2);
         mdecId2 = 0x4D444543;
