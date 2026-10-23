@@ -184,9 +184,9 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
         walker = arg0 + 0x24;
         pe = prim + 0xE;
         do {
-            v0_ = *(s32 *)(walker - 0xC);
-            v1_ = *(s32 *)(walker - 0x8);
-            v2_ = *(s32 *)(walker - 0x4);
+            v0_ = *(s32 *)&((Face *)(walker - 0x24))->vertex[0];
+            v1_ = *(s32 *)&((Face *)(walker - 0x24))->vertex[1];
+            v2_ = *(s32 *)&((Face *)(walker - 0x24))->vertex[2];
             gte_ldv3(v0_, v1_, v2_);
             gte_rtpt();
             SetLineF4(prim);
@@ -705,13 +705,19 @@ void SceneUpdateProjectiles(Car *owner) {
             do {
                 u32 vertexAddress;
 
+                /* effect stepped by one SVECTOR per vertex, so its vertex[0]
+                 * is effect->vertex[vertexIndex]; retail keeps the stepped
+                 * pointer. */
                 vertexAddress = vertexIndex * 8;
                 do {
                     vertexAddress = (u32)effect - -vertexAddress;
                 } while (0);
-                *(u16 *)(vertexAddress + 0x60) -= gProjectileOriginX;
-                *(u16 *)(vertexAddress + 0x62) -= gProjectileOriginY;
-                *(u16 *)(vertexAddress + 0x64) -= gProjectileOriginZ;
+                *(u16 *)&((Projectile *)vertexAddress)->vertex[0].vx -=
+                    gProjectileOriginX;
+                *(u16 *)&((Projectile *)vertexAddress)->vertex[0].vy -=
+                    gProjectileOriginY;
+                *(u16 *)&((Projectile *)vertexAddress)->vertex[0].vz -=
+                    gProjectileOriginZ;
                 vertexIndex++;
             } while (vertexIndex < 4);
             renderCount = 1;
@@ -755,6 +761,18 @@ void SceneUpdateProjectiles(Car *owner) {
     } while (effectIndex < 10);
 }
 
+typedef struct {
+    u16 tpx;
+    u16 tpy;
+    u16 clutX;
+    u16 clutY;
+    u8 u;
+    u8 unk9;
+    u8 v;
+    u8 unkB;
+    u16 tpage;
+} SceneTexture;
+
 extern u8 D_800A342C[];
 extern s32 D_800A3430[];
 extern u8 D_80090F32[];
@@ -796,7 +814,7 @@ void SceneInitProjectilePrimitives(void) {
         do {
             D_800A342C[i] = 0;
             buf = (u8 *)HeapAlloc(0x500);
-            v1 = *(s8 *)(D_800A3984[0] + (i * 5 << 8) + 0x876);
+            v1 = (s8)((Car *)D_800A3984[0])[i + 1].driver;
             D_800A3430[i] = (s32)buf;
             j = 0;
             v0 = v1 * 3;
@@ -816,16 +834,18 @@ void SceneInitProjectilePrimitives(void) {
                 row->face.g0 = b1;
                 row->face.b0 = b2;
                 row->face.vertex[3] = &row->vertex[2];
-                row->face.tpage = GetTPage(*(u16 *)ptr, 0, *(u16 *)(ptr - 0xC),
-                                           *(u16 *)(ptr - 0xA));
-                row->face.u0 = ptr[-4] + 0x6F;
-                row->face.v0 = *(u16 *)(ptr - 2);
-                row->face.u1 = ptr[-4] + 0x60;
-                row->face.v1 = *(u16 *)(ptr - 2);
-                row->face.u2 = ptr[-4] + 0x6F;
-                row->face.v2 = ptr[-2] + 0xF;
-                row->face.u3 = ptr[-4] + 0x60;
-                row->face.v3 = ptr[-2] + 0xF;
+                row->face.tpage =
+                    GetTPage(((SceneTexture *)(ptr - 0xC))->tpage, 0,
+                             ((SceneTexture *)(ptr - 0xC))->tpx,
+                             ((SceneTexture *)(ptr - 0xC))->tpy);
+                row->face.u0 = ((SceneTexture *)(ptr - 0xC))->u + 0x6F;
+                row->face.v0 = *(u16 *)&((SceneTexture *)(ptr - 0xC))->v;
+                row->face.u1 = ((SceneTexture *)(ptr - 0xC))->u + 0x60;
+                row->face.v1 = *(u16 *)&((SceneTexture *)(ptr - 0xC))->v;
+                row->face.u2 = ((SceneTexture *)(ptr - 0xC))->u + 0x6F;
+                row->face.v2 = ((SceneTexture *)(ptr - 0xC))->v + 0xF;
+                row->face.u3 = ((SceneTexture *)(ptr - 0xC))->u + 0x60;
+                row->face.v3 = ((SceneTexture *)(ptr - 0xC))->v + 0xF;
                 row->unk0 = 0;
                 j++;
             } while (j < 10);
@@ -858,7 +878,7 @@ void SceneInitProjectilePrimitives(void) {
             t = (s32)HeapAlloc(0x500);
             u = D_800A3984[0];
             D_800A3430[i] = t;
-            v1 = *(s8 *)((i * 5 << 8) + u + 0x876);
+            v1 = (s8)((Car *)((i * 5 << 8) + u))[1].driver;
             buf = (u8 *)t;
             j = 0;
             v0 = v1 * 3;
@@ -878,16 +898,18 @@ void SceneInitProjectilePrimitives(void) {
                 row->face.g0 = b1;
                 row->face.b0 = b2;
                 row->face.vertex[3] = &row->vertex[2];
-                row->face.tpage = GetTPage(*(u16 *)ptr, 0, *(u16 *)(ptr - 0xC),
-                                           *(u16 *)(ptr - 0xA));
-                row->face.u0 = ptr[-4] + 0x6F;
-                row->face.v0 = *(u16 *)(ptr - 2);
-                row->face.u1 = ptr[-4] + 0x60;
-                row->face.v1 = *(u16 *)(ptr - 2);
-                row->face.u2 = ptr[-4] + 0x6F;
-                row->face.v2 = ptr[-2] + 0xF;
-                row->face.u3 = ptr[-4] + 0x60;
-                row->face.v3 = ptr[-2] + 0xF;
+                row->face.tpage =
+                    GetTPage(((SceneTexture *)(ptr - 0xC))->tpage, 0,
+                             ((SceneTexture *)(ptr - 0xC))->tpx,
+                             ((SceneTexture *)(ptr - 0xC))->tpy);
+                row->face.u0 = ((SceneTexture *)(ptr - 0xC))->u + 0x6F;
+                row->face.v0 = *(u16 *)&((SceneTexture *)(ptr - 0xC))->v;
+                row->face.u1 = ((SceneTexture *)(ptr - 0xC))->u + 0x60;
+                row->face.v1 = *(u16 *)&((SceneTexture *)(ptr - 0xC))->v;
+                row->face.u2 = ((SceneTexture *)(ptr - 0xC))->u + 0x6F;
+                row->face.v2 = ((SceneTexture *)(ptr - 0xC))->v + 0xF;
+                row->face.u3 = ((SceneTexture *)(ptr - 0xC))->u + 0x60;
+                row->face.v3 = ((SceneTexture *)(ptr - 0xC))->v + 0xF;
                 row->unk0 = 0;
                 j++;
             } while (j < 10);
@@ -938,18 +960,6 @@ void SceneLinkLiveEntries(Car *car) {
     }
     func_80032DEC(&base->face, n);
 }
-
-typedef struct {
-    u16 tpx;
-    u16 tpy;
-    u16 clutX;
-    u16 clutY;
-    u8 u;
-    u8 unk9;
-    u8 v;
-    u8 unkB;
-    u16 tpage;
-} SceneTexture;
 
 extern SceneTexture D_80090F50[];
 extern Vec3 *D_800AE15C[];

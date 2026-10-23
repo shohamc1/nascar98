@@ -1460,7 +1460,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         primLoad = ((MenuObj *)m)->primitive;
         primLoad->font = 2;
         primLoad->scale = 2;
-        primLoad->text = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
+        primLoad->text = D_8009A298[arg0 + 4];
         entry->next = (MenuObj *)m;
     }
     func_80060008(arg0);

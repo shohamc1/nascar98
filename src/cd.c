@@ -1382,7 +1382,7 @@ s32 func_8003E78C(Car *object) {
     return 0;
 }
 
-void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
+void func_8003EA94(ModelPart *part, s32 *arg1, s32 arg2) {
     s32 *entries;
     s32 count;
     s32 value;
@@ -1390,9 +1390,9 @@ void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
     s32 i;
     i = 0;
     entries = arg1;
-    count = (*(s16 *)(object + 2) - *(s16 *)(object + 0)) + 1;
-    value = *(s32 *)(object + 8) + arg2;
-    *(s32 *)(object + 8) = value;
+    count = (part->lastVertex - part->firstVertex) + 1;
+    value = part->origin.y + arg2;
+    part->origin.y = value;
     if (count <= 0) {
         goto done;
     }

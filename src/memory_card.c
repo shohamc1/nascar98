@@ -516,7 +516,6 @@ void MenuFontBuildPrimitives(u8 poolIndex, u8 textureIndex) {
     s32 *base;
     u32 idx;
     u8 *prim;
-    u8 *p;
     u16 i;
     Prim28 *old;
     u8 n;
@@ -545,18 +544,17 @@ void MenuFontBuildPrimitives(u8 poolIndex, u8 textureIndex) {
         i = 0;
         bound = total;
         do {
-            p = prim + 0x25;
-            *(u16 *)(p - 0x17) = GetClut(entry->x, entry->y);
+            ((POLY_FT4 *)prim)->clut = GetClut(entry->x, entry->y);
             dim = (Dim *)(i * 10 + (s32)table);
-            *(u16 *)(p - 0xF) = GetTPage(0, 0, dim->x, dim->y);
-            p[-0x19] = dim->w;
-            p[-0x18] = dim->h;
-            p[-0x11] = dim->w + dim->ax;
-            p[-0x10] = dim->h;
-            p[-0x9] = dim->w;
-            p[-0x8] = dim->h + dim->ay;
-            p[-0x1] = dim->w + dim->ax;
-            p[0] = dim->h + dim->ay;
+            ((POLY_FT4 *)prim)->tpage = GetTPage(0, 0, dim->x, dim->y);
+            ((POLY_FT4 *)prim)->u0 = dim->w;
+            ((POLY_FT4 *)prim)->v0 = dim->h;
+            ((POLY_FT4 *)prim)->u1 = dim->w + dim->ax;
+            ((POLY_FT4 *)prim)->v1 = dim->h;
+            ((POLY_FT4 *)prim)->u2 = dim->w;
+            ((POLY_FT4 *)prim)->v2 = dim->h + dim->ay;
+            ((POLY_FT4 *)prim)->u3 = dim->w + dim->ax;
+            ((POLY_FT4 *)prim)->v3 = dim->h + dim->ay;
             SetSemiTrans(prim, 1);
             prim += 0x28;
             i++;
@@ -1488,9 +1486,9 @@ extern u8 *D_8009A248[];
 extern u8 *D_8009A2C4[];
 extern u8 *D_8009ABFC[];
 extern u8 D_8009AF74[];
-extern u8 *D_800A3690;
-extern u8 *D_800A39C0;
-extern u8 *D_800A3A28;
+extern u8 **D_800A3690;
+extern u8 **D_800A39C0;
+extern u8 **D_800A3A28;
 extern MenuObj *D_800A39B8;
 extern MenuObj *D_800A36F0;
 extern MenuObj *D_800A38F8;
@@ -1524,47 +1522,47 @@ void func_8005C124(u8 menuId, u8 selRow) {
     D_800A3A28 = 0;
     switch (menuId) {
     case 0:
-        D_800A3690 = (u8 *)D_8009A05C;
+        D_800A3690 = (u8 **)D_8009A05C;
         break;
     case 1:
-        D_800A3690 = (u8 *)D_8009A0B8;
+        D_800A3690 = (u8 **)D_8009A0B8;
         break;
     case 2:
-        D_800A3690 = (u8 *)D_8009A078;
-        D_800A39C0 = (u8 *)D_8009A098;
+        D_800A3690 = (u8 **)D_8009A078;
+        D_800A39C0 = (u8 **)D_8009A098;
         break;
     case 4:
-        D_800A3690 = (u8 *)D_8009A110;
-        D_800A39C0 = (u8 *)D_8009A134;
-        D_800A3A28 = (u8 *)D_8009A158;
+        D_800A3690 = (u8 **)D_8009A110;
+        D_800A39C0 = (u8 **)D_8009A134;
+        D_800A3A28 = (u8 **)D_8009A158;
         break;
     case 5:
-        D_800A3690 = (u8 *)D_8009A0D8;
-        D_800A39C0 = (u8 *)D_8009A0F4;
+        D_800A3690 = (u8 **)D_8009A0D8;
+        D_800A39C0 = (u8 **)D_8009A0F4;
         break;
     case 3:
-        D_800A3690 = (u8 *)D_8009A1DC;
+        D_800A3690 = (u8 **)D_8009A1DC;
         break;
     case 6:
-        D_800A3690 = (u8 *)D_8009A200;
+        D_800A3690 = (u8 **)D_8009A200;
         break;
     case 8:
-        D_800A3690 = (u8 *)D_8009A21C;
+        D_800A3690 = (u8 **)D_8009A21C;
         break;
     case 7:
-        D_800A3690 = (u8 *)D_8009A228;
-        D_800A39C0 = (u8 *)D_8009A248;
+        D_800A3690 = (u8 **)D_8009A228;
+        D_800A39C0 = (u8 **)D_8009A248;
         break;
     case 13:
-        D_800A3690 = (u8 *)D_8009ABFC;
+        D_800A3690 = (u8 **)D_8009ABFC;
         break;
     case 11:
-        D_800A3690 = (u8 *)D_8009A17C;
-        D_800A39C0 = (u8 *)D_8009A19C;
-        D_800A3A28 = (u8 *)D_8009A1BC;
+        D_800A3690 = (u8 **)D_8009A17C;
+        D_800A39C0 = (u8 **)D_8009A19C;
+        D_800A3A28 = (u8 **)D_8009A1BC;
         break;
     case 15:
-        D_800A3690 = (u8 *)D_8009A2C4;
+        D_800A3690 = (u8 **)D_8009A2C4;
         break;
     case 9:
     case 10:
@@ -1683,7 +1681,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
             MenuFontSet(1, 1);
             entry->scale = 1;
             entry->font = 1;
-            entry->text = *(u8 **)D_800A3690;
+            entry->text = D_800A3690[0];
             item->velocityX = -2;
         } else {
             if (i == 1) {
@@ -1707,20 +1705,20 @@ void func_8005C124(u8 menuId, u8 selRow) {
                 switch (D_800A3989[i - 2]) {
                 case 0:
                 case 0x80:
-                    entry->text = ((u8 **)D_800A3690)[i];
+                    entry->text = D_800A3690[i];
                     if (D_800A3989[i - 2] == 0x80) {
                         entry->shade |= 2;
                     }
                     break;
                 case 1:
                 case 0x81:
-                    entry->text = ((u8 **)D_800A39C0)[i];
+                    entry->text = D_800A39C0[i];
                     if (D_800A3989[i - 2] == 0x81) {
                         entry->shade |= 2;
                     }
                     break;
                 case 2:
-                    entry->text = ((u8 **)D_800A3A28)[i];
+                    entry->text = D_800A3A28[i];
                     break;
                 }
             }
@@ -1774,7 +1772,7 @@ void func_8005C8D8(u8 index) {
     switch (D_800A3988[index]) {
     case 0:
     case 0x80:
-        prim->text = *(s32 *)(D_800A3690 + index * 4 + 4);
+        prim->text = (s32)D_800A3690[index + 1];
         if (D_800A3988[index] == 0x80) {
             prim->shade |= 2;
         } else {
@@ -1783,7 +1781,7 @@ void func_8005C8D8(u8 index) {
         break;
     case 1:
     case 0x81:
-        prim->text = *(s32 *)(D_800A39C0 + index * 4 + 4);
+        prim->text = (s32)D_800A39C0[index + 1];
         if (D_800A3988[index] == 0x81) {
             prim->shade |= 2;
         } else {
@@ -1791,7 +1789,7 @@ void func_8005C8D8(u8 index) {
         }
         break;
     case 2:
-        prim->text = *(s32 *)(D_800A3A28 + index * 4 + 4);
+        prim->text = (s32)D_800A3A28[index + 1];
         break;
     }
     MenuFontSet(0, 0);

@@ -663,9 +663,9 @@ void func_800442C8(u8 *arg0, ReplayFrame *arg1) {
         i = 0;
         do {
             if ((arg1->unkC >> i & 1) != 0) {
-                *(u8 *)(arg0 + 0x3A6 + i) = 0;
+                ((Car *)arg0)->unk3A6[i] = 0;
             } else {
-                *(u8 *)(arg0 + 0x3A6 + i) = 1;
+                ((Car *)arg0)->unk3A6[i] = 1;
             }
             i++;
         } while (i < 8);

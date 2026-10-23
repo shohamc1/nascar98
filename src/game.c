@@ -1318,7 +1318,7 @@ extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
 void func_800144B4(void) {
     volatile s32 pad[128];
-    u8 *tbl;
+    PlayerSetup *tbl;
     u8 *p;
     u8 *be70c;
     u8 *q;
@@ -1349,26 +1349,26 @@ void func_800144B4(void) {
     c2 = 2;
     c3 = 3;
     c1 = 1;
-    tbl = (u8 *)LOW_RAM_TABLE_80011E04;
+    tbl = (PlayerSetup *)PLAYER_SETUP_TABLE;
 loop:
-    tbl[0xF] = 0;
+    tbl->unkF = 0;
 
     do {
-        tbl[0x10] = c20;
-        tbl[0x11] = c20;
-        tbl[0x12] = c20;
-        tbl[0x0] = 0;
+        tbl->unk10[0] = c20;
+        tbl->unk10[1] = c20;
+        tbl->unk10[2] = c20;
+        tbl->unk0 = 0;
     } while (0);
-    *(s16 *)(tbl + 0x14) = c2BC;
-    tbl[0x7] = c6;
-    tbl[0x8] = c7;
-    tbl[0x6] = c4;
-    tbl[0x5] = c5;
-    tbl[0xC] = c2;
-    tbl[0xB] = c3;
-    tbl[0xD] = c1;
-    tbl[0xE] = 0;
-    tbl = tbl + 0x16;
+    tbl->unk14 = c2BC;
+    tbl->unk7 = c6;
+    tbl->unk8 = c7;
+    tbl->unk6 = c4;
+    tbl->unk5 = c5;
+    tbl->unkC = c2;
+    tbl->unkB = c3;
+    tbl->unkD = c1;
+    tbl->unkE = 0;
+    tbl = tbl + 1;
     i = i + 1;
     if (i < 4) {
         goto loop;
@@ -2626,7 +2626,7 @@ void func_8001636C(void) {
     tailp = base;
     entry = tailp;
 again:
-    *(s32 *)(entry + 0x34) = (s32)(base + offset);
+    ((LinkedGT4 *)entry)->next = (LinkedGT4 *)(base + offset);
 
     offset += 0x38;
     count += 1;
@@ -2637,7 +2637,7 @@ again:
     entry = (u8 *)D_800A2D60;
     D_800A2D5C = 0x898;
     tailp = (u8 *)((count * 0x38) + ((s32)entry));
-    *(s32 *)(tailp + 0x34) = zero;
+    *(s32 *)&((LinkedGT4 *)tailp)->next = zero;
     D_800A2D64 = (s32 *)tailp;
 }
 
@@ -2699,15 +2699,15 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     src = array + 0x18;
     for (i = 0; i < count; i++) {
         polys[i] = poly;
-        w0 = *(s32 *)(src - 0x10);
-        w1 = *(s32 *)(src - 0xC);
-        w2 = *(s32 *)(src - 8);
-        w3 = *(s32 *)(src - 4);
+        w0 = *(s32 *)&((Face *)(src - 0x18))->u0;
+        w1 = *(s32 *)&((Face *)(src - 0x18))->u1;
+        w2 = *(s32 *)&((Face *)(src - 0x18))->u2;
+        w3 = *(s32 *)&((Face *)(src - 0x18))->u3;
         *(s32 *)&poly->u0 = w0;
         *(s32 *)&poly->u1 = w1;
         *(s32 *)&poly->u2 = w2;
         *(s32 *)&poly->u3 = w3;
-        w0 = *(s32 *)(src - 0x14);
+        w0 = *(s32 *)&((Face *)(src - 0x18))->r0;
         cba = poly->clut;
         w1 = w0 & 0xFF;
         w0 >>= 8;

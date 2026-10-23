@@ -22,6 +22,27 @@ typedef struct {
     u32 unk10; /* 0x10 */
 } ReplayFrame;
 
+/* A 0x16 per-player setup record, four of them at PLAYER_SETUP_TABLE in
+   low RAM. func_800144B4 resets them; func_8002F2CC copies unk14 into
+   Car.unk112. */
+typedef struct {
+    u8 unk0;
+    u8 unk1[4];
+    u8 unk5;
+    u8 unk6;
+    u8 unk7;
+    u8 unk8;
+    u8 unk9[2];
+    u8 unkB;
+    u8 unkC;
+    u8 unkD;
+    u8 unkE;
+    u8 unkF;
+    u8 unk10[3];
+    u8 unk13;
+    s16 unk14; /* 0x14: 700 after a reset */
+} PlayerSetup;
+
 /* A 0x0A font glyph: its texture page position, UV and size. The first
    glyph of a menu font holds the font's line height. */
 typedef struct {

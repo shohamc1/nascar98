@@ -621,9 +621,9 @@ void func_8001D108(u8 *arg0) {
     index = 0;
     flagPtr = obj + 0x5A;
 again:
-    vertex.vx = *(u16 *)vertexPtr;
-    vertex.vy = *(u16 *)(flagPtr - 4);
-    vertex.vz = *(u16 *)(flagPtr - 2);
+    vertex.vx = ((SVECTOR *)vertexPtr)->vx;
+    vertex.vy = ((SVECTOR *)(flagPtr - 6))->vy;
+    vertex.vz = ((SVECTOR *)(flagPtr - 6))->vz;
     RotTransPers_nom(&vertex);
     func_8003382C(vertexPtr);
     masked = flags & 0x7EF6;
@@ -1108,7 +1108,7 @@ void func_8001DB20(Face *arg0, s32 arg1) {
     } else {
         arg0->flags = arg0->flags | 0x10;
     }
-    arg0->len = *(u8 *)((u8 *)prim + 3);
+    arg0->len = ((Face *)prim)->len;
     if (arg0->type != 6) {
         *(s32 *)&arg0->r0 = *(s32 *)&prim->r0;
     }

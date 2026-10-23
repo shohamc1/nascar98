@@ -866,7 +866,7 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
         point = track->point;
         pos[0] = track->x;
         pos[1] = track->z;
-        pos[2] = *(s16 *)(*(u8 **)(track->unk20 + 0x18) + 4);
+        pos[2] = ((Face *)track->unk20)->vertex[0]->vz;
         pos[2] = (pos[2] + FAR_VAR(s32, gFarOffsetZ)) * 4;
         dx = pos[0] - D_800B1348nm[point].x;
         dy = pos[1] - D_800B1348nm[point].y;
@@ -8333,12 +8333,12 @@ extern s32 D_800A2E80[];
 
 void func_8002F2CC(void) {
     Car *node;
-    u8 *tableBase;
+    PlayerSetup *tableBase;
     s32 carIdx;
     s32 val;
 
     node = gCarList;
-    tableBase = (u8 *)0x80011E04;
+    tableBase = (PlayerSetup *)PLAYER_SETUP_TABLE;
     if (node != NULL) {
         do {
             if (node->type == 0) {
@@ -8349,7 +8349,7 @@ void func_8002F2CC(void) {
                 node->unk2A0 = (val - 0x40) / 4;
                 val = D_800A3861[carIdx * 4];
                 node->unk2A6 = (val - 0x40) / 4;
-                node->unk112 = *(u16 *)(tableBase + carIdx * 22 + 0x14);
+                node->unk112 = tableBase[carIdx].unk14;
                 val = D_800A3863[carIdx * 4];
                 func_80028754(node, 9 - val * 10 / 64);
                 val = D_800A3860S8[carIdx * 4];
@@ -15435,7 +15435,9 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
                     value = car->lane;
                     func_80039B74(car, 0);
                     maxDistance = (car->segment + 4) % gTrackSectionCount[0];
-                    flags = ((u32 *)D_800AE154[0])[maxDistance * 3 + 2] >> 30;
+                    flags = *(u32 *)&((RoutePoint *)D_800AE154[0])[maxDistance]
+                                 .speed >>
+                            30;
                     leftAllowed = flags & 1;
                     maxDistance = flags & 2;
                     if (lateral > 0) {
@@ -15537,12 +15539,12 @@ void func_80039B74(Car *arg0, s32 arg1) {
         entryAddr = (u8 *)(off12 + base);
         objX = *(s32 *)obj;
         eptr = *(u8 **)gTrackSections;
-        entryX = ((Vec3 *)entryAddr)->x;
+        entryX = ((RoutePoint *)entryAddr)->x;
         ptr = eptr + idx * 0x90;
         w = (0x400 - ((TrackSection *)ptr)->angle) & 0x3FF;
         tableA = ((s32 **)D_800A3A34Absolute)[0][w];
         prod = tableA * (objX - entryX);
-        entryY = ((Vec3 *)entryAddr)->y;
+        entryY = ((RoutePoint *)entryAddr)->y;
         objY = obj->pos.y;
         prod2 = ((s32 **)D_800A3A2CAbsolute)[0][w] * (objY - entryY);
         result = (prod + prod2) >> 16;
@@ -15696,15 +15698,19 @@ void CarPlaceOnStartingGrid(void) {
                 (car->lane) = 0;
             }
             sectionOffset = section * 0xC;
-            (car->pos.x) = (s32) * (s32 *)(sectionOffset + D_800AE154[0]);
-            (car->pos.y) = (s32) * (s32 *)(sectionOffset + D_800AE154[0] + 0x4);
+            (car->pos.x) = ((RoutePoint *)(sectionOffset + D_800AE154[0]))->x;
+            (car->pos.y) = ((RoutePoint *)(sectionOffset + D_800AE154[0]))->y;
             ObjectSetHeading(
-                car, 0x400 - (*(u16 *)(sectionOffset + D_800AE154[0] + 0xA) &
-                              0x3FFF));
+                car,
+                0x400 -
+                    (((RoutePoint *)(sectionOffset + D_800AE154[0]))->heading &
+                     0x3FFF));
             (car->speed) =
-                (s32)((*(s16 *)(sectionOffset + D_800AE154[0] + 0x8) << 0x11) /
+                (s32)((((RoutePoint *)(sectionOffset + D_800AE154[0]))->speed
+                       << 0x11) /
                       3);
-            gridSpeed = *(s16 *)(sectionOffset + D_800AE154[0] + 0x8) << 0x10;
+            gridSpeed = ((RoutePoint *)(sectionOffset + D_800AE154[0]))->speed
+                        << 0x10;
             (car->segment) = section;
             (car->lastSegment) = (s32)(s16)section;
             (car->speed) = gridSpeed;
@@ -15716,10 +15722,12 @@ void CarPlaceOnStartingGrid(void) {
                     (s32)(section + 0xC) % (s32)gTrackSectionCount[0];
                 cameraSectionOffset = cameraSection * 0xC;
                 *(s32 *)(((u8 *)gGridCameraX0) + ((car->slot) * 0xC)) =
-                    *(s32 *)(cameraSectionOffset + D_800AE154[0]);
+                    ((RoutePoint *)(cameraSectionOffset + D_800AE154[0]))->x;
                 *(s32 *)(((u8 *)gGridCameraY0) + ((car->slot) * 0xC)) =
-                    *(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4);
-                workValue = *(u16 *)(cameraSectionOffset + D_800AE154[0] + 0xA);
+                    ((RoutePoint *)(cameraSectionOffset + D_800AE154[0]))->y;
+                workValue =
+                    ((RoutePoint *)(cameraSectionOffset + D_800AE154[0]))
+                        ->heading;
                 cameraWork = car->slot;
                 workValue &= 0x3FFF;
                 workValue += 0x300;
@@ -15763,9 +15771,11 @@ void CarPlaceOnStartingGrid(void) {
                 ground.vz = groundSection;
                 if (groundSection == -1) {
                     *(s32 *)(((u8 *)gGridCameraX5) + ((car->slot) * 0xC)) =
-                        *(s32 *)(cameraSectionOffset + D_800AE154[0]);
+                        ((RoutePoint *)(cameraSectionOffset + D_800AE154[0]))
+                            ->x;
                     *(s32 *)(((u8 *)gGridCameraY5) + ((car->slot) * 0xC)) =
-                        *(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4);
+                        ((RoutePoint *)(cameraSectionOffset + D_800AE154[0]))
+                            ->y;
                     retryX =
                         *(s32 *)(((u8 *)gGridCameraX6) + ((car->slot) * 0xC));
                     if (retryX < 0) {

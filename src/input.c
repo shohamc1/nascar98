@@ -299,7 +299,7 @@ void func_80041F54(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
     mask3 = 0xFF000000;
     for (i = 0; i < 2; i++) {
         word = *w;
-        w2 = *(u32 *)((u16 *)w + 2);
+        w2 = ((PadBuffer *)w)->analog;
         hs = ((u16 *)w)[1];
         swap = ~(((hs & 0xFF) << 8) | (hs >> 8));
         gPadType[i] = (word & 0xF000) >> 12;

@@ -14,6 +14,12 @@
 #include "cd.h"
 #include "input.h"
 #include "scene.h"
+
+/* The head of a movie stream chunk. Both words are big-endian. */
+typedef struct StreamChunk {
+    u32 tag;  /* 0x00: four characters, such as "ad20" or "au00" */
+    u32 size; /* 0x04: bytes, header included */
+} StreamChunk;
 extern s32 SpuSetReverbVoice(s32, s32);
 
 void SpuSetTransferStartAddr(s32);
@@ -556,10 +562,10 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
             goto done;
         }
         idx = 8;
-        w0 = *((u32 *)p);
+        w0 = ((StreamChunk *)p)->tag;
         magic = (((w0 >> 24) | ((w0 >> 8) & 0xFF00)) | ((w0 & 0xFF00) << 8)) |
                 (w0 << 24);
-        w1 = *(u32 *)(p + 4);
+        w1 = ((StreamChunk *)p)->size;
         size = (((w1 >> 24) | ((w1 >> 8) & 0xFF00)) | ((w1 & 0xFF00) << 8)) |
                (w1 << 24);
         if (size < 0x4400) {
@@ -937,7 +943,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     w8 = ((MovieFrame *)frameData)->width;
     wAlo = wAlo << 8;
     bsw = cnt | wAlo;
-    cnt = *(s32 *)((u8 *)(st) + 0x118);
+    cnt = st->unk118;
     asm volatile("srl %0, %1, 8" : "=r"(w8hi) : "r"(w8));
     w8lo = w8 & 0xFF;
     w8lo = w8lo << 8;
@@ -1020,7 +1026,7 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     s32 height16;
     s32 output;
     u32 i;
-    s32 *str;
+    MovieContext *str;
     u32 nsectors16;
     s32 stride;
 
@@ -1034,29 +1040,28 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     height16 = (wA >> 8) | ((wA & 0xFF) << 8);
     rect.x = (u32)(x * D_800A33A0) >> 1;
     nsectors16 = (w8 >> 8) | ((w8 & 0xFF) << 8);
-    if (str[0x45] != 0) {
+    if (str->displayIndex != 0) {
         rect.x = rect.x + D_800A33A0 * 0xA0;
     }
     rect.w = D_800A33A0 * 8;
     rect.h = height16;
-    if (str[0x46] == 0) {
+    if (str->unk118 == 0) {
         if (magic == 0x4D444543) {
             func_800708D8(frameData + 0x10,
-                          *(s32 *)((s32)str + str[0xC] * 4 + 0x28));
+                          str->decodeBuffers[str->decodeBufferIndex]);
         }
         ((volatile MovieContext *)gMovieContext)->uploadComplete = 0;
     } else {
-        output = str[9];
-        DecDCTin((u_long *)*(s32 *)((s32)str + (1 - str[0xC]) * 4 + 0x28),
+        output = (s32)str->imageBuffer;
+        DecDCTin((u_long *)str->decodeBuffers[1 - str->decodeBufferIndex],
                  D_800A339C);
         stride = D_800A33A0 * 8;
         DecDCTout((u_long *)output,
                   ((u32)(height16 * stride) >> 1) * (nsectors16 >> 4));
         if (magic == 0x4D444543) {
-            func_800708D8(frameData + 0x10,
-                          *(s32 *)((s32)gMovieContext +
-                                   gMovieContext->decodeBufferIndex * 4 +
-                                   0x28));
+            func_800708D8(
+                frameData + 0x10,
+                gMovieContext->decodeBuffers[gMovieContext->decodeBufferIndex]);
         }
         DecDCToutSync(0);
         i = 0;
@@ -2751,12 +2756,6 @@ s32 AudioGetStreamFreeSpace(s32 *size) {
     difference = D_800A351C[1] - 0x3C00;
     return D_800A351C[0] - difference;
 }
-
-/* The head of a movie stream chunk. Both words are big-endian. */
-typedef struct StreamChunk {
-    u32 tag;  /* 0x00: four characters, such as "ad20" or "au00" */
-    u32 size; /* 0x04: bytes, header included */
-} StreamChunk;
 
 #define SWAP32(w)                                                              \
     (((w) >> 24) | (((w) >> 8) & 0xFF00) | (((w) & 0xFF00) << 8) | ((w) << 24))

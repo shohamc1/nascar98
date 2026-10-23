@@ -88,4 +88,13 @@ typedef struct TrackSection {
     u8 *unk78[6];  /* 0x78 */
 } TrackSection;
 
+/* A 0x0C racing-line point, one per track section, in the route tables at
+   D_800AE154. CarPlaceOnStartingGrid starts each car on one. */
+typedef struct {
+    s32 x;       /* 0x00 */
+    s32 y;       /* 0x04 */
+    s16 speed;   /* 0x08 */
+    u16 heading; /* 0x0A: angle in bits 0 to 13, flags in bits 14 and 15 */
+} RoutePoint;
+
 #endif /* TRACK_H */
