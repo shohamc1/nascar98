@@ -1722,7 +1722,7 @@ typedef struct {
     s32 color;   /* 0x18: copied to Face.r0 */
 } DiskFace;
 
-void TrackReadData(s32 *trackData, s32 file) {
+void TrackReadData(TrackResource *trackData, s32 file) {
     register TrackResource *resource asm("s7");
     /* Only the first byte is accessed in the retail function. */
     char scratch[0x220];
@@ -1838,7 +1838,7 @@ void TrackReadData(s32 *trackData, s32 file) {
     u8 *outputUv;
     register u32 boundLimit;
 
-    resource = (TrackResource *)trackData;
+    resource = trackData;
     fileSize = FileSeek(file, 0, 2);
     fileData = (TrackFileHeader *)((0x1F4000 - fileSize) | RAM_CACHED_BASE);
     FileSeek(file, 0, 0);
@@ -2411,7 +2411,7 @@ void func_80015930(TrackSection *arg0, void *arg1, s32 arg2) {
 
 void TrackLoadFromFile(s32 arg0) {
     extern s32 FileOpen(s32, void *);
-    extern void TrackReadData(s32 *, s32);
+    extern void TrackReadData(TrackResource *, s32);
     extern void FileClose(s32);
     extern char gErrorTrackFileOpen[] __attribute__((aligned(4)));
     extern u8 gTrackFileMode[];
@@ -2664,7 +2664,7 @@ again:
     D_800A2D64 = (s32 *)tailp;
 }
 
-void *func_800163E8(u8 *arg0, s32 arg1) {
+void *func_800163E8(Car *arg0, s32 arg1) {
     extern s32 gOrderingTableBankAbsolute[];
     u8 *polys[250];
     u8 *first;
@@ -2693,7 +2693,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     s32 next;
     s32 bank;
 
-    obj = ((Car *)arg0)->model;
+    obj = arg0->model;
     poly = (u8 *)D_800A2D60;
     count = obj->faceCount;
     array = (u8 *)obj->faces;
@@ -2776,7 +2776,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     ((LinkedGT4 *)poly)->next = NULL;
     D_800A2D5C = pool - count;
     D_800A2D60 = next;
-    ((Car *)arg0)->unk430[bank] = (s32)poly;
+    arg0->unk430[bank] = (s32)poly;
     return first;
 }
 
@@ -2789,7 +2789,7 @@ void func_80016724(s32 value, s32 *next, s32 size) {
 }
 
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-void func_80016744(u32 arg0) {
+void func_80016744(Car *arg0) {
     s32 bank;
     s32 oldEntry;
     s32 value;
@@ -2800,23 +2800,23 @@ void func_80016744(u32 arg0) {
     s32 extra;
 
     bank = gOrderingTableBankLui;
-    oldEntry = ((Car *)arg0)->unk420[bank];
+    oldEntry = arg0->unk420[bank];
     if (oldEntry != 0) {
-        value = ((Car *)arg0)->unk41C[bank];
-        offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
+        value = arg0->unk41C[bank];
+        offset = value * 0x44 + *(s32 *)&arg0->shape;
         hw = ((Model *)offset)->faceCount;
         ptr = (u32)D_800A2D64;
         size = D_800A2D5C;
-        extra = ((Car *)arg0)->unk430[bank];
+        extra = arg0->unk430[bank];
         *(s32 *)&((Model *)ptr)->faceList = oldEntry;
         D_800A2D64 = (s32 *)extra;
-        ((Car *)arg0)->unk420[bank] = 0;
+        arg0->unk420[bank] = 0;
         D_800A2D5C = size + hw;
     }
-    ((Car *)arg0)->unk41C[gOrderingTableBankLui] = -1;
+    arg0->unk41C[gOrderingTableBankLui] = -1;
 }
 
-s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+s32 func_800167BC(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 bank;
     s32 oldEntry;
     s32 value;
@@ -2831,40 +2831,40 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 ret;
 
     bank = gOrderingTableBankLui;
-    value = ((Car *)arg0)->unk41C[bank];
-    if (value == *(s8 *)&((Car *)arg0)->unk374) {
-        if (((Car *)arg0)->unk420[bank] != 0) {
+    value = arg0->unk41C[bank];
+    if (value == arg0->unk374) {
+        if (arg0->unk420[bank] != 0) {
             return 0;
         }
     } else {
-        oldEntry = ((Car *)arg0)->unk420[bank];
+        oldEntry = arg0->unk420[bank];
         if (oldEntry != 0) {
-            offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
+            offset = value * 0x44 + *(s32 *)&arg0->shape;
             ptr = (u32)D_800A2D64;
             hw = ((Model *)offset)->faceCount;
-            extra = ((Car *)arg0)->unk430[bank];
+            extra = arg0->unk430[bank];
             size = D_800A2D5C;
             *(s32 *)&((Model *)ptr)->faceList = oldEntry;
             do {
-                ((Car *)arg0)->unk420[bank] = 0;
+                arg0->unk420[bank] = 0;
                 D_800A2D64 = (s32 *)extra;
                 D_800A2D5C = size + hw;
             } while (0);
         }
     }
-    if (*(s8 *)&((Car *)arg0)->unk374 == 4) {
-        ((Car *)arg0)->unk41C[gOrderingTableBankLui] = -1;
+    if (arg0->unk374 == 4) {
+        arg0->unk41C[gOrderingTableBankLui] = -1;
         return 1;
     }
-    speed = *(u8 *)&((Car *)arg0)->mode;
+    speed = *(u8 *)&arg0->mode;
     q = speed / 5;
     ret = (s32)func_800163E8(arg0, q);
     bank2 = gOrderingTableBankLui;
-    ((Car *)arg0)->unk420[bank2] = ret;
+    arg0->unk420[bank2] = ret;
     if (ret == 0) {
         return 1;
     }
-    ((Car *)arg0)->unk41C[bank2] = ((Car *)arg0)->unk374;
+    arg0->unk41C[bank2] = arg0->unk374;
     return 0;
 }
 

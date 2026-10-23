@@ -646,6 +646,9 @@ MatrixCombineState = 0x8001EF14; // type:func
 
 HEAP_LIMIT = 0x801F6000; // absolute:True fixed_address
 PLAYER_SETUP_TABLE = 0x80011E04; // absolute:True fixed_address
+SAVE_DATA_BASE = 0x80010000; // absolute:True fixed_address
+SAVE_DRIVER_RECORDS = 0x8001000C; // absolute:True fixed_address
+SAVE_SLOTS = 0x80010AEC; // absolute:True fixed_address
 SoundStart = 0x8003EEA4; // type:func
 SoundInitTables = 0x8003F014; // type:func
 GraphicsSetClearColor = 0x8001EB3C; // type:func

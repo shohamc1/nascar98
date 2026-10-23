@@ -67,19 +67,19 @@ void func_8001EEC4(Car *arg0);
 void func_8001F198(void);
 void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB);
 void CameraBuildRotationMatrix(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
-void func_8001F728(s32 arg0);
+void func_8001F728(Vec3 *arg0);
 void func_8001F828(s32 *p);
 void MatrixStoreObjectBasis(Car *arg0);
 void MatrixSetRotationFromAngle(Car *arg0, s32 index);
 void func_8001FB28(Car *arg0, s32 index);
 
 extern s32 D_800A3A2CAbsolute[];
-s32 VectorGetMagnitude2D(void *object) {
+s32 VectorGetMagnitude2D(Car *object) {
     s32 dx;
     s32 dy;
 
-    dx = ((Car *)object)->toCamera.x;
-    dy = ((Car *)object)->toCamera.y;
+    dx = object->toCamera.x;
+    dy = object->toCamera.y;
     return MathSqrt(dx * dx + dy * dy);
 }
 
@@ -174,9 +174,9 @@ void func_8001FDD0(Car *cam, Car *car) {
     cosYaw = MathFixedDivide(car->toCamera.x, dist2);
     CameraBuildRotationMatrix(cosYaw, MathFixedDivide(car->toCamera.y, dist2),
                               cosPitch, sinPitch);
-    func_8001F728((s32)&cam->rot[0]);
-    func_8001F728((s32)&cam->rot[1]);
-    func_8001F728((s32)&cam->rot[2]);
+    func_8001F728(&cam->rot[0]);
+    func_8001F728(&cam->rot[1]);
+    func_8001F728(&cam->rot[2]);
 }
 
 void func_8001FF3C(Car *camera, Car *car) {
@@ -695,9 +695,9 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
                            MathMultiplyFixed16(cam->rot[2].z, 150 << 16)) >>
                           16);
         func_8001F2C4(0x200, 0, 0);
-        func_8001F728((s32)&cam->rot[0]);
-        func_8001F728((s32)&cam->rot[1]);
-        func_8001F728((s32)&cam->rot[2]);
+        func_8001F728(&cam->rot[0]);
+        func_8001F728(&cam->rot[1]);
+        func_8001F728(&cam->rot[2]);
         cam->rot[0].y = -cam->rot[0].y;
         cam->rot[1].y = -cam->rot[1].y;
         cam->rot[2].y = -cam->rot[2].y;
@@ -1968,7 +1968,7 @@ s32 TrackTestPointInSection(s32 x, s32 y, TrackSection *section) {
     crossingCount = 0;
     crossingXs = (s32 *)SCRATCHPAD_BASE;
     seg = (CurveSeg *)D_800A356C + section->section;
-    segmentCount = ((u8 *)section)[0xE];
+    segmentCount = *(u8 *)&section->culled;
     for (i = segmentCount; i > 0; i--, seg++) {
         if (y >= seg->lo && y < seg->hi) {
             crossingX = seg->base + ((seg->scale * (y - seg->lo)) >> 16);
@@ -2426,7 +2426,7 @@ void TrackLoadResource(s32 arg0) {
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008CFC0);
 INCLUDE_RODATA("asm/nonmatchings/objects", D_8008CFE0);
 
-void func_80025454(s32 track) {
+void func_80025454(Model *track) {
     s32 count;
     s32 minX;
     s32 minY;
@@ -2449,8 +2449,8 @@ void func_80025454(s32 track) {
     minX = 0;
     i = 0;
     maxZ = 0;
-    count = ((Model *)track)->vertexCount;
-    cursor = *(s32 **)&((Model *)track)->vertices;
+    count = track->vertexCount;
+    cursor = *(s32 **)&track->vertices;
     for (; i < count; i++) {
         x = cursor[2];
         if (x < minX) {
@@ -2493,13 +2493,13 @@ void func_80025454(s32 track) {
     if (limit < maxZ) {
         limit = maxZ;
     }
-    ((Model *)track)->unk18 = limit - 5;
-    ((Model *)track)->minX = minX;
-    ((Model *)track)->minY = minY;
-    ((Model *)track)->minZ = minZ;
-    ((Model *)track)->maxX = maxX;
-    ((Model *)track)->maxY = maxY;
-    ((Model *)track)->maxZ = maxZ;
+    track->unk18 = limit - 5;
+    track->minX = minX;
+    track->minY = minY;
+    track->minZ = minZ;
+    track->maxX = maxX;
+    track->maxY = maxY;
+    track->maxZ = maxZ;
 }
 
 void CarResetMotionCounters(Car *object) {
@@ -3559,16 +3559,15 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     }
     return result;
 }
-s32 VectorProjectAgainstHeading(void *vector, s32 heading) {
+s32 VectorProjectAgainstHeading(Vec3 *vector, s32 heading) {
     s32 index;
     s32 product;
     s32 result;
 
     index = (0x400 - heading) & 0x3FF;
     product = ((s32 **)D_800A3A2CAbsolute)[0][index];
-    product *= ((Vec3 *)vector)->x;
-    result =
-        product - ((s32 **)D_800A3A34Absolute)[0][index] * ((Vec3 *)vector)->y;
+    product *= vector->x;
+    result = product - ((s32 **)D_800A3A34Absolute)[0][index] * vector->y;
     result = -(result >> 16) * 3;
     if (result < 0) {
         result += 3;
@@ -3588,7 +3587,7 @@ extern s32 *gContactCosTable asm("D_800A3A2CAbsolute2");
 extern s32 *gContactSinTable asm("D_800A3A34Absolute2");
 
 /* Resolves the nearest track-edge contact and applies wheel impulses. */
-s32 CarHandleWallCollision(void *object) {
+s32 CarHandleWallCollision(Car *object) {
     Car *car;
     /* Keep the coordinates and effect vector in their retail stack slots. */
     struct {
@@ -3703,7 +3702,7 @@ s32 CarHandleWallCollision(void *object) {
     register s32 quarterY asm("$3");
     s32 *regionHome;
 
-    car = (Car *)object;
+    car = object;
     value4 = 0x0FFFFFFF;
     trackIndex = car->segment;
     nearestContact = NULL;
@@ -5000,7 +4999,7 @@ void func_800297D0(Car *car) {
     /* Called without its car argument; a0 still holds it. */
     extern void func_80031264NoArgs(void) asm("func_80031264");
     extern void func_800294A8(void *);
-    extern s32 CarHandleWallCollision(void *);
+    extern s32 CarHandleWallCollision(Car *);
     extern s32 D_800A2EC8NM[] asm("D_800A2EC8.NON_MATCHING");
 
     func_80031264NoArgs();
@@ -5203,9 +5202,9 @@ void func_80029E44(void) {
     rowB = secondRow;
     ptr += 0x54;
     func_8001F2C4(x, y, zero);
-    func_8001F728((s32)rowA);
-    func_8001F728((s32)rowB);
-    func_8001F728((s32)ptr);
+    func_8001F728((Vec3 *)rowA);
+    func_8001F728((Vec3 *)rowB);
+    func_8001F728((Vec3 *)ptr);
 }
 
 extern u8 gPadTypew15f[] asm("gPadType.NON_MATCHING");
@@ -8455,18 +8454,18 @@ void GameShutdownAndExit(void) {
 
 void func_8002F5F4(void) {
     extern s32 D_800A2E9CSmall;
-    s32 node;
+    Car *node;
     s32 f;
     s32 temp;
 
     node = D_800A2E9CSmall;
-    node = *(s32 *)&((Car *)node)->next;
+    node = *(s32 *)&node->next;
     D_800A2E9CSmall = node;
-    if (node != 0 && *(s32 *)&((Car *)node)->update != (s32)func_80029E34) {
+    if (node != 0 && *(s32 *)&node->update != (s32)func_80029E34) {
         return;
     }
     node = gCarList;
-    temp = *(s32 *)&((Car *)node)->update;
+    temp = *(s32 *)&node->update;
     f = (s32)func_80029E34;
     D_800A2E9CSmall = node;
     if (temp != f) {
@@ -8474,8 +8473,8 @@ void func_8002F5F4(void) {
     }
     do {
         node = D_800A2E9CSmall;
-        node = *(s32 *)&((Car *)node)->next;
-        temp = *(s32 *)&((Car *)node)->update;
+        node = *(s32 *)&node->next;
+        temp = *(s32 *)&node->update;
         D_800A2E9CSmall = node;
     } while (temp == f);
 }
@@ -9937,7 +9936,7 @@ void func_800319D4(Car *object, s32 arg1) {
     *(Vec3 *)&object->rot[1].x = *(Vec3 *)cross;
     *(Vec3 *)&object->rot[2].x = *(Vec3 *)normalOut;
 }
-extern s32 D_800A3574Lui asm("D_800A3574Absolute");
+extern Model *D_800A3574Lui asm("D_800A3574Absolute");
 
 extern s32 D_800A353CLui asm("D_800A353CAbsolute");
 extern s32 D_800A3758Lui asm("D_800A3758Absolute");
@@ -10157,7 +10156,7 @@ void ModelLoadGeometryFromFile(s32 fileId) {
     fileSize = FileSeekCall32328(handle, 0, 2);
     FileSeekCall32328(handle, 0, 0);
     FileReadCall32328(STACK_BLOCK_801C0000, fileSize, 1, handle);
-    ObjectLoadGeometry((Model *)D_800A3574Lui, (u8 *)STACK_BLOCK_801C0000, -1);
+    ObjectLoadGeometry(D_800A3574Lui, (u8 *)STACK_BLOCK_801C0000, -1);
     D_800A2D4C[0] = 1;
     func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;
@@ -10171,8 +10170,7 @@ void ModelLoadGeometryFromFile(s32 fileId) {
  * the %lo displacement (0x36D0 - 0x15C = 0x3574).
  */
 void ModelLoadGeometryByIndex(s32 modelIndex, s32 reuse) {
-    ObjectLoadGeometry((Model *)D_800A3574Lui,
-                       *(u8 **)(D_800B9F44 + modelIndex), reuse);
+    ObjectLoadGeometry(D_800A3574Lui, *(u8 **)(D_800B9F44 + modelIndex), reuse);
     D_800A2D4C[0] = 1;
     func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;
@@ -13210,17 +13208,17 @@ s32 CarTestLateralSeparation(Car *car, Car *headingCar, s32 sideThreshold) {
     return sideThreshold < ((tA * dx - tB * dy) >> 16);
 }
 
-s32 CarIsAheadOfHeading(s32 *a, s32 *b) {
+s32 CarIsAheadOfHeading(s32 *a, Car *b) {
     s32 index;
     s32 t1;
     s32 t2;
     s32 x;
     s32 y;
 
-    index = ((Car *)b)->heading << 2;
-    x = a[0] - b[0];
+    index = b->heading << 2;
+    x = a[0] - b->pos.x;
     t1 = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
-    y = a[1] - b[1];
+    y = a[1] - b->pos.y;
     t2 = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
     return ((t1 * x + t2 * y) >> 16) > 0;
 }
@@ -16394,7 +16392,7 @@ void func_8003B464(void) {
     s32 scaled;
     s32 rank;
     s32 startPos;
-    s32 next;
+    CarLink *next;
     Car *other;
 
     if (D_800A2E94[0] == 1) {
@@ -16423,9 +16421,9 @@ void func_8003B464(void) {
                 } else {
                     result = scaled + RandomScaledGet(8);
                 }
-                next = (s32)obj->order.node.next;
+                next = (CarLink *)obj->order.node.next;
                 obj->unk264 = result;
-                other = *(u8 **)&((CarLink *)next)->car;
+                other = *(u8 **)&next->car;
                 otherVal = other->unk264;
                 if ((u32)otherVal >= (u32)result &&
                     other != (u8 *)D_800A35E0[0]) {
@@ -16435,8 +16433,8 @@ void func_8003B464(void) {
                 s32 otherVal;
                 s32 objVal;
 
-                next = (s32)obj->order.node.next;
-                other = *(u8 **)&((CarLink *)next)->car;
+                next = (CarLink *)obj->order.node.next;
+                other = *(u8 **)&next->car;
                 if (other == (u8 *)D_800A35E0[0]) {
                     other->unk264 = 0;
                 }
@@ -16447,11 +16445,11 @@ void func_8003B464(void) {
                 }
             }
         }
-        next = (s32)obj->order.node.previous;
+        next = (CarLink *)obj->order.node.previous;
         if (next == 0) {
             break;
         }
-        obj = ((CarLink *)next)->car;
+        obj = next->car;
     }
     D_800A2F65 = 0;
 }

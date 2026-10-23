@@ -253,7 +253,7 @@ typedef struct Car {
     char *name; /* 0x34C */
     void (*update)(struct Car *); /* 0x350 */
     void (*callback)(struct Car *); /* 0x354 */
-    s8 unk358; /* 0x358 */
+    u8 unk358; /* 0x358 */
     u8 unk359[0x7];
     u16 state; /* 0x360 */
     u16 frontRightContact; /* 0x362 */
@@ -263,7 +263,7 @@ typedef struct Car {
     u8 unk36A[0x2];
     Model *model; /* 0x36C */
     Model *shape; /* 0x370: one Model per level of detail */
-    u8 unk374; /* 0x374 */
+    s8 unk374; /* 0x374 */
     s8 unk375; /* 0x375 */
     u8 driver; /* 0x376 */
     u8 unk377[0x5];

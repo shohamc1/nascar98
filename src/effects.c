@@ -654,7 +654,7 @@ void EffectRestoreSlots(void) {
     }
 }
 
-void func_800442C8(u8 *arg0, ReplayFrame *arg1) {
+void func_800442C8(Car *arg0, ReplayFrame *arg1) {
     u32 bits;
     s32 i;
 
@@ -663,16 +663,16 @@ void func_800442C8(u8 *arg0, ReplayFrame *arg1) {
         i = 0;
         do {
             if ((arg1->unkC >> i & 1) != 0) {
-                ((Car *)arg0)->unk3A6[i] = 0;
+                arg0->unk3A6[i] = 0;
             } else {
-                ((Car *)arg0)->unk3A6[i] = 1;
+                arg0->unk3A6[i] = 1;
             }
             i++;
         } while (i < 8);
-        arg0[0x3AE] = (bits & 0x3FFF) >> 12;
-        arg0[0x3AF] = (bits & 0xFFF) >> 10;
-        arg0[0x3B0] = (bits & 0x3FF) >> 8;
-        arg0[0x3B1] = (bits & 0xFF) >> 6;
+        arg0->unk3AE[0] = (bits & 0x3FFF) >> 12;
+        arg0->unk3AE[1] = (bits & 0xFFF) >> 10;
+        arg0->unk3AE[2] = (bits & 0x3FF) >> 8;
+        arg0->unk3AE[3] = (bits & 0xFF) >> 6;
     }
 }
 

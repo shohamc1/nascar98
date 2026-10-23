@@ -2936,8 +2936,7 @@ void HudInitRacePrims(void) {
                         heap->r0 = 0x80;
                         heap->g0 = 0x80;
                         heap->b0 = 0xC0;
-                        heap->tpage = GetTPage(0, 0, *(s16 *)&((u8 *)glyph)[0],
-                                               *(s16 *)&((u8 *)glyph)[2]);
+                        heap->tpage = GetTPage(0, 0, glyph->x, glyph->y);
                         heap->u0 = glyph->u;
                         heap->v0 = glyph->v;
                         heap->u1 = glyph->u + *(u8 *)&glyph->width;
@@ -12112,21 +12111,21 @@ void func_8005978C(void) {
     extern void FileRead(s32, s32, s32, s32);
     extern s32 gSceneFileMode[];
     DISPENV env;
-    s32 sector;
+    void *sector;
     s32 size;
     s32 buf;
     s32 next;
     s32 tmp;
 
-    sector = (s32)FileOpen(0, gSceneFileMode);
-    size = (FileSeekArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
+    sector = FileOpen(0, gSceneFileMode);
+    size = (FileSeekArgs(sector, 0, 2) + 0x7FF) >> 11 << 11;
     do {
         tmp = (s32)HeapAlloc(size);
-        FileSeekArgsV((void *)sector, 0, 0);
+        FileSeekArgsV(sector, 0, 0);
     } while (0);
     buf = tmp;
-    FileRead(buf, 1, size, sector);
-    FileCloseArgs(sector);
+    FileRead(buf, 1, size, (s32)sector);
+    FileCloseArgs((s32)sector);
     next = ((SceneFileHeader *)buf)->timOffset;
     D_800A381C = buf + 4;
     D_800A3638 = buf;

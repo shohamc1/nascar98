@@ -4,11 +4,6 @@
 #include "common.h"
 #include "menu_obj.h"
 
-typedef struct MenuTextPacket {
-    u8 unk0, unk1, unk2, unk3;
-    s32 orderingDepth, text;
-} MenuTextPacket;
-
 void MenuSetTextColor(u8, u8, u8);
 s16 MenuFontLineHeight(void);
 void MenuSetTexturedQuad(POLY_FT4 *dst, u32 idx, u16 dx, u16 dy, u16 ax,

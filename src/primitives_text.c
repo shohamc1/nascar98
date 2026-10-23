@@ -483,10 +483,10 @@ __inline__ void func_80018768(void *arg0, s32 x, s32 y, s32 format) {
 }
 
 extern void func_800183C0(s32, s32, s32, s32);
-void TextDrawTwoObjectStrings(void *object, s32 x, s32 y) {
+void TextDrawTwoObjectStrings(Car *object, s32 x, s32 y) {
     s32 value;
-    func_800183C0(((Car *)object)->unk258, x, y, 0);
-    value = ((Car *)object)->time;
+    func_800183C0(object->unk258, x, y, 0);
+    value = object->time;
     if (value != 0x7FFFFFFF) {
         func_800183C0(value, x, y + 0x10, 0);
     }
@@ -1256,7 +1256,7 @@ void func_800197D4(s32 kind, s32 x, s32 y) {
     }
 }
 
-void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
+void func_80019A00(s16 arg0, POLY_FT4 *arg1, s32 arg2) {
     s32 num;
     s32 den;
     s32 rem;
@@ -1308,14 +1308,14 @@ void func_80019A00(s16 arg0, u8 *arg1, s32 arg2) {
         ptrB += 2;
         ptrA += 2;
     }
-    ((u16 *)arg1)[4] = corners[0];
-    ((u16 *)arg1)[5] = corners[1];
-    ((u16 *)arg1)[8] = corners[2];
-    ((u16 *)arg1)[9] = corners[3];
-    ((u16 *)arg1)[12] = corners[4];
-    ((u16 *)arg1)[13] = corners[5];
-    ((u16 *)arg1)[16] = corners[6];
-    ((u16 *)arg1)[17] = corners[7];
+    arg1->x0 = corners[0];
+    arg1->y0 = corners[1];
+    arg1->x1 = corners[2];
+    arg1->y1 = corners[3];
+    arg1->x2 = corners[4];
+    arg1->y2 = corners[5];
+    arg1->x3 = corners[6];
+    arg1->y3 = corners[7];
 }
 
 extern s16 D_800A2D8C;

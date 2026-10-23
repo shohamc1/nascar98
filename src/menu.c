@@ -3990,9 +3990,9 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     prim->u1 = (u16)node->width;
     prim->v1 = *(u16 *)&D_8009B02A[off];
     prim->u2 = 0;
-    prim->v2 = D_8009B02A[off] + ((u8 *)node)[0x18];
+    prim->v2 = D_8009B02A[off] + *(u8 *)&node->height;
     prim->u3 = (u16)node->width;
-    prim->v3 = D_8009B02A[off] + ((u8 *)node)[0x18];
+    prim->v3 = D_8009B02A[off] + *(u8 *)&node->height;
     node = node->next;
     prim = (POLY_FT4 *)((u8 *)node->primitive);
     if (id == 1 && (gPadType[playerSlot & 0xFF] == 5 ||
@@ -5946,14 +5946,14 @@ void *func_8006654C(void *queue, s32 arg1) {
             src = templates[sel];
             sel ^= 1;
             *((POLY_F4 *)dst) = *((POLY_F4 *)src);
-            ((u16 *)dst)[4] = x;
-            ((u16 *)dst)[8] = x;
-            ((u16 *)dst)[5] = topY;
-            ((u16 *)dst)[6] = x + 0x20;
-            ((u16 *)dst)[7] = topY;
-            ((u16 *)dst)[9] = bottomY;
-            ((u16 *)dst)[10] = x + 0x20;
-            ((u16 *)dst)[11] = bottomY;
+            ((POLY_F4 *)dst)->x0 = x;
+            ((POLY_F4 *)dst)->x2 = x;
+            ((POLY_F4 *)dst)->y0 = topY;
+            ((POLY_F4 *)dst)->x1 = x + 0x20;
+            ((POLY_F4 *)dst)->y1 = topY;
+            ((POLY_F4 *)dst)->y2 = bottomY;
+            ((POLY_F4 *)dst)->x3 = x + 0x20;
+            ((POLY_F4 *)dst)->y3 = bottomY;
             x += 0x20;
             AddPrim(((u8 *)(orderTable = gOrderingTable)[0]) + offset, dst);
             i += 1;
@@ -6732,13 +6732,13 @@ void MenuStartVBlankEventAlternate(void) {
 }
 
 void MenuSetTextObject(MenuObj *obj, u8 a, u8 b, s32 c, u8 d, s32 e) {
-    MenuTextPacket *p;
+    MenuText *p;
     p = obj->primitive;
-    p->unk1 = a;
-    p->unk2 = b;
+    p->font = a;
+    p->scale = b;
     p->text = c;
-    p->unk3 = d;
-    p->orderingDepth = e;
+    p->center = d;
+    p->otz = e;
     obj->orderingDepth = e;
 }
 

@@ -106,12 +106,12 @@ u16 PadReadObjectState(Car *object) {
         object->unk3C6 = data >> 8;
         object->unk3C7 = data >> 0x10;
         object->unk3C5 = data;
-        ((u8 *)object)[0x3C8] = data >> 0x18;
+        object->unk3C8[0] = data >> 0x18;
     } else {
         object->unk3C6 = data >> 8;
         object->unk3C5 = data >> 0x10;
         object->unk3C7 = data;
-        ((u8 *)object)[0x3C8] = data >> 0x18;
+        object->unk3C8[0] = data >> 0x18;
     }
     pad = *(u16 *)(D_8008CA06 + object->slot * 8);
     mode = ~(((pad & 0xFF) << 8) | (pad >> 8));
@@ -300,7 +300,7 @@ void func_80041F54(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
     for (i = 0; i < 2; i++) {
         word = *w;
         w2 = ((PadBuffer *)w)->analog;
-        hs = ((u16 *)w)[1];
+        hs = ((PadBuffer *)w)->buttons;
         swap = ~(((hs & 0xFF) << 8) | (hs >> 8));
         gPadType[i] = (word & 0xF000) >> 12;
         out = swap;

@@ -23,7 +23,10 @@ typedef struct {
 
 /* A 0xE8 driver's saved records, in the table at D_800A35F4. */
 typedef struct {
-    char name[0x1C];       /* 0x00 */
+    char name[0x19];       /* 0x00 */
+    u8 flags;              /* 0x19: bit 0 automatic, bit 1 D_800A3069 */
+    u8 padType;            /* 0x1A */
+    u8 padLayout;          /* 0x1B */
     CardRecord tracks[17]; /* 0x1C */
 } DriverRecord;
 
@@ -121,18 +124,18 @@ void func_80067F34(s32 page, s32 track) {
     w = MenuStringWidth(D_8009A474[0]);
     {
         s32 hdrH;
-        MenuTextPacket *pktH;
+        MenuText *pktH;
         hdrH = next->orderingDepth;
         sum2 = (u16)obj->x + w;
         next->x = sum2;
         next->drawOffsetX = sum2;
         string = (char *)D_8009A31C[track & 0xFF];
         pktH = next->primitive;
-        pktH->unk1 = 2;
-        pktH->unk2 = 3;
-        pktH->unk3 = 0;
+        pktH->font = 2;
+        pktH->scale = 3;
+        pktH->center = 0;
         cnt = ((u8 *)D_800A3A54)[4];
-        pktH->orderingDepth = hdrH;
+        pktH->otz = hdrH;
         pktH->text = (s32)string;
         next->orderingDepth = hdrH;
     }
@@ -144,7 +147,7 @@ void func_80067F34(s32 page, s32 track) {
             j = 0;
             do {
                 s32 hdrL;
-                MenuTextPacket *pktL;
+                MenuText *pktL;
                 s32 flagL;
                 s32 t;
                 switch (j) {
@@ -197,11 +200,11 @@ void func_80067F34(s32 page, s32 track) {
                 }
                 hdrL = obj->orderingDepth;
                 pktL = obj->primitive;
-                pktL->unk1 = 2;
-                pktL->unk2 = 3;
+                pktL->font = 2;
+                pktL->scale = 3;
                 pktL->text = value;
-                pktL->unk3 = flagL;
-                pktL->orderingDepth = hdrL;
+                pktL->center = flagL;
+                pktL->otz = hdrL;
                 obj->orderingDepth = hdrL;
                 obj = obj->next;
                 j++;
@@ -264,14 +267,14 @@ void CardMenuCreateRecordTable(u8 track) {
         tail->orderingDepth = 0x32;
         {
             s32 str;
-            MenuTextPacket *pkt;
+            MenuText *pkt;
             str = D_8009A48C[0];
             pkt = tail->primitive;
-            pkt->unk1 = 2;
-            pkt->unk2 = 3;
+            pkt->font = 2;
+            pkt->scale = 3;
             pkt->text = str;
-            pkt->unk3 = 0;
-            pkt->orderingDepth = 0x32;
+            pkt->center = 0;
+            pkt->otz = 0x32;
             tail->orderingDepth = 0x32;
         }
         return;
@@ -294,15 +297,15 @@ void CardMenuCreateRecordTable(u8 track) {
         {
             s32 hdr;
             s32 str;
-            MenuTextPacket *pkt;
+            MenuText *pkt;
             hdr = tail->orderingDepth;
             str = (s32)D_8009A474[0];
             pkt = tail->primitive;
-            pkt->unk1 = 2;
-            pkt->unk2 = 3;
+            pkt->font = 2;
+            pkt->scale = 3;
             pkt->text = str;
-            pkt->unk3 = 0;
-            pkt->orderingDepth = hdr;
+            pkt->center = 0;
+            pkt->otz = hdr;
             tail->orderingDepth = hdr;
         }
         w = (s16)MenuStringWidth(D_8009A474[0]);
@@ -314,16 +317,16 @@ void CardMenuCreateRecordTable(u8 track) {
         obj->blue = 0xC0;
         {
             s32 str;
-            MenuTextPacket *pkt;
+            MenuText *pkt;
             s32 hdr;
             str = D_8009A31C[track];
             pkt = obj->primitive;
             hdr = obj->orderingDepth;
-            pkt->unk1 = 2;
-            pkt->unk2 = 3;
+            pkt->font = 2;
+            pkt->scale = 3;
             pkt->text = str;
-            pkt->unk3 = 0;
-            pkt->orderingDepth = hdr;
+            pkt->center = 0;
+            pkt->otz = hdr;
             obj->orderingDepth = hdr;
         }
         tail->next = obj;
@@ -351,16 +354,16 @@ void CardMenuCreateRecordTable(u8 track) {
             }
             {
                 s32 str;
-                MenuTextPacket *pkt;
+                MenuText *pkt;
                 s32 hdr;
                 str = D_8009A478[i];
                 pkt = obj->primitive;
                 hdr = obj->orderingDepth;
-                pkt->unk1 = 2;
-                pkt->unk2 = 3;
+                pkt->font = 2;
+                pkt->scale = 3;
                 pkt->text = str;
-                pkt->unk3 = 0;
-                pkt->orderingDepth = hdr;
+                pkt->center = 0;
+                pkt->otz = hdr;
                 obj->orderingDepth = hdr;
             }
             tail->next = obj;
@@ -404,16 +407,16 @@ void CardMenuCreateRecordTable(u8 track) {
                 }
                 {
                     u8 flag;
-                    MenuTextPacket *pkt;
+                    MenuText *pkt;
                     s32 hdr;
                     flag = (j != 0 && j != 5);
                     pkt = obj->primitive;
                     hdr = obj->orderingDepth;
-                    pkt->unk1 = 2;
-                    pkt->unk2 = 3;
+                    pkt->font = 2;
+                    pkt->scale = 3;
                     pkt->text = 0;
-                    pkt->unk3 = flag;
-                    pkt->orderingDepth = hdr;
+                    pkt->center = flag;
+                    pkt->otz = hdr;
                     obj->orderingDepth = hdr;
                 }
                 tail = obj;
@@ -706,11 +709,11 @@ void func_80068CE4(void) {
     MenuObj *tail;
     /* One packet pointer per section: a single shared pointer takes one
      * register, retail uses a different one in each section. */
-    MenuTextPacket *titlePkt;
-    MenuTextPacket *subPkt;
-    MenuTextPacket *rowPkt;
-    MenuTextPacket *hdrPkt;
-    MenuTextPacket *cellPkt;
+    MenuText *titlePkt;
+    MenuText *subPkt;
+    MenuText *rowPkt;
+    MenuText *hdrPkt;
+    MenuText *cellPkt;
     u8 *record;
     char buf[0x40];
     s32 value;
@@ -747,22 +750,22 @@ void func_80068CE4(void) {
     tail->targetX = titleX;
     tail->orderingDepth = 0x32;
     titlePkt = tail->primitive;
-    titlePkt->unk1 = 2;
-    titlePkt->unk2 = 3;
+    titlePkt->font = 2;
+    titlePkt->scale = 3;
     titlePkt->text = (s32)D_800B9B54;
-    titlePkt->unk3 = 0;
-    titlePkt->orderingDepth = 0x32;
+    titlePkt->center = 0;
+    titlePkt->otz = 0x32;
     tail->orderingDepth = 0x32;
     titleW = MenuStringWidth(D_800B9B54);
     obj = MenuCreateTextObject(tail->x + titleW, 0x2A);
     obj->orderingDepth = 0x32;
     value = (s32)D_8009A498[0];
     subPkt = obj->primitive;
-    subPkt->unk1 = 2;
-    subPkt->unk2 = 3;
+    subPkt->font = 2;
+    subPkt->scale = 3;
     subPkt->text = value;
-    subPkt->unk3 = 0;
-    subPkt->orderingDepth = 0x32;
+    subPkt->center = 0;
+    subPkt->otz = 0x32;
     obj->orderingDepth = 0x32;
     tail->next = obj;
     tail = obj;
@@ -800,11 +803,11 @@ void func_80068CE4(void) {
 
             w = obj->orderingDepth;
             rowPkt = obj->primitive;
-            rowPkt->unk1 = 2;
-            rowPkt->unk2 = 3;
+            rowPkt->font = 2;
+            rowPkt->scale = 3;
             rowPkt->text = value;
-            rowPkt->unk3 = j;
-            rowPkt->orderingDepth = w;
+            rowPkt->center = j;
+            rowPkt->otz = w;
             obj->orderingDepth = w;
             tail->next = obj;
             tail = obj;
@@ -833,11 +836,11 @@ void func_80068CE4(void) {
         obj->orderingDepth = 0x32;
         label = (s32)D_8009A4B0[i];
         hdrPkt = obj->primitive;
-        hdrPkt->unk1 = 2;
-        hdrPkt->unk2 = 3;
+        hdrPkt->font = 2;
+        hdrPkt->scale = 3;
         hdrPkt->text = label;
-        hdrPkt->unk3 = ((u32)(i - 1)) < 2;
-        hdrPkt->orderingDepth = 0x32;
+        hdrPkt->center = ((u32)(i - 1)) < 2;
+        hdrPkt->otz = 0x32;
         obj->orderingDepth = 0x32;
         tail->next = obj;
         tail = obj;
@@ -886,11 +889,11 @@ void func_80068CE4(void) {
             }
 
             cellPkt = obj->primitive;
-            cellPkt->unk1 = 2;
-            cellPkt->unk2 = 3;
+            cellPkt->font = 2;
+            cellPkt->scale = 3;
             cellPkt->text = value;
-            cellPkt->unk3 = flag;
-            cellPkt->orderingDepth = 0;
+            cellPkt->center = flag;
+            cellPkt->otz = 0;
             obj->orderingDepth = 0;
             tail = obj;
         }
@@ -916,15 +919,15 @@ void __maspsx_include_asm_hack_jtblpad_80068CE4() {
  * gap to the leader, and a highlight behind the player's row. */
 static __inline__ void MenuSetText(MenuObj *obj, s32 text, s32 flag, s32 two,
                                    s32 three) {
-    MenuTextPacket *pkt;
+    MenuText *pkt;
     s32 h;
     pkt = obj->primitive;
     h = obj->orderingDepth;
-    pkt->unk1 = two;
-    pkt->unk2 = three;
+    pkt->font = two;
+    pkt->scale = three;
     pkt->text = text;
-    pkt->unk3 = flag;
-    pkt->orderingDepth = h;
+    pkt->center = flag;
+    pkt->otz = h;
     obj->orderingDepth = h;
 }
 
@@ -942,7 +945,7 @@ void CardMenuCreateStandingsTable(void) {
     MenuObj *obj;
     MenuObj *tail;
     MenuObj *mine;
-    MenuTextPacket *pkt;
+    MenuText *pkt;
     struct {
         char buf[0x3F];
         u8 previous;
@@ -1152,8 +1155,8 @@ void func_800697EC(u8 mode) {
     MenuObj *obj;
     MenuObj *prev;
     /* One packet pointer per section, so each is a block-local pseudo. */
-    MenuTextPacket *titlePkt;
-    MenuTextPacket *rowPkt;
+    MenuText *titlePkt;
+    MenuText *rowPkt;
     s8 *buf;
     s8 *p;
     /* u16, so `i + 1` stays a copy (no biv) and the test below is a shift. */
@@ -1193,11 +1196,11 @@ void func_800697EC(u8 mode) {
     prev->orderingDepth = 0x32;
     title = (s32)D_8009AD58[mode];
     titlePkt = prev->primitive;
-    titlePkt->unk1 = 2;
-    titlePkt->unk2 = 3;
+    titlePkt->font = 2;
+    titlePkt->scale = 3;
     titlePkt->text = title;
-    titlePkt->unk3 = 0;
-    titlePkt->orderingDepth = 0x32;
+    titlePkt->center = 0;
+    titlePkt->otz = 0x32;
     prev->orderingDepth = 0x32;
     if (mode == 0) {
         buf = (s8 *)D_800A3370;
@@ -1233,11 +1236,11 @@ void func_800697EC(u8 mode) {
             obj->x = w;
             obj->targetX = w;
             obj->orderingDepth = 0;
-            rowPkt->unk1 = pktType;
-            rowPkt->unk2 = pktMode;
+            rowPkt->font = pktType;
+            rowPkt->scale = pktMode;
             rowPkt->text = (s32)p;
-            rowPkt->unk3 = 0;
-            rowPkt->orderingDepth = 0;
+            rowPkt->center = 0;
+            rowPkt->otz = 0;
             obj->orderingDepth = 0;
             if ((i << 16) == 0) {
                 D_800A3858 = obj;
@@ -1485,18 +1488,18 @@ void MenuCreateItemRow(s32 itemCode) {
     }
 }
 
-extern char *D_800A35F4;
+extern DriverRecord *D_800A35F4;
 extern char *D_800A3604;
 extern char *D_800A366C;
 extern char *D_800A3978;
 extern char *D_800A3A0C;
 
 void CardMenuSetSaveDataPointers(void) {
-    D_800A366C = (char *)0x80010000;
-    D_800A3978 = (char *)0x8001000C;
-    D_800A3A0C = (char *)0x80010AEC;
-    D_800A35F4 = (char *)0x8001000C;
-    D_800A3604 = (char *)0x80010000;
+    D_800A366C = (char *)SAVE_DATA_BASE;
+    D_800A3978 = (char *)SAVE_DRIVER_RECORDS;
+    D_800A3A0C = (char *)SAVE_SLOTS;
+    D_800A35F4 = (DriverRecord *)SAVE_DRIVER_RECORDS;
+    D_800A3604 = (char *)SAVE_DATA_BASE;
 }
 
 extern u8 D_800A3938;
@@ -1702,9 +1705,6 @@ extern char D_8009B1E4[];
 
 s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
     typedef struct {
-        s32 words[0x3A];
-    } DriverRecord;
-    typedef struct {
         s32 words[0x4F];
     } SaveSlot;
     char path[0x40];
@@ -1873,7 +1873,7 @@ s32 CardLoadSaveTable(u8 updateDriverRecords) {
          0xFF) != 0) {
         D_800A3A58 = 0;
         D_800A3604 = (char *)D_800A35B0;
-        D_800A35F4 = (char *)D_800A35B0 + 0xC;
+        D_800A35F4 = (DriverRecord *)((char *)D_800A35B0 + 0xC);
         row = (u8 *)D_800A35F4;
         for (i = 0; i < 12; i++) {
             if ((u8)(row[0] + 1) >= 2) {
@@ -1962,7 +1962,7 @@ void func_8006ABF8(void) {
 
     i = 0;
     do {
-        row = D_800A35F4 + i * 0xE8;
+        row = (u8 *)&D_800A35F4[i];
         row[0] = 0;
         row[0x19] = 0;
         j = 0;
@@ -2023,7 +2023,7 @@ s32 CardFindSavedDriverRecord(char *name) {
     }
     i = 0;
     while (i < D_800A3A58) {
-        if (strcmp(name, D_800A35F4 + i * 0xE8) == 0) {
+        if (strcmp(name, D_800A35F4[i].name) == 0) {
             return i & 0xFF;
         }
         i++;
@@ -2079,7 +2079,7 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
         D_800A3A58 = D_800A3A58 + 1;
     }
 
-    strcpy(D_800A35F4, arg1);
+    strcpy(D_800A35F4->name, arg1);
 
     i = 0;
     one = 1;
@@ -2089,14 +2089,15 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
     d7 = arg7;
     lt11 = d7 < 11;
     table = (u32)D_800BBA24w17;
-    D_800A35F4[0x19] = D_800A3068w17[arg0 * 2] | (D_800A3069w17[arg0 * 2] << 1);
+    D_800A35F4->flags =
+        D_800A3068w17[arg0 * 2] | (D_800A3069w17[arg0 * 2] << 1);
     d0 = arg0;
     d0x16 = d0 << 4;
     off = 0x1C;
 
 outer:
     do {
-        rec = D_800A35F4 + off;
+        rec = (u8 *)D_800A35F4 + off;
         if (i == arg2) {
             if (arg5 == 0) {
                 if ((d3 = d3) == 0 && arg6 == 0) {
@@ -2146,29 +2147,24 @@ outer:
         goto outer;
     }
 
-    D_800A35F4[0x1A] = gPadTypew17[arg0];
-    D_800A35F4[0x1B] = gPadLayoutw17[arg0];
+    D_800A35F4->padType = gPadTypew17[arg0];
+    D_800A35F4->padLayout = gPadLayoutw17[arg0];
 }
 
-typedef struct {
-    s32 words[0x3A];
-} CardMoveRecord;
-
 void CardMenuMoveRecordToFront(s32 recordIndex) {
-    CardMoveRecord buf;
+    DriverRecord buf;
     s32 n;
 
     if ((recordIndex & 0xFF) == 0) {
         return;
     }
-    buf = ((CardMoveRecord *)D_800A35F4)[recordIndex & 0xFF];
+    buf = D_800A35F4[recordIndex & 0xFF];
     n = (recordIndex & 0xFF) - 1;
     while (n >= 0) {
-        ((CardMoveRecord *)D_800A35F4)[n + 1] =
-            ((CardMoveRecord *)D_800A35F4)[n];
+        D_800A35F4[n + 1] = D_800A35F4[n];
         n--;
     }
-    *(CardMoveRecord *)D_800A35F4 = buf;
+    D_800A35F4[0] = buf;
 }
 
 void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
@@ -2238,10 +2234,10 @@ outer:
         goto outer;
     }
     slotM = slot & 0xFF;
-    D_800A35F4[slotM * 0xE8 + 0x19] =
+    D_800A35F4[slotM].flags =
         D_800A3068w17[driver * 2] | (D_800A3069w17[driver * 2] << 1);
-    D_800A35F4[slotM * 0xE8 + 0x1A] = gPadTypew17[driver];
-    D_800A35F4[slotM * 0xE8 + 0x1B] = gPadLayoutw17[driver];
+    D_800A35F4[slotM].padType = gPadTypew17[driver];
+    D_800A35F4[slotM].padLayout = gPadLayoutw17[driver];
 }
 
 extern u8 D_800BBA24[];
@@ -2351,7 +2347,7 @@ extern s32 D_800B0B1C[];
 extern s32 D_800B0B1CNM[] asm("D_800B0B1C.NON_MATCHING");
 
 void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
-    CardMoveRecord buf;
+    DriverRecord buf;
     u8 *p;
     char *name;
     s32 i;
@@ -2382,7 +2378,7 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
             } else {
                 j = 0;
                 while (j < D_800A3A58) {
-                    if (strcmp(name, D_800A35F4 + j * 0xE8) == 0) {
+                    if (strcmp(name, D_800A35F4[j].name) == 0) {
                         slot = j;
                         goto found;
                     }
@@ -2415,14 +2411,13 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
                 func_8006B1CC(i, slot, gSelectedTrack[0], idx, value, arg0,
                               D_800B0B1CNM[idx] == -1, flags);
                 if (slot != 0) {
-                    buf = ((CardMoveRecord *)D_800A35F4)[slot];
+                    buf = D_800A35F4[slot];
                     n = slot - 1;
                     while (n >= 0) {
-                        ((CardMoveRecord *)D_800A35F4)[n + 1] =
-                            ((CardMoveRecord *)D_800A35F4)[n];
+                        D_800A35F4[n + 1] = D_800A35F4[n];
                         n--;
                     }
-                    *(CardMoveRecord *)D_800A35F4 = buf;
+                    D_800A35F4[0] = buf;
                 }
             }
             i--;
@@ -3438,7 +3433,7 @@ void CardMenuCopyRecordNames(u8 destinationIndex, u8 sourceIndex) {
 
     for (i = 0; i < 0x11; i++) {
         dst = &D_800BBA24[destinationIndex * 0x44 + i * 4];
-        src = D_800A35F4 + sourceIndex * 0xE8 + i * 0xC;
+        src = (u8 *)&D_800A35F4[sourceIndex] + i * 0xC;
         for (j = 0; j < 4; j++) {
             dst[j] = src[j + 0x24];
         }
@@ -3512,12 +3507,11 @@ outer:
     if (i < 0x11) {
         goto outer;
     }
-    bit = ((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x19] & 1;
+    bit = D_800A35F4[arg1].flags & 1;
     D_800A3068_nm[arg0 * 2] = bit;
-    D_800A3069_nm[arg0 * 2] =
-        (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x19] >> 1) & 1;
-    if (((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1A] == gPadType_nm[arg0]) {
-        gPadLayout_nm[arg0] = ((u8 *)D_800A35F4)[(arg1 * 0xE8) + 0x1B];
+    D_800A3069_nm[arg0 * 2] = (D_800A35F4[arg1].flags >> 1) & 1;
+    if (D_800A35F4[arg1].padType == gPadType_nm[arg0]) {
+        gPadLayout_nm[arg0] = D_800A35F4[arg1].padLayout;
         D_800A308C_nm[arg0] = ((u8 *)gPadType_nm)[arg0];
     } else {
         gPadLayout_nm[arg0] = 0;
@@ -3616,7 +3610,7 @@ again:
         } else {
             n = 0;
             while (n < D_800A3A58) {
-                if (strcmp(name, D_800A35F4 + n * 0xE8) == 0) {
+                if (strcmp(name, D_800A35F4[n].name) == 0) {
                     match = n;
                     goto found;
                 }

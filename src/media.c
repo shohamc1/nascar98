@@ -517,8 +517,8 @@ extern void func_80072750(void);
 extern void AudioEnableStream(void);
 extern s32 AudioGetStreamCounter(void);
 extern s32 AudioGetStreamPositionLimit(u32);
-extern void AudioQueueAdpcm(u8 *);
-extern void AudioQueueStereoAdpcm(u8 *);
+extern void AudioQueueAdpcm(StreamChunk *);
+extern void AudioQueueStereoAdpcm(StreamChunk *);
 extern void MediaBuildVlcLookup(s32);
 extern void VideoSwapDisplayAndDrawEnvironments(void);
 extern void MovieDispatchFrameUpdateArgs(u8 *, s32, s32);
@@ -593,13 +593,13 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
             case 0x61643230:
 
             case 0x61643231:
-                AudioQueueAdpcm(p);
+                AudioQueueAdpcm((StreamChunk *)p);
                 break;
 
             case 0x61753030:
 
             case 0x61753031:
-                AudioQueueStereoAdpcm(p);
+                AudioQueueStereoAdpcm((StreamChunk *)p);
                 break;
 
             case 0x4D444332:
@@ -905,7 +905,7 @@ typedef struct {
     u8 unkC[4];
 } MovieFrame;
 
-void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
+void func_8006FBB0Args(MovieFrame *frameData, s32 x, s16 y) {
     MovieContext *st;
     MovieContext *st2;
     register u32 bsw asm("$5");
@@ -930,17 +930,17 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     s32 h32;
     u32 i;
 
-    word = ((MovieFrame *)frameData)->header;
+    word = frameData->header;
     st = gMovieContext;
 
     bsw = word >> 0x18;
     bsw = bsw | ((word >> 8) & 0xFF00);
     bsw = bsw | ((word & 0xFF00) << 8);
     magic = bsw | (word << 0x18);
-    wA = ((MovieFrame *)frameData)->height;
+    wA = frameData->height;
     asm volatile("srl %0, %1, 8" : "=r"(cnt) : "r"(wA));
     wAlo = wA & 0xFF;
-    w8 = ((MovieFrame *)frameData)->width;
+    w8 = frameData->width;
     wAlo = wAlo << 8;
     bsw = cnt | wAlo;
     cnt = st->unk118;
@@ -971,7 +971,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
         st->uploadRects[0].w = w8;
         st->uploadRects[1].w = w8;
         if (magic == mdecId) {
-            func_800708D8(frameData + 0x10,
+            func_800708D8((u8 *)frameData + 0x10,
                           (s32)st->decodeBuffers[st->decodeBufferIndex]);
         }
         ((volatile MovieContext *)gMovieContext)->uploadComplete = 0;
@@ -991,7 +991,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
         mdecId2 = 0x4D444543;
         if (magic == mdecId2) {
             st2 = gMovieContext;
-            func_800708D8(frameData + 0x10,
+            func_800708D8((u8 *)frameData + 0x10,
                           (s32)st2->decodeBuffers[st2->decodeBufferIndex]);
         }
         DecDCToutSync(0);
@@ -1016,7 +1016,7 @@ done:
 }
 asm(".globl func_8006FBB0\nfunc_8006FBB0 = func_8006FBB0Args");
 
-void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
+void func_8006FDDC(MovieFrame *frameData, s32 x, s16 y) {
     RECT rect;
     volatile s32 pad[2];
     u32 word;
@@ -1024,15 +1024,15 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     u32 w8;
     s32 magic;
     s32 height16;
-    s32 output;
+    u_long *output;
     u32 i;
     MovieContext *str;
     u32 nsectors16;
     s32 stride;
 
-    word = ((MovieFrame *)frameData)->header;
-    w8 = ((MovieFrame *)frameData)->width;
-    wA = ((MovieFrame *)frameData)->height;
+    word = frameData->header;
+    w8 = frameData->width;
+    wA = frameData->height;
     magic = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) |
             (word << 0x18);
     rect.y = y;
@@ -1047,30 +1047,29 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     rect.h = height16;
     if (str->unk118 == 0) {
         if (magic == 0x4D444543) {
-            func_800708D8(frameData + 0x10,
+            func_800708D8((u8 *)frameData + 0x10,
                           str->decodeBuffers[str->decodeBufferIndex]);
         }
         ((volatile MovieContext *)gMovieContext)->uploadComplete = 0;
     } else {
-        output = (s32)str->imageBuffer;
+        output = str->imageBuffer;
         DecDCTin((u_long *)str->decodeBuffers[1 - str->decodeBufferIndex],
                  D_800A339C);
         stride = D_800A33A0 * 8;
-        DecDCTout((u_long *)output,
-                  ((u32)(height16 * stride) >> 1) * (nsectors16 >> 4));
+        DecDCTout(output, ((u32)(height16 * stride) >> 1) * (nsectors16 >> 4));
         if (magic == 0x4D444543) {
             func_800708D8(
-                frameData + 0x10,
+                (u8 *)frameData + 0x10,
                 gMovieContext->decodeBuffers[gMovieContext->decodeBufferIndex]);
         }
         DecDCToutSync(0);
         i = 0;
         if (nsectors16 != 0) {
             do {
-                LoadImage(&rect, (u_long *)output);
+                LoadImage(&rect, output);
                 i += 0x10;
                 rect.x = (u16)rect.x + D_800A33A0 * 8;
-                output += rect.w * rect.h * 2;
+                output = (u_long *)((u8 *)output + rect.w * rect.h * 2);
             } while (i < nsectors16);
         }
         gMovieContext->uploadComplete = 1;
@@ -2778,7 +2777,7 @@ u32 AudioGetAdpcmSize(StreamChunk *header) {
     return size;
 }
 
-void AudioQueueAdpcm(u8 *block) {
+void AudioQueueAdpcm(StreamChunk *block) {
     volatile u32 *pollState;
     volatile u32 *state;
     volatile u32 *tailState;
@@ -2793,14 +2792,14 @@ void AudioQueueAdpcm(u8 *block) {
     u8 *rightSource;
     u8 *secondSource;
 
-    swapped = SWAP32(((StreamChunk *)block)->tag);
+    swapped = SWAP32(block->tag);
     isAd2 = (swapped & 0xFFFFFF00) == 0x61643200;
     if ((swapped & 0xFFFF0000) == 0x61640000) {
-        leftSource = block + 0x10;
-        size = SWAP32(((StreamChunk *)block)->size) - 0x10;
+        leftSource = (u8 *)block + 0x10;
+        size = SWAP32(block->size) - 0x10;
     } else {
-        leftSource = block + 0xC;
-        size = SWAP32(((StreamChunk *)block)->size) - 0xC;
+        leftSource = (u8 *)block + 0xC;
+        size = SWAP32(block->size) - 0xC;
     }
     rightSource = leftSource;
     if (isAd2) {
@@ -2903,7 +2902,7 @@ void func_80072FE4(u8 *dst, u8 *src, u32 n) {
                                length);                                        \
     }
 
-void AudioQueueStereoAdpcm(u8 *block) {
+void AudioQueueStereoAdpcm(StreamChunk *block) {
     /* Compiler frame extent; retail does not access these bytes. */
     u8 frameExtent[0x30];
     u32 pollTail;
@@ -2932,7 +2931,7 @@ void AudioQueueStereoAdpcm(u8 *block) {
     volatile u32 *rightState;
     volatile u32 *tailState;
 
-    headerWord = ((StreamChunk *)block)->size;
+    headerWord = block->size;
     headerSize = SWAP32(headerWord) - 0x10;
     encodedLength = headerSize >> 1;
     blockCount = encodedLength / 15;
@@ -2940,7 +2939,7 @@ void AudioQueueStereoAdpcm(u8 *block) {
     encodedLength = encodedTimes16 - blockCount;
     outputBlocks = encodedLength / 15;
     outputLength = outputBlocks * 16;
-    leftSource = block + 0x10;
+    leftSource = (u8 *)block + 0x10;
     rightSource = leftSource + encodedLength;
     pollState = (volatile u32 *)D_800A351C;
     do {

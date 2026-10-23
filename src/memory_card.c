@@ -1031,9 +1031,9 @@ u8 texture;
     object->primitive = (u8 *)poly;
     SetPolyF4((u8 *)poly);
     SetSemiTrans((void *)poly, semiTrans);
-    ((u8 *)poly)[4] = red;
-    ((u8 *)poly)[5] = green;
-    ((u8 *)poly)[6] = blue;
+    ((POLY_F4 *)poly)->r0 = red;
+    ((POLY_F4 *)poly)->g0 = green;
+    ((POLY_F4 *)poly)->b0 = blue;
     ((POLY_F4 *)poly)->x0 = x;
     ((POLY_F4 *)poly)->y0 = y;
     ((POLY_F4 *)poly)->x1 = x + width;
@@ -1092,9 +1092,9 @@ u8 mode;
     object->primitive = (u8 *)poly;
     SetPolyF3((POLY_F3 *)poly);
     SetSemiTrans((void *)poly, semiTrans);
-    ((u8 *)poly)[4] = red;
-    ((u8 *)poly)[5] = green;
-    ((u8 *)poly)[6] = blue;
+    ((POLY_F3 *)poly)->r0 = red;
+    ((POLY_F3 *)poly)->g0 = green;
+    ((POLY_F3 *)poly)->b0 = blue;
     return object;
 }
 

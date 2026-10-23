@@ -362,16 +362,16 @@ void CarDrawPreviewModel(Car *arg0, s32 x, s32 y, s32 z) {
 
 extern s32 D_800A2EC4Lui asm("D_800A2EC4Absolute");
 extern s32 gSplitScreenModeLui asm("gSplitScreenModeAbsolute");
-extern u32 gCarListLui asm("gCarListAbsolute");
+extern Car *gCarListLui asm("gCarListAbsolute");
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 extern s32 D_800A2D6C;
 extern s32 D_800A3818;
-extern s32 func_800167BC(u8 *);
+extern s32 func_800167BC(Car *);
 extern s32 GraphicsHasFreePrimitives(s32);
 
 /* Draw every car in the list, or release the ones that were skipped. */
 void CarDrawAll(void) {
-    u32 car;
+    Car *car;
     s32 released;
     s32 bankFlag;
     s32 slot;
@@ -398,64 +398,63 @@ void CarDrawAll(void) {
     if (D_800A2EC4Lui == 0) {
         bankFlag = gSplitScreenModeLui == 0;
     }
-    for (car = gCarListLui; car != 0; car = *(u32 *)&((Car *)car)->next) {
+    for (car = gCarListLui; car != 0; car = car->next) {
         released = 0;
-        slot = ((Car *)car)->unk1E2;
-        if (slot != -1 && ((Car *)car)->unk1E4 != -1 &&
+        slot = car->unk1E2;
+        if (slot != -1 && car->unk1E4 != -1 &&
             ((TrackSection *)(carState = (u8 *)gTrackSections[0] + slot * 0x90))
                     ->culled == 1 &&
-            *(s32 *)&((Car *)car)->model != 0 &&
-            *(s8 *)&((Car *)car)->unk374 < 4) {
+            *(s32 *)&car->model != 0 && car->unk374 < 4) {
             D_800A3818 = 0x808080;
-            if (func_800167BC((u8 *)car) & 0xFF) {
-                if (GraphicsHasFreePrimitives(((Car *)car)->model->faceCount)) {
-                    func_800168F8(((Car *)car)->model,
-                                  (s8)((s8) * (u8 *)&((Car *)car)->mode / 5));
+            if (func_800167BC(car) & 0xFF) {
+                if (GraphicsHasFreePrimitives(car->model->faceCount)) {
+                    func_800168F8(car->model,
+                                  (s8)((s8) * (u8 *)&car->mode / 5));
                     CarDrawModel(car, 0);
                 }
                 continue;
             }
             released = 1;
             if (CarDrawModel(car, 1) & 0xFF) {
-                *(u8 *)&((Car *)car)->unk358 = 1;
+                car->unk358 = 1;
             } else {
-                *(u8 *)&((Car *)car)->unk358 = 0;
+                car->unk358 = 0;
             }
         }
         if (released == 0) {
             bank = gOrderingTableBankLui;
-            oldEntry = ((Car *)car)->unk420[bank];
+            oldEntry = car->unk420[bank];
             if (oldEntry != 0) {
-                value = ((Car *)car)->unk41C[bank];
-                offset = value * 0x44 + *(s32 *)&((Car *)car)->shape;
+                value = car->unk41C[bank];
+                offset = value * 0x44 + *(s32 *)&car->shape;
                 hw = ((Model *)offset)->faceCount;
                 ptr = (u32)D_800A2D64;
                 size = D_800A2D5C;
-                extra = ((Car *)car)->unk430[bank];
+                extra = car->unk430[bank];
                 *(s32 *)&((Model *)ptr)->faceList = oldEntry;
                 D_800A2D64 = (s32 *)extra;
-                ((Car *)car)->unk420[bank] = 0;
+                car->unk420[bank] = 0;
                 D_800A2D5C = size + hw;
             }
-            ((Car *)car)->unk41C[gOrderingTableBankLui] = -1;
+            car->unk41C[gOrderingTableBankLui] = -1;
         }
         if (bankFlag != 0) {
             bank2 = gOrderingTableBankLui + 1;
-            oldEntry2 = ((Car *)car)->unk420[bank2];
+            oldEntry2 = car->unk420[bank2];
             gOrderingTableBankLui = bank2;
             if (oldEntry2 != 0) {
-                value2 = ((Car *)car)->unk41C[bank2];
-                offset2 = value2 * 0x44 + *(s32 *)&((Car *)car)->shape;
+                value2 = car->unk41C[bank2];
+                offset2 = value2 * 0x44 + *(s32 *)&car->shape;
                 hw2 = ((Model *)offset2)->faceCount;
                 ptr2 = (u32)D_800A2D64;
                 size2 = D_800A2D5C;
-                extra2 = ((Car *)car)->unk430[bank2];
+                extra2 = car->unk430[bank2];
                 *(s32 *)&((Model *)ptr2)->faceList = oldEntry2;
                 D_800A2D64 = (s32 *)extra2;
-                ((Car *)car)->unk420[bank2] = 0;
+                car->unk420[bank2] = 0;
                 D_800A2D5C = size2 + hw2;
             }
-            ((Car *)car)->unk41C[gOrderingTableBankLui] = -1;
+            car->unk41C[gOrderingTableBankLui] = -1;
             gOrderingTableBankLui--;
         }
     }

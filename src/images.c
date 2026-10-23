@@ -801,7 +801,7 @@ void CameraBuildRotationMatrix(s32 cosYaw, s32 sinYaw, s32 cosPitch,
     D_800A36E8 = cosPitch;
 }
 
-void func_8001F728(s32 arg0) {
+void func_8001F728(Vec3 *arg0) {
     Vec3 *v;
     s32 x;
     s32 y;
@@ -809,7 +809,7 @@ void func_8001F728(s32 arg0) {
     extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
         D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
 
-    v = (Vec3 *)arg0;
+    v = arg0;
     x = v->x;
     y = v->y;
     z = v->z;
@@ -995,14 +995,14 @@ void func_8001FB28(Car *arg0, s32 index) {
     arg0->orient[1].y = value3;
 }
 
-s32 ObjectGetMagnitude3D(void *object) {
+s32 ObjectGetMagnitude3D(Car *object) {
     s32 dx;
     s32 dy;
     s32 dz;
 
-    dx = ((Car *)object)->toCamera.x;
-    dy = ((Car *)object)->toCamera.y;
-    dz = ((Car *)object)->toCamera.z;
+    dx = object->toCamera.x;
+    dy = object->toCamera.y;
+    dz = object->toCamera.z;
     return MathSqrt(dx * dx + dy * dy + dz * dz);
 }
 
