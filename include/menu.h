@@ -17,7 +17,7 @@ MenuObj *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom,
 void func_80064000(s32 mode, s32 a, s32 b);
 void func_8006DD28(u32 arg0, u32 arg1);
 void func_8006E484(u32 arg0, u32 arg1);
-s16 MenuStringWidth(s32);
+s16 MenuStringWidth(u8 *);
 void MenuDrawModel(s32, s32, s32);
 void MenuUpdatePadPicture(s32);
 

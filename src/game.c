@@ -703,7 +703,7 @@ void TextureLoadTim(void *timImage) {
         rect.y = *(u16 *)&image[6];
         rect.w = *(u16 *)&image[8];
         rect.h = *(u16 *)&image[0xA];
-        *(RECT *)&D_800A39B0[0] = rect;
+        D_800A39B0[0] = rect;
         pixels = *(s32 *)&image[0xC];
         D_800A36B4 = pixels;
         mode = *(u8 *)pixels;

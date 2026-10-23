@@ -41,7 +41,7 @@ extern u8 *GraphicsAllocPolyF4(s32);
 extern u8 D_800A3988[];
 extern u8 D_800A3644[];
 extern char *strcat(char *, char *);
-extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
                       u8 arg6, s32 arg7);
 void func_8001E230(s32 arg0, s32 arg1);
@@ -5242,14 +5242,14 @@ void func_80064E6C(void) {
     MenuFontSet(2, 4);
     MenuSetTextColor(0x80, 0x80, 0xC0);
     base = D_8009A400;
-    MenuDrawString((s32)*base, (s16)MenuTextCenterOffset(0x140, (s32)*base),
-                   0xC8, 0, 0, 0, 0, 0);
+    MenuDrawString(*base, (s16)MenuTextCenterOffset(0x140, (s32)*base), 0xC8, 0,
+                   0, 0, 0, 0);
     if (gSessionTypeAbsolute[0] == 0) {
-        MenuDrawString((s32)D_8009A3EC[1],
+        MenuDrawString(D_8009A3EC[1],
                        (s16)MenuTextCenterOffset(0x140, (s32)D_8009A3F0[0]),
                        0xC8, 0, 0, 0, 0, 0);
     } else {
-        MenuDrawString((s32)D_8009A414[1],
+        MenuDrawString(D_8009A414[1],
                        (s16)MenuTextCenterOffset(0x140, (s32)D_8009A418[0]),
                        0xC8, 0, 0, 0, 0, 0);
     }
@@ -5455,16 +5455,16 @@ void MenuDrawCarPick(u8 id, s32 shift) {
     MenuSetTextColor(0x80, 0x80, 0xC0);
     gOrderingTableLui += 4;
     if (D_800A3950[0] == 0xFB || D_800A3950[0] == 3) {
-        MenuDrawString((s32)gTrackNames[gSelectedTrack[0]], 0x17, 0x41, 0, 0, 1,
-                       0, 0);
+        MenuDrawString(gTrackNames[gSelectedTrack[0]], 0x17, 0x41, 0, 0, 1, 0,
+                       0);
     } else {
-        MenuDrawString((s32)D_8009A3A4[gSelectedTrack[0]], 0x17, 0x41, 0, 0, 1,
-                       0, 0);
+        MenuDrawString(D_8009A3A4[gSelectedTrack[0]], 0x17, 0x41, 0, 0, 1, 0,
+                       0);
     }
     if (gSessionTypeAbsolute[0] == 0) {
-        MenuDrawString((s32)D_8009A3E8[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
+        MenuDrawString(D_8009A3E8[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
     } else {
-        MenuDrawString((s32)D_8009A41C[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
+        MenuDrawString(D_8009A41C[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
     }
     if (id + 1 >= 0xA) {
         D_8009A3ECLui[4] = 0x31;
@@ -5474,7 +5474,7 @@ void MenuDrawCarPick(u8 id, s32 shift) {
         D_8009A3ECLui[4] = id + 0x31;
         D_8009A3ECLui[5] = 0;
     }
-    MenuDrawString((s32)D_8009A3EC[0], 0xFC, 0x4D, 0, 0, 0, 0, 0);
+    MenuDrawString(D_8009A3EC[0], 0xFC, 0x4D, 0, 0, 0, 0, 0);
     height = id * 2;
     for (i = 0; i < 2; i++) {
         x0 = 0xA5;
@@ -5496,18 +5496,17 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             b2 = 0xC0;
         }
         MenuSetTextColor(r2, g2, b2);
-        MenuDrawString((s32)D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
-        MenuDrawString((s32)gDriverNames[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0,
-                       0);
+        MenuDrawString(D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
+        MenuDrawString(gDriverNames[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0, 0);
         if (gSessionTypeAbsolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
-            MenuDrawString((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
+            MenuDrawString(D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
             TextFormatTime((void *)D_800AEB34[color], -1, entry);
-            MenuDrawString((s32)entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
+            MenuDrawString(entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
         }
         if (gSessionTypeAbsolute[0] == 0 && height == 0 && i == 0) {
-            MenuDrawString((s32)D_8009A3EC[13], x0 + 0x59, 0x61, 0, 0, 0, 0, 0);
-            MenuDrawString((s32)D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
+            MenuDrawString(D_8009A3EC[13], x0 + 0x59, 0x61, 0, 0, 0, 0, 0);
+            MenuDrawString(D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
         }
     }
     gOrderingTableLui -= 4;
@@ -5765,8 +5764,8 @@ void func_80065F80(void) {
     entry = D_8009A3FC;
     D_800A38D8 = (u8 *)D_800A367C;
     *(volatile u8 *)&D_800A35B4 = strlen((char *)entry[0]);
-    MenuDrawString((s32)entry[0], MenuTextCenterOffset(0x140, (s32)entry[0]),
-                   0x7F, 0, 0, 0, 0, 0);
+    MenuDrawString(entry[0], MenuTextCenterOffset(0x140, (s32)entry[0]), 0x7F,
+                   0, 0, 0, 0, 0);
     ClearOTagR(D_800A38C4, 4);
     ptr = D_800A369C;
     str = D_8009A400[0];
@@ -5835,8 +5834,8 @@ void MenuDrawCarPickPair(s32 shiftPanels) {
             x = 0x17;
         }
         MenuSetTextColor(0x80, 0x80, 0xC0);
-        MenuDrawString((s32)D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
-        MenuDrawString((s32)gDriverNames[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
+        MenuDrawString(D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
+        MenuDrawString(gDriverNames[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
         D_800A3970 = (u8 *)D_800A367C;
         if (shift != 0) {
             for (prim = (POLY_FT4 *)D_800A3568; prim != (POLY_FT4 *)D_800A3970;
@@ -5849,11 +5848,11 @@ void MenuDrawCarPickPair(s32 shiftPanels) {
         }
     }
     x = MenuTextCenterOffset(0x140, (s32)D_8009A3F4[0]);
-    MenuDrawString((s32)D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
+    MenuDrawString(D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
     x = MenuTextCenterOffset(0x140, (s32)D_8009A3F8);
-    MenuDrawString((s32)D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
+    MenuDrawString(D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
     x = MenuTextCenterOffset(0x140, (s32)gTrackNames[gSelectedTrackLui]);
-    MenuDrawString((s32)gTrackNames[gSelectedTrackLui], x, 0x4D, 0, 0, 0, 0, 0);
+    MenuDrawString(gTrackNames[gSelectedTrackLui], x, 0x4D, 0, 0, 0, 0, 0);
     D_800A3940Signed = 2;
     if ((shiftPanels & 0xFF) != 0) {
         D_800A3A44Signed = -0x140;

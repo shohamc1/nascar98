@@ -662,7 +662,7 @@ s16 MenuFontLineHeight(void) {
     return *(s16 *)(D_800A35AC + 8);
 }
 
-s16 MenuStringWidth(s32 text) {
+s16 MenuStringWidth(u8 *text) {
     s32 total;
     s32 idx;
     s32 glyphCount;
@@ -673,10 +673,10 @@ s16 MenuStringWidth(s32 text) {
     glyphCount = *(u16 *)D_800A35A0;
     i = 0;
     total = 0;
-    if (*(u8 *)text != 0) {
+    if (*text != 0) {
         limit = glyphCount + 0x20;
         do {
-            ch = ((u8 *)text)[i];
+            ch = text[i];
             idx = 0;
             if (ch >= 0x20) {
                 if (ch < limit) {
@@ -694,7 +694,7 @@ s16 MenuStringWidth(s32 text) {
                 total -= 1;
             }
             i++;
-        } while (((u8 *)text)[i] != 0);
+        } while (text[i] != 0);
     }
     return total;
 }
@@ -705,7 +705,7 @@ s16 MenuStringWidth(s32 text) {
    CLUT, 4 = 9/10). '\n' returns to x and moves down one line. center
    right-aligns the string to end at x, shade picks the tint, semi sets
    semi-transparency, and advance replaces the glyph width when non-zero. */
-void MenuDrawString(s32 text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
+void MenuDrawString(u8 *text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
                     u8 semi, u8 advance) {
     s16 penX;
     s32 i;
@@ -731,9 +731,9 @@ void MenuDrawString(s32 text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
         clut = GetClut(0x100, 0x1FF);
     }
     i = 0;
-    if (((u8 *)text)[0] != 0) {
+    if (text[0] != 0) {
         do {
-            ch = ((u8 *)text)[i];
+            ch = text[i];
             if (ch == '\n') {
                 penX = x;
                 if (D_800A3534 == 2) {
@@ -816,7 +816,7 @@ void MenuDrawString(s32 text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
                 }
                 i++;
             }
-        } while (((u8 *)text)[i] != 0);
+        } while (text[i] != 0);
     }
 }
 
@@ -1762,8 +1762,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
         item->targetX = 0x131 - (u16)item->width;
         item->x = x - (u16)item->width;
         if ((menuId == 4 && i == 1) || (menuId == 0xB && (u32)(i - 2) < 5)) {
-            width =
-                MenuStringWidth((s32)gFormatLeadingSpacesZeroesPercentWildcard);
+            width = MenuStringWidth(gFormatLeadingSpacesZeroesPercentWildcard);
             item->targetX = (u16)item->targetX - width;
             slots[1][count] = y;
             slots[2][count] = x;
@@ -2020,7 +2019,7 @@ void MenuRefreshSixEntryValues(void) {
 }
 
 #ifdef NON_MATCHING
-extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     register u8 *prim asm("s3");
 
@@ -2047,7 +2046,7 @@ void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     }
 }
 #else
-extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     u8 *prim;
     s32 id;

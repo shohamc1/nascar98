@@ -854,7 +854,7 @@ extern Car *D_800A3960CarState[] asm("gCrashCar");
 extern s32 D_800A39E0CarState asm("D_800A39E0");
 extern s32 D_800A3A04CarState[] asm("D_800A3A04");
 extern s32 gTrackSectionCountCarState[] asm("gTrackSectionCount");
-extern u8 *gTrackSectionsCarState[] asm("gTrackSections");
+extern TrackSection *gTrackSectionsCarState[] asm("gTrackSections");
 
 extern Car *D_800A3960CarStateStore[] asm("gCrashCar");
 extern s32 D_800A3A04CarStateStore[] asm("D_800A3A04");
@@ -918,7 +918,7 @@ void func_8003DBA8(Car *object) {
     if ((sectionCount < section) || (section < 0)) {
         section = 0;
     }
-    entry = &((TrackSection *)gTrackSectionsCarState[0])[section];
+    entry = &gTrackSectionsCarState[0][section];
     targets = (u8 *)entry + 0x34;
     if (entry->unk34 != section) {
         entry->unk34 = section;
@@ -927,11 +927,11 @@ void func_8003DBA8(Car *object) {
         earlierOffset = gTrackSectionCountCarState[0] - 2;
         earlierSection =
             (s32)(section + earlierOffset) % (s32)gTrackSectionCountCarState[0];
-        previous =
-            gTrackSectionsCarState[0] + (((s32)(section + previousOffset) %
-                                          (s32)gTrackSectionCountCarState[0]) *
-                                         0x90);
-        earlier = &((TrackSection *)gTrackSectionsCarState[0])[earlierSection];
+        previous = (u8 *)gTrackSectionsCarState[0] +
+                   (((s32)(section + previousOffset) %
+                     (s32)gTrackSectionCountCarState[0]) *
+                    0x90);
+        earlier = &gTrackSectionsCarState[0][earlierSection];
         coordinate = *(s32 *)(previous + 0x40);
         entry->unk40 = (s32)((coordinate - earlier->unk40) + coordinate);
         coordinateY = *(s32 *)(previous + 0x44);
@@ -963,12 +963,10 @@ void func_8003DBA8(Car *object) {
         }
         if (MathGetAngleDelta(
                 object->heading,
-                ((TrackSection *)gTrackSectionsCarState[0])[object->segment]
-                    .angle) < 0) {
+                gTrackSectionsCarState[0][object->segment].angle) < 0) {
             if (-MathGetAngleDelta(
                     object->heading,
-                    ((TrackSection *)gTrackSectionsCarState[0])[object->segment]
-                        .angle) < 0x15) {
+                    gTrackSectionsCarState[0][object->segment].angle) < 0x15) {
                 turnLimit = 4;
             } else {
                 turnLimit = 0x14;
@@ -976,8 +974,7 @@ void func_8003DBA8(Car *object) {
         } else {
             if (MathGetAngleDelta(
                     object->heading,
-                    ((TrackSection *)gTrackSectionsCarState[0])[object->segment]
-                        .angle) >= 0x15) {
+                    gTrackSectionsCarState[0][object->segment].angle) >= 0x15) {
                 turnLimit = 0x14;
             } else {
                 turnLimit = 4;
@@ -1250,8 +1247,7 @@ void func_8003DBA8(Car *object) {
             trailingSection =
                 (s32)(object->segment + trailingOffset) % sectionCount;
             object->unk84 = 0xA0000;
-            trailing =
-                &((TrackSection *)gTrackSectionsCarState[0])[trailingSection];
+            trailing = &gTrackSectionsCarState[0][trailingSection];
             if (trailing->unk34 == trailingSection) {
                 delta[0] = trailing->unk38 - object->pos.x;
                 delta[1] = trailing->unk3C - object->pos.y;
@@ -1261,8 +1257,7 @@ void func_8003DBA8(Car *object) {
         } else {
             angleDelta = MathGetAngleDelta(
                 object->heading,
-                ((TrackSection *)gTrackSectionsCarState[0])[object->segment]
-                    .angle);
+                gTrackSectionsCarState[0][object->segment].angle);
             if (angleDelta >= 0) {
                 if (angleDelta < 0x14) {
                     goto block_114;
@@ -1271,9 +1266,7 @@ void func_8003DBA8(Car *object) {
             }
             if (-angleDelta < 0x14) {
             block_114:
-                ringV1 =
-                    ((TrackSection *)gTrackSectionsCarState[0])[object->segment]
-                        .angle;
+                ringV1 = gTrackSectionsCarState[0][object->segment].angle;
                 object->unk269 = 2U;
                 object->heading = ringV1;
             } else {

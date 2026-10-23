@@ -919,7 +919,7 @@ typedef struct {
 } SceneTexture;
 
 extern SceneTexture D_80090F50[];
-extern s32 D_800AE15C[];
+extern Vec3 *D_800AE15C[];
 extern u8 D_800A3424;
 extern s8 D_800A3438;
 
@@ -982,8 +982,8 @@ void SceneInitProjectiles(void) {
         object.heading = angle;
         object.fineHeading = angle * 4;
         for (j = 0; j < 2; j++) {
-            point[0] = *(s32 *)((u8 *)D_800AE15C[0] + i * 12);
-            point[1] = *(s32 *)((u8 *)D_800AE15C[0] + i * 12 + 4);
+            point[0] = D_800AE15C[0][i].x;
+            point[1] = D_800AE15C[0][i].y;
             dist = 0x96;
             if (j != 0) {
                 dist = -0x96;
@@ -1126,9 +1126,7 @@ void SceneInitRoadStrip(void) {
                             register SceneRoadPoint *firstCache asm("a0");
                             s32 cameraZ;
 
-                            x = (*(s32 *)((u8 *)D_800AE15C[0] +
-                                          sectionIndex * 12) +
-                                     result.vz >>
+                            x = (D_800AE15C[0][sectionIndex].x + result.vz >>
                                  2) -
                                 origin[0];
                             firstPoint = (u8 *)quad + side * sizeof(SVECTOR);
@@ -1136,9 +1134,7 @@ void SceneInitRoadStrip(void) {
                                                             (side * 6 + row));
                             firstCache->x = x;
                             ((SVECTOR *)(firstPoint + 0x30))->vx = x;
-                            y = (*(s32 *)((u8 *)D_800AE15C[0] +
-                                          sectionIndex * 12 + 4) +
-                                     result.vx >>
+                            y = (D_800AE15C[0][sectionIndex].y + result.vx >>
                                  2) -
                                 origin[1];
                             firstCache->y = y;
@@ -1183,8 +1179,7 @@ void SceneInitRoadStrip(void) {
                             s32 nextSectionIndex;
 
                             nextSectionIndex = (s16)nextSection;
-                            x = (*(s32 *)((u8 *)D_800AE15C[0] +
-                                          nextSectionIndex * 12) +
+                            x = (D_800AE15C[0][nextSectionIndex].x +
                                      result.vz >>
                                  2) -
                                 origin[0];
@@ -1200,8 +1195,7 @@ void SceneInitRoadStrip(void) {
                                 (u8 *)quad + otherSide * sizeof(SVECTOR);
                             nextCache->x = x;
                             ((SVECTOR *)(nextPoint + 0x30))->vx = x;
-                            y = (*(s32 *)((u8 *)D_800AE15C[0] +
-                                          nextSectionIndex * 12 + 4) +
+                            y = (D_800AE15C[0][nextSectionIndex].y +
                                      result.vx >>
                                  2) -
                                 origin[1];
@@ -1331,9 +1325,7 @@ void SceneUpdateRoadStrip(Car *car) {
                     points[otherSide].vx = D_800A45C0[slot][side].x;
                     points[otherSide].vy = D_800A45C0[slot][side].y;
                     points[otherSide].vz = D_800A45C0[slot][side].z;
-                    x = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12) +
-                             result.vz >>
-                         2) -
+                    x = (D_800AE15C[0][(s16)section].x + result.vz >> 2) -
                         origin[0];
                     row = slot * 12 + side * 6;
                     /* Build the cache pointer after x is ready. */
@@ -1343,9 +1335,7 @@ void SceneUpdateRoadStrip(Car *car) {
                     point = (SVECTOR *)(pointOffset + (u32)points);
                     cache->x = x;
                     point->vx = x;
-                    y = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12 + 4) +
-                             result.vx >>
-                         2) -
+                    y = (D_800AE15C[0][(s16)section].y + result.vx >> 2) -
                         origin[1];
                     cache->y = y;
                     point->vy = y;
@@ -1416,9 +1406,7 @@ void SceneUpdateRoadStrip(Car *car) {
                     points[side].vx = D_800A45D8[slot][side].x;
                     points[side].vy = D_800A45D8[slot][side].y;
                     points[side].vz = D_800A45D8[slot][side].z;
-                    x = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12) +
-                             result.vz >>
-                         2) -
+                    x = (D_800AE15C[0][(s16)section].x + result.vz >> 2) -
                         origin[0];
                     row = slot * 12 + side * 6;
                     asm("" : "=r"(row) : "0"(row), "r"(x) : "v0", "a0");
@@ -1427,9 +1415,7 @@ void SceneUpdateRoadStrip(Car *car) {
                     point = (SVECTOR *)(pointOffset + (u32)points);
                     cache->x = x;
                     point->vx = x;
-                    y = (*(s32 *)((u8 *)D_800AE15C[0] + (s16)section * 12 + 4) +
-                             result.vx >>
-                         2) -
+                    y = (D_800AE15C[0][(s16)section].y + result.vx >> 2) -
                         origin[1];
                     cache->y = y;
                     point->vy = y;
@@ -1649,7 +1635,7 @@ void func_800474A0(void) {
                 rot[1] = D_80099256[(s16)loopIdx * 3];
                 rot[2] = D_80099258[(s16)loopIdx * 3] - multTmp;
                 D_800A2FEC.vz = D_800A3480 - D_800A3480 * 16;
-                RotMatrix(&D_800A2FEC, (MATRIX *)D_800A7530);
+                RotMatrix(&D_800A2FEC, D_800A7530);
                 goto afterRot;
             }
         } else {
@@ -1674,7 +1660,7 @@ void func_800474A0(void) {
                     rot[2] = rot[2] - D_800A3468;
                 }
                 D_800A2FEC.vz = 0;
-                RotMatrix(&D_800A2FEC, (MATRIX *)D_800A7530);
+                RotMatrix(&D_800A2FEC, D_800A7530);
                 goto afterRot;
             }
         }
@@ -1683,7 +1669,7 @@ void func_800474A0(void) {
         rot[2] = D_80099258[(s16)loopIdx * 3];
         angC = D_800A3480;
         D_800A2FEC.vz = angC - angC * 16;
-        RotMatrix(&D_800A2FEC, (MATRIX *)D_800A7530);
+        RotMatrix(&D_800A2FEC, D_800A7530);
     afterRot:
         if (loopIdx != 0) {
             if (D_800A3480 < 0) {
@@ -1805,14 +1791,14 @@ void func_800474A0(void) {
             }
             segIdx += 1;
         } while (segIdx < 0x12);
-        SetRotMatrix((MATRIX *)D_800A7530);
+        SetRotMatrix(D_800A7530);
         if (loopIdx == 0 && D_800A3460 != 0) {
             transPtr = &mat1;
             mat1.t[0] = D_800A3460 * 4;
             mat1.t[1] = D_800A3460 * 8 + 0x64;
             mat1.t[2] = D_800A3460 * 16;
         } else {
-            transPtr = (MATRIX *)D_800A7530;
+            transPtr = D_800A7530;
         }
         SetTransMatrix(transPtr);
         if (loopIdx != 0 && D_800A345C >= 5) {
@@ -2753,7 +2739,7 @@ typedef struct {
 } HudTexture;
 
 extern u8 D_800A3680[1];
-extern u8 D_800A2FD0[3];
+extern s8 D_800A2FD0[3];
 extern u8 D_800A3484Small;
 asm(".globl D_800A3484Small\nD_800A3484Small = D_800A3484");
 extern s8 *D_8009AE2C[];
@@ -2946,13 +2932,13 @@ void HudInitRacePrims(void) {
         *(u8 *)(prim + 0x24) = D_80090FF2c[0] + 0x3C;
         *(u8 *)(prim + 0x25) = D_80090FF4c[0] + 0x3C;
         *(s16 *)(prim + 8) = 0xF5;
-        *(s16 *)(prim + 0xA) = (s8)D_800A2FD0[row] + 0xA0;
+        *(s16 *)(prim + 0xA) = D_800A2FD0[row] + 0xA0;
         *(s16 *)(prim + 0x10) = 0x131;
-        *(s16 *)(prim + 0x12) = (s8)D_800A2FD0[row] + 0xA0;
+        *(s16 *)(prim + 0x12) = D_800A2FD0[row] + 0xA0;
         *(s16 *)(prim + 0x18) = 0xF5;
-        *(s16 *)(prim + 0x1A) = (s8)D_800A2FD0[row] + 0xDC;
+        *(s16 *)(prim + 0x1A) = D_800A2FD0[row] + 0xDC;
         *(s16 *)(prim + 0x20) = 0x131;
-        *(s16 *)(prim + 0x22) = (s8)D_800A2FD0[row] + 0xDC;
+        *(s16 *)(prim + 0x22) = D_800A2FD0[row] + 0xDC;
         *(u16 *)((u8 *)D_800A78E2 + row * 0x28) =
             GetClut(D_80090FEE[0], D_80090FF0[0]);
         tex = D_80090FEA;
@@ -3006,7 +2992,7 @@ void HudInitRacePrims(void) {
             ((POLY_FT4 *)mapPrim)->x0 = (value >> 0x10) + 0x12C;
             coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
             value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
-            asm("" : "=r"(yOffset) : "0"((s32)D_800A2FD0[view]));
+            asm("" : "=r"(yOffset) : "0"((s32)(u8)D_800A2FD0[view]));
             coordX = (u8 *)D_800A3A2CAbsolute[0];
             value >>= 0x10;
             yOffset = (s8)yOffset + 0xD7;
@@ -3020,7 +3006,7 @@ void HudInitRacePrims(void) {
             ((POLY_FT4 *)mapPrim)->x1 = (value >> 0x10) + 0x130;
             coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
             value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
-            asm("" : "=r"(yOffset) : "0"((s32)D_800A2FD0[view]));
+            asm("" : "=r"(yOffset) : "0"((s32)(u8)D_800A2FD0[view]));
             coordX = (u8 *)D_800A3A2CAbsolute[0];
             value >>= 0x10;
             yOffset = (s8)yOffset + 0xD7;
@@ -3036,7 +3022,7 @@ void HudInitRacePrims(void) {
             value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
             coordX = (u8 *)D_800A3A2CAbsolute[0];
             ((POLY_FT4 *)mapPrim)->y2 =
-                (value >> 0x10) + (s8)D_800A2FD0[view] + 0xDB;
+                (value >> 0x10) + D_800A2FD0[view] + 0xDB;
             coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
             coordinateValue = *(s32 *)coordX;
             value = MathMultiplyFixed16(0x370000, coordinateValue);
@@ -3045,7 +3031,7 @@ void HudInitRacePrims(void) {
             cornerOffset += (u32)coordY;
             value = MathMultiplyFixed16(0x370000, *(s32 *)cornerOffset);
             ((POLY_FT4 *)mapPrim)->y3 =
-                (value >> 0x10) + (s8)D_800A2FD0[view] + 0xDB;
+                (value >> 0x10) + D_800A2FD0[view] + 0xDB;
         }
         col = 0;
         tileIndex = (s8)entry;
@@ -3061,7 +3047,7 @@ void HudInitRacePrims(void) {
             tileX = 0xD;
             ((TILE *)p4)->x0 = tileX;
             tileX = 0;
-            ((TILE *)p4)->y0 = (s8)D_800A2FD0[tileIndex] + 0xD3;
+            ((TILE *)p4)->y0 = D_800A2FD0[tileIndex] + 0xD3;
             tileHeightBase = (u8 *)D_800A7932;
             *(u16 *)(tileBytes + col * 0x10 + tileHeightBase) = 6;
             tileHeightBase = 0;
@@ -3099,7 +3085,7 @@ void HudInitRacePrims(void) {
             ((TILE *)back)->g0 = 0;
             ((TILE *)back)->b0 = 0;
             ((TILE *)back)->x0 = 0xC;
-            ((TILE *)back)->y0 = (s8)D_800A2FD0[tileRow] + 0xD2;
+            ((TILE *)back)->y0 = D_800A2FD0[tileRow] + 0xD2;
             ((TILE *)back)->w = 0x2A;
             ((TILE *)back)->h = 8;
         }
@@ -3155,7 +3141,7 @@ void HudInitRacePrims(void) {
         }
     }
 }
-extern u8 D_800A2FD0[];
+extern s8 D_800A2FD0[];
 
 /* The `(u32)index + (u32)base` casts give retail's index-first `addu`
  * operands. The block-local row load and the `asm volatile` barrier keep
@@ -3192,7 +3178,7 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
         i24 = i << 24;
         xy0 = (u16 *)((u32)(i24 >> 22) + (u32)arg1);
         row = *(s8 **)((u32)(i24 >> 22) + (u32)a914);
-        asm("" : "=r"(padByte) : "0"(D_800A2FD0[arg0e]));
+        asm("" : "=r"(padByte) : "0"((u8)D_800A2FD0[arg0e]));
         asm volatile("");
         x = xy0[0];
         w = xy0[1] + ((padByte << 24) >> 24);
@@ -6409,7 +6395,7 @@ extern s32 D_800A2DF0Absolute[];
 extern s32 gOrderingTableBankSmall[];
 void SceneSkyFadeDraw(void) {
     extern s32 D_800A2F00wC[] asm("D_800A2F00");
-    extern u8 *D_800A3A2CwC[] asm("D_800A3A2C");
+    extern s32 D_800A3A2CwC[] asm("D_800A3A2C");
     extern u8 *D_800A3A34wC[] asm("D_800A3A34");
 
     extern u8 *D_800A3A34Next[] asm("D_800A3A34.NON_MATCHING");
@@ -6612,7 +6598,7 @@ void SceneSkyFadeDraw(void) {
         }
     }
     factor = D_800A34D8;
-    byteValue = (s32)D_800A3A2CwC[0];
+    byteValue = D_800A3A2CwC[0];
     argument = (s32)D_800A3A34wC[0];
     result = factor << 2;
     byteValue = result + byteValue;
@@ -6666,7 +6652,7 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, shade);
             {
                 s32 tableAddress;
-                tableAddress = (s32)D_800A3A2CwC[0];
+                tableAddress = D_800A3A2CwC[0];
                 idx += tableAddress;
                 argument = *(s32 *)idx;
                 factor = shade;
@@ -6707,7 +6693,7 @@ void SceneSkyFadeDraw(void) {
                         result += screenShift;
                         D_800A8B7C[0] = result;
                         D_800A8B64[0] = result;
-                        result = (s32)D_800A3A2CwC[0];
+                        result = D_800A3A2CwC[0];
                         value = *(u16 *)((u8 *)D_800A8AF2 + paletteOffset);
                         idx = (s32)(fade << 16) >> 14;
                         asm("" : : "r"(fade));
@@ -6740,7 +6726,7 @@ void SceneSkyFadeDraw(void) {
                         asm(""
                             : "=r"(shade), "=r"(byteValue)
                             : "0"(shade), "1"(byteValue));
-                        argument = (s32)D_800A3A2CwC[0];
+                        argument = D_800A3A2CwC[0];
                         result >>= 16;
                         result = yStep + result;
                         byteValue += result;
@@ -6846,7 +6832,7 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, shade);
             {
                 s32 tableAddress;
-                tableAddress = (s32)D_800A3A2CwC[0];
+                tableAddress = D_800A3A2CwC[0];
                 idx += tableAddress;
                 argument = *(s32 *)idx;
                 factor = shade;
@@ -6887,7 +6873,7 @@ void SceneSkyFadeDraw(void) {
                         result += screenShift;
                         D_800A8B20[0] = result;
                         D_800A8B10[0] = result;
-                        result = (s32)D_800A3A2CwC[0];
+                        result = D_800A3A2CwC[0];
                         value = *(u16 *)((u8 *)D_800A8AF2 + paletteOffset);
                         idx = (s32)(fade << 16) >> 14;
                         asm("" : : "r"(fade));
@@ -6920,7 +6906,7 @@ void SceneSkyFadeDraw(void) {
                         asm(""
                             : "=r"(shade), "=r"(byteValue)
                             : "0"(shade), "1"(byteValue));
-                        argument = (s32)D_800A3A2CwC[0];
+                        argument = D_800A3A2CwC[0];
                         result >>= 16;
                         result = yStep + result;
                         byteValue += result;
@@ -7608,7 +7594,7 @@ void MenuRunFrontEnd(void) {
         SetDispMask(0);
     }
     TextureLoadTim(D_800A37EC);
-    D_800A3710[0] = *(RECT *)&D_800A39B0[0];
+    D_800A3710[0] = D_800A39B0[0];
     D_800A35F0 = (u16 *)D_800A36B4w6c[0];
     func_80053D40();
     func_80063AE0(0, 0);
@@ -11692,7 +11678,7 @@ void func_80058D94(void) {
     D_800A37EC = (s32)(fileBuf + offsets[0]);
     texBuf = HeapAlloc(0x25800);
     TextureLoadTim((void *)D_800A37EC);
-    D_800A3710[0] = *(RECT *)&D_800A39B0[0];
+    D_800A3710[0] = D_800A39B0[0];
     D_800A35F0 = (u16 *)D_800A36B4w6c[0];
     DrawSync(0);
     TextureLoadTim(fileBuf + offsets[1]);

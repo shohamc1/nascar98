@@ -5860,8 +5860,8 @@ s32 func_8002AEB0(u8 *arg0) {
 }
 
 void func_8002AF94(Car *car) {
-    extern u8 *trigA asm("D_800A3A2CAbsolute");
-    extern u8 *trigB asm("D_800A3A34Absolute");
+    extern s32 *trigA asm("D_800A3A2CAbsolute");
+    extern s32 *trigB asm("D_800A3A34Absolute");
     u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
     VECTOR front;
     VECTOR rear;
@@ -5869,31 +5869,27 @@ void func_8002AF94(Car *car) {
     s32 index;
 
     index = (0x400 - car->heading) & 0x3FF;
-    front.vx = MathMultiplyFixed16(((s32 *)trigA)[index], car->frontVelocityX) -
-               MathMultiplyFixed16(((s32 *)trigB)[index], car->frontVelocityY);
-    front.vy = MathMultiplyFixed16(((s32 *)trigB)[index], car->frontVelocityX) +
-               MathMultiplyFixed16(((s32 *)trigA)[index], car->frontVelocityY);
-    rear.vx = MathMultiplyFixed16(((s32 *)trigA)[index], car->rearVelocityX) -
-              MathMultiplyFixed16(((s32 *)trigB)[index], car->rearVelocityY);
-    rear.vy = MathMultiplyFixed16(((s32 *)trigB)[index], car->rearVelocityX) +
-              MathMultiplyFixed16(((s32 *)trigA)[index], car->rearVelocityY);
+    front.vx = MathMultiplyFixed16(trigA[index], car->frontVelocityX) -
+               MathMultiplyFixed16(trigB[index], car->frontVelocityY);
+    front.vy = MathMultiplyFixed16(trigB[index], car->frontVelocityX) +
+               MathMultiplyFixed16(trigA[index], car->frontVelocityY);
+    rear.vx = MathMultiplyFixed16(trigA[index], car->rearVelocityX) -
+              MathMultiplyFixed16(trigB[index], car->rearVelocityY);
+    rear.vy = MathMultiplyFixed16(trigB[index], car->rearVelocityX) +
+              MathMultiplyFixed16(trigA[index], car->rearVelocityY);
     diff = front.vx - rear.vx;
     if (abs(diff) > 0x50000) {
         front.vx = front.vx + -diff * 4 / 10;
         rear.vx = rear.vx + diff * 6 / 10;
         index = car->heading;
-        car->frontVelocityX =
-            MathMultiplyFixed16(((s32 *)trigA)[index], front.vx) -
-            MathMultiplyFixed16(((s32 *)trigB)[index], front.vy);
-        car->frontVelocityY =
-            MathMultiplyFixed16(((s32 *)trigB)[index], front.vx) +
-            MathMultiplyFixed16(((s32 *)trigA)[index], front.vy);
-        car->rearVelocityX =
-            MathMultiplyFixed16(((s32 *)trigA)[index], rear.vx) -
-            MathMultiplyFixed16(((s32 *)trigB)[index], rear.vy);
-        car->rearVelocityY =
-            MathMultiplyFixed16(((s32 *)trigB)[index], rear.vx) +
-            MathMultiplyFixed16(((s32 *)trigA)[index], rear.vy);
+        car->frontVelocityX = MathMultiplyFixed16(trigA[index], front.vx) -
+                              MathMultiplyFixed16(trigB[index], front.vy);
+        car->frontVelocityY = MathMultiplyFixed16(trigB[index], front.vx) +
+                              MathMultiplyFixed16(trigA[index], front.vy);
+        car->rearVelocityX = MathMultiplyFixed16(trigA[index], rear.vx) -
+                             MathMultiplyFixed16(trigB[index], rear.vy);
+        car->rearVelocityY = MathMultiplyFixed16(trigB[index], rear.vx) +
+                             MathMultiplyFixed16(trigA[index], rear.vy);
     }
 }
 
@@ -7138,8 +7134,8 @@ typedef struct {
 } Delta3;
 
 s32 CarTestDraft(Car *arg0, Car *arg1) {
-    extern u8 *trigA asm("D_800A3A2CAbsolute");
-    extern u8 *trigB asm("D_800A3A34Absolute");
+    extern s32 *trigA asm("D_800A3A2CAbsolute");
+    extern s32 *trigB asm("D_800A3A34Absolute");
     /* A struct member is not a plain decl, so fold hoists one load of the
      * limit above each ABS split. */
     extern struct {
@@ -7164,11 +7160,11 @@ s32 CarTestDraft(Car *arg0, Car *arg1) {
     }
     rot = delta;
     index = (0x400 - arg0->heading) & 0x3FF;
-    delta.x = (MathMultiplyFixed16(((s32 *)trigA)[index], rot.x << 16) -
-               MathMultiplyFixed16(((s32 *)trigB)[index], rot.y << 16)) >>
+    delta.x = (MathMultiplyFixed16(trigA[index], rot.x << 16) -
+               MathMultiplyFixed16(trigB[index], rot.y << 16)) >>
               16;
-    delta.y = (MathMultiplyFixed16(((s32 *)trigB)[index], rot.x << 16) +
-               MathMultiplyFixed16(((s32 *)trigA)[index], rot.y << 16)) >>
+    delta.y = (MathMultiplyFixed16(trigB[index], rot.x << 16) +
+               MathMultiplyFixed16(trigA[index], rot.y << 16)) >>
               16;
     if (*(s16 *)((s32)arg0->shape + 0x22) * 2 > ABS(delta.y)) {
         if (ABS(delta.x) < cull.dist) {

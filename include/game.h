@@ -68,7 +68,7 @@ extern s32 D_800A397CAbsolute[];
 extern u8 D_800A3980[];
 extern s32 D_800A3984[];
 extern MenuObj *D_800A39A0[];
-extern u8 D_800A39B0[];
+extern RECT D_800A39B0[];
 extern u8 D_800A39C4;
 extern u8 gScreenState[];
 extern u8 gScreenStateAbsolute[];

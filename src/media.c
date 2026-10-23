@@ -24,7 +24,7 @@ extern u8 D_800A2F9CLui asm("D_800A2F9CAbsolute");
 extern void SoundPlaySlot(s8, s8);
 extern void SsSetMute(s32);
 s32 VSync(s32);
-extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
+extern void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void TextureLoadTim(void *timImage);
 asm(".globl MenuDrawStringW");
 extern u16 gCdVolumeAbsolute[];
@@ -436,7 +436,7 @@ void func_8006EEE0(s32 arg0) {
     MoviePlayFile(idx + 0xF, 2, 0);
     SetDispMask(0);
     TextureLoadTim(heap);
-    rect = *(RECT *)&D_800A39B0[0];
+    rect = D_800A39B0[0];
     pixptr = D_800A36B4nm[0];
     SetDefDispEnv(&disp, 0, 0, 0x140, 0xF0);
     if (D_800A3578[0] == 1) {

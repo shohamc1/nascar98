@@ -87,13 +87,13 @@ void func_80067F34(s32 page, s32 track) {
     MenuFontSetS32(2, 3);
     strcpy(buf, D_8009A474[0]);
     strcat(buf, (char *)D_8009A31C[track & 0xFF]);
-    w = MenuStringWidth((s32)buf);
+    w = MenuStringWidth(buf);
     sum = (0x140 - w) / 2;
     obj->x = sum;
     obj->targetX = sum;
     obj->drawOffsetX = obj->x;
     next = obj->next;
-    w = MenuStringWidth((s32)D_8009A474[0]);
+    w = MenuStringWidth(D_8009A474[0]);
     {
         s32 hdrH;
         MenuTextPacket *pktH;
@@ -193,7 +193,7 @@ void CardMenuCreateRecordTable(u8 track) {
     extern MenuObj *D_800A3870;
     extern u8 D_800A3894;
     extern MenuObj *D_800A37D4;
-    extern s16 MenuStringWidth(s32 text);
+    extern s16 MenuStringWidth(u8 * text);
     extern MenuObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, s32, s32, s32,
                                        s32, s32);
     extern MenuObj *MenuCreateTextObject(s32, s32);
@@ -258,7 +258,7 @@ void CardMenuCreateRecordTable(u8 track) {
         MenuFontSetS32(2, 3);
         strcpy(buf, D_8009A474[0]);
         strcat(buf, (char *)D_8009A31C[track]);
-        w = (s16)MenuStringWidth((s32)buf);
+        w = (s16)MenuStringWidth(buf);
         x = (0x140 - w) / 2;
         tail->x = x;
         tail->targetX = x;
@@ -280,7 +280,7 @@ void CardMenuCreateRecordTable(u8 track) {
             pkt->orderingDepth = hdr;
             tail->orderingDepth = hdr;
         }
-        w = (s16)MenuStringWidth((s32)D_8009A474[0]);
+        w = (s16)MenuStringWidth(D_8009A474[0]);
         obj = MenuCreateTextObject(tail->x + w, 0x2A);
         obj->drawOffsetX = obj->x;
         obj->orderingDepth = 0x32;
@@ -707,7 +707,7 @@ void func_80068CE4(void) {
     strcat(buf, D_8009A498[0]);
     /* After the call, so the li lands in the call's delay slot. */
     y = 0x39;
-    titleW = MenuStringWidth((s32)buf);
+    titleW = MenuStringWidth(buf);
     titleX = (0x140 - titleW) / 2;
     tail->x = titleX;
     tail->targetX = titleX;
@@ -719,7 +719,7 @@ void func_80068CE4(void) {
     titlePkt->unk3 = 0;
     titlePkt->orderingDepth = 0x32;
     tail->orderingDepth = 0x32;
-    titleW = MenuStringWidth((s32)D_800B9B54);
+    titleW = MenuStringWidth(D_800B9B54);
     obj = MenuCreateTextObject(tail->x + titleW, 0x2A);
     obj->orderingDepth = 0x32;
     value = (s32)D_8009A498[0];
@@ -949,7 +949,7 @@ void CardMenuCreateStandingsTable(void) {
     tail = MenuCreateTextObject(0, 0x2A);
     sMenuHead[0] = tail;
     MenuFontSetS32(2, 3);
-    h = (0x140 - MenuStringWidth((s32)D_8009A490[0])) / 2;
+    h = (0x140 - MenuStringWidth(D_8009A490[0])) / 2;
     tail->x = h;
     tail->targetX = h;
     tail->orderingDepth = 0x32;
