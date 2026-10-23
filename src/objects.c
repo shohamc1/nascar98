@@ -2923,7 +2923,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
         tmp0 = (s32)gPlayerCar[0];
         if (otherCar == (u8 *)tmp0) {
             otherCar = car;
-            car = (u8 *)tmp0;
+            car = (Car *)tmp0;
         }
     }
     separation.x = (otherCar->pos.x) - (car->pos.x);
@@ -5708,7 +5708,7 @@ void CarUpdatePlayer(Car *object) {
     *(s32 *)&car->pos.x = positionX;
     *(s32 *)&car->pos.y = positionY;
     *(s32 *)&car->pos.z = positionZ;
-    func_80029CB4((s32 *)car);
+    func_80029CB4(car);
     func_80039B74((s32 *)car, 0);
     if ((*(s8 *)&car->place) == 1) {
         (*(s32 *)&car->unk3D0) = (s32)D_800A2EC0PlayerStep[0];
@@ -6481,7 +6481,7 @@ void func_8002BD48(Car *carBytes) {
             node = (u8 *)leader->order.node.next;
 
         nextCar:
-            leader = *((u8 **)(node + 8));
+            leader = *((Car **)(node + 8));
 
             if ((leader->type) != 0) {
                 goto findCar;
@@ -9178,7 +9178,7 @@ asm(".globl D_800A2E8CFrame\nD_800A2E8CFrame = D_800A2E8C\n"
     ".globl gOrderingTableFrame5Read\ngOrderingTableFrame5Read = gOrderingTable\n"
     ".globl gOrderingTableFrame8Read\ngOrderingTableFrame8Read = gOrderingTable\n");
 extern s32 D_800A2E98Frame;
-extern u8 *D_800A2E9CFrame;
+extern Car *D_800A2E9CFrame;
 extern Car *D_800A2EA0Frame;
 extern s32 D_800A2EBCFrame;
 extern s32 D_800A2EC0Frame;
@@ -9282,7 +9282,8 @@ void GraphicsDrawRaceViews(void) {
             } else {
                 randomIndex = RandomScaledGet(0x18);
             }
-            D_800A2E9CFrame = D_800A3984Frame[0] + ((randomIndex + 1) * 0x500);
+            D_800A2E9CFrame =
+                (Car *)(D_800A3984Frame[0] + ((randomIndex + 1) * 0x500));
         }
     }
     ticks = GetRCnt(RCntCNT1);
@@ -9342,7 +9343,7 @@ void GraphicsDrawRaceViews(void) {
                 car = (*(u8 **)(car + 0x3E0));
             } while (car != NULL);
         }
-        focusCar = ((u8 *)gPlayerCarFrame[0]->next);
+        focusCar = gPlayerCarFrame[0]->next;
         D_800A2F0CFrame = 0xA28;
         D_800A2F10Frame = 0x992;
         D_800A2ED9Frame = 1;
@@ -13682,7 +13683,7 @@ extern s16 D_800A3910373B4[];
 extern u8 *D_800A3960373B4[];
 extern s32 *D_800A3A2C373B4[];
 extern s32 *D_800A3A34373B4[];
-extern u8 *D_800A3A64373B4[];
+extern Car *D_800A3A64373B4[];
 extern s32 gTrackSectionCount373B4[];
 extern s32 func_800A2CE0373B4[];
 extern s32 MathFixedDivide373B4(s32, s32) asm("MathFixedDivide");
@@ -14577,7 +14578,7 @@ void func_800373B4(Car *object) {
                     }
                     tempA08 = ((u8 *)car->sectionLink.node.previous);
                     if (tempA08 != NULL) {
-                        followingCar = (*(u8 **)((u8 *)tempA08 + 8));
+                        followingCar = (*(Car **)((u8 *)tempA08 + 8));
                         followAllowed = 1;
                         if ((followingCar->type) == 0) {
                             if (func_8003702C373B4(followingCar, car) < 0) {
@@ -14599,7 +14600,7 @@ void func_800373B4(Car *object) {
                             tempA09 = (u8 *)car->sectionLink.node.next;
                             if (tempA09 != NULL) {
                                 aheadOfFollowingCar =
-                                    (*(u8 **)((u8 *)tempA09 + 8));
+                                    (*(Car **)((u8 *)tempA09 + 8));
                                 if (func_8003702C373B4(aheadOfFollowingCar,
                                                        car) < 0) {
                                     varA16 = -func_8003702C373B4(
@@ -16116,7 +16117,7 @@ void func_8003A54C(void) {
                 if (node->unkF4 == 0 || node->unkF4 == 2 ||
                     *(s32 *)&node->callback != (s32)CarResetMotionCounters) {
                     node->unk84 = 0;
-                    func_80029CB4((s32 *)node);
+                    func_80029CB4(node);
                     node->callback(node);
                 } else {
                     node->unk120 = 0;
@@ -16858,7 +16859,7 @@ void func_8003BCAC(void) {
             offset += 0x10;
         } while (object != 0);
     }
-    object = ((u8 **)D_800A3854Absolute)[9];
+    object = ((Car **)D_800A3854Absolute)[9];
     object->pos.x = *(s32 *)((u8 *)D_800BE72C + count * 0x10);
     object->pos.y = *(s32 *)((u8 *)D_800BE730 + count * 0x10);
     object->pos.z = 0;

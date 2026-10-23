@@ -850,7 +850,7 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
     camX = car->pos.x;
     camY = car->pos.y;
     camZ = car->pos.z;
-    obj = (u8 *)D_80098D00[id - 1];
+    obj = (Car *)D_80098D00[id - 1];
     if (D_800A2FA4B[id - 1] > 0) {
         D_800A2FA4B[id - 1]--;
     }

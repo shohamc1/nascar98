@@ -5035,7 +5035,7 @@ void HudUpdateTrafficGapData(void) {
             e0 = (u8 *)((CarLink *)car->order.node.next)->car;
             t1 = car->unk264;
             t2 = *(s32 *)(e0 + 0x264);
-            car = *(s32 *)((u8 *)(e0) + 0x34C);
+            car = *(Car **)((u8 *)(e0) + 0x34C);
             D_800A34BC = t1 - t2;
             strcpy(D_800A8A4C, (char *)car);
             D_800A34B4 = (s32)strtok(D_800A8A4C, gTextSpaceDelimiter);
@@ -5998,7 +5998,7 @@ void HudUpdateFlagOverlay(void) {
 
 extern u8 D_800A39F8, D_800A38B8, D_800A3420;
 extern u8 D_800A3564u asm("D_800A3564");
-extern u8 *D_800A3A64Car asm("D_800A3A64");
+extern Car *D_800A3A64Car asm("D_800A3A64");
 extern Car *gPlayerCarLui asm("gPlayerCarAbsolute");
 extern Car *gCarListLui asm("gCarListAbsolute");
 extern s32 D_800A2F00Sw[] asm("D_800A2F00");

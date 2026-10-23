@@ -4725,7 +4725,7 @@ void func_80063C34(s32 arg0, s32 arg1) {
 }
 
 extern s32 D_800A2E84Absolute[];
-extern u8 *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
+extern Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 
 void func_80063E7C(void) {
     RECT rect;
@@ -4751,8 +4751,8 @@ void func_80063E7C(void) {
     entry = func_8002D874(0, 0, 0x1B, 0);
     entry->pos.x = 0x1F4;
     entry->pos.y = 0;
-    prev1->next = (s32)entry;
-    entry->prev = (s32)prev1;
+    prev1->next = entry;
+    entry->prev = prev1;
     gPlayerCar[0] = entry;
     prev2 = entry;
     entry = func_8002D874(0, 1, 0x18, -1);
@@ -4761,8 +4761,8 @@ void func_80063E7C(void) {
     srcX = 0x300;
     entry->pos.x = 0;
     entry->pos.y = 0;
-    prev2->next = (s32)entry;
-    entry->prev = (s32)prev2;
+    prev2->next = entry;
+    entry->prev = prev2;
     entry->next = 0;
     while (i < 2) {
         rect.x = (i % 4) * 0x40 + 0x300;

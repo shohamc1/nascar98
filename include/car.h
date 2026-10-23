@@ -236,7 +236,7 @@ typedef struct Car {
     s32 penalty; /* 0x3CC */
     s32 unk3D0; /* 0x3D0 */
     u8 unk3D4[0x4];
-    s32 unk3D8; /* 0x3D8 */
+    struct Car *unk3D8; /* 0x3D8 */
     struct Car *prev; /* 0x3DC */
     struct Car *next; /* 0x3E0 */
     CarLink order; /* 0x3E4 */
