@@ -37,6 +37,20 @@ typedef struct SkidMark {
     struct SkidMark *next;    /* 0x54 */
 } SkidMark;
 
+/* A callback node in a track section's callbacks list. ListDispatchCallbacks
+ * runs D_80091080[callback] on each. The vertex handlers move count track
+ * vertices (index[i]) to coord[i] plus offset. */
+typedef struct TrackCallback {
+    struct TrackCallback *next; /* 0x00 */
+    u8 unk4[6];
+    s16 count;         /* 0x0A */
+    s16 callback;      /* 0x0C */
+    u8 unkE[2];
+    u16 index[64];     /* 0x10 */
+    s16 coord[64][3];  /* 0x90 */
+    s32 offset[3];     /* 0x210 */
+} TrackCallback;
+
 /* A 0x90-byte track section. gTrackSections[0] points to the array, and
  * prev and next link each section to its neighbours. */
 typedef struct TrackSection {
@@ -57,7 +71,7 @@ typedef struct TrackSection {
     s32 unk24;
     struct Face *firstQuad; /* 0x28 */
     s32 unk2C;
-    u8 *callbacks; /* 0x30: nodes run by ListDispatchCallbacks */
+    TrackCallback *callbacks; /* 0x30 */
     s16 unk34;
     s16 unk36;
     s32 unk38;

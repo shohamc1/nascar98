@@ -722,8 +722,8 @@ void ReplayWriteEffects(EffectPacked *out) {
 pass1:
     if (slot->active != 0 && (s8)slot->unk1D != kindSpawned) {
         object = (u8 *)gCarListPack + (s8)slot->unk1E * 0x500;
-        out->dx = (slot->x - *(s32 *)object) / 64;
-        out->dy = (slot->y - *(s32 *)(object + 4)) / 64;
+        out->dx = (slot->x - ((Car *)object)->pos.x) / 64;
+        out->dy = (slot->y - ((Car *)object)->pos.y) / 64;
         out->dz = slot->unkC / 32;
         field = (s8)slot->unk1E;
         word = *(u32 *)out;
@@ -743,8 +743,8 @@ pass1:
             for (;;) {
                 if (slot->active != 0 && (s8)slot->unk1D == kindSpawned) {
                     object = (u8 *)gCarListPack + (s8)slot->unk1E * 0x500;
-                    out->dx = (slot->x - *(s32 *)object) / 64;
-                    out->dy = (slot->y - *(s32 *)(object + 4)) / 64;
+                    out->dx = (slot->x - ((Car *)object)->pos.x) / 64;
+                    out->dy = (slot->y - ((Car *)object)->pos.y) / 64;
                     out->dz = slot->unkC / 32;
                     field = (s8)slot->unk1E;
                     word = *(u32 *)out;

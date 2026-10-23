@@ -251,20 +251,20 @@ void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
     }
 }
 
-void RenderTransformVerticesWithOffset(u8 *object) {
+void RenderTransformVerticesWithOffset(TrackCallback *object) {
     s32 i;
     s32 *vec;
     ModelVertex *el;
     u8 *base;
 
     base = D_800BE97C[0];
-    vec = (s32 *)(object + 0x210);
+    vec = object->offset;
     func_8001F2C4(0, 0, (D_800A2EC0Absolute[0] & 0x1F) << 5);
-    for (i = 0; i < *(s16 *)(object + 0xA); i++) {
-        el = base + *(u16 *)(object + 0x10 + i * 2) * 0x14;
-        el->local.vx = *(u16 *)(object + 0x90 + i * 6);
-        el->local.vy = *(u16 *)(object + 0x92 + i * 6);
-        el->local.vz = *(u16 *)(object + 0x94 + i * 6);
+    for (i = 0; i < object->count; i++) {
+        el = base + object->index[i] * 0x14;
+        el->local.vx = (u16)object->coord[i][0];
+        el->local.vy = (u16)object->coord[i][1];
+        el->local.vz = (u16)object->coord[i][2];
         MatrixTransformVector((s32 *)el);
         el->world.x = el->local.vx + vec[0];
         el->world.y = el->local.vy + vec[1];
@@ -272,7 +272,7 @@ void RenderTransformVerticesWithOffset(u8 *object) {
     }
 }
 
-void func_8001CAB8(u8 *arg0) {
+void func_8001CAB8(TrackCallback *arg0) {
     s32 i;
     s32 *vec;
     ModelVertex *el;
@@ -281,13 +281,13 @@ void func_8001CAB8(u8 *arg0) {
 
     temp = (D_800A2EC0Absolute[0] & 0x1F) << 5;
     base = D_800BE97C[0];
-    vec = (s32 *)(arg0 + 0x210);
+    vec = arg0->offset;
     func_8001F2C4(temp, 0, temp);
-    for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
-        el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
-        el->local.vx = *(u16 *)(arg0 + 0x90 + i * 6);
-        el->local.vy = *(u16 *)(arg0 + 0x92 + i * 6);
-        el->local.vz = *(u16 *)(arg0 + 0x94 + i * 6);
+    for (i = 0; i < arg0->count; i++) {
+        el = base + arg0->index[i] * 0x14;
+        el->local.vx = (u16)arg0->coord[i][0];
+        el->local.vy = (u16)arg0->coord[i][1];
+        el->local.vz = (u16)arg0->coord[i][2];
         MatrixTransformVector((s32 *)el);
         el->world.x = el->local.vx + vec[0];
         el->world.y = el->local.vy + vec[1];
@@ -344,19 +344,17 @@ extern Face *D_800A3A40Absolute[];
 
 /* Sets up a shade-tex primitive (0x2C entry) from the D_800A3A40 pool:
    entry +0xE tpage, +0xA clut (first arm only), +8..+0x15 palette bytes. */
-void func_8001CC7C(u8 *arg0) {
+void func_8001CC7C(TrackCallback *arg0) {
     s32 idx;
     s32 pal;
     s32 c;
     Face *entry;
 
-    if (*(s16 *)(arg0 + 0xA) != 4) {
+    if (arg0->count != 4) {
         return;
     }
     entry = (u8 *)D_800A3A40Absolute[0] +
-            ((*(u16 *)(arg0 + 0x18) * 2 + *(u16 *)(arg0 + 0x18)) * 4 -
-             *(u16 *)(arg0 + 0x18)) *
-                4;
+            ((arg0->index[4] * 2 + arg0->index[4]) * 4 - arg0->index[4]) * 4;
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
         entry->tpage = GetTPage(1, 0, 0x200, 0x100);
@@ -406,20 +404,18 @@ void func_8001CC7C(u8 *arg0) {
 #else
 extern Face *D_800A3A40Absolute[];
 
-void func_8001CC7C(u8 *arg0) {
+void func_8001CC7C(TrackCallback *arg0) {
     s32 pal;
     u16 clut;
     s32 c;
     s32 d;
     Face *entry;
-    if ((*((s16 *)(arg0 + 0xA))) != 4) {
+    if (arg0->count != 4) {
         return;
     }
     entry =
         ((u8 *)D_800A3A40Absolute[0]) +
-        ((((((*((u16 *)(arg0 + 0x18))) * 2) + (*((u16 *)(arg0 + 0x18)))) * 4) -
-          (*((u16 *)(arg0 + 0x18)))) *
-         4);
+        (((((arg0->index[4] * 2) + arg0->index[4]) * 4) - arg0->index[4]) * 4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
         entry->tpage = GetTPage(1, 0, 0x200, 0x100);
@@ -605,13 +601,13 @@ void func_8001CF38(u8 *arg0) {
 
 extern void (*D_80091080[])(void *);
 void ListDispatchCallbacks(TrackSection *owner) {
-    u8 *node;
+    TrackCallback *node;
     void (*callback)(void *);
     node = owner->callbacks;
     while (node != 0) {
-        callback = D_80091080[*(s16 *)(node + 0xC)];
+        callback = D_80091080[node->callback];
         callback(node);
-        node = *(u8 **)node;
+        node = node->next;
     }
 }
 

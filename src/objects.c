@@ -906,12 +906,22 @@ extern Car *gCarListRecord[] asm("gCarList.NON_MATCHING");
 extern Car *D_800A3960Record[] asm("gCrashCar.NON_MATCHING");
 extern Car *gPlayerCarRecord[] asm("gPlayerCar.NON_MATCHING");
 
+/* A 0x14 replay frame: one car's position and packed state. */
+typedef struct {
+    s32 x;     /* 0x00 */
+    s32 y;     /* 0x04 */
+    u32 state; /* 0x08: heading, steering, damage, gear and flags */
+    u16 unkC;  /* 0x0C: Car.unk3A4 */
+    u16 speed; /* 0x0E: speed and reverse speed */
+    u32 unk10; /* 0x10 */
+} ReplayFrame;
+
 void func_8002267C(void) {
     Car *node;
     s32 base;
     Car *curCar;
     Car *car;
-    u8 *rec;
+    ReplayFrame *rec;
     u32 bits;
 
     node = gCarListRecord[0];
@@ -926,9 +936,9 @@ void func_8002267C(void) {
             if (node->type >= 0) {
                 rec = (u8 *)(D_800A37E8Small * 20 + base);
                 *(s32 *)rec = node->pos.x;
-                *(s32 *)(rec + 4) = node->pos.y;
-                *(u16 *)(rec + 0xC) = node->unk3A4;
-                *(u16 *)(rec + 0xE) =
+                rec->y = node->pos.y;
+                rec->unkC = node->unk3A4;
+                rec->speed =
                     ((node->speed / 2 >> 16) << 7) | node->reverseSpeed;
                 bits = (node->heading << 22) | ((node->steering + 0x80) << 14) |
                        ((node->unk3AE[0] & 3) << 12) |
@@ -941,8 +951,8 @@ void func_8002267C(void) {
                 } else if (gSplitScreenModenm[0] != 0 && curCar == car->next) {
                     bits |= 0x10;
                 }
-                *(s32 *)((u8 *)(D_800A37E8Small * 20 + base) + 8) = bits;
-                *(s32 *)((u8 *)(D_800A37E8Small * 20 + base) + 0x10) =
+                ((ReplayFrame *)(D_800A37E8Small * 20 + base))->state = bits;
+                ((ReplayFrame *)(D_800A37E8Small * 20 + base))->unk10 =
                     ((((u16)node->unkFE << 16) >> 17) + 0x800 << 20) |
                     (node->unk388 << 10) | node->unk38A;
                 if (node->type == 1) {
@@ -1011,8 +1021,8 @@ void ReplayStepForward(void) {
             if (node->type >= 0) {
                 rec = (u8 *)gReplayBufferSmall;
                 rec = (u8 *)(offset + (s32)rec);
-                node->pos.x = *(s32 *)rec;
-                node->pos.y = *(s32 *)(rec + 4);
+                node->pos.x = ((ReplayFrame *)rec)->x;
+                node->pos.y = ((ReplayFrame *)rec)->y;
                 func_800442C8(node);
                 val = *(u16 *)(u8 *)(offset + gReplayBufferSmall + 0xE);
                 node->reverseSpeed = val & 0x7F;
@@ -1097,8 +1107,8 @@ void ReplayStepBack(void) {
             if (node->type >= 0) {
                 rec = (u8 *)gReplayBufferSmall;
                 rec = (u8 *)(offset + (s32)rec);
-                node->pos.x = *(s32 *)rec;
-                node->pos.y = *(s32 *)(rec + 4);
+                node->pos.x = ((ReplayFrame *)rec)->x;
+                node->pos.y = ((ReplayFrame *)rec)->y;
                 func_800442C8(node);
                 val = *(u16 *)(u8 *)(offset + gReplayBufferSmall + 0xE);
                 node->reverseSpeed = val & 0x7F;

@@ -5158,6 +5158,16 @@ void MenuDrawTimingAndScoring(void) {
     GraphicsDrawRect(0, 35, 320, 170, 0, 0, 0, 1);
 }
 
+/* A 0x30 lap record: split speeds, split times and running totals. */
+typedef struct {
+    u16 unk0;
+    u16 unk2; /* 0x02: average split speed */
+    s16 unk4;
+    s16 splitSpeed[5]; /* 0x06 */
+    s32 splitTime[4];  /* 0x10 */
+    s32 splitTotal[4]; /* 0x20 */
+} LapRecord;
+
 extern u8 *D_800A8A74[];
 extern char *D_8009AE64[];
 extern char *D_8009AE74[];
@@ -5191,7 +5201,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     char *sign;
 
     top = 47;
-    speed = *(s16 *)(D_800A8A74[lap] + 4);
+    speed = ((LapRecord *)D_800A8A74[lap])->unk4;
     if (speed == 0x7FFF) {
         strcpy(title, D_8009AE64[lap]);
     } else {
@@ -5212,8 +5222,8 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     case 0:
         func_80050028Row(D_8009AE7C[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            HudDrawTimeRow(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x10), 215, y, 3,
-                           1);
+            HudDrawTimeRow(((LapRecord *)D_800A8A74[lap])->splitTime[i], 215, y,
+                           3, 1);
             y += 12;
         }
         y += 6;
@@ -5228,7 +5238,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
 
         func_80050028Row(D_8009AE84[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            speed = *(s16 *)(D_800A8A74[lap] + i * 2 + 6);
+            speed = ((LapRecord *)D_800A8A74[lap])->splitSpeed[i];
             if (speed == 0x7FFF) {
                 func_80050028Row(D_8009AE90[0], 215, y, 3);
             } else {
@@ -5244,7 +5254,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         y += 6;
         textY = y;
         func_80050028Row(D_8009AE88[0], 20, textY, 3);
-        speed = *(s16 *)(D_800A8A74[lap] + 2);
+        speed = *(s16 *)&((LapRecord *)D_800A8A74[lap])->unk2;
         if (speed == 0x7FFF) {
             func_80050028Row(D_8009AE90[0], 215, textY, 3);
         } else {
@@ -5261,14 +5271,14 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     case 2:
         func_80050028Row(D_8009AE8C[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            HudDrawTimeRow(*(s32 *)(D_800A8A74[lap] + i * 4 + 0x20), 215, y, 3,
-                           1);
+            HudDrawTimeRow(((LapRecord *)D_800A8A74[lap])->splitTotal[i], 215,
+                           y, 3, 1);
             y += 12;
         }
         break;
     }
     top = 169;
-    if (*(s8 *)D_800A8A74[lap] == 127) {
+    if (*(s8 *)&((LapRecord *)D_800A8A74[lap])->unk0 == 127) {
         for (i = 0; i < 2; i++) {
             sprintfRow(title, gFormatStringString, D_8009AE98[i],
                        D_8009AE98[-2]);
@@ -5476,16 +5486,6 @@ typedef struct {
     /* 0x00 */ s32 lapTime;
 } LapTimeSlot;
 
-typedef struct {
-    /* 0x00 */ u8 unk0[0x20];
-    /* 0x20 */ s32 unk20;
-} LapTotalSlot;
-
-typedef struct {
-    /* 0x00 */ u8 unk0[2];
-    /* 0x02 */ s16 unk2;
-} LapAvgSlot;
-
 void HudRecordLapSplitStats(void) {
     extern u8 D_800A3688;
     extern u8 *D_800A8A80[];
@@ -5510,8 +5510,8 @@ void HudRecordLapSplitStats(void) {
     car = gPlayerCar[0];
     slot->lapTime = lapTime;
     speed = ((s16 *)&car->speed)[1];
-    *(s16 *)(gLapSplitIndex * 2 + D_800A8A80[0] + 6) = speed;
-    ((LapTotalSlot *)(gLapSplitIndex * 4 + D_800A8A80[0]))->unk20 = car->unk258;
+    ((LapRecord *)D_800A8A80[0])->splitSpeed[gLapSplitIndex] = speed;
+    ((LapRecord *)D_800A8A80[0])->splitTotal[gLapSplitIndex] = car->unk258;
     if (gLapSplitIndex == gTrackSplitCount[*(s32 *)(void *)D_800A2CE0] - 1) {
         if (D_800A3688 != 0 && gSessionTypeAbsolute[0] == 0) {
             D_800A34B0 = *(s32 *)(void *)D_800A2CE0 == 3 ? 0x28 : 0x32;
@@ -5520,19 +5520,19 @@ void HudRecordLapSplitStats(void) {
         i = 0;
         if (gTrackSplitCount[D_800A2CE0[0]] > 0) {
             do {
-                sum += *(u16 *)(i * 2 + D_800A8A80[0] + 6);
+                sum += (u16)((LapRecord *)D_800A8A80[0])->splitSpeed[i];
                 i++;
             } while (i < gTrackSplitCount[D_800A2CE0[0]]);
         }
-        ((LapAvgSlot *)D_800A8A80[0])->unk2 =
+        ((LapRecord *)D_800A8A80[0])->unk2 =
             (s16)sum / gTrackSplitCount[D_800A2CE0[0]];
         idx = gLapSplitIndex;
         for (i = 0; i < 3; i++) {
             j = i + 1;
             if (j < 4) {
                 do {
-                    if (*(s32 *)(idx * 4 + D_800A8A74[j] + 0x20) <
-                        *(s32 *)(idx * 4 + D_800A8A74[i] + 0x20)) {
+                    if (((LapRecord *)D_800A8A74[j])->splitTotal[idx] <
+                        ((LapRecord *)D_800A8A74[i])->splitTotal[idx]) {
                         tmp = D_800A8A74[i];
                         D_800A8A74[i] = D_800A8A74[j];
                         D_800A8A74[j] = tmp;
@@ -5548,7 +5548,7 @@ extern u8 *D_800A8A80[];
 void RaceStoreLapRecordCarFields(void) {
     D_800A8A80[0][0] = (u16)gPlayerCar[0]->unk2AA;
     D_800A8A80[0][1] = (u16)gPlayerCar[0]->unk2A4;
-    *(u16 *)(D_800A8A80[0] + 4) = (u16)gPlayerCar[0]->lap;
+    *(u16 *)&((LapRecord *)D_800A8A80[0])->unk4 = (u16)gPlayerCar[0]->lap;
 }
 
 extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
