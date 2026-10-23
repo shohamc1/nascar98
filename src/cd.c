@@ -19,7 +19,7 @@
 extern s32 strlen(char *);
 
 extern Car *gPlayerCar[];
-void CarResetMotionCounters();
+void CarResetMotionCounters(Car *);
 extern s32 D_800A3A04nm[] asm("D_800A3A04.NON_MATCHING");
 extern s32 D_800A39E0;
 extern void CarResetMotionCounters(Car *);

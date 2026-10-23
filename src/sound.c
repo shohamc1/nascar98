@@ -17,7 +17,7 @@ extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
 
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern Car *gPlayerCar[];
-void CarResetMotionCounters();
+void CarResetMotionCounters(Car *);
 s32 func_8003702C(Car *, Car *);
 extern void HeapFree(void *ptr);
 extern s32 D_800A359C[];
@@ -1424,7 +1424,7 @@ void func_80041564(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_800A2E90[];
     extern u8 D_800A2EE0[];
     extern s32 D_800BE86C[];
-    extern void CarResetMotionCounters();
+    extern void CarResetMotionCounters(Car *);
     s32 timer;
     s32 *base;
     s32 *slot;

@@ -27,9 +27,9 @@ void SoundStopConditionalSlots(s8 arg0);
 void CarUpdateEngineRpm(Car *obj);
 void func_8003667C(u32 *list);
 void func_80041328(void);
-void func_8002B538(u8 *arg0);
+void func_8002B538(Car *arg0);
 void func_8002D16C(Car *car);
-void func_8002B258(u8 *arg0);
+void func_8002B258(Car *arg0);
 void func_8003A440(void);
 void CarUpdateAi(Car *arg0);
 void CarUpdateTrackSideOffsets(void);
@@ -2538,7 +2538,7 @@ void CarApplyRandomHeadingImpulse(Car *car) {
     car->callback = CarResetMotionCounters;
 }
 
-void CarResetMotionCounters();
+void CarResetMotionCounters(Car *);
 
 void ObjectSetResetCallback(u8 *obj) {
     *(void (**)())(obj + 0x354) = CarResetMotionCounters;
@@ -5900,7 +5900,7 @@ void func_8002AF94(Car *car) {
 extern s32 D_800A2E44nm asm("D_800A2E44.NON_MATCHING");
 extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
 
-void func_8002B258(u8 *arg0) {
+void func_8002B258(Car *arg0) {
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
     extern s32 D_800A3A2CAbsoluteB[] asm("D_800A3A2CAbsolute");
     extern s32 D_800A3A34AbsoluteB[] asm("D_800A3A34Absolute");
@@ -5914,111 +5914,109 @@ void func_8002B258(u8 *arg0) {
     s32 v;
     s32 x;
 
-    if (*(s32 *)(arg0 + 0x238) & 0x80) {
+    if (arg0->flags & 0x80) {
         speed = D_800A2E48nm << 16;
-        if (*(s16 *)(arg0 + 0x120) != 0) {
+        if (arg0->unk120 != 0) {
             speed = speed / 3;
         }
-        if (*(s8 *)(arg0 + 0x3C4) != 4) {
-            *(s32 *)(arg0 + 0x228) =
-                MathMultiplyFixed16(speed, *(s32 *)(arg0 + 0x3C0));
+        if (arg0->unk3C4 != 4) {
+            arg0->unk228 = MathMultiplyFixed16(speed, arg0->unk3C0);
         } else {
-            *(s32 *)(arg0 + 0x228) += MathFixedDivide(D_800A2E44nm, 100);
-            if (speed < *(s32 *)(arg0 + 0x228)) {
-                *(s32 *)(arg0 + 0x228) = speed;
+            arg0->unk228 += MathFixedDivide(D_800A2E44nm, 100);
+            if (speed < arg0->unk228) {
+                arg0->unk228 = speed;
             }
         }
-        if (*(s32 *)(arg0 + 0x228) > *(s32 *)(arg0 + 0x90)) {
-            *(s32 *)(arg0 + 0x228) = *(s32 *)(arg0 + 0x90);
+        if (arg0->unk228 > arg0->speed) {
+            arg0->unk228 = arg0->speed;
         }
-        scale = *(s32 *)(arg0 + 0x228);
-        index = *(s16 *)(arg0 + 0x104);
+        scale = arg0->unk228;
+        index = arg0->movementHeading;
         if (D_800A2EE4nm[0] != 0) {
             scale = MathMultiplyFixed16(
-                scale,
-                MathFixedDivide((*(s8 *)(arg0 + 0x205) - 1) * 50 + 100, 100));
-            if (*(s32 *)(arg0 + 0x90) < scale) {
-                scale = *(s32 *)(arg0 + 0x90);
+                scale, MathFixedDivide((arg0->assistRank - 1) * 50 + 100, 100));
+            if (arg0->speed < scale) {
+                scale = arg0->speed;
             }
         }
-        if ((*(s32 *)(arg0 + 0xB0) >= 0 ? *(s32 *)(arg0 + 0xB0) < 10
-                                        : -*(s32 *)(arg0 + 0xB0) < 10) &&
-            (*(s32 *)(arg0 + 0xB4) >= 0 ? *(s32 *)(arg0 + 0xB4) < 10
-                                        : -*(s32 *)(arg0 + 0xB4) < 10)) {
-            *(s32 *)(arg0 + 0xC4) = 0;
-            *(s32 *)(arg0 + 0xC8) = 0;
-            *(s32 *)(arg0 + 0xD0) = 0;
-            *(s32 *)(arg0 + 0xD4) = 0;
+        if ((arg0->velocityX >= 0 ? arg0->velocityX < 10
+                                  : -arg0->velocityX < 10) &&
+            (arg0->velocityY >= 0 ? arg0->velocityY < 10
+                                  : -arg0->velocityY < 10)) {
+            arg0->frontVelocityX = 0;
+            arg0->frontVelocityY = 0;
+            arg0->rearVelocityX = 0;
+            arg0->rearVelocityY = 0;
         } else {
             if (scale == 0) {
                 scale = 0x50000;
             }
             v = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index],
                                     scale);
-            x = *(s32 *)(arg0 + 0xC4);
+            x = arg0->frontVelocityX;
             p = *(s32 *)D_800A3A34Absolute;
             x -= v;
-            *(s32 *)(arg0 + 0xC4) = x;
+            arg0->frontVelocityX = x;
             q = (s32 *)(index * 4 + p);
             v = MathMultiplyFixed16(*q, scale);
-            x = *(s32 *)(arg0 + 0xC8);
+            x = arg0->frontVelocityY;
             p = *(s32 *)D_800A3A2CAbsoluteB;
             x -= v;
-            *(s32 *)(arg0 + 0xC8) = x;
+            arg0->frontVelocityY = x;
             q = (s32 *)(index * 4 + p);
             v = MathMultiplyFixed16(*q, scale);
-            x = *(s32 *)(arg0 + 0xD0);
+            x = arg0->rearVelocityX;
             p = *(s32 *)D_800A3A34AbsoluteB;
             x -= v;
-            *(s32 *)(arg0 + 0xD0) = x;
-            *(s32 *)(arg0 + 0xD4) -=
+            arg0->rearVelocityX = x;
+            arg0->rearVelocityY -=
                 MathMultiplyFixed16(*(s32 *)(index * 4 + p), scale);
         }
-        if (*(s32 *)(arg0 + 0x90) > 0x17C0000 && RandomScaledGet(0xA) == 0) {
+        if (arg0->speed > 0x17C0000 && RandomScaledGet(0xA) == 0) {
             value = RandomScaledGet(4);
             if (value < 0) {
                 value = -RandomScaledGet(4);
             } else {
                 value = RandomScaledGet(4);
             }
-            *(s16 *)(arg0 + 0x2D8) = value;
-            *(s16 *)(arg0 + 0x2B0) = value;
+            arg0->wheel[1].effect = value;
+            arg0->wheel[0].effect = value;
         }
     } else {
-        *(s32 *)(arg0 + 0x228) -= 0x10000;
-        if (*(s32 *)(arg0 + 0x228) < 0) {
-            *(s32 *)(arg0 + 0x228) = 0;
+        arg0->unk228 -= 0x10000;
+        if (arg0->unk228 < 0) {
+            arg0->unk228 = 0;
         }
-        *(s16 *)(arg0 + 0x11E) = 0;
-        *(s16 *)(arg0 + 0x120) = 0;
-        *(s16 *)(arg0 + 0x11C) = 0;
+        arg0->unk11E = 0;
+        arg0->unk120 = 0;
+        arg0->unk11C = 0;
     }
 }
 
-void func_8002B538(u8 *arg0) {
+void func_8002B538(Car *arg0) {
     s32 speed;
     s32 half;
 
-    speed = (*(s32 *)(arg0 + 0x90) / *(s16 *)(arg0 + 0x2B4)) >> 16;
-    if (*(s16 *)(arg0 + 0x120) != 0 || *(u8 *)(arg0 + 0xF8) != 0) {
+    speed = (arg0->speed / arg0->wheel[0].unk8) >> 16;
+    if (arg0->unk120 != 0 || arg0->unkF8 != 0) {
         speed = speed * 4;
     }
-    *(s32 *)(arg0 + 0x2B8) -= speed;
-    *(s32 *)(arg0 + 0x2E0) -= speed;
+    arg0->wheel[0].unkC -= speed;
+    arg0->wheel[1].unkC -= speed;
     half = speed / 2;
-    if (*(s32 *)(arg0 + 0x2B8) <= 0x9FFFF) {
-        *(s32 *)(arg0 + 0x2B8) = 0xA0000;
+    if (arg0->wheel[0].unkC <= 0x9FFFF) {
+        arg0->wheel[0].unkC = 0xA0000;
     }
-    if (*(s32 *)(arg0 + 0x2E0) <= 0x9FFFF) {
-        *(s32 *)(arg0 + 0x2E0) = 0xA0000;
+    if (arg0->wheel[1].unkC <= 0x9FFFF) {
+        arg0->wheel[1].unkC = 0xA0000;
     }
-    *(s32 *)(arg0 + 0x308) -= half;
-    *(s32 *)(arg0 + 0x330) -= half;
-    if (*(s32 *)(arg0 + 0x308) <= 0x9FFFF) {
-        *(s32 *)(arg0 + 0x308) = 0xA0000;
+    arg0->wheel[2].unkC -= half;
+    arg0->wheel[3].unkC -= half;
+    if (arg0->wheel[2].unkC <= 0x9FFFF) {
+        arg0->wheel[2].unkC = 0xA0000;
     }
-    if (*(s32 *)(arg0 + 0x330) <= 0x9FFFF) {
-        *(s32 *)(arg0 + 0x330) = 0xA0000;
+    if (arg0->wheel[3].unkC <= 0x9FFFF) {
+        arg0->wheel[3].unkC = 0xA0000;
     }
 }
 
@@ -15279,8 +15277,8 @@ void func_800373B4(Car *object) {
     }
 }
 
-void func_8003AA20(s32 car);
-void CarAdvanceResetTimer(u8 *object);
+void func_8003AA20(Car *car);
+void CarAdvanceResetTimer(Car *object);
 
 void CarUpdateAi(Car *arg0) {
     int val;
@@ -16095,7 +16093,7 @@ void func_8003A54C(void) {
 
 extern s16 D_80098254[];
 
-void func_8003A880(s32 car) {
+void func_8003A880(Car *car) {
     s32 oldFrame;
     s32 nextFrame;
     s32 frameIndex;
@@ -16105,39 +16103,39 @@ void func_8003A880(s32 car) {
     s32 currentSpeed;
     s32 slowedSpeed;
 
-    if (*(s16 *)(car + 0x102) != 0) {
-        oldFrame = *(u16 *)(car + 0x1BC);
+    if (car->unk102 != 0) {
+        oldFrame = (u16)car->unk1BC;
         nextFrame = oldFrame + 1;
         frameIndex = (s16)oldFrame;
-        *(u16 *)(car + 0x1BC) = nextFrame;
+        car->unk1BC = nextFrame;
         turnDelta = -D_80098254[frameIndex];
     } else {
-        oldFrame = *(u16 *)(car + 0x1BC);
+        oldFrame = (u16)car->unk1BC;
         nextFrame = oldFrame + 1;
         frameIndex = (s16)oldFrame;
-        *(u16 *)(car + 0x1BC) = nextFrame;
+        car->unk1BC = nextFrame;
         turnDelta = D_80098254[frameIndex];
     }
-    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turnDelta + 0x400) & 0x3FF;
-    speed = *(s32 *)(car + 0x90);
+    car->heading = ((u16)car->heading + turnDelta + 0x400) & 0x3FF;
+    speed = car->speed;
     reducedSpeed = speed - (speed >> 5);
-    *(s32 *)(car + 0x90) = reducedSpeed;
+    car->speed = reducedSpeed;
     if (turnDelta != 0) {
         return;
     }
-    *(u16 *)(car + 0x1BC) = 0x32;
-    currentSpeed = *(s32 *)(car + 0x90);
+    car->unk1BC = 0x32;
+    currentSpeed = car->speed;
     slowedSpeed = currentSpeed - 0x320000;
-    *(s32 *)(car + 0x90) = slowedSpeed;
+    car->speed = slowedSpeed;
     if (slowedSpeed < 0) {
-        *(s32 *)(car + 0x90) = 0;
+        car->speed = 0;
     }
-    ObjectSetCallbackIfAllowed((Car *)car, CarAdvanceResetTimer);
+    ObjectSetCallbackIfAllowed(car, CarAdvanceResetTimer);
 }
 
 extern s16 D_80098294[];
 
-void func_8003A950(s32 car) {
+void func_8003A950(Car *car) {
     s32 oldFrame;
     s32 nextFrame;
     s32 frameIndex;
@@ -16147,39 +16145,39 @@ void func_8003A950(s32 car) {
     s32 currentSpeed;
     s32 slowedSpeed;
 
-    if (*(s16 *)(car + 0x102) != 0) {
-        oldFrame = *(u16 *)(car + 0x1BC);
+    if (car->unk102 != 0) {
+        oldFrame = (u16)car->unk1BC;
         nextFrame = oldFrame + 1;
         frameIndex = (s16)oldFrame;
-        *(u16 *)(car + 0x1BC) = nextFrame;
+        car->unk1BC = nextFrame;
         turnDelta = -D_80098294[frameIndex];
     } else {
-        oldFrame = *(u16 *)(car + 0x1BC);
+        oldFrame = (u16)car->unk1BC;
         nextFrame = oldFrame + 1;
         frameIndex = (s16)oldFrame;
-        *(u16 *)(car + 0x1BC) = nextFrame;
+        car->unk1BC = nextFrame;
         turnDelta = D_80098294[frameIndex];
     }
-    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turnDelta + 0x400) & 0x3FF;
-    speed = *(s32 *)(car + 0x90);
+    car->heading = ((u16)car->heading + turnDelta + 0x400) & 0x3FF;
+    speed = car->speed;
     reducedSpeed = speed - (speed >> 5);
-    *(s32 *)(car + 0x90) = reducedSpeed;
+    car->speed = reducedSpeed;
     if (turnDelta != 0) {
         return;
     }
-    *(u16 *)(car + 0x1BC) = 0x32;
-    currentSpeed = *(s32 *)(car + 0x90);
+    car->unk1BC = 0x32;
+    currentSpeed = car->speed;
     slowedSpeed = currentSpeed - 0x320000;
-    *(s32 *)(car + 0x90) = slowedSpeed;
+    car->speed = slowedSpeed;
     if (slowedSpeed < 0) {
-        *(s32 *)(car + 0x90) = 0;
+        car->speed = 0;
     }
-    ObjectSetCallbackIfAllowed((Car *)car, CarAdvanceResetTimer);
+    ObjectSetCallbackIfAllowed(car, CarAdvanceResetTimer);
 }
 
 extern s16 D_800982D4[];
 
-void func_8003AA20(s32 car) {
+void func_8003AA20(Car *car) {
     s32 oldFrame;
     s32 nextFrame;
     s32 frameIndex;
@@ -16189,39 +16187,39 @@ void func_8003AA20(s32 car) {
     s32 currentSpeed;
     s32 slowedSpeed;
 
-    if (*(s16 *)(car + 0x102) != 0) {
-        oldFrame = *(u16 *)(car + 0x1BC);
+    if (car->unk102 != 0) {
+        oldFrame = (u16)car->unk1BC;
         nextFrame = oldFrame + 1;
         frameIndex = (s16)oldFrame;
-        *(u16 *)(car + 0x1BC) = nextFrame;
+        car->unk1BC = nextFrame;
         turnDelta = -D_800982D4[frameIndex];
     } else {
-        oldFrame = *(u16 *)(car + 0x1BC);
+        oldFrame = (u16)car->unk1BC;
         nextFrame = oldFrame + 1;
         frameIndex = (s16)oldFrame;
-        *(u16 *)(car + 0x1BC) = nextFrame;
+        car->unk1BC = nextFrame;
         turnDelta = D_800982D4[frameIndex];
     }
-    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turnDelta + 0x400) & 0x3FF;
-    speed = *(s32 *)(car + 0x90);
+    car->heading = ((u16)car->heading + turnDelta + 0x400) & 0x3FF;
+    speed = car->speed;
     reducedSpeed = speed - (speed >> 7);
-    *(s32 *)(car + 0x90) = reducedSpeed;
+    car->speed = reducedSpeed;
     if (turnDelta != 0) {
         return;
     }
-    *(u16 *)(car + 0x1BC) = 0;
-    currentSpeed = *(s32 *)(car + 0x90);
+    car->unk1BC = 0;
+    currentSpeed = car->speed;
     slowedSpeed = currentSpeed - 0x320000;
-    *(s32 *)(car + 0x90) = slowedSpeed;
+    car->speed = slowedSpeed;
     if (slowedSpeed < 0) {
-        *(s32 *)(car + 0x90) = 0;
+        car->speed = 0;
     }
-    ObjectSetCallbackIfAllowed((Car *)car, CarAdvanceResetTimer);
+    ObjectSetCallbackIfAllowed(car, CarAdvanceResetTimer);
 }
 
 extern s16 D_80098328[];
 
-void func_8003AAEC(s32 car) {
+void func_8003AAEC(Car *car) {
     s32 old;
     s32 new;
     s32 idx;
@@ -16230,42 +16228,42 @@ void func_8003AAEC(s32 car) {
     s32 t2;
     s32 mode;
 
-    if (*(s16 *)(car + 0x102) != 0) {
-        old = *(u16 *)(car + 0x1BC);
+    if (car->unk102 != 0) {
+        old = (u16)car->unk1BC;
         new = old + 1;
         idx = (s16)old;
-        *(u16 *)(car + 0x1BC) = new;
+        car->unk1BC = new;
         turn = -D_80098328[idx];
     } else {
-        old = *(u16 *)(car + 0x1BC);
+        old = (u16)car->unk1BC;
         new = old + 1;
         idx = (s16)old;
-        *(u16 *)(car + 0x1BC) = new;
+        car->unk1BC = new;
         turn = D_80098328[idx];
     }
-    *(u16 *)(car + 0x114) = (*(u16 *)(car + 0x114) + turn + 0x400) & 0x3FF;
-    t = *(s32 *)(car + 0x90);
+    car->heading = ((u16)car->heading + turn + 0x400) & 0x3FF;
+    t = car->speed;
     t2 = t - (t >> 9);
-    *(s32 *)(car + 0x90) = t2;
-    if (*(u16 *)(car + 0x360) == 2) {
-        *(s32 *)(car + 0x90) = t2 - (t2 >> 3);
+    car->speed = t2;
+    if (car->state == 2) {
+        car->speed = t2 - (t2 >> 3);
     }
     if (turn != 0) {
         return;
     }
-    *(u16 *)(car + 0x1BC) = 0;
-    ObjectSetCallbackIfAllowed((Car *)car, CarResetMotionCounters);
+    car->unk1BC = 0;
+    ObjectSetCallbackIfAllowed(car, CarResetMotionCounters);
 }
 
 extern void CarResetMotionCounters(Car *);
 
-void CarAdvanceResetTimer(u8 *object) {
-    *(u16 *)(object + 0x1BC) += 1;
-    *(u32 *)(object + 0x90) = 0;
-    if ((*(u16 *)(object + 0x3A4) & 0xF) == 0) {
-        if (*(s16 *)(object + 0x1BC) >= 0x65) {
-            *(u16 *)(object + 0x1BC) = 0;
-            ObjectSetCallbackIfAllowed((Car *)object, CarResetMotionCounters);
+void CarAdvanceResetTimer(Car *object) {
+    object->unk1BC += 1;
+    object->speed = 0;
+    if ((object->unk3A4 & 0xF) == 0) {
+        if (object->unk1BC >= 0x65) {
+            object->unk1BC = 0;
+            ObjectSetCallbackIfAllowed(object, CarResetMotionCounters);
         }
     }
 }
