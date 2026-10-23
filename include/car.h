@@ -92,7 +92,7 @@ typedef struct Car {
     u8 unkD8[0x1C];
     u8 unkF4; /* 0x0F4 */
     u8 collisionPending; /* 0x0F5 */
-    u8 unkF6; /* 0x0F6 */
+    u8 automatic; /* 0x0F6: picks gears by speed; manual shifts need 0 */
     u8 unkF7; /* 0x0F7 */
     u8 unkF8; /* 0x0F8 */
     u8 sliding; /* 0x0F9 */

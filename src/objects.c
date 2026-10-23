@@ -4572,8 +4572,8 @@ void CarUpdateEngineRpm(Car *obj) {
         if (obj->unk3CA > 0) {
             obj->unk3CA = obj->unk3CA - 1;
         }
-        if ((obj->unkF6 != 0 || D_800A2F58Absolute2 != 0 || obj->unk268 != 0 ||
-             FAR_VAR(s32, gFarBlend2EAC) != 0) &&
+        if ((obj->automatic != 0 || D_800A2F58Absolute2 != 0 ||
+             obj->unk268 != 0 || FAR_VAR(s32, gFarBlend2EAC) != 0) &&
             obj->unk3CA == 0) {
             prev = obj->gearIndex;
             for (i = 0; i < D_800A2E18; i++) {
@@ -4705,7 +4705,7 @@ void func_80028D80(Car *object) {
     D_800A3990 = base;
     row = (Gear *)(idx * 0x18 + (s32)base);
     scale = row->ratio;
-    if (node->unkF6 == 0) {
+    if (node->automatic == 0) {
         cur = node->speed;
         lim = row->startSpeed;
         if (cur < lim) {
@@ -4778,50 +4778,32 @@ void func_80028FCC(Car *car) {
 }
 
 extern u8 D_800A2E18;
-typedef struct {
-    u8 pad0[0xF6];
-    u8 state;
-    u8 padF7[0x15];
-    u16 count;
-} Counter;
-void SelectionStepForward(Counter *selection) {
+void CarShiftUp(Car *car) {
     u16 newIndex;
-    if (selection->state == 0) {
-        newIndex = selection->count + 1;
-        selection->count = newIndex;
+    if (car->automatic == 0) {
+        newIndex = car->gearIndex + 1;
+        car->gearIndex = newIndex;
         if ((s16)newIndex >= (s8)D_800A2E18) {
-            selection->count = (u16)((s8)D_800A2E18 - 1);
+            car->gearIndex = (u16)((s8)D_800A2E18 - 1);
         }
-        CarUpdateEngineRpm(selection);
+        CarUpdateEngineRpm(car);
     }
 }
 
-typedef struct SelectionState {
-    u8 pad0[0xF6];
-    u8 unkF6;
-    u8 padF7[0x11];
-    s16 selectedValue;
-    u8 pad10A[2];
-    s16 selectionIndex;
-} SelectionState;
-
-void SelectionStepBackward(SelectionState *selection) {
+void CarShiftDown(Car *car) {
     u16 newIndex;
     s32 index;
     s32 value;
-    s32 *record;
 
-    if (selection->unkF6 == 0) {
-        newIndex = selection->selectionIndex - 1;
-        selection->selectionIndex = newIndex;
+    if (car->automatic == 0) {
+        newIndex = car->gearIndex - 1;
+        car->gearIndex = newIndex;
         if ((s16)newIndex < 0)
-            selection->selectionIndex = 0;
-        CarUpdateEngineRpm(selection);
-        index = selection->selectionIndex;
-        record = (s32 *)selection;
-        record += index * 6;
-        value = record[0x130 / 4];
-        selection->selectedValue = value;
+            car->gearIndex = 0;
+        CarUpdateEngineRpm(car);
+        index = car->gearIndex;
+        value = car->gear[index].lowRpm;
+        car->rpm = value;
     }
 }
 
@@ -5489,10 +5471,10 @@ void CarUpdatePlayer(Car *object) {
         }
     }
     if (controlFlags & ((u16) ~*(u32 *)&car->flags & 1)) {
-        SelectionStepForward((Counter *)car);
+        CarShiftUp(car);
     }
     if (controlFlags & ((u16) ~*(u32 *)&car->flags & 2)) {
-        SelectionStepBackward((SelectionState *)car);
+        CarShiftDown(car);
     }
     (*(u32 *)&car->flags) = controlFlags;
     car->callback(car);
@@ -7377,7 +7359,7 @@ void CarInitDefaults(Car *car) {
     car->frontLeftContact = 0;
     car->frontRightContact = 0;
     car->lane = -1;
-    car->unkF6 = 1;
+    car->automatic = 1;
     car->unkF7 = 1;
     /* sched1 barrier: retail schedules this global read right here */
     do {
@@ -8404,7 +8386,7 @@ void func_8002F2CC(void) {
         do {
             if (node->type == 0) {
                 carIdx = node->slot;
-                node->unkF6 = D_800A3068[carIdx * 2] < 1;
+                node->automatic = D_800A3068[carIdx * 2] < 1;
                 node->unkF7 = D_800A3069[carIdx * 2];
                 val = D_800A3862[carIdx * 4];
                 node->unk2A0 = (val - 0x40) / 4;
@@ -12506,11 +12488,6 @@ void GraphicsDrawHorizonForCar(s32 useLinkedCar) {
     GraphicsDrawHorizonWalls();
 }
 
-typedef struct {
-    u8 pad[0x3E0];
-    void *unk3E0;
-} Data3554;
-
 void CameraUpdateHorizon(void);
 
 void GraphicsUpdateAndDrawHorizonForCar(s32 useLinkedCar) {
@@ -12521,7 +12498,7 @@ void GraphicsUpdateAndDrawHorizonForCar(s32 useLinkedCar) {
     if (useLinkedCar == 0) {
         value0 = gPlayerCar[0];
     } else {
-        value0 = ((Data3554 *)gPlayerCar[0])->unk3E0;
+        value0 = gPlayerCar[0]->next;
     }
     D_800A2EA0[0] = value0;
     GraphicsDrawHorizonWalls();

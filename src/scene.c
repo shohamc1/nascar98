@@ -2467,7 +2467,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                 }
                 ang = (car->unk402 * 0x1F40) / 13250 + 0x3E8;
                 scaled = (s16)ang << 8;
-                idx = (car->unkF6 != 0 || car->gearIndex == car->unk110 ||
+                idx = (car->automatic != 0 || car->gearIndex == car->unk110 ||
                                ((u8 *)D_800A2F9DAbsolute)[-0x45] != 0
                            ? scaled / 10000
                            : scaled / 9000) +
@@ -3334,7 +3334,7 @@ void HudDrawDashboard(void) {
                 /* Scale the tachometer angle by 585/13250 or 658/13250. */
                 car = gPlayerCar[0];
                 rpm = car->unk402;
-                if (car->unkF6 != 0 || car->gearIndex == car->unk110) {
+                if (car->automatic != 0 || car->gearIndex == car->unk110) {
                     trueFactor = 0x9E468F35;
                     numerator = rpm * 585;
                     asm("mult %2,%3\n\tmfhi %0"
@@ -6043,8 +6043,8 @@ s32 RaceUpdateCaution(void) {
             }
             gPlayerCarLui->sliding = 0;
             D_800A2F00Sw[0] = 3;
-            D_800A3420 = gPlayerCarLui->unkF6;
-            gPlayerCarLui->unkF6 = 1;
+            D_800A3420 = gPlayerCarLui->automatic;
+            gPlayerCarLui->automatic = 1;
             SoundStopConditionalSlots(0);
             D_800A35A4 = 600;
             D_800A39F8 = 1;
@@ -6106,7 +6106,7 @@ s32 RaceUpdateCaution(void) {
                 if (car != gPlayerCarLui) {
                     func_800373B4(car);
                 } else if (D_800A35A4 < 0x32) {
-                    car->unkF6 = D_800A3420;
+                    car->automatic = D_800A3420;
                     car->update(car);
                 } else {
                     func_800373B4(car);
