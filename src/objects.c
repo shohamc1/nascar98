@@ -5042,9 +5042,9 @@ void EffectSpawnAtWheel(Car *car, s32 wheelIndex) {
 
     if (car->unkF4 != 0) {
         entry = (u8 *)(*(s32 *)((s32)car->shape + 0x40) + wheelIndex * 0x18);
-        pos[0] = *(s32 *)(entry + 4);
-        pos[1] = *(s32 *)(entry + 8);
-        pos[2] = *(s32 *)(entry + 0xC);
+        pos[0] = ((ModelPart *)entry)->origin.x;
+        pos[1] = ((ModelPart *)entry)->origin.y;
+        pos[2] = ((ModelPart *)entry)->origin.z;
         func_8001EEC4(car);
         MatrixRotateVector(pos);
         pos[0] += car->pos.x;
@@ -12800,14 +12800,14 @@ void func_8003644C(s32 index, s32 arg1, s32 arg2, s32 arg3) {
     base = (u8 *)D_800B60E8 + index * 0x12C0;
     for (i = 0; i < 0x18; i++) {
         entry = base + i * 0xC8;
-        if (*(s16 *)(entry + 0) == 0) {
-            *(s32 *)(entry - 0x18) = arg1;
-            *(s32 *)(entry - 0x14) = arg2;
-            *(s32 *)(entry - 0x10) = arg3;
+        if (((Spark *)(entry - 0x20))->life == 0) {
+            ((Spark *)(entry - 0x20))->pos.x = arg1;
+            ((Spark *)(entry - 0x20))->pos.y = arg2;
+            ((Spark *)(entry - 0x20))->pos.z = arg3;
             if (flag == 0) {
-                *(s16 *)(entry + 0) = longValue;
+                ((Spark *)(entry - 0x20))->life = longValue;
             } else {
-                *(s16 *)(entry + 0) = shortValue;
+                ((Spark *)(entry - 0x20))->life = shortValue;
             }
             return;
         }
@@ -12848,16 +12848,17 @@ void func_800365B8(s32 *out) {
     count = 0;
     entry = (u8 *)D_800B7398;
     for (i = 0; i < 0x18; i++, entry += 0xC8) {
-        if (*(s16 *)((u32)entry + 0x10) == 0) {
+        if (((Spark *)(entry - 0x10))->life == 0) {
             continue;
         }
         value = *out;
-        value = (value & -0x800) | ((*(s32 *)((u32)entry - 8) >> 7) & 0x7FF);
+        value = (value & -0x800) |
+                ((((Spark *)(entry - 0x10))->pos.x >> 7) & 0x7FF);
         *out = value;
         value = (value & 0xFFC007FF) |
-                (((*(s32 *)((u32)entry - 4) >> 7) & 0x7FF) << 11);
+                (((((Spark *)(entry - 0x10))->pos.y >> 7) & 0x7FF) << 11);
         *out = value;
-        temp = *(s32 *)entry;
+        temp = ((Spark *)(entry - 0x10))->pos.z;
         value = (value & 0x3FFFFF) | ((temp / 16) << 22);
         *out = value;
         out = out + 1;
