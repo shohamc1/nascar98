@@ -1318,7 +1318,7 @@ extern s16 D_800A2D8C;
 extern s16 D_800A2D8A;
 extern s8 gTimeBlankText[];
 extern s8 *D_8009ADD8[];
-extern void func_80025730(u8 *);
+extern void func_80025730(Car *);
 
 /* Draw the car place, laps, speed, times, and panel primitives. */
 void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
@@ -2144,7 +2144,7 @@ void func_8001BA94(s32 arg0) {
                 if (node != gPlayerCar) {
                     func_8001B82C(node, off);
                 }
-                node = *(u8 **)(*(s32 *)((u8 *)node + 0x3E8) + 8);
+                node = *(Car **)(*(s32 *)((u8 *)node + 0x3E8) + 8);
             }
         }
     }

@@ -19,7 +19,7 @@ void CarResetMotionCounters();
 s32 func_8003702C(Car *, Car *);
 extern void HeapFree(void *ptr);
 extern s32 D_800A359C[];
-extern void CarResetMotionCounters(u8 *);
+extern void CarResetMotionCounters(Car *);
 extern void FileRead();
 extern u8 gStereoEnabled;
 void VectorRotate2D(s32 angleIndex, s32 x, s32 y, s16 *rotatedPoint);

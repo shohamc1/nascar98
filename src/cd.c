@@ -22,7 +22,7 @@ extern Car *gPlayerCar[];
 void CarResetMotionCounters();
 extern s32 D_800A3A04nm[] asm("D_800A3A04.NON_MATCHING");
 extern s32 D_800A39E0;
-extern void CarResetMotionCounters(u8 *);
+extern void CarResetMotionCounters(Car *);
 extern u8 D_800B9DA4[];
 void CarUpdateWheelVelocityComponents(s32 *car);
 s32 func_80029EF8(Car *obj);

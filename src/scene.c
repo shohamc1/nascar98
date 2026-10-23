@@ -29,7 +29,7 @@ extern s32 gReplayIndexAbsolute[];
 extern s32 D_800A3A34Absolute[];
 extern s32 D_800A397C[];
 extern u8 D_800A3680[];
-extern void func_80025730(u8 *);
+extern void func_80025730(Car *);
 extern Car *gPlayerCar[];
 s32 func_8003702C(Car *, Car *);
 extern void HeapFree(void *ptr);
@@ -6068,7 +6068,7 @@ s32 RaceUpdateCaution(void) {
             func_8005157C();
         }
         done = 1;
-        for (car = D_800A3A64Car; car != NULL; car = (u8 *)car->unk404) {
+        for (car = D_800A3A64Car; car != NULL; car = (Car *)car->unk404) {
             CarUpdateState(car);
             func_800373B4(car);
             if (car->unkF4 != 0 && (car->unk3A4 & 0xF) != 0) {
@@ -6105,7 +6105,7 @@ s32 RaceUpdateCaution(void) {
             if (D_800A3564u != 0) {
                 func_8005157C();
             }
-            for (car = D_800A3A64Car; car != NULL; car = (u8 *)car->unk404) {
+            for (car = D_800A3A64Car; car != NULL; car = (Car *)car->unk404) {
                 CarUpdateState(car);
                 if (car != gPlayerCarLui) {
                     func_800373B4(car);
@@ -7520,7 +7520,7 @@ void func_8005301C(void) {
     if (gSplitScreenModeAbsolute[0] == 0) {
         return;
     }
-    obj = (u8 *)gPlayerCar[0]->next;
+    obj = (Car *)gPlayerCar[0]->next;
     if ((s8)obj->unk3B9 != 0) {
         func_8003FC0C(
             0x15,

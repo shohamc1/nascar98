@@ -192,8 +192,8 @@ typedef struct Car {
     s16 unk2AA; /* 0x2AA */
     Wheel wheel[4]; /* 0x2AC */
     char *name; /* 0x34C */
-    void (*update)(u8 *); /* 0x350 */
-    void (*callback)(u8 *); /* 0x354 */
+    void (*update)(struct Car *); /* 0x350 */
+    void (*callback)(struct Car *); /* 0x354 */
     s8 unk358; /* 0x358 */
     u8 unk359[0x7];
     u16 state; /* 0x360 */
