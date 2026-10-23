@@ -359,13 +359,13 @@ void CarDrawPreviewModel(u8 *arg0, s32 x, s32 y, s32 z) {
 }
 
 extern s32 D_800A2EC4Lui asm("D_800A2EC4Absolute");
-extern s32 D_800A2EA4Lui asm("D_800A2EA4Absolute");
+extern s32 gSplitScreenModeLui asm("gSplitScreenModeAbsolute");
 extern u32 gCarListLui asm("gCarListAbsolute");
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 extern s32 D_800A2D6C;
 extern s32 D_800A3818;
 extern s32 func_800167BC(u8 *);
-extern s32 func_80014AC8(s32);
+extern s32 GraphicsHasFreePrimitives(s32);
 
 /* Draw every car in the list, or release the ones that were skipped. */
 void CarDrawAll(void) {
@@ -396,7 +396,7 @@ void CarDrawAll(void) {
     D_800A2D6C = 1;
     bankFlag = 0;
     if (D_800A2EC4Lui == 0) {
-        bankFlag = D_800A2EA4Lui == 0;
+        bankFlag = gSplitScreenModeLui == 0;
     }
     for (car = gCarListLui; car != 0; car = *(u32 *)(car + 0x3E0)) {
         released = 0;
@@ -407,7 +407,8 @@ void CarDrawAll(void) {
             *(s32 *)(car + 0x36C) != 0 && *(s8 *)(car + 0x374) < 4) {
             D_800A3818 = 0x808080;
             if (func_800167BC((u8 *)car) & 0xFF) {
-                if (func_80014AC8(*(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
+                if (GraphicsHasFreePrimitives(
+                        *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
                     func_800168F8(*(u8 **)(car + 0x36C),
                                   (s8)((s8) * (u8 *)(car + 0x200) / 5));
                     CarDrawModel((u8 *)car, 0);

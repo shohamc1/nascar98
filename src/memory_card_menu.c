@@ -15,8 +15,8 @@
 #include "menu.h"
 
 extern s32 strlen(char *);
-extern s16 D_800A3696w15[] asm("D_800A3696.NON_MATCHING");
-extern s16 D_800A3694w15[] asm("D_800A3694.NON_MATCHING");
+extern s16 gMusicVolumew15[] asm("gMusicVolume.NON_MATCHING");
+extern s16 gCdVolumew15[] asm("gCdVolume.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
 extern s8 gPadTypew18c[] asm("gPadType.NON_MATCHING");
 
@@ -28,54 +28,57 @@ extern u8 gPlayerDriver[];
 extern char *strcat(char *, char *);
 extern u8 *D_800AE178[];
 extern s32 D_8009A31C[];
-extern void func_8005B688(u8 *first, u8 friction);
-extern void func_8005B8B8(u8 *first, s32 value);
-extern u8 D_800A305B[];
-extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
-extern s32 func_8005B0E4(s16, s32);
+extern void MenuUpdateObjectPosition(u8 *first, u8 friction);
+extern void MenuDrawObjectList(u8 *first, s32 value);
+extern u8 gSelectedTrack[];
+extern void MenuFontSetS32(s32, s32) asm("MenuFontSet");
+extern s32 MenuTextCenterOffset(s16, s32);
 asm(".globl MenuDrawStringW");
-void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5);
+void GraphicsQueueDrawEnvironment(u8 arg0, s32 arg1, s32 arg2, s32 arg3,
+                                  s32 arg4, s32 arg5);
 u8 RaceFindDriverPosition(u8 value);
 void CardCloseFile(s32 handle);
 u8 CardDeleteFile(char *path);
-void func_800598C4(void);
-void func_800599E4(void);
-s32 CardCheckStatus(s32 arg0, u8 arg1);
+void CardTestAndDisableEvents(void);
+void CardEnableAndTestEvents(void);
+s32 CardCheckStatus(s32 slot, u8 returnOnBusy);
 s32 CardFindFirstFile(char *path, struct DIRENTRY *entry);
-s32 CardFormat(s32 second);
-s32 func_80059F0C(s32 arg0);
+s32 CardFormat(s32 slot);
+s32 func_80059F0C(s32 slot);
 s32 CardOpenFile(char *path, s32 flags);
-s32 CardReadSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
-s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf);
-s32 CardCountOtherFileBlocks(s32 arg0, char *name);
+s32 CardReadSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
+                    s32 buffer);
+s32 CardWriteSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
+                     s32 buffer);
+s32 CardCountOtherFileBlocks(s32 slot, char *excludedName);
 s16 MenuCharWidth(s8 arg0);
-void func_8005DEDC(s16 value);
+void MenuSetAllObjectOrderingDepths(s16 value);
 void func_8005E4A4(u8 *table);
-void func_8005EC5C(u8 arg0);
-void func_8005ED04(s32 index);
+void MenuFormatLapCount(u8 arg0);
+void MenuSetTrackLabel(s32 index);
 void func_80062D38(s32 arg0, s32 arg1, u8 *arg2);
 void func_80062F6C(s32 arg0, s32 arg1);
 void func_800641EC(void);
-void func_80067EA4(UnkObject24 *obj, u8 a, u8 b, s32 c, u8 d, s32 e);
+void MenuSetTextObject(MenuTextObjectView *obj, u8 a, u8 b, s32 c, u8 d, s32 e);
 
-void func_80067F34(s32 arg0, s32 arg1) {
-    typedef struct UnkTextObj67F34 {
-        u16 unk0;
+void func_80067F34(s32 page, s32 track) {
+    typedef struct RecordTableTextObject {
+        u16 kind;
         u8 unk2[4];
-        u16 unk6;
-        u16 unk8;
-        u16 unkA;
+        u16 x;
+        u16 y;
+        u16 targetX;
         u8 unkC[6];
-        u16 unk12;
+        u16 drawOffsetX;
         u8 unk14[6];
-        s16 unk1A;
-        struct UnkTextObj67F34 *unk1C;
-        UnkPacket0C *unk20;
-    } UnkTextObj67F34;
+        s16 orderingDepth;
+        struct RecordTableTextObject *next;
+        MenuTextPacket *textPacket;
+    } RecordTableTextObject;
     extern char *D_8009A474[];
     extern s32 D_8009AC80[];
-    UnkTextObj67F34 *obj;
-    UnkTextObj67F34 *next;
+    RecordTableTextObject *obj;
+    RecordTableTextObject *next;
     u8 *name;
     u8 *entry;
     s32 value;
@@ -91,45 +94,45 @@ void func_80067F34(s32 arg0, s32 arg1) {
     s32 cnt;
     char buf[0x48];
 
-    obj = *(UnkTextObj67F34 **)((u8 *)D_800A3668Absolute - 0x5C +
-                                (arg0 & 0xFF) * 4);
-    func_8005A7B8S32(2, 3);
+    obj = *(RecordTableTextObject **)((u8 *)D_800A3668Absolute - 0x5C +
+                                      (page & 0xFF) * 4);
+    MenuFontSetS32(2, 3);
     strcpy(buf, D_8009A474[0]);
-    strcat(buf, (char *)D_8009A31C[arg1 & 0xFF]);
+    strcat(buf, (char *)D_8009A31C[track & 0xFF]);
     w = MenuStringWidth((s32)buf);
     sum = (0x140 - w) / 2;
-    obj->unk6 = sum;
-    obj->unkA = sum;
-    obj->unk12 = obj->unk6;
-    next = obj->unk1C;
+    obj->x = sum;
+    obj->targetX = sum;
+    obj->drawOffsetX = obj->x;
+    next = obj->next;
     w = MenuStringWidth((s32)D_8009A474[0]);
     {
         s32 hdrH;
-        UnkPacket0C *pktH;
-        hdrH = next->unk1A;
-        sum2 = obj->unk6 + w;
-        next->unk6 = sum2;
-        next->unk12 = sum2;
-        string = (char *)D_8009A31C[arg1 & 0xFF];
-        pktH = next->unk20;
+        MenuTextPacket *pktH;
+        hdrH = next->orderingDepth;
+        sum2 = obj->x + w;
+        next->x = sum2;
+        next->drawOffsetX = sum2;
+        string = (char *)D_8009A31C[track & 0xFF];
+        pktH = next->textPacket;
         pktH->unk1 = 2;
         pktH->unk2 = 3;
         pktH->unk3 = 0;
         cnt = ((u8 *)D_800A3A54)[4];
-        pktH->unk4 = hdrH;
-        pktH->unk8 = (s32)string;
-        next->unk1A = hdrH;
+        pktH->orderingDepth = hdrH;
+        pktH->text = (s32)string;
+        next->orderingDepth = hdrH;
     }
-    obj =
-        *(UnkTextObj67F34 **)((u8 *)D_800A3854Absolute + (arg0 & 0xFF) * 4 + 4);
+    obj = *(RecordTableTextObject **)((u8 *)D_800A3854Absolute +
+                                      (page & 0xFF) * 4 + 4);
     i = 0;
     if (cnt > 0) {
-        recordOff = (arg1 & 0xFF) * 0xC;
+        recordOff = (track & 0xFF) * 0xC;
         do {
             j = 0;
             do {
                 s32 hdrL;
-                UnkPacket0C *pktL;
+                MenuTextPacket *pktL;
                 s32 flagL;
                 s32 t;
                 switch (j) {
@@ -180,15 +183,15 @@ void func_80067F34(s32 arg0, s32 arg1) {
                     flagL = t;
                     asm("" : : "r"(t));
                 }
-                hdrL = obj->unk1A;
-                pktL = obj->unk20;
+                hdrL = obj->orderingDepth;
+                pktL = obj->textPacket;
                 pktL->unk1 = 2;
                 pktL->unk2 = 3;
-                pktL->unk8 = value;
+                pktL->text = value;
                 pktL->unk3 = flagL;
-                pktL->unk4 = hdrL;
-                obj->unk1A = hdrL;
-                obj = obj->unk1C;
+                pktL->orderingDepth = hdrL;
+                obj->orderingDepth = hdrL;
+                obj = obj->next;
                 j++;
             } while (j < 6);
             i++;
@@ -197,22 +200,22 @@ void func_80067F34(s32 arg0, s32 arg1) {
 }
 
 void CardMenuCreateRecordTable(u8 track) {
-    typedef struct UnkTextObj68220 {
-        s16 unk0;
+    typedef struct CardRecordTableTextObject {
+        s16 kind;
         u8 unk2;
         u8 unk3;
         u8 unk4;
         u8 unk5;
-        s16 unk6;
-        s16 unk8;
-        s16 unkA;
+        s16 x;
+        s16 y;
+        s16 targetX;
         u8 unkC[6];
-        s16 unk12;
+        s16 drawOffsetX;
         u8 unk14[6];
-        s16 unk1A;
-        struct UnkTextObj68220 *unk1C;
-        UnkPacket0C *unk20;
-    } UnkTextObj68220;
+        s16 orderingDepth;
+        struct CardRecordTableTextObject *next;
+        MenuTextPacket *textPacket;
+    } CardRecordTableTextObject;
     extern char *D_8009A474[];
     extern s8 D_800A3944;
     extern s8 D_800A39DC;
@@ -220,22 +223,26 @@ void CardMenuCreateRecordTable(u8 track) {
     extern u8 D_800A3894;
     extern u8 *D_800A37D4;
     extern s16 MenuStringWidth(s32 text);
-    extern UnkTextObj68220 *func_8005B314(s32, s32, s32, s32, s32, s32, s32,
-                                          s32, s32, s32);
-    extern UnkTextObj68220 *func_8005BF8C(s32, s32);
+    extern CardRecordTableTextObject *MenuCreateFlatRect(
+        s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+    extern CardRecordTableTextObject *MenuCreateTextObject(s32, s32);
     extern s32 D_8009A478[];
     extern s16 D_8009B1AC[];
     extern s16 D_8009B1BA[];
     extern s32 D_8009A48C[];
     extern u8 D_800A3A58Lui asm("D_800A3A58Absolute");
-    extern UnkTextObj68220 *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
+    extern CardRecordTableTextObject *D_800A3900Obj asm(
+        "D_800A3900.NON_MATCHING");
     /* Sized, so [0] goes through $gp; [page] needs the lui alias. */
-    extern UnkTextObj68220 *D_800A360C[2];
-    extern UnkTextObj68220 *D_800A360CArr[] asm("D_800A360C.NON_MATCHING");
-    extern UnkTextObj68220 *D_800A3858Arr[] asm("D_800A3858.NON_MATCHING");
-    extern UnkTextObj68220 *D_800A3918Arr[] asm("D_800A3918.NON_MATCHING");
-    UnkTextObj68220 *tail;
-    UnkTextObj68220 *obj;
+    extern CardRecordTableTextObject *D_800A360C[2];
+    extern CardRecordTableTextObject *D_800A360CArr[] asm(
+        "D_800A360C.NON_MATCHING");
+    extern CardRecordTableTextObject *D_800A3858Arr[] asm(
+        "D_800A3858.NON_MATCHING");
+    extern CardRecordTableTextObject *D_800A3918Arr[] asm(
+        "D_800A3918.NON_MATCHING");
+    CardRecordTableTextObject *tail;
+    CardRecordTableTextObject *obj;
     s32 i;
     s32 j;
     s32 page;
@@ -247,86 +254,87 @@ void CardMenuCreateRecordTable(u8 track) {
 
     i = 0;
     do {
-        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        tail =
+            MenuCreateFlatRect(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (i == 0) {
             D_800A3900Obj = tail;
         } else {
-            D_800A3900Obj->unk1C = tail;
+            D_800A3900Obj->next = tail;
         }
-        tail->unk1A = 0x3FD;
+        tail->orderingDepth = 0x3FD;
         i++;
     } while (i < 2);
 
     if (D_800A3A58Lui == 0) {
-        tail = func_8005BF8C(0x64, 0x66);
+        tail = MenuCreateTextObject(0x64, 0x66);
         D_800A360C[0] = tail;
-        tail->unk12 = 0;
-        tail->unk1A = 0x32;
+        tail->drawOffsetX = 0;
+        tail->orderingDepth = 0x32;
         {
             s32 str;
-            UnkPacket0C *pkt;
+            MenuTextPacket *pkt;
             str = D_8009A48C[0];
-            pkt = tail->unk20;
+            pkt = tail->textPacket;
             pkt->unk1 = 2;
             pkt->unk2 = 3;
-            pkt->unk8 = str;
+            pkt->text = str;
             pkt->unk3 = 0;
-            pkt->unk4 = 0x32;
-            tail->unk1A = 0x32;
+            pkt->orderingDepth = 0x32;
+            tail->orderingDepth = 0x32;
         }
         return;
     }
 
     for (page = 0; page < 2; page++) {
-        tail = func_8005BF8C(0, 0x2A);
+        tail = MenuCreateTextObject(0, 0x2A);
         D_800A360CArr[page] = tail;
-        func_8005A7B8S32(2, 3);
+        MenuFontSetS32(2, 3);
         strcpy(buf, D_8009A474[0]);
         strcat(buf, (char *)D_8009A31C[track]);
         w = (s16)MenuStringWidth((s32)buf);
         x = (0x140 - w) / 2;
-        tail->unk6 = x;
-        tail->unkA = x;
-        tail->unk1A = 0x32;
+        tail->x = x;
+        tail->targetX = x;
+        tail->orderingDepth = 0x32;
         tail->unk2 = 0x80;
         tail->unk3 = 0x80;
         tail->unk4 = 0xC0;
         {
             s32 hdr;
             s32 str;
-            UnkPacket0C *pkt;
-            hdr = tail->unk1A;
+            MenuTextPacket *pkt;
+            hdr = tail->orderingDepth;
             str = (s32)D_8009A474[0];
-            pkt = tail->unk20;
+            pkt = tail->textPacket;
             pkt->unk1 = 2;
             pkt->unk2 = 3;
-            pkt->unk8 = str;
+            pkt->text = str;
             pkt->unk3 = 0;
-            pkt->unk4 = hdr;
-            tail->unk1A = hdr;
+            pkt->orderingDepth = hdr;
+            tail->orderingDepth = hdr;
         }
         w = (s16)MenuStringWidth((s32)D_8009A474[0]);
-        obj = func_8005BF8C(tail->unk6 + w, 0x2A);
-        obj->unk12 = obj->unk6;
-        obj->unk1A = 0x32;
+        obj = MenuCreateTextObject(tail->x + w, 0x2A);
+        obj->drawOffsetX = obj->x;
+        obj->orderingDepth = 0x32;
         obj->unk2 = 0x80;
         obj->unk3 = 0x80;
         obj->unk4 = 0xC0;
         {
             s32 str;
-            UnkPacket0C *pkt;
+            MenuTextPacket *pkt;
             s32 hdr;
             str = D_8009A31C[track];
-            pkt = obj->unk20;
-            hdr = obj->unk1A;
+            pkt = obj->textPacket;
+            hdr = obj->orderingDepth;
             pkt->unk1 = 2;
             pkt->unk2 = 3;
-            pkt->unk8 = str;
+            pkt->text = str;
             pkt->unk3 = 0;
-            pkt->unk4 = hdr;
-            obj->unk1A = hdr;
+            pkt->orderingDepth = hdr;
+            obj->orderingDepth = hdr;
         }
-        tail->unk1C = obj;
+        tail->next = obj;
         tail = obj;
 
         /* Column headings, alternating between two rows and colours. */
@@ -337,9 +345,9 @@ void CardMenuCreateRecordTable(u8 track) {
             } else {
                 y = 0x48;
             }
-            obj = func_8005BF8C(colX, y);
-            obj->unk12 = colX;
-            obj->unk1A = 0x32;
+            obj = MenuCreateTextObject(colX, y);
+            obj->drawOffsetX = colX;
+            obj->orderingDepth = 0x32;
             if (i & 1) {
                 obj->unk2 = 0xFF;
                 obj->unk3 = 0x80;
@@ -351,19 +359,19 @@ void CardMenuCreateRecordTable(u8 track) {
             }
             {
                 s32 str;
-                UnkPacket0C *pkt;
+                MenuTextPacket *pkt;
                 s32 hdr;
                 str = D_8009A478[i];
-                pkt = obj->unk20;
-                hdr = obj->unk1A;
+                pkt = obj->textPacket;
+                hdr = obj->orderingDepth;
                 pkt->unk1 = 2;
                 pkt->unk2 = 3;
-                pkt->unk8 = str;
+                pkt->text = str;
                 pkt->unk3 = 0;
-                pkt->unk4 = hdr;
-                obj->unk1A = hdr;
+                pkt->orderingDepth = hdr;
+                obj->orderingDepth = hdr;
             }
-            tail->unk1C = obj;
+            tail->next = obj;
             tail = obj;
         }
 
@@ -371,20 +379,20 @@ void CardMenuCreateRecordTable(u8 track) {
         y = 0;
         for (i = 0; i < D_800A3A58Lui; i++, y += 15) {
             for (j = 0; j < 6; j++) {
-                obj = func_8005BF8C(D_8009B1AC[j], y);
+                obj = MenuCreateTextObject(D_8009B1AC[j], y);
                 if (i == 0 && j == 0) {
                     D_800A3858Arr[page] = obj;
                 } else {
-                    tail->unk1C = obj;
+                    tail->next = obj;
                 }
-                obj->unk12 = obj->unk6;
-                obj->unk1A = 0;
+                obj->drawOffsetX = obj->x;
+                obj->orderingDepth = 0;
                 switch (j) {
                 case 1:
                 case 2:
                 case 3:
                 case 4:
-                    obj->unk0 = 5;
+                    obj->kind = 5;
                     if (j & 1) {
                         obj->unk2 = 0xC8;
                         obj->unk3 = 0x40;
@@ -396,7 +404,7 @@ void CardMenuCreateRecordTable(u8 track) {
                     }
                     break;
                 case 5:
-                    obj->unk0 = 6;
+                    obj->kind = 6;
                     obj->unk2 = 0xC8;
                     obj->unk3 = 0x40;
                     obj->unk4 = 0x20;
@@ -404,17 +412,17 @@ void CardMenuCreateRecordTable(u8 track) {
                 }
                 {
                     u8 flag;
-                    UnkPacket0C *pkt;
+                    MenuTextPacket *pkt;
                     s32 hdr;
                     flag = (j != 0 && j != 5);
-                    pkt = obj->unk20;
-                    hdr = obj->unk1A;
+                    pkt = obj->textPacket;
+                    hdr = obj->orderingDepth;
                     pkt->unk1 = 2;
                     pkt->unk2 = 3;
-                    pkt->unk8 = 0;
+                    pkt->text = 0;
                     pkt->unk3 = flag;
-                    pkt->unk4 = hdr;
-                    obj->unk1A = hdr;
+                    pkt->orderingDepth = hdr;
+                    obj->orderingDepth = hdr;
                 }
                 tail = obj;
             }
@@ -430,7 +438,7 @@ void CardMenuCreateRecordTable(u8 track) {
     D_800A3870 = 0;
     D_800A3894 = track;
     D_800A37D4 = D_800A360C[0];
-    func_8005DEDC(1000);
+    MenuSetAllObjectOrderingDepths(1000);
 }
 
 void func_800686FC(s32 arg0, s32 arg1) {
@@ -443,35 +451,36 @@ void func_800686FC(s32 arg0, s32 arg1) {
     extern u8 *D_800A360C;
     extern u8 *D_800A3858;
 
-    func_8005B8B8(D_800A3900Ptr, 0xFF);
+    MenuDrawObjectList(D_800A3900Ptr, 0xFF);
     if ((arg0 & 0xFF) == 9 && ((u8 *)D_800A3A54)[4] != 0) {
         if (D_800A37D4 != 0) {
-            func_8005B688(D_800A37D4, 1);
-            func_8005B8B8(D_800A37D4, 0xFF);
+            MenuUpdateObjectPosition(D_800A37D4, 1);
+            MenuDrawObjectList(D_800A37D4, 0xFF);
         }
         if (D_800A3870 != 0) {
-            func_8005B688(D_800A3870, 1);
-            func_8005B8B8(D_800A3870, 0xFF);
+            MenuUpdateObjectPosition(D_800A3870, 1);
+            MenuDrawObjectList(D_800A3870, 0xFF);
         }
     } else {
-        func_8005B8B8(D_800A360C, 0xFF);
+        MenuDrawObjectList(D_800A360C, 0xFF);
     }
     if (D_800A3914[0] != 0) {
-        func_8005B8B8((u8 *)D_800A3914[0], 0xFF);
+        MenuDrawObjectList((u8 *)D_800A3914[0], 0xFF);
     }
     switch ((arg0 & 0xFF) - 9) {
     case 0:
         if (((u8 *)D_800A3A54)[4] != 0) {
-            func_80057F34(arg1 & 0xFF, 0, 0x57, 0x140, 0x7B, 0xA);
+            GraphicsQueueDrawEnvironment(arg1 & 0xFF, 0, 0x57, 0x140, 0x7B,
+                                         0xA);
         }
         break;
     case 1:
-        func_80057F34(arg1 & 0xFF, 0, 0x9D, 0x140, 0x35, 0xA);
+        GraphicsQueueDrawEnvironment(arg1 & 0xFF, 0, 0x9D, 0x140, 0x35, 0xA);
         break;
     case 3:
     case 7:
     case 8:
-        func_80057F34(arg1 & 0xFF, 0, 0x39, 0x140, 0x99, 0xA);
+        GraphicsQueueDrawEnvironment(arg1 & 0xFF, 0, 0x39, 0x140, 0x99, 0xA);
         break;
     }
     switch (arg0 & 0xFF) {
@@ -481,16 +490,16 @@ void func_800686FC(s32 arg0, s32 arg1) {
     }
     if ((u8)(arg0 - 0x10) < 2) {
     hideIt:
-        func_8005B8B8(D_800A3858, 0xFF);
+        MenuDrawObjectList(D_800A3858, 0xFF);
     } else if ((arg0 & 0xFF) == 9) {
         if (((u8 *)D_800A3A54)[4] != 0) {
             if (D_800A37D4 != 0) {
-                func_8005B688(D_800A3854Absolute[D_800A3944 + 1], 1);
-                func_8005B8B8(D_800A3854Absolute[D_800A3944 + 1], 0xFF);
+                MenuUpdateObjectPosition(D_800A3854Absolute[D_800A3944 + 1], 1);
+                MenuDrawObjectList(D_800A3854Absolute[D_800A3944 + 1], 0xFF);
             }
             if (D_800A3870 != 0) {
-                func_8005B688(D_800A3854Absolute[D_800A39DC + 1], 1);
-                func_8005B8B8(D_800A3854Absolute[D_800A39DC + 1], 0xFF);
+                MenuUpdateObjectPosition(D_800A3854Absolute[D_800A39DC + 1], 1);
+                MenuDrawObjectList(D_800A3854Absolute[D_800A39DC + 1], 0xFF);
             }
         }
     }
@@ -505,9 +514,9 @@ void __maspsx_include_asm_hack_jtblpad_800686FC() {
 }
 
 void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
-    extern UnkNode1C *D_800A360C[];
-    extern UnkNode1C *D_800A3858Absolute[] asm("D_800A3858.NON_MATCHING");
-    UnkNode1C *node;
+    extern MenuObjectNode *D_800A360C[];
+    extern MenuObjectNode *D_800A3858Absolute[] asm("D_800A3858.NON_MATCHING");
+    MenuObjectNode *node;
     u8 *other;
     s32 index;
     s32 v1;
@@ -516,9 +525,9 @@ void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
     node = D_800A360C[arg0 & 0xFF];
     if (node != NULL) {
         do {
-            node->unkE = arg3;
-            node->unk6 = node->unk12 + arg1;
-            node->unkA = node->unk12 + arg2;
+            node->velocityX = arg3;
+            node->x = node->drawOffsetX + arg1;
+            node->targetX = node->drawOffsetX + arg2;
             node = node->next;
             index = arg0 & 0xFF;
         } while (node != NULL);
@@ -533,12 +542,12 @@ void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
     }
     if (node != NULL) {
         do {
-            node->unk6 = node->unk12 + arg1;
+            node->x = node->drawOffsetX + arg1;
             if (arg4 != 0) {
-                node->unk8 = node->unkC + v1;
+                node->y = node->targetY + v1;
             }
-            node->unkE = arg3;
-            node->unkA = node->unk12 + arg2;
+            node->velocityX = arg3;
+            node->targetX = node->drawOffsetX + arg2;
             node = node->next;
         } while (node != NULL);
     }
@@ -574,7 +583,7 @@ extern s32 D_800A3830Absolute2[];
 extern s32 D_800A37F0Absolute[];
 extern s32 D_800A37F0Absolute2[];
 extern s32 D_800A37F0Absolute3[];
-extern u8 D_800A39E4NM[] asm("D_800A39E4.NON_MATCHING");
+extern u8 gScreenStateNM[] asm("gScreenState.NON_MATCHING");
 extern u8 D_800A3A58NM[] asm("D_800A3A58.NON_MATCHING");
 extern s16 D_800B9B84NM[] asm("D_800B9B84.NON_MATCHING");
 extern u8 *D_800A3858NM[] asm("D_800A3858.NON_MATCHING");
@@ -623,7 +632,7 @@ noStore:
         delta = -dneg;
     }
 
-    val = D_800A39E4NM[0];
+    val = gScreenStateNM[0];
     if ((val & 0xFF) == 9) {
         limit = 0x7B;
     } else if ((val & 0xFF) == 0xA) {
@@ -632,18 +641,18 @@ noStore:
         limit = 0x99;
     }
     limit = limit - 0xD;
-    if (D_800A39E4NM[0] == 9) {
+    if (gScreenStateNM[0] == 9) {
         if (D_800A3A58NM[0] == 0) {
             return;
         }
     }
-    if (D_800A39E4NM[0] == 0xC) {
+    if (gScreenStateNM[0] == 0xC) {
         if (D_800B9B84NM[0] == 0) {
             return;
         }
     }
     idx = 0;
-    if (D_800A39E4NM[0] == 9) {
+    if (gScreenStateNM[0] == 9) {
         idx = D_800A3944;
     }
     head = D_800A3858NM[idx];
@@ -692,14 +701,15 @@ typedef struct UnkTextObj {
     u8 unk14[6];
     s16 unk1A;
     struct UnkTextObj *unk1C;
-    UnkPacket0C *unk20;
+    MenuTextPacket *unk20;
 } UnkTextObj;
 extern UnkTextObj *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
 extern UnkTextObj *D_800A360C;
 extern UnkTextObj *D_800A3858;
 extern UnkTextObj *D_800A3918;
-UnkTextObj *func_8005B314(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
-UnkTextObj *func_8005BF8C(s32, s32);
+UnkTextObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, s32, s32, s32, s32,
+                               s32);
+UnkTextObj *MenuCreateTextObject(s32, s32);
 
 void func_80068CE4(void) {
     extern char *D_8009A498[];
@@ -712,11 +722,11 @@ void func_80068CE4(void) {
     UnkTextObj *tail;
     /* One packet pointer per section: a single shared pointer takes one
      * register, retail uses a different one in each section. */
-    UnkPacket0C *titlePkt;
-    UnkPacket0C *subPkt;
-    UnkPacket0C *rowPkt;
-    UnkPacket0C *hdrPkt;
-    UnkPacket0C *cellPkt;
+    MenuTextPacket *titlePkt;
+    MenuTextPacket *subPkt;
+    MenuTextPacket *rowPkt;
+    MenuTextPacket *hdrPkt;
+    MenuTextPacket *cellPkt;
     u8 *record;
     char buf[0x40];
     s32 value;
@@ -730,7 +740,8 @@ void func_80068CE4(void) {
     s32 i;
     s32 j;
     for (i = 0; i < 2; i++) {
-        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        tail =
+            MenuCreateFlatRect(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (i == 0) {
             D_800A3900Obj = tail;
         } else {
@@ -739,9 +750,9 @@ void func_80068CE4(void) {
         tail->unk1A = 0x3FD;
     }
 
-    tail = func_8005BF8C(0, 0x2A);
+    tail = MenuCreateTextObject(0, 0x2A);
     D_800A360C = tail;
-    func_8005A7B8S32(2, 3);
+    MenuFontSetS32(2, 3);
     strcpy(buf, D_800B9B54);
     strcat(buf, D_8009A498[0]);
     /* After the call, so the li lands in the call's delay slot. */
@@ -754,26 +765,26 @@ void func_80068CE4(void) {
     titlePkt = tail->unk20;
     titlePkt->unk1 = 2;
     titlePkt->unk2 = 3;
-    titlePkt->unk8 = (s32)D_800B9B54;
+    titlePkt->text = (s32)D_800B9B54;
     titlePkt->unk3 = 0;
-    titlePkt->unk4 = 0x32;
+    titlePkt->orderingDepth = 0x32;
     tail->unk1A = 0x32;
     titleW = MenuStringWidth((s32)D_800B9B54);
-    obj = func_8005BF8C(tail->unk6 + titleW, 0x2A);
+    obj = MenuCreateTextObject(tail->unk6 + titleW, 0x2A);
     obj->unk1A = 0x32;
     value = (s32)D_8009A498[0];
     subPkt = obj->unk20;
     subPkt->unk1 = 2;
     subPkt->unk2 = 3;
-    subPkt->unk8 = value;
+    subPkt->text = value;
     subPkt->unk3 = 0;
-    subPkt->unk4 = 0x32;
+    subPkt->orderingDepth = 0x32;
     obj->unk1A = 0x32;
     tail->unk1C = obj;
     tail = obj;
     for (i = 0; i < 5; i++) {
         for (j = 0; j < 2; j++) {
-            obj = func_8005BF8C((j != 0) ? (0xF0) : (0x40), y);
+            obj = MenuCreateTextObject((j != 0) ? (0xF0) : (0x40), y);
             obj->unk1A = 0x32;
             if (j != 0) {
                 switch (i) {
@@ -807,9 +818,9 @@ void func_80068CE4(void) {
             rowPkt = obj->unk20;
             rowPkt->unk1 = 2;
             rowPkt->unk2 = 3;
-            rowPkt->unk8 = value;
+            rowPkt->text = value;
             rowPkt->unk3 = j;
-            rowPkt->unk4 = w;
+            rowPkt->orderingDepth = w;
             obj->unk1A = w;
             tail->unk1C = obj;
             tail = obj;
@@ -834,15 +845,15 @@ void func_80068CE4(void) {
             break;
         }
 
-        obj = func_8005BF8C(x, 0x89);
+        obj = MenuCreateTextObject(x, 0x89);
         obj->unk1A = 0x32;
         label = (s32)D_8009A4B0[i];
         hdrPkt = obj->unk20;
         hdrPkt->unk1 = 2;
         hdrPkt->unk2 = 3;
-        hdrPkt->unk8 = label;
+        hdrPkt->text = label;
         hdrPkt->unk3 = ((u32)(i - 1)) < 2;
-        hdrPkt->unk4 = 0x32;
+        hdrPkt->orderingDepth = 0x32;
         obj->unk1A = 0x32;
         tail->unk1C = obj;
         tail = obj;
@@ -852,7 +863,7 @@ void func_80068CE4(void) {
     for (i = 0; i < 0x11; i++) {
         record = &D_800B9BB4[i * 0xC];
         for (j = 0; j < 4; j++) {
-            obj = func_8005BF8C(D_8009B1C4[j], y);
+            obj = MenuCreateTextObject(D_8009B1C4[j], y);
             if ((i == 0) && (j == 0)) {
                 D_800A3858 = obj;
             } else {
@@ -893,9 +904,9 @@ void func_80068CE4(void) {
             cellPkt = obj->unk20;
             cellPkt->unk1 = 2;
             cellPkt->unk2 = 3;
-            cellPkt->unk8 = value;
+            cellPkt->text = value;
             cellPkt->unk3 = flag;
-            cellPkt->unk4 = 0;
+            cellPkt->orderingDepth = 0;
             obj->unk1A = 0;
             tail = obj;
         }
@@ -906,7 +917,7 @@ void func_80068CE4(void) {
         y += 0xF;
     }
 
-    func_8005DEDC(0x3E8);
+    MenuSetAllObjectOrderingDepths(0x3E8);
 }
 
 /* The original toolchain padded this odd-length jump table with one zero
@@ -921,15 +932,15 @@ void __maspsx_include_asm_hack_jtblpad_80068CE4() {
  * gap to the leader, and a highlight behind the player's row. */
 static __inline__ void MenuSetText(UnkTextObj *obj, s32 text, s32 flag, s32 two,
                                    s32 three) {
-    UnkPacket0C *pkt;
+    MenuTextPacket *pkt;
     s32 h;
     pkt = obj->unk20;
     h = obj->unk1A;
     pkt->unk1 = two;
     pkt->unk2 = three;
-    pkt->unk8 = text;
+    pkt->text = text;
     pkt->unk3 = flag;
-    pkt->unk4 = h;
+    pkt->orderingDepth = h;
     obj->unk1A = h;
 }
 
@@ -947,7 +958,7 @@ void CardMenuCreateStandingsTable(void) {
     UnkTextObj *obj;
     UnkTextObj *tail;
     UnkTextObj *mine;
-    UnkPacket0C *pkt;
+    MenuTextPacket *pkt;
     struct {
         char buf[0x3F];
         u8 previous;
@@ -974,7 +985,8 @@ void CardMenuCreateStandingsTable(void) {
     u8 *previous;
     s32 rowScore;
     for (i = 0; i < 2; i++) {
-        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        tail =
+            MenuCreateFlatRect(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (i == 0) {
             D_800A3900 = tail;
         } else {
@@ -984,16 +996,17 @@ void CardMenuCreateStandingsTable(void) {
     }
 
     one = 1;
-    tail = func_8005BF8C(0, 0x2A);
+    tail = MenuCreateTextObject(0, 0x2A);
     sMenuHead[0] = tail;
-    func_8005A7B8S32(2, 3);
+    MenuFontSetS32(2, 3);
     h = (0x140 - MenuStringWidth((s32)D_8009A490[0])) / 2;
     tail->unk6 = h;
     tail->unkA = h;
     tail->unk1A = 0x32;
     MenuSetText(tail, (s32)D_8009A490[0], 0, 2, 3);
     if (D_800B9B84[0] == 0) {
-        obj = func_8005BF8C(func_8005B0E4(0x140, (s32)D_8009A494[0]), 0x66);
+        obj = MenuCreateTextObject(
+            MenuTextCenterOffset(0x140, (s32)D_8009A494[0]), 0x66);
         obj->unk12 = 0;
         obj->unk1A = 0x32;
         MenuSetText(obj, (s32)D_8009A494[0], 0, 2, 3);
@@ -1031,7 +1044,7 @@ void CardMenuCreateStandingsTable(void) {
             for (; j < 4; j++) {
                 /* Keep the list tail live across the object call. */
                 asm("" : : "r"(tail));
-                obj = func_8005BF8C(D_8009B1D4[j], y);
+                obj = MenuCreateTextObject(D_8009B1D4[j], y);
                 if ((i == 0) && (j == 0)) {
                     sMenuList[0] = obj;
                 } else {
@@ -1110,11 +1123,12 @@ void CardMenuCreateStandingsTable(void) {
             y += 0xF;
         }
 
-        obj = func_8005B314(0, mine->unk8 - 2, 0x140, 0xF, 0, 0, 0, 0xFF, 1, 1);
+        obj = MenuCreateFlatRect(0, mine->unk8 - 2, 0x140, 0xF, 0, 0, 0, 0xFF,
+                                 1, 1);
         obj->unk1A = mine->unk1A + 2;
         tail->unk1C = obj;
     }
-    func_8005DEDC(0x3E8);
+    MenuSetAllObjectOrderingDepths(0x3E8);
 }
 
 typedef struct UnkBlockOffsets {
@@ -1126,7 +1140,7 @@ extern UnkBlockOffsets *D_800A3A30;
 extern void *D_800A336C;
 extern s32 D_800A3370, D_800A3374, D_800A3378Small;
 
-void func_80069744(void) {
+void CardMenuLoadResources(void) {
     s32 block;
 
     block = (s32)FileLoadOffsetTable(0xB, (void **)gPadType + 3, 0);
@@ -1139,7 +1153,7 @@ void func_80069744(void) {
     }
 }
 
-void func_800697B4(void) {
+void CardMenuFreeResources(void) {
     if (D_800A336C != 0)
         HeapFree(D_800A336C);
     D_800A336C = 0;
@@ -1154,8 +1168,8 @@ void func_800697EC(u8 mode) {
     UnkTextObj *obj;
     UnkTextObj *prev;
     /* One packet pointer per section, so each is a block-local pseudo. */
-    UnkPacket0C *titlePkt;
-    UnkPacket0C *rowPkt;
+    MenuTextPacket *titlePkt;
+    MenuTextPacket *rowPkt;
     s8 *buf;
     s8 *p;
     /* u16, so `i + 1` stays a copy (no biv) and the test below is a shift. */
@@ -1175,7 +1189,8 @@ void func_800697EC(u8 mode) {
 
     j = 0;
     do {
-        prev = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        prev =
+            MenuCreateFlatRect(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (j == 0) {
             D_800A3900Obj = prev;
         } else {
@@ -1185,10 +1200,10 @@ void func_800697EC(u8 mode) {
         j += 1;
     } while (j < 2);
 
-    prev = func_8005BF8C(0, 0x2A);
+    prev = MenuCreateTextObject(0, 0x2A);
     D_800A360C = prev;
-    func_8005A7B8S32(2, 3);
-    w = func_8005B0E4(0x140, (s32)D_8009AD58[mode]);
+    MenuFontSetS32(2, 3);
+    w = MenuTextCenterOffset(0x140, (s32)D_8009AD58[mode]);
     prev->unk6 = w;
     prev->unkA = w;
     prev->unk1A = 0x32;
@@ -1196,17 +1211,17 @@ void func_800697EC(u8 mode) {
     titlePkt = prev->unk20;
     titlePkt->unk1 = 2;
     titlePkt->unk2 = 3;
-    titlePkt->unk8 = title;
+    titlePkt->text = title;
     titlePkt->unk3 = 0;
-    titlePkt->unk4 = 0x32;
+    titlePkt->orderingDepth = 0x32;
     prev->unk1A = 0x32;
     if (mode == 0) {
         buf = (s8 *)D_800A3370;
     } else {
         buf = (s8 *)D_800A3374;
     }
-    func_8005A7B8S32(2, 4);
-    width = func_8005A84C();
+    MenuFontSetS32(2, 4);
+    width = MenuFontLineHeight();
     i = 0;
     x = 0;
     while (1) {
@@ -1220,7 +1235,7 @@ void func_800697EC(u8 mode) {
         if (c == '\n') {
             x += width / 4;
         } else {
-            obj = func_8005BF8C(0, x);
+            obj = MenuCreateTextObject(0, x);
             if (*p == '*') {
                 p = buf + ((s16)i + 1);
                 obj->unk2 = 0xF0;
@@ -1228,7 +1243,7 @@ void func_800697EC(u8 mode) {
                 obj->unk4 = 0x40;
             }
             pktMode = 4;
-            w = func_8005B0E4(0x140, (s32)p);
+            w = MenuTextCenterOffset(0x140, (s32)p);
             rowPkt = obj->unk20;
             obj->unk12 = w;
             obj->unk6 = w;
@@ -1236,9 +1251,9 @@ void func_800697EC(u8 mode) {
             obj->unk1A = 0;
             rowPkt->unk1 = pktType;
             rowPkt->unk2 = pktMode;
-            rowPkt->unk8 = (s32)p;
+            rowPkt->text = (s32)p;
             rowPkt->unk3 = 0;
-            rowPkt->unk4 = 0;
+            rowPkt->orderingDepth = 0;
             obj->unk1A = 0;
             if ((i << 16) == 0) {
                 D_800A3858 = obj;
@@ -1255,11 +1270,11 @@ void func_800697EC(u8 mode) {
         }
         i++;
     }
-    func_8005DEDC(0x3E8);
+    MenuSetAllObjectOrderingDepths(0x3E8);
 }
 
-inline u8 func_80069A90(s32 arg0) {
-    switch (arg0 & 0xFF) {
+inline u8 func_80069A90(s32 itemCode) {
+    switch (itemCode & 0xFF) {
     case 0:
     case 1:
     case 3:
@@ -1302,7 +1317,7 @@ void __maspsx_include_asm_hack_jtblpad_80069A90() {
             "    .section .text # maspsx-keep\n");
 }
 
-void MenuUpdateItemRow(s32 arg0) {
+void MenuUpdateItemRow(s32 itemCode) {
     extern void *D_800A3914[];
     extern s8 gPadLayout[];
     extern s32 D_8009A2D4[];
@@ -1313,7 +1328,7 @@ void MenuUpdateItemRow(s32 arg0) {
     s32 value;
     u8 *obj;
     u8 *child;
-    switch (arg0 & 0xFF) {
+    switch (itemCode & 0xFF) {
     case 0:
 
     case 1:
@@ -1390,11 +1405,11 @@ void MenuUpdateItemRow(s32 arg0) {
             return;
         }
     }
-    func_8005A7B8S32(2, 2);
+    MenuFontSetS32(2, 2);
     if (((s8 *)gPadType)[0] == 2) {
-        value = func_8005B0E4(0x140, D_8009A2F4[index]);
+        value = MenuTextCenterOffset(0x140, D_8009A2F4[index]);
     } else {
-        value = func_8005B0E4(0x140, D_8009A2D4[index]);
+        value = MenuTextCenterOffset(0x140, D_8009A2D4[index]);
     }
     obj = (u8 *)D_800A3914[0];
     *((s16 *)(obj + 6)) = value;
@@ -1414,7 +1429,7 @@ void MenuUpdateItemRow(s32 arg0) {
  * switch table is jtbl_8008FBBC). `index` is a u8 copy of `group`; the first
  * lookup reads `group`, the others read `index`. Each arm of the last test
  * holds its own copy of the row setup, so the locals stay block-local. */
-void MenuCreateItemRow(s32 arg0) {
+void MenuCreateItemRow(s32 itemCode) {
     extern void *D_800A3914[];
     extern u8 *D_800A3910f[] asm("D_800A3910");
     extern u8 *D_800A3918n[] asm("D_800A3918");
@@ -1425,22 +1440,22 @@ void MenuCreateItemRow(s32 arg0) {
     u8 index;
     s32 text;
     u8 *obj;
-    group = func_80069A90(arg0);
+    group = func_80069A90(itemCode);
     index = group;
     if (group == 0xFF) {
         D_800A3914[0] = 0;
         return;
     }
-    func_8005A7B8S32(2, 2);
+    MenuFontSetS32(2, 2);
     if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
         text = D_8009A2F4[group];
     } else {
         text = D_8009A2D4[index];
     }
-    obj = (u8 *)func_8005BF8C(func_8005B0E4(0x140, text), 0xDC);
+    obj = (u8 *)MenuCreateTextObject(MenuTextCenterOffset(0x140, text), 0xDC);
     D_800A3914[0] = obj;
-    if (((arg0 & 0xFF) != 0xC) && ((u32)((arg0 - 9) & 0xFF) >= 2U) &&
-        ((u32)((arg0 - 0x10) & 0xFF) >= 2U)) {
+    if (((itemCode & 0xFF) != 0xC) && ((u32)((itemCode - 9) & 0xFF) >= 2U) &&
+        ((u32)((itemCode - 0x10) & 0xFF) >= 2U)) {
         *((s16 *)(obj + 0xE)) = 2;
         *((u16 *)(obj + 6)) = *((u16 *)(obj + 6)) - 0x140;
     }
@@ -1492,7 +1507,7 @@ extern char *D_800A366C;
 extern char *D_800A3978;
 extern char *D_800A3A0C;
 
-void func_80069E88(void) {
+void CardMenuSetSaveDataPointers(void) {
     D_800A366C = (char *)0x80010000;
     D_800A3978 = (char *)0x8001000C;
     D_800A3A0C = (char *)0x80010AEC;
@@ -1580,7 +1595,7 @@ s32 CardResolveSlot(void) {
     return 1;
 }
 
-s32 func_8006A080(void) {
+s32 CardProbeSlots(void) {
     s32 count;
     s32 i;
     s8 result;
@@ -1616,10 +1631,10 @@ u8 CardGetOtherFileBlocks(void) {
 
 extern char D_800B0A2C[];
 extern u8 D_800A3968;
-extern s32 D_800A3380[2];
-extern s32 D_800A3388[2];
+extern s32 gMemoryCardPort0PathPrefix[2];
+extern s32 gMemoryCardPort1PathPrefix[2];
 extern void *memcpy(void *, const void *, size_t);
-s32 CardLoadNameList(u8 arg0) {
+s32 CardLoadNameList(u8 requestedSlot) {
     u8 slot;
     u8 status;
     u32 count;
@@ -1629,7 +1644,7 @@ s32 CardLoadNameList(u8 arg0) {
     char path[0x40];
     struct DIRENTRY entry;
 
-    slot = arg0 == 0xFF ? 0 : arg0;
+    slot = requestedSlot == 0xFF ? 0 : requestedSlot;
     D_800A3968 = 0;
     gCardMenuMessage = 0;
     status = CardCheckStatus(slot, 0);
@@ -1639,7 +1654,7 @@ s32 CardLoadNameList(u8 arg0) {
         return 0;
     }
     if (status == 2) {
-        if (arg0 == 0xFF) {
+        if (requestedSlot == 0xFF) {
             status = CardCheckStatus(1, 0);
             D_800A3938 = status;
         }
@@ -1661,9 +1676,9 @@ s32 CardLoadNameList(u8 arg0) {
     status = func_80059F0C(gCardSlot);
     D_800A3938 = status;
     if (gCardSlot == 0) {
-        memcpy(path, D_800A3380, 6);
+        memcpy(path, gMemoryCardPort0PathPrefix, 6);
     } else {
-        memcpy(path, D_800A3388, 6);
+        memcpy(path, gMemoryCardPort1PathPrefix, 6);
     }
     strcat(path, gCardFileName);
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
@@ -1725,9 +1740,9 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
         return 0;
     }
     if (gCardSlot == 0) {
-        memcpy(path, D_800A3380, 6);
+        memcpy(path, gMemoryCardPort0PathPrefix, 6);
     } else {
-        memcpy(path, D_800A3388, 6);
+        memcpy(path, gMemoryCardPort1PathPrefix, 6);
     }
     strcat(path, gCardFileName);
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
@@ -1804,7 +1819,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
 
 extern s32 D_800A35B0;
 extern void func_8006B464(void);
-s32 CardLoadSaveTable(u8 arg0) {
+s32 CardLoadSaveTable(u8 updateDriverRecords) {
     u8 slot;
     u8 status;
     u16 c;
@@ -1849,9 +1864,9 @@ s32 CardLoadSaveTable(u8 arg0) {
     status = func_80059F0C(gCardSlot);
     D_800A3938 = status;
     if (gCardSlot == 0) {
-        memcpy(path, D_800A3380, 6);
+        memcpy(path, gMemoryCardPort0PathPrefix, 6);
     } else {
-        memcpy(path, D_800A3388, 6);
+        memcpy(path, gMemoryCardPort1PathPrefix, 6);
     }
     strcat(path, gCardFileName);
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
@@ -1886,7 +1901,7 @@ s32 CardLoadSaveTable(u8 arg0) {
             }
             row += 0xE8;
         }
-        if (arg0 != 0) {
+        if (updateDriverRecords != 0) {
             func_8006B464();
         }
     } else {
@@ -1897,8 +1912,8 @@ s32 CardLoadSaveTable(u8 arg0) {
 }
 
 s32 func_8006AA70(void) {
-    extern s32 D_800A3380[2];
-    extern s32 D_800A3388[2];
+    extern s32 gMemoryCardPort0PathPrefix[2];
+    extern s32 gMemoryCardPort1PathPrefix[2];
     extern char D_8009B1E4[];
     extern void *memcpy(void *, const void *, size_t);
     char path[0x40];
@@ -1910,9 +1925,9 @@ s32 func_8006AA70(void) {
 
     gCardMenuMessage = 0;
     if (gCardSlot == 0) {
-        memcpy(path, D_800A3380, 6);
+        memcpy(path, gMemoryCardPort0PathPrefix, 6);
     } else {
-        memcpy(path, D_800A3388, 6);
+        memcpy(path, gMemoryCardPort1PathPrefix, 6);
     }
     strcat(path, gCardFileName);
     result = CardFindFirstFile(path, &entry);
@@ -1994,13 +2009,13 @@ void func_8006ABF8(void) {
     D_800A3A58 = 0;
 }
 
-void func_8006AC78(s32 arg0) {
+void CardMenuSetDriverIndexFromName(s32 playerIndex) {
     char *label;
     s32 mask;
     s32 index;
 
     index = 0;
-    mask = arg0 & 0xFF;
+    mask = playerIndex & 0xFF;
     do {
         label = gDriverNames[index];
         if (strcmp(D_800BB9B4 + mask * 0x18, label) == 0) {
@@ -2011,7 +2026,7 @@ void func_8006AC78(s32 arg0) {
     } while (index < 0x18);
 }
 
-u8 func_8006AD0C(u8 value) {
+u8 DriverFindIndexById(u8 value) {
     s32 i;
     for (i = 0; i < 0x18; i++) {
         if (value == D_8009AD40[i])
@@ -2021,7 +2036,7 @@ u8 func_8006AD0C(u8 value) {
 
 /* Memory card menu state. */
 
-s32 func_8006AD44(char *name) {
+s32 CardFindSavedDriverRecord(char *name) {
     s32 i;
 
     if (D_800A3A58 == 0) {
@@ -2164,15 +2179,15 @@ typedef struct {
     s32 words[0x3A];
 } CardMoveRecord;
 
-void func_8006B088(s32 arg0) {
+void CardMenuMoveRecordToFront(s32 recordIndex) {
     CardMoveRecord buf;
     s32 n;
 
-    if ((arg0 & 0xFF) == 0) {
+    if ((recordIndex & 0xFF) == 0) {
         return;
     }
-    buf = ((CardMoveRecord *)D_800A35F4)[arg0 & 0xFF];
-    n = (arg0 & 0xFF) - 1;
+    buf = ((CardMoveRecord *)D_800A35F4)[recordIndex & 0xFF];
+    n = (recordIndex & 0xFF) - 1;
     while (n >= 0) {
         ((CardMoveRecord *)D_800A35F4)[n + 1] =
             ((CardMoveRecord *)D_800A35F4)[n];
@@ -2281,8 +2296,8 @@ void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
 extern u8 *volatile D_800A3604Vol asm("D_800A3604.NON_MATCHING");
 extern u8 D_800A306D[];
 extern u8 D_800A3078[];
-extern u8 D_800A2F94R[] asm("D_800A2F94.NON_MATCHING");
-extern u8 D_800A2F95R[] asm("D_800A2F95.NON_MATCHING");
+extern u8 gMusicVolumeScaledR[] asm("gMusicVolumeScaled.NON_MATCHING");
+extern u8 gStereoEnabledR[] asm("gStereoEnabled.NON_MATCHING");
 
 void func_8006B464(void) {
     u8 *rec;
@@ -2311,14 +2326,14 @@ void func_8006B464(void) {
     }
     D_800A3073[-1] = (bB >> 1) & 1;
     rec2 = D_800A3604Vol;
-    D_800A3694w15[0] = rec2[1];
+    gCdVolumew15[0] = rec2[1];
     b2 = rec2[2];
-    D_800A3696w15[0] = b2;
-    D_800A2F94R[0] = b2 * 127 / 100;
+    gMusicVolumew15[0] = b2;
+    gMusicVolumeScaledR[0] = b2 * 127 / 100;
     if (D_800A306D[-1] != 0) {
-        D_800A2F95R[0] = 0;
+        gStereoEnabledR[0] = 0;
     } else {
-        D_800A2F95R[0] = 1;
+        gStereoEnabledR[0] = 1;
     }
     D_800A3078[0] = D_800A3604Vol[3];
     i = 0;
@@ -2335,9 +2350,9 @@ void func_8006B464(void) {
  * bytes are untracked; reached as D_800A3073[-N]/[+2] (already declared
  * in this TU).
  */
-extern u16 D_800A3694Absolute[];
+extern u16 gCdVolumeAbsolute[];
 
-void func_8006B5BC(void) {
+void CardMenuSaveSettings(void) {
     s32 i;
 
     D_800A3604Vol[0] = D_800A3073[-3] << 7 | D_800A3073[-7] << 6 |
@@ -2345,8 +2360,8 @@ void func_8006B5BC(void) {
                        D_800A3073[-5];
     D_800A3604Vol[0xB] =
         D_800A3073[2] << 2 | D_800A3073[-1] << 1 | D_800A3073[-2] & 1;
-    D_800A3604Vol[1] = D_800A3694Absolute[0];
-    D_800A3604Vol[2] = D_800A3694Absolute[1];
+    D_800A3604Vol[1] = gCdVolumeAbsolute[0];
+    D_800A3604Vol[2] = gCdVolumeAbsolute[1];
     D_800A3604Vol[3] = D_800A3078[0];
     for (i = 0; i < 6; i++) {
         (D_800A3604Vol + i)[4] = D_800A331CAbsolute[i];
@@ -2371,11 +2386,11 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
     u8 idx;
     u8 isNew;
 
-    func_800599E4();
+    CardEnableAndTestEvents();
     if (CardResolveSlot() & 0xFF) {
         CardLoadSaveTable(0);
     }
-    func_800598C4();
+    CardTestAndDisableEvents();
     i = arg1;
     if (i >= 0) {
         top = i;
@@ -2416,10 +2431,10 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
                 flags = 0x18;
             }
             if (isNew) {
-                func_8006ADC4(i, gDriverNames[*p], D_800A305B[0], idx, value,
-                              arg0, D_800B0B1C[idx] == -1, flags);
+                func_8006ADC4(i, gDriverNames[*p], gSelectedTrack[0], idx,
+                              value, arg0, D_800B0B1C[idx] == -1, flags);
             } else {
-                func_8006B1CC(i, slot, D_800A305B[0], idx, value, arg0,
+                func_8006B1CC(i, slot, gSelectedTrack[0], idx, value, arg0,
                               D_800B0B1CNM[idx] == -1, flags);
                 if (slot != 0) {
                     buf = ((CardMoveRecord *)D_800A35F4)[slot];
@@ -2436,11 +2451,11 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
             p--;
         } while (i >= 0);
     }
-    func_8006B5BC();
-    func_800599E4();
+    CardMenuSaveSettings();
+    CardEnableAndTestEvents();
     CardResolveSlot();
     func_8006AA70();
-    func_800598C4();
+    CardTestAndDisableEvents();
 }
 
 extern u8 D_800B9BB4[];
@@ -2528,8 +2543,8 @@ void func_8006BB1C(void) {
     extern u8 D_800A308C[];
     extern u8 gPadLayout[];
     extern s32 D_800A37D0[];
-    extern u8 D_800A2F94[];
-    extern u8 D_800A2F95[];
+    extern u8 gMusicVolumeScaled[];
+    extern u8 gStereoEnabled[];
 
     level = D_800B9B73[0];
     flags = D_800B9B75[0];
@@ -2537,7 +2552,7 @@ void func_8006BB1C(void) {
     v82 = D_800B9B82[0];
     gPlayerDriver[0] = level;
     level = flags & 3;
-    D_800A305B[0] = v74;
+    gSelectedTrack[0] = v74;
     D_800A306F[0] = (flags >> 2) & 1;
     D_800A3069[0] = (flags >> 3) & 1;
     D_800A3068[0] = (flags >> 4) & 1;
@@ -2549,15 +2564,15 @@ void func_8006BB1C(void) {
         D_800A3071NM[0] = 0;
     }
 
-    D_800A3694w15[0] = D_800B9B76[0];
+    gCdVolumew15[0] = D_800B9B76[0];
     gear = D_800A306C[0];
     D_800A3072[0] = (v82 >> 1) & 1;
-    D_800A3696w15[0] = D_800B9B77[0];
-    D_800A2F94[0] = (D_800B9B77[0] * 0x7F) / 100;
+    gMusicVolumew15[0] = D_800B9B77[0];
+    gMusicVolumeScaled[0] = (D_800B9B77[0] * 0x7F) / 100;
     if (gear != 0) {
-        D_800A2F95[0] = 0;
+        gStereoEnabled[0] = 0;
     } else {
-        D_800A2F95[0] = 1;
+        gStereoEnabled[0] = 1;
     }
 
     D_800A3078[0] = D_800B9B78[0];
@@ -2583,7 +2598,7 @@ outer:
     dst = table;
 inner:
     *dst = *src;
-    if (entry == D_800A305B[0]) {
+    if (entry == gSelectedTrack[0]) {
         D_800A3860S8[i] = *src;
     }
     src++;
@@ -2610,7 +2625,7 @@ void func_8006BD68(void) {
     s32 src;
     s32 end;
     extern char *D_8009A31CStr[] asm("D_8009A31C.NON_MATCHING");
-    extern u8 D_800A305BR[] asm("D_800A305B.NON_MATCHING");
+    extern u8 gSelectedTrackR[] asm("gSelectedTrack.NON_MATCHING");
     extern u8 D_800A306CR[] asm("D_800A306C.NON_MATCHING");
     extern u8 D_800A306ER[] asm("D_800A306E.NON_MATCHING");
     extern u8 D_800A306FR[] asm("D_800A306F.NON_MATCHING");
@@ -2619,8 +2634,8 @@ void func_8006BD68(void) {
     extern u8 D_800A3072R[] asm("D_800A3072.NON_MATCHING");
     extern u8 D_800A3075[];
     extern u8 gPadLayout[];
-    extern u16 D_800A3694R[] asm("D_800A3694.NON_MATCHING");
-    extern u16 D_800A3696[];
+    extern u16 gCdVolumeR[] asm("gCdVolume.NON_MATCHING");
+    extern u16 gMusicVolume[];
     extern u8 D_800B9B44[];
     extern u8 D_800B9B73[];
     extern u8 D_800B9B74[];
@@ -2635,18 +2650,18 @@ void func_8006BD68(void) {
     extern u8 D_800B9B82[];
 
     dest = D_800B9B44;
-    strcpy((char *)dest, D_8009A31CStr[D_800A305B[0]]);
+    strcpy((char *)dest, D_8009A31CStr[gSelectedTrack[0]]);
     strcpy((char *)dest + 0x10, gDriverNames[gPlayerDriver[0]]);
     D_800B9B73[0] = D_800A36E1[-1];
-    D_800B9B74[0] = D_800A305BR[0];
+    D_800B9B74[0] = gSelectedTrackR[0];
     D_800B9B75[0] =
         D_800A306ER[0] |
         (D_800A3070R[0] << 7 | D_800A306CR[0] << 6 | D_800A306D[0] << 5 |
          D_800A3068[0] << 4 | D_800A3069[0] << 3 | D_800A306FR[0] << 2);
     D_800B9B82[0] =
         D_800A3075[0] << 2 | D_800A3072R[0] << 1 | D_800A3071R[0] & 1;
-    D_800B9B76[0] = D_800A3694R[0];
-    D_800B9B77[0] = D_800A3696[0];
+    D_800B9B76[0] = gCdVolumeR[0];
+    D_800B9B77[0] = gMusicVolume[0];
     D_800B9B78[0] = D_800A3078[0];
     i = 0;
     do {
@@ -2699,18 +2714,19 @@ void CardMenuBuildFileList(void) {
     u8 *pkt;
     u8 *obj;
 
-    func_8005A7B8(2, 2);
+    MenuFontSet(2, 2);
     y = 0x3C;
     x = MenuStringWidth(D_8009A4C0[0]);
     x = (0x78 - x) / 2;
-    prev = func_8005BF8C(x, 0x43);
+    prev = MenuCreateTextObject(x, 0x43);
     prev->unk1A = 7;
     prev->unk12 = x;
     i = 0;
     *(UnkTextObj **)D_800A3A10Obj = prev;
-    func_80067EA4((UnkObject24 *)prev, 2, 2, D_8009A4C0[0], 0, prev->unk1A);
+    MenuSetTextObject((MenuTextObjectView *)prev, 2, 2, D_8009A4C0[0], 0,
+                      prev->unk1A);
     do {
-        node = func_8005B598(0, y, 0x78, 0x18, 9, 1, 0);
+        node = MenuCreateTexturedRect(0, y, 0x78, 0x18, 9, 1, 0);
         prev->unk1C = (UnkTextObj *)node;
         pkt = *(u8 **)(node + 0x20);
         *(s16 *)(node + 0xE) = 2;
@@ -2728,8 +2744,8 @@ void CardMenuBuildFileList(void) {
             h = 0x18;
             break;
         }
-        func_8005B17C(pkt, 9, 0, h, *(u16 *)(node + 0x16),
-                      *(u16 *)(node + 0x18));
+        MenuSetTexturedQuad(pkt, 9, 0, h, *(u16 *)(node + 0x16),
+                            *(u16 *)(node + 0x18));
         i += 1;
         y += *(s16 *)(node + 0x18);
         prev = (UnkTextObj *)node;
@@ -2737,7 +2753,8 @@ void CardMenuBuildFileList(void) {
     y = 0x3C;
     i = 0;
     do {
-        obj = (u8 *)func_8005B314(0, y, 0x78, 0x60, 0, 0x20, 0x20, 0x40, 1, 1);
+        obj = (u8 *)MenuCreateFlatRect(0, y, 0x78, 0x60, 0, 0x20, 0x20, 0x40, 1,
+                                       1);
         *(s16 *)(obj + 0x6) = -0x78;
         *(s16 *)(obj + 0xE) = 2;
         *(s16 *)(obj + 0x1A) = 0xA;
@@ -2748,10 +2765,11 @@ void CardMenuBuildFileList(void) {
     y = 0x55;
     i = 0;
     do {
-        obj = (u8 *)func_8005BF8C(0, y);
+        obj = (u8 *)MenuCreateTextObject(0, y);
         *(s16 *)(obj + 0x1A) = 2;
-        func_80067EA4((UnkObject24 *)obj, 2, 2, (s32)(D_800B0A2C + i * 0x10), 0,
-                      *(s16 *)(obj + 0x1A));
+        MenuSetTextObject((MenuTextObjectView *)obj, 2, 2,
+                          (s32)(D_800B0A2C + i * 0x10), 0,
+                          *(s16 *)(obj + 0x1A));
         *(s16 *)(obj + 0x12) = 0xB;
         *(s16 *)(obj + 0xE) = 2;
         *(s16 *)(obj + 0x6) = -0x6E;
@@ -2787,8 +2805,8 @@ void CardMenuBuildFileList(void) {
             blue = 0xC0;
             y = 0x5E;
         }
-        obj = (u8 *)func_8005B314(0, y, width, height, 0, red, green, blue,
-                                  i == 0, 1);
+        obj = (u8 *)MenuCreateFlatRect(0, y, width, height, 0, red, green, blue,
+                                       i == 0, 1);
         if (i == 0) {
             D_800A377C[0] = obj;
         }
@@ -2810,7 +2828,7 @@ extern char *D_8009A31CStr[] asm("D_8009A31C.NON_MATCHING");
 extern s32 D_8009A4D8[];
 void func_8006C668(s32 start, s32 arg1);
 
-/* Card-menu mode switch (D_800A39E4 == 0x28) or cursor step: arg0 nonzero
+/* Card-menu mode switch (gScreenState == 0x28) or cursor step: arg0 nonzero
  * steps the cursor, scrolling the row window when it reaches the edge. */
 void func_8006C2D0(s32 arg0) {
     s32 i;
@@ -2825,7 +2843,7 @@ void func_8006C2D0(s32 arg0) {
     s32 gear;
     s32 mode;
 
-    if (D_800A39E4[0] == 0x28) {
+    if (gScreenState[0] == 0x28) {
         node = D_800A3908[0];
         for (i = 0; i < 2; i++) {
             entry = *(u8 **)(node + 0x20);
@@ -2852,7 +2870,7 @@ void func_8006C2D0(s32 arg0) {
         if ((arg0 & 0xFF) != 0) {
             if (D_800A3968 < 0xF) {
                 strcpy(D_800A3968 * 0x10 + D_800B0A2C,
-                       D_8009A31CStr[D_800A305B[0]]);
+                       D_8009A31CStr[gSelectedTrack[0]]);
                 for (i = D_800A3968 + 1; i < 0xF; i++) {
                     row16 = i * 0x10;
                     *(u8 *)(row16 + D_800B0A2C) = 0;
@@ -2868,7 +2886,7 @@ void func_8006C2D0(s32 arg0) {
     if (D_800A358C >= 0xF) {
         D_800A358C = 0xE;
     }
-    if ((arg0 & 0xFF) != 0 && D_800A39E4[0] != 0x28) {
+    if ((arg0 & 0xFF) != 0 && gScreenState[0] != 0x28) {
         if (D_800A358C >= 7) {
             *(u8 *)(D_800A377C[0] + 5) = 6;
         } else {
@@ -2882,14 +2900,14 @@ void func_8006C2D0(s32 arg0) {
     } else {
         *(u8 *)(D_800A377C[0] + 5) = 0;
         D_800A358C = 0;
-        if (D_800A39E4[0] != 0x28) {
+        if (gScreenState[0] != 0x28) {
             func_8006C668(0, D_800A3968 - 1);
         }
     }
 
     cursor = D_800A377C[0];
     gear = *(s8 *)(cursor + 5);
-    mode = D_800A39E4[0];
+    mode = gScreenState[0];
     *(s16 *)(cursor + 8) = gear * 9 + 0x54;
     if (mode != 0x28) {
         head = D_800A3908[0];
@@ -2919,7 +2937,7 @@ typedef struct ColorNode {
     struct ColorNode *next;
 } ColorNode;
 extern ColorNode *D_800A3A10[];
-void func_8006C598(s32 low, s32 high, s32 color) {
+void CardMenuSetColorNodeLayout(s32 low, s32 high, s32 color) {
     ColorNode *node;
     node = D_800A3A10[0];
     while (node != NULL) {
@@ -2941,20 +2959,20 @@ void func_8006C598(s32 low, s32 high, s32 color) {
  * NOTE: plain asm(""); at this spot makes maspsx emit two hazard nops
  * (+8 bytes) -- do not use it as an order barrier here.
  */
-void func_8006C5E4(s32 arg0) {
+void CardMenuCenterSelectedText(s32 textIndex) {
     s32 *entry;
     u8 *obj;
     register s32 value asm("v1");
 
     obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
-    entry = &D_8009A4C0[arg0 & 0xFF];
+    entry = &D_8009A4C0[textIndex & 0xFF];
     value = MenuStringWidth(*entry);
     value = (0x78 - value) / 2;
     *(s32 *)(obj + 8) = *entry;
     *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
 }
 #else
-void func_8006C5E4(s32 arg0) {
+void CardMenuCenterSelectedText(s32 arg0) {
     s32 *entry;
     u8 *obj;
     s32 value;
@@ -3033,7 +3051,7 @@ void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
         if (target == 0xF) {
             target = 0xE;
         }
-    } else if (D_800A39E4[0] == 0x28) {
+    } else if (gScreenState[0] == 0x28) {
         target = 1;
     } else {
         target = D_800A3968 - 1;
@@ -3099,7 +3117,7 @@ extern s32 MenuPrefixWidth(u32, void *);
 /* Expand the cursor helper here and in its caller with the same byte types. */
 #define CARD_MENU_CURSOR_BODY(finish, font, size, index, text, cursor, result) \
     {                                                                          \
-        func_8005A7B8(font, size);                                             \
+        MenuFontSet(font, size);                                               \
         if (*text == 0) {                                                      \
             *cursor = MenuCharWidth(0x20);                                     \
             finish(0);                                                         \
@@ -3114,7 +3132,7 @@ s32 func_8006C94C(u8 arg0, u8 arg1, u8 arg2, s8 *arg3, s16 *arg4) {
     CARD_MENU_CURSOR_BODY(return, arg0, arg1, arg2, arg3, arg4, ret);
 }
 
-void func_8006C9DC(void) {
+void MenuHideCurrentObject(void) {
     *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
 }
 
@@ -3251,7 +3269,7 @@ noStore:
     cardNames[D_800A358C][*(s8 *)(st + 5)] = ch;
     idx = *(u8 *)(st + 5);
     entry = (s8 *)cardNames[D_800A358C];
-    func_8005A7B8S32(2, 2);
+    MenuFontSetS32(2, 2);
     if (*entry == 0) {
         *(s16 *)(st + 0x16) = MenuCharWidth(0x20);
         result = 0;
@@ -3275,7 +3293,7 @@ void func_8006CE64(void) {
     obj = *((u8 **)(D_800A377C[0] + 0x1C));
     *((u8 *)(obj + 5)) = 0;
     entry = ((s8 *)D_800B0A2C) + ((index = D_800A358C) * 0x10);
-    func_8005A7B8S32(2, 2);
+    MenuFontSetS32(2, 2);
     if ((*entry) == 0) {
         *((s16 *)(obj + 0x16)) = MenuCharWidth(0x20);
         status = 0;
@@ -3286,14 +3304,15 @@ void func_8006CE64(void) {
     *((s16 *)(obj + 6)) = status + 0xA;
 }
 
-void func_8006CF38(void) {
+void CardMenuAppendTrackName(void) {
     if (D_800A358C < D_800A3968) {
-        strcpy(D_800B0A2C + D_800A358C * 16, (char *)D_8009A31C[D_800A305B[0]]);
+        strcpy(D_800B0A2C + D_800A358C * 16,
+               (char *)D_8009A31C[gSelectedTrack[0]]);
     }
 }
 
 void func_8006CF90(u32 mode) {
-    extern u8 D_800A3390[];
+    extern u8 gMemoryCardNameInitialCharacter[];
     u8 *node;
     u8 *st;
     char *entry;
@@ -3317,13 +3336,14 @@ void func_8006CF90(u32 mode) {
             c = c + 1;
             *(s8 *)(st + 5) = c;
             if (c == strlen(&D_800B0A2C[D_800A358C * 16])) {
-                strcat(&D_800B0A2C[D_800A358C * 16], D_800A3390);
+                strcat(&D_800B0A2C[D_800A358C * 16],
+                       gMemoryCardNameInitialCharacter);
             }
         }
     }
     idx = *(u8 *)(st + 5);
     entry = D_800B0A2C + D_800A358C * 16;
-    func_8005A7B8S32(2, 2);
+    MenuFontSetS32(2, 2);
     ch = *entry;
     if (ch == 0) {
         *(u16 *)(st + 0x16) = MenuCharWidth(0x20);
@@ -3335,7 +3355,7 @@ void func_8006CF90(u32 mode) {
     *(u16 *)(st + 6) = result + 10;
 }
 
-s32 func_8006D0C0(void) {
+s32 CardMenuCheckTrackNameCapacity(void) {
     if (D_800A358C < D_800A3968) {
         gCardMenuMessage = 16;
         return 1;
@@ -3345,15 +3365,15 @@ s32 func_8006D0C0(void) {
 }
 
 extern char D_800B9B44[];
-void func_8006D0F0(void) {
+void CardMenuWriteSaveSlot(void) {
     s32 isCurrent;
     isCurrent = D_800A358C < D_800A3968;
     strcpy(D_800B9B44, &D_800B0A2C[D_800A358C * 16]);
-    func_800599E4();
+    CardEnableAndTestEvents();
     if ((CardWriteSaveSlot(D_800B9B44, isCurrent, D_800A358C) & 0xFF) == 1) {
         gCardMenuMessage = 0x11;
     }
-    func_800598C4();
+    CardTestAndDisableEvents();
 }
 
 /* The same 16-byte name slots as D_800B0A2C, typed with a 16-byte stride so
@@ -3397,8 +3417,8 @@ s32 func_8006D258(void) {
     typedef struct {
         s32 words[0x13C / 4];
     } SaveRec;
-    extern u8 D_800A305BR2[] asm("D_800A305B.NON_MATCHING");
-    extern u8 D_800A305BR3[] asm("D_800A305B.NON_MATCHING");
+    extern u8 gSelectedTrackR2[] asm("gSelectedTrack.NON_MATCHING");
+    extern u8 gSelectedTrackR3[] asm("gSelectedTrack.NON_MATCHING");
     s32 status;
     s32 match;
     s32 i;
@@ -3406,9 +3426,9 @@ s32 func_8006D258(void) {
     u8 idx;
     u8 *paint;
 
-    func_800599E4();
+    CardEnableAndTestEvents();
     status = CardCheckStatus(gCardSlot, 1);
-    func_800598C4();
+    CardTestAndDisableEvents();
     status &= 0xFF;
     if (status == 3) {
         gCardMenuMessage = 0xF;
@@ -3423,13 +3443,13 @@ s32 func_8006D258(void) {
     func_8006BB1C();
     idx = D_800B9B74[0];
     paint = D_800AE178[idx];
-    D_800A305B[0] = idx;
+    gSelectedTrack[0] = idx;
     func_8005E4A4(paint);
-    func_8005ED04(D_800A305BR2[0]);
-    func_8005EC5C(D_800A305BR3[0]);
+    MenuSetTrackLabel(gSelectedTrackR2[0]);
+    MenuFormatLapCount(gSelectedTrackR3[0]);
     gPlayerDriver[0] = D_800B9B73[0];
     func_80063AE0(0, gPlayerDriver[0]);
-    func_800636EC(0, D_800A36E1[-1]);
+    MenuSetDriverNameLabel(0, D_800A36E1[-1]);
     for (i = 0; i < 0x18; i++) {
         if (D_800A36E1w15[-1] == D_8009AD40[i]) {
             match = i;
@@ -3438,7 +3458,7 @@ s32 func_8006D258(void) {
     }
     D_800A3980[0] = match;
     strcpy(D_800BB9B4, gDriverNames[gPlayerDriver[0]]);
-    func_8006EEBC();
+    BufferClear17Bytes();
     return 1;
 }
 
@@ -3447,22 +3467,22 @@ s32 func_8006D258(void) {
  * i/j register naming (target: i in a3 inited FIRST at entry, j in a2;
  * both row-pointer temps outer-loop). src[j + 0x24] keeps the +0x24 in
  * the lbu displacement. */
-void func_8006D424(u8 arg0, u8 arg1) {
+void CardMenuCopyRecordNames(u8 destinationIndex, u8 sourceIndex) {
     char *src;
     u8 *dst;
     u8 i;
     u8 j;
 
     for (i = 0; i < 0x11; i++) {
-        dst = &D_800BBA24[arg0 * 0x44 + i * 4];
-        src = D_800A35F4 + arg1 * 0xE8 + i * 0xC;
+        dst = &D_800BBA24[destinationIndex * 0x44 + i * 4];
+        src = D_800A35F4 + sourceIndex * 0xE8 + i * 0xC;
         for (j = 0; j < 4; j++) {
             dst[j] = src[j + 0x24];
         }
     }
 }
 #else
-void func_8006D424(u8 arg0, u8 arg1) {
+void CardMenuCopyRecordNames(u8 arg0, u8 arg1) {
     u8 i;
     u8 j;
     u8 *dst;
@@ -3541,7 +3561,7 @@ outer:
     }
 }
 
-void func_8006D634(s32 arg) {
+void CardMenuClearNameCharacters(s32 arg) {
     u8 *base;
     u8 *tbl;
     u8 i;
@@ -3738,7 +3758,7 @@ void func_8006DA40(void) {
     y = 0x50;
     i = 0;
     do {
-        node = func_8005B598(0x64, y, 0x78, 0x18, 9, 1, 0);
+        node = MenuCreateTexturedRect(0x64, y, 0x78, 0x18, 9, 1, 0);
         if (i == 0) {
             D_800A3A10[0] = (ColorNode *)node;
         } else {
@@ -3763,8 +3783,8 @@ void func_8006DA40(void) {
             break;
         }
 
-        func_8005B17C(pkt, 9, 0, height, *((u16 *)(node + 0x16)),
-                      *((u16 *)(node + 0x18)));
+        MenuSetTexturedQuad(pkt, 9, 0, height, *((u16 *)(node + 0x16)),
+                            *((u16 *)(node + 0x18)));
         y += *((s16 *)(node + 0x18));
         prev = node;
         i += 1;
@@ -3772,8 +3792,8 @@ void func_8006DA40(void) {
     y = 0x50;
     i = 0;
     do {
-        node =
-            (u8 *)func_8005B314(0x64, y, 0x78, 0x48, 0, 0x20, 0x20, 0x40, 1, 1);
+        node = (u8 *)MenuCreateFlatRect(0x64, y, 0x78, 0x48, 0, 0x20, 0x20,
+                                        0x40, 1, 1);
         *((s16 *)(node + 0x6)) = -0x78;
         *((s16 *)(node + 0xE)) = 2;
         *((s16 *)(node + 0x1A)) = 0xA;
@@ -3781,7 +3801,7 @@ void func_8006DA40(void) {
         prev = node;
         i += 1;
     } while (i < 2);
-    node = (u8 *)func_8005BF8C(0x71, 0x55);
+    node = (u8 *)MenuCreateTextObject(0x71, 0x55);
     err = gCardMenuMessage;
     *((s16 *)(node + 0x1A)) = 2;
     if (err == 2) {
@@ -3798,11 +3818,11 @@ void func_8006DA40(void) {
         }
     }
     if (gPadType_nm[0] == 2) {
-        func_80067EA4((UnkObject24 *)node, 2, 2, (s32)D_8009AB80nm[idx], 0,
-                      *((s16 *)(node + 0x1A)));
+        MenuSetTextObject((MenuTextObjectView *)node, 2, 2,
+                          (s32)D_8009AB80nm[idx], 0, *((s16 *)(node + 0x1A)));
     } else {
-        func_80067EA4((UnkObject24 *)node, 2, 2, (s32)D_8009AB00nm[idx], 0,
-                      *((s16 *)(node + 0x1A)));
+        MenuSetTextObject((MenuTextObjectView *)node, 2, 2,
+                          (s32)D_8009AB00nm[idx], 0, *((s16 *)(node + 0x1A)));
     }
     *((s16 *)(node + 0xE)) = 2;
     *((s16 *)(node + 0x12)) = 0xB;
@@ -3811,9 +3831,9 @@ void func_8006DA40(void) {
     *((u8 **)(prev + 0x1C)) = node;
 }
 
-void func_8006DCF0(void) {
-    func_8005B688(D_800A3A10[0], 1);
-    func_8005B8B8(((void **)gReplayIndex)[-11], 0xFF);
+void MenuUpdateAndDrawObjectLists(void) {
+    MenuUpdateObjectPosition(D_800A3A10[0], 1);
+    MenuDrawObjectList(((void **)gReplayIndex)[-11], 0xFF);
 }
 
 extern u8 D_800AEE3C[];
@@ -3912,7 +3932,7 @@ void func_8006DE68(u32 arg0, u32 mode) {
 /* A mode above 2 falls off the end of the switch, as in retail: the return
  * value is whatever the dispatch left in v0 (2). The narrow `u8 arg3`
  * parameter makes gcc keep a raw copy of a3 for the mode 0 and 1 tests. */
-u8 func_8006DF98(void *arg0, s32 arg1, s32 arg2, u8 arg3) {
+u8 PadReadObjectAxis(void *arg0, s32 arg1, s32 arg2, u8 arg3) {
     u8 mode;
 
     mode = arg1;

@@ -10,7 +10,7 @@ typedef struct {
     s8 unk200;
     u8 unk201[0x153];
     void (*callback)(void);
-} Batch0CallbackObject;
+} ObjectCallbackView;
 
 typedef struct {
     s32 x;
@@ -20,20 +20,20 @@ typedef struct {
 
 typedef struct {
     u8 unk0[0x90];
-    s32 unk90;
-} UnkObject90;
+    s32 speed;
+} CarSpeedView;
 s32 MathGetAngleDelta(s32 arg0, s32 arg1);
 s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
-void func_80029CB4(s32 *arg0);
+void func_80029CB4(s32 *car);
 void func_8002A1FC(u8 *);
-void func_8002AD20(s32 *car, s32 index);
-void func_8002DA30(s32 *arg0);
-void func_8003271C(s32 arg0);
-void func_80032DEC(u8 *arg0, s32 arg1);
-void func_80037130(u8 *object);
+void CarSetVelocityFromHeading(s32 *car, s32 index);
+void MatrixSetIdentity(s32 *arg0);
+void ScratchpadFillPattern(s32 arg0);
+void func_80032DEC(u8 *firstObject, s32 objectCount);
+void ObjectAdvanceAlongHeading(u8 *object);
 void func_800373B4(u8 *);
-void ObjectSetCallbackIfAllowed(Batch0CallbackObject *object,
+void ObjectSetCallbackIfAllowed(ObjectCallbackView *object,
                                 void (*callback)(void));
-void func_80028F98(UnkObject90 *object);
+void CarReduceSpeed(CarSpeedView *object);
 
 #endif /* OBJECTS_H */

@@ -3,20 +3,21 @@
 
 #include "common.h"
 
-typedef struct ListNode28 ListNode28;
+typedef struct RenderListNode RenderListNode;
 
 typedef struct DoublyLinkedNode {
     struct DoublyLinkedNode *next;
     struct DoublyLinkedNode *previous;
 } DoublyLinkedNode;
-void func_8001DFC8(void);
-void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before);
-void ListRemoveNode(ListNode28 **head, ListNode28 *target);
+void RenderDrawFiveLinkedLists(void);
+void ListInsertBefore(RenderListNode **head, RenderListNode *node,
+                      RenderListNode *before);
+void ListRemoveNode(RenderListNode **head, RenderListNode *target);
 void ListPushFront(u8 *node, u8 **head, u8 **tail);
-void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
-                            ListNode28 **tail);
+void ListRemoveNodeWithTail(RenderListNode *node, RenderListNode **head,
+                            RenderListNode **tail);
 void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
                                DoublyLinkedNode **first);
-void ListDispatchCallbacks(u8 *arg0);
+void ListDispatchCallbacks(u8 *owner);
 
 #endif /* LIST_H */

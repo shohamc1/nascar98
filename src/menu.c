@@ -26,32 +26,32 @@ extern void HeapFree(void *ptr);
 extern s32 D_800A38AC[];
 extern s32 D_800A37C4Absolute[];
 extern void SetPolyF4(u8 *prim);
-void func_80041AF0();
+void PadResetAndInitializeBuffers();
 extern s32 D_800A37D0[];
 void SetPolyFT4(POLY_FT4 *);
 extern u8 gCardMenuMessageb[] asm("D_800A3814.NON_MATCHING");
 extern DRAWENV D_800BDD4C[];
 extern DISPENV D_800BDE04[];
 extern void SetPolyF3(POLY_F3 *);
-extern u8 *func_80057CCC(s32);
-extern u8 *func_80057D50(s32);
+extern u8 *GraphicsAllocPolyFT4(s32);
+extern u8 *GraphicsAllocPolyF4(s32);
 extern u8 D_800A3988[];
 extern u8 D_800A3644[];
 extern char *strcat(char *, char *);
 extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
-void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7);
+void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
+                      u8 arg6, s32 arg7);
 void func_8001E230(s32 arg0, s32 arg1);
 void func_8002EEFC(u8 *arg0);
-void func_80032450(s32 first, s32 second);
-void func_80041AF0(void);
-void func_80058D08(s32 gp);
-void func_8005A6EC(u8 id, s32 arg1, void *dest);
-s32 func_8005B0E4(s16 arg0, s32 arg1);
-s32 TextCountLines(u8 *str);
+void ModelLoadGeometryFromAddress(s32 first, s32 second);
+void PadResetAndInitializeBuffers(void);
+void SystemSetGlobalPointer(s32 gp);
+void MenuFontCopyGlyphPrimitives(u8 id, s32 arg1, void *dest);
+s32 MenuTextCenterOffset(s16 arg0, s32 arg1);
+s32 TextCountLines(u8 *text);
 u8 *MenuObjAlloc(void);
-void func_8005B688(u8 *first, u8 friction);
-void func_8005B8B8(u8 *object, s32 arg1);
+void MenuUpdateObjectPosition(u8 *first, u8 friction);
+void MenuDrawObjectList(u8 *object, s32 arg1);
 
 /* Menu entries and panels. */
 
@@ -124,8 +124,8 @@ void func_8005DFA0(void) {
     i = 0;
     primOffset = 0;
 again:
-    index = D_800A35EC++;
-    slot = D_800A3678 + index * 36;
+    index = gMenuObjectPoolCount++;
+    slot = gMenuObjectPool + index * 36;
     *(s16 *)(slot + 0x12) = 0;
     object = slot;
     *(s16 *)(object + 0x14) = 0;
@@ -200,10 +200,10 @@ again:
     code = 2;
     panelOffset = 0;
 again2:
-    index = D_800A35EC;
+    index = gMenuObjectPoolCount;
     panelPrim = D_800AE1BC + panelOffset;
-    D_800A35EC = index + 1;
-    panel = D_800A3678 + index * 36;
+    gMenuObjectPoolCount = index + 1;
+    panel = gMenuObjectPool + index * 36;
     panel[4] = 0;
     *(s16 *)(panel + 0x18) = panelH;
     *(s16 *)(panel + 0x12) = 0;
@@ -224,7 +224,7 @@ again2:
     panel[3] = color;
     panel[4] = panelB;
     if (panelPrim == 0) {
-        panelPrim = func_80057D50(1);
+        panelPrim = GraphicsAllocPolyF4(1);
     }
     *(u8 **)(panel + 0x20) = panelPrim;
     SetPolyF4(panelPrim);
@@ -249,11 +249,11 @@ again2:
     if (i < 2) {
         goto again2;
     }
-    D_800A39C4 = D_800A35EC;
+    D_800A39C4 = gMenuObjectPoolCount;
 }
 
 extern void *D_800A3954;
-void func_8005E3DC(void) {
+void MenuFreeResourceBlock(void) {
     if (D_800A3954 != NULL) {
         HeapFree(D_800A3954);
     }
@@ -261,20 +261,20 @@ void func_8005E3DC(void) {
 }
 
 extern void *D_800A399C[];
-void func_8005E408(void) {
+void MenuFreeObjectBuffer(void) {
     if (D_800A399C[0] != 0) {
         HeapFree(D_800A399C[0]);
     }
     *(void **)&D_800A3988[0x14] = 0;
 }
 
-extern char D_800BA058[], D_800A333C[];
+extern char D_800BA058[], gTextLeadingSpaceLaps[];
 void MenuFormatLapText(s32 value) {
     TextFormatInt(value, D_800BA058);
-    strcat(D_800BA058, D_800A333C);
+    strcat(D_800BA058, gTextLeadingSpaceLaps);
 }
 
-void func_8005E47C(void) {
+void MenuAllocateObjectBuffer(void) {
     D_800A399C[0] = HeapAlloc(0x2580);
 }
 
@@ -349,12 +349,12 @@ void func_8005E4A4(u8 *table) {
 }
 
 extern u8 *D_800AE178[];
-void func_8005E550(s32 arg0) {
+void MenuLoadOffsetResources(s32 fileId) {
     void *table;
     void *result;
     u8 i;
 
-    result = FileLoadOffsetTable(arg0, &table, 0);
+    result = FileLoadOffsetTable(fileId, &table, 0);
     D_800A3954 = result;
     for (i = 0; i < 0x11; i++) {
         D_800AE178[i] = result + ((s32 *)table)[i];
@@ -366,9 +366,9 @@ void func_8005E5BC(s32 unused, s32 x, s16 y, s32 flag) {
     u8 count;
     s32 height;
     s32 fieldValue;
-    count = D_800A35EC;
-    D_800A35EC = count + 1;
-    entry = D_800A3678 + count * 36;
+    count = gMenuObjectPoolCount;
+    gMenuObjectPoolCount = count + 1;
+    entry = gMenuObjectPool + count * 36;
     *(s16 *)(entry + 0) = 3;
     height = 0x3C;
     *(s16 *)(entry + 0x12) = 0;
@@ -408,9 +408,9 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 value;
     u8 *entry2;
 
-    count = D_800A35EC;
-    D_800A35EC = count + 1;
-    entry = D_800A3678 + count * 36;
+    count = gMenuObjectPoolCount;
+    gMenuObjectPoolCount = count + 1;
+    entry = gMenuObjectPool + count * 36;
     entry[4] = 0;
     entry[3] = 0;
     entry[2] = 0;
@@ -445,7 +445,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         D_800A3814B[0] = 3;
     }
     TextFormatInt(D_800A3814C[0], D_800BA058);
-    strcat(D_800BA058B, D_800A333C);
+    strcat(D_800BA058B, gTextLeadingSpaceLaps);
     entry2 = (u8 *)D_800A3788;
     *(char **)(local + 8) = D_800BA058C;
     *(u16 *)(entry2 + 6) = *(u16 *)(entry2 + 6) + 0x71;
@@ -471,8 +471,8 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 offset;
     s32 stride;
 
-    index = D_800A35EC++;
-    object = D_800A3678 + index * 36;
+    index = gMenuObjectPoolCount++;
+    object = gMenuObjectPool + index * 36;
     object[4] = 0;
     object[3] = 0;
     object[2] = 0;
@@ -523,7 +523,7 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 extern s32 D_800A3344;
 extern u16 D_8009AFA8[];
 extern MATRIX D_800A8C70;
-extern u8 D_800A305B[];
+extern u8 gSelectedTrack[];
 /* One model face: three corner vertices plus a fourth, 32 bytes. The pad
  * halfword of each vertex holds the face colour (v[0..2]) or the
  * semi-transparency flag (v[3]). */
@@ -532,9 +532,9 @@ typedef struct {
 } ModelQuad;
 
 /* Draws the spinning model that sits in a menu window as one POLY_F4 per
- * face. arg0 advances the spin angle, semiTrans forces semi-transparency, and
+ * face. advanceSpin changes the spin angle, semiTrans forces semi-transparency, and
  * mode picks the full-screen camera (non-zero) or the window at D_800A3634. */
-void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
+void MenuDrawModel(s32 advanceSpin, s32 semiTrans, s32 fullScreenMode) {
     SVECTOR angles;
     VECTOR trans;
     s32 *ot;
@@ -549,11 +549,11 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
 
     cursor = (u8 *)gPrimitiveCursor[0];
     ot = (s32 *)gOrderingTable[0];
-    if (mode & 0xFF) {
+    if (fullScreenMode & 0xFF) {
         x = 0xA0;
         y = 0x64;
         depth = 0xC8;
-        switch (D_800A305B[0]) {
+        switch (gSelectedTrack[0]) {
         case 1:
             x = 0x9B;
             depth = 0x12C;
@@ -569,7 +569,7 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
         case 11:
             depth = 0x12C;
             y = 0x6E;
-            if (D_800A305B[0] != 0xB) {
+            if (gSelectedTrack[0] != 0xB) {
                 break;
             }
         case 9:
@@ -594,7 +594,7 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
             break;
         }
         SetGeomOffset(x, y);
-        angles.vy = D_8009AFA8[D_800A305B[0]];
+        angles.vy = D_8009AFA8[gSelectedTrack[0]];
         angles.vx = 0x4B0;
         angles.vz = 0;
     } else if (cursor) {
@@ -615,7 +615,7 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
     }
     RotMatrix(&angles, &D_800A8C70);
     SetRotMatrix(&D_800A8C70);
-    if (arg0 & 0xFF) {
+    if (advanceSpin & 0xFF) {
         if (depth) { /* identical arms, see above */
             D_800A3344 = (D_800A3344 + 0x10) % 0x1000;
         } else {
@@ -624,7 +624,7 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
     }
     trans.vx = 0;
     trans.vy = 0;
-    if (mode & 0xFF) {
+    if (fullScreenMode & 0xFF) {
         trans.vz = depth;
     } else {
         trans.vz = 0x1C2;
@@ -647,7 +647,7 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
             otz += 0x10;
         }
         if (q->v[0].pad == 0 && q->v[1].pad == 0x46 && q->v[2].pad == 0x9A) {
-            if (mode & 0xFF) {
+            if (fullScreenMode & 0xFF) {
                 continue;
             }
             otz -= 0x20;
@@ -672,22 +672,22 @@ void MenuDrawModel(s32 arg0, s32 semiTrans, s32 mode) {
 extern u16 D_8009AF84[];
 extern s32 D_800A37D0;
 extern s32 D_800A3814;
-void func_8005EC5C(s32 arg0) {
+void MenuFormatLapCount(s32 trackIndex) {
     s32 value;
     s32 scaled;
-    value = D_8009AF84[arg0 & 0xFF];
+    value = D_8009AF84[trackIndex & 0xFF];
     scaled = (value * D_800A37D0) / 100;
     D_800A3814 = scaled;
     if (scaled < 3)
         D_800A3814 = 3;
     TextFormatInt(D_800A3814, D_800BA058);
-    strcat(D_800BA058, D_800A333C);
+    strcat(D_800BA058, gTextLeadingSpaceLaps);
 }
 #else
 extern s32 D_800A3814Abs[];
 extern char D_800BA058NM[] asm("D_800BA058.NON_MATCHING");
 asm(".globl D_800A3814Abs\nD_800A3814Abs = D_800A3814");
-void func_8005EC5C(u8 arg0) {
+void MenuFormatLapCount(u8 arg0) {
     s32 value;
 
     value = *(s16 *)&D_8009AF84[(arg0 & 0xFF) * 2] * D_800A37D0[0] / 100;
@@ -696,7 +696,7 @@ void func_8005EC5C(u8 arg0) {
         D_800A3814[0] = 3;
     }
     TextFormatInt(D_800A3814Abs[0], D_800BA058);
-    strcat(D_800BA058NM, D_800A333C);
+    strcat(D_800BA058NM, gTextLeadingSpaceLaps);
 }
 
 #if 0
@@ -706,7 +706,7 @@ void func_8005EC5C(u8 arg0) {
  * cross-call cse). D_800A3814 is reached as D_800A37E8[11] (bss
  * neighbor of an already-array symbol; declaring D_800A3814 drifts
  * labels), and D_8009AF84 needs u8[] + s16 cast (retail strides 2). */
-void func_8005EC5C(u8 arg0) {
+void MenuFormatLapCount(u8 arg0) {
     s32 value;
 
     value = *(s16 *)&D_8009AF84[(arg0 & 0xFF) * 2] * D_800A37D0[0] / 100;
@@ -715,17 +715,17 @@ void func_8005EC5C(u8 arg0) {
         *(D_800A37E8 + 11) = 3;
     }
     TextFormatInt(D_800A37E8[11], D_800BA058);
-    strcat(D_800BA058, D_800A333C);
+    strcat(D_800BA058, gTextLeadingSpaceLaps);
 }
 #endif
 #endif
 
 extern s32 D_8009A31C[];
-void func_8005ED04(s32 index) {
+void MenuSetTrackLabel(s32 index) {
     D_800A3740[8][2] = D_8009A31C[index & 0xFF];
 }
 
-s32 func_8005ED28(u8 x, u8 y) {
+s32 MenuGetGridScale(u8 x, u8 y) {
     u32 scale;
     u32 level;
 
@@ -753,7 +753,7 @@ extern s32 D_8009A268[];
 extern s32 D_8009A298[];
 extern void func_80060008(u8);
 /* Menu screen builder. Each "object" is a 36-byte record taken from
- * D_800A3678; the MenuObj struct matters for the match: member stores are
+ * gMenuObjectPool; the MenuObj struct matters for the match: member stores are
  * MEM_IN_STRUCT_P, so the scheduler may hoist the scalar D_800A3654 load
  * above them like retail. Retail's constants and register order depend on
  * the locals below (k2b is pinned to $19, the empty asm statements make the
@@ -832,26 +832,26 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         z1 = 0x3FC;
     a1_L:
         {
-            ix1 = D_800A35EC;
-            D_800A35EC = ix1 + 1;
-            obj1 = D_800A3678 + ix1 * 36;
-            ((MenuObj *)obj1)->unk12 = 0;
-            ((MenuObj *)obj1)->unk14 = 0;
-            ((MenuObj *)obj1)->unk1C = 0;
+            ix1 = gMenuObjectPoolCount;
+            gMenuObjectPoolCount = ix1 + 1;
+            obj1 = gMenuObjectPool + ix1 * 36;
+            ((MenuObj *)obj1)->drawOffsetX = 0;
+            ((MenuObj *)obj1)->drawOffsetY = 0;
+            ((MenuObj *)obj1)->next = 0;
             obj1[4] = 0;
             obj1[3] = 0;
             obj1[2] = 0;
-            ((MenuObj *)obj1)->unk1A = 0;
-            ((MenuObj *)obj1)->unk0 = 1;
-            ((MenuObj *)obj1)->unk16 = w1;
-            ((MenuObj *)obj1)->unkA = h;
-            ((MenuObj *)obj1)->unk6 = h;
-            ((MenuObj *)obj1)->unkC = x1;
-            ((MenuObj *)obj1)->unk8 = x1;
-            ((MenuObj *)obj1)->unk18 = g1;
-            ((MenuObj *)obj1)->unkE = 0;
-            ((MenuObj *)obj1)->unk10 = 0;
-            pr1 = func_80057CCC(1);
+            ((MenuObj *)obj1)->orderingDepth = 0;
+            ((MenuObj *)obj1)->kind = 1;
+            ((MenuObj *)obj1)->width = w1;
+            ((MenuObj *)obj1)->targetX = h;
+            ((MenuObj *)obj1)->x = h;
+            ((MenuObj *)obj1)->targetY = x1;
+            ((MenuObj *)obj1)->y = x1;
+            ((MenuObj *)obj1)->height = g1;
+            ((MenuObj *)obj1)->velocityX = 0;
+            ((MenuObj *)obj1)->velocityY = 0;
+            pr1 = GraphicsAllocPolyFT4(1);
             SetPolyFT4((POLY_FT4 *)pr1);
             SetShadeTex(pr1, 0);
             pr1[4] = 0x80;
@@ -859,16 +859,16 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             pr1[6] = 0x80;
             SetSemiTrans(pr1, 0);
             entry = obj1;
-            ((MenuObj *)entry)->unk20 = pr1;
-            ((MenuObj *)entry)->unk1A = z1;
+            ((MenuObj *)entry)->primitive = pr1;
+            ((MenuObj *)entry)->orderingDepth = z1;
             if (j == 0) {
                 *listSlot = entry;
             } else {
                 *(u8 **)(*listSlot + 0x1C) = entry;
             }
-            prim2 = ((MenuObj *)entry)->unk20;
-            ((MenuObj *)entry)->unk6 = -0xF5;
-            ((MenuObj *)entry)->unkE = 2;
+            prim2 = ((MenuObj *)entry)->primitive;
+            ((MenuObj *)entry)->x = -0xF5;
+            ((MenuObj *)entry)->velocityX = 2;
             if (j == 0) {
                 u16 w;
                 u8 v;
@@ -918,30 +918,30 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         b2 = 0x40;
     a2_L:
         {
-            ix2 = D_800A35EC;
-            D_800A35EC = ix2 + 1;
-            obj2 = D_800A3678 + ix2 * 36;
+            ix2 = gMenuObjectPoolCount;
+            gMenuObjectPoolCount = ix2 + 1;
+            obj2 = gMenuObjectPool + ix2 * 36;
             obj2[4] = 0;
-            ((MenuObj *)obj2)->unk18 = g2;
-            ((MenuObj *)obj2)->unk12 = 0;
-            ((MenuObj *)obj2)->unk14 = 0;
-            ((MenuObj *)obj2)->unk1C = 0;
+            ((MenuObj *)obj2)->height = g2;
+            ((MenuObj *)obj2)->drawOffsetX = 0;
+            ((MenuObj *)obj2)->drawOffsetY = 0;
+            ((MenuObj *)obj2)->next = 0;
             obj2[3] = 0;
             obj2[2] = 0;
-            ((MenuObj *)obj2)->unk1A = 0;
-            ((MenuObj *)obj2)->unk0 = k2;
-            ((MenuObj *)obj2)->unk6 = 0;
-            ((MenuObj *)obj2)->unkA = 0;
-            ((MenuObj *)obj2)->unk8 = yBase;
-            ((MenuObj *)obj2)->unkC = yBase;
-            ((MenuObj *)obj2)->unkE = 0;
-            ((MenuObj *)obj2)->unk10 = 0;
-            ((MenuObj *)obj2)->unk16 = w2;
+            ((MenuObj *)obj2)->orderingDepth = 0;
+            ((MenuObj *)obj2)->kind = k2;
+            ((MenuObj *)obj2)->x = 0;
+            ((MenuObj *)obj2)->targetX = 0;
+            ((MenuObj *)obj2)->y = yBase;
+            ((MenuObj *)obj2)->targetY = yBase;
+            ((MenuObj *)obj2)->velocityX = 0;
+            ((MenuObj *)obj2)->velocityY = 0;
+            ((MenuObj *)obj2)->width = w2;
             obj2[2] = c2;
             obj2[3] = c2;
             obj2[4] = b2;
-            pr2 = func_80057D50(1);
-            ((MenuObj *)obj2)->unk20 = pr2;
+            pr2 = GraphicsAllocPolyF4(1);
+            ((MenuObj *)obj2)->primitive = pr2;
             SetPolyF4(pr2);
             SetSemiTrans(pr2, 1);
             y1 = yBase + 0x1E;
@@ -956,10 +956,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             *(s16 *)(pr2 + 0x12) = y1;
             *(s16 *)(pr2 + 0x14) = w2;
             *(s16 *)(pr2 + 0x16) = y1;
-            ((MenuObj *)obj2)->unk1A = 0x3FD;
-            ((MenuObj *)obj2)->unkE = k2;
-            ((MenuObj *)obj2)->unk6 = -0xF5;
-            ((MenuObj *)obj2)->unkE = k2;
+            ((MenuObj *)obj2)->orderingDepth = 0x3FD;
+            ((MenuObj *)obj2)->velocityX = k2;
+            ((MenuObj *)obj2)->x = -0xF5;
+            ((MenuObj *)obj2)->velocityX = k2;
             *(u8 **)(entry + 0x1C) = obj2;
             entry = obj2;
             j++;
@@ -987,7 +987,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 u8 primIdx;
                 u8 *textPrim;
                 u8 *primLoad;
-                func_8005A7B8(2, 2);
+                MenuFontSet(2, 2);
                 value = (s16)func_8005A8EI(D_8009A268[n]);
                 switch (m) {
                 case 0:
@@ -1000,38 +1000,38 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                     h = 0x70 - value;
                     break;
                 }
-                ix3 = D_800A35EC;
-                D_800A35EC = ix3 + 1;
-                obj3 = D_800A3678 + ix3 * 36;
+                ix3 = gMenuObjectPoolCount;
+                gMenuObjectPoolCount = ix3 + 1;
+                obj3 = gMenuObjectPool + ix3 * 36;
                 obj3[4] = 0;
                 obj3[3] = 0;
                 obj3[2] = 0;
                 primIdx = D_800A37BC;
                 entry = obj3;
-                ((MenuObj *)entry)->unk12 = 0;
-                ((MenuObj *)entry)->unk14 = 0;
-                ((MenuObj *)entry)->unk1C = 0;
-                ((MenuObj *)entry)->unk1A = 0;
-                ((MenuObj *)entry)->unk0 = 0;
-                ((MenuObj *)entry)->unkA = h;
-                ((MenuObj *)entry)->unk6 = h;
-                ((MenuObj *)entry)->unkC = yBase;
-                ((MenuObj *)entry)->unk8 = yBase;
-                ((MenuObj *)entry)->unkE = 0;
-                ((MenuObj *)entry)->unk10 = 0;
-                ((MenuObj *)entry)->unk1A = 0;
+                ((MenuObj *)entry)->drawOffsetX = 0;
+                ((MenuObj *)entry)->drawOffsetY = 0;
+                ((MenuObj *)entry)->next = 0;
+                ((MenuObj *)entry)->orderingDepth = 0;
+                ((MenuObj *)entry)->kind = 0;
+                ((MenuObj *)entry)->targetX = h;
+                ((MenuObj *)entry)->x = h;
+                ((MenuObj *)entry)->targetY = yBase;
+                ((MenuObj *)entry)->y = yBase;
+                ((MenuObj *)entry)->velocityX = 0;
+                ((MenuObj *)entry)->velocityY = 0;
+                ((MenuObj *)entry)->orderingDepth = 0;
                 D_800A37BC = primIdx + 1;
                 textPrim = (u8 *)D_800A3654 + primIdx * 12;
-                ((MenuObj *)entry)->unk20 = textPrim;
+                ((MenuObj *)entry)->primitive = textPrim;
                 textPrim[0] = 0;
                 textPrim[3] = 0;
                 *(s32 *)(textPrim + 4) = 0;
                 D_800BB9F4[n] = entry;
-                ((MenuObj *)entry)->unkE = 2;
-                ((MenuObj *)entry)->unk16 = value;
-                ((MenuObj *)entry)->unk6 = *(u16 *)(entry + 0xA) - 0xF5;
-                ((MenuObj *)entry)->unk18 = func_8005A84C();
-                primLoad = ((MenuObj *)entry)->unk20;
+                ((MenuObj *)entry)->velocityX = 2;
+                ((MenuObj *)entry)->width = value;
+                ((MenuObj *)entry)->x = *(u16 *)(entry + 0xA) - 0xF5;
+                ((MenuObj *)entry)->height = MenuFontLineHeight();
+                primLoad = ((MenuObj *)entry)->primitive;
                 primLoad[1] = 2;
                 primLoad[2] = 2;
                 *(s32 *)(primLoad + 8) = D_8009A268[n];
@@ -1063,26 +1063,26 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             u16 hh;
             u32 scale;
             u32 level;
-            ix4 = D_800A35EC;
-            D_800A35EC = ix4 + 1;
-            obj4 = D_800A3678 + ix4 * 36;
-            ((MenuObj *)obj4)->unk0 = 1;
-            ((MenuObj *)obj4)->unk16 = w4;
-            ((MenuObj *)obj4)->unk12 = 0;
-            ((MenuObj *)obj4)->unk14 = 0;
-            ((MenuObj *)obj4)->unk1C = 0;
+            ix4 = gMenuObjectPoolCount;
+            gMenuObjectPoolCount = ix4 + 1;
+            obj4 = gMenuObjectPool + ix4 * 36;
+            ((MenuObj *)obj4)->kind = 1;
+            ((MenuObj *)obj4)->width = w4;
+            ((MenuObj *)obj4)->drawOffsetX = 0;
+            ((MenuObj *)obj4)->drawOffsetY = 0;
+            ((MenuObj *)obj4)->next = 0;
             obj4[4] = 0;
             obj4[3] = 0;
             obj4[2] = 0;
-            ((MenuObj *)obj4)->unk1A = 0;
-            ((MenuObj *)obj4)->unkA = h;
-            ((MenuObj *)obj4)->unk6 = h;
-            ((MenuObj *)obj4)->unkC = yBase;
-            ((MenuObj *)obj4)->unk8 = yBase;
-            ((MenuObj *)obj4)->unk18 = g4;
-            ((MenuObj *)obj4)->unkE = 0;
-            ((MenuObj *)obj4)->unk10 = 0;
-            pr4 = func_80057CCC(1);
+            ((MenuObj *)obj4)->orderingDepth = 0;
+            ((MenuObj *)obj4)->targetX = h;
+            ((MenuObj *)obj4)->x = h;
+            ((MenuObj *)obj4)->targetY = yBase;
+            ((MenuObj *)obj4)->y = yBase;
+            ((MenuObj *)obj4)->height = g4;
+            ((MenuObj *)obj4)->velocityX = 0;
+            ((MenuObj *)obj4)->velocityY = 0;
+            pr4 = GraphicsAllocPolyFT4(1);
             SetPolyFT4((POLY_FT4 *)pr4);
             SetShadeTex(pr4, 0);
             pr4[4] = 0x80;
@@ -1090,14 +1090,14 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             pr4[6] = 0x80;
             SetSemiTrans(pr4, 0);
             entry = obj4;
-            ((MenuObj *)entry)->unk20 = pr4;
-            ((MenuObj *)entry)->unk1A = z4;
+            ((MenuObj *)entry)->primitive = pr4;
+            ((MenuObj *)entry)->orderingDepth = z4;
             tbl = D_800B9980;
             slot = tbl + i;
             *slot = entry;
-            prim2 = ((MenuObj *)entry)->unk20;
-            ((MenuObj *)entry)->unk6 = -0xF5;
-            ((MenuObj *)entry)->unkE = 2;
+            prim2 = ((MenuObj *)entry)->primitive;
+            ((MenuObj *)entry)->x = -0xF5;
+            ((MenuObj *)entry)->velocityX = 2;
             w = *(u16 *)(entry + 0x16);
             hh = *(u16 *)(entry + 0x18);
             *(s16 *)(prim2 + 0xE) = GetClut(D_8009AEA2[1], D_8009AEA6[0]);
@@ -1120,30 +1120,30 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             x4 = yBase + 1;
             {
                 s16 y2;
-                ix5 = D_800A35EC;
-                D_800A35EC = ix5 + 1;
-                obj5 = D_800A3678 + ix5 * 36;
-                ((MenuObj *)obj5)->unk0 = 2;
-                ((MenuObj *)obj5)->unk6 = k9;
-                ((MenuObj *)obj5)->unkA = k9;
+                ix5 = gMenuObjectPoolCount;
+                gMenuObjectPoolCount = ix5 + 1;
+                obj5 = gMenuObjectPool + ix5 * 36;
+                ((MenuObj *)obj5)->kind = 2;
+                ((MenuObj *)obj5)->x = k9;
+                ((MenuObj *)obj5)->targetX = k9;
                 obj5[2] = 0;
-                ((MenuObj *)obj5)->unk18 = k3;
+                ((MenuObj *)obj5)->height = k3;
                 obj5[4] = 0;
                 obj5[2] = 0x40;
-                ((MenuObj *)obj5)->unk12 = 0;
-                ((MenuObj *)obj5)->unk14 = 0;
-                ((MenuObj *)obj5)->unk1C = 0;
+                ((MenuObj *)obj5)->drawOffsetX = 0;
+                ((MenuObj *)obj5)->drawOffsetY = 0;
+                ((MenuObj *)obj5)->next = 0;
                 obj5[3] = 0;
-                ((MenuObj *)obj5)->unk1A = 0;
-                ((MenuObj *)obj5)->unk8 = x4;
-                ((MenuObj *)obj5)->unkC = x4;
-                ((MenuObj *)obj5)->unkE = 0;
-                ((MenuObj *)obj5)->unk10 = 0;
-                ((MenuObj *)obj5)->unk16 = scale;
+                ((MenuObj *)obj5)->orderingDepth = 0;
+                ((MenuObj *)obj5)->y = x4;
+                ((MenuObj *)obj5)->targetY = x4;
+                ((MenuObj *)obj5)->velocityX = 0;
+                ((MenuObj *)obj5)->velocityY = 0;
+                ((MenuObj *)obj5)->width = scale;
                 obj5[3] = 0x60;
                 obj5[4] = 0x80;
-                pr5 = func_80057D50(1);
-                ((MenuObj *)obj5)->unk20 = pr5;
+                pr5 = GraphicsAllocPolyF4(1);
+                ((MenuObj *)obj5)->primitive = pr5;
                 SetPolyF4(pr5);
                 SetSemiTrans(pr5, 1);
                 pr5[4] = 0x40;
@@ -1162,10 +1162,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 *(s16 *)(pr5 + 0x12) = yBase + 4;
                 *(s16 *)(pr5 + 0x16) = yBase + 4;
                 *(s16 *)(pr5 + 0x14) = y2;
-                ((MenuObj *)entry)->unk1A = 0x3E8;
+                ((MenuObj *)entry)->orderingDepth = 0x3E8;
                 *(u8 **)(*slot + 0x1C) = entry;
-                ((MenuObj *)entry)->unk6 = -0xF5;
-                ((MenuObj *)entry)->unkE = 2;
+                ((MenuObj *)entry)->x = -0xF5;
+                ((MenuObj *)entry)->velocityX = 2;
             }
             yBase += 0x1E;
         } while (i < 4);
@@ -1173,26 +1173,26 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     {
         u16 w;
         u16 hh;
-        ix6 = D_800A35EC;
-        D_800A35EC = ix6 + 1;
-        obj6 = D_800A3678 + ix6 * 36;
-        ((MenuObj *)obj6)->unk12 = 0;
-        ((MenuObj *)obj6)->unk14 = 0;
-        ((MenuObj *)obj6)->unk1C = 0;
+        ix6 = gMenuObjectPoolCount;
+        gMenuObjectPoolCount = ix6 + 1;
+        obj6 = gMenuObjectPool + ix6 * 36;
+        ((MenuObj *)obj6)->drawOffsetX = 0;
+        ((MenuObj *)obj6)->drawOffsetY = 0;
+        ((MenuObj *)obj6)->next = 0;
         obj6[4] = 0;
         obj6[3] = 0;
         obj6[2] = 0;
-        ((MenuObj *)obj6)->unk1A = 0;
-        ((MenuObj *)obj6)->unk0 = 1;
-        ((MenuObj *)obj6)->unkC = 0x2A;
-        ((MenuObj *)obj6)->unkA = 0;
-        ((MenuObj *)obj6)->unk8 = 0x2A;
-        ((MenuObj *)obj6)->unk16 = 0x78;
-        ((MenuObj *)obj6)->unk6 = 0;
-        ((MenuObj *)obj6)->unk18 = 0x30;
-        ((MenuObj *)obj6)->unkE = 0;
-        ((MenuObj *)obj6)->unk10 = 0;
-        pr6 = func_80057CCC(1);
+        ((MenuObj *)obj6)->orderingDepth = 0;
+        ((MenuObj *)obj6)->kind = 1;
+        ((MenuObj *)obj6)->targetY = 0x2A;
+        ((MenuObj *)obj6)->targetX = 0;
+        ((MenuObj *)obj6)->y = 0x2A;
+        ((MenuObj *)obj6)->width = 0x78;
+        ((MenuObj *)obj6)->x = 0;
+        ((MenuObj *)obj6)->height = 0x30;
+        ((MenuObj *)obj6)->velocityX = 0;
+        ((MenuObj *)obj6)->velocityY = 0;
+        pr6 = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)pr6);
         SetShadeTex(pr6, 0);
         pr6[4] = 0x80;
@@ -1200,17 +1200,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         pr6[6] = 0x80;
         SetSemiTrans(pr6, 0);
         entry = obj6;
-        ((MenuObj *)entry)->unk20 = pr6;
-        ((MenuObj *)entry)->unk1A = 0x3FC;
+        ((MenuObj *)entry)->primitive = pr6;
+        ((MenuObj *)entry)->orderingDepth = 0x3FC;
         do {
         } while (0);
-        prim2 = ((MenuObj *)entry)->unk20;
+        prim2 = ((MenuObj *)entry)->primitive;
         w = *(u16 *)(entry + 0x16);
         hh = *(u16 *)(entry + 0x18);
-        ((MenuObj *)entry)->unkE = 2;
+        ((MenuObj *)entry)->velocityX = 2;
         j = 0;
         D_800A39ACPtr = entry;
-        ((MenuObj *)entry)->unk10 = 0;
+        ((MenuObj *)entry)->velocityY = 0;
         *(s16 *)(prim2 + 0xE) = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
         *(s16 *)(prim2 + 0x16) =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
@@ -1230,30 +1230,30 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     *(s16 *)(D_800A39ACPtr + 6) = -0x7D;
     *(s16 *)(D_800A39ACPtr + 0xE) = 2;
     do {
-        ix7 = D_800A35EC;
-        D_800A35EC = ix7 + 1;
-        obj7 = D_800A3678 + ix7 * 36;
+        ix7 = gMenuObjectPoolCount;
+        gMenuObjectPoolCount = ix7 + 1;
+        obj7 = gMenuObjectPool + ix7 * 36;
         obj7[4] = 0;
-        ((MenuObj *)obj7)->unk18 = k30;
-        ((MenuObj *)obj7)->unk12 = 0;
-        ((MenuObj *)obj7)->unk14 = 0;
-        ((MenuObj *)obj7)->unk1C = 0;
+        ((MenuObj *)obj7)->height = k30;
+        ((MenuObj *)obj7)->drawOffsetX = 0;
+        ((MenuObj *)obj7)->drawOffsetY = 0;
+        ((MenuObj *)obj7)->next = 0;
         obj7[3] = 0;
         obj7[2] = 0;
-        ((MenuObj *)obj7)->unk1A = 0;
-        ((MenuObj *)obj7)->unk0 = k2b;
-        ((MenuObj *)obj7)->unk6 = 0;
-        ((MenuObj *)obj7)->unkA = 0;
-        ((MenuObj *)obj7)->unk8 = yBase;
-        ((MenuObj *)obj7)->unkC = yBase;
-        ((MenuObj *)obj7)->unkE = 0;
-        ((MenuObj *)obj7)->unk10 = 0;
-        ((MenuObj *)obj7)->unk16 = h;
+        ((MenuObj *)obj7)->orderingDepth = 0;
+        ((MenuObj *)obj7)->kind = k2b;
+        ((MenuObj *)obj7)->x = 0;
+        ((MenuObj *)obj7)->targetX = 0;
+        ((MenuObj *)obj7)->y = yBase;
+        ((MenuObj *)obj7)->targetY = yBase;
+        ((MenuObj *)obj7)->velocityX = 0;
+        ((MenuObj *)obj7)->velocityY = 0;
+        ((MenuObj *)obj7)->width = h;
         obj7[2] = 0x20;
         obj7[3] = 0x20;
         obj7[4] = 0x40;
-        pr7 = func_80057D50(1);
-        ((MenuObj *)obj7)->unk20 = pr7;
+        pr7 = GraphicsAllocPolyF4(1);
+        ((MenuObj *)obj7)->primitive = pr7;
         SetPolyF4(pr7);
         SetSemiTrans(pr7, 1);
         pr7[4] = 0x20;
@@ -1267,10 +1267,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         *(s16 *)(pr7 + 0xE) = yBase;
         *(s16 *)(pr7 + 0x10) = 0;
         *(s16 *)(pr7 + 0x14) = h;
-        ((MenuObj *)obj7)->unk1A = 0x3FD;
-        ((MenuObj *)obj7)->unkE = k2b;
-        ((MenuObj *)obj7)->unk6 = -0x7D;
-        ((MenuObj *)obj7)->unkE = k2b;
+        ((MenuObj *)obj7)->orderingDepth = 0x3FD;
+        ((MenuObj *)obj7)->velocityX = k2b;
+        ((MenuObj *)obj7)->x = -0x7D;
+        ((MenuObj *)obj7)->velocityX = k2b;
         *(u8 **)(entry + 0x1C) = obj7;
         entry = obj7;
         j++;
@@ -1287,26 +1287,26 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         u8 *prD7;
         u16 w;
         u16 hh;
-        ix8 = D_800A35EC;
-        D_800A35EC = ix8 + 1;
-        obj8 = D_800A3678 + ix8 * 36;
-        ((MenuObj *)obj8)->unk0 = 1;
-        ((MenuObj *)obj8)->unkA = k41;
-        ((MenuObj *)obj8)->unk6 = k41;
-        ((MenuObj *)obj8)->unk16 = k32;
-        ((MenuObj *)obj8)->unk12 = 0;
-        ((MenuObj *)obj8)->unk14 = 0;
-        ((MenuObj *)obj8)->unk1C = 0;
+        ix8 = gMenuObjectPoolCount;
+        gMenuObjectPoolCount = ix8 + 1;
+        obj8 = gMenuObjectPool + ix8 * 36;
+        ((MenuObj *)obj8)->kind = 1;
+        ((MenuObj *)obj8)->targetX = k41;
+        ((MenuObj *)obj8)->x = k41;
+        ((MenuObj *)obj8)->width = k32;
+        ((MenuObj *)obj8)->drawOffsetX = 0;
+        ((MenuObj *)obj8)->drawOffsetY = 0;
+        ((MenuObj *)obj8)->next = 0;
         obj8[4] = 0;
         obj8[3] = 0;
         obj8[2] = 0;
-        ((MenuObj *)obj8)->unk1A = 0;
-        ((MenuObj *)obj8)->unkC = yBase;
-        ((MenuObj *)obj8)->unk8 = yBase;
-        ((MenuObj *)obj8)->unk18 = k7;
-        ((MenuObj *)obj8)->unkE = 0;
-        ((MenuObj *)obj8)->unk10 = 0;
-        pr8 = func_80057CCC(1);
+        ((MenuObj *)obj8)->orderingDepth = 0;
+        ((MenuObj *)obj8)->targetY = yBase;
+        ((MenuObj *)obj8)->y = yBase;
+        ((MenuObj *)obj8)->height = k7;
+        ((MenuObj *)obj8)->velocityX = 0;
+        ((MenuObj *)obj8)->velocityY = 0;
+        pr8 = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)pr8);
         SetShadeTex(pr8, 0);
         pr8[4] = 0x80;
@@ -1314,13 +1314,13 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         pr8[6] = 0x80;
         SetSemiTrans(pr8, 0);
         entry = obj8;
-        ((MenuObj *)entry)->unk20 = pr8;
-        ((MenuObj *)entry)->unk1A = 1;
+        ((MenuObj *)entry)->primitive = pr8;
+        ((MenuObj *)entry)->orderingDepth = 1;
         slot = &D_800B60B8[i];
         *slot = entry;
-        prim2 = ((MenuObj *)entry)->unk20;
-        ((MenuObj *)entry)->unkE = 2;
-        ((MenuObj *)entry)->unk6 = -0x7D;
+        prim2 = ((MenuObj *)entry)->primitive;
+        ((MenuObj *)entry)->velocityX = 2;
+        ((MenuObj *)entry)->x = -0x7D;
         w = *(u16 *)(entry + 0x16);
         hh = *(u16 *)(entry + 0x18);
         x6 = yBase + 1;
@@ -1340,30 +1340,30 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             u8 *objB8;
             u8 *prC8;
             s16 y2;
-            ix9 = D_800A35EC;
-            D_800A35EC = ix9 + 1;
-            objB9 = D_800A3678 + ix9 * 36;
-            ((MenuObj *)objB9)->unk0 = 2;
-            ((MenuObj *)objB9)->unk6 = 0x42;
-            ((MenuObj *)objB9)->unk12 = 0;
-            ((MenuObj *)objB9)->unk14 = 0;
-            ((MenuObj *)objB9)->unk1C = 0;
+            ix9 = gMenuObjectPoolCount;
+            gMenuObjectPoolCount = ix9 + 1;
+            objB9 = gMenuObjectPool + ix9 * 36;
+            ((MenuObj *)objB9)->kind = 2;
+            ((MenuObj *)objB9)->x = 0x42;
+            ((MenuObj *)objB9)->drawOffsetX = 0;
+            ((MenuObj *)objB9)->drawOffsetY = 0;
+            ((MenuObj *)objB9)->next = 0;
             objB9[4] = 0;
             objB9[3] = 0;
             objB9[2] = 0;
-            ((MenuObj *)objB9)->unk1A = 0;
-            ((MenuObj *)objB9)->unkA = 0x42;
-            ((MenuObj *)objB9)->unk8 = x6;
-            ((MenuObj *)objB9)->unkC = x6;
-            ((MenuObj *)objB9)->unkE = 0;
-            ((MenuObj *)objB9)->unk10 = 0;
-            ((MenuObj *)objB9)->unk16 = 0x30;
-            ((MenuObj *)objB9)->unk18 = 5;
+            ((MenuObj *)objB9)->orderingDepth = 0;
+            ((MenuObj *)objB9)->targetX = 0x42;
+            ((MenuObj *)objB9)->y = x6;
+            ((MenuObj *)objB9)->targetY = x6;
+            ((MenuObj *)objB9)->velocityX = 0;
+            ((MenuObj *)objB9)->velocityY = 0;
+            ((MenuObj *)objB9)->width = 0x30;
+            ((MenuObj *)objB9)->height = 5;
             objB9[2] = 0x40;
             objB9[3] = 0x60;
             objB9[4] = 0x80;
-            prC9 = func_80057D50(1);
-            ((MenuObj *)objB9)->unk20 = prC9;
+            prC9 = GraphicsAllocPolyF4(1);
+            ((MenuObj *)objB9)->primitive = prC9;
             SetPolyF4(prC9);
             SetSemiTrans(prC9, 0);
             prC9[6] = 0x80;
@@ -1383,50 +1383,50 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             }
             entry = objB9;
             *(u8 **)(*slot + 0x1C) = entry;
-            ((MenuObj *)entry)->unk6 = -0x7D;
-            ((MenuObj *)entry)->unkE = 2;
-            ((MenuObj *)entry)->unk1A = 0;
+            ((MenuObj *)entry)->x = -0x7D;
+            ((MenuObj *)entry)->velocityX = 2;
+            ((MenuObj *)entry)->orderingDepth = 0;
         }
-        func_8005A7B8(2, 2);
+        MenuFontSet(2, 2);
         strP = &D_8009A298[i];
         value = (s16)func_8005A8EI(*strP);
         {
             u8 primIdx;
             u8 *objC9;
             u8 *textPrim;
-            ixB10 = D_800A35EC;
-            D_800A35EC = ixB10 + 1;
-            objC10 = D_800A3678 + ixB10 * 36;
+            ixB10 = gMenuObjectPoolCount;
+            gMenuObjectPoolCount = ixB10 + 1;
+            objC10 = gMenuObjectPool + ixB10 * 36;
             objC10[4] = 0;
             objC10[3] = 0;
             objC10[2] = 0;
             primIdx = D_800A37BC;
             entry = objC10;
             h = 0x3E - value;
-            ((MenuObj *)entry)->unk12 = 0;
-            ((MenuObj *)entry)->unk14 = 0;
-            ((MenuObj *)entry)->unk1C = 0;
-            ((MenuObj *)entry)->unk1A = 0;
-            ((MenuObj *)entry)->unk0 = 0;
-            ((MenuObj *)entry)->unkA = h;
-            ((MenuObj *)entry)->unk6 = h;
-            ((MenuObj *)entry)->unkC = yBase;
-            ((MenuObj *)entry)->unk8 = yBase;
-            ((MenuObj *)entry)->unkE = 0;
-            ((MenuObj *)entry)->unk10 = 0;
-            ((MenuObj *)entry)->unk1A = 0;
+            ((MenuObj *)entry)->drawOffsetX = 0;
+            ((MenuObj *)entry)->drawOffsetY = 0;
+            ((MenuObj *)entry)->next = 0;
+            ((MenuObj *)entry)->orderingDepth = 0;
+            ((MenuObj *)entry)->kind = 0;
+            ((MenuObj *)entry)->targetX = h;
+            ((MenuObj *)entry)->x = h;
+            ((MenuObj *)entry)->targetY = yBase;
+            ((MenuObj *)entry)->y = yBase;
+            ((MenuObj *)entry)->velocityX = 0;
+            ((MenuObj *)entry)->velocityY = 0;
+            ((MenuObj *)entry)->orderingDepth = 0;
             D_800A37BC = primIdx + 1;
             textPrim = (u8 *)D_800A3654 + primIdx * 12;
-            ((MenuObj *)entry)->unk20 = textPrim;
+            ((MenuObj *)entry)->primitive = textPrim;
             textPrim[0] = 0;
             textPrim[3] = 0;
             *(s32 *)(textPrim + 4) = 0;
             D_800AE168[i] = entry;
-            ((MenuObj *)entry)->unkE = 2;
-            ((MenuObj *)entry)->unk16 = value;
-            ((MenuObj *)entry)->unk6 = ((MenuObj *)entry)->unkA - 0xAD;
-            ((MenuObj *)entry)->unk18 = func_8005A84C();
-            prD10 = ((MenuObj *)entry)->unk20;
+            ((MenuObj *)entry)->velocityX = 2;
+            ((MenuObj *)entry)->width = value;
+            ((MenuObj *)entry)->x = ((MenuObj *)entry)->targetX - 0xAD;
+            ((MenuObj *)entry)->height = MenuFontLineHeight();
+            prD10 = ((MenuObj *)entry)->primitive;
             prD10[1] = 2;
             prD10[2] = 2;
         }
@@ -1438,37 +1438,37 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         u8 primIdx;
         u8 *textPrim;
         u8 *primLoad;
-        ix11 = D_800A35EC;
-        D_800A35EC = ix11 + 1;
-        obj11 = D_800A3678 + ix11 * 36;
+        ix11 = gMenuObjectPoolCount;
+        gMenuObjectPoolCount = ix11 + 1;
+        obj11 = gMenuObjectPool + ix11 * 36;
         obj11[4] = 0;
         obj11[3] = 0;
         obj11[2] = 0;
         primIdx = D_800A37BC;
         m = (s32)obj11;
-        ((MenuObj *)m)->unkA = 5;
-        ((MenuObj *)m)->unk12 = 0;
-        ((MenuObj *)m)->unk14 = 0;
-        ((MenuObj *)m)->unk1C = 0;
-        ((MenuObj *)m)->unk1A = 0;
-        ((MenuObj *)m)->unk0 = 0;
-        ((MenuObj *)m)->unk6 = 5;
-        ((MenuObj *)m)->unkC = 0x20;
-        ((MenuObj *)m)->unk8 = 0x20;
-        ((MenuObj *)m)->unkE = 0;
-        ((MenuObj *)m)->unk10 = 0;
-        ((MenuObj *)m)->unk1A = 0;
+        ((MenuObj *)m)->targetX = 5;
+        ((MenuObj *)m)->drawOffsetX = 0;
+        ((MenuObj *)m)->drawOffsetY = 0;
+        ((MenuObj *)m)->next = 0;
+        ((MenuObj *)m)->orderingDepth = 0;
+        ((MenuObj *)m)->kind = 0;
+        ((MenuObj *)m)->x = 5;
+        ((MenuObj *)m)->targetY = 0x20;
+        ((MenuObj *)m)->y = 0x20;
+        ((MenuObj *)m)->velocityX = 0;
+        ((MenuObj *)m)->velocityY = 0;
+        ((MenuObj *)m)->orderingDepth = 0;
         D_800A37BC = primIdx + 1;
         textPrim = (u8 *)D_800A3654 + primIdx * 12;
-        ((MenuObj *)m)->unk20 = textPrim;
+        ((MenuObj *)m)->primitive = textPrim;
         textPrim[0] = 0;
         textPrim[3] = 0;
         *(s32 *)(textPrim + 4) = 0;
-        ((MenuObj *)m)->unkE = 2;
-        ((MenuObj *)m)->unk16 = value;
-        ((MenuObj *)m)->unk6 = *(u16 *)(((u8 *)m) + 0xA) - 0xAD;
-        ((MenuObj *)m)->unk18 = func_8005A84C();
-        primLoad = ((MenuObj *)m)->unk20;
+        ((MenuObj *)m)->velocityX = 2;
+        ((MenuObj *)m)->width = value;
+        ((MenuObj *)m)->x = *(u16 *)(((u8 *)m) + 0xA) - 0xAD;
+        ((MenuObj *)m)->height = MenuFontLineHeight();
+        primLoad = ((MenuObj *)m)->primitive;
         primLoad[1] = 2;
         primLoad[2] = 2;
         *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
@@ -1477,26 +1477,26 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     func_80060008(arg0);
 }
 
-void func_8005FE90(void) {
+void MenuUpdateObjectGroups(void) {
     extern u8 *D_800A39ACSmall asm("D_800A39AC.NON_MATCHING");
     s32 i;
     s32 j;
 
     for (i = 0; i < 4; i++) {
-        func_8005B688(D_800B996C[i], 1);
-        func_8005B688(D_800B9980[i], 1);
+        MenuUpdateObjectPosition(D_800B996C[i], 1);
+        MenuUpdateObjectPosition(D_800B9980[i], 1);
         for (j = 0; j < 3; j++) {
-            func_8005B688(D_800BB9F4[i * 3 + j], 1);
+            MenuUpdateObjectPosition(D_800BB9F4[i * 3 + j], 1);
         }
     }
-    func_8005B688(D_800A39ACSmall, 1);
+    MenuUpdateObjectPosition(D_800A39ACSmall, 1);
     for (i = 0; i < 4; i++) {
-        func_8005B688(D_800AE168[i], 1);
-        func_8005B688(D_800B60B8[i], 1);
+        MenuUpdateObjectPosition(D_800AE168[i], 1);
+        MenuUpdateObjectPosition(D_800B60B8[i], 1);
     }
 }
 
-u8 *func_8005FFA8(u8 x, u8 y) {
+u8 *MenuSetGridObjectScale(u8 x, u8 y) {
     u32 scale;
     u32 level;
     u32 result;
@@ -1570,19 +1570,19 @@ static inline void MenuObjDrawText(u8 *window, u8 code, u8 first, u8 second,
     u8 *prim;
 
     prim = *(u8 **)(window + 0x20);
-    func_8005A7B8(prim[1], prim[2]);
+    MenuFontSet(prim[1], prim[2]);
     prim[0] = code;
     if (textId == 0) {
         textId = *(s32 *)(prim + 8);
     }
     if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
-        func_8005A818(window[2], window[3], window[4]);
+        MenuSetTextColor(window[2], window[3], window[4]);
     } else if (prim[1] == 2) {
-        func_8005A818(0xFF, 0x80, 0x40);
+        MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
-        func_8005A818(0, 0, 0);
+        MenuSetTextColor(0, 0, 0);
     }
-    if (D_800A39E4[0] == 0xD) {
+    if (gScreenState[0] == 0xD) {
         MenuDrawString(textId,
                        (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
                        (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
@@ -1593,7 +1593,7 @@ static inline void MenuObjDrawText(u8 *window, u8 code, u8 first, u8 second,
     }
 }
 
-void MenuDrawLevelBars(s8 arg0, u8 arg1) {
+void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
     s32 i;
     s32 j;
     s32 first;
@@ -1604,16 +1604,16 @@ void MenuDrawLevelBars(s8 arg0, u8 arg1) {
     u8 *window;
     u8 *prim;
 
-    sel = arg0 - 2;
+    sel = selectedColumn - 2;
     for (i = 0; i < 4; i++) {
-        level = D_800A3860[arg1][(u8)i];
+        level = D_800A3860[player][(u8)i];
         scale = ((((level << 1) + level) << 2) + level) >> 3;
         if (scale == 0) {
             scale = 1;
         }
         *(s16 *)(*(u8 **)(D_800B9980[(u8)i] + 0x1C) + 0x16) = scale;
-        func_8005B8B8(D_800B996C[i], 0xFF);
-        func_8005B8B8(D_800B9980[i], i != sel);
+        MenuDrawObjectList(D_800B996C[i], 0xFF);
+        MenuDrawObjectList(D_800B9980[i], i != sel);
         first = i != sel;
         for (j = 0; j < 3; j++) {
             window = D_800BB9F4[i * 3 + j];
@@ -1626,14 +1626,14 @@ void MenuDrawLevelBars(s8 arg0, u8 arg1) {
             MenuObjDrawText(window, 0, first, 0, 0);
         }
     }
-    func_8005B8B8(D_800A39ACPtr, 0xFF);
+    MenuDrawObjectList(D_800A39ACPtr, 0xFF);
     for (i = 0; i < 4; i++) {
-        func_8005B8B8(D_800B60B8[i], 0xFF);
+        MenuDrawObjectList(D_800B60B8[i], 0xFF);
         MenuObjDrawText(D_800AE168[i], 0, 0, 0, 0);
     }
     node = *(u8 **)(D_800AE168[3] + 0x1C);
     if (node != 0) {
-        func_8005B8B8(node, 0xFF);
+        MenuDrawObjectList(node, 0xFF);
     }
 }
 
@@ -1664,8 +1664,8 @@ void func_800606D4(void) {
         u8 *prim;
         u16 w;
         u16 h;
-        index = D_800A35EC++;
-        object = D_800A3678 + (index * 36);
+        index = gMenuObjectPoolCount++;
+        object = gMenuObjectPool + (index * 36);
         *((s16 *)(object + 0)) = 1;
         *((s16 *)(object + 0xC)) = 0xA7;
         *((s16 *)(object + 8)) = 0xA7;
@@ -1684,7 +1684,7 @@ void func_800606D4(void) {
         *((s16 *)(object + 0x18)) = idx2;
         *((s16 *)(object + 0xE)) = 0;
         *((s16 *)(object + 0x10)) = 0;
-        prim = func_80057CCC(1);
+        prim = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)prim);
         SetShadeTex(prim, 0);
         prim[4] = 0x80;
@@ -1719,8 +1719,8 @@ void func_800606D4(void) {
         u8 index;
         u8 *object;
         u8 *prim;
-        index = D_800A35EC++;
-        object = D_800A3678 + (index * 36);
+        index = gMenuObjectPoolCount++;
+        object = gMenuObjectPool + (index * 36);
         *((s16 *)(object + 0x12)) = 0;
         *((s16 *)(object + 0x14)) = 0;
         *((s32 *)(object + 0x1C)) = 0;
@@ -1741,7 +1741,7 @@ void func_800606D4(void) {
         object[2] = 0x40;
         object[3] = 0x60;
         object[4] = 0x80;
-        prim = func_80057D50(1);
+        prim = GraphicsAllocPolyF4(1);
         *((u8 **)(object + 0x20)) = prim;
         SetPolyF4(prim);
         SetSemiTrans(prim, 0);
@@ -1767,8 +1767,8 @@ void func_800606D4(void) {
     for (i = 0; i < 2; i++) {
         u8 index;
         u8 *prim;
-        index = D_800A35EC++;
-        row = D_800A3678 + (index * 36);
+        index = gMenuObjectPoolCount++;
+        row = gMenuObjectPool + (index * 36);
         *((s16 *)(row + 0)) = 2;
         *((s16 *)(row + 8)) = 0xA7;
         *((s16 *)(row + 0xC)) = 0xA7;
@@ -1788,7 +1788,7 @@ void func_800606D4(void) {
         row[2] = 0x20;
         row[3] = 0x20;
         row[4] = 0x40;
-        prim = func_80057D50(1);
+        prim = GraphicsAllocPolyF4(1);
         *((u8 **)(row + 0x20)) = prim;
         SetPolyF4(prim);
         SetSemiTrans(prim, 1);
@@ -1822,8 +1822,8 @@ void func_800606D4(void) {
         u16 w;
         u16 h;
         s16 x3;
-        index = D_800A35EC++;
-        panel = D_800A3678 + (index * 36);
+        index = gMenuObjectPoolCount++;
+        panel = gMenuObjectPool + (index * 36);
         *((s16 *)(panel + 0xA)) = 8;
         *((s16 *)(panel + 6)) = 8;
         *((s16 *)(panel + 0xC)) = 0xC5;
@@ -1840,7 +1840,7 @@ void func_800606D4(void) {
         *((s16 *)(panel + 0x18)) = 5;
         *((s16 *)(panel + 0xE)) = 0;
         *((s16 *)(panel + 0x10)) = 0;
-        face = func_80057CCC(1);
+        face = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)face);
         SetShadeTex(face, 0);
         face[4] = 0x80;
@@ -1870,10 +1870,10 @@ void func_800606D4(void) {
         prim2[0x1D] = (*((u8 *)(((u8 *)D_8009AEA2) + 8))) + h;
         prim2[0x24] = (*((u8 *)(((u8 *)D_8009AEAE) - 6))) + w;
         prim2[0x25] = (*((u8 *)(((u8 *)D_8009AEAE) - 4))) + h;
-        index = D_800A35EC;
-        frame = D_800A3678 + (index * 36);
+        index = gMenuObjectPoolCount;
+        frame = gMenuObjectPool + (index * 36);
         *((u8 **)(row + 0x1C)) = cur;
-        D_800A35EC = index + 1;
+        gMenuObjectPoolCount = index + 1;
         *((s16 *)(frame + 0x12)) = 0;
         *((s16 *)(frame + 0x14)) = 0;
         *((s32 *)(frame + 0x1C)) = 0;
@@ -1920,7 +1920,7 @@ void func_800606D4(void) {
     do {
         s32 x;
         s32 value;
-        func_8005A7B8(2, 2);
+        MenuFontSet(2, 2);
         value = (s16)MenuStringWidth(*p);
         do {
             if (p != table) {
@@ -1928,8 +1928,8 @@ void func_800606D4(void) {
             } else {
                 x = 8;
             }
-            idx2 = D_800A35EC++;
-            sign = D_800A3678 + (idx2 * 36);
+            idx2 = gMenuObjectPoolCount++;
+            sign = gMenuObjectPool + (idx2 * 36);
             sign[4] = 0;
             sign[3] = 0;
             sign[2] = 0;
@@ -1959,7 +1959,7 @@ void func_800606D4(void) {
         *((s32 *)(mark + 4)) = 0;
         *((s16 *)(cur + 0x12)) = x;
         *((s16 *)(cur + 0x16)) = value;
-        *((s16 *)(cur + 0x18)) = func_8005A84C();
+        *((s16 *)(cur + 0x18)) = MenuFontLineHeight();
         cell = *((u8 **)(cur + 0x20));
         *((s16 *)(cur + 0xE)) = two;
         *new_var2 = 0;
@@ -1975,31 +1975,31 @@ void func_800606D4(void) {
 
 typedef struct PanelChild {
     u8 pad0[8];
-    s32 value;
+    s32 text;
 } PanelChild;
 typedef struct PanelState {
     u8 pad0[0x12];
-    s16 y;
+    s16 textX;
     u8 pad14[2];
-    s16 height;
+    s16 textWidth;
     u8 pad18[8];
     PanelChild *child;
 } PanelState;
 extern PanelState *D_800A3A68;
-void func_80060E94(s32 arg0) {
-    s32 value;
-    s32 height;
-    s32 centered;
-    func_8005A7B8(2, 2);
-    value = D_8009A2B0[arg0 & 0xFF];
-    D_800A3A68->child->value = value;
-    height = MenuStringWidth(value);
-    centered = (0x78 - height) / 2;
-    D_800A3A68->y = centered;
-    D_800A3A68->height = (s16)height;
+void MenuCenterText(s32 textIndex) {
+    s32 text;
+    s32 textWidth;
+    s32 textX;
+    MenuFontSet(2, 2);
+    text = D_8009A2B0[textIndex & 0xFF];
+    D_800A3A68->child->text = text;
+    textWidth = MenuStringWidth(text);
+    textX = (0x78 - textWidth) / 2;
+    D_800A3A68->textX = textX;
+    D_800A3A68->textWidth = (s16)textWidth;
 }
 
-void func_80060F10(s32 a, s32 b, s16 c) {
+void MenuSetLinkedObjectLayout(s32 a, s32 b, s16 c) {
     u8 *node;
     node = D_800A38A8;
     while (node != 0) {
@@ -2010,18 +2010,18 @@ void func_80060F10(s32 a, s32 b, s16 c) {
     }
 }
 
-extern u8 D_800A2F94Lui asm("D_800A2F94Absolute");
-void func_80060F54(s32 arg0, s32 volume) {
+extern u8 gMusicVolumeScaledLui asm("gMusicVolumeScaledAbsolute");
+void MenuSetVolume(s32 volumePercent, s32 volumeSettingIndex) {
     u8 *node;
     u8 x;
 
     node = *(u8 **)(D_800A38A8 + 0x1C);
-    volume &= 0xFF;
-    x = arg0;
+    volumeSettingIndex &= 0xFF;
+    x = volumePercent;
     *(u16 *)(node + 0x16) = x;
-    if (volume != 0) {
-        x = arg0;
-        D_800A2F94Lui = (x * 127) / 100;
+    if (volumeSettingIndex != 0) {
+        x = volumePercent;
+        gMusicVolumeScaledLui = (x * 127) / 100;
         SoundSetSlotVolume(1, 0x7F, 0x7F);
     } else {
         CdSetMixVolume(x);
@@ -2040,7 +2040,7 @@ typedef struct {
     s8 tab[7];
 } MenuRowList;
 extern s8 D_800A3348[];
-extern s32 *D_800A37D8[];
+extern s32 *gPadPictureMenuLists[];
 extern u8 *D_800A3A1C[];
 extern u8 *D_800A3888[];
 extern u8 *D_800A3A84[];
@@ -2054,8 +2054,9 @@ extern u16 D_8009AEA0[];
 extern u16 D_8009AEA4[];
 extern u16 D_8009AEAC[];
 extern u8 D_8009AEA8[];
-struct UnkObject24;
-extern void func_80067EA4(struct UnkObject24 *, u8, u8, s32, u8, s32);
+struct MenuTextObjectView;
+extern void MenuSetTextObject(struct MenuTextObjectView *, u8, u8, s32, u8,
+                              s32);
 extern void ListSetFieldsAndEnable(u8 *, s16, s16, s16);
 extern u8 D_800A3644[9];
 
@@ -2098,7 +2099,7 @@ void func_80060FD8(void) {
         register u32 initialIndex asm("$4");
         register u8 *cell asm("$16");
         s32 centered;
-        initialIndex = D_800A35EC;
+        initialIndex = gMenuObjectPoolCount;
         rowList = *(MenuRowList *)D_800A3348;
         /* These slots reproduce observed compiler spill homes.
          * They do not imply original source struct types. */
@@ -2112,9 +2113,9 @@ void func_80060FD8(void) {
                        "=m"(shadeHome.value));
         /* Keep the allocation and pool loads in their retail order. */
         asm volatile(".set\tnoreorder\n"
-                     "lw         $v1, D_800A3678\n"
+                     "lw         $v1, gMenuObjectPool\n"
                      "addiu      $v0, $a0, 0x1\n"
-                     "sb         $v0, D_800A35EC\n"
+                     "sb         $v0, gMenuObjectPoolCount\n"
                      "sll        $v0, $a0, 3\n"
                      "addu       $v0, $v0, $a0\n"
                      "sll        $v0, $v0, 2\n"
@@ -2159,14 +2160,14 @@ void func_80060FD8(void) {
                      "lw         $v0, %%lo(D_8009AC00)($v0)\n"
                      "ori        $a1, $zero, 0x2\n"
                      "ori        $a0, $zero, 0x2\n"
-                     "jal        func_8005A7B8\n"
+                     "jal        MenuFontSet\n"
                      "sw        $v0, 0x8(%1)\n"
                      ".set\tnoreorder\n"
                      ".set\treorder\n"
                      : "=r"(currentNode), "=r"(cell)
                      : "r"(initialIndex)
                      : "$2", "$3", "$4", "$5", "$31", "memory");
-        centered = func_8005B0E4(0x140, *(s32 *)(cell + 8));
+        centered = MenuTextCenterOffset(0x140, *(s32 *)(cell + 8));
         asm volatile("lui $a0,%%hi(D_800A3644)\n"
                      "lbu $a0,%%lo(D_800A3644)($a0)\n"
                      "sh $v0,0x12($s6)\n"
@@ -2219,11 +2220,11 @@ panelLoop:
                          : "$2", "$11");
             do {
                 asm volatile(".set\tnoreorder\n"
-                             "lbu        $v1, D_800A35EC\n"
-                             "lw         $s0, D_800A3678\n"
+                             "lbu        $v1, gMenuObjectPoolCount\n"
+                             "lw         $s0, gMenuObjectPool\n"
                              "ori        $a0, $zero, 0x1\n"
                              "addiu      $v0, $v1, 0x1\n"
-                             "sb         $v0, D_800A35EC\n"
+                             "sb         $v0, gMenuObjectPoolCount\n"
                              "sll        $v0, $v1, 3\n"
                              "addu       $v0, $v0, $v1\n"
                              "sll        $v0, $v0, 2\n"
@@ -2251,7 +2252,7 @@ panelLoop:
                              "sb         $a2, 0x2($s0)\n"
                              "sb         $a2, 0x3($s0)\n"
                              "sb         $t3, 0x4($s0)\n"
-                             "jal        func_80057D50\n"
+                             "jal        GraphicsAllocPolyF4\n"
                              "sw        $a2, 0x68($sp)\n"
                              "addu       $s1, $v0, $zero\n"
                              "addu $a0,$s1,$zero\n"
@@ -2306,8 +2307,8 @@ panelLoop:
                              "sll $v0,$s7,24\n"
                              "bnez $v0,1f\n"
                              "nop\n"
-                             "lui $t3,%%hi(D_800A37D8)\n"
-                             "addiu $t3,$t3,%%lo(D_800A37D8)\n"
+                             "lui $t3,%%hi(gPadPictureMenuLists)\n"
+                             "addiu $t3,$t3,%%lo(gPadPictureMenuLists)\n"
                              "addu $v0,$s3,$t3\n"
                              "j 2f\n"
                              "sw $s6,0($v0)\n"
@@ -2389,10 +2390,10 @@ panelLoop:
                     "sw        $t3, 0x30($sp)\n"
                     "addiu      $fp, $zero, -0xA2\n"
                     "9:\n"
-                    "lbu        $v1, D_800A35EC\n"
-                    "lw         $a1, D_800A3678\n"
+                    "lbu        $v1, gMenuObjectPoolCount\n"
+                    "lw         $a1, gMenuObjectPool\n"
                     "addiu      $v0, $v1, 0x1\n"
-                    "sb         $v0, D_800A35EC\n"
+                    "sb         $v0, gMenuObjectPoolCount\n"
                     "sll        $v0, $v1, 3\n"
                     "addu       $v0, $v0, $v1\n"
                     "sll        $v0, $v0, 2\n"
@@ -2420,7 +2421,7 @@ panelLoop:
                     "sb         $s1, 0x2($s2)\n"
                     "sb         $s1, 0x3($s2)\n"
                     "sb         $s1, 0x4($s2)\n"
-                    "jal        func_80057D50\n"
+                    "jal        GraphicsAllocPolyF4\n"
                     "sh        $t3, 0x18($s2)\n"
                     "addu       $s0, $v0, $zero\n"
                     "addu       $a0, $s0, $zero\n"
@@ -2473,11 +2474,11 @@ panelLoop:
             /* Header texture and two black quads share allocation registers. */
             asm volatile(".set\tnoreorder\n"
                          "ori        $a1, $zero, 0x74\n"
-                         "lbu        $v1, D_800A35EC\n"
-                         "lw         $s1, D_800A3678\n"
+                         "lbu        $v1, gMenuObjectPoolCount\n"
+                         "lw         $s1, gMenuObjectPool\n"
                          "ori        $a0, $zero, 0x1\n"
                          "addiu      $v0, $v1, 0x1\n"
-                         "sb         $v0, D_800A35EC\n"
+                         "sb         $v0, gMenuObjectPoolCount\n"
                          "sll        $v0, $v1, 3\n"
                          "addu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
@@ -2499,7 +2500,7 @@ panelLoop:
                          "sh         $a1, 0x16($s1)\n"
                          "sh         $v0, 0x18($s1)\n"
                          "sh         $zero, 0xE($s1)\n"
-                         "jal        func_80057CCC\n"
+                         "jal        GraphicsAllocPolyFT4\n"
                          "sh        $zero, 0x10($s1)\n"
                          "addu       $s0, $v0, $zero\n"
                          "jal        SetPolyFT4\n"
@@ -2521,7 +2522,7 @@ panelLoop:
                          "sh         $t4, 0x1A($s1)\n"
                          "sh         $v0, 0x12($s6)\n"
                          "lbu        $t3, %6\n"
-                         "lbu        $v1, D_800A35EC\n"
+                         "lbu        $v1, gMenuObjectPoolCount\n"
                          "sll        $s5, $t3, 24\n"
                          "sra        $s5, $s5, 24\n"
                          "sll        $v0, $s5, 2\n"
@@ -2531,14 +2532,14 @@ panelLoop:
                          "sll        $s4, $s4, 2\n"
                          "sh         $s4, 0x14($s6)\n"
                          "sw         $s6, 0x1C($s2)\n"
-                         "lw         $s2, D_800A3678\n"
+                         "lw         $s2, gMenuObjectPool\n"
                          "ori        $a0, $zero, 0x1\n"
                          "ori        $s3, $zero, 0x4\n"
                          "lui        $at, %%hi(D_800A3A1C)\n"
                          "addu       $at, $at, $v0\n"
                          "sw         $s6, %%lo(D_800A3A1C)($at)\n"
                          "addiu      $v0, $v1, 0x1\n"
-                         "sb         $v0, D_800A35EC\n"
+                         "sb         $v0, gMenuObjectPoolCount\n"
                          "sll        $v0, $v1, 3\n"
                          "addu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
@@ -2562,7 +2563,7 @@ panelLoop:
                          "sh         $t3, 0x18($s2)\n"
                          "sb         $zero, 0x2($s2)\n"
                          "sb         $zero, 0x3($s2)\n"
-                         "jal        func_80057D50\n"
+                         "jal        GraphicsAllocPolyF4\n"
                          "sb        $zero, 0x4($s2)\n"
                          "addu       $s0, $v0, $zero\n"
                          "addu       $a0, $s0, $zero\n"
@@ -2574,7 +2575,7 @@ panelLoop:
                          "sb         $zero, 0x4($s0)\n"
                          "sb         $zero, 0x5($s0)\n"
                          "sb         $zero, 0x6($s0)\n"
-                         "lbu        $v1, D_800A35EC\n"
+                         "lbu        $v1, gMenuObjectPoolCount\n"
                          "addu       $s7, $zero, $zero\n"
                          "addu       $s6, $s2, $zero\n"
                          "ori        $t4, $zero, 0x1\n"
@@ -2587,7 +2588,7 @@ panelLoop:
                          "sh         $t4, 0x12($s0)\n"
                          "sh         $s3, 0x14($s0)\n"
                          "sh         $t3, 0x16($s0)\n"
-                         "lw         $s0, D_800A3678\n"
+                         "lw         $s0, gMenuObjectPool\n"
                          "ori        $a0, $zero, 0x1\n"
                          "addiu      $v0, $zero, -0x2\n"
                          "sh         $v0, 0x12($s6)\n"
@@ -2596,7 +2597,7 @@ panelLoop:
                          "sh         $v0, 0x14($s6)\n"
                          "sw         $s6, 0x1C($s1)\n"
                          "addiu      $v0, $v1, 0x1\n"
-                         "sb         $v0, D_800A35EC\n"
+                         "sb         $v0, gMenuObjectPoolCount\n"
                          "sll        $v0, $v1, 3\n"
                          "addu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
@@ -2622,7 +2623,7 @@ panelLoop:
                          "sh         $t3, 0x18($s0)\n"
                          "sb         $zero, 0x2($s0)\n"
                          "sb         $zero, 0x3($s0)\n"
-                         "jal        func_80057D50\n"
+                         "jal        GraphicsAllocPolyF4\n"
                          "sb        $zero, 0x4($s0)\n"
                          "addu       $s1, $v0, $zero\n"
                          "addu       $a0, $s1, $zero\n"
@@ -2652,7 +2653,7 @@ panelLoop:
                          "sh         $zero, 0x1A($s6)\n"
                          "sh         $v0, 0x12($s6)\n"
                          "sh         $s4, 0x14($s6)\n"
-                         "jal        func_8005A7B8\n"
+                         "jal        MenuFontSet\n"
                          "sw        $s6, 0x1C($s2)\n"
                          "lui        $a1, %%hi(D_8009A314)\n"
                          "lw         $a1, %%lo(D_8009A314)($a1)\n"
@@ -2664,7 +2665,7 @@ panelLoop:
                          : "2"(panelState), "m"(panelIndex.value)
                          : "$2", "$3", "$4", "$11", "$12", "$16", "$17", "$19",
                            "$20", "$31", "memory");
-            textCenterX = func_8005B0E4(0x140, textWord) - 0xA0;
+            textCenterX = MenuTextCenterOffset(0x140, textWord) - 0xA0;
         }
         asm volatile("" : "=r"(textCenterX) : "0"(textCenterX));
         textLeftX = textCenterX - 5;
@@ -2673,10 +2674,10 @@ panelLoop:
             u8 *cell;
             /* Text object and cell pools must be loaded independently. */
             asm volatile(".set\tnoreorder\n"
-                         "lbu        $a0, D_800A35EC\n"
-                         "lw         $v1, D_800A3678\n"
+                         "lbu        $a0, gMenuObjectPoolCount\n"
+                         "lw         $v1, gMenuObjectPool\n"
                          "addiu      $v0, $a0, 0x1\n"
-                         "sb         $v0, D_800A35EC\n"
+                         "sb         $v0, gMenuObjectPoolCount\n"
                          "sll        $v0, $a0, 3\n"
                          "addu       $v0, $v0, $a0\n"
                          "sll        $v0, $v0, 2\n"
@@ -2821,10 +2822,10 @@ panelLoop:
                     /* Allocate one text cell, place it, then test the row counter. */
                     asm volatile(
                         ".set\tnoreorder\n"
-                        "lbu        $a0, D_800A35EC\n"
-                        "lw         $v1, D_800A3678\n"
+                        "lbu        $a0, gMenuObjectPoolCount\n"
+                        "lw         $v1, gMenuObjectPool\n"
                         "addiu      $v0, $a0, 0x1\n"
-                        "sb         $v0, D_800A35EC\n"
+                        "sb         $v0, gMenuObjectPoolCount\n"
                         "sll        $v0, $a0, 3\n"
                         "addu       $v0, $v0, $a0\n"
                         "sll        $v0, $v0, 2\n"
@@ -2900,8 +2901,8 @@ panelLoop:
             /* Set the animation fields while walking the panel's node chain. */
             asm volatile(".set\tnoreorder\n"
                          "lbu        $t4, %2\n"
-                         "lui        $t3, %%hi(D_800A37D8)\n"
-                         "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                         "lui        $t3, %%hi(gPadPictureMenuLists)\n"
+                         "addiu      $t3, $t3, %%lo(gPadPictureMenuLists)\n"
                          "sll        $v0, $t4, 24\n"
                          "sra        $a0, $v0, 24\n"
                          "sll        $v1, $a0, 2\n"
@@ -2991,10 +2992,10 @@ panelLoop:
                          ".LtextureStage80061AEC:\n"
                          "sw         $t4, %3\n"
                          ".LtextureStage80061AF0:\n"
-                         "lbu        $v1, D_800A35EC\n"
-                         "lw         $s0, D_800A3678\n"
+                         "lbu        $v1, gMenuObjectPoolCount\n"
+                         "lw         $s0, gMenuObjectPool\n"
                          "addiu      $v0, $v1, 0x1\n"
-                         "sb         $v0, D_800A35EC\n"
+                         "sb         $v0, gMenuObjectPoolCount\n"
                          "sll        $v0, $v1, 3\n"
                          "addu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
@@ -3018,7 +3019,7 @@ panelLoop:
                          "ori        $a0, $zero, 0x1\n"
                          "sh         $zero, 0xE($s0)\n"
                          "sh         $zero, 0x10($s0)\n"
-                         "jal        func_80057CCC\n"
+                         "jal        GraphicsAllocPolyFT4\n"
                          "sh        $t3, 0x18($s0)\n"
                          "addu       $s1, $v0, $zero\n"
                          "jal        SetPolyFT4\n"
@@ -3057,8 +3058,8 @@ panelLoop:
                          "addiu      $v0, $zero, -0x140\n"
                          "sh         $v0, 0x6($s6)\n"
                          ".LtextureStage80061BE8:\n"
-                         "lui        $t3, %%hi(D_800A37D8)\n"
-                         "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                         "lui        $t3, %%hi(gPadPictureMenuLists)\n"
+                         "addiu      $t3, $t3, %%lo(gPadPictureMenuLists)\n"
                          "addu       $v0, $s3, $t3\n"
                          "lw         $v0, 0x0($v0)\n"
                          "lw         $s2, 0x20($s6)\n"
@@ -3211,11 +3212,11 @@ panelLoop:
                          "sll        $t3, $fp, 2\n"
                          "sw         $t3, %5\n"
                          ".LtextureStage80061E44:\n"
-                         "lbu        $v1, D_800A35EC\n"
-                         "lw         $s0, D_800A3678\n"
+                         "lbu        $v1, gMenuObjectPoolCount\n"
+                         "lw         $s0, gMenuObjectPool\n"
                          "ori        $a0, $zero, 0x1\n"
                          "addiu      $v0, $v1, 0x1\n"
-                         "sb         $v0, D_800A35EC\n"
+                         "sb         $v0, gMenuObjectPoolCount\n"
                          "sll        $v0, $v1, 3\n"
                          "addu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
@@ -3238,7 +3239,7 @@ panelLoop:
                          "sh         $t3, 0x16($s0)\n"
                          "sh         $t4, 0x18($s0)\n"
                          "sh         $zero, 0xE($s0)\n"
-                         "jal        func_80057CCC\n"
+                         "jal        GraphicsAllocPolyFT4\n"
                          "sh        $zero, 0x10($s0)\n"
                          "addu       $s1, $v0, $zero\n"
                          "jal        SetPolyFT4\n"
@@ -3270,8 +3271,8 @@ panelLoop:
                          "addiu      $v0, $v0, 0xFA\n"
                          "sh         $v0, 0x12($s6)\n"
                          "lw         $t3, %5\n"
-                         "lui        $t4, %%hi(D_800A37D8)\n"
-                         "addiu      $t4, $t4, %%lo(D_800A37D8)\n"
+                         "lui        $t4, %%hi(gPadPictureMenuLists)\n"
+                         "addiu      $t4, $t4, %%lo(gPadPictureMenuLists)\n"
                          "addu       $v0, $t3, $t4\n"
                          "lw         $v0, 0x0($v0)\n"
                          "nop\n"
@@ -3341,10 +3342,10 @@ panelLoop:
             /* The leaf setter reads its fifth and sixth arguments here. */
             asm volatile(
                 ".set\tnoreorder\n"
-                "lbu        $a0, D_800A35EC\n"
-                "lw         $v1, D_800A3678\n"
+                "lbu        $a0, gMenuObjectPoolCount\n"
+                "lw         $v1, gMenuObjectPool\n"
                 "addiu      $v0, $a0, 0x1\n"
-                "sb         $v0, D_800A35EC\n"
+                "sb         $v0, gMenuObjectPoolCount\n"
                 "sll        $v0, $a0, 3\n"
                 "addu       $v0, $v0, $a0\n"
                 "sll        $v0, $v0, 2\n"
@@ -3393,8 +3394,8 @@ panelLoop:
                 "ori        $v0, $zero, 0x8\n"
                 "sh         $v0, 0x12($s6)\n"
                 "lbu        $t4, %5\n"
-                "lui        $t3, %%hi(D_800A37D8)\n"
-                "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                "lui        $t3, %%hi(gPadPictureMenuLists)\n"
+                "addiu      $t3, $t3, %%lo(gPadPictureMenuLists)\n"
                 "sll        $v1, $t4, 24\n"
                 "sra        $v1, $v1, 24\n"
                 "sll        $s0, $v1, 2\n"
@@ -3415,7 +3416,7 @@ panelLoop:
                 "ori        $t3, $zero, 0x1\n"
                 "sw         $zero, %2\n"
                 "sw         $t3, %3\n"
-                "jal        func_80067EA4\n"
+                "jal        MenuSetTextObject\n"
                 "sra       $s2, $t4, 24\n"
                 "sw         $s6, 0x1C($s5)\n"
                 "addu       $s5, $s6, $zero\n"
@@ -3423,10 +3424,10 @@ panelLoop:
                 "addu       $at, $at, $s0\n"
                 "sw         $s5, %%lo(D_800A3A84)($at)\n"
                 ".LlabelStage80062144:\n"
-                "lbu        $a0, D_800A35EC\n"
-                "lw         $v1, D_800A3678\n"
+                "lbu        $a0, gMenuObjectPoolCount\n"
+                "lw         $v1, gMenuObjectPool\n"
                 "addiu      $v0, $a0, 0x1\n"
-                "sb         $v0, D_800A35EC\n"
+                "sb         $v0, gMenuObjectPoolCount\n"
                 "sll        $v0, $a0, 3\n"
                 "addu       $v0, $v0, $a0\n"
                 "sll        $v0, $v0, 2\n"
@@ -3495,7 +3496,7 @@ panelLoop:
                 "lw         $a3, %%lo(D_8009AC10)($at)\n"
                 "addu       $a0, $s6, $zero\n"
                 "ori        $a1, $zero, 0x2\n"
-                "jal        func_80067EA4\n"
+                "jal        MenuSetTextObject\n"
                 "ori       $a2, $zero, 0x2\n"
                 "sw         $s6, 0x1C($s5)\n"
                 "addiu      $v0, $s7, 0x1\n"
@@ -3517,11 +3518,11 @@ panelLoop:
              * The shared column offset stays inside this block in hardware FP. */
             asm volatile(
                 ".set\tnoreorder\n"
-                "lbu        $v1, D_800A35EC\n"
-                "lw         $s0, D_800A3678\n"
+                "lbu        $v1, gMenuObjectPoolCount\n"
+                "lw         $s0, gMenuObjectPool\n"
                 "ori        $a0, $zero, 0x1\n"
                 "addiu      $v0, $v1, 0x1\n"
-                "sb         $v0, D_800A35EC\n"
+                "sb         $v0, gMenuObjectPoolCount\n"
                 "sll        $v0, $v1, 3\n"
                 "addu       $v0, $v0, $v1\n"
                 "sll        $v0, $v0, 2\n"
@@ -3550,7 +3551,7 @@ panelLoop:
                 "sb         $zero, 0x4($s0)\n"
                 "sra        $s2, $t4, 24\n"
                 "sh         $s2, 0x8($s0)\n"
-                "jal        func_80057D50\n"
+                "jal        GraphicsAllocPolyF4\n"
                 "sh        $s2, 0xC($s0)\n"
                 "addu       $s1, $v0, $zero\n"
                 "addu       $a0, $s1, $zero\n"
@@ -3587,8 +3588,8 @@ panelLoop:
                 "ori        $v0, $zero, 0xA9\n"
                 "sh         $v0, 0x12($s6)\n"
                 "lbu        $t3, %4\n"
-                "lui        $t4, %%hi(D_800A37D8)\n"
-                "addiu      $t4, $t4, %%lo(D_800A37D8)\n"
+                "lui        $t4, %%hi(gPadPictureMenuLists)\n"
+                "addiu      $t4, $t4, %%lo(gPadPictureMenuLists)\n"
                 "sll        $v1, $t3, 24\n"
                 "sra        $v1, $v1, 24\n"
                 "sll        $a0, $v1, 2\n"
@@ -3610,11 +3611,11 @@ panelLoop:
                 "addu       $at, $at, $fp\n"
                 "sw         $s5, %%lo(D_800A37FC)($at)\n"
                 "3:\n"
-                "lbu        $v1, D_800A35EC\n"
-                "lw         $s0, D_800A3678\n"
+                "lbu        $v1, gMenuObjectPoolCount\n"
+                "lw         $s0, gMenuObjectPool\n"
                 "ori        $a0, $zero, 0x1\n"
                 "addiu      $v0, $v1, 0x1\n"
-                "sb         $v0, D_800A35EC\n"
+                "sb         $v0, gMenuObjectPoolCount\n"
                 "sll        $v0, $v1, 3\n"
                 "addu       $v0, $v0, $v1\n"
                 "sll        $v0, $v0, 2\n"
@@ -3640,7 +3641,7 @@ panelLoop:
                 "sh         $t4, 0x18($s0)\n"
                 "sb         $t3, 0x2($s0)\n"
                 "sb         $zero, 0x3($s0)\n"
-                "jal        func_80057D50\n"
+                "jal        GraphicsAllocPolyF4\n"
                 "sb        $zero, 0x4($s0)\n"
                 "addu       $s1, $v0, $zero\n"
                 "addu       $a0, $s1, $zero\n"
@@ -3679,8 +3680,8 @@ panelLoop:
                 "ori        $v0, $zero, 0x11C\n"
                 "6:\n"
                 "sh         $v0, 0x12($s6)\n"
-                "lui        $t3, %%hi(D_800A37D8)\n"
-                "addiu      $t3, $t3, %%lo(D_800A37D8)\n"
+                "lui        $t3, %%hi(gPadPictureMenuLists)\n"
+                "addiu      $t3, $t3, %%lo(gPadPictureMenuLists)\n"
                 "addu       $v0, $fp, $t3\n"
                 "lw         $v0, 0x0($v0)\n"
                 "nop\n"
@@ -3740,11 +3741,11 @@ panelLoop:
                 do {
                     widthDelta = triangleColumn != 0 ? 3 : -3;
                     asm volatile(".set\tnoreorder\n"
-                                 "lbu\t$v1, D_800A35EC\n"
-                                 "lw\t$s0, D_800A3678\n"
+                                 "lbu\t$v1, gMenuObjectPoolCount\n"
+                                 "lw\t$s0, gMenuObjectPool\n"
                                  "ori\t$a0, $zero, 0x1\n"
                                  "addiu\t$v0, $v1, 0x1\n"
-                                 "sb\t$v0, D_800A35EC\n"
+                                 "sb\t$v0, gMenuObjectPoolCount\n"
                                  "sll\t$v0, $v1, 3\n"
                                  "addu\t$v0, $v0, $v1\n"
                                  "sll\t$v0, $v0, 2\n"
@@ -3777,7 +3778,7 @@ panelLoop:
                                  : "r"(widthDelta), "r"(colorS)
                                  : "$2", "$3", "$11", "memory");
                     node[4] = nodeBlue;
-                    primitive = func_80057D50(allocateMode);
+                    primitive = GraphicsAllocPolyF4(allocateMode);
                     *(u8 **)(node + 0x20) = primitive;
                     SetPolyF3(primitive);
                     SetSemiTrans(primitive, 0);
@@ -3802,7 +3803,7 @@ panelLoop:
                                  : "$2", "$12", "memory");
                     *(s16 *)(currentNode + 0x12) = rowX;
                     asm volatile(
-                        ".set\tnoreorder\nlw $t3,%2\nlui $t4,%%hi(D_800A37D8)\naddiu $t4,$t4,%%lo(D_800A37D8)\naddu $v0,$t3,$t4\nlw $v0,0($v0)"
+                        ".set\tnoreorder\nlw $t3,%2\nlui $t4,%%hi(gPadPictureMenuLists)\naddiu $t4,$t4,%%lo(gPadPictureMenuLists)\naddu $v0,$t3,$t4\nlw $v0,0($v0)"
                         : "=r"(panelNode), "=r"(panelTableBase)
                         : "m"(triangleOffset.value)
                         : "$11");
@@ -3854,11 +3855,11 @@ panelLoop:
             do {
                 heightDelta = arrowIndex != 0 ? 3 : -3;
                 asm volatile(".set\tnoreorder\n"
-                             "lbu\t$v1, D_800A35EC\n"
-                             "lw\t$s0, D_800A3678\n"
+                             "lbu\t$v1, gMenuObjectPoolCount\n"
+                             "lw\t$s0, gMenuObjectPool\n"
                              "ori\t$a0, $zero, 0x1\n"
                              "addiu\t$v0, $v1, 0x1\n"
-                             "sb\t$v0, D_800A35EC\n"
+                             "sb\t$v0, gMenuObjectPoolCount\n"
                              "sll\t$v0, $v1, 3\n"
                              "addu\t$v0, $v0, $v1\n"
                              "sll\t$v0, $v0, 2\n"
@@ -3890,7 +3891,7 @@ panelLoop:
                              : "r"(heightDelta), "r"(colorS), "r"(blue)
                              : "$2", "$3", "$11", "$12", "memory");
                 node[4] = blue;
-                primitive = func_80057D50(allocateMode);
+                primitive = GraphicsAllocPolyF4(allocateMode);
                 *(u8 **)(node + 0x20) = primitive;
                 SetPolyF3(primitive);
                 SetSemiTrans(primitive, 0);
@@ -3974,7 +3975,7 @@ extern u8 D_8009B00C[];
 extern u8 D_8009B028[];
 extern u8 D_8009B02A[];
 
-void MenuUpdatePadPicture(s32 arg0) {
+void MenuUpdatePadPicture(s32 playerSlot) {
     u8 *node;
     u8 *prim;
     s32 a;
@@ -3991,19 +3992,21 @@ void MenuUpdatePadPicture(s32 arg0) {
     s32 idx;
     u8 *prim2;
 
-    node = (u8 *)D_800A37D8[arg0 & 0xFF];
+    node = (u8 *)gPadPictureMenuLists[playerSlot & 0xFF];
     while (*(u16 *)node != 1) {
         node = *(u8 **)(node + 0x1C);
     }
     prim = *(u8 **)(node + 0x20);
-    if (((s8 *)gPadType)[arg0 & 0xFF] != ((s8 *)D_800A308C)[arg0 & 0xFF] &&
-        ((s8 *)gPadType)[arg0 & 0xFF] != 0) {
-        ((s8 *)gPadLayout)[arg0 & 0xFF] = 0;
+    if (((s8 *)gPadType)[playerSlot & 0xFF] !=
+            ((s8 *)D_800A308C)[playerSlot & 0xFF] &&
+        ((s8 *)gPadType)[playerSlot & 0xFF] != 0) {
+        ((s8 *)gPadLayout)[playerSlot & 0xFF] = 0;
     }
-    if (((s8 *)gPadType)[arg0 & 0xFF] != 0) {
-        ((s8 *)D_800A308C)[arg0 & 0xFF] = ((s8 *)gPadType)[arg0 & 0xFF];
+    if (((s8 *)gPadType)[playerSlot & 0xFF] != 0) {
+        ((s8 *)D_800A308C)[playerSlot & 0xFF] =
+            ((s8 *)gPadType)[playerSlot & 0xFF];
     }
-    idx = arg0 & 0xFF;
+    idx = playerSlot & 0xFF;
     a = ((s8 *)gPadType)[idx];
     if (a != 0) {
         fontId = ((s8 *)D_800A3350)[a];
@@ -4028,26 +4031,26 @@ void MenuUpdatePadPicture(s32 arg0) {
     prim[0x25] = D_8009B02A[off] + node[0x18];
     node = *(u8 **)(node + 0x1C);
     prim = *(u8 **)(node + 0x20);
-    if (id == 1 && (((s8 *)gPadType)[arg0 & 0xFF] == 5 ||
-                    ((s8 *)gPadType)[arg0 & 0xFF] == 7)) {
-        prim[4] = -(((s8 *)gPadType)[arg0 & 0xFF] == 7);
-        prim[5] = -(((s8 *)gPadType)[arg0 & 0xFF] == 5);
+    if (id == 1 && (((s8 *)gPadType)[playerSlot & 0xFF] == 5 ||
+                    ((s8 *)gPadType)[playerSlot & 0xFF] == 7)) {
+        prim[4] = -(((s8 *)gPadType)[playerSlot & 0xFF] == 7);
+        prim[5] = -(((s8 *)gPadType)[playerSlot & 0xFF] == 5);
         prim[6] = 0;
         node[5] = 1;
     } else {
         node[5] = 0;
     }
     node = *(u8 **)(node + 0x1C);
-    node[5] = !((s8 *)gPadType)[arg0 & 0xFF];
+    node[5] = !((s8 *)gPadType)[playerSlot & 0xFF];
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
     prim2 = *(u8 **)(node + 0x20);
-    *(s32 *)(prim2 + 8) = ((s8 *)gPadLayout)[arg0 & 0xFF] + 1;
-    uc = ((s8 *)gPadType)[arg0 & 0xFF];
-    c = ((s8 *)gPadType)[arg0 & 0xFF];
+    *(s32 *)(prim2 + 8) = ((s8 *)gPadLayout)[playerSlot & 0xFF] + 1;
+    uc = ((s8 *)gPadType)[playerSlot & 0xFF];
+    c = ((s8 *)gPadType)[playerSlot & 0xFF];
     ghost = c;
     if (uc == 0) {
-        c = D_800A308C[arg0 & 0xFF];
+        c = D_800A308C[playerSlot & 0xFF];
     }
     /* Both terms are zero; combine folds them after flow, so `ghost` stays
        a dead copy that fills the bnez slot. */
@@ -4059,7 +4062,7 @@ void MenuUpdatePadPicture(s32 arg0) {
             f = ((s8 *)D_800A3350)[(s8)c];
             prim2 = *(u8 **)(node + 0x20);
             *(s32 *)(prim2 + 8) =
-                D_8009A4E0[f][((s8 *)gPadLayout)[(u8)arg0]][7 * i + j];
+                D_8009A4E0[f][((s8 *)gPadLayout)[(u8)playerSlot]][7 * i + j];
         }
     }
 }
@@ -4073,11 +4076,11 @@ s32 ListHasClearFlags(u8 *node) {
     return 1;
 }
 
-void ListSetFieldsAndEnable(u8 *node, s16 a, s16 b, s16 c) {
+void ListSetFieldsAndEnable(u8 *node, s16 field6, s16 fieldA, s16 fieldE) {
     while (node != 0) {
-        *(s16 *)(node + 6) = a;
-        *(s16 *)(node + 10) = b;
-        *(s16 *)(node + 14) = c;
+        *(s16 *)(node + 6) = field6;
+        *(s16 *)(node + 10) = fieldA;
+        *(s16 *)(node + 14) = fieldE;
         node[5] = 1;
         node = *(u8 **)(node + 0x1C);
     }
@@ -4114,7 +4117,7 @@ void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
          */
         p = arg2;
         p += i;
-        val = (s32)D_800A37D8;
+        val = (s32)gPadPictureMenuLists;
         tmp = idx << 2;
         entry = (s32 **)(val + tmp);
         do {
@@ -4213,7 +4216,7 @@ void func_80062F6C(s32 arg0, s32 arg1) {
     obj = (u8 *)D_800A37FC[idx];
     i = 0;
     base9 = idx * 9;
-    base2 = (s32)D_800A37D8;
+    base2 = (s32)gPadPictureMenuLists;
     entry = (s32 **)(idx * 4 + base2);
     offset = -3;
     for (; i < 3; i++) {
@@ -4287,14 +4290,14 @@ void func_80063180(s32 enabled) {
     }
 }
 
-void func_800631B4(void) {
+void MenuAllocateObjectList(void) {
     D_800A3984[0] = (s32)HeapAlloc(0xF00);
 }
 
 extern u8 *D_800A35E4[];
 extern u8 *D_800A3868[];
-extern u8 *func_8005BF8C(s32, s32);
-extern u8 *func_8005B314(s32, s32, s32, s32, s32, u8, u8, u8, u8, u8);
+extern u8 *MenuCreateTextObject(s32, s32);
+extern u8 *MenuCreateFlatRect(s32, s32, s32, s32, s32, u8, u8, u8, u8, u8);
 extern u8 gPlayerDriver[];
 
 void func_800631DC(s32 left, s32 top, s32 code) {
@@ -4314,8 +4317,8 @@ void func_800631DC(s32 left, s32 top, s32 code) {
     u8 *packet;
     s32 width;
 
-    func_8005A7B8(2, 2);
-    if (D_800A39E4[0] == 0xE) {
+    MenuFontSet(2, 2);
+    if (gScreenState[0] == 0xE) {
         base = 0x9E;
     } else {
         base = 0x3A;
@@ -4323,7 +4326,7 @@ void func_800631DC(s32 left, s32 top, s32 code) {
     entry = gPlayerCar[0];
     for (i = 0; i < 2; i++) {
         node = MenuObjAlloc();
-        mode = D_800A39E4[0];
+        mode = gScreenState[0];
         D_800A35E4[i] = node;
         *(s16 *)(node + 0) = 4;
         *(s16 *)(node + 0x6) = left;
@@ -4340,13 +4343,14 @@ void func_800631DC(s32 left, s32 top, s32 code) {
         if (mode == 7 || mode == 0xE) {
             continue;
         }
-        x = func_8005B0E4(0x64, (s32)gDriverNames[gPlayerDriver[i]]) - 0x32;
-        object = func_8005BF8C(left + x, base - 6);
+        x = MenuTextCenterOffset(0x64, (s32)gDriverNames[gPlayerDriver[i]]) -
+            0x32;
+        object = MenuCreateTextObject(left + x, base - 6);
         *(s16 *)(object + 0xA) = top + x;
         *(s16 *)(object + 0x12) = x;
         *(s16 *)(object + 0xE) = code;
-        func_80067EA4((struct UnkObject24 *)object, 2, 2,
-                      (s32)gDriverNames[gPlayerDriver[i]], 0, 0);
+        MenuSetTextObject((struct MenuTextObjectView *)object, 2, 2,
+                          (s32)gDriverNames[gPlayerDriver[i]], 0, 0);
         *(u8 **)(node + 0x1C) = object;
         node = object;
         D_800A3868[i] = node;
@@ -4376,18 +4380,18 @@ void func_800631DC(s32 left, s32 top, s32 code) {
                 dy = 0x29;
                 break;
             }
-            object = func_8005B598(left + xoff, y, width, 7, 1, 1, 0);
+            object = MenuCreateTexturedRect(left + xoff, y, width, 7, 1, 1, 0);
             packet = *(u8 **)(object + 0x20);
             *(s16 *)(object + 0x12) = xoff;
             *(s16 *)(object + 0xA) = top + xoff;
             *(s16 *)(object + 0xE) = code;
-            func_8005B17C(packet, 9, dx, dy, width, 7);
+            MenuSetTexturedQuad(packet, 9, dx, dy, width, 7);
             *(u8 **)(node + 0x1C) = object;
             node = object;
         }
         for (k = 0; k < 2; k++) {
-            object = func_8005B314(left - 0x32, base - 9, 0x64, 0xE, 0, 0x20,
-                                   0x20, 0x40, 1, 1);
+            object = MenuCreateFlatRect(left - 0x32, base - 9, 0x64, 0xE, 0,
+                                        0x20, 0x20, 0x40, 1, 1);
             *(s16 *)(object + 0x1A) = 3;
             *(s16 *)(object + 0x12) = -0x32;
             *(s16 *)(object + 0xA) = top - 0x32;
@@ -4399,8 +4403,8 @@ void func_800631DC(s32 left, s32 top, s32 code) {
 }
 
 void func_80063538(s32 arg0, s32 arg1) {
-    extern u8 *func_8005B474(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32,
-                             s32);
+    extern u8 *MenuCreateFlatTriangle(s32, s32, s32, s32, s32, s32, s32, s32,
+                                      s32, s32, s32);
     extern u8 *D_800A3628[];
     s32 cmd;
     u8 **table;
@@ -4419,8 +4423,8 @@ void func_80063538(s32 arg0, s32 arg1) {
             if (i != 0) {
                 offs = -4;
             }
-            node =
-                func_8005B474(arg1, cmd, offs, 8, 0, 0x28, 0x64, 0xC8, 0, 1, 0);
+            node = MenuCreateFlatTriangle(arg1, cmd, offs, 8, 0, 0x28, 0x64,
+                                          0xC8, 0, 1, 0);
             *(s16 *)(node + 0x1A) = 0;
             if (i != 0) {
                 *(s16 *)(node + 0x12) = 0x2E;
@@ -4467,7 +4471,7 @@ void func_80063638(u8 mode) {
     }
 }
 
-void func_80063694(u8 index, s16 dx, s16 dy, s16 code) {
+void MenuSetLinkedObjectLayoutByIndex(u8 index, s16 dx, s16 dy, s16 code) {
     u8 *node;
 
     node = D_800A35E4[index];
@@ -4482,7 +4486,7 @@ void func_80063694(u8 index, s16 dx, s16 dy, s16 code) {
     }
 }
 
-void func_800636EC(u8 index, u8 kind) {
+void MenuSetDriverNameLabel(u8 index, u8 kind) {
     u8 *node;
     u8 *object;
     s32 value;
@@ -4490,13 +4494,13 @@ void func_800636EC(u8 index, u8 kind) {
     node = D_800A3868[index];
     object = *(u8 **)(node + 0x20);
     *(u8 **)(object + 8) = gDriverNames[kind];
-    func_8005A7B8(object[1], object[2]);
-    value = func_8005B0E4(0x64, *(s32 *)(object + 8));
+    MenuFontSet(object[1], object[2]);
+    value = MenuTextCenterOffset(0x64, *(s32 *)(object + 8));
     *(s16 *)(node + 6) = value + 0xA;
     *(s16 *)(node + 0x12) = value - 0x32;
 }
 
-void func_80063770(u8 index) {
+void MenuNegateLinkedObjectValues(u8 index) {
     u8 *node;
     s16 value;
 
@@ -4514,7 +4518,7 @@ void func_80063770(u8 index) {
     }
 }
 
-void func_800637D8(u8 index) {
+void MenuRestoreLinkedObjectValues(u8 index) {
     u8 *node;
     s16 value;
 
@@ -4532,7 +4536,7 @@ void func_800637D8(u8 index) {
     }
 }
 
-void func_8006383C(void) {
+void ScratchpadFillGrayscaleRamp(void) {
     u32 i;
     u32 greyLevel;
 
@@ -4595,8 +4599,8 @@ void func_80063874(void) {
         first = D_800A36F4_w42 + ((s32 *)table)[i];
         second = -(i == 0);
         D_800A3574_w42[0] = elem;
-        func_80032450(first, second);
-        func_80032494(D_800A3570_w42[1]);
+        ModelLoadGeometryFromAddress(first, second);
+        ModelBuildReverseLinks(D_800A3570_w42[1]);
         elem += 0x44;
         do {
         } while (0);
@@ -4609,7 +4613,7 @@ void func_80063874(void) {
             i++;
         } while (i < 10);
     }
-    func_8001DFC8();
+    RenderDrawFiveLinkedLists();
 }
 
 void func_80063A20(void) {
@@ -4818,10 +4822,10 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
                     i += 1;
                 } while (i < 0x100U);
             } else {
-                func_8003271C(0);
+                ScratchpadFillPattern(0);
             }
             CarDrawPreviewModel(obj, 0, 0xFA, 0x44C);
-            if (!(arg0 & 0xFF) || (arg2 & 0xFF) || D_800A39E4[0] == 0xE) {
+            if (!(arg0 & 0xFF) || (arg2 & 0xFF) || gScreenState[0] == 0xE) {
                 asm("" : : "r"(arg1));
                 t = *(s16 *)(obj + 0x20E);
                 v1 = t + 0xFEC;
@@ -4841,7 +4845,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
 
 void TextureLoadTim(void *arg0);
 
-void func_80064174(void) {
+void MenuLoadTextureTable(void) {
     void *data;
     s32 *offsets;
     s32 i;
@@ -4871,10 +4875,10 @@ extern u8 *D_800A3744[];
 extern u8 *D_800A3958[];
 extern u8 *D_800A3900[];
 extern u8 *D_800A35E0Alias[] asm("D_800A35E0Absolute");
-extern u8 func_8006AD0C(s8);
+extern u8 DriverFindIndexById(s8);
 extern void func_800645A4(s32, s32);
-struct UnkNode1C;
-extern void ListSetRangeFields(struct UnkNode1C *, s32, s32, s16);
+struct MenuObjectNode;
+extern void ListSetRangeFields(struct MenuObjectNode *, s32, s32, s16);
 
 void func_80064208(void) {
     u8 *tail;
@@ -4897,29 +4901,29 @@ void func_80064208(void) {
     } else {
         D_800A39FC = RandomScaledGet(0x18);
     }
-    D_800A3594 = func_8006AD0C(D_800A39FC);
+    D_800A3594 = DriverFindIndexById(D_800A39FC);
     for (i = 0; i < 2; i++) {
-        tail = func_8005B598(0x14, 0x41, 0x40, 0x48, 1, 1, 0);
+        tail = MenuCreateTexturedRect(0x14, 0x41, 0x40, 0x48, 1, 1, 0);
         D_800A3744[i] = tail;
         *((s16 *)(tail + 0x12)) = 0x14;
-        node = func_8005BF8C(0x5F, 0x2D);
+        node = MenuCreateTextObject(0x5F, 0x2D);
         kind = D_800A39FC;
-        ((MenuObj *)node)->unk12 = 0x5F;
-        func_80067EA4((struct UnkObject24 *)node, 2, 3, gDriverNames[kind], 0,
-                      0);
+        ((MenuObj *)node)->drawOffsetX = 0x5F;
+        MenuSetTextObject((struct MenuTextObjectView *)node, 2, 3,
+                          gDriverNames[kind], 0, 0);
         *((u8 **)(tail + 0x1C)) = node;
         tail = node;
-        func_8005A7B8(2, 3);
-        height = func_8005A84C();
+        MenuFontSet(2, 3);
+        height = MenuFontLineHeight();
         y = height + 0x32;
-        func_8005A7B8(2, 4);
-        height = func_8005A84C();
+        MenuFontSet(2, 4);
+        height = MenuFontLineHeight();
         for (j = 0; j < 5; j++) {
-            node = func_8005BF8C(0x5F, y);
+            node = MenuCreateTextObject(0x5F, y);
             kind2 = D_800A39FC;
             *((s16 *)(node + 0x12)) = 0x5F;
-            func_80067EA4((struct UnkObject24 *)node, 2, 4, gDriverNames[kind2],
-                          0, 0);
+            MenuSetTextObject((struct MenuTextObjectView *)node, 2, 4,
+                              gDriverNames[kind2], 0, 0);
             y += height;
             *((u8 **)(tail + 0x1C)) = node;
             tail = node;
@@ -4928,13 +4932,13 @@ void func_80064208(void) {
             }
         }
 
-        prim = func_8005B598(0x14, 0x2B, 0x40, 0xC, 1, 1, 0);
+        prim = MenuCreateTexturedRect(0x14, 0x2B, 0x40, 0xC, 1, 1, 0);
         node = prim;
         D_800A3958[i] = prim;
         *((s16 *)(node + 0x12)) = 0x14;
         *((u8 **)(tail + 0x1C)) = node;
         prim = *((u8 **)(prim + 0x20));
-        func_8005B17C(prim, 2, 0, 0, 0x40, 0xC);
+        MenuSetTexturedQuad(prim, 2, 0, 0, 0x40, 0xC);
         *((s16 *)(prim + 8)) = 0x14;
         *((s16 *)(prim + 0xA)) = 0x2D;
         *((s16 *)(prim + 0x10)) = 0x54;
@@ -4946,7 +4950,8 @@ void func_80064208(void) {
     }
 
     for (k = 0; k < 2; k++) {
-        tail = func_8005B314(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
+        tail =
+            MenuCreateFlatRect(0, 0x27, 0x140, 0xC8, 0, 0x10, 0x10, 0x10, 1, 1);
         if (k == 0) {
             D_800A3900[0] = tail;
         } else {
@@ -4961,7 +4966,7 @@ void func_80064208(void) {
     entry = D_800A3744[D_800A3A14];
     D_800A39A0[0] = 0;
     D_800A38FC[0] = entry;
-    ListSetRangeFields((struct UnkNode1C *)entry, -0x140, 0, 2);
+    ListSetRangeFields((struct MenuObjectNode *)entry, -0x140, 0, 2);
     func_800631DC(-0x10C, 0x34, 2);
     /* D_800A35E4[0] via the D_800A35E0 alias: a distinct symbol keeps the
      * base load below from being shared with the height lookup. */
@@ -5021,8 +5026,8 @@ void func_800645A4(s32 arg0, s32 arg1) {
     prim[0x24] = q;
     prim[0x25] = y + 0x47;
     node = *(u8 **)(node + 0x1C);
-    func_8005A7B8(2, 4);
-    h = func_8005A84C();
+    MenuFontSet(2, 4);
+    h = MenuFontLineHeight();
     x = *(s16 *)(node + 8);
     offset = *(s32 *)(D_800A3A5C + idx * 4);
     for (i = 0; i < 6; i++) {
@@ -5067,11 +5072,11 @@ void func_800645A4(s32 arg0, s32 arg1) {
     *(s16 *)(str + 0x1A) = advance;
 }
 
-void ListSetRangeFields(UnkNode1C *node, s32 low, s32 high, s16 value) {
+void ListSetRangeFields(MenuObjectNode *node, s32 low, s32 high, s16 value) {
     while (node != NULL) {
-        node->unkE = value;
-        node->unk6 = node->unk12 + low;
-        node->unkA = node->unk12 + high;
+        node->velocityX = value;
+        node->x = node->drawOffsetX + low;
+        node->targetX = node->drawOffsetX + high;
         node = node->next;
     }
 }
@@ -5079,22 +5084,22 @@ void ListSetRangeFields(UnkNode1C *node, s32 low, s32 high, s16 value) {
 extern u8 *D_800A39A4nm[] asm("D_800A39A4.NON_MATCHING");
 extern u8 *D_800A39AC[];
 
-void func_80064898(void) {
-    func_8005B8B8(D_800A38FC[1], 0xFF);
+void MenuDrawObjectGroups(void) {
+    MenuDrawObjectList(D_800A38FC[1], 0xFF);
     if (D_800A38FC[0] != 0) {
-        func_8005B688(D_800A38FC[0], 1);
-        func_8005B8B8(D_800A3900[-1], 0xFF);
+        MenuUpdateObjectPosition(D_800A38FC[0], 1);
+        MenuDrawObjectList(D_800A3900[-1], 0xFF);
     }
     if (D_800A39A0[0] != 0) {
-        func_8005B688(D_800A39A0[0], 1);
-        func_8005B8B8(D_800A39A4nm[-1], 0xFF);
+        MenuUpdateObjectPosition(D_800A39A0[0], 1);
+        MenuDrawObjectList(D_800A39A4nm[-1], 0xFF);
     }
-    func_8005B688(D_800A35E4[0], 1);
-    func_8005B8B8(D_800A35E8[-1], 0xFF);
+    MenuUpdateObjectPosition(D_800A35E4[0], 1);
+    MenuDrawObjectList(D_800A35E8[-1], 0xFF);
     func_80064000(0, 0, 0);
     if (D_800A3A14 != 0 || D_800A39AC[-3] != 0) {
-        func_8005B688(D_800A35E8[0], 1);
-        func_8005B8B8(D_800A35E8[0], 0xFF);
+        MenuUpdateObjectPosition(D_800A35E8[0], 1);
+        MenuDrawObjectList(D_800A35E8[0], 0xFF);
         func_80064000(1, 0, 0);
     }
 }
@@ -5138,7 +5143,7 @@ extern u8 D_8009B04A[];
 extern u16 D_8009B050[][7];
 extern u16 D_8009B054[][7];
 
-void func_80064AB4(u8 *prim, u8 idx) {
+void MenuInitializeTexturedQuad(u8 *prim, u8 idx) {
     SetShadeTex(prim, 0);
     ((u8 *)prim)[4] = 0x80;
     ((u8 *)prim)[5] = 0x80;
@@ -5163,7 +5168,7 @@ extern u8 D_800A3698;
 extern u8 D_800A3A4C;
 extern u8 *D_800A39D8;
 extern u8 *D_800A369C;
-void func_80064C14(void) {
+void MenuInitializeGlyphPrimitiveBuffer(void) {
     extern u32 *D_800A38C4;
     extern s32 D_800A367C;
 
@@ -5171,7 +5176,7 @@ void func_80064C14(void) {
     gOrderingTable[0] = gOrderingTables;
     D_800A39D8 = gOrderingTables + 0x20;
     D_800A369C = gOrderingTables + 0x13A8;
-    if (D_800A2EB0Absolute[0] == 0) {
+    if (gSessionTypeAbsolute[0] == 0) {
         D_800A3698 = strlen(D_8009A3F0[0]);
     } else {
         D_800A3698 = strlen(D_8009A418[0]);
@@ -5180,7 +5185,7 @@ void func_80064C14(void) {
     /* Preserve the byte reloads observed after these stores in retail. */
     D_800A3698 += *(volatile u8 *)&D_800A3A4C;
     D_800A367C = (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
-    func_8005A6EC(2, 4, D_800A39D8);
+    MenuFontCopyGlyphPrimitives(2, 4, D_800A39D8);
 }
 
 void GraphicsInitDoubleBuffer(s32 mode) {
@@ -5247,19 +5252,19 @@ void func_80064E6C(void) {
     GraphicsInitDoubleBuffer(1);
     func_8006499C();
     D_800A367C = (s32)D_800A369C;
-    func_8005A7B8(2, 4);
-    func_8005A818(0x80, 0x80, 0xC0);
+    MenuFontSet(2, 4);
+    MenuSetTextColor(0x80, 0x80, 0xC0);
     base = D_8009A400;
-    MenuDrawString((s32)*base, (s16)func_8005B0E4(0x140, (s32)*base), 0xC8, 0,
-                   0, 0, 0, 0);
-    if (D_800A2EB0Absolute[0] == 0) {
+    MenuDrawString((s32)*base, (s16)MenuTextCenterOffset(0x140, (s32)*base),
+                   0xC8, 0, 0, 0, 0, 0);
+    if (gSessionTypeAbsolute[0] == 0) {
         MenuDrawString((s32)D_8009A3EC[1],
-                       (s16)func_8005B0E4(0x140, (s32)D_8009A3F0[0]), 0xC8, 0,
-                       0, 0, 0, 0);
+                       (s16)MenuTextCenterOffset(0x140, (s32)D_8009A3F0[0]),
+                       0xC8, 0, 0, 0, 0, 0);
     } else {
         MenuDrawString((s32)D_8009A414[1],
-                       (s16)func_8005B0E4(0x140, (s32)D_8009A418[0]), 0xC8, 0,
-                       0, 0, 0, 0);
+                       (s16)MenuTextCenterOffset(0x140, (s32)D_8009A418[0]),
+                       0xC8, 0, 0, 0, 0, 0);
     }
     ClearOTagR(D_800A38C4, 4);
     D_800A367C = (s32)(D_800A369C + D_800A3698 * 0x28);
@@ -5280,7 +5285,7 @@ void func_80064E6C(void) {
 }
 
 extern s32 D_800A367C;
-s32 func_80065028(void) {
+s32 MenuAllocateGlyphPrimitive(void) {
     s32 current;
     current = D_800A367C;
     D_800A367C = current + 0x28;
@@ -5436,7 +5441,7 @@ void MenuDrawCarPick(u8 id, s32 shift) {
         color = gDriverOrder[height + i];
         prim = (u8 *)func_80065040();
         SetPolyFT4((POLY_FT4 *)prim);
-        func_80064AB4(prim, color);
+        MenuInitializeTexturedQuad(prim, color);
         if (i == 0) {
             *(s16 *)(prim + 8) = leftX;
             *(s16 *)(prim + 0xA) = 0x5A;
@@ -5459,17 +5464,17 @@ void MenuDrawCarPick(u8 id, s32 shift) {
         AddPrim((u8 *)D_800A38C4 + 8, prim);
     }
     D_800A3568 = (u8 *)D_800A367C;
-    func_8005A7B8(2, 4);
-    func_8005A818(0x80, 0x80, 0xC0);
+    MenuFontSet(2, 4);
+    MenuSetTextColor(0x80, 0x80, 0xC0);
     gOrderingTableLui += 4;
     if (D_800A3950[0] == 0xFB || D_800A3950[0] == 3) {
-        MenuDrawString((s32)gTrackNames[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
-                       0);
+        MenuDrawString((s32)gTrackNames[gSelectedTrack[0]], 0x17, 0x41, 0, 0, 1,
+                       0, 0);
     } else {
-        MenuDrawString((s32)D_8009A3A4[D_800A305B[0]], 0x17, 0x41, 0, 0, 1, 0,
-                       0);
+        MenuDrawString((s32)D_8009A3A4[gSelectedTrack[0]], 0x17, 0x41, 0, 0, 1,
+                       0, 0);
     }
-    if (D_800A2EB0Absolute[0] == 0) {
+    if (gSessionTypeAbsolute[0] == 0) {
         MenuDrawString((s32)D_8009A3E8[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
     } else {
         MenuDrawString((s32)D_8009A41C[0], 0x17, 0x4D, 0, 0, 1, 0, 0);
@@ -5503,17 +5508,17 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             g2 = 0x80;
             b2 = 0xC0;
         }
-        func_8005A818(r2, g2, b2);
+        MenuSetTextColor(r2, g2, b2);
         MenuDrawString((s32)D_8009ACE0[color], x0, 0xA7, 0, 0, 0, 0, 0);
         MenuDrawString((s32)gDriverNames[color], x0 + 0x1E, 0xA7, 0, 0, 0, 0,
                        0);
-        if (D_800A2EB0Absolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
+        if (gSessionTypeAbsolute[0] == 0 && D_800AEB34[color] == 0x7FFFFFFF) {
             MenuDrawString((s32)D_8009A42C[0], x0 + 0x45, 0x7E, 0, 0, 0, 0, 0);
         } else {
             TextFormatTime((void *)D_800AEB34[color], -1, entry);
             MenuDrawString((s32)entry, x0 + 0x45, 0x7E, 0, 0, 0, 0, 7);
         }
-        if (D_800A2EB0Absolute[0] == 0 && height == 0 && i == 0) {
+        if (gSessionTypeAbsolute[0] == 0 && height == 0 && i == 0) {
             MenuDrawString((s32)D_8009A3EC[13], x0 + 0x59, 0x61, 0, 0, 0, 0, 0);
             MenuDrawString((s32)D_8009A3EC[14], x0 + 0x4F, 0x6B, 0, 0, 0, 0, 0);
         }
@@ -5547,7 +5552,7 @@ void func_80065838(s32 arg0) {
         str = D_8009A400[0];
     } else {
         ptr += D_800A3A4C * 0x28;
-        if (D_800A2EB0Absolute[0] == 0) {
+        if (gSessionTypeAbsolute[0] == 0) {
             str = D_8009A3F0[0];
         } else {
             str = D_8009A418[0];
@@ -5567,7 +5572,7 @@ void func_80065838(s32 arg0) {
 
 extern u8 D_800A35B4;
 extern u8 *D_800A38D8;
-void func_800658F0(void) {
+void MenuLinkGlyphPrimitives(void) {
     s32 i;
     u8 *primitive;
     primitive = D_800A38D8;
@@ -5679,9 +5684,9 @@ void func_80065C3C(void) {
     s32 i;
 
     oldGp = GetGp();
-    func_80058D08(D_8008CA4C[0]);
+    SystemSetGlobalPointer(D_8008CA4C[0]);
     SetDispMask(1);
-    if ((u8)(D_800A39E4[0] + 3) >= 2) {
+    if ((u8)(gScreenState[0] + 3) >= 2) {
         PutDrawEnv(D_800BDD4C);
         if ((D_800A3940 << 16) > 0) {
             func_8006594C(D_800A3760, 0);
@@ -5697,7 +5702,7 @@ void func_80065C3C(void) {
                     ClearOTagR(D_800A38C4, 4);
                     walk = D_800A369C;
                     walk += D_800A3A4C * 0x28;
-                    if (D_800A2EB0Absolute[0] == 0) {
+                    if (gSessionTypeAbsolute[0] == 0) {
                         text = (char *)D_8009A3F0[0];
                     } else {
                         text = (char *)D_8009A418[0];
@@ -5729,7 +5734,7 @@ void func_80065C3C(void) {
                     } else {
                         walk = D_800A369C;
                         walk += D_800A3A4C * 0x28;
-                        if (D_800A2EB0Absolute[0] == 0) {
+                        if (gSessionTypeAbsolute[0] == 0) {
                             text = (char *)D_8009A3F0[0];
                         } else {
                             text = (char *)D_8009A418[0];
@@ -5768,13 +5773,13 @@ void func_80065F80(void) {
     s32 temp;
     volatile s32 framePad[2];
 
-    func_8005A7B8(2, 4);
-    func_8005A818(0x80, 0x80, 0xC0);
+    MenuFontSet(2, 4);
+    MenuSetTextColor(0x80, 0x80, 0xC0);
     entry = D_8009A3FC;
     D_800A38D8 = (u8 *)D_800A367C;
     *(volatile u8 *)&D_800A35B4 = strlen((char *)entry[0]);
-    MenuDrawString((s32)entry[0], func_8005B0E4(0x140, (s32)entry[0]), 0x7F, 0,
-                   0, 0, 0, 0);
+    MenuDrawString((s32)entry[0], MenuTextCenterOffset(0x140, (s32)entry[0]),
+                   0x7F, 0, 0, 0, 0, 0);
     ClearOTagR(D_800A38C4, 4);
     ptr = D_800A369C;
     str = D_8009A400[0];
@@ -5795,8 +5800,8 @@ void func_80065F80(void) {
 extern s32 D_800A3540;
 extern u8 *D_8009A3F4[];
 extern u8 *D_8009A3F8;
-extern u8 D_800A305BLui asm("D_800A305BAbsolute");
-void MenuDrawCarPickPair(s32 arg0) {
+extern u8 gSelectedTrackLui asm("gSelectedTrackAbsolute");
+void MenuDrawCarPickPair(s32 shiftPanels) {
     s32 i;
     s32 shift;
     s32 x;
@@ -5804,7 +5809,7 @@ void MenuDrawCarPickPair(s32 arg0) {
     POLY_FT4 *prim;
 
     for (i = 0; i < 2; i++) {
-        if ((arg0 & 0xFF) != 0) {
+        if ((shiftPanels & 0xFF) != 0) {
             shift = -0x140;
             if (i != 0) {
                 shift = 0x140;
@@ -5815,7 +5820,7 @@ void MenuDrawCarPickPair(s32 arg0) {
         color = gPlayerDriver[i];
         prim = (POLY_FT4 *)func_80065040();
         SetPolyFT4(prim);
-        func_80064AB4((u8 *)prim, color);
+        MenuInitializeTexturedQuad((u8 *)prim, color);
         if (i == 0) {
             prim->x0 = shift + 0x3E;
             prim->y0 = 0x66;
@@ -5842,7 +5847,7 @@ void MenuDrawCarPickPair(s32 arg0) {
         if (i == 0) {
             x = 0x17;
         }
-        func_8005A818(0x80, 0x80, 0xC0);
+        MenuSetTextColor(0x80, 0x80, 0xC0);
         MenuDrawString((s32)D_8009ACE0[color], x, 0xB1, 0, 0, 0, 0, 0);
         MenuDrawString((s32)gDriverNames[color], x + 0x1E, 0xB1, 0, 0, 0, 0, 0);
         D_800A3970 = (u8 *)D_800A367C;
@@ -5856,14 +5861,14 @@ void MenuDrawCarPickPair(s32 arg0) {
             }
         }
     }
-    x = func_8005B0E4(0x140, (s32)D_8009A3F4[0]);
+    x = MenuTextCenterOffset(0x140, (s32)D_8009A3F4[0]);
     MenuDrawString((s32)D_8009A3F4[0], x, 0x2A, 0, 0, 0, 0, 0);
-    x = func_8005B0E4(0x140, (s32)D_8009A3F8);
+    x = MenuTextCenterOffset(0x140, (s32)D_8009A3F8);
     MenuDrawString((s32)D_8009A3F8, x, 0x3E, 0, 0, 0, 0, 0);
-    x = func_8005B0E4(0x140, (s32)gTrackNames[D_800A305BLui]);
-    MenuDrawString((s32)gTrackNames[D_800A305BLui], x, 0x4D, 0, 0, 0, 0, 0);
+    x = MenuTextCenterOffset(0x140, (s32)gTrackNames[gSelectedTrackLui]);
+    MenuDrawString((s32)gTrackNames[gSelectedTrackLui], x, 0x4D, 0, 0, 0, 0, 0);
     D_800A3940Signed = 2;
-    if ((arg0 & 0xFF) != 0) {
+    if ((shiftPanels & 0xFF) != 0) {
         D_800A3A44Signed = -0x140;
     } else {
         D_800A3A44 = 0;
@@ -5886,9 +5891,9 @@ void func_800663B0(void) {
     s32 i;
 
     oldGp = GetGp();
-    func_80058D08(D_8008CA4C[0]);
+    SystemSetGlobalPointer(D_8008CA4C[0]);
     SetDispMask(1);
-    if ((u8)(D_800A39E4[0] + 3) >= 2) {
+    if ((u8)(gScreenState[0] + 3) >= 2) {
         if ((D_800A3940 << 16) > 0) {
             PutDrawEnv(D_800BDD4C);
             func_8006594C(D_800A3760, 1);
@@ -5901,7 +5906,7 @@ void func_800663B0(void) {
                 count = D_800A3A4C;
                 walk = (u8 *)D_800A369C;
                 walk += count * 0x28;
-                if (D_800A2EB0Absolute[0] == 0) {
+                if (gSessionTypeAbsolute[0] == 0) {
                     text = (char *)D_8009A3F0[0];
                 } else {
                     text = (char *)D_8009A418[0];
@@ -5941,7 +5946,7 @@ void *func_8006654C(void *queue, s32 arg1) {
     depth = arg1;
     for (i = 0; i < 2; i++) {
         if (cursor == 0) {
-            templates[i] = (s32 *)func_80057D50(0);
+            templates[i] = (s32 *)GraphicsAllocPolyF4(0);
         } else {
             templates[i] = (s32 *)cursor;
             cursor += 0x18;
@@ -5972,7 +5977,7 @@ void *func_8006654C(void *queue, s32 arg1) {
         bottomY = topY + 0x20;
         do {
             if (cursor == 0) {
-                dst = (s32 *)func_80057D50(0);
+                dst = (s32 *)GraphicsAllocPolyF4(0);
             } else {
                 dst = (s32 *)cursor;
                 cursor += 0x18;
@@ -6006,7 +6011,7 @@ extern u8 D_8009B198[];
 extern DRAWENV D_800BDDA8[];
 extern DISPENV D_800BDE18[];
 extern void *func_8006654C(void *, s32);
-extern void func_8005A7B8S32(s32, s32) asm("func_8005A7B8");
+extern void MenuFontSetS32(s32, s32) asm("MenuFontSet");
 asm(".globl MenuDrawStringW");
 asm("MenuDrawStringW = MenuDrawString");
 
@@ -6031,15 +6036,16 @@ void func_80066730(void) {
     q = table + 2;
     for (page = 0; page < 2; page++) {
         ClearOTagR((u32 *)gOrderingTablePtr[0], 0x3FF);
-        func_80014A40(0);
+        GraphicsSelectPrimitiveBuffer(0);
         func_8006654C((void *)0, 0x3FC);
         MenuDrawModel(0, 0, 1);
-        func_8005A7B8S32(2, 4);
-        func_8005A818(0x80, 0x80, 0xC0);
+        MenuFontSetS32(2, 4);
+        MenuSetTextColor(0x80, 0x80, 0xC0);
         y = 0xA0;
         i = 0;
         p = table;
-        MenuDrawString(gTrackNames[D_800A305B[0]], 0x20, 0x23, 0, 0, 0, 0, 0);
+        MenuDrawString(gTrackNames[gSelectedTrack[0]], 0x20, 0x23, 0, 0, 0, 0,
+                       0);
         do {
             y16 = (s16)y;
             MenuDrawString(p[0], 0x20, y16, 0, 0, 0, 0, 0);
@@ -6047,12 +6053,12 @@ void func_80066730(void) {
             x = (s16)(ret + 0x20);
             switch (i) {
             case 0:
-                MenuDrawString(q[D_8009B198[D_800A305B[0]]], x, y16, 0, 0, 0, 0,
-                               0);
+                MenuDrawString(q[D_8009B198[gSelectedTrack[0]]], x, y16, 0, 0,
+                               0, 0, 0);
                 break;
             case 1:
-                MenuDrawString(D_8009A430[D_800A305B[0]], x, y16, 0, 0, 0, 0,
-                               0);
+                MenuDrawString(D_8009A430[gSelectedTrack[0]], x, y16, 0, 0, 0,
+                               0, 0);
                 break;
             }
             y += 0xF;
@@ -6063,7 +6069,7 @@ void func_80066730(void) {
         if (page == 0) {
             pp = D_8009A400;
         }
-        raw = func_8005B0E4(0x140, (s32)pp[0]);
+        raw = MenuTextCenterOffset(0x140, (s32)pp[0]);
         a0v = (s32)pp[0];
         a1v = (s16)raw;
         MenuDrawStringW(a0v, a1v, 0xC8, 0, 0, 0, 0, 0);
@@ -6080,11 +6086,11 @@ void func_80066730(void) {
 extern s32 GetGp(void);
 extern s32 D_8008CA4C[];
 extern volatile u8 D_800A3360;
-void func_800669B8(void) {
+void MenuShowDisplay(void) {
     s32 gp;
 
     gp = GetGp();
-    func_80058D08(D_8008CA4C[0]);
+    SystemSetGlobalPointer(D_8008CA4C[0]);
     SetDispMask(1);
     if (*(volatile u8 *)&D_800A3884 == 1) {
         PutDispEnv(D_800BDE04);
@@ -6095,7 +6101,7 @@ void func_800669B8(void) {
 
 extern s32 D_800A335C;
 extern void func_80065C3C(void);
-void func_80066A24(u8 mode) {
+void MenuStartVBlankEvent(u8 mode) {
     void (*callback)(void);
 
     *(s32 *)D_8008CA4C = GetGp();
@@ -6104,7 +6110,7 @@ void func_80066A24(u8 mode) {
     } else {
         callback = func_80065C3C;
         if (mode == 2) {
-            callback = func_800669B8;
+            callback = MenuShowDisplay;
         }
     }
     EnterCriticalSection();
@@ -6115,7 +6121,7 @@ void func_80066A24(u8 mode) {
     ExitCriticalSection();
 }
 
-void func_80066B08(void) {
+void MenuStopVBlankEvent(void) {
     if (D_800A335C != 0) {
         D_800A3360 = 0;
         while (D_800A3360 == 0) {
@@ -6160,7 +6166,7 @@ void func_80066B70(void) {
         SetDefDispEnv((DISPENV *)((u8 *)D_800BDE04 + off14),
                       (0 - (i == 0)) & 0x140, 0, 0x140, height);
         D_800BDD62[off5C] = 0;
-        if (D_800A2EB0Absolute[0] == 2) {
+        if (gSessionTypeAbsolute[0] == 2) {
             env[0x1A] = 7;
             env[0x19] = 0;
             env[0x1B] = 0x26;
@@ -6172,7 +6178,7 @@ void func_80066B70(void) {
         off14 += 0x14;
         off5C += 0x5C;
     }
-    if (D_800A2EB0Absolute[0] == 2) {
+    if (gSessionTypeAbsolute[0] == 2) {
         D_800BDD64[0] = 1;
     }
     PutDrawEnv(D_800BDD4C);
@@ -6205,7 +6211,7 @@ void func_80066CFC(void) {
     u8 *limit;
 
     oldCursor = (POLY_FT4 *)gPrimitiveCursor2[0];
-    func_8001D778(0, 0xD2, 0x140, 0x1E, 8, 8, 8, 0);
+    GraphicsDrawRect(0, 0xD2, 0x140, 0x1E, 8, 8, 8, 0);
     func_80066B70();
     *(volatile u8 *)&D_800A36A0 = 1;
     gOtMenuStore[0] = gOrderingTables;
@@ -6273,7 +6279,7 @@ void func_80066CFC(void) {
     D_800A3930 = 0;
 }
 
-void func_80067020(u8 *start, u8 *end, u8 delta) {
+void MenuOffsetTexturedQuadY(u8 *start, u8 *end, u8 delta) {
     POLY_FT4 *quad;
     if (start < end) {
         quad = (POLY_FT4 *)start;
@@ -6401,8 +6407,9 @@ void func_8006733C(void) {
     extern s32 D_800A3848[];
     extern u8 *D_8009A428[];
     extern volatile s32 D_800A3930;
-    extern void func_80058D08(s32);
-    extern void func_80041AF0Arg(s32) asm("func_80041AF0");
+    extern void SystemSetGlobalPointer(s32);
+    extern void PadResetAndInitializeBuffersArg(s32) asm(
+        "PadResetAndInitializeBuffers");
     extern void func_8006709C();
     s32 oldGp;
     s32 input;
@@ -6417,10 +6424,10 @@ void func_8006733C(void) {
     u32 unused[4]; /* retail reserves 16 bytes of locals nothing touches */
 
     oldGp = GetGp();
-    func_80058D08(D_8008CA4C[0]);
+    SystemSetGlobalPointer(D_8008CA4C[0]);
     if (DrawSync(1) == 0) {
         D_800A3930++;
-        func_80041AF0Arg(0);
+        PadResetAndInitializeBuffersArg(0);
         input = PadGetButtons(0);
         if (input & 0x1000) {
             flag = 1;
@@ -6506,7 +6513,7 @@ void MenuDrawLoadScreen(void) {
 
     func_80066B70();
     textCursor = gPrimitiveCursorLui;
-    HudDrawText(gTrackNames[D_800A305B[0]], 0x14, 0x23, 0);
+    HudDrawText(gTrackNames[gSelectedTrack[0]], 0x14, 0x23, 0);
     HudDrawText(gDriverNames[gPlayerDriver[0]], 0xA0, 0xB0, 0);
     HudDrawText(D_8009A400[34], 0xA0, 0xBE, 0);
     HudDrawText(D_800A3364, 0xE0, 0xBE, 0);
@@ -6521,7 +6528,7 @@ void MenuDrawLoadScreen(void) {
     *(s32 *)(car + 4) = 0;
     *(s32 *)(car + 8) = 0;
     *(u16 *)(car + 0x20E) = 0xA00;
-    func_8003271C(0);
+    ScratchpadFillPattern(0);
     func_800168F8(*(u8 **)(gPlayerCarLui + 0x36C),
                   (s8)(*(s8 *)(gPlayerCarLui + 0x200) / 5));
     end = gPrimitiveCursorLui;
@@ -6631,7 +6638,7 @@ void func_80067AB4(void) {
     extern u8 D_800A3884;
     extern volatile u8 D_800A3360;
     extern s32 GetGp(void);
-    extern void func_80058D08(s32);
+    extern void SystemSetGlobalPointer(s32);
     s32 oldGp;
     u16 *baseA;
     u16 *baseB;
@@ -6645,7 +6652,7 @@ void func_80067AB4(void) {
     u32 unused[4]; /* retail reserves 16 bytes of locals nothing touches */
 
     oldGp = GetGp();
-    func_80058D08(D_8008CA4C[0]);
+    SystemSetGlobalPointer(D_8008CA4C[0]);
     if (DrawSync(1) == 0) {
         if (*(volatile u8 *)&D_800A3884 == 1) {
             baseA = D_800A387C;
@@ -6746,12 +6753,12 @@ void func_80067AB4(void) {
  */
 extern void func_8006733C(void);
 extern void func_80067AB4(void);
-void func_80067DFC(void) {
+void MenuStartVBlankEventAlternate(void) {
     void (*callback)(void);
 
     *(s32 *)D_8008CA4C = GetGp();
     callback = func_8006733C;
-    if (D_800A2EB0Absolute[0] == 2) {
+    if (gSessionTypeAbsolute[0] == 2) {
         callback = func_80067AB4;
     }
     EnterCriticalSection();
@@ -6762,18 +6769,19 @@ void func_80067DFC(void) {
     ExitCriticalSection();
 }
 
-void func_80067EA4(UnkObject24 *obj, u8 a, u8 b, s32 c, u8 d, s32 e) {
-    UnkPacket0C *p;
-    p = obj->unk20;
+void MenuSetTextObject(MenuTextObjectView *obj, u8 a, u8 b, s32 c, u8 d,
+                       s32 e) {
+    MenuTextPacket *p;
+    p = obj->textPacket;
     p->unk1 = a;
     p->unk2 = b;
-    p->unk8 = c;
+    p->text = c;
     p->unk3 = d;
-    p->unk4 = e;
-    obj->unk1A = e;
+    p->orderingDepth = e;
+    obj->orderingDepth = e;
 }
 
-u8 func_80067ECC(char *name) {
+u8 DriverFindIndexByName(char *name) {
     s32 i;
 
     for (i = 0; i < 0x18; i++) {

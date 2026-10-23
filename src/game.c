@@ -40,7 +40,7 @@ void GraphicsInit(void) {
 extern u8 D_800A2D0D;
 extern u8 D_800A2D0E;
 extern u8 D_800A2D0F;
-extern u8 D_800A39E4Absolute2[];
+extern u8 gScreenStateAbsolute2[];
 extern void GameRunSession(void);
 
 int main(void) __asm__("func_80012108");
@@ -50,7 +50,7 @@ int main(void) {
 
     D_800A2D0D = 0;
     D_800A2EB8[0] = 0;
-    D_800A2EB0Absolute[0] = 0;
+    gSessionTypeAbsolute[0] = 0;
     ResetCallback();
     mode = 0xF9;
     ResetGraph(0);
@@ -65,10 +65,10 @@ int main(void) {
     func_8005978C();
     GameInitDefaults();
     while (1) {
-        if (D_800A39E4[0] == mode) {
+        if (gScreenState[0] == mode) {
             func_80058D94();
         }
-        if (((D_800A39E4Absolute[0] + 3) & 0xFFU) >= 2U) {
+        if (((gScreenStateAbsolute[0] + 3) & 0xFFU) >= 2U) {
             MenuRunFrontEnd();
             HeapResetInitFlag();
         }
@@ -76,16 +76,16 @@ int main(void) {
         D_800A2EACAbsolute[0] = 0;
         D_800A2EC8[0] = 0;
         if (D_800A2D0E != 0 || D_800A2D0F != 0) {
-            func_80066B08();
+            MenuStopVBlankEvent();
             exitCode = D_800A2D0F;
-            D_800A39E4Absolute2[0] = mode;
+            gScreenStateAbsolute2[0] = mode;
             if (exitCode != 0) {
                 RaceRecordSessionResult();
                 exitCode = -2;
             } else {
                 exitCode = -3;
             }
-            D_800A2EB0Absolute[0] = exitCode;
+            gSessionTypeAbsolute[0] = exitCode;
             D_800A2D0E = 0;
             D_800A2D0F = 0;
         } else {
@@ -127,12 +127,12 @@ void GameRunSession(void) {
     extern s32 D_800A2F54[];
     extern s32 D_800A2EC4Absolute[];
     extern u8 D_800A306DAbsolute[];
-    extern s16 D_800A3694Absolute[];
+    extern s16 gCdVolumeAbsolute[];
     extern s8 D_800A2F9CAbsolute[];
     extern s32 D_800A3720;
     extern s32 D_800A3948;
     extern u8 D_800A3884[];
-    extern s32 D_800A2EB0After[] asm("D_800A2EB0.NON_MATCHING");
+    extern s32 gSessionTypeAfter[] asm("gSessionType.NON_MATCHING");
     extern s32 D_800A33C8;
     extern u8 D_800A2D0C;
     extern s8 D_800A2D10;
@@ -168,7 +168,7 @@ void GameRunSession(void) {
     extern DISPENV D_800BDE04[];
     extern void GraphicsInitScreen(s32, s32, s32, s32);
     extern void GraphicsPartitionWorkBuffers(void);
-    extern void func_8002DDA0(void);
+    extern void RaceAllocateObjectList(void);
     extern void func_80041850(void);
     extern void TextureLoadAll(void);
     extern void func_80017E08(void);
@@ -176,9 +176,9 @@ void GameRunSession(void) {
     extern void func_800144B4(void);
     extern void func_8002F514(void);
     extern void func_8001636C(void);
-    extern void func_80025370(s32);
-    extern void func_8002F5A4(void);
-    extern void func_80012E00(void);
+    extern void TrackLoadResource(s32);
+    extern void RacePlaceCarsOnStartingGrid(void);
+    extern void HeapAllocateLargeBlock(void);
     extern void func_80014440(void);
     extern void CdApplyMixVolume(void);
     extern void func_8002F2CC(void);
@@ -187,7 +187,8 @@ void GameRunSession(void) {
     extern void func_80014A70(void);
     extern void ReplayAllocBuffer(void);
     extern void PadRefreshTypes(void);
-    extern void func_80041AF0Run(s8) asm("func_80041AF0");
+    extern void PadResetAndInitializeBuffersRun(s8) asm(
+        "PadResetAndInitializeBuffers");
     extern void SystemInitCounter(void);
     extern void func_8004195C(void);
     extern void func_80041328(void);
@@ -195,20 +196,20 @@ void GameRunSession(void) {
     extern void RaceUpdateFrame(void);
     extern void GraphicsDrawRaceViews(void);
     extern void func_8001C34C(void);
-    extern void func_8003CC48(void);
+    extern void CdStopIfPlaybackChanged(void);
     extern void func_8001E7EC(void *, s32 *, s32);
     extern void func_8003CF04(void);
-    extern void func_80041A28(void);
+    extern void SoundShutdownAll(void);
     extern void GraphicsSetColor(s32, s32, s32);
     extern s32 HudTextWidth(u8 *);
     extern void HudDrawText(u8 *, s16, s32, s8);
-    extern void func_8001D778(s32, s32, s32, s32, s32, s32, s32, s32);
+    extern void GraphicsDrawRect(s32, s32, s32, s32, s32, s32, s32, s32);
     extern void func_8003C1CC(void);
-    extern void func_8003C528(void);
+    extern void RaceSetPlayerFirstStanding(void);
     extern void MenuDrawLoadScreen(void);
     extern void MenuDrawResults(s32);
     extern void func_80066CFC(void);
-    extern void func_80067DFC(void);
+    extern void MenuStartVBlankEventAlternate(void);
     extern void SystemStopCounterAfterVSync(void);
     SessionTiming *timings;
     u8 *ot;
@@ -235,7 +236,7 @@ void GameRunSession(void) {
     bank = 0;
     GraphicsPartitionWorkBuffers();
     timeout = 1200;
-    func_8002DDA0();
+    RaceAllocateObjectList();
     func_80041850();
     TextureLoadAll();
     func_80017E08();
@@ -243,14 +244,14 @@ void GameRunSession(void) {
     func_800144B4();
     func_8002F514();
     func_8001636C();
-    func_80025370(D_800A3720);
-    func_8002F5A4();
-    func_80012E00();
+    TrackLoadResource(D_800A3720);
+    RacePlaceCarsOnStartingGrid();
+    HeapAllocateLargeBlock();
     SsSetMVol(127, 127);
-    if (D_800A306DAbsolute[0] != 0 && D_800A2EB0Absolute[0] != -1) {
+    if (D_800A306DAbsolute[0] != 0 && gSessionTypeAbsolute[0] != -1) {
         D_800A2F9CAbsolute[0] = 0;
     } else {
-        if (D_800A3694Absolute[0] != 0) {
+        if (gCdVolumeAbsolute[0] != 0) {
             D_800A2F9CAbsolute[0] = 1;
         } else {
             D_800A2F9CAbsolute[0] = 0;
@@ -267,11 +268,11 @@ void GameRunSession(void) {
     ReplayAllocBuffer();
     PadRefreshTypes();
     D_800A3884[0] = 1;
-    if (D_800A2EB0Absolute[0] != -1) {
+    if (gSessionTypeAbsolute[0] != -1) {
         D_800A33C8 = 0;
         do {
-            func_80041AF0Run(0);
-            if (D_800A2EA4Absolute[0] != 0) {
+            PadResetAndInitializeBuffersRun(0);
+            if (gSplitScreenModeAbsolute[0] != 0) {
                 firstButtons = PadGetButtons(0);
                 buttons = firstButtons | PadGetButtons(1);
             } else {
@@ -280,7 +281,7 @@ void GameRunSession(void) {
             D_800A33C8 = buttons;
         } while (!(buttons & 0x800));
     }
-    func_80066B08();
+    MenuStopVBlankEvent();
     SystemInitCounter();
     GetRCnt(0xF2000001);
     func_8004195C();
@@ -330,19 +331,19 @@ void GameRunSession(void) {
         timings->elapsed = GetRCnt(0xF2000001) - D_800A3708;
         func_8001C34C();
         D_800A370C = GetRCnt(0xF2000001);
-        func_8003CC48();
+        CdStopIfPlaybackChanged();
         if (D_800A3075[0] != 0) {
             while ((u32)(GetRCnt(0xF2000001) - D_800A3708) < 270U) {
-                func_80041AF0Run(D_800A2D10);
+                PadResetAndInitializeBuffersRun(D_800A2D10);
             }
         } else {
             while ((u32)(GetRCnt(0xF2000001) - D_800A3708) < 530U) {
-                func_80041AF0Run(D_800A2D10);
+                PadResetAndInitializeBuffersRun(D_800A2D10);
             }
         }
         D_800A2D00 = 0;
         GetRCnt(0xF2000001);
-        func_80041AF0Run(0);
+        PadResetAndInitializeBuffersRun(0);
         {
             u32 linkMask;
             s32 *entry;
@@ -380,12 +381,12 @@ void GameRunSession(void) {
                           &sync, 0);
         }
     } while (D_800A2D0C == 0);
-    if (D_800A2EB0Absolute[0] == 2) {
+    if (gSessionTypeAbsolute[0] == 2) {
         func_8003CF04();
     }
-    func_80041A28();
+    SoundShutdownAll();
     DrawSync(0);
-    if (D_800A2EB0After[0] == -1 && D_800A2D0F == 0) {
+    if (gSessionTypeAfter[0] == -1 && D_800A2D0F == 0) {
         ot = gOrderingTables;
         D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
         gPrimitiveCursorRun = D_800A3570;
@@ -395,7 +396,7 @@ void GameRunSession(void) {
         HudDrawText(D_8009A400[0],
                     (s16)((320 - HudTextWidth(D_8009A400[0])) << 15 >> 16), 110,
                     0);
-        func_8001D778(0, 0, 320, 240, 0, 0, 0, 0);
+        GraphicsDrawRect(0, 0, 320, 240, 0, 0, 0, 0);
         /* Keep the base operand first. */
         asm("addu %0, %0, %2"
             : "=r"(ot)
@@ -408,7 +409,7 @@ void GameRunSession(void) {
         PutDispEnv(&D_800BDE04[bank]);
     } else {
         if (D_800A2EACAbsolute[0] != 0) {
-            mode = D_800A2EB0Absolute[0];
+            mode = gSessionTypeAbsolute[0];
             checkValue = 2;
             if (mode == checkValue) {
                 goto checkMode;
@@ -417,13 +418,13 @@ void GameRunSession(void) {
         }
         func_8003C1CC();
         SetDispMask(0);
-        mode = D_800A2EB0Absolute[0];
+        mode = gSessionTypeAbsolute[0];
         checkValue = 2;
     checkMode:
         /* Keep the mode test on both paths. */
         asm("" : "=r"(mode) : "0"(mode), "r"(checkValue));
         if (mode == checkValue) {
-            func_8003C528();
+            RaceSetPlayerFirstStanding();
             if (D_800A2D0E == 0) {
                 D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
                 gPrimitiveCursorRun = D_800A3570;
@@ -450,7 +451,7 @@ void GameRunSession(void) {
         MenuDrawResults(D_800A359C >= 540);
         func_80066CFC();
     finishDisplay:
-        func_80067DFC();
+        MenuStartVBlankEventAlternate();
     }
 displayDone:
     SystemStopCounterAfterVSync();
@@ -473,12 +474,12 @@ void SystemDrainHardware(void) {
     VSync(0);
 }
 
-void CdSeekToSector(s32 arg0) {
+void CdSeekToSector(s32 sector) {
     u8 pos[0x18];
     s8 filter[8];
     u8 result[8];
 
-    CdIntToPos(arg0, pos);
+    CdIntToPos(sector, pos);
     do {
     } while (CdControl(2, pos, result) == 0);
     do {
@@ -505,7 +506,7 @@ extern s32 D_800B9D58;
 extern s32 D_800B9D5C;
 extern s32 D_800B9D60;
 
-void func_80012C30(void) {
+void DebugDrawMetersAndReset(void) {
     DebugDrawMeterBar(D_800A370C - D_800A3708, 0xF0, 0x14, 0);
     DebugDrawMeterBar(D_800A2D00, 0xF0, 0x14, 3);
     DebugDrawMeterBar(D_800B9D54[0], 0xF0, 0x23, 0);
@@ -521,10 +522,10 @@ void func_80012C30(void) {
 extern u32 D_800A38A0;
 extern s8 D_800A2D10;
 
-void func_80012D10(s32 arg0) {
+void FrameWaitForCounterPhase(s32 waitForCounterPhase) {
     u32 frame;
 
-    if (arg0 == 0) {
+    if (waitForCounterPhase == 0) {
         D_800A38A0 = GetRCnt(0xF2000001);
         return;
     }
@@ -533,13 +534,13 @@ void func_80012D10(s32 arg0) {
         return;
     }
     do {
-        func_80041AF0(D_800A2D10);
+        PadResetAndInitializeBuffers(D_800A2D10);
         frame = (u32)(0x107 - (((u32)GetRCnt(0xF2000001) - D_800A38A0) % 263));
     } while (frame >= 0x1F);
 }
 
 extern void *D_800A3A8C;
-void func_80012E00(void) {
+void HeapAllocateLargeBlock(void) {
     D_800A3A8C = HeapAlloc(0x35B60);
 }
 
@@ -549,15 +550,15 @@ void func_80012E28(void) {
 
 extern s32 strlen(char *);
 
-void TextReverseString(u8 *arg0) {
+void TextReverseString(u8 *string) {
     s32 i;
     s32 j;
     u8 ch;
 
-    for (i = 0, j = strlen((char *)arg0) - 1; i < j; i++, j--) {
-        ch = arg0[i];
-        arg0[i] = arg0[j];
-        arg0[j] = ch;
+    for (i = 0, j = strlen((char *)string) - 1; i < j; i++, j--) {
+        ch = string[i];
+        string[i] = string[j];
+        string[j] = ch;
     }
 }
 
@@ -653,17 +654,17 @@ void TextureLoadAll(void) {
     rect.w = 2;
     rect.h = 2;
     LoadImage(&rect, (u_long *)&env);
-    func_8003CDBC(0x40, (void *)STACK_BLOCK_80180000);
+    GraphicsLoadImagePointerTable(0x40, (void *)STACK_BLOCK_80180000);
     for (i = 0; i < 0x16; i++) {
         TextureLoadTim((void *)D_800B9F44[i]);
     }
 }
 
-void func_8001317C(s32 arg0) {
-    extern void func_8003CA18(s32, s32);
+void TextureLoadFileByIndex(s32 fileIndex) {
+    extern void CdLoadFileByIndex(s32, s32);
     extern void TextureLoadTim(void *);
 
-    func_8003CA18(STACK_BLOCK_801E0000, arg0);
+    CdLoadFileByIndex(STACK_BLOCK_801E0000, fileIndex);
     TextureLoadTim((void *)STACK_BLOCK_801E0000);
 }
 
@@ -686,15 +687,15 @@ extern u16 D_800A38C0[];
 
 extern void GsGetTimInfo(u8 *, u8 *);
 
-void TextureLoadTim(void *arg0) {
+void TextureLoadTim(void *timImage) {
     RECT rect;
     u8 image[0x20];
     s32 pixels;
     u8 mode;
     u16 color;
 
-    if (*(u32 *)arg0 == 0x10) {
-        GsGetTimInfo(arg0 + 4, image);
+    if (*(u32 *)timImage == 0x10) {
+        GsGetTimInfo(timImage + 4, image);
         rect.x = *(u16 *)&image[4];
         rect.y = *(u16 *)&image[6];
         rect.w = *(u16 *)&image[8];
@@ -781,10 +782,10 @@ void TrackLoad(u8 selectTrack) {
     extern s32 func_80041D60(s32);
     extern void TrackLoadFromFile(s32);
     extern void GraphicsLoadImageBank(s32);
-    extern void func_8003CA18(s32, s32);
+    extern void CdLoadFileByIndex(s32, s32);
     extern void func_800367DC(s32);
     extern s32 MathFixedDivide(s32, s32);
-    extern void func_8001DF60(s32);
+    extern void RenderDrawGeometryList(s32);
     extern char *strcat(char *, const char *);
     char trackName[256];
     char loadingText[256];
@@ -905,7 +906,7 @@ void TrackLoad(u8 selectTrack) {
         } while (1);
         __builtin_memcpy(loadingText, sTrackLoadingText, 17);
         strcat(loadingText, trackName);
-        if (D_800A2EA4[0] == 2) {
+        if (gSplitScreenMode[0] == 2) {
             strcat(loadingText, sTrackTwoPlayersText);
         }
         func_8001E7EC(gOrderingTables + (gOrderingTableBank << 12),
@@ -948,7 +949,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xA8;
         TrackLoadFromFile(0x41);
         GraphicsLoadImageBank(0x42);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x43);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x43);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x44);
         func_800367DC(0x45);
@@ -963,7 +964,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xA9;
         TrackLoadFromFile(0x47);
         GraphicsLoadImageBank(0x48);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x49);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x49);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x4A);
         func_800367DC(0x4B);
@@ -976,7 +977,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xAA;
         TrackLoadFromFile(0x4D);
         GraphicsLoadImageBank(0x4E);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x4F);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x4F);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x50);
         func_800367DC(0x51);
@@ -990,7 +991,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xAB;
         TrackLoadFromFile(0x53);
         GraphicsLoadImageBank(0x54);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x55);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x55);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x56);
         func_800367DC(0x57);
@@ -1004,7 +1005,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xAC;
         TrackLoadFromFile(0x59);
         GraphicsLoadImageBank(0x5A);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x5B);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x5B);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x5C);
         func_800367DC(0x5D);
@@ -1018,7 +1019,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xAD;
         TrackLoadFromFile(0x5F);
         GraphicsLoadImageBank(0x60);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x61);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x61);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x62);
         func_800367DC(0x63);
@@ -1031,7 +1032,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xAE;
         TrackLoadFromFile(0x65);
         GraphicsLoadImageBank(0x66);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x67);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x67);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x68);
         func_800367DC(0x69);
@@ -1047,7 +1048,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xAF;
         TrackLoadFromFile(0x6B);
         GraphicsLoadImageBank(0x6C);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x6D);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x6D);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x6E);
         func_800367DC(0x6F);
@@ -1064,7 +1065,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB0;
         TrackLoadFromFile(0x71);
         GraphicsLoadImageBank(0x72);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x73);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x73);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x74);
         func_800367DC(0x75);
@@ -1081,7 +1082,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB1;
         TrackLoadFromFile(0x77);
         GraphicsLoadImageBank(0x78);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x79);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x79);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x7A);
         func_800367DC(0x7B);
@@ -1096,7 +1097,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB2;
         TrackLoadFromFile(0x7D);
         GraphicsLoadImageBank(0x7E);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x7F);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x7F);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x80);
         func_800367DC(0x81);
@@ -1114,7 +1115,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB3;
         TrackLoadFromFile(0x83);
         GraphicsLoadImageBank(0x84);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x85);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x85);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x86);
         func_800367DC(0x87);
@@ -1133,7 +1134,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB4;
         TrackLoadFromFile(0x89);
         GraphicsLoadImageBank(0x8A);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x8B);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x8B);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x8C);
         func_800367DC(0x8D);
@@ -1149,7 +1150,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB5;
         TrackLoadFromFile(0x8F);
         GraphicsLoadImageBank(0x90);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x91);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x91);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x92);
         func_800367DC(0x93);
@@ -1174,7 +1175,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB6;
         TrackLoadFromFile(0x95);
         GraphicsLoadImageBank(0x96);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x97);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x97);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x98);
         func_800367DC(0x99);
@@ -1190,7 +1191,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB7;
         TrackLoadFromFile(0x9B);
         GraphicsLoadImageBank(0x9C);
-        func_8003CA18(STACK_BLOCK_801E0000, 0x9D);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x9D);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0x9E);
         func_800367DC(0x9F);
@@ -1209,7 +1210,7 @@ void TrackLoad(u8 selectTrack) {
         D_800A3720 = 0xB8;
         TrackLoadFromFile(0xA1);
         GraphicsLoadImageBank(0xA2);
-        func_8003CA18(STACK_BLOCK_801E0000, 0xA3);
+        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0xA3);
         TextureLoadTim(STACK_BLOCK_801E0000);
         func_800367DC(0xA4);
         func_800367DC(0xA5);
@@ -1246,7 +1247,7 @@ void TrackLoad(u8 selectTrack) {
     D_800A2E64[0] = setting1;
     D_800A2F50Load = product >> 16;
     D_800A2F88[0] = scaled;
-    func_8001DF60(product);
+    RenderDrawGeometryList(product);
     func_800A2CE0 = track;
 }
 
@@ -1290,18 +1291,18 @@ void func_80014440(void) {
     if (value == 4) {
         value = 5;
     }
-    if (D_800A2EB0Absolute[0] == -1) {
+    if (gSessionTypeAbsolute[0] == -1) {
         value = 5;
     }
     func_8003CAE8(value);
 }
 
 extern u8 D_800A364Cw15[] asm("D_800A364C.NON_MATCHING");
-extern s32 D_800A2EB0w15[] asm("D_800A2EB0.NON_MATCHING");
+extern s32 gSessionTypew15[] asm("gSessionType.NON_MATCHING");
 extern s32 D_800A2E90w15[] asm("D_800A2E90.NON_MATCHING");
 extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
-extern s16 D_800A3696w15[] asm("D_800A3696.NON_MATCHING");
-extern s16 D_800A3694w15[] asm("D_800A3694.NON_MATCHING");
+extern s16 gMusicVolumew15[] asm("gMusicVolume.NON_MATCHING");
+extern s16 gCdVolumew15[] asm("gCdVolume.NON_MATCHING");
 extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
 extern u8 D_800A2F9Cw15[] asm("D_800A2F9C.NON_MATCHING");
 extern u8 D_800A2EDCw15[] asm("D_800A2EDC.NON_MATCHING");
@@ -1312,7 +1313,7 @@ extern u8 D_800A3074w15[] asm("D_800A3074.NON_MATCHING");
 extern u8 D_800A36E1w15[] asm("D_800A36E1.NON_MATCHING");
 extern u8 D_800B9DA4w15[] asm("D_800B9DA4.NON_MATCHING");
 extern u8 gDriverOrderw15[] asm("gDriverOrder.NON_MATCHING");
-extern s32 D_800A2EA4w15[] asm("D_800A2EA4.NON_MATCHING");
+extern s32 gSplitScreenModew15[] asm("gSplitScreenMode.NON_MATCHING");
 extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
 void func_800144B4(void) {
@@ -1336,7 +1337,7 @@ void func_800144B4(void) {
     mode = 0;
     be70c = gDriverOrderw15;
     if (D_800A364Cw15[-8] == 1) {
-        mode = D_800A2EB0w15[0] != (-1);
+        mode = gSessionTypew15[0] != (-1);
     }
     i = 0;
     c20 = 0x20;
@@ -1380,11 +1381,11 @@ loop:
     }
     goto dispatchDone;
 case0:
-    D_800A2EA4w15[0] = 0;
+    gSplitScreenModew15[0] = 0;
 
     goto dispatchShared;
 case1:
-    D_800A2EA4w15[0] = 2;
+    gSplitScreenModew15[0] = 2;
 
 dispatchShared:
     D_8008CA28[0] = 0;
@@ -1392,7 +1393,7 @@ dispatchShared:
 dispatchDone:
     TrackLoad(0);
 
-    v = D_800A2EB0w15[0];
+    v = gSessionTypew15[0];
     if (v > 0) {
         D_800A2E90w15[0] = 0;
     }
@@ -1401,19 +1402,19 @@ dispatchDone:
     } else {
         D_800A2EDAw15[0] = 0;
     }
-    v = D_800A2EB0w15[0];
+    v = gSessionTypew15[0];
     if (v == 1) {
         D_800A2EA8w15[0] = v;
     }
     if (v == 2) {
         D_800A2EA8w15[0] = 999;
     }
-    if (D_800A3696w15[0] != 0) {
+    if (gMusicVolumew15[0] != 0) {
         D_800A2F9Dw15[0] = 1;
     } else {
         D_800A2F9Dw15[0] = 0;
     }
-    if (D_800A3694w15[0] != 0) {
+    if (gCdVolumew15[0] != 0) {
         D_800A2F9Cw15[0] = 1;
     } else {
         D_800A2F9Cw15[0] = 0;
@@ -1421,7 +1422,7 @@ dispatchDone:
     if (D_800A2EDCw15[0] == 0) {
         D_800A2EE0w15[0] = 0;
     }
-    if (D_800A2EA4w15[0] == 2) {
+    if (gSplitScreenModew15[0] == 2) {
         D_800A2EE4w15[0] = D_800A3074w15[0];
         D_800A2EDBw15[0] = D_800A3074w15[-1];
     } else {
@@ -1449,10 +1450,10 @@ dispatchDone:
     }
 }
 
-extern s32 D_800A2EA4w18c[] asm("D_800A2EA4.NON_MATCHING");
+extern s32 gSplitScreenModew18c[] asm("gSplitScreenMode.NON_MATCHING");
 extern s8 gPadTypew18c[] asm("gPadType.NON_MATCHING");
 extern s8 D_800A3A25w18c[] asm("D_800A3A25.NON_MATCHING");
-extern s32 D_800A2EB0w18c[] asm("D_800A2EB0.NON_MATCHING");
+extern s32 gSessionTypew18c[] asm("gSessionType.NON_MATCHING");
 extern u8 D_800A2EDAw18c[] asm("D_800A2EDA.NON_MATCHING");
 extern s8 D_800A3620w18c[] asm("D_800A3620.NON_MATCHING");
 extern s32 D_800A33CCw18c[] asm("D_800A33CC.NON_MATCHING");
@@ -1478,10 +1479,10 @@ void func_8001475C(void) {
     u32 mask;
     s32 one;
 
-    if (D_800A2EA4w18c[0] == 0) {
+    if (gSplitScreenModew18c[0] == 0) {
         D_800A33C0w18c = PadGetButtons(0);
         D_800A33C4w18c = 0;
-        if (gPadTypew18c[0] == 0 && D_800A2EB0w18c[0] >= 0) {
+        if (gPadTypew18c[0] == 0 && gSessionTypew18c[0] >= 0) {
             D_800A33C4w18c = 0;
             D_800A33C0w18c = 0;
             if (D_800A2EC8w18c[0] == 0) {
@@ -1489,7 +1490,7 @@ void func_8001475C(void) {
             }
         }
     } else if ((gPadTypew18c[0] == 0 || D_800A3A25w18c[0] == 0) &&
-               D_800A2EB0w18c[0] >= 0) {
+               gSessionTypew18c[0] >= 0) {
         D_800A33C4w18c = 0;
         D_800A33C0w18c = 0;
         if (gPadTypew18c[0] == 0) {
@@ -1533,7 +1534,7 @@ f4:
         D_800A2D0Cw18c = 1;
         D_800A2D0Fw18c = 1;
     } else if (D_800A359Cw18c != 0) {
-        if (D_800A2EB0w18c[0] == 2) {
+        if (gSessionTypew18c[0] == 2) {
             D_800A2D0Cw18c = 1;
         }
     } else {
@@ -1575,8 +1576,8 @@ loopy:
 
 extern u32 gPrimitiveCursorNonMatching asm("gPrimitiveCursor.NON_MATCHING");
 
-void func_80014A40(s32 arg0) {
-    if ((arg0 & 0xFF) != 0) {
+void GraphicsSelectPrimitiveBuffer(s32 bufferIndex) {
+    if ((bufferIndex & 0xFF) != 0) {
         gPrimitiveCursorNonMatching = (u32)STACK_BLOCK_801E6600;
     } else {
         gPrimitiveCursorNonMatching = (u32)STACK_BLOCK_801D6C00;
@@ -1602,7 +1603,7 @@ extern u32 gPrimitiveCursor_gp asm("gPrimitiveCursor.NON_MATCHING");
 extern u32 D_800A3570;
 extern s32 D_800A38F4;
 
-s32 func_80014AC8(s32 arg0) {
+s32 GraphicsHasFreePrimitives(s32 arg0) {
     s32 freePrims;
     s32 usedPrims;
 
@@ -1617,27 +1618,28 @@ s32 func_80014AC8(s32 arg0) {
 extern void *D_800A39A4;
 extern s32 D_800BE970[];
 extern s32 D_800BE984[];
-extern char D_8008CB94[] __attribute__((aligned(4)));
-extern char D_8008CBB4[] __attribute__((aligned(4)));
-extern char D_8008CBD0[] __attribute__((aligned(4)));
+extern char gErrorTrackVertexAllocation[] __attribute__((aligned(4)));
+extern char gErrorTrackFaceAllocation[] __attribute__((aligned(4)));
+extern char gErrorTrackSpecialObjectAllocation[] __attribute__((aligned(4)));
 /* Resource loading. */
 
-void func_80014B10(s32 arg0, s32 arg1, s32 arg2) {
+void TrackAllocateGeometryBuffers(s32 vertexCount, s32 faceCount,
+                                  s32 specialObjectCount) {
     void *ptr;
-    ptr = HeapAlloc(arg0 * 8);
+    ptr = HeapAlloc(vertexCount * 8);
     D_800BE97C[0] = ptr;
     if (ptr == 0)
-        SystemShowFatalError(D_8008CB94);
-    ptr = HeapAlloc(arg1 * 0x2C);
+        SystemShowFatalError(gErrorTrackVertexAllocation);
+    ptr = HeapAlloc(faceCount * 0x2C);
     D_800A3A40 = ptr;
     if (ptr == 0)
-        SystemShowFatalError(D_8008CBB4);
+        SystemShowFatalError(gErrorTrackFaceAllocation);
     D_800BE984[0] = 0;
-    D_800BE970[0] = arg0;
-    ptr = HeapAlloc(arg2 * 0x21C);
+    D_800BE970[0] = vertexCount;
+    ptr = HeapAlloc(specialObjectCount * 0x21C);
     D_800A39A4 = ptr;
     if (ptr == 0)
-        SystemShowFatalError(D_8008CBD0);
+        SystemShowFatalError(gErrorTrackSpecialObjectAllocation);
 }
 
 typedef struct {
@@ -1839,19 +1841,19 @@ void TrackReadData(s32 *trackData, s32 file) {
     D_800BE97C[0] = allocatedVertices;
     sectionData = sectionHeader + 4;
     if (allocatedVertices == NULL) {
-        SystemShowFatalError(&D_8008CB94);
+        SystemShowFatalError(&gErrorTrackVertexAllocation);
     }
     allocatedFaces = HeapAlloc(faceCount * 0x2C);
     D_800A3A40 = allocatedFaces;
     if (allocatedFaces == NULL) {
-        SystemShowFatalError(&D_8008CBB4);
+        SystemShowFatalError(&gErrorTrackFaceAllocation);
     }
     D_800BE984[0] = 0;
     D_800BE970[0] = (s32)vertexCount;
     allocatedNodes = HeapAlloc(nodeCount * 0x21C);
     D_800A39A4 = allocatedNodes;
     if (allocatedNodes == NULL) {
-        SystemShowFatalError(&D_8008CBD0);
+        SystemShowFatalError(&gErrorTrackSpecialObjectAllocation);
     }
     i = 0;
     allocatedObjects = HeapAlloc(resource->objectCount * 0x90);
@@ -2274,7 +2276,7 @@ s32 func_800157B0(s16 *arg0, void *arg1, u8 *arg2) {
     return count;
 }
 
-extern u8 D_8008CC6C[];
+extern u8 gErrorSeparateWalls[];
 
 void func_80015870(u8 *arg0, void *arg1) {
     char buffer[0x40];
@@ -2291,7 +2293,7 @@ void func_80015870(u8 *arg0, void *arg1) {
                 ListPushFront(node, (u8 **)arg1, (u8 **)((u8 *)arg1 + 4));
             }
             if (*(u8 *)(node + 0x12) >= 5) {
-                sprintf(buffer, D_8008CC6C);
+                sprintf(buffer, gErrorSeparateWalls);
                 GraphicsRenderFrame((s32)buffer);
             }
             node = next;
@@ -2374,13 +2376,13 @@ void TrackLoadFromFile(s32 arg0) {
     extern s32 FileOpen(s32, void *);
     extern void TrackReadData(s32 *, s32);
     extern void FileClose(s32);
-    extern char D_8008CC7C[] __attribute__((aligned(4)));
-    extern u8 D_800A2D48[];
+    extern char gErrorTrackFileOpen[] __attribute__((aligned(4)));
+    extern u8 gTrackFileMode[];
     extern u8 D_800A2D4C[];
     s32 value0;
-    value0 = FileOpen(arg0, D_800A2D48);
+    value0 = FileOpen(arg0, gTrackFileMode);
     if (value0 == 0)
-        SystemShowFatalError(D_8008CC7C);
+        SystemShowFatalError(gErrorTrackFileOpen);
     TrackReadData(D_800BE970, value0);
     D_800A2D4C[0] = 1;
     FileClose(value0);
@@ -2388,7 +2390,7 @@ void TrackLoadFromFile(s32 arg0) {
 
 /* Geometry, projection, and drawing buffers. */
 
-void func_80015AE0(s32 *transform, MATRIX *matrix) {
+void MatrixCopyTransformBasis(s32 *transform, MATRIX *matrix) {
     matrix->m[0][0] = (s16)(-transform[7] / 16);
     matrix->m[1][0] = (s16)(-transform[8] / 16);
     matrix->m[2][0] = (s16)(transform[6] / 16);
@@ -2581,7 +2583,7 @@ void func_80016298(s16 *arg0, u8 *arg1) {
     singles = width % 3;
     while (singles > 0) {
         RotTransPers_nom(arg1);
-        func_80033788(arg1);
+        GteStoreDepthAndScreenCoordinates(arg1);
         arg1 += 0x14;
         singles--;
         width--;

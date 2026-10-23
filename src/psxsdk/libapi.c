@@ -140,29 +140,29 @@ extern u32 D_8009B9E8[];
 
 extern volatile RCnt *_counters asm("D_8009B9E8");
 long SetRCnt(long timer, unsigned short target, long mode) {
-    long i = timer & 0xFFFF;
-    long md = 0x48;
-    if (i >= 3) {
+    long timerIndex = timer & 0xFFFF;
+    long modeValue = 0x48;
+    if (timerIndex >= 3) {
         return 0;
     }
-    _counters[i].mode = 0;
-    _counters[i].target = target;
-    if (i < 2U) {
+    _counters[timerIndex].mode = 0;
+    _counters[timerIndex].target = target;
+    if (timerIndex < 2U) {
         if (mode & 0x10) {
-            md = 0x49;
+            modeValue = 0x49;
         }
         if (!(mode & 1)) {
-            md |= 0x100;
+            modeValue |= 0x100;
         }
-    } else if (i == 2U) {
+    } else if (timerIndex == 2U) {
         if (!(mode & 1)) {
-            md = 0x248;
+            modeValue = 0x248;
         }
     }
     if ((mode & 0x1000) != 0) {
-        md |= 0x10;
+        modeValue |= 0x10;
     }
-    _counters[i].mode = md;
+    _counters[timerIndex].mode = modeValue;
     return 1;
 }
 

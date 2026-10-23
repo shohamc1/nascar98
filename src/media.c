@@ -22,11 +22,11 @@ extern void SoundPlaySlot(s8, s8);
 extern void SsSetMute(s32);
 s32 VSync(s32);
 extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
-void TextureLoadTim(void *arg0);
+void TextureLoadTim(void *timImage);
 asm(".globl MenuDrawStringW");
-extern u16 D_800A3694Absolute[];
+extern u16 gCdVolumeAbsolute[];
 void *FileOpen(s32 fileId, void *mode);
-void *FileLoadToHeap(s32 arg0);
+void *FileLoadToHeap(s32 fileId);
 void func_80063A28(void);
 
 extern u8 gPadLayout[];
@@ -394,7 +394,7 @@ void func_8006EB18(u8 *obj) {
 }
 
 extern u8 D_800AD984[];
-void func_8006EEBC(void) {
+void BufferClear17Bytes(void) {
     s32 i;
     u8 *ptr;
     i = 16;
@@ -412,9 +412,9 @@ extern s32 D_8009A2E0[];
 extern s32 D_8009A300[];
 extern s8 gPadTypeAbsolute[];
 extern s32 RandomScaledGetVoid(void);
-extern void func_80041AF0i(s32);
+extern void PadResetAndInitializeBuffersi(s32);
 asm(".globl RandomScaledGetVoid\nRandomScaledGetVoid = RandomScaledGet");
-asm(".globl func_80041AF0i\nfunc_80041AF0i = func_80041AF0");
+asm(".globl PadResetAndInitializeBuffersi\nPadResetAndInitializeBuffersi = PadResetAndInitializeBuffers");
 
 void func_8006EEE0(s32 arg0) {
     RECT rect;
@@ -446,7 +446,7 @@ void func_8006EEE0(s32 arg0) {
     }
     DrawSync(0);
     ClearOTagR((OT_TYPE *)gOrderingTable[0], 0x400);
-    func_8005A7B8(2, 2);
+    MenuFontSet(2, 2);
     if (gPadTypeAbsolute[0] == 2) {
         textId = D_8009A300[0];
     } else {
@@ -456,16 +456,16 @@ void func_8006EEE0(s32 arg0) {
     DrawOTag((OT_TYPE *)(gOrderingTable[0] + 0xC));
     PutDispEnv(&disp);
     SetDispMask(1);
-    func_800596F4();
+    CdEnablePlaybackAndSetVolume();
     do {
-        func_80041AF0i(0);
+        PadResetAndInitializeBuffersi(0);
     } while (PadGetButtons(0) != 0);
     flag = 0;
     countdown = 0x384;
     do {
         RandomScaledGetVoid();
         VSync(0);
-        func_80041AF0i(0);
+        PadResetAndInitializeBuffersi(0);
         buttons = PadGetButtons(0);
         if ((buttons = buttons) & 0x800 || (buttons = buttons) & 0x40 ||
             countdown == 0) {
@@ -478,44 +478,44 @@ void func_8006EEE0(s32 arg0) {
     SoundPlaySlot(0, 3);
 }
 
-void func_8006F128(s32 arg0) {
+void MoviePlayIndexedFile(s32 fileIndex) {
     s32 pad[6];
 
     if (D_800A2F9CLui != 0) {
         func_8003CCE0(0);
         D_800A2F9CLui = 0;
     }
-    MoviePlayFile((arg0 & 0xFF) + 0x3A, 0, 0);
-    func_800596F4();
-    CdSetMixVolume(((u8 *)D_800A3694Absolute)[0]);
+    MoviePlayFile((fileIndex & 0xFF) + 0x3A, 0, 0);
+    CdEnablePlaybackAndSetVolume();
+    CdSetMixVolume(((u8 *)gCdVolumeAbsolute)[0]);
 }
 
-extern u8 D_800A3694AbsoluteU8[] asm("D_800A3694Absolute");
-void func_8006F194(s32 arg) {
+extern u8 gCdVolumeAbsoluteU8[] asm("gCdVolumeAbsolute");
+void MoviePlayIndexedFileAlternate(s32 arg) {
     if (D_800A2F9CLui != 0) {
         func_8003CCE0(0);
         D_800A2F9CLui = 0;
     }
     MoviePlayFile((arg & 0xFF) + 0xC, 0, 0);
-    func_800596F4();
-    CdSetMixVolume(D_800A3694AbsoluteU8[0]);
+    CdEnablePlaybackAndSetVolume();
+    CdSetMixVolume(gCdVolumeAbsoluteU8[0]);
 }
 
 extern s32 D_800A3904w16 asm("D_800A3904.NON_MATCHING");
 extern u8 *func_800719FC(s32 *);
 extern void func_800718D4(s32);
 extern void func_80072750(void);
-extern void func_80072A34(void);
-extern s32 func_80072A5C(void);
-extern s32 func_80072AFC(u32);
+extern void AudioEnableStream(void);
+extern s32 AudioGetStreamCounter(void);
+extern s32 AudioGetStreamPositionLimit(u32);
 extern void AudioQueueAdpcm(u8 *);
 extern void AudioQueueStereoAdpcm(u8 *);
-extern void func_80070750(s32);
-extern void func_8007005C(void);
-extern void func_80070018Args(u8 *, s32, s32);
-asm(".globl func_80070018Args\nfunc_80070018Args = func_80070018");
-extern void func_80041AF0Arg(s32);
-asm(".globl func_80041AF0Arg\nfunc_80041AF0Arg = func_80041AF0");
+extern void MediaBuildVlcLookup(s32);
+extern void VideoSwapDisplayAndDrawEnvironments(void);
+extern void MovieDispatchFrameUpdateArgs(u8 *, s32, s32);
+asm(".globl MovieDispatchFrameUpdateArgs\nMovieDispatchFrameUpdateArgs = MovieDispatchFrameUpdate");
+extern void PadResetAndInitializeBuffersArg(s32);
+asm(".globl PadResetAndInitializeBuffersArg\nPadResetAndInitializeBuffersArg = PadResetAndInitializeBuffers");
 
 s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
     s32 block;
@@ -536,7 +536,7 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
     D_800A3904w16 = 0;
     while (1) {
         if (i >= 4) {
-            func_80041AF0Arg(0);
+            PadResetAndInitializeBuffersArg(0);
             status = PadGetButtons(0);
             if ((status & 0x840)) {
                 D_800A3904w16 = status;
@@ -570,7 +570,7 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
             }
             switch (magic) {
             case 0x564C4330:
-                func_80070750((s32)(p + 8));
+                MediaBuildVlcLookup((s32)(p + 8));
                 break;
 
             case 0x41643130:
@@ -600,15 +600,15 @@ s32 func_8006F200(s32 arg0, s32 arg1, u32 arg2) {
                 if (idx == 1) {
                     func_80072750();
                 }
-                func_80072A34();
+                AudioEnableStream();
                 i = idx + 1;
-                limit = func_80072AFC(idx);
-                func_80070018Args(p, arg0, arg1);
-                while (((u32)func_80072A5C()) < limit) {
+                limit = AudioGetStreamPositionLimit(idx);
+                MovieDispatchFrameUpdateArgs(p, arg0, arg1);
+                while (((u32)AudioGetStreamCounter()) < limit) {
                     VSync(0);
                 }
 
-                func_8007005C();
+                VideoSwapDisplayAndDrawEnvironments();
                 break;
 
             default:
@@ -628,7 +628,7 @@ done:
 
 extern long SpuMalloc(long size);
 extern void SpuFree(unsigned long addr);
-extern void func_80072A48(void);
+extern void AudioDisableStream(void);
 extern s32 MdecBuildVlcLookup(u8 *first, u8 *second, u8 *table);
 extern s32 CdStreamInit();
 extern s32 AudioInit();
@@ -638,12 +638,12 @@ extern void AudioShutdown(void);
 extern s32 AudioGetContextSize(void);
 extern void MdecStreamShutdown(s32);
 extern void func_800700F8(void);
-extern s32 func_80070124(void);
+extern s32 MdecGetBufferSize(void);
 extern void func_8007012C(void);
-extern s32 func_80071EC0(s32, s32, s32);
-extern void func_80072A20(s32);
-extern s32 func_80072B4C(void);
-extern s32 func_80073BC8(void);
+extern s32 MediaGetBufferAllocationSize(s32, s32, s32);
+extern void AudioSetStreamMode(s32);
+extern s32 AudioCountActiveStreamBuffers(void);
+extern s32 AudioGetSpuBufferSize(void);
 extern u8 gPlayerDriver[];
 extern u8 D_800A3397;
 extern u8 D_800A39BC;
@@ -696,30 +696,34 @@ s32 MoviePlay(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
             if (vlcTable != NULL) {
                 MdecBuildVlcLookup(vlcBuf, vlcTable, NULL);
                 func_800700F8();
-                mdecBuf = HeapAlloc(func_80070124());
+                mdecBuf = HeapAlloc(MdecGetBufferSize());
                 if (mdecBuf != NULL) {
                     if (func_800703D0(mdecBuf, frameBuf,
                                       (u8 *)frameBuf + 0xF000,
                                       (u8 *)frameBuf + 0x1E000, 1, arg5, 1)) {
-                        cdBuf = HeapAlloc(func_80071EC0(arg6, 0x4400, arg1));
+                        cdBuf = HeapAlloc(
+                            MediaGetBufferAllocationSize(arg6, 0x4400, arg1));
                         if (cdBuf != NULL) {
-                            if (CdStreamInit(cdBuf, func_80072A48, arg0, arg1,
-                                             0x800)) {
+                            if (CdStreamInit(cdBuf, AudioDisableStream, arg0,
+                                             arg1, 0x800)) {
                                 audioCtx = HeapAlloc(AudioGetContextSize());
                                 if (audioCtx != NULL) {
-                                    spuBuf0 = SpuMalloc(func_80073BC8());
+                                    spuBuf0 =
+                                        SpuMalloc(AudioGetSpuBufferSize());
                                     if (spuBuf0 != 0) {
-                                        spuBuf1 = SpuMalloc(func_80073BC8());
+                                        spuBuf1 =
+                                            SpuMalloc(AudioGetSpuBufferSize());
                                         if (spuBuf1 != 0) {
                                             if (AudioInit(audioCtx, 0x400000,
                                                           spuBuf0, 0x800000,
                                                           spuBuf1, arg2, 1)) {
-                                                func_80072A20(0);
+                                                AudioSetStreamMode(0);
                                                 result = func_8006F200(
                                                     arg3, arg4, arg6 * arg7);
                                                 tries = 3;
-                                                while (func_80072B4C() &&
-                                                       tries > 0) {
+                                                while (
+                                                    AudioCountActiveStreamBuffers() &&
+                                                    tries > 0) {
                                                     VSync(0);
                                                     tries--;
                                                 }
@@ -791,9 +795,9 @@ void SoundInitOutput(void) {
     SsSetMute(0);
 }
 
-extern u8 D_800A3394[];
+extern u8 gMovieFileModeReadBinary[];
 extern s32 MoviePlay(s32, s32, s32, s32, s32, s32, s32, s32);
-s32 MoviePlayFile(s32 arg0, s32 arg1, s32 arg2) {
+s32 MoviePlayFile(s32 fileId, s32 arg1, s32 arg2) {
     volatile s32 pad[14];
     void *handle;
 
@@ -801,7 +805,7 @@ s32 MoviePlayFile(s32 arg0, s32 arg1, s32 arg2) {
     SsSetSerialAttr(0, 0, 1);
     SsSetSerialVol(0, 0x7FFF, 0x7FFF);
     SsSetMute(0);
-    handle = FileOpen(arg0, D_800A3394);
+    handle = FileOpen(fileId, gMovieFileModeReadBinary);
     D_800A3397 = (u8)arg1;
     D_800A39BC = (u8)arg2;
     return MoviePlay((s32)handle, 1, 0x800, 0, 0xA, 1, 0xC8, 0x400) & 0xFF;
@@ -820,17 +824,17 @@ extern s32 *D_800A3398;
 extern s32 D_800A33A0;
 void func_8006FAAC(void) {
     typedef struct {
-        RECT unk0[2];
-        s32 unk10;
+        RECT uploadRects[2];
+        s32 activeRect;
         s32 unk14;
         s32 unk18;
-        u16 unk1C;
-        u16 unk1E;
-        u16 unk20;
-        u16 unk22;
-        u_long *unk24;
+        u16 uploadX;
+        u16 uploadY;
+        u16 imageWidth;
+        u16 imageHeight;
+        u_long *imageBuffer;
         u8 unk28[0xF4];
-        s32 unk11C;
+        s32 uploadComplete;
     } StreamVram;
     volatile StreamVram *st;
     volatile StreamVram *st2;
@@ -845,47 +849,47 @@ void func_8006FAAC(void) {
     s32 n;
 
     st = (volatile StreamVram *)D_800A3398;
-    LoadImage((RECT *)&st->unk1C, st->unk24);
+    LoadImage((RECT *)&st->uploadX, st->imageBuffer);
     st2 = (volatile StreamVram *)D_800A3398;
-    st2->unk1C = st2->unk1C + D_800A33A0 * 8;
-    xv = (s16)st2->unk1C;
-    ex = &st2->unk0[st2->unk10].x;
+    st2->uploadX = st2->uploadX + D_800A33A0 * 8;
+    xv = (s16)st2->uploadX;
+    ex = &st2->uploadRects[st2->activeRect].x;
     a = *ex;
-    ew = &st2->unk0[st2->unk10].w;
+    ew = &st2->uploadRects[st2->activeRect].w;
     b = *ew;
     if (xv < a + b) {
-        w = (s16)st2->unk20;
-        h = (s16)st2->unk22;
-        buf = st2->unk24;
+        w = (s16)st2->imageWidth;
+        h = (s16)st2->imageHeight;
+        buf = st2->imageBuffer;
         n = w * h;
         DecDCTout(buf, n / 2);
     } else {
-        st2->unk11C = 1;
-        st2->unk10 = !st2->unk10;
-        st2->unk1C = (u16)st2->unk0[st2->unk10].x;
-        st2->unk1E = (u16)st2->unk0[st2->unk10].y;
+        st2->uploadComplete = 1;
+        st2->activeRect = !st2->activeRect;
+        st2->uploadX = (u16)st2->uploadRects[st2->activeRect].x;
+        st2->uploadY = (u16)st2->uploadRects[st2->activeRect].y;
     }
 }
 
 extern void func_800708D8(void *, s32);
 extern s32 D_800A339C;
 
-void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
+void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     typedef struct {
-        RECT unk0[2];
-        s32 unk10;
+        RECT uploadRects[2];
+        s32 activeRect;
         s32 unk14;
         s32 unk18;
-        u16 unk1C;
-        u16 unk1E;
-        u16 unk20;
-        u16 unk22;
-        u_long *unk24;
-        u32 unk28[2];
-        s32 unk30;
+        u16 uploadX;
+        u16 uploadY;
+        u16 imageWidth;
+        u16 imageHeight;
+        u_long *imageBuffer;
+        u32 decodeBuffers[2];
+        s32 decodeBufferIndex;
         u8 unk34[0xE4];
         s32 unk118;
-        s32 unk11C;
+        s32 uploadComplete;
     } StreamVram;
     StreamVram *st;
     StreamVram *st2;
@@ -911,18 +915,18 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
     s32 h32;
     u32 i;
 
-    word = *(u32 *)arg0;
-    w8 = *(u16 *)(arg0 + 8);
+    word = *(u32 *)frameData;
+    w8 = *(u16 *)(frameData + 8);
     st = (StreamVram *)D_800A3398;
 
     bsw = word >> 0x18;
     bsw = bsw | ((word >> 8) & 0xFF00);
     bsw = bsw | ((word & 0xFF00) << 8);
     magic = bsw | (word << 0x18);
-    wA = *(u16 *)(arg0 + 0xA);
+    wA = *(u16 *)(frameData + 0xA);
     asm volatile("srl %0, %1, 8" : "=r"(cnt) : "r"(wA));
     wAlo = wA & 0xFF;
-    asm volatile("lhu %0, 8(%1)" : "=r"(w8) : "r"(arg0));
+    asm volatile("lhu %0, 8(%1)" : "=r"(w8) : "r"(frameData));
     wAlo = wAlo << 8;
     bsw = cnt | wAlo;
     cnt = *(s32 *)((u8 *)(st) + 0x118);
@@ -933,57 +937,60 @@ void func_8006FBB0Args(u8 *arg0, s32 arg1, s16 arg2) {
     if (cnt == 0) {
         wA = D_800A33A0;
         mdecId = 0x4D444543;
-        asm("" : "=r"(xv) : "0"(arg1));
-        st->unk0[0].x = arg1;
-        st->unk0[0].y = arg2;
-        st->unk0[0].h = bsw;
-        st->unk0[1].y = arg2;
-        st->unk0[1].h = bsw;
+        asm("" : "=r"(xv) : "0"(x));
+        st->uploadRects[0].x = x;
+        st->uploadRects[0].y = y;
+        st->uploadRects[0].h = bsw;
+        st->uploadRects[1].y = y;
+        st->uploadRects[1].h = bsw;
         asm volatile("mult %0, %1" : : "r"(nsec), "r"(wA) : "lo", "hi");
-        st->unk1C = xv;
-        st->unk1E = arg2;
+        st->uploadX = xv;
+        st->uploadY = y;
         do {
         } while (0);
-        st->unk0[1].x = arg1 + wA * 0xA0;
-        st->unk20 = wA * 8;
-        st->unk22 = bsw;
-        st->unk10 = 0;
+        st->uploadRects[1].x = x + wA * 0xA0;
+        st->imageWidth = wA * 8;
+        st->imageHeight = bsw;
+        st->activeRect = 0;
         asm volatile("mflo %0" : "=r"(prod));
         w8 = prod >> 1;
-        st->unk0[0].w = w8;
-        st->unk0[1].w = w8;
+        st->uploadRects[0].w = w8;
+        st->uploadRects[1].w = w8;
         if (magic == mdecId) {
-            func_800708D8(arg0 + 0x10, (s32)st->unk28[st->unk30]);
+            func_800708D8(frameData + 0x10,
+                          (s32)st->decodeBuffers[st->decodeBufferIndex]);
         }
         ((volatile s32 *)D_800A3398)[0x47] = 0;
     } else {
-        st->unk11C = 0;
-        DecDCTin((u_long *)st->unk28[1 - st->unk30], D_800A339C);
+        st->uploadComplete = 0;
+        DecDCTin((u_long *)st->decodeBuffers[1 - st->decodeBufferIndex],
+                 D_800A339C);
         st2 = (StreamVram *)D_800A3398;
         asm volatile("lhu %0, 0x20(%1)" : "=r"(bsw) : "r"(st2));
         asm volatile("lhu %0, 0x22(%1)" : "=r"(h16u) : "r"(st2));
         w32 = (s16)bsw;
         h32 = (s16)h16u;
         asm volatile("mult %0, %1" : : "r"(w32), "r"(h32) : "lo", "hi");
-        outp = (u_long *)st2->unk24;
+        outp = (u_long *)st2->imageBuffer;
         asm volatile("mflo %0" : "=r"(prod2));
         DecDCTout(outp, prod2 / 2);
         mdecId2 = 0x4D444543;
         if (magic == mdecId2) {
             st2 = (StreamVram *)D_800A3398;
-            func_800708D8(arg0 + 0x10, (s32)st2->unk28[st2->unk30]);
+            func_800708D8(frameData + 0x10,
+                          (s32)st2->decodeBuffers[st2->decodeBufferIndex]);
         }
         DecDCToutSync(0);
         vst = (volatile StreamVram *)D_800A3398;
         i = 0;
-        if (vst->unk11C == 0) {
+        if (vst->uploadComplete == 0) {
             bsw = 0x30D40;
         again:
             if (i > bsw) {
                 goto done;
             }
             i++;
-            if (vst->unk11C == 0) {
+            if (vst->uploadComplete == 0) {
                 goto again;
             }
         }
@@ -995,7 +1002,7 @@ done:
 }
 asm(".globl func_8006FBB0\nfunc_8006FBB0 = func_8006FBB0Args");
 
-void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
+void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     RECT rect;
     volatile s32 pad[2];
     u32 word;
@@ -1009,15 +1016,15 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
     u32 nsectors16;
     s32 stride;
 
-    word = *(u32 *)arg0;
-    w8 = *(u16 *)(arg0 + 8);
-    wA = *(u16 *)(arg0 + 0xA);
+    word = *(u32 *)frameData;
+    w8 = *(u16 *)(frameData + 8);
+    wA = *(u16 *)(frameData + 0xA);
     magic = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) |
             (word << 0x18);
-    rect.y = arg2;
+    rect.y = y;
     str = D_800A3398;
     height16 = (wA >> 8) | ((wA & 0xFF) << 8);
-    rect.x = (u32)(arg1 * D_800A33A0) >> 1;
+    rect.x = (u32)(x * D_800A33A0) >> 1;
     nsectors16 = (w8 >> 8) | ((w8 & 0xFF) << 8);
     if (str[0x45] != 0) {
         rect.x = rect.x + D_800A33A0 * 0xA0;
@@ -1026,7 +1033,7 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
     rect.h = height16;
     if (str[0x46] == 0) {
         if (magic == 0x4D444543) {
-            func_800708D8(arg0 + 0x10,
+            func_800708D8(frameData + 0x10,
                           *(s32 *)((s32)str + str[0xC] * 4 + 0x28));
         }
         ((volatile s32 *)D_800A3398)[0x47] = 0;
@@ -1038,8 +1045,9 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
         DecDCTout((u_long *)output,
                   ((u32)(height16 * stride) >> 1) * (nsectors16 >> 4));
         if (magic == 0x4D444543) {
-            func_800708D8(arg0 + 0x10, *(s32 *)((s32)D_800A3398 +
-                                                D_800A3398[0xC] * 4 + 0x28));
+            func_800708D8(
+                frameData + 0x10,
+                *(s32 *)((s32)D_800A3398 + D_800A3398[0xC] * 4 + 0x28));
         }
         DecDCToutSync(0);
         i = 0;
@@ -1061,14 +1069,14 @@ void func_8006FDDC(u8 *arg0, s32 arg1, s16 arg2) {
 void func_8006FBB0(void);
 extern void func_8006FDDCNoArgs(void);
 asm(".globl func_8006FDDCNoArgs\nfunc_8006FDDCNoArgs = func_8006FDDC");
-void func_80070018(void) {
+void MovieDispatchFrameUpdate(void) {
     if (D_800A3398[0x12C / 4])
         func_8006FBB0();
     else
         func_8006FDDCNoArgs();
 }
 
-void func_8007005C(void) {
+void VideoSwapDisplayAndDrawEnvironments(void) {
     s32 *s;
     s32 *s2;
     s32 other;
@@ -1095,7 +1103,7 @@ void func_80070110(void) {
     D_800A33A0 = 2;
 }
 
-s32 func_80070124(void) {
+s32 MdecGetBufferSize(void) {
     return 0x130;
 }
 
@@ -1275,7 +1283,7 @@ s32 func_800703D0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
 extern u8 *D_800A33A8;
 extern u8 *D_800A33AC;
 extern u8 D_8009B800[];
-void func_80070750(s32 arg) {
+void MediaBuildVlcLookup(s32 arg) {
     if (arg != 0) {
         MdecBuildVlcLookup(D_800A33A8, D_800A33AC, (u8 *)arg);
     } else {
@@ -1395,7 +1403,7 @@ s32 MdecBuildVlcLookup(u8 *dst, u8 *dst2, u8 *src) {
 extern s32 func_800708D8Ret(void *arg0, s32 arg1);
 asm(".globl func_800708D8\nfunc_800708D8 = func_800708D8Ret");
 
-s32 func_800708D8Ret(void *arg0, s32 arg1) {
+s32 func_800708D8Ret(void *source, s32 outputAddress) {
     u16 *src;
     u16 *out;
     u8 *tbl1;
@@ -1415,8 +1423,8 @@ s32 func_800708D8Ret(void *arg0, s32 arg1) {
     u32 scale;
     u32 hdr;
 
-    src = (u16 *)arg0;
-    out = (u16 *)arg1;
+    src = (u16 *)source;
+    out = (u16 *)outputAddress;
     tbl1 = D_800A33A8;
     tbl2 = D_800A33AC;
     bitpos = 0;
@@ -2296,7 +2304,7 @@ void CdStreamSetEnabled(s32 enable) {
 
 extern s32 D_800A3514;
 extern s32 D_800A3518;
-s32 func_80071EC0(s32 index, s32 base, s32 item) {
+s32 MediaGetBufferAllocationSize(s32 index, s32 base, s32 item) {
     D_800A3510 = index;
     index <<= 11;
     index += 0x57C;
@@ -2657,23 +2665,23 @@ void func_80072750(void) {
     SpuSetKey(1, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);
 }
 
-void func_80072A20(s32 value) {
+void AudioSetStreamMode(s32 value) {
     D_800A351C[0x7B74 / 4] = value;
 }
 
-void func_80072A34(void) {
+void AudioEnableStream(void) {
     D_800A351C[0x7B20 / 4] = 1;
 }
 
-void func_80072A48(void) {
+void AudioDisableStream(void) {
     D_800A351C[0x7B20 / 4] = 0;
 }
 
-s32 func_80072A5C(void) {
+s32 AudioGetStreamCounter(void) {
     return D_800A351C[0x7B24 / 4];
 }
 
-s32 func_80072A70(void) {
+s32 AudioGetScaledStreamPosition(void) {
     u32 val;
     long long q;
     s32 mode;
@@ -2693,14 +2701,14 @@ s32 func_80072A70(void) {
 }
 
 /* Enabled after the maspsx li-$reg,0 wrapper fix; see matching.md. */
-s32 func_80072AFC(u32 arg) {
+s32 AudioGetStreamPositionLimit(u32 arg) {
     if (D_800A351C[0x7B74 / 4] == 1) {
         return (long long)arg * 0x271000 / 0xBB5;
     }
     return arg << 10;
 }
 
-s32 func_80072B4C(void) {
+s32 AudioCountActiveStreamBuffers(void) {
     u16 flag;
     volatile s32 *p;
     u32 i;
@@ -2720,15 +2728,15 @@ s32 func_80072B4C(void) {
     return count;
 }
 
-s32 func_80072B88(void) {
+s32 AudioGetStreamReadPosition(void) {
     return D_800A351C[0];
 }
 
-s32 func_80072B9C(void) {
+s32 AudioGetStreamWritePosition(void) {
     return D_800A351C[1];
 }
 
-s32 func_80072BB0(s32 *size) {
+s32 AudioGetStreamFreeSpace(s32 *size) {
     s32 difference;
     if (size)
         *size = 0x3C00;
@@ -2978,7 +2986,7 @@ void AudioQueueStereoAdpcm(u8 *block) {
 #undef COPY_ADPCM_BLOCKS
 #undef COPY_ADPCM_BLOCKS_BODY
 
-void func_80073948(void) {
+void AudioBeginStreamUpdate(void) {
     volatile s32 *p;
     volatile s32 *field;
     u32 i;
@@ -2994,11 +3002,11 @@ void func_80073948(void) {
     } while (i < 4);
 }
 
-void func_80073978(void) {
+void AudioEndStreamUpdate(void) {
     D_800A351C[0x7B78 / 4] = 0;
 }
 
-void func_8007398C(void) {
+void AudioResetStreamState(void) {
     volatile s32 *field;
     volatile s32 *p;
     u32 i;
@@ -3042,7 +3050,7 @@ void func_800739E0(void) {
 
 extern void SpuSetReverbVoice(s32, s32);
 
-void func_80073A44(void) {
+void AudioApplyStreamReverbVoices(void) {
     SpuSetKey(0, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);
     SpuSetReverbVoice(D_800A351C[0x7B6C / 4], D_800A351C[0x7B64 / 4]);
     SpuSetReverbVoice(D_800A351C[0x7B70 / 4], D_800A351C[0x7B68 / 4]);
@@ -3085,7 +3093,7 @@ void AudioShutdown(void) {
     SwExitCriticalSection();
 }
 
-s32 func_80073BC8(void) {
+s32 AudioGetSpuBufferSize(void) {
     return 0xC00;
 }
 
@@ -3093,7 +3101,7 @@ s32 AudioGetContextSize(void) {
     return 0x7B80;
 }
 
-s32 func_80073BD8(void) {
+s32 AudioGetStreamStatus(void) {
     return D_800A351C[0x7B58 / 4];
 }
 

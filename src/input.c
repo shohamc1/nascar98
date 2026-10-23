@@ -14,12 +14,12 @@
 #include "util.h"
 
 extern u8 *gCarListnm[] asm("gCarList.NON_MATCHING");
-void func_80041AF0();
+void PadResetAndInitializeBuffers();
 
 /* Controller state and input. */
 
-void func_80041AD0(void) {
-    func_80041AF0();
+void PadInitialize(void) {
+    PadResetAndInitializeBuffers();
 }
 
 extern s32 gPadBuffers[];
@@ -36,7 +36,7 @@ extern u32 D_800B9E00[];
 extern u32 D_800B9E04[];
 extern void func_80041F54(s32 *, s32 *, s32, s32);
 
-void func_80041AF0(void) {
+void PadResetAndInitializeBuffers(void) {
     D_8008CA14[0] = 0xFFFF0000;
     D_8008CA18[0] = 0;
     D_8008CA1C[0] = 0xFFFF0000;
@@ -53,21 +53,21 @@ s32 PadGetButtons(s32 index) {
     return D_8008CA04U16[index * 4];
 }
 
-u16 func_80041B94(s32 index) {
+u16 PadGetButtonWord(s32 index) {
     return D_8008CA04U16[index];
 }
 
 /* Wall: retail computes the nibble before the 0xFF branch and keeps it
  * in a0 with a final move v0,a0 on both paths; our shapes either go
  * branchless (xori/sltu/negu) or compute after the branch. */
-u32 PadGetType(s32 arg0) {
+u32 PadGetType(s32 padIndex) {
     s32 temp;
     s32 result;
 
-    if (arg0 < 0) {
+    if (padIndex < 0) {
         return 0;
     }
-    temp = gPadBuffers[arg0 * 3];
+    temp = gPadBuffers[padIndex * 3];
     result = ((u32)(temp & 0xF000)) >> 12;
     if ((temp & 0xFF) == 0xFF) {
         temp = 0;
@@ -81,30 +81,30 @@ extern u8 D_8008CA06[];
 /* Retail keeps an empty 8-byte frame; `framePad` reproduces it. The `u16 mode`
  * keeps the nor result and the or-accumulator in separate registers, and the
  * 0x3C8 store sits in both arms so jump2 cross-jumps only the final sb. */
-u16 PadReadObjectState(u8 *arg0) {
+u16 PadReadObjectState(u8 *object) {
     s32 bank;
     u32 data;
     u16 pad;
     u16 mode;
     volatile s32 framePad[2];
 
-    bank = *(s8 *)(arg0 + 0x20B);
+    bank = *(s8 *)(object + 0x20B);
     if (bank < 0) {
         return 0;
     }
     data = *(u32 *)((u8 *)D_8008CA08 + bank * 8);
     if (((s8 *)gPadType)[bank] == 2) {
-        arg0[0x3C6] = data >> 8;
-        arg0[0x3C7] = data >> 0x10;
-        arg0[0x3C5] = data;
-        arg0[0x3C8] = data >> 0x18;
+        object[0x3C6] = data >> 8;
+        object[0x3C7] = data >> 0x10;
+        object[0x3C5] = data;
+        object[0x3C8] = data >> 0x18;
     } else {
-        arg0[0x3C6] = data >> 8;
-        arg0[0x3C5] = data >> 0x10;
-        arg0[0x3C7] = data;
-        arg0[0x3C8] = data >> 0x18;
+        object[0x3C6] = data >> 8;
+        object[0x3C5] = data >> 0x10;
+        object[0x3C7] = data;
+        object[0x3C8] = data >> 0x18;
     }
-    pad = *(u16 *)(D_8008CA06 + *(s8 *)(arg0 + 0x20B) * 8);
+    pad = *(u16 *)(D_8008CA06 + *(s8 *)(object + 0x20B) * 8);
     mode = ~(((pad & 0xFF) << 8) | (pad >> 8));
     if (mode & 0x1000) {
         mode |= 8;
@@ -435,11 +435,11 @@ void func_80042218(u16 *src, s32 *acc, u32 *dst) {
     } while (i < 4);
 }
 
-s32 func_8004229C(s32 arg0) {
+s32 PadTypeNeedsCalibration(s32 padType) {
     s32 var_v0;
     u32 temp_a0;
 
-    temp_a0 = arg0 & 0xFF;
+    temp_a0 = padType & 0xFF;
     if (temp_a0 == 2) {
         var_v0 = 1;
     } else {
@@ -458,7 +458,7 @@ typedef struct BoxCorner {
 } BoxCorner;
 extern BoxCorner D_800B1FF0[8];
 
-void CarInitTumble(u8 *obj) {
+void CarInitTumble(u8 *car) {
     s32 i;
     register s32 height asm("t1");
     s16 y;
@@ -469,23 +469,23 @@ void CarInitTumble(u8 *obj) {
     s32 *vxb;
     s32 *vzb;
 
-    *(s16 *)(obj + 0x398) =
-        ABS(*(s16 *)(obj + 0x104) - *(s16 *)(obj + 0x114) + 0x400) & 0x3FF;
-    *(s16 *)(obj + 0x388) = 0;
-    *(s16 *)(obj + 0x38A) = 0;
-    *(s16 *)(obj + 0x39A) = *(u16 *)(obj + 0xFE) + 4;
-    *(s16 *)(obj + 0x38C) = RandomScaledGet(0x20);
-    if (*(s16 *)(obj + 0x38C) == 0) {
-        *(s16 *)(obj + 0x38C) = 1;
+    *(s16 *)(car + 0x398) =
+        ABS(*(s16 *)(car + 0x104) - *(s16 *)(car + 0x114) + 0x400) & 0x3FF;
+    *(s16 *)(car + 0x388) = 0;
+    *(s16 *)(car + 0x38A) = 0;
+    *(s16 *)(car + 0x39A) = *(u16 *)(car + 0xFE) + 4;
+    *(s16 *)(car + 0x38C) = RandomScaledGet(0x20);
+    if (*(s16 *)(car + 0x38C) == 0) {
+        *(s16 *)(car + 0x38C) = 1;
     }
-    *(s16 *)(obj + 0x38E) = ABS(RandomScaledGet(0x20));
-    *(s16 *)(obj + 0x396) = 1;
-    *(s16 *)(obj + 0x394) = ABS(RandomScaledGet(0x32)) + 0x4B;
+    *(s16 *)(car + 0x38E) = ABS(RandomScaledGet(0x20));
+    *(s16 *)(car + 0x396) = 1;
+    *(s16 *)(car + 0x394) = ABS(RandomScaledGet(0x32)) + 0x4B;
     i = 0;
     cb = D_800B1FF0;
     vxb = &cb->vx;
     vzb = &cb->vz;
-    height = *(s16 *)(*(u8 **)(obj + 0x370) + 0x26);
+    height = *(s16 *)(*(u8 **)(car + 0x370) + 0x26);
     pvx = vxb;
     c = cb;
     pvz = vzb;
@@ -495,36 +495,36 @@ void CarInitTumble(u8 *obj) {
         switch (i) {
         case 0:
         case 4:
-            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1E);
+            c->sz = *(u16 *)(*(u8 **)(car + 0x370) + 0x1E);
             *pvz = c->sz;
-            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x20);
+            c->sx = *(u16 *)(*(u8 **)(car + 0x370) + 0x20);
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
             break;
         case 1:
         case 5:
-            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1E);
+            c->sz = *(u16 *)(*(u8 **)(car + 0x370) + 0x1E);
             *pvz = c->sz;
-            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x22);
+            c->sx = *(u16 *)(*(u8 **)(car + 0x370) + 0x22);
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
             break;
         case 2:
         case 6:
-            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1C);
+            c->sz = *(u16 *)(*(u8 **)(car + 0x370) + 0x1C);
             *pvz = c->sz;
-            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x22);
+            c->sx = *(u16 *)(*(u8 **)(car + 0x370) + 0x22);
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
             break;
         case 3:
         case 7:
-            c->sz = *(u16 *)(*(u8 **)(obj + 0x370) + 0x1C);
+            c->sz = *(u16 *)(*(u8 **)(car + 0x370) + 0x1C);
             *pvz = c->sz;
-            c->sx = *(u16 *)(*(u8 **)(obj + 0x370) + 0x20);
+            c->sx = *(u16 *)(*(u8 **)(car + 0x370) + 0x20);
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
@@ -541,7 +541,7 @@ extern void EffectSpawnAtCarPoint(u8 *, s32);
 extern void func_80043B68(u8 *, s32);
 
 extern s32 D_800A3A2CAbsolute[];
-void CarCheckGroundContact(u8 *obj) {
+void CarCheckGroundContact(u8 *car) {
     s32 i;
     s32 best;
     s32 bestIdx;
@@ -559,8 +559,8 @@ void CarCheckGroundContact(u8 *obj) {
     bestIdx = 0;
     sinTab = *(s32 **)D_800A3A2CAbsolute;
     cosTab = *(s32 **)D_800A3A34Absolute;
-    idxA = *(s16 *)(obj + 0x388);
-    idxB = *(s16 *)(obj + 0x38A);
+    idxA = *(s16 *)(car + 0x388);
+    idxB = *(s16 *)(car + 0x38A);
     c = D_800B1FF0;
     for (i = 0; i < 8; c++, i++) {
         z = c->vz;
@@ -571,195 +571,195 @@ void CarCheckGroundContact(u8 *obj) {
         c->sz = (sinTab[idxB] * z - cosTab[idxB] * x) >> 16;
         c->sy = (cosTab[idxB] * z + sinTab[idxB] * x) >> 16;
         c->sx = t;
-        idxC = *(s16 *)(obj + 0x398);
-        z = ((sinTab[idxC] * c->sz - cosTab[idxC] * t) >> 16) + *(s32 *)obj;
+        idxC = *(s16 *)(car + 0x398);
+        z = ((sinTab[idxC] * c->sz - cosTab[idxC] * t) >> 16) + *(s32 *)car;
         c->sx = ((cosTab[idxC] * c->sz + sinTab[idxC] * t) >> 16) +
-                *(s32 *)(obj + 4);
+                *(s32 *)(car + 4);
         c->sz = z;
         if (c->sy < best) {
             best = c->sy;
             bestIdx = i;
         }
     }
-    if (best <= 0 && -best >= *(s16 *)(obj + 0x39A)) {
-        *(s16 *)(obj + 0x39A) = -best;
-        *(s16 *)(obj + 0x1C0) = 0;
-        *(u16 *)(obj + 0x396) |= 8;
+    if (best <= 0 && -best >= *(s16 *)(car + 0x39A)) {
+        *(s16 *)(car + 0x39A) = -best;
+        *(s16 *)(car + 0x1C0) = 0;
+        *(u16 *)(car + 0x396) |= 8;
         if (RandomScaledGet(3) < 0) {
             t = -RandomScaledGet(3);
         } else {
             t = RandomScaledGet(3);
         }
-        if (ABS(*(s16 *)(obj + 0x394)) < 0x3C) {
+        if (ABS(*(s16 *)(car + 0x394)) < 0x3C) {
             t += 2;
         }
         switch (bestIdx % 4) {
         case 3:
             if (t == 0) {
-                EffectSpawnAtCarPoint(obj, 0);
+                EffectSpawnAtCarPoint(car, 0);
             }
             if (t < 3) {
-                EffectSpawnAtCarPoint(obj, 5);
+                EffectSpawnAtCarPoint(car, 5);
             }
-            func_80043B68(obj, 0);
+            func_80043B68(car, 0);
             break;
         case 2:
             if (t == 0) {
-                EffectSpawnAtCarPoint(obj, 1);
+                EffectSpawnAtCarPoint(car, 1);
             }
             if (t < 3) {
-                EffectSpawnAtCarPoint(obj, 6);
+                EffectSpawnAtCarPoint(car, 6);
             }
-            func_80043B68(obj, 1);
+            func_80043B68(car, 1);
             break;
         case 1:
             if (t == 0) {
-                EffectSpawnAtCarPoint(obj, 2);
+                EffectSpawnAtCarPoint(car, 2);
             }
             if (t < 3) {
-                EffectSpawnAtCarPoint(obj, 7);
+                EffectSpawnAtCarPoint(car, 7);
             }
-            func_80043B68(obj, 2);
+            func_80043B68(car, 2);
             break;
         case 0:
             if (t == 0) {
-                EffectSpawnAtCarPoint(obj, 3);
+                EffectSpawnAtCarPoint(car, 3);
             }
             if (t < 3) {
-                EffectSpawnAtCarPoint(obj, 7);
+                EffectSpawnAtCarPoint(car, 7);
             }
-            func_80043B68(obj, 3);
+            func_80043B68(car, 3);
             break;
         }
     } else {
-        *(s16 *)(obj + 0x1C0) = -1;
-        *(u16 *)(obj + 0x396) &= ~8;
+        *(s16 *)(car + 0x1C0) = -1;
+        *(u16 *)(car + 0x396) &= ~8;
     }
     for (i = 0; i < 4; i++) {
-        *(u16 *)(obj + 0x2AC + i * 0x28) = *(u16 *)(obj + 0x39A);
-        *(u16 *)(obj + 0x2B0 + i * 0x28) = 0;
+        *(u16 *)(car + 0x2AC + i * 0x28) = *(u16 *)(car + 0x39A);
+        *(u16 *)(car + 0x2B0 + i * 0x28) = 0;
     }
 }
 
 extern s32 D_800A3A34Small[];
 
-void CarUpdateTumble(u8 *obj) {
+void CarUpdateTumble(u8 *car) {
     s32 heading;
     s32 t;
     s32 i;
     s16 r;
     s32 d;
 
-    CarCheckGroundContact(obj);
-    if (!(*(u16 *)(obj + 0x396) & 8)) {
-        *(s16 *)(obj + 0x39A) += *(s16 *)(obj + 0x394);
-        *(s16 *)(obj + 0x394) -= 8;
-        *(s32 *)(obj + 0x90) -= 0x8000;
-        if (*(s32 *)(obj + 0x90) < 0) {
-            *(s32 *)(obj + 0x90) = 0;
+    CarCheckGroundContact(car);
+    if (!(*(u16 *)(car + 0x396) & 8)) {
+        *(s16 *)(car + 0x39A) += *(s16 *)(car + 0x394);
+        *(s16 *)(car + 0x394) -= 8;
+        *(s32 *)(car + 0x90) -= 0x8000;
+        if (*(s32 *)(car + 0x90) < 0) {
+            *(s32 *)(car + 0x90) = 0;
         }
     } else {
-        if (*(s32 *)(obj + 0x90) < 0x320000 ||
-            ABS(*(s16 *)(obj + 0x394)) < 0x14) {
-            if (*(u16 *)(obj + 0x396) & 1) {
-                *(u16 *)(obj + 0x396) = (*(u16 *)(obj + 0x396) & ~1) | 2;
+        if (*(s32 *)(car + 0x90) < 0x320000 ||
+            ABS(*(s16 *)(car + 0x394)) < 0x14) {
+            if (*(u16 *)(car + 0x396) & 1) {
+                *(u16 *)(car + 0x396) = (*(u16 *)(car + 0x396) & ~1) | 2;
             }
         }
-        *(s16 *)(obj + 0x394) = -*(s16 *)(obj + 0x394) / 2 - 10;
-        *(s16 *)(obj + 0x39A) += *(s16 *)(obj + 0x394);
-        if (*(u16 *)(obj + 0x396) & 1) {
-            r = *(s16 *)(obj + 0x388) % 512;
-            heading = *(s16 *)(obj + 0x398);
+        *(s16 *)(car + 0x394) = -*(s16 *)(car + 0x394) / 2 - 10;
+        *(s16 *)(car + 0x39A) += *(s16 *)(car + 0x394);
+        if (*(u16 *)(car + 0x396) & 1) {
+            r = *(s16 *)(car + 0x388) % 512;
+            heading = *(s16 *)(car + 0x398);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[r],
-                                    *(s32 *)(obj + 0x90) / 3);
+                                    *(s32 *)(car + 0x90) / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[heading], t);
-            *(s16 *)(obj + 0x38C) = t >> 16;
-            if (*(u16 *)(obj + 0x38A) > 0x100 &&
-                *(u16 *)(obj + 0x38A) < 0x300) {
-                *(s16 *)(obj + 0x38C) = -*(s16 *)(obj + 0x38C);
+            *(s16 *)(car + 0x38C) = t >> 16;
+            if (*(u16 *)(car + 0x38A) > 0x100 &&
+                *(u16 *)(car + 0x38A) < 0x300) {
+                *(s16 *)(car + 0x38C) = -*(s16 *)(car + 0x38C);
             }
-            r = *(s16 *)(obj + 0x38A) % 512;
+            r = *(s16 *)(car + 0x38A) % 512;
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Small)[r],
-                                    *(s32 *)(obj + 0x90) / 3);
+                                    *(s32 *)(car + 0x90) / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[heading], t);
-            *(s16 *)(obj + 0x38E) = t >> 16;
-            *(s32 *)(obj + 0x90) = *(s32 *)(obj + 0x90) * 9 / 10;
-            if (*(s32 *)(obj + 0x90) < 0) {
-                *(s32 *)(obj + 0x90) = 0;
+            *(s16 *)(car + 0x38E) = t >> 16;
+            *(s32 *)(car + 0x90) = *(s32 *)(car + 0x90) * 9 / 10;
+            if (*(s32 *)(car + 0x90) < 0) {
+                *(s32 *)(car + 0x90) = 0;
             }
         }
     }
-    if (*(u16 *)(obj + 0x396) & 3) {
-        *(u16 *)(obj + 0x388) =
-            (*(u16 *)(obj + 0x388) + *(u16 *)(obj + 0x38C) + 0x400) & 0x3FF;
-        *(u16 *)(obj + 0x38A) =
-            (*(u16 *)(obj + 0x38A) + *(u16 *)(obj + 0x38E) + 0x400) & 0x3FF;
-        if (*(u16 *)(obj + 0x396) & 8) {
-            func_800414E0(obj, 6, 1);
+    if (*(u16 *)(car + 0x396) & 3) {
+        *(u16 *)(car + 0x388) =
+            (*(u16 *)(car + 0x388) + *(u16 *)(car + 0x38C) + 0x400) & 0x3FF;
+        *(u16 *)(car + 0x38A) =
+            (*(u16 *)(car + 0x38A) + *(u16 *)(car + 0x38E) + 0x400) & 0x3FF;
+        if (*(u16 *)(car + 0x396) & 8) {
+            SoundPlaySlotAtVolume(car, 6, 1);
         }
     }
-    if (*(u16 *)(obj + 0x396) & 2) {
-        r = *(u16 *)(obj + 0x388) & 0x1FF;
+    if (*(u16 *)(car + 0x396) & 2) {
+        r = *(u16 *)(car + 0x388) & 0x1FF;
         d = r - 0x100;
         if (d > 0x40 || (d > -0x40 && d < 0)) {
-            *(s16 *)(obj + 0x390) = *(u16 *)(obj + 0x388) - r + 0x200;
-            *(s16 *)(obj + 0x38C) = 1;
+            *(s16 *)(car + 0x390) = *(u16 *)(car + 0x388) - r + 0x200;
+            *(s16 *)(car + 0x38C) = 1;
         } else {
-            *(s16 *)(obj + 0x390) = *(u16 *)(obj + 0x388) - r;
-            *(s16 *)(obj + 0x38C) = -1;
+            *(s16 *)(car + 0x390) = *(u16 *)(car + 0x388) - r;
+            *(s16 *)(car + 0x38C) = -1;
         }
-        r = *(u16 *)(obj + 0x38A) & 0x1FF;
+        r = *(u16 *)(car + 0x38A) & 0x1FF;
         if (r > 0x100) {
-            *(s16 *)(obj + 0x392) = *(u16 *)(obj + 0x38A) - r + 0x200;
-            *(s16 *)(obj + 0x38E) = 1;
+            *(s16 *)(car + 0x392) = *(u16 *)(car + 0x38A) - r + 0x200;
+            *(s16 *)(car + 0x38E) = 1;
         } else {
-            *(s16 *)(obj + 0x392) = *(u16 *)(obj + 0x38A) - r;
-            *(s16 *)(obj + 0x38E) = -1;
+            *(s16 *)(car + 0x392) = *(u16 *)(car + 0x38A) - r;
+            *(s16 *)(car + 0x38E) = -1;
         }
-        *(u16 *)(obj + 0x396) = (*(u16 *)(obj + 0x396) & ~2) | 4;
+        *(u16 *)(car + 0x396) = (*(u16 *)(car + 0x396) & ~2) | 4;
     }
-    if (*(u16 *)(obj + 0x396) & 4) {
-        *(s16 *)(obj + 0x388) += *(s16 *)(obj + 0x38C) / 2;
-        if ((*(s16 *)(obj + 0x38C) > 0 &&
-             *(s16 *)(obj + 0x388) >= *(s16 *)(obj + 0x390)) ||
-            (*(s16 *)(obj + 0x38C) <= 0 &&
-             *(s16 *)(obj + 0x388) <= *(s16 *)(obj + 0x390))) {
-            *(s16 *)(obj + 0x38C) = 0;
-            *(s16 *)(obj + 0x388) = *(s16 *)(obj + 0x390) & 0x3FF;
-        } else if (*(s16 *)(obj + 0x38C) > 0) {
-            *(s16 *)(obj + 0x38C) += 1;
+    if (*(u16 *)(car + 0x396) & 4) {
+        *(s16 *)(car + 0x388) += *(s16 *)(car + 0x38C) / 2;
+        if ((*(s16 *)(car + 0x38C) > 0 &&
+             *(s16 *)(car + 0x388) >= *(s16 *)(car + 0x390)) ||
+            (*(s16 *)(car + 0x38C) <= 0 &&
+             *(s16 *)(car + 0x388) <= *(s16 *)(car + 0x390))) {
+            *(s16 *)(car + 0x38C) = 0;
+            *(s16 *)(car + 0x388) = *(s16 *)(car + 0x390) & 0x3FF;
+        } else if (*(s16 *)(car + 0x38C) > 0) {
+            *(s16 *)(car + 0x38C) += 1;
         } else {
-            *(s16 *)(obj + 0x38C) -= 1;
+            *(s16 *)(car + 0x38C) -= 1;
         }
-        *(s16 *)(obj + 0x38A) += *(s16 *)(obj + 0x38E) / 2;
-        if ((*(s16 *)(obj + 0x38E) > 0 &&
-             *(s16 *)(obj + 0x38A) >= *(s16 *)(obj + 0x392)) ||
-            (*(s16 *)(obj + 0x38E) <= 0 &&
-             *(s16 *)(obj + 0x38A) <= *(s16 *)(obj + 0x392))) {
-            *(s16 *)(obj + 0x38E) = 0;
-            *(s16 *)(obj + 0x38A) = *(s16 *)(obj + 0x392) & 0x3FF;
-        } else if (*(s16 *)(obj + 0x38E) > 0) {
-            *(s16 *)(obj + 0x38E) += 1;
+        *(s16 *)(car + 0x38A) += *(s16 *)(car + 0x38E) / 2;
+        if ((*(s16 *)(car + 0x38E) > 0 &&
+             *(s16 *)(car + 0x38A) >= *(s16 *)(car + 0x392)) ||
+            (*(s16 *)(car + 0x38E) <= 0 &&
+             *(s16 *)(car + 0x38A) <= *(s16 *)(car + 0x392))) {
+            *(s16 *)(car + 0x38E) = 0;
+            *(s16 *)(car + 0x38A) = *(s16 *)(car + 0x392) & 0x3FF;
+        } else if (*(s16 *)(car + 0x38E) > 0) {
+            *(s16 *)(car + 0x38E) += 1;
         } else {
-            *(s16 *)(obj + 0x38E) -= 1;
+            *(s16 *)(car + 0x38E) -= 1;
         }
-        d = *(s16 *)(obj + 0x390) & 0x3FF;
-        heading = *(s16 *)(obj + 0x392) & 0x3FF;
-        if (*(s16 *)(obj + 0x388) == d && *(s16 *)(obj + 0x38A) == heading) {
+        d = *(s16 *)(car + 0x390) & 0x3FF;
+        heading = *(s16 *)(car + 0x392) & 0x3FF;
+        if (*(s16 *)(car + 0x388) == d && *(s16 *)(car + 0x38A) == heading) {
             if (!D_800A2EDC[0] || d + heading == 0 ||
-                *(s16 *)(obj + 0x1EC) == 1) {
-                *(s16 *)(obj + 0x1BC) = 3;
+                *(s16 *)(car + 0x1EC) == 1) {
+                *(s16 *)(car + 0x1BC) = 3;
                 for (i = 0; i < 4; i++) {
-                    *(s16 *)(obj + 0x2B0 + i * 0x28) =
-                        *(s16 *)(obj + 0x394) / 2;
+                    *(s16 *)(car + 0x2B0 + i * 0x28) =
+                        *(s16 *)(car + 0x394) / 2;
                 }
                 return;
             }
-            if (*(s16 *)(obj + 0x1BC) != 4) {
-                *(u8 *)(obj + 0x3B7) = 0x14;
+            if (*(s16 *)(car + 0x1BC) != 4) {
+                *(u8 *)(car + 0x3B7) = 0x14;
             }
-            *(s16 *)(obj + 0x1BC) = 4;
+            *(s16 *)(car + 0x1BC) = 4;
         }
     }
-    func_8002AD20((s32 *)obj, *(s16 *)(obj + 0x104));
+    CarSetVelocityFromHeading((s32 *)car, *(s16 *)(car + 0x104));
 }

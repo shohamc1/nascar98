@@ -10,7 +10,7 @@ typedef struct {
     u8 center;
 } PadAxisCal;
 
-/* Reads one stick axis from a pad buffer. func_8006DF98 in
+/* Reads one stick axis from a pad buffer. PadReadObjectAxis in
  * memory_card_menu.c is the out-of-line copy of this function; retail
  * inlines it into PadCalibrateRange, PadCalibrateCenter and func_8006EB18, which
  * puts the buffer address in its own register for one arm and folds it

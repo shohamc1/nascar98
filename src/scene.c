@@ -49,11 +49,11 @@ extern void PopMatrix(void);
 extern u8 D_800A2EE0[];
 void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
-void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7);
+void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
+                      u8 arg6, s32 arg7);
 void func_8001EEC4(s32 *arg0);
 void func_80028FCC(u8 *arg0);
-void func_8002D3A8(u8 *object, s32 index);
+void ObjectSetModelDataVariant(u8 *object, s32 index);
 void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag);
 s32 func_80037204(u8 *obj);
 void func_8003A880(s32 car);
@@ -61,15 +61,15 @@ void func_8003AA20(s32 car);
 void *FileOpen(s32 fileId, void *mode);
 void FileClose(s32 handle);
 s32 FileSeek(s32 handle, s32 offset, s32 whence);
-void func_8003CA18(s32 arg0, s32 arg1);
-void func_8003CC48(void);
+void CdLoadFileByIndex(s32 arg0, s32 arg1);
+void CdStopIfPlaybackChanged(void);
 void CdStop(void);
-void func_8003F0CC(s32 arg0);
+void SoundReloadVabAndResetSlots(s32 arg0);
 void func_80041564(u8 *arg0, s32 arg1);
-s32 func_8004229C(s32 arg0);
+s32 PadTypeNeedsCalibration(s32 arg0);
 void HeapResetInitFlag(void);
-void func_80044A1C(s16 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, u8 arg7);
+void GraphicsDrawDoubleBorderRect(s16 arg0, s16 arg1, s16 arg2, s16 arg3,
+                                  u8 arg4, u8 arg5, u8 arg6, u8 arg7);
 
 extern u8 *gCarListNM[] asm("gCarList.NON_MATCHING");
 extern SVECTOR D_800992E4[];
@@ -245,7 +245,7 @@ extern s32 D_80098134nm[] asm("D_80098134.NON_MATCHING");
 extern s32 D_8009813Cnm[] asm("D_8009813C.NON_MATCHING");
 extern u8 D_800A3880nm[] asm("D_800A3880.NON_MATCHING");
 
-void func_80044FF8(s32 arg0, s32 arg1) {
+void SoundRunSlotEnvelope(s32 arg0, s32 arg1) {
     s32 i;
     s32 off;
     s32 *entry;
@@ -344,17 +344,17 @@ void func_80045288(void) {
     extern u32 D_800A34E0;
     extern u8 D_800991E8[];
     void func_80052E18(void);
-    void func_80046258(void);
+    void SceneInitProjectiles(void);
     void HudInitPrims(void);
     void HudInitLapSplits(void);
     void SceneInitHandModel(void);
     void func_8004F880(void);
     void HudInitRacePrims(void);
-    void func_80048700(void);
-    void func_80045F70(void);
-    void func_800511E4(void);
-    void func_800508E4(void);
-    void func_80048C90(void);
+    void SceneCreateSceneryCar(void);
+    void SceneInitProjectilePrimitives(void);
+    void HudInitFlagOverlay(void);
+    void GraphicsInitializeTexturedQuad(void);
+    void RaceInitCrashCandidates(void);
     u8 *obj;
     u8 *v;
     s32 x;
@@ -368,7 +368,7 @@ void func_80045288(void) {
     s32 w;
 
     flag = 1;
-    if (D_800A2EA4[0] != 0) {
+    if (gSplitScreenMode[0] != 0) {
         flag = 2;
     }
     obj = gPlayerCar[0];
@@ -407,18 +407,18 @@ void func_80045288(void) {
     }
     func_80052E18();
     if (D_800A3A60gp != 0) {
-        func_80046258();
+        SceneInitProjectiles();
     }
     HudInitPrims();
     HudInitLapSplits();
     SceneInitHandModel();
     func_8004F880();
     HudInitRacePrims();
-    func_80048700();
-    func_80045F70();
-    func_800511E4();
-    func_800508E4();
-    func_80048C90();
+    SceneCreateSceneryCar();
+    SceneInitProjectilePrimitives();
+    HudInitFlagOverlay();
+    GraphicsInitializeTexturedQuad();
+    RaceInitCrashCandidates();
     flag2 = 0;
     if (D_800A3598[0] != 1) {
         goto set_one;
@@ -430,7 +430,7 @@ void func_80045288(void) {
 set_one:
     flag2 = 1;
 flag_done:
-    w = D_800A2EB0Absolute[0];
+    w = gSessionTypeAbsolute[0];
     D_800A39D4 = flag2;
     if (w >= 0) {
         if (w == 1) {
@@ -660,8 +660,8 @@ void SceneUpdateProjectiles(u8 *owner) {
                         if (*(s16 *)(other + 0x1EC) != 0) {
                             callback = (void (*)(void))func_8003AA20;
                         }
-                        ObjectSetCallbackIfAllowed(
-                            (Batch0CallbackObject *)other, callback);
+                        ObjectSetCallbackIfAllowed((ObjectCallbackView *)other,
+                                                   callback);
                     }
                     hitEffect->life = 0;
                     goto nextEffect;
@@ -767,7 +767,7 @@ extern u8 D_800991EA[];
  * HeapAlloc result to s4 (slot 5) instead of fp no matter where buf
  * is declared; retail order is row s0, poly s1, ptr s2, j s3, b2 s4,
  * b1 s5, b0 s6, i s7, buf fp. Decomp-permuter candidate. */
-void func_80045F70(void) {
+void SceneInitProjectilePrimitives(void) {
     u8 *buf;
     s8 i;
     u8 b0;
@@ -781,7 +781,7 @@ void func_80045F70(void) {
     s32 v1;
 
     i = 0;
-    if (D_800A2EB0Absolute[1] > 0) {
+    if (gSessionTypeAbsolute[1] > 0) {
         ptr = D_80090F32;
         do {
             D_800A342C[i] = 0;
@@ -820,12 +820,12 @@ void func_80045F70(void) {
                 j++;
             } while (j < 10);
             i++;
-        } while (i < D_800A2EB0Absolute[1]);
+        } while (i < gSessionTypeAbsolute[1]);
     }
 }
 #else
 
-void func_80045F70(void) {
+void SceneInitProjectilePrimitives(void) {
     u8 *buf;
     s8 i;
     u8 b0;
@@ -841,7 +841,7 @@ void func_80045F70(void) {
     s32 v1;
 
     i = 0;
-    if (D_800A2EB0Absolute[1] > 0) {
+    if (gSessionTypeAbsolute[1] > 0) {
         ptr = D_80090F32;
         do {
             D_800A342C[i] = 0;
@@ -882,7 +882,7 @@ void func_80045F70(void) {
                 j++;
             } while (j < 10);
             i++;
-        } while (i < D_800A2EB0Absolute[1]);
+        } while (i < gSessionTypeAbsolute[1]);
     }
 }
 
@@ -892,7 +892,7 @@ extern s8 D_800A343C;
 extern s8 *D_800A3444[];
 extern s32 gTrackSectionsv asm("gTrackSections");
 
-void func_80046184(s8 *arg0) {
+void SceneLinkLiveEntries(s8 *arg0) {
     s8 *base;
     s8 *entry;
     s8 *tail;
@@ -936,7 +936,7 @@ extern s32 D_800AE15C[];
 extern u8 D_800A3424;
 extern s8 D_800A3438;
 
-void func_80046258(void) {
+void SceneInitProjectiles(void) {
     extern u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
     extern void SetPolyFT4(POLY_FT4 *);
     s32 heights[2];
@@ -2026,13 +2026,13 @@ void func_80048568(void) {
 
 extern void CarInitDefaults(u8 *);
 
-void func_80048700(void) {
+void SceneCreateSceneryCar(void) {
     D_800A3728 = 0;
     D_800A347C = HeapAlloc(0x500);
     *(s16 *)(D_800A347C + 0x1EC) = 2;
-    func_8002DA30((s32 *)D_800A347C);
+    MatrixSetIdentity((s32 *)D_800A347C);
     CarInitDefaults(D_800A347C);
-    func_8002D3A8(D_800A347C, -4);
+    ObjectSetModelDataVariant(D_800A347C, -4);
     *(s32 *)(D_800A347C + 0x10) = -1;
     *(s32 *)(D_800A347C + 0xC) = -1;
 }
@@ -2040,7 +2040,7 @@ void func_80048700(void) {
 void func_8004875C(void) {
     extern s32 gTrackSections[];
     extern void func_80031264(u8 * object);
-    extern void func_80037130(u8 * object);
+    extern void ObjectAdvanceAlongHeading(u8 * object);
     extern s32 MathMultiplyFixed16(s32, s32);
     extern s32 D_800A2EC0Absolute[];
     u8 *src;
@@ -2058,7 +2058,7 @@ void func_8004875C(void) {
     *(u16 *)(D_800A3728 + 0x104) = val;
     *(u16 *)(D_800A3728 + 0x116) = *(u16 *)(D_800A3728 + 0x114) * 4;
     func_80031264(D_800A3728);
-    func_80037130(D_800A3728);
+    ObjectAdvanceAlongHeading(D_800A3728);
     src = D_800A3728;
     dst = D_800A347C;
     *(u32 *)(dst + 0) = *(u32 *)(src + 0);
@@ -2066,7 +2066,7 @@ void func_8004875C(void) {
     *(u32 *)(dst + 8) = *(u32 *)(src + 8);
     *(u16 *)(dst + 0x104) = *(u16 *)(dst + 0x114) = *(u16 *)(src + 0x114);
     *(u16 *)(dst + 0x116) = *(u16 *)(src + 0x116);
-    func_80037130(dst);
+    ObjectAdvanceAlongHeading(dst);
     func_80031264(D_800A347C);
     t = MathMultiplyFixed16(*(s32 *)(D_800A347C + 0x3C), 0x3200000);
     p = D_800A347C;
@@ -2085,7 +2085,7 @@ void func_8004875C(void) {
     *(s32 *)(w + 0x10) = 0x7FFFFFFF;
 }
 
-void func_800488A4(u8 *object) {
+void SceneSetCameraTarget(u8 *object) {
     u8 *state;
     state = D_800A347C;
     *(s32 *)(object + 0x90) = 0;
@@ -2227,7 +2227,7 @@ extern s32 D_800A37D0[];
 extern s32 D_800A37D4nm[] asm("D_800A37D4.NON_MATCHING");
 extern s32 D_800A7550[];
 
-void func_80048C90(void) {
+void RaceInitCrashCandidates(void) {
     extern s32 D_800A2E94nm[] asm("D_800A2E94.NON_MATCHING");
     s8 buf[24];
     s8 *p;
@@ -2244,7 +2244,7 @@ void func_80048C90(void) {
     s32 r2;
     s32 cnt;
 
-    if (D_800A38F0 == 0 || (count = D_800A2EB0Absolute[0]) != 0) {
+    if (D_800A38F0 == 0 || (count = gSessionTypeAbsolute[0]) != 0) {
         D_800A35FCnm = 0;
         return;
     }
@@ -2415,9 +2415,9 @@ extern TILE D_800A7924[];
 extern TILE D_800A7954[];
 extern u8 D_800A78D4[];
 extern u8 D_800A78FC[];
-extern char D_800A2FF4[];
-extern char D_800A2FF8[];
-extern char D_800A2FFC[];
+extern char gTextDoubleDash[];
+extern char gFormatWidth3Integer[];
+extern char gFormatIntegerDashInteger[];
 extern char *D_8009ADD8[];
 extern char *D_8009ADF8[];
 extern char *D_8009ADFC[];
@@ -2430,7 +2430,7 @@ extern void func_800188B0(s32, s32, s32, s32, s32);
 extern void GraphicsSetColor(u8, u8, u8);
 extern s16 HudTextWidthS16(u8 *) asm("HudTextWidth");
 extern void HudDrawTextS16(char *, s32, s16, s32) asm("HudDrawText");
-extern void func_80052FC4(s8);
+extern void SoundStopConditionalSlots(s8);
 extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
 
 /* Value that D_800A3480 follows, the field at 0x20E of the car in
@@ -2445,7 +2445,8 @@ extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
         w = HudTextWidthS16((u8 *)(text)[0]);                                  \
         x = (0x140 - w) >> 1;                                                  \
         HudDrawTextS16((text)[0], x, yOffset + (ty), 0);                       \
-        func_80044A1C(x - 0xA, yOffset + (ty) - 1, w + 0x14, 0xD, 0, 0, 0, 1); \
+        GraphicsDrawDoubleBorderRect(x - 0xA, yOffset + (ty) - 1, w + 0x14,    \
+                                     0xD, 0, 0, 0, 1);                         \
     }
 
 void HudDrawCar(HudCar *car, s16 yOffset) {
@@ -2475,7 +2476,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
 
     split = 0;
     flag = 0;
-    if (car->unk20C != 0 || D_800A2EA4[0] != 0) {
+    if (car->unk20C != 0 || gSplitScreenMode[0] != 0) {
         split = 1;
     }
     if (D_800A2ED4[0] == 0) {
@@ -2547,7 +2548,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
             D_800A3480 = -0x34;
         }
     }
-    if (D_800A2EA4[0] == 0) {
+    if (gSplitScreenMode[0] == 0) {
         if (D_800A3680Small != 0) {
             func_8004AFE0(0, (u16 *)D_80099260[split],
                           (u16 *)D_800A78C4[gOrderingTableBankAbsolute[0]]);
@@ -2653,15 +2654,16 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                 prim += 0x28;
             }
             layout = &D_8009927C[split];
-            if (D_800A2EB0Absolute[0] == 2) {
-                FontDrawString(D_800A2FF4, layout->unk8, layout->unkA + yOffset,
-                               2);
-                sprintfHud(buf, D_800A2FF8, car->lap);
+            if (gSessionTypeAbsolute[0] == 2) {
+                FontDrawString(gTextDoubleDash, layout->unk8,
+                               layout->unkA + yOffset, 2);
+                sprintfHud(buf, gFormatWidth3Integer, car->lap);
             } else {
                 func_80018B18(car->place,
-                              layout->unk8 + (D_800A2EA4[0] != 0 ? 5 : 0),
+                              layout->unk8 + (gSplitScreenMode[0] != 0 ? 5 : 0),
                               layout->unkA + yOffset, 2);
-                sprintfHud(buf, D_800A2FFC, car->lap, D_800A2EA8[0]);
+                sprintfHud(buf, gFormatIntegerDashInteger, car->lap,
+                           D_800A2EA8[0]);
             }
             FontDrawString(buf, layout->unkC, layout->unkE + yOffset, 2);
             func_80018768((void *)(car->lap != 0 ? car->unk258 : 0x7FFFFFFF),
@@ -2697,14 +2699,14 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                     car->unk84 = 0;
                     car->unk410 = 0;
                     car->unk414 = -1;
-                    func_80052FC4(0);
+                    SoundStopConditionalSlots(0);
                     func_80041564Hud(car, 0x44);
                     car->unkF4 = 0;
                 }
                 flag = 1;
                 D_800A3910 = 0x7FFF;
             }
-            if (D_800A2EA4[0] != 0 && D_800A2EDC[0] != 0 &&
+            if (gSplitScreenMode[0] != 0 && D_800A2EDC[0] != 0 &&
                 D_800A2EE0[0] == 0 && (car->unk3A4 & 0x100F)) {
                 GraphicsSetColor(0xFF, 0x40, 0x40);
                 HUD_MESSAGE(D_8009AE10, 0xD2);
@@ -2775,14 +2777,14 @@ void SceneDrawSunGlare(HudCar *car) {
     POLY_FT4 *prim;
     u32 entry;
 
-    if (D_800A359C[0] != 0 || D_800A2EA4[0] != 0 || D_800A2ED8[0] != 0) {
+    if (D_800A359C[0] != 0 || gSplitScreenMode[0] != 0 || D_800A2ED8[0] != 0) {
         return;
     }
-    func_8001EC38((s32 *)D_800A38AC[0]);
+    MatrixLoadObjectBasis((s32 *)D_800A38AC[0]);
     sunDir.vx = 0x400;
     sunDir.vy = 0;
     sunDir.vz = 0;
-    func_8001ED84((s32 *)&sunDir);
+    MatrixTransformVector((s32 *)&sunDir);
     angle = 0x3FF - func_800358EC((s32 *)&sunDir);
     D_800A348C = angle;
     if (D_800A2CE0[0] == 3 && D_800A3A60gp != 0) {
@@ -2989,7 +2991,7 @@ void HudInitRacePrims(void) {
 
     D_800A3680[0] = 0;
     D_800A3490 = 0;
-    D_800A2FD0[0] = -(D_800A2EA4[0] != 0) & 0x92;
+    D_800A2FD0[0] = -(gSplitScreenMode[0] != 0) & 0x92;
     for (entry = 0; entry < D_800A3424; entry++) {
         D_800A3485 = 0;
         for (col = 0; col < 6; col++) {
@@ -3413,7 +3415,7 @@ void HudDrawDashboard(void) {
     register s32 screenY asm("v1");
     register s16 *baseCorner asm("t2");
 
-    if (D_800A2EA4[0] == 0) {
+    if (gSplitScreenMode[0] == 0) {
         i = 0;
     copyHud1:
         {
@@ -4234,7 +4236,7 @@ void HudInitPrims(void) {
     quads = D_8008D4CC;
     corners = D_8008D4E4;
     tail = D_800A3014[0];
-    D_800A2FD4[0] = -(D_800A2EA4[0] != 0) & 0xD8;
+    D_800A2FD4[0] = -(gSplitScreenMode[0] != 0) & 0xD8;
     for (i = 0; i < D_800A3424; i++) {
         tex = D_80090FCE;
         for (j = 0; j < 6; j++) {
@@ -4378,7 +4380,7 @@ void HudInitPrims(void) {
             *(s16 *)(prim3 + 0x16) = (s8)D_800A2FD4[i] + 0x9E;
         }
     }
-    if (D_800A2EA4[0] == 0) {
+    if (gSplitScreenMode[0] == 0) {
         tex = &D_80090FCE[4];
         for (i = 0; i < 4; i++) {
             u8 *prim;
@@ -4680,11 +4682,11 @@ extern u8 gStandingsNameX;
 extern u8 gStandingsNameXAbsolute[];
 extern u8 gStandingsLapX;
 extern u8 gStandingsTimeX;
-extern char D_800A301C[];
-extern char D_800A3020[];
-extern char D_800A3024[];
-extern char D_800A302C[];
-extern char D_800A3034[];
+extern char gFormatLeadingSpaceInteger[];
+extern char gFormatInteger[];
+extern char gFormatTwoSpacesString[];
+extern char gFormatTwoSpacesInteger[];
+extern char gTextNegativeSign[];
 extern u8 gTextColor;
 extern char *D_8009ADEC[];
 extern char *D_8009ADF0[];
@@ -4719,56 +4721,62 @@ typedef struct CarLink {
 extern s32 sprintfRow(char *, char *, ...) asm("sprintf");
 extern void func_80050028Row(char *, s32, s32, s32);
 asm(".globl func_80050028Row\nfunc_80050028Row = HudDrawText");
-extern void func_8004FF90Row(s16, s32, s32, s32) asm("func_8004FF90");
+extern void FontDrawColoredIntegerRow(s16, s32, s32,
+                                      s32) asm("FontDrawColoredInteger");
 extern void HudDrawTimeRow(s32, s32, s32, s32, s32) asm("HudDrawTime");
 
-void HudDrawStandings(s8 arg0, s32 y) {
+void HudDrawStandings(s8 firstRow, s32 y) {
     char text[8];
     Car *entry;
     s8 index;
-    s8 rowStart;
+    s8 rowIndex;
     s8 row;
-    s8 carIndex;
+    s8 place;
     u8 selected;
     s32 gap;
     s32 limit;
     u8 *column;
     s32 textY;
 
-    if (D_800A2EB0Absolute[0] != 0) {
+    if (gSessionTypeAbsolute[0] != 0) {
         selected = 0;
-        rowStart = arg0;
+        rowIndex = firstRow;
         row = 1;
-        carIndex = arg0 + 1;
+        place = firstRow + 1;
         do {
-            sprintfRow(text, carIndex < 10 ? D_800A301C : D_800A3020, carIndex);
+            sprintfRow(text,
+                       place < 10 ? gFormatLeadingSpaceInteger : gFormatInteger,
+                       place);
             gTextColor = 9;
             textY = (u8)y;
             func_80050028Row(text, gStandingsPlaceX + 3, textY, 0);
-            if (carIndex == ((Car *)gPlayerCar[0])->place) {
+            if (place == ((Car *)gPlayerCar[0])->place) {
                 if (selected == 0 && D_800A2EACAbsolute[0] == 0) {
                     gTextColor = 0;
                     func_80050028Row(((Car *)gPlayerCar[0])->name,
                                      gStandingsNameX, textY, 0);
                     gTextColor = 9;
-                    func_8004FF90Row(((Car *)gPlayerCar[0])->lap,
-                                     gStandingsLapX + 8, textY, 0);
+                    FontDrawColoredIntegerRow(((Car *)gPlayerCar[0])->lap,
+                                              gStandingsLapX + 8, textY, 0);
                     HudDrawTimeRow(((Car *)gPlayerCar[0])->unk25C,
                                    gStandingsTimeX, textY, 0, 1);
-                    func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
+                    GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80,
+                                     0);
                     if (row == 15) {
                         return;
                     }
                     selected = 1;
                     row++;
-                    carIndex++;
+                    place++;
                     gTextColor = 9;
                     y += 12;
-                    sprintfRow(text, carIndex < 10 ? D_800A301C : D_800A3020,
-                               carIndex);
+                    sprintfRow(text,
+                               place < 10 ? gFormatLeadingSpaceInteger
+                                          : gFormatInteger,
+                               place);
                     func_80050028Row(text, gStandingsPlaceX + 3, (u8)y, 0);
                 }
-                if (carIndex == ((Car *)gPlayerCar[0])->place &&
+                if (place == ((Car *)gPlayerCar[0])->place &&
                     D_800A2EA8[0] >= ((Car *)gPlayerCar[0])->lap) {
                     goto skipBlank;
                 }
@@ -4776,46 +4784,49 @@ void HudDrawStandings(s8 arg0, s32 y) {
             func_80050028Row(D_8009AE94[0], gStandingsLapX + 8, (u8)y, 0);
         skipBlank:
             gTextColor = 0;
-            limit = (u8)arg0 + 1;
-            index = rowStart;
+            limit = (u8)firstRow + 1;
+            index = rowIndex;
             if (((Car *)gPlayerCar[0])->place < limit &&
                 D_800A2EACAbsolute[0] == 0) {
-                index = rowStart - 1;
+                index = rowIndex - 1;
             }
             textY = (u8)y;
             func_80050028Row(gDriverNames[gDriverOrder[index]], gStandingsNameX,
                              textY, 0);
-            if (carIndex == ((Car *)gPlayerCar[0])->place &&
+            if (place == ((Car *)gPlayerCar[0])->place &&
                 ((Car *)gPlayerCar[0])->lap < 2) {
                 func_80050028Row(D_8009ADF4[0], gStandingsTimeX, textY, 0);
             } else {
                 HudDrawTimeRow(D_800AE1EC[index], gStandingsTimeX, (u8)y, 0, 1);
             }
             if (D_800A2EACAbsolute[0] != 0 &&
-                carIndex == ((Car *)gPlayerCar[0])->place) {
-                func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
+                place == ((Car *)gPlayerCar[0])->place) {
+                GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
-            rowStart++;
+            rowIndex++;
             row++;
-            carIndex++;
+            place++;
             y += 12;
         } while (row < 16);
         return;
     }
     entry = (Car *)D_800A35E0[0];
-    for (rowStart = 0; rowStart < (u8)arg0; rowStart++) {
+    for (rowIndex = 0; rowIndex < (u8)firstRow; rowIndex++) {
         entry = entry->unk3E8->next;
     }
-    rowStart = arg0;
+    rowIndex = firstRow;
     row = 1;
-    if (rowStart < D_800A2E94[0]) {
+    if (rowIndex < D_800A2E94[0]) {
         column = gStandingsNameXAbsolute;
         do {
             func_80050028Row(entry->name, gStandingsNameX, (u8)y, 0);
-            if (D_800A2EA4[0] != 0) {
-                func_8004FF90Row(entry->place, column[-1] + 6, (u8)y, 0);
+            if (gSplitScreenMode[0] != 0) {
+                FontDrawColoredIntegerRow(entry->place, column[-1] + 6, (u8)y,
+                                          0);
             } else {
-                sprintfRow(text, entry->place < 10 ? D_800A301C : D_800A3020,
+                sprintfRow(text,
+                           entry->place < 10 ? gFormatLeadingSpaceInteger
+                                             : gFormatInteger,
                            entry->place);
                 gTextColor = 9;
                 func_80050028Row(text, column[-1] + 3, (u8)y, 0);
@@ -4829,13 +4840,13 @@ void HudDrawStandings(s8 arg0, s32 y) {
                 lap = entry->lap;
                 gTextColor = 9;
                 if (D_800A2EA8[0] < lap) {
-                    sprintfRow(text, D_800A3024, D_8009AE94[0]);
+                    sprintfRow(text, gFormatTwoSpacesString, D_8009AE94[0]);
                 } else if (lap >= 100) {
-                    sprintfRow(text, D_800A3020, lap);
+                    sprintfRow(text, gFormatInteger, lap);
                 } else if (lap >= 10) {
-                    sprintfRow(text, D_800A301C, lap);
+                    sprintfRow(text, gFormatLeadingSpaceInteger, lap);
                 } else {
-                    sprintfRow(text, D_800A302C, lap);
+                    sprintfRow(text, gFormatTwoSpacesInteger, lap);
                 }
                 textY = (u8)y;
                 func_80050028Row(text, gStandingsLapX - 4, textY, 0);
@@ -4852,9 +4863,10 @@ void HudDrawStandings(s8 arg0, s32 y) {
                                 gTrackSectionCount[0]);
                     gTextColor = 9;
                     if (gap > 0) {
-                        func_80050028Row(D_800A3034, gStandingsTimeX - 10,
-                                         textY, 0);
-                        func_8004FF90Row(gap, gStandingsTimeX, textY, 0);
+                        func_80050028Row(gTextNegativeSign,
+                                         gStandingsTimeX - 10, textY, 0);
+                        FontDrawColoredIntegerRow(gap, gStandingsTimeX, textY,
+                                                  0);
                         if (gap == 1) {
                             func_80050028Row(D_8009ADF0[0],
                                              gStandingsTimeX + 15, textY, 0);
@@ -4869,24 +4881,24 @@ void HudDrawStandings(s8 arg0, s32 y) {
                                              gStandingsTimeX + 35, textY, 0);
                         }
                     } else {
-                        func_80050028Row(D_800A3038, gStandingsTimeX - 10,
-                                         textY, 0);
+                        func_80050028Row(gTextPositiveSign,
+                                         gStandingsTimeX - 10, textY, 0);
                         HudDrawTimeRow(entry->unk264, gStandingsTimeX, textY, 0,
                                        1);
                     }
                 }
             }
             if (entry->unk1EC == 0 && D_800A2E94[0] >= 3) {
-                func_8001D778(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
+                GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
             if (row == 15) {
                 return;
             }
-            rowStart++;
+            rowIndex++;
             row++;
             entry = entry->unk3E8->next;
             y += 12;
-        } while (rowStart < D_800A2E94[0]);
+        } while (rowIndex < D_800A2E94[0]);
     }
 }
 
@@ -4908,9 +4920,9 @@ void MenuDrawStatistics(void) {
 
     top = (s8)D_800A3590 / 12;
     GraphicsSetColor(128, 128, 192);
-    sprintfHud(text, D_8008D4F4, D_8009AD68[D_800A2EB0Absolute[0]][0],
+    sprintfHud(text, D_8008D4F4, D_8009AD68[gSessionTypeAbsolute[0]][0],
                D_8009AE60[0], D_8009A31C[D_800A2CE0[0]]);
-    if (D_800A2EA4[0] == 0) {
+    if (gSplitScreenMode[0] == 0) {
         HudDrawTextS16(text, (s16)((320 - HudTextWidth((u8 *)text)) >> 1), 210,
                        0);
     }
@@ -4918,11 +4930,11 @@ void MenuDrawStatistics(void) {
         HudDrawTextS16(D_8009ADDC[i], gStandingsPlaceXRow[i], 20, 0);
     }
     y = 37 - (s8)D_800A3590 % 12;
-    func_8001D778(0, 0, 320, 35, 0, 0, 0, 0);
-    func_8001D778(0, 205, 320, 35, 0, 0, 0, 0);
+    GraphicsDrawRect(0, 0, 320, 35, 0, 0, 0, 0);
+    GraphicsDrawRect(0, 205, 320, 35, 0, 0, 0, 0);
     GraphicsSetColor(128, 128, 128);
     HudDrawStandingsRow(top, y);
-    if (D_800A2EA4[0] != 0) {
+    if (gSplitScreenMode[0] != 0) {
         gOrderingTableBankLui += 1;
         gOrderingTableLui += 0x1004;
         if (D_800A2E94[0] >= 3) {
@@ -4931,14 +4943,14 @@ void MenuDrawStatistics(void) {
         GraphicsSetColor(128, 128, 192);
         HudDrawTextS16(text, (s16)((320 - HudTextWidth((u8 *)text)) >> 1), 90,
                        0);
-        func_8001D778(0, 85, 320, 35, 0, 0, 0, 0);
-        func_8001D778(0, 0, 320, 120, 0, 0, 0, 1);
-        func_8001D778(0, 0, 320, 120, 0, 0, 0, 1);
+        GraphicsDrawRect(0, 85, 320, 35, 0, 0, 0, 0);
+        GraphicsDrawRect(0, 0, 320, 120, 0, 0, 0, 1);
+        GraphicsDrawRect(0, 0, 320, 120, 0, 0, 0, 1);
         gOrderingTableBankLui -= 1;
         gOrderingTableLui -= 0x1004;
     }
-    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
-    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
+    GraphicsDrawRect(0, 35, 320, 170, 0, 0, 0, 1);
+    GraphicsDrawRect(0, 35, 320, 170, 0, 0, 0, 1);
 }
 
 typedef struct LapSplit {
@@ -4958,8 +4970,8 @@ extern s32 gLapSplitTime;
 extern s32 gLapSplitBest;
 extern char *D_8009AE44[];
 extern char *D_8009AE48[];
-extern void func_8004FCF4(void);
-extern void func_8004E808(void);
+extern void HudRecordLapSplitStats(void);
+extern void HudDrawTrafficGapPanel(void);
 extern void HudDrawTextLap(char *, s16, s16, s8) asm("HudDrawText");
 extern void HudDrawTimeLap(s32, s16, s16, s8, s8) asm("HudDrawTime");
 
@@ -4973,7 +4985,7 @@ void HudDrawLapSplit(void) {
     pos = *(s16 *)(gPlayerCar[0] + 0x1D6) * gTrackSectionCount[0] +
           *(s16 *)(gPlayerCar[0] + 0x1E0);
     if (pos >= gLapSplits[gLapSplitIndex].section) {
-        func_8004FCF4();
+        HudRecordLapSplitStats();
         gLapSplitTime = time = *(s32 *)(gPlayerCar[0] + 0x258);
         gLapSplitBest = gLapSplits[gLapSplitIndex].best;
         gLapSplitDelta = time - gLapSplitBest;
@@ -4995,8 +5007,8 @@ void HudDrawLapSplit(void) {
     if (D_800A3688 == 0) {
         return;
     }
-    if (D_800A2EB0Absolute[0] == 0) {
-        func_8004E808();
+    if (gSessionTypeAbsolute[0] == 0) {
+        HudDrawTrafficGapPanel();
     }
     if (D_800A3688 == 0 || pos <= gLapSplitMinPos) {
         return;
@@ -5025,15 +5037,17 @@ void HudDrawLapSplit(void) {
         HudDrawTimeLap(gLapSplitTime, 0x87, gLapSplitPanelY + 0xC3, 0, 1);
         HudDrawTimeLap(gLapSplitDelta < 0 ? -gLapSplitDelta : gLapSplitDelta,
                        0x87, gLapSplitPanelY + 0xCD, 0, 1);
-        HudDrawTextLap(gLapSplitDelta < 0 ? D_800A3034 : D_800A3038, 0x7D,
-                       gLapSplitPanelY + 0xCD, 0);
+        HudDrawTextLap(gLapSplitDelta < 0 ? gTextNegativeSign
+                                          : gTextPositiveSign,
+                       0x7D, gLapSplitPanelY + 0xCD, 0);
     } else {
         HudDrawTimeLap(gLapSplits[gLapSplitIndex].best, 0x87,
                        gLapSplitPanelY + 0xB9, 0, 1);
         HudDrawTimeLap(*(s32 *)(gPlayerCar[0] + 0x258), 0x87,
                        gLapSplitPanelY + 0xC3, 0, 1);
     }
-    func_80044A1C(0x55, gLapSplitPanelY + 0xB4, 0x87, 0x28, 0, 0, 0, 1);
+    GraphicsDrawDoubleBorderRect(0x55, gLapSplitPanelY + 0xB4, 0x87, 0x28, 0, 0,
+                                 0, 1);
 }
 
 void HudInitLapSplits(void) {
@@ -5082,13 +5096,13 @@ extern u8 *D_8009AE4C[];
 extern void func_80050028Lbl(char *, s16, s16, s8);
 asm(".globl func_80050028Lbl\nfunc_80050028Lbl = HudDrawText");
 
-void func_8004E808(void) {
+void HudDrawTrafficGapPanel(void) {
     if (gLapSplitPanelY < 0x3C) {
         return;
     }
     if (D_800A34B0 != 0) {
         if ((s8)D_800A34AC == 0x3C) {
-            func_8004EA34();
+            HudUpdateTrafficGapData();
             if (D_800A34BC == 0 && D_800A34C0 == 0) {
                 D_800A34B0 = 0;
                 return;
@@ -5120,18 +5134,19 @@ void func_8004E808(void) {
                 HudDrawTime((void *)D_800A34C0, 0x96,
                             (s16)((s8)D_800A34AC + 0xCD), 0, 1);
             }
-            func_80044A1C(0x4B, (s8)D_800A34AC + 0xB4, 0xA0, 0x28, 0, 0, 0, 1);
+            GraphicsDrawDoubleBorderRect(0x4B, (s8)D_800A34AC + 0xB4, 0xA0,
+                                         0x28, 0, 0, 0, 1);
         }
     }
 }
 
 extern char D_800A8A4C[];
 extern char D_800A8A60[];
-extern char D_800A303C[];
+extern char gTextSpaceDelimiter[];
 extern char *strcpy(char *, const char *);
 extern char *strtok(char *, const char *);
 
-void func_8004EA34(void) {
+void HudUpdateTrafficGapData(void) {
     register s32 len asm("v1");
     register u8 *car asm("a1");
     u8 *e0;
@@ -5172,8 +5187,8 @@ void func_8004EA34(void) {
             car = *(s32 *)((u8 *)(e0) + 0x34C);
             D_800A34BC = t1 - t2;
             strcpy(D_800A8A4C, (char *)car);
-            D_800A34B4 = (s32)strtok(D_800A8A4C, D_800A303C);
-            D_800A34B4 = (s32)strtok((char *)0, D_800A303C);
+            D_800A34B4 = (s32)strtok(D_800A8A4C, gTextSpaceDelimiter);
+            D_800A34B4 = (s32)strtok((char *)0, gTextSpaceDelimiter);
         }
         asm volatile("" : : : "memory");
         if (*(s32 *)(gPlayerCar[0] + 0x3E8) != 0) {
@@ -5193,8 +5208,8 @@ void func_8004EA34(void) {
                 name2 = *(char **)(e0 + 0x34C);
                 D_800A34C0 = rel;
                 strcpy(D_800A8A60, name2);
-                D_800A34B8 = (s32)strtok(D_800A8A60, D_800A303C);
-                D_800A34B8 = (s32)strtok((char *)0, D_800A303C);
+                D_800A34B8 = (s32)strtok(D_800A8A60, gTextSpaceDelimiter);
+                D_800A34B8 = (s32)strtok((char *)0, gTextSpaceDelimiter);
             }
         }
     }
@@ -5217,7 +5232,7 @@ asm(".globl D_800A8AB4First\nD_800A8AB4First = D_800A8AB4");
 extern s16 D_800A8AB4Coords[][2] asm("D_800A8AB4");
 extern s16 D_800A8AB6Coords[][2] asm("D_800A8AB6");
 extern void MenuDrawLapStatistics(s8, s8);
-extern void func_8004FF90(s32, s32, s32, s8);
+extern void FontDrawColoredInteger(s32, s32, s32, s8);
 
 void MenuDrawTimingAndScoring(void) {
     char caption[40];
@@ -5255,8 +5270,8 @@ void MenuDrawTimingAndScoring(void) {
     /* Narrow and halve the x coordinate for the text renderer. */
     centeredX <<= 15;
     HudDrawTextS16(captionArg, (s16)(centeredX >> 16), 210, 0);
-    func_8001D778(0, 0, 320, 35, 0, 0, 0, 0);
-    func_8001D778(0, 205, 320, 35, 0, 0, 0, 0);
+    GraphicsDrawRect(0, 0, 320, 35, 0, 0, 0, 0);
+    GraphicsDrawRect(0, 205, 320, 35, 0, 0, 0, 0);
     GraphicsSetColor(128, 128, 128);
     MenuDrawLapStatistics((s8)D_800A35A8, (s8)D_800A3924);
     slideLap = D_800A36FC;
@@ -5294,15 +5309,16 @@ void MenuDrawTimingAndScoring(void) {
     if (i < gTrackSplitCount[D_800A2CE0[0]]) {
         loopLapCount = (s32)lapCount;
     drawLapMarker:
-        func_8004FF90(i, D_800A8AB4Coords[i][0], D_800A8AB6Coords[i][0], 0);
+        FontDrawColoredInteger(i, D_800A8AB4Coords[i][0],
+                               D_800A8AB6Coords[i][0], 0);
         i++;
         if (i < *(s8 *)(D_800A2CE0[0] + loopLapCount)) {
             goto drawLapMarker;
         }
     }
     func_8001BA94(1);
-    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
-    func_8001D778(0, 35, 320, 170, 0, 0, 0, 1);
+    GraphicsDrawRect(0, 35, 320, 170, 0, 0, 0, 1);
+    GraphicsDrawRect(0, 35, 320, 170, 0, 0, 0, 1);
 }
 
 extern u8 *D_800A8A74[];
@@ -5316,9 +5332,9 @@ extern char *D_8009AE88[];
 extern char *D_8009AE8C[];
 extern char *D_8009AE90[];
 extern char *D_8009AE98[];
-extern char D_800A3040[];
-extern char D_800A3048[];
-extern char D_800A3050[];
+extern char gFormatStringColonHashInteger[];
+extern char gFormatStringString[];
+extern char gFormatIntegerDotIntegerMenu[];
 
 void MenuDrawLapStatistics(s8 lap, s8 mode) {
     char title[40];
@@ -5342,14 +5358,15 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     if (speed == 0x7FFF) {
         strcpy(title, D_8009AE64[lap]);
     } else {
-        sprintfRow(title, D_800A3040, D_8009AE64[lap], speed);
+        sprintfRow(title, gFormatStringColonHashInteger, D_8009AE64[lap],
+                   speed);
     }
     func_80050028Row(title, 20, top, 2);
     y = top + 24;
     for (i = 1; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
         textY = y;
         func_80050028Row(D_8009AE74[0], 20, textY, 0);
-        func_8004FF90(i, 60, textY, 0);
+        FontDrawColoredInteger(i, 60, textY, 0);
         y += 12;
     }
     func_80050028Row(D_8009AE78[0], 20, y, 0);
@@ -5383,7 +5400,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
                 } else {
                     speedValue = speed * 210 / 550;
                 }
-                func_8004FF90(speedValue, 215, y, 3);
+                FontDrawColoredInteger(speedValue, 215, y, 3);
             }
             y += 12;
         }
@@ -5400,7 +5417,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
                 speedValue = speed * 210 / 550;
             }
             fraction = speedValue;
-            func_8004FF90(fraction, 215, y, 3);
+            FontDrawColoredInteger(fraction, 215, y, 3);
         }
         break;
     }
@@ -5416,7 +5433,8 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     top = 169;
     if (*(s8 *)D_800A8A74[lap] == 127) {
         for (i = 0; i < 2; i++) {
-            sprintfRow(title, D_800A3048, D_8009AE98[i], D_8009AE98[-2]);
+            sprintfRow(title, gFormatStringString, D_8009AE98[i],
+                       D_8009AE98[-2]);
             func_80050028Row(
                 title, (s32)((320 - HudTextWidth((u8 *)title)) << 15) >> 16,
                 top, 2);
@@ -5438,7 +5456,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
             valueBuffer = valueText;
             /* Set the buffer argument before the sign test. */
             asm("" : : "r"(valueBuffer), "r"(setting));
-            valueFormat = D_800A3050;
+            valueFormat = gFormatIntegerDotIntegerMenu;
             if (setting < 0) {
                 setting = -setting;
             }
@@ -5472,9 +5490,9 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
                 : "=r"(labelWidth)
                 : "0"(labelWidth), "r"(setupIndex), "r"(setupIndex),
                   "r"(setupIndex), "r"(setupIndex), "r"(screenX));
-            sign = D_800A3038;
+            sign = gTextPositiveSign;
             if (*(s8 *)(D_800A8A74[lap] + setupIndex) < 0) {
-                sign = D_800A3034;
+                sign = gTextNegativeSign;
             }
             number = screenX + (u8)labelWidth;
             func_80050028Row(sign, number, footerY, 2);
@@ -5631,7 +5649,7 @@ typedef struct {
     /* 0x02 */ s16 unk2;
 } LapAvgSlot;
 
-void func_8004FCF4(void) {
+void HudRecordLapSplitStats(void) {
     extern u8 D_800A3688;
     extern u8 *D_800A8A80[];
     u8 *entry;
@@ -5659,7 +5677,7 @@ void func_8004FCF4(void) {
     ((LapTotalSlot *)(gLapSplitIndex * 4 + D_800A8A80[0]))->unk20 =
         *(s32 *)(car + 0x258);
     if (gLapSplitIndex == gTrackSplitCount[*(s32 *)(void *)D_800A2CE0] - 1) {
-        if (D_800A3688 != 0 && D_800A2EB0Absolute[0] == 0) {
+        if (D_800A3688 != 0 && gSessionTypeAbsolute[0] == 0) {
             D_800A34B0 = *(s32 *)(void *)D_800A2CE0 == 3 ? 0x28 : 0x32;
         }
         sum = 0;
@@ -5691,29 +5709,29 @@ void func_8004FCF4(void) {
 }
 
 extern u8 *D_800A8A80[];
-void func_8004FF3C(void) {
+void RaceStoreLapRecordCarFields(void) {
     D_800A8A80[0][0] = *(u16 *)(gPlayerCar[0] + 0x2AA);
     D_800A8A80[0][1] = *(u16 *)(gPlayerCar[0] + 0x2A4);
     *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)(gPlayerCar[0] + 0x1D6);
 }
 
 extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
-extern char D_800A3020nm[] asm("D_800A3020.NON_MATCHING");
+extern char gFormatIntegernm[] asm("gFormatInteger.NON_MATCHING");
 extern u8 gTextColorNm asm("gTextColor.NON_MATCHING");
 extern void func_80050028Args(char *, s16, s16, s8);
 asm(".globl func_80050028Args\nfunc_80050028Args = HudDrawText");
 extern s32 sprintfTextArgs(char *, char *, ...);
 asm(".globl sprintfTextArgs\nsprintfTextArgs = sprintf");
-void func_8004FF90(s32 arg0, s32 arg1, s32 arg2, s8 arg3) {
+void FontDrawColoredInteger(s32 value, s32 x, s32 y, s8 colorMode) {
     char text[16];
 
-    if (arg3 == 1) {
+    if (colorMode == 1) {
         gTextColorNm = 6;
     } else {
         gTextColorNm = 9;
     }
-    sprintfTextArgs(text, D_800A3020nm, arg0);
-    func_80050028Args(text, (s16)arg1, (s16)arg2, arg3);
+    sprintfTextArgs(text, gFormatIntegernm, value);
+    func_80050028Args(text, (s16)x, (s16)y, colorMode);
     gTextColorNm = 0;
 }
 
@@ -5992,7 +6010,7 @@ void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode) {
 }
 
 extern s16 D_800A8AD2[];
-void func_800508E4(void) {
+void GraphicsInitializeTexturedQuad(void) {
     SetPolyFT4(D_800A8AC4);
     D_800A8AD2[0] = GetClut(0x390, 0x3C);
 }
@@ -6039,7 +6057,7 @@ extern s16 D_800A34D8;
 extern u8 D_800A34DC;
 extern u8 D_800A8B30[], D_800A8B31[], D_800A8B32[];
 void SceneSkyFadeDraw(void);
-void func_800514EC(u8, u8, u8);
+void SceneSetOverlayColor(u8, u8, u8);
 
 void HudUpdateFlagOverlay(void) {
     u8 *car;
@@ -6049,7 +6067,7 @@ void HudUpdateFlagOverlay(void) {
             if (D_800A372C == 0 || D_800A3764 != 0) {
                 D_800A3414 = gPlayerCar[0][0x209];
                 gPlayerCar[0][0x209] = (s8)gPlayerCar[0][0x209] > 0;
-                if (D_800A2EA4[0] != 0) {
+                if (gSplitScreenMode[0] != 0) {
                     D_800A3418 = D_800A3428[0x209];
                     D_800A3428[0x209] = (s8)D_800A3428[0x209] > 0;
                 }
@@ -6069,13 +6087,13 @@ void HudUpdateFlagOverlay(void) {
             D_800A341C = 1;
             switch (D_800A2F00Lui[0]) {
             case 1:
-                func_800514EC(0, 0xC0, 0);
+                SceneSetOverlayColor(0, 0xC0, 0);
                 break;
             case 2:
-                func_800514EC(0xFF, 0xFF, 0xFF);
+                SceneSetOverlayColor(0xFF, 0xFF, 0xFF);
                 break;
             case 3:
-                func_800514EC(0xFF, 0xFF, 0);
+                SceneSetOverlayColor(0xFF, 0xFF, 0);
                 break;
             }
             if (D_800A3910 == 0) {
@@ -6115,7 +6133,7 @@ void HudUpdateFlagOverlay(void) {
         D_800A35D4 = 0;
         if (D_800A2EACAbsolute[0] == 0 && D_800A372C == 0) {
             gPlayerCar[0][0x209] = D_800A3414;
-            if (D_800A2EA4[0] != 0) {
+            if (gSplitScreenMode[0] != 0) {
                 D_800A3428[0x209] = D_800A3418;
             }
             if (gPlayerCar[0][0x268] == 0) {
@@ -6188,7 +6206,7 @@ s32 RaceUpdateCaution(void) {
             D_800A2F00Sw[0] = 3;
             D_800A3420 = gPlayerCarLui[0xF6];
             gPlayerCarLui[0xF6] = 1;
-            func_80052FC4(0);
+            SoundStopConditionalSlots(0);
             D_800A35A4 = 600;
             D_800A39F8 = 1;
             D_800A38B0 = 1;
@@ -6221,7 +6239,8 @@ s32 RaceUpdateCaution(void) {
             }
         }
         func_80028FCC(gCarListLui);
-        func_8002AD20((s32 *)gPlayerCarLui, *(s16 *)(gPlayerCarLui + 0x114));
+        CarSetVelocityFromHeading((s32 *)gPlayerCarLui,
+                                  *(s16 *)(gPlayerCarLui + 0x114));
         if (done && D_800A35A4 <= 0) {
             D_800A3764 = 0;
             D_800A2EFCSw[0] = 0;
@@ -6254,8 +6273,8 @@ s32 RaceUpdateCaution(void) {
                     (*(void (**)(u8 *))(car + 0x350))(car);
                 } else {
                     func_800373B4(car);
-                    func_8002AD20((s32 *)gPlayerCarLui,
-                                  *(s16 *)(gPlayerCarLui + 0x114));
+                    CarSetVelocityFromHeading((s32 *)gPlayerCarLui,
+                                              *(s16 *)(gPlayerCarLui + 0x114));
                 }
             }
             func_80028FCC(gCarListLui);
@@ -6297,7 +6316,7 @@ extern u16 D_800A8B52[], D_800A8B7A[], D_800A8B5A[], D_800A8B82[];
 extern s16 D_800A8AEC[], D_800A8AEE[], D_800A8AF0[], D_800A8AF2[];
 extern s16 D_800A8AF4[], D_800A8AF6[], D_800A8AF8[], D_800A8AFA[];
 
-void func_800511E4(void) {
+void HudInitFlagOverlay(void) {
     u16 x;
     u16 y;
 
@@ -6385,7 +6404,7 @@ extern u8 D_800A8B00[];
 extern u8 D_800A8B01[];
 extern u8 D_800A8B02[];
 
-void func_800514EC(u8 arg0, u8 arg1, u8 arg2) {
+void SceneSetOverlayColor(u8 arg0, u8 arg1, u8 arg2) {
     D_800A34CC = arg0;
     D_800A34CD = arg1;
     D_800A34CE = arg2;
@@ -6939,7 +6958,7 @@ void SceneSkyFadeDraw(void) {
                     D_800A8B8E[0] = shade;
                     GraphicsAddPolyFT4((u8 *)idx);
                     GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
-                    if (D_800A2EA4Absolute[0] != 0) {
+                    if (gSplitScreenModeAbsolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
@@ -6979,7 +6998,7 @@ void SceneSkyFadeDraw(void) {
                     }
                     argument = idx;
                     GraphicsAddPolyFT4((u8 *)argument);
-                    if (D_800A2EA4Absolute[0] != 0) {
+                    if (gSplitScreenModeAbsolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
@@ -7119,7 +7138,7 @@ void SceneSkyFadeDraw(void) {
                     D_800A8B2A[0] = shade;
                     GraphicsAddPolyFT4((u8 *)idx);
                     GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
-                    if (D_800A2EA4Absolute[0] != 0) {
+                    if (gSplitScreenModeAbsolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
@@ -7159,7 +7178,7 @@ void SceneSkyFadeDraw(void) {
                         D_800A8B12[0] = y1 + yBits;
                     }
                     GraphicsAddPolyFT4((u8 *)argument);
-                    if (D_800A2EA4Absolute[0] != 0) {
+                    if (gSplitScreenModeAbsolute[0] != 0) {
                         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
                         gReplayIndexAbsolute[-29] =
                             D_800A397CAbsolute[19] + 0x1004;
@@ -7249,12 +7268,12 @@ void SceneSkyFadeDraw(void) {
     D_800A8B40[0] = home.buf[6];
     D_800A8B42[0] = home.buf[7];
     GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
-    func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
-    if (D_800A2EA4Absolute[0] != 0) {
+    GraphicsDrawRect((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
+    if (gSplitScreenModeAbsolute[0] != 0) {
         D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
         gReplayIndexAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
         GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
-        func_8001D778((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
+        GraphicsDrawRect((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
         bank = gOrderingTableBankAbsolute[0] - 1;
         gOrderingTableBankSmall[0] = bank;
         D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
@@ -7465,7 +7484,7 @@ loop2:
     vec.vx = xoff + out.vz;
     vec.vy = side2 * 120 + out.vx;
     vec.vz = 0;
-    func_8001ED84((s32 *)&vec);
+    MatrixTransformVector((s32 *)&vec);
     {
         register s16 *c asm("$5");
 
@@ -7653,7 +7672,7 @@ void func_80052E18(void) {
     }
 }
 
-void func_80052FC4(s8 arg0) {
+void SoundStopConditionalSlots(s8 arg0) {
     if (arg0 < 2) {
         SoundStopSlot(0x14);
         D_800A34EC = 0;
@@ -7683,7 +7702,7 @@ void func_8005301C(void) {
         SoundStopSlot(0x14);
         D_800A34EC = 0;
     }
-    if (D_800A2EA4Absolute[0] == 0) {
+    if (gSplitScreenModeAbsolute[0] == 0) {
         return;
     }
     obj = *(u8 **)(gPlayerCar[0] + 0x3E0);
@@ -7704,10 +7723,10 @@ void func_8005301C(void) {
 extern u8 D_800A3058;
 extern u8 D_800A3060;
 extern u8 D_800A3061;
-extern u8 D_800A3694;
+extern u8 gCdVolume;
 extern u8 D_800A3950;
 extern u8 D_800A3644;
-extern u8 D_800A39E4Small;
+extern u8 gScreenStateSmall;
 extern s32 D_800A37EC;
 extern u16 *D_800A35F0;
 extern s32 D_800A305C;
@@ -7718,21 +7737,22 @@ extern u8 D_800A3A58Lui asm("D_800A3A58Absolute");
 extern s32 D_800A335C[];
 extern u8 D_800A3884[];
 
-void func_80057FC8(s32 hide);
+void GraphicsHideDisplay(s32 hide);
 void func_8006D4C8(s32, s32);
 void SsStart2(void);
-void func_80041AF0FrontEnd(s32) asm("func_80041AF0");
+void PadResetAndInitializeBuffersFrontEnd(s32) asm(
+    "PadResetAndInitializeBuffers");
 void func_80053D40(void);
-void func_80064C14(void);
-void func_80014A40(s32);
-s32 func_8005B0E4(s16, u8 *);
+void MenuInitializeGlyphPrimitiveBuffer(void);
+void GraphicsSelectPrimitiveBuffer(s32);
+s32 MenuTextCenterOffset(s16, u8 *);
 void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void func_80066730(void);
 void func_80064E6C(void);
-void func_80066A24FrontEnd(s32) asm("func_80066A24");
+void MenuStartVBlankEventFrontEnd(s32) asm("MenuStartVBlankEvent");
 void func_80057BFC(void);
 void func_8005957C(void);
-void func_80058030(void);
+void GraphicsPutCurrentEnvironments(void);
 void func_80058148(void);
 
 /* Front-end session: set up, run the menu loop func_80053D40, tear down. */
@@ -7743,10 +7763,10 @@ void MenuRunFrontEnd(void) {
     u8 *ot;
 
     if (D_800A3058 != 0) {
-        func_8003F0CC(3);
+        SoundReloadVabAndResetSlots(3);
     }
     D_800A3058 = 1;
-    func_80057FC8(0);
+    GraphicsHideDisplay(0);
     if (D_800A3060 != 0 && D_800A3061 != 0) {
         if (D_800A3A58Lui != 0) {
             func_8006D4C8(0, 0);
@@ -7757,10 +7777,10 @@ void MenuRunFrontEnd(void) {
         D_800A3061 = 0;
     }
     func_800539F0();
-    func_800596F4();
+    CdEnablePlaybackAndSetVolume();
     SsStart2();
     SsSetMVol(0x7F, 0x7F);
-    CdSetMixVolume(D_800A3694);
+    CdSetMixVolume(gCdVolume);
     if (D_800A335C[0] == 0) {
         if (D_800A3950 != 0xF9) {
             GraphicsInitDoubleBufferSwapped();
@@ -7768,8 +7788,8 @@ void MenuRunFrontEnd(void) {
     } else {
         D_800A3884[0] = 1;
         do {
-            func_8003CC48();
-            func_80041AF0FrontEnd(0);
+            CdStopIfPlaybackChanged();
+            PadResetAndInitializeBuffersFrontEnd(0);
             buttons = PadGetButtons(0);
             if (D_800A3644 != 0) {
                 if (buttons & 0x800) {
@@ -7778,9 +7798,9 @@ void MenuRunFrontEnd(void) {
                 buttons = PadGetButtons(1);
             }
         } while (!(buttons & 0x800));
-        func_80066B08();
+        MenuStopVBlankEvent();
     }
-    if (D_800A39E4Small == 0xC) {
+    if (gScreenStateSmall == 0xC) {
         SetDispMask(0);
     }
     TextureLoadTim(D_800A37EC);
@@ -7789,11 +7809,11 @@ void MenuRunFrontEnd(void) {
     func_80053D40();
     func_80063AE0(0, 0);
     func_80063AE0(1, 1);
-    if (D_800A39E4Small != 0xF8 && D_800A39E4Small != 0xFD &&
-        D_800A2EB0Absolute[0] != 2) {
-        func_80064C14();
+    if (gScreenStateSmall != 0xF8 && gScreenStateSmall != 0xFD &&
+        gSessionTypeAbsolute[0] != 2) {
+        MenuInitializeGlyphPrimitiveBuffer();
     }
-    if (D_800A39E4Small == 0xFD) {
+    if (gScreenStateSmall == 0xFD) {
         func_80063AE0(0, 0);
         func_80063AE0(1, 1);
         DrawSync(0);
@@ -7804,38 +7824,39 @@ void MenuRunFrontEnd(void) {
         gOrderingTableBankAbsolute[0] = bank;
         gOrderingTable[0] = (s32)ot;
         ClearOTagR((OT_TYPE *)ot, 0x400);
-        func_80014A40((u8)D_800A305C);
-        func_8005A7B8(1, 1);
-        func_8005B0E4(0x140, D_8009A400[0]);
-        MenuDrawString(D_8009A400[0], func_8005B0E4(0x140, D_8009A400[0]), 0x78,
-                       0, 0, 0, 0, 0);
-        func_80058030();
+        GraphicsSelectPrimitiveBuffer((u8)D_800A305C);
+        MenuFontSet(1, 1);
+        MenuTextCenterOffset(0x140, D_8009A400[0]);
+        MenuDrawString(D_8009A400[0],
+                       MenuTextCenterOffset(0x140, D_8009A400[0]), 0x78, 0, 0,
+                       0, 0, 0);
+        GraphicsPutCurrentEnvironments();
         D_800A3710Small.x = -(D_800A305C != 0) & 0x140;
         LoadImage(D_800A3710, (u_long *)D_800A35F0);
         DrawOTag((OT_TYPE *)(gOrderingTableAbsolute[0] + 0xFFC));
         D_800A305C = D_800A305C == 0;
-        func_80058030();
-    } else if (D_800A39E4Small != 0xF8) {
+        GraphicsPutCurrentEnvironments();
+    } else if (gScreenStateSmall != 0xF8) {
         func_80058148();
     }
     CdStop();
     if (D_800A3058 != 0) {
         SsSetMVol(0, 0);
-        func_8003FA0C();
+        SoundStopActiveSlots();
         SoundShutdown();
         VSync(0);
     }
-    if (D_800A2EB0Absolute[0] == 2) {
+    if (gSessionTypeAbsolute[0] == 2) {
         func_80066730();
         func_80057BFC();
     } else {
         func_80057BFC();
-        if (D_800A39E4Small != 0xFD) {
-            D_800A39E4Small = 0x80;
+        if (gScreenStateSmall != 0xFD) {
+            gScreenStateSmall = 0x80;
             func_80064E6C();
         }
     }
-    func_80066A24FrontEnd(D_800A2EB0Absolute[0]);
+    MenuStartVBlankEventFrontEnd(gSessionTypeAbsolute[0]);
 }
 
 /* Called once at boot: resets the player names, volumes, and option
@@ -7849,11 +7870,11 @@ void GameInitDefaults(void) {
     extern u8 D_800A3981Lui asm("D_800A3981Absolute");
     extern u8 D_800A3658;
     extern u8 gPlayerDriverSmall;
-    extern s16 D_800A3694Small;
-    extern s16 D_800A3696Lui asm("D_800A3696Absolute");
-    extern u8 D_800A2F94Lui asm("D_800A2F94Absolute");
-    extern u8 D_800A2F95Lui asm("D_800A2F95Absolute");
-    extern u8 D_800A305BSmall;
+    extern s16 gCdVolumeSmall;
+    extern s16 gMusicVolumeLui asm("gMusicVolumeAbsolute");
+    extern u8 gMusicVolumeScaledLui asm("gMusicVolumeScaledAbsolute");
+    extern u8 gStereoEnabledLui asm("gStereoEnabledAbsolute");
+    extern u8 gSelectedTrackSmall;
     extern s32 D_800A37D0Small;
     extern u8 D_800A306F;
     extern u8 D_800A3968Lui asm("D_800A3968Absolute");
@@ -7861,17 +7882,17 @@ void GameInitDefaults(void) {
     extern u8 gCardMenuMessageLui asm("gCardMenuMessageAbsolute");
     extern u8 D_800A3A48;
     extern char *D_800A35F4Lui asm("D_800A35F4Absolute");
-    extern void func_80069E88(void);
+    extern void CardMenuSetSaveDataPointers(void);
     extern void func_8006ABF8(void);
     extern void func_8006BA68(void);
-    extern void func_800599E4(void);
-    extern void func_800598C4(void);
-    extern u8 func_8006A080(void);
+    extern void CardEnableAndTestEvents(void);
+    extern void CardTestAndDisableEvents(void);
+    extern u8 CardProbeSlots(void);
     extern u8 CardResolveSlot(void);
     extern u8 CardGetOtherFileBlocks(void);
     extern u8 CardLoadSaveTable(u8);
-    extern void func_8006AC78(s32);
-    extern u8 func_8006AD0C(u8);
+    extern void CardMenuSetDriverIndexFromName(s32);
+    extern u8 DriverFindIndexById(u8);
     s32 i;
     s32 j;
     s32 k;
@@ -7900,11 +7921,11 @@ void GameInitDefaults(void) {
     }
     strcpy(D_800BB9B4, gDriverNames[gPlayerDriverSmall]);
     strcpy(&D_800BB9B4[0x18], gDriverNames[D_800A36E1Lui]);
-    D_800A3694Small = 65;
-    D_800A3696Lui = 50;
-    D_800A2F94Lui = 0x20;
-    D_800A2F95Lui = 1;
-    D_800A305BSmall = 0;
+    gCdVolumeSmall = 65;
+    gMusicVolumeLui = 50;
+    gMusicVolumeScaledLui = 0x20;
+    gStereoEnabledLui = 1;
+    gSelectedTrackSmall = 0;
     D_800A37D0Small = 3;
     D_800A306F = 0;
     for (offset = 14 * 0x18; offset >= 0; offset -= 0x18) {
@@ -7913,15 +7934,15 @@ void GameInitDefaults(void) {
     D_800A3968Lui = 0;
     /* i holds the "card full" block count from here on. */
     i = 15;
-    func_80069E88();
+    CardMenuSetSaveDataPointers();
     ok = 0;
     func_8006ABF8();
     value = 1;
     func_8006BA68();
     D_800A3060 = 0;
     D_800A3061 = value;
-    func_800599E4();
-    switch (func_8006A080()) {
+    CardEnableAndTestEvents();
+    switch (CardProbeSlots()) {
     case 0:
         gCardMenuMessageLui = 2;
         D_800A3A48 = 0xFC;
@@ -7982,26 +8003,26 @@ void GameInitDefaults(void) {
         if (CardLoadSaveTable(1) == 1) {
             if (D_800A3A58Lui != 0) {
                 strcpy(D_800BB9B4, D_800A35F4Lui);
-                func_8006AC78(0);
-                D_800A3980Small = func_8006AD0C(gPlayerDriverSmall);
+                CardMenuSetDriverIndexFromName(0);
+                D_800A3980Small = DriverFindIndexById(gPlayerDriverSmall);
                 D_800A3060 = 1;
             }
             if (D_800A3A58Lui >= 2) {
                 strcpy(&D_800BB9B4[0x18], D_800A35F4Lui + 0xE8);
-                func_8006AC78(1);
-                D_800A3981Lui = func_8006AD0C(D_800A36E1Lui);
+                CardMenuSetDriverIndexFromName(1);
+                D_800A3981Lui = DriverFindIndexById(D_800A36E1Lui);
             }
         }
         D_800A3A48 = 0;
         D_800A3950 = 0;
     }
     i = 1;
-    func_800598C4();
+    CardTestAndDisableEvents();
     flags = D_800A36E4;
     for (; i >= 0; i--) {
         flags[i] = 0;
     }
-    D_800A39E4Small = 0xF9;
+    gScreenStateSmall = 0xF9;
 }
 
 extern void SceneInitPrimPools(void);
@@ -8016,14 +8037,14 @@ void func_800539F0(void) {
     void *base;
 
     D_800A37EC = (s32)HeapAlloc(0x26000);
-    func_8003CA18(D_800A37EC, 5);
-    func_8005E550(6);
+    CdLoadFileByIndex(D_800A37EC, 5);
+    MenuLoadOffsetResources(6);
     SceneInitPrimPools();
     i = 0;
-    func_800631B4();
+    MenuAllocateObjectList();
     func_80063E7C();
-    func_80057A9C();
-    func_8005A4E0();
+    SceneAllocateRuntimeBuffers();
+    MenuFontReset();
     base = FileLoadOffsetTable(9, &table, 0);
     TextureLoadTim(base + ((s32 *)table)[0xB]);
     DrawSync(0);
@@ -8048,14 +8069,14 @@ void func_800539F0(void) {
     DrawSync(0);
     TextureLoadTim(base + ((s32 *)table)[0]);
     DrawSync(0);
-    func_80059648();
+    GraphicsLoadPaletteRow();
     HeapFree(base);
-    func_80064174();
-    func_80069744();
-    func_8005A544(0, 0);
-    func_8005A544(1, 1);
-    func_8005A544(2, 2);
-    func_8005A804(0xA0, 0xA0, 0x40);
+    MenuLoadTextureTable();
+    CardMenuLoadResources();
+    MenuFontBuildPrimitives(0, 0);
+    MenuFontBuildPrimitives(1, 1);
+    MenuFontBuildPrimitives(2, 2);
+    MenuSetShadeColors(0xA0, 0xA0, 0x40);
     D_800A3724NM = 3;
     D_800A305ANM = 0;
     D_800A37F0NM = 1;
@@ -8068,36 +8089,36 @@ extern u8 D_800A3059;
 void func_80053C00(s32 arg0, s32 arg1) {
     extern s32 D_800A3914[];
     extern s32 D_800A3914NM[] asm("D_800A3914.NON_MATCHING");
-    extern void func_8006DCF0(void);
-    extern void func_8005B688(u8 *, u8);
-    extern void func_8005B8B8(u8 *, u8);
-    extern void func_80064898(void);
+    extern void MenuUpdateAndDrawObjectLists(void);
+    extern void MenuUpdateObjectPosition(u8 *, u8);
+    extern void MenuDrawObjectList(u8 *, u8);
+    extern void MenuDrawObjectGroups(void);
     extern void func_800686FC(u8, u8);
     extern void func_8005D094(s32, u8, u8);
     extern s32 func_8005DCF0(void);
 
-    if (D_800A39E4Small == 0xFC) {
-        func_8006DCF0();
+    if (gScreenStateSmall == 0xFC) {
+        MenuUpdateAndDrawObjectLists();
     } else {
         if (D_800A3914[0] != 0) {
-            func_8005B688((u8 *)D_800A3914[0], 1);
+            MenuUpdateObjectPosition((u8 *)D_800A3914[0], 1);
         }
-        if ((D_800A39E4Small >= 9 && D_800A39E4Small <= 10) ||
-            D_800A39E4Small == 12 ||
-            (D_800A39E4Small >= 16 && D_800A39E4Small <= 17)) {
-            func_800686FC(D_800A39E4Small, arg0);
-        } else if (D_800A39E4Small == 14) {
-            func_8005B8B8((u8 *)D_800A3914NM[0], 0xFF);
-            func_80064898();
+        if ((gScreenStateSmall >= 9 && gScreenStateSmall <= 10) ||
+            gScreenStateSmall == 12 ||
+            (gScreenStateSmall >= 16 && gScreenStateSmall <= 17)) {
+            func_800686FC(gScreenStateSmall, arg0);
+        } else if (gScreenStateSmall == 14) {
+            MenuDrawObjectList((u8 *)D_800A3914NM[0], 0xFF);
+            MenuDrawObjectGroups();
         } else {
-            func_8005B8B8((u8 *)D_800A3914NM[0], 0xFF);
-            func_8005D094(D_800A39E4Small, D_800A3059, arg1);
+            MenuDrawObjectList((u8 *)D_800A3914NM[0], 0xFF);
+            func_8005D094(gScreenStateSmall, D_800A3059, arg1);
         }
     }
     if (D_800A3608 != 0) {
         D_800A3608 = D_800A3608 - 1;
-    } else if (!((D_800A39E4Small >= 16 && D_800A39E4Small <= 17) ||
-                 D_800A39E4Small == 14) &&
+    } else if (!((gScreenStateSmall >= 16 && gScreenStateSmall <= 17) ||
+                 gScreenStateSmall == 14) &&
                func_8005DCF0() == 1) {
         D_800A3608 = 0x78;
     }
@@ -8106,7 +8127,7 @@ void func_80053C00(s32 arg0, s32 arg1) {
 __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "D_800A3059.MainLoop = D_800A3059\n"
         "D_800A305A.MainLoop = D_800A305A\n"
-        "D_800A305B.MainLoop = D_800A305B\n"
+        "gSelectedTrack.MainLoop = gSelectedTrack\n"
         "D_800A305C.MainLoop = D_800A305C\n"
         "D_800A3064.MainLoop = D_800A3064\n"
         "D_800A3065.MainLoop = D_800A3065\n"
@@ -8124,7 +8145,7 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "D_800A3950.MainLoop = D_800A3950\n"
         "D_800A3968.MainLoop = D_800A3968\n"
         "D_800A3980.MainLoop = D_800A3980\n"
-        "D_800A39E4.MainLoop = D_800A39E4\n"
+        "gScreenState.MainLoop = gScreenState\n"
         "D_800B9B84.MainLoop = D_800B9B84\n"
         "D_800A3684.MainLoopSmall = D_800A3684\n"
         "D_800A3988.MainLoopSmall = D_800A3988\n"
@@ -8140,7 +8161,7 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "gOrderingTable.MainLoop10 = gOrderingTable\n"
         "gOrderingTable.MainLoop11 = gOrderingTable\n"
         "D_800A3685.MainLoop12 = D_800A3685\n"
-        "D_800A37D8.MainLoop13 = D_800A37D8\n"
+        "gPadPictureMenuLists.MainLoop13 = gPadPictureMenuLists\n"
         "D_800A37DC.MainLoop14 = D_800A37DC\n"
         "D_800A3684.MainLoop15 = D_800A3684\n"
         "gPadType.MainLoop16 = gPadType\n"
@@ -8191,16 +8212,18 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
 s32 ListHasClearFlagsMainLoop(u8 *node) asm("ListHasClearFlags");
 void ListSetFieldsAndEnableMainLoop(u8 *, s32, s32,
                                     s32) asm("ListSetFieldsAndEnable");
-void func_80014A40MainLoop(s32 arg0) asm("func_80014A40");
-void func_8003CC48MainLoop(void) asm("func_8003CC48");
+void GraphicsSelectPrimitiveBufferMainLoop(s32 arg0) asm(
+    "GraphicsSelectPrimitiveBuffer");
+void CdStopIfPlaybackChangedMainLoop(void) asm("CdStopIfPlaybackChanged");
 void func_8003CCE0MainLoop(s32 arg0) asm("func_8003CCE0");
 s32 func_8003F4FCMainLoop(s32 arg0) asm("SoundIsSlotActive");
 /* All loop sound arguments fit s8. Pins already hold their extended values. */
 void SoundPlaySlotMainLoop(s32, s32) asm("SoundPlaySlot");
 void SoundStopSlotMainLoop(s32) asm("SoundStopSlot");
 s32 func_80041B7CMainLoop(s32) asm("PadGetButtons");
-s32 func_8004229CMainLoop(s32 arg0) asm("func_8004229C");
-void func_80044FF8MainLoop(s32 arg0, s32 arg1) asm("func_80044FF8");
+s32 PadTypeNeedsCalibrationMainLoop(s32 arg0) asm("PadTypeNeedsCalibration");
+void SoundRunSlotEnvelopeMainLoop(s32 arg0,
+                                  s32 arg1) asm("SoundRunSlotEnvelope");
 void MenuHandleOptionsInputMainLoop() asm("MenuHandleOptionsInput");
 s32 func_80056B0CMainLoop(s32 arg0, s32 arg1) asm("func_80056B0C");
 s32 func_80056B5CMainLoop(s32 arg0, s32 arg1, s32 arg2) asm("func_80056B5C");
@@ -8212,40 +8235,48 @@ void func_80057DD4MainLoop(void) asm("func_80057DD4");
 void func_80057DE8MainLoop(void) asm("func_80057DE8");
 void func_80057DFCMainLoop(void) asm("func_80057DFC");
 void func_80057E10MainLoop(void) asm("func_80057E10");
-void func_80058000MainLoop(s32 index, s32 *out) asm("func_80058000");
-void func_80058030MainLoop(void) asm("func_80058030");
-void func_800596F4MainLoop(void) asm("func_800596F4");
-void func_800598C4MainLoop(void) asm("func_800598C4");
-void func_800599E4MainLoop(void) asm("func_800599E4");
+void InputGetPadButtonsMainLoop(s32 index, s32 *out) asm("InputGetPadButtons");
+void GraphicsPutCurrentEnvironmentsMainLoop(void) asm(
+    "GraphicsPutCurrentEnvironments");
+void CdEnablePlaybackAndSetVolumeMainLoop(void) asm(
+    "CdEnablePlaybackAndSetVolume");
+void CardTestAndDisableEventsMainLoop(void) asm("CardTestAndDisableEvents");
+void CardEnableAndTestEventsMainLoop(void) asm("CardEnableAndTestEvents");
 /* Intensity is masked to u8 in the pulse block before these calls. */
-void func_8005A804MainLoop(s32, s32, s32) asm("func_8005A804");
-void func_8005B2F0MainLoop(void) asm("func_8005B2F0");
-void func_8005B300MainLoop(void) asm("func_8005B300");
+void MenuSetShadeColorsMainLoop(s32, s32, s32) asm("MenuSetShadeColors");
+void MenuObjResetPoolMainLoop(void) asm("MenuObjResetPool");
+void MenuObjRestorePoolCursorMainLoop(void) asm("MenuObjRestorePoolCursor");
 void func_8005E4A4MainLoop(u8 *table) asm("func_8005E4A4");
-void func_80060E94MainLoop(s32 arg0) asm("func_80060E94");
-void func_80060F10MainLoop(s32 a, s32 b, s16 c) asm("func_80060F10");
-void func_80060F54MainLoop(s32 arg0, s32 volume) asm("func_80060F54");
+void MenuCenterTextMainLoop(s32 arg0) asm("MenuCenterText");
+void MenuSetLinkedObjectLayoutMainLoop(s32 a, s32 b,
+                                       s16 c) asm("MenuSetLinkedObjectLayout");
+void MenuSetVolumeMainLoop(s32 arg0, s32 volume) asm("MenuSetVolume");
 void func_80062874MainLoop(s32 arg0, s32 arg1) asm("func_80062874");
 void func_80062F04MainLoop() asm("func_80062F04");
 void func_80063180MainLoop(s32 enabled) asm("func_80063180");
-void func_80063770MainLoop(u8 index) asm("func_80063770");
+void MenuNegateLinkedObjectValuesMainLoop(u8 index) asm(
+    "MenuNegateLinkedObjectValues");
 void func_80063AE0MainLoop(s32, s32) asm("func_80063AE0");
 void func_80068AC4MainLoop(s32 arg0, s32 arg1, s32 arg2) asm("func_80068AC4");
 void MenuUpdateItemRowMainLoop(s32 arg0) asm("MenuUpdateItemRow");
 s32 func_80069EB8MainLoop(void) asm("func_80069EB8");
-s32 func_8006A080MainLoop(void) asm("func_8006A080");
-u8 func_8006AD0CMainLoop(u8 value) asm("func_8006AD0C");
-void func_8006C598MainLoop(s32 low, s32 high, s32 color) asm("func_8006C598");
-void func_8006C5E4MainLoop(s32 arg0) asm("func_8006C5E4");
-void func_8006C9DCMainLoop(void) asm("func_8006C9DC");
+s32 CardProbeSlotsMainLoop(void) asm("CardProbeSlots");
+u8 DriverFindIndexByIdMainLoop(u8 value) asm("DriverFindIndexById");
+void CardMenuSetColorNodeLayoutMainLoop(s32 low, s32 high, s32 color) asm(
+    "CardMenuSetColorNodeLayout");
+void CardMenuCenterSelectedTextMainLoop(s32 arg0) asm(
+    "CardMenuCenterSelectedText");
+void MenuHideCurrentObjectMainLoop(void) asm("MenuHideCurrentObject");
 void func_8006CE64MainLoop(void) asm("func_8006CE64");
-void func_8006CF38MainLoop(void) asm("func_8006CF38");
-s32 func_8006D0C0MainLoop(void) asm("func_8006D0C0");
-void func_8006D0F0MainLoop(void) asm("func_8006D0F0");
+void CardMenuAppendTrackNameMainLoop(void) asm("CardMenuAppendTrackName");
+s32 CardMenuCheckTrackNameCapacityMainLoop(void) asm(
+    "CardMenuCheckTrackNameCapacity");
+void CardMenuWriteSaveSlotMainLoop(void) asm("CardMenuWriteSaveSlot");
 s32 func_8006D258MainLoop(void) asm("func_8006D258");
 void func_8006DA40MainLoop(void) asm("func_8006DA40");
 void func_8006DE68MainLoop(u32 arg0, u32 mode) asm("func_8006DE68");
-void func_80041AF0MainLoop(s32) asm("func_80041AF0");
+void PadResetAndInitializeBuffersMainLoop(s32) asm(
+    "PadResetAndInitializeBuffers");
 void ClearOTagRMainLoop(u32 *, s32) asm("ClearOTagR");
 void DrawOTagMainLoop(u32 *) asm("DrawOTag");
 s32 DrawSyncMainLoop(s32) asm("DrawSync");
@@ -8284,7 +8315,7 @@ void func_8005C124MainLoop(u8, u8) asm("func_8005C124");
 extern s8 D_800A2F9CMainLoop[] asm("D_800A2F9C.MainLoop");
 extern u8 D_800A3059MainLoop asm("D_800A3059.MainLoop");
 extern u8 D_800A305AMainLoop asm("D_800A305A.MainLoop");
-extern u8 D_800A305BMainLoop asm("D_800A305B.MainLoop");
+extern u8 gSelectedTrackMainLoop asm("gSelectedTrack.MainLoop");
 extern s32 D_800A305CMainLoop asm("D_800A305C.MainLoop");
 extern u8 D_800A3064MainLoop asm("D_800A3064.MainLoop");
 extern u8 D_800A3065MainLoop asm("D_800A3065.MainLoop");
@@ -8302,7 +8333,7 @@ extern u8 D_800A3928MainLoop asm("D_800A3928.MainLoop");
 extern u8 D_800A3950MainLoop asm("D_800A3950.MainLoop");
 extern u8 D_800A3968MainLoop[] asm("D_800A3968.MainLoop");
 extern s8 D_800A3980MainLoop asm("D_800A3980.MainLoop");
-extern u8 D_800A39E4MainLoop asm("D_800A39E4.MainLoop");
+extern u8 gScreenStateMainLoop asm("gScreenState.MainLoop");
 extern s16 D_800B9B84MainLoop[] asm("D_800B9B84.MainLoop");
 extern u8 D_800A3684MainLoopSmall asm("D_800A3684.MainLoopSmall");
 extern u8 D_800A3988MainLoopSmall asm("D_800A3988.MainLoopSmall");
@@ -8319,7 +8350,8 @@ extern s32
 extern u32 *gOrderingTableMainLoopSite10[] asm("gOrderingTable.MainLoop10");
 extern u32 *gOrderingTableMainLoopSite11[] asm("gOrderingTable.MainLoop11");
 extern u8 D_800A3685MainLoopSite12[] asm("D_800A3685.MainLoop12");
-extern u8 *D_800A37D8MainLoopSite13[] asm("D_800A37D8.MainLoop13");
+extern u8 *
+    gPadPictureMenuListsMainLoopSite13[] asm("gPadPictureMenuLists.MainLoop13");
 extern u8 *D_800A37DCMainLoopSite14[] asm("D_800A37DC.MainLoop14");
 extern u8 D_800A3684MainLoopSite15[] asm("D_800A3684.MainLoop15");
 extern s8 gPadTypeMainLoopSite16[] asm("gPadType.MainLoop16");
@@ -8433,12 +8465,12 @@ void func_80053D40(void) {
 
     playerUnlockSteps[0] = 0;
     playerUnlockSteps[1] = 0;
-    func_8005B2F0MainLoop();
+    MenuObjResetPoolMainLoop();
     func_8005DAD4MainLoop();
     func_8005DFA0MainLoop();
     idleFrames = 0;
-    if ((u8)D_800A305BMainLoop < 0x11U) {
-        screenTable = D_800AE178MainLoopSite1[D_800A305BMainLoop];
+    if ((u8)gSelectedTrackMainLoop < 0x11U) {
+        screenTable = D_800AE178MainLoopSite1[gSelectedTrackMainLoop];
     } else {
         screenTable = *D_800AE178MainLoopSite2;
     }
@@ -8457,37 +8489,37 @@ void func_80053D40(void) {
         }
         func_80057DE8MainLoop();
         func_80057E10MainLoop();
-        func_8005B300MainLoop();
-        argument0 = D_800A39E4MainLoop;
+        MenuObjRestorePoolCursorMainLoop();
+        argument0 = gScreenStateMainLoop;
         asm("" : "=r"(argument0) : "0"(argument0));
         if (argument0 == 0xFC) {
-            func_80041AF0MainLoop(0);
+            PadResetAndInitializeBuffersMainLoop(0);
             func_8006DA40MainLoop();
             D_800A3928MainLoop = 0;
         } else if (argument0 == 9) {
             if (*D_800A3A58MainLoopSite3 == 0) {
-                func_800599E4MainLoop();
+                CardEnableAndTestEventsMainLoop();
                 if (CardResolveSlotMainLoop() & 0xFF) {
                     CardLoadSaveTableMainLoop(0);
                 }
-                func_800598C4MainLoop();
+                CardTestAndDisableEventsMainLoop();
             }
-            CardMenuCreateRecordTableMainLoop((s32)D_800A305BMainLoop);
+            CardMenuCreateRecordTableMainLoop((s32)gSelectedTrackMainLoop);
         } else if (argument0 == 0xA) {
             func_80068CE4MainLoop();
         } else if (argument0 == 0xC) {
             CardMenuCreateStandingsTableMainLoop();
         } else if (argument0 == 0xE) {
             func_80064208MainLoop();
-        } else if ((u32)(D_800A39E4MainLoop - 0x10) < 2U) {
+        } else if ((u32)(gScreenStateMainLoop - 0x10) < 2U) {
             func_800697ECMainLoop(argument0 - 0x10);
         } else {
             func_80056C84MainLoop(argument0, activePlayer);
-            func_8005C124MainLoop(D_800A39E4MainLoop, D_800A3059MainLoop);
+            func_8005C124MainLoop(gScreenStateMainLoop, D_800A3059MainLoop);
         }
-        MenuCreateItemRowMainLoop(D_800A39E4MainLoop);
-        func_80056F04MainLoop((s32)D_800A39E4MainLoop);
-        switch (D_800A39E4MainLoop) {
+        MenuCreateItemRowMainLoop(gScreenStateMainLoop);
+        func_80056F04MainLoop((s32)gScreenStateMainLoop);
+        switch (gScreenStateMainLoop) {
         case 0:
             idleFrames = 0;
             goto initializePads;
@@ -8514,9 +8546,10 @@ void func_80053D40(void) {
         case 2:
         case 8:
             index = 0;
-            D_800A3980MainLoop = func_8006AD0CMainLoop(gPlayerDriverMainLoop);
+            D_800A3980MainLoop =
+                DriverFindIndexByIdMainLoop(gPlayerDriverMainLoop);
             D_800A3981MainLoopSite5[0] =
-                func_8006AD0CMainLoop(D_800A36E1MainLoopSite4[0]);
+                DriverFindIndexByIdMainLoop(D_800A36E1MainLoopSite4[0]);
             currentPadCursor = &newPad[0];
             break;
         case 5:
@@ -8539,7 +8572,7 @@ void func_80053D40(void) {
             goto resetPadArray;
         case 3:
         case 6:
-            RaceBuildQualifyingGridMainLoop(D_800A305BMainLoop);
+            RaceBuildQualifyingGridMainLoop(gSelectedTrackMainLoop);
         default:
         initializePads:
             index = 0;
@@ -8551,7 +8584,7 @@ void func_80053D40(void) {
         }
         previousPadCursor = &oldPad[0];
     readInitialPads:
-        func_80058000MainLoop(index & 0xFF, previousPadCursor);
+        InputGetPadButtonsMainLoop(index & 0xFF, previousPadCursor);
         *currentPadCursor = 0;
         currentPadCursor++;
         index += 1;
@@ -8562,7 +8595,7 @@ void func_80053D40(void) {
         screenResult = 0;
         D_800A305CMainLoop = 0;
         unlockStep = 0;
-        if (D_800A39E4MainLoop == 0xC) {
+        if (gScreenStateMainLoop == 0xC) {
             displayPhase = 0;
         } else {
             displayPhase = 0xFF;
@@ -8571,12 +8604,12 @@ void func_80053D40(void) {
         if (!(screenResult & 0xFF)) {
             mode13 = 13;
             do {
-                func_8003CC48MainLoop();
+                CdStopIfPlaybackChangedMainLoop();
                 nextIdleFrames = idleFrames + 1;
                 idleFrames = nextIdleFrames;
-                if ((D_800A39E4MainLoop == 0) && (nextIdleFrames >= 0x709)) {
+                if ((gScreenStateMainLoop == 0) && (nextIdleFrames >= 0x709)) {
                     screenResult = 1;
-                    D_800A39E4MainLoop = 0xFD;
+                    gScreenStateMainLoop = 0xFD;
                 }
                 pulseTick = D_800A3724MainLoop - 1;
                 D_800A3724MainLoop = pulseTick;
@@ -8595,7 +8628,7 @@ void func_80053D40(void) {
                         asm(".set\tnoreorder\n\tnop\n\taddiu\t%0,%2,-10\n\tbgez\t%0,1f\n\tsll\t%0,%0,3\n\tori\t%0,$zero,10\n\tsubu\t%0,%0,%2\n\tsll\t%0,%0,3\n1:\n\taddiu\t%0,%0,64\n\tandi\t%1,%0,255"
                             : "=&r"(magnitude), "=r"(intensity)
                             : "r"(pulseValue));
-                        func_8005A804MainLoop(intensity, intensity, 0x19U);
+                        MenuSetShadeColorsMainLoop(intensity, intensity, 0x19U);
                     }
                     D_800A3724MainLoop = 3;
                 }
@@ -8606,14 +8639,15 @@ void func_80053D40(void) {
                 gOrderingTableBankMainLoopSite9[0] = nextBufferIndex;
                 gOrderingTableMainLoopSite10[0] = orderingTable;
                 ClearOTagRMainLoop(orderingTable, 0x400);
-                func_80014A40MainLoop((s32)(u8)D_800A305CMainLoop);
+                GraphicsSelectPrimitiveBufferMainLoop(
+                    (s32)(u8)D_800A305CMainLoop);
                 func_80057DFCMainLoop();
                 func_80057DD4MainLoop();
                 func_80053C00MainLoop((s32)(u8)D_800A305CMainLoop,
                                       activePlayer & 0xFF);
                 DrawSyncMainLoop(0);
                 VSyncMainLoop(0);
-                func_80058030MainLoop();
+                GraphicsPutCurrentEnvironmentsMainLoop();
                 if (displayPhase == one) {
                     SetDispMaskMainLoop(1);
                     displayPhase = 2;
@@ -8625,11 +8659,11 @@ void func_80053D40(void) {
                 if (displayPhase == 0) {
                     displayPhase = 1;
                 }
-                func_80041AF0MainLoop(0);
+                PadResetAndInitializeBuffersMainLoop(0);
                 if (newPad[0] != 0) {
                     idleFrames = 0;
                 }
-                if (D_800A39E4MainLoop == 5) {
+                if (gScreenStateMainLoop == 5) {
                     padBits0 = func_80041B7CMainLoop(0);
                     newPad[0] = padBits0;
                     if ((padBits0 & 0x20) && (D_800A3076MainLoop == 0)) {
@@ -8675,7 +8709,7 @@ void func_80053D40(void) {
                     resetUnlockStep:
                         unlockStep = 0;
                     }
-                } else if ((D_800A39E4MainLoop == two) &&
+                } else if ((gScreenStateMainLoop == two) &&
                            (D_800A3059MainLoop == one)) {
                     index = 0;
                     sequenceCursor = &playerUnlockSteps[0];
@@ -8741,10 +8775,10 @@ void func_80053D40(void) {
                         }
                     }
                 }
-                if ((D_800A39E4MainLoop == mode13) &&
+                if ((gScreenStateMainLoop == mode13) &&
                     (D_800A3684MainLoopSmall == two) &&
-                    (ListHasClearFlagsMainLoop(*D_800A37D8MainLoopSite13) !=
-                     0) &&
+                    (ListHasClearFlagsMainLoop(
+                         *gPadPictureMenuListsMainLoopSite13) != 0) &&
                     ((D_800A3644MainLoop == 0) ||
                      ((*D_800A3685MainLoopSite12 == two) &&
                       (ListHasClearFlagsMainLoop(*D_800A37DCMainLoopSite14) !=
@@ -8757,7 +8791,7 @@ void func_80053D40(void) {
                     do {
                         if ((index == 0) || (D_800A3644MainLoop != 0)) {
                             (&newPad[0])[index] = func_80041B7CMainLoop(index);
-                            if ((D_800A39E4MainLoop == 7) &&
+                            if ((gScreenStateMainLoop == 7) &&
                                 (activePlayer == one)) {
                                 if (index != 0) {
                                     newPad[0] = newPad[1];
@@ -8767,8 +8801,8 @@ void func_80053D40(void) {
                                 goto nextPlayer;
                             }
                             if (player & 0xFF) {
-                                if (D_800A39E4MainLoop != two) {
-                                    if (D_800A39E4MainLoop == mode13) {
+                                if (gScreenStateMainLoop != two) {
+                                    if (gScreenStateMainLoop == mode13) {
                                         goto handlePlayerInput;
                                     }
                                     goto nextPlayer;
@@ -8777,7 +8811,7 @@ void func_80053D40(void) {
                             }
                         handlePlayerInput:
                         handlePlayerSelection:
-                            if (D_800A39E4MainLoop == mode13) {
+                            if (gScreenStateMainLoop == mode13) {
                                 index = player & 0xFF;
                                 if (newPad[index] &
                                     ((u16)~oldPad[index] & 0x800)) {
@@ -8785,7 +8819,7 @@ void func_80053D40(void) {
                                         D_800A3684MainLoopSite15[index];
                                     if (transitionPhase == 0) {
                                         SoundPlaySlotMainLoop(0, 3);
-                                        if (func_8004229CMainLoop(
+                                        if (PadTypeNeedsCalibrationMainLoop(
                                                 (s32)(u8)gPadTypeMainLoopSite16
                                                     [index]) &
                                             0xFF) {
@@ -8860,7 +8894,7 @@ void func_80053D40(void) {
                                                 0x140, 4);
                                         }
                                     }
-                                } else if ((func_8004229CMainLoop(
+                                } else if ((PadTypeNeedsCalibrationMainLoop(
                                                 (s32)(u8)gPadTypeMainLoopSite31
                                                     [index]) &
                                             0xFF) &&
@@ -8888,18 +8922,18 @@ void func_80053D40(void) {
                                     s32 confirmMode;
                                     screenResult = func_80056B5CMainLoop(
                                         (s32)D_800A3059MainLoop,
-                                        (s32)D_800A39E4MainLoop,
+                                        (s32)gScreenStateMainLoop,
                                         (s32)D_800A3950MainLoop);
                                     if (screenResult & 0xFF) {
 
-                                        if ((u32)(D_800A39E4MainLoop - 0x10) >=
-                                            2U) {
+                                        if ((u32)(gScreenStateMainLoop -
+                                                  0x10) >= 2U) {
                                             SoundPlaySlotMainLoop(0, 3);
                                         }
                                     } else {
                                         confirmPivot = 0x24;
                                         asm("" : : "r"(confirmPivot));
-                                        confirmMode = D_800A39E4MainLoop;
+                                        confirmMode = gScreenStateMainLoop;
                                         if (confirmMode == confirmPivot) {
                                             goto confirmMode24;
                                         }
@@ -8978,11 +9012,12 @@ void func_80053D40(void) {
                                         if ((D_800A3059MainLoop == two &&
                                              D_800A3950MainLoop != 0) ||
                                             D_800A3059MainLoop == one) {
-                                            func_800599E4MainLoop();
-                                            if ((func_8006A080MainLoop() &
+                                            CardEnableAndTestEventsMainLoop();
+                                            if ((CardProbeSlotsMainLoop() &
                                                  0xFF) == two) {
-                                                D_800A39E4MainLoop = 0x28;
-                                                func_8006C5E4MainLoop(5);
+                                                gScreenStateMainLoop = 0x28;
+                                                CardMenuCenterSelectedTextMainLoop(
+                                                    5);
                                                 menuCode = 1;
                                             } else {
                                                 menuCode =
@@ -8991,14 +9026,15 @@ void func_80053D40(void) {
                                             }
                                             func_80057008MainLoop(menuCode &
                                                                   0xFF);
-                                            func_800598C4MainLoop();
+                                            CardTestAndDisableEventsMainLoop();
                                             func_80057160MainLoop(1);
                                         } else if (D_800A3059MainLoop == 6) {
                                             if (D_800B9B84MainLoop[0] == 0) {
                                                 screenResult = 1;
                                                 goto finishInput;
                                             }
-                                            func_8006C5E4MainLoop(2);
+                                            CardMenuCenterSelectedTextMainLoop(
+                                                2);
                                             gCardMenuMessageMainLoop[0] = 0x15;
                                             CardMenuShowMessageMainLoop(0);
                                             animateX = -0x78;
@@ -9008,7 +9044,8 @@ void func_80053D40(void) {
                                             goto showConfirmDialog;
                                         } else if (D_800A3059MainLoop == 0 &&
                                                    D_800A3950MainLoop != 0) {
-                                            func_8006C5E4MainLoop(4);
+                                            CardMenuCenterSelectedTextMainLoop(
+                                                4);
                                             gCardMenuMessageMainLoop[0] = 0x18;
                                             CardMenuShowMessageMainLoop(0);
                                             animateX = -0x78;
@@ -9016,11 +9053,12 @@ void func_80053D40(void) {
                                             animateStep = 2;
                                             dialogScreen = 0x27;
                                         showConfirmDialog:
-                                            D_800A39E4MainLoop = dialogScreen;
-                                            func_8006C598MainLoop(animateX,
-                                                                  animateY,
-                                                                  animateStep);
-                                            func_80063770MainLoop(0);
+                                            gScreenStateMainLoop = dialogScreen;
+                                            CardMenuSetColorNodeLayoutMainLoop(
+                                                animateX, animateY,
+                                                animateStep);
+                                            MenuNegateLinkedObjectValuesMainLoop(
+                                                0);
                                         }
                                         goto finishInput;
                                     confirmMode5:
@@ -9028,50 +9066,53 @@ void func_80053D40(void) {
                                             2U) {
                                             SoundPlaySlotMainLoop(0, 3);
                                             if (D_800A3059MainLoop == 3) {
-                                                func_80044FF8MainLoop(0, 1);
+                                                SoundRunSlotEnvelopeMainLoop(0,
+                                                                             1);
                                                 func_8003CCE0MainLoop(0);
                                                 D_800A2F9CMainLoop[0] = 0;
                                             }
-                                            func_80060E94MainLoop(
+                                            MenuCenterTextMainLoop(
                                                 D_800A3059MainLoop - 2);
-                                            func_80060F54MainLoop(
+                                            MenuSetVolumeMainLoop(
                                                 (s16)D_800A3690MainLoop
                                                     [D_800A3059MainLoop],
                                                 D_800A3059MainLoop - 2);
-                                            func_80060F10MainLoop(-0x78, 0, 2);
-                                            D_800A39E4MainLoop = 0x21;
+                                            MenuSetLinkedObjectLayoutMainLoop(
+                                                -0x78, 0, 2);
+                                            gScreenStateMainLoop = 0x21;
                                             MenuUpdateItemRowMainLoop(0x21);
                                         }
                                         goto finishInput;
                                     confirmMode21:
                                         SoundPlaySlotMainLoop(0, 3);
-                                        func_80060F10MainLoop(0, -0x78, -2);
-                                        D_800A39E4MainLoop = 5;
+                                        MenuSetLinkedObjectLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = 5;
                                         MenuUpdateItemRowMainLoop(5);
                                         if (D_800A3059MainLoop == 3) {
-                                            func_80044FF8MainLoop(2, 1);
-                                            func_800596F4MainLoop();
+                                            SoundRunSlotEnvelopeMainLoop(2, 1);
+                                            CdEnablePlaybackAndSetVolumeMainLoop();
                                         }
                                         goto finishInput;
                                     confirmMode28:
                                         SoundPlaySlotMainLoop(0, 3);
-                                        func_800599E4MainLoop();
+                                        CardEnableAndTestEventsMainLoop();
                                         cardMenuCode = CardLoadNameListMainLoop(
                                             D_800A358CMainLoop[0]);
-                                        D_800A39E4MainLoop = one;
+                                        gScreenStateMainLoop = one;
                                         func_80057008MainLoop(cardMenuCode &
                                                               0xFF);
-                                        func_800598C4MainLoop();
+                                        CardTestAndDisableEventsMainLoop();
                                         func_80057160MainLoop(0);
                                         goto finishInput;
                                     confirmMode22:
                                         SoundPlaySlotMainLoop(0, 3);
-                                        D_800A39E4MainLoop = 0x23;
-                                        func_8006CF38MainLoop();
+                                        gScreenStateMainLoop = 0x23;
+                                        CardMenuAppendTrackNameMainLoop();
                                         func_8006C9F8MainLoop();
                                         gCardMenuMessageMainLoop[0] = 0;
                                         MenuUpdateItemRowMainLoop(
-                                            D_800A39E4MainLoop);
+                                            gScreenStateMainLoop);
                                         goto finishInput;
                                     confirmMode23:
                                         {
@@ -9093,10 +9134,10 @@ void func_80053D40(void) {
                                                     0) {
                                                     SoundStopSlotMainLoop(0);
                                                 } else {
-                                                    func_8006C9DCMainLoop();
+                                                    MenuHideCurrentObjectMainLoop();
                                                     if (gCardMenuMessageMainLoop
                                                             [0] == 0) {
-                                                        if (func_8006D0C0MainLoop() ==
+                                                        if (CardMenuCheckTrackNameCapacityMainLoop() ==
                                                             one) {
                                                             goto refreshCardMenu;
                                                         }
@@ -9108,7 +9149,7 @@ void func_80053D40(void) {
                                                     if (gCardMenuMessageMainLoop
                                                             [0] == 0x10) {
                                                     updateCardStatus:
-                                                        func_800599E4MainLoop();
+                                                        CardEnableAndTestEventsMainLoop();
                                                         if (!(CardResolveSlotMainLoop() &
                                                               0xFF)) {
                                                             CardMenuShowMessageMainLoop(
@@ -9120,7 +9161,7 @@ void func_80053D40(void) {
                                                                     one;
                                                             }
                                                         }
-                                                        func_800598C4MainLoop();
+                                                        CardTestAndDisableEventsMainLoop();
                                                         if (gCardMenuMessageMainLoop
                                                                 [0] == mode13) {
                                                             goto finishInput;
@@ -9166,23 +9207,26 @@ void func_80053D40(void) {
                                         CardMenuShowMessageMainLoop(0);
                                         goto finishInput;
                                     confirmStageTwo:
-                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
                                         if (D_800A3968MainLoop[0] != 0) {
                                             D_800A3950MainLoop = 0x24;
                                         }
                                         goto finishMainMenuReturn;
                                     confirmMode25:
                                         SoundPlaySlotMainLoop(0, 3);
-                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
                                         screenResult = 1;
-                                        D_800A39E4MainLoop = screenResult;
+                                        gScreenStateMainLoop = screenResult;
                                         goto finishInput;
                                     confirmMode26:
                                         SoundPlaySlotMainLoop(0, 3);
-                                        func_8006C598MainLoop(0, -0x78, -2);
-                                        D_800A39E4MainLoop = 7;
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = 7;
                                         RaceBuildQualifyingGridMainLoop(
-                                            D_800A305BMainLoop);
+                                            gSelectedTrackMainLoop);
                                         screenResult = 0xFF;
                                         goto finishInput;
                                     }
@@ -9190,20 +9234,22 @@ void func_80053D40(void) {
                                 }
                                 if (currentPadZero &
                                     ((u16)previousPadInverse & 0x10)) {
-                                    if (D_800A39E4MainLoop == 7) {
+                                    if (gScreenStateMainLoop == 7) {
 
                                         if (D_800A3950MainLoop == 0xFB) {
                                             SoundPlaySlotMainLoop(0, 4);
-                                            D_800A39E4MainLoop = 0x26;
+                                            gScreenStateMainLoop = 0x26;
                                             gCardMenuMessageMainLoopSite51[0] =
                                                 0x16;
                                             CardMenuShowMessageMainLoop(0);
-                                            func_8006C5E4MainLoop(3);
-                                            func_8006C598MainLoop(-0x78, 0, 2);
+                                            CardMenuCenterSelectedTextMainLoop(
+                                                3);
+                                            CardMenuSetColorNodeLayoutMainLoop(
+                                                -0x78, 0, 2);
                                         }
                                     } else {
                                         screenResult = func_80056B0CMainLoop(
-                                            (s32)D_800A39E4MainLoop,
+                                            (s32)gScreenStateMainLoop,
                                             (s32)D_800A3950MainLoop);
                                         if (screenResult & 0xFF) {
                                             SoundPlaySlotMainLoop(0, 4);
@@ -9220,7 +9266,7 @@ void func_80053D40(void) {
                                     s32 cancelMode;
                                     cancelPivot = 0x25;
                                     asm("" : : "r"(cancelPivot));
-                                    cancelMode = D_800A39E4MainLoop;
+                                    cancelMode = gScreenStateMainLoop;
                                     switch (cancelMode) {
                                     case 0xFC:
                                         if (gCardMenuMessageMainLoop[0] !=
@@ -9228,7 +9274,7 @@ void func_80053D40(void) {
                                             D_800A3928MainLoop == 0) {
                                             s32 cardStatus;
                                             SoundPlaySlotMainLoop(0, 3);
-                                            func_800599E4MainLoop();
+                                            CardEnableAndTestEventsMainLoop();
                                             CardResolveSlotMainLoop();
                                             cardStatus =
                                                 func_80069EB8MainLoop() & 0xFF;
@@ -9239,7 +9285,7 @@ void func_80053D40(void) {
                                             }
                                             gCardMenuMessageMainLoop[0] =
                                                 cardStatus;
-                                            func_800598C4MainLoop();
+                                            CardTestAndDisableEventsMainLoop();
                                             cardOperation = 1;
                                         startCardOperation:
                                             CardMenuShowMessageMainLoop(
@@ -9255,7 +9301,7 @@ void func_80053D40(void) {
                                                           [0] -
                                                       0x19) < 2U) {
                                                 SoundPlaySlotMainLoop(0, 3);
-                                                func_800599E4MainLoop();
+                                                CardEnableAndTestEventsMainLoop();
                                                 if (!(func_80069EB8MainLoop() &
                                                       0xFF)) {
                                                     gCardMenuMessageMainLoop
@@ -9266,11 +9312,11 @@ void func_80053D40(void) {
                                                     MenuUpdateItemRowMainLoop(
                                                         0xA);
                                                 } else {
-                                                    func_800598C4MainLoop();
+                                                    CardTestAndDisableEventsMainLoop();
                                                 checkCardMenuReady:
                                                     if (gCardMenuMessageMainLoop
                                                             [0] == 0) {
-                                                        func_8006D0F0MainLoop();
+                                                        CardMenuWriteSaveSlotMainLoop();
                                                         CardMenuShowMessageMainLoop(
                                                             0);
                                                         D_800A3928MainLoop =
@@ -9291,9 +9337,10 @@ void func_80053D40(void) {
                                     returnMainMenu:
                                         SoundPlaySlotMainLoop(returnChannel,
                                                               actionSound);
-                                        func_8006C598MainLoop(0, -0x78, -2);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
                                     finishMainMenuReturn:
-                                        D_800A39E4MainLoop = one;
+                                        gScreenStateMainLoop = one;
                                         MenuUpdateItemRowMainLoop(1);
                                         break;
                                     case 0x22:
@@ -9302,13 +9349,15 @@ void func_80053D40(void) {
                                     case 0x25:
                                     case 0x27:
                                         SoundPlaySlotMainLoop(0, 4);
-                                        func_8006C598MainLoop(0, -0x78, -2);
-                                        D_800A39E4MainLoop = one;
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = one;
                                         break;
                                     case 0x26:
                                         SoundPlaySlotMainLoop(0, 4);
-                                        func_8006C598MainLoop(0, -0x78, -2);
-                                        D_800A39E4MainLoop = 7;
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = 7;
                                         break;
                                     }
                                     goto finishInput;
@@ -9319,7 +9368,7 @@ void func_80053D40(void) {
                                 if (padBits &
                                     ((u16)previousPadInverse & 0x20)) {
 
-                                    if (D_800A39E4MainLoop == 0x23) {
+                                    if (gScreenStateMainLoop == 0x23) {
                                         func_8006CE64MainLoop();
                                     }
                                     goto finishInput;
@@ -9333,9 +9382,9 @@ void func_80053D40(void) {
                                     blockedModeUp = 0x21;
                                     /* Retain the raw mode byte and its comparison value. */
                                     asm volatile(
-                                        "lbu\t%0,D_800A39E4.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
+                                        "lbu\t%0,gScreenState.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
                                         : "=r"(rawModeUp), "=r"(modeUp)
-                                        : "m"(D_800A39E4MainLoop));
+                                        : "m"(gScreenStateMainLoop));
                                     if ((modeUp != blockedModeUp) &&
                                         (modeUp != 0xFC) &&
                                         ((u32)(rawModeUp - 0x25) >= 2U) &&
@@ -9373,7 +9422,7 @@ void func_80053D40(void) {
                                                         [0] == 0) {
                                                     if (func_8006C700MainLoop(
                                                             0,
-                                                            D_800A39E4MainLoop ==
+                                                            gScreenStateMainLoop ==
                                                                 0x22) &
                                                         0xFF) {
                                                         SoundPlaySlotMainLoop(
@@ -9403,7 +9452,8 @@ void func_80053D40(void) {
                                                     :
                                                     : "m"(D_800A3059MainLoop)
                                                     : "memory");
-                                                if (D_800A39E4MainLoop == two) {
+                                                if (gScreenStateMainLoop ==
+                                                    two) {
 
                                                     if (D_800A3988MainLoopSmall ==
                                                         0) {
@@ -9418,7 +9468,7 @@ void func_80053D40(void) {
                                                     }
                                                     goto finishInput;
                                                 }
-                                                if ((D_800A39E4MainLoop ==
+                                                if ((gScreenStateMainLoop ==
                                                      one) &&
                                                     (D_800A3950MainLoop == 0)) {
 
@@ -9431,7 +9481,7 @@ void func_80053D40(void) {
                                                         goto finishInput;
                                                     }
                                                 } else {
-                                                    if (D_800A39E4MainLoop ==
+                                                    if (gScreenStateMainLoop ==
                                                         3) {
 
                                                         if (D_800A3644MainLoop !=
@@ -9454,7 +9504,7 @@ void func_80053D40(void) {
                                                         }
                                                         goto finishInput;
                                                     }
-                                                    if (D_800A39E4MainLoop ==
+                                                    if (gScreenStateMainLoop ==
                                                         4) {
                                                         itemCursorUp =
                                                             D_800A3059MainLoopPostUp;
@@ -9480,7 +9530,7 @@ void func_80053D40(void) {
                                                         goto finishInput;
                                                     }
 
-                                                    if (D_800A39E4MainLoop ==
+                                                    if (gScreenStateMainLoop ==
                                                         5) {
 
                                                         if (D_800A3059MainLoopPostUp ==
@@ -9515,9 +9565,9 @@ void func_80053D40(void) {
                                     blockedModeDown = 0x21;
                                     /* Retain the raw mode byte and its comparison value. */
                                     asm volatile(
-                                        "lbu\t%0,D_800A39E4.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
+                                        "lbu\t%0,gScreenState.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
                                         : "=r"(rawModeDown), "=r"(modeDown)
-                                        : "m"(D_800A39E4MainLoop));
+                                        : "m"(gScreenStateMainLoop));
                                     if ((modeDown != blockedModeDown) &&
                                         (modeDown != 0xFC) &&
                                         ((u32)(rawModeDown - 0x25) >= 2U) &&
@@ -9562,7 +9612,7 @@ void func_80053D40(void) {
                                                             [0] == 0) {
                                                         if (func_8006C700MainLoop(
                                                                 1,
-                                                                D_800A39E4MainLoop ==
+                                                                gScreenStateMainLoop ==
                                                                     0x22) &
                                                             0xFF) {
                                                             SoundPlaySlotMainLoop(
@@ -9584,7 +9634,7 @@ void func_80053D40(void) {
                                                     } else {
                                                         D_800A3059MainLoop += 1;
                                                     }
-                                                    if (D_800A39E4MainLoop ==
+                                                    if (gScreenStateMainLoop ==
                                                         two) {
 
                                                         if (D_800A3988MainLoopSmall ==
@@ -9603,7 +9653,7 @@ void func_80053D40(void) {
                                                         }
                                                         goto finishInput;
                                                     }
-                                                    if ((D_800A39E4MainLoop ==
+                                                    if ((gScreenStateMainLoop ==
                                                          one) &&
                                                         (D_800A3950MainLoop ==
                                                          0)) {
@@ -9618,7 +9668,7 @@ void func_80053D40(void) {
                                                         }
                                                         goto finishInput;
                                                     }
-                                                    if (D_800A39E4MainLoop ==
+                                                    if (gScreenStateMainLoop ==
                                                         3) {
 
                                                         if (D_800A3644MainLoop !=
@@ -9633,7 +9683,7 @@ void func_80053D40(void) {
 
                                                             } else if (
                                                                 itemDown ==
-                                                                D_800A39E4MainLoop) {
+                                                                gScreenStateMainLoop) {
                                                                 D_800A3059MainLoopPostDown +=
                                                                     1;
 
@@ -9643,7 +9693,7 @@ void func_80053D40(void) {
                                                         }
                                                         goto finishInput;
                                                     }
-                                                    if (D_800A39E4MainLoop ==
+                                                    if (gScreenStateMainLoop ==
                                                         4) {
                                                         itemCursorDown =
                                                             D_800A3059MainLoopPostDown;
@@ -9669,12 +9719,12 @@ void func_80053D40(void) {
                                                         goto finishInput;
                                                     }
 
-                                                    if (D_800A39E4MainLoop !=
+                                                    if (gScreenStateMainLoop !=
                                                         5) {
                                                         goto finishInput;
                                                     }
                                                     if (D_800A3059MainLoopPostDown !=
-                                                        D_800A39E4MainLoop) {
+                                                        gScreenStateMainLoop) {
                                                         goto finishInput;
                                                     }
                                                     if (D_800A3076MainLoop !=
@@ -9695,10 +9745,10 @@ void func_80053D40(void) {
                                     }
                                 } else {
                                     if (padBits & 0x8000) {
-                                        if (D_800A39E4MainLoop == mode13 &&
+                                        if (gScreenStateMainLoop == mode13 &&
                                             (padBits &
                                              ((u16)~oldPad[index] & 0x8000))) {
-                                            if (!(func_8004229CMainLoop(
+                                            if (!(PadTypeNeedsCalibrationMainLoop(
                                                       (u8)gPadTypeMainLoopSite68
                                                           [index]) &
                                                   0xFF) ||
@@ -9732,7 +9782,8 @@ void func_80053D40(void) {
                                                     }
                                                 }
                                             }
-                                        } else if (D_800A39E4MainLoop == two &&
+                                        } else if (gScreenStateMainLoop ==
+                                                       two &&
                                                    D_800A3059MainLoop == one) {
                                             MenuHandleOptionsInputMainLoop(
                                                 2, 1, 1, newPad[player & 0xFF],
@@ -9740,16 +9791,16 @@ void func_80053D40(void) {
                                                 player & 0xFF);
                                         } else {
                                             MenuHandleOptionsInputMainLoop(
-                                                D_800A39E4MainLoop,
+                                                gScreenStateMainLoop,
                                                 D_800A3059MainLoop, 1,
                                                 newPad[0], oldPad[0],
                                                 activePlayer);
                                         }
                                     } else if (padBits & 0x2000) {
-                                        if (D_800A39E4MainLoop == mode13 &&
+                                        if (gScreenStateMainLoop == mode13 &&
                                             (padBits &
                                              ((u16)~oldPad[index] & 0x2000))) {
-                                            if (!(func_8004229CMainLoop(
+                                            if (!(PadTypeNeedsCalibrationMainLoop(
                                                       (u8)gPadTypeMainLoopSite74
                                                           [index]) &
                                                   0xFF) ||
@@ -9767,7 +9818,8 @@ void func_80053D40(void) {
                                                                  [index]];
                                                 }
                                             }
-                                        } else if (D_800A39E4MainLoop == two &&
+                                        } else if (gScreenStateMainLoop ==
+                                                       two &&
                                                    D_800A3059MainLoop == one) {
                                             MenuHandleOptionsInputMainLoop(
                                                 2, 1, 0, newPad[player & 0xFF],
@@ -9775,7 +9827,7 @@ void func_80053D40(void) {
                                                 player & 0xFF);
                                         } else {
                                             MenuHandleOptionsInputMainLoop(
-                                                D_800A39E4MainLoop,
+                                                gScreenStateMainLoop,
                                                 D_800A3059MainLoop, 0,
                                                 newPad[0], oldPad[0],
                                                 activePlayer);
@@ -9800,14 +9852,14 @@ void func_80053D40(void) {
             } while (!(screenResult & 0xFF));
         }
         DrawSyncMainLoop(0);
-        if (D_800A39E4MainLoop == 7) {
+        if (gScreenStateMainLoop == 7) {
             func_80057DE8MainLoop();
         }
         screenResultByte = screenResult & 0xFF;
-        if (D_800A39E4MainLoop != 0xFD) {
+        if (gScreenStateMainLoop != 0xFD) {
             nextScreen = MenuUpdateScreenStateMainLoop(
-                D_800A39E4MainLoop, &D_800A3950MainLoop, screenResultByte);
-            D_800A39E4MainLoop = nextScreen;
+                gScreenStateMainLoop, &D_800A3950MainLoop, screenResultByte);
+            gScreenStateMainLoop = nextScreen;
             if ((nextScreen & 0xFF) == 7) {
                 activePlayer = 0;
             }
@@ -9816,12 +9868,12 @@ void func_80053D40(void) {
                 (screenResultByte != 0xFF)) {
                 activePlayer = 1;
                 D_800A3950MainLoop = nextScreen;
-                D_800A39E4MainLoop = 7;
+                gScreenStateMainLoop = 7;
                 D_800A3059MainLoop = 0;
             }
         }
-        if ((D_800A39E4MainLoop == 0xFF) || (D_800A39E4MainLoop == 0xFD) ||
-            (D_800A39E4MainLoop == 0xF8)) {
+        if ((gScreenStateMainLoop == 0xFF) || (gScreenStateMainLoop == 0xFD) ||
+            (gScreenStateMainLoop == 0xF8)) {
             exitLoop = 1;
         }
     } while (exitLoop == 0);
@@ -9856,14 +9908,14 @@ void func_80055AA4(u8 arg0, s32 arg1) {
         }
     }
     gPlayerDriver[arg0] = D_8009AD40[D_800A3980[arg0]];
-    func_800636EC(arg0, gPlayerDriver[arg0]);
+    MenuSetDriverNameLabel(arg0, gPlayerDriver[arg0]);
     func_80063AE0(arg0, gPlayerDriver[arg0]);
     strcpy(&D_800BB9B4[arg0 * 24], gDriverNamesR[gPlayerDriver[arg0]]);
 }
 
 /* The repeated label aliases keep gcc from caching addresses that retail
  * reloads, and func_80055AA4B stops cross-jumping from merging the two
- * func_80055AA4 calls. func_80063694KR is unprototyped on purpose: retail
+ * func_80055AA4 calls. MenuSetLinkedObjectLayoutByIndexKR is unprototyped on purpose: retail
  * passes its first argument without narrowing it to u8.
  */
 void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
@@ -9872,8 +9924,8 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern u8 D_800A3988NM asm("D_800A3988.NON_MATCHING");
     extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
     extern s8 D_800A3078NM asm("D_800A3078.NON_MATCHING");
-    extern u8 D_800A305BSmall;
-    extern u8 D_800A2F95NM[] asm("D_800A2F95.NON_MATCHING");
+    extern u8 gSelectedTrackSmall;
+    extern u8 gStereoEnabledNM[] asm("gStereoEnabled.NON_MATCHING");
     extern s8 D_800A3A14NM[] asm("D_800A3A14.NON_MATCHING");
     extern s8 D_800A3A14R2[] asm("D_800A3A14.NON_MATCHING");
     extern s8 D_800A3A14R3[] asm("D_800A3A14.NON_MATCHING");
@@ -9953,18 +10005,19 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern void func_8005C8D8(s32);
     extern s32 func_8005CCEC(u8, s32);
     extern void func_8005CC34(void);
-    extern void func_8005CEDC(void);
+    extern void MenuRefreshSixEntryValues(void);
     extern void func_8005E4A4(s32);
-    extern void func_8005ED04(u8);
-    extern void func_8005EC5C(u8);
+    extern void MenuSetTrackLabel(u8);
+    extern void MenuFormatLapCount(u8);
     extern void func_80060008(u8);
-    extern void func_80063694KR() asm("func_80063694");
+    extern void MenuSetLinkedObjectLayoutByIndexKR() asm(
+        "MenuSetLinkedObjectLayoutByIndex");
     extern void func_800645A4(s8, s8);
     extern void func_80067F34(s8, u8);
     extern void func_8006894C(s8, s32, s32, s32, s32);
-    extern void func_80060F54(s16, s32);
+    extern void MenuSetVolume(s16, s32);
     extern void func_8006CF90(u8);
-    extern void ListSetRangeFields(struct UnkNode1C *, s32, s32, s16);
+    extern void ListSetRangeFields(struct MenuObjectNode *, s32, s32, s16);
     s32 limit;
     s32 value;
     s32 tableByte;
@@ -10039,35 +10092,35 @@ dispatch:
             break;
         case 2:
             if (arg2 != 0) {
-                if (D_800A305BSmall != 0) {
-                    D_800A305BSmall = D_800A305BSmall - 1;
+                if (gSelectedTrackSmall != 0) {
+                    gSelectedTrackSmall = gSelectedTrackSmall - 1;
                 } else {
-                    D_800A305BSmall = 0x10;
+                    gSelectedTrackSmall = 0x10;
                 }
-                while (D_8009957C[D_800A305BSmall] == 0) {
-                    if (D_800A305BSmall != 0) {
-                        D_800A305BSmall = D_800A305BSmall - 1;
+                while (D_8009957C[gSelectedTrackSmall] == 0) {
+                    if (gSelectedTrackSmall != 0) {
+                        gSelectedTrackSmall = gSelectedTrackSmall - 1;
                     } else {
-                        D_800A305BSmall = 0x10;
+                        gSelectedTrackSmall = 0x10;
                     }
                 }
             } else {
-                if (D_800A305BSmall < 0x10) {
-                    D_800A305BSmall = D_800A305BSmall + 1;
+                if (gSelectedTrackSmall < 0x10) {
+                    gSelectedTrackSmall = gSelectedTrackSmall + 1;
                 } else {
-                    D_800A305BSmall = 0;
+                    gSelectedTrackSmall = 0;
                 }
-                while (D_8009957C[D_800A305BSmall] == 0) {
-                    if (D_800A305BSmall < 0x10) {
-                        D_800A305BSmall = D_800A305BSmall + 1;
+                while (D_8009957C[gSelectedTrackSmall] == 0) {
+                    if (gSelectedTrackSmall < 0x10) {
+                        gSelectedTrackSmall = gSelectedTrackSmall + 1;
                     } else {
-                        D_800A305BSmall = 0;
+                        gSelectedTrackSmall = 0;
                     }
                 }
             }
-            func_8005E4A4(D_800AE178[D_800A305BSmall]);
-            func_8005ED04(D_800A305BSmall);
-            func_8005EC5C(D_800A305BSmall);
+            func_8005E4A4(D_800AE178[gSelectedTrackSmall]);
+            MenuSetTrackLabel(gSelectedTrackSmall);
+            MenuFormatLapCount(gSelectedTrackSmall);
             break;
         case 4:
             arg1 = arg1 & 0xFF;
@@ -10112,7 +10165,7 @@ dispatch:
                 }
             }
             func_8005CC34();
-            func_8005EC5C(D_800A305BSmall);
+            MenuFormatLapCount(gSelectedTrackSmall);
             return;
         case 1:
             if (arg2 != 0) {
@@ -10243,7 +10296,7 @@ dispatch:
                 D_80099574[arg1] = D_800A331C[arg1];
             }
         }
-        func_8005CEDC();
+        MenuRefreshSixEntryValues();
         if ((changed & 0xFF) == 0) {
             return;
         }
@@ -10255,10 +10308,10 @@ dispatch:
             D_800A306C = D_800A306C ^ 1;
             func_8005C8D8(1);
             if (D_800A306DNM != 0) {
-                D_800A2F95NM[0] = 0;
+                gStereoEnabledNM[0] = 0;
                 SsSetMono();
             } else {
-                D_800A2F95NM[0] = 1;
+                gStereoEnabledNM[0] = 1;
                 SsSetStereo();
             }
             break;
@@ -10333,19 +10386,21 @@ dispatch:
         func_80063AE0(D_800A3A14R4[0], D_800A39FCR2[0]);
         D_800A38FCR2[0] = (u8 *)D_800A3744[D_800A3A14R5[0]];
         if (arg2 == 0) {
-            ListSetRangeFields((struct UnkNode1C *)D_800A39A0R3[0], 0, -0x140,
-                               -2);
-            func_80063694KR(arg1, 0x34, -0x10C, -2);
-            ListSetRangeFields((struct UnkNode1C *)D_800A38FCR4[0], 0x140, 0,
-                               -2);
-            func_80063694KR(D_800A3A14R7[0], 0x174, 0x34, -2);
+            ListSetRangeFields((struct MenuObjectNode *)D_800A39A0R3[0], 0,
+                               -0x140, -2);
+            MenuSetLinkedObjectLayoutByIndexKR(arg1, 0x34, -0x10C, -2);
+            ListSetRangeFields((struct MenuObjectNode *)D_800A38FCR4[0], 0x140,
+                               0, -2);
+            MenuSetLinkedObjectLayoutByIndexKR(D_800A3A14R7[0], 0x174, 0x34,
+                                               -2);
         } else {
-            ListSetRangeFields((struct UnkNode1C *)D_800A39A0R2[0], 0, 0x140,
-                               2);
-            func_80063694KR(arg1, 0x34, 0x174, 2);
-            ListSetRangeFields((struct UnkNode1C *)D_800A38FCR3[0], -0x140, 0,
-                               2);
-            func_80063694KR(D_800A3A14R6[0], -0x10C, 0x34, 2);
+            ListSetRangeFields((struct MenuObjectNode *)D_800A39A0R2[0], 0,
+                               0x140, 2);
+            MenuSetLinkedObjectLayoutByIndexKR(arg1, 0x34, 0x174, 2);
+            ListSetRangeFields((struct MenuObjectNode *)D_800A38FCR3[0], -0x140,
+                               0, 2);
+            MenuSetLinkedObjectLayoutByIndexKR(D_800A3A14R6[0], -0x10C, 0x34,
+                                               2);
         }
         SoundPlaySlot(0, 2);
         return;
@@ -10383,7 +10438,7 @@ dispatch:
                 D_800A3690NM[arg1 & 0xFF] = 0x64;
             }
         }
-        func_80060F54(*(s16 *)&D_800A3690NM[arg1 & 0xFF], (arg1 & 0xFF) - 2);
+        MenuSetVolume(*(s16 *)&D_800A3690NM[arg1 & 0xFF], (arg1 & 0xFF) - 2);
         return;
     case 0x23:
         func_8006CF90(arg2);
@@ -10403,7 +10458,7 @@ s32 func_80056B0C(s32 arg0, s32 arg1) {
     s32 result;
 
     result = 0;
-    switch (D_800A39E4Small) {
+    switch (gScreenStateSmall) {
     case 2:
     case 3:
     case 6:
@@ -10426,7 +10481,7 @@ s32 func_80056B5C(s32 arg0, s32 arg1, s32 arg2) {
     s32 result;
 
     result = 0;
-    switch (D_800A39E4Small) {
+    switch (gScreenStateSmall) {
     case 2:
         if ((arg0 & 0xFF) == 6) {
             result = 1;
@@ -10629,12 +10684,12 @@ void func_80056C84(s32 arg0, s32 arg1) {
 
 extern u8 gPlayerDriverSmall;
 extern u8 D_800A361C;
-extern u8 D_800A305BSmall;
+extern u8 gSelectedTrackSmall;
 void func_80056F04(s32 arg0) {
     extern void func_8005E5BC(s32, s32, s32, s32);
     extern void func_8005E7F8(s32, s32, s32, s32);
     extern void func_8005E644(s32, s32, s32, s32);
-    extern void func_8005DF08(s32, s32, s32, s32);
+    extern void MenuSetLinkedObjectMotion(s32, s32, s32, s32);
     extern void func_800631DC(s32, s32, s32);
     s32 idx;
     s32 flag;
@@ -10650,14 +10705,14 @@ void func_80056F04(s32 arg0) {
     case 8:
         flag = idx == 7;
         D_800A361C = 0;
-        func_8005E5BC(D_800A305BSmall, -0x78, 2, flag);
-        func_8005E7F8(D_800A305BSmall, -0x78, 2, flag);
-        func_8005E644(D_800A305BSmall, -0x78, 2, flag);
-        func_8005DF08(-0x78, 0, 2, flag);
+        func_8005E5BC(gSelectedTrackSmall, -0x78, 2, flag);
+        func_8005E7F8(gSelectedTrackSmall, -0x78, 2, flag);
+        func_8005E644(gSelectedTrackSmall, -0x78, 2, flag);
+        MenuSetLinkedObjectMotion(-0x78, 0, 2, flag);
         func_800631DC(-0x3C, 0x3C, 2);
         func_80063AE0(0, gPlayerDriverSmall);
         func_80063AE0(1, D_800A36E1[0]);
-        switch (D_800A39E4Small) {
+        switch (gScreenStateSmall) {
         case 2:
         case 8:
             func_80063538(-0x3C, 0x3C, 2);
@@ -10679,7 +10734,7 @@ extern u8 D_800A3950nm asm("D_800A3950.NON_MATCHING");
 
 void func_80057008(s32 arg0) {
     extern void CardMenuShowMessage(s32);
-    extern void func_8006C5E4(s32);
+    extern void CardMenuCenterSelectedText(s32);
     s32 m2;
     extern void func_8006BD68(void);
     extern u8 D_800A3928;
@@ -10689,37 +10744,37 @@ void func_80057008(s32 arg0) {
         m2 = D_800A3059;
         D_800A3928 = 1;
         if (m2 == 1) {
-            func_8006C5E4(1);
+            CardMenuCenterSelectedText(1);
             if (D_800A3059 == m2) {
-                D_800A39E4Small = 0x24;
+                gScreenStateSmall = 0x24;
                 D_800A3928 = 2;
                 return;
             }
         }
-        D_800A39E4Small = 0x23;
-    } else if (D_800A39E4Small != 0x28) {
+        gScreenStateSmall = 0x23;
+    } else if (gScreenStateSmall != 0x28) {
         if (D_800A3059 == 2) {
             func_8006BD68();
             D_800A3928 = 0;
             gCardMenuMessageb[-12] = 0;
-            D_800A39E4Small = 0x22;
-            func_8006C5E4(0);
+            gScreenStateSmall = 0x22;
+            CardMenuCenterSelectedText(0);
         } else if (D_800A3059 == 1) {
             if (D_800A3968a[0] == 0) {
                 gCardMenuMessagec[-4] = 0x14;
                 CardMenuShowMessage(0);
                 D_800A3928 = 2;
-                D_800A39E4Small = 0x24;
-                func_8006C5E4(1);
+                gScreenStateSmall = 0x24;
+                CardMenuCenterSelectedText(1);
             } else {
                 gCardMenuMessaged[-8] = 0;
-                D_800A39E4Small = 0x24;
+                gScreenStateSmall = 0x24;
                 if (D_800A3950nm == 0) {
                     D_800A3928 = 1;
                 } else {
                     D_800A3928 = 0;
                 }
-                func_8006C5E4(1);
+                CardMenuCenterSelectedText(1);
             }
         }
     }
@@ -10728,26 +10783,26 @@ void func_80057008(s32 arg0) {
 extern u8 D_800A3704;
 
 void func_80057160(s32 arg0) {
-    extern void func_8006C9DC(void);
-    extern void func_8006C598(s32, s32, s32);
+    extern void MenuHideCurrentObject(void);
+    extern void CardMenuSetColorNodeLayout(s32, s32, s32);
     extern void func_8006C2D0(s32);
     extern void func_8006CB40(void);
-    extern void func_80063770(u8);
+    extern void MenuNegateLinkedObjectValues(u8);
     extern void MenuUpdateItemRow(u8);
     s32 result;
 
     D_800A3704 = 1;
-    func_8006C9DC();
+    MenuHideCurrentObject();
     result = arg0 & 0xFF;
     if (result != 0) {
-        func_8006C598(-0x78, 0, 2);
+        CardMenuSetColorNodeLayout(-0x78, 0, 2);
     }
     if (((u8 *)D_800A36D0Absolute)[0x138] == 0) {
         func_8006C2D0(D_800A3059 == 2);
         func_8006CB40();
     }
-    func_80063770(0);
-    MenuUpdateItemRow(D_800A39E4Small);
+    MenuNegateLinkedObjectValues(0);
+    MenuUpdateItemRow(gScreenStateSmall);
 }
 
 u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
@@ -10760,22 +10815,22 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
     extern s32 D_800AE178[];
     extern u8 D_800AD974[];
     extern u8 D_800AD974Other[] asm("D_800AD974");
-    extern s32 D_800A2EB0Transition[] asm("D_800A2EB0.NON_MATCHING");
+    extern s32 gSessionTypeTransition[] asm("gSessionType.NON_MATCHING");
     extern char D_800B9B73[];
     extern void func_8006BA68(void);
     extern void func_8005E4A4(s32);
     extern void func_80063C34(u8, u8);
-    extern s32 func_8006AD44(char *);
-    extern void func_8006D424(u8, u8);
+    extern s32 CardFindSavedDriverRecord(char *);
+    extern void CardMenuCopyRecordNames(u8, u8);
     extern void func_8006D684(u8);
-    extern void func_8005ED04(u8);
-    extern void func_8005EC5C(u8);
-    extern void func_8006D634(u8);
+    extern void MenuSetTrackLabel(u8);
+    extern void MenuFormatLapCount(u8);
+    extern void CardMenuClearNameCharacters(u8);
     extern void func_8006EEE0(u8);
     extern void func_8006D708(s32, u8, s32);
-    extern void func_8005DEDC(s32);
-    extern void func_8006F128(u8);
-    extern void func_8006F194(s32);
+    extern void MenuSetAllObjectOrderingDepths(s32);
+    extern void MoviePlayIndexedFile(u8);
+    extern void MoviePlayIndexedFileAlternate(s32);
     u8 i;
     u8 next;
     u8 selection;
@@ -10788,8 +10843,8 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
         case 1:
             D_800A3644NM = 0;
             func_8006BA68();
-            func_8006EEBC();
-            D_800A305BSmall = 0;
+            BufferClear17Bytes();
+            gSelectedTrackSmall = 0;
             func_8005E4A4(D_800AE178[0]);
             if (D_800A3064 != 0) {
                 func_80063C34(5, 0x18);
@@ -10838,12 +10893,13 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
                 next = 4;
             } else {
                 for (i = 0; i < D_800A3644NM + 1; i++) {
-                    found = func_8006AD44(gDriverNames[gPlayerDriver[i]]);
+                    found = CardFindSavedDriverRecord(
+                        gDriverNames[gPlayerDriver[i]]);
                     if (found != 0xFF) {
-                        func_8006D424(i, found);
+                        CardMenuCopyRecordNames(i, found);
                     }
                 }
-                func_8006D684(D_800A305BSmall);
+                func_8006D684(gSelectedTrackSmall);
             }
         }
         break;
@@ -10857,18 +10913,18 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             case 0:
                 next = 8;
                 func_8006BA68();
-                func_8006EEBC();
-                D_800A305BSmall = 0;
+                BufferClear17Bytes();
+                gSelectedTrackSmall = 0;
                 func_8005E4A4(D_800AE178[0]);
-                func_8005ED04(D_800A305BSmall);
-                func_8005EC5C(D_800A305BSmall);
-                func_8006D634(D_800A305BSmall);
+                MenuSetTrackLabel(gSelectedTrackSmall);
+                MenuFormatLapCount(gSelectedTrackSmall);
+                CardMenuClearNameCharacters(gSelectedTrackSmall);
                 break;
             case 5:
                 next = 6;
-                if (D_800AD974[D_800A305BSmall] == 0) {
-                    func_8006EEE0(D_800A305BSmall);
-                    D_800AD974Other[D_800A305BSmall] = 1;
+                if (D_800AD974[gSelectedTrackSmall] == 0) {
+                    func_8006EEE0(gSelectedTrackSmall);
+                    D_800AD974Other[gSelectedTrackSmall] = 1;
                 }
                 break;
             case 3:
@@ -10880,13 +10936,14 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             default:
                 next = 0;
                 selection = 1;
-                found = func_8006AD44(gDriverNames[gPlayerDriverSmall]);
+                found =
+                    CardFindSavedDriverRecord(gDriverNames[gPlayerDriverSmall]);
                 if (found != 0xFF) {
-                    func_8006D424(0, found);
+                    CardMenuCopyRecordNames(0, found);
                 } else {
                     i = 0;
                     do {
-                        func_8006D634(i);
+                        CardMenuClearNameCharacters(i);
                         i++;
                     } while (i < 17U);
                 }
@@ -10899,7 +10956,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
         if (action == 0xFF) {
             *previous = 0;
         } else {
-            D_800A305BSmall = 0;
+            gSelectedTrackSmall = 0;
             next = 4;
             func_8006BA68();
             D_800B9B73[0] = gPlayerDriverSmall;
@@ -10931,8 +10988,8 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             next = 11;
         } else if (*previous == 8) {
             next = 6;
-            func_8006EEE0(D_800A305BSmall);
-            D_800AD974[D_800A305BSmall] = 1;
+            func_8006EEE0(gSelectedTrackSmall);
+            D_800AD974[gSelectedTrackSmall] = 1;
         } else {
             next = *previous;
             if (*previous == 0) {
@@ -10965,15 +11022,15 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
                 next = 7;
                 break;
             case 2:
-                D_800A2EB0Absolute[0] = 2;
+                gSessionTypeAbsolute[0] = 2;
                 next = 0xFF;
                 break;
             case 3:
-                D_800A2EB0Transition[0] = 1;
+                gSessionTypeTransition[0] = 1;
                 next = 0xFF;
                 break;
             case 4:
-                D_800A2EB0Absolute[0] = 0;
+                gSessionTypeAbsolute[0] = 0;
                 next = 0xFF;
                 break;
             case 5:
@@ -10992,18 +11049,18 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
                 next = 1;
                 break;
             case 1:
-                D_800A2EB0Absolute[0] = 2;
+                gSessionTypeAbsolute[0] = 2;
                 next = 0xFF;
                 break;
             case 2:
-                D_800A2EB0Transition[0] = 1;
+                gSessionTypeTransition[0] = 1;
                 next = 0xFF;
                 break;
             case 0:
                 next = 7;
                 break;
             case 3:
-                D_800A2EB0Absolute[0] = 0;
+                gSessionTypeAbsolute[0] = 0;
                 next = 0xFF;
                 break;
             case 4:
@@ -11018,11 +11075,11 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             selection = 1;
             next = 3;
         } else {
-            func_8006D708(0, D_800A305BSmall, *previous == 3);
-            func_8006D708(1, D_800A305BSmall, *previous == 3);
+            func_8006D708(0, gSelectedTrackSmall, *previous == 3);
+            func_8006D708(1, gSelectedTrackSmall, *previous == 3);
             found = *previous;
             if ((u8)(found + 6) < 2U) {
-                D_800A2EB0Absolute[0] = 0;
+                gSessionTypeAbsolute[0] = 0;
                 next = 0xFF;
             } else {
                 next = found;
@@ -11038,12 +11095,12 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
         }
         break;
     case 9:
-        func_8005DEDC(0);
+        MenuSetAllObjectOrderingDepths(0);
         next = 3;
         selection = 6;
         break;
     case 10:
-        func_8005DEDC(0);
+        MenuSetAllObjectOrderingDepths(0);
         next = 1;
     selectionThree:
         /* Keep this entry separate from the screen-4 return path. */
@@ -11051,17 +11108,17 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
         selection = 3;
         break;
     case 12:
-        func_8005DEDC(0);
+        MenuSetAllObjectOrderingDepths(0);
         next = 1;
         if (*previous == 1) {
             selection = 4;
-        } else if (D_800A305BSmall < 17U) {
+        } else if (gSelectedTrackSmall < 17U) {
             selection = 5;
         } else {
             if (D_800A374C < 3U) {
-                func_8006F128(D_800A374C);
+                MoviePlayIndexedFile(D_800A374C);
             }
-            D_800A305BSmall = 0;
+            gSelectedTrackSmall = 0;
             next = 0;
         }
         break;
@@ -11097,11 +11154,11 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
     case 16:
     case 17:
         if (action != 0xFF) {
-            func_8006F194(screen == 16);
+            MoviePlayIndexedFileAlternate(screen == 16);
         }
         selection = screen - 16;
         next = 15;
-        func_8005DEDC(0);
+        MenuSetAllObjectOrderingDepths(0);
         break;
     }
     if (action != 0xFF && screen != 5 && screen != 13 && screen != 7 &&
@@ -11113,7 +11170,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
 }
 
 extern s32 D_800A3654Lui asm("D_800A3654Absolute");
-void func_80057A9C(void) {
+void SceneAllocateRuntimeBuffers(void) {
     ((s32 *)D_800A3668Absolute)[4] = (s32)HeapAlloc(0x1AB8);
     ((u8 *)D_800A3668Absolute)[-0x7C] = 0;
     D_800A3654Lui = (s32)HeapAlloc(0x834);
@@ -11166,18 +11223,18 @@ void SceneInitPrimPools(void) {
         SetSemiTrans(shade, 0);
         shade++;
     }
-    func_8005E47C();
+    MenuAllocateObjectBuffer();
 }
 
-extern s32 D_800A3678Lui asm("D_800A3678Absolute");
+extern s32 gMenuObjectPoolLui asm("gMenuObjectPoolAbsolute");
 void func_80057BFC(void) {
-    extern void func_800697B4(void);
-    extern void func_8005E3DC(void);
-    extern void func_8005E408(void);
+    extern void CardMenuFreeResources(void);
+    extern void MenuFreeResourceBlock(void);
+    extern void MenuFreeObjectBuffer(void);
     extern void func_80014A68(void);
     extern void func_80063A20(void);
 
-    func_800697B4();
+    CardMenuFreeResources();
     if (D_800A3780 != 0) {
         HeapFree((void *)D_800A3780);
     }
@@ -11186,16 +11243,16 @@ void func_80057BFC(void) {
         HeapFree((void *)D_800A3548);
     }
     D_800A3548 = 0;
-    func_8005E3DC();
-    func_8005E408();
+    MenuFreeResourceBlock();
+    MenuFreeObjectBuffer();
     if (D_800A37EC != 0) {
         HeapFree((void *)D_800A37EC);
     }
     D_800A37EC = 0;
-    if (D_800A3678Lui != 0) {
-        HeapFree((void *)D_800A3678Lui);
+    if (gMenuObjectPoolLui != 0) {
+        HeapFree((void *)gMenuObjectPoolLui);
     }
-    D_800A3678Lui = 0;
+    gMenuObjectPoolLui = 0;
     if (D_800A3654Lui != 0) {
         HeapFree((void *)D_800A3654Lui);
     }
@@ -11210,7 +11267,7 @@ extern s32 D_800A3580;
 extern s32 D_800A3650;
 
 #ifdef NON_MATCHING
-/* w9f: D_800A39E4Small unlock works (gp lbu matches). Remaining wall:
+/* w9f: gScreenStateSmall unlock works (gp lbu matches). Remaining wall:
  * the then-branch must interleave load,load,add,store,add,store with
  * EC->v1 / A18->v0 (v1 reused for both increment results, anti-dep
  * keeps the second addiu below the first store). Every plain-C form
@@ -11219,14 +11276,14 @@ extern s32 D_800A3650;
  * the asm("") form splits too far (+8, reloads after the store).
  * gPrimitiveCursor[0] += 0x28 also ICEs cc1 at this TU position (0-symbol
  * object); read/store it via D_800A36D0Absolute[-67] instead. */
-void func_80057CCC(s32 arg0) {
+void GraphicsAllocPolyFT4(s32 arg0) {
     s32 cursor;
 
     arg0 &= 0xFF;
     if (arg0 != 0) {
         D_800A36EC += 1;
         D_800A3A18 += 0x28;
-    } else if (D_800A39E4Small != 0x80) {
+    } else if (gScreenStateSmall != 0x80) {
         D_800A3964 += 1;
         cursor = D_800A36D0Absolute[-67];
         D_800A36D0Absolute[-67] = cursor + 0x28;
@@ -11235,14 +11292,14 @@ void func_80057CCC(s32 arg0) {
     }
 }
 
-void func_80057D50(s32 arg0) {
+void GraphicsAllocPolyF4(s32 arg0) {
     s32 cursor;
 
     arg0 &= 0xFF;
     if (arg0 != 0) {
         D_800A3580 += 1;
         D_800A35B8 += 0x18;
-    } else if (D_800A39E4Small != 0x80) {
+    } else if (gScreenStateSmall != 0x80) {
         D_800A3650 += 1;
         cursor = D_800A36D0Absolute[-67];
         D_800A36D0Absolute[-67] = cursor + 0x28;
@@ -11254,7 +11311,7 @@ void func_80057D50(s32 arg0) {
 
 extern s32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
 extern s32 D_800A367CLui asm("D_800A367CAbsolute");
-u8 *func_80057CCC(s32 arg0) {
+u8 *GraphicsAllocPolyFT4(s32 arg0) {
     u8 *prim;
 
     arg0 &= 0xFF;
@@ -11264,7 +11321,7 @@ u8 *func_80057CCC(s32 arg0) {
         D_800A3A18 = (s32)prim + 0x28;
         return prim;
     }
-    if (D_800A39E4Small == 0x80) {
+    if (gScreenStateSmall == 0x80) {
         prim = (u8 *)D_800A3668Absolute[5];
         D_800A367CLui = (s32)prim + 0x28;
         return prim;
@@ -11275,7 +11332,7 @@ u8 *func_80057CCC(s32 arg0) {
     return prim;
 }
 
-u8 *func_80057D50(s32 arg0) {
+u8 *GraphicsAllocPolyF4(s32 arg0) {
     u8 *prim;
 
     arg0 &= 0xFF;
@@ -11285,7 +11342,7 @@ u8 *func_80057D50(s32 arg0) {
         D_800A35B8 = (s32)prim + 0x18;
         return prim;
     }
-    if (D_800A39E4Small == 0x80) {
+    if (gScreenStateSmall == 0x80) {
         prim = (u8 *)D_800A3668Absolute[5];
         D_800A367CLui = (s32)prim + 0x28;
         return prim;
@@ -11350,7 +11407,8 @@ void GraphicsInitDoubleBufferSwapped(void) {
 
 extern u8 D_800A8C14[];
 extern u8 D_800A8B94[];
-void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
+void GraphicsQueueDrawEnvironment(u8 arg0, s32 arg1, s32 arg2, s32 arg3,
+                                  s32 arg4, s32 arg5) {
     u8 *env;
     u32 *ot;
     s32 cond;
@@ -11364,7 +11422,7 @@ void func_80057F34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     AddPrim(ot + arg5, env);
 }
 
-void func_80057FC8(s32 hide) {
+void GraphicsHideDisplay(s32 hide) {
     if (hide & 0xFF) {
         SetDispMask(0);
         SetGraphDebug(0);
@@ -11372,11 +11430,11 @@ void func_80057FC8(s32 hide) {
     SetGeomScreen(0x82);
 }
 
-void func_80058000(s32 index, s32 *out) {
+void InputGetPadButtons(s32 index, s32 *out) {
     *out = PadGetButtons(index & 0xFF);
 }
 
-void func_80058030(void) {
+void GraphicsPutCurrentEnvironments(void) {
     PutDispEnv(&D_800BDE04[D_800A305C]);
     PutDrawEnv(&D_800BDD4C[D_800A305C]);
 }
@@ -11386,11 +11444,11 @@ void func_80058030(void) {
  * the HeapAlloc references, which ranks size ahead of sector for the saved
  * registers, as in retail. */
 void *FileLoadOffsetTable(s32 fileId, void **outTable, s32 buf) {
-    extern s32 D_800A3090[];
+    extern s32 gSceneFileMode[];
     s32 size;
     s32 sector;
 
-    sector = (s32)FileOpen(fileId, D_800A3090);
+    sector = (s32)FileOpen(fileId, gSceneFileMode);
     size = (FileSeek(sector, 0, 2) + 0x7FF) >> 11 << 11;
     if (buf == 0) {
         do {
@@ -11419,7 +11477,7 @@ void func_80058148(void) {
     extern u8 D_800A3077;
     extern s32 D_800A2CE0w45[] asm("D_800A2CE0.NON_MATCHING");
     extern s32 D_800A2EA8w45[] asm("D_800A2EA8.NON_MATCHING");
-    extern s32 D_800A2EA4w45[] asm("D_800A2EA4.NON_MATCHING");
+    extern s32 gSplitScreenModew45[] asm("gSplitScreenMode.NON_MATCHING");
     extern u8 D_800A2EDCw45[] asm("D_800A2EDC.NON_MATCHING");
     extern u8 D_800A2EE0w45[] asm("D_800A2EE0.NON_MATCHING");
     extern s8 D_800A3A25w45[] asm("D_800A3A25.NON_MATCHING");
@@ -11431,11 +11489,11 @@ void func_80058148(void) {
     s32 i;
 
     D_800A2EA8w45[0] = D_800A3814w45S;
-    D_800A2CE0w45[0] = D_800A305BSmall;
+    D_800A2CE0w45[0] = gSelectedTrackSmall;
     if (D_800A3644w45 != 0 && D_800A3A25w45[0] == 0) {
         D_800A3644w45 = 0;
     }
-    D_800A2EA4w45[0] = D_800A3644w45;
+    gSplitScreenModew45[0] = D_800A3644w45;
     switch (D_800A306E) {
     case 0:
         D_800A2EDCw45[0] = 0;
@@ -11458,7 +11516,7 @@ void func_80058148(void) {
         D_800A3688w45[0] = 0;
     }
     for (i = 0; i < D_800A3644w45 + 1; i++) {
-        if ((func_8004229C(gPadTypew45[i]) & 0xFF) != 0) {
+        if ((PadTypeNeedsCalibration(gPadTypew45[i]) & 0xFF) != 0) {
             if (D_800A36E4w45[i] != 0) {
                 func_8006E484(i, (s8)gPadTypew45[i]);
             } else {
@@ -11608,7 +11666,7 @@ extern SeasonTrackResult gSeasonTrackResults[];
 extern u16 D_800B9B84[];
 extern s32 D_800B0B1C[];
 extern s32 D_800995D4[];
-extern void func_8006D634(u8);
+extern void CardMenuClearNameCharacters(u8);
 extern void func_8006D708(s32, u8, s32);
 
 extern u8 D_800B9B6E[];
@@ -11617,18 +11675,18 @@ void RaceRecordSessionResult(void) {
     u8 pos;
     s32 m;
 
-    if (D_800A2EB0Absolute[0] >= 0) {
+    if (gSessionTypeAbsolute[0] >= 0) {
         for (i = 0; i < 2; i++) {
-            func_8006D708(i, D_800A305BSmall,
+            func_8006D708(i, gSelectedTrackSmall,
                           D_800A3950 == 3 || D_800A3950 == 0xFB);
         }
     }
 
-    switch (D_800A2EB0Absolute[0]) {
+    switch (gSessionTypeAbsolute[0]) {
     case -2:
     case -1:
         D_800A3950 = 0xFE;
-        D_800A39E4Small = 0xF9;
+        gScreenStateSmall = 0xF9;
         D_800A3059 = 0;
         gPlayerDriverPair[0] = D_800A3718;
         break;
@@ -11637,14 +11695,15 @@ void RaceRecordSessionResult(void) {
             D_800B9B72[0]++;
             pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
             if (D_800B0B1C[pos] == -1) {
-                gSeasonTrackResults[D_800A305BSmall].finishPlace = -1;
+                gSeasonTrackResults[gSelectedTrackSmall].finishPlace = -1;
             } else {
-                gSeasonTrackResults[D_800A305BSmall].finishPlace = pos + 1;
+                gSeasonTrackResults[gSelectedTrackSmall].finishPlace = pos + 1;
                 D_800B9B71[0]++;
             }
             if (D_800AE1EC[pos] <
-                gSeasonTrackResults[D_800A305BSmall].bestTime) {
-                gSeasonTrackResults[D_800A305BSmall].bestTime = D_800AE1EC[pos];
+                gSeasonTrackResults[gSelectedTrackSmall].bestTime) {
+                gSeasonTrackResults[gSelectedTrackSmall].bestTime =
+                    D_800AE1EC[pos];
             }
             if (pos == 0) {
                 D_800B9B6E[0]++;
@@ -11658,32 +11717,33 @@ void RaceRecordSessionResult(void) {
             for (i = 0; i < 24; i++) {
                 D_800B9B84[gDriverOrder[i]] += D_800995D4[i];
             }
-            if (D_800A305BSmall < 17) {
-                D_800A305BSmall++;
-                if (D_800A305BSmall < 17) {
-                    func_8006D634(D_800A305BSmall);
+            if (gSelectedTrackSmall < 17) {
+                gSelectedTrackSmall++;
+                if (gSelectedTrackSmall < 17) {
+                    CardMenuClearNameCharacters(gSelectedTrackSmall);
                 }
             }
-            D_800A39E4Small = 12;
+            gScreenStateSmall = 12;
             D_800A3950 = 12;
             D_800A3059 = 5;
         } else if (D_800A3950 == 3 || D_800A3950 == 0xFB) {
             CardUpdateDriverRecords(0, D_800A3644 != 0, D_800A3074,
                                     D_800A3644 != 0 && D_800A3073NM == 0);
-            D_800A39E4Small = 3;
+            gScreenStateSmall = 3;
             D_800A3950 = 3;
             D_800A3059 = 0;
         }
         break;
     case 1:
-        D_800A39E4Small = 7;
+        gScreenStateSmall = 7;
         if (D_800A3950 == 6) {
-            gSeasonTrackResults[D_800A305BSmall].qualifyPlace =
+            gSeasonTrackResults[gSelectedTrackSmall].qualifyPlace =
                 D_800B9DA4[gPlayerDriverPair[0]] + 1;
             pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
             if (D_800AE1EC[pos] <
-                gSeasonTrackResults[D_800A305BSmall].bestTime) {
-                gSeasonTrackResults[D_800A305BSmall].bestTime = D_800AE1EC[pos];
+                gSeasonTrackResults[gSelectedTrackSmall].bestTime) {
+                gSeasonTrackResults[gSelectedTrackSmall].bestTime =
+                    D_800AE1EC[pos];
             }
             D_800A3950 = 0xFA;
         } else if (D_800A3950 == 3) {
@@ -11698,14 +11758,15 @@ void RaceRecordSessionResult(void) {
         if (D_800A3950 == 6) {
             pos = RaceFindDriverPosition(gPlayerDriverPair[0]);
             if (D_800AE1EC[pos] <
-                gSeasonTrackResults[D_800A305BSmall].bestTime) {
-                gSeasonTrackResults[D_800A305BSmall].bestTime = D_800AE1EC[pos];
+                gSeasonTrackResults[gSelectedTrackSmall].bestTime) {
+                gSeasonTrackResults[gSelectedTrackSmall].bestTime =
+                    D_800AE1EC[pos];
             }
-            D_800A39E4Small = 6;
+            gScreenStateSmall = 6;
             D_800A3059 = 1;
         } else {
             CardUpdateDriverRecords(2, 0, 0);
-            D_800A39E4Small = 3;
+            gScreenStateSmall = 3;
             D_800A3950 = 3;
             D_800A3059 = 2;
         }
@@ -11713,8 +11774,8 @@ void RaceRecordSessionResult(void) {
     }
 }
 
-/* func_80058D08: writes $gp directly; not expressible in C. */
-void func_80058D08(s32 gp) {
+/* SystemSetGlobalPointer: writes $gp directly; not expressible in C. */
+void SystemSetGlobalPointer(s32 gp) {
     /* Retail writes the new global pointer directly; not expressible
      * in plain C. */
     asm("addu $gp, $a0, $zero");
@@ -11765,17 +11826,17 @@ extern DRAWENV D_800BDDA8[];
 extern DISPENV D_800BDE18[];
 extern s32 D_800A3638;
 extern s32 D_800A381C;
-extern void func_80066A24(void);
-extern void func_80041AF0Scene(s32);
+extern void MenuStartVBlankEvent(void);
+extern void PadResetAndInitializeBuffersScene(s32);
 extern s32 RandomScaledGetScene(void);
-asm(".globl func_80041AF0Scene\nfunc_80041AF0Scene = func_80041AF0");
+asm(".globl PadResetAndInitializeBuffersScene\nPadResetAndInitializeBuffersScene = PadResetAndInitializeBuffers");
 asm(".globl RandomScaledGetScene\nRandomScaledGetScene = RandomScaledGet");
 
 void func_80058D94(void) {
     extern s32 FileSeekScene(s32, s32, s32) asm("FileSeek");
     extern void FileCloseScene(s32) asm("FileClose");
     extern void TextureLoadTim(void *);
-    extern s32 D_800A3090[];
+    extern s32 gSceneFileMode[];
     s32 done;
     s32 prevPads;
     RECT rect;
@@ -11814,7 +11875,7 @@ void func_80058D94(void) {
 
     (void)&pad;
     if (D_800A3638 == 0) {
-        sector = (s32)FileOpen(0, D_800A3090);
+        sector = (s32)FileOpen(0, gSceneFileMode);
         size = (FileSeekScene(sector, 0, 2) + 0x7FF) >> 11 << 11;
         buf = HeapAlloc(size);
         FileSeekScene(sector, 0, 0);
@@ -11857,7 +11918,7 @@ void func_80058D94(void) {
     *(u8 *)(D_800A34FC + 0x24) = 0xA0;
     *(u8 *)(D_800A34FC + 0x25) = 0x39;
     xy = (s16 *)D_800A34FC;
-    cond = (u32)(D_800A2EB0Absolute[0] + 3) < 2;
+    cond = (u32)(gSessionTypeAbsolute[0] + 3) < 2;
     xy[4] = (xa = 0x73);
     xb = 0xD3;
     xy[5] = 0xBC;
@@ -11931,7 +11992,7 @@ void func_80058D94(void) {
     toggle = 0;
     prevPads = 0;
     D_800A305C = 0;
-    frame = -(D_800A2EB0Absolute[0] == -2) & 0xB4;
+    frame = -(gSessionTypeAbsolute[0] == -2) & 0xB4;
     do {
         RandomScaledGetScene();
         bank = D_800A305C == 0;
@@ -11988,10 +12049,10 @@ void func_80058D94(void) {
             continue;
         }
         DrawOTag((OT_TYPE *)(gOrderingTabledraw[0] + 0xC));
-        func_80041AF0Scene(0);
+        PadResetAndInitializeBuffersScene(0);
         pads = PadGetButtons(0);
         if (frame >= 0xB5) {
-            if (D_800A2EB0Absolute[0] == -2) {
+            if (gSessionTypeAbsolute[0] == -2) {
                 mask = ~prevPads & 0x9F0;
             } else {
                 mask = ~prevPads & 0x800;
@@ -12001,23 +12062,23 @@ void func_80058D94(void) {
             }
             if ((done & 0xFF) != 0) {
                 if (D_800A3A48 != 0xFF) {
-                    D_800A39E4Small = D_800A3A48;
+                    gScreenStateSmall = D_800A3A48;
                     D_800A3A48 = 0xFF;
                 } else {
-                    D_800A39E4Small = 0;
+                    gScreenStateSmall = 0;
                 }
             } else {
                 if (frame >= 0x709) {
                     done = 1;
-                    D_800A39E4Small = 0xFE;
+                    gScreenStateSmall = 0xFE;
                 }
             }
         }
         prevPads = pads;
     } while ((done & 0xFF) == 0);
-    if (D_800A39E4Small == 0xFE) {
+    if (gScreenStateSmall == 0xFE) {
         func_8005957C();
-    } else if (D_800A39E4Small == 0) {
+    } else if (gScreenStateSmall == 0) {
         D_800A3950 = 0xF9;
     }
     rect.x = 0x200;
@@ -12033,8 +12094,8 @@ void func_80058D94(void) {
     HeapFree(fileBuf);
     D_800A3638 = 0;
     HeapFree(texBuf);
-    if (D_800A39E4Small == 0xFE) {
-        func_80066A24();
+    if (gScreenStateSmall == 0xFE) {
+        MenuStartVBlankEvent();
     }
     HeapResetInitFlag();
 }
@@ -12045,7 +12106,7 @@ void func_80058D94(void) {
  * active C here (even size-identical to the stub) shifts the sdata
  * labels -0xC and a shorter body shifts them differently (see
  * matching.md). text side (all verified, keep these when retrying):
- * - D_800A2EB0=-1 / D_800A2EA8=3 via D_800A2EB0Absolute[0] / [-2]
+ * - gSessionType=-1 / D_800A2EA8=3 via gSessionTypeAbsolute[0] / [-2]
  * - D_800A2CE0 twice via DISTINCT aliases (A2E24[-0x151] first,
  *   A2EB0Absolute[-0x74] in the arm) or gcc hoists the address into s0
  * - store the arm call result DIRECTLY (`D[...] = RandomScaledGet(0x10);`)
@@ -12066,15 +12127,15 @@ void func_8005957C(void) {
     s32 value;
     u8 seed;
 
-    D_800A2EB0Absolute[0] = -1;
-    D_800A2EB0Absolute[-2] = 3;
+    gSessionTypeAbsolute[0] = -1;
+    gSessionTypeAbsolute[-2] = 3;
     value = RandomScaledGet(0x11);
     D_800A2E24Absolute[-0x151] = value;
     if (value == 0x10) {
-        D_800A2EB0Absolute[-0x74] = RandomScaledGet(0x10);
+        gSessionTypeAbsolute[-0x74] = RandomScaledGet(0x10);
     }
     seed = gPlayerDriver;
-    D_800A2EA4[0] = 0;
+    gSplitScreenMode[0] = 0;
     D_800A2EDC[0] = 0;
     D_800A2EE0[0] = 1;
     D_800A38F0[0] = 0;
@@ -12084,7 +12145,7 @@ void func_8005957C(void) {
     D_800A3718 = seed;
 }
 #endif
-extern u32 D_800A2EA4NM[] asm("D_800A2EA4.NON_MATCHING");
+extern u32 gSplitScreenModeNM[] asm("gSplitScreenMode.NON_MATCHING");
 extern u8 D_800A2EDCNM[] asm("D_800A2EDC.NON_MATCHING");
 extern u8 D_800A2EE0NM[] asm("D_800A2EE0.NON_MATCHING");
 extern u8 D_800A38F0NM[] asm("D_800A38F0.NON_MATCHING");
@@ -12097,15 +12158,15 @@ void func_8005957C(void) {
     s32 value;
     u8 seed;
 
-    D_800A2EB0Absolute[0] = -1;
-    D_800A2EB0Absolute[-2] = 3;
+    gSessionTypeAbsolute[0] = -1;
+    gSessionTypeAbsolute[-2] = 3;
     value = RandomScaledGet(0x11);
     D_800A2E24Absolute[-0x51] = value;
     if (value == 0x10) {
-        D_800A2EB0Absolute[-0x74] = RandomScaledGet(0x10);
+        gSessionTypeAbsolute[-0x74] = RandomScaledGet(0x10);
     }
     seed = gPlayerDriverNM;
-    D_800A2EA4NM[0] = 0;
+    gSplitScreenModeNM[0] = 0;
     D_800A2EDCNM[0] = 0;
     D_800A2EE0NM[0] = 1;
     D_800A38F0NM[0] = 0;
@@ -12128,7 +12189,7 @@ s32 ColorPack555(s32 red, s32 green, u8 blue) {
  * materializes each constant just before its store (single recycled
  * register). Loop uses pointer=v1/counter=v0; retail has them swapped.
  * Permuter candidate. */
-void func_80059648(void) {
+void GraphicsLoadPaletteRow(void) {
     RECT rect;
     s16 *pixels;
     s32 i;
@@ -12155,7 +12216,7 @@ void func_80059648(void) {
     HeapFree(pixels);
 }
 #else
-void func_80059648(void) {
+void GraphicsLoadPaletteRow(void) {
     RECT rect;
     s16 *pixels;
     s32 i;
@@ -12196,10 +12257,10 @@ void func_80059648(void) {
 
 #endif
 
-void func_800596F4(void) {
+void CdEnablePlaybackAndSetVolume(void) {
     D_800A2F9CAbsolute[0] = 1;
     func_8003CAE8(3);
-    CdSetMixVolume(D_800A3694);
+    CdSetMixVolume(gCdVolume);
 }
 
 void CdSetMixVolume(s32 arg) {
@@ -12222,7 +12283,7 @@ asm(".globl FileCloseArgs\nFileCloseArgs = FileClose");
 void func_8005978C(void) {
     extern void *FileOpen(s32, void *);
     extern void FileRead(s32, s32, s32, s32);
-    extern s32 D_800A3090[];
+    extern s32 gSceneFileMode[];
     DISPENV env;
     s32 sector;
     s32 size;
@@ -12230,7 +12291,7 @@ void func_8005978C(void) {
     s32 next;
     s32 tmp;
 
-    sector = (s32)FileOpen(0, D_800A3090);
+    sector = (s32)FileOpen(0, gSceneFileMode);
     size = (FileSeekArgs((void *)sector, 0, 2) + 0x7FF) >> 11 << 11;
     do {
         tmp = (s32)HeapAlloc(size);

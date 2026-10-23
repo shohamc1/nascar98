@@ -7,9 +7,10 @@
 const char gObjectVectorsAllocationError[] = "No Memory for Object Vectors!";
 const char gObjectFacesAllocationError[] = "No Memory for Object Faces!";
 const char gObjectOffsetsAllocationError[] = "No Memory for Object Offsets!";
-const char D_8008D08C[] = "Input file couldn't be opened!";
-const char D_8008D0AC[] = "Input file couldn't be opened!";
-const char D_8008D0CC[] = "Not enough Memory to load Computer_Replay!";
+const char gErrorModelFileOpen[] = "Input file couldn't be opened!";
+const char gErrorRaceDataFileOpen[] = "Input file couldn't be opened!";
+const char gErrorComputerReplayMemory[] =
+    "Not enough Memory to load Computer_Replay!";
 
 /* Six null car pointers, copied into the workspace as its initial value. */
 const u8 *const D_8008D0F8[6] = {0};

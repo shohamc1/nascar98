@@ -200,10 +200,10 @@ extern u8 D_8009D040[];
 
 typedef struct {
     u8 unk00[0x1C];
-    s32 unk1C;
+    s32 capacity;
     u8 unk20[4];
-    u8 *unk24;
-    s32 unk28;
+    u8 *buffer;
+    s32 written;
     u8 unk2C[4];
 } FntFont;
 
@@ -439,14 +439,14 @@ int FntPrint(const char *fmt, ...) {
     if ((s32)fmt < 0 || (s32)fmt >= (s32)D_8009D038[0]) {
         str = (u8 *)fmt;
         fmt = (const char *)D_8009D03C[0];
-        if (D_8009CEB8[(s32)fmt].unk24 == 0) {
+        if (D_8009CEB8[(s32)fmt].buffer == 0) {
             return -1;
         }
     } else {
         str = va_arg(ap, u8 *);
     }
     font = &D_8009CEB8[(s32)fmt];
-    if (font->unk28 > font->unk1C) {
+    if (font->written > font->capacity) {
         return -1;
     }
     ch = *str;
@@ -464,8 +464,8 @@ int FntPrint(const char *fmt, ...) {
                 goto format;
             }
         store:
-            font->unk24[font->unk28++] = ch;
-            if (font->unk28 > font->unk1C) {
+            font->buffer[font->written++] = ch;
+            if (font->written > font->capacity) {
                 return -1;
             }
             goto tail;
@@ -537,16 +537,16 @@ int FntPrint(const char *fmt, ...) {
             if (count < width) {
                 spaceChar = ' ';
                 do {
-                    font->unk24[font->unk28++] = spaceChar;
-                    if (font->unk28 > font->unk1C) {
+                    font->buffer[font->written++] = spaceChar;
+                    if (font->written > font->capacity) {
                         return -1;
                     }
                     width--;
                 } while (count < width);
             }
             while (--count != -1) {
-                font->unk24[font->unk28++] = *buf++;
-                if (font->unk28 > font->unk1C) {
+                font->buffer[font->written++] = *buf++;
+                if (font->written > font->capacity) {
                     return -1;
                 }
             }
@@ -555,8 +555,8 @@ int FntPrint(const char *fmt, ...) {
             ch = *str;
         } while (ch != 0);
     }
-    font->unk24[font->unk28] = 0;
-    return font->unk28;
+    font->buffer[font->written] = 0;
+    return font->written;
 }
 
 u_short GetTPage(int tp, int abr, int x, int y) {
@@ -723,10 +723,10 @@ void SetBlockFill(BLK_FILL *p) {
 
 /* SPDX-License-Identifier: MIT */
 
-void SetDrawMove(void *arg0) {
-    *((u8 *)arg0 + 3) = 5;
-    *((u8 *)arg0 + 7) = 1;
-    *((u32 *)arg0 + 2) = 0x80000000;
+void SetDrawMove(void *packet) {
+    *((u8 *)packet + 3) = 5;
+    *((u8 *)packet + 7) = 1;
+    *((u32 *)packet + 2) = 0x80000000;
 }
 
 void SetDrawTPage(void *drtpage, s32 dfe, s32 dtd, s32 tpage) {
@@ -1076,26 +1076,27 @@ extern u32 D_8009DA8C[];
 extern u8 D_8009DA92[];
 extern u8 D_8009DB4C[];
 extern char D_80090770[];
-OT_TYPE *ClearOTag(OT_TYPE *arg0, int arg1) {
+OT_TYPE *ClearOTag(OT_TYPE *orderingTable, int length) {
     OT_TYPE *temp_a0;
     u32 masked;
     if ((u8)D_8009DA92[0] >= 2U) {
         temp_a0 = (OT_TYPE *)D_80090770;
-        ((int (*)(const char *, ...))D_8009DA8C[0])(temp_a0, arg0, arg1);
+        ((int (*)(const char *, ...))D_8009DA8C[0])(temp_a0, orderingTable,
+                                                    length);
     }
-    arg1 -= 1;
-    if (arg1 != 0) {
+    length -= 1;
+    if (length != 0) {
         do {
-            arg1 -= 1;
-            temp_a0 = (OT_TYPE *)arg0 + 1;
-            ((u8 *)arg0)[3] = 0;
+            length -= 1;
+            temp_a0 = (OT_TYPE *)orderingTable + 1;
+            ((u8 *)orderingTable)[3] = 0;
             masked = (u32)temp_a0 & 0xFFFFFF;
-            arg0[0] = (arg0[0] & 0xFF000000) | masked;
-            arg0 = temp_a0;
-        } while (arg1 != 0);
+            orderingTable[0] = (orderingTable[0] & 0xFF000000) | masked;
+            orderingTable = temp_a0;
+        } while (length != 0);
     }
-    *arg0 = (s32)((u32)D_8009DB4C & 0xFFFFFF);
-    return arg0;
+    *orderingTable = (s32)((u32)D_8009DB4C & 0xFFFFFF);
+    return orderingTable;
 }
 
 extern u32 D_8009DA88[];
@@ -1407,7 +1408,7 @@ s32 get_mode(s32 dfe, s32 dtd, s32 tpage) {
 
 /* SPDX-License-Identifier: MIT */
 
-u32 get_cs(s16 arg0, s16 arg1) {
+u32 get_cs(s16 x, s16 y) {
     volatile u16 *px;
     volatile u16 *py;
     register s32 cmdBase asm("$4");
@@ -1424,20 +1425,20 @@ u32 get_cs(s16 arg0, s16 arg1) {
     s32 word0;
 
     clipX = 0;
-    if (arg0 >= 0) {
+    if (x >= 0) {
         px = (volatile u16 *)D_8009DA94;
         asm("" : "=r"(px) : "0"(px));
         xmax = (s16)px[0];
         mx = xmax - 1;
-        xv = arg0;
-        if (mx < arg0) {
+        xv = x;
+        if (mx < x) {
             xv = mx;
         }
         clipX = xv;
     }
-    arg0 = clipX;
-    asm("" : "=r"(arg0) : "0"(arg0));
-    yv = arg1;
+    x = clipX;
+    asm("" : "=r"(x) : "0"(x));
+    yv = y;
     clipY = 0;
     if (yv >= 0) {
         py = (volatile u16 *)D_8009DA96;
@@ -1454,12 +1455,12 @@ u32 get_cs(s16 arg0, s16 arg1) {
     if ((u32)(pm[0] - 1) >= 2) {
         word1 = clipY & 0x3FF;
         word1 = word1 << 0xA;
-        word0 = arg0 & 0x3FF;
+        word0 = x & 0x3FF;
         cmdBase = 0xE3000000;
     } else {
         word1 = clipY & 0xFFF;
         word1 = word1 << 0xC;
-        word0 = arg0 & 0xFFF;
+        word0 = x & 0xFFF;
         cmdBase = 0xE3000000;
     }
     if (mx) {
@@ -1471,7 +1472,7 @@ u32 get_cs(s16 arg0, s16 arg1) {
 
 /* SPDX-License-Identifier: MIT */
 
-u32 get_ce(s16 arg0, s16 arg1) {
+u32 get_ce(s16 x, s16 y) {
     volatile u16 *px;
     volatile u16 *py;
     register s32 cmdBase asm("$4");
@@ -1488,20 +1489,20 @@ u32 get_ce(s16 arg0, s16 arg1) {
     s32 word0;
 
     clipX = 0;
-    if (arg0 >= 0) {
+    if (x >= 0) {
         px = (volatile u16 *)D_8009DA94;
         asm("" : "=r"(px) : "0"(px));
         xmax = (s16)px[0];
         mx = xmax - 1;
-        xv = arg0;
-        if (mx < arg0) {
+        xv = x;
+        if (mx < x) {
             xv = mx;
         }
         clipX = xv;
     }
-    arg0 = clipX;
-    asm("" : "=r"(arg0) : "0"(arg0));
-    yv = arg1;
+    x = clipX;
+    asm("" : "=r"(x) : "0"(x));
+    yv = y;
     clipY = 0;
     if (yv >= 0) {
         py = (volatile u16 *)D_8009DA96;
@@ -1518,12 +1519,12 @@ u32 get_ce(s16 arg0, s16 arg1) {
     if ((u32)(pm[0] - 1) >= 2) {
         word1 = clipY & 0x3FF;
         word1 = word1 << 0xA;
-        word0 = arg0 & 0x3FF;
+        word0 = x & 0x3FF;
         cmdBase = 0xE4000000;
     } else {
         word1 = clipY & 0xFFF;
         word1 = word1 << 0xC;
-        word0 = arg0 & 0xFFF;
+        word0 = x & 0xFFF;
         cmdBase = 0xE4000000;
     }
     if (mx) {
@@ -1587,11 +1588,11 @@ s32 _status(void) {
 extern void set_alarm(void);
 extern s32 get_alarm(void);
 
-s32 _otc(s32 arg0, s32 arg1) {
+s32 _otc(s32 tableAddress, s32 length) {
     *DPCR |= 0x08000000;
     *DMA6_CHCR = 0;
-    *DMA6_MADR = arg0 - 4 + arg1 * 4;
-    *DMA6_BCR = arg1;
+    *DMA6_MADR = tableAddress - 4 + length * 4;
+    *DMA6_BCR = length;
     *DMA6_CHCR = 0x11000002;
     set_alarm();
     while (*DMA6_CHCR & 0x01000000) {
@@ -1599,14 +1600,14 @@ s32 _otc(s32 arg0, s32 arg1) {
             return -1;
         }
     }
-    return arg1;
+    return length;
 }
 
 extern s32 gpuClrBuf[];
 extern void _cwc(s32);
 
 /* Clears a frame buffer rectangle. */
-s32 _clr(RECT *arg0, s32 color) {
+s32 _clr(RECT *rect, s32 color) {
     s32 w;
     s32 h;
     s32 m;
@@ -1614,24 +1615,24 @@ s32 _clr(RECT *arg0, s32 color) {
     s32 rw;
     s32 rh;
     s32 *ptr;
-    w = arg0->w;
+    w = rect->w;
     rw = w < 0 ? 0
                : (
                      {
                          m = (s16)gfxMaxW[0] - 1;
                          w > m ? m : w;
                      });
-    arg0->w = rw;
-    h = arg0->h;
+    rect->w = rw;
+    h = rect->h;
     rh = h < 0 ? 0
                : (
                      {
                          n = (s16)gfxMaxH[0] - 1;
                          h > n ? n : h;
                      });
-    arg0->h = rh;
+    rect->h = rh;
 
-    if ((arg0->x & 0x3F) || (arg0->w & 0x3F)) {
+    if ((rect->x & 0x3F) || (rect->w & 0x3F)) {
         ptr = &gpuClrBuf[8];
         gpuClrBuf[0] = 0x07000000 | ((s32)ptr & 0xFFFFFF);
         gpuClrBuf[1] = 0xE3000000;
@@ -1640,8 +1641,8 @@ s32 _clr(RECT *arg0, s32 color) {
         gpuClrBuf[4] = 0xE6000000;
 
         gpuClrBuf[5] = (color & 0xFFFFFF) | 0x60000000;
-        gpuClrBuf[6] = LOW(arg0->x);
-        gpuClrBuf[7] = LOW(arg0->w);
+        gpuClrBuf[6] = LOW(rect->x);
+        gpuClrBuf[7] = LOW(rect->w);
         gpuClrBuf[8] = 0x03FFFFFF;
         gpuClrBuf[9] = 0xE3000000 | _param(3);
         gpuClrBuf[10] = 0xE4000000 | _param(4);
@@ -1651,8 +1652,8 @@ s32 _clr(RECT *arg0, s32 color) {
         gpuClrBuf[1] = 0xE6000000;
 
         gpuClrBuf[2] = (color & 0xFFFFFF) | 0x02000000;
-        gpuClrBuf[3] = LOW(arg0->x);
-        gpuClrBuf[4] = LOW(arg0->w);
+        gpuClrBuf[3] = LOW(rect->x);
+        gpuClrBuf[4] = LOW(rect->w);
     }
     _cwc(&gpuClrBuf[0]);
     return 0;
@@ -1661,7 +1662,7 @@ s32 _clr(RECT *arg0, s32 color) {
 /* The clamps are written as `r = v; if (v > max) r = max;` inside the
  * non-negative arm: that shape gives retail's single result register. */
 /* LoadImage: copies host memory to VRAM. */
-s32 _dws(RECT *arg0, s32 *arg1) {
+s32 _dws(RECT *rect, s32 *source) {
     s16 w;
     s16 h;
     s16 rw;
@@ -1674,7 +1675,7 @@ s32 _dws(RECT *arg0, s32 *arg1) {
     set_alarm();
     var_s4 = 0;
 
-    w = arg0->w;
+    w = rect->w;
     if (w >= 0) {
         rw = w;
         if (w > (s16)gfxMaxW[0]) {
@@ -1683,8 +1684,8 @@ s32 _dws(RECT *arg0, s32 *arg1) {
     } else {
         rw = 0;
     }
-    arg0->w = rw;
-    h = arg0->h;
+    rect->w = rw;
+    h = rect->h;
     if (h >= 0) {
         rh = h;
         if (h > (s16)gfxMaxH[0]) {
@@ -1693,9 +1694,9 @@ s32 _dws(RECT *arg0, s32 *arg1) {
     } else {
         rh = 0;
     }
-    arg0->h = rh;
+    rect->h = rh;
 
-    temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
+    temp_a0 = ((rect->w * rect->h) + 1) / 2;
     if (temp_a0 <= 0) {
         return -1;
     }
@@ -1711,16 +1712,16 @@ s32 _dws(RECT *arg0, s32 *arg1) {
 
     *GPU_DATA = 0x01000000;
     *GPU_DATA = var_s4 ? 0xB0000000 : 0xA0000000;
-    *GPU_DATA = LOW(arg0->x);
-    *GPU_DATA = LOW(arg0->w);
+    *GPU_DATA = LOW(rect->x);
+    *GPU_DATA = LOW(rect->w);
 
     while (--var_s0 != -1) {
-        *GPU_DATA = *arg1++;
+        *GPU_DATA = *source++;
     }
 
     if (size != 0) {
         *GPU_STATUS = 0x04000002;
-        *DMA2_MADR = (s32)arg1;
+        *DMA2_MADR = (s32)source;
         *DMA2_BCR = (size << 0x10) | 0x10;
         *DMA2_CHCR = 0x01000201;
     }
@@ -1729,7 +1730,7 @@ s32 _dws(RECT *arg0, s32 *arg1) {
 }
 
 /* StoreImage: copies VRAM to host memory. */
-s32 _drs(RECT *arg0, s32 *arg1) {
+s32 _drs(RECT *rect, s32 *destination) {
     s16 w;
     s16 h;
     s16 rw;
@@ -1740,7 +1741,7 @@ s32 _drs(RECT *arg0, s32 *arg1) {
 
     set_alarm();
 
-    w = arg0->w;
+    w = rect->w;
     if (w >= 0) {
         rw = w;
         if (w > (s16)gfxMaxW[0]) {
@@ -1749,8 +1750,8 @@ s32 _drs(RECT *arg0, s32 *arg1) {
     } else {
         rw = 0;
     }
-    arg0->w = rw;
-    h = arg0->h;
+    rect->w = rw;
+    h = rect->h;
     if (h >= 0) {
         rh = h;
         if (h > (s16)gfxMaxH[0]) {
@@ -1759,9 +1760,9 @@ s32 _drs(RECT *arg0, s32 *arg1) {
     } else {
         rh = 0;
     }
-    arg0->h = rh;
+    rect->h = rh;
 
-    temp_a0 = ((arg0->w * arg0->h) + 1) / 2;
+    temp_a0 = ((rect->w * rect->h) + 1) / 2;
     if (temp_a0 <= 0) {
         return -1;
     }
@@ -1777,8 +1778,8 @@ s32 _drs(RECT *arg0, s32 *arg1) {
 
     *GPU_DATA = 0x01000000;
     *GPU_DATA = 0xC0000000;
-    *GPU_DATA = LOW(arg0->x);
-    *GPU_DATA = LOW(arg0->w);
+    *GPU_DATA = LOW(rect->x);
+    *GPU_DATA = LOW(rect->w);
 
     while (!(*GPU_STATUS & 0x08000000)) {
         if (get_alarm()) {
@@ -1787,12 +1788,12 @@ s32 _drs(RECT *arg0, s32 *arg1) {
     }
 
     while (--var_s0 != -1) {
-        *arg1++ = *GPU_DATA;
+        *destination++ = *GPU_DATA;
     }
 
     if (size != 0) {
         *GPU_STATUS = 0x04000003;
-        *DMA2_MADR = (s32)arg1;
+        *DMA2_MADR = (s32)destination;
         *DMA2_BCR = (size << 0x10) | 0x10;
         *DMA2_CHCR = 0x01000200;
     }

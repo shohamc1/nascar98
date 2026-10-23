@@ -18,17 +18,17 @@ extern s32 func_8001E7EC(void *, s32, s32);
 extern s32 D_800A2EC8nm[] asm("D_800A2EC8.NON_MATCHING");
 extern s32 gOTBnm[] asm("gOrderingTableBank.NON_MATCHING");
 extern u8 D_800A2EDAnm[] asm("D_800A2EDA.NON_MATCHING");
-extern s32 D_800A2EA4nm[] asm("D_800A2EA4.NON_MATCHING");
+extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
 extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
-void func_8001D778(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
-                   u8 arg6, s32 arg7);
+void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
+                      u8 arg6, s32 arg7);
 void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 
 /* Images and matrix state. */
 
-extern Unk16 *D_800A36CC;
+extern ImageBankTexture *D_800A36CC;
 
-Unk16 *func_8001E040(s32 i) {
+ImageBankTexture *GraphicsGetImageBankTexture(s32 i) {
     return &D_800A36CC[i];
 }
 
@@ -40,8 +40,8 @@ void GraphicsLoadImageBank(s32 fileName) {
     extern void FileRead(s32, s32, s32, s32);
     extern void GraphicsLoadImageWithXOffset(s32);
     extern void FileClose(s32);
-    extern u8 D_800A2DC0[];
-    extern char D_8008CD0C[];
+    extern u8 gImageFileMode[];
+    extern char gErrorImageBankFileOpen[];
     extern void *D_800A368C;
     extern void *D_800A37E4;
     extern u16 D_800A3754;
@@ -58,10 +58,10 @@ void GraphicsLoadImageBank(s32 fileName) {
     u32 base;
     volatile s32 pad[2];
 
-    handle = FileOpen(fileName, D_800A2DC0);
+    handle = FileOpen(fileName, gImageFileMode);
     if (handle == 0) {
         GraphicsInit();
-        FntPrint(D_8008CD0C);
+        FntPrint(gErrorImageBankFileOpen);
         FntFlush(-1);
         for (;;) {
         }
@@ -78,7 +78,7 @@ void GraphicsLoadImageBank(s32 fileName) {
     D_800A3754 = w;
     count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (Unk16 *)(head + count * 8);
+    D_800A36CC = (ImageBankTexture *)(head + count * 8);
     if (count > 0) {
         i = 0;
         base = (u32)image;
@@ -122,7 +122,7 @@ void GraphicsSelectImageBank(s32 index) {
     D_800A3754 = w;
     count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (Unk16 *)(head + count * 8);
+    D_800A36CC = (ImageBankTexture *)(head + count * 8);
     i = 0;
     if (count > 0) {
         asm volatile("" : : "r"(i));
@@ -147,8 +147,8 @@ void func_8001E230(s32 arg0, s32 arg1) {
     extern void FileRead(s32, s32, s32, s32);
     extern void GraphicsLoadImageWithXOffset(s32);
     extern void FileClose(s32);
-    extern u8 D_800A2DC0[];
-    extern char D_8008CD0C[];
+    extern u8 gImageFileMode[];
+    extern char gErrorImageBankFileOpen[];
     extern void *D_800A368C;
     extern void *D_800A37E4;
     extern u16 D_800A3754;
@@ -165,10 +165,10 @@ void func_8001E230(s32 arg0, s32 arg1) {
     u32 base;
     volatile s32 pad[2];
 
-    handle = FileOpen(arg0, D_800A2DC0);
+    handle = FileOpen(arg0, gImageFileMode);
     if (handle == 0) {
         GraphicsInit();
-        FntPrint(D_8008CD0C);
+        FntPrint(gErrorImageBankFileOpen);
         FntFlush(-1);
         for (;;) {
         }
@@ -190,7 +190,7 @@ void func_8001E230(s32 arg0, s32 arg1) {
     D_800A3754 = w;
     count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (Unk16 *)(head + count * 8);
+    D_800A36CC = (ImageBankTexture *)(head + count * 8);
     if (count > 0) {
         i = 0;
         base = (u32)image;
@@ -301,7 +301,7 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
     DrawSync(0);
     VSync(0);
     if (arg2 == 0) {
-        func_80012D10(0);
+        FrameWaitForCounterPhase(0);
     }
     envPtr = D_800A3F7Cw15 + D_800A2DC4w15 * 0x5C;
     PutDrawEnv((DRAWENV *)envPtr);
@@ -309,23 +309,23 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
     if (arg2 != 0) {
         return 0;
     }
-    if (D_800A2EA4nm[0] == 2) {
+    if (gSplitScreenModenm[0] == 2) {
         u8 *otFFC;
         u8 *ot1000;
         u8 *ot1FFC;
 
         gOrderingTablenm[0] = (s32)arg0;
-        func_8003565C(0);
+        GraphicsDrawHorizonForCar(0);
         ot1000 = (u8 *)arg0 + 0x1000;
         D_800A39C4w15[1] = (s32)ot1000;
-        func_800356A8(1);
+        GraphicsUpdateAndDrawHorizonForCar(1);
         otFFC = (u8 *)arg0 + 0xFFC;
         AddPrim(otFFC, D_800A43BCw15 + (D_800A2DC4w15 << 6));
         ot1FFC = (u8 *)arg0 + 0x1FFC;
         AddPrim(ot1FFC, D_800A43BCw15 + 0x80 + (D_800A2DC4w15 << 6));
         D_800A39CCw15[-1] = (s32)ot1000;
         if ((D_800A2ED0w15[0] & 8) == 0) {
-            func_8001D778(0, 0x77, 0x140, 2, 8, 8, 8, 0);
+            GraphicsDrawRect(0, 0x77, 0x140, 2, 8, 8, 8, 0);
         }
         AddPrim(ot1000, D_800A43BCw15 - 0x80 + (D_800A2DC4w15 << 6));
         DrawOTag((OT_TYPE *)otFFC);
@@ -336,9 +336,9 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
         u8 *ot1FFC;
 
         gOrderingTablenm[0] = (s32)arg0;
-        func_8003565C(0);
+        GraphicsDrawHorizonForCar(0);
         ot1000 = (u8 *)arg0 + 0x1000;
-        func_8003587C(ot1000);
+        GraphicsUpdateSkyAndHorizon(ot1000);
         otFFC = (u8 *)arg0 + 0xFFC;
         AddPrim(otFFC, D_800A433Cw15 + (D_800A2DC4w15 << 6));
         func_8001DA48((u8 *)arg0, 0xC6, 0x12, 0x69, 0x26);
@@ -348,7 +348,7 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
         AddPrim(ot1000, D_800A433Cw15 + (D_800A2DC4w15 << 6));
         DrawOTag((OT_TYPE *)ot1FFC);
     } else {
-        func_8003565C(0);
+        GraphicsDrawHorizonForCar(0);
         DrawOTag((OT_TYPE *)((u8 *)arg0 + 0xFFC));
     }
 }
@@ -406,17 +406,17 @@ void GraphicsPartitionWorkBuffers(void) {
 
 extern s32 D_800A36B0, D_800A36B8, D_800A36C0, D_800A36C8, D_800A36D0,
     D_800A36D4, D_800A36D8, D_800A36DC, D_800A36E8;
-void func_8001EBE8(s32 *p) {
+void func_8001EBE8(s32 *transform) {
     s32 a, b, c, d, e, f, g, h, i;
-    a = p[6];
-    b = p[9];
-    c = p[12];
-    d = p[7];
-    e = p[10];
-    f = p[13];
-    g = p[8];
-    h = p[11];
-    i = p[14];
+    a = transform[6];
+    b = transform[9];
+    c = transform[12];
+    d = transform[7];
+    e = transform[10];
+    f = transform[13];
+    g = transform[8];
+    h = transform[11];
+    i = transform[14];
     D_800A36B0 = a;
     D_800A36B8 = b;
     D_800A36C0 = c;
@@ -428,16 +428,16 @@ void func_8001EBE8(s32 *p) {
     D_800A36E8 = i;
 }
 
-void func_8001EC38(s32 *arg0) {
-    D_800A36B0 = arg0[0x3C / 4];
-    D_800A36B8 = arg0[0x48 / 4];
-    D_800A36C0 = arg0[0x54 / 4];
-    D_800A36C8 = arg0[0x40 / 4];
-    D_800A36D0 = arg0[0x4C / 4];
-    D_800A36D4 = arg0[0x58 / 4];
-    D_800A36D8 = arg0[0x44 / 4];
-    D_800A36DC = arg0[0x50 / 4];
-    D_800A36E8 = arg0[0x5C / 4];
+void MatrixLoadObjectBasis(s32 *transform) {
+    D_800A36B0 = transform[0x3C / 4];
+    D_800A36B8 = transform[0x48 / 4];
+    D_800A36C0 = transform[0x54 / 4];
+    D_800A36C8 = transform[0x40 / 4];
+    D_800A36D0 = transform[0x4C / 4];
+    D_800A36D4 = transform[0x58 / 4];
+    D_800A36D8 = transform[0x44 / 4];
+    D_800A36DC = transform[0x50 / 4];
+    D_800A36E8 = transform[0x5C / 4];
 }
 
 void func_8001EC88(s32 *a, s32 *b, s32 *c) {
@@ -522,7 +522,7 @@ void func_8001ED4C(s32 *p) {
     p[0x50 / 4] = a;
 }
 
-void func_8001ED84(s32 *vec) {
+void MatrixTransformVector(s32 *vec) {
     s32 x, y, z;
     s32 a, b, c;
 
@@ -546,17 +546,17 @@ extern s32 D_800A37A4;
 extern s32 D_800A37AC;
 extern s32 D_800A37B4;
 extern s32 D_800A37C4;
-void func_8001EE74(s32 *arg0) {
+void func_8001EE74(s32 *transform) {
     s32 a, b, c, d, e, f, g, h, i;
-    a = arg0[6];
-    b = arg0[9];
-    c = arg0[12];
-    d = arg0[7];
-    e = arg0[10];
-    f = arg0[13];
-    g = arg0[8];
-    h = arg0[11];
-    i = arg0[14];
+    a = transform[6];
+    b = transform[9];
+    c = transform[12];
+    d = transform[7];
+    e = transform[10];
+    f = transform[13];
+    g = transform[8];
+    h = transform[11];
+    i = transform[14];
     D_800A3784 = a;
     D_800A3790 = b;
     D_800A3794 = c;
@@ -568,17 +568,17 @@ void func_8001EE74(s32 *arg0) {
     D_800A37C4 = i;
 }
 
-void func_8001EEC4(s32 *arg0) {
+void func_8001EEC4(s32 *transform) {
     s32 a, b, c, d, e, f, g, h, i;
-    a = arg0[15];
-    b = arg0[18];
-    c = arg0[21];
-    d = arg0[16];
-    e = arg0[19];
-    f = arg0[22];
-    g = arg0[17];
-    h = arg0[20];
-    i = arg0[23];
+    a = transform[15];
+    b = transform[18];
+    c = transform[21];
+    d = transform[16];
+    e = transform[19];
+    f = transform[22];
+    g = transform[17];
+    h = transform[20];
+    i = transform[23];
     D_800A3784 = a;
     D_800A3790 = b;
     D_800A3794 = c;
@@ -787,16 +787,17 @@ void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB) {
     D_800A37C4 = product;
 }
 
-void func_8001F684(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
-    D_800A36B0 = MathMultiplyFixed16(arg0, arg2);
-    D_800A36B8 = MathMultiplyFixed16(arg1, arg2);
-    D_800A36C0 = arg3;
-    D_800A36C8 = -arg1;
-    D_800A36D0 = arg0;
+void CameraBuildRotationMatrix(s32 cosYaw, s32 sinYaw, s32 cosPitch,
+                               s32 sinPitch) {
+    D_800A36B0 = MathMultiplyFixed16(cosYaw, cosPitch);
+    D_800A36B8 = MathMultiplyFixed16(sinYaw, cosPitch);
+    D_800A36C0 = sinPitch;
+    D_800A36C8 = -sinYaw;
+    D_800A36D0 = cosYaw;
     D_800A36D4 = 0;
-    D_800A36D8 = -MathMultiplyFixed16(arg0, arg3);
-    D_800A36DC = -MathMultiplyFixed16(arg1, arg3);
-    D_800A36E8 = arg2;
+    D_800A36D8 = -MathMultiplyFixed16(cosYaw, sinPitch);
+    D_800A36DC = -MathMultiplyFixed16(sinYaw, sinPitch);
+    D_800A36E8 = cosPitch;
 }
 
 void func_8001F728(s32 arg0) {
@@ -849,16 +850,16 @@ void func_8001F828(s32 *p) {
     p[14] = i;
 }
 
-void func_8001F874(s32 *arg0) {
-    arg0[0x60 / 4] = (s32)D_800A36B0;
-    arg0[0x6C / 4] = (s32)D_800A36B8;
-    arg0[0x78 / 4] = (s32)D_800A36C0;
-    arg0[0x64 / 4] = (s32)D_800A36C8;
-    arg0[0x70 / 4] = (s32)D_800A36D0;
-    arg0[0x7C / 4] = (s32)D_800A36D4;
-    arg0[0x68 / 4] = (s32)D_800A36D8;
-    arg0[0x74 / 4] = (s32)D_800A36DC;
-    arg0[0x80 / 4] = (s32)D_800A36E8;
+void MatrixStoreObjectBasis(s32 *object) {
+    object[0x60 / 4] = (s32)D_800A36B0;
+    object[0x6C / 4] = (s32)D_800A36B8;
+    object[0x78 / 4] = (s32)D_800A36C0;
+    object[0x64 / 4] = (s32)D_800A36C8;
+    object[0x70 / 4] = (s32)D_800A36D0;
+    object[0x7C / 4] = (s32)D_800A36D4;
+    object[0x68 / 4] = (s32)D_800A36D8;
+    object[0x74 / 4] = (s32)D_800A36DC;
+    object[0x80 / 4] = (s32)D_800A36E8;
 }
 
 void MatrixStoreToObject(s32 *object) {
@@ -888,18 +889,19 @@ void MatrixStoreToObject(s32 *object) {
  * call as retail does, so it needs a hazard nop (+4 bytes). The product
  * save (move s0,v0) is also emitted before the cos shift instead of in
  * the second jal's delay slot. Three source shapes tried. */
-void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3) {
+void VectorRotate2D(s32 angleIndex, s32 x, s32 y, s16 *rotatedPoint) {
     s32 *matrixB;
     s32 productA;
     s32 productB;
 
-    productA = MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], arg1 << 16);
-    productB = MathMultiplyFixed16(((s32 *)D_800A3A34)[arg0], arg2 << 16);
+    productA = MathMultiplyFixed16(((s32 *)D_800A3A2C)[angleIndex], x << 16);
+    productB = MathMultiplyFixed16(((s32 *)D_800A3A34)[angleIndex], y << 16);
     matrixB = (s32 *)D_800A3A34;
-    arg3[0] = (productA - productB) >> 16;
-    arg3[1] = (MathMultiplyFixed16(matrixB[arg0], arg1 << 16) +
-               MathMultiplyFixed16(((s32 *)D_800A3A2C)[arg0], arg2 << 16)) >>
-              16;
+    rotatedPoint[0] = (productA - productB) >> 16;
+    rotatedPoint[1] =
+        (MathMultiplyFixed16(matrixB[angleIndex], x << 16) +
+         MathMultiplyFixed16(((s32 *)D_800A3A2C)[angleIndex], y << 16)) >>
+        16;
 }
 
 extern s32 D_800AE868[];
@@ -938,19 +940,19 @@ void MatrixRestoreState(void) {
 
 #ifdef NON_MATCHING
 /* Wall: same scheduler wall as func_8001FB28: load/negu placement differs. */
-void func_8001FAC0(u8 *arg0, s32 index) {
-    *(s32 *)((u8 *)arg0 + 0x18) = ((s16 *)D_800A384C)[index] * 4;
-    *(s32 *)((u8 *)arg0 + 0x30) = 0;
-    *(s32 *)((u8 *)arg0 + 0x24) = ((s16 *)D_800A3854)[index] * 4;
-    *(s32 *)((u8 *)arg0 + 0x1C) = -((s16 *)D_800A3854)[index] * 4;
-    *(s32 *)((u8 *)arg0 + 0x34) = 0;
-    *(s32 *)((u8 *)arg0 + 0x20) = 0;
-    *(s32 *)((u8 *)arg0 + 0x2C) = 0;
-    *(s32 *)((u8 *)arg0 + 0x38) = 0x10000;
-    *(s32 *)((u8 *)arg0 + 0x28) = ((s16 *)D_800A384C)[index] * 4;
+void MatrixSetRotationFromAngle(u8 *object, s32 angleIndex) {
+    *(s32 *)((u8 *)object + 0x18) = ((s16 *)D_800A384C)[angleIndex] * 4;
+    *(s32 *)((u8 *)object + 0x30) = 0;
+    *(s32 *)((u8 *)object + 0x24) = ((s16 *)D_800A3854)[angleIndex] * 4;
+    *(s32 *)((u8 *)object + 0x1C) = -((s16 *)D_800A3854)[angleIndex] * 4;
+    *(s32 *)((u8 *)object + 0x34) = 0;
+    *(s32 *)((u8 *)object + 0x20) = 0;
+    *(s32 *)((u8 *)object + 0x2C) = 0;
+    *(s32 *)((u8 *)object + 0x38) = 0x10000;
+    *(s32 *)((u8 *)object + 0x28) = ((s16 *)D_800A384C)[angleIndex] * 4;
 }
 #else
-void func_8001FAC0(u8 *arg0, s32 index) {
+void MatrixSetRotationFromAngle(u8 *arg0, s32 index) {
     s16 *table1;
     s16 *table2;
     s32 value1;
@@ -998,14 +1000,14 @@ void func_8001FB28(u8 *arg0, s32 index) {
     *(s32 *)(arg0 + 0x70) = value3;
 }
 
-s32 func_8001FB80(void *arg0) {
+s32 ObjectGetMagnitude3D(void *object) {
     s32 dx;
     s32 dy;
     s32 dz;
 
-    dx = *(s32 *)((u8 *)arg0 + 0x9C);
-    dy = *(s32 *)((u8 *)arg0 + 0xA0);
-    dz = *(s32 *)((u8 *)arg0 + 0xA4);
+    dx = *(s32 *)((u8 *)object + 0x9C);
+    dy = *(s32 *)((u8 *)object + 0xA0);
+    dz = *(s32 *)((u8 *)object + 0xA4);
     return MathSqrt(dx * dx + dy * dy + dz * dz);
 }
 

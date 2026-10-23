@@ -84,15 +84,15 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2E6CAbsolute=D_800A2E6C \
             --defsym=D_800A2F50Absolute=D_800A2F50 \
             --defsym=D_800A2F50Absolute2=D_800A2F50 \
-            --defsym=D_800A3678Absolute=D_800A3678 \
+            --defsym=gMenuObjectPoolAbsolute=gMenuObjectPool \
             --defsym=D_800A3654Absolute=D_800A3654 \
             --defsym=D_800A367CAbsolute=D_800A367C \
-            --defsym=D_800A305BAbsolute=D_800A305B \
+            --defsym=gSelectedTrackAbsolute=gSelectedTrack \
             --defsym=gOrderingTableAbsolute=gOrderingTable \
             --defsym=gPrimitiveCursorAbsolute=gPrimitiveCursor \
             --defsym=gTextColorAbsolute=gTextColor \
             --defsym=D_800A3570Absolute=D_800A3570 \
-            --defsym=D_800A2F94Absolute=D_800A2F94 \
+            --defsym=gMusicVolumeScaledAbsolute=gMusicVolumeScaled \
             --defsym=D_800A3A04Absolute=D_800A3A04 \
             --defsym=gReplayBufferAbsolute=gReplayBuffer \
             --defsym=D_800A3848Absolute=D_800A3848 \
@@ -112,11 +112,11 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3A34Absolute=D_800A3A34 \
             --defsym=D_800A2F9DSmall=D_800A2F9D \
             --defsym=D_800A2F9DAbsolute=D_800A2F9D \
-            --defsym=D_800A3694Absolute=D_800A3694 \
+            --defsym=gCdVolumeAbsolute=gCdVolume \
             --defsym=D_800A2EACSmall=D_800A2EAC \
             --defsym=D_800A2EACAbsolute=D_800A2EAC \
             --defsym=D_800A2EC0Absolute=D_800A2EC0 \
-            --defsym=D_800A2EB0Absolute=D_800A2EB0 \
+            --defsym=gSessionTypeAbsolute=gSessionType \
             --defsym=D_800A2EF0Absolute=D_800A2EF0 \
             --defsym=D_800A2E24Absolute=D_800A2E24 \
             --defsym=D_800A331CAbsolute=D_800A331C \
@@ -129,7 +129,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=gStandingsNameXAbsolute=gStandingsNameX \
             --defsym=D_800A3A8CAbsolute=D_800A3A8C \
             --defsym=D_800A2EA0Small=D_800A2EA0 \
-            --defsym=D_800A2EA4Absolute=D_800A2EA4 \
+            --defsym=gSplitScreenModeAbsolute=gSplitScreenMode \
             --defsym=D_800A2EC8Small=D_800A2EC8 \
             --defsym=D_800A2EC8Absolute=D_800A2EC8 \
             --defsym=D_800A3A54Small=D_800A3A54 \
@@ -157,14 +157,14 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2DF4Absolute=D_800A2DF4 \
             --defsym=gPadTypeSmall=gPadType \
             --defsym=gPadTypeAbsolute=gPadType \
-            --defsym=D_800A39E4Small=D_800A39E4 \
-            --defsym=D_800A39E4Absolute=D_800A39E4 \
+            --defsym=gScreenStateSmall=gScreenState \
+            --defsym=gScreenStateAbsolute=gScreenState \
             --defsym=D_800A2E9CSmall=D_800A2E9C \
             --defsym=D_800A2E90Small=D_800A2E90 \
             --defsym=D_800A2E94Small=D_800A2E94 \
-            --defsym=D_800A2EA4Small=D_800A2EA4 \
+            --defsym=gSplitScreenModeSmall=gSplitScreenMode \
             --defsym=D_800A2EB4Small=D_800A2EB4 \
-            --defsym=D_800A305BSmall=D_800A305B \
+            --defsym=gSelectedTrackSmall=gSelectedTrack \
             --defsym=gPlayerDriverSmall=gPlayerDriver \
             --defsym=D_800A37F0Absolute=D_800A37F0 \
             --defsym=D_800A37F0Absolute2=D_800A37F0 \
@@ -172,7 +172,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3830Absolute2=D_800A3830 \
             --defsym=D_800A37F0Absolute3=D_800A37F0 \
             --defsym=D_800A38C0Small=D_800A38C0 \
-            --defsym=D_800A39E4Absolute2=D_800A39E4 \
+            --defsym=gScreenStateAbsolute2=gScreenState \
             --defsym=D_800A26E0Read=D_800A26E0 \
             --defsym=D_800A26E0Write=D_800A26E0 \
             --defsym=D_800B9DDERead=D_800B9DDE \
@@ -420,10 +420,10 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2E80.NON_MATCHING=D_800A2E80 \
             --defsym=D_800A2E90.NON_MATCHING=D_800A2E90 \
             --defsym=D_800A2E94.NON_MATCHING=D_800A2E94 \
-            --defsym=D_800A2EA4.NON_MATCHING=D_800A2EA4 \
+            --defsym=gSplitScreenMode.NON_MATCHING=gSplitScreenMode \
             --defsym=D_800A2EA8.NON_MATCHING=D_800A2EA8 \
             --defsym=D_800A2EAC.NON_MATCHING=D_800A2EAC \
-            --defsym=D_800A2EB0.NON_MATCHING=D_800A2EB0 \
+            --defsym=gSessionType.NON_MATCHING=gSessionType \
             --defsym=D_800A2EB8.NON_MATCHING=D_800A2EB8 \
             --defsym=D_800A2EC0.NON_MATCHING=D_800A2EC0 \
             --defsym=D_800A2EC4.NON_MATCHING=D_800A2EC4 \
@@ -444,14 +444,14 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2F38.NON_MATCHING=D_800A2F38 \
             --defsym=D_800A2F54.NON_MATCHING=D_800A2F54 \
             --defsym=D_800A2F84.NON_MATCHING=D_800A2F84 \
-            --defsym=D_800A2F94.NON_MATCHING=D_800A2F94 \
-            --defsym=D_800A2F95.NON_MATCHING=D_800A2F95 \
+            --defsym=gMusicVolumeScaled.NON_MATCHING=gMusicVolumeScaled \
+            --defsym=gStereoEnabled.NON_MATCHING=gStereoEnabled \
             --defsym=D_800A2F9C.NON_MATCHING=D_800A2F9C \
             --defsym=D_800A2F9D.NON_MATCHING=D_800A2F9D \
             --defsym=D_800A2FA4.NON_MATCHING=D_800A2FA4 \
-            --defsym=D_800A3020.NON_MATCHING=D_800A3020 \
+            --defsym=gFormatInteger.NON_MATCHING=gFormatInteger \
             --defsym=D_800A305A.NON_MATCHING=D_800A305A \
-            --defsym=D_800A305B.NON_MATCHING=D_800A305B \
+            --defsym=gSelectedTrack.NON_MATCHING=gSelectedTrack \
             --defsym=D_800A3064.NON_MATCHING=D_800A3064 \
             --defsym=D_800A3065.NON_MATCHING=D_800A3065 \
             --defsym=D_800A3068.NON_MATCHING=D_800A3068 \
@@ -470,9 +470,9 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A308C.NON_MATCHING=D_800A308C \
             --defsym=gOrderingTableBank.NON_MATCHING=gOrderingTableBank \
             --defsym=func_800A2CE0=D_800A2CE0 \
-            --defsym=D_800A3384=D_800A3380+4 \
+            --defsym=D_800A3384=gMemoryCardPort0PathPrefix+4 \
             --defsym=D_800A2FEC=D_800A2FE8+4 \
-            --defsym=D_800A338C=D_800A3388+4
+            --defsym=D_800A338C=gMemoryCardPort1PathPrefix+4
 
 
 # Addressing aliases for func_80023454.
@@ -484,7 +484,7 @@ LDFLAGS += \
             --defsym=D_800A2ECCAbsolute=D_800A2ECC \
             --defsym=D_800A2ED0Absolute=D_800A2ED0 \
             --defsym=D_800A2ED4Absolute=D_800A2ED4 \
-            --defsym=D_800A2F95Absolute=D_800A2F95 \
+            --defsym=gStereoEnabledAbsolute=gStereoEnabled \
             --defsym=D_800A2FC8Absolute=D_800A2FC8 \
             --defsym=D_800A306CAbsolute=D_800A306C \
             --defsym=D_800A306DAbsolute=D_800A306D \
@@ -492,9 +492,9 @@ LDFLAGS += \
             --defsym=D_800A3590Absolute=D_800A3590 \
             --defsym=D_800A35A8Absolute=D_800A35A8 \
             --defsym=D_800A3614Absolute=D_800A3614 \
-            --defsym=D_800A3694Absolute2=D_800A3694 \
-            --defsym=D_800A3696Absolute=D_800A3696 \
-            --defsym=D_800A3696Absolute2=D_800A3696 \
+            --defsym=gCdVolumeAbsolute2=gCdVolume \
+            --defsym=gMusicVolumeAbsolute=gMusicVolume \
+            --defsym=gMusicVolumeAbsolute2=gMusicVolume \
             --defsym=D_800A36FCAbsolute=D_800A36FC \
             --defsym=D_800A3700Absolute=D_800A3700 \
             --defsym=D_800A380CAbsolute=D_800A380C \
@@ -653,7 +653,7 @@ LDFLAGS += --defsym=D_800A353CAbsolute=D_800A353C \
 # globals inside the small-data window.
 LDFLAGS += --defsym=D_800A3980Small=D_800A3980 \
            --defsym=D_800A37D0Small=D_800A37D0 \
-           --defsym=D_800A3694Small=D_800A3694 \
+           --defsym=gCdVolumeSmall=gCdVolume \
            --defsym=D_800A3981Absolute=D_800A3981 \
            --defsym=D_800A3968Absolute=D_800A3968 \
            --defsym=D_800A35F4Absolute=D_800A35F4 \

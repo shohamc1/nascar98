@@ -17,31 +17,31 @@
 extern u8 *gCarListw15[] asm("gCarList.NON_MATCHING");
 extern s32 D_800A38AC[];
 extern s32 gRandomSeed16;
-void func_80029994(u8 *arg0, s32 arg1);
+void EffectSpawnAtWheel(u8 *arg0, s32 arg1);
 void func_800328AC(void *arg0, s32 arg1);
-void func_800364C4(void);
-void func_80036540(void);
+void EffectCopyPrimitiveBufferToList(void);
+void EffectRestorePrimitiveBuffer(void);
 
 /* Scene effects and random numbers. */
 
-__inline__ u32 RandomGetScaled16(s32 arg0) {
-    s32 value0;
-    value0 = ((gRandomSeed16 * 0x6255) + 0x3619) & 0xFFFF;
-    gRandomSeed16 = value0;
-    value0 *= arg0;
-    return (u32)value0 >> 0x10;
+__inline__ u32 RandomGetScaled16(s32 scale) {
+    s32 seed;
+    seed = ((gRandomSeed16 * 0x6255) + 0x3619) & 0xFFFF;
+    gRandomSeed16 = seed;
+    seed *= scale;
+    return (u32)seed >> 0x10;
 }
 
 extern u8 D_800AD9CC[];
-void func_80043D6C(void);
-void func_80042EC0(void) {
-    s32 offset;
-    offset = 0x750;
+void EffectInitRandomOffsetTables(void);
+void EffectInit(void) {
+    s32 slotOffset;
+    slotOffset = 0x750;
     do {
-        D_800AD9CC[offset] = 0;
-        offset -= 0x30;
-    } while (offset >= 0);
-    func_80043D6C();
+        D_800AD9CC[slotOffset] = 0;
+        slotOffset -= 0x30;
+    } while (slotOffset >= 0);
+    EffectInitRandomOffsetTables();
 }
 
 typedef struct EffectPoint {
@@ -77,150 +77,152 @@ typedef struct EffectSlot {
 
 extern EffectSlot gEffectSlots[] asm("D_800AD9B0");
 
-void EffectSpawnParticles(u8 *object, s32 idx) {
-    s32 i;
-    s32 j;
+void EffectSpawnParticles(u8 *car, s32 pointIndex) {
+    s32 spawnIndex;
+    s32 slotIndex;
     s32 twenty;
     s32 ninetysix;
-    EffectPoint *table;
-    EffectPoint *entry;
+    EffectPoint *pointTable;
+    EffectPoint *point;
 
-    for (i = 0, twenty = 20, ninetysix = 96; i < 5; i++) {
-        for (j = 0; j < 0x28; j++) {
-            if (gEffectSlots[j].active == 0) {
+    for (spawnIndex = 0, twenty = 20, ninetysix = 96; spawnIndex < 5;
+         spawnIndex++) {
+        for (slotIndex = 0; slotIndex < 0x28; slotIndex++) {
+            if (gEffectSlots[slotIndex].active == 0) {
                 break;
             }
         }
-        if (j >= 0x28) {
+        if (slotIndex >= 0x28) {
             return;
         }
-        table = *(EffectPoint **)(*(u8 **)(object + 0x370) + 0x40);
-        gEffectSlots[j].active = 1;
-        gEffectSlots[j].unk1D = 0xA;
-        gEffectSlots[j].unk1E = *(u16 *)(object + 0x1DE);
-        entry = &table[idx];
-        gEffectSlots[j].x = *(s32 *)object + entry->x;
-        gEffectSlots[j].y = *(s32 *)(object + 4) + entry->y;
-        gEffectSlots[j].z = *(s32 *)(object + 8) + entry->z;
-        gEffectSlots[j].unk1A = 0x1E;
-        gEffectSlots[j].unk20 = gEffectSlots[j].unk24 =
-            *(s16 *)(object + 0x1E0);
-        if (idx < 5) {
-            gEffectSlots[j].unkE = gEffectSlots[j].z;
+        pointTable = *(EffectPoint **)(*(u8 **)(car + 0x370) + 0x40);
+        gEffectSlots[slotIndex].active = 1;
+        gEffectSlots[slotIndex].unk1D = 0xA;
+        gEffectSlots[slotIndex].unk1E = *(u16 *)(car + 0x1DE);
+        point = &pointTable[pointIndex];
+        gEffectSlots[slotIndex].x = *(s32 *)car + point->x;
+        gEffectSlots[slotIndex].y = *(s32 *)(car + 4) + point->y;
+        gEffectSlots[slotIndex].z = *(s32 *)(car + 8) + point->z;
+        gEffectSlots[slotIndex].unk1A = 0x1E;
+        gEffectSlots[slotIndex].unk20 = gEffectSlots[slotIndex].unk24 =
+            *(s16 *)(car + 0x1E0);
+        if (pointIndex < 5) {
+            gEffectSlots[slotIndex].unkE = gEffectSlots[slotIndex].z;
         } else {
-            gEffectSlots[j].unkE = *(s32 *)(object + 8) + 0xF;
+            gEffectSlots[slotIndex].unkE = *(s32 *)(car + 8) + 0xF;
         }
-        gEffectSlots[j].unkC = 0;
-        gEffectSlots[j].unk10 = RandomGetScaled16(twenty) + 0x1E;
-        gEffectSlots[j].unk12 =
-            (*(u16 *)(object + 0x114) + 0x400 + RandomGetScaled16(ninetysix)) &
+        gEffectSlots[slotIndex].unkC = 0;
+        gEffectSlots[slotIndex].unk10 = RandomGetScaled16(twenty) + 0x1E;
+        gEffectSlots[slotIndex].unk12 =
+            (*(u16 *)(car + 0x114) + 0x400 + RandomGetScaled16(ninetysix)) &
             0x3FF;
-        gEffectSlots[j].unk14 = (*(s32 *)(object + 0x90) * 7) / 8 >> 16;
-        if (gEffectSlots[j].unk14 < 0x14) {
-            gEffectSlots[j].unk14 = twenty;
+        gEffectSlots[slotIndex].unk14 = (*(s32 *)(car + 0x90) * 7) / 8 >> 16;
+        if (gEffectSlots[slotIndex].unk14 < 0x14) {
+            gEffectSlots[slotIndex].unk14 = twenty;
         }
-        gEffectSlots[j].unk28 = *(s32 *)(*(u8 **)(object + 0x370) + 0x38);
-        gEffectSlots[j].unk2C =
-            *(s32 *)(*(u8 **)(object + 0x370) + 0x40) + 0x90;
+        gEffectSlots[slotIndex].unk28 = *(s32 *)(*(u8 **)(car + 0x370) + 0x38);
+        gEffectSlots[slotIndex].unk2C =
+            *(s32 *)(*(u8 **)(car + 0x370) + 0x40) + 0x90;
         /* ABS evaluates its argument twice: two LCG steps per field. */
-        gEffectSlots[j].unk16 = ABS((s32)RandomGetScaled16(0x1000));
-        gEffectSlots[j].unk18 = ABS((s32)RandomGetScaled16(0x1000));
+        gEffectSlots[slotIndex].unk16 = ABS((s32)RandomGetScaled16(0x1000));
+        gEffectSlots[slotIndex].unk18 = ABS((s32)RandomGetScaled16(0x1000));
     }
 }
 
 extern u8 D_800A2EE0[];
 
-void EffectSpawnAtCarPoint(u8 *object, s32 idx) {
-    s32 i;
-    EffectPoint *entry;
-    u8 *info;
-    s32 slot;
+void EffectSpawnAtCarPoint(u8 *car, s32 pointIndex) {
+    s32 slotIndex;
+    EffectPoint *point;
+    u8 *carInfo;
+    s32 flagOffset;
     s32 unk28;
     s32 gate;
     s32 speed;
     s32 flag;
 
-    if (*(s8 *)(object + 0x3B6) == 0) {
+    if (*(s8 *)(car + 0x3B6) == 0) {
         return;
     }
-    if (*(s8 *)(object + 0x200) == 4) {
+    if (*(s8 *)(car + 0x200) == 4) {
         return;
     }
-    if (idx >= 4) {
-        if (*(s32 *)(object + 0x90) > 0) {
-            EffectSpawnParticles(object, idx);
+    if (pointIndex >= 4) {
+        if (*(s32 *)(car + 0x90) > 0) {
+            EffectSpawnParticles(car, pointIndex);
         }
         return;
     }
-    for (i = 0; i < 0x28; i++) {
-        if (gEffectSlots[i].active == 0) {
+    for (slotIndex = 0; slotIndex < 0x28; slotIndex++) {
+        if (gEffectSlots[slotIndex].active == 0) {
             break;
         }
     }
-    if (i >= 0x28) {
+    if (slotIndex >= 0x28) {
         return;
     }
-    info = *(u8 **)(object + 0x370);
-    if (idx >= *(s16 *)(info + 0x2E)) {
+    carInfo = *(u8 **)(car + 0x370);
+    if (pointIndex >= *(s16 *)(carInfo + 0x2E)) {
         return;
     }
-    entry = (EffectPoint *)(*(u8 **)(info + 0x40) + idx * 24);
-    slot = *(s16 *)((u8 *)entry + 0x14);
-    if (slot == 0) {
+    point = (EffectPoint *)(*(u8 **)(carInfo + 0x40) + pointIndex * 24);
+    flagOffset = *(s16 *)((u8 *)point + 0x14);
+    if (flagOffset == 0) {
         return;
     }
-    if (idx >= 8) {
+    if (pointIndex >= 8) {
         return;
     }
-    if (*(s8 *)(object + slot + 0x3A5) == 0) {
+    if (*(s8 *)(car + flagOffset + 0x3A5) == 0) {
         return;
     }
-    *(u16 *)(object + 0x3A4) |= 1 << idx;
-    *(u8 *)(object + idx + 0x3A6) = 0;
-    gEffectSlots[i].active = 1;
-    gEffectSlots[i].unk1D = idx;
-    gEffectSlots[i].unk1E = *(u16 *)(object + 0x1DE);
-    gEffectSlots[i].x = *(s32 *)object + entry->x;
-    gEffectSlots[i].y = *(s32 *)(object + 4) + entry->y;
-    gEffectSlots[i].z = *(s32 *)(object + 8) + entry->z;
-    gEffectSlots[i].unk1A = 0xC8;
-    gEffectSlots[i].unk20 = gEffectSlots[i].unk24 = *(s16 *)(object + 0x1E0);
-    if (idx < 5) {
-        gEffectSlots[i].unkE = gEffectSlots[i].z;
+    *(u16 *)(car + 0x3A4) |= 1 << pointIndex;
+    *(u8 *)(car + pointIndex + 0x3A6) = 0;
+    gEffectSlots[slotIndex].active = 1;
+    gEffectSlots[slotIndex].unk1D = pointIndex;
+    gEffectSlots[slotIndex].unk1E = *(u16 *)(car + 0x1DE);
+    gEffectSlots[slotIndex].x = *(s32 *)car + point->x;
+    gEffectSlots[slotIndex].y = *(s32 *)(car + 4) + point->y;
+    gEffectSlots[slotIndex].z = *(s32 *)(car + 8) + point->z;
+    gEffectSlots[slotIndex].unk1A = 0xC8;
+    gEffectSlots[slotIndex].unk20 = gEffectSlots[slotIndex].unk24 =
+        *(s16 *)(car + 0x1E0);
+    if (pointIndex < 5) {
+        gEffectSlots[slotIndex].unkE = gEffectSlots[slotIndex].z;
     } else {
-        gEffectSlots[i].unkE = *(s32 *)(object + 8) + 0xF;
+        gEffectSlots[slotIndex].unkE = *(s32 *)(car + 8) + 0xF;
     }
-    gEffectSlots[i].unkC = 0;
-    gEffectSlots[i].unk10 = RandomGetScaled16(0x32) + 0x23;
-    gEffectSlots[i].unk12 =
-        (*(u16 *)(object + 0x114) + 0x400 + RandomGetScaled16(0x60)) & 0x3FF;
-    if (idx < 5) {
-        speed = *(s16 *)(object + 0x92);
+    gEffectSlots[slotIndex].unkC = 0;
+    gEffectSlots[slotIndex].unk10 = RandomGetScaled16(0x32) + 0x23;
+    gEffectSlots[slotIndex].unk12 =
+        (*(u16 *)(car + 0x114) + 0x400 + RandomGetScaled16(0x60)) & 0x3FF;
+    if (pointIndex < 5) {
+        speed = *(s16 *)(car + 0x92);
         flag = D_800A2EE0[0];
-        gEffectSlots[i].unk14 = speed;
-        if (flag != 0 && *(u8 *)(object + 0x3B7) == 0) {
-            *(u8 *)(object + 0x3B7) = 0x3C;
+        gEffectSlots[slotIndex].unk14 = speed;
+        if (flag != 0 && *(u8 *)(car + 0x3B7) == 0) {
+            *(u8 *)(car + 0x3B7) = 0x3C;
         }
-        if (*(u8 *)(object + 0xF5) != 0) {
-            func_80041848(object, 7);
+        if (*(u8 *)(car + 0xF5) != 0) {
+            func_80041848(car, 7);
         }
     } else {
-        gEffectSlots[i].unk14 = (*(s32 *)(object + 0x90) * 7) / 8 >> 16;
+        gEffectSlots[slotIndex].unk14 = (*(s32 *)(car + 0x90) * 7) / 8 >> 16;
     }
-    if (gEffectSlots[i].unk14 < 0x14) {
-        gEffectSlots[i].unk14 = 0x14;
+    if (gEffectSlots[slotIndex].unk14 < 0x14) {
+        gEffectSlots[slotIndex].unk14 = 0x14;
     }
-    unk28 = *(s32 *)(*(u8 **)(object + 0x370) + 0x38);
+    unk28 = *(s32 *)(*(u8 **)(car + 0x370) + 0x38);
     gate = D_8008CA28[0];
-    gEffectSlots[i].unk2C = (s32)entry;
-    gEffectSlots[i].unk16 = 0;
-    gEffectSlots[i].unk18 = 0;
-    gEffectSlots[i].unk28 = unk28;
+    gEffectSlots[slotIndex].unk2C = (s32)point;
+    gEffectSlots[slotIndex].unk16 = 0;
+    gEffectSlots[slotIndex].unk18 = 0;
+    gEffectSlots[slotIndex].unk28 = unk28;
     if (gate == 0) {
-        func_80029994(object, idx);
+        EffectSpawnAtWheel(car, pointIndex);
     }
-    if (*(s32 *)(object + 0x90) > 0) {
-        EffectSpawnParticles(object, idx);
+    if (*(s32 *)(car + 0x90) > 0) {
+        EffectSpawnParticles(car, pointIndex);
     }
 }
 
@@ -228,7 +230,7 @@ extern void PushMatrix(void);
 extern void PopMatrix(void);
 extern void MulRotMatrix(MATRIX *matrix);
 
-void func_800436D0(u8 *object) {
+void EffectDrawParticle(u8 *object) {
     SVECTOR input;
     VECTOR trans;
     MATRIX matrix;
@@ -292,7 +294,7 @@ typedef struct {
     u8 pad1E[6];
     s32 unk24;
 } EffectRow30;
-void func_8004382C(void) {
+void EffectUpdateAndDrawParticles(void) {
     EffectRow30 *fx;
     s32 i;
     s8 *flagPtr;
@@ -382,7 +384,7 @@ void func_8004382C(void) {
             }
             fx->unk18 = (fx->unk18 + 0x80) & 0xFFF;
         }
-        func_800436D0((u8 *)fx);
+        EffectDrawParticle((u8 *)fx);
     }
 }
 
@@ -451,7 +453,7 @@ extern u8 D_800B1A24[];
 extern u8 D_800B1A25[];
 extern u8 D_800B1A26R[] asm("D_800B1A26.NON_MATCHING");
 
-void func_80043D6C(void) {
+void EffectInitRandomOffsetTables(void) {
     s32 base;
     s32 m3base;
     s32 m3;
@@ -649,17 +651,17 @@ typedef struct {
 
 extern CopyRow30 D_800AD9B0[];
 extern CopyRow30 D_800BBAAC[];
-void func_800441C8(void) {
+void EffectSaveSlots(void) {
     s32 row;
-    func_800364C4();
+    EffectCopyPrimitiveBufferToList();
     for (row = 0; row < 0x28; row++) {
         D_800BBAAC[row] = D_800AD9B0[row];
     }
 }
 
-void func_80044248(void) {
+void EffectRestoreSlots(void) {
     s32 row;
-    func_80036540();
+    EffectRestorePrimitiveBuffer();
     for (row = 0; row < 0x28; row++) {
         D_800AD9B0[row] = D_800BBAAC[row];
     }

@@ -33,12 +33,12 @@ extern s32 D_800A2250Init[];
 extern s32 D_800A2244Init[];
 extern s32 D_800A26C4Init[];
 extern s32 D_800A229CInit[];
-void _SpuInit(s32 arg0) {
+void _SpuInit(s32 mode) {
     s32 i;
     u32 centerNote;
     ResetCallback();
-    _spu_init(arg0);
-    if (arg0 == 0) {
+    _spu_init(mode);
+    if (mode == 0) {
         centerNote = 0xC000;
         i = 23;
         do {
@@ -445,15 +445,15 @@ static __inline__ void _spu_FsetDelayR(void) {
 /* Starts or checks an SPU transfer: 2 sets the address, 0 and 1 start a
  * write or a read, 3 programs the DMA for count bytes. Returns -2 when the
  * SPU does not settle. */
-s32 _spu_t(s32 arg0, ...) {
-    s32 var_a2;
+s32 _spu_t(s32 transferCommand, ...) {
+    s32 dmaControl;
     s32 i;
     va_list args;
     u32 count;
     u16 ck2;
     u16 cnt;
-    va_start(args, arg0);
-    switch (arg0) {
+    va_start(args, transferCommand);
+    switch (transferCommand) {
     case 2:
         count = va_arg(args, u32);
         _spu_tsa = count >> _spu_mem_mode_plus;
@@ -505,10 +505,10 @@ s32 _spu_t(s32 arg0, ...) {
         *_spu_dmaAddr = _spu_xferAddr;
         *_spu_dmaSize = (_spu_xferBlocks << 16) | 0x10;
         if (_spu_transDir == 1)
-            var_a2 = 0x01000200;
+            dmaControl = 0x01000200;
         else
-            var_a2 = 0x01000201;
-        *_spu_dmaCtrl = var_a2;
+            dmaControl = 0x01000201;
+        *_spu_dmaCtrl = dmaControl;
         break;
     }
     return 0;
@@ -536,10 +536,10 @@ extern u16 D_800A26A8[];
 extern s32 D_800A26D0[];
 s32 _spu_t(s32, ...);
 
-s32 _spu_read(s32 arg0, u32 size) {
+s32 _spu_read(s32 destination, u32 size) {
     _spu_t(2, D_800A26A8[0] << D_800A26D0[0]);
     _spu_t(0);
-    _spu_t(3, arg0, size);
+    _spu_t(3, destination, size);
     return size;
 }
 
@@ -562,23 +562,23 @@ extern s32 D_800A26D0[];
 extern u32 D_800A26D4[];
 extern u32 D_800A26D8[];
 
-u32 _spu_FsetRXXa(s32 arg0, u32 arg1) {
+u32 _spu_FsetRXXa(s32 registerIndex, u32 inputAddress) {
     u32 registerValue;
     u32 address;
 
-    address = arg1;
+    address = inputAddress;
     if ((D_800A26CC[0] != 0) && ((address % D_800A26D4[0]) != 0)) {
         address += D_800A26D4[0];
         address &= ~D_800A26D8[0];
     }
     registerValue = address >> D_800A26D0[0];
-    switch (arg0) {
+    switch (registerIndex) {
     case -1:
         return registerValue & 0xFFFF;
     case -2:
         return address;
     default:
-        D_800A26AC[0][arg0] = registerValue;
+        D_800A26AC[0][registerIndex] = registerValue;
         return address;
     }
 }
@@ -588,18 +588,18 @@ u32 _spu_FsetRXXa(s32 arg0, u32 arg1) {
 extern u16 *D_800A26AC[];
 extern s32 D_800A26D0[];
 
-u32 _spu_FgetRXXa(s32 arg0, s32 arg1) {
+u32 _spu_FgetRXXa(s32 registerIndex, s32 mode) {
     u16 temp;
 
-    temp = D_800A26AC[0][arg0];
-    if (arg1 == -1) {
+    temp = D_800A26AC[0][registerIndex];
+    if (mode == -1) {
         return temp;
     }
     return temp << D_800A26D0[0];
 }
 
-void _SpuDataCallback(void (*arg0)()) {
-    DMACallback(4, arg0);
+void _SpuDataCallback(void (*callback)()) {
+    DMACallback(4, callback);
 }
 
 extern SpuStartedStorage D_800A26A0Read;
@@ -852,7 +852,7 @@ typedef struct SpuMallocItem {
 extern s32 D_800A2704[];
 extern SpuMallocItem *D_800A270C[];
 extern void _spu_gcSPU(void);
-void SpuFree(unsigned long arg0) {
+void SpuFree(unsigned long address) {
     s32 temp_v1;
     s32 cur_block_num;
     SpuMallocItem *cur_mem;
@@ -864,7 +864,7 @@ void SpuFree(unsigned long arg0) {
     cur_block_num = 0;
     if (temp_v1 = D_800A2704[0] > 0) {
         mask4 = 0x40000000;
-        temp = arg0 | 0x80000000;
+        temp = address | 0x80000000;
         block_num = D_800A2704[0];
         cur_mem = D_800A270C[0];
         while (1) {
@@ -872,7 +872,7 @@ void SpuFree(unsigned long arg0) {
             if (temp_v1 & mask4) {
                 break;
             }
-            if (temp_v1 == arg0) {
+            if (temp_v1 == address) {
                 cur_mem->addr = temp;
                 break;
             }
@@ -942,7 +942,7 @@ s32 SpuSetReverb(s32 on_off) {
 
 /* SPDX-License-Identifier: MIT */
 
-s32 _SpuIsInAllocateArea(u32 arg0) {
+s32 _SpuIsInAllocateArea(u32 address) {
     s32 i;
 
     for (i = 0; 1; i++) {
@@ -952,10 +952,10 @@ s32 _SpuIsInAllocateArea(u32 arg0) {
         if (D_800A270C[0][i].addr & 0x40000000) {
             break;
         }
-        if (arg0 <= (D_800A270C[0][i].addr & 0x0FFFFFFF)) {
+        if (address <= (D_800A270C[0][i].addr & 0x0FFFFFFF)) {
             return 1;
         }
-        if (arg0 <
+        if (address <
             (D_800A270C[0][i].addr & 0x0FFFFFFF) + D_800A270C[0][i].size) {
             return 1;
         }
@@ -968,10 +968,10 @@ s32 _SpuIsInAllocateArea(u32 arg0) {
 extern SpuMallocItem *D_800A270C[];
 extern s32 D_800A26D0[];
 
-s32 _SpuIsInAllocateArea_(u32 arg0) {
+s32 _SpuIsInAllocateArea_(u32 address) {
     s32 i;
 
-    arg0 <<= D_800A26D0[0];
+    address <<= D_800A26D0[0];
     for (i = 0; 1; i++) {
         if (D_800A270C[0][i].addr & 0x80000000) {
             continue;
@@ -979,10 +979,10 @@ s32 _SpuIsInAllocateArea_(u32 arg0) {
         if (D_800A270C[0][i].addr & 0x40000000) {
             break;
         }
-        if (arg0 <= (D_800A270C[0][i].addr & 0x0FFFFFFF)) {
+        if (address <= (D_800A270C[0][i].addr & 0x0FFFFFFF)) {
             return 1;
         }
-        if (arg0 <
+        if (address <
             (D_800A270C[0][i].addr & 0x0FFFFFFF) + D_800A270C[0][i].size) {
             return 1;
         }
@@ -1285,7 +1285,7 @@ extern s32 D_800A26E0ClearCheck[];
 extern s32 D_800A26E0ClearSave[];
 extern s32 D_800A26E0ClearWrite[];
 extern s32 D_800A26E0ClearRestore[];
-long SpuClearReverbWorkArea(long arg0) {
+long SpuClearReverbWorkArea(long reverbMode) {
     volatile s32 sp10;
     s32 temp_a0;
     s32 *temp_s1;
@@ -1298,13 +1298,13 @@ long SpuClearReverbWorkArea(long arg0) {
     u32 var_s1;
     sp10 = 0;
     var_s5 = 0;
-    if ((u32)arg0 >= 10)
+    if ((u32)reverbMode >= 10)
         return -1;
     new_var = D_800A2710Clear;
-    temp_s1 = new_var + arg0;
+    temp_s1 = new_var + reverbMode;
     if (_SpuIsInAllocateArea_(*temp_s1) != 0)
         return -1;
-    if (arg0 == 0) {
+    if (reverbMode == 0) {
         var_s1 = 0x10 << D_800A26D0Clear0[0];
         var_s2 = 0xFFF0 << D_800A26D0Clear0[0];
     } else {
@@ -1846,8 +1846,8 @@ SpuIRQCallbackProc SpuSetTransferCallback(SpuIRQCallbackProc func) {
 }
 
 extern s32 D_800A26DC[];
-void _spu_setInTransfer(s32 arg0) {
-    if (arg0 == 1) {
+void _spu_setInTransfer(s32 inTransfer) {
+    if (inTransfer == 1) {
         D_800A26DC[0] = 0;
     } else {
         D_800A26DC[0] = 1;
@@ -1861,7 +1861,7 @@ s32 _spu_getInTransfer(void) {
 
 void SpuSetCommonAttrDraft(SpuCommonAttr *) asm("SpuSetCommonAttr");
 extern volatile u16 *D_800A26ACCommon2[];
-void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
+void SpuSetCommonAttrDraft(SpuCommonAttr *attr) {
     s32 mask;
     s32 isDefault;
     s32 level;
@@ -1873,7 +1873,7 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     s32 modeCode;
     s32 value;
     volatile u16 *control;
-    mask = arg0->mask;
+    mask = attr->mask;
     isDefault = (mask == 0);
     volLeft = 0;
     volRight = 0;
@@ -1881,7 +1881,7 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     modeRight = 0;
     if (isDefault || (mask & 1)) {
         if (isDefault || (mask & 4)) {
-            modeCode = (s16)arg0->mvolmode.left;
+            modeCode = (s16)attr->mvolmode.left;
             switch (modeCode) {
             case 1:
                 modeLeft = 0x8000;
@@ -1906,21 +1906,21 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
                 break;
             case 0:
             default:
-                volLeft = arg0->mvol.left;
+                volLeft = attr->mvol.left;
                 modeLeft = 0;
                 break;
             }
         } else {
-            volLeft = arg0->mvol.left;
+            volLeft = attr->mvol.left;
             modeLeft = 0;
         }
         if (modeLeft != 0) {
-            if (*(s16 *)&arg0->mvol.left >= 0x80) {
+            if (*(s16 *)&attr->mvol.left >= 0x80) {
                 volLeft = 0x7F;
-            } else if (*(s16 *)&arg0->mvol.left < 0) {
+            } else if (*(s16 *)&attr->mvol.left < 0) {
                 volLeft = 0;
             } else {
-                volLeft = *(s16 *)&arg0->mvol.left;
+                volLeft = *(s16 *)&attr->mvol.left;
             }
             volume = volLeft & 0x7FFF;
         } else {
@@ -1931,7 +1931,7 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     }
     if (isDefault || (mask & 2)) {
         if (isDefault || (mask & 8)) {
-            modeCode = (s16)arg0->mvolmode.right;
+            modeCode = (s16)attr->mvolmode.right;
             switch (modeCode) {
             case 1:
                 modeRight = 0x8000;
@@ -1956,21 +1956,21 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
                 break;
             case 0:
             default:
-                volRight = arg0->mvol.right;
+                volRight = attr->mvol.right;
                 modeRight = 0;
                 break;
             }
         } else {
-            volRight = arg0->mvol.right;
+            volRight = attr->mvol.right;
             modeRight = 0;
         }
         if (modeRight != 0) {
-            if (*(s16 *)&arg0->mvol.right >= 0x80) {
+            if (*(s16 *)&attr->mvol.right >= 0x80) {
                 volRight = 0x7F;
-            } else if (*(s16 *)&arg0->mvol.right < 0) {
+            } else if (*(s16 *)&attr->mvol.right < 0) {
                 volRight = 0;
             } else {
-                volRight = *(s16 *)&arg0->mvol.right;
+                volRight = *(s16 *)&attr->mvol.right;
             }
             volume = volRight & 0x7FFF;
         } else {
@@ -1980,13 +1980,13 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
         control[0x182 / 2] = volume | modeRight;
     }
     if (isDefault || (mask & 0x40))
-        D_800A26ACCommon2[0][0x1B0 / 2] = arg0->cd.volume.left;
+        D_800A26ACCommon2[0][0x1B0 / 2] = attr->cd.volume.left;
     if (isDefault || (mask & 0x80))
-        D_800A26ACCommon2[0][0x1B2 / 2] = arg0->cd.volume.right;
+        D_800A26ACCommon2[0][0x1B2 / 2] = attr->cd.volume.right;
     if (isDefault || (mask & 0x100)) {
         register volatile u16 *ctl asm("$2");
 
-        if (arg0->cd.reverb == 0) {
+        if (attr->cd.reverb == 0) {
             ctl = D_800A26ACCommon2[0];
             value = ctl[0x1AA / 2];
             value &= 0xFFFB;
@@ -2000,7 +2000,7 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     if (isDefault || (mask & 0x200)) {
         register volatile u16 *ctl asm("$2");
 
-        if (arg0->cd.mix == 0) {
+        if (attr->cd.mix == 0) {
             ctl = D_800A26ACCommon2[0];
             value = ctl[0x1AA / 2];
             value &= 0xFFFE;
@@ -2012,13 +2012,13 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
         ctl[0x1AA / 2] = value;
     }
     if (isDefault || (mask & 0x400))
-        D_800A26ACCommon2[0][0x1B4 / 2] = arg0->ext.volume.left;
+        D_800A26ACCommon2[0][0x1B4 / 2] = attr->ext.volume.left;
     if (isDefault || (mask & 0x800))
-        D_800A26ACCommon2[0][0x1B6 / 2] = arg0->ext.volume.right;
+        D_800A26ACCommon2[0][0x1B6 / 2] = attr->ext.volume.right;
     if (isDefault || (mask & 0x1000)) {
         register volatile u16 *ctl asm("$2");
 
-        if (arg0->ext.reverb == 0) {
+        if (attr->ext.reverb == 0) {
             ctl = D_800A26ACCommon2[0];
             value = ctl[0x1AA / 2];
             value &= 0xFFF7;
@@ -2032,7 +2032,7 @@ void SpuSetCommonAttrDraft(SpuCommonAttr *arg0) {
     if (isDefault || (mask & 0x2000)) {
         register volatile u16 *ctl asm("$2");
 
-        if (arg0->ext.mix == 0) {
+        if (attr->ext.mix == 0) {
             ctl = D_800A26ACCommon2[0];
             value = ctl[0x1AA / 2];
             value &= 0xFFFD;

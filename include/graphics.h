@@ -5,11 +5,11 @@
 
 typedef struct {
     u8 pad[16];
-} Unk16;
+} ImageBankTexture;
 void MatrixCombineState(void);
 void MatrixRotateVector(s32 *vec);
-void func_8001EC38(s32 *arg0);
-void func_8001ED84(s32 *vec);
+void MatrixLoadObjectBasis(s32 *transform);
+void MatrixTransformVector(s32 *vec);
 void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2);
 void GraphicsAddPolyFT4(u8 *arg0);
 void FontSetColor(s16 red, s16 green, s16 blue);

@@ -24,8 +24,8 @@ extern char *strcpy(char *, const char *);
 void SetPolyFT4(POLY_FT4 *);
 extern u8 D_800A361C[];
 extern u8 D_800A3059[];
-u8 *func_80057CCC(s32 arg0);
-u8 *func_80057D50(s32 arg0);
+u8 *GraphicsAllocPolyFT4(s32 arg0);
+u8 *GraphicsAllocPolyF4(s32 arg0);
 
 /* Memory card files and events. */
 
@@ -34,15 +34,15 @@ void CardCloseFile(s32 handle) {
         close(handle);
 }
 
-u8 CardDeleteFile(char *path) {
-    return delete(path);
+u8 CardDeleteFile(char *filePath) {
+    return delete(filePath);
 }
 
 extern void CardTestEvents(void);
 extern s32 CardDisableEvents(void);
-void func_800598C4(void) {
+void CardTestAndDisableEvents(void) {
     CardTestEvents();
-    func_8005A414();
+    CardTestTransferEvents();
     CardDisableEvents();
     ChangeClearPAD(0);
 }
@@ -83,11 +83,11 @@ s32 CardDisableEvents(void) {
     return result;
 }
 
-extern void CardTestEvents(void), func_8005A414(void);
-void func_800599E4(void) {
+extern void CardTestEvents(void), CardTestTransferEvents(void);
+void CardEnableAndTestEvents(void) {
     CardEnableEvents();
     CardTestEvents();
-    func_8005A414();
+    CardTestTransferEvents();
 }
 
 /* result is s16: the narrowing keeps the first compare in v0 and copies
@@ -125,24 +125,24 @@ s32 CardEnableEvents(void) {
     return result;
 }
 
-s32 CardCheckStatus(s32 arg0, u8 arg1) {
+s32 CardCheckStatus(s32 slot, u8 returnOnBusy) {
     s32 channel;
     u32 retries;
     s32 status;
 
-    channel = ((arg0 & 0xFF) != 0) * 0x10;
+    channel = ((slot & 0xFF) != 0) * 0x10;
     retries = 0;
 again:
     _card_info(channel);
-    status = func_8005A294();
+    status = CardPollStatusEvents();
     switch (status) {
     case 0:
         return 0;
     case 3:
-        func_8005A414();
+        CardTestTransferEvents();
         _card_clear(channel);
         status = CardWaitForEvent();
-        if (arg1 != 0) {
+        if (returnOnBusy != 0) {
             return 3;
         }
         if (status == 0) {
@@ -161,8 +161,8 @@ s32 CardFindFirstFile(char *path, struct DIRENTRY *entry) {
 }
 
 extern char gMemoryCardDevice2[], gMemoryCardDevice1[];
-s32 CardFormat(s32 second) {
-    if (!(second & 0xFF))
+s32 CardFormat(s32 slot) {
+    if (!(slot & 0xFF))
         return format(gMemoryCardDevice1) & 0xFF;
     else
         return format(gMemoryCardDevice2) & 0xFF;
@@ -255,22 +255,22 @@ void CardStop(void) {
     ExitCriticalSection();
 }
 
-s32 func_80059F0C(s32 arg0) {
+s32 func_80059F0C(s32 slot) {
     s32 retries = 0;
-    s32 channel = ((arg0 & 0xFF) != 0) * 0x10;
+    s32 channel = ((slot & 0xFF) != 0) * 0x10;
     s32 status;
     do {
         _card_info(channel);
-        status = func_8005A294();
+        status = CardPollStatusEvents();
         if (status == 3) {
-            func_8005A414();
+            CardTestTransferEvents();
             _card_clear(channel);
             status = CardWaitForEvent();
         }
         if (status == 0) {
             CardTestEvents();
             _card_load(channel);
-            status = func_8005A294();
+            status = CardPollStatusEvents();
             if (status == 0) {
                 break;
             }
@@ -293,27 +293,28 @@ s32 CardOpenFile(char *path, s32 flags) {
 
 extern void _new_card(void);
 extern void _card_read(s32, s32, s32);
-s32 CardReadSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
+s32 CardReadSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
+                    s32 buffer) {
     s32 channel;
     s32 sector;
     s32 offset;
     s32 retries;
     s32 end;
     s32 limit;
-    channel = ((arg3 & 0xFF) != 0) * 0x10;
-    arg2 = arg2 & 0xFF;
-    if (buf == 0)
+    channel = ((slot & 0xFF) != 0) * 0x10;
+    sectorCount = sectorCount & 0xFF;
+    if (buffer == 0)
         goto success;
     retries = offset = 0;
-    sector = (arg1 & 0xFF) + *(s32 *)(arg0 + 0x20);
-    limit = (sector & 0xFFFF) + arg2;
+    sector = (firstSector & 0xFF) + *(s32 *)(entry + 0x20);
+    limit = (sector & 0xFFFF) + sectorCount;
     if ((sector & 0xFFFF) >= limit)
         goto success;
     end = limit;
     do {
-        func_8005A414();
+        CardTestTransferEvents();
         _new_card();
-        _card_read(channel, sector & 0xFFFF, buf + offset);
+        _card_read(channel, sector & 0xFFFF, buffer + offset);
         if (CardWaitForEvent() == 0) {
             sector += 1;
             offset += 0x80;
@@ -329,7 +330,8 @@ success:
 }
 
 extern void _card_write(s32, s32, s32);
-s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
+s32 CardWriteSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
+                     s32 buffer) {
     s32 sector;
     u32 retries;
     s32 offset;
@@ -339,15 +341,15 @@ s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
 
     offset = 0;
     retries = 0;
-    sector = (arg1 & 0xFF) + *(s32 *)(arg0 + 0x20);
-    channel = ((arg3 & 0xFF) != 0) * 0x10;
-    limit = (sector & 0xFFFF) + (arg2 & 0xFF);
+    sector = (firstSector & 0xFF) + *(s32 *)(entry + 0x20);
+    channel = ((slot & 0xFF) != 0) * 0x10;
+    limit = (sector & 0xFFFF) + (sectorCount & 0xFF);
     if ((sector & 0xFFFF) < limit) {
         end = limit;
         do {
-            func_8005A414();
+            CardTestTransferEvents();
             _new_card();
-            _card_write(channel, sector & 0xFFFF, buf + offset);
+            _card_write(channel, sector & 0xFFFF, buffer + offset);
             if (CardWaitForEvent() == 0) {
                 sector += 1;
                 offset += 0x80;
@@ -366,7 +368,7 @@ s32 CardWriteSectors(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 buf) {
  * retail's locals are 15*0x28 + 8. The call-per-arm with the ==0 branch
  * sense reproduces the bnez/per-arm-a0/single-jal merge, and i=0 before
  * the blez lets total=0 fill its delay slot. */
-s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
+s32 CardCountOtherFileBlocks(s32 slot, char *excludedName) {
     s32 zero;
     struct DIRENTRY entries[15];
     s32 count;
@@ -374,7 +376,7 @@ s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     s32 i;
     struct DIRENTRY *entry;
 
-    if ((arg0 & 0xFF) == 0) {
+    if ((slot & 0xFF) == 0) {
         count = CardScanDirectory(gMemoryCardDevice1, entries);
     } else {
         count = CardScanDirectory(gMemoryCardDevice2, entries);
@@ -385,7 +387,7 @@ s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     if (count > zero) {
         entry = entries;
         do {
-            if (strcmp(entry->name, name) != 0) {
+            if (strcmp(entry->name, excludedName) != 0) {
                 total += entry->size;
             }
             i++;
@@ -395,7 +397,7 @@ s32 CardCountOtherFileBlocks(s32 arg0, char *name) {
     return (total >> 13) & 0xFF;
 }
 
-s32 func_8005A294(void) {
+s32 CardPollStatusEvents(void) {
     u32 i;
 
     i = 0;
@@ -443,7 +445,7 @@ s32 CardWaitForEvent(void) {
     }
 }
 
-void func_8005A414(void) {
+void CardTestTransferEvents(void) {
     TestEvent(D_800A38C8);
     TestEvent(D_800A38CC);
     TestEvent(D_800A38D0);
@@ -474,7 +476,7 @@ extern s32 D_800B1EBC[];
 extern s32 D_800A39E8;
 extern u16 D_800A3874;
 extern s32 D_800A3768;
-void func_8005A4E0(void) {
+void MenuFontReset(void) {
     u8 i;
 
     for (i = 0; i < 5; i++) {
@@ -482,10 +484,10 @@ void func_8005A4E0(void) {
     }
     D_800A3874 = 0;
     D_800A3768 = D_800A39E8;
-    func_8005A818(0xFF, 0x80, 0x40);
+    MenuSetTextColor(0xFF, 0x80, 0x40);
 }
 
-void func_8005A544(u8 arg0, u8 arg1) {
+void MenuFontBuildPrimitives(u8 poolIndex, u8 textureIndex) {
     typedef struct {
         s16 x;
         s16 y;
@@ -523,9 +525,9 @@ void func_8005A544(u8 arg0, u8 arg1) {
     u32 bound;
     u16 w;
 
-    entry = &D_80099FE4_g1b[arg1];
+    entry = &D_80099FE4_g1b[textureIndex];
     n = entry->count;
-    idx = arg0;
+    idx = poolIndex;
     old = D_800A3768_g1b;
     base = D_800B1EBC;
     slot = idx + base;
@@ -562,7 +564,7 @@ void func_8005A544(u8 arg0, u8 arg1) {
     }
 }
 
-void func_8005A6EC(u8 id, s32 arg1, void *dest) {
+void MenuFontCopyGlyphPrimitives(u8 fontId, s32 fontScale, void *dest) {
     typedef struct {
         u32 w[4];
     } W16;
@@ -582,7 +584,7 @@ void func_8005A6EC(u8 id, s32 arg1, void *dest) {
     s32 n;
     volatile u8 *cursor;
 
-    func_8005A7B8(id & 0xFF, arg1 & 0xFF);
+    MenuFontSet(fontId & 0xFF, fontScale & 0xFF);
     count = *D_800A35A0p;
     src = D_800A3750p;
     cursor = (volatile u8 *)dest;
@@ -604,7 +606,7 @@ void func_8005A6EC(u8 id, s32 arg1, void *dest) {
             i++;
         } while (i < n);
     }
-    D_800B1EBCx[id & 0xFF] = (s32)dest;
+    D_800B1EBCx[fontId & 0xFF] = (s32)dest;
 }
 
 extern s32 D_800A35A0;
@@ -612,42 +614,42 @@ extern u8 D_800A3534;
 extern s32 D_800A3750;
 extern s32 D_800A35AC;
 extern s32 D_80099FE4[][3];
-void func_8005A7B8(u8 arg0, u8 arg1) {
+void MenuFontSet(u8 fontId, u8 fontScale) {
     s32 *entry;
     s32 word;
 
-    word = D_800B1EBC[arg0];
-    entry = &D_80099FE4[arg1][0];
+    word = D_800B1EBC[fontId];
+    entry = &D_80099FE4[fontScale][0];
     D_800A35A0 = (s32)entry;
-    D_800A3534 = arg1;
+    D_800A3534 = fontScale;
     D_800A3750 = word;
     D_800A35AC = entry[2];
 }
 
 extern u8 D_800A37C8, D_800A37A8, D_800A378C;
-void func_8005A804(u8 a, u8 b, u8 c) {
-    D_800A37C8 = a;
-    D_800A37A8 = b;
-    D_800A378C = c;
+void MenuSetShadeColors(u8 red, u8 green, u8 blue) {
+    D_800A37C8 = red;
+    D_800A37A8 = green;
+    D_800A378C = blue;
 }
 
 extern u8 D_800A3618;
 extern u8 D_800A3624;
 extern u8 D_800A364C;
 
-void func_8005A818(u8 first, u8 second, u8 third) {
-    D_800A364C = first;
-    D_800A3624 = second;
-    D_800A3618 = third;
+void MenuSetTextColor(u8 red, u8 green, u8 blue) {
+    D_800A364C = red;
+    D_800A3624 = green;
+    D_800A3618 = blue;
 }
 
-void func_8005A82C(void) {
+void MenuResetTextColor(void) {
     D_800A364C = 0xFF;
     D_800A3624 = 0x80;
     D_800A3618 = 0x40;
 }
 
-s16 func_8005A84C(void) {
+s16 MenuFontLineHeight(void) {
     s32 res;
     if (D_800A3534 == 2) {
         res = *(s16 *)(D_800A35AC + 8) * 3;
@@ -762,7 +764,7 @@ void MenuDrawString(s32 text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
                     w = *(s16 *)(glyph + 6);
                 }
                 if (penX + w >= 0 && penX < 0x140 && y + h >= 0 && y < 0xF0) {
-                    prim = (POLY_FT4 *)func_80057CCC(0);
+                    prim = (POLY_FT4 *)GraphicsAllocPolyFT4(0);
                     *prim = *tmpl;
                     if (D_800A3534 == 2) {
                         prim->clut = clut;
@@ -822,7 +824,7 @@ void MenuDrawString(s32 text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
    table (D_800A35AC) holds 10-byte records with the width at offset 6;
    D_800A3534 picks the scale (2 = 3/4, 4 = 9/10) and subtracts 1 per
    character when below 2. */
-s16 MenuPrefixWidth(u8 count, u8 *str) {
+s16 MenuPrefixWidth(u8 count, u8 *text) {
     s32 total;
     s32 i;
     s32 idx;
@@ -833,10 +835,10 @@ s16 MenuPrefixWidth(u8 count, u8 *str) {
     glyphCount = *(u16 *)D_800A35A0;
     i = 0;
     total = 0;
-    if (*str != 0) {
+    if (*text != 0) {
         limit = glyphCount + 0x20;
-        while (str[i] != 0 && i < count) {
-            ch = str[i];
+        while (text[i] != 0 && i < count) {
+            ch = text[i];
             idx = 0;
             if (ch >= 0x20) {
                 if (ch < limit) {
@@ -859,7 +861,7 @@ s16 MenuPrefixWidth(u8 count, u8 *str) {
     return total;
 }
 
-s16 MenuCharWidth(s8 arg0) {
+s16 MenuCharWidth(s8 character) {
     s32 index;
     s32 entry;
     s32 scaled;
@@ -868,8 +870,8 @@ s16 MenuCharWidth(s8 arg0) {
     s32 quotient;
     entry = *((u16 *)D_800A35A0);
     index = 0;
-    if ((arg0 >= 0x20) && (arg0 < (entry + 0x20))) {
-        index = arg0 - 0x20;
+    if ((character >= 0x20) && (character < (entry + 0x20))) {
+        index = character - 0x20;
     }
     if (D_800A3534 == 2) {
         scaled = (*((s16 *)((D_800A35AC + (index * 0xA)) + 6))) * 3;
@@ -891,50 +893,50 @@ s16 MenuCharWidth(s8 arg0) {
     return (s16)value;
 }
 
-s32 func_8005B0E4(s16 arg0, s32 arg1) {
+s32 MenuTextCenterOffset(s16 maxWidth, s32 text) {
     s32 limit;
 
-    limit = MenuStringWidth(arg1);
-    if (arg0 < limit) {
+    limit = MenuStringWidth(text);
+    if (maxWidth < limit) {
         return 0;
     }
-    return (arg0 - limit) >> 1;
+    return (maxWidth - limit) >> 1;
 }
 
 #ifdef NON_MATCHING
-s32 TextCountLines(u8 *str) {
+s32 TextCountLines(u8 *text) {
     s32 count;
     u8 c;
 
     count = 0;
-    c = *str;
+    c = *text;
     while (c != 0) {
         if (c == 0xA) {
             count++;
         }
-        str++;
-        c = *str;
+        text++;
+        c = *text;
     }
     return count + 1;
 }
 #else
-s32 TextCountLines(u8 *str) {
+s32 TextCountLines(u8 *text) {
     s32 count;
 
     count = 0;
-    if (*str != 0) {
+    if (*text != 0) {
         do {
-            if (*str == 0xA) {
+            if (*text == 0xA) {
                 count++;
             }
-            str++;
-        } while (*str != 0);
+            text++;
+        } while (*text != 0);
     }
     return count + 1;
 }
 #endif
 
-void func_8005B17C(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
+void MenuSetTexturedQuad(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
     struct Tab14 {
         u16 f0;
         u16 f2;
@@ -965,8 +967,8 @@ void func_8005B17C(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
 u8 *MenuObjAlloc(void) {
     u8 index;
     u8 *object;
-    index = D_800A35EC++;
-    object = D_800A3678 + index * 36;
+    index = gMenuObjectPoolCount++;
+    object = gMenuObjectPool + index * 36;
     *(s16 *)(object + 0x12) = 0;
     *(s16 *)(object + 0x14) = 0;
     *(s32 *)(object + 0x1C) = 0;
@@ -977,18 +979,18 @@ u8 *MenuObjAlloc(void) {
     return object;
 }
 
-void func_8005B2F0(void) {
+void MenuObjResetPool(void) {
     D_800A37BC = 0;
-    D_800A35EC = 0;
+    gMenuObjectPoolCount = 0;
 }
 
-void func_8005B300(void) {
+void MenuObjRestorePoolCursor(void) {
     D_800A37BC = 0;
-    D_800A35EC = D_800A39C4;
+    gMenuObjectPoolCount = D_800A39C4;
 }
 
-struct UnkTextObj *func_8005B314(x, y, width, height, poly, red, green, blue,
-                                 semiTrans, texture)
+struct UnkTextObj *MenuCreateFlatRect(x, y, width, height, poly, red, green,
+                                      blue, semiTrans, texture)
 s32 x;
 s32 y;
 s32 width;
@@ -1003,8 +1005,8 @@ u8 texture;
     u8 index;
     u8 *object;
 
-    index = D_800A35EC++;
-    object = D_800A3678 + index * 36;
+    index = gMenuObjectPoolCount++;
+    object = gMenuObjectPool + index * 36;
     *(s16 *)(object + 0x12) = 0;
     *(s16 *)(object + 0x14) = 0;
     *(s32 *)(object + 0x1C) = 0;
@@ -1025,7 +1027,7 @@ u8 texture;
     object[3] = green;
     object[4] = blue;
     if (poly == 0) {
-        poly = (s32)func_80057D50(texture);
+        poly = (s32)GraphicsAllocPolyF4(texture);
     }
     *(u8 **)(object + 0x20) = (u8 *)poly;
     SetPolyF4((u8 *)poly);
@@ -1045,8 +1047,8 @@ u8 texture;
 }
 
 extern void SetPolyF3(POLY_F3 *);
-u8 *func_8005B474(x, y, width, height, poly, red, green, blue, semiTrans,
-                  texture, mode)
+u8 *MenuCreateFlatTriangle(x, y, width, height, poly, red, green, blue,
+                           semiTrans, texture, mode)
 s32 x;
 s32 y;
 s32 width;
@@ -1063,8 +1065,8 @@ u8 mode;
     u8 *fresh;
     u8 *object;
 
-    index = D_800A35EC++;
-    fresh = D_800A3678 + index * 36;
+    index = gMenuObjectPoolCount++;
+    fresh = gMenuObjectPool + index * 36;
     asm("" : "=r"(object) : "0"(fresh));
     *(s16 *)(fresh + 0x12) = 0;
     *(s16 *)(fresh + 0x14) = 0;
@@ -1086,7 +1088,7 @@ u8 mode;
     object[3] = green;
     object[4] = blue;
     if (poly == 0) {
-        poly = (s32)func_80057D50(texture);
+        poly = (s32)GraphicsAllocPolyF4(texture);
     }
     *(u8 **)(object + 0x20) = (u8 *)poly;
     SetPolyF3((POLY_F3 *)poly);
@@ -1097,13 +1099,13 @@ u8 mode;
     return object;
 }
 
-u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
-                  u8 texture, u8 semiTrans) {
+u8 *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
+                           u8 texture, u8 semiTrans) {
     u8 index;
     u8 *object;
     POLY_FT4 *poly;
-    index = D_800A35EC++;
-    object = D_800A3678 + index * 36;
+    index = gMenuObjectPoolCount++;
+    object = gMenuObjectPool + index * 36;
     *(s16 *)(object + 0x12) = 0;
     *(s16 *)(object + 0x14) = 0;
     *(s32 *)(object + 0x1C) = 0;
@@ -1120,7 +1122,7 @@ u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
     *(s16 *)(object + 0x18) = bottom;
     *(s16 *)(object + 0xE) = 0;
     *(s16 *)(object + 0x10) = 0;
-    poly = func_80057CCC(texture);
+    poly = GraphicsAllocPolyFT4(texture);
     SetPolyFT4(poly);
     SetShadeTex(poly, 0);
     ((u8 *)poly)[4] = 0x80;
@@ -1132,7 +1134,7 @@ u8 *func_8005B598(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
     return object;
 }
 
-void func_8005B688(u8 *first, u8 friction) {
+void MenuUpdateObjectPosition(u8 *first, u8 friction) {
     u8 *object;
     s16 sum;
 
@@ -1168,12 +1170,12 @@ void func_8005B688(u8 *first, u8 friction) {
                         (s16) * (u16 *)(object + 0x10) / 2;
                 }
             }
-            object = (u8 *)((MenuObj *)object)->unk1C;
+            object = (u8 *)((MenuObj *)object)->next;
         } while (object != 0);
     }
 }
 
-void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
+void MenuDrawF4Object(u8 *object, s32 orderingDepth, u8 semiTrans) {
     POLY_F4 *poly;
 
     poly = (POLY_F4 *)*(u8 **)(object + 0x20);
@@ -1188,7 +1190,7 @@ void func_8005B7DC(u8 *object, s32 index, u8 semiTrans) {
     if (semiTrans != 0xFF) {
         SetSemiTrans(poly, semiTrans);
     }
-    AddPrim(gOrderingTable[0] + index * 4, poly);
+    AddPrim(gOrderingTable[0] + orderingDepth * 4, poly);
 }
 
 typedef struct {
@@ -1204,7 +1206,7 @@ typedef struct {
     u32 unk0[2];
 } UnkPrim8;
 
-void func_8005B8B8(u8 *object, s32 arg1) {
+void MenuDrawObjectList(u8 *object, s32 semiTransMode) {
     u8 *src;
     u8 *poly;
     s32 semiTrans;
@@ -1214,10 +1216,10 @@ void func_8005B8B8(u8 *object, s32 arg1) {
     if (object == 0) {
         return;
     }
-    semiTrans = arg1 & 0xFF;
-    for (; object != 0; object = (u8 *)((MenuObj *)object)->unk1C) {
+    semiTrans = semiTransMode & 0xFF;
+    for (; object != 0; object = (u8 *)((MenuObj *)object)->next) {
         if (*(s16 *)(object + 0x1A) >= 0) {
-            if (D_800A39E4Absolute[0] != 0xD || *(s8 *)(object + 5) != 0) {
+            if (gScreenStateAbsolute[0] != 0xD || *(s8 *)(object + 5) != 0) {
                 switch (*(u16 *)(object)) {
                 case 1: {
                     u8 *prim;
@@ -1225,7 +1227,7 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                     u8 *dst;
                     u8 *end;
 
-                    prim = func_80057CCC(0);
+                    prim = GraphicsAllocPolyFT4(0);
                     src = *(u8 **)(object + 0x20);
                     dst = prim;
                     end = src + 0x20;
@@ -1235,7 +1237,7 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                         dst += 0x10;
                     } while (src != end);
                     *(UnkPrim8 *)dst = *(UnkPrim8 *)src;
-                    if (D_800A39E4Absolute[0] == 0xD) {
+                    if (gScreenStateAbsolute[0] == 0xD) {
                         *(u16 *)(prim + 0x8) =
                             *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
                         *(u16 *)(prim + 0xA) =
@@ -1277,10 +1279,10 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                 case 2: {
                     u8 *src2;
 
-                    poly = func_80057D50(0);
+                    poly = GraphicsAllocPolyF4(0);
                     src2 = *(u8 **)(object + 0x20);
                     *(UnkPrim18 *)poly = *(UnkPrim18 *)src2;
-                    if (D_800A39E4Absolute[0] == 0xD) {
+                    if (gScreenStateAbsolute[0] == 0xD) {
                         if (*(s16 *)(object + 0x16) == 0) {
                             break;
                         }
@@ -1330,7 +1332,7 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                 }
                 case 7:
                 case 8:
-                    poly = func_80057D50(0);
+                    poly = GraphicsAllocPolyF4(0);
                     src = *(u8 **)(object + 0x20);
                     *(UnkPrim14 *)poly = *(UnkPrim14 *)src;
                     if (*(u16 *)(object) == 7) {
@@ -1402,7 +1404,7 @@ void func_8005B8B8(u8 *object, s32 arg1) {
                     func_8005CF34(object, 0, 0, 0, (s32)scratch);
                     break;
                 case 6:
-                    func_8005C0F4(object, (s32)scratch);
+                    MenuFormatTimeObject(object, (s32)scratch);
                     func_8005CF34(object, 0, 0, 9, (s32)scratch);
                     break;
                 }
@@ -1417,22 +1419,22 @@ void __maspsx_include_asm_hack_pad_8008F94C(void) {
             "    .section .text # maspsx-keep\n");
 }
 
-s32 func_8005BF68(void) {
+s32 MenuAllocTextPacket(void) {
     u8 index;
     index = D_800A37BC;
     D_800A37BC = index + 1;
     return D_800A3654 + index * 12;
 }
 
-struct UnkTextObj *func_8005BF8C(s32 left, s32 top) {
+struct UnkTextObj *MenuCreateTextObject(s32 left, s32 top) {
     u8 spriteIndex;
     u8 primIndex;
     u8 *object;
     u8 *prim;
     u8 *base;
 
-    spriteIndex = D_800A35EC++;
-    base = D_800A3678;
+    spriteIndex = gMenuObjectPoolCount++;
+    base = gMenuObjectPool;
     object = base + spriteIndex * 36;
     object[4] = 0;
     object[3] = 0;
@@ -1473,32 +1475,32 @@ typedef struct {
     u8 unk1;
     u8 unk2;
 } Unk3;
-extern Unk4 D_800A3324[];
-extern Unk4 D_800A3328[];
-extern Unk3 D_800A332C[];
+extern Unk4 gTextThreeDashes[];
+extern Unk4 gTextDnf[];
+extern Unk3 gTextTwoSpaces[];
 void func_8005C020(u8 *object, u8 *dest) {
     s32 id;
 
     id = *(s16 *)(*(u8 **)(object + 0x20) + 8);
-    if (D_800A39E4[0] == 0xA) {
+    if (gScreenState[0] == 0xA) {
         if (id == 0xFF) {
-            *(Unk4 *)dest = D_800A3324[0];
+            *(Unk4 *)dest = gTextThreeDashes[0];
             return;
         }
         if (id == -1) {
-            *(Unk4 *)dest = D_800A3328[0];
+            *(Unk4 *)dest = gTextDnf[0];
             return;
         }
-    } else if (D_800A39E4[0] == 0xC) {
+    } else if (gScreenState[0] == 0xC) {
         if (id == 0) {
-            *(Unk3 *)dest = D_800A332C[0];
+            *(Unk3 *)dest = gTextTwoSpaces[0];
             return;
         }
     }
     TextFormatInt(id, dest);
 }
 
-void func_8005C0F4(u8 *object, s32 value) {
+void MenuFormatTimeObject(u8 *object, s32 value) {
     TextFormatTime(*(void **)(*(u8 **)(object + 0x20) + 8), -1, value);
 }
 
@@ -1535,10 +1537,10 @@ extern u8 D_800A3988[];
 extern u8 D_800A3989[];
 extern u8 *D_800AE27C[];
 extern u8 *D_800BB9E4[];
-extern u8 D_800A3330[];
+extern u8 gFormatLeadingSpacesZeroesPercentWildcard[];
 extern u8 D_800AD980[];
 extern u8 D_800A35C8Text[] asm("D_800A35C8");
-extern void func_8005CBC8(s32);
+extern void TextFormatPercentage(s32);
 void func_8005C124(u8 menuId, u8 selRow) {
     s32 slots[3][4];
     u8 *item;
@@ -1624,8 +1626,8 @@ void func_8005C124(u8 menuId, u8 selRow) {
             u8 index;
             u8 *object;
 
-            index = D_800A35EC++;
-            object = D_800A3678 + index * 36;
+            index = gMenuObjectPoolCount++;
+            object = gMenuObjectPool + index * 36;
             *(s16 *)(object + 0x12) = 0;
             *(s16 *)(object + 0x14) = 0;
             *(s32 *)(object + 0x1C) = 0;
@@ -1714,7 +1716,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
         *(s16 *)(item + 0x10) = 0;
         if (i == 0) {
             D_800A39B8 = item;
-            func_8005A7B8(1, 1);
+            MenuFontSet(1, 1);
             entry[2] = 1;
             entry[1] = 1;
             *(u8 **)(entry + 8) = *(u8 **)D_800A3690;
@@ -1722,18 +1724,18 @@ void func_8005C124(u8 menuId, u8 selRow) {
         } else {
             if (i == 1) {
                 D_800A36F0 = item;
-                func_8005A7B8(0, 0);
+                MenuFontSet(0, 0);
             }
             entry[2] = 0;
             entry[1] = 0;
             if (menuId == 4 && D_800A38E8 < i) {
                 D_800A38F8 = item;
-                func_8005CBC8(D_800A37D0[0]);
+                TextFormatPercentage(D_800A37D0[0]);
                 *(u8 **)(entry + 8) = D_800A35C8Text;
             } else if (menuId == 0xB && (d = D_800A38E8) < i) {
                 d = i - d;
                 D_800BB9E4[d - 1] = item;
-                func_8005CBC8(D_800A331C[d - 1]);
+                TextFormatPercentage(D_800A331C[d - 1]);
                 text = D_800AD980 + (i - D_800A38E8) * 8;
                 *(u8 **)(entry + 8) = text;
                 strcpy(text, D_800A35C8Text);
@@ -1761,11 +1763,12 @@ void func_8005C124(u8 menuId, u8 selRow) {
             *(s16 *)(item + 0xE) = 2;
         }
         *(s16 *)(item + 0x16) = MenuStringWidth(*(s32 *)(entry + 8));
-        *(s16 *)(item + 0x18) = func_8005A84C();
+        *(s16 *)(item + 0x18) = MenuFontLineHeight();
         *(s16 *)(item + 0xA) = 0x131 - *(u16 *)(item + 0x16);
         *(s16 *)(item + 6) = x - *(u16 *)(item + 0x16);
         if ((menuId == 4 && i == 1) || (menuId == 0xB && (u32)(i - 2) < 5)) {
-            width = MenuStringWidth((s32)D_800A3330);
+            width =
+                MenuStringWidth((s32)gFormatLeadingSpacesZeroesPercentWildcard);
             *(s16 *)(item + 0xA) = *(u16 *)(item + 0xA) - width;
             slots[1][count] = y;
             slots[2][count] = x;
@@ -1829,7 +1832,7 @@ void func_8005C8D8(u8 index) {
         *(s32 *)(prim + 8) = *(s32 *)(D_800A3A28 + index * 4 + 4);
         break;
     }
-    func_8005A7B8(0, 0);
+    MenuFontSet(0, 0);
     result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
     *(s16 *)(window + 0x16) = result;
@@ -1863,10 +1866,11 @@ s32 func_8005CA4C(void) {
         D_800A3644[0] = 1;
         if (gPlayerDriver[0] == gPlayerDriver[1]) {
             D_800A36E1[0] = (gPlayerDriver[0] + 1) % 24;
-            func_800636EC(1, D_800A36E1[0]);
+            MenuSetDriverNameLabel(1, D_800A36E1[0]);
             func_80063AE0(1, gPlayerDriver[1]);
         }
-        func_80063694(1, -0x3C, *(s16 *)(D_800A35E8[0] + 0xA), 2);
+        MenuSetLinkedObjectLayoutByIndex(1, -0x3C,
+                                         *(s16 *)(D_800A35E8[0] + 0xA), 2);
     }
     D_800A3989[0] = D_800A3988[1] ^ 1;
     D_800A3988[0] = D_800A3989[-1] ^ 1;
@@ -1877,9 +1881,9 @@ s32 func_8005CA4C(void) {
 
 extern u8 D_800A35C8;
 extern u8 D_800A35C9[];
-extern u8 D_800A3338[];
+extern u8 gFormatPercentWildcard[];
 extern char *strcat(char *, char *);
-void func_8005CBC8(s32 number) {
+void TextFormatPercentage(s32 number) {
     u8 *buffer;
     s32 length;
 
@@ -1892,7 +1896,7 @@ void func_8005CBC8(s32 number) {
     }
     D_800A35C9[length - 1] = 0;
     TextFormatInt(number, buffer + length);
-    strcat(buffer, D_800A3338);
+    strcat(buffer, gFormatPercentWildcard);
 }
 
 void func_8005CC34(void) {
@@ -1914,8 +1918,8 @@ void func_8005CC34(void) {
     }
     D_800A35C9[length - 1] = 0;
     TextFormatInt(number, buffer + length);
-    strcat(buffer, D_800A3338);
-    func_8005A7B8(prim[1], prim[2]);
+    strcat(buffer, gFormatPercentWildcard);
+    MenuFontSet(prim[1], prim[2]);
     result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
     *(s16 *)(D_800A38F8 + 0x16) = result;
@@ -1988,10 +1992,10 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         }
         D_800A35C9[length - 1] = 0;
         TextFormatInt(value, buffer + length);
-        strcat(buffer, D_800A3338);
+        strcat(buffer, gFormatPercentWildcard);
         strcpy(*((char **)(prim + 8)), (char *)buffer);
     } while (0);
-    func_8005A7B8(prim[1], prim[2]);
+    MenuFontSet(prim[1], prim[2]);
     *((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)) =
         MenuStringWidth(*((s32 *)(prim + 8)));
     *((s16 *)(D_800BB9E4[id & 0xFF] + 6)) =
@@ -2013,7 +2017,7 @@ extern u8 D_800A3078[];
 extern void func_8005C8D8(u8);
 extern s32 func_8005CCECArgs(u8, s32);
 asm(".globl func_8005CCECArgs\nfunc_8005CCECArgs = func_8005CCEC");
-void func_8005CEDC(void) {
+void MenuRefreshSixEntryValues(void) {
     s32 i;
     D_800A3988[0] = D_800A3078[0];
     i = 0;
@@ -2031,19 +2035,19 @@ void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
     register u8 *prim asm("s3");
 
     prim = *(u8 **)(window + 0x20);
-    func_8005A7B8(prim[1], prim[2]);
+    MenuFontSet(prim[1], prim[2]);
     prim[0] = code;
     if (textId == 0) {
         textId = *(s32 *)(prim + 8);
     }
     if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
-        func_8005A818(window[2], window[3], window[4]);
+        MenuSetTextColor(window[2], window[3], window[4]);
     } else if (prim[1] == 2) {
-        func_8005A818(0xFF, 0x80, 0x40);
+        MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
-        func_8005A818(0, 0, 0);
+        MenuSetTextColor(0, 0, 0);
     }
-    if (D_800A39E4[0] == 0xD) {
+    if (gScreenState[0] == 0xD) {
         MenuDrawString(textId,
                        (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
                        (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
@@ -2060,20 +2064,20 @@ void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
     s32 id;
 
     prim = *(u8 **)(window + 0x20);
-    func_8005A7B8(prim[1], prim[2]);
+    MenuFontSet(prim[1], prim[2]);
     prim[0] = code;
     id = textId;
     if (id == 0) {
         id = *(s32 *)(prim + 8);
     }
     if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
-        func_8005A818(window[2], window[3], window[4]);
+        MenuSetTextColor(window[2], window[3], window[4]);
     } else if (prim[1] == 2) {
-        func_8005A818(0xFF, 0x80, 0x40);
+        MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
-        func_8005A818(0, 0, 0);
+        MenuSetTextColor(0, 0, 0);
     }
-    if (D_800A39E4[0] == 0xD) {
+    if (gScreenState[0] == 0xD) {
         MenuDrawString(
             id, (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
             (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)), prim[3],
@@ -2093,7 +2097,7 @@ extern u8 *D_800A362C[];
 extern u8 *D_800A3634;
 extern u8 *D_800A3740;
 extern u8 *D_800A3788;
-extern u8 *D_800A37D8[];
+extern u8 *gPadPictureMenuLists[];
 extern u8 *D_800A37F8;
 extern u8 *D_800A3888[];
 extern u8 *D_800A3A10;
@@ -2102,10 +2106,10 @@ extern u8 D_800A3685[];
 extern u8 D_800A361CStore[] asm("D_800A361C.NON_MATCHING");
 extern u8 *D_800A35E8Read[] asm("D_800A35E8.NON_MATCHING");
 extern u8 *D_800A362CRead[] asm("D_800A362C.NON_MATCHING");
-extern void func_8005FE90(void);
+extern void MenuUpdateObjectGroups(void);
 extern void MenuDrawLevelBars(s8, u8);
 extern void func_80063638(u8);
-extern void func_800637D8(u8);
+extern void MenuRestoreLinkedObjectValues(u8);
 void func_8005D094(s32 mode, u8 selection, u8 second) {
     u8 *window;
     s32 count;
@@ -2136,7 +2140,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
             code |= 2;
         }
         if (*(s16 *)(window + 0xE) != 0) {
-            func_8005B688(window, 1);
+            MenuUpdateObjectPosition(window, 1);
         } else if (i == count - 1 && D_800A361C[0] == 0) {
             D_800A361CStore[0] = 1;
         }
@@ -2180,18 +2184,18 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 u8 drawFirst;
                 drawFirst = i != 0;
                 drawPrim = *(u8 **)(window + 0x20);
-                func_8005A7B8(drawPrim[1], drawPrim[2]);
+                MenuFontSet(drawPrim[1], drawPrim[2]);
                 drawPrim[0] = code;
                 drawId = *(s32 *)(drawPrim + 8);
                 if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 ||
                     window[4] != 0) {
-                    func_8005A818(window[2], window[3], window[4]);
+                    MenuSetTextColor(window[2], window[3], window[4]);
                 } else if (drawPrim[1] == 2) {
-                    func_8005A818(0xFF, 0x80, 0x40);
+                    MenuSetTextColor(0xFF, 0x80, 0x40);
                 } else {
-                    func_8005A818(0, 0, 0);
+                    MenuSetTextColor(0, 0, 0);
                 }
-                if (D_800A39E4[0] == 0xD) {
+                if (gScreenState[0] == 0xD) {
                     MenuDrawString(
                         drawId,
                         (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
@@ -2209,32 +2213,32 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         window += 0x24;
     }
     if (D_800A361C[0] == 1) {
-        func_8005B688(D_800A392C, 1);
-        func_8005B8B8(D_800A392C, 0xFF);
-        func_8005B688(D_800A3634, 1);
+        MenuUpdateObjectPosition(D_800A392C, 1);
+        MenuDrawObjectList(D_800A392C, 0xFF);
+        MenuUpdateObjectPosition(D_800A3634, 1);
         active = 1;
         if ((mode & 0xFF) == 2)
             active = selection != 2;
         MenuDrawModel(1, active, 0);
-        func_8005B688(D_800A3740, 1);
+        MenuUpdateObjectPosition(D_800A3740, 1);
         {
             u8 *drawWindow;
             u8 *drawPrim;
             s32 drawId;
             drawWindow = D_800A3740;
             drawPrim = *(u8 **)(drawWindow + 0x20);
-            func_8005A7B8(drawPrim[1], drawPrim[2]);
+            MenuFontSet(drawPrim[1], drawPrim[2]);
             drawPrim[0] = 0;
             drawId = *(s32 *)(drawPrim + 8);
             if ((*(s32 *)(drawWindow + 0) & 0xFFFF0000) != 0 ||
                 drawWindow[4] != 0) {
-                func_8005A818(drawWindow[2], drawWindow[3], drawWindow[4]);
+                MenuSetTextColor(drawWindow[2], drawWindow[3], drawWindow[4]);
             } else if (drawPrim[1] == 2) {
-                func_8005A818(0xFF, 0x80, 0x40);
+                MenuSetTextColor(0xFF, 0x80, 0x40);
             } else {
-                func_8005A818(0, 0, 0);
+                MenuSetTextColor(0, 0, 0);
             }
-            if (D_800A39E4[0] == 0xD) {
+            if (gScreenState[0] == 0xD) {
                 MenuDrawString(drawId,
                                (s16)(*(u16 *)(drawWindow + 6) +
                                      *(u16 *)(drawWindow + 0x12)),
@@ -2248,25 +2252,25 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                                drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
             }
         }
-        func_8005B688(D_800A3788, 1);
+        MenuUpdateObjectPosition(D_800A3788, 1);
         {
             u8 *drawWindow;
             u8 *drawPrim;
             s32 drawId;
             drawWindow = D_800A3788;
             drawPrim = *(u8 **)(drawWindow + 0x20);
-            func_8005A7B8(drawPrim[1], drawPrim[2]);
+            MenuFontSet(drawPrim[1], drawPrim[2]);
             drawPrim[0] = 0;
             drawId = *(s32 *)(drawPrim + 8);
             if ((*(s32 *)(drawWindow + 0) & 0xFFFF0000) != 0 ||
                 drawWindow[4] != 0) {
-                func_8005A818(drawWindow[2], drawWindow[3], drawWindow[4]);
+                MenuSetTextColor(drawWindow[2], drawWindow[3], drawWindow[4]);
             } else if (drawPrim[1] == 2) {
-                func_8005A818(0xFF, 0x80, 0x40);
+                MenuSetTextColor(0xFF, 0x80, 0x40);
             } else {
-                func_8005A818(0, 0, 0);
+                MenuSetTextColor(0, 0, 0);
             }
-            if (D_800A39E4[0] == 0xD) {
+            if (gScreenState[0] == 0xD) {
                 MenuDrawString(drawId,
                                (s16)(*(u16 *)(drawWindow + 6) +
                                      *(u16 *)(drawWindow + 0x12)),
@@ -2281,42 +2285,42 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
             }
         }
         if ((mode & 0xFF) != 7 || second == 0) {
-            func_8005B688(D_800A35E4, 1);
-            func_8005B8B8(D_800A35E4, 0xFF);
+            MenuUpdateObjectPosition(D_800A35E4, 1);
+            MenuDrawObjectList(D_800A35E4, 0xFF);
             func_80064000(0, 0, (mode & 0xFF) == 7);
             if (((mode & 0xFF) == 2 && (u8)(selection - 1) < 2) ||
                 ((mode & 0xFF) == 8 && selection == 0)) {
                 if ((mode & 0xFF) == 2)
                     func_80063638(selection == 1);
-                func_8005B688(D_800A3628, 1);
-                func_8005B8B8(D_800A3628, 0xFF);
+                MenuUpdateObjectPosition(D_800A3628, 1);
+                MenuDrawObjectList(D_800A3628, 0xFF);
             }
         }
         if (D_800A3644[0] != 0) {
             if ((mode & 0xFF) != 7 || second == 1) {
-                func_8005B688(D_800A35E8[0], 1);
-                func_8005B8B8(D_800A35E8Read[0], 0xFF);
+                MenuUpdateObjectPosition(D_800A35E8[0], 1);
+                MenuDrawObjectList(D_800A35E8Read[0], 0xFF);
                 selected = D_800A3A25[0] == 0;
                 func_80064000(1, selected, (mode & 0xFF) == 7);
                 if ((mode & 0xFF) == 2 && selection == 1) {
-                    func_8005B688(D_800A362C[0], 1);
+                    MenuUpdateObjectPosition(D_800A362C[0], 1);
                     if (selected == 0)
-                        func_8005B8B8(D_800A362CRead[0], 0xFF);
+                        MenuDrawObjectList(D_800A362CRead[0], 0xFF);
                 }
             }
         }
         if ((mode & 0xFF) == 7) {
-            func_8005FE90();
+            MenuUpdateObjectGroups();
             MenuDrawLevelBars((s8)selection, second);
         }
         if ((u8)(mode - 34) < 2 || (mode & 0xFF) == 36 || (mode & 0xFF) == 40 ||
             (mode & 0xFF) == 37 || (u8)(mode - 38) < 2 ||
             ((mode & 0xFF) == 1 && *(s16 *)(D_800A3A10 + 0xE) < 0)) {
-            func_8005B688(D_800A3A10, 1);
-            func_8005B8B8(D_800A3A10, 0xFF);
+            MenuUpdateObjectPosition(D_800A3A10, 1);
+            MenuDrawObjectList(D_800A3A10, 0xFF);
         }
         if ((mode & 0xFF) == 1 && *(s16 *)(D_800A3A10 + 0xE) == 0) {
-            func_800637D8(0);
+            MenuRestoreLinkedObjectValues(0);
         }
     }
     if ((mode & 0xFF) != 33) {
@@ -2325,26 +2329,26 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         }
     } else {
         if (D_800A3059[0] == 3 && !(VSync(-1) & 3)) {
-            func_80044FF8(1, 1);
+            SoundRunSlotEnvelope(1, 1);
         }
     }
-    func_8005B688(D_800A38A8, 1);
-    func_8005B8B8(D_800A38A8, 0xFF);
+    MenuUpdateObjectPosition(D_800A38A8, 1);
+    MenuDrawObjectList(D_800A38A8, 0xFF);
 afterPanel:
     if ((mode & 0xFF) == 13) {
         i = 0;
         if (i < D_800A3644[0] + 1) {
-            entry = D_800A37D8;
+            entry = gPadPictureMenuLists;
             do {
                 offset = i * 4;
                 MenuUpdatePadPicture(i & 0xFF);
-                func_8005B688(*entry, 1);
-                func_8005B8B8(*entry, 0xFF);
+                MenuUpdateObjectPosition(*entry, 1);
+                MenuDrawObjectList(*entry, 0xFF);
                 if (D_800A3684[i] == 1) {
                     other = D_800A3888;
                     other = (u8 **)((u8 *)other + offset);
-                    func_8005B688(*other, 1);
-                    func_8005B8B8(*other, 0xFF);
+                    MenuUpdateObjectPosition(*other, 1);
+                    MenuDrawObjectList(*other, 0xFF);
                 }
                 i++;
                 entry++;
@@ -2352,12 +2356,12 @@ afterPanel:
         }
         if (D_800A3644[0] != 0) {
             if (D_800A3684[0] == 0 || D_800A3685[0] == 0) {
-                func_8005B688(D_800A37F8, 1);
-                func_8005B8B8(D_800A37F8, 0xFF);
+                MenuUpdateObjectPosition(D_800A37F8, 1);
+                MenuDrawObjectList(D_800A37F8, 0xFF);
             }
         } else if (D_800A3684[0] == 0) {
-            func_8005B688(D_800A37F8, 1);
-            func_8005B8B8(D_800A37F8, 0xFF);
+            MenuUpdateObjectPosition(D_800A37F8, 1);
+            MenuDrawObjectList(D_800A37F8, 0xFF);
         }
     }
 }
@@ -2394,10 +2398,10 @@ void func_8005DAD4(void) {
     i = 0;
     primOffset = 0;
     do {
-        index = D_800A35EC;
+        index = gMenuObjectPoolCount;
         prim = D_800B9990 + primOffset;
-        D_800A35EC = index + 1;
-        object = D_800A3678 + index * 36;
+        gMenuObjectPoolCount = index + 1;
+        object = gMenuObjectPool + index * 36;
         *(s16 *)(object + 0) = 1;
         *(s16 *)(object + 0x12) = 0;
         *(s16 *)(object + 0x14) = 0;
@@ -2442,7 +2446,7 @@ void func_8005DAD4(void) {
         i++;
         *(u8 **)(object + 0x20) = prim;
     } while (i < 10);
-    D_800A39C4 = D_800A35EC;
+    D_800A39C4 = gMenuObjectPoolCount;
 }
 
 s32 func_8005DCF0(void) {
@@ -2476,7 +2480,7 @@ s32 func_8005DCF0(void) {
             }
         }
         if (done == 0) {
-            poly = func_80057CCC(0);
+            poly = GraphicsAllocPolyFT4(0);
             *poly = *(POLY_FT4 *)*(u8 **)(object + 0x20);
             *(u16 *)((u8 *)poly + 8) = *(u16 *)(object + 6);
             *(u16 *)((u8 *)poly + 0xA) = *(u16 *)(object + 8);
@@ -2497,7 +2501,7 @@ s32 func_8005DCF0(void) {
     return done;
 }
 
-void func_8005DEDC(s16 value) {
+void MenuSetAllObjectOrderingDepths(s16 value) {
     s32 i;
     s16 **entry;
     i = 0;
@@ -2509,7 +2513,7 @@ void func_8005DEDC(s16 value) {
     } while (i < 10);
 }
 
-void func_8005DF08(s32 a, s32 b, s32 c, u8 flag) {
+void MenuSetLinkedObjectMotion(s32 a, s32 b, s32 c, u8 flag) {
     u8 *object;
     object = D_800A392C;
     while (object) {
@@ -2519,6 +2523,6 @@ void func_8005DF08(s32 a, s32 b, s32 c, u8 flag) {
         object[5] = c;
         if (flag)
             *(s16 *)(object + 0xA) = 125;
-        object = (u8 *)((MenuObj *)object)->unk1C;
+        object = (u8 *)((MenuObj *)object)->next;
     }
 }

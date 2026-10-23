@@ -4,24 +4,24 @@
 #include "common.h"
 
 typedef struct MenuObj {
-    s16 unk0;
-    u8 unk2;
-    u8 unk3;
-    u8 unk4;
+    s16 kind;
+    u8 red;
+    u8 green;
+    u8 blue;
     u8 unk5;
-    s16 unk6;
-    s16 unk8;
-    s16 unkA;
-    s16 unkC;
-    s16 unkE;
-    s16 unk10;
-    s16 unk12;
-    s16 unk14;
-    s16 unk16;
-    s16 unk18;
-    s16 unk1A;
-    struct MenuObj *unk1C;
-    u8 *unk20;
+    s16 x;
+    s16 y;
+    s16 targetX;
+    s16 targetY;
+    s16 velocityX;
+    s16 velocityY;
+    s16 drawOffsetX;
+    s16 drawOffsetY;
+    s16 width;
+    s16 height;
+    s16 orderingDepth;
+    struct MenuObj *next;
+    u8 *primitive;
 } MenuObj;
 
 #endif /* MENU_OBJ_H */

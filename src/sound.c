@@ -15,14 +15,14 @@
 
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern u8 *gPlayerCar[];
-void func_80025594();
+void CarResetMotionCounters();
 s32 func_8003702C(u8 *, u8 *);
 extern void HeapFree(void *ptr);
 extern s32 D_800A359C[];
-extern void func_80025594(u8 *);
+extern void CarResetMotionCounters(u8 *);
 extern void FileRead();
-extern u8 D_800A2F95;
-void func_8001F90C(s32 arg0, s32 arg1, s32 arg2, s16 *arg3);
+extern u8 gStereoEnabled;
+void VectorRotate2D(s32 angleIndex, s32 x, s32 y, s16 *rotatedPoint);
 void *FileOpen(s32 fileId, void *mode);
 void FileClose(void);
 s32 FileSeek(s32 *handle);
@@ -32,7 +32,7 @@ s32 FileSeek(s32 *handle);
 void SoundStart(void) {
     SsStart2();
     SsSetMVol(127, 127);
-    if (D_800A2F95 != 0) {
+    if (gStereoEnabled != 0) {
         SsSetStereo();
     } else {
         SsSetMono();
@@ -70,7 +70,7 @@ void SoundEnd(void) {
 }
 
 extern void func_80080758(void);
-void func_8003EFC8(void) {
+void SoundInitialize(void) {
     func_80080758();
 }
 
@@ -95,7 +95,7 @@ void SoundInitTables(void) {
 extern s16 gSoundSlots[];
 extern u8 D_800A3880;
 
-void func_8003F060(s32 arg0) {
+void SoundLoadVabAndResetSlots(s32 vabSource) {
     u8 i;
     s16 value;
 
@@ -110,11 +110,11 @@ again:
     gVabId = -1;
     gSequenceData = 0;
     gVabHead = 0;
-    SoundLoadVab(arg0);
+    SoundLoadVab(vabSource);
     D_800A3880 = 0;
 }
 
-void func_8003F0CC(s32 arg0) {
+void SoundReloadVabAndResetSlots(s32 vabSource) {
     u8 i;
     s32 off;
 
@@ -126,7 +126,7 @@ void func_8003F0CC(s32 arg0) {
     gVabId = -1;
     gSequenceData = 0;
     gVabHead = 0;
-    SoundReloadVab(arg0);
+    SoundReloadVab(vabSource);
     D_800A3880 = 1;
 }
 
@@ -136,7 +136,7 @@ extern s32 SoundVabOpen(s32, s32);
 void SoundLoadVab(s32 arg0) {
     s32 value;
 
-    func_8003FA0C();
+    SoundStopActiveSlots();
     if (gVabId != -1)
         SsVabClose(gVabId);
     gVabHead = (s32)FileLoadBlock((void *)(arg0 + 1), 0);
@@ -151,7 +151,7 @@ void SoundLoadVab(s32 arg0) {
     volatile s32 buf[8];
     s32 body;
 
-    func_8003FA0C();
+    SoundStopActiveSlots();
     if (gVabId != -1) {
         SsVabClose(gVabId);
     }
@@ -166,7 +166,7 @@ void SoundLoadVab(s32 arg0) {
 void SoundReloadVab(s32 arg0) {
     s32 value;
 
-    func_8003FA0C();
+    SoundStopActiveSlots();
     if (gVabId != -1)
         SsVabClose(gVabId);
     gVabHead = (s32)FileLoadBlock((void *)arg0, 0);
@@ -185,7 +185,7 @@ void SoundReloadVab(s32 arg0) {
     volatile s32 buf[8];
     s32 body;
 
-    func_8003FA0C();
+    SoundStopActiveSlots();
     if (gVabId != -1) {
         SsVabClose(gVabId);
     }
@@ -200,26 +200,26 @@ void SoundReloadVab(s32 arg0) {
 }
 #endif
 
-void func_8003F23C(void) {
+void SoundResetVoiceState(void) {
     func_80082B70();
 }
 
 void func_8003F25C(void) {
     func_80082B70();
-    func_8003F284();
+    SoundSetReverbType();
 }
 
 extern void func_80082B50(void);
-void func_8003F284(void) {
+void SoundSetReverbType(void) {
     SsUtSetReverbType(2);
     func_80082B50();
 }
 
-extern u8 D_800A2F94;
+extern u8 gMusicVolumeScaled;
 
 void SoundSetReverbDepth(s32 arg0, s32 arg1) {
-    SsUtSetReverbDepth((s16)((arg0 & 0xFF) * D_800A2F94 / 127),
-                       (s16)((arg1 & 0xFF) * D_800A2F94 / 127));
+    SsUtSetReverbDepth((s16)((arg0 & 0xFF) * gMusicVolumeScaled / 127),
+                       (s16)((arg1 & 0xFF) * gMusicVolumeScaled / 127));
 }
 
 void SoundOpenSequence(void) {
@@ -231,7 +231,7 @@ void SoundOpenSequence(void) {
     if (sequence != 0) {
         id = SsSeqOpen(sequence, gVabId);
         gSequenceId = id;
-        SsSeqSetVol(id, D_800A2F94, D_800A2F94);
+        SsSeqSetVol(id, gMusicVolumeScaled, gMusicVolumeScaled);
     }
 }
 
@@ -299,11 +299,11 @@ void SoundStopSequence(void) {
 
 extern s32 SpuGetKeyStatus(s32);
 
-s32 SoundIsSlotActive(s32 arg0) {
+s32 SoundIsSlotActive(s32 slot) {
     s16 voice;
     s32 status;
 
-    voice = gSoundSlots[(s8)arg0 * 6];
+    voice = gSoundSlots[(s8)slot * 6];
     if (voice != -1) {
         status = SpuGetKeyStatus(1 << voice);
         if (status == 1) {
@@ -368,7 +368,7 @@ s8 type;
     if ((s8)tone == -1) {
         return;
     }
-    vol = D_800A2F94;
+    vol = gMusicVolumeScaled;
     if (D_800A3880 != 0) {
         v = (s8)type;
         if (v == 7) {
@@ -519,7 +519,7 @@ s8 SoundStopSlotBody(s32 arg0) {
     }
 }
 
-void func_8003FA0C(void) {
+void SoundStopActiveSlots(void) {
     u8 i;
     s32 value;
     s16 voice;
@@ -663,15 +663,15 @@ s8 vol;
     }
 }
 
-void SoundSetSlotVolume(s8 arg0, s32 arg1, s32 arg2) {
+void SoundSetSlotVolume(s8 slot, s32 leftVolume, s32 rightVolume) {
     s16 voice;
     u16 volL;
     u16 volR;
 
-    voice = gSoundSlots[(s8)arg0 * 6];
+    voice = gSoundSlots[(s8)slot * 6];
     if (voice != -1) {
-        volL = ((arg1 & 0xFF) * D_800A2F94) / 127;
-        volR = ((arg2 & 0xFF) * D_800A2F94) / 127;
+        volL = ((leftVolume & 0xFF) * gMusicVolumeScaled) / 127;
+        volR = ((rightVolume & 0xFF) * gMusicVolumeScaled) / 127;
         if (volL >= 0x80) {
             volL = 0x7F;
         }
@@ -726,13 +726,13 @@ s16 SoundVabOpen(void *arg0, void *arg1) {
 }
 
 /* Loads a whole file into arg1, or into a page-rounded HeapAlloc block when
- * arg1 is NULL. D_800A2F98 is the "rb" mode string for FileOpen. Assigning
+ * arg1 is NULL. gSoundFileMode is the "rb" mode string for FileOpen. Assigning
  * buffer in both arms keeps the allocation in arg1's register and keeps the
  * first guard's branch on the second test.
  */
 static const char sSoundOpenError[] = "unable to open sound file";
 static const char sSoundMemoryError[] = "Insufficient memory to load sound";
-extern char D_800A2F98[];
+extern char gSoundFileMode[];
 
 s32 FileLoadBlock(void *arg0, void *arg1) {
     void *buffer;
@@ -740,7 +740,7 @@ s32 FileLoadBlock(void *arg0, void *arg1) {
     s32 padded;
     s32 size;
 
-    handle = FileOpen(arg0, D_800A2F98);
+    handle = FileOpen(arg0, gSoundFileMode);
     if (handle == NULL) {
         SystemShowFatalError(sSoundOpenError);
     }
@@ -805,7 +805,7 @@ extern s8 D_800A2FA4B[] asm("D_800A2FA4.NON_MATCHING");
 extern s8 D_800A354CB[] asm("D_800A354C.NON_MATCHING");
 extern s32 D_800BA048B[] asm("D_800BA048.NON_MATCHING");
 extern s8 D_800A39D0B asm("D_800A39D0.NON_MATCHING");
-void func_800401B8(void) {
+void SoundInitializeVoiceSlots(void) {
     s32 i;
     s32 initialized;
     i = 0;
@@ -901,7 +901,7 @@ void SoundUpdateOpponentVoice(u8 *car, s32 id) {
         SoundSetSlotVolume(id, 0, 0);
         return;
     }
-    func_8001F90C((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
+    VectorRotate2D((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
     level = D_80098C00w16[level];
     if (out[0] < 0) {
         level = level * 10 / 8;
@@ -1021,7 +1021,7 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     if (fog >= 0x100) {
         fog = 0xFF;
     }
-    func_8001F90C((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
+    VectorRotate2D((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
     pan = out[1];
     if (pan > 0) {
         q = MathFixedDivide(pan, dist);
@@ -1084,7 +1084,8 @@ void func_800409A0(u8 *object) {
         player = gPlayerCarnm[0];
         if (object == player) {
             SoundPlaySlot(0x14, 2);
-        } else if (object == *(u8 **)(player + 0x3E0) && D_800A2EA4[0] == 2) {
+        } else if (object == *(u8 **)(player + 0x3E0) &&
+                   gSplitScreenMode[0] == 2) {
             SoundPlaySlot(0x15, 2);
         }
     }
@@ -1366,19 +1367,19 @@ extern u8 D_800A2FA8;
 void func_80041328(void) {
     if (D_800A2F9D == 0) {
         SoundSetSlotVolume(0, 0, 0);
-        if (D_800A2EA4[0] == 2) {
+        if (gSplitScreenMode[0] == 2) {
             SoundSetSlotVolume(1, 0, 0);
         }
     } else if (D_800A2FA8 == 0) {
         D_800A2FA8 = 1;
         SoundSetSlotVolume(0, 0x38, 0x38);
-        if (D_800A2EA4[0] == 2) {
+        if (gSplitScreenMode[0] == 2) {
             SoundSetSlotVolume(1, 0x38, 0x38);
         }
     }
 }
 
-void func_800413C0(void) {
+void SoundMuteFiveSlots(void) {
     s32 i;
     if (D_800A2FA8) {
         D_800A2FA8 = 0;
@@ -1396,13 +1397,13 @@ void func_8004142C(void) {
     D_800A2F9D = D_800A2F9D == 0;
 }
 
-void func_80041444(s32 arg0) {
+void SoundMuteAllSlots(s32 includeExtraSlots) {
     s32 i;
 
     for (i = 0; i < 0x14; i++) {
         SoundSetSlotVolume((s8)i, 0, 0);
     }
-    if ((arg0 & 0xFF) != 0) {
+    if ((includeExtraSlots & 0xFF) != 0) {
         SoundSetSlotVolume(0x14, 0, 0);
         SoundSetSlotVolume(0x15, 0, 0);
     }
@@ -1410,20 +1411,20 @@ void func_80041444(s32 arg0) {
     SoundSetSlotVolume(0x17, 0, 0);
 }
 
-void func_800414E0(void *arg0, s32 arg1, s32 arg2) {
+void SoundPlaySlotAtVolume(void *arg0, s32 slot, s32 type) {
     if (D_800A2F9D == 0) {
         if (D_800A2EC8[0] == 0)
             return;
-        if (arg2 == 6)
+        if (type == 6)
             goto active;
-        if (arg2 != 3)
+        if (type != 3)
             return;
     }
 active:
     if (D_800A359C[0] != 0)
         return;
-    SoundPlaySlot((s8)arg1, (s8)arg2);
-    SoundSetSlotVolume((s8)arg1, 0x72, 0x72);
+    SoundPlaySlot((s8)slot, (s8)type);
+    SoundSetSlotVolume((s8)slot, 0x72, 0x72);
 }
 
 void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -1432,7 +1433,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_800A2E90[];
     extern u8 D_800A2EE0[];
     extern s32 D_800BE86C[];
-    extern void func_80025594();
+    extern void CarResetMotionCounters();
     s32 timer;
     s32 *base;
     s32 *slot;
@@ -1448,7 +1449,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (D_800A397C[0] == 2) {
         return;
     }
-    if (*(u8 *)(gPlayerCar[0] + 0xF4) == 0 && D_800A2EA4[0] == 0) {
+    if (*(u8 *)(gPlayerCar[0] + 0xF4) == 0 && gSplitScreenMode[0] == 0) {
         return;
     }
     timer = D_800A2EC0Absolute[0];
@@ -1503,7 +1504,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         arg2 = 5;
         break;
     case 0x26:
-        if (*(s32 *)(arg0 + 0x354) != (s32)func_80025594) {
+        if (*(s32 *)(arg0 + 0x354) != (s32)CarResetMotionCounters) {
             return;
         }
         if (D_800A38B0[0] != 0) {
@@ -1523,14 +1524,14 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         arg2 = 6;
         break;
     case 0x21:
-        if (D_800A2EB0Absolute[0] != 0) {
+        if (gSessionTypeAbsolute[0] != 0) {
             return;
         }
         arg3 = 0;
         arg2 = 7;
         break;
     case 0x22:
-        if (D_800A2EB0Absolute[0] == 1) {
+        if (gSessionTypeAbsolute[0] == 1) {
             return;
         }
         arg3 = 0;
@@ -1542,12 +1543,12 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         if (*(u8 *)(arg0 + 0xF4) == 0) {
             return;
         }
-        if (D_800A2EB0Absolute[0] == 1) {
+        if (gSessionTypeAbsolute[0] == 1) {
             return;
         }
         break;
     case 0x29:
-        if (D_800A2EB0Absolute[0] != 0) {
+        if (gSessionTypeAbsolute[0] != 0) {
             return;
         }
         if (D_800A2EE0[0] != 0) {
@@ -1644,15 +1645,15 @@ void func_80041850(void) {
         default:
             return;
         }
-        func_8003F060(msg);
+        SoundLoadVabAndResetSlots(msg);
     } else {
-        func_8003F060(0x3E);
+        SoundLoadVabAndResetSlots(0x3E);
     }
 }
 
 void func_8004195C(void) {
     SsStart2();
-    func_8003F284();
+    SoundSetReverbType();
     SoundPlaySlot(0, 0);
     SoundSetSlotVolume(0, 0, 0);
     VSync(0);
@@ -1670,7 +1671,7 @@ void func_8004195C(void) {
 
 extern void SsSetMute(s32);
 
-void func_80041A28(void) {
+void SoundShutdownAll(void) {
     s32 i;
 
     i = 0;
@@ -1680,8 +1681,8 @@ void func_80041A28(void) {
     } while (i < 5);
     SoundSetReverbDepth(0, 0);
     SoundSetSequenceVolume(0, 0);
-    func_8003F23C();
-    func_8003FA0C();
+    SoundResetVoiceState();
+    SoundStopActiveSlots();
     SsSetMVol(0, 0);
     VSync(0);
     VSync(0);

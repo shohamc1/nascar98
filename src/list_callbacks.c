@@ -18,14 +18,15 @@ extern s32 gOrderingTable[];
 
 /* Lists and callbacks. */
 
-struct ListNode28 {
+struct RenderListNode {
     u8 unk0[0x28];
-    ListNode28 *next;
+    RenderListNode *next;
 };
 
-void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before) {
-    ListNode28 *current;
-    ListNode28 *previous;
+void ListInsertBefore(RenderListNode **head, RenderListNode *node,
+                      RenderListNode *before) {
+    RenderListNode *current;
+    RenderListNode *previous;
 
     if (before == 0) {
         node->next = *head;
@@ -51,9 +52,9 @@ void ListInsertBefore(ListNode28 **head, ListNode28 *node, ListNode28 *before) {
     }
 }
 
-void ListRemoveNode(ListNode28 **head, ListNode28 *target) {
-    ListNode28 *current;
-    ListNode28 *previous;
+void ListRemoveNode(RenderListNode **head, RenderListNode *target) {
+    RenderListNode *current;
+    RenderListNode *previous;
 
     current = *head;
     previous = current;
@@ -72,7 +73,7 @@ void ListRemoveNode(ListNode28 **head, ListNode28 *target) {
     }
 }
 
-void func_8001C668(void *arg0, void *arg1) {
+void func_8001C668(void *headPointer, void *tailPointer) {
     u8 **head;
     u8 **tail;
     u8 *node;
@@ -80,8 +81,8 @@ void func_8001C668(void *arg0, void *arg1) {
     u8 *prevNode;
     u8 *temp;
 
-    head = (u8 **)arg0;
-    tail = (u8 **)arg1;
+    head = (u8 **)headPointer;
+    tail = (u8 **)tailPointer;
     node = *head;
     next = NULL;
     prevNode = NULL;
@@ -212,10 +213,10 @@ void ListPushFront(u8 *node, u8 **head, u8 **tail) {
     }
 }
 
-void ListRemoveNodeWithTail(ListNode28 *node, ListNode28 **head,
-                            ListNode28 **tail) {
-    ListNode28 *previous;
-    ListNode28 *current;
+void ListRemoveNodeWithTail(RenderListNode *node, RenderListNode **head,
+                            RenderListNode **tail) {
+    RenderListNode *previous;
+    RenderListNode *current;
     current = *head;
     previous = current;
     if (current != 0) {
@@ -259,21 +260,21 @@ void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
     }
 }
 
-void func_8001C99C(u8 *arg0) {
+void RenderTransformVerticesWithOffset(u8 *object) {
     s32 i;
     s32 *vec;
     u8 *el;
     u8 *base;
 
     base = D_800BE97C[0];
-    vec = (s32 *)(arg0 + 0x210);
+    vec = (s32 *)(object + 0x210);
     func_8001F2C4(0, 0, (D_800A2EC0Absolute[0] & 0x1F) << 5);
-    for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
-        el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
-        *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
-        *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
-        *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
-        func_8001ED84((s32 *)el);
+    for (i = 0; i < *(s16 *)(object + 0xA); i++) {
+        el = base + *(u16 *)(object + 0x10 + i * 2) * 0x14;
+        *(u16 *)(el + 0) = *(u16 *)(object + 0x90 + i * 6);
+        *(u16 *)(el + 2) = *(u16 *)(object + 0x92 + i * 6);
+        *(u16 *)(el + 4) = *(u16 *)(object + 0x94 + i * 6);
+        MatrixTransformVector((s32 *)el);
         *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
         *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
         *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
@@ -296,7 +297,7 @@ void func_8001CAB8(u8 *arg0) {
         *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
         *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
         *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
-        func_8001ED84((s32 *)el);
+        MatrixTransformVector((s32 *)el);
         *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
         *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
         *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
@@ -348,7 +349,7 @@ void func_8001CBD4(u8 *arg0) {
    0x40 at +8/+0xC and reuse the variable for 0xBF); (c) the != 0 arm is the
    fall-through; (d) if-arm +0xD/+0x15 store c (0x78), +9/+0x11 store 0;
    (e) gOTB test must be `!= 0` with the 0-arg call as fall-through. */
-extern ListNode28 *D_800A3A40Absolute[];
+extern RenderListNode *D_800A3A40Absolute[];
 
 /* Sets up a shade-tex primitive (0x2C entry) from the D_800A3A40 pool:
    entry +0xE tpage, +0xA clut (first arm only), +8..+0x15 palette bytes. */
@@ -412,7 +413,7 @@ void func_8001CC7C(u8 *arg0) {
     }
 }
 #else
-extern ListNode28 *D_800A3A40Absolute[];
+extern RenderListNode *D_800A3A40Absolute[];
 
 void func_8001CC7C(u8 *arg0) {
     s32 pal;
@@ -480,7 +481,7 @@ void func_8001CC7C(u8 *arg0) {
 }
 
 #endif
-extern ListNode28 *D_800A3A40Absolute[];
+extern RenderListNode *D_800A3A40Absolute[];
 
 void func_8001CDDC(u8 *arg0) {
     s32 pal;
@@ -612,10 +613,10 @@ void func_8001CF38(u8 *arg0) {
 }
 
 extern void (*D_80091080[])(void *);
-void ListDispatchCallbacks(u8 *arg0) {
+void ListDispatchCallbacks(u8 *owner) {
     u8 *node;
     void (*callback)(void *);
-    node = *(u8 **)(arg0 + 0x30);
+    node = *(u8 **)(owner + 0x30);
     while (node != 0) {
         callback = D_80091080[*(s16 *)(node + 0xC)];
         callback(node);
@@ -653,7 +654,7 @@ again:
     *(s16 *)(obj + 0xE) = flags;
 }
 
-void func_8001D1B0(s32 *destination, s32 *source) {
+void RenderCopyVertexCoordinates(s32 *destination, s32 *source) {
     s32 first;
     s32 second;
     first = source[0];
@@ -879,8 +880,8 @@ color:
     AddPrim((u8 *)gOrderingTable[0], entry);
 }
 extern POLY_FT4 D_800A3C6C[];
-void func_8001D778(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
-                   s32 semiTrans) {
+void GraphicsDrawRect(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
+                      s32 semiTrans) {
     POLY_FT4 *prim;
     POLY_FT4 *entry;
     u32 cursor;
@@ -920,8 +921,8 @@ void func_8001D778(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
 
 extern POLY_F4 D_800A3D0C[];
 extern s32 D_800A2DB8;
-void func_8001D914(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
-                   s32 semiTrans) {
+void GraphicsDrawFlatRect(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
+                          s32 semiTrans) {
     POLY_F4 *poly;
 
     poly = &D_800A3D0C[D_800A2DB8];
@@ -971,7 +972,7 @@ void func_8001DA48(u8 *ot, s32 x, s32 y, s32 w, s32 h) {
     AddPrim(ot, poly);
 }
 
-extern Unk16 *func_8001E040(s32);
+extern ImageBankTexture *GraphicsGetImageBankTexture(s32);
 extern void func_80032D94(s8 *);
 
 typedef struct {
@@ -979,10 +980,10 @@ typedef struct {
     s16 y;
 } XyPair;
 
-void func_8001DB20(ListNode28 *arg0, s32 arg1) {
+void func_8001DB20(RenderListNode *arg0, s32 arg1) {
     POLY_FT4 poly;
     POLY_FT4 *prim;
-    Unk16 *tex;
+    ImageBankTexture *tex;
     u8 *vert;
     u8 flag;
     u8 r;
@@ -1033,7 +1034,7 @@ void func_8001DB20(ListNode28 *arg0, s32 arg1) {
     }
     tex = 0;
     if (*(s16 *)((u8 *)arg0 + 0x16) >= 0) {
-        tex = func_8001E040(*(s16 *)((u8 *)arg0 + 0x16));
+        tex = GraphicsGetImageBankTexture(*(s16 *)((u8 *)arg0 + 0x16));
     }
     saved = *(s8 *)((u8 *)arg0 + 1);
     if (tex != 0) {
@@ -1144,30 +1145,30 @@ void func_8001DB20(ListNode28 *arg0, s32 arg1) {
 
 extern s32 D_800BE978[];
 
-extern void func_8001DB20(ListNode28 *, s32);
+extern void func_8001DB20(RenderListNode *, s32);
 
-void func_8001DF60(void) {
+void RenderDrawGeometryList(void) {
     s32 count;
     s32 i;
 
     count = D_800BE978[0];
     i = 0;
     while (i < count) {
-        func_8001DB20((ListNode28 *)((u8 *)D_800A3A40Absolute[0] + i * 0x2C),
-                      1);
+        func_8001DB20(
+            (RenderListNode *)((u8 *)D_800A3A40Absolute[0] + i * 0x2C), 1);
         i += 1;
     }
 }
 
-void func_8001DFC8(void) {
-    extern ListNode28 D_800AE8C0[];
+void RenderDrawFiveLinkedLists(void) {
+    extern RenderListNode D_800AE8C0[];
     s32 offset;
     s32 i;
-    ListNode28 *node;
+    RenderListNode *node;
     i = 0;
     offset = 0;
     do {
-        node = *(ListNode28 **)((u8 *)D_800AE8C0 + offset);
+        node = *(RenderListNode **)((u8 *)D_800AE8C0 + offset);
         if (node != NULL) {
             do {
                 func_8001DB20(node, 0);

@@ -5,7 +5,7 @@
 
 void func_800406D0(u8 *, u8 *, s32, s32);
 s32 func_80041848(u8 *, s32);
-void func_80041A28(void);
+void SoundShutdownAll(void);
 void SoundLoadVab(s32 arg0);
 void SoundReloadVab(s32 arg0);
 void SoundShutdown(void);

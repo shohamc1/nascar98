@@ -327,7 +327,7 @@ extern CdlCB CD_cbsync;
 
 /* Sends a command, retrying up to four times. A command that takes a
  * position first sends CdlSetloc. Returns 0 on success and -1 on failure. */
-static __inline__ s32 cd_cw(u8 com, u8 *param, u8 *result, s32 arg3) {
+static __inline__ s32 cd_cw(u8 com, u8 *param, u8 *result, s32 asyncFlag) {
     CdlCB old = CD_cbsync;
     s32 count = 3;
 
@@ -339,7 +339,7 @@ static __inline__ s32 cd_cw(u8 com, u8 *param, u8 *result, s32 arg3) {
         if (param == 0 || D_8009B9FC[com] == 0 ||
             !CD_cw(CdlSetloc, param, result, 0)) {
             CD_cbsync = old;
-            if (!CD_cw(com, param, result, arg3)) {
+            if (!CD_cw(com, param, result, asyncFlag)) {
                 return 0;
             }
         }
@@ -444,17 +444,17 @@ typedef struct {
     u8 c;
 } CD_intr;
 
-typedef struct Alarm_t {
-    s32 unk0;
-    s32 unk4;
-    char *unk8;
-} Alarm_t;
+typedef struct CdAlarm {
+    s32 timeoutVSync;
+    s32 pollCount;
+    char *commandName;
+} CdAlarm;
 
 extern volatile CD_intr Intr;
 extern Result_t CD_resultSync;
 extern Result_t CD_resultReady;
 extern Result_t CD_resultC;
-extern volatile Alarm_t Alarm;
+extern volatile CdAlarm Alarm;
 extern CdlCB CD_cbready;
 extern s32 CD_debug;
 extern s32 CD_status;
@@ -590,17 +590,18 @@ s32 getintr(void) {
 
 static __inline__ void CD_setAlarm(char *name) {
     /* schedule a timeout 960 vblanks from now */
-    ((Alarm_t *)&Alarm)->unk0 = VSync(-1) + 960;
-    ((Alarm_t *)&Alarm)->unk4 = 0;
-    ((Alarm_t *)&Alarm)->unk8 = name;
+    ((CdAlarm *)&Alarm)->timeoutVSync = VSync(-1) + 960;
+    ((CdAlarm *)&Alarm)->pollCount = 0;
+    ((CdAlarm *)&Alarm)->commandName = name;
 }
 
 static __inline__ s32 CD_getAlarm(void) {
-    if (((Alarm_t *)&Alarm)->unk0 < VSync(-1) ||
-        ((Alarm_t *)&Alarm)->unk4++ > 0x3C0000) {
+    if (((CdAlarm *)&Alarm)->timeoutVSync < VSync(-1) ||
+        ((CdAlarm *)&Alarm)->pollCount++ > 0x3C0000) {
         puts(sCdTimeoutPrefix);
-        printf(sCdTimeoutFormat, ((Alarm_t *)&Alarm)->unk8, CD_comstr[CD_com],
-               CD_intrstr[Intr.sync], CD_intrstr[Intr.ready]);
+        printf(sCdTimeoutFormat, ((CdAlarm *)&Alarm)->commandName,
+               CD_comstr[CD_com], CD_intrstr[Intr.sync],
+               CD_intrstr[Intr.ready]);
         CD_flush();
         return -1;
     }
@@ -694,7 +695,7 @@ s32 CD_ready(s32 mode, u8 *result) {
     }
 }
 
-s32 CD_cw(u8 com, u8 *param, u8 *result, s32 arg3) {
+s32 CD_cw(u8 com, u8 *param, u8 *result, s32 asyncFlag) {
     s32 i;
 
     if (CD_debug > 1) {
@@ -722,7 +723,7 @@ s32 CD_cw(u8 com, u8 *param, u8 *result, s32 arg3) {
     }
     CD_com = com;
     *libcd_CDRegister1 = com;
-    if (arg3 != 0) {
+    if (asyncFlag != 0) {
         return 0;
     }
 
@@ -961,59 +962,59 @@ void callback(void) {
 
 typedef struct {
     s32 sectors;
-    u32 *unk4;
-    u32 *unk8;
+    u32 *buffer;
+    u32 *currentBuffer;
     s32 mode;
-    s32 unk10;
-    s32 unk14;
-    s32 unk18;
-    s32 unk1C;
-    s32 unk20;
+    s32 sectorWordCount;
+    s32 sectorsRemaining;
+    s32 lastCallbackVSync;
+    s32 startVSync;
+    s32 currentSector;
     CdlCB sync;
     CdlCB ready;
-} cdreadStruct;
+} CdReadState;
 
-extern volatile cdreadStruct CD_read;
+extern volatile CdReadState CD_read;
 extern CdlCB CD_ReadCallbackFunc;
 extern char D_800903C0[];
 extern s32 cd_read_retry(s32);
 
-void cb_read(u8 arg0, u8 *result) {
+void cb_read(u8 status, u8 *result) {
     s32 pos[3];
 
-    if (arg0 == 1) {
-        if (CD_read.unk14 > 0) {
-            if (CD_read.unk10 == 0x200) {
+    if (status == 1) {
+        if (CD_read.sectorsRemaining > 0) {
+            if (CD_read.sectorWordCount == 0x200) {
                 CdGetSector(pos, 3);
-                if (CdPosToInt((CdlLOC *)pos) != CD_read.unk20) {
+                if (CdPosToInt((CdlLOC *)pos) != CD_read.currentSector) {
                     puts(D_800903C0);
-                    CD_read.unk14 = -1;
+                    CD_read.sectorsRemaining = -1;
                 }
             }
-            CdGetSector(CD_read.unk8, CD_read.unk10);
-            CD_read.unk8 += CD_read.unk10;
-            CD_read.unk14--;
-            CD_read.unk20++;
+            CdGetSector(CD_read.currentBuffer, CD_read.sectorWordCount);
+            CD_read.currentBuffer += CD_read.sectorWordCount;
+            CD_read.sectorsRemaining--;
+            CD_read.currentSector++;
         }
     } else {
-        CD_read.unk14 = -1;
+        CD_read.sectorsRemaining = -1;
     }
-    CD_read.unk18 = VSync(-1);
-    if (CD_read.unk14 < 0) {
+    CD_read.lastCallbackVSync = VSync(-1);
+    if (CD_read.sectorsRemaining < 0) {
         cd_read_retry(1);
     }
-    if (VSync(-1) > CD_read.unk1C + 1200) {
-        CD_read.unk14 = -1;
+    if (VSync(-1) > CD_read.startVSync + 1200) {
+        CD_read.sectorsRemaining = -1;
     }
-    if (CD_read.unk14 && VSync(-1) <= CD_read.unk1C + 1200) {
+    if (CD_read.sectorsRemaining && VSync(-1) <= CD_read.startVSync + 1200) {
         return;
     }
     CdSyncCallback(CD_read.sync);
     CdReadyCallback(CD_read.ready);
     CdControl(CdlPause, 0, 0);
     if (CD_ReadCallbackFunc != 0) {
-        CD_ReadCallbackFunc(CD_read.unk14 == 0 ? CdlComplete : CdlDiskError,
-                            result);
+        CD_ReadCallbackFunc(
+            CD_read.sectorsRemaining == 0 ? CdlComplete : CdlDiskError, result);
     }
 }
 
@@ -1030,15 +1031,15 @@ s32 cd_read_retry(s32 retry) {
             puts(D_800903D8);
         }
         CdControlF(CdlNop, 0);
-        CD_read.unk1C = VSync(-1);
-        CD_read.unk14 = -1;
-        return CD_read.unk14;
+        CD_read.startVSync = VSync(-1);
+        CD_read.sectorsRemaining = -1;
+        return CD_read.sectorsRemaining;
     }
     if (retry) {
         puts(D_800903F0);
         CdControl(CdlPause, 0, 0);
         if (!CdControl(CdlSetloc, CdLastPos(), 0)) {
-            return CD_read.unk14 = -1;
+            return CD_read.sectorsRemaining = -1;
         }
     }
     CdFlush();
@@ -1046,17 +1047,17 @@ s32 cd_read_retry(s32 retry) {
     mode = mode2;
     if ((char)mode2 != CdMode() || retry) {
         if (!CdControl(CdlSetmode, (u8 *)&mode, 0)) {
-            CD_read.unk14 = -1;
-            return CD_read.unk14;
+            CD_read.sectorsRemaining = -1;
+            return CD_read.sectorsRemaining;
         }
     }
-    CD_read.unk20 = CdPosToInt(CdLastPos());
+    CD_read.currentSector = CdPosToInt(CdLastPos());
     CdReadyCallback((CdlCB)&cb_read);
-    CD_read.unk8 = CD_read.unk4;
+    CD_read.currentBuffer = CD_read.buffer;
     CdControlF(CdlReadN, 0);
-    CD_read.unk14 = CD_read.sectors;
-    CD_read.unk18 = VSync(-1);
-    return CD_read.unk14;
+    CD_read.sectorsRemaining = CD_read.sectors;
+    CD_read.lastCallbackVSync = VSync(-1);
+    return CD_read.sectorsRemaining;
 }
 
 extern volatile u32 D_8009BD98[];
@@ -1073,21 +1074,21 @@ int CdRead(int sectors, u_long *buf, int mode) {
     CD_read.mode = mode;
     switch (CD_read.mode & (CdlModeSize0 | CdlModeSize1)) {
     case 0:
-        CD_read.unk10 = 0x200;
+        CD_read.sectorWordCount = 0x200;
         break;
     case CdlModeSize1:
-        CD_read.unk10 = 0x249;
+        CD_read.sectorWordCount = 0x249;
         break;
     default:
-        CD_read.unk10 = 0x246;
+        CD_read.sectorWordCount = 0x246;
         break;
     }
     CD_read.mode |= CdlModeSize1;
-    CD_read.unk4 = (u32 *)buf;
+    CD_read.buffer = (u32 *)buf;
     CD_read.sectors = sectors;
     CD_read.sync = CdSyncCallback(0);
     CD_read.ready = CdReadyCallback(0);
-    CD_read.unk1C = VSync(-1);
+    CD_read.startVSync = VSync(-1);
     if (CdStatus() & (CdlStatPlay | CdlStatSeek | CdlStatRead)) {
         CdControlB(CdlPause, 0, 0);
     }
