@@ -1915,9 +1915,9 @@ void func_8005CC34(void) {
     MenuFontSet(prim[1], prim[2]);
     result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
-    *(s16 *)&D_800A38F8->width = result;
-    *(s16 *)&D_800A38F8->x = height;
-    *(s16 *)&D_800A38F8->targetX = height;
+    D_800A38F8->width = result;
+    D_800A38F8->x = height;
+    D_800A38F8->targetX = height;
 }
 
 /* buffer is pinned to s1 with an explicit-register local: gcc 2.7.2 hands

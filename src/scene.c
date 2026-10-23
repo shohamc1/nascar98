@@ -86,7 +86,7 @@ void func_80044BCC(s32 arg0) {
 
     ot = (u32 *)(gOrderingTable[0] + 0x20);
     prim = (u8 *)gPrimitiveCursor[0];
-    typeIndex = *(s8 *)((u8 *)gCarListNM[0] + arg0 * 0x500 + 0x376);
+    typeIndex = (s8)gCarListNM[0][arg0].driver;
     gte_ldv3(D_800992E4, D_800992EC, D_800992F4);
     gte_rtpt();
     SetPolyFT3((POLY_FT3 *)prim);
@@ -7397,8 +7397,7 @@ loop2:
             next = (s16)(cur + 1);
             *(s32 *)(slot + 4) = head;
             new_var4 = ((u8 *)arg0 + arg1 * 0x28) + 0x2B4;
-            *(s32 *)((u8 *)arg0 + arg1 * 0x28 + 0x2B8) -=
-                (0x12C - *(s16 *)new_var4) >> 3;
+            arg0->wheel[arg1].unkC -= (0x12C - *(s16 *)new_var4) >> 3;
             D_800A34E8 = next % 100;
         }
     }

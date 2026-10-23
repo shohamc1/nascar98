@@ -60,8 +60,7 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
     dy = car->pos.y - D_800A38AC[1];
     dz = car->pos.z - D_800A38AC[2];
     model = *(s32 *)(car->unk36C + 0x38);
-    basePrimitive =
-        *(s32 *)((u8 *)car + gOrderingTableBankAbsolute[0] * 4 + 0x420);
+    basePrimitive = car->unk420[gOrderingTableBankAbsolute[0]];
     if ((dx >= 0 ? dx < 30001 : -dx < 30001) == 0 ||
         (dy >= 0 ? dy < 30001 : -dy < 30001) == 0 ||
         (dz >= 0 ? dz < 30001 : -dz < 30001) == 0) {
@@ -98,7 +97,7 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
         }
     }
     if (D_800A2ED4[0] == 0 && ((s8)car->unk3B9 == 0 || car->sliding != 0 ||
-                               *(s16 *)((u8 *)car + 0x92) > 400)) {
+                               ((s16 *)&car->speed)[1] > 400)) {
         if (car->speed != 0) {
             wheelAngle = (car->speed >> 16) * 5;
             if (wheelAngle > 1536)

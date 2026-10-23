@@ -196,7 +196,7 @@ void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     gEffectSlots[slotIndex].unk12 =
         ((u16)car->heading + 0x400 + RandomGetScaled16(0x60)) & 0x3FF;
     if (pointIndex < 5) {
-        speed = *(s16 *)((u8 *)car + 0x92);
+        speed = ((s16 *)&car->speed)[1];
         flag = D_800A2EE0[0];
         gEffectSlots[slotIndex].unk14 = speed;
         if (flag != 0 && car->unk3B7 == 0) {

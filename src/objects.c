@@ -4937,14 +4937,13 @@ Visible:
     }
     func_800409A0(car);
     for (i = 0, shade = 0; i < 4; shade += 0x1000000, i++) {
-        if (*(s16 *)((u8 *)car + i * 0x28 + 0x2AC) == 0 &&
-            *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
+        if (car->wheel[i].unk0 == 0 && *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
             func_800525A8(car, shade >> 24);
             if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
                 func_80041848(car, 0x57);
             }
             D_800A2E28 = D_800A2EC0Lui;
-        } else if (*(u8 *)((u8 *)car + i * 0x28 + 0x2CC) != 0) {
+        } else if (car->wheel[i].unk20 != 0) {
             func_800524A0(car, shade >> 24);
         }
     }
@@ -4957,14 +4956,14 @@ Other:
         }
         func_800409A0(car);
         for (i = 0, shade2 = 0; i < 4; shade2 += 0x1000000, i++) {
-            if (*(s16 *)((u8 *)car + i * 0x28 + 0x2AC) == 0 &&
+            if (car->wheel[i].unk0 == 0 &&
                 *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
                 func_800525A8(car, shade2 >> 24);
                 if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
                     func_80041848(car, 0x57);
                 }
                 D_800A2E28 = D_800A2EC0Lui;
-            } else if (*(u8 *)((u8 *)car + i * 0x28 + 0x2CC) != 0) {
+            } else if (car->wheel[i].unk20 != 0) {
                 func_800524A0(car, shade2 >> 24);
             }
         }
@@ -4972,7 +4971,7 @@ Other:
     }
     func_80040AC0(car);
     for (i = 0; i < 4; i++) {
-        if (*(u8 *)((u8 *)car + i * 0x28 + 0x2CC) != 0) {
+        if (car->wheel[i].unk20 != 0) {
             func_800524A0(car, i);
         }
     }
@@ -5509,7 +5508,7 @@ void CarUpdatePlayer(Car *object) {
         steeringLimit = 8;
     }
     /* Digital steering ramps toward either limit and returns to center. */
-    if ((*(s8 *)&car->unk3C4) == 4) {
+    if ((car->unk3C4) == 4) {
         if (controlFlags & 0x8000) {
             leftStep = (*(s8 *)&car->unk207);
             if (leftStep == 0) {
@@ -5524,7 +5523,7 @@ void CarUpdatePlayer(Car *object) {
             }
             (*(s8 *)&car->unk208) = 0;
             angleWork = *(u16 *)&car->steering;
-            steeringValue = *(u8 *)&car->unk207;
+            steeringValue = car->unk207;
             asm(""
                 : "=r"(steeringValue)
                 : "0"(steeringValue), "m"(*(s8 *)&car->unk208));
@@ -5549,7 +5548,7 @@ void CarUpdatePlayer(Car *object) {
             }
             (*(s8 *)&car->unk207) = 0;
             rightAngle = *(u16 *)&car->steering;
-            turnWork = *(u8 *)&car->unk208;
+            turnWork = car->unk208;
             asm("" : "=r"(turnWork) : "0"(turnWork), "m"(*(s8 *)&car->unk207));
             turnWork = (s8)turnWork;
             rightAngle -= 4;
@@ -5561,7 +5560,7 @@ void CarUpdatePlayer(Car *object) {
                 (*(u16 *)&car->steering) = (u16)turnWork;
             }
         } else {
-            steeringValue = *(s16 *)&car->steering;
+            steeringValue = car->steering;
             (*(s8 *)&car->unk207) = 0;
             (*(s8 *)&car->unk208) = 0;
             centerAngle = steeringValue;
@@ -5581,18 +5580,18 @@ void CarUpdatePlayer(Car *object) {
         }
     } else {
         /* Retail retains a second analog read and a discarded offset. */
-        analogProduct = -((*(s8 *)&car->unk3C5) * steeringLimit);
+        analogProduct = -((car->unk3C5) * steeringLimit);
         asm("" : "=r"(car) : "0"(car), "r"(analogProduct));
-        analogSample = *(s8 *)&car->unk3C5;
+        analogSample = car->unk3C5;
         (*(u16 *)&car->steering) = (u16)(analogProduct / 112);
         asm("" : : "r"(analogSample), "m"(*(u16 *)&car->steering) : "v0");
         centeredAnalog = analogSample - 128;
         asm("" : : "r"(centeredAnalog));
     }
-    if ((*(s32 *)&car->speed) >= 0) {
+    if ((car->speed) >= 0) {
         quarterAngle = (s16)(*(u16 *)&car->steering) / 4;
         headingInput = quarterAngle;
-        (*(s16 *)&car->unk212) = (s16)quarterAngle;
+        (car->unk212) = (s16)quarterAngle;
         if (headingInput >= 0) {
             if (headingInput != 1) {
 
@@ -5601,14 +5600,14 @@ void CarUpdatePlayer(Car *object) {
             }
         } else if (-headingInput == 1) {
         clearQuarterAngle:
-            (*(s16 *)&car->unk212) = 0;
+            (car->unk212) = 0;
         }
     } else {
         asm("" : : : "a0");
         headingInput = 0;
     }
     headingBase = headingInput + 0x400;
-    if (((*(u8 *)&car->unkF8) != 0) && (controlFlags & 0x40)) {
+    if (((car->unkF8) != 0) && (controlFlags & 0x40)) {
         work = headingInput * 5;
         headingInput = work >> 2;
         if (work < 0) {
@@ -5624,35 +5623,35 @@ void CarUpdatePlayer(Car *object) {
     headingInput = headingQuotientInput >> 10;
     work = headingInput << 10;
     headingInput = headingBase - work;
-    (*(s16 *)&car->unk1D0) = (s16)headingInput;
-    (*(s16 *)&car->unk1D2) = zeroPitch;
-    (*(s16 *)&car->unk1D4) = zeroRoll;
+    (car->unk1D0) = (s16)headingInput;
+    (car->unk1D2) = zeroPitch;
+    (car->unk1D4) = zeroRoll;
     throttlePressed = controlFlags & 0x40;
     if (throttlePressed) {
         work = D_800A2E24PlayerStep;
-        (*(s32 *)&car->unk37C) = 0;
-        (*(s32 *)&car->unk84) = work;
+        (car->unk37C) = 0;
+        (car->unk84) = work;
     } else {
-        work = *(s32 *)&car->unk37C;
-        (*(s32 *)&car->unk84) = 0;
+        work = car->unk37C;
+        (car->unk84) = 0;
         work++;
-        (*(s32 *)&car->unk37C) = work;
+        (car->unk37C) = work;
     }
     func_8002B258(car);
     func_8002D16C(car);
     func_8002B538(car);
     func_80029A78(car);
     CarApplyCorneringDrag(car);
-    positionX = *(s32 *)&car->pos.x + *(s32 *)&car->velocityX;
-    positionY = *(s32 *)&car->pos.y + *(s32 *)&car->velocityY;
-    positionZ = *(s32 *)&car->pos.z + *(s32 *)&car->velocityZ;
-    *(s32 *)&car->pos.x = positionX;
-    *(s32 *)&car->pos.y = positionY;
-    *(s32 *)&car->pos.z = positionZ;
+    positionX = car->pos.x + car->velocityX;
+    positionY = car->pos.y + car->velocityY;
+    positionZ = car->pos.z + car->velocityZ;
+    car->pos.x = positionX;
+    car->pos.y = positionY;
+    car->pos.z = positionZ;
     func_80029CB4(car);
     func_80039B74(car, 0);
-    if ((*(s8 *)&car->place) == 1) {
-        (*(s32 *)&car->unk3D0) = (s32)D_800A2EC0PlayerStep[0];
+    if ((car->place) == 1) {
+        (car->unk3D0) = (s32)D_800A2EC0PlayerStep[0];
     }
 }
 
@@ -9624,8 +9623,7 @@ u16 func_80030F24(Car *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     s32 value;
     s16 result16;
 
-    offset = (*(s16 *)&object->fineHeading + *(s16 *)&object->unk118 + 0x1000) &
-             0xFFF;
+    offset = (*(s16 *)&object->fineHeading + object->unk118 + 0x1000) & 0xFFF;
     tableA = (s16 *)D_800A384CAbsolute[0];
     tableB = (s16 *)D_800A3854Absolute[0];
     pointArray[0] +=
@@ -9633,21 +9631,21 @@ u16 func_80030F24(Car *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     pointArray[1] +=
         ((tableB[offset] * arg2 + tableA[offset] * arg3) >> 16) * 4;
     pointArray[2] = 0;
-    if (*(s16 *)&object->type == 0) {
+    if (object->type == 0) {
         if (D_800A2F2C > 0) {
             D_800A2F2C = D_800A2F2C - 1;
         }
     }
-    *(s16 *)&object->segment = (s16)TrackFindSection(
-        pointArray[0], pointArray[1], D_800A2F2CAbsolute, &outX, &outZ);
+    object->segment = (s16)TrackFindSection(pointArray[0], pointArray[1],
+                                            D_800A2F2CAbsolute, &outX, &outZ);
     object->unkDC = *(Vec3 *)D_800B6094;
-    result16 = *(s16 *)&object->segment;
+    result16 = object->segment;
     if (result16 == -1) {
-        *(u8 *)&object->collisionPending = 1;
+        object->collisionPending = 1;
         return 0;
     }
-    *(s32 *)&object->regionIndex = result16;
-    if ((*(s16 *)&object->type == 0) && (outZ == 2)) {
+    object->regionIndex = result16;
+    if ((object->type == 0) && (outZ == 2)) {
         point[0] = pointArray[0] / 4 - D_800AE844[0];
         point[1] = pointArray[1] / 4 - D_800AE848[0];
         func_80030D80(object, point);
@@ -9665,13 +9663,13 @@ u16 func_80030F24(Car *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
         pointArray[2] = outX * 4;
         *(s16 *)&object->state = outZ;
     }
-    if (*(s16 *)&object->segment < *(s16 *)&object->unk1E2) {
-        *(s16 *)&object->unk1E2 = *(s16 *)&object->segment;
+    if (object->segment < object->unk1E2) {
+        object->unk1E2 = object->segment;
     }
-    if (*(s16 *)&object->unk1E4 < *(s16 *)&object->segment) {
-        *(s16 *)&object->unk1E4 = *(s16 *)&object->segment;
+    if (object->unk1E4 < object->segment) {
+        object->unk1E4 = object->segment;
     }
-    return *(u16 *)&object->state;
+    return object->state;
 }
 
 void VectorNormalize3D(s32 x, s32 y, s32 z, s32 *out) {
@@ -9773,7 +9771,7 @@ void func_80031264(Car *object) {
         object->unkFE = result;
     } else {
         for (i = 0; i < 4; i++) {
-            *(u16 *)((u8 *)object + i * 0x28 + 0x2AC) = (u16)object->unk39A;
+            *(u16 *)&object->wheel[i].unk0 = (u16)object->unk39A;
         }
         object->unkFE = (u16)object->unk39A;
     }
@@ -9879,19 +9877,19 @@ void func_800319D4(Car *object, s32 arg1) {
     s32 value;
     u16 result;
 
-    value = *(s32 *)&object->pos.x;
+    value = object->pos.x;
     corners[4][0] = value;
     corners[3][0] = value;
     corners[2][0] = value;
     corners[1][0] = value;
     corners[0][0] = value;
-    value = *(s32 *)&object->pos.y;
+    value = object->pos.y;
     corners[4][1] = value;
     corners[3][1] = value;
     corners[2][1] = value;
     corners[1][1] = value;
     corners[0][1] = value;
-    value = *(s32 *)&object->pos.z;
+    value = object->pos.z;
     corners[4][2] = value;
     corners[3][2] = value;
     corners[2][2] = value;
@@ -9902,21 +9900,21 @@ void func_800319D4(Car *object, s32 arg1) {
     *(Vec3 *)&object->rot[2].x = *(Vec3 *)&object->basis[2].x;
     func_8001EEC4(object);
     func_8001F198();
-    *(u8 *)&object->collisionPending = 0;
-    *(s16 *)&object->fineHeading = *(s16 *)&object->heading * 4;
+    object->collisionPending = 0;
+    *(s16 *)&object->fineHeading = object->heading * 4;
     if (arg1 == 0) {
-        *(s16 *)&object->unk1E2 = 0x7D00;
-        *(s16 *)&object->unk1E4 = -1;
-        D_800A2F2C = *(s32 *)&object->regionIndex;
+        object->unk1E2 = 0x7D00;
+        object->unk1E4 = -1;
+        D_800A2F2C = object->regionIndex;
         result = func_80030F24(object, corners[3], 0, 0, 0);
         *(s16 *)&object->frontRightContact = result;
         *(s16 *)&object->frontLeftContact = result;
-        *(s16 *)&object->rearRightContact = *(u16 *)&object->frontRightContact;
-        *(s16 *)&object->rearLeftContact = *(u16 *)&object->frontRightContact;
+        *(s16 *)&object->rearRightContact = object->frontRightContact;
+        *(s16 *)&object->rearLeftContact = object->frontRightContact;
     }
     vecA[0] = object->unkDC.x;
     vecA[1] = object->unkDC.y;
-    index = *(s16 *)&object->heading * 4;
+    index = object->heading * 4;
     temp1 = (*(s32 *)(index + (u32)D_800A3A2CAbsolute[0]) << 8) >> 16;
     temp2 = (*(s32 *)(index + (u32)D_800A3A34Absolute[0]) << 8) >> 16;
     corners[0][0] = temp1;
@@ -9926,20 +9924,18 @@ void func_800319D4(Car *object, s32 arg1) {
     corners[0][2] = -((vecA[0] * temp1 + vecA[1] * temp2) >> 16);
     corners[1][2] = -((vecA[0] * -temp2 + vecA[1] * temp1) >> 16);
     if (arg1 == 0) {
-        corners[0][2] +=
-            *(s16 *)&object->wheel[3].unk0 - *(s16 *)&object->wheel[1].unk0;
-        corners[1][2] +=
-            *(s16 *)&object->wheel[0].unk0 - *(s16 *)&object->wheel[1].unk0;
-        sum = *(s16 *)&object->wheel[3].unk0 + *(s16 *)&object->wheel[1].unk0 +
-              *(s16 *)&object->wheel[0].unk0 + *(s16 *)&object->wheel[2].unk0;
+        corners[0][2] += object->wheel[3].unk0 - object->wheel[1].unk0;
+        corners[1][2] += object->wheel[0].unk0 - object->wheel[1].unk0;
+        sum = object->wheel[3].unk0 + object->wheel[1].unk0 +
+              object->wheel[0].unk0 + object->wheel[2].unk0;
         sum4 = sum / 4;
-        *(s16 *)&object->unk1BE = sum4;
-        *(s32 *)&object->pos.z = corners[3][2] + (s16)sum4;
+        object->unk1BE = sum4;
+        object->pos.z = corners[3][2] + (s16)sum4;
         object->unk1E8 = *(u16 *)&object->unk1E4;
         object->unk1E6 = *(u16 *)&object->unk1E2;
     } else {
-        *(s16 *)&object->unk1E4 = -1;
-        *(s16 *)&object->unk1E2 = -1;
+        object->unk1E4 = -1;
+        object->unk1E2 = -1;
     }
     OuterProduct0(corners[0], corners[1], cross);
     cross[0] >>= 6;

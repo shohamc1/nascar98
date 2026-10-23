@@ -1075,7 +1075,7 @@ void func_800409A0(Car *object) {
     }
     func_8003FC0C(
         id,
-        (s8)(*(s16 *)((u8 *)object + 0x92) * 8 / *(s16 *)((u8 *)object + 0x9A) +
+        (s8)(((s16 *)&object->speed)[1] * 8 / ((s16 *)&object->maxSpeed)[1] +
              0x2C),
         0);
     if (object->unk3B8 == 0) {

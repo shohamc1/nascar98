@@ -634,8 +634,8 @@ void CarCheckGroundContact(Car *car) {
         car->unk396 &= ~8;
     }
     for (i = 0; i < 4; i++) {
-        *(u16 *)((u8 *)car + 0x2AC + i * 0x28) = (u16)car->unk39A;
-        *(u16 *)((u8 *)car + 0x2B0 + i * 0x28) = 0;
+        *(u16 *)&car->wheel[i].unk0 = (u16)car->unk39A;
+        *(u16 *)&car->wheel[i].effect = 0;
     }
 }
 
@@ -652,12 +652,12 @@ void CarUpdateTumble(Car *car) {
     if (!(car->unk396 & 8)) {
         car->unk39A += car->unk394;
         car->unk394 -= 8;
-        *(s32 *)&car->speed -= 0x8000;
-        if (*(s32 *)&car->speed < 0) {
-            *(s32 *)&car->speed = 0;
+        car->speed -= 0x8000;
+        if (car->speed < 0) {
+            car->speed = 0;
         }
     } else {
-        if (*(s32 *)&car->speed < 0x320000 || ABS(car->unk394) < 0x14) {
+        if (car->speed < 0x320000 || ABS(car->unk394) < 0x14) {
             if (car->unk396 & 1) {
                 car->unk396 = (car->unk396 & ~1) | 2;
             }
@@ -665,23 +665,23 @@ void CarUpdateTumble(Car *car) {
         car->unk394 = -car->unk394 / 2 - 10;
         car->unk39A += car->unk394;
         if (car->unk396 & 1) {
-            r = *(s16 *)&car->unk388 % 512;
+            r = car->unk388 % 512;
             heading = car->unk398;
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[r],
-                                    *(s32 *)&car->speed / 3);
+                                    car->speed / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[heading], t);
             car->unk38C = t >> 16;
             if (*(u16 *)&car->unk38A > 0x100 && *(u16 *)&car->unk38A < 0x300) {
                 car->unk38C = -car->unk38C;
             }
-            r = *(s16 *)&car->unk38A % 512;
+            r = car->unk38A % 512;
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Small)[r],
-                                    *(s32 *)&car->speed / 3);
+                                    car->speed / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[heading], t);
             car->unk38E = t >> 16;
-            *(s32 *)&car->speed = *(s32 *)&car->speed * 9 / 10;
-            if (*(s32 *)&car->speed < 0) {
-                *(s32 *)&car->speed = 0;
+            car->speed = car->speed * 9 / 10;
+            if (car->speed < 0) {
+                car->speed = 0;
             }
         }
     }
@@ -715,21 +715,21 @@ void CarUpdateTumble(Car *car) {
         car->unk396 = (car->unk396 & ~2) | 4;
     }
     if (car->unk396 & 4) {
-        *(s16 *)&car->unk388 += car->unk38C / 2;
-        if ((car->unk38C > 0 && *(s16 *)&car->unk388 >= car->unk390) ||
-            (car->unk38C <= 0 && *(s16 *)&car->unk388 <= car->unk390)) {
+        car->unk388 += car->unk38C / 2;
+        if ((car->unk38C > 0 && car->unk388 >= car->unk390) ||
+            (car->unk38C <= 0 && car->unk388 <= car->unk390)) {
             car->unk38C = 0;
-            *(s16 *)&car->unk388 = car->unk390 & 0x3FF;
+            car->unk388 = car->unk390 & 0x3FF;
         } else if (car->unk38C > 0) {
             car->unk38C += 1;
         } else {
             car->unk38C -= 1;
         }
-        *(s16 *)&car->unk38A += car->unk38E / 2;
-        if ((car->unk38E > 0 && *(s16 *)&car->unk38A >= car->unk392) ||
-            (car->unk38E <= 0 && *(s16 *)&car->unk38A <= car->unk392)) {
+        car->unk38A += car->unk38E / 2;
+        if ((car->unk38E > 0 && car->unk38A >= car->unk392) ||
+            (car->unk38E <= 0 && car->unk38A <= car->unk392)) {
             car->unk38E = 0;
-            *(s16 *)&car->unk38A = car->unk392 & 0x3FF;
+            car->unk38A = car->unk392 & 0x3FF;
         } else if (car->unk38E > 0) {
             car->unk38E += 1;
         } else {
@@ -737,19 +737,19 @@ void CarUpdateTumble(Car *car) {
         }
         d = car->unk390 & 0x3FF;
         heading = car->unk392 & 0x3FF;
-        if (*(s16 *)&car->unk388 == d && *(s16 *)&car->unk38A == heading) {
-            if (!D_800A2EDC[0] || d + heading == 0 || *(s16 *)&car->type == 1) {
-                *(s16 *)&car->unk1BC = 3;
+        if (car->unk388 == d && car->unk38A == heading) {
+            if (!D_800A2EDC[0] || d + heading == 0 || car->type == 1) {
+                car->unk1BC = 3;
                 for (i = 0; i < 4; i++) {
-                    *(s16 *)((u8 *)car + 0x2B0 + i * 0x28) = car->unk394 / 2;
+                    car->wheel[i].effect = car->unk394 / 2;
                 }
                 return;
             }
-            if (*(s16 *)&car->unk1BC != 4) {
-                *(u8 *)&car->unk3B7 = 0x14;
+            if (car->unk1BC != 4) {
+                car->unk3B7 = 0x14;
             }
-            *(s16 *)&car->unk1BC = 4;
+            car->unk1BC = 4;
         }
     }
-    CarSetVelocityFromHeading(car, *(s16 *)&car->movementHeading);
+    CarSetVelocityFromHeading(car, car->movementHeading);
 }

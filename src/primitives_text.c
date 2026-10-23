@@ -1490,9 +1490,9 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
             x += D_800A2D8C;
         } while (*p != 0);
     }
-    FontDrawGlyph((s8)(*(u8 *)((u8 *)car + 0x10C) + '1'), 60, 190 - yOffset, 2);
+    FontDrawGlyph((s8)((u8)car->gearIndex + '1'), 60, 190 - yOffset, 2);
     if (hideTimes == 0) {
-        helperTime = *(void **)((u8 *)car + 0x258);
+        helperTime = (void *)car->unk258;
         helperMode = 2;
         helperBuffer = (s32)text;
         asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
@@ -1510,7 +1510,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
                 x += *glyphWidth;
             } while (*p != 0);
         }
-        helperTime = *(void **)((u8 *)car + 0x25C);
+        helperTime = (void *)car->time;
         helperMode = 2;
         if ((s32)helperTime != 0x7FFFFFFF) {
             helperBuffer = (s32)text;
