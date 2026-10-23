@@ -2783,7 +2783,7 @@ void func_80016744(u32 arg0) {
     oldEntry = *(s32 *)(entries + 0x420);
     if (oldEntry != 0) {
         value = *(s8 *)((u8 *)arg0 + bank + 0x41C);
-        offset = value * 0x44 + *(s32 *)((u8 *)arg0 + 0x370);
+        offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
         hw = ((Model *)offset)->faceCount;
         ptr = (u32)D_800A2D64;
         size = D_800A2D5C;

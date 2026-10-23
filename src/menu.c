@@ -4110,7 +4110,7 @@ void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
                     }
                 }
                 val -= 0x37;
-                tmp = *(u16 *)((u8 *)entry[0] + 0x14);
+                tmp = *(u16 *)&((MenuObj *)entry[0])->drawOffsetY;
                 obj->drawOffsetY = tmp - val;
                 break;
             case 2:
@@ -4237,7 +4237,8 @@ void func_80062F6C(s32 arg0, s32 arg1) {
             }
             obj->height = val;
             delta = val - 0x38;
-            obj->drawOffsetY = *(u16 *)((u8 *)entry[0] + 0x14) - delta;
+            obj->drawOffsetY =
+                *(u16 *)&((MenuObj *)entry[0])->drawOffsetY - delta;
             break;
         }
         obj = (u8 *)obj->next;

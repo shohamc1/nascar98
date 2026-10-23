@@ -3103,7 +3103,7 @@ void func_8006C9F8(void) {
     }
     ptr = *(u8 **)D_800A377C;
     obj->x = status + 0xA;
-    obj->y = *(u16 *)(ptr + 8) + 9;
+    obj->y = *(u16 *)&((MenuObj *)ptr)->y + 9;
 }
 #undef CARD_MENU_CURSOR_BODY
 

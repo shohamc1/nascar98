@@ -2997,7 +2997,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     work0 >>= 16;
     separation.y = work0;
     tmp0 = (s32)car->shape;
-    tmp0 = *(s16 *)(tmp0 + 0x1E);
+    tmp0 = ((Model *)tmp0)->maxX;
     tmp1 = separation.x;
     collisionHalfWidth = tmp0 - 10;
     tmp0 = collisionHalfWidth << 1;
@@ -3077,11 +3077,11 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
         }
         if ((scratchA0 == tmp0) && ((otherCar->type) == scratchA0)) {
             tmp0 = (s32)car->shape;
-            tmp0 = *(s16 *)(tmp0 + 0x22);
+            tmp0 = ((Model *)tmp0)->maxY;
             scratchV1 = tmp0 - 0x1E;
         } else {
             tmp0 = (s32)car->shape;
-            tmp0 = *(s16 *)(tmp0 + 0x22);
+            tmp0 = ((Model *)tmp0)->maxY;
             scratchV1 = tmp0 - 0xF;
         }
         (car->unk1CE) = 0;
@@ -9626,7 +9626,7 @@ u16 func_80030F24(Car *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
         point[1] = pointArray[1] / 4 - D_800AE848[0];
         func_80030D80(object, point);
         pointArray[2] = (point[2] + D_800AE84C[0]) * 4;
-        if (D_800A3A80 == 0 || (*(u8 *)((u8 *)D_800A3A80 + 0x13) & 8) == 0) {
+        if (D_800A3A80 == 0 || (((Face *)D_800A3A80)->flags & 8) == 0) {
             value = 5;
         } else {
             value = 2;
@@ -10053,28 +10053,28 @@ void ObjectLoadGeometry(Model *model, ModelFileHeader *data, s32 reuse) {
         faceTable[i] = face;
         face->next = model->faceList;
         model->faceList = face;
-        if (sourceFace[0] & 1) {
+        if (((ModelFileFace *)sourceFace)->flags & 1) {
             count = 4;
             face->vertexCount = 4;
         } else {
             count = 3;
             face->vertexCount = 3;
         }
-        if (sourceFace[0] & 2) {
-            if (sourceFace[0] & 8) {
+        if (((ModelFileFace *)sourceFace)->flags & 2) {
+            if (((ModelFileFace *)sourceFace)->flags & 8) {
                 face->type = 6;
             } else {
                 face->type = 0;
             }
-        } else if (sourceFace[0] & 8) {
+        } else if (((ModelFileFace *)sourceFace)->flags & 8) {
             face->type = 5;
-        } else if (sourceFace[0] & 4) {
+        } else if (((ModelFileFace *)sourceFace)->flags & 4) {
             face->type = 4;
         } else {
             face->type = 3;
         }
-        *(u32 *)&face->r0 = *(u32 *)(sourceFace + 20);
-        face->depth = sourceFace[1];
+        *(u32 *)&face->r0 = ((ModelFileFace *)sourceFace)->colour;
+        face->depth = *(u8 *)&((ModelFileFace *)sourceFace)->depth;
         face->flags = 0;
         for (j = 0; j < count; j++) {
             face->vertex[j] =
@@ -10083,16 +10083,16 @@ void ObjectLoadGeometry(Model *model, ModelFileHeader *data, s32 reuse) {
         if (j == 3) {
             face->vertex[3] = face->vertex[0];
         }
-        face->angle = *(u16 *)(sourceFace + 10);
+        face->angle = ((ModelFileFace *)sourceFace)->texture;
         for (j = 0; j < 3; j++) {
             ((u8 *)face)[8 + j * 4] = sourceFace[12 + j * 2];
             ((u8 *)face)[9 + j * 4] = sourceFace[13 + j * 2];
         }
         if (face->vertexCount >= 4) {
-            face->u2 = sourceFace[18];
-            face->v2 = sourceFace[19];
-            face->u3 = sourceFace[16];
-            face->v3 = sourceFace[17];
+            face->u2 = ((ModelFileFace *)sourceFace)->uv[6];
+            face->v2 = ((ModelFileFace *)sourceFace)->uv[7];
+            face->u3 = ((ModelFileFace *)sourceFace)->uv[4];
+            face->v3 = ((ModelFileFace *)sourceFace)->uv[5];
         }
         sourceFace += 24;
     }
@@ -10954,8 +10954,9 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                 while (obj != 0) {
                     count++;
                     verts = (u8 *)word0;
-                    gte_ldv3(*(u8 **)verts, *(u8 **)(verts + 4),
-                             *(u8 **)(verts + 8));
+                    gte_ldv3(*(u8 **)&((Face *)(verts - 0x18))->vertex[0],
+                             *(u8 **)&((Face *)(verts - 0x18))->vertex[1],
+                             *(u8 **)&((Face *)(verts - 0x18))->vertex[2]);
                     word0 = *(s32 *)&obj->r0;
                     word1 = *(s32 *)&obj->u0;
                     gte_op(rtpt);
@@ -10971,7 +10972,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                         goto skip;
                     }
                     gte_op(nclip);
-                    vec = *(u8 **)(verts + 0xC);
+                    vec = *(u8 **)&((Face *)(verts - 0x18))->vertex[3];
                     word0 = *(s32 *)&((SVECTOR *)vec)->vx;
                     word1 = *(s32 *)&((SVECTOR *)vec)->vz;
                     *(s32 *)&prim->u2 = w10;
@@ -13884,7 +13885,7 @@ void func_800373B4(Car *object) {
             if (car != playerCar) {
                 tempV02 = ((u8 *)car->order.node.next);
                 if (tempV02 != NULL) {
-                    tempA03 = (*(u8 **)((u8 *)tempV02 + 8));
+                    tempA03 = (*(u8 **)&((CarLink *)tempV02)->car);
                     if ((car->segment) == (((Car *)tempA03)->segment)) {
                         slowDelta = -0x40000;
                         tempV03 = (((Car *)tempA03)->speed);
@@ -16416,7 +16417,7 @@ void func_8003B464(void) {
                 }
                 next = (s32)obj->order.node.next;
                 obj->unk264 = result;
-                other = *(u8 **)(next + 8);
+                other = *(u8 **)&((CarLink *)next)->car;
                 otherVal = other->unk264;
                 if ((u32)otherVal >= (u32)result &&
                     other != (u8 *)D_800A35E0[0]) {
@@ -16427,7 +16428,7 @@ void func_8003B464(void) {
                 s32 objVal;
 
                 next = (s32)obj->order.node.next;
-                other = *(u8 **)(next + 8);
+                other = *(u8 **)&((CarLink *)next)->car;
                 if (other == (u8 *)D_800A35E0[0]) {
                     other->unk264 = 0;
                 }
