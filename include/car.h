@@ -54,15 +54,7 @@ typedef struct Car {
     s32 unk14; /* 0x014 */
     Vec3 basis[3]; /* 0x018 */
     Vec3 rot[3]; /* 0x03C: rows saved as a unit; 0x44 (rot[0].z) is the drag slope, once dragScale */
-    s32 unk60; /* 0x060 */
-    s32 unk64; /* 0x064 */
-    u8 unk68[0x4];
-    s32 unk6C; /* 0x06C */
-    s32 unk70; /* 0x070 */
-    u8 unk74[0x4];
-    s32 unk78; /* 0x078 */
-    s32 unk7C; /* 0x07C */
-    u8 unk80[0x4];
+    Vec3 orient[3]; /* 0x060: x column is the velocity direction */
     s32 unk84; /* 0x084 */
     s32 driveScale; /* 0x088 */
     s32 unk8C; /* 0x08C */
@@ -142,7 +134,8 @@ typedef struct Car {
     s32 regionIndex; /* 0x1F8 */
     s32 unk1FC; /* 0x1FC */
     s8 mode; /* 0x200 */
-    u8 unk201[0x2];
+    u8 unk201; /* 0x201 */
+    u8 unk202[0x1];
     s8 unk203; /* 0x203 */
     s8 place; /* 0x204 */
     s8 assistRank; /* 0x205 */

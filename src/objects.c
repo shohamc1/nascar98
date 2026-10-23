@@ -2632,8 +2632,8 @@ s32 func_80025938(Car *firstCar, Car *secondCar) {
                    ? secondCar->pos.z - firstCar->pos.z
                    : firstCar->pos.z - secondCar->pos.z);
     if (radius >= dist[0] && radius >= dist[1] && radius >= dist[2]) {
-        if (*(s32 *)((u8 *)firstCar + 0x354) != (s32)func_80025730 &&
-            *(s32 *)((u8 *)secondCar + 0x354) != (s32)func_80025730) {
+        if ((s32)firstCar->callback != (s32)func_80025730 &&
+            (s32)secondCar->callback != (s32)func_80025730) {
             return 1;
         }
         if ((firstCar->pos.z - secondCar->pos.z < 0
@@ -4952,9 +4952,9 @@ void CarApplyCorneringDrag(Car *car) {
         car->speed -= slow;
         step = (-drag / 200) << 16;
         car->unk1C4 = (step < 0 ? -step : step) >> 14;
-        vec[0] = MathMultiplyFixed16(car->unk64, step) >> 16;
-        vec[1] = MathMultiplyFixed16(car->unk70, step) >> 16;
-        vec[2] = MathMultiplyFixed16(car->unk7C, step) >> 16;
+        vec[0] = MathMultiplyFixed16(car->orient[0].y, step) >> 16;
+        vec[1] = MathMultiplyFixed16(car->orient[1].y, step) >> 16;
+        vec[2] = MathMultiplyFixed16(car->orient[2].y, step) >> 16;
         car->velocityX += vec[0];
         car->velocityY += vec[1];
         car->velocityZ += vec[2];
@@ -5548,7 +5548,7 @@ void CarUpdatePlayer(u8 *object) {
         SelectionStepBackward((SelectionState *)car);
     }
     (*(u32 *)&car->flags) = controlFlags;
-    (*(void (**)(u8 *))((u8 *)car + 0x354))(car);
+    car->callback(car);
     /* Retail keeps incoming s1 when unkF8 is nonzero. Earlier calls
      * preserve s1. Capture that register input before using C locals. */
     steeringLimit = incomingS1;
@@ -5582,7 +5582,7 @@ void CarUpdatePlayer(u8 *object) {
                      50) +
                     D_800A2E6CPlayerStep[0];
     steeringDivisor = CarGetSteeringDivisor((s32 *)car);
-    speed = (*(s16 *)((u8 *)car + 0x92));
+    speed = (((s16 *)&car->speed)[1]);
     steeringLimit *= 4;
     if (speed > 0xC8) {
         steeringFactor =
@@ -13573,9 +13573,9 @@ void ObjectAdvanceAlongHeading(Car *object) {
     object->fineHeading = *(volatile s16 *)&object->heading * 4;
     MatrixSetRotationFromAngle(object, object->heading * 4);
     func_8001FB28(object, object->movementHeading);
-    prod0 = ((volatile s16 *)&object->speed)[1] * object->unk60;
-    prod1 = ((volatile s16 *)&object->speed)[1] * object->unk6C;
-    prod2 = ((volatile s16 *)&object->speed)[1] * object->unk78;
+    prod0 = ((volatile s16 *)&object->speed)[1] * object->orient[0].x;
+    prod1 = ((volatile s16 *)&object->speed)[1] * object->orient[1].x;
+    prod2 = ((volatile s16 *)&object->speed)[1] * object->orient[2].x;
     object->velocityX = prod0 >> 16;
     object->velocityY = prod1 >> 16;
     object->velocityZ = prod2 >> 16;
@@ -13591,9 +13591,12 @@ void ObjectAdvanceAlongHeading(Car *object) {
     object->fineHeading = object->heading * 4;
     MatrixSetRotationFromAngle(object, object->heading * 4);
     func_8001FB28(object, object->movementHeading);
-    object->velocityX = (object->unk60 * ((s16 *)&object->speed)[1]) >> 16;
-    object->velocityY = (object->unk6C * ((s16 *)&object->speed)[1]) >> 16;
-    object->velocityZ = (object->unk78 * ((s16 *)&object->speed)[1]) >> 16;
+    object->velocityX =
+        (object->orient[0].x * ((s16 *)&object->speed)[1]) >> 16;
+    object->velocityY =
+        (object->orient[1].x * ((s16 *)&object->speed)[1]) >> 16;
+    object->velocityZ =
+        (object->orient[2].x * ((s16 *)&object->speed)[1]) >> 16;
     object->pos.x += object->velocityX;
     object->pos.y += object->velocityY;
     object->pos.z += object->velocityZ;
@@ -13914,9 +13917,8 @@ void func_800373B4(Car *object) {
     workspace.useSameSegment = 0;
     if (active != 0) {
         if ((car->type) == 0) {
-            if ((*(void (**)(u8 *, s32))((u8 *)car + 0x354)) ==
-                func_80025730373B4) {
-                (*(void (**)(u8 *))((u8 *)car + 0x350))(car);
+            if ((void (*)(u8 *, s32))car->callback == func_80025730373B4) {
+                car->update(car);
                 return;
             }
             func_8002D16C373B4(car);
@@ -14020,10 +14022,10 @@ void func_800373B4(Car *object) {
                 func_8002A1D0373B4(car);
                 func_8002BC88373B4(car);
                 tempA02 = (car->maxSpeed);
-                if ((tempA02 >> 0x10) < (*(s16 *)((u8 *)car + 0x86))) {
+                if ((tempA02 >> 0x10) < (((s16 *)&car->unk84)[1])) {
                     (car->unk84) = tempA02;
                 }
-                if (((car->maxSpeed) >> 0x10) < (*(s16 *)((u8 *)car + 0x92))) {
+                if (((car->maxSpeed) >> 0x10) < (((s16 *)&car->speed)[1])) {
                     (car->speed) = (car->maxSpeed);
                 }
             } else {
@@ -14324,7 +14326,7 @@ void func_800373B4(Car *object) {
             (tempA13 = (car->unk3A4), ((tempA13 & 0xF) != 0))) {
             tempA06 = (car->unk3B7);
             if (tempA06 != 0) {
-                if (((*(void (**)(u8 *, s32))((u8 *)car + 0x354)) ==
+                if (((void (*)(u8 *, s32))car->callback ==
                      CarResetMotionCounters373B4) &&
                     (tempA06 == 0x64) && ((car->type) != 0)) {
                     if (tempA13 & 3) {
@@ -15295,11 +15297,11 @@ void func_800373B4(Car *object) {
             varA19 = func_800358EC373B4(&workspace.delta[0]);
             if (D_800A2F48373B4[0] != 0) {
                 varA19 = (s32)(car->heading);
-                (*(u8 *)((u8 *)car + 0x201)) = 1;
+                (car->unk201) = 1;
             } else {
-                (*(u8 *)((u8 *)car + 0x201)) = 0;
+                (car->unk201) = 0;
             }
-            tempV118 = (*(void (**)(u8 *, s32))((u8 *)car + 0x354));
+            tempV118 = (void (*)(u8 *, s32))car->callback;
             if (tempV118 == CarResetMotionCounters373B4) {
                 CarSteerTowardHeading373B4(car, varA19);
                 (car->movementHeading) = (u16)(car->heading);
@@ -15388,7 +15390,7 @@ void CarUpdateAi(Car *arg0) {
         }
         if (arg0->segment == -1) {
             func_80031264(arg0);
-            if (*(s32 *)((u8 *)arg0 + 0x354) == (s32)func_8003AA20) {
+            if ((s32)arg0->callback == (s32)func_8003AA20) {
                 ObjectSetCallbackIfAllowed(arg0, CarAdvanceResetTimer);
             }
             arg0->collisionPending = 1;

@@ -544,8 +544,8 @@ void func_8003D25C(Car *object) {
                     break;
                 }
             }
-            value = *(u16 *)((u8 *)object + i * 2 + 0x26C);
-            *(u16 *)((u8 *)object + i * 2 + 0x26C) = value - 1;
+            value = *(u16 *)&object->unk26C[i];
+            *(u16 *)&object->unk26C[i] = value - 1;
             count = (s16)(value - 1);
             if (count == 0x5A) {
                 goto special;
@@ -555,19 +555,18 @@ void func_8003D25C(Car *object) {
                 if (object->type == 0) {
                     SoundPlaySlotAtVolume(object, 8, 3);
                 }
-                *(u16 *)((u8 *)object + i * 2 + 0x26C) =
-                    *(u16 *)((u8 *)object + i * 2 + 0x26C) - 1;
+                *(u16 *)&object->unk26C[i] = *(u16 *)&object->unk26C[i] - 1;
             } else if (count == 0x46) {
                 diff = value - 2;
-                *(s16 *)((u8 *)object + i * 2 + 0x26C) = diff;
+                object->unk26C[i] = diff;
             } else if (count == 0x28) {
                 diff = value - 2;
-                *(s16 *)((u8 *)object + i * 2 + 0x26C) = diff;
+                object->unk26C[i] = diff;
                 func_8002D3EC(object);
-                *(u8 *)((u8 *)object + i + 0x3A6) = 1;
+                object->unk3A6[i] = 1;
             }
             do {
-                if (*(s16 *)((u8 *)object + i * 2 + 0x26C) > 0) {
+                if (object->unk26C[i] > 0) {
                     flag = 0;
                 }
             } while (0);
@@ -581,7 +580,7 @@ void func_8003D25C(Car *object) {
             }
             i = 3;
             do {
-                *(s16 *)((u8 *)object + i * 0x28 + 0x2B0) = 0;
+                object->wheel[i].effect = 0;
                 i--;
             } while (i >= 0);
         } else {

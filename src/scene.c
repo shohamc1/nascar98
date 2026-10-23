@@ -620,15 +620,14 @@ void SceneUpdateProjectiles(Car *owner) {
         return;
     }
     player = owner->slot;
-    if ((PadGetButtons(player) & 0x10) &&
-        *(void (**)(u8 *))((u8 *)owner + 0x354) != func_80025730 &&
+    if ((PadGetButtons(player) & 0x10) && owner->callback != func_80025730 &&
         owner->unk268 == 0 && D_800A372C == 0) {
         pool = (Projectile *)(gProjectilePools[player] +
                               gProjectileWriteIndex[player] * 0x80);
         pool->life = 200;
-        pool->forward = *(Vec3 *)((u8 *)owner + 0x3C);
-        pool->right = *(Vec3 *)((u8 *)owner + 0x48);
-        pool->up = *(Vec3 *)((u8 *)owner + 0x54);
+        pool->forward = owner->rot[0];
+        pool->right = owner->rot[1];
+        pool->up = owner->rot[2];
         pool->position.x = *(s32 *)owner;
         pool->position.y = owner->pos.y;
         pool->position.z = owner->pos.z;
@@ -6138,7 +6137,7 @@ s32 RaceUpdateCaution(void) {
                     func_800373B4(car);
                 } else if (D_800A35A4 < 0x32) {
                     car->unkF6 = D_800A3420;
-                    (*(void (**)(u8 *))((u8 *)car + 0x350))(car);
+                    car->update(car);
                 } else {
                     func_800373B4(car);
                     CarSetVelocityFromHeading((s32 *)gPlayerCarLui,

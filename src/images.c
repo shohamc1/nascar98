@@ -982,17 +982,17 @@ void func_8001FB28(Car *arg0, s32 index) {
     table1 = D_800A3A2C;
     value1 = table1[index];
     table2 = D_800A3A34;
-    arg0->unk60 = value1;
+    arg0->orient[0].x = value1;
     value2 = table2[index];
-    arg0->unk78 = 0;
-    arg0->unk6C = value2;
-    arg0->unk64 = -table2[index];
+    arg0->orient[2].x = 0;
+    arg0->orient[1].x = value2;
+    arg0->orient[0].y = -table2[index];
     value3 = table1[index];
-    arg0->unk7C = 0;
-    *(s32 *)((u8 *)arg0 + 0x68) = 0;
-    *(s32 *)((u8 *)arg0 + 0x74) = 0;
-    *(s32 *)((u8 *)arg0 + 0x80) = 0x10000;
-    arg0->unk70 = value3;
+    arg0->orient[2].y = 0;
+    arg0->orient[0].z = 0;
+    arg0->orient[1].z = 0;
+    arg0->orient[2].z = 0x10000;
+    arg0->orient[1].y = value3;
 }
 
 s32 ObjectGetMagnitude3D(void *object) {

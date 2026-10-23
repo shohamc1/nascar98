@@ -616,19 +616,19 @@ void func_80044114(Car *arg0) {
     s32 i;
     u8 *entry;
 
-    *(volatile s16 *)((u8 *)arg0 + 0x3A4) = 0;
+    *(volatile s16 *)&arg0->unk3A4 = 0;
     for (i = 0; i < 8; i++) {
         *(volatile u8 *)((u8 *)arg0 + i + 0x3A6) = 1;
         *(volatile u8 *)((u8 *)arg0 + i + 0x3AE) = 0;
     }
     if (D_800A2EE0[0] != 0) {
-        *(volatile s16 *)((u8 *)arg0 + 0x1BC) = 3;
+        *(volatile s16 *)&arg0->unk1BC = 3;
         for (i = 0, entry = arg0; i < 4; i++) {
             *(volatile s16 *)(entry + 0x2AC) = 0;
             *(volatile s16 *)(entry + 0x2B0) = 0;
             entry += 0x28;
         }
-        *(volatile s16 *)((u8 *)arg0 + 0x10C) = 0;
+        *(volatile s16 *)&arg0->unk10C = 0;
     }
     if (arg0 == D_800A3960[0]) {
         D_800A3960w17[0] = 0;
