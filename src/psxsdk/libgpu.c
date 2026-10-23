@@ -127,43 +127,34 @@ extern long GetVideoMode(void);
 extern int GetGraphType(void);
 
 DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h) {
-    DRAWENV *sEnv;
-    s32 sX;
-    s32 sY;
-    register s32 sW asm("s0");
     int videoMode;
 
-    sEnv = env;
-    sX = x;
-    sY = y;
-    sW = w;
-
     videoMode = GetVideoMode();
-    sEnv->clip.x = sX;
-    sEnv->clip.y = sY;
-    sEnv->clip.w = sW;
-    sEnv->clip.h = h;
-    sEnv->tw.x = 0;
-    sEnv->tw.y = 0;
-    sEnv->tw.w = 0;
-    sEnv->tw.h = 0;
-    sEnv->r0 = 0;
-    sEnv->g0 = 0;
-    sEnv->b0 = 0;
-    sEnv->dtd = 1;
+    env->clip.x = x;
+    env->clip.y = y;
+    env->clip.w = w;
+    env->clip.h = h;
+    env->tw.x = 0;
+    env->tw.y = 0;
+    env->tw.w = 0;
+    env->tw.h = 0;
+    env->r0 = 0;
+    env->g0 = 0;
+    env->b0 = 0;
+    env->dtd = 1;
     if (videoMode != 0) {
-        sEnv->dfe = h < 0x121;
+        env->dfe = h < 0x121;
     } else {
-        sEnv->dfe = h < 0x101;
+        env->dfe = h < 0x101;
     }
-    sEnv->ofs[0] = sX;
-    sEnv->ofs[1] = sY;
+    env->ofs[0] = x;
+    env->ofs[1] = y;
     if (GetGraphType() != 1) {
         GetGraphType();
     }
-    sEnv->tpage = 10;
-    sEnv->isbg = 0;
-    return sEnv;
+    env->tpage = 10;
+    env->isbg = 0;
+    return env;
 }
 
 DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h) {
@@ -1427,7 +1418,6 @@ u32 get_cs(s16 x, s16 y) {
     clipX = 0;
     if (x >= 0) {
         px = (volatile u16 *)D_8009DA94;
-        asm("" : "=r"(px) : "0"(px));
         xmax = (s16)px[0];
         mx = xmax - 1;
         xv = x;
@@ -1442,7 +1432,6 @@ u32 get_cs(s16 x, s16 y) {
     clipY = 0;
     if (yv >= 0) {
         py = (volatile u16 *)D_8009DA96;
-        asm("" : "=r"(py) : "0"(py));
         ymax = (s16)py[0];
         my = ymax - 1;
         if (my < yv) {
@@ -1451,7 +1440,6 @@ u32 get_cs(s16 x, s16 y) {
         clipY = yv;
     }
     pm = D_8009DA90;
-    asm("" : "=r"(pm) : "0"(pm));
     if ((u32)(pm[0] - 1) >= 2) {
         word1 = clipY & 0x3FF;
         word1 = word1 << 0xA;
@@ -1491,7 +1479,6 @@ u32 get_ce(s16 x, s16 y) {
     clipX = 0;
     if (x >= 0) {
         px = (volatile u16 *)D_8009DA94;
-        asm("" : "=r"(px) : "0"(px));
         xmax = (s16)px[0];
         mx = xmax - 1;
         xv = x;
@@ -1506,7 +1493,6 @@ u32 get_ce(s16 x, s16 y) {
     clipY = 0;
     if (yv >= 0) {
         py = (volatile u16 *)D_8009DA96;
-        asm("" : "=r"(py) : "0"(py));
         ymax = (s16)py[0];
         my = ymax - 1;
         if (my < yv) {
@@ -1515,7 +1501,6 @@ u32 get_ce(s16 x, s16 y) {
         clipY = yv;
     }
     pm = D_8009DA90;
-    asm("" : "=r"(pm) : "0"(pm));
     if ((u32)(pm[0] - 1) >= 2) {
         word1 = clipY & 0x3FF;
         word1 = word1 << 0xA;

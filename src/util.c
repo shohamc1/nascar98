@@ -125,11 +125,11 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
             turnValue = car->steering;
             turnScale = turnValue * 4;
         }
-        turnSum = turnScale + turnValue;
-        turnValue = turnSum + 4096;
-        steeringAngle = turnValue % 4096;
-        /* Keep the car-state load after this angle update. */
-        asm volatile("" : : : "memory");
+        do {
+            turnSum = turnScale + turnValue;
+            turnValue = turnSum + 4096;
+            steeringAngle = turnValue % 4096;
+        } while (0);
     }
     if ((s8)car->unk374 < 2 || (car == D_800A2EA0[0] && car->type == 0 &&
                                 D_800A2ED8[0] == 0 && car->cameraMode == 0)) {

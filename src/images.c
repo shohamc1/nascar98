@@ -94,10 +94,8 @@ void GraphicsLoadImageBank(s32 fileName) {
     FileClose(handle);
 }
 
-/* GraphicsSelectImageBank: fixes up the selected image bank's relocation
- * entries, then reloads it if the swap flag is set. The empty asm after
- * i = 0 pins the counter's allocation to a1 (the retail delay-slot move)
- * without blocking the branch delay-slot fill. */
+/* Relocate the selected image bank, then reload it if needed.
+ * Keep the loop body grouped for the retail counter allocation. */
 void GraphicsSelectImageBank(s32 index) {
     extern void *D_800A368C;
     extern void *D_800A37E4;
@@ -126,13 +124,14 @@ void GraphicsSelectImageBank(s32 index) {
     D_800A36CC = (ImageBankTexture *)(head + count * 8);
     i = 0;
     if (count > 0) {
-        asm volatile("" : : "r"(i));
         base = (u32)image;
         limit = count;
         do {
-            ((u32 *)head)[i + i] += base;
-            ((u32 *)head)[i + i + 1] += base;
-            i++;
+            do {
+                ((u32 *)head)[i + i] += base;
+                ((u32 *)head)[i + i + 1] += base;
+                i++;
+            } while (0);
         } while (i < limit);
     }
     if (D_800A2EDAnm[0] != 0) {

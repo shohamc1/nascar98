@@ -106,11 +106,12 @@ void func_80017E08(void) {
         prim = (POLY_FT4 *)(D_800BA8D4 + offsetB);
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
-        cB = 0x80;
-        prim->r0 = cB;
-        prim->g0 = cB;
-        asm volatile("" : : "r"(x1a));
-        prim->b0 = cB;
+        do {
+            cB = 0x80;
+            prim->r0 = cB;
+            prim->g0 = cB;
+            prim->b0 = cB;
+        } while (0);
         if (x1a < 0x100) {
             prim->tpage = GetTPage(2, 0, 0x100, 0);
             prim->u0 = x0a;
@@ -1332,7 +1333,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     register s32 helperBuffer asm("a2");
     register POLY_FT4 *copyFrom asm("a2");
     POLY_FT4 *copyTo;
-    register u8 *copyEnd asm("t1");
+    u8 *copyEnd;
     register s32 numberArg asm("a0");
     s32 shiftedLap;
     register s8 *start asm("v1");
@@ -1465,7 +1466,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     if (fixedSpeed < 0)
         fixedSpeed = 0;
     /* Retail keeps this mask after the byte load. */
-    asm("andi %0,%0,255" : "=r"(byteValue) : "0"(byteValue));
+    byteValue &= 255;
     if (byteValue == 1)
         number = ((fixedSpeed >> 16) * 336) / 550;
     else
@@ -1761,7 +1762,8 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
         labels = (u8 **)D_8009AD60;
         do {
             /* Keep the signed byte index in one register. */
-            asm("sll %0,%1,24\n\tsra %0,%0,24" : "=r"(index) : "r"(i));
+            index = (u32)i << 24;
+            index >>= 24;
             offset = index * 4;
             x = (s16)(((u32)(158 - HudTextWidth(*(
                                        u8 **)(offset + (gSessionTypepanel * 24 +

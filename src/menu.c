@@ -1690,8 +1690,10 @@ void func_800606D4(void) {
         SetSemiTrans(prim, 0);
         entry = object;
         entry->primitive = prim;
-        entry->orderingDepth = new_var3;
-        asm volatile("" : : : "memory");
+        do {
+            entry->orderingDepth = new_var3;
+        } while (0);
+
         prim2 = (POLY_FT4 *)((u8 *)entry->primitive);
         entry->velocityX = 0;
         entry->velocityY = 0;
@@ -2177,11 +2179,8 @@ void func_80060FD8(void) {
             goto panelsDone;
         }
     }
-    asm volatile("sll $v1,$v1,24\n"
-                 "sw $v1,%0\n"
-                 ".set\treorder\n"
-                 : "=m"(colorHome.value), "=r"(initialShade)
-                 : "1"(initialShade));
+    initialShade = (u32)initialShade << 24;
+    colorHome.value = initialShade;
 panelLoop:
     {
         {
@@ -2745,14 +2744,8 @@ panelLoop:
                            "$10", "$11", "$31", "memory");
             {
                 s32 loopCondition;
-                asm volatile("addiu $v0,$s7,1\n"
-                             "addu $s7,$v0,$zero\n"
-                             "sll $v0,$v0,24\n"
-                             "sra $v0,$v0,24\n"
-                             "slti $v0,$v0,2\n"
-                             ".set\treorder\n"
-                             : "=r"(textIndex), "=r"(loopCondition)
-                             : "0"(textIndex));
+                textIndex++;
+                loopCondition = (s8)textIndex < 2;
                 previousNode = currentNode;
                 if (loopCondition != 0) {
                     goto loopC;
@@ -3912,10 +3905,7 @@ panelLoop:
             } while (arrowIndex < 2);
         }
     }
-    asm volatile("lbu\t%0,%1\n"
-                 ".set\treorder\n"
-                 : "=r"(previousPanelByte)
-                 : "m"(panelIndex.value));
+    previousPanelByte = (u8)panelIndex.value;
     nextPanel = previousPanelByte + 1;
     panelIndex.value = nextPanel;
     if (panelIndex.value < D_800A3644[0] + 1) {
@@ -6683,8 +6673,9 @@ void func_80067AB4(void) {
         if (D_800A3940 != 0) {
             u16 *base;
             u16 *limit;
-            rawShift = D_800A3940;
-            asm volatile("" ::: "memory");
+            do {
+                rawShift = D_800A3940;
+            } while (0);
             base = (u16 *)D_800A3568;
             limit = (u16 *)D_800A367C;
             shift = rawShift;

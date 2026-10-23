@@ -104,7 +104,7 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     s32 sectors;
     s32 hnd = handle;
     register s32 buf asm("s2");
-    register s32 retries asm("s4");
+    s32 retries;
     u8 result[0x10];
     register s32 status asm("a1");
     s32 *ptr;
@@ -115,26 +115,28 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     retries = 0;
     total = total * size;
     DrawSync(0);
-    buf = buffer;
-    VSync(0);
-    VSync(0);
-    total += 0x7FF;
-    sectors = total >> 11;
-    while (CdSync(1, result) == 0) {
-        VSync(0);
-    }
-    total = -1;
-retry:
-    while (CdControl(2, (u_char *)hnd, 0) == 0) {
-    }
-    CdSeekToSector(D_80098340[D_800A37CC * 3] + 0x13C);
-    CdRead(sectors, buf, 0x80);
     do {
-        status = CdReadSync(1, 0);
-    } while (status > 0);
-    if (status == total) {
-        goto retry;
-    }
+        buf = buffer;
+        VSync(0);
+        VSync(0);
+        total += 0x7FF;
+        sectors = total >> 11;
+        while (CdSync(1, result) == 0) {
+            VSync(0);
+        }
+        total = -1;
+    retry:
+        while (CdControl(2, (u_char *)hnd, 0) == 0) {
+        }
+        CdSeekToSector(D_80098340[D_800A37CC * 3] + 0x13C);
+        CdRead(sectors, buf, 0x80);
+        do {
+            status = CdReadSync(1, 0);
+        } while (status > 0);
+        if (status == total) {
+            goto retry;
+        }
+    } while (0);
     ptr = (s32 *)buf;
     i = 0;
     words = sectors << 9;
@@ -885,7 +887,6 @@ void func_8003DBA8(Car *object) {
     s32 otherSteerAmount;
     register s32 trailingSection asm("a1");
     s32 charge;
-    register s32 angleDelta asm("a1");
     s32 trailingY;
     s32 control;
     s32 i;
@@ -980,9 +981,10 @@ void func_8003DBA8(Car *object) {
                 turnLimit = 4;
             }
         }
-        ringResult = D_800A39E0CarState;
+        do {
+            ringResult = D_800A39E0CarState;
+        } while (0);
         D_800A2F4CCarState[0] = turnLimit;
-        asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
         ringV1 = gTrackSectionCountCarState[0];
         ringA1 = object->segment;
         {
@@ -1055,13 +1057,12 @@ void func_8003DBA8(Car *object) {
         {
             const s32 section = object->segment;
             s32 end = D_800A39E0CarState + offset + 1;
-            register s32 count asm("v1");
-            count = gTrackSectionCountCarState[0];
-            if (end >= count) {
-                if (section >= count / 2) {
+            ringV1 = gTrackSectionCountCarState[0];
+            if (end >= ringV1) {
+                if (section >= ringV1 / 2) {
                     ringResult = 0;
                 } else {
-                    end -= count;
+                    end -= ringV1;
                     ringResult = !(section < end);
                 }
             } else {
@@ -1075,8 +1076,9 @@ void func_8003DBA8(Car *object) {
             object->unk26C[4] = 0;
             if (ringV1 < 0)
                 ringV1 = -ringV1;
-            ringResult = ringV1 * 10;
-            asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
+            do {
+                ringResult = ringV1 * 10;
+            } while (0);
             ringV1 = object->unk2A8;
             object->unk26C[6] = ringResult;
             if (ringV1 < 0)
@@ -1255,23 +1257,23 @@ void func_8003DBA8(Car *object) {
                 goto updateMotion;
             }
         } else {
-            angleDelta = MathGetAngleDelta(
+            ringA1 = MathGetAngleDelta(
                 object->heading,
                 gTrackSectionsCarState[0][object->segment].angle);
-            if (angleDelta >= 0) {
-                if (angleDelta < 0x14) {
+            if (ringA1 >= 0) {
+                if (ringA1 < 0x14) {
                     goto block_114;
                 }
                 goto block_115;
             }
-            if (-angleDelta < 0x14) {
+            if (-ringA1 < 0x14) {
             block_114:
                 ringV1 = gTrackSectionsCarState[0][object->segment].angle;
                 object->unk269 = 2U;
                 object->heading = ringV1;
             } else {
             block_115:
-                if (angleDelta > 0) {
+                if (ringA1 > 0) {
                     angle = (u16)object->heading + 0x3EC;
                 } else {
                     angle = (u16)object->heading + 0x14;
@@ -1533,9 +1535,6 @@ void func_8003EBD0(u8 *object, s32 index) {
 
 extern u8 D_800A387C[];
 
-/* The two pins put base and the src walker in retail's registers. The
- * opaque dst copy keeps cse from copying it out of src, and the explicit
- * `adjust` local keeps the D_800AE84C address ahead of the walker copies. */
 void func_8003ECB8(u8 *object) {
     Car *current;
     register u8 *base;
@@ -1548,7 +1547,7 @@ void func_8003ECB8(u8 *object) {
     s32 extra;
     u16 u16v;
     u8 *row;
-    register u8 *src asm("$8");
+    u8 *src;
     u8 *dst;
 
     current = *(u8 **)(D_800A387C - 4);
@@ -1568,10 +1567,9 @@ void func_8003ECB8(u8 *object) {
 
                 adjust = D_800AE84C;
                 src = object;
-                asm("" : "=r"(dst) : "0"(object));
+                dst = object;
                 do {
-                    current = src;
-                    value = *(s16 *)&current->unk94;
+                    value = *(s16 *)&((Car *)src)->unk94;
                     extra = *(s32 *)(object + 0x218);
                     u16v = *(u16 *)(dst + 0x10);
                     row = (u8 *)((u32)(u16v << 3) + (u32)base);

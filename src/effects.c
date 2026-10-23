@@ -539,9 +539,7 @@ void EffectInitRandomOffsetTables(void) {
                              :
                              : "r"(value3), "r"(m3)
                              : "lo", "hi");
-                asm volatile("addu %0, %1, %2"
-                             : "=r"(off3)
-                             : "r"(colOff), "r"(mo));
+                off3 = (u32)colOff - -(u32)mo;
                 colOff += 4;
                 asm volatile("mflo %0" : "=r"(prodlo));
                 D_800B1A26R[off3] = (s32)((u32)prodlo >> 16);

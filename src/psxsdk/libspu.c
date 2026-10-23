@@ -1328,23 +1328,23 @@ long SpuClearReverbWorkArea(long reverbMode) {
     }
     asm("" : "=r"(var_s1) : "0"(var_s1));
     do {
-        var_s0 = var_s1;
-        if (var_s1 >= 0x401) {
-            var_s0 = 0x400;
-        } else {
-            var_s3 = 0;
-        }
-        _spu_t(2, (u32)var_s2);
-        _spu_t(1);
-        _spu_t(3, D_800A22A0Clear, var_s0);
-        temp_a0 = D_800A2298Clear[0];
-        asm volatile("" : : "r"(temp_a0));
-        var_s1 -= 0x400;
-        var_s2 += 0x400;
-        WaitEvent(temp_a0);
-    } while (var_s3 != 0);
-    asm("" : "=r"(var_s0) : "0"(var_s0));
-    asm("" : "=r"(var_s0) : "0"(var_s0));
+        do {
+            var_s0 = var_s1;
+            if (var_s1 >= 0x401) {
+                var_s0 = 0x400;
+            } else {
+                var_s3 = 0;
+            }
+            _spu_t(2, (u32)var_s2);
+            _spu_t(1);
+            _spu_t(3, D_800A22A0Clear, var_s0);
+            temp_a0 = D_800A2298Clear[0];
+            asm volatile("" : : "r"(temp_a0));
+            var_s1 -= 0x400;
+            var_s2 += 0x400;
+            WaitEvent(temp_a0);
+        } while (var_s3 != 0);
+    } while (0);
     if (var_s5 != 0)
         D_800A26C4ClearWrite[0] = temp_s4;
     if (sp10 != 0)

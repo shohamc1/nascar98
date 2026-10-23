@@ -921,7 +921,6 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     u32 i;
 
     word = *(u32 *)frameData;
-    w8 = *(u16 *)(frameData + 8);
     st = (StreamVram *)D_800A3398;
 
     bsw = word >> 0x18;
@@ -931,7 +930,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     wA = *(u16 *)(frameData + 0xA);
     asm volatile("srl %0, %1, 8" : "=r"(cnt) : "r"(wA));
     wAlo = wA & 0xFF;
-    asm volatile("lhu %0, 8(%1)" : "=r"(w8) : "r"(frameData));
+    w8 = *(u16 *)(frameData + 8);
     wAlo = wAlo << 8;
     bsw = cnt | wAlo;
     cnt = *(s32 *)((u8 *)(st) + 0x118);
@@ -2022,9 +2021,11 @@ void CdUpdateStream(void) {
                 refillReadStream[0x414 / 4] = 1;
                 readPosition = (u8 *)refillReadStream[0x430 / 4] + 0x24;
                 readBuffer = bufferBase + (bufferSector << 11);
-                /* Publish the buffer address before its sector count. */
-                refillReadStream[0x450 / 4] = readBuffer;
-                asm("" : : : "memory");
+                do {
+                    /* Publish the buffer address before its sector count. */
+                    refillReadStream[0x450 / 4] = readBuffer;
+                } while (0);
+
                 refillReadStream[0x454 / 4] = readSectors;
             } while (0);
             asm("" : : "r"(readBuffer), "r"(readPosition) : "memory");
@@ -2948,11 +2949,25 @@ void AudioQueueStereoAdpcm(u8 *block) {
     if (firstLength >= encodedLength) {
         leftDestination =
             (u8 *)(((u32)spaceState[1] % 0x3C00) + (u32)spaceState) + 0x10;
-        COPY_ADPCM_BLOCKS(leftSource, leftDestination, encodedLength, "a1");
+        {
+            u8 *copySource = leftSource;
+            u8 *copyDestination = leftDestination;
+            u32 copyCount = 0;
+
+            COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,
+                                   encodedLength);
+        }
         rightState = (volatile u32 *)D_800A351C;
         rightDestination =
             (u8 *)(((u32)rightState[1] % 0x3C00) + (u32)rightState) + 0x3C10;
-        COPY_ADPCM_BLOCKS(rightSource, rightDestination, encodedLength, "a2");
+        {
+            u8 *copySource = rightSource;
+            u8 *copyDestination = rightDestination;
+            u32 copyCount = 0;
+
+            COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,
+                                   encodedLength);
+        }
     } else {
         leftDestination =
             (u8 *)(((u32)spaceState[1] % 0x3C00) + (u32)spaceState) + 0x10;

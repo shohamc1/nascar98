@@ -1068,7 +1068,6 @@ u8 mode;
 
     index = gMenuObjectPoolCount++;
     fresh = &gMenuObjectPool[index];
-    asm("" : "=r"(object) : "0"(fresh));
     fresh->drawOffsetX = 0;
     fresh->drawOffsetY = 0;
     fresh->next = 0;
@@ -1076,6 +1075,7 @@ u8 mode;
     fresh->green = 0;
     fresh->red = 0;
     fresh->orderingDepth = 0;
+    object = fresh;
     object->kind = mode != 0 ? 7 : 8;
     object->x = x;
     object->targetX = x;

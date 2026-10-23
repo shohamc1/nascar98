@@ -401,9 +401,7 @@ void GameRunSession(void) {
                     0);
         GraphicsDrawRect(0, 0, 320, 240, 0, 0, 0, 0);
         /* Keep the base operand first. */
-        asm("addu %0, %0, %2"
-            : "=r"(ot)
-            : "0"(ot), "r"(gOrderingTableBank << 12));
+        ot = (u8 *)((u32)ot - -(u32)(gOrderingTableBank << 12));
         DrawOTag((u_long *)(ot + 0xFFC));
         /* Keep the table pointer across the GPU call. */
         DrawSync(0);
@@ -422,11 +420,8 @@ void GameRunSession(void) {
         func_8003C1CC();
         SetDispMask(0);
         mode = gSessionTypeAbsolute[0];
-        checkValue = 2;
     checkMode:
-        /* Keep the mode test on both paths. */
-        asm("" : "=r"(mode) : "0"(mode), "r"(checkValue));
-        if (mode == checkValue) {
+        if (mode == 2) {
             RaceSetPlayerFirstStanding();
             if (D_800A2D0E == 0) {
                 D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
@@ -1815,10 +1810,7 @@ void TrackReadData(s32 *trackData, s32 file) {
                    "g"(sectionsOffset), "g"(vertexCount)
                  : "memory");
     /* Inverse of 135 for the aligned 540-byte node records. */
-    asm volatile("lui %0,0xE1A8\nori %0,%0,0xC537"
-                 : "=r"(nodeScale)
-                 : "g"(vertexCount)
-                 : "memory");
+    nodeScale = 0xE1A8C537;
     nodeDataStart = fileData + nodesOffset;
     sectionHeaderData = fileData + sectionsOffset;
     resource->vertexCount = (s32)vertexCount;
@@ -2171,12 +2163,7 @@ void TrackReadData(s32 *trackData, s32 file) {
         i = 0;
         resource->objectCount = value0 - 1;
         objects = objectData;
-        /* Keep this address setup after the object count update. */
-        asm volatile("lui %1,%%hi(D_800BE72C)\naddiu %1,%1,%%lo(D_800BE72C)"
-                     : "=r"(lastObjectOffset), "=&r"(outputRecord)
-                     : "0"(lastObjectOffset), "r"(objects),
-                       "m"(resource->objectCount)
-                     : "memory");
+        outputRecord = (u8 *)D_800BE72C;
         lastObjectOffset *= 16;
         *(u8 **)objects = objects + (lastObjectOffset - 0x90);
         *(u8 **)(lastObjectOffset + (s32)objects - 140) = objects;

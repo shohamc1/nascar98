@@ -1198,7 +1198,7 @@ s32 _SsStart(s32 arg0) {
         rcntTarget = 0x44E8;
         break;
     default: {
-        register u8 *env asm("a0");
+        u8 *env;
         register s32 ticks asm("v1");
         register s32 quot asm("v0");
         register s32 envD asm("v1");

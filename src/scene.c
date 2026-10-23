@@ -690,10 +690,12 @@ void SceneUpdateProjectiles(Car *owner) {
             effect->vertex[3].vz = (effect->position.z + (leftZ >> 16)) >> 2;
             vertexIndex = 0;
             do {
-                register u32 vertexAddress asm("v1");
+                u32 vertexAddress;
 
                 vertexAddress = vertexIndex * 8;
-                vertexAddress = (u32)effect + vertexAddress;
+                do {
+                    vertexAddress = (u32)effect - -vertexAddress;
+                } while (0);
                 *(u16 *)(vertexAddress + 0x60) -= gProjectileOriginX;
                 *(u16 *)(vertexAddress + 0x62) -= gProjectileOriginY;
                 *(u16 *)(vertexAddress + 0x64) -= gProjectileOriginZ;
@@ -1051,8 +1053,10 @@ void SceneInitRoadStrip(void) {
     s32 sectionPosition;
     s32 count;
 
-    quadSlots = &D_800A3444;
-    asm volatile("" : : : "memory");
+    do {
+        quadSlots = &D_800A3444;
+    } while (0);
+
     first[0] = 1;
     first[1] = 1;
     PushMatrix();
@@ -1093,7 +1097,7 @@ void SceneInitRoadStrip(void) {
                     s32 sectionValue;
                     register s8 *quadBase asm("a2");
                     TrackSection *nodes;
-                    register SVECTOR *rotationPtr asm("a0");
+                    SVECTOR *rotationPtr;
                     TrackSection *previousNode;
 
                     previousNode = node->prev;
@@ -2879,9 +2883,9 @@ void HudInitRacePrims(void) {
                             register u8 *addressBase asm("$8");
 
                             glyphOffset = line24 >> 22;
-                            asm("lui %1,%%hi(D_8009AE14)\naddiu %1,%1,%%lo(D_8009AE14)\naddu %0,%2,%1"
-                                : "=r"(slot), "=&r"(addressBase)
-                                : "r"(glyphOffset));
+                            addressBase = (u8 *)D_8009AE14;
+                            slot =
+                                (s8 **)((u32)(glyphOffset) - -(u32)addressBase);
                         }
                         glyph = &D_80098BD0[(*slot)[j] * 10];
                         SetPolyFT4(heap);
@@ -3035,7 +3039,7 @@ void HudInitRacePrims(void) {
         /* Keep these locals multi-set so loop.c does not hoist their values. */
         for (; col < 3; col++) {
             p3 = (TILE *)((u8 *)((u32)(col * 0x10) + (u32)f4base));
-            asm("addu %0,%1,%0" : "=r"(p3) : "r"(tileBytes), "0"(p3));
+            p3 = (TILE *)((u32)tileBytes - -(u32)p3);
             SetTile(p3);
             SetSemiTrans(p3, 1);
             p4 = (TILE *)((u8 *)((u32)tileBytes + (u32)(col * 0x10) +
@@ -3050,7 +3054,7 @@ void HudInitRacePrims(void) {
         }
         {
             register s32 tileRow asm("$6");
-            register u8 *green asm("$2");
+            u8 *green;
             register u8 *red asm("$3");
             register u8 *back asm("$4");
             s32 offset;
@@ -3067,9 +3071,8 @@ void HudInitRacePrims(void) {
             {
                 register u8 *addressBase asm("$8");
 
-                asm("lui %1,%%hi(D_800A7944)\naddiu %1,%1,%%lo(D_800A7944)\naddu %0,%2,%1"
-                    : "=r"(back), "=&r"(addressBase)
-                    : "r"(offset), "r"(color));
+                addressBase = (u8 *)D_800A7944;
+                back = (u8 *)((u32)(offset) - -(u32)addressBase);
             }
             ((TILE *)green)->r0 = 0;
             ((TILE *)green)->g0 = color;
@@ -3116,16 +3119,11 @@ void HudInitRacePrims(void) {
         for (col = 0; col < 0x18; col++) {
             driverCall =
                 (POLY_FT4 *)((u8 *)((u32)(col * 0x28) + (u32)driverBase));
-            asm("addu %0,%1,%0"
-                : "=r"(driverCall)
-                : "r"(entry * 0x3C0), "0"(driverCall));
+            driverCall = (POLY_FT4 *)((u32)(entry * 0x3C0) - -(u32)driverCall);
             SetPolyFT4(driverCall);
             SetShadeTex(driverCall, 0);
             markerPage = GetTPage(page[0], 0, page[-6], page[-5]);
-            asm volatile("addu %0,%1,%2"
-                         : "=r"(markerOffset)
-                         : "r"(col * 0x28), "r"(entry * 0x3C0)
-                         : "memory");
+            markerOffset = (u32)col * 0x28 + (u32)entry * 0x3C0;
             *(u16 *)(markerOffset + (u8 *)D_800B0B92) = markerPage;
             asm volatile("lbu %0,D_800991E8(%1)"
                          : "=r"(driverR)
@@ -3162,7 +3160,7 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
     s16 *glyph;
     s32 arg0e;
     do {
-        asm volatile("" : "=r"(cursor) : "0"(arg2));
+        cursor = arg2;
         table = D_8009AE14;
     } while (0);
     i = 0;
@@ -3174,38 +3172,41 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
         j = 0;
         i24 = i << 24;
         xy0 = (u16 *)((u32)(i24 >> 22) + (u32)arg1);
-        row = *(s8 **)((u32)(i24 >> 22) + (u32)a914);
-        asm("" : "=r"(padByte) : "0"((u8)D_800A2FD0[arg0e]));
-        asm volatile("");
-        x = xy0[0];
-        w = xy0[1] + ((padByte << 24) >> 24);
-        if (row[0] != 0) {
-            out = (s16 *)(((u8 *)cursor) + 0x22);
-        inner:
+        do {
+            row = *(s8 **)((u32)(i24 >> 22) + (u32)a914);
             do {
-                t = (*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j];
-                glyph = (s16 *)(&D_80098BD0[t * 10]);
-                v0 = glyph[3];
-                out[-13] = x;
-                out[-12] = w;
-                out[-8] = w;
-                out[-5] = x;
-                sum = x + ((v0 * 3) >> 2);
-                out[-9] = sum;
-                v1 = glyph[4];
-                out[-1] = sum;
-                out[-4] = w + ((v1 * 3) >> 2);
-                out[0] = w + ((glyph[4] * 3) >> 2);
+                asm("" : "=r"(padByte) : "0"((u8)D_800A2FD0[arg0e]));
             } while (0);
+            x = xy0[0];
+            w = xy0[1] + ((padByte << 24) >> 24);
+            if (row[0] != 0) {
+                out = (s16 *)(((u8 *)cursor) + 0x22);
+            inner:
+                do {
+                    t = (*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j];
+                    glyph = (s16 *)(&D_80098BD0[t * 10]);
+                    v0 = glyph[3];
+                    out[-13] = x;
+                    out[-12] = w;
+                    out[-8] = w;
+                    out[-5] = x;
+                    sum = x + ((v0 * 3) >> 2);
+                    out[-9] = sum;
+                    v1 = glyph[4];
+                    out[-1] = sum;
+                    out[-4] = w + ((v1 * 3) >> 2);
+                    out[0] = w + ((glyph[4] * 3) >> 2);
+                } while (0);
 
-            j++;
-            cursor += 0x14;
-            x = sum;
-            out += 0x14;
-            if ((*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j] != 0) {
-                goto inner;
+                j++;
+                cursor += 0x14;
+                x = sum;
+                out += 0x14;
+                if ((*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j] != 0) {
+                    goto inner;
+                }
             }
-        }
+        } while (0);
         i++;
     } while (i < 7);
 }
@@ -5001,7 +5002,7 @@ void HudUpdateTrafficGapData(void) {
     asm volatile("sw\t$zero, %gp_rel(D_800A34BC)($gp)");
     refDist = prod1 + e0dist;
     asm volatile("mflo %0" : "=r"(prod2));
-    asm volatile("addu %0, %2, %1" : "=r"(cardist) : "0"(cardist), "r"(prod2));
+    cardist = (u32)prod2 - -(u32)cardist;
     if (refDist - cardist < len) {
         if (car->place >= 2) {
             e0 = (u8 *)((CarLink *)car->order.node.next)->car;
@@ -5062,7 +5063,7 @@ void MenuDrawTimingAndScoring(void) {
     char *title;
     char *captionArg;
     char **titleTable;
-    register s32 width asm("v0");
+    s32 width;
     s32 centeredX;
     s8 *lapCount;
     s32 loopLapCount;
@@ -5078,21 +5079,13 @@ void MenuDrawTimingAndScoring(void) {
                D_8009A31C[D_800A2CE0[0]]);
     titleTable = D_8009AE70;
     width = HudTextWidth((u8 *)titleTable[0]);
-    /* Load the title before reusing the table register for screen width. */
-    asm volatile("lw %0, 0(%1)"
-                 : "=r"(title)
-                 : "r"(titleTable), "m"(*titleTable));
+    title = titleTable[0];
     centeredX = 320;
     width = centeredX - width;
     HudDrawTextS16(title, (s16)(width >> 1), 20, 0);
     width = HudTextWidth((u8 *)caption);
     captionArg = caption;
-    /* Form the caption address before updating its centered x value. */
-    asm volatile("" : "=r"(centeredX) : "0"(centeredX), "r"(captionArg));
-    centeredX -= width;
-    /* Narrow and halve the x coordinate for the text renderer. */
-    centeredX <<= 15;
-    HudDrawTextS16(captionArg, (s16)(centeredX >> 16), 210, 0);
+    HudDrawTextS16(captionArg, (s16)((320 - width) << 15 >> 16), 210, 0);
     GraphicsDrawRect(0, 0, 320, 35, 0, 0, 0, 0);
     GraphicsDrawRect(0, 205, 320, 35, 0, 0, 0, 0);
     GraphicsSetColor(128, 128, 128);
@@ -6639,9 +6632,7 @@ void SceneSkyFadeDraw(void) {
                 idx <<= 2;
                 primitive[5] = result;
                 /* Preserve the retail operand order of this commutative add. */
-                asm("addu %0,%1,%0"
-                    : "=r"(tableAddress)
-                    : "r"(idx), "0"(tableAddress), "m"(primitive[5]));
+                tableAddress = (s32)((u32)idx - -(u32)tableAddress);
                 argument = *(s32 *)tableAddress;
             }
             result = MathMultiplyFixed16(argument, shade);
@@ -6819,9 +6810,7 @@ void SceneSkyFadeDraw(void) {
                 idx <<= 2;
                 primitive[3] = result;
                 /* Preserve the retail operand order of this commutative add. */
-                asm("addu %0,%1,%0"
-                    : "=r"(tableAddress)
-                    : "r"(idx), "0"(tableAddress), "m"(primitive[3]));
+                tableAddress = (s32)((u32)idx - -(u32)tableAddress);
                 argument = *(s32 *)tableAddress;
             }
             result = MathMultiplyFixed16(argument, shade);
@@ -8225,7 +8214,7 @@ void func_80053D40(void) {
     s32 unlockDirectionBits;
     s32 dialogScreen;
     s32 actionSound;
-    register s32 returnChannel asm("a0");
+    s32 returnChannel;
     u32 *orderingTable;
     u8 *screenTable;
     register u8 *sequenceCursor asm("s1");
@@ -8717,7 +8706,6 @@ void func_80053D40(void) {
                                         }
                                     } else {
                                         confirmPivot = 0x24;
-                                        asm("" : : "r"(confirmPivot));
                                         confirmMode = gScreenStateMainLoop;
                                         if (confirmMode == confirmPivot) {
                                             goto confirmMode24;
@@ -9050,7 +9038,6 @@ void func_80053D40(void) {
                                     s32 cancelPivot;
                                     s32 cancelMode;
                                     cancelPivot = 0x25;
-                                    asm("" : : "r"(cancelPivot));
                                     cancelMode = gScreenStateMainLoop;
                                     switch (cancelMode) {
                                     case 0xFC:
@@ -9162,14 +9149,12 @@ void func_80053D40(void) {
                                     register s32 padEdgeUp asm("v0");
                                     s32 blockedModeUp;
                                     s32 cardModeUp;
-                                    register s32 rawModeUp asm("a0");
+                                    s32 rawModeUp;
                                     s32 modeUp;
                                     blockedModeUp = 0x21;
                                     /* Retain the raw mode byte and its comparison value. */
-                                    asm volatile(
-                                        "lbu\t%0,gScreenState.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
-                                        : "=r"(rawModeUp), "=r"(modeUp)
-                                        : "m"(gScreenStateMainLoop));
+                                    rawModeUp = (u8)gScreenStateMainLoop;
+                                    modeUp = rawModeUp & 255;
                                     if ((modeUp != blockedModeUp) &&
                                         (modeUp != 0xFC) &&
                                         ((u32)(rawModeUp - 0x25) >= 2U) &&
@@ -9184,9 +9169,6 @@ void func_80053D40(void) {
                                             goto finishInput;
                                         }
                                         cardModeUp = 0x23;
-                                        asm(""
-                                            : "=r"(cardModeUp)
-                                            : "0"(cardModeUp), "r"(rawModeUp));
                                         if (modeUp == cardModeUp) {
                                             if (D_800A3928MainLoop == one) {
                                                 goto nextPlayer;
@@ -9345,14 +9327,12 @@ void func_80053D40(void) {
                                     register s32 padEdgeDown asm("v0");
                                     s32 blockedModeDown;
                                     s32 cardModeDown;
-                                    register s32 rawModeDown asm("a0");
+                                    s32 rawModeDown;
                                     register s32 modeDown;
                                     blockedModeDown = 0x21;
                                     /* Retain the raw mode byte and its comparison value. */
-                                    asm volatile(
-                                        "lbu\t%0,gScreenState.MainLoop\n\tnop\n\tandi\t%1,%0,0xff"
-                                        : "=r"(rawModeDown), "=r"(modeDown)
-                                        : "m"(gScreenStateMainLoop));
+                                    rawModeDown = (u8)gScreenStateMainLoop;
+                                    modeDown = rawModeDown & 255;
                                     if ((modeDown != blockedModeDown) &&
                                         (modeDown != 0xFC) &&
                                         ((u32)(rawModeDown - 0x25) >= 2U) &&
@@ -9368,10 +9348,6 @@ void func_80053D40(void) {
                                             goto finishInput;
                                         }
                                         cardModeDown = 0x23;
-                                        asm(""
-                                            : "=r"(cardModeDown)
-                                            : "0"(cardModeDown),
-                                              "r"(rawModeDown));
                                         if (modeDown == cardModeDown) {
                                             if (D_800A3928MainLoop == one) {
                                                 goto nextPlayer;
@@ -10773,10 +10749,13 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             D_800AD974[gSelectedTrackSmall] = 1;
         } else {
             next = *previous;
-            if (*previous == 0) {
+            switch (next) {
+            case 0:
                 selection = 4;
-            } else if (*previous == 2) {
+                break;
+            case 2:
                 selection = 3;
+                break;
             }
         }
         break;
@@ -10884,8 +10863,6 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
         MenuSetAllObjectOrderingDepths(0);
         next = 1;
     selectionThree:
-        /* Keep this entry separate from the screen-4 return path. */
-        asm("" : : "r"(next));
         selection = 3;
         break;
     case 12:
