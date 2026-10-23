@@ -537,7 +537,7 @@ void CarInitTumble(u8 *car) {
 }
 
 extern s32 D_800A3A34Absolute[];
-extern void EffectSpawnAtCarPoint(u8 *, s32);
+extern void EffectSpawnAtCarPoint(Car *, s32);
 extern void func_80043B68(u8 *, s32);
 
 extern s32 D_800A3A2CAbsolute[];

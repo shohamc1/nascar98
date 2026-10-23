@@ -54,7 +54,7 @@ void func_8001EEC4(s32 *arg0);
 void func_80028FCC(Car *arg0);
 void ObjectSetModelDataVariant(u8 *object, s32 index);
 void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag);
-s32 func_80037204(u8 *obj);
+s32 func_80037204(Car *obj);
 void func_8003A880(s32 car);
 void func_8003AA20(s32 car);
 void *FileOpen(s32 fileId, void *mode);

@@ -17,7 +17,7 @@
 extern Car *gCarListw15[] asm("gCarList.NON_MATCHING");
 extern s32 D_800A38AC[];
 extern s32 gRandomSeed16;
-void EffectSpawnAtWheel(u8 *arg0, s32 arg1);
+void EffectSpawnAtWheel(Car *arg0, s32 arg1);
 void func_800328AC(void *arg0, s32 arg1);
 void EffectCopyPrimitiveBufferToList(void);
 void EffectRestorePrimitiveBuffer(void);
@@ -131,7 +131,7 @@ void EffectSpawnParticles(u8 *car, s32 pointIndex) {
 
 extern u8 D_800A2EE0[];
 
-void EffectSpawnAtCarPoint(u8 *car, s32 pointIndex) {
+void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     s32 slotIndex;
     EffectPoint *point;
     u8 *carInfo;
@@ -141,14 +141,14 @@ void EffectSpawnAtCarPoint(u8 *car, s32 pointIndex) {
     s32 speed;
     s32 flag;
 
-    if (*(s8 *)(car + 0x3B6) == 0) {
+    if (car->unk3B6 == 0) {
         return;
     }
-    if (*(s8 *)(car + 0x200) == 4) {
+    if (car->mode == 4) {
         return;
     }
     if (pointIndex >= 4) {
-        if (*(s32 *)(car + 0x90) > 0) {
+        if (car->speed > 0) {
             EffectSpawnParticles(car, pointIndex);
         }
         return;
@@ -161,7 +161,7 @@ void EffectSpawnAtCarPoint(u8 *car, s32 pointIndex) {
     if (slotIndex >= 0x28) {
         return;
     }
-    carInfo = *(u8 **)(car + 0x370);
+    carInfo = (u8 *)car->shape;
     if (pointIndex >= *(s16 *)(carInfo + 0x2E)) {
         return;
     }
@@ -173,46 +173,46 @@ void EffectSpawnAtCarPoint(u8 *car, s32 pointIndex) {
     if (pointIndex >= 8) {
         return;
     }
-    if (*(s8 *)(car + flagOffset + 0x3A5) == 0) {
+    if (*(s8 *)((u8 *)car + flagOffset + 0x3A5) == 0) {
         return;
     }
-    *(u16 *)(car + 0x3A4) |= 1 << pointIndex;
-    *(u8 *)(car + pointIndex + 0x3A6) = 0;
+    car->unk3A4 |= 1 << pointIndex;
+    *(u8 *)((u8 *)car + pointIndex + 0x3A6) = 0;
     gEffectSlots[slotIndex].active = 1;
     gEffectSlots[slotIndex].unk1D = pointIndex;
-    gEffectSlots[slotIndex].unk1E = *(u16 *)(car + 0x1DE);
-    gEffectSlots[slotIndex].x = *(s32 *)car + point->x;
-    gEffectSlots[slotIndex].y = *(s32 *)(car + 4) + point->y;
-    gEffectSlots[slotIndex].z = *(s32 *)(car + 8) + point->z;
+    gEffectSlots[slotIndex].unk1E = (u16)car->unk1DE;
+    gEffectSlots[slotIndex].x = *(s32 *)(u8 *)car + point->x;
+    gEffectSlots[slotIndex].y = car->pos.y + point->y;
+    gEffectSlots[slotIndex].z = car->pos.z + point->z;
     gEffectSlots[slotIndex].unk1A = 0xC8;
     gEffectSlots[slotIndex].unk20 = gEffectSlots[slotIndex].unk24 =
-        *(s16 *)(car + 0x1E0);
+        car->segment;
     if (pointIndex < 5) {
         gEffectSlots[slotIndex].unkE = gEffectSlots[slotIndex].z;
     } else {
-        gEffectSlots[slotIndex].unkE = *(s32 *)(car + 8) + 0xF;
+        gEffectSlots[slotIndex].unkE = car->pos.z + 0xF;
     }
     gEffectSlots[slotIndex].unkC = 0;
     gEffectSlots[slotIndex].unk10 = RandomGetScaled16(0x32) + 0x23;
     gEffectSlots[slotIndex].unk12 =
-        (*(u16 *)(car + 0x114) + 0x400 + RandomGetScaled16(0x60)) & 0x3FF;
+        ((u16)car->heading + 0x400 + RandomGetScaled16(0x60)) & 0x3FF;
     if (pointIndex < 5) {
-        speed = *(s16 *)(car + 0x92);
+        speed = *(s16 *)((u8 *)car + 0x92);
         flag = D_800A2EE0[0];
         gEffectSlots[slotIndex].unk14 = speed;
-        if (flag != 0 && *(u8 *)(car + 0x3B7) == 0) {
-            *(u8 *)(car + 0x3B7) = 0x3C;
+        if (flag != 0 && car->unk3B7 == 0) {
+            car->unk3B7 = 0x3C;
         }
-        if (*(u8 *)(car + 0xF5) != 0) {
+        if (car->collisionPending != 0) {
             func_80041848(car, 7);
         }
     } else {
-        gEffectSlots[slotIndex].unk14 = (*(s32 *)(car + 0x90) * 7) / 8 >> 16;
+        gEffectSlots[slotIndex].unk14 = (car->speed * 7) / 8 >> 16;
     }
     if (gEffectSlots[slotIndex].unk14 < 0x14) {
         gEffectSlots[slotIndex].unk14 = 0x14;
     }
-    unk28 = *(s32 *)(*(u8 **)(car + 0x370) + 0x38);
+    unk28 = *(s32 *)((u8 *)car->shape + 0x38);
     gate = D_8008CA28[0];
     gEffectSlots[slotIndex].unk2C = (s32)point;
     gEffectSlots[slotIndex].unk16 = 0;
@@ -221,7 +221,7 @@ void EffectSpawnAtCarPoint(u8 *car, s32 pointIndex) {
     if (gate == 0) {
         EffectSpawnAtWheel(car, pointIndex);
     }
-    if (*(s32 *)(car + 0x90) > 0) {
+    if (car->speed > 0) {
         EffectSpawnParticles(car, pointIndex);
     }
 }

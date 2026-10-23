@@ -828,7 +828,7 @@ extern s32 D_800BE890w16[] asm("D_800BE890.NON_MATCHING");
 extern u8 D_80098C00w16[] asm("D_80098C00.NON_MATCHING");
 extern u8 D_800A306Cw16[] asm("D_800A306C.NON_MATCHING");
 
-void SoundUpdateOpponentVoice(u8 *car, s32 id) {
+void SoundUpdateOpponentVoice(Car *car, s32 id) {
     s32 camX;
     s32 camY;
     s32 camZ;
@@ -847,9 +847,9 @@ void SoundUpdateOpponentVoice(u8 *car, s32 id) {
     s16 out[2];
 
     first = 0;
-    camX = *(s32 *)(car + 0);
-    camY = *(s32 *)(car + 4);
-    camZ = *(s32 *)(car + 8);
+    camX = car->pos.x;
+    camY = car->pos.y;
+    camZ = car->pos.z;
     obj = (u8 *)D_80098D00[id - 1];
     if (D_800A2FA4B[id - 1] > 0) {
         D_800A2FA4B[id - 1]--;
@@ -901,7 +901,7 @@ void SoundUpdateOpponentVoice(u8 *car, s32 id) {
         SoundSetSlotVolume(id, 0, 0);
         return;
     }
-    VectorRotate2D((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
+    VectorRotate2D((0x400 - car->heading) & 0x3FF, dx, dy, out);
     level = D_80098C00w16[level];
     if (out[0] < 0) {
         level = level * 10 / 8;
@@ -1173,9 +1173,9 @@ typedef struct SoundCarLink {
     u8 *car;
 } SoundCarLink;
 
-void SoundUpdateCar(u8 *car) {
+void SoundUpdateCar(Car *car) {
     extern u32 RandomGetScaled16(s32);
-    extern void SoundUpdateOpponentVoice(u8 *, s32);
+    extern void SoundUpdateOpponentVoice(Car *, s32);
     extern void func_800400D8Pair(u8 *, u8 *) asm("func_800400D8");
     extern s8 D_800A354F[];
     s32 i;
@@ -1213,40 +1213,39 @@ void SoundUpdateCar(u8 *car) {
         return;
     }
     if (D_800A2EACAbsolute[0] == 0 || D_800A2EACAbsolute[0] >= 3) {
-        if (D_800A2EC8[0] == 0 && *(s8 *)(car + 0x3B8) > 0) {
+        if (D_800A2EC8[0] == 0 && car->unk3B8 > 0) {
             id = 20;
             if (car != gPlayerCar[0]) {
                 id = 21;
             }
-            if (*(s8 *)(car + 0x3B9) == 0) {
-                *(s8 *)(car + 0x3B8) -= 3;
-                if (*(s8 *)(car + 0x3B8) <= 0) {
-                    *(s8 *)(car + 0x3B8) = 0;
+            if ((s8)car->unk3B9 == 0) {
+                car->unk3B8 -= 3;
+                if (car->unk3B8 <= 0) {
+                    car->unk3B8 = 0;
                     SoundStopSlot((s8)id);
                 }
             }
-            decayVolume = (*(s8 *)(car + 0x3B8) * 4 + 31) & 0xFF;
+            decayVolume = (car->unk3B8 * 4 + 31) & 0xFF;
             SoundSetSlotVolume((s8)id, decayVolume, decayVolume);
         }
         func_80040AC8(car);
         if (D_800A2F9D != 0) {
-            rpm = *(u16 *)(car + 0x108);
-            pitch = ((s16)rpm + *(s16 *)(car + 0x10A)) / 100;
-            if ((s16)rpm >= 2001 && *(s32 *)(car + 0x90) <= 0x95FFFF &&
+            rpm = (u16)car->unk108;
+            pitch = ((s16)rpm + car->unk10A) / 100;
+            if ((s16)rpm >= 2001 && car->speed <= 0x95FFFF &&
                 D_800A2EC8[0] == 0 &&
                 RandomGetScaled16((s16)((s16)rpm / 1000)) == 0) {
-                pitch -= pitch / (s16)(*(s16 *)(car + 0x108) / 1700);
+                pitch -= pitch / (s16)(car->unk108 / 1700);
             }
             /* Retail keeps this unused filter calculation. */
-            blend = pitch + *(s16 *)(car + 0x3BA) + *(s16 *)(car + 0x3BA) +
-                    *(s16 *)(car + 0x3BA) + 3;
+            blend = pitch + car->unk3BA + car->unk3BA + car->unk3BA + 3;
             asm("" : : "r"(blend) : "memory");
-            if (*(s16 *)(car + 0x108) >= 7001 && D_800A2EC8[0] == 0 &&
-                RandomGetScaled16((s16)(*(s16 *)(car + 0x108) / 1000)) == 0) {
+            if (car->unk108 >= 7001 && D_800A2EC8[0] == 0 &&
+                RandomGetScaled16((s16)(car->unk108 / 1000)) == 0) {
                 /* Retail also keeps this unused signed high product. */
                 register s32 magic;
                 u16 highRpm;
-                highRpm = *(u16 *)(car + 0x108);
+                highRpm = (u16)car->unk108;
                 shiftedRpm = (u32)highRpm << 16;
                 asm("" : "=r"(shiftedRpm) : "0"(shiftedRpm) : "v0");
                 sample = shiftedRpm >> 16;
@@ -1258,36 +1257,36 @@ void SoundUpdateCar(u8 *car) {
                 asm("" : : "r"(unusedHigh));
             }
             volume = 100;
-            if (*(s32 *)(car + 0x3BC) >= 4097) {
+            if (car->driveInput >= 4097) {
                 volume = 127;
             }
-            if (*(s16 *)(car + 0x1CA) + 7 < volume) {
-                *(s16 *)(car + 0x1CA) = *(s16 *)(car + 0x1CA) + 7;
-            } else if (volume < *(s16 *)(car + 0x1CA) - 3) {
-                *(s16 *)(car + 0x1CA) = *(s16 *)(car + 0x1CA) - 3;
+            if (car->unk1CA + 7 < volume) {
+                car->unk1CA = car->unk1CA + 7;
+            } else if (volume < car->unk1CA - 3) {
+                car->unk1CA = car->unk1CA - 3;
             } else {
-                *(s16 *)(car + 0x1CA) = volume;
+                car->unk1CA = volume;
             }
-            if (*(s16 *)(car + 0x1CA) >= 128) {
-                *(s16 *)(car + 0x1CA) = 127;
+            if (car->unk1CA >= 128) {
+                car->unk1CA = 127;
             }
-            volume = *(s16 *)(car + 0x1CA);
-            pitch = (*(s16 *)(car + 0x108) + *(s16 *)(car + 0x10A)) / 110 - 32;
-            if (*(s8 *)(car + 0x3CA) >= 18) {
+            volume = car->unk1CA;
+            pitch = (car->unk108 + car->unk10A) / 110 - 32;
+            if (car->unk3CA >= 18) {
                 pitch = 78;
             }
-            pitch += *(s32 *)(car + 0x3BC) >> 11;
-            if (*(s16 *)(car + 0x3BA) + 7 < pitch) {
-                *(s16 *)(car + 0x3BA) = *(s16 *)(car + 0x3BA) + 7;
-            } else if (pitch < *(s16 *)(car + 0x3BA) - 5) {
-                *(s16 *)(car + 0x3BA) = *(s16 *)(car + 0x3BA) - 5;
+            pitch += car->driveInput >> 11;
+            if (car->unk3BA + 7 < pitch) {
+                car->unk3BA = car->unk3BA + 7;
+            } else if (pitch < car->unk3BA - 5) {
+                car->unk3BA = car->unk3BA - 5;
             } else {
-                *(s16 *)(car + 0x3BA) = pitch;
+                car->unk3BA = pitch;
             }
-            if (*(s16 *)(car + 0x3BA) >= 128) {
-                *(s16 *)(car + 0x3BA) = 127;
+            if (car->unk3BA >= 128) {
+                car->unk3BA = 127;
             }
-            pitch = *(s16 *)(car + 0x3BA);
+            pitch = car->unk3BA;
             if (car == gPlayerCar[0]) {
                 func_8003FA84(0, (s8)pitch);
                 SoundSetSlotVolume(0, volume & 0xFF, volume & 0xFF);
@@ -1300,8 +1299,8 @@ void SoundUpdateCar(u8 *car) {
             }
             i = 3;
             if (D_800A2E94[0] == 24) {
-                next = *(SoundCarLink **)(car + 0x3F0);
-                previous = *(SoundCarLink **)(car + 0x3F4);
+                next = (SoundCarLink *)car->sectionLink.node.next;
+                previous = (SoundCarLink *)car->sectionLink.node.previous;
                 clearFlags = D_800A354F;
                 D_800A39D0B = 0;
                 do {

@@ -4975,16 +4975,16 @@ void func_800294A8(void *arg0) {
     extern void func_80040AC0(u8 * object);
     extern void func_800524A0(u8 * arg0, s8 arg1);
     extern void func_800525A8(u8 * arg0, s8 arg1);
-    extern void EffectSpawnAtWheel(u8 * arg0, s32 arg1);
+    extern void EffectSpawnAtWheel(Car * arg0, s32 arg1);
     volatile s32 pad[8];
     s32 delta;
     s32 value;
     s32 i;
     s32 shade;
     s32 shade2;
-    u8 *car = arg0;
+    Car *car = arg0;
 
-    delta = (*(s16 *)(car + 0x104) - *(s16 *)(car + 0x114) + 0x400) & 0x3FF;
+    delta = (car->movementHeading - car->heading + 0x400) & 0x3FF;
     if (delta >= 0x201) {
         delta = (0x400 - delta) & 0x3FF;
     }
@@ -4999,16 +4999,15 @@ void func_800294A8(void *arg0) {
         goto Checks;
     }
 Far:
-    if (*(s32 *)(car + 0x90) > 0x320000) {
+    if (car->speed > 0x320000) {
         goto Visible;
     }
 Checks:
-    if ((*(s16 *)(car + 0x120) == 0 && *(u8 *)(car + 0xF9) == 0) ||
-        D_800A2EACAbsolute[0] != 0) {
+    if ((car->unk120 == 0 && car->sliding == 0) || D_800A2EACAbsolute[0] != 0) {
         goto Other;
     }
 Visible:
-    if (*(u8 *)(car + 0xF9) == 0) {
+    if (car->sliding == 0) {
         if (RandomScaledGet(4) < 0) {
             value = -RandomScaledGet(4);
         } else {
@@ -5024,34 +5023,34 @@ Visible:
     }
     func_800409A0(car);
     for (i = 0, shade = 0; i < 4; shade += 0x1000000, i++) {
-        if (*(s16 *)(car + i * 0x28 + 0x2AC) == 0 &&
-            *(s8 *)(car + i + 0x3A6) != 0) {
+        if (*(s16 *)((u8 *)car + i * 0x28 + 0x2AC) == 0 &&
+            *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
             func_800525A8(car, shade >> 24);
             if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
                 func_80041848(car, 0x57);
             }
             D_800A2E28 = D_800A2EC0Lui;
-        } else if (*(u8 *)(car + i * 0x28 + 0x2CC) != 0) {
+        } else if (*(u8 *)((u8 *)car + i * 0x28 + 0x2CC) != 0) {
             func_800524A0(car, shade >> 24);
         }
     }
     return;
 Other:
-    if (*(s16 *)(car + 0x1C4) > 0) {
-        *(s16 *)(car + 0x1C4) = 0;
-        if (*(s8 *)(car + 0x3B8) >= 0xB) {
-            *(u8 *)(car + 0x3B8) = 5;
+    if (car->unk1C4 > 0) {
+        car->unk1C4 = 0;
+        if (car->unk3B8 >= 0xB) {
+            car->unk3B8 = 5;
         }
         func_800409A0(car);
         for (i = 0, shade2 = 0; i < 4; shade2 += 0x1000000, i++) {
-            if (*(s16 *)(car + i * 0x28 + 0x2AC) == 0 &&
-                *(s8 *)(car + i + 0x3A6) != 0) {
+            if (*(s16 *)((u8 *)car + i * 0x28 + 0x2AC) == 0 &&
+                *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
                 func_800525A8(car, shade2 >> 24);
                 if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
                     func_80041848(car, 0x57);
                 }
                 D_800A2E28 = D_800A2EC0Lui;
-            } else if (*(u8 *)(car + i * 0x28 + 0x2CC) != 0) {
+            } else if (*(u8 *)((u8 *)car + i * 0x28 + 0x2CC) != 0) {
                 func_800524A0(car, shade2 >> 24);
             }
         }
@@ -5059,7 +5058,7 @@ Other:
     }
     func_80040AC0(car);
     for (i = 0; i < 4; i++) {
-        if (*(u8 *)(car + i * 0x28 + 0x2CC) != 0) {
+        if (*(u8 *)((u8 *)car + i * 0x28 + 0x2CC) != 0) {
             func_800524A0(car, i);
         }
     }
@@ -5110,22 +5109,22 @@ void CarUpdateWheelVelocityComponents(s32 *car) {
         MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[index], car[0x24]);
 }
 
-void EffectSpawnAtWheel(u8 *car, s32 wheelIndex) {
+void EffectSpawnAtWheel(Car *car, s32 wheelIndex) {
     s32 pos[3];
     s32 x;
     u8 *entry;
 
-    if (*(u8 *)(car + 0xF4) != 0) {
-        entry =
-            (u8 *)(*(s32 *)(*(s32 *)(car + 0x370) + 0x40) + wheelIndex * 0x18);
+    if (car->unkF4 != 0) {
+        entry = (u8 *)(*(s32 *)(*(s32 *)((u8 *)car + 0x370) + 0x40) +
+                       wheelIndex * 0x18);
         pos[0] = *(s32 *)(entry + 4);
         pos[1] = *(s32 *)(entry + 8);
         pos[2] = *(s32 *)(entry + 0xC);
         func_8001EEC4((s32 *)car);
         MatrixRotateVector(pos);
-        pos[0] += *(s32 *)(car + 0);
-        pos[1] += *(s32 *)(car + 4);
-        pos[2] += *(s32 *)(car + 8);
+        pos[0] += car->pos.x;
+        pos[1] += car->pos.y;
+        pos[2] += car->pos.z;
         x = pos[0] + RandomScaledGet(25);
         func_8003644C(1, x, pos[1] + RandomScaledGet(25), pos[2]);
     }
@@ -5133,7 +5132,7 @@ void EffectSpawnAtWheel(u8 *car, s32 wheelIndex) {
 
 extern s32 D_800A2E1C;
 
-void func_80029A78(u8 *car) {
+void func_80029A78(Car *car) {
     s32 angle;
     s32 dist10;
     s32 value;
@@ -5141,26 +5140,25 @@ void func_80029A78(u8 *car) {
     s32 vx;
     s32 vy;
 
-    *(u16 *)(car + 0x104) = *(u16 *)(car + 0x114);
-    func_8001F2C4(*(s16 *)(car + 0x114), 0, 0);
+    car->movementHeading = (u16)car->heading;
+    func_8001F2C4(car->heading, 0, 0);
     MatrixStoreObjectBasis((s32 *)car);
-    if (*(u8 *)(car + 0x410) != 0) {
-        *(u16 *)(car + 0x20E) = -*(u16 *)(car + 0x20E);
+    if (car->reverseSpeed != 0) {
+        car->steering = -(u16)car->steering;
     }
-    angle = *(s16 *)(car + 0x20E);
+    angle = car->steering;
     if (angle < 0) {
         angle += 0x1000;
     }
-    if (*(s32 *)(car + 0xB0) >= 0 ? *(s32 *)(car + 0xB0) < 0x28
-                                  : -*(s32 *)(car + 0xB0) < 0x28) {
-        if (*(s32 *)(car + 0xB4) >= 0 ? *(s32 *)(car + 0xB4) < 0x28
-                                      : -*(s32 *)(car + 0xB4) < 0x28) {
-            vx = *(s32 *)(car + 0xB0);
-            vy = *(s32 *)(car + 0xB4);
+    if (car->velocityX >= 0 ? car->velocityX < 0x28 : -car->velocityX < 0x28) {
+        if (car->velocityY >= 0 ? car->velocityY < 0x28
+                                : -car->velocityY < 0x28) {
+            vx = car->velocityX;
+            vy = car->velocityY;
             dist10 = (s32)MathSqrt(vx * vx + vy * vy) * D_800A2E1C / 10;
-            if (*(s16 *)(car + 0x20E) >= 0 ? dist10 < *(s16 *)(car + 0x20E)
-                                           : dist10 < -*(s16 *)(car + 0x20E)) {
-                if (*(s16 *)(car + 0x20E) >= 0) {
+            if (car->steering >= 0 ? dist10 < car->steering
+                                   : dist10 < -car->steering) {
+                if (car->steering >= 0) {
                     angle = dist10;
                 } else {
                     angle = (0x1000 - dist10) & 0xFFF;
@@ -5168,22 +5166,22 @@ void func_80029A78(u8 *car) {
             }
         }
     }
-    *(u16 *)(car + 0x1D0) = angle / 4;
+    car->unk1D0 = angle / 4;
     scale = 1000;
     if (angle >= 0x801) {
         angle -= 0x1000;
     }
     dist10 = angle * scale / 1000;
-    *(u16 *)(car + 0x212) = dist10 / 4;
+    car->unk212 = dist10 / 4;
     if (dist10 < 0) {
         dist10 += 0x1000;
     }
-    value = (*(u16 *)(car + 0x116) + dist10) & 0xFFF;
-    *(u16 *)(car + 0x116) = value;
-    *(s16 *)(car + 0x114) = value / 4;
-    MatrixSetRotationFromAngle(car, *(s16 *)(car + 0x116));
-    if (*(u8 *)(car + 0x410) != 0) {
-        *(u16 *)(car + 0x20E) = -*(u16 *)(car + 0x20E);
+    value = (car->fineHeading + dist10) & 0xFFF;
+    car->fineHeading = value;
+    car->heading = value / 4;
+    MatrixSetRotationFromAngle(car, (s16)car->fineHeading);
+    if (car->reverseSpeed != 0) {
+        car->steering = -(u16)car->steering;
     }
 }
 
@@ -5464,7 +5462,7 @@ extern s32 D_800A3598PlayerStep[];
 extern u8 D_800A35D4PlayerStep[];
 extern s32 D_800A397CPlayerStep[];
 
-void CarUpdatePlayer(u8 *object) {
+void CarUpdatePlayer(Car *object) {
     u8 frameScratch[0x48];
     Car *car;
     register s32 zeroRoll asm("s5");
@@ -5512,7 +5510,7 @@ void CarUpdatePlayer(u8 *object) {
         func_80023454();
         return;
     }
-    if ((*(u8 *)((u8 *)car + 0x268)) != 0) {
+    if ((car->unk268) != 0) {
         func_8003DBA8(car);
         return;
     }
@@ -6096,7 +6094,7 @@ void func_8002B538(u8 *arg0) {
 s32 CarGetWheelGrip(Car *car, s16 surface, s32 idx) {
     extern s32 MathFixedDivide(s32, s32);
     extern s32 RandomScaledGet(s32);
-    extern void EffectSpawnAtWheel(u8 *, s32);
+    extern void EffectSpawnAtWheel(Car *, s32);
     extern u8 D_800A2E5A;
     extern u8 D_800A2E5B;
     s32 scale;
@@ -6444,7 +6442,7 @@ void func_8002BD48(u8 *carBytes) {
     register s32 assistBoost asm("t1");
     u32 velocitySumX;
     u32 velocitySumY;
-    u8 *leader;
+    Car *leader;
     register u8 *node asm("v0");
     asm("" : "=r"(car) : "0"(carBytes));
     initialYaw = D_800A2E5C;
@@ -6510,12 +6508,12 @@ void func_8002BD48(u8 *carBytes) {
             node = car->order.node.next;
             goto nextCar;
         findCar:
-            node = *((u8 **)(leader + 0x3E4));
+            node = (u8 *)leader->order.node.next;
 
         nextCar:
             leader = *((u8 **)(node + 8));
 
-            if ((*((s16 *)(leader + 0x1EC))) != 0) {
+            if ((leader->type) != 0) {
                 goto findCar;
             }
             leaderDistance = func_8003702C(leader, (u8 *)car);
@@ -7255,17 +7253,17 @@ s32 CarTestDraft(u8 *arg0, u8 *arg1) {
 
 s32 CarTestDraft(u8 *, u8 *);
 
-void func_8002D16C(u8 *car) {
+void func_8002D16C(Car *car) {
     u8 *other;
     s32 flag;
     s32 flag40;
     s32 value;
     s32 newValue;
 
-    *(u8 *)(car + 0x3FC) = 0;
-    if (0x8BFFFF < *(s32 *)(car + 0x90)) {
+    car->unk3FC = 0;
+    if (0x8BFFFF < car->speed) {
         if (D_800A2E94[0] >= 2) {
-            other = *(u8 **)(*(s32 *)(car + 0x3F0) + 8);
+            other = *(u8 **)(*(s32 *)((u8 *)car + 0x3F0) + 8);
             if (other != 0) {
                 flag = 1;
                 flag40 = 0x28;
@@ -7277,7 +7275,7 @@ void func_8002D16C(u8 *car) {
                         goto decay;
                     }
                     if ((CarTestDraft(car, other) & 0xFF) != 0) {
-                        *(u8 *)(car + 0x3FC) = flag;
+                        car->unk3FC = flag;
                         if (*(s16 *)(other + 0x1EC) == 0) {
                             return;
                         }
@@ -7288,17 +7286,17 @@ void func_8002D16C(u8 *car) {
                 } while (other != 0);
             }
         decay:
-            value = *(s32 *)(car + 0x22C);
+            value = car->speedBoost;
             if (value > 0) {
                 newValue = value - 0x8000;
-                *(s32 *)(car + 0x22C) = newValue;
+                car->speedBoost = newValue;
                 if (newValue < 0) {
-                    *(s32 *)(car + 0x22C) = 0;
+                    car->speedBoost = 0;
                 }
             }
             return;
         }
-        *(s32 *)(car + 0x22C) = 0;
+        car->speedBoost = 0;
     }
 }
 
@@ -7544,7 +7542,7 @@ Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         s16 unkC;
         s16 unkE;
     } D_800BE72C[];
-    extern void CarUpdatePlayer(u8 *);
+    extern void CarUpdatePlayer(Car *);
     extern void func_800373B4(Car *);
     extern void func_80029E34(void);
     extern void CarResetMotionCounters(u8 *);
@@ -8171,7 +8169,7 @@ void func_80031264(u8 *object);
  * stops it. */
 static __inline__ void CarPullOntoTrack(Car *car, s32 dx, s32 dz, s32 dist) {
     s32 idx;
-    u8 *obj;
+    Car *obj;
     s32 *cosTable;
     s32 *sinTable;
     VECTOR unused;
@@ -8189,18 +8187,18 @@ static __inline__ void CarPullOntoTrack(Car *car, s32 dx, s32 dz, s32 dist) {
     }
     if (car->frontRightContact == 0 || car->frontLeftContact == 0 ||
         car->rearRightContact == 0 || car->rearLeftContact == 0) {
-        *(s32 *)(obj + 0x0) = *(s32 *)(obj + 0xC);
-        *(s32 *)(obj + 0x4) = *(s32 *)(obj + 0x10);
+        obj->pos.x = obj->unkC;
+        obj->pos.y = obj->unk10;
         func_80031264(obj);
-        idx = (*(s16 *)(obj + 0x104) + 0x200) & 0x3FF;
+        idx = (obj->movementHeading + 0x200) & 0x3FF;
         cosTable = COS_TABLE;
         sinTable = SIN_TABLE;
-        *(s32 *)(obj + 0xB4) = 0;
-        *(s32 *)(obj + 0xB0) = 0;
-        *(s32 *)(obj + 0xC4) = (cosTable[idx] - sinTable[idx]) * 100;
-        *(s32 *)(obj + 0xC8) = (sinTable[idx] + cosTable[idx]) * 100;
-        *(s32 *)(obj + 0xD0) = (cosTable[idx] - sinTable[idx]) * 100;
-        *(s32 *)(obj + 0xD4) = (sinTable[idx] + cosTable[idx]) * 100;
+        obj->velocityY = 0;
+        obj->velocityX = 0;
+        obj->frontVelocityX = (cosTable[idx] - sinTable[idx]) * 100;
+        obj->frontVelocityY = (sinTable[idx] + cosTable[idx]) * 100;
+        obj->rearVelocityX = (cosTable[idx] - sinTable[idx]) * 100;
+        obj->rearVelocityY = (sinTable[idx] + cosTable[idx]) * 100;
     }
 }
 
@@ -10947,7 +10945,7 @@ extern s32 D_800A396CNM asm("D_800A396C.NON_MATCHING");
  * vertex, and the next object's vertex list. */
 void func_80033000(Car *endB, Car *endA, Car *firstA) {
     u8 *prim;
-    u8 *listA;
+    Car *listA;
     u8 *listB;
     s32 count;
     u32 *otCursor;
@@ -13606,7 +13604,7 @@ void ObjectAdvanceAlongHeading(Car *object) {
 
 extern s32 D_800A39E0[];
 
-s32 func_80037204(u8 *obj) {
+s32 func_80037204(Car *obj) {
     extern void *gTrackSectionsz[] asm("gTrackSections");
     Car *node;
     s32 tmp;
@@ -13624,11 +13622,11 @@ s32 func_80037204(u8 *obj) {
     u16 val;
 
     node = gCarListw15[0];
-    tmp = *(s32 *)(obj + 0x3CC);
-    *(s32 *)(obj + 0x414) = -1;
-    *(s32 *)(obj + 0x354) = (s32)CarResetMotionCounters;
-    *(s32 *)(obj + 0x90) = 0;
-    *(s32 *)(obj + 0x84) = 0;
+    tmp = obj->penalty;
+    obj->unk414 = -1;
+    obj->callback = (s32)CarResetMotionCounters;
+    obj->speed = 0;
+    obj->unk84 = 0;
     if (tmp > 0) {
         goto fail;
     }
@@ -13645,10 +13643,10 @@ s32 func_80037204(u8 *obj) {
         }
         node = node->next;
     }
-    if (*(u8 *)(obj + 0xF4) != 0) {
+    if (obj->unkF4 != 0) {
         func_80041848(obj, 12);
-        heading = *(s16 *)(obj + 0x28A);
-        *(u8 *)(obj + 0xF4) = 0;
+        heading = obj->unk28A;
+        obj->unkF4 = 0;
         num = D_800A39E0[0] + heading;
         den = gTrackSectionCount[0];
         rem = num % den;
@@ -13656,18 +13654,18 @@ s32 func_80037204(u8 *obj) {
         idx = rem * 0x90;
         entry = base + idx;
         t = *(s32 *)(entry + 0x48);
-        *(s32 *)(obj + 0x0) = t;
+        obj->pos.x = t;
         t = *(s32 *)(entry + 0x4C);
-        *(s32 *)(obj + 0x4) = t;
+        obj->pos.y = t;
         b2 = (u8 *)gTrackSectionsz[0];
         val = *(u16 *)(idx + (s32)b2 + 0x10);
-        counter = *(u16 *)(obj + 0x1D6);
+        counter = (u16)obj->lap;
         counter = counter - 2;
-        *(u16 *)(obj + 0x1D6) = counter;
-        *(u16 *)(obj + 0x104) = val;
-        *(u16 *)(obj + 0x114) = val;
+        obj->lap = counter;
+        obj->movementHeading = val;
+        obj->heading = val;
         if ((s16)counter < 0) {
-            *(u16 *)(obj + 0x1D6) = 0;
+            obj->lap = 0;
         }
         if (obj == D_800A3960w15[0]) {
             D_800A3960[0] = 0;
@@ -13887,8 +13885,8 @@ void func_800373B4(Car *object) {
     u8 *aheadOfFollowingCar;
     u8 *followingCar;
     u8 *paceLeader;
-    register u8 *forwardNeighbor asm("$17");
-    register u8 *backwardNeighbor asm("$17");
+    register Car *forwardNeighbor asm("$17");
+    register Car *backwardNeighbor asm("$17");
     u8 *blockingCar;
     register u8 *paceAheadCar asm("$17");
     u8 tempA06;
@@ -15407,20 +15405,19 @@ void CarUpdateAi(Car *arg0) {
     }
 }
 
-s32 CarCanPassOther(u8 *car, u8 *otherCar) {
+s32 CarCanPassOther(Car *car, u8 *otherCar) {
     extern s32 func_8003702C();
     volatile s32 pad[4];
     s32 result;
 
-    if (*(s32 *)(car + 0x90) <= *(s32 *)(otherCar + 0x90)) {
+    if (car->speed <= *(s32 *)(otherCar + 0x90)) {
         return 0;
     }
     result = func_8003702C(car, otherCar);
     if (result >= 2) {
         return 0;
     }
-    return (*(s32 *)(car + 0x90) - *(s32 *)(otherCar + 0x90)) / 20 >> 16 >=
-           result;
+    return (car->speed - *(s32 *)(otherCar + 0x90)) / 20 >> 16 >= result;
 }
 
 extern u8 D_800A2F84w44[] asm("D_800A2F84");

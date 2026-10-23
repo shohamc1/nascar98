@@ -1,6 +1,8 @@
 #ifndef LIST_H
 #define LIST_H
 
+struct Car;
+
 #include "common.h"
 
 typedef struct RenderListNode RenderListNode;
@@ -18,6 +20,6 @@ void ListRemoveNodeWithTail(RenderListNode *node, RenderListNode **head,
                             RenderListNode **tail);
 void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
                                DoublyLinkedNode **first);
-void ListDispatchCallbacks(u8 *owner);
+void ListDispatchCallbacks(struct Car *owner);
 
 #endif /* LIST_H */
