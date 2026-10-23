@@ -4973,7 +4973,7 @@ extern char *strtok(char *, const char *);
 void HudUpdateTrafficGapData(void) {
     register s32 len asm("v1");
     register Car *car asm("a1");
-    u8 *e0;
+    Car *e0;
     register s32 prod2 asm("$8");
     s32 prod1;
     s32 refDist;
@@ -4990,7 +4990,7 @@ void HudUpdateTrafficGapData(void) {
 
     e0 = (u8 *)D_800A35E0[0];
     len = gTrackSectionCount[0];
-    e01d6 = *(s16 *)(e0 + 0x1D6);
+    e01d6 = e0->lap;
     asm volatile("mult\t%0, %1" : : "r"(e01d6), "r"(len));
     car = gPlayerCar[0];
     car1d6 = car->lap;
@@ -5007,7 +5007,7 @@ void HudUpdateTrafficGapData(void) {
         if (car->place >= 2) {
             e0 = (u8 *)((CarLink *)car->order.node.next)->car;
             t1 = car->unk264;
-            t2 = *(s32 *)(e0 + 0x264);
+            t2 = e0->unk264;
             car = *(Car **)((u8 *)(e0) + 0x34C);
             D_800A34BC = t1 - t2;
             strcpy(D_800A8A4C, (char *)car);
@@ -5018,18 +5018,18 @@ void HudUpdateTrafficGapData(void) {
         if (*(s32 *)&gPlayerCar[0]->order.node.previous != 0) {
             e0 = (u8 *)((CarLink *)gPlayerCar[0]->order.node.previous)->car;
             len = gTrackSectionCount[0];
-            other1d6 = *(s16 *)(e0 + 0x1D6);
+            other1d6 = e0->lap;
             asm volatile("mult\t%0, %1" : : "r"(other1d6), "r"(len));
-            otherdist = *(s16 *)(e0 + 0x1E0);
+            otherdist = e0->segment;
             asm volatile("mflo $7\n\taddu %0, $7, %1"
                          : "=r"(otherdist)
                          : "0"(otherdist));
             if (refDist - otherdist < len) {
-                rel = *(s32 *)(e0 + 0x264);
+                rel = e0->unk264;
                 if (gPlayerCar[0]->place != 1) {
                     rel -= gPlayerCar[0]->unk264;
                 }
-                name2 = *(char **)(e0 + 0x34C);
+                name2 = e0->name;
                 D_800A34C0 = rel;
                 strcpy(D_800A8A60, name2);
                 D_800A34B8 = (s32)strtok(D_800A8A60, gTextSpaceDelimiter);

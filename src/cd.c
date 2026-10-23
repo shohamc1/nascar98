@@ -671,31 +671,31 @@ void func_8003D654(u8 *object) {
     }
 }
 
-void func_8003D69C(u8 *object) {
+void func_8003D69C(Car *object) {
     s32 value;
     s32 now;
 
-    value = *(volatile u16 *)(object + 0x278);
-    now = *(u16 *)(object + 0x278);
-    *(u16 *)(object + 0x278) = now - 1;
-    *(s16 *)(object + 0x2A2) = (s16)value / 10;
+    value = *(volatile u16 *)((u8 *)object + 0x278);
+    now = (u16)object->unk26C[6];
+    object->unk26C[6] = now - 1;
+    object->unk2A2 = (s16)value / 10;
     if ((now << 16) < 0) {
-        *(u16 *)(object + 0x2A2) = 0;
-        *(u8 *)(object + 0x26A) &= ~0x04;
+        object->unk2A2 = 0;
+        object->unk26A &= ~0x04;
     }
 }
 
-void func_8003D6F8(u8 *object) {
+void func_8003D6F8(Car *object) {
     s32 value;
     s32 now;
 
-    value = *(volatile u16 *)(object + 0x27A);
-    now = *(u16 *)(object + 0x27A);
-    *(u16 *)(object + 0x27A) = now - 1;
-    *(s16 *)(object + 0x2A8) = (s16)value / 10;
+    value = *(volatile u16 *)((u8 *)object + 0x27A);
+    now = (u16)object->unk26C[7];
+    object->unk26C[7] = now - 1;
+    object->unk2A8 = (s16)value / 10;
     if ((now << 16) < 0) {
-        *(u16 *)(object + 0x2A8) = 0;
-        *(u8 *)(object + 0x26A) &= ~0x08;
+        object->unk2A8 = 0;
+        object->unk26A &= ~0x08;
     }
 }
 
@@ -1537,7 +1537,7 @@ extern u8 D_800A387C[];
  * opaque dst copy keeps cse from copying it out of src, and the explicit
  * `adjust` local keeps the D_800AE84C address ahead of the walker copies. */
 void func_8003ECB8(u8 *object) {
-    u8 *current;
+    Car *current;
     register u8 *base;
     s32 id;
     s32 depth;
@@ -1555,14 +1555,13 @@ void func_8003ECB8(u8 *object) {
     base = D_800BE97C[0];
     if (current != 0) {
         id = *(s16 *)(object + 0xC) - 1;
-        for (; current != 0; current = *(u8 **)(current + 0x3E0)) {
-            if (*(s16 *)(current + 0x1DE) == id) {
+        for (; current != 0; current = (u8 *)current->next) {
+            if (current->unk1DE == id) {
                 break;
             }
         }
-        if (current != 0 && *(s16 *)(current + 0x1EC) != 1 &&
-            *(u8 *)(current + 0x268) != 0) {
-            depth = *(s16 *)(current + 0x27C);
+        if (current != 0 && current->type != 1 && current->unk268 != 0) {
+            depth = current->unk26C[8];
             i = 0;
             if (i < *(s16 *)(object + 0xA)) {
                 s32 *adjust;
@@ -1572,7 +1571,7 @@ void func_8003ECB8(u8 *object) {
                 asm("" : "=r"(dst) : "0"(object));
                 do {
                     current = src;
-                    value = *(s16 *)(current + 0x94);
+                    value = *(s16 *)((u8 *)current + 0x94);
                     extra = *(s32 *)(object + 0x218);
                     u16v = *(u16 *)(dst + 0x10);
                     row = (u8 *)((u32)(u16v << 3) + (u32)base);

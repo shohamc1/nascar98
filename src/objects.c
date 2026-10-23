@@ -1282,14 +1282,14 @@ void func_80023074(void) {
                 split = gSplitScreenModeLui;
                 car->cameraAngle = car->heading;
                 if (split == mode) {
-                    u8 *other = (u8 *)car->next;
+                    Car *other = (u8 *)car->next;
                     u8 copy;
 
                     copy = 0;
-                    if (*(u8 *)(other + 0x268) == 0) {
-                        copy = *(u8 *)(other + 0x20D);
+                    if (other->unk268 == 0) {
+                        copy = other->unk20D;
                     }
-                    *(u8 *)(other + 0x20C) = copy;
+                    other->cameraMode = copy;
                     gPlayerCarLui->next->segment = TrackFindSectionForward(
                         *(s32 *)(u8 *)gPlayerCarLui->next,
                         gPlayerCarLui->next->pos.y,
@@ -1335,10 +1335,10 @@ void func_80023074(void) {
         }
     }
     if (gSplitScreenModeLui == 2) {
-        u8 *other = (u8 *)gPlayerCarLui->next;
+        Car *other = (u8 *)gPlayerCarLui->next;
 
-        if (*(u8 *)(other + 0x268) == 0) {
-            *(u8 *)(other + 0x20D) = *(u8 *)(other + 0x20C);
+        if (other->unk268 == 0) {
+            other->unk20D = (u8)other->cameraMode;
         }
     }
     offset = gReplayLengthSmall - 1;
@@ -2498,25 +2498,25 @@ void CarResetMotionCounters(Car *object) {
     object->unk388 = 0;
 }
 
-void func_800255A0(u8 *arg0) {
+void func_800255A0(Car *arg0) {
     u16 temp;
 
-    temp = *(u16 *)(arg0 + 0x1BC);
-    *(s32 *)(arg0 + 0x238) = *(s32 *)(arg0 + 0x238) & 0xFFFF7DBF;
-    *(u16 *)(arg0 + 0x1BC) = temp + 1;
+    temp = (u16)arg0->unk1BC;
+    arg0->flags = arg0->flags & 0xFFFF7DBF;
+    arg0->unk1BC = temp + 1;
     switch ((s16)temp) {
     case 0:
-        *(s16 *)(arg0 + 0x1C0) = 0;
-        *(s16 *)(arg0 + 0x1BE) = 0;
+        arg0->unk1C0 = 0;
+        arg0->unk1BE = 0;
         return;
     case 32:
-        *(u16 *)(arg0 + 0x1BC) = 0;
+        arg0->unk1BC = 0;
         break;
     default:
-        *(s16 *)(arg0 + 0x1D0) = 32;
+        arg0->unk1D0 = 32;
         return;
     }
-    *(s32 *)(arg0 + 0x354) = (s32)CarResetMotionCounters;
+    arg0->callback = (s32)CarResetMotionCounters;
 }
 
 void CarApplyRandomHeadingImpulse(Car *car) {
@@ -5830,32 +5830,32 @@ void CarAddVelocityAlongHeading(Car *car, s32 speed) {
         car->rearVelocityY + MathMultiplyFixed16(entryB, speed);
 }
 
-s32 func_8002AEB0(u8 *arg0) {
+s32 func_8002AEB0(Car *arg0) {
     s32 index;
     VECTOR rotated;
     s32 value;
     s32 temp;
     s32 product;
 
-    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
-    product = ((s32 **)D_800A3A2CAbsolute)[0][index] * *(s32 *)(arg0 + 0xB0);
-    rotated.vx = (product - (((s32 **)D_800A3A34Absolute)[0][index] *
-                             *(s32 *)(arg0 + 0xB4))) >>
+    index = (0x400 - arg0->heading) & 0x3FF;
+    product = ((s32 **)D_800A3A2CAbsolute)[0][index] * arg0->velocityX;
+    rotated.vx = (product -
+                  (((s32 **)D_800A3A34Absolute)[0][index] * arg0->velocityY)) >>
                  16;
-    product = ((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)(arg0 + 0xB0);
-    rotated.vy = (product + (((s32 **)D_800A3A2CAbsolute)[0][index] *
-                             *(s32 *)(arg0 + 0xB4))) >>
+    product = ((s32 **)D_800A3A34Absolute)[0][index] * arg0->velocityX;
+    rotated.vy = (product +
+                  (((s32 **)D_800A3A2CAbsolute)[0][index] * arg0->velocityY)) >>
                  16;
     value = rotated.vx;
     if (value < 0) {
         temp = -value;
-        *(u8 *)(arg0 + 0x410) = temp;
+        arg0->reverseSpeed = temp;
         value = 0;
         if ((temp & 0xFF) >= 0x65U) {
-            *(u8 *)(arg0 + 0x410) = 0x64;
+            arg0->reverseSpeed = 0x64;
         }
     } else {
-        *(u8 *)(arg0 + 0x410) = 0;
+        arg0->reverseSpeed = 0;
     }
     return value << 16;
 }
@@ -9217,8 +9217,8 @@ void GraphicsDrawRaceViews(void) {
     s32 bankAfterInset;
     register s32 randomIndex asm("v0");
     register s32 viewLimit asm("v0");
-    u8 *car;
-    u8 *insetCar;
+    Car *car;
+    Car *insetCar;
     Car *focusCar;
 
     focusCar = gPlayerCarFrame[0];
@@ -9294,11 +9294,11 @@ void GraphicsDrawRaceViews(void) {
         car = D_800A3558Frame[0];
         if (car != NULL) {
             do {
-                if ((*(s16 *)(car + 0x1EC)) >= 0) {
-                    (*(u16 *)(car + 0x1E2)) = (u16)(*(u16 *)(car + 0x1E6));
-                    (*(u16 *)(car + 0x1E4)) = (u16)(*(u16 *)(car + 0x1E8));
+                if ((car->type) >= 0) {
+                    (car->unk1E2) = (u16)((u16)car->unk1E6);
+                    (car->unk1E4) = (u16)((u16)car->unk1E8);
                 }
-                car = (*(u8 **)(car + 0x3E0));
+                car = ((u8 *)car->next);
             } while (car != NULL);
         }
         focusCar = gPlayerCarFrame[0]->next;
@@ -9356,13 +9356,11 @@ void GraphicsDrawRaceViews(void) {
         insetCar = D_800A3558Frame[0];
         if (insetCar != NULL) {
             do {
-                if ((*(s16 *)(insetCar + 0x1EC)) >= 0) {
-                    (*(u16 *)(insetCar + 0x1E2)) =
-                        (u16)(*(u16 *)(insetCar + 0x1E6));
-                    (*(u16 *)(insetCar + 0x1E4)) =
-                        (u16)(*(u16 *)(insetCar + 0x1E8));
+                if ((insetCar->type) >= 0) {
+                    (insetCar->unk1E2) = (u16)((u16)insetCar->unk1E6);
+                    (insetCar->unk1E4) = (u16)((u16)insetCar->unk1E8);
                 }
-                insetCar = (*(u8 **)(insetCar + 0x3E0));
+                insetCar = ((u8 *)insetCar->next);
             } while (insetCar != NULL);
         }
         D_800A2ED8Frame = 1;
@@ -15713,7 +15711,7 @@ s8 TrackGetLateralOffset(u8 *section, s32 worldX, s32 worldY) {
 }
 
 void CarUpdateTrackSideOffsets(void) {
-    u8 *car;
+    Car *car;
     u8 *section;
     s32 index;
     s32 sectionIndex;
@@ -15730,7 +15728,7 @@ void CarUpdateTrackSideOffsets(void) {
 
     car = (u8 *)D_800A3984[0] + 0x500;
     while (car != NULL) {
-        sectionIndex = *(s16 *)(car + 0x1E0);
+        sectionIndex = car->segment;
         if (sectionIndex != -1) {
             section = *(u8 **)gTrackSections;
             section += sectionIndex * 0x90;
@@ -15741,13 +15739,13 @@ void CarUpdateTrackSideOffsets(void) {
             index = ((0x400 - angle) & 0x3FF) << 2;
             tableA = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
             prodA = tableA * (objX - entryX);
-            objY = *(s32 *)(car + 4);
+            objY = car->pos.y;
             entryY = *(s32 *)(section + 0x18);
             tableB = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
             value = prodA + tableB * (objY - entryY);
-            *(s8 *)(car + 0x203) = (-(value >> 16)) / 250;
+            car->unk203 = (-(value >> 16)) / 250;
         }
-        car = *(u8 **)(car + 0x3E0);
+        car = (u8 *)car->next;
     }
 }
 
