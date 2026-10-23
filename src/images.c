@@ -947,7 +947,7 @@ void MatrixSetRotationFromAngle(u8 *object, s32 angleIndex) {
     *(s32 *)((u8 *)object + 0x28) = ((s16 *)D_800A384C)[angleIndex] * 4;
 }
 #else
-void MatrixSetRotationFromAngle(u8 *arg0, s32 index) {
+void MatrixSetRotationFromAngle(Car *arg0, s32 index) {
     s16 *table1;
     s16 *table2;
     s32 value1;
@@ -957,22 +957,22 @@ void MatrixSetRotationFromAngle(u8 *arg0, s32 index) {
     table1 = (s16 *)D_800A384C;
     value1 = table1[index] * 4;
     table2 = (s16 *)D_800A3854;
-    *(s32 *)(arg0 + 0x18) = value1;
+    arg0->basis[0].x = value1;
     value2 = table2[index] * 4;
-    *(s32 *)(arg0 + 0x30) = 0;
-    *(s32 *)(arg0 + 0x24) = value2;
-    *(s32 *)(arg0 + 0x1C) = -table2[index] * 4;
+    arg0->basis[2].x = 0;
+    arg0->basis[1].x = value2;
+    arg0->basis[0].y = -table2[index] * 4;
     value3 = table1[index] * 4;
-    *(s32 *)(arg0 + 0x34) = 0;
-    *(s32 *)(arg0 + 0x20) = 0;
-    *(s32 *)(arg0 + 0x2C) = 0;
-    *(s32 *)(arg0 + 0x38) = 0x10000;
-    *(s32 *)(arg0 + 0x28) = value3;
+    arg0->basis[2].y = 0;
+    arg0->basis[0].z = 0;
+    arg0->basis[1].z = 0;
+    arg0->basis[2].z = 0x10000;
+    arg0->basis[1].y = value3;
 }
 
 #endif
 
-void func_8001FB28(u8 *arg0, s32 index) {
+void func_8001FB28(Car *arg0, s32 index) {
     s32 *table1;
     s32 *table2;
     s32 value1;
@@ -982,17 +982,17 @@ void func_8001FB28(u8 *arg0, s32 index) {
     table1 = D_800A3A2C;
     value1 = table1[index];
     table2 = D_800A3A34;
-    *(s32 *)(arg0 + 0x60) = value1;
+    arg0->unk60 = value1;
     value2 = table2[index];
-    *(s32 *)(arg0 + 0x78) = 0;
-    *(s32 *)(arg0 + 0x6C) = value2;
-    *(s32 *)(arg0 + 0x64) = -table2[index];
+    arg0->unk78 = 0;
+    arg0->unk6C = value2;
+    arg0->unk64 = -table2[index];
     value3 = table1[index];
-    *(s32 *)(arg0 + 0x7C) = 0;
-    *(s32 *)(arg0 + 0x68) = 0;
-    *(s32 *)(arg0 + 0x74) = 0;
-    *(s32 *)(arg0 + 0x80) = 0x10000;
-    *(s32 *)(arg0 + 0x70) = value3;
+    arg0->unk7C = 0;
+    *(s32 *)((u8 *)arg0 + 0x68) = 0;
+    *(s32 *)((u8 *)arg0 + 0x74) = 0;
+    *(s32 *)((u8 *)arg0 + 0x80) = 0x10000;
+    arg0->unk70 = value3;
 }
 
 s32 ObjectGetMagnitude3D(void *object) {

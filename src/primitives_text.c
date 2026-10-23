@@ -2111,7 +2111,7 @@ void func_8001BA94(s32 arg0) {
     s32 shade;
     u8 mode;
     u8 *tile;
-    u8 *node;
+    Car *node;
     s32 cursor;
     POLY_FT4 *prim;
     s32 xy0;
@@ -2144,7 +2144,7 @@ void func_8001BA94(s32 arg0) {
                 if (node != gPlayerCar) {
                     func_8001B82C(node, off);
                 }
-                node = *(u8 **)(*(s32 *)(node + 0x3E8) + 8);
+                node = *(u8 **)(*(s32 *)((u8 *)node + 0x3E8) + 8);
             }
         }
     }

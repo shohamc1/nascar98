@@ -315,7 +315,7 @@ extern PadAxisCal D_800AEE3C[][3];
  * (axes 0 and 1) rates using the per-pad calibration table. Indexing the
  * table by axis lets cse fold `i * 3` to a constant in the `i == 2` and
  * `i == 0` arms, which loop.c then hoists after the constant 2. */
-void func_8006EB18(u8 *obj) {
+void func_8006EB18(Car *obj) {
     u8 scratch[0x500];
     u8 id;
     u8 value;
@@ -323,7 +323,7 @@ void func_8006EB18(u8 *obj) {
     u8 rate;
     s32 i;
 
-    id = obj[0x20B];
+    id = (u8)obj->slot;
     scratch[0x20B] = id;
     PadReadObjectState(scratch);
     for (i = 0; i < 3; i++) {
@@ -339,7 +339,7 @@ void func_8006EB18(u8 *obj) {
                 if (rate >= 0x80) {
                     rate = 0x7F;
                 }
-                obj[0x3C5] = -rate;
+                obj->unk3C5 = -rate;
             } else if (target + 4 < value) {
                 value = value - target;
                 denom = D_800AEE3C[id][i].max - target;
@@ -347,9 +347,9 @@ void func_8006EB18(u8 *obj) {
                 if (rate >= 0x80) {
                     rate = 0x7F;
                 }
-                obj[0x3C5] = rate;
+                obj->unk3C5 = rate;
             } else {
-                obj[0x3C5] = 0;
+                obj->unk3C5 = 0;
             }
         } else {
             if (gPadType[id] >= 5) {
@@ -385,9 +385,9 @@ void func_8006EB18(u8 *obj) {
             }
             rate = value * 255 / denom;
             if (i == 0) {
-                obj[0x3C6] = rate;
+                obj->unk3C6 = rate;
             } else {
-                obj[0x3C7] = rate;
+                obj->unk3C7 = rate;
             }
         }
     }

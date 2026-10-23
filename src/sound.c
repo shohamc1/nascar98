@@ -16,7 +16,7 @@
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern Car *gPlayerCar[];
 void CarResetMotionCounters();
-s32 func_8003702C(u8 *, u8 *);
+s32 func_8003702C(Car *, Car *);
 extern void HeapFree(void *ptr);
 extern s32 D_800A359C[];
 extern void CarResetMotionCounters(u8 *);
@@ -943,8 +943,8 @@ void SoundUpdateOpponentVoice(u8 *car, s32 id) {
 
 void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     extern u8 D_800A2F9DSmall;
-    u8 *car;
-    u8 *obj;
+    Car *car;
+    Car *obj;
     s32 camX;
     s32 camY;
     s32 camZ;
@@ -995,11 +995,11 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
             return;
         }
     }
-    row = *(s32 *)(obj + 0);
+    row = obj->pos.x;
     dx = (row - camX) >> 4;
-    row = *(s32 *)(obj + 4);
+    row = obj->pos.y;
     dy = (row - camY) >> 4;
-    row = *(s32 *)(obj + 8);
+    row = obj->pos.z;
     dz = (row - camZ) >> 4;
     sum = dx * dx;
     dySq = dy * dy;
@@ -1021,7 +1021,7 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     if (fog >= 0x100) {
         fog = 0xFF;
     }
-    VectorRotate2D((0x400 - *(s16 *)(car + 0x114)) & 0x3FF, dx, dy, out);
+    VectorRotate2D((0x400 - car->heading) & 0x3FF, dx, dy, out);
     pan = out[1];
     if (pan > 0) {
         q = MathFixedDivide(pan, dist);
@@ -1580,7 +1580,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     }
 }
 
-s32 func_80041848(u8 *arg0, s32 arg1) {
+s32 func_80041848(Car *arg0, s32 arg1) {
 }
 
 /* Sound startup and shutdown. */

@@ -53,7 +53,7 @@ typedef struct Car {
     s32 unk10; /* 0x010 */
     s32 unk14; /* 0x014 */
     Vec3 basis[3]; /* 0x018 */
-    Vec3 rot[3]; /* 0x03C */
+    Vec3 rot[3]; /* 0x03C: rows saved as a unit; 0x44 (rot[0].z) is the drag slope, once dragScale */
     s32 unk60; /* 0x060 */
     s32 unk64; /* 0x064 */
     u8 unk68[0x4];
@@ -154,7 +154,7 @@ typedef struct Car {
     s8 slot; /* 0x20B */
     s8 cameraMode; /* 0x20C */
     u8 unk20D; /* 0x20D */
-    s16 steering; /* 0x20E */
+    s16 steering; /* 0x20E: offset from heading, also headingOffset */
     s16 unk210; /* 0x210 */
     s16 unk212; /* 0x212 */
     s16 orbitAngle; /* 0x214 */

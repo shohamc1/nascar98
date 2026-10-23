@@ -50,7 +50,7 @@ void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void MatrixStoreObjectBasis(s32 *arg0);
 void MatrixSetRotationFromAngle(u8 *arg0, s32 index);
-void func_8001FB28(u8 *arg0, s32 index);
+void func_8001FB28(Car *arg0, s32 index);
 
 extern s32 D_800A3A2CAbsolute[];
 s32 VectorGetMagnitude2D(void *object) {
@@ -1149,7 +1149,7 @@ void ReplayStepBackwardFourFrames(void) {
     ReplayStepBack();
 }
 
-s32 ObjectSetHeading(u8 *object, s32 heading) {
+s32 ObjectSetHeading(Car *object, s32 heading) {
     s32 value;
     s16 shortValue;
     s32 value0;
@@ -1164,34 +1164,34 @@ s32 ObjectSetHeading(u8 *object, s32 heading) {
     MatrixStoreObjectBasis((s32 *)object);
     func_8001F828((s32 *)object);
     shortValue = value;
-    *(s16 *)(object + 0x102) = shortValue;
-    *(s16 *)(object + 0x104) = shortValue;
-    *(s16 *)(object + 0x114) = shortValue;
-    *(s16 *)(object + 0x116) = value * 4;
+    object->unk102 = shortValue;
+    object->movementHeading = shortValue;
+    object->heading = shortValue;
+    object->fineHeading = value * 4;
     do {
     } while (0);
-    value0 = *(s32 *)(object + 0x18);
-    value1 = *(s32 *)(object + 0x1C);
-    value2 = *(s32 *)(object + 0x20);
-    *(s32 *)(object + 0x3C) = value0;
-    *(s32 *)(object + 0x40) = value1;
-    *(s32 *)(object + 0x44) = value2;
+    value0 = object->basis[0].x;
+    value1 = object->basis[0].y;
+    value2 = object->basis[0].z;
+    object->rot[0].x = value0;
+    object->rot[0].y = value1;
+    object->rot[0].z = value2;
     do {
     } while (0);
-    value0 = *(s32 *)(object + 0x24);
-    value1 = *(s32 *)(object + 0x28);
-    value2 = *(s32 *)(object + 0x2C);
-    *(s32 *)(object + 0x48) = value0;
-    *(s32 *)(object + 0x4C) = value1;
-    *(s32 *)(object + 0x50) = value2;
+    value0 = object->basis[1].x;
+    value1 = object->basis[1].y;
+    value2 = object->basis[1].z;
+    object->rot[1].x = value0;
+    object->rot[1].y = value1;
+    object->rot[1].z = value2;
     do {
     } while (0);
-    value0 = *(s32 *)(object + 0x30);
-    value1 = *(s32 *)(object + 0x34);
-    value2 = *(s32 *)(object + 0x38);
-    *(s32 *)(object + 0x54) = value0;
-    *(s32 *)(object + 0x58) = value1;
-    *(s32 *)(object + 0x5C) = value2;
+    value0 = object->basis[2].x;
+    value1 = object->basis[2].y;
+    value2 = object->basis[2].z;
+    object->rot[2].x = value0;
+    object->rot[2].y = value1;
+    object->rot[2].z = value2;
 }
 
 extern Car *gPlayerCarLui asm("gPlayerCarAbsolute");
@@ -2616,29 +2616,29 @@ void ObjectSetCallbackIfAllowed(Car *object, void (*callback)(void)) {
     }
 }
 
-s32 func_80025938(u8 *firstCar, u8 *secondCar) {
+s32 func_80025938(Car *firstCar, Car *secondCar) {
     s32 dist[3];
     s32 radius;
 
-    radius = *(s32 *)(*(s32 *)(firstCar + 0x370) + 0x18) +
-             *(s32 *)(*(s32 *)(secondCar + 0x370) + 0x18);
-    dist[0] = (*(s32 *)(firstCar + 0) - *(s32 *)(secondCar + 0) < 0
-                   ? *(s32 *)(secondCar + 0) - *(s32 *)(firstCar + 0)
-                   : *(s32 *)(firstCar + 0) - *(s32 *)(secondCar + 0));
-    dist[1] = (*(s32 *)(firstCar + 4) - *(s32 *)(secondCar + 4) < 0
-                   ? *(s32 *)(secondCar + 4) - *(s32 *)(firstCar + 4)
-                   : *(s32 *)(firstCar + 4) - *(s32 *)(secondCar + 4));
-    dist[2] = (*(s32 *)(firstCar + 8) - *(s32 *)(secondCar + 8) < 0
-                   ? *(s32 *)(secondCar + 8) - *(s32 *)(firstCar + 8)
-                   : *(s32 *)(firstCar + 8) - *(s32 *)(secondCar + 8));
+    radius = *(s32 *)(*(s32 *)((u8 *)firstCar + 0x370) + 0x18) +
+             *(s32 *)(*(s32 *)((u8 *)secondCar + 0x370) + 0x18);
+    dist[0] = (firstCar->pos.x - secondCar->pos.x < 0
+                   ? secondCar->pos.x - firstCar->pos.x
+                   : firstCar->pos.x - secondCar->pos.x);
+    dist[1] = (firstCar->pos.y - secondCar->pos.y < 0
+                   ? secondCar->pos.y - firstCar->pos.y
+                   : firstCar->pos.y - secondCar->pos.y);
+    dist[2] = (firstCar->pos.z - secondCar->pos.z < 0
+                   ? secondCar->pos.z - firstCar->pos.z
+                   : firstCar->pos.z - secondCar->pos.z);
     if (radius >= dist[0] && radius >= dist[1] && radius >= dist[2]) {
-        if (*(s32 *)(firstCar + 0x354) != (s32)func_80025730 &&
-            *(s32 *)(secondCar + 0x354) != (s32)func_80025730) {
+        if (*(s32 *)((u8 *)firstCar + 0x354) != (s32)func_80025730 &&
+            *(s32 *)((u8 *)secondCar + 0x354) != (s32)func_80025730) {
             return 1;
         }
-        if ((*(s32 *)(firstCar + 8) - *(s32 *)(secondCar + 8) < 0
-                 ? *(s32 *)(secondCar + 8) - *(s32 *)(firstCar + 8)
-                 : *(s32 *)(firstCar + 8) - *(s32 *)(secondCar + 8)) >= 501) {
+        if ((firstCar->pos.z - secondCar->pos.z < 0
+                 ? secondCar->pos.z - firstCar->pos.z
+                 : firstCar->pos.z - secondCar->pos.z) >= 501) {
             return 0;
         }
         return 1;
@@ -2646,7 +2646,7 @@ s32 func_80025938(u8 *firstCar, u8 *secondCar) {
     return 0;
 }
 
-s32 func_8003702C(u8 *, u8 *);
+s32 func_8003702C(Car *, Car *);
 
 s32 func_80025A38(Car *arg0) {
     Car *other;
@@ -4720,7 +4720,7 @@ void CarUpdateEngineRpm(CurveObject *obj) {
 }
 
 void func_80028D80(Car *object) {
-    u8 *node;
+    Car *node;
     extern void *D_800A3990;
     extern s8 D_800A2E18;
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
@@ -4736,28 +4736,26 @@ void func_80028D80(Car *object) {
     s32 v7;
 
     node = object;
-    mode = *(s16 *)(node + 0x1EC);
+    mode = node->type;
     if (mode == 0) {
-        if (*(s32 *)(node + 0x28C) <= 0 ||
-            (*(u16 *)(node + 0x3A4) & 0x1000) != 0) {
-            *(s32 *)(node + 0x88) = 0;
+        if (node->unk28C <= 0 || (node->unk3A4 & 0x1000) != 0) {
+            node->driveScale = 0;
             return;
         }
-    } else if (mode == 1 && *(s32 *)(node + 0x290) <= 0) {
-        *(s32 *)(node + 0x88) = 0;
-        if (*(s16 *)(node + 0x1EC) == mode &&
-            *(s32 *)(node + 0x90) <= 0x63FFFF) {
-            *(s32 *)(node + 0x88) = MathFixedDivide(1, 0xA);
+    } else if (mode == 1 && node->unk290 <= 0) {
+        node->driveScale = 0;
+        if (node->type == mode && node->speed <= 0x63FFFF) {
+            node->driveScale = MathFixedDivide(1, 0xA);
         }
         return;
     }
-    idx = *(s16 *)(node + 0x10C);
-    base = node + 0x124;
+    idx = node->unk10C;
+    base = (u8 *)node + 0x124;
     D_800A3990 = base;
     row = (u8 *)(idx * 0x18 + (s32)base);
     scale = *(s32 *)row;
-    if (*(u8 *)(node + 0xF6) == 0) {
-        cur = *(s32 *)(node + 0x90);
+    if (node->unkF6 == 0) {
+        cur = node->speed;
         lim = *(s32 *)(row + 4);
         if (cur < lim) {
             if ((lim >> 16) != 0) {
@@ -4775,25 +4773,24 @@ void func_80028D80(Car *object) {
         }
     } else {
         v1 = *(s32 *)(base + (s32)D_800A2E18 * 0x18 - 0x10);
-        cur = *(s32 *)(node + 0x90);
+        cur = node->speed;
         if (v1 < cur) {
             scale = MathMultiplyFixed16(
                 scale, MathFixedDivide(0x10, ((cur - v1) >> 16) + 0x10));
         }
     }
     if (D_800A2EE4nm[0] != 0) {
-        if (*(s16 *)(node + 0x1EC) == 0) {
+        if (node->type == 0) {
             scale = MathMultiplyFixed16(
-                scale, MathFixedDivide(
-                           (*(s8 *)(node + 0x205) - 1) * 0x64 + 0x64, 0x64));
+                scale,
+                MathFixedDivide((node->assistRank - 1) * 0x64 + 0x64, 0x64));
         }
     }
     v7 = scale * 8;
     v7 = v7 - scale;
     scale = v7 >> 2;
-    *(s32 *)(node + 0x88) = scale + (*(s32 *)(node + 0x22C) >> 4);
-    *(s32 *)(node + 0x90) =
-        *(s32 *)(node + 0x90) + (scale + (*(s32 *)(node + 0x22C) >> 4));
+    node->driveScale = scale + (node->speedBoost >> 4);
+    node->speed = node->speed + (scale + (node->speedBoost >> 4));
 }
 
 void CarReduceSpeed(Car *object) {
@@ -5469,7 +5466,7 @@ extern s32 D_800A397CPlayerStep[];
 
 void CarUpdatePlayer(u8 *object) {
     u8 frameScratch[0x48];
-    u8 *car;
+    Car *car;
     register s32 zeroRoll asm("s5");
     register s32 zeroPitch asm("s4");
     s16 speed;
@@ -5515,50 +5512,50 @@ void CarUpdatePlayer(u8 *object) {
         func_80023454();
         return;
     }
-    if ((*(u8 *)(car + 0x268)) != 0) {
+    if ((*(u8 *)((u8 *)car + 0x268)) != 0) {
         func_8003DBA8(car);
         return;
     }
     controlFlags = func_80029EF8(car);
-    if ((controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 0x10)) ||
-        (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 0x4000))) {
-        CameraCycleModeCallback((Car *)car);
+    if ((controlFlags & ((u16) ~*(u32 *)&car->flags & 0x10)) ||
+        (controlFlags & ((u16) ~*(u32 *)&car->flags & 0x4000))) {
+        CameraCycleModeCallback(car);
     }
     if (D_800A397CPlayerStep[0] == 2) {
-        (*(s32 *)(car + 0x238)) = controlFlags;
+        (*(u32 *)&car->flags) = controlFlags;
         return;
     }
     if ((D_800A35D4PlayerStep[0] == 0) &&
-        (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 4))) {
+        (controlFlags & ((u16) ~*(u32 *)&car->flags & 4))) {
         if (gSplitScreenModePlayerStep[0] != 0) {
-            (*(u8 *)(car + 0x209)) = (u8)((*(u8 *)(car + 0x209)) ^ 1);
+            car->unk209 = (u8)(((u8)car->unk209) ^ 1);
         } else {
-            cameraMode = (s8)(*(u8 *)(car + 0x209));
+            cameraMode = (s8)((u8)car->unk209);
             nextCameraMode = cameraMode + 1;
             cameraQuotientInput = nextCameraMode;
             if (nextCameraMode < 0) {
                 cameraQuotientInput = cameraMode + 4;
             }
             nextCamera = nextCameraMode - ((cameraQuotientInput >> 2) * 4);
-            (*(u8 *)(car + 0x209)) = nextCamera;
+            car->unk209 = nextCamera;
             D_800A2EC4PlayerStep[0] = (s8)nextCamera == 3;
         }
     }
-    if (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 1)) {
+    if (controlFlags & ((u16) ~*(u32 *)&car->flags & 1)) {
         SelectionStepForward((Counter *)car);
     }
-    if (controlFlags & ((u16) ~*(s32 *)(car + 0x238) & 2)) {
+    if (controlFlags & ((u16) ~*(u32 *)&car->flags & 2)) {
         SelectionStepBackward((SelectionState *)car);
     }
-    (*(s32 *)(car + 0x238)) = controlFlags;
-    (*(void (**)(u8 *))(car + 0x354))(car);
+    (*(u32 *)&car->flags) = controlFlags;
+    (*(void (**)(u8 *))((u8 *)car + 0x354))(car);
     /* Retail keeps incoming s1 when unkF8 is nonzero. Earlier calls
      * preserve s1. Capture that register input before using C locals. */
     steeringLimit = incomingS1;
     D_800A2E24PlayerStep = 0x01EF0000 - ((D_800A2E1CPlayerStep - 3) * 0x30000);
-    unkF8 = *(u8 *)(car + 0xF8);
+    unkF8 = (u8) * (s8 *)&car->unkF8;
     asm("" : : "r"(unkF8) : "s3");
-    controlFlags = (*(s32 *)(car + 0x238));
+    controlFlags = (*(u32 *)&car->flags);
     asm("" : : "r"(controlFlags) : "s5", "s4");
     zeroRoll = 0;
     zeroPitch = 0;
@@ -5585,7 +5582,7 @@ void CarUpdatePlayer(u8 *object) {
                      50) +
                     D_800A2E6CPlayerStep[0];
     steeringDivisor = CarGetSteeringDivisor((s32 *)car);
-    speed = (*(s16 *)(car + 0x92));
+    speed = (*(s16 *)((u8 *)car + 0x92));
     steeringLimit *= 4;
     if (speed > 0xC8) {
         steeringFactor =
@@ -5603,90 +5600,90 @@ void CarUpdatePlayer(u8 *object) {
         steeringLimit = 8;
     }
     /* Digital steering ramps toward either limit and returns to center. */
-    if ((*(s8 *)(car + 0x3C4)) == 4) {
+    if ((*(s8 *)&car->unk3C4) == 4) {
         if (controlFlags & 0x8000) {
-            leftStep = (*(s8 *)(car + 0x207));
+            leftStep = (*(s8 *)&car->unk207);
             if (leftStep == 0) {
                 nextLeftStep = 4;
             } else {
                 nextLeftStep = leftStep + 3;
             }
-            (*(s8 *)(car + 0x207)) = nextLeftStep;
+            (*(s8 *)&car->unk207) = nextLeftStep;
             asm("" : : : "memory");
-            if ((*(s8 *)(car + 0x207)) >= 0xC) {
-                (*(s8 *)(car + 0x207)) = 0xC;
+            if ((*(s8 *)&car->unk207) >= 0xC) {
+                (*(s8 *)&car->unk207) = 0xC;
             }
-            (*(s8 *)(car + 0x208)) = 0;
-            angleWork = *(u16 *)(car + 0x20E);
-            steeringValue = *(u8 *)(car + 0x207);
+            (*(s8 *)&car->unk208) = 0;
+            angleWork = *(u16 *)&car->steering;
+            steeringValue = *(u8 *)&car->unk207;
             asm(""
                 : "=r"(steeringValue)
-                : "0"(steeringValue), "m"(*(s8 *)(car + 0x208)));
+                : "0"(steeringValue), "m"(*(s8 *)&car->unk208));
             steeringValue = (s8)steeringValue;
             angleWork += 4;
             leftAngle = steeringValue + angleWork;
-            (*(u16 *)(car + 0x20E)) = leftAngle;
+            (*(u16 *)&car->steering) = leftAngle;
             if (steeringLimit < (s16)leftAngle) {
-                (*(u16 *)(car + 0x20E)) = (u16)steeringLimit;
+                (*(u16 *)&car->steering) = (u16)steeringLimit;
             }
         } else if (controlFlags & 0x200) {
-            rightStep = (*(s8 *)(car + 0x208));
+            rightStep = (*(s8 *)&car->unk208);
             if (rightStep == 0) {
                 nextRightStep = 4;
             } else {
                 nextRightStep = rightStep + 3;
             }
-            (*(s8 *)(car + 0x208)) = nextRightStep;
+            (*(s8 *)&car->unk208) = nextRightStep;
             asm("" : : : "memory");
-            if ((*(s8 *)(car + 0x208)) >= 0xC) {
-                (*(s8 *)(car + 0x208)) = 0xC;
+            if ((*(s8 *)&car->unk208) >= 0xC) {
+                (*(s8 *)&car->unk208) = 0xC;
             }
-            (*(s8 *)(car + 0x207)) = 0;
-            rightAngle = *(u16 *)(car + 0x20E);
-            turnWork = *(u8 *)(car + 0x208);
-            asm("" : "=r"(turnWork) : "0"(turnWork), "m"(*(s8 *)(car + 0x207)));
+            (*(s8 *)&car->unk207) = 0;
+            rightAngle = *(u16 *)&car->steering;
+            turnWork = *(u8 *)&car->unk208;
+            asm("" : "=r"(turnWork) : "0"(turnWork), "m"(*(s8 *)&car->unk207));
             turnWork = (s8)turnWork;
             rightAngle -= 4;
             rightAngle -= turnWork;
-            (*(u16 *)(car + 0x20E)) = rightAngle;
+            (*(u16 *)&car->steering) = rightAngle;
             steeringValue = (s16)rightAngle;
             turnWork = -steeringLimit;
             if (steeringValue < turnWork) {
-                (*(u16 *)(car + 0x20E)) = (u16)turnWork;
+                (*(u16 *)&car->steering) = (u16)turnWork;
             }
         } else {
-            steeringValue = *(s16 *)(car + 0x20E);
-            (*(s8 *)(car + 0x207)) = 0;
-            (*(s8 *)(car + 0x208)) = 0;
+            steeringValue = *(s16 *)&car->steering;
+            (*(s8 *)&car->unk207) = 0;
+            (*(s8 *)&car->unk208) = 0;
             centerAngle = steeringValue;
             if (steeringValue > 0) {
                 centerLeftAngle = centerAngle - 8;
-                (*(u16 *)(car + 0x20E)) = centerLeftAngle;
+                (*(u16 *)&car->steering) = centerLeftAngle;
                 if ((centerLeftAngle << 16) < 0) {
-                    (*(u16 *)(car + 0x20E)) = 0U;
+                    (*(u16 *)&car->steering) = 0U;
                 }
             } else {
                 centerRightAngle = centerAngle + 8;
-                (*(u16 *)(car + 0x20E)) = centerRightAngle;
+                (*(u16 *)&car->steering) = centerRightAngle;
                 if ((centerRightAngle << 0x10) > 0) {
-                    (*(u16 *)(car + 0x20E)) = 0U;
+                    (*(u16 *)&car->steering) = 0U;
                 }
             }
         }
     } else {
         /* Retail retains a second analog read and a discarded offset. */
-        analogProduct = -((*(s8 *)(car + 0x3C5)) * steeringLimit);
+        analogProduct = -((*(s8 *)&car->unk3C5) * steeringLimit);
         asm("" : "=r"(car) : "0"(car), "r"(analogProduct));
-        analogSample = *(s8 *)(car + 0x3C5);
-        (*(u16 *)(car + 0x20E)) = (u16)(analogProduct / 112);
-        asm("" : : "r"(analogSample), "m"(*(u16 *)(car + 0x20E)) : "v0");
+        analogSample = *(s8 *)&car->unk3C5;
+        (*(u16 *)&car->steering) = (u16)(analogProduct / 112);
+        asm("" : : "r"(analogSample), "m"(*(u16 *)&car->steering) : "v0");
         centeredAnalog = analogSample - 128;
         asm("" : : "r"(centeredAnalog));
     }
-    if ((*(s32 *)(car + 0x90)) >= 0) {
-        quarterAngle = (s16)(*(u16 *)(car + 0x20E)) / 4;
+    if ((*(s32 *)&car->speed) >= 0) {
+        quarterAngle = (s16)(*(u16 *)&car->steering) / 4;
         headingInput = quarterAngle;
-        (*(s16 *)(car + 0x212)) = (s16)quarterAngle;
+        (*(s16 *)&car->unk212) = (s16)quarterAngle;
         if (headingInput >= 0) {
             if (headingInput != 1) {
 
@@ -5695,14 +5692,14 @@ void CarUpdatePlayer(u8 *object) {
             }
         } else if (-headingInput == 1) {
         clearQuarterAngle:
-            (*(s16 *)(car + 0x212)) = 0;
+            (*(s16 *)&car->unk212) = 0;
         }
     } else {
         asm("" : : : "a0");
         headingInput = 0;
     }
     headingBase = headingInput + 0x400;
-    if (((*(u8 *)(car + 0xF8)) != 0) && (controlFlags & 0x40)) {
+    if (((*(u8 *)&car->unkF8) != 0) && (controlFlags & 0x40)) {
         work = headingInput * 5;
         headingInput = work >> 2;
         if (work < 0) {
@@ -5718,35 +5715,35 @@ void CarUpdatePlayer(u8 *object) {
     headingInput = headingQuotientInput >> 10;
     work = headingInput << 10;
     headingInput = headingBase - work;
-    (*(s16 *)(car + 0x1D0)) = (s16)headingInput;
-    (*(s16 *)(car + 0x1D2)) = zeroPitch;
-    (*(s16 *)(car + 0x1D4)) = zeroRoll;
+    (*(s16 *)&car->unk1D0) = (s16)headingInput;
+    (*(s16 *)&car->unk1D2) = zeroPitch;
+    (*(s16 *)&car->unk1D4) = zeroRoll;
     throttlePressed = controlFlags & 0x40;
     if (throttlePressed) {
         work = D_800A2E24PlayerStep;
-        (*(s32 *)(car + 0x37C)) = 0;
-        (*(s32 *)(car + 0x84)) = work;
+        (*(s32 *)&car->unk37C) = 0;
+        (*(s32 *)&car->unk84) = work;
     } else {
-        work = *(s32 *)(car + 0x37C);
-        (*(s32 *)(car + 0x84)) = 0;
+        work = *(s32 *)&car->unk37C;
+        (*(s32 *)&car->unk84) = 0;
         work++;
-        (*(s32 *)(car + 0x37C)) = work;
+        (*(s32 *)&car->unk37C) = work;
     }
     func_8002B258(car);
     func_8002D16C(car);
     func_8002B538(car);
     func_80029A78(car);
-    CarApplyCorneringDrag((Car *)car);
-    positionX = *(s32 *)(car + 0) + *(s32 *)(car + 0xB0);
-    positionY = *(s32 *)(car + 4) + *(s32 *)(car + 0xB4);
-    positionZ = *(s32 *)(car + 8) + *(s32 *)(car + 0xB8);
-    *(s32 *)(car + 0) = positionX;
-    *(s32 *)(car + 4) = positionY;
-    *(s32 *)(car + 8) = positionZ;
+    CarApplyCorneringDrag(car);
+    positionX = *(s32 *)&car->pos.x + *(s32 *)&car->velocityX;
+    positionY = *(s32 *)&car->pos.y + *(s32 *)&car->velocityY;
+    positionZ = *(s32 *)&car->pos.z + *(s32 *)&car->velocityZ;
+    *(s32 *)&car->pos.x = positionX;
+    *(s32 *)&car->pos.y = positionY;
+    *(s32 *)&car->pos.z = positionZ;
     func_80029CB4((s32 *)car);
     func_80039B74((s32 *)car, 0);
-    if ((*(s8 *)(car + 0x204)) == 1) {
-        (*(s32 *)(car + 0x3D0)) = (s32)D_800A2EC0PlayerStep[0];
+    if ((*(s8 *)&car->place) == 1) {
+        (*(s32 *)&car->unk3D0) = (s32)D_800A2EC0PlayerStep[0];
     }
 }
 
@@ -7908,9 +7905,9 @@ void func_8002E230(void) {
 
 extern void PushMatrix(void);
 extern void PopMatrix(void);
-extern void func_80033000(u8 *arg0, u8 *arg1, u8 *arg2);
+extern void func_80033000(Car *arg0, Car *arg1, Car *arg2);
 extern void SceneLinkLiveEntries(u8 *arg0);
-extern void SceneUpdateProjectiles(u8 *arg0);
+extern void SceneUpdateProjectiles(Car *arg0);
 extern void func_800345E0(void);
 extern void CarDrawAll(s32 arg0);
 extern s32 func_800346D0(s32 arg0);
@@ -7936,7 +7933,7 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
     long flag[2];
     MATRIX *matrix;
     s32 *camera;
-    u8 *node;
+    Car *node;
     u8 *child;
     u8 *tail;
     s32 count;
@@ -7959,8 +7956,8 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
         if (firstSection != sectionEnd) {
             do {
                 ListDispatchCallbacks(node);
-                if (*(u16 *)(node + 0xE) == 0) {
-                    child = *(u8 **)(node + 0x74);
+                if (*(u16 *)((u8 *)node + 0xE) == 0) {
+                    child = *(u8 **)((u8 *)node + 0x74);
                     D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
                     if (gReplayIndex[0] < ((s32 *)gPlayerCarAbsolute)[-1]) {
                         depth = D_800A2EC0 -
@@ -7991,8 +7988,8 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
         if (firstSection != sectionEnd) {
             do {
                 ListDispatchCallbacks(node);
-                if (*(u16 *)(node + 0xE) == 0) {
-                    child = *(u8 **)(node + 0x74);
+                if (*(u16 *)((u8 *)node + 0xE) == 0) {
+                    child = *(u8 **)((u8 *)node + 0x74);
                     D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
                     if (child != NULL) {
                         do {
@@ -8046,7 +8043,7 @@ extern s32 D_800A359C[];
 extern s32 D_800A2D50[];
 extern s32 D_800B9D58[];
 extern s32 D_800B9D78[];
-void SceneUpdateRoadStrip(u8 *car);
+void SceneUpdateRoadStrip(Car *car);
 void HudDrawDashboard(void);
 void EffectUpdateAndDrawParticles(void);
 void SceneDrawSunGlare(u8 *car);
@@ -8172,7 +8169,7 @@ void func_80031264(u8 *object);
  * its section (dx, dz is the car-to-section vector, dist its length). If a
  * corner still finds no surface, puts the car back at its last position and
  * stops it. */
-static __inline__ void CarPullOntoTrack(u8 *car, s32 dx, s32 dz, s32 dist) {
+static __inline__ void CarPullOntoTrack(Car *car, s32 dx, s32 dz, s32 dist) {
     s32 idx;
     u8 *obj;
     s32 *cosTable;
@@ -8183,17 +8180,15 @@ static __inline__ void CarPullOntoTrack(u8 *car, s32 dx, s32 dz, s32 dist) {
     if (dist == 0) {
         dist = 1;
     }
-    *(s32 *)(car + 0x0) =
-        ((MathFixedDivide(dx, dist) * 250) >> 16) + *(s32 *)(car + 0xC);
-    *(s32 *)(car + 0x4) =
-        ((MathFixedDivide(dz, dist) * 250) >> 16) + *(s32 *)(car + 0x10);
-    *(u16 *)(car + 0x1E0) = *(s32 *)(car + 0x1F8) = *(s32 *)(car + 0x1F4);
+    car->pos.x = ((MathFixedDivide(dx, dist) * 250) >> 16) + car->unkC;
+    car->pos.y = ((MathFixedDivide(dz, dist) * 250) >> 16) + car->unk10;
+    car->segment = car->regionIndex = car->lastSegment;
     func_80031264(car);
-    if (*(s16 *)(car + 0x1E2) == -1 || *(s16 *)(car + 0x1E4) == -1) {
-        *(s16 *)(car + 0x1E0) = -1;
+    if (car->unk1E2 == -1 || car->unk1E4 == -1) {
+        car->segment = -1;
     }
-    if (*(u16 *)(car + 0x362) == 0 || *(u16 *)(car + 0x364) == 0 ||
-        *(u16 *)(car + 0x366) == 0 || *(u16 *)(car + 0x368) == 0) {
+    if (car->frontRightContact == 0 || car->frontLeftContact == 0 ||
+        car->rearRightContact == 0 || car->rearLeftContact == 0) {
         *(s32 *)(obj + 0x0) = *(s32 *)(obj + 0xC);
         *(s32 *)(obj + 0x4) = *(s32 *)(obj + 0x10);
         func_80031264(obj);
@@ -10950,7 +10945,7 @@ extern s32 D_800A396CNM asm("D_800A396C.NON_MATCHING");
  *
  * word0 and word1 are scratch words reused for colour words, the fourth
  * vertex, and the next object's vertex list. */
-void func_80033000(u8 *endB, u8 *endA, u8 *firstA) {
+void func_80033000(Car *endB, Car *endA, Car *firstA) {
     u8 *prim;
     u8 *listA;
     u8 *listB;
@@ -13380,14 +13375,14 @@ s32 CarIsAheadOfHeading(s32 *a, s32 *b) {
 }
 
 #ifdef NON_MATCHING
-s32 func_8003702C(u8 *objectA, u8 *objectB) {
+s32 func_8003702C(Car *objectA, Car *objectB) {
     s32 limit;
     s32 diff;
     s32 a;
     s32 b;
 
     limit = gTrackSectionCount[0];
-    diff = *(s16 *)(objectA + 0x1E0) - *(s16 *)(objectB + 0x1E0);
+    diff = objectA->segment - objectB->segment;
     if (diff >= 0) {
         if (diff < (limit >> 1)) {
             return diff;
@@ -13397,8 +13392,8 @@ s32 func_8003702C(u8 *objectA, u8 *objectB) {
             return diff;
         }
     }
-    a = *(s16 *)(objectA + 0x1E0);
-    b = *(s16 *)(objectB + 0x1E0);
+    a = objectA->segment;
+    b = objectB->segment;
     if (b < a) {
         b = b + limit;
         if (b - a < 0) {
@@ -13464,7 +13459,7 @@ s32 func_8003702C(s32 arg0, s32 arg1) {
 }
 #endif
 
-s32 func_8003702C(u8 *objectA, u8 *objectB) {
+s32 func_8003702C(Car *objectA, Car *objectB) {
     s32 limit;
     s32 diff;
     s32 half;
@@ -13472,13 +13467,13 @@ s32 func_8003702C(u8 *objectA, u8 *objectB) {
     s32 b;
 
     limit = gTrackSectionCount[0];
-    diff = *(s16 *)(objectA + 0x1E0) - *(s16 *)(objectB + 0x1E0);
+    diff = objectA->segment - objectB->segment;
     half = limit >> 1;
     if ((diff < 0 ? -diff : diff) < half) {
         return diff;
     }
-    a = *(s16 *)(objectA + 0x1E0);
-    b = *(s16 *)(objectB + 0x1E0);
+    a = objectA->segment;
+    b = objectB->segment;
     if (b < a) {
         b = b + limit;
         if (b - a < 0) {
@@ -13566,7 +13561,7 @@ s32 func_800370B8(s32 a, s32 b) {
  * Products map 0xB0=prod(0x60), 0xB4=prod(0x6C), 0xB8=prod(0x78);
  * the volatile reloads of 0xB0/B4/B8 before the adds are exact.
  */
-void func_8001FB28(u8 *, s16);
+void func_8001FB28(Car *, s16);
 void ObjectAdvanceAlongHeading(Car *object) {
     s32 prod0;
     s32 prod1;
@@ -13745,7 +13740,7 @@ __asm__(
 
 /* Update AI route speed, pace following, nearby lanes, and steering. */
 void func_800373B4(Car *object) {
-    u8 *car;
+    Car *car;
     u8 *middleOther;
     register u32 middleOne asm("$9");
     s32 middleFlag;
@@ -13918,18 +13913,19 @@ void func_800373B4(Car *object) {
     workspace.useTrackCenter = 0;
     workspace.useSameSegment = 0;
     if (active != 0) {
-        if ((*(s16 *)((u8 *)car + 0x1EC)) == 0) {
-            if ((*(void (**)(u8 *, s32))(car + 0x354)) == func_80025730373B4) {
-                (*(void (**)(u8 *))(car + 0x350))(car);
+        if ((car->type) == 0) {
+            if ((*(void (**)(u8 *, s32))((u8 *)car + 0x354)) ==
+                func_80025730373B4) {
+                (*(void (**)(u8 *))((u8 *)car + 0x350))(car);
                 return;
             }
             func_8002D16C373B4(car);
             goto block_5;
         }
     block_5:
-        if ((*(u8 *)((u8 *)car + 0x268)) != 0) {
+        if ((car->unk268) != 0) {
             func_8003DBA8373B4(car);
-            (*(s16 *)((u8 *)car + 0x288)) = 1;
+            (car->unk26C[14]) = 1;
             return;
         }
         D_800A2F54373B4 = 0;
@@ -13943,7 +13939,7 @@ void func_800373B4(Car *object) {
     block_10:
         if (D_800A2EAC373B4[0] != 0) {
         block_11:
-            if ((*(u16 *)((u8 *)car + 0x360)) == 4) {
+            if ((car->state) == 4) {
                 tempV0 = CarGetTrackSide373B4(car, 0);
                 if (tempV0 == 1) {
                     D_800A2F54373B4 = (s32)tempV0;
@@ -14018,19 +14014,17 @@ void func_800373B4(Car *object) {
         workspace.allowLeft = routeLeftFlag;
         if (routeRaceMode != 0) {
             if (gSessionType373B4[0] == 1) {
-                (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
-                    (*(s32 *)((u8 *)car + 0x84)),
-                    MathFixedDivide373B4(D_800A2F50373B4 + 0x28,
-                                         routeDenominator));
+                (car->unk84) = MathMultiplyFixed16373B4(
+                    (car->unk84), MathFixedDivide373B4(D_800A2F50373B4 + 0x28,
+                                                       routeDenominator));
                 func_8002A1D0373B4(car);
                 func_8002BC88373B4(car);
-                tempA02 = (*(s32 *)((u8 *)car + 0x98));
+                tempA02 = (car->maxSpeed);
                 if ((tempA02 >> 0x10) < (*(s16 *)((u8 *)car + 0x86))) {
-                    (*(s32 *)((u8 *)car + 0x84)) = tempA02;
+                    (car->unk84) = tempA02;
                 }
-                if (((*(s32 *)((u8 *)car + 0x98)) >> 0x10) <
-                    (*(s16 *)((u8 *)car + 0x92))) {
-                    (*(s32 *)((u8 *)car + 0x90)) = (*(s32 *)((u8 *)car + 0x98));
+                if (((car->maxSpeed) >> 0x10) < (*(s16 *)((u8 *)car + 0x92))) {
+                    (car->speed) = (car->maxSpeed);
                 }
             } else {
                 varA0 = 2;
@@ -14040,35 +14034,32 @@ void func_800373B4(Car *object) {
                     varA0 = D_800A2F50373B4;
                     varA1 = 0x1A7;
                 }
-                (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
-                    (*(s32 *)((u8 *)car + 0x84)),
-                    MathFixedDivide373B4(varA0, varA1));
+                (car->unk84) = MathMultiplyFixed16373B4(
+                    (car->unk84), MathFixedDivide373B4(varA0, varA1));
             }
             playerCar = D_800A35E0373B4[0];
-            (*(s32 *)((u8 *)car + 0x22C)) = 0;
+            (car->speedBoost) = 0;
             if (car != playerCar) {
-                tempV02 = (*(u8 **)((u8 *)car + 0x3E4));
+                tempV02 = ((u8 *)car->order.node.next);
                 if (tempV02 != NULL) {
                     tempA03 = (*(u8 **)((u8 *)tempV02 + 8));
-                    if ((*(s16 *)((u8 *)car + 0x1E0)) ==
-                        (*(s16 *)((u8 *)tempA03 + 0x1E0))) {
+                    if ((car->segment) == (*(s16 *)((u8 *)tempA03 + 0x1E0))) {
                         slowDelta = -0x40000;
                         tempV03 = (*(s32 *)((u8 *)tempA03 + 0x90));
                         tempV03 += slowDelta;
-                        (*(s32 *)((u8 *)car + 0x90)) = tempV03;
-                        (*(s32 *)((u8 *)car + 0x84)) = tempV03;
+                        (car->speed) = tempV03;
+                        (car->unk84) = tempV03;
                     }
                 }
             }
             if ((gSessionType373B4[0] != 1) && (func_800A2CE0373B4[0] == 5)) {
-                (*(s32 *)((u8 *)car + 0x84)) =
-                    MathMultiplyFixed16373B4((*(s32 *)((u8 *)car + 0x84)),
-                                             MathFixedDivide373B4(0x41, 0x64));
+                (car->unk84) = MathMultiplyFixed16373B4(
+                    (car->unk84), MathFixedDivide373B4(0x41, 0x64));
             }
         } else {
             if (((*(s16 *)((u8 *)D_800A35E0373B4[0] + 0x1EC)) == 0) &&
                 ((*(s16 *)((u8 *)D_800A35E0373B4[0] + 0x284)) >=
-                 (*(s16 *)((u8 *)car + 0x284))) &&
+                 (car->unk26C[12])) &&
                 (routeSelection != 1) &&
                 (tempV04 = D_800A2F5C373B4 + 1, D_800A2F5C373B4 = tempV04,
                  (tempV04 >= 0))) {
@@ -14103,17 +14094,17 @@ void func_800373B4(Car *object) {
                 varV0 <<= 1;
                 asm("addu\t%0,%1,%2" : "=r"(varV0) : "r"(varV1), "r"(varV0));
                 speedResult = MathMultiplyFixed16373B4(
-                    *(s32 *)(car + 0x84),
+                    car->unk84,
                     MathFixedDivide373B4(varV0, routeDenominator << 3));
                 counterScale = D_800A2E94373B4[0];
-                *(s32 *)(car + 0x84) = speedResult;
-                *(s32 *)(car + 0x22C) = 0x1E0000;
+                car->unk84 = speedResult;
+                car->speedBoost = 0x1E0000;
                 D_800A2F5C373B4 = counterScale * 0x190;
             } else {
                 paceTimer = D_800A2F5C373B4;
                 if (paceTimer > 0) {
                     timerBase = D_800A2F50373B4;
-                    tireAge2 = *(s16 *)(car + 0xFA);
+                    tireAge2 = car->unkFA;
                     varA0 = D_800A3320373B4[0];
                     routeDenominator <<= 3;
                     paceTimer -= 1;
@@ -14125,10 +14116,9 @@ void func_800373B4(Car *object) {
                     timerBase -= tireAge2;
                     varV0 -= varA0;
                     varA0 = varV0 * 3;
-                    *(s32 *)(car + 0x84) = MathMultiplyFixed16373B4(
-                        *(s32 *)(car + 0x84),
-                        MathFixedDivide373B4(timerBase + varA0,
-                                             routeDenominator));
+                    car->unk84 = MathMultiplyFixed16373B4(
+                        car->unk84, MathFixedDivide373B4(timerBase + varA0,
+                                                         routeDenominator));
                     varV02 = 0x140000;
                 } else {
                     if (paceTimer >= 0) {
@@ -14136,57 +14126,52 @@ void func_800373B4(Car *object) {
                     }
                     tempV13 = (gCarList373B4[0]->place);
                     if (tempV13 >= 0x15) {
-                        varV03 = (*(s16 *)((u8 *)car + 0xFA)) * 0x10;
+                        varV03 = (car->unkFA) * 0x10;
                     } else {
                         asm("slti\t%0,%1,0xD"
                             : "=r"(standingTest)
                             : "r"(tempV13));
                         if (standingTest == 0) {
-                            varV03 = (*(s16 *)((u8 *)car + 0xFA)) * 0xA;
+                            varV03 = (car->unkFA) * 0xA;
                         } else {
-                            varV03 = (*(s16 *)((u8 *)car + 0xFA)) * 4;
+                            varV03 = (car->unkFA) * 4;
                         }
                     }
-                    (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
-                        (*(s32 *)((u8 *)car + 0x84)),
+                    (car->unk84) = MathMultiplyFixed16373B4(
+                        (car->unk84),
                         MathFixedDivide373B4((D_800A2F50373B4 * 8) - varV03,
                                              routeDenominator << 3));
                     varV02 = 0xA0000;
                 }
-                (*(s32 *)((u8 *)car + 0x22C)) = varV02;
+                (car->speedBoost) = varV02;
             }
             if (D_800A2F5C373B4 < -(D_800A2E94373B4[0] * 0xC8)) {
-                (*(u8 *)((u8 *)car + 0x3FC)) = 0U;
+                (car->unk3FC) = 0U;
                 tempV04 = D_800A2F5C373B4;
-                (*(s32 *)((u8 *)car + 0x22C)) = 0;
+                (car->speedBoost) = 0;
                 tempV04 += 1;
                 D_800A2F5C373B4 = tempV04;
-                (*(s32 *)((u8 *)car + 0x84)) =
-                    MathMultiplyFixed16373B4((*(s32 *)((u8 *)car + 0x84)),
-                                             MathFixedDivide373B4(0x60, 0x64));
+                (car->unk84) = MathMultiplyFixed16373B4(
+                    (car->unk84), MathFixedDivide373B4(0x60, 0x64));
             }
-            if ((*(u8 *)((u8 *)car + 0x3FC)) != 0) {
+            if ((car->unk3FC) != 0) {
                 if (gSplitScreenMode373B4[0] == 0) {
-                    (*(s32 *)((u8 *)car + 0x84)) =
-                        (s32)((*(s32 *)((u8 *)car + 0x84)) +
-                              (gPlayerCar373B4[0]->speedBoost));
+                    (car->unk84) =
+                        (s32)((car->unk84) + (gPlayerCar373B4[0]->speedBoost));
                 } else {
-                    (*(s32 *)((u8 *)car + 0x84)) =
-                        (s32)((*(s32 *)((u8 *)car + 0x84)) + 0xC0000);
+                    (car->unk84) = (s32)((car->unk84) + 0xC0000);
                 }
-                (*(u8 *)((u8 *)car + 0x3FC)) =
-                    (u8)((*(u8 *)((u8 *)car + 0x3FC)) - 1);
+                (car->unk3FC) = (u8)((car->unk3FC) - 1);
             }
         }
-        (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
-            (*(s32 *)((u8 *)car + 0x84)),
-            MathFixedDivide373B4(D_800A2E4C373B4[0], 0x64));
-        if ((*(u16 *)((u8 *)car + 0x3A4)) & 0x1000) {
-            (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
-                (*(s32 *)((u8 *)car + 0x84)), MathFixedDivide373B4(1, 2));
+        (car->unk84) = MathMultiplyFixed16373B4(
+            (car->unk84), MathFixedDivide373B4(D_800A2E4C373B4[0], 0x64));
+        if ((car->unk3A4) & 0x1000) {
+            (car->unk84) = MathMultiplyFixed16373B4((car->unk84),
+                                                    MathFixedDivide373B4(1, 2));
         }
-        if ((*(s32 *)((u8 *)car + 0x84)) <= 0x31FFFF) {
-            (*(s32 *)((u8 *)car + 0x84)) = 0x320000;
+        if ((car->unk84) <= 0x31FFFF) {
+            (car->unk84) = 0x320000;
         }
         if (D_800A372C373B4[0] != 0) {
             D_800A2F5C373B4 = -(D_800A2E94373B4[0] * 0x190);
@@ -14194,14 +14179,14 @@ void func_800373B4(Car *object) {
                 asm("ori\t%0,$0,1" : "=r"(trackCenterFlag));
                 workspace.useTrackCenter = trackCenterFlag;
             }
-            if (*(u16 *)(car + 0x3A4) & 0xF) {
-                *(s32 *)(car + 0x84) = 0;
+            if (car->unk3A4 & 0xF) {
+                car->unk84 = 0;
             } else {
                 paceMatch = 0;
                 if (car == D_800A3A64373B4[0]) {
-                    *(s32 *)(car + 0x84) = 0xAC0000;
+                    car->unk84 = 0xAC0000;
                 } else {
-                    paceLeader = *(u8 **)(*(u8 **)(car + 0x3F0) + 8);
+                    paceLeader = *(u8 **)((u8 *)car->sectionLink.node.next + 8);
                     asm("lh\t%0,0x288(%1)"
                         : "=r"(varV04)
                         : "r"(paceLeader)
@@ -14295,7 +14280,7 @@ void func_800373B4(Car *object) {
                         : "r"(paceMatch));
                     if (varV06 != 0) {
                         if (D_800A3670373B4[0] != 0) {
-                            *(u8 *)(car + 0x401) = followAllowed;
+                            car->unk401 = followAllowed;
                         } else {
                             peerFollowFlag = *(u8 *)(paceLeader + 0x401);
                             varV12 = 0;
@@ -14303,7 +14288,7 @@ void func_800373B4(Car *object) {
                                 varV12 = followAllowed;
                                 asm("");
                             }
-                            *(u8 *)(car + 0x401) = varV12;
+                            car->unk401 = varV12;
                         }
                         asm("sll\t$2,%1,16\n\tsra\t%0,$2,16"
                             : "=r"(paceDistance)
@@ -14311,23 +14296,23 @@ void func_800373B4(Car *object) {
                             : "$2");
                         if (paceDistance >= 2) {
                             varV0 = MathFixedDivide373B4(paceDistance - 1, 9);
-                            varA0 = *(s32 *)(car + 0x84);
+                            varA0 = car->unk84;
                             paceBase = workspace.paceSpeed;
                             varA1 = varV0;
                             varV0 = MathMultiplyFixed16373B4(varA0 - paceBase,
                                                              varA1);
                             paceBase = workspace.paceSpeed;
                             varV0 = paceBase + varV0;
-                            *(s32 *)(car + 0x84) = varV0;
+                            car->unk84 = varV0;
                         } else {
                             speedResult = MathMultiplyFixed16373B4(
                                 workspace.paceSpeed,
                                 MathFixedDivide373B4(9, 10));
                             varA02 = 5;
-                            *(s32 *)(car + 0x84) = speedResult;
+                            car->unk84 = speedResult;
                             if (paceDistance != 0)
                                 varA02 = 9;
-                            *(s32 *)(car + 0x90) = MathMultiplyFixed16373B4(
+                            car->speed = MathMultiplyFixed16373B4(
                                 *(s32 *)(paceLeader + 0x90),
                                 MathFixedDivide373B4(varA02, 10));
                         }
@@ -14336,21 +14321,20 @@ void func_800373B4(Car *object) {
             }
         }
         if ((D_800A2EDC373B4[0] != 0) &&
-            (tempA13 = (*(u16 *)((u8 *)car + 0x3A4)), ((tempA13 & 0xF) != 0))) {
-            tempA06 = (*(u8 *)((u8 *)car + 0x3B7));
+            (tempA13 = (car->unk3A4), ((tempA13 & 0xF) != 0))) {
+            tempA06 = (car->unk3B7);
             if (tempA06 != 0) {
-                if (((*(void (**)(u8 *, s32))(car + 0x354)) ==
+                if (((*(void (**)(u8 *, s32))((u8 *)car + 0x354)) ==
                      CarResetMotionCounters373B4) &&
-                    (tempA06 == 0x64) && ((*(s16 *)((u8 *)car + 0x1EC)) != 0)) {
+                    (tempA06 == 0x64) && ((car->type) != 0)) {
                     if (tempA13 & 3) {
-                        (*(s16 *)((u8 *)car + 0x102)) = 0;
+                        (car->unk102) = 0;
                     } else {
-                        (*(s16 *)((u8 *)car + 0x102)) = 1;
+                        (car->unk102) = 1;
                     }
                     ObjectSetCallbackIfAllowed373B4(car, func_8003AA20373B4);
                 }
-                (*(u8 *)((u8 *)car + 0x3B7)) =
-                    (u8)((*(u8 *)((u8 *)car + 0x3B7)) - 1);
+                (car->unk3B7) = (u8)((car->unk3B7) - 1);
                 goto block_120;
             }
             if (D_800A2EE0373B4[0] != 0) {
@@ -14370,10 +14354,9 @@ void func_800373B4(Car *object) {
                 }
             } else {
             block_120:
-                (*(s32 *)((u8 *)car + 0x84)) = MathMultiplyFixed16373B4(
-                    (*(s32 *)((u8 *)car + 0x84)),
-                    MathFixedDivide373B4((s32)(*(u8 *)((u8 *)car + 0x3B7)),
-                                         0x64));
+                (car->unk84) = MathMultiplyFixed16373B4(
+                    (car->unk84),
+                    MathFixedDivide373B4((s32)(car->unk3B7), 0x64));
                 goto block_121;
             }
         } else {
@@ -14514,7 +14497,7 @@ void func_800373B4(Car *object) {
                     if ((blockedLaneMask & 2) ||
                         ((desiredLane = 0, (D_800A2F58373B4 != 0)) &&
                          (D_800A3598373B4[0] == 0))) {
-                        tempA07 = (*(s8 *)(car + 0x206));
+                        tempA07 = (car->lane);
                         varV09 = 1;
                         tempV18 = tempA07 + 1;
                         asm("sllv %0,%0,%2"
@@ -14616,7 +14599,7 @@ void func_800373B4(Car *object) {
                             }
                         }
                     }
-                    tempA08 = (*(u8 **)((u8 *)car + 0x3F4));
+                    tempA08 = ((u8 *)car->sectionLink.node.previous);
                     if (tempA08 != NULL) {
                         followingCar = (*(u8 **)((u8 *)tempA08 + 8));
                         followAllowed = 1;
@@ -14637,7 +14620,7 @@ void func_800373B4(Car *object) {
                                 : "memory");
                             if (varV011 >= tempV112)
                                 goto pressureNotAllowed;
-                            tempA09 = *(u8 **)(car + 0x3F0);
+                            tempA09 = (u8 *)car->sectionLink.node.next;
                             if (tempA09 != NULL) {
                                 aheadOfFollowingCar =
                                     (*(u8 **)((u8 *)tempA09 + 8));
@@ -14659,9 +14642,8 @@ void func_800373B4(Car *object) {
                             followAllowed = 0;
                         pressureAllowed:
                             varV011 = followAllowed & 0xFF;
-                            if ((varV011 != 0) &&
-                                ((*(s32 *)((u8 *)car + 0x90)) > 0x01720000)) {
-                                pressureTimerValue = *(s8 *)(car + 0x205);
+                            if ((varV011 != 0) && ((car->speed) > 0x01720000)) {
+                                pressureTimerValue = car->assistRank;
                                 if (pressureTimerValue != 0)
                                     goto pressureTimerCheck;
                                 {
@@ -14708,16 +14690,16 @@ void func_800373B4(Car *object) {
                                                  : "$2", "$3", "$4", "memory");
                                 }
                             }
-                            pressureTimerValue = *(s8 *)(car + 0x205);
+                            pressureTimerValue = car->assistRank;
                         pressureTimerCheck:
                             tempV19 = pressureTimerValue;
                             if (pressureTimerValue > 0) {
                                 tempV018 = tempV19 - 1;
-                                *(s8 *)(car + 0x205) = tempV018;
+                                car->assistRank = tempV018;
                             }
                         }
                     }
-                    if ((*(u16 *)((u8 *)car + 0x3A4)) & 0x1000) {
+                    if ((car->unk3A4) & 0x1000) {
                         desiredLane = 2;
                         if (D_800A2F84373B4[0] != 0) {
                             desiredLane = -2;
@@ -14804,7 +14786,7 @@ void func_800373B4(Car *object) {
                                         desiredLane = 1;
                                     }
                                 } else {
-                                    desiredLane = (*(s8 *)((u8 *)car + 0x3FE));
+                                    desiredLane = (car->unk3FE);
                                 }
                                 asm("ori %0,$zero,1" : "=r"(middleOne));
                                 workspace.useSameSegment = middleOne;
@@ -14813,21 +14795,20 @@ void func_800373B4(Car *object) {
                             }
                         } else {
                         block_229:
-                            if ((*(u8 *)((u8 *)car + 0x401)) != 0) {
-                                tempV011 = (*(s8 *)((u8 *)car + 0x400));
+                            if (((u8)car->unk401) != 0) {
+                                tempV011 = (car->unk400);
                                 varV16 = tempV011;
                                 if (tempV011 == 0) {
                                     varV16 = 0;
-                                    if ((*(s8 *)((u8 *)car + 0x3FF)) == 0) {
-                                        varV16 =
-                                            (u8)(*(s8 *)((u8 *)car + 0x3FE));
+                                    if ((car->unk3FF) == 0) {
+                                        varV16 = (u8)(car->unk3FE);
                                     }
                                     asm volatile(
                                         "lb %0,0x409(%2)\n\tori %1,$zero,10"
                                         : "=r"(varV012), "=r"(middleRandomLimit)
                                         : "r"(car)
                                         : "memory");
-                                    (*(s8 *)((u8 *)car + 0x3FF)) = (s8)varV16;
+                                    (car->unk3FF) = (s8)varV16;
                                     tempS03 = varV012 - 5;
                                     if (RandomScaledGet373B4(
                                             middleRandomLimit) < 0) {
@@ -14840,9 +14821,9 @@ void func_800373B4(Car *object) {
                                 } else {
                                     varV012 = varV16 - 1;
                                 }
-                                (*(s8 *)((u8 *)car + 0x400)) = varV012;
+                                (car->unk400) = varV012;
                             }
-                            desiredLane = (*(s8 *)((u8 *)car + 0x3FF));
+                            desiredLane = (car->unk3FF);
                         }
                     }
                     asm volatile(
@@ -15040,7 +15021,7 @@ void func_800373B4(Car *object) {
                             collisionArgument0, collisionArgument1);
                         lateralSinProduct -= collisionReturn;
                         lateralGap = lateralSinProduct >> 16;
-                        tempV112 = (*(s16 *)(*(u8 **)(car + 0x36C) + 0x1E)) * 2;
+                        tempV112 = (*(s16 *)(car->unk36C + 0x1E)) * 2;
                         collisionWidthCopy = tempV112;
                         if (lateralGap >= 0) {
                             if (lateralGap >= tempV112) {
@@ -15074,8 +15055,7 @@ void func_800373B4(Car *object) {
                                 collisionArgument0, collisionArgument1);
                             longitudinalGap += collisionReturn;
                             longitudinalGap >>= 16;
-                            tempV113 =
-                                (*(s16 *)(*(u8 **)(car + 0x36C) + 0x22)) * 2;
+                            tempV113 = (*(s16 *)(car->unk36C + 0x22)) * 2;
                             collisionWidthCopy = tempV113;
                             if (longitudinalGap >= 0) {
                                 asm("slt %0,%1,%2"
@@ -15090,11 +15070,10 @@ void func_800373B4(Car *object) {
                             if (-longitudinalGap < collisionWidthCopy) {
                             block_278:
                                 if (longitudinalGap < 0) {
-                                    tempV014 =
-                                        (u8)(*(s8 *)((u8 *)car + 0x206)) - 1;
-                                    (*(s8 *)((u8 *)car + 0x206)) = tempV014;
+                                    tempV014 = (u8)(car->lane) - 1;
+                                    (car->lane) = tempV014;
                                     if ((s8)tempV014 < -1) {
-                                        (*(s8 *)((u8 *)car + 0x206)) = -1;
+                                        (car->lane) = -1;
                                     }
                                     tempV015 = (*(s8 *)((u8 *)overlappingCar +
                                                         0x206)) +
@@ -15115,11 +15094,10 @@ void func_800373B4(Car *object) {
                                         (*(s8 *)((u8 *)overlappingCar +
                                                  0x206)) = -1U;
                                     }
-                                    tempV017 =
-                                        (u8)(*(s8 *)((u8 *)car + 0x206)) + 1;
-                                    (*(s8 *)((u8 *)car + 0x206)) = tempV017;
+                                    tempV017 = (u8)(car->lane) + 1;
+                                    (car->lane) = tempV017;
                                     if ((s8)tempV017 >= 2) {
-                                        (*(s8 *)((u8 *)car + 0x206)) = 1;
+                                        (car->lane) = 1;
                                     }
                                 }
                                 asm volatile(
@@ -15188,7 +15166,7 @@ void func_800373B4(Car *object) {
                     varA17 = -func_8003702C373B4(paceAheadCar, car);
                     goto collisionPaceResume;
                 collisionSlowCar:
-                    *(s32 *)(car + 0x90) -= 0x10000;
+                    car->speed -= 0x10000;
                     goto collisionDone;
                 } else {
                     varA17 = func_8003702C373B4(paceAheadCar, car);
@@ -15199,8 +15177,8 @@ void func_800373B4(Car *object) {
                     tempA012 = (*(s32 *)((u8 *)paceAheadCar + 0x90));
                     if (tempA012 > 0x640000) {
                         tempV018 = tempA012 + 0xFFFB0000;
-                        (*(s32 *)((u8 *)car + 0x90)) = tempV018;
-                        (*(s32 *)((u8 *)car + 0x84)) = tempV018;
+                        (car->speed) = tempV018;
+                        (car->unk84) = tempV018;
                     }
                 }
             }
@@ -15254,7 +15232,7 @@ void func_800373B4(Car *object) {
                          : "$4", "$5", "$6", "$7", "accum", "memory");
             workspace.targetY = tailTargetValue;
             if (tempV114 != tailMinusOne) {
-                tempA22 = (*(s16 *)((u8 *)car + 0x1E0));
+                tempA22 = (car->segment);
                 tailRouteLength = gTrackSectionCount373B4[0];
                 tailSegment = tempV114;
                 varA18 = tempA22 - tailSegment;
@@ -15284,17 +15262,17 @@ void func_800373B4(Car *object) {
                         }
                     }
                 }
-                if ((varA18 > 0) || (tailTargetValue = *(s32 *)(car + 0x250),
+                if ((varA18 > 0) || (tailTargetValue = car->avoidX,
                                      workspace.targetX = tailTargetValue,
-                                     tailTargetValue = *(s32 *)(car + 0x254),
+                                     tailTargetValue = car->avoidY,
                                      workspace.targetY = tailTargetValue,
                                      (CarAvoidTraffic373B4(car, 1) == 0))) {
-                    (*(s16 *)((u8 *)car + 0x24E)) = -1;
+                    (car->targetSegment) = -1;
                 }
             } else if (CarAvoidTraffic373B4(car, 0) != 0) {
-                tailTargetValue = *(s32 *)(car + 0x250);
+                tailTargetValue = car->avoidX;
                 workspace.targetX = tailTargetValue;
-                tailTargetValue = *(s32 *)(car + 0x254);
+                tailTargetValue = car->avoidY;
                 workspace.targetY = tailTargetValue;
             }
             asm volatile(".set\tnoreorder\n"
@@ -15313,27 +15291,24 @@ void func_800373B4(Car *object) {
                          : "m"(workspace.targetX), "m"(workspace.targetY),
                            "r"(car)
                          : "$2", "$9", "memory");
-            workspace.delta[2] = -(*(s32 *)((u8 *)car + 0x8));
+            workspace.delta[2] = -(car->pos.z);
             varA19 = func_800358EC373B4(&workspace.delta[0]);
             if (D_800A2F48373B4[0] != 0) {
-                varA19 = (s32)(*(s16 *)((u8 *)car + 0x114));
+                varA19 = (s32)(car->heading);
                 (*(u8 *)((u8 *)car + 0x201)) = 1;
             } else {
                 (*(u8 *)((u8 *)car + 0x201)) = 0;
             }
-            tempV118 = (*(void (**)(u8 *, s32))(car + 0x354));
+            tempV118 = (*(void (**)(u8 *, s32))((u8 *)car + 0x354));
             if (tempV118 == CarResetMotionCounters373B4) {
                 CarSteerTowardHeading373B4(car, varA19);
-                (*(s16 *)((u8 *)car + 0x104)) =
-                    (u16)(*(s16 *)((u8 *)car + 0x114));
+                (car->movementHeading) = (u16)(car->heading);
             } else {
                 tempV118(car, varA19);
             }
-            (*(s16 *)((u8 *)car + 0x116)) =
-                (s16)((*(s16 *)((u8 *)car + 0x114)) * 4);
-            MatrixSetRotationFromAngle373B4(car,
-                                            (*(s16 *)((u8 *)car + 0x114)) * 4);
-            func_8001FB28373B4(car, (s16)(*(s16 *)((u8 *)car + 0x104)));
+            ((s16)car->fineHeading) = (s16)((car->heading) * 4);
+            MatrixSetRotationFromAngle373B4(car, (car->heading) * 4);
+            func_8001FB28373B4(car, (s16)(car->movementHeading));
             /* Keep the three low-product windows and position stores. */
             asm volatile(".set\tnoreorder\n"
                          "lh         $v1, 0x92(%3)\n"
@@ -15385,12 +15360,11 @@ void func_800373B4(Car *object) {
 void func_8003AA20(s32 car);
 void CarAdvanceResetTimer(u8 *object);
 
-void CarUpdateAi(u8 *arg0) {
+void CarUpdateAi(Car *arg0) {
     int val;
 
-    if (*(u8 *)(arg0 + 0x268) == 0 && *(s16 *)(arg0 + 0x288) == 0) {
-        val =
-            ((*(s16 *)(arg0 + 0x104) - *(s16 *)(arg0 + 0x114)) + 0x400) & 0x3FF;
+    if (arg0->unk268 == 0 && arg0->unk26C[14] == 0) {
+        val = ((arg0->movementHeading - arg0->heading) + 0x400) & 0x3FF;
         if (val > 0x200) {
             val = 0x400 - val;
         }
@@ -15398,7 +15372,7 @@ void CarUpdateAi(u8 *arg0) {
             EffectSpawnAtWheel(arg0, ABS(RandomScaledGet(4)));
         }
         func_80031264(arg0);
-        *(u8 *)(arg0 + 0x375) = 1;
+        arg0->unk375 = 1;
         val = 0;
         if (ABS(func_8003702C(arg0, gPlayerCarLui)) < 0x19) {
             val = 1;
@@ -15409,24 +15383,23 @@ void CarUpdateAi(u8 *arg0) {
             }
         }
         if (val != 0 && func_80025A38(arg0) != 0) {
-            *(s16 *)((u8 *)arg0 + 0x1E0) = TrackFindSectionForward(
-                *(s32 *)((u8 *)arg0 + 0), *(s32 *)((u8 *)arg0 + 4),
-                (s32 *)((u8 *)arg0 + 0x1F8));
+            arg0->segment = TrackFindSectionForward(arg0->pos.x, arg0->pos.y,
+                                                    &arg0->regionIndex);
         }
-        if (*(s16 *)(arg0 + 0x1E0) == -1) {
+        if (arg0->segment == -1) {
             func_80031264(arg0);
-            if (*(s32 *)(arg0 + 0x354) == (s32)func_8003AA20) {
-                ObjectSetCallbackIfAllowed((Car *)arg0, CarAdvanceResetTimer);
+            if (*(s32 *)((u8 *)arg0 + 0x354) == (s32)func_8003AA20) {
+                ObjectSetCallbackIfAllowed(arg0, CarAdvanceResetTimer);
             }
-            *(u8 *)(arg0 + 0xF5) = 1;
+            arg0->collisionPending = 1;
             CarHandleWallCollision(arg0);
-            *(u8 *)(arg0 + 0xF5) = 0;
-            if (D_800A2EACControl != 0 && *(s16 *)(arg0 + 0x1EC) == 0) {
-                *(u8 *)(arg0 + 0xF4) = 2;
-                *(s32 *)(arg0 + 0x90) = 0;
+            arg0->collisionPending = 0;
+            if (D_800A2EACControl != 0 && arg0->type == 0) {
+                arg0->unkF4 = 2;
+                arg0->speed = 0;
                 CarUpdateEngineRpm(arg0);
-                *(s32 *)(arg0 + 0) = *(s32 *)(arg0 + 0xC);
-                *(s32 *)(arg0 + 4) = *(s32 *)(arg0 + 0x10);
+                arg0->pos.x = arg0->unkC;
+                arg0->pos.y = arg0->unk10;
             }
         }
     }

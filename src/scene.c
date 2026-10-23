@@ -31,7 +31,7 @@ extern s32 D_800A397C[];
 extern u8 D_800A3680[];
 extern void func_80025730(u8 *);
 extern Car *gPlayerCar[];
-s32 func_8003702C(u8 *, u8 *);
+s32 func_8003702C(Car *, Car *);
 extern void HeapFree(void *ptr);
 extern s32 D_800A37B4Absolute[];
 extern s32 D_800A359C[];
@@ -585,7 +585,7 @@ extern s32 gProjectileOriginX asm("D_800AE844");
 extern s32 gProjectileOriginY asm("D_800AE848");
 extern s32 gProjectileOriginZ asm("D_800AE84C");
 
-void SceneUpdateProjectiles(u8 *owner) {
+void SceneUpdateProjectiles(Car *owner) {
     Car *other;
     s8 player;
     register Projectile *effect asm("s1");
@@ -619,19 +619,19 @@ void SceneUpdateProjectiles(u8 *owner) {
         gProjectileMode[0] != 0 || D_800A2EACAbsolute[0] != 0) {
         return;
     }
-    player = *(s8 *)(owner + 0x20B);
+    player = owner->slot;
     if ((PadGetButtons(player) & 0x10) &&
-        *(void (**)(u8 *))(owner + 0x354) != func_80025730 &&
-        owner[0x268] == 0 && D_800A372C == 0) {
+        *(void (**)(u8 *))((u8 *)owner + 0x354) != func_80025730 &&
+        owner->unk268 == 0 && D_800A372C == 0) {
         pool = (Projectile *)(gProjectilePools[player] +
                               gProjectileWriteIndex[player] * 0x80);
         pool->life = 200;
-        pool->forward = *(Vec3 *)(owner + 0x3C);
-        pool->right = *(Vec3 *)(owner + 0x48);
-        pool->up = *(Vec3 *)(owner + 0x54);
+        pool->forward = *(Vec3 *)((u8 *)owner + 0x3C);
+        pool->right = *(Vec3 *)((u8 *)owner + 0x48);
+        pool->up = *(Vec3 *)((u8 *)owner + 0x54);
         pool->position.x = *(s32 *)owner;
-        pool->position.y = *(s32 *)(owner + 4);
-        pool->position.z = *(s32 *)(owner + 8);
+        pool->position.y = owner->pos.y;
+        pool->position.z = owner->pos.z;
         gProjectileWriteIndex[player] =
             (gProjectileWriteIndex[player] + 1) % 10;
         SoundPlaySlot(10, 9);
@@ -1291,7 +1291,7 @@ void SceneInitRoadStrip(void) {
     PopMatrix();
 }
 
-void SceneUpdateRoadStrip(u8 *car) {
+void SceneUpdateRoadStrip(Car *car) {
     SVECTOR rotation;
     VECTOR result;
     long flag;
@@ -1311,8 +1311,8 @@ void SceneUpdateRoadStrip(u8 *car) {
     register s32 row asm("a2");
     s32 mode;
 
-    slot = *(s8 *)(car + 0x20B);
-    section = *(u16 *)(car + 0x1E0);
+    slot = car->slot;
+    section = (u16)car->segment;
     distance = section - D_800A3440[slot];
     if (distance != 0 && (s16)section != -1 && D_800A359C[0] == 0 &&
         D_800A2D0C[0] == 0) {
@@ -1488,9 +1488,9 @@ void SceneUpdateRoadStrip(u8 *car) {
             }
         }
         mode = D_800A397C[0];
-        D_800A3440[slot] = *(s16 *)(car + 0x1E0);
+        D_800A3440[slot] = car->segment;
         if (mode != 2) {
-            D_800A357C[slot] = *(s16 *)(car + 0x1E0);
+            D_800A357C[slot] = car->segment;
         }
         PopMatrix();
     }
@@ -2042,7 +2042,7 @@ void func_8004875C(void) {
     extern s32 MathMultiplyFixed16(s32, s32);
     extern s32 D_800A2EC0Absolute[];
     u8 *src;
-    u8 *dst;
+    Car *dst;
     u16 val;
     s32 t;
     u8 *p;
@@ -2059,11 +2059,11 @@ void func_8004875C(void) {
     ObjectAdvanceAlongHeading(D_800A3728);
     src = D_800A3728;
     dst = D_800A347C;
-    *(u32 *)(dst + 0) = *(u32 *)(src + 0);
-    *(u32 *)(dst + 4) = *(u32 *)(src + 4);
-    *(u32 *)(dst + 8) = *(u32 *)(src + 8);
-    *(u16 *)(dst + 0x104) = *(u16 *)(dst + 0x114) = *(u16 *)(src + 0x114);
-    *(u16 *)(dst + 0x116) = *(u16 *)(src + 0x116);
+    dst->pos.x = *(u32 *)(src + 0);
+    dst->pos.y = *(u32 *)(src + 4);
+    dst->pos.z = *(u32 *)(src + 8);
+    dst->movementHeading = dst->heading = *(u16 *)(src + 0x114);
+    dst->fineHeading = *(u16 *)(src + 0x116);
     ObjectAdvanceAlongHeading(dst);
     func_80031264(D_800A347C);
     t = MathMultiplyFixed16(*(s32 *)(D_800A347C + 0x3C), 0x3200000);
@@ -6039,7 +6039,7 @@ void func_8005157C(void);
  * cars are settled and the 600-frame timer runs out. Afterwards it counts
  * down to the green flag. Returns 0 when racing runs normally. */
 s32 RaceUpdateCaution(void) {
-    u8 *car;
+    Car *car;
     s8 side;
     s8 sideAhead;
     u8 done;
@@ -6095,16 +6095,16 @@ s32 RaceUpdateCaution(void) {
             func_8005157C();
         }
         done = 1;
-        for (car = D_800A3A64Car; car != NULL; car = *(u8 **)(car + 0x404)) {
+        for (car = D_800A3A64Car; car != NULL; car = (u8 *)car->unk404) {
             CarUpdateState(car);
             func_800373B4(car);
-            if (car[0xF4] != 0 && (*(u16 *)(car + 0x3A4) & 0xF) != 0) {
+            if (car->unkF4 != 0 && (car->unk3A4 & 0xF) != 0) {
                 done = 0;
             }
-            if (ABS(MathGetAngleDelta(*(s16 *)(car + 0x114),
+            if (ABS(MathGetAngleDelta(car->heading,
                                       *(u16 *)((u8 *)gTrackSections[0] +
-                                               *(s16 *)(car + 0x1E0) * 0x90 +
-                                               0x10))) > 0x40) {
+                                               car->segment * 0x90 + 0x10))) >
+                0x40) {
                 D_800A3564u = 1;
             }
         }
@@ -6132,14 +6132,13 @@ s32 RaceUpdateCaution(void) {
             if (D_800A3564u != 0) {
                 func_8005157C();
             }
-            for (car = D_800A3A64Car; car != NULL;
-                 car = *(u8 **)(car + 0x404)) {
+            for (car = D_800A3A64Car; car != NULL; car = (u8 *)car->unk404) {
                 CarUpdateState(car);
                 if (car != gPlayerCarLui) {
                     func_800373B4(car);
                 } else if (D_800A35A4 < 0x32) {
-                    car[0xF6] = D_800A3420;
-                    (*(void (**)(u8 *))(car + 0x350))(car);
+                    car->unkF6 = D_800A3420;
+                    (*(void (**)(u8 *))((u8 *)car + 0x350))(car);
                 } else {
                     func_800373B4(car);
                     CarSetVelocityFromHeading((s32 *)gPlayerCarLui,

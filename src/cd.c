@@ -507,7 +507,7 @@ void CarUpdateState(Car *object) {
 extern s32 D_800A2F84nm asm("D_800A2F84.NON_MATCHING");
 
 extern s32 D_800A3A04Lui asm("D_800A3A04Absolute");
-void func_8003D25C(u8 *object) {
+void func_8003D25C(Car *object) {
     s32 i;
     s32 value;
     s32 count;
@@ -518,24 +518,24 @@ void func_8003D25C(u8 *object) {
     func_80029CB4(object);
     D_800A3A04Lui = 0xD;
     flag = 1;
-    if (*(u8 *)(object + 0x26A) & 0x10) {
-        i = *(u8 *)(object + 0x26A) & 0x40;
+    if (object->unk26A & 0x10) {
+        i = object->unk26A & 0x40;
         if (D_800A2F84nm != 0) {
             i = !i;
         }
         if (i != 0) {
-            *(s16 *)(object + 0x2AC) = *(s16 *)(object + 0x274) * 10;
-            *(s16 *)(object + 0x2FC) = *(s16 *)(object + 0x274) * 10;
-            *(s16 *)(object + 0x2D4) = *(s16 *)(object + 0x274) * 4;
-            *(s16 *)(object + 0x324) = *(s16 *)(object + 0x274) * 4;
+            object->wheel[0].unk0 = object->unk26C[4] * 10;
+            object->wheel[2].unk0 = object->unk26C[4] * 10;
+            object->wheel[1].unk0 = object->unk26C[4] * 4;
+            object->wheel[3].unk0 = object->unk26C[4] * 4;
         } else {
-            *(s16 *)(object + 0x2D4) = *(s16 *)(object + 0x274) * 10;
-            *(s16 *)(object + 0x324) = *(s16 *)(object + 0x274) * 10;
-            *(s16 *)(object + 0x2AC) = *(s16 *)(object + 0x274) * 4;
-            *(s16 *)(object + 0x2FC) = *(s16 *)(object + 0x274) * 4;
+            object->wheel[1].unk0 = object->unk26C[4] * 10;
+            object->wheel[3].unk0 = object->unk26C[4] * 10;
+            object->wheel[0].unk0 = object->unk26C[4] * 4;
+            object->wheel[2].unk0 = object->unk26C[4] * 4;
         }
         for (i = 0; i < 4; i++) {
-            if (*(u8 *)(object + 0x26A) & 0x40) {
+            if (object->unk26A & 0x40) {
                 if (i < 2) {
                     continue;
                 }
@@ -544,93 +544,92 @@ void func_8003D25C(u8 *object) {
                     break;
                 }
             }
-            value = *(u16 *)(object + i * 2 + 0x26C);
-            *(u16 *)(object + i * 2 + 0x26C) = value - 1;
+            value = *(u16 *)((u8 *)object + i * 2 + 0x26C);
+            *(u16 *)((u8 *)object + i * 2 + 0x26C) = value - 1;
             count = (s16)(value - 1);
             if (count == 0x5A) {
                 goto special;
             }
             if (count == 5) {
             special:
-                if (*(s16 *)(object + 0x1EC) == 0) {
+                if (object->type == 0) {
                     SoundPlaySlotAtVolume(object, 8, 3);
                 }
-                *(u16 *)(object + i * 2 + 0x26C) =
-                    *(u16 *)(object + i * 2 + 0x26C) - 1;
+                *(u16 *)((u8 *)object + i * 2 + 0x26C) =
+                    *(u16 *)((u8 *)object + i * 2 + 0x26C) - 1;
             } else if (count == 0x46) {
                 diff = value - 2;
-                *(s16 *)(object + i * 2 + 0x26C) = diff;
+                *(s16 *)((u8 *)object + i * 2 + 0x26C) = diff;
             } else if (count == 0x28) {
                 diff = value - 2;
-                *(s16 *)(object + i * 2 + 0x26C) = diff;
+                *(s16 *)((u8 *)object + i * 2 + 0x26C) = diff;
                 func_8002D3EC(object);
-                *(u8 *)(object + i + 0x3A6) = 1;
+                *(u8 *)((u8 *)object + i + 0x3A6) = 1;
             }
             do {
-                if (*(s16 *)(object + i * 2 + 0x26C) > 0) {
+                if (*(s16 *)((u8 *)object + i * 2 + 0x26C) > 0) {
                     flag = 0;
                 }
             } while (0);
         }
         if (flag != 0) {
-            if (*(u8 *)(object + 0x26A) & 0x40) {
-                *(u8 *)(object + 0x26A) &= 0xAE;
+            if (object->unk26A & 0x40) {
+                object->unk26A &= 0xAE;
             } else {
-                *(s16 *)(object + 0x274) = -0x23;
-                *(u8 *)(object + 0x26A) =
-                    (*(u8 *)(object + 0x26A) | 0x40) & 0xEF;
+                object->unk26C[4] = -0x23;
+                object->unk26A = (object->unk26A | 0x40) & 0xEF;
             }
             i = 3;
             do {
-                *(s16 *)(object + i * 0x28 + 0x2B0) = 0;
+                *(s16 *)((u8 *)object + i * 0x28 + 0x2B0) = 0;
                 i--;
             } while (i >= 0);
         } else {
-            if (*(s16 *)(object + 0x274) < 4) {
-                *(s16 *)(object + 0x274) = *(s16 *)(object + 0x274) + 1;
+            if (object->unk26C[4] < 4) {
+                object->unk26C[4] = object->unk26C[4] + 1;
             }
         }
     } else {
-        if ((s16)++ * (u16 *)(object + 0x274) == 5) {
-            *(u8 *)(object + 0x26A) |= 0x10;
-            *(s16 *)(object + 0x274) = 0;
-            if (*(u8 *)(object + 0x26A) & 0x40) {
-                *(s16 *)(object + 0x270) = 100;
-                *(s16 *)(object + 0x272) = 100;
+        if ((s16)++object->unk26C[4] == 5) {
+            object->unk26A |= 0x10;
+            object->unk26C[4] = 0;
+            if (object->unk26A & 0x40) {
+                object->unk26C[2] = 100;
+                object->unk26C[3] = 100;
             } else {
-                *(s16 *)(object + 0x26C) = 100;
-                *(s16 *)(object + 0x26E) = 100;
+                object->unk26C[0] = 100;
+                object->unk26C[1] = 100;
             }
         }
     }
 }
 
-void func_8003D528(u8 *object) {
+void func_8003D528(Car *object) {
     s32 result;
     s32 value;
     s32 mask;
 
-    value = *(s32 *)(object + 0x28C) + 0x4B;
-    *(s32 *)(object + 0x28C) = value;
+    value = object->unk28C + 0x4B;
+    object->unk28C = value;
     result = 0;
     if (value >= 0x3E81) {
-        *(s32 *)(object + 0x28C) = 0x3E80;
+        object->unk28C = 0x3E80;
     }
-    if (*(s16 *)(object + 0x1EC) == 0) {
+    if (object->type == 0) {
         result = func_80029EF8(object);
     }
-    if (*(s32 *)(object + 0x28C) == 0x3E80) {
+    if (object->unk28C == 0x3E80) {
         goto trigger;
     }
-    if (*(s16 *)(object + 0x1EC) == 0 && (*(u8 *)(object + 0x26A) & 1) == 0) {
-        mask = ~*(s32 *)(object + 0x23C) & 0x40;
+    if (object->type == 0 && (object->unk26A & 1) == 0) {
+        mask = ~object->unk23C & 0x40;
         if ((result & mask) != 0) {
         trigger:
-            *(s32 *)(object + 0x290) = 0x7D000;
-            *(u8 *)(object + 0x26A) &= 0xDD;
+            object->unk290 = 0x7D000;
+            object->unk26A &= 0xDD;
         }
     }
-    *(s32 *)(object + 0x23C) = result;
+    object->unk23C = result;
 }
 
 void func_8003D5F8(u8 *object) {
