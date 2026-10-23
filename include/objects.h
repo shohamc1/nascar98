@@ -14,7 +14,7 @@ void ScratchpadFillPattern(s32 arg0);
 void func_80032DEC(u8 *firstObject, s32 objectCount);
 void ObjectAdvanceAlongHeading(Car *object);
 void func_800373B4(Car *);
-void ObjectSetCallbackIfAllowed(Car *object, void (*callback)(void));
+void ObjectSetCallbackIfAllowed(Car *object, void (*callback)(Car *));
 void CarReduceSpeed(Car *object);
 
 #endif /* OBJECTS_H */

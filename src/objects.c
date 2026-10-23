@@ -2516,7 +2516,7 @@ void CarApplyRandomHeadingImpulse(Car *car) {
     index = (0x480 - heading) & 0x3FF;
     car->frontVelocityX += table1[index] * 20;
     car->frontVelocityY += table2[index] * 20;
-    car->callback = (s32)CarResetMotionCounters;
+    car->callback = CarResetMotionCounters;
 }
 
 void CarResetMotionCounters();
@@ -2600,10 +2600,10 @@ void func_80025730(Car *obj) {
     default:
         break;
     }
-    obj->callback = (s32)CarResetMotionCounters;
+    obj->callback = CarResetMotionCounters;
 }
 
-void ObjectSetCallbackIfAllowed(Car *object, void (*callback)(void)) {
+void ObjectSetCallbackIfAllowed(Car *object, void (*callback)(Car *)) {
     if (((object->type != 1) || (callback != func_80025730)) &&
         (object->callback != func_80025730) && (object->mode != 4)) {
         object->callback = callback;
@@ -2933,7 +2933,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     original = separation;
     midpoint.x = (s32)((otherCar->pos.x) + (car->pos.x)) / 2;
     midpoint.y = (s32)((otherCar->pos.y) + (car->pos.y)) / 2;
-    if (((s32)car->callback) == (s32)func_80025730) {
+    if (car->callback == (s32)func_80025730) {
         contactAngle = (car->unk38A);
         angleFromHalfTurn = contactAngle - 0x200;
         if (angleFromHalfTurn >= 0) {
@@ -3328,7 +3328,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                      (nextCallback != (s32)func_80025730)) &&
                     (((s32)car->callback) != (s32)func_80025730) &&
                     ((car->mode) != 4)) {
-                    ((s32)car->callback) = nextCallback;
+                    car->callback = (void (*)(Car *))nextCallback;
                 }
                 if ((car->type) == 0) {
                     if ((otherCar->type) != 0) {
@@ -3348,7 +3348,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                             otherHeading = carHeading;
                         }
                         (otherCar->heading) = otherHeading;
-                        ((s16)otherCar->fineHeading) =
+                        otherCar->fineHeading =
                             (s16)((s32)(otherHeading << 0x10) >> 0xE);
                     }
                     responseYInRange = work1 < 0x33;
@@ -3437,13 +3437,13 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                     (car->unk1CE) = responseCode;
                     if ((tmp0 != 1) && (((s32)car->callback) != callA0) &&
                         ((car->mode) != 4)) {
-                        ((s32)car->callback) = callA0;
+                        car->callback = (void (*)(Car *))callA0;
                     }
                     if (((otherCar->type) == 0)) {
                         tmp0 = (s32)otherCar->callback;
                         callA0 = (s32)func_80025730;
                         if ((tmp0 != callA0) && ((otherCar->mode) != 4)) {
-                            ((s32)otherCar->callback) = callA0;
+                            otherCar->callback = (void (*)(Car *))callA0;
                         }
                     }
                     result = 4;
@@ -3513,7 +3513,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                      (nextCallback != (s32)func_80025730)) &&
                     (((s32)car->callback) != (s32)func_80025730) &&
                     ((car->mode) != 4)) {
-                    ((s32)car->callback) = nextCallback;
+                    car->callback = (void (*)(Car *))nextCallback;
                 }
                 result = 2;
                 if ((car->type) == 0) {
@@ -4653,7 +4653,7 @@ void CarUpdateEngineRpm(Car *obj) {
 
 void func_80028D80(Car *object) {
     Car *node;
-    extern void *D_800A3990;
+    extern Gear *D_800A3990;
     extern s8 D_800A2E18;
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
     s16 mode;
@@ -7492,7 +7492,7 @@ Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     } else {
         entry->update = func_80029E34;
     }
-    entry->callback = (u32)CarResetMotionCounters;
+    entry->callback = CarResetMotionCounters;
     entry->pos.x = D_800BE72C[arg1].unk0;
     entry->pos.y = D_800BE72C[arg1].unk4;
     entry->pos.z = 0;
@@ -8814,7 +8814,7 @@ void RaceUpdateFrame(void) {
                     playerIndex = (u16)savedCar->segment;
                     savedCar->segment = 0;
                     SceneInitRoadStrip();
-                    ((u16)gPlayerCarRaceStep5[0]->segment) = playerIndex;
+                    gPlayerCarRaceStep5[0]->segment = playerIndex;
                 }
             }
         }
@@ -8912,7 +8912,7 @@ void RaceUpdateFrame(void) {
                 savedSections[(object->slot)] = ((u16)object->segment);
                 nextPlayerIndex = playerIndex + 1;
                 playerIndex = nextPlayerIndex;
-                ((u16)object->segment) = (u16)(0x1E - (s8)(object->place));
+                object->segment = (u16)(0x1E - (s8)(object->place));
                 object = (object->next);
             } while (nextPlayerIndex < D_800A2EB4RaceStep);
         }
@@ -9584,7 +9584,7 @@ void func_80030D80(Car *object, s32 *query) {
             }
             node = *(s8 **)(node + 0x28);
         }
-        entry = (u8 *)entry->prev;
+        entry = entry->prev;
         object->segment = entry->section;
         node = (s8 *)entry->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
@@ -9595,7 +9595,7 @@ void func_80030D80(Car *object, s32 *query) {
             }
             node = *(s8 **)(node + 0x28);
         }
-        entry = *(u8 **)((u8 *)entry->next + 4);
+        entry = *(TrackSection **)((u8 *)entry->next + 4);
         object->segment = entry->section;
         node = (s8 *)entry->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
@@ -13526,7 +13526,7 @@ s32 func_80037204(Car *obj) {
     node = gCarListw15[0];
     tmp = obj->penalty;
     obj->unk414 = -1;
-    obj->callback = (s32)CarResetMotionCounters;
+    obj->callback = CarResetMotionCounters;
     obj->speed = 0;
     obj->unk84 = 0;
     if (tmp > 0) {
@@ -13615,7 +13615,7 @@ extern s32 gTrackSectionCount373B4[];
 extern s32 func_800A2CE0373B4[];
 extern s32 MathFixedDivide373B4(s32, s32) asm("MathFixedDivide");
 extern s32 MathMultiplyFixed16373B4(s32, s32) asm("MathMultiplyFixed16");
-extern void ObjectSetCallbackIfAllowed373B4(Car *, void (*)(void)) asm(
+extern void ObjectSetCallbackIfAllowed373B4(Car *, void (*)(Car *)) asm(
     "ObjectSetCallbackIfAllowed");
 extern s32 RandomScaledGet373B4(s32) asm("RandomScaledGet");
 extern void
@@ -15208,7 +15208,7 @@ void func_800373B4(Car *object) {
             } else {
                 tempV118(car, varA19);
             }
-            ((s16)car->fineHeading) = (s16)((car->heading) * 4);
+            car->fineHeading = (s16)((car->heading) * 4);
             MatrixSetRotationFromAngle373B4(car, (car->heading) * 4);
             func_8001FB28373B4(car, (s16)(car->movementHeading));
             /* Keep the three low-product windows and position stores. */
@@ -15835,7 +15835,7 @@ void CarPlaceOnStartingGrid(void) {
             (car->speed) = gridSpeed;
             if (((car->type) == 0) ||
                 ((D_800A2EDAw15[0] != 0) && (car == gPlayerCar[0]))) {
-                ((u8)car->cameraMode) = 0xC;
+                car->cameraMode = 0xC;
                 (car->unkFA) = (s16)(s8)(u8)(car->place);
                 cameraSection =
                     (s32)(section + 0xC) % (s32)gTrackSectionCount[0];
@@ -16652,7 +16652,7 @@ void RaceUpdatePositions(u8 force) {
         }
         best->sortKey = -1;
         best->sectionLink.car = best;
-        ListPushFrontDoublyLinked(&best->sectionLink, &first, &last);
+        ListPushFrontDoublyLinked(&best->sectionLink.node, &first, &last);
     }
     first->next = last;
     last->previous = first;
@@ -16691,7 +16691,7 @@ void RaceUpdatePositions(u8 force) {
                 best->assistRank = assist++;
             }
             best->order.car = best;
-            ListPushFrontDoublyLinked(&best->order, &first, &last);
+            ListPushFrontDoublyLinked(&best->order.node, &first, &last);
         }
         leader = ((CarLink *)first)->car;
         last->previous = NULL;

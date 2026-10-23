@@ -413,7 +413,7 @@ void func_800686FC(s32 arg0, s32 arg1) {
     extern s8 D_800A3944;
     extern s8 D_800A39DC;
     extern MenuObj *D_800A3900Ptr asm("D_800A3900.NON_MATCHING");
-    extern MenuObj *D_800A360C;
+    extern MenuObj *D_800A360CHead asm("D_800A360C");
     extern MenuObj *D_800A3858;
 
     MenuDrawObjectList(D_800A3900Ptr, 0xFF);
@@ -427,7 +427,7 @@ void func_800686FC(s32 arg0, s32 arg1) {
             MenuDrawObjectList(D_800A3870, 0xFF);
         }
     } else {
-        MenuDrawObjectList(D_800A360C, 0xFF);
+        MenuDrawObjectList(D_800A360CHead, 0xFF);
     }
     if (D_800A3914[0] != 0) {
         MenuDrawObjectList((MenuObj *)D_800A3914[0], 0xFF);
@@ -652,14 +652,12 @@ noStore:
     }
 }
 
-typedef MenuObj UnkTextObj;
-extern UnkTextObj *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
-extern UnkTextObj *D_800A360C;
-extern UnkTextObj *D_800A3858;
-extern UnkTextObj *D_800A3918;
-UnkTextObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, s32, s32, s32, s32,
-                               s32);
-UnkTextObj *MenuCreateTextObject(s32, s32);
+extern MenuObj *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
+extern MenuObj *D_800A360CHead asm("D_800A360C");
+extern MenuObj *D_800A3858;
+extern MenuObj *D_800A3918;
+MenuObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+MenuObj *MenuCreateTextObject(s32, s32);
 
 void func_80068CE4(void) {
     extern char *D_8009A498[];
@@ -668,8 +666,8 @@ void func_80068CE4(void) {
     extern char D_800B9B54[];
     extern s8 D_800B9B6E[];
     extern u8 D_800B9BB4[];
-    UnkTextObj *obj;
-    UnkTextObj *tail;
+    MenuObj *obj;
+    MenuObj *tail;
     /* One packet pointer per section: a single shared pointer takes one
      * register, retail uses a different one in each section. */
     MenuTextPacket *titlePkt;
@@ -701,7 +699,7 @@ void func_80068CE4(void) {
     }
 
     tail = MenuCreateTextObject(0, 0x2A);
-    D_800A360C = tail;
+    D_800A360CHead = tail;
     MenuFontSetS32(2, 3);
     strcpy(buf, D_800B9B54);
     strcat(buf, D_8009A498[0]);
@@ -880,7 +878,7 @@ void __maspsx_include_asm_hack_jtblpad_80068CE4() {
 
 /* Builds the championship standings table: rank, driver name, points,
  * gap to the leader, and a highlight behind the player's row. */
-static __inline__ void MenuSetText(UnkTextObj *obj, s32 text, s32 flag, s32 two,
+static __inline__ void MenuSetText(MenuObj *obj, s32 text, s32 flag, s32 two,
                                    s32 three) {
     MenuTextPacket *pkt;
     s32 h;
@@ -901,13 +899,13 @@ void CardMenuCreateStandingsTable(void) {
     extern char *D_8009A494[];
     extern s32 D_8009B1D4[];
     extern s8 D_800A374C[];
-    extern UnkTextObj *D_800A3900;
-    extern UnkTextObj *sMenuHead[2] asm("D_800A360C");
-    extern UnkTextObj *sMenuList[2] asm("D_800A3858");
-    extern UnkTextObj *D_800A3918;
-    UnkTextObj *obj;
-    UnkTextObj *tail;
-    UnkTextObj *mine;
+    extern MenuObj *D_800A3900;
+    extern MenuObj *sMenuHead[2] asm("D_800A360C");
+    extern MenuObj *sMenuList[2] asm("D_800A3858");
+    extern MenuObj *D_800A3918;
+    MenuObj *obj;
+    MenuObj *tail;
+    MenuObj *mine;
     MenuTextPacket *pkt;
     struct {
         char buf[0x3F];
@@ -1115,8 +1113,8 @@ void CardMenuFreeResources(void) {
 extern s8 *D_8009AD58[];
 
 void func_800697EC(u8 mode) {
-    UnkTextObj *obj;
-    UnkTextObj *prev;
+    MenuObj *obj;
+    MenuObj *prev;
     /* One packet pointer per section, so each is a block-local pseudo. */
     MenuTextPacket *titlePkt;
     MenuTextPacket *rowPkt;
@@ -1151,7 +1149,7 @@ void func_800697EC(u8 mode) {
     } while (j < 2);
 
     prev = MenuCreateTextObject(0, 0x2A);
-    D_800A360C = prev;
+    D_800A360CHead = prev;
     MenuFontSetS32(2, 3);
     w = MenuTextCenterOffset(0x140, (s32)D_8009AD58[mode]);
     prev->x = w;
@@ -2659,7 +2657,7 @@ void CardMenuBuildFileList(void) {
     s32 x;
     s32 y;
     s32 h;
-    UnkTextObj *prev;
+    MenuObj *prev;
     MenuObj *node;
     u8 *pkt;
     u8 *obj;
@@ -2672,12 +2670,12 @@ void CardMenuBuildFileList(void) {
     prev->orderingDepth = 7;
     prev->drawOffsetX = x;
     i = 0;
-    *(UnkTextObj **)D_800A3A10Obj = prev;
+    *(MenuObj **)D_800A3A10Obj = prev;
     MenuSetTextObject((MenuObj *)prev, 2, 2, D_8009A4C0[0], 0,
                       prev->orderingDepth);
     do {
         node = MenuCreateTexturedRect(0, y, 0x78, 0x18, 9, 1, 0);
-        prev->next = (UnkTextObj *)node;
+        prev->next = (MenuObj *)node;
         pkt = node->primitive;
         node->velocityX = 2;
         node->x = -0x78;
@@ -2697,7 +2695,7 @@ void CardMenuBuildFileList(void) {
         MenuSetTexturedQuad(pkt, 9, 0, h, (u16)node->width, (u16)node->height);
         i += 1;
         y += node->height;
-        prev = (UnkTextObj *)node;
+        prev = (MenuObj *)node;
     } while (i < 4);
     y = 0x3C;
     i = 0;
@@ -2707,8 +2705,8 @@ void CardMenuBuildFileList(void) {
         *(s16 *)(obj + 0x6) = -0x78;
         *(s16 *)(obj + 0xE) = 2;
         *(s16 *)(obj + 0x1A) = 0xA;
-        prev->next = (UnkTextObj *)obj;
-        prev = (UnkTextObj *)obj;
+        prev->next = (MenuObj *)obj;
+        prev = (MenuObj *)obj;
         i += 1;
     } while (i < 2);
     y = 0x55;
@@ -2724,8 +2722,8 @@ void CardMenuBuildFileList(void) {
         if (i == 0) {
             D_800A3908[0] = obj;
         }
-        prev->next = (UnkTextObj *)obj;
-        prev = (UnkTextObj *)obj;
+        prev->next = (MenuObj *)obj;
+        prev = (MenuObj *)obj;
         i += 1;
         y += 9;
     } while (i < 7);
@@ -2758,13 +2756,13 @@ void CardMenuBuildFileList(void) {
         if (i == 0) {
             D_800A377C[0] = obj;
         }
-        prev->next = (UnkTextObj *)obj;
+        prev->next = (MenuObj *)obj;
         *(s16 *)(obj + 0xE) = 2;
         *(s16 *)(obj + 0x1A) = 3;
         if (i != 0) {
             *(s16 *)(obj + 0x1A) = -1;
         }
-        prev = (UnkTextObj *)obj;
+        prev = (MenuObj *)obj;
         i += 1;
         *(s16 *)(obj + 0x12) = 0xA;
         *(s16 *)(obj + 0x6) = -0x6E;

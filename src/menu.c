@@ -1472,7 +1472,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         primLoad[1] = 2;
         primLoad[2] = 2;
         *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
-        entry->next = ((u8 *)m);
+        entry->next = (MenuObj *)m;
     }
     func_80060008(arg0);
 }

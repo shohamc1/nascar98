@@ -921,7 +921,7 @@ void SceneInitProjectiles(void) {
     extern void SetPolyFT4(POLY_FT4 *);
     s32 heights[2];
     s32 point[3];
-    u8 object[0x500];
+    Car object;
     SceneTexture *tim;
     u8 *elem;
     Car *objectPtr;
@@ -966,14 +966,14 @@ void SceneInitProjectiles(void) {
             *(u8 *)(elem + 0x11) = v;
         }
     }
-    *(u16 *)(object + 0x118) = 0;
-    *(u16 *)(object + 0x1EC) = 2;
+    object.unk118 = 0;
+    object.type = 2;
     for (i = 0; i < gTrackSectionCount[0]; i++) {
-        objectPtr = object;
+        objectPtr = &object;
         pointPtr = point;
         angle = ((TrackSection *)gTrackSections[0])[i].angle;
-        *(u16 *)(object + 0x114) = angle;
-        *(u16 *)(object + 0x116) = angle * 4;
+        object.heading = angle;
+        object.fineHeading = angle * 4;
         for (j = 0; j < 2; j++) {
             point[0] = *(s32 *)((u8 *)D_800AE15C[0] + i * 12);
             point[1] = *(s32 *)((u8 *)D_800AE15C[0] + i * 12 + 4);
