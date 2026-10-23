@@ -2307,9 +2307,7 @@ void MenuDrawResults(s32 reset) {
                                       (s16)(baseY + (i * 0xE) + 0x28), 0);
                 }
                 i++;
-                node = *(void **)((u8 *)*(void **)&((Car *)node)
-                                      ->order.node.previous +
-                                  8);
+                node = ((CarLink *)((Car *)node)->order.node.previous)->car;
             } while (D_800A2E90[0] >= i);
         }
     } else {

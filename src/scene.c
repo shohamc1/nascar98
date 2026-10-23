@@ -1859,7 +1859,7 @@ void func_800474A0(void) {
                 gte_ldv3(verts[0], verts[1], verts[2]);
                 gte_rtpt();
                 gte_avsz3();
-                *(u32 *)(primNext - 0xC) = *(u32 *)&node->r0;
+                *(u32 *)&((POLY_F4 *)(primNext - 0x10))->r0 = *(u32 *)&node->r0;
                 gte_stsxy3(prim + 8, prim + 0xC, prim + 0x14);
                 gte_ldv0(verts[3]);
                 gte_rtps();
@@ -5254,7 +5254,10 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         func_80050028Row(D_8009AE80[0], 20, textY, 3);
         lapData = D_800A8A74[lap];
         lapData += gTrackSplitCount[D_800A2CE0[0]] * 4;
-        HudDrawTimeRow(*(s32 *)(lapData + 0x1C), 215, textY, 3, 1);
+        /* lapData is the record stepped by the split count, so this is
+         * splitTotal[count - 1]. */
+        HudDrawTimeRow(((LapRecord *)lapData)->splitTotal[-1], 215, textY, 3,
+                       1);
         break;
     case 1: {
         s32 speedValue;
@@ -5445,10 +5448,12 @@ void func_8004F880(void) {
             pj = p;
         innerJ:
             inf = 0x7FFFFFFF;
-            *(u16 *)(stride + (s32)D_800A8AB0[0] + 6 + j * 2) = lim;
+            *(u16 *)&((LapRecord *)(stride + (s32)D_800A8AB0[0]))
+                 ->splitSpeed[j] = lim;
+            /* The record stepped by split j. */
             distBase = j * 4 + (stride + (s32)D_800A8AB0nm[0]);
-            *(s32 *)(distBase + 0x20) = inf;
-            *(s32 *)(distBase + 0x10) = inf;
+            ((LapRecord *)distBase)->splitTotal[0] = inf;
+            ((LapRecord *)distBase)->splitTime[0] = inf;
             j++;
             if (j < pj[0]) {
                 goto innerJ;
@@ -5523,12 +5528,14 @@ void HudRecordLapSplitStats(void) {
     s8 i;
     s8 j;
 
+    /* The lap record stepped by one split, so ((LapRecord *)entry)
+     * ->splitTotal[-1] is the previous split's total. */
     entry = (u8 *)(gLapSplitIndex * 4 + (s32)D_800A8A80[0]);
     slot = (LapTimeSlot *)(entry + 0x10);
     if (gLapSplitIndex == 0) {
         lapTime = gPlayerCar[0]->unk258;
     } else {
-        lapTime = gPlayerCar[0]->unk258 - *(s32 *)(entry + 0x1C);
+        lapTime = gPlayerCar[0]->unk258 - ((LapRecord *)entry)->splitTotal[-1];
     }
     car = gPlayerCar[0];
     slot->lapTime = lapTime;

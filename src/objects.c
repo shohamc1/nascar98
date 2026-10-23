@@ -820,11 +820,13 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
         cam->basis[2] = car->basis[2];
         cam->rot[2] = cam->basis[2];
         if (FAR_VAR(s32, gFarMode2CE0) == 10) {
-            to = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xB28);
-            from = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xB3C);
+            to = (s16 *)((TrackSection *)FAR_VAR(u8 *, gFarTrack))[19].unk78[0];
+            from =
+                (s16 *)((TrackSection *)FAR_VAR(u8 *, gFarTrack))[19].unk78[5];
         } else {
-            to = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xFA8);
-            from = *(s16 **)(FAR_VAR(u8 *, gFarTrack) + 0xFBC);
+            to = (s16 *)((TrackSection *)FAR_VAR(u8 *, gFarTrack))[27].unk78[0];
+            from =
+                (s16 *)((TrackSection *)FAR_VAR(u8 *, gFarTrack))[27].unk78[5];
         }
         dx = from[0] + (to[0] - from[0]) * FAR_VAR(s32, gFarBlend2EAC) / 120;
         dy = from[1] + (to[1] - from[1]) * FAR_VAR(s32, gFarBlend2EAC) / 120;
@@ -10851,15 +10853,12 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
             } else if (lod < count) {
                 for (i = 0; i < 5; i++) {
                     if (mode) {
-                        gte_ldv3(((u8 **)(*(u8 **)(u8 *)group + 0x78))[i],
-                                 ((u8 **)(*(u8 **)((u8 *)group->next + 4) +
-                                          0x78))[i],
-                                 ((u8 **)(*(u8 **)((u8 *)group->next + 4) +
-                                          0x78))[i + 1]);
+                        gte_ldv3(group->prev->unk78[i],
+                                 group->next->next->unk78[i],
+                                 group->next->next->unk78[i + 1]);
                     } else {
-                        gte_ldv3(group->unk78[i],
-                                 ((u8 **)((u8 *)group->next + 0x78))[i],
-                                 ((u8 **)((u8 *)group->next + 0x78))[i + 1]);
+                        gte_ldv3(group->unk78[i], group->next->unk78[i],
+                                 group->next->unk78[i + 1]);
                     }
                     poly = (POLY_F4 *)prim;
                     gte_rtpt();
@@ -10879,7 +10878,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     }
                     gte_avsz3();
                     if (mode) {
-                        vec = *(u8 **)(*(u8 **)(u8 *)group + (i << 2) + 0x7C);
+                        vec = group->prev->unk78[i + 1];
                     } else {
                         vec = group->unk78[i + 1];
                     }
@@ -16636,7 +16635,7 @@ void func_8003BCAC(void) {
     s32 offset;
     Car *object;
 
-    object = *(Car **)(((u8 **)D_800A3854Absolute)[9] + 0x3E0);
+    object = ((Car *)((u8 **)D_800A3854Absolute)[9])->next;
     count = 0;
     if (object != 0) {
         offset = 0;

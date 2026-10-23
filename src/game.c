@@ -1677,9 +1677,18 @@ typedef struct {
 typedef struct {
     s32 w[4];
 } TrackCopy16;
+/* A 0x1C section record in a track file: TrackReadData copies it over
+   TrackSection.unk34 to unk4C of the section it names. */
 typedef struct {
-    s32 w[7];
-} TrackCopy28;
+    s16 section; /* 0x00: index of the TrackSection it fills */
+    s16 unk2;
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+} DiskSection;
 extern s32 FileSeek(s32, s32, s32);
 extern s32 FileRead(void *, s32, s32, s32);
 extern s32 sprintf(char *, char *, ...);
@@ -2142,7 +2151,7 @@ void TrackReadData(s32 *trackData, s32 file) {
                 faceColor = 0x808080;
                 do {
                     if (*(s32 *)&((Face *)face)->r0 == specialFaceColor) {
-                        *(u32 *)((u8 *)flagObject + (16)) |= 0x10000;
+                        *(u32 *)&((TrackSection *)flagObject)->angle |= 0x10000;
                     } else {
                         *(s32 *)&((Face *)face)->r0 = faceColor;
                     }
@@ -2200,8 +2209,10 @@ void TrackReadData(s32 *trackData, s32 file) {
         objects = objectData;
         outputRecord = (u8 *)D_800BE72C;
         lastObjectOffset *= 16;
-        *(u8 **)objects = objects + (lastObjectOffset - 0x90);
-        *(u8 **)(lastObjectOffset + (s32)objects - 140) = objects;
+        *(u8 **)&((TrackSection *)objects)->prev =
+            objects + (lastObjectOffset - 0x90);
+        *(u8 **)&((TrackSection *)(lastObjectOffset + (s32)objects - 0x90))
+             ->next = objects;
     }
     do {
         *(TrackCopy16 *)outputRecord = *(TrackCopy16 *)inputCopy16;
@@ -2216,10 +2227,10 @@ void TrackReadData(s32 *trackData, s32 file) {
     positionByteOffset = 0;
 copyStart:
     *(s32 *)((u8 *)D_800B1348 + positionByteOffset) =
-        *(s32 *)((u8 *)inputPosition + (0));
+        ((Vec3 *)inputPosition)->x;
     *(s32 *)((u8 *)D_800B134C + positionByteOffset) =
-        *(s32 *)((u8 *)inputPosition + (4));
-    positionZ = *(s32 *)((u8 *)inputPosition + (8));
+        ((Vec3 *)inputPosition)->y;
+    positionZ = ((Vec3 *)inputPosition)->z;
     *(s32 *)outputZ = positionZ;
     if (positionZ < 0xFA0) {
         *(s32 *)outputZ = minimumZ;
@@ -2253,9 +2264,9 @@ copyStart:
     } else {
         register s32 firstIndex;
         s32 lastIndex;
-        firstIndex = *(s16 *)sectionData;
+        firstIndex = ((DiskSection *)sectionData)->section;
         lastIndex = sectionCount * 0x1C;
-        lastIndex = *(s16 *)(lastIndex + (s32)sectionData - 28);
+        lastIndex = ((DiskSection *)(lastIndex + (s32)sectionData))[-1].section;
         D_800A39E0[0] = firstIndex;
         D_800A376C[0] = lastIndex;
     }
@@ -2263,9 +2274,11 @@ copyStart:
     if (D_800A2F80[0] > 0) {
         section = sectionData;
     readSection:
-        sectionObject = (u8 *)(*(s16 *)section * 0x90 + (s32)objectData);
-        outputRecord = *(s32 *)((u8 *)section + (12));
-        *(TrackCopy28 *)(sectionObject + 52) = *(TrackCopy28 *)section;
+        sectionObject =
+            (u8 *)(((DiskSection *)section)->section * 0x90 + (s32)objectData);
+        outputRecord = ((DiskSection *)section)->unkC;
+        *(DiskSection *)&((TrackSection *)sectionObject)->unk34 =
+            *(DiskSection *)section;
         i += 1;
         section += 0x1C;
         if (i < D_800A2F80[0])

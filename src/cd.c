@@ -1532,6 +1532,7 @@ void func_8003EBD0(Car *object, s32 index) {
 }
 
 extern u8 D_800A387C[];
+extern u8 *gCarListAbsolute[];
 
 void func_8003ECB8(TrackCallback *object) {
     Car *current;
@@ -1548,7 +1549,7 @@ void func_8003ECB8(TrackCallback *object) {
     u8 *src;
     u8 *dst;
 
-    current = *(u8 **)(D_800A387C - 4);
+    current = gCarListAbsolute[0];
     base = D_800BE97C[0];
     if (current != 0) {
         id = object->callback - 1;

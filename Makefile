@@ -683,4 +683,7 @@ LDFLAGS += --defsym=D_800A3980Small=D_800A3980 \
            --defsym=gOrderingTableAbsolute6=gOrderingTable \
            --defsym=gOrderingTableBankAbsolute3=gOrderingTableBank \
            --defsym=gOrderingTableBankAbsolute4=gOrderingTableBank \
+           --defsym=D_800A360CAbsolute=D_800A360C \
+           --defsym=D_800A3858Absolute=D_800A3858 \
+           --defsym=D_800A35F4Absolute2=D_800A35F4 \
            --defsym=gCardMenuMessageAbsolute=gCardMenuMessage

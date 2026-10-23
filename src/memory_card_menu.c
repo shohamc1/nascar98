@@ -13,6 +13,24 @@
 #include "pad_axis.h"
 #include "input.h"
 #include "menu.h"
+
+/* A 0x0C per-track entry in a DriverRecord. */
+typedef struct {
+    u8 count[4]; /* 0x00 */
+    u32 best;    /* 0x04 */
+    u32 unk8;
+} CardRecord;
+
+/* A 0xE8 driver's saved records, in the table at D_800A35F4. */
+typedef struct {
+    char name[0x1C];       /* 0x00 */
+    CardRecord tracks[17]; /* 0x1C */
+} DriverRecord;
+
+extern MenuObj *D_800A360CAbsolute[];
+extern MenuObj *D_800A3858Absolute[];
+extern DriverRecord *D_800A35F4Absolute[];
+extern u8 *D_800A35F4Absolute2[];
 extern u8 gPlayerDriverAbsolute3[];
 extern u8 gPlayerDriverAbsolute4[];
 extern u8 D_800A3072AbsoluteU8[] asm("D_800A3072Absolute");
@@ -90,7 +108,7 @@ void func_80067F34(s32 page, s32 track) {
     s32 cnt;
     char buf[0x48];
 
-    obj = *(MenuObj **)((u8 *)D_800A3668Absolute - 0x5C + (page & 0xFF) * 4);
+    obj = D_800A360CAbsolute[page & 0xFF];
     MenuFontSetS32(2, 3);
     strcpy(buf, D_8009A474[0]);
     strcat(buf, (char *)D_8009A31C[track & 0xFF]);
@@ -118,7 +136,7 @@ void func_80067F34(s32 page, s32 track) {
         pktH->text = (s32)string;
         next->orderingDepth = hdrH;
     }
-    obj = *(MenuObj **)((u8 *)D_800A3854Absolute + (page & 0xFF) * 4 + 4);
+    obj = D_800A3858Absolute[page & 0xFF];
     i = 0;
     if (cnt > 0) {
         recordOff = (track & 0xFF) * 0xC;
@@ -133,8 +151,7 @@ void func_80067F34(s32 page, s32 track) {
                 case 0:
                     k = 0;
                     entry = (u8 *)gDriverNames;
-                    name = (u8 *)(i * 0xE8) +
-                           (u32) * (u8 **)((u8 *)D_800A3668Absolute - 0x74);
+                    name = (u8 *)(i * 0xE8) + (u32)D_800A35F4Absolute2[0];
                     do {
                         if (strcmp((char *)name, *(char **)entry) == 0) {
                             break;
@@ -146,29 +163,30 @@ void func_80067F34(s32 page, s32 track) {
                     value = D_8009AC80[idx & 0xFF];
                     break;
                 case 1:
-                    value =
-                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                          recordOff + 0x1C);
+                    value = ((CardRecord *)(i * 0xE8 + D_800A35F4Absolute2[0] +
+                                            recordOff + 0x1C))
+                                ->count[0];
                     break;
                 case 2:
-                    value =
-                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                          recordOff + 0x1D);
+                    value = ((CardRecord *)(i * 0xE8 + D_800A35F4Absolute2[0] +
+                                            recordOff + 0x1C))
+                                ->count[1];
                     break;
                 case 3:
-                    value =
-                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                          recordOff + 0x1E);
+                    value = ((CardRecord *)(i * 0xE8 + D_800A35F4Absolute2[0] +
+                                            recordOff + 0x1C))
+                                ->count[2];
                     break;
                 case 4:
-                    value =
-                        *(i * 0xE8 + *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                          recordOff + 0x1F);
+                    value = ((CardRecord *)(i * 0xE8 + D_800A35F4Absolute2[0] +
+                                            recordOff + 0x1C))
+                                ->count[3];
                     break;
                 case 5:
-                    value = *(s32 *)(i * 0xE8 +
-                                     *(u8 **)((u8 *)D_800A3668Absolute - 0x74) +
-                                     recordOff + 0x20);
+                    value = *(s32 *)&((CardRecord *)(i * 0xE8 +
+                                                     D_800A35F4Absolute2[0] +
+                                                     recordOff + 0x1C))
+                                 ->best;
                     break;
                 }
                 flagL = 0;
@@ -1685,13 +1703,13 @@ extern char D_8009B1E4[];
 s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
     typedef struct {
         s32 words[0x3A];
-    } SaveEntry;
+    } DriverRecord;
     typedef struct {
         s32 words[0x4F];
     } SaveSlot;
     char path[0x40];
     struct DIRENTRY entry;
-    SaveEntry blank;
+    DriverRecord blank;
     u8 sectors;
     s32 fd;
     s32 i;
@@ -1752,7 +1770,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
             D_800A366C[0xA] = 0;
             D_800A366C[0xB] = 0;
             for (i = 0; i < 12; i++) {
-                *(SaveEntry *)(D_800A3978 + i * 0xE8) = blank;
+                *(DriverRecord *)(D_800A3978 + i * 0xE8) = blank;
                 if (i == 0) {
                     ((u8 *)&blank)[0] = 0;
                 }
@@ -2019,19 +2037,8 @@ extern u8 gPadTypew17[] asm("gPadType.NON_MATCHING");
 extern u8 gPadLayoutw17[] asm("gPadLayout.NON_MATCHING");
 extern u8 D_800BBA24w17[] asm("D_800BBA24.NON_MATCHING");
 
-/* A 0x0C entry in a memory-card slot's record table at D_800A35F4. */
-typedef struct {
-    u8 count[4]; /* 0x00 */
-    u32 best;    /* 0x04 */
-    u32 unk8;
-} CardRecord;
-
 void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
                    u8 arg6, u8 arg7) {
-    typedef struct {
-        s32 words[0x3A];
-    } SaveEntry;
-
     s32 count;
     s32 iv;
     s32 k;
@@ -2062,8 +2069,8 @@ void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
             k = i * 29;
             iv = k << 3;
             do {
-                *(SaveEntry *)(iv + (u32)D_800A35F4 + 0xE8) =
-                    *(SaveEntry *)(iv + (u32)D_800A35F4);
+                ((DriverRecord *)(iv + (u32)D_800A35F4))[1] =
+                    *(DriverRecord *)(iv + (u32)D_800A35F4);
                 i--;
                 iv -= 0xE8;
             } while (i >= 0);
