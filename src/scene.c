@@ -460,15 +460,6 @@ typedef struct TrackQuad {
 } TrackQuad;
 
 /* One 0x90-byte entry of the array at gTrackSections. */
-typedef struct {
-    u8 pad0[0x10];
-    u16 angle;
-    u8 pad12[2];
-    s32 x;
-    s32 z;
-    u8 pad1C[0xC];
-    TrackQuad *firstQuad;
-} TrackSectionEntry;
 
 /* Sorts the quads of one track section across the track and returns +1 or
  * -1 for the side of the dividing line between the middle two that the car
@@ -478,7 +469,7 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     TrackQuad *quads[4];
     s32 center[4][2];
     s32 origin[2];
-    TrackSectionEntry *entry;
+    TrackSection *entry;
     TrackQuad *node;
     s8 i, j;
     s32 tmp;
@@ -486,11 +477,10 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     s32 dot;
     s32 result;
 
-    entry =
-        (TrackSectionEntry *)((u8 *)gTrackSections[0] +
-                              ((car->segment + offset + gTrackSectionCount[0]) %
-                               gTrackSectionCount[0]) *
-                                  0x90);
+    entry = (TrackSection *)((u8 *)gTrackSections[0] +
+                             ((car->segment + offset + gTrackSectionCount[0]) %
+                              gTrackSectionCount[0]) *
+                                 0x90);
     i = 0;
     for (node = entry->firstQuad; node != NULL; node = node->next) {
         quads[i] = node;
@@ -1007,18 +997,6 @@ void SceneInitProjectiles(void) {
     SceneInitRoadStrip();
 }
 
-typedef struct SceneRoadNode {
-    struct SceneRoadNode *prev;
-    struct SceneRoadNode *next;
-    u16 section;
-    u8 unkA[6];
-    u16 angle;
-    u8 unk12[10];
-    u16 height0;
-    s16 height1;
-    u8 unk20[0x70];
-} SceneRoadNode;
-
 typedef struct SceneRoadQuad {
     u16 section;
     u8 unk2[0x2E];
@@ -1062,7 +1040,7 @@ void SceneInitRoadStrip(void) {
     s8 *(*quadSlots)[];
     s8 side;
     register s8 otherSide asm("s5");
-    SceneRoadNode *node;
+    TrackSection *node;
     SceneRoadQuad *quad;
     register s32 *origin asm("s7");
     s32 row;
@@ -1099,7 +1077,7 @@ void SceneInitRoadStrip(void) {
             sectionPosition =
                 ((s16)section + lookBehind - 1) % gTrackSectionCount[0];
             count = D_800A343C;
-            node = (SceneRoadNode *)gTrackSections[0] + sectionPosition;
+            node = (TrackSection *)gTrackSections[0] + sectionPosition;
             index = 0;
             if (count > 0) {
                 s32 slotBits;
@@ -1117,9 +1095,9 @@ void SceneInitRoadStrip(void) {
                 do {
                     s32 sectionValue;
                     register s8 *quadBase asm("a2");
-                    SceneRoadNode *nodes;
+                    TrackSection *nodes;
                     register SVECTOR *rotationPtr asm("a0");
-                    SceneRoadNode *previousNode;
+                    TrackSection *previousNode;
 
                     previousNode = node->prev;
                     section = node->section;
@@ -1127,7 +1105,7 @@ void SceneInitRoadStrip(void) {
                     quadBase = *base;
                     rotation.vx = 0;
                     rotationPtr = &rotation;
-                    nodes = (SceneRoadNode *)gTrackSections[0];
+                    nodes = (TrackSection *)gTrackSections[0];
                     sectionValue = (s16)section;
                     rotation.vy = nodes[sectionValue].angle * 4;
                     sectionIndex = sectionValue;
@@ -1168,12 +1146,12 @@ void SceneInitRoadStrip(void) {
                             ((SVECTOR *)(firstPoint + 0x30))->vy = y;
                             cameraZ = origin[2];
                             if (side) {
-                                z = ((SceneRoadNode *)
+                                z = ((TrackSection *)
                                          gTrackSections[0])[sectionIndex]
                                         .height0 -
                                     0x4000;
                             } else {
-                                z = ((SceneRoadNode *)
+                                z = ((TrackSection *)
                                          gTrackSections[0])[sectionIndex]
                                         .height1 -
                                     0x4000;
@@ -1232,12 +1210,12 @@ void SceneInitRoadStrip(void) {
                             ((SVECTOR *)(nextPoint + 0x30))->vy = y;
                             cameraZ = origin[2];
                             if (side) {
-                                z = ((SceneRoadNode *)
+                                z = ((TrackSection *)
                                          gTrackSections[0])[nextSectionIndex]
                                         .height0 -
                                     0x4000;
                             } else {
-                                z = ((SceneRoadNode *)
+                                z = ((TrackSection *)
                                          gTrackSections[0])[nextSectionIndex]
                                         .height1 -
                                     0x4000;
@@ -1303,7 +1281,7 @@ void SceneUpdateRoadStrip(Car *car) {
     s32 z;
     s8 side;
     s8 otherSide;
-    SceneRoadNode *node;
+    TrackSection *node;
     SceneRoadQuad *quad;
     SVECTOR *points;
     SceneRoadPoint *cache;
@@ -1331,14 +1309,13 @@ void SceneUpdateRoadStrip(Car *car) {
             s32 cameraZ;
 
             count = 0;
-            node = (SceneRoadNode *)gTrackSections[0] +
+            node = (TrackSection *)gTrackSections[0] +
                    (D_800A3440[slot] + D_800A3438) % gTrackSectionCount[0];
             while (count < distance) {
                 section = node->section;
                 rotation.vx = 0;
                 rotation.vy =
-                    ((SceneRoadNode *)gTrackSections[0])[(s16)section].angle *
-                    4;
+                    ((TrackSection *)gTrackSections[0])[(s16)section].angle * 4;
                 rotation.vz = 0;
                 RotMatrix(&rotation, &D_8009931C);
                 SetRotMatrix(&D_8009931C);
@@ -1375,11 +1352,11 @@ void SceneUpdateRoadStrip(Car *car) {
                     point->vy = y;
                     cameraZ = origin[2];
                     if (side) {
-                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
+                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
                                 .height0 -
                             0x4000;
                     } else {
-                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
+                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
                                 .height1 -
                             0x4000;
                     }
@@ -1416,15 +1393,14 @@ void SceneUpdateRoadStrip(Car *car) {
             asm("" : "=r"(sectionIndex) : "0"(sectionIndex));
             length = gTrackSectionCount[0];
             lastSection = length - 1;
-            node = (SceneRoadNode *)gTrackSections[0] +
+            node = (TrackSection *)gTrackSections[0] +
                    (sectionIndex + lastSection) % length;
             distance = -distance;
             while (count < distance) {
                 section = node->section;
                 rotation.vx = 0;
                 rotation.vy =
-                    ((SceneRoadNode *)gTrackSections[0])[(s16)section].angle *
-                    4;
+                    ((TrackSection *)gTrackSections[0])[(s16)section].angle * 4;
                 rotation.vz = 0;
                 RotMatrix(&rotation, &D_8009931C);
                 SetRotMatrix(&D_8009931C);
@@ -1460,11 +1436,11 @@ void SceneUpdateRoadStrip(Car *car) {
                     point->vy = y;
                     cameraZ = origin[2];
                     if (side) {
-                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
+                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
                                 .height0 -
                             0x4000;
                     } else {
-                        z = ((SceneRoadNode *)gTrackSections[0])[(s16)section]
+                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
                                 .height1 -
                             0x4000;
                     }

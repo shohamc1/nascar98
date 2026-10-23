@@ -29,17 +29,10 @@ extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 extern s32 gOrderingTable[];
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
 extern s32 D_800A3A34Absolute[];
-typedef struct RoadSection {
-    struct RoadSection *prev;
-    struct RoadSection *next;
-    u8 unk8[6];
-    u16 culled;
-    u8 unk10[0x80];
-} RoadSection;
 
 extern RenderListNode *D_800A3A40Absolute[];
 extern s32 D_800A2EC4w15[] asm("D_800A2EC4.NON_MATCHING");
-void func_8001D108(RoadSection *arg0);
+void func_8001D108(TrackSection *arg0);
 void func_8001D1E4(void);
 void func_8001ED4C(s32 *p);
 void func_8001EEC4(s32 *arg0);
@@ -8056,9 +8049,9 @@ void SceneDrawView(Car *arg0) {
     SVECTOR rotation;
     VECTOR translation;
     long flag[2];
-    RoadSection *current;
-    RoadSection *back;
-    RoadSection *ahead;
+    TrackSection *current;
+    TrackSection *back;
+    TrackSection *ahead;
     s32 *camera;
     s32 index;
     s32 margin;
@@ -8091,7 +8084,7 @@ void SceneDrawView(Car *arg0) {
     if (index == -1) {
         index = 0;
     }
-    current = (RoadSection *)FAR_VAR(u8 *, gFarTrack) + index;
+    current = (TrackSection *)FAR_VAR(u8 *, gFarTrack) + index;
     back = current->prev;
     ahead = current;
     func_80036264();
