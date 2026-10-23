@@ -538,7 +538,7 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     }
     tmp = 0x3FF - ((quads[1]->angle + quads[2]->angle) / 2);
     dot = (MathMultiplyFixed16(((s32 *)D_800A3A34Absolute[0])[tmp],
-                               (*(s32 *)(u8 *)car - center[1][0]) << 16) +
+                               (car->pos.x - center[1][0]) << 16) +
            MathMultiplyFixed16(((s32 *)D_800A3A2CAbsolute[0])[tmp],
                                (car->pos.y - center[1][1]) << 16)) >>
           16;
@@ -646,7 +646,7 @@ void SceneUpdateProjectiles(u8 *owner) {
                 if (other != owner &&
                     (hitEffect->position.x - *(s32 *)other >= 0
                          ? hitEffect->position.x - *(s32 *)other < 500
-                         : *(s32 *)(u8 *)other - hitEffect->position.x < 500) &&
+                         : other->pos.x - hitEffect->position.x < 500) &&
                     (hitEffect->position.y - other->pos.y >= 0
                          ? hitEffect->position.y - other->pos.y < 500
                          : other->pos.y - hitEffect->position.y < 500) &&
@@ -2141,7 +2141,7 @@ void RaceUpdateCrashTrigger(void) {
                                                  car->speed) {
                                 D_800A35F8 = 1;
                                 car->unk414 = -1;
-                                car->unk276 = 1;
+                                car->unk26C[5] = 1;
                                 car->unk3A4 |= 0x1000;
                                 func_80041848((u8 *)car, 13);
                                 gCrashCar = car;
@@ -5951,7 +5951,7 @@ void HudUpdateFlagOverlay(void) {
                     D_800A3428[0x209] = (s8)D_800A3428[0x209] > 0;
                 }
                 if (gPlayerCar[0]->unk268 != 0) {
-                    D_800A35D0 = gPlayerCar[0]->unk286;
+                    D_800A35D0 = gPlayerCar[0]->unk26C[13];
                 } else {
                     D_800A35D0 = D_800A2EC4Lui[0];
                 }
@@ -6057,7 +6057,7 @@ s32 RaceUpdateCaution(void) {
             ((Car *)gPlayerCarLui)->unk3FC = 0;
             side = CarGetTrackSide(gPlayerCarLui, 0);
             if (side == 1) {
-                gPlayerCarLui->unk288 = 1;
+                gPlayerCarLui->unk26C[14] = 1;
             } else {
                 sideAhead = CarGetTrackSide(gPlayerCarLui, 5);
                 if (sideAhead == 1) {
@@ -6066,10 +6066,10 @@ s32 RaceUpdateCaution(void) {
                         D_800A38B8 = 1;
                     }
                     if (gPlayerCarLui->state == 5) {
-                        gPlayerCarLui->unk288 = 1;
+                        gPlayerCarLui->unk26C[14] = 1;
                     }
                 } else {
-                    gPlayerCarLui->unk288 = 0;
+                    gPlayerCarLui->unk26C[14] = 0;
                 }
             }
             gPlayerCarLui->sliding = 0;
@@ -6337,7 +6337,7 @@ void func_8005157C(void) {
             if (car->unk3A4 & 0xF) {
                 arr[0x48 + flagged] = car;
                 flagged++;
-            } else if (car->unk288 != 0) {
+            } else if (car->unk26C[14] != 0) {
                 arr[0x30 + linked] = car;
                 linked++;
             } else {

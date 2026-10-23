@@ -918,10 +918,11 @@ void func_8002267C(void) {
                 *(u16 *)(rec + 0xE) =
                     ((node->speed / 2 >> 16) << 7) | node->reverseSpeed;
                 bits = (node->heading << 22) | ((node->steering + 0x80) << 14) |
-                       ((node->unk3AE & 3) << 12) | ((node->unk3AF & 3) << 10) |
-                       ((node->unk3B0 & 3) << 8) | ((node->unk3B1 & 3) << 6) |
-                       (node->unk10C << 4) | ((s8)node->unk3B9 << 3) |
-                       (node->sliding << 2);
+                       ((node->unk3AE[0] & 3) << 12) |
+                       ((node->unk3AE[1] & 3) << 10) |
+                       ((node->unk3AE[2] & 3) << 8) |
+                       ((node->unk3AE[3] & 3) << 6) | (node->unk10C << 4) |
+                       ((s8)node->unk3B9 << 3) | (node->sliding << 2);
                 if (curCar == car) {
                     bits |= 1;
                 } else if (gSplitScreenModenm[0] != 0 && curCar == car->next) {
@@ -1276,14 +1277,13 @@ void func_80023074(void) {
                         copy = *(u8 *)(other + 0x20D);
                     }
                     *(u8 *)(other + 0x20C) = copy;
-                    *(s16 *)((u8 *)gPlayerCarLui->next + 0x1E0) =
-                        TrackFindSectionForward(
-                            *(s32 *)(u8 *)gPlayerCarLui->next,
-                            *(s32 *)((u8 *)gPlayerCarLui->next + 4),
-                            (s32 *)((u8 *)gPlayerCarLui->next + 0x1F8));
+                    gPlayerCarLui->next->segment = TrackFindSectionForward(
+                        *(s32 *)(u8 *)gPlayerCarLui->next,
+                        gPlayerCarLui->next->pos.y,
+                        &gPlayerCarLui->next->regionIndex);
                     func_8004B128((u8 *)gPlayerCarLui->next);
-                    *(s32 *)((u8 *)gPlayerCarLui->next + 0x380) =
-                        *(s16 *)((u8 *)gPlayerCarLui->next + 0x114);
+                    gPlayerCarLui->next->cameraAngle =
+                        gPlayerCarLui->next->heading;
                 }
             }
             if (FAR_VAR(u8, gFarFlag3A60) != 0) {
@@ -1295,8 +1295,7 @@ void func_80023074(void) {
                 split2 = gSplitScreenModeLui;
                 car->segment = word;
                 if (split2 != 0) {
-                    *(u16 *)((u8 *)car->next + 0x1E0) =
-                        FAR_VAR(u16, gFarWord357E);
+                    car->next->segment = FAR_VAR(u16, gFarWord357E);
                 }
                 SceneInitRoadStrip();
             }
@@ -1555,8 +1554,7 @@ void func_80023454(void) {
                             }
                             if (gPlayerCarControl->unk268 == 0) {
                                 gPlayerCarControl->cameraMode =
-                                    (u8) *
-                                    (u8 *)((u8 *)gPlayerCarControl + 0x20D);
+                                    (u8)gPlayerCarControl->unk20D;
                             }
                             if (gSplitScreenModeControl == 2) {
                                 otherObject = (u8 *)gPlayerCarControl->next;
@@ -7379,10 +7377,10 @@ void func_8002D3EC(Car *car) {
     entry = car;
     i = 0;
     do {
-        *(s16 *)((u8 *)car + i * 0x28 + 0x2B2) = 0;
+        car->wheel[i].unk6 = 0;
         car->wheel[i].effect = 0;
-        *(s16 *)((u8 *)car + i * 0x28 + 0x2AE) = 0;
-        *(s16 *)((u8 *)car + i * 0x28 + 0x2B4) = diff;
+        car->wheel[i].unk2 = 0;
+        car->wheel[i].unk8 = diff;
         car->wheel[i].unkC = car->unk234;
         i += 1;
         entry += 0x28;
@@ -7495,7 +7493,7 @@ void CarInitDefaults(Car *car) {
     car->unk269 = 0;
     car->unk268 = 0;
     for (i = 14; i >= 0; i--) {
-        *(s16 *)((u8 *)car + 0x26C + i * 2) = 0;
+        car->unk26C[i] = 0;
     }
     car->unk29C = 0;
     car->unk298 = 0;
@@ -7509,13 +7507,13 @@ void CarInitDefaults(Car *car) {
     car->unk3A0 = 0;
     for (i = 0; i < 4; i++) {
         car->wheel[i].unk0 = 0;
-        *(s16 *)((u8 *)car + i * 0x28 + 0x2B6) = 0x7FFF;
+        car->wheel[i].unkA = 0x7FFF;
     }
     car->unk3B6 = D_800A2EDC[0];
     car->unk3A4 = 0;
     for (i = 0; i < 8; i++) {
-        *(s8 *)((u8 *)car + i + 0x3A6) = 1;
-        *(s8 *)((u8 *)car + i + 0x3AE) = 0;
+        car->unk3A6[i] = 1;
+        car->unk3AE[i] = 0;
     }
     car->unk234 = D_800A2E7Cgp;
     func_8002D3EC(car);
@@ -7578,12 +7576,12 @@ Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     MatrixSetIdentity((s32 *)entry);
     entry->type = arg0;
     if (arg0 == 0) {
-        entry->update = (u32)CarUpdatePlayer;
+        entry->update = CarUpdatePlayer;
         D_800A2EB4Lui = D_800A2EB4Lui + 1;
     } else if (arg0 == 1) {
-        entry->update = (u32)func_800373B4;
+        entry->update = func_800373B4;
     } else {
-        entry->update = (u32)func_80029E34;
+        entry->update = func_80029E34;
     }
     entry->callback = (u32)CarResetMotionCounters;
     entry->pos.x = D_800BE72C[arg1].unk0;
@@ -7807,7 +7805,7 @@ void RaceSpawnCars(void) {
     car = func_8002D874(-1, 0, 0, -1);
     car->cameraMode = 4;
     table = D_800B9DA4;
-    car->update = (u32)func_80029E34;
+    car->update = func_80029E34;
     D_800A3558[0] = (s32)car;
     D_800A38AC[0] = (s32)car;
     car->prev = NULL;
@@ -8420,7 +8418,7 @@ void func_8002F1A0(void) {
         if (node != NULL) {
             do {
                 CarUpdateState(node);
-                ((void (*)(void *)) * (s32 *)((u8 *)node + 0x350))(node);
+                node->update(node);
                 node = node->next;
             } while (node != NULL);
         }
@@ -8844,7 +8842,7 @@ void RaceUpdateFrame(void) {
             if (object != NULL) {
                 do {
                     CarUpdateState(object);
-                    (*(void (**)(u8 *))((u8 *)object + 0x350))(object);
+                    object->update(object);
                     object = (object->next);
                 } while (object != NULL);
             }
@@ -15644,7 +15642,7 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
         } else if (routeDistance < -1 || maxDistance < routeDistance) {
             continue;
         }
-        if (car->unk288 == 0) {
+        if (car->unk26C[14] == 0) {
             if (ABS(other->unk203) >= 7) {
                 car->targetSegment = -1;
                 continue;
@@ -16120,13 +16118,12 @@ void func_8003A54C(void) {
         if (mode == 0) {
             object = gPlayerCarAbsolute[0];
             if (gSplitScreenModeAbsolute[0] == 2) {
-                *(u8 *)((u8 *)object->next + 0x410) = 0;
+                object->next->reverseSpeed = 0;
                 player = gPlayerCar[0];
-                if (player->unkF4 == 0 &&
-                    *(u8 *)((u8 *)player->next + 0xF4) == 0) {
+                if (player->unkF4 == 0 && player->next->unkF4 == 0) {
                     goto store410;
                 }
-                if (player->place < *(s8 *)((u8 *)player->next + 0x204)) {
+                if (player->place < player->next->place) {
                     object = player;
                 } else {
                     object = (u8 *)player->next;
@@ -17071,7 +17068,7 @@ void func_8003C1CC(void) {
         } else {
             head = gPlayerCar[0];
             if (D_800A2EA8[0] >= head->lap &&
-                D_800A2EA8[0] >= *(s16 *)((u8 *)head->next + 0x1D6)) {
+                D_800A2EA8[0] >= head->next->lap) {
                 rank = 1;
             }
         }

@@ -1939,7 +1939,7 @@ void func_800606D4(void) {
         cur->drawOffsetX = 0;
         cur->drawOffsetY = 0;
         cur->next = 0;
-        new_var2 = (s16 *)((u8 *)cur + 0x1A);
+        new_var2 = &cur->orderingDepth;
         *new_var2 = 0;
         cur->kind = 0;
         cur->targetX = x;
@@ -4963,7 +4963,7 @@ void func_80064208(void) {
     /* D_800A35E4[0] via the D_800A35E0 alias: a distinct symbol keeps the
      * base load below from being shared with the height lookup. */
     obj = D_800A35E0Alias[1];
-    h = *((s16 *)((u8 *)D_800A35E4[D_800A3A14] + 0xA));
+    h = *(&D_800A35E4[D_800A3A14]->targetX);
     while (obj != 0) {
         node = (MenuObj *)(obj + 0xE);
         *((s16 *)node) = 2;

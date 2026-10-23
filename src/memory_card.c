@@ -1150,7 +1150,7 @@ void MenuUpdateObjectPosition(MenuObj *first, u8 friction) {
                     object->x = (u16)object->targetX;
                 } else if (friction != 0) {
                     object->velocityX = (u16)object->velocityX +
-                                        (s16) * (u16 *)((u8 *)object + 0xE) / 2;
+                                        (s16)(u16)object->velocityX / 2;
                 }
             }
             if (object->velocityY != 0) {
@@ -1161,9 +1161,8 @@ void MenuUpdateObjectPosition(MenuObj *first, u8 friction) {
                     object->velocityY = 0;
                     object->y = (u16)object->targetY;
                 } else if (friction != 0) {
-                    object->velocityY =
-                        (u16)object->velocityY +
-                        (s16) * (u16 *)((u8 *)object + 0x10) / 2;
+                    object->velocityY = (u16)object->velocityY +
+                                        (s16)(u16)object->velocityY / 2;
                 }
             }
             object = object->next;
@@ -1974,7 +1973,7 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         D_800A331CAbsolute[id & 0xFF] = max;
         inRange = 0;
     }
-    prim = *((u8 **)((u8 *)D_800BB9E4[id & 0xFF] + 0x20));
+    prim = *((u8 **)&D_800BB9E4[id & 0xFF]->primitive);
     value = D_800A331CAbsolute[id & 0xFF];
     buffer = D_800A35C9 - 1;
     D_800A35C8 = 0x20;
@@ -1990,12 +1989,9 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         strcpy(*((char **)(prim + 8)), (char *)buffer);
     } while (0);
     MenuFontSet(prim[1], prim[2]);
-    *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 0x16)) =
-        MenuStringWidth(*((s32 *)(prim + 8)));
-    *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 6)) =
-        0x131 - (*((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 0x16)));
-    *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 0xA)) =
-        *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 6));
+    *(&D_800BB9E4[id & 0xFF]->width) = MenuStringWidth(*((s32 *)(prim + 8)));
+    *(&D_800BB9E4[id & 0xFF]->x) = 0x131 - (*(&D_800BB9E4[id & 0xFF]->width));
+    *(&D_800BB9E4[id & 0xFF]->targetX) = *(&D_800BB9E4[id & 0xFF]->x);
     return inRange;
 }
 

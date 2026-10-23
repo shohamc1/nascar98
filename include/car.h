@@ -14,9 +14,11 @@ typedef struct {
 /* One 0x28-byte record per wheel, starting at car + 0x2AC. */
 typedef struct {
     s16 unk0;
-    u8 unk2[0x2];
+    s16 unk2;
     s16 effect;
-    u8 unk6[0x6];
+    s16 unk6;
+    s16 unk8;
+    s16 unkA;
     s32 unkC;
     u8 unk10[0x18];
 } Wheel;
@@ -182,18 +184,7 @@ typedef struct Car {
     u8 unk269; /* 0x269 */
     u8 unk26A; /* 0x26A */
     u8 unk26B; /* 0x26B */
-    u8 unk26C[0x8];
-    u16 unk274; /* 0x274 */
-    s16 unk276; /* 0x276 */
-    u16 unk278; /* 0x278 */
-    u16 unk27A; /* 0x27A */
-    u16 unk27C; /* 0x27C */
-    u16 unk27E; /* 0x27E */
-    u16 unk280; /* 0x280 */
-    s16 unk282; /* 0x282 */
-    u16 unk284; /* 0x284 */
-    s16 unk286; /* 0x286 */
-    s16 unk288; /* 0x288 */
+    s16 unk26C[15]; /* 0x26C */
     s16 unk28A; /* 0x28A */
     s32 unk28C; /* 0x28C */
     s32 unk290; /* 0x290 */
@@ -208,7 +199,7 @@ typedef struct Car {
     s16 unk2AA; /* 0x2AA */
     Wheel wheel[4]; /* 0x2AC */
     char *name; /* 0x34C */
-    u32 update; /* 0x350 */
+    void (*update)(u8 *); /* 0x350 */
     void (*callback)(u8 *); /* 0x354 */
     s8 unk358; /* 0x358 */
     u8 unk359[0x7];
@@ -232,12 +223,8 @@ typedef struct Car {
     u8 unk38C[0x14];
     s32 unk3A0; /* 0x3A0 */
     u16 unk3A4; /* 0x3A4 */
-    u8 unk3A6[0x8];
-    u8 unk3AE; /* 0x3AE */
-    u8 unk3AF; /* 0x3AF */
-    u8 unk3B0; /* 0x3B0 */
-    u8 unk3B1; /* 0x3B1 */
-    u8 unk3B2[0x4];
+    u8 unk3A6[8]; /* 0x3A6 */
+    u8 unk3AE[8]; /* 0x3AE */
     s8 unk3B6; /* 0x3B6 */
     u8 unk3B7; /* 0x3B7 */
     s8 unk3B8; /* 0x3B8 */

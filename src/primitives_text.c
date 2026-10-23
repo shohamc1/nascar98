@@ -1928,7 +1928,7 @@ void HudDrawPitMenu(Car *car, s32 y) {
                                 : gTextPitTuningPositiveSign,
                 0xC8, wedgeY, 0);
 
-    fuelTime = (s16)car->unk27E;
+    fuelTime = (s16)car->unk26C[9];
     if (fuelTime > 0) {
         HudDrawTime(fuelTime, 0x78, (s16)(y + 0x64), 0, 2);
         GraphicsDrawDoubleBorderRect(0x6E, (s16)(y + 0x63), 0x64, 0xC, 0, 0, 0,

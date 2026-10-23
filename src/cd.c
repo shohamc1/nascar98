@@ -434,7 +434,7 @@ void CarUpdateState(Car *object) {
                 } else {
                     value = D_800A2EC4Lui[0];
                 }
-                object->unk286 = value;
+                object->unk26C[13] = value;
                 object->unk2A4 = object->unk2A0 + 8;
                 object->unk2AA = object->unk2A6 + 8;
                 if (ABS(func_800370B8(object->segment, D_800A376C)) < 5) {
@@ -483,12 +483,12 @@ void CarUpdateState(Car *object) {
     } else {
         if (object->unk268 == 1 && object->type == 0) {
             if (D_800A35D4Lui[0] == 0) {
-                D_800A2EC4Sw[0] = object->unk286;
+                D_800A2EC4Sw[0] = object->unk26C[13];
             }
             heading = object->heading;
             object->cameraMode = object->unk20D;
             object->cameraAngle = heading;
-            object->unk284 += 1;
+            object->unk26C[12] += 1;
             D_800A3680Lui[0] = 1;
             RaceStoreLapRecordCarFields();
         }
@@ -962,9 +962,9 @@ void func_8003DBA8(Car *object) {
         delta[0] = *(s32 *)(entry + 0x38) - object->pos.x;
         delta[1] = *(s32 *)(entry + 0x3C) - object->pos.y;
         delta[2] = 0;
-        object->unk276 = 0xFU;
-        object->unk278 = 0U;
-        object->unk27E = 0U;
+        object->unk26C[5] = 0xFU;
+        object->unk26C[6] = 0U;
+        object->unk26C[9] = 0U;
         if ((object->type == 0) && ((D_800A2EE0CarState[0] != 0) ||
                                     !(*(s32 *)&object->unk3A4 & 0x100F))) {
             func_8003D754(object);
@@ -1056,10 +1056,10 @@ void func_8003DBA8(Car *object) {
         }
         if ((u8)ringResult) {
             object->unk84 = 0x3D0000;
-            brake = object->unk27C + 0x14;
-            object->unk27C = brake;
+            brake = object->unk26C[8] + 0x14;
+            object->unk26C[8] = brake;
             if ((s16)brake >= 0x15F) {
-                object->unk27C = 0x15EU;
+                object->unk26C[8] = 0x15EU;
             }
         }
         {
@@ -1082,13 +1082,13 @@ void func_8003DBA8(Car *object) {
             ringResult = 3;
             ringV1 = object->unk2A2;
             object->unk269 = ringResult;
-            object->unk274 = 0;
+            object->unk26C[4] = 0;
             if (ringV1 < 0)
                 ringV1 = -ringV1;
             ringResult = ringV1 * 10;
             asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
             ringV1 = object->unk2A8;
-            object->unk278 = ringResult;
+            object->unk26C[6] = ringResult;
             if (ringV1 < 0)
                 ringV1 = -ringV1;
             ringResult = ringV1 * 5;
@@ -1098,7 +1098,7 @@ void func_8003DBA8(Car *object) {
             ringV1 = (u16)object->unk2A6;
             ringA1 = (u16)object->unk2A8;
             ringA2 = object->unk28C;
-            object->unk27A = ringA3;
+            object->unk26C[7] = ringA3;
             ringResult += ringA0;
             ringV1 += ringA1;
             object->unk2A0 = ringResult;
@@ -1121,7 +1121,7 @@ void func_8003DBA8(Car *object) {
                     i += 1;
                 } while (i < 8);
             }
-            object->unk280 = damageTime;
+            object->unk26C[10] = damageTime;
         }
         goto updateMotion;
     case 0x2:
@@ -1129,16 +1129,16 @@ void func_8003DBA8(Car *object) {
         delta[1] = *(s32 *)(entry + 0x44) - object->pos.y;
         D_800A2F4CCarState[0] = 4;
         delta[2] = 0;
-        object->unk276 = 0U;
+        object->unk26C[5] = 0U;
         goto updateMotion;
     case 0x3:
-        ringResult = object->unk27E;
+        ringResult = (u16)object->unk26C[9];
         ringV1 = D_800A2EACCarState[0];
         object->speed = 0;
         object->unk84 = 0;
         object->unk108 = 0;
         ringResult += 1;
-        object->unk27E = ringResult;
+        object->unk26C[9] = ringResult;
         if (ringV1 == 0) {
             if (*(s32 *)&object->unk3A4 & 0x100F) {
                 if (object == D_800A3960CarState[0]) {
@@ -1163,15 +1163,15 @@ void func_8003DBA8(Car *object) {
                         if (control == 0) {
                             func_80041564(object, 0x42);
                         }
-                        oldWait = (u16)object->unk276;
-                        object->unk276 = (u16)(oldWait - 1);
+                        oldWait = (u16)object->unk26C[5];
+                        object->unk26C[5] = (u16)(oldWait - 1);
                         if ((oldWait << 0x10) <= 0) {
                             object->unk269 = 2U;
                         }
-                        newBrake = object->unk27C - 0x1E;
-                        object->unk27C = newBrake;
+                        newBrake = object->unk26C[8] - 0x1E;
+                        object->unk26C[8] = newBrake;
                         if ((newBrake << 16) < 0) {
-                            object->unk27C = 0U;
+                            object->unk26C[8] = 0U;
                         }
                     }
                     goto block_83;
@@ -1181,14 +1181,14 @@ void func_8003DBA8(Car *object) {
         block_83:
             if (object->unk3A4 != 0) {
             block_84:
-                oldDamageTime = object->unk280;
-                object->unk280 = (u16)(oldDamageTime - 1);
+                oldDamageTime = object->unk26C[10];
+                object->unk26C[10] = (u16)(oldDamageTime - 1);
                 if ((oldDamageTime << 16) < 0) {
                     object->unk3A4 = 0;
                     j = 0;
                     do {
-                        *((u8 *)object + j + 0x3A6) = 1;
-                        *((u8 *)object + j + 0x3AE) = 0;
+                        object->unk3A6[j] = 1;
+                        object->unk3AE[j] = 0;
                         j++;
                     } while (j < 8);
                 }
@@ -1198,11 +1198,11 @@ void func_8003DBA8(Car *object) {
                     func_8003D25C(object);
                 } else {
                     if (flags & 4) {
-                        steerTime = object->unk278;
+                        steerTime = object->unk26C[6];
                         steerAmount = (s16)steerTime / 10;
-                        oldSteerTime = (*(volatile u16 *)&object->unk278);
+                        oldSteerTime = (*(volatile u16 *)&object->unk26C[6]);
 
-                        object->unk278 = (u16)(oldSteerTime - 1);
+                        object->unk26C[6] = (u16)(oldSteerTime - 1);
                         object->unk2A2 = (s16)steerAmount;
                         if ((oldSteerTime << 16) < 0) {
                             object->unk2A2 = 0;
@@ -1210,11 +1210,12 @@ void func_8003DBA8(Car *object) {
                         }
                     }
                     if (object->unk26A & 8) {
-                        otherSteerTime = object->unk27A;
+                        otherSteerTime = object->unk26C[7];
                         otherSteerAmount = (s16)otherSteerTime / 10;
-                        oldOtherSteerTime = (*(volatile u16 *)&object->unk27A);
+                        oldOtherSteerTime =
+                            (*(volatile u16 *)&object->unk26C[7]);
 
-                        object->unk27A = (u16)(oldOtherSteerTime - 1);
+                        object->unk26C[7] = (u16)(oldOtherSteerTime - 1);
                         object->unk2A8 = (s16)otherSteerAmount;
                         if ((oldOtherSteerTime << 16) < 0) {
                             object->unk2A8 = 0;
@@ -1282,9 +1283,9 @@ void func_8003DBA8(Car *object) {
             } else {
             block_115:
                 if (angleDelta > 0) {
-                    angle = (u16) * (s16 *)((u8 *)object + 0x114) + 0x3EC;
+                    angle = (u16)object->heading + 0x3EC;
                 } else {
-                    angle = (u16) * (s16 *)((u8 *)object + 0x114) + 0x14;
+                    angle = (u16)object->heading + 0x14;
                 }
                 object->heading = (s16)(angle & 0x3FF);
             }
@@ -1615,7 +1616,7 @@ void func_8003EDA0(Car *object) {
     dist = gTrackSectionCount[0] * D_800A2EA8[0] / D_800A2F88;
     value = (D_800A2EA8[0] + dist) / (dist + 1) + 1;
     object->unk29C = value;
-    object->unk282 = value;
+    object->unk26C[11] = value;
     if (dist != 0) {
         adjustment = 2;
         pace = (u32)object->unk29C;
