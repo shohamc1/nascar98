@@ -2901,12 +2901,12 @@ void CardMenuCenterSelectedText(s32 textIndex) {
     MenuText *obj;
     register s32 value asm("v1");
 
-    obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
+    obj = *(u8 **)&((MenuObj *)D_800A3A10[0])->primitive;
     entry = &D_8009A4C0[textIndex & 0xFF];
     value = MenuStringWidth(*entry);
     value = (0x78 - value) / 2;
     obj->text = *entry;
-    *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
+    *(u16 *)&((MenuObj *)D_800A3A10[0])->drawOffsetX = value;
 }
 #else
 void CardMenuCenterSelectedText(s32 arg0) {

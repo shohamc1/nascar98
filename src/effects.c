@@ -438,9 +438,9 @@ void func_80043B68(Car *object, s32 idx) {
         base -= idx;
     }
     row = table + base * 24;
-    start = *(s16 *)row;
+    start = ((ModelPart *)row)->firstVertex;
     verts = (u8 *)fx->vertices;
-    limit = *(s16 *)(row + 2) - start + 1;
+    limit = ((ModelPart *)row)->lastVertex - start + 1;
     prim = (FxVertex *)(verts + start * 20);
     for (i = 0; i < limit; i++) {
         prim->x += (u8)RandomGetScaled16(5);

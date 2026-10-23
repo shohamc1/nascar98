@@ -2566,7 +2566,7 @@ void func_80025730(Car *obj) {
         i = 3;
         p = (u8 *)obj + 0x78;
         do {
-            ((Car *)p)->wheel[0].effect = value;
+            *(s16 *)(p + 0x2B0) = value;
             i--;
             p -= 0x28;
         } while (i >= 0);
@@ -10180,16 +10180,16 @@ void ModelLoadGeometryFromAddress(s32 dataAddress, s32 reuse) {
     D_800A2D4D[0] = 0;
 }
 
-void ModelBuildReverseLinks(u8 *object) {
+void ModelBuildReverseLinks(Model *object) {
     u8 *node;
 
-    node = *(u8 **)(object + 0x3C);
+    node = (u8 *)object->unk3C;
     if (node != NULL) {
-        *(s32 *)(object + 0x34) = 0;
+        object->faceList = 0;
         do {
             if (*(s32 *)(node + 0x8) != 0) {
-                *(s32 *)(*(s32 *)(node + 0xC) + 0x28) = *(s32 *)(object + 0x34);
-                *(s32 *)(object + 0x34) = *(s32 *)(node + 0x8);
+                *(s32 *)(*(s32 *)(node + 0xC) + 0x28) = (s32)object->faceList;
+                object->faceList = *(s32 *)(node + 0x8);
             }
             node = *(u8 **)(node + 0x4);
         } while (node != NULL);

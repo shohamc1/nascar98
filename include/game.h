@@ -151,7 +151,7 @@ extern void func_80025454(s32);
 extern void func_80028754(u8 *, s32);
 extern void func_8002D3EC(Car *);
 extern void ModelLoadGeometryByIndex(s32, s32);
-extern void ModelBuildReverseLinks(u8 *);
+extern void ModelBuildReverseLinks(Model *);
 extern void GteStoreDepthAndScreenCoordinates(SVECTOR *vertex);
 extern void func_8003379C(SVECTOR *arg0, SVECTOR *arg1, SVECTOR *arg2);
 extern s32 func_800337EC(void);

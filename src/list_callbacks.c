@@ -642,7 +642,7 @@ again:
     if (++index < 4) {
         goto again;
     }
-    *(s16 *)(obj + 0xE) = flags;
+    *(s16 *)&((TrackSection *)obj)->culled = flags;
 }
 
 void RenderCopyVertexCoordinates(s32 *destination, s32 *source) {

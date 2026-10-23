@@ -7099,19 +7099,21 @@ void func_800524A0(Car *car, s8 arg1) {
         if (w == 2) {
             table += 0xE;
         }
-        entry->face.clut = GetClut(*(u16 *)(table + 4), *(u16 *)(table + 6));
-        entry->face.tpage = GetTPage(*(u16 *)(table + 0xC), 0,
-                                     *(u16 *)(table + 0), *(u16 *)(table + 2));
-        v = table[8] + 0x3F;
+        entry->face.clut = GetClut(((SceneTexture *)table)->clutX,
+                                   ((SceneTexture *)table)->clutY);
+        entry->face.tpage = GetTPage(((SceneTexture *)table)->tpage, 0,
+                                     ((SceneTexture *)table)->tpx,
+                                     ((SceneTexture *)table)->tpy);
+        v = ((SceneTexture *)table)->u + 0x3F;
         entry->face.u1 = v;
         entry->face.u0 = v;
-        v = table[8];
+        v = ((SceneTexture *)table)->u;
         entry->face.u3 = v;
         entry->face.u2 = v;
-        v = table[0xA];
+        v = ((SceneTexture *)table)->v;
         entry->face.v2 = v;
         entry->face.v0 = v;
-        v = table[0xA] + 0x1F;
+        v = ((SceneTexture *)table)->v + 0x1F;
         entry->face.v3 = v;
         entry->face.v1 = v;
     }
