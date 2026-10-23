@@ -1970,17 +1970,17 @@ void TrackReadData(s32 *trackData, s32 file) {
         outputVertex = (SVECTOR *)outputVertices;
         workValue = (s32)(data + 8);
         do {
-            rawX = *(s32 *)data;
+            rawX = ((Vec3 *)data)->x;
             if (rawX < 0) {
                 rawX += 3;
             }
             outputVertex->vx = (s16)((rawX >> 2) - D_800AE844[0]);
-            rawY = *(s32 *)((u8 *)workValue + (-4));
+            rawY = ((Vec3 *)(workValue - 8))->y;
             if (rawY < 0) {
                 rawY += 3;
             }
             outputVertex->vy = (s16)((rawY >> 2) - D_800AE844[1]);
-            scaledZ = *(s32 *)((u8 *)workValue + (0));
+            scaledZ = ((Vec3 *)(workValue - 8))->z;
             if (scaledZ < 0) {
                 scaledZ += 3;
             }

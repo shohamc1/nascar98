@@ -1078,11 +1078,15 @@ void func_8001DB20(Face *arg0, s32 arg1) {
         if (arg0->vertexCount == 3) {
             SetPolyFT4(prim);
             arg0->vertex[3] = (s32)arg0->vertex[2];
+            /* vert is arg0 as bytes: copy the u2, v2 word over u3, v3.
+             * Retail addresses it through vert, not arg0. */
             *(XyPair *)(vert + 0x14) = *(XyPair *)(vert + 0x10);
         }
     } else {
         if (arg0->vertexCount == 3) {
             arg0->vertex[3] = (s32)arg0->vertex[2];
+            /* vert is arg0 as bytes: copy the u2, v2 word over u3, v3.
+             * Retail addresses it through vert, not arg0. */
             *(XyPair *)(vert + 0x14) = *(XyPair *)(vert + 0x10);
             if (arg0->type == 6) {
                 arg0->code = arg0->b0;
