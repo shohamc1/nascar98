@@ -199,17 +199,19 @@ typedef struct {
 } TrackPoint;
 
 /* One 0x90-byte entry of the array at gTrackSections. */
+/* TrackSection as the route code reads it: the word at 0x10 holds the
+ * angle in its low 16 bits and the point index in bits 17 to 23. */
 typedef struct {
     u8 unk0[0x10];
     u32 unk10 : 17;
     u32 point : 7;
     u32 unk10Top : 8;
-    s32 unk14;
-    s32 unk18;
+    s32 x;
+    s32 z;
     u8 unk1C[0x4];
     u8 *unk20;
     u8 unk24[0x6C];
-} TrackRacer;
+} TrackSectionPoint;
 
 extern s32 D_800A2DCCSmall asm("D_800A2DCC.NON_MATCHING");
 extern s32 D_800A2DD0Small asm("D_800A2DD0.NON_MATCHING");
@@ -299,7 +301,7 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
     u32 dist;
     s16 *from;
     s16 *to;
-    TrackRacer *track;
+    TrackSectionPoint *track;
     s16 *rate;
     Vec3 *row0;
     Vec3 *row1;
@@ -626,7 +628,7 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
         cam->rot[2] = cam->basis[2];
         index = car->segment;
         if (index >= 0) {
-            point = FAR_VAR(TrackRacer *, gFarTrack)[index].point;
+            point = FAR_VAR(TrackSectionPoint *, gFarTrack)[index].point;
         } else {
             point = 0;
         }
@@ -833,10 +835,10 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
         cam->rot[1] = cam->basis[1];
         cam->basis[2] = car->basis[2];
         cam->rot[2] = cam->basis[2];
-        track = FAR_VAR(TrackRacer *, gFarTrack);
+        track = FAR_VAR(TrackSectionPoint *, gFarTrack);
         point = track->point;
-        pos[0] = track->unk14;
-        pos[1] = track->unk18;
+        pos[0] = track->x;
+        pos[1] = track->z;
         pos[2] = *(s16 *)(*(u8 **)(track->unk20 + 0x18) + 4);
         pos[2] = (pos[2] + FAR_VAR(s32, gFarOffsetZ)) * 4;
         dx = pos[0] - D_800B1348nm[point].x;
@@ -8140,9 +8142,9 @@ void CarKeepOnTrack(Car *car) {
                        car->frontLeftContact == 0 ||
                        car->rearRightContact == 0 ||
                        car->rearLeftContact == 0 || car->segment == -1) {
-                dx = ((TrackRacer *)gTrackSections[0])[car->lastSegment].unk14 -
+                dx = ((TrackSection *)gTrackSections[0])[car->lastSegment].x -
                      car->unkC;
-                dz = ((TrackRacer *)gTrackSections[0])[car->lastSegment].unk18 -
+                dz = ((TrackSection *)gTrackSections[0])[car->lastSegment].z -
                      car->unk10;
                 CarPullOntoTrack(car, dx, dz, MathSqrt(dx * dx + dz * dz));
                 car->unk375 = 0;
@@ -8152,9 +8154,9 @@ void CarKeepOnTrack(Car *car) {
         car->unk375 = 0;
         if (D_800A2EC8Small == 0 &&
             (car->unk1E2 == -1 || car->unk1E4 == -1 || car->segment == -1)) {
-            dx = ((TrackRacer *)gTrackSections[0])[car->lastSegment].unk14 -
+            dx = ((TrackSection *)gTrackSections[0])[car->lastSegment].x -
                  car->unkC;
-            dz = ((TrackRacer *)gTrackSections[0])[car->lastSegment].unk18 -
+            dz = ((TrackSection *)gTrackSections[0])[car->lastSegment].z -
                  car->unk10;
             dist = MathSqrt(dx * dx + dz * dz);
             if (dist == 0) {
@@ -8163,9 +8165,7 @@ void CarKeepOnTrack(Car *car) {
             car->pos.x = ((MathFixedDivide(dx, dist) * 250) >> 16) + car->unkC;
             car->pos.y = ((MathFixedDivide(dz, dist) * 250) >> 16) + car->unk10;
             heading =
-                *(u16 *)((u8 *)&((
-                             TrackRacer *)gTrackSections[0])[car->lastSegment] +
-                         0x10);
+                ((TrackSection *)gTrackSections[0])[car->lastSegment].angle;
             car->heading = heading;
             car->segment = car->regionIndex = car->lastSegment;
             car->fineHeading = heading * 4;
@@ -9579,7 +9579,7 @@ void func_80030D80(Car *object, s32 *query) {
     if (rot >= 0) {
         D_800A3A80 = 0;
         entry = object->segment * 0x90 + (u8 *)gTrackSections[0];
-        node = (s8 *)((TrackRacer *)entry)->unk20;
+        node = (s8 *)((TrackSection *)entry)->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC((s32 *)object, (s32 *)node, query) & 0xFF) !=
