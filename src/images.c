@@ -401,8 +401,8 @@ extern u8 *D_800A3668, *D_800A384C, *D_800A3854;
 void GraphicsPartitionWorkBuffers(void) {
     D_800A384C = D_800910A4;
     D_800A3854 = D_800910A4 + 0x2000;
-    D_800A3A2C = (s32 *)(D_800910A4 + 0x4000);
-    D_800A3A34 = (s32 *)(D_800910A4 + 0x5000);
+    gCosTable = (s32 *)(D_800910A4 + 0x4000);
+    gSinTable = (s32 *)(D_800910A4 + 0x5000);
     D_800A3668 = D_800910A4 + 0x6000;
 }
 
@@ -709,8 +709,8 @@ void func_8001F2C4(s32 arg0, s32 arg1, s32 arg2) {
     s32 value00, value02, value10, value12, value20, value22;
     s32 row0, row1, row2;
     s32 cross01, cross11, cross21, cross02, cross12, cross22;
-    matrixA = D_800A3A2C;
-    matrixB = D_800A3A34;
+    matrixA = gCosTable;
+    matrixB = gSinTable;
     value00 = matrixA[arg0];
     value02 = matrixB[arg2];
     value10 = matrixB[arg0];
@@ -738,8 +738,8 @@ void func_8001F440(s32 arg0, s32 arg1, s32 arg2) {
     s32 *matrixB;
     s32 value00, value02, value10, value12, value20;
     s32 row0, row1, cross01, cross11, cross02, cross12;
-    matrixA = D_800A3A2C;
-    matrixB = D_800A3A34;
+    matrixA = gCosTable;
+    matrixB = gSinTable;
     value00 = matrixA[arg0];
     value02 = matrixB[arg2];
     value10 = matrixB[arg0];
@@ -769,10 +769,10 @@ void func_8001F5BC(s32 arg0, s32 indexA, s32 indexB) {
     s32 valueB;
     s32 product;
 
-    valueA = D_800A3A2C[indexA];
-    slotA = D_800A3A34[indexA];
-    valueB = D_800A3A2C[indexB];
-    slotB = D_800A3A34[indexB];
+    valueA = gCosTable[indexA];
+    slotA = gSinTable[indexA];
+    valueB = gCosTable[indexB];
+    slotB = gSinTable[indexB];
 
     D_800A3784 = valueA;
     product = MathMultiplyFixed16(slotA, slotB);
@@ -881,7 +881,7 @@ void MatrixStoreToObject(Car *object) {
     object->rot[2].z = value8;
 }
 
-/* Wall: gcc schedules the second D_800A3A34 value reload (needed for the
+/* Wall: gcc schedules the second gSinTable value reload (needed for the
  * third read) AFTER the subu/sra/sh chain instead of directly after the
  * call as retail does, so it needs a hazard nop (+4 bytes). The product
  * save (move s0,v0) is also emitted before the cos shift instead of in
@@ -891,12 +891,12 @@ void VectorRotate2D(s32 angleIndex, s32 x, s32 y, s16 *rotatedPoint) {
     s32 productA;
     s32 productB;
 
-    productA = MathMultiplyFixed16(D_800A3A2C[angleIndex], x << 16);
-    productB = MathMultiplyFixed16(D_800A3A34[angleIndex], y << 16);
-    matrixB = D_800A3A34;
+    productA = MathMultiplyFixed16(gCosTable[angleIndex], x << 16);
+    productB = MathMultiplyFixed16(gSinTable[angleIndex], y << 16);
+    matrixB = gSinTable;
     rotatedPoint[0] = (productA - productB) >> 16;
     rotatedPoint[1] = (MathMultiplyFixed16(matrixB[angleIndex], x << 16) +
-                       MathMultiplyFixed16(D_800A3A2C[angleIndex], y << 16)) >>
+                       MathMultiplyFixed16(gCosTable[angleIndex], y << 16)) >>
                       16;
 }
 
@@ -980,9 +980,9 @@ void func_8001FB28(Car *arg0, s32 index) {
     s32 value2;
     s32 value3;
 
-    table1 = D_800A3A2C;
+    table1 = gCosTable;
     value1 = table1[index];
-    table2 = D_800A3A34;
+    table2 = gSinTable;
     arg0->orient[0].x = value1;
     value2 = table2[index];
     arg0->orient[2].x = 0;

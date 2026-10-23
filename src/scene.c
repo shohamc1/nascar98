@@ -52,7 +52,7 @@ extern s32 gOrderingTable[];
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
 extern s32 gReplayIndexAbsolute[];
-extern s32 *D_800A3A34Absolute[];
+extern s32 *gSinTableAbsolute[];
 extern s32 D_800A397C[];
 extern u8 D_800A3680[];
 extern void func_80025730(Car *);
@@ -102,7 +102,7 @@ extern SVECTOR D_800992EC[];
 extern SVECTOR D_800992F4[];
 extern void SetPolyFT3(POLY_FT3 *prim);
 
-extern s32 *D_800A3A2CAbsolute[];
+extern s32 *gCosTableAbsolute[];
 void func_80044BCC(s32 arg0) {
     s32 v;
     s32 typeIndex;
@@ -515,8 +515,8 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     origin[0] = entry->x;
     origin[1] = entry->z;
     i = 0;
-    sinValue = D_800A3A2CAbsolute[0][0x3FF - entry->angle];
-    cosValue = D_800A3A34Absolute[0][0x3FF - entry->angle];
+    sinValue = gCosTableAbsolute[0][0x3FF - entry->angle];
+    cosValue = gSinTableAbsolute[0][0x3FF - entry->angle];
     do {
         lateral[i] =
             (MathMultiplyFixed16(cosValue, (center[i][0] - origin[0]) << 16) +
@@ -544,9 +544,9 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
         }
     }
     tmp = 0x3FF - ((quads[1]->angle + quads[2]->angle) / 2);
-    dot = (MathMultiplyFixed16(D_800A3A34Absolute[0][tmp],
+    dot = (MathMultiplyFixed16(gSinTableAbsolute[0][tmp],
                                (car->pos.x - center[1][0]) << 16) +
-           MathMultiplyFixed16(D_800A3A2CAbsolute[0][tmp],
+           MathMultiplyFixed16(gCosTableAbsolute[0][tmp],
                                (car->pos.y - center[1][1]) << 16)) >>
           16;
     if (D_800A2F84[0] != 0) {
@@ -2483,8 +2483,8 @@ void HudDrawCar(Car *car, s16 yOffset) {
                            ? scaled / 10000
                            : scaled / 9000) +
                       0x200;
-                sinV = D_800A3A2CAbsolute[0][idx];
-                cosV = D_800A3A34Absolute[0][idx];
+                sinV = gCosTableAbsolute[0][idx];
+                cosV = gSinTableAbsolute[0][idx];
                 for (i = 0; i < 4; i++) {
                     pts[i].x =
                         ((MathMultiplyFixed16(sinV, D_8009933C[i].x << 16) -
@@ -2823,14 +2823,14 @@ extern u16 D_80090FF4a[];
 extern u16 D_80090FF4b[];
 extern u16 D_80090FF4c[];
 
-extern s32 D_800A3A34Map0[];
-asm(".globl D_800A3A34Map0\nD_800A3A34Map0 = D_800A3A34");
-extern s32 D_800A3A34Map1[];
-asm(".globl D_800A3A34Map1\nD_800A3A34Map1 = D_800A3A34");
-extern s32 D_800A3A34Map2[];
-asm(".globl D_800A3A34Map2\nD_800A3A34Map2 = D_800A3A34");
-extern s32 D_800A3A34Map3[];
-asm(".globl D_800A3A34Map3\nD_800A3A34Map3 = D_800A3A34");
+extern s32 gSinTableMap0[];
+asm(".globl gSinTableMap0\ngSinTableMap0 = gSinTable");
+extern s32 gSinTableMap1[];
+asm(".globl gSinTableMap1\ngSinTableMap1 = gSinTable");
+extern s32 gSinTableMap2[];
+asm(".globl gSinTableMap2\ngSinTableMap2 = gSinTable");
+extern s32 gSinTableMap3[];
+asm(".globl gSinTableMap3\ngSinTableMap3 = gSinTable");
 
 extern u8 D_800A798BWrite[];
 asm(".globl D_800A798BWrite\nD_800A798BWrite = D_800A798B");
@@ -3011,19 +3011,19 @@ void HudInitRacePrims(void) {
                 register s32 cornerPrefix asm("s0");
 
                 cornerPrefix = col * 12;
-                coord = (u8 *)D_800A3A2CAbsolute[0];
+                coord = (u8 *)gCosTableAbsolute[0];
                 cornerPrefix += col;
                 cornerPrefix = cornerPrefix * 8 + 0x828;
                 cornerOffset = cornerPrefix;
             }
             value = MathMultiplyFixed16(
                 0x370000, *(s32 *)((u32)cornerOffset + (u32)coord));
-            coordY = (u8 *)D_800A3A34Map0[0];
+            coordY = (u8 *)gSinTableMap0[0];
             mapPrim->x0 = (value >> 0x10) + 0x12C;
             coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
             value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
             asm("" : "=r"(yOffset) : "0"((s32)(u8)D_800A2FD0[view]));
-            coordX = (u8 *)D_800A3A2CAbsolute[0];
+            coordX = (u8 *)gCosTableAbsolute[0];
             value >>= 0x10;
             yOffset = (s8)yOffset + 0xD7;
             coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
@@ -3032,12 +3032,12 @@ void HudInitRacePrims(void) {
             mapPrim->y0 = value;
             coordinateValue = *(s32 *)coordX;
             value = MathMultiplyFixed16(0x370000, coordinateValue);
-            coordY = (u8 *)D_800A3A34Map1[0];
+            coordY = (u8 *)gSinTableMap1[0];
             mapPrim->x1 = (value >> 0x10) + 0x130;
             coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
             value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
             asm("" : "=r"(yOffset) : "0"((s32)(u8)D_800A2FD0[view]));
-            coordX = (u8 *)D_800A3A2CAbsolute[0];
+            coordX = (u8 *)gCosTableAbsolute[0];
             value >>= 0x10;
             yOffset = (s8)yOffset + 0xD7;
             coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
@@ -3046,16 +3046,16 @@ void HudInitRacePrims(void) {
             mapPrim->y1 = value;
             coordinateValue = *(s32 *)coordX;
             value = MathMultiplyFixed16(0x370000, coordinateValue);
-            coordY = (u8 *)D_800A3A34Map2[0];
+            coordY = (u8 *)gSinTableMap2[0];
             mapPrim->x2 = (value >> 0x10) + 0x12C;
             coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
             value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
-            coordX = (u8 *)D_800A3A2CAbsolute[0];
+            coordX = (u8 *)gCosTableAbsolute[0];
             mapPrim->y2 = (value >> 0x10) + D_800A2FD0[view] + 0xDB;
             coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
             coordinateValue = *(s32 *)coordX;
             value = MathMultiplyFixed16(0x370000, coordinateValue);
-            coordY = (u8 *)D_800A3A34Map3[0];
+            coordY = (u8 *)gSinTableMap3[0];
             mapPrim->x3 = (value >> 0x10) + 0x130;
             cornerOffset += (u32)coordY;
             value = MathMultiplyFixed16(0x370000, *(s32 *)cornerOffset);
@@ -3424,8 +3424,8 @@ void HudDrawDashboard(void) {
                 register s32 index asm("v0");
                 register s32 *cosineTable asm("v1");
                 register s32 *sineTable asm("a0");
-                extern s32 *hudCosine asm("D_800A3A2CAbsolute");
-                extern s32 *hudSine asm("D_800A3A34Absolute");
+                extern s32 *hudCosine asm("gCosTableAbsolute");
+                extern s32 *hudSine asm("gSinTableAbsolute");
 
                 index = i << 16;
                 angleWord = *(u16 *)angles;
@@ -3682,8 +3682,8 @@ void HudDrawDashboard(void) {
                             u32 centers;
                             register u32 angleIndex asm("a3");
                             register u32 centerValue asm("v1");
-                            extern s32 *hudCosine asm("D_800A3A2CAbsolute");
-                            extern s32 *hudSine asm("D_800A3A34Absolute");
+                            extern s32 *hudCosine asm("gCosTableAbsolute");
+                            extern s32 *hudSine asm("gSinTableAbsolute");
 
                             index = (s16)i;
                             width = D_800A2FD8[index];
@@ -4077,8 +4077,8 @@ extern s16 D_800A89BE[];
 extern s16 D_800A89C4[];
 extern s16 D_800A89C6[];
 
-extern s32 D_800A3A2CSmall[];
-extern s32 D_800A3A34Small[];
+extern s32 gCosTableSmall[];
+extern s32 gSinTableSmall[];
 
 void HudInitPrims(void) {
     SceneTexInfo *tex;
@@ -4426,21 +4426,19 @@ void HudInitPrims(void) {
         for (i = 0; i < 0x20; i++) {
             D_800A7FE4[i].x =
                 MathMultiplyFixed16(
-                    0x3C0000,
-                    *(s32 *)(*(u8 **)D_800A3A2CAbsolute2 + i * 128)) >>
+                    0x3C0000, *(s32 *)(*(u8 **)gCosTableAbsolute2 + i * 128)) >>
                 16;
             D_800A7FE4[i].y =
                 MathMultiplyFixed16(
-                    0x3C0000,
-                    *(s32 *)(*(u8 **)D_800A3A34Absolute2 + i * 128)) >>
+                    0x3C0000, *(s32 *)(*(u8 **)gSinTableAbsolute2 + i * 128)) >>
                 16;
             D_800A7FE4[i + 0x20].x =
                 MathMultiplyFixed16(
-                    0x320000, *(s32 *)(*(u8 **)D_800A3A2CAbsolute + i * 128)) >>
+                    0x320000, *(s32 *)(*(u8 **)gCosTableAbsolute + i * 128)) >>
                 16;
             D_800A7FE4[i + 0x20].y =
                 MathMultiplyFixed16(
-                    0x320000, *(s32 *)(*(u8 **)D_800A3A34Absolute + i * 128)) >>
+                    0x320000, *(s32 *)(*(u8 **)gSinTableAbsolute + i * 128)) >>
                 16;
         }
         for (i = 0; i < 0x24; i++) {
@@ -4485,8 +4483,8 @@ void HudInitPrims(void) {
         D_800A7F28[0] = u3 + 0x6F;
         D_800A7F29[0] = v3;
         for (i = 0x21, j = 0; j < 3; j++, i++) {
-            matA = *(s32 *)(*(u8 **)D_800A3A2CSmall + rot.a[j] * 4);
-            matB = *(s32 *)(*(u8 **)D_800A3A34Small + rot.a[j] * 4);
+            matA = *(s32 *)(*(u8 **)gCosTableSmall + rot.a[j] * 4);
+            matB = *(s32 *)(*(u8 **)gSinTableSmall + rot.a[j] * 4);
             for (k = 0; k < 4; k++) {
                 D_800A85AC[i][k].vx =
                     (MathMultiplyFixed16(corners.p[k].x << 16, matA) >> 16) -
@@ -6189,28 +6187,28 @@ void HudInitFlagOverlay(void) {
     D_800A8B90[0] = x + 0x20;
     D_800A8B91[0] = y + 0x18;
     D_800A8AEC[0] =
-        (MathMultiplyFixed16(0x2D0000, D_800A3A2CAbsolute[0][0x180]) >> 0x10) +
+        (MathMultiplyFixed16(0x2D0000, gCosTableAbsolute[0][0x180]) >> 0x10) +
         0x122;
     D_800A8AEE[0] =
-        (MathMultiplyFixed16(0x2D0000, D_800A3A34Absolute[0][0x180]) >> 0x10) +
+        (MathMultiplyFixed16(0x2D0000, gSinTableAbsolute[0][0x180]) >> 0x10) +
         0x3C;
     D_800A8AF0[0] =
-        (MathMultiplyFixed16(0x140000, D_800A3A2CAbsolute[0][0x180]) >> 0x10) +
+        (MathMultiplyFixed16(0x140000, gCosTableAbsolute[0][0x180]) >> 0x10) +
         0x122;
     D_800A8AF2[0] =
-        (MathMultiplyFixed16(0x140000, D_800A3A34Absolute[0][0x180]) >> 0x10) +
+        (MathMultiplyFixed16(0x140000, gSinTableAbsolute[0][0x180]) >> 0x10) +
         0x3C;
     D_800A8AF4[0] =
-        (MathMultiplyFixed16(0x2D0000, D_800A3A2CAbsolute[0][0x280]) >> 0x10) +
+        (MathMultiplyFixed16(0x2D0000, gCosTableAbsolute[0][0x280]) >> 0x10) +
         0x122;
     D_800A8AF6[0] =
-        (MathMultiplyFixed16(0x2D0000, D_800A3A34Absolute[0][0x280]) >> 0x10) +
+        (MathMultiplyFixed16(0x2D0000, gSinTableAbsolute[0][0x280]) >> 0x10) +
         0x3C;
     D_800A8AF8[0] =
-        (MathMultiplyFixed16(0x140000, D_800A3A2CAbsolute[0][0x280]) >> 0x10) +
+        (MathMultiplyFixed16(0x140000, gCosTableAbsolute[0][0x280]) >> 0x10) +
         0x122;
     D_800A8AFA[0] =
-        (MathMultiplyFixed16(0x140000, D_800A3A34Absolute[0][0x280]) >> 0x10) +
+        (MathMultiplyFixed16(0x140000, gSinTableAbsolute[0][0x280]) >> 0x10) +
         0x3C;
 }
 
@@ -6399,10 +6397,10 @@ extern s32 D_800A2DF0Absolute[];
 extern s32 gOrderingTableBankSmall[];
 void SceneSkyFadeDraw(void) {
     extern s32 D_800A2F00wC[] asm("D_800A2F00");
-    extern s32 D_800A3A2CwC[] asm("D_800A3A2C");
-    extern u8 *D_800A3A34wC[] asm("D_800A3A34");
+    extern s32 gCosTablewC[] asm("gCosTable");
+    extern u8 *gSinTablewC[] asm("gSinTable");
 
-    extern u8 *D_800A3A34Next[] asm("D_800A3A34.NON_MATCHING");
+    extern u8 *gSinTableNext[] asm("gSinTable.NON_MATCHING");
 
     /* The homes follow the observed stack offsets. The tail is compiler storage. */
     struct {
@@ -6471,9 +6469,9 @@ void SceneSkyFadeDraw(void) {
             result = 0x280 - argument;
             yStep = 0x3C;
             if (result >= 0) {
-                table = D_800A3A34wC[0];
+                table = gSinTablewC[0];
             } else {
-                table = D_800A3A34wC[0];
+                table = gSinTablewC[0];
                 result = argument - 0x280;
             }
             result <<= 4;
@@ -6490,9 +6488,9 @@ void SceneSkyFadeDraw(void) {
             result = 0x280 - argument;
             if (result >= 0) {
                 result <<= 4;
-                table = D_800A3A34wC[0];
+                table = gSinTablewC[0];
             } else {
-                table = D_800A3A34wC[0];
+                table = gSinTablewC[0];
                 result = (argument - 0x280) << 4;
             }
             asm("" : "=r"(table) : "0"(table), "r"(result));
@@ -6551,7 +6549,7 @@ void SceneSkyFadeDraw(void) {
             result = D_800A34D8;
             factor = 0x80000;
             asm("" : "=r"(result), "=r"(factor) : "0"(result), "1"(factor));
-            argument = (s32)D_800A3A34wC[0];
+            argument = (s32)gSinTablewC[0];
             byteValue = (u8)D_800A34D4;
             asm(""
                 : "=r"(argument), "=r"(byteValue)
@@ -6567,7 +6565,7 @@ void SceneSkyFadeDraw(void) {
         {
             asm volatile("" : : : "fp");
             byteValue = D_800A34D8;
-            argument = (s32)D_800A3A34Next[0];
+            argument = (s32)gSinTableNext[0];
             asm(""
                 : "=r"(byteValue), "=r"(argument)
                 : "0"(byteValue), "1"(argument), "r"(result));
@@ -6602,8 +6600,8 @@ void SceneSkyFadeDraw(void) {
         }
     }
     factor = D_800A34D8;
-    byteValue = D_800A3A2CwC[0];
-    argument = (s32)D_800A3A34wC[0];
+    byteValue = gCosTablewC[0];
+    argument = (s32)gSinTablewC[0];
     result = factor << 2;
     byteValue = result + byteValue;
     byteValue = *(s32 *)byteValue;
@@ -6643,7 +6641,7 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, factor);
             {
                 s32 tableAddress;
-                tableAddress = (s32)D_800A3A34wC[0];
+                tableAddress = (s32)gSinTablewC[0];
                 result = yStep + (result >> 16);
                 idx <<= 2;
                 primitive[5] = result;
@@ -6654,7 +6652,7 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, shade);
             {
                 s32 tableAddress;
-                tableAddress = D_800A3A2CwC[0];
+                tableAddress = gCosTablewC[0];
                 idx += tableAddress;
                 argument = *(s32 *)idx;
                 factor = shade;
@@ -6695,7 +6693,7 @@ void SceneSkyFadeDraw(void) {
                         result += screenShift;
                         D_800A8B7C[0] = result;
                         D_800A8B64[0] = result;
-                        result = D_800A3A2CwC[0];
+                        result = gCosTablewC[0];
                         value = *(u16 *)((u8 *)D_800A8AF2 + paletteOffset);
                         idx = (s32)(fade << 16) >> 14;
                         asm("" : : "r"(fade));
@@ -6713,7 +6711,7 @@ void SceneSkyFadeDraw(void) {
                         asm(""
                             : "=r"(t2), "=r"(argument)
                             : "0"(t2), "1"(argument));
-                        table = (s32)D_800A3A34wC[0];
+                        table = (s32)gSinTablewC[0];
                         result >>= 16;
                         result = yBase + result;
                         result -= argument;
@@ -6728,7 +6726,7 @@ void SceneSkyFadeDraw(void) {
                         asm(""
                             : "=r"(shade), "=r"(byteValue)
                             : "0"(shade), "1"(byteValue));
-                        argument = D_800A3A2CwC[0];
+                        argument = gCosTablewC[0];
                         result >>= 16;
                         result = yStep + result;
                         byteValue += result;
@@ -6739,7 +6737,7 @@ void SceneSkyFadeDraw(void) {
                     m = MathMultiplyFixed16(gradB, factor);
                     t2 >>= 24;
                     D_800A8B8C[0] = yBase + (m >> 16) - t2;
-                    idx += (s32)D_800A3A34wC[0];
+                    idx += (s32)gSinTablewC[0];
                     result = MathMultiplyFixed16(gradB, *(s32 *)idx);
                     shade >>= 24;
                     idx = (s32)primitive - 8;
@@ -6823,7 +6821,7 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, factor);
             {
                 s32 tableAddress;
-                tableAddress = (s32)D_800A3A34wC[0];
+                tableAddress = (s32)gSinTablewC[0];
                 result = yStep + (result >> 16);
                 idx <<= 2;
                 primitive[3] = result;
@@ -6834,7 +6832,7 @@ void SceneSkyFadeDraw(void) {
             result = MathMultiplyFixed16(argument, shade);
             {
                 s32 tableAddress;
-                tableAddress = D_800A3A2CwC[0];
+                tableAddress = gCosTablewC[0];
                 idx += tableAddress;
                 argument = *(s32 *)idx;
                 factor = shade;
@@ -6875,7 +6873,7 @@ void SceneSkyFadeDraw(void) {
                         result += screenShift;
                         D_800A8B20[0] = result;
                         D_800A8B10[0] = result;
-                        result = D_800A3A2CwC[0];
+                        result = gCosTablewC[0];
                         value = *(u16 *)((u8 *)D_800A8AF2 + paletteOffset);
                         idx = (s32)(fade << 16) >> 14;
                         asm("" : : "r"(fade));
@@ -6893,7 +6891,7 @@ void SceneSkyFadeDraw(void) {
                         asm(""
                             : "=r"(t2), "=r"(argument)
                             : "0"(t2), "1"(argument));
-                        table = (s32)D_800A3A34wC[0];
+                        table = (s32)gSinTablewC[0];
                         result >>= 16;
                         result = yBase + result;
                         result -= argument;
@@ -6908,7 +6906,7 @@ void SceneSkyFadeDraw(void) {
                         asm(""
                             : "=r"(shade), "=r"(byteValue)
                             : "0"(shade), "1"(byteValue));
-                        argument = D_800A3A2CwC[0];
+                        argument = gCosTablewC[0];
                         result >>= 16;
                         result = yStep + result;
                         byteValue += result;
@@ -6919,7 +6917,7 @@ void SceneSkyFadeDraw(void) {
                     m = MathMultiplyFixed16(gradB, factor);
                     t2 >>= 24;
                     D_800A8B28[0] = yBase + (m >> 16) - t2;
-                    idx += (s32)D_800A3A34wC[0];
+                    idx += (s32)gSinTablewC[0];
                     result = MathMultiplyFixed16(gradB, *(s32 *)idx);
                     shade >>= 24;
                     idx = (s32)primitive - 8;

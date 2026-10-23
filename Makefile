@@ -97,8 +97,8 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=gReplayBufferAbsolute=gReplayBuffer \
             --defsym=D_800A3848Absolute=D_800A3848 \
             --defsym=D_800A3574Absolute=D_800A3574 \
-            --defsym=D_800A3A2CAbsolute2=D_800A3A2C \
-            --defsym=D_800A3A34Absolute2=D_800A3A34 \
+            --defsym=gCosTableAbsolute2=gCosTable \
+            --defsym=gSinTableAbsolute2=gSinTable \
             --defsym=D_800A2F2CAbsolute=D_800A2F2C \
             --defsym=D_800A3378Small=D_800A3378 \
             --defsym=D_800A33B0Small=D_800A33B0 \
@@ -106,10 +106,10 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A397CAbsolute=D_800A397C \
             --defsym=gReplayIndexSmall=gReplayIndex \
             --defsym=gReplayIndexAbsolute=gReplayIndex \
-            --defsym=D_800A3A2CSmall=D_800A3A2C \
-            --defsym=D_800A3A2CAbsolute=D_800A3A2C \
-            --defsym=D_800A3A34Small=D_800A3A34 \
-            --defsym=D_800A3A34Absolute=D_800A3A34 \
+            --defsym=gCosTableSmall=gCosTable \
+            --defsym=gCosTableAbsolute=gCosTable \
+            --defsym=gSinTableSmall=gSinTable \
+            --defsym=gSinTableAbsolute=gSinTable \
             --defsym=D_800A2F9DSmall=D_800A2F9D \
             --defsym=D_800A2F9DAbsolute=D_800A2F9D \
             --defsym=gCdVolumeAbsolute=gCdVolume \

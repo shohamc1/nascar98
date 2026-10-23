@@ -64,7 +64,7 @@ extern u8 D_800A2EDAw15[] asm("D_800A2EDA.NON_MATCHING");
 
 extern s32 gOrderingTable[];
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
-extern s32 *D_800A3A34Absolute[];
+extern s32 *gSinTableAbsolute[];
 
 extern Face *D_800A3A40Absolute[];
 extern s32 D_800A2EC4w15[] asm("D_800A2EC4.NON_MATCHING");
@@ -81,7 +81,7 @@ void MatrixStoreObjectBasis(Car *arg0);
 void MatrixSetRotationFromAngle(Car *arg0, s32 index);
 void func_8001FB28(Car *arg0, s32 index);
 
-extern s32 *D_800A3A2CAbsolute[];
+extern s32 *gCosTableAbsolute[];
 s32 VectorGetMagnitude2D(Car *object) {
     s32 dx;
     s32 dy;
@@ -275,8 +275,8 @@ extern FarVar gFarPlayer asm("D_800A38AC");
 extern FarVar gFarOffsetX asm("D_800AE844");
 extern FarVar gFarOffsetY asm("D_800AE848");
 extern FarVar gFarOffsetZ asm("D_800AE84C");
-extern FarVar gFarCosTable asm("D_800A3A2CAbsolute");
-extern FarVar gFarSinTable asm("D_800A3A34Absolute");
+extern FarVar gFarCosTable asm("gCosTableAbsolute");
+extern FarVar gFarSinTable asm("gSinTableAbsolute");
 extern s32 D_800A3584nm[] asm("D_800A3584.NON_MATCHING");
 extern u8 D_800A363Cnm[] asm("D_800A363C.NON_MATCHING");
 extern s16 D_800A383Cnm[] asm("D_800A383C.NON_MATCHING");
@@ -2546,8 +2546,8 @@ void CarApplyRandomHeadingImpulse(Car *car) {
     car->wheel[0].effect = ABS(RandomScaledGet(10)) + 20;
     car->wheel[1].effect = ABS(RandomScaledGet(10)) + 20;
     heading = car->heading;
-    table1 = D_800A3A2CAbsolute[0];
-    table2 = D_800A3A34Absolute[0];
+    table1 = gCosTableAbsolute[0];
+    table2 = gSinTableAbsolute[0];
     car->unk1BC = 0;
     index = (0x480 - heading) & 0x3FF;
     car->frontVelocityX += table1[index] * 20;
@@ -2877,10 +2877,10 @@ void func_80026074(Car *arg0, Car *arg1, s32 arg2, s32 arg3, s32 arg4,
     }
 }
 
-extern s32 pairCosTable3[] asm("D_800A3A2CSmall");
-extern s32 pairSinTable3[] asm("D_800A3A34Small");
-extern s32 pairCosTable4[] asm("D_800A3A2C");
-extern s32 pairSinTable4[] asm("D_800A3A34");
+extern s32 pairCosTable3[] asm("gCosTableSmall");
+extern s32 pairSinTable3[] asm("gSinTableSmall");
+extern s32 pairCosTable4[] asm("gCosTable");
+extern s32 pairSinTable4[] asm("gSinTable");
 extern void EffectSpawnAtCarPoint(Car *, s32);
 extern void func_80043B68(Car *, s32);
 extern void func_8003AC18(Car *, s32, s32, s32);
@@ -2983,19 +2983,19 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
         tmp0 = 0x3FF;
         work6 = tmp0 - tmp1;
     }
-    tmp0 = (s32)D_800A3A2CAbsolute[0];
+    tmp0 = (s32)gCosTableAbsolute[0];
     work1 = work6 << 2;
     callA1 = original.x;
     tmp0 = work1 + tmp0;
     callA0 = *(s32 *)tmp0;
     tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
-    tmp1 = (s32)D_800A3A34Absolute[0];
+    tmp1 = (s32)gSinTableAbsolute[0];
     callA1 = original.y;
     tmp1 = work1 + tmp1;
     callA0 = *(s32 *)tmp1;
     work0 = tmp0;
     tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
-    tmp1 = D_800A3A34Absolute2[0];
+    tmp1 = gSinTableAbsolute2[0];
     callA1 = original.x;
     work0 -= tmp0;
     work0 >>= 16;
@@ -3003,7 +3003,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     tmp1 = work1 + tmp1;
     callA0 = *(s32 *)tmp1;
     tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
-    tmp1 = D_800A3A2CAbsolute2[0];
+    tmp1 = gCosTableAbsolute2[0];
     callA1 = original.y;
     work1 += tmp1;
     asm("" : "=r"(work1) : "0"(work1));
@@ -3205,14 +3205,14 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                     CollisionApplyImpulse(car, otherCar, velocity, work0,
                                           work0);
                     tmp0 = car->heading;
-                    tmp1 = (s32)D_800A3A2CAbsolute[0];
+                    tmp1 = (s32)gCosTableAbsolute[0];
                     tmp0 += 0x200;
                     work6 = tmp0 & 0x3FF;
                     scratchA0 = work6 << 2;
                     tmp1 = scratchA0 + tmp1;
                     tmp0 = *(s32 *)tmp1;
                     impulseX = relativeSpeed * tmp0;
-                    tmp1 = (s32)D_800A3A34Absolute[0];
+                    tmp1 = (s32)gSinTableAbsolute[0];
                     tmp0 = car->frontVelocityX;
                     scratchA0 += tmp1;
                     asm(""
@@ -3573,9 +3573,9 @@ s32 VectorProjectAgainstHeading(Vec3 *vector, s32 heading) {
     s32 result;
 
     index = (0x400 - heading) & 0x3FF;
-    product = D_800A3A2CAbsolute[0][index];
+    product = gCosTableAbsolute[0][index];
     product *= vector->x;
-    result = product - D_800A3A34Absolute[0][index] * vector->y;
+    result = product - gSinTableAbsolute[0][index] * vector->y;
     result = -(result >> 16) * 3;
     if (result < 0) {
         result += 3;
@@ -3591,8 +3591,8 @@ typedef struct ContactRegion {
     u8 unk8[8];
 } ContactRegion;
 extern char D_8008CFE0[];
-extern s32 *gContactCosTable asm("D_800A3A2CAbsolute2");
-extern s32 *gContactSinTable asm("D_800A3A34Absolute2");
+extern s32 *gContactCosTable asm("gCosTableAbsolute2");
+extern s32 *gContactSinTable asm("gSinTableAbsolute2");
 
 /* Resolves the nearest track-edge contact and applies wheel impulses. */
 s32 CarHandleWallCollision(Car *object) {
@@ -5038,8 +5038,8 @@ void func_800297D0(Car *car) {
 void CarUpdateWheelVelocityComponents(Car *car) {
     /* Word views of the table pointers: retail reads all four the same
      * way, and the Absolute2 aliases in game.h are still s32 arrays. */
-    extern s32 cosWords[] asm("D_800A3A2CAbsolute");
-    extern s32 sinWords[] asm("D_800A3A34Absolute");
+    extern s32 cosWords[] asm("gCosTableAbsolute");
+    extern s32 sinWords[] asm("gSinTableAbsolute");
     s32 index;
 
     index = car->heading;
@@ -5048,9 +5048,9 @@ void CarUpdateWheelVelocityComponents(Car *car) {
     car->frontVelocityY =
         MathMultiplyFixed16((*(s32 **)sinWords)[index], car->speed);
     car->rearVelocityX =
-        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute2)[index], car->speed);
+        MathMultiplyFixed16((*(s32 **)gCosTableAbsolute2)[index], car->speed);
     car->rearVelocityY =
-        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[index], car->speed);
+        MathMultiplyFixed16((*(s32 **)gSinTableAbsolute2)[index], car->speed);
 }
 
 void EffectSpawnAtWheel(Car *car, s32 wheelIndex) {
@@ -5789,8 +5789,8 @@ void CarSetVelocityFromHeading(Car *car, s32 index) {
     s32 entryA;
     s32 entryB;
 
-    entryA = D_800A3A2CAbsolute[0][index];
-    entryB = D_800A3A34Absolute[0][index];
+    entryA = gCosTableAbsolute[0][index];
+    entryB = gSinTableAbsolute[0][index];
     car->frontVelocityX = MathMultiplyFixed16(entryA, car->speed);
     car->frontVelocityY = MathMultiplyFixed16(entryB, car->speed);
     car->rearVelocityX = MathMultiplyFixed16(entryA, car->speed);
@@ -5805,8 +5805,8 @@ void CarAddVelocityAlongHeading(Car *car, s32 speed) {
     s32 entryB;
 
     index = (car->heading + 0x200) & 0x3FF;
-    entryA = D_800A3A2CAbsolute[0][index];
-    entryB = D_800A3A34Absolute[0][index];
+    entryA = gCosTableAbsolute[0][index];
+    entryB = gSinTableAbsolute[0][index];
     car->frontVelocityX =
         car->frontVelocityX + MathMultiplyFixed16(entryA, speed);
     car->frontVelocityY =
@@ -5825,12 +5825,12 @@ s32 func_8002AEB0(Car *arg0) {
     s32 product;
 
     index = (0x400 - arg0->heading) & 0x3FF;
-    product = D_800A3A2CAbsolute[0][index] * arg0->velocityX;
+    product = gCosTableAbsolute[0][index] * arg0->velocityX;
     rotated.vx =
-        (product - (D_800A3A34Absolute[0][index] * arg0->velocityY)) >> 16;
-    product = D_800A3A34Absolute[0][index] * arg0->velocityX;
+        (product - (gSinTableAbsolute[0][index] * arg0->velocityY)) >> 16;
+    product = gSinTableAbsolute[0][index] * arg0->velocityX;
     rotated.vy =
-        (product + (D_800A3A2CAbsolute[0][index] * arg0->velocityY)) >> 16;
+        (product + (gCosTableAbsolute[0][index] * arg0->velocityY)) >> 16;
     value = rotated.vx;
     if (value < 0) {
         temp = -value;
@@ -5846,8 +5846,8 @@ s32 func_8002AEB0(Car *arg0) {
 }
 
 void func_8002AF94(Car *car) {
-    extern s32 *trigA asm("D_800A3A2CAbsolute");
-    extern s32 *trigB asm("D_800A3A34Absolute");
+    extern s32 *trigA asm("gCosTableAbsolute");
+    extern s32 *trigB asm("gSinTableAbsolute");
     u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
     VECTOR front;
     VECTOR rear;
@@ -5884,8 +5884,8 @@ extern s32 D_800A2E48nm asm("D_800A2E48.NON_MATCHING");
 
 void func_8002B258(Car *arg0) {
     extern u8 D_800A2EE4nm[] asm("D_800A2EE4.NON_MATCHING");
-    extern s32 D_800A3A2CAbsoluteB[] asm("D_800A3A2CAbsolute");
-    extern s32 D_800A3A34AbsoluteB[] asm("D_800A3A34Absolute");
+    extern s32 gCosTableAbsoluteB[] asm("gCosTableAbsolute");
+    extern s32 gSinTableAbsoluteB[] asm("gSinTableAbsolute");
     volatile s32 pad[16];
     s32 speed;
     s32 index;
@@ -5933,21 +5933,21 @@ void func_8002B258(Car *arg0) {
             if (scale == 0) {
                 scale = 0x50000;
             }
-            v = MathMultiplyFixed16(D_800A3A2CAbsolute[0][index], scale);
+            v = MathMultiplyFixed16(gCosTableAbsolute[0][index], scale);
             x = arg0->frontVelocityX;
-            p = (s32)D_800A3A34Absolute[0];
+            p = (s32)gSinTableAbsolute[0];
             x -= v;
             arg0->frontVelocityX = x;
             q = (s32 *)(index * 4 + p);
             v = MathMultiplyFixed16(*q, scale);
             x = arg0->frontVelocityY;
-            p = *(s32 *)D_800A3A2CAbsoluteB;
+            p = *(s32 *)gCosTableAbsoluteB;
             x -= v;
             arg0->frontVelocityY = x;
             q = (s32 *)(index * 4 + p);
             v = MathMultiplyFixed16(*q, scale);
             x = arg0->rearVelocityX;
-            p = *(s32 *)D_800A3A34AbsoluteB;
+            p = *(s32 *)gSinTableAbsoluteB;
             x -= v;
             arg0->rearVelocityX = x;
             arg0->rearVelocityY -=
@@ -6695,8 +6695,8 @@ noSliding:
                  "lh $v0,0x114(%4)\n\t"
                  "lw %1,0xC4(%4)\n\t"
                  "lw $a2,%6\n\t"
-                 "lui $v1,%%hi(D_800A3A2C)\n\t"
-                 "lw $v1,%%lo(D_800A3A2C)($v1)\n\t"
+                 "lui $v1,%%hi(gCosTable)\n\t"
+                 "lw $v1,%%lo(gCosTable)($v1)\n\t"
                  "subu $v0,$v0,%7\n\t"
                  "addiu $v0,$v0,1024\n\t"
                  "andi $v0,$v0,1023\n\t"
@@ -6912,8 +6912,8 @@ noSliding:
                  "lw %1,0xD0(%4)\n\t"
                  "lw $a3,%6\n\t"
                  "li $v0,1024\n\t"
-                 "lui $v1,%%hi(D_800A3A2C)\n\t"
-                 "lw $v1,%%lo(D_800A3A2C)($v1)\n\t"
+                 "lui $v1,%%hi(gCosTable)\n\t"
+                 "lw $v1,%%lo(gCosTable)($v1)\n\t"
                  "subu $v0,$v0,$a2\n\t"
                  "andi %2,$v0,1023\n\t"
                  "sll %3,%2,2\n\t"
@@ -6949,7 +6949,7 @@ noSliding:
             *(s32 *)(tableOffset + gFarCosTable.unk[0]), limitedRearX);
         fixedValue = MathMultiplyFixed16(
             *(s32 *)(tableOffset + gFarSinTable.unk[0]), local.axleVelocity.vy);
-        asm("lui %0,%%hi(D_800A3A34)\n\tlw %0,%%lo(D_800A3A34)(%0)"
+        asm("lui %0,%%hi(gSinTable)\n\tlw %0,%%lo(gSinTable)(%0)"
             : "=r"(gripBase));
         car->rearVelocityX = limitedRearXProduct - fixedValue;
         frontXValue = local.axleVelocity.vx;
@@ -7050,8 +7050,8 @@ noSliding:
                  "lw %0,0xB0(%7)\n\t"
                  "nop\n\t"
                  "mult $a0,%0\n\t"
-                 "lui %0,%%hi(D_800A3A34)\n\t"
-                 "lw %0,%%lo(D_800A3A34)(%0)\n\t"
+                 "lui %0,%%hi(gSinTable)\n\t"
+                 "lw %0,%%lo(gSinTable)(%0)\n\t"
                  "nop\n\t"
                  "addu %1,%1,%0\n\t"
                  "lw $a0,0(%1)\n\t"
@@ -7110,8 +7110,8 @@ typedef struct {
 } Delta3;
 
 s32 CarTestDraft(Car *arg0, Car *arg1) {
-    extern s32 *trigA asm("D_800A3A2CAbsolute");
-    extern s32 *trigB asm("D_800A3A34Absolute");
+    extern s32 *trigA asm("gCosTableAbsolute");
+    extern s32 *trigB asm("gSinTableAbsolute");
     /* A struct member is not a plain decl, so fold hoists one load of the
      * limit above each ABS split. */
     extern struct {
@@ -9898,8 +9898,8 @@ void func_800319D4(Car *object, s32 arg1) {
     vecA[0] = object->unkDC.x;
     vecA[1] = object->unkDC.y;
     index = object->heading * 4;
-    temp1 = (*(s32 *)(index + (u32)D_800A3A2CAbsolute[0]) << 8) >> 16;
-    temp2 = (*(s32 *)(index + (u32)D_800A3A34Absolute[0]) << 8) >> 16;
+    temp1 = (*(s32 *)(index + (u32)gCosTableAbsolute[0]) << 8) >> 16;
+    temp2 = (*(s32 *)(index + (u32)gSinTableAbsolute[0]) << 8) >> 16;
     corners[0][0] = temp1;
     corners[1][1] = temp1;
     corners[0][1] = temp2;
@@ -13205,9 +13205,9 @@ s32 CarTestLateralSeparation(Car *car, Car *headingCar, s32 sideThreshold) {
 
     idx = (headingCar->heading) << 2;
     dx = *(s32 *)car - *(s32 *)headingCar;
-    tA = *(s32 *)(idx + ((u32)D_800A3A2CAbsolute[0]));
+    tA = *(s32 *)(idx + ((u32)gCosTableAbsolute[0]));
     dy = car->pos.y - headingCar->pos.y;
-    tB = *(s32 *)(idx + ((u32)D_800A3A34Absolute[0]));
+    tB = *(s32 *)(idx + ((u32)gSinTableAbsolute[0]));
     return sideThreshold < ((tA * dx - tB * dy) >> 16);
 }
 
@@ -13220,9 +13220,9 @@ s32 CarIsAheadOfHeading(s32 *a, Car *b) {
 
     index = b->heading << 2;
     x = a[0] - b->pos.x;
-    t1 = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
+    t1 = *(s32 *)(index + (u32)gSinTableAbsolute[0]);
     y = a[1] - b->pos.y;
-    t2 = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
+    t2 = *(s32 *)(index + (u32)gCosTableAbsolute[0]);
     return ((t1 * x + t2 * y) >> 16) > 0;
 }
 
@@ -13554,8 +13554,8 @@ extern s8 D_800A3764373B4[];
 extern Car *gCarList373B4[];
 extern s16 D_800A3910373B4[];
 extern u8 *D_800A3960373B4[];
-extern s32 *D_800A3A2C373B4[];
-extern s32 *D_800A3A34373B4[];
+extern s32 *gCosTable373B4[];
+extern s32 *gSinTable373B4[];
 extern Car *D_800A3A64373B4[];
 extern s32 gTrackSectionCount373B4[];
 extern s32 func_800A2CE0373B4[];
@@ -13585,7 +13585,7 @@ extern void CarResetMotionCounters373B4(void) asm("CarResetMotionCounters");
 extern void func_80025730373B4(void) asm("func_80025730");
 extern void func_8003AA20373B4(void) asm("func_8003AA20");
 __asm__(
-    ".globl D_800A2E4C373B4\nD_800A2E4C373B4 = D_800A2E4C\n.globl D_800A2E90373B4\nD_800A2E90373B4 = D_800A2E90\n.globl D_800A2E94373B4\nD_800A2E94373B4 = D_800A2E94\n.globl gSplitScreenMode373B4\ngSplitScreenMode373B4 = gSplitScreenMode\n.globl D_800A2EAC373B4\nD_800A2EAC373B4 = D_800A2EAC\n.globl gSessionType373B4\ngSessionType373B4 = gSessionType\n.globl D_800A2EDC373B4\nD_800A2EDC373B4 = D_800A2EDC\n.globl D_800A2EE0373B4\nD_800A2EE0373B4 = D_800A2EE0\n.globl D_800A2F48373B4\nD_800A2F48373B4 = D_800A2F48\n.globl D_800A2F50373B4\nD_800A2F50373B4 = D_800A2F50\n.globl D_800A2F54373B4\nD_800A2F54373B4 = D_800A2F54\n.globl D_800A2F58373B4\nD_800A2F58373B4 = D_800A2F58\n.globl D_800A2F5C373B4\nD_800A2F5C373B4 = D_800A2F5C\n.globl D_800A2F84373B4\nD_800A2F84373B4 = D_800A2F84\n.globl D_800A3071373B4\nD_800A3071373B4 = D_800A3071\n.globl D_800A3320373B4\nD_800A3320373B4 = D_800A3320\n.globl gPlayerCar373B4\ngPlayerCar373B4 = gPlayerCar\n.globl D_800A3564373B4\nD_800A3564373B4 = D_800A3564\n.globl D_800A3598373B4\nD_800A3598373B4 = D_800A3598\n.globl D_800A35E0373B4\nD_800A35E0373B4 = D_800A35E0\n.globl D_800A3670373B4\nD_800A3670373B4 = D_800A3670\n.globl D_800A36A4373B4\nD_800A36A4373B4 = D_800A36A4\n.globl D_800A3728373B4\nD_800A3728373B4 = D_800A3728\n.globl D_800A372C373B4\nD_800A372C373B4 = D_800A372C\n.globl D_800A3764373B4\nD_800A3764373B4 = D_800A3764\n.globl D_800A37C0373B4\nD_800A37C0373B4 = D_800A37C0\n.globl gCarList373B4\ngCarList373B4 = gCarList\n.globl D_800A3910373B4\nD_800A3910373B4 = D_800A3910\n.globl D_800A3960373B4\nD_800A3960373B4 = gCrashCar\n.globl D_800A3A2C373B4\nD_800A3A2C373B4 = D_800A3A2C\n.globl D_800A3A34373B4\nD_800A3A34373B4 = D_800A3A34\n.globl D_800A3A64373B4\nD_800A3A64373B4 = D_800A3A64\n.globl D_800AE154373B4\nD_800AE154373B4 = D_800AE154\n.globl D_800B1EA8373B4\nD_800B1EA8373B4 = D_800B1EA8\n.globl gTrackSectionCount373B4\ngTrackSectionCount373B4 = gTrackSectionCount\n.globl gTrackSections373B4\ngTrackSections373B4 = gTrackSections\n.globl func_800A2CE0373B4\nfunc_800A2CE0373B4 = func_800A2CE0\n");
+    ".globl D_800A2E4C373B4\nD_800A2E4C373B4 = D_800A2E4C\n.globl D_800A2E90373B4\nD_800A2E90373B4 = D_800A2E90\n.globl D_800A2E94373B4\nD_800A2E94373B4 = D_800A2E94\n.globl gSplitScreenMode373B4\ngSplitScreenMode373B4 = gSplitScreenMode\n.globl D_800A2EAC373B4\nD_800A2EAC373B4 = D_800A2EAC\n.globl gSessionType373B4\ngSessionType373B4 = gSessionType\n.globl D_800A2EDC373B4\nD_800A2EDC373B4 = D_800A2EDC\n.globl D_800A2EE0373B4\nD_800A2EE0373B4 = D_800A2EE0\n.globl D_800A2F48373B4\nD_800A2F48373B4 = D_800A2F48\n.globl D_800A2F50373B4\nD_800A2F50373B4 = D_800A2F50\n.globl D_800A2F54373B4\nD_800A2F54373B4 = D_800A2F54\n.globl D_800A2F58373B4\nD_800A2F58373B4 = D_800A2F58\n.globl D_800A2F5C373B4\nD_800A2F5C373B4 = D_800A2F5C\n.globl D_800A2F84373B4\nD_800A2F84373B4 = D_800A2F84\n.globl D_800A3071373B4\nD_800A3071373B4 = D_800A3071\n.globl D_800A3320373B4\nD_800A3320373B4 = D_800A3320\n.globl gPlayerCar373B4\ngPlayerCar373B4 = gPlayerCar\n.globl D_800A3564373B4\nD_800A3564373B4 = D_800A3564\n.globl D_800A3598373B4\nD_800A3598373B4 = D_800A3598\n.globl D_800A35E0373B4\nD_800A35E0373B4 = D_800A35E0\n.globl D_800A3670373B4\nD_800A3670373B4 = D_800A3670\n.globl D_800A36A4373B4\nD_800A36A4373B4 = D_800A36A4\n.globl D_800A3728373B4\nD_800A3728373B4 = D_800A3728\n.globl D_800A372C373B4\nD_800A372C373B4 = D_800A372C\n.globl D_800A3764373B4\nD_800A3764373B4 = D_800A3764\n.globl D_800A37C0373B4\nD_800A37C0373B4 = D_800A37C0\n.globl gCarList373B4\ngCarList373B4 = gCarList\n.globl D_800A3910373B4\nD_800A3910373B4 = D_800A3910\n.globl D_800A3960373B4\nD_800A3960373B4 = gCrashCar\n.globl gCosTable373B4\ngCosTable373B4 = gCosTable\n.globl gSinTable373B4\ngSinTable373B4 = gSinTable\n.globl D_800A3A64373B4\nD_800A3A64373B4 = D_800A3A64\n.globl D_800AE154373B4\nD_800AE154373B4 = D_800AE154\n.globl D_800B1EA8373B4\nD_800B1EA8373B4 = D_800B1EA8\n.globl gTrackSectionCount373B4\ngTrackSectionCount373B4 = gTrackSectionCount\n.globl gTrackSections373B4\ngTrackSections373B4 = gTrackSections\n.globl func_800A2CE0373B4\nfunc_800A2CE0373B4 = func_800A2CE0\n");
 
 /* Update AI route speed, pace following, nearby lanes, and steering. */
 void func_800373B4(Car *object) {
@@ -14794,8 +14794,8 @@ void func_800373B4(Car *object) {
                             "lw %2,0(%9)\n\t"
                             "lw %3,4(%9)\n\t"
                             "lh %4,0x114(%9)\n\t"
-                            "lui %5,%%hi(D_800A3A2C373B4)\n\t"
-                            "lw %5,%%lo(D_800A3A2C373B4)(%5)\n\t"
+                            "lui %5,%%hi(gCosTable373B4)\n\t"
+                            "lw %5,%%lo(gCosTable373B4)(%5)\n\t"
                             "li %0,0x3FF\n\t"
                             "lw %6,0(%1)\n\t"
                             "lw %7,4(%1)"
@@ -14816,7 +14816,7 @@ void func_800373B4(Car *object) {
                         deltaY = collisionCarY - collisionNeighborY;
                         collisionReturn = MathMultiplyFixed16373B4(
                             collisionArgument0, collisionArgument1);
-                        collisionTableBase = (s32)D_800A3A34373B4[0];
+                        collisionTableBase = (s32)gSinTable373B4[0];
                         collisionTableOffset =
                             (u32)collisionTableOffset + (u32)collisionTableBase;
                         collisionArgument0 = *(s32 *)collisionTableOffset;
@@ -14839,11 +14839,11 @@ void func_800373B4(Car *object) {
                         block_274:
                             collisionTableOffset = reverseAngle << 2;
                             collisionArgument0 =
-                                D_800A3A34373B4[0][reverseAngle];
+                                gSinTable373B4[0][reverseAngle];
                             collisionArgument1 = deltaX << 16;
                             collisionReturn = MathMultiplyFixed16373B4(
                                 collisionArgument0, collisionArgument1);
-                            collisionTableBase = (s32)D_800A3A2C373B4[0];
+                            collisionTableBase = (s32)gCosTable373B4[0];
                             collisionTableOffset = (u32)collisionTableOffset +
                                                    (u32)collisionTableBase;
                             collisionArgument0 = *(s32 *)collisionTableOffset;
@@ -14969,8 +14969,8 @@ void func_800373B4(Car *object) {
         collisionDone:
             asm volatile(".set\tnoreorder\n"
                          "lw         $t1, %1\n"
-                         "lui        $v1, %%hi(D_800A3A2C)\n"
-                         "lw         $v1, %%lo(D_800A3A2C)($v1)\n"
+                         "lui        $v1, %%hi(gCosTable)\n"
+                         "lw         $v1, %%lo(gCosTable)($v1)\n"
                          "addiu      $v0, $t1, 0x300\n"
                          "andi       $v0, $v0, 0x3FF\n"
                          "sw         $v0, %1\n"
@@ -14983,8 +14983,8 @@ void func_800373B4(Car *object) {
                          "sll        $v0, $v0, 2\n"
                          "addu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
-                         "lui        $v1, %%hi(D_800A3A34)\n"
-                         "lw         $v1, %%lo(D_800A3A34)($v1)\n"
+                         "lui        $v1, %%hi(gSinTable)\n"
+                         "lw         $v1, %%lo(gSinTable)($v1)\n"
                          "sra        $v0, $v0, 16\n"
                          "negu       $a1, $a1\n"
                          "mult       $v0, $a1\n"
@@ -15234,8 +15234,8 @@ void func_800390A0(Car *car, Car *other, s32 side, s32 unused) {
     car->targetSegment = sectionIndex;
     heading = sectionEntry->angle;
     trigIndex = ((0x400 - heading) & 0x3FF) << 2;
-    cosine = *(s32 *)(trigIndex + (u32)D_800A3A2CAbsolute[0]);
-    sine = *(s32 *)(trigIndex + (u32)D_800A3A34Absolute[0]);
+    cosine = *(s32 *)(trigIndex + (u32)gCosTableAbsolute[0]);
+    sine = *(s32 *)(trigIndex + (u32)gSinTableAbsolute[0]);
     if (car->unk26C[14] != 0) {
         offsetX = (sine * 0x6D6) >> 16;
         offsetY = (cosine * 0x6D6) >> 16;
@@ -15303,8 +15303,8 @@ s32 func_80039274(Car *car, Car *other, u8 side) {
         } else {
             result = section->angle;
         }
-        cosine = D_800A3A2CAbsolute[0][result];
-        sine = D_800A3A34Absolute[0][result];
+        cosine = gCosTableAbsolute[0][result];
+        sine = gSinTableAbsolute[0][result];
         if (side) {
             x = (cosine * 1600 + sine * 350) >> 16;
             y = (sine * 1600 - cosine * 350) >> 16;
@@ -15397,7 +15397,7 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
         }
         angle = 0x400;
         angle -= car->heading;
-        cosTable = D_800A3A2CAbsolute[0];
+        cosTable = gCosTableAbsolute[0];
         /* Keep the x loads after the table base and entry address. */
         dx = other->pos.x;
         maxDistance = angle & 0x3FF;
@@ -15407,12 +15407,12 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
             : "m"(car->pos.x), "1"(cosTable));
         cosine = *cosTable;
         dx -= carX;
-        sine = D_800A3A34Absolute[0][maxDistance];
+        sine = gSinTableAbsolute[0][maxDistance];
         dy = other->pos.y - car->pos.y;
         forward = (cosine * dx - sine * dy) >> 16;
         lateral = (sine * dx + cosine * dy) >> 16;
         routeDistance = ABS(MathGetAngleDelta(car->heading, other->heading));
-        sideScale = (D_800A3A34Absolute[0][routeDistance] * 250) >> 16;
+        sideScale = (gSinTableAbsolute[0][routeDistance] * 250) >> 16;
         if (sideScale < 0) {
             sideScale = -sideScale;
         }
@@ -15539,11 +15539,11 @@ void func_80039B74(Car *arg0, s32 arg1) {
         entryX = ((RoutePoint *)entryAddr)->x;
         ptr = eptr + idx * 0x90;
         w = (0x400 - ((TrackSection *)ptr)->angle) & 0x3FF;
-        tableA = D_800A3A34Absolute[0][w];
+        tableA = gSinTableAbsolute[0][w];
         prod = tableA * (objX - entryX);
         entryY = ((RoutePoint *)entryAddr)->y;
         objY = obj->pos.y;
-        prod2 = D_800A3A2CAbsolute[0][w] * (objY - entryY);
+        prod2 = gCosTableAbsolute[0][w] * (objY - entryY);
         result = (prod + prod2) >> 16;
         neg = -result;
         if (neg < 0) {
@@ -15565,8 +15565,8 @@ s8 TrackGetLateralOffset(TrackSection *section, s32 worldX, s32 worldY) {
     sectionX = section->x;
     index = (0x400 - heading) & 0x3FF;
     sectionY = section->z;
-    return -((D_800A3A34Absolute[0][index] * (worldX - sectionX) +
-              D_800A3A2CAbsolute[0][index] * (worldY - sectionY)) >>
+    return -((gSinTableAbsolute[0][index] * (worldX - sectionX) +
+              gCosTableAbsolute[0][index] * (worldY - sectionY)) >>
              16) /
            250;
 }
@@ -15598,11 +15598,11 @@ void CarUpdateTrackSideOffsets(void) {
             entryX = ((TrackSection *)section)->x;
             angle = heading;
             index = ((0x400 - angle) & 0x3FF) << 2;
-            tableA = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
+            tableA = *(s32 *)(index + (u32)gSinTableAbsolute[0]);
             prodA = tableA * (objX - entryX);
             objY = car->pos.y;
             entryY = ((TrackSection *)section)->z;
-            tableB = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
+            tableB = *(s32 *)(index + (u32)gCosTableAbsolute[0]);
             value = prodA + tableB * (objY - entryY);
             car->unk203 = (-(value >> 16)) / 250;
         }
@@ -15731,10 +15731,10 @@ void CarPlaceOnStartingGrid(void) {
                 workValue &= 0x3FF;
                 tableWork = workValue * 4;
                 cameraOffset = cameraWork * 12;
-                workValue = *(s32 *)(tableWork + (u32)D_800A3A2CAbsolute[0]);
+                workValue = *(s32 *)(tableWork + (u32)gCosTableAbsolute[0]);
                 product = workValue * 1000;
                 workValue = *(s32 *)(((u8 *)gGridCameraX0) + cameraOffset);
-                cameraWork = D_800A3A34Absolute[0];
+                cameraWork = gSinTableAbsolute[0];
                 workValue -= product >> 16;
                 *(s32 *)(((u8 *)gGridCameraX0) + cameraOffset) = workValue;
                 cameraOffset = (car->slot) * 0xC;
@@ -16480,8 +16480,8 @@ __inline__ u8 CarIsAheadOnSection(Car *car, Car *other) {
     }
     sec = &gTrackSections[0][section];
     angle = (0x400 - sec->angle) & 0x3FF;
-    cs = D_800A3A2CAbsolute[0][angle];
-    sn = D_800A3A34Absolute[0][angle];
+    cs = gCosTableAbsolute[0][angle];
+    sn = gSinTableAbsolute[0][angle];
     dx = car->pos.x - sec->x;
     dz = car->pos.y - sec->z;
     distCar = (cs * dx - sn * dz) >> 16;

@@ -61,7 +61,7 @@ void MenuDrawObjectList(MenuObj *object, s32 arg1);
 extern MenuObj *D_800A3634;
 extern s32 **D_800A3740;
 extern MenuObj *D_800A3788;
-extern s32 *D_800A3A2CAbsolute[];
+extern s32 *gCosTableAbsolute[];
 void func_8005DF50(s32 arg0, s32 arg1, s32 arg2) {
     MenuObj *p0;
     MenuObj *p1;
@@ -3914,7 +3914,7 @@ void func_80062874(s32 arg0, s32 arg1) {
     index = arg0 & 0xFF;
     flag = index != 0;
     if ((arg1 & 0xFF) != 0) {
-        node = ((void **)D_800A3A2CAbsolute)[index - 4];
+        node = ((void **)gCosTableAbsolute)[index - 4];
     } else {
         node = ((void **)D_800A37C4Absolute)[index + 5];
     }

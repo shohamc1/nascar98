@@ -2929,7 +2929,7 @@ void func_800168F8(Model *arg0, s32 arg1) {
 }
 
 s32 func_80016ACC(Car *arg0, s16 *arg1) {
-    extern s32 *D_800A3A34Absolute[];
+    extern s32 *gSinTableAbsolute[];
     s32 pad[4];
     register s32 f asm("a0");
     register s32 fade asm("a1");
@@ -2979,7 +2979,7 @@ s32 func_80016ACC(Car *arg0, s16 *arg1) {
     rem2 = t % den2;
     fdiv2 = (q2 << 0x10) + (((rem2 << 15) / den2) << 1);
     x = MathMultiplyFixed16(0x04000000, fdiv2);
-    x = MathMultiplyFixed16(0x640000, D_800A3A34Absolute[0][x >> 16]);
+    x = MathMultiplyFixed16(0x640000, gSinTableAbsolute[0][x >> 16]);
     x = MathMultiplyFixed16(fdiv1, x);
     x = x >> 16;
     fade = x;

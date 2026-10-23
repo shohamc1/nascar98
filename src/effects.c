@@ -281,8 +281,8 @@ void EffectDrawParticle(Particle *object) {
     PopMatrix();
 }
 
-extern s32 pairTable4382C[] asm("D_800A3A2C");
-extern s32 pairTable4382CA[] asm("D_800A3A34");
+extern s32 pairTable4382C[] asm("gCosTable");
+extern s32 pairTable4382CA[] asm("gSinTable");
 extern u8 D_800AD9B0p[] asm("D_800AD9B0");
 extern s8 D_800AD9CCp[] asm("D_800AD9CC");
 extern s32 D_800A38ACw38[] asm("D_800A38AC");

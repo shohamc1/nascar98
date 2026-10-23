@@ -1276,16 +1276,16 @@ void func_80019A00(s16 arg0, POLY_FT4 *arg1, s32 arg2) {
     s32 off;
     s32 off3;
     extern s16 D_80091072[];
-    extern s32 *D_800A3A2CAbsolute[];
-    extern s32 *D_800A3A34Absolute[];
+    extern s32 *gCosTableAbsolute[];
+    extern s32 *gSinTableAbsolute[];
 
     num = 0x230;
     den = 0x32C8;
     rem = num % den;
     rem = (rem << 15) / den;
     result = MathMultiplyFixed16(rem << 1, (s32)arg0 << 16);
-    radiusA = D_800A3A2CAbsolute[0][((result >> 16) + 0x1D6) & 0x3FF];
-    radiusB = D_800A3A34Absolute[0][((result >> 16) + 0x1D6) & 0x3FF];
+    radiusA = gCosTableAbsolute[0][((result >> 16) + 0x1D6) & 0x3FF];
+    radiusB = gSinTableAbsolute[0][((result >> 16) + 0x1D6) & 0x3FF];
     i = 0;
     ptrB = D_80091072;
     ptrA = ptrB - 1;
@@ -2350,10 +2350,10 @@ extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
 extern Car *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
-extern s32 *D_800A3A34Absolute[];
+extern s32 *gSinTableAbsolute[];
 
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-extern s32 *D_800A3A2CAbsolute[];
+extern s32 *gCosTableAbsolute[];
 void func_8001C34C(void) {
     s32 mode;
     s32 value;
