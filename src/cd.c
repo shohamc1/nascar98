@@ -441,7 +441,7 @@ void CarUpdateState(Car *object) {
                     object->unk269 = 0xFF;
                 }
                 object->flags = PadGetButtons(object->slot);
-                buttons = func_80029EF8((u8 *)object);
+                buttons = func_80029EF8(object);
                 object->sliding = 0;
                 object->unk3B9 = 0;
                 player = gPlayerCarCar[0];
@@ -843,7 +843,7 @@ s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
 
 extern void func_8003D754(Car *);
 extern void CarSteerTowardHeading(Car *, s32);
-extern void func_80041564(u8 *, s32);
+extern void func_80041564(Car *, s32);
 extern s32 D_800A2EA8CarState[] asm("D_800A2EA8");
 extern s32 D_800A2EACCarState[] asm("D_800A2EAC");
 extern s32 gSessionTypeCarState[] asm("gSessionType");
@@ -1332,7 +1332,7 @@ extern u8 D_800A372C[];
 extern s32 D_800A3560;
 extern s32 D_800A3820;
 
-s32 func_8003E78C(u8 *object) {
+s32 func_8003E78C(Car *object) {
     s32 laps;
     s32 ahead;
     u32 pace;
@@ -1342,52 +1342,50 @@ s32 func_8003E78C(u8 *object) {
     s32 near;
     s32 far;
 
-    if (*(s16 *)(object + 0x288) != 0) {
-        if (D_800A372C[0] != 0 && D_800A2CE0[0] == 3 &&
-            *(s16 *)(object + 0x1EC) == 0 && *(s16 *)(object + 0x1E0) >= 100)
+    if (object->unk26C[14] != 0) {
+        if (D_800A372C[0] != 0 && D_800A2CE0[0] == 3 && object->type == 0 &&
+            object->segment >= 100)
             return 1;
         lead = D_800A3560 + 8;
         lag = D_800A3820 + 0x14;
         if (!(u8)TrackSectionIsInWrappedRange(
-                *(s16 *)(object + 0x1E0),
+                object->segment,
                 (D_800A39E0 - lag + gTrackSectionCount[0]) %
                     gTrackSectionCount[0],
                 (D_800A376C + lead) % gTrackSectionCount[0])) {
-            *(s16 *)(object + 0x288) = 0;
-            *(u16 *)(object + 0x284) = *(u16 *)(object + 0x284) + 1;
+            object->unk26C[14] = 0;
+            object->unk26C[12] = (u16)object->unk26C[12] + 1;
             return 0;
         }
         return 1;
     }
-    laps = *(s16 *)(object + 0x1D6);
+    laps = object->lap;
     if (laps < 2)
         return 0;
-    if (*(s16 *)(object + 0x276) != 0) {
+    if (object->unk26C[5] != 0) {
         if (D_800A372C[0] != 0)
             return 0;
         near = D_800A3820 + 7;
         far = D_800A3820 + 0xF;
         if (!(u8)TrackSectionIsInWrappedRange(
-                *(s16 *)(object + 0x1E0),
+                object->segment,
                 (D_800A39E0 - far + gTrackSectionCount[0]) %
                     gTrackSectionCount[0],
                 (D_800A39E0 - near + gTrackSectionCount[0]) %
                     gTrackSectionCount[0]))
             return 0;
-        ahead = *(s16 *)(object + 0x282);
-        pace = *(u32 *)(object + 0x29C);
+        ahead = object->unk26C[11];
+        pace = (u32)object->unk29C;
         adjustment = 2;
-        *(s16 *)(object + 0x288) = 1;
+        object->unk26C[14] = 1;
         if (RandomScaledGet(5) < 0)
-            *(s32 *)(object + 0x29C) =
-                (pace - adjustment) + (ahead - RandomScaledGet(5));
+            object->unk29C = (pace - adjustment) + (ahead - RandomScaledGet(5));
         else
-            *(s32 *)(object + 0x29C) =
-                (pace - adjustment) + (ahead + RandomScaledGet(5));
+            object->unk29C = (pace - adjustment) + (ahead + RandomScaledGet(5));
         return 1;
     }
-    if ((u32)laps >= (u32) * (s32 *)(object + 0x29C) || D_800A2EA8[0] < laps)
-        *(s16 *)(object + 0x276) = 1;
+    if ((u32)laps >= (u32)object->unk29C || D_800A2EA8[0] < laps)
+        object->unk26C[5] = 1;
     return 0;
 }
 

@@ -1427,7 +1427,7 @@ active:
     SoundSetSlotVolume((s8)slot, 0x72, 0x72);
 }
 
-void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+void func_80041564(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_800A397C[];
     extern u8 D_800A38B0[];
     extern s32 D_800A2E90[];
@@ -1455,7 +1455,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     timer = D_800A2EC0Absolute[0];
     switch (arg1) {
     case 0x41:
-        if (*(s32 *)(arg0 + 0x28C) == 0) {
+        if (arg0->unk28C == 0) {
             return;
         }
         arg3 = 0x4B0;
@@ -1470,14 +1470,14 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         arg2 = 2;
         break;
     case 0x48:
-        if (*(s32 *)(arg0 + 0x28C) == 0) {
+        if (arg0->unk28C == 0) {
             return;
         }
         arg3 = 0x438;
         arg2 = 1;
         break;
     case 0x43:
-        if (*(u8 *)(arg0 + 0xF4) == 0) {
+        if (arg0->unkF4 == 0) {
             return;
         }
         /* falls through */
@@ -1497,14 +1497,14 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         arg2 = 5;
         break;
     case 0x25:
-        if (*(s32 *)(arg0 + 0x90) <= 0xC7FFFF) {
+        if (arg0->speed <= 0xC7FFFF) {
             return;
         }
         arg3 = 0x12C;
         arg2 = 5;
         break;
     case 0x26:
-        if (*(s32 *)(arg0 + 0x354) != (s32)CarResetMotionCounters) {
+        if (*(s32 *)((u8 *)arg0 + 0x354) != (s32)CarResetMotionCounters) {
             return;
         }
         if (D_800A38B0[0] != 0) {
@@ -1540,7 +1540,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     case 0x28:
         arg3 = 0;
         arg2 = 7;
-        if (*(u8 *)(arg0 + 0xF4) == 0) {
+        if (arg0->unkF4 == 0) {
             return;
         }
         if (gSessionTypeAbsolute[0] == 1) {
@@ -1554,10 +1554,10 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         if (D_800A2EE0[0] != 0) {
             return;
         }
-        if ((*(u16 *)(arg0 + 0x3A4) & 0xF) == 0) {
+        if ((arg0->unk3A4 & 0xF) == 0) {
             return;
         }
-        if (*(u8 *)(arg0 + 0xF4) == 0) {
+        if (arg0->unkF4 == 0) {
             return;
         }
         arg3 = 0x12C;

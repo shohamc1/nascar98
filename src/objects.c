@@ -42,7 +42,7 @@ void CameraBuildRotationMatrix(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_8001F728(s32 arg0);
 void func_8001F828(s32 *p);
 void MatrixStoreObjectBasis(s32 *arg0);
-void MatrixSetRotationFromAngle(u8 *arg0, s32 index);
+void MatrixSetRotationFromAngle(Car *arg0, s32 index);
 void func_8001FB28(Car *arg0, s32 index);
 
 extern s32 D_800A3A2CAbsolute[];
@@ -1230,7 +1230,7 @@ void func_80023074(void) {
     D_800A2ED4[0] = mode;
     func_8004B128(gPlayerCarLui);
     if (gSplitScreenModeLui != 0) {
-        func_8004B128((u8 *)gPlayerCarLui->next);
+        func_8004B128(gPlayerCarLui->next);
     }
     if (D_800A2EC8Lui != 0) {
         mode = D_800A397CSmall;
@@ -1274,7 +1274,7 @@ void func_80023074(void) {
                         *(s32 *)(u8 *)gPlayerCarLui->next,
                         gPlayerCarLui->next->pos.y,
                         &gPlayerCarLui->next->regionIndex);
-                    func_8004B128((u8 *)gPlayerCarLui->next);
+                    func_8004B128(gPlayerCarLui->next);
                     gPlayerCarLui->next->cameraAngle =
                         gPlayerCarLui->next->heading;
                 }
@@ -2763,29 +2763,24 @@ scan:
     return 0;
 }
 
-void func_80025DD4(u8 *firstCar, u8 *secondCar) {
+void func_80025DD4(Car *firstCar, Car *secondCar) {
     s32 x;
     s32 y;
     s32 x2;
     s32 y2;
 
-    if (*(s16 *)(firstCar + 0x1EC) == 1 &&
-        *(s16 *)(secondCar + 0x1EC) == *(s16 *)(firstCar + 0x1EC)) {
+    if (firstCar->type == 1 && secondCar->type == firstCar->type) {
         return;
     }
-    x = (*(s32 *)(firstCar + 0) + *(s32 *)(secondCar + 0)) / 2 +
-        RandomScaledGet(100) - 50;
-    y = (*(s32 *)(firstCar + 4) + *(s32 *)(secondCar + 4)) / 2 +
-        RandomScaledGet(100) - 50;
+    x = (firstCar->pos.x + secondCar->pos.x) / 2 + RandomScaledGet(100) - 50;
+    y = (firstCar->pos.y + secondCar->pos.y) / 2 + RandomScaledGet(100) - 50;
     func_8003644C(1, x, y,
-                  (*(s32 *)(firstCar + 8) + *(s32 *)(secondCar + 8)) / 2 +
+                  (firstCar->pos.z + secondCar->pos.z) / 2 +
                       RandomScaledGet(50) + 75);
-    x2 = (*(s32 *)(firstCar + 0) + *(s32 *)(secondCar + 0)) / 2 +
-         RandomScaledGet(100) - 50;
-    y2 = (*(s32 *)(firstCar + 4) + *(s32 *)(secondCar + 4)) / 2 +
-         RandomScaledGet(100) - 50;
+    x2 = (firstCar->pos.x + secondCar->pos.x) / 2 + RandomScaledGet(100) - 50;
+    y2 = (firstCar->pos.y + secondCar->pos.y) / 2 + RandomScaledGet(100) - 50;
     func_8003644C(1, x2, y2,
-                  (*(s32 *)(firstCar + 8) + *(s32 *)(secondCar + 8)) / 2 +
+                  (firstCar->pos.z + secondCar->pos.z) / 2 +
                       RandomScaledGet(50) + 75);
 }
 
@@ -2859,16 +2854,16 @@ extern s32 pairCosTable3[] asm("D_800A3A2CSmall");
 extern s32 pairSinTable3[] asm("D_800A3A34Small");
 extern s32 pairCosTable4[] asm("D_800A3A2C");
 extern s32 pairSinTable4[] asm("D_800A3A34");
-extern void EffectSpawnAtCarPoint(void *, s32);
-extern void func_80043B68(void *, s32);
-extern void func_8003AC18(u8 *, s32, s32, s32);
+extern void EffectSpawnAtCarPoint(Car *, s32);
+extern void func_80043B68(Car *, s32);
+extern void func_8003AC18(Car *, s32, s32, s32);
 extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32,
                                   s32) asm("func_80026074");
 
 /* Resolves car-to-car contact and applies separation and velocity impulses.
  * Empty asm constraints retain the retail compiler register lifetimes.
  */
-s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
+s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     Vec3 separation;
     Vec3 direction;
     Vec3 velocity;
@@ -2917,8 +2912,8 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     s32 scratchV1;
     u32 speedSumA;
     u32 speedSumB;
-    u8 *car;
-    u8 *otherCar;
+    Car *car;
+    Car *otherCar;
 
     car = firstCar;
 
@@ -2931,14 +2926,14 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
             car = (u8 *)tmp0;
         }
     }
-    separation.x = (*(s32 *)(otherCar + 0x0)) - (*(s32 *)(car + 0x0));
-    separation.y = (*(s32 *)(otherCar + 0x4)) - (*(s32 *)(car + 0x4));
-    separation.z = (*(s32 *)(otherCar + 0x8)) - (*(s32 *)(car + 0x8));
+    separation.x = (otherCar->pos.x) - (car->pos.x);
+    separation.y = (otherCar->pos.y) - (car->pos.y);
+    separation.z = (otherCar->pos.z) - (car->pos.z);
     original = separation;
-    midpoint.x = (s32)((*(s32 *)(otherCar + 0x0)) + (*(s32 *)(car + 0x0))) / 2;
-    midpoint.y = (s32)((*(s32 *)(otherCar + 0x4)) + (*(s32 *)(car + 0x4))) / 2;
-    if ((*(s32 *)(car + 0x354)) == (s32)func_80025730) {
-        contactAngle = (*(s16 *)(car + 0x38A));
+    midpoint.x = (s32)((otherCar->pos.x) + (car->pos.x)) / 2;
+    midpoint.y = (s32)((otherCar->pos.y) + (car->pos.y)) / 2;
+    if ((*(s32 *)((u8 *)car + 0x354)) == (s32)func_80025730) {
+        contactAngle = (car->unk38A);
         angleFromHalfTurn = contactAngle - 0x200;
         if (angleFromHalfTurn >= 0) {
             if (angleFromHalfTurn < 0x100) {
@@ -2948,7 +2943,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         }
         if ((0x200 - contactAngle) < 0x100) {
         block_8:
-            tmp1 = *(s16 *)(car + 0x114);
+            tmp1 = car->heading;
             tmp0 = 0x600 - tmp1;
             work6 = tmp0 & 0x3FF;
 
@@ -2957,7 +2952,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         }
     } else {
     block_9:
-        tmp1 = *(s16 *)(car + 0x114);
+        tmp1 = car->heading;
         tmp0 = 0x3FF;
         work6 = tmp0 - tmp1;
     }
@@ -2990,7 +2985,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     work0 += MathMultiplyFixed16(callA0, callA1 << 16);
     work0 >>= 16;
     separation.y = work0;
-    tmp0 = *(s32 *)(car + 0x370);
+    tmp0 = *(s32 *)((u8 *)car + 0x370);
     tmp0 = *(s16 *)(tmp0 + 0x1E);
     tmp1 = separation.x;
     collisionHalfWidth = tmp0 - 10;
@@ -3004,11 +2999,11 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
     outsideCollisionWidth = tmp0;
     result = 0;
     if (outsideCollisionWidth == 0) {
-        work3 = MathMultiplyFixed16((*(s32 *)(otherCar + 0x18)), 0xFA0);
+        work3 = MathMultiplyFixed16((otherCar->basis[0].x), 0xFA0);
 
-        work2 = MathMultiplyFixed16((*(s32 *)(otherCar + 0x24)), 0xFA0);
+        work2 = MathMultiplyFixed16((otherCar->basis[1].x), 0xFA0);
 
-        tmp0 = MathMultiplyFixed16(*(s32 *)(otherCar + 0x30), 0xFA0);
+        tmp0 = MathMultiplyFixed16(otherCar->basis[2].x, 0xFA0);
         tmp1 = pairCosTable3[0];
         work1 = work6 << 2;
         direction.z = tmp0;
@@ -3041,8 +3036,8 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         work0 += MathMultiplyFixed16(callA0, callA1);
         work0 >>= 16;
         direction.y = work0;
-        tmp0 = *(s32 *)(car + 0xB0);
-        productX = *(s32 *)(otherCar + 0xB0);
+        tmp0 = car->velocityX;
+        productX = otherCar->velocityX;
         tmp1 = direction.x;
         scratchA0 = D_800A3668Absolute[0];
         tmp0 -= productX;
@@ -3051,35 +3046,34 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         scratchA0 += tmp1;
         work6 = *(u8 *)scratchA0;
         velocity.x = tmp0;
-        tmp0 = *(s32 *)(car + 0xB4);
-        tmp1 = *(s32 *)(otherCar + 0xB4);
+        tmp0 = car->velocityY;
+        tmp1 = otherCar->velocityY;
         tmp0 -= tmp1;
         productY = tmp0 * tmp0;
         velocity.y = tmp0;
-        tmp1 = *(s32 *)(otherCar + 0xB8);
-        tmp0 = *(s32 *)(car + 0xB8);
+        tmp1 = otherCar->velocityZ;
+        tmp0 = car->velocityZ;
         tmp0 -= tmp1;
         velocity.z = tmp0;
         tmp0 = MathSqrt(productX + productY);
         relativeSpeed = tmp0;
         tmp1 = separation.y;
-        scratchA0 = *(s16 *)(car + 0x1EC);
+        scratchA0 = car->type;
         tmp0 = 1;
         work2 = tmp1;
         if (tmp1 < 0) {
             work2 = -work2;
         }
-        if ((scratchA0 == tmp0) &&
-            ((*(s16 *)(otherCar + 0x1EC)) == scratchA0)) {
-            tmp0 = *(s32 *)(car + 0x370);
+        if ((scratchA0 == tmp0) && ((otherCar->type) == scratchA0)) {
+            tmp0 = *(s32 *)((u8 *)car + 0x370);
             tmp0 = *(s16 *)(tmp0 + 0x22);
             scratchV1 = tmp0 - 0x1E;
         } else {
-            tmp0 = *(s32 *)(car + 0x370);
+            tmp0 = *(s32 *)((u8 *)car + 0x370);
             tmp0 = *(s16 *)(tmp0 + 0x22);
             scratchV1 = tmp0 - 0xF;
         }
-        (*(s16 *)(car + 0x1CE)) = 0;
+        (car->unk1CE) = 0;
         tmp0 = (u32)work6 < 0xA1;
         scratchA1 = scratchV1 << 1;
         if (tmp0 == 0) {
@@ -3090,55 +3084,49 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
             if (tmp0 != 0) {
                 responseCode = 1;
                 if (relativeSpeed >= 0x12D) {
-                    tmp0 = *(s16 *)(car + 0x1EC);
+                    tmp0 = car->type;
                     goto block_125;
                 }
                 if (separation.x >= 0) {
-                    (*(s16 *)(car + 0x1CE)) = 2;
+                    (car->unk1CE) = 2;
                     tmp0 = collisionHalfWidth << 3;
                     tmp1 = tmp0 + collisionHalfWidth;
                     if (tmp1 < 0) {
                         tmp1 += 3;
                     }
                     tmp0 = separation.x;
-                    callA0 = *(s32 *)(car + 0x18);
+                    callA0 = car->basis[0].x;
                     tmp1 >>= 2;
                     tmp0 -= tmp1;
                     tmp1 = (u32)tmp0 >> 31;
                     tmp0 += tmp1;
                     work3 = tmp0 >> 1;
-                    (*(s32 *)(car + 0x0)) =
-                        (s32)((*(s32 *)(car + 0x0)) +
-                              MathMultiplyFixed16(callA0, work3));
-                    (*(s32 *)(car + 0x4)) =
-                        (s32)((*(s32 *)(car + 0x4)) +
-                              MathMultiplyFixed16((*(s32 *)(car + 0x24)),
-                                                  work3));
-                    (*(s32 *)(otherCar + 0x0)) =
-                        (s32)((*(s32 *)(otherCar + 0x0)) -
-                              MathMultiplyFixed16((*(s32 *)(car + 0x18)),
-                                                  work3));
-                    (*(s32 *)(otherCar + 0x4)) =
-                        (s32)((*(s32 *)(otherCar + 0x4)) -
-                              MathMultiplyFixed16((*(s32 *)(car + 0x24)),
-                                                  work3));
+                    (car->pos.x) = (s32)((car->pos.x) +
+                                         MathMultiplyFixed16(callA0, work3));
+                    (car->pos.y) =
+                        (s32)((car->pos.y) +
+                              MathMultiplyFixed16((car->basis[1].x), work3));
+                    (otherCar->pos.x) =
+                        (s32)((otherCar->pos.x) -
+                              MathMultiplyFixed16((car->basis[0].x), work3));
+                    (otherCar->pos.y) =
+                        (s32)((otherCar->pos.y) -
+                              MathMultiplyFixed16((car->basis[1].x), work3));
                     if (direction.x > 0) {
-                        speedSumA = (*(s32 *)(otherCar + 0x90)) +
-                                    (*(s32 *)(car + 0x90));
+                        speedSumA = (otherCar->speed) + (car->speed);
                         meanSpeedA =
                             (s32)(speedSumA + (speedSumA >> 0x1F)) >> 1;
-                        if ((*(s16 *)(otherCar + 0x1EC)) != 0) {
-                            (*(s32 *)(otherCar + 0x90)) =
-                                (s32)(meanSpeedA + 0xA0000);
+                        if ((otherCar->type) != 0) {
+                            (otherCar->speed) = (s32)(meanSpeedA + 0xA0000);
                         }
-                        if ((*(s16 *)(car + 0x1EC)) != 0) {
+                        if ((car->type) != 0) {
                             newSpeedA = meanSpeedA + 0xFFF60000;
                             goto block_40;
                         }
                     } else {
-                        tmp0 = *(s32 *)(otherCar + 0x90);
-                        tmp1 = *(s32 *)(car + 0x90);
-                        scratchA0 = *(s16 *)(otherCar + 0x1EC);
+                        tmp0 = otherCar->speed;
+                        tmp1 = car->speed;
+                        scratchA0 = otherCar->type;
                         tmp0 += tmp1;
                         if (tmp0 < 0) {
                             tmp0 = -tmp0;
@@ -3147,13 +3135,12 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                         tmp0 += tmp1;
                         tmp1 = tmp0 >> 1;
                         if (scratchA0 != 0) {
-                            (*(s32 *)(otherCar + 0x90)) =
-                                (s32)(tmp1 + 0xFFF60000);
+                            (otherCar->speed) = (s32)(tmp1 + 0xFFF60000);
                         }
-                        if ((*(s16 *)(car + 0x1EC)) != 0) {
+                        if ((car->type) != 0) {
                             newSpeedA = tmp1 + 0xA0000;
                         block_40:
-                            (*(s32 *)(car + 0x90)) = newSpeedA;
+                            (car->speed) = newSpeedA;
                         }
                     }
                     func_80025DD4(otherCar, car);
@@ -3190,7 +3177,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     }
                     CollisionApplyImpulse(car, otherCar, velocity, work0,
                                           work0);
-                    tmp0 = *(s16 *)(car + 0x114);
+                    tmp0 = car->heading;
                     tmp1 = D_800A3A2CAbsolute[0];
                     tmp0 += 0x200;
                     work6 = tmp0 & 0x3FF;
@@ -3199,21 +3186,21 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     tmp0 = *(s32 *)tmp1;
                     impulseX = relativeSpeed * tmp0;
                     tmp1 = D_800A3A34Absolute[0];
-                    tmp0 = *(s32 *)(car + 0xC4);
+                    tmp0 = car->frontVelocityX;
                     scratchA0 += tmp1;
                     asm(""
                         : "=r"(impulsePart)
                         : "0"(impulseX), "r"(tmp0), "r"(scratchA0));
                     tmp0 += impulsePart;
-                    *(s32 *)(car + 0xC4) = tmp0;
+                    car->frontVelocityX = tmp0;
                     tmp0 = *(s32 *)scratchA0;
                     impulseY = relativeSpeed * tmp0;
-                    tmp0 = *(s32 *)(car + 0xC8);
+                    tmp0 = car->frontVelocityY;
                     asm("" : "=r"(impulsePart) : "0"(impulseY), "r"(tmp0));
                     tmp0 += impulsePart;
-                    *(s32 *)(car + 0xC8) = tmp0;
+                    car->frontVelocityY = tmp0;
                     result = 2;
-                    if ((*(s16 *)(otherCar + 0x1EC)) == work0) {
+                    if ((otherCar->type) == work0) {
                         func_8003AC18(otherCar, relativeSpeed, separation.x,
                                       separation.y);
                         asm("# collision response 1");
@@ -3221,7 +3208,7 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     }
                     return result;
                 }
-                (*(s16 *)(car + 0x1CE)) = 3;
+                (car->unk1CE) = 3;
                 tmp1 = separation.x;
                 tmp0 = collisionHalfWidth << 3;
                 tmp0 += collisionHalfWidth;
@@ -3229,40 +3216,37 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                 if (tmp0 < 0) {
                     tmp0 += 3;
                 }
-                callA0 = *(s32 *)(car + 0x18);
+                callA0 = car->basis[0].x;
                 tmp0 >>= 2;
                 tmp0 = tmp1 - tmp0;
                 tmp1 = (u32)tmp0 >> 31;
                 tmp0 += tmp1;
                 work3 = tmp0 >> 1;
-                (*(s32 *)(car + 0x0)) =
-                    (s32)((*(s32 *)(car + 0x0)) -
-                          MathMultiplyFixed16(callA0, work3));
-                (*(s32 *)(car + 0x4)) =
-                    (s32)((*(s32 *)(car + 0x4)) -
-                          MathMultiplyFixed16((*(s32 *)(car + 0x24)), work3));
-                (*(s32 *)(otherCar + 0x0)) =
-                    (s32)((*(s32 *)(otherCar + 0x0)) +
-                          MathMultiplyFixed16((*(s32 *)(car + 0x18)), work3));
-                (*(s32 *)(otherCar + 0x4)) =
-                    (s32)((*(s32 *)(otherCar + 0x4)) +
-                          MathMultiplyFixed16((*(s32 *)(car + 0x24)), work3));
+                (car->pos.x) =
+                    (s32)((car->pos.x) - MathMultiplyFixed16(callA0, work3));
+                (car->pos.y) =
+                    (s32)((car->pos.y) -
+                          MathMultiplyFixed16((car->basis[1].x), work3));
+                (otherCar->pos.x) =
+                    (s32)((otherCar->pos.x) +
+                          MathMultiplyFixed16((car->basis[0].x), work3));
+                (otherCar->pos.y) =
+                    (s32)((otherCar->pos.y) +
+                          MathMultiplyFixed16((car->basis[1].x), work3));
                 if (direction.x > 0) {
-                    speedSumB =
-                        (*(s32 *)(otherCar + 0x90)) + (*(s32 *)(car + 0x90));
+                    speedSumB = (otherCar->speed) + (car->speed);
                     meanSpeedB = (s32)(speedSumB + (speedSumB >> 0x1F)) >> 1;
-                    if ((*(s16 *)(otherCar + 0x1EC)) != 0) {
-                        (*(s32 *)(otherCar + 0x90)) =
-                            (s32)(meanSpeedB + 0xA0000);
+                    if ((otherCar->type) != 0) {
+                        (otherCar->speed) = (s32)(meanSpeedB + 0xA0000);
                     }
-                    if ((*(s16 *)(car + 0x1EC)) != 0) {
+                    if ((car->type) != 0) {
                         newSpeedB = meanSpeedB + 0xFFF60000;
                         goto block_69;
                     }
                 } else {
-                    tmp0 = *(s32 *)(otherCar + 0x90);
-                    tmp1 = *(s32 *)(car + 0x90);
-                    scratchA0 = *(s16 *)(otherCar + 0x1EC);
+                    tmp0 = otherCar->speed;
+                    tmp1 = car->speed;
+                    scratchA0 = otherCar->type;
                     tmp0 += tmp1;
                     if (tmp0 < 0) {
                         tmp0 = -tmp0;
@@ -3271,12 +3255,12 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     tmp0 += tmp1;
                     tmp1 = tmp0 >> 1;
                     if (scratchA0 != 0) {
-                        (*(s32 *)(otherCar + 0x90)) = (s32)(tmp1 + 0xFFF60000);
+                        (otherCar->speed) = (s32)(tmp1 + 0xFFF60000);
                     }
-                    if ((*(s16 *)(car + 0x1EC)) != 0) {
+                    if ((car->type) != 0) {
                         newSpeedB = tmp1 + 0xA0000;
                     block_69:
-                        (*(s32 *)(car + 0x90)) = newSpeedB;
+                        (car->speed) = newSpeedB;
                     }
                 }
                 func_80025DD4(otherCar, car);
@@ -3319,37 +3303,36 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                 return 2;
             }
             if (work2 < scratchA1) {
-                (*(s16 *)(car + 0x1CE)) = 4;
+                (car->unk1CE) = 4;
                 work2 = scratchA1 - work2;
                 work3 = 1;
                 if (separation.y > 0) {
                     work2 = -work2;
                 }
-                work1 = MathMultiplyFixed16((*(s32 *)(car + 0x1C)), work2);
+                work1 = MathMultiplyFixed16((car->basis[0].y), work2);
 
-                (*(s32 *)(car + 0x0)) = (s32)((*(s32 *)(car + 0x0)) + work1);
-                work0 = MathMultiplyFixed16((*(s32 *)(car + 0x28)), work2);
+                (car->pos.x) = (s32)((car->pos.x) + work1);
+                work0 = MathMultiplyFixed16((car->basis[1].y), work2);
 
-                (*(s32 *)(car + 0x4)) = (s32)((*(s32 *)(car + 0x4)) + work0);
-                (*(s32 *)(otherCar + 0x0)) =
-                    (s32)((*(s32 *)(otherCar + 0x0)) -
-                          MathMultiplyFixed16((*(s32 *)(car + 0x1C)), work2));
-                (*(s32 *)(otherCar + 0x4)) =
-                    (s32)((*(s32 *)(otherCar + 0x4)) -
-                          MathMultiplyFixed16((*(s32 *)(car + 0x28)), work2));
+                (car->pos.y) = (s32)((car->pos.y) + work0);
+                (otherCar->pos.x) =
+                    (s32)((otherCar->pos.x) -
+                          MathMultiplyFixed16((car->basis[0].y), work2));
+                (otherCar->pos.y) =
+                    (s32)((otherCar->pos.y) -
+                          MathMultiplyFixed16((car->basis[1].y), work2));
                 func_80025DD4(otherCar, car);
                 nextCallback = (s32)ObjectSetResetCallback;
-                if ((((*(s16 *)(car + 0x1EC)) != work3) ||
+                if ((((car->type) != work3) ||
                      (nextCallback != (s32)func_80025730)) &&
-                    ((*(s32 *)(car + 0x354)) != (s32)func_80025730) &&
-                    ((*(s8 *)(car + 0x200)) != 4)) {
-                    (*(s32 *)(car + 0x354)) = nextCallback;
+                    ((*(s32 *)((u8 *)car + 0x354)) != (s32)func_80025730) &&
+                    ((car->mode) != 4)) {
+                    (*(s32 *)((u8 *)car + 0x354)) = nextCallback;
                 }
-                if ((*(s16 *)(car + 0x1EC)) == 0) {
-                    if ((*(s16 *)(otherCar + 0x1EC)) != 0) {
-                        carHeading = (*(s16 *)(car + 0x114));
-                        headingDifference =
-                            carHeading - (*(s16 *)(otherCar + 0x114));
+                if ((car->type) == 0) {
+                    if ((otherCar->type) != 0) {
+                        carHeading = (car->heading);
+                        headingDifference = carHeading - (otherCar->heading);
                         wrappedHeadingDifference = headingDifference + 0x400;
                         roundedHeadingDifference = wrappedHeadingDifference;
                         if (wrappedHeadingDifference < 0) {
@@ -3363,8 +3346,8 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                         } else {
                             otherHeading = carHeading;
                         }
-                        (*(s16 *)(otherCar + 0x114)) = otherHeading;
-                        (*(s16 *)(otherCar + 0x116)) =
+                        (otherCar->heading) = otherHeading;
+                        ((s16)otherCar->fineHeading) =
                             (s16)((s32)(otherHeading << 0x10) >> 0xE);
                     }
                     responseYInRange = work1 < 0x33;
@@ -3388,35 +3371,35 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     work0 = -0x32;
                 }
                 if (separation.x >= -collisionHalfWidth) {
-                    (*(s32 *)(car + 0xC4)) =
-                        (s32)((*(s32 *)(car + 0xC4)) + (work1 << 0x11));
-                    (*(s32 *)(car + 0xC8)) =
-                        (s32)((*(s32 *)(car + 0xC8)) + (work0 << 0x11));
+                    (car->frontVelocityX) =
+                        (s32)((car->frontVelocityX) + (work1 << 0x11));
+                    (car->frontVelocityY) =
+                        (s32)((car->frontVelocityY) + (work0 << 0x11));
                 }
                 tmp0 = separation.x;
                 tmp0 = collisionHalfWidth < tmp0;
                 if (tmp0 != 0) {
                     return 1;
                 }
-                tmp1 = *(s32 *)(car + 0xD0);
-                callA0 = *(s32 *)(car + 0xD4);
-                scratchA1 = *(s16 *)(car + 0x1EC);
+                tmp1 = car->rearVelocityX;
+                callA0 = car->rearVelocityY;
+                scratchA1 = car->type;
                 tmp0 = work1 << 16;
                 tmp1 += tmp0;
                 tmp0 = work0 << 16;
                 callA0 += tmp0;
-                *(s32 *)(car + 0xD0) = tmp1;
-                *(s32 *)(car + 0xD4) = callA0;
+                car->rearVelocityX = tmp1;
+                car->rearVelocityY = callA0;
                 if (scratchA1 != 0) {
                     goto sideReturnOne;
                 }
-                tmp1 = *(s16 *)(otherCar + 0x1EC);
+                tmp1 = otherCar->type;
                 tmp0 = 1;
                 if (tmp1 == tmp0) {
                     tmp1 = 0xFFFB0000;
-                    tmp0 = *(s32 *)(otherCar + 0x90);
+                    tmp0 = otherCar->speed;
                     tmp0 += tmp1;
-                    *(s32 *)(otherCar + 0x90) = tmp0;
+                    otherCar->speed = tmp0;
                 sideReturnOne:
                     asm("# side return one");
                     tmp0 = 1;
@@ -3446,78 +3429,74 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
         block_122:
             if (work2 < overlapLimit) {
                 if (relativeSpeed >= 0x12D) {
-                    tmp0 = *(s16 *)(car + 0x1EC);
+                    tmp0 = car->type;
                     responseCode = 5;
                 block_125:
                     asm("" : "=r"(callA0) : "0"((s32)func_80025730));
-                    (*(s16 *)(car + 0x1CE)) = responseCode;
-                    if ((tmp0 != 1) && ((*(s32 *)(car + 0x354)) != callA0) &&
-                        ((*(s8 *)(car + 0x200)) != 4)) {
-                        (*(s32 *)(car + 0x354)) = callA0;
+                    (car->unk1CE) = responseCode;
+                    if ((tmp0 != 1) &&
+                        ((*(s32 *)((u8 *)car + 0x354)) != callA0) &&
+                        ((car->mode) != 4)) {
+                        (*(s32 *)((u8 *)car + 0x354)) = callA0;
                     }
-                    if (((*(s16 *)(otherCar + 0x1EC)) == 0)) {
-                        tmp0 = *(s32 *)(otherCar + 0x354);
+                    if (((otherCar->type) == 0)) {
+                        tmp0 = *(s32 *)((u8 *)otherCar + 0x354);
                         callA0 = (s32)func_80025730;
-                        if ((tmp0 != callA0) &&
-                            ((*(s8 *)(otherCar + 0x200)) != 4)) {
-                            (*(s32 *)(otherCar + 0x354)) = callA0;
+                        if ((tmp0 != callA0) && ((otherCar->mode) != 4)) {
+                            (*(s32 *)((u8 *)otherCar + 0x354)) = callA0;
                         }
                     }
                     result = 4;
-                    if ((*(s16 *)(car + 0x1EC)) == 0) {
+                    if ((car->type) == 0) {
                         func_8003AC18(otherCar, relativeSpeed, separation.x,
                                       separation.y);
                         return 4;
                     }
                     return result;
                 }
-                (*(s16 *)(car + 0x1CE)) = 6;
+                (car->unk1CE) = 6;
                 tmp0 = original.x;
                 tmp1 = tmp0 * tmp0;
                 tmp0 = original.y;
                 productY = tmp0 * tmp0;
                 work3 = MathSqrt(tmp1 + productY);
-                (*(s32 *)(car + 0x0)) =
+                (car->pos.x) =
                     (s32)(midpoint.x +
-                          ((s32)(MathFixedDivide((*(s32 *)(car + 0x0)) -
-                                                     midpoint.x,
+                          ((s32)(MathFixedDivide((car->pos.x) - midpoint.x,
                                                  work3) *
                                  0x320) >>
                            0x10));
-                (*(s32 *)(car + 0x4)) =
+                (car->pos.y) =
                     (s32)(midpoint.y +
-                          ((s32)(MathFixedDivide((*(s32 *)(car + 0x4)) -
-                                                     midpoint.y,
+                          ((s32)(MathFixedDivide((car->pos.y) - midpoint.y,
                                                  work3) *
                                  0x320) >>
                            0x10));
-                (*(s32 *)(otherCar + 0x0)) =
+                (otherCar->pos.x) =
                     (s32)(midpoint.x +
-                          ((s32)(MathFixedDivide((*(s32 *)(otherCar + 0x0)) -
-                                                     midpoint.x,
+                          ((s32)(MathFixedDivide((otherCar->pos.x) - midpoint.x,
                                                  work3) *
                                  0x320) >>
                            0x10));
                 otherPositionY =
                     midpoint.y +
-                    ((s32)(MathFixedDivide(
-                               (*(s32 *)(otherCar + 0x4)) - midpoint.y, work3) *
+                    ((s32)(MathFixedDivide((otherCar->pos.y) - midpoint.y,
+                                           work3) *
                            0x320) >>
                      0x10);
-                (*(s32 *)(otherCar + 0x4)) = otherPositionY;
+                (otherCar->pos.y) = otherPositionY;
                 func_80025DD4(otherCar, car);
                 tmp1 = separation.x;
                 if (tmp1 >= -collisionHalfWidth) {
                     CollisionApplyImpulse(car, otherCar, velocity, 1, 0);
-                    if ((separation.x < 0) &&
-                        ((*(s16 *)(otherCar + 0x1EC)) != 0)) {
-                        (*(s32 *)(otherCar + 0x90)) = 0;
+                    if ((separation.x < 0) && ((otherCar->type) != 0)) {
+                        (otherCar->speed) = 0;
                     }
                 } else {
                     beyondFar = collisionHalfWidth < tmp1;
                     if (beyondFar == 0) {
-                        tmp0 = *(s32 *)(otherCar + 0xB0);
-                        tmp1 = *(s32 *)(otherCar + 0xB4);
+                        tmp0 = otherCar->velocityX;
+                        tmp1 = otherCar->velocityY;
                         scratchA0 = (u32)tmp0 >> 31;
                         tmp0 = (tmp0 + scratchA0) >> 1;
                         work1 = tmp0 << 16;
@@ -3530,14 +3509,14 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                     }
                 }
                 nextCallback = (s32)CarApplyRandomHeadingImpulse;
-                if ((((*(s16 *)(car + 0x1EC)) != 1) ||
+                if ((((car->type) != 1) ||
                      (nextCallback != (s32)func_80025730)) &&
-                    ((*(s32 *)(car + 0x354)) != (s32)func_80025730) &&
-                    ((*(s8 *)(car + 0x200)) != 4)) {
-                    (*(s32 *)(car + 0x354)) = nextCallback;
+                    ((*(s32 *)((u8 *)car + 0x354)) != (s32)func_80025730) &&
+                    ((car->mode) != 4)) {
+                    (*(s32 *)((u8 *)car + 0x354)) = nextCallback;
                 }
                 result = 2;
-                if ((*(s16 *)(car + 0x1EC)) == 0) {
+                if ((car->type) == 0) {
                     func_8003AC18(otherCar, relativeSpeed, separation.x,
                                   separation.y);
                     return 2;
@@ -3545,9 +3524,9 @@ s32 CarHandlePairCollision(u8 *firstCar, u8 *secondCar) {
                 return result;
             }
             if ((tmp0 = work2 < scratchA1) != 0) {
-                (*(s16 *)(car + 0x1CE)) = 7;
+                (car->unk1CE) = 7;
                 result = 3;
-                if ((*(s16 *)(otherCar + 0x1EC)) == 1) {
+                if ((otherCar->type) == 1) {
                     func_8003AC18(otherCar, relativeSpeed, separation.x,
                                   separation.y);
                     return 3;
@@ -4890,7 +4869,7 @@ void CarApplyCorneringDrag(Car *car) {
     s32 step;
     s32 offset;
 
-    func_8002BD48((u8 *)car);
+    func_8002BD48(car);
     if (D_800A3598[0] == 1) {
         base = MathMultiplyFixed16(car->rot[1].z, 0x1C000000) >> 16;
         slope = car->unk212;
@@ -6113,7 +6092,7 @@ s32 CarGetWheelGrip(Car *car, s16 surface, s32 idx) {
         if (surface == 2) {
             D_800A2E5B++;
             if (car->speed > 0x140000) {
-                EffectSpawnAtWheel((u8 *)car, idx);
+                EffectSpawnAtWheel(car, idx);
             }
             if (D_800A2E5A) {
                 scale = MathFixedDivide(0x63, 0x64);
@@ -6206,7 +6185,7 @@ void func_8002B9AC(Car *car, s32 *frontGrip, s32 *rearGrip) {
     grip = grip + CarGetWheelGrip(car, car->rearLeftContact, 3);
     grip = MathMultiplyFixed16(car->wheel[0].unkC + car->wheel[1].unkC, grip);
     if (D_800A2E5B == 4) {
-        func_80041848((u8 *)car, 3);
+        func_80041848(car, 3);
     }
     count = car->unk2A6;
     cnt = count + 1;
@@ -6245,18 +6224,18 @@ void func_8002B9AC(Car *car, s32 *frontGrip, s32 *rearGrip) {
 
 extern s32 D_800A2E40;
 
-void func_8002BC88(u8 *arg0) {
+void func_8002BC88(Car *arg0) {
     s32 y;
     s32 val;
     s32 result;
     s32 d;
-    y = (*(s16 *)(arg0 + 0x2A6) + 1) * 75 << 16;
-    val = D_800A2E24Absolute[0] + *(s32 *)(arg0 + 0x22C) -
-          (*(s16 *)(arg0 + 0x10E) << 17) - y / 15;
-    result = MathFixedDivide(*(s32 *)(arg0 + 0x28C), 16000);
+    y = (arg0->unk2A6 + 1) * 75 << 16;
+    val = D_800A2E24Absolute[0] + arg0->speedBoost - (arg0->unk10E << 17) -
+          y / 15;
+    result = MathFixedDivide(arg0->unk28C, 16000);
     d = D_800A2E40;
     val -= result * d - ((d / 2) << 16);
-    *(s32 *)(arg0 + 0x98) = val;
+    arg0->maxSpeed = val;
 }
 
 extern s32 D_800A3598Physics[] asm("D_800A3598.NON_MATCHING");
@@ -6509,7 +6488,7 @@ void func_8002BD48(Car *carBytes) {
             if ((leader->type) != 0) {
                 goto findCar;
             }
-            leaderDistance = func_8003702C(leader, (u8 *)car);
+            leaderDistance = func_8003702C(leader, car);
             asm("" : "=r"(distanceAdjusted) : "0"(leaderDistance));
             if (((u32)(distanceAdjusted + 2)) < 0xAU) {
                 distanceAdjusted -= 3;
@@ -6654,7 +6633,7 @@ void func_8002BD48(Car *carBytes) {
             } else {
                 if (RandomScaledGet(firstRandomRange) < 0xB) {
                 firstSlideEvent:
-                    EffectSpawnAtWheel((u8 *)car, 0);
+                    EffectSpawnAtWheel(car, 0);
                 }
                 secondRandomRange = speedHigh + 1;
             }
@@ -6665,7 +6644,7 @@ void func_8002BD48(Car *carBytes) {
                 }
             } else if (RandomScaledGet(secondRandomRange) < 0xB) {
             secondSlideEvent:
-                EffectSpawnAtWheel((u8 *)car, 1);
+                EffectSpawnAtWheel(car, 1);
             }
             slideYawDivisor = D_800A2E5C;
             car->sliding = 1;
@@ -7580,7 +7559,7 @@ Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     }
     CarInitDefaults(entry);
     func_80028754((u8 *)entry, 5);
-    ObjectSetHeading((u8 *)entry, D_800BE72C[arg1].unkC);
+    ObjectSetHeading(entry, D_800BE72C[arg1].unkC);
     w = D_800A2E94Lui;
     b = arg1 + 1;
     entry->place = b;
@@ -8037,7 +8016,7 @@ extern s32 D_800B9D78[];
 void SceneUpdateRoadStrip(Car *car);
 void HudDrawDashboard(void);
 void EffectUpdateAndDrawParticles(void);
-void SceneDrawSunGlare(u8 *car);
+void SceneDrawSunGlare(Car *car);
 void func_80036264(void);
 
 /* Draws the road for one car's view: narrows the clip limits in the split
@@ -8150,7 +8129,7 @@ void SceneDrawView(Car *arg0) {
     back = back->next;
     ahead = ahead->prev;
     D_800B9D58[0] += GetRCnt(0xF2000001) - D_800B9D78[0];
-    func_8002E240(arg0, (u8 *)ahead, (u8 *)back, (u8 *)current);
+    func_8002E240(arg0, ahead, back, current);
     EffectUpdateAndDrawParticles();
 }
 
@@ -13718,7 +13697,7 @@ MatrixSetRotationFromAngle373B4(Car *, s32) asm("MatrixSetRotationFromAngle");
 extern void func_8001FB28373B4(Car *, s16) asm("func_8001FB28");
 extern void func_80029CB4373B4(u8 *) asm("func_80029CB4");
 extern void func_8002A1D0373B4(u8 *) asm("func_8002A1D0");
-extern void func_8002BC88373B4(u8 *) asm("func_8002BC88");
+extern void func_8002BC88373B4(Car *) asm("func_8002BC88");
 extern void func_8002D16C373B4(Car *) asm("func_8002D16C");
 extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
 extern void CarSteerTowardHeading373B4(Car *, s32) asm("CarSteerTowardHeading");
@@ -13726,7 +13705,7 @@ extern s32 func_8003702C373B4(Car *, Car *) asm("func_8003702C");
 extern s32 func_80037204373B4(Car *) asm("func_80037204");
 extern s32 CarAvoidTraffic373B4(Car *, s32) asm("CarAvoidTraffic");
 extern void func_8003DBA8373B4(Car *) asm("func_8003DBA8");
-extern u8 func_8003E78C373B4(u8 *) asm("func_8003E78C");
+extern u8 func_8003E78C373B4(Car *) asm("func_8003E78C");
 extern void func_80044114373B4(Car *) asm("func_80044114");
 extern s8 CarGetTrackSide373B4(Car *, s32) asm("CarGetTrackSide");
 extern void SceneSetCameraTarget373B4(Car *) asm("SceneSetCameraTarget");
@@ -15376,7 +15355,7 @@ void CarUpdateAi(Car *arg0) {
             val = 1;
         }
         if (gSplitScreenModeLui == 2) {
-            if (ABS(func_8003702C(arg0, (u8 *)gPlayerCarLui->next)) < 0x19) {
+            if (ABS(func_8003702C(arg0, gPlayerCarLui->next)) < 0x19) {
                 val = 1;
             }
         }
@@ -15604,7 +15583,7 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
         if (maxDistance >= 6) {
             maxDistance = 5;
         }
-        routeDistance = func_8003702C((u8 *)other, (u8 *)car);
+        routeDistance = func_8003702C(other, car);
         if (keepTarget & 0xFF) {
             if (routeDistance < 3) {
                 return 0;
@@ -16063,9 +16042,9 @@ void func_8003A440(void) {
     D_800A2EE4w15[0] = D_800A33E4;
 }
 
-extern void func_80041564(u8 *, s32);
+extern void func_80041564(Car *, s32);
 extern void func_800294A8(void *);
-extern void CarUpdateState(u8 *);
+extern void CarUpdateState(Car *);
 extern u32 D_800A2F50;
 extern u8 D_800A39F8nm[] asm("D_800A39F8.NON_MATCHING");
 extern u8 D_800A38B8nm[] asm("D_800A38B8.NON_MATCHING");
@@ -16348,28 +16327,28 @@ void CarAdvanceResetTimer(u8 *object) {
     }
 }
 
-void func_8003AC18(u8 *object, s32 arg1, s32 arg2, s32 arg3) {
-    if (*(s16 *)(object + 0x1EC) == 1) {
-        *(s16 *)(object + 0x1BC) = 0;
+void func_8003AC18(Car *object, s32 arg1, s32 arg2, s32 arg3) {
+    if (object->type == 1) {
+        object->unk1BC = 0;
         if ((arg2 = arg2) > 0 && arg3 > 0) {
-            *(s16 *)(object + 0x102) = 1;
+            object->unk102 = 1;
         } else if ((arg2 = arg2) < 0 && arg3 < 0) {
-            *(s16 *)(object + 0x102) = 1;
+            object->unk102 = 1;
         } else {
-            *(s16 *)(object + 0x102) = 0;
+            object->unk102 = 0;
         }
         if (arg1 >= 0xC9) {
-            ObjectSetCallbackIfAllowed((Car *)object, func_8003AA20);
+            ObjectSetCallbackIfAllowed(object, func_8003AA20);
             ((void (*)(void *, s32))func_8002F66C)(object, 1);
             func_80041564(object, 0x29);
         } else if (arg1 >= 0xB0) {
-            ObjectSetCallbackIfAllowed((Car *)object, func_8003A880);
+            ObjectSetCallbackIfAllowed(object, func_8003A880);
             func_80041564(object, 0x29);
         } else if (arg1 >= 0x97) {
-            ObjectSetCallbackIfAllowed((Car *)object, func_8003A950);
+            ObjectSetCallbackIfAllowed(object, func_8003A950);
             func_80041564(object, 0x29);
         } else if (arg1 >= 0x3D) {
-            ObjectSetCallbackIfAllowed((Car *)object, func_8003AAEC);
+            ObjectSetCallbackIfAllowed(object, func_8003AAEC);
         }
     }
 }
@@ -16814,7 +16793,7 @@ void RaceUpdatePositions(u8 force) {
         D_800A35E0[0] = (s32)leader;
         if (D_800A2EF0Absolute == 0 && leader->penalty != 0) {
             D_800A2EF0Absolute = 1;
-            func_80041848((u8 *)leader, 4);
+            func_80041848(leader, 4);
         }
         player = gRankPlayerCar[0];
         if (gSessionTypeAbsolute[0] == 1) {
@@ -16829,26 +16808,26 @@ void RaceUpdatePositions(u8 force) {
             if (prevPlace[0] != 1) {
                 racer = gRankPlayerCar[0];
                 if (racer->place == 1) {
-                    func_80041564((u8 *)racer, 0x45);
+                    func_80041564(racer, 0x45);
                 }
             }
         } else {
             for (assist = 0; assist < D_800A2EB4Absolute[0]; assist++) {
                 if (prevPlace[assist] != 1 && player->place == 1 &&
                     player->unk3D0 == 0) {
-                    func_80041564((u8 *)player, 0x24);
+                    func_80041564(player, 0x24);
                 } else if (player->place < prevPlace[assist] &&
                            prevPlace[assist] < 16) {
                     if ((D_800A306DAbsolute[0] != 0 ||
                          player->place < prevPlace[assist] - 1) &&
                         ((RankLink *)player->order.node.previous)
                                 ->car->unk268 == 0) {
-                        func_80041564((u8 *)player, 0x26);
+                        func_80041564(player, 0x26);
                     }
                 } else if (prevPlace[assist] < player->place) {
-                    func_80041848((u8 *)player, 0x4C);
+                    func_80041848(player, 0x4C);
                 } else if (prevPlace[assist] < player->place - 1) {
-                    func_80041848((u8 *)player, 0x4D);
+                    func_80041848(player, 0x4D);
                 }
                 player = player->next;
             }

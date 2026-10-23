@@ -413,12 +413,12 @@ void CarDrawAll(void) {
                         *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
                     func_800168F8(*(u8 **)(car + 0x36C),
                                   (s8)((s8) * (u8 *)(car + 0x200) / 5));
-                    CarDrawModel((u8 *)car, 0);
+                    CarDrawModel(car, 0);
                 }
                 continue;
             }
             released = 1;
-            if (CarDrawModel((u8 *)car, 1) & 0xFF) {
+            if (CarDrawModel(car, 1) & 0xFF) {
                 *(u8 *)(car + 0x358) = 1;
             } else {
                 *(u8 *)(car + 0x358) = 0;

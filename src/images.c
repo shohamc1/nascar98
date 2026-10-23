@@ -935,16 +935,16 @@ void MatrixRestoreState(void) {
 
 #ifdef NON_MATCHING
 /* Wall: same scheduler wall as func_8001FB28: load/negu placement differs. */
-void MatrixSetRotationFromAngle(u8 *object, s32 angleIndex) {
-    *(s32 *)((u8 *)object + 0x18) = ((s16 *)D_800A384C)[angleIndex] * 4;
-    *(s32 *)((u8 *)object + 0x30) = 0;
-    *(s32 *)((u8 *)object + 0x24) = ((s16 *)D_800A3854)[angleIndex] * 4;
-    *(s32 *)((u8 *)object + 0x1C) = -((s16 *)D_800A3854)[angleIndex] * 4;
-    *(s32 *)((u8 *)object + 0x34) = 0;
-    *(s32 *)((u8 *)object + 0x20) = 0;
-    *(s32 *)((u8 *)object + 0x2C) = 0;
-    *(s32 *)((u8 *)object + 0x38) = 0x10000;
-    *(s32 *)((u8 *)object + 0x28) = ((s16 *)D_800A384C)[angleIndex] * 4;
+void MatrixSetRotationFromAngle(Car *object, s32 angleIndex) {
+    object->basis[0].x = ((s16 *)D_800A384C)[angleIndex] * 4;
+    object->basis[2].x = 0;
+    object->basis[1].x = ((s16 *)D_800A3854)[angleIndex] * 4;
+    object->basis[0].y = -((s16 *)D_800A3854)[angleIndex] * 4;
+    object->basis[2].y = 0;
+    object->basis[0].z = 0;
+    object->basis[1].z = 0;
+    object->basis[2].z = 0x10000;
+    object->basis[1].y = ((s16 *)D_800A384C)[angleIndex] * 4;
 }
 #else
 void MatrixSetRotationFromAngle(Car *arg0, s32 index) {

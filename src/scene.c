@@ -64,7 +64,7 @@ void CdLoadFileByIndex(s32 arg0, s32 arg1);
 void CdStopIfPlaybackChanged(void);
 void CdStop(void);
 void SoundReloadVabAndResetSlots(s32 arg0);
-void func_80041564(u8 *arg0, s32 arg1);
+void func_80041564(Car *arg0, s32 arg1);
 s32 PadTypeNeedsCalibration(s32 arg0);
 void HeapResetInitFlag(void);
 void GraphicsDrawDoubleBorderRect(s16 arg0, s16 arg1, s16 arg2, s16 arg3,
@@ -1975,19 +1975,17 @@ void func_80048568(void) {
     } else if (D_800A3728 != 0) {
         if ((u8)D_800A347C->unk401 != 0) {
             CarDrawModel(D_800A347C, 0);
-            if (D_800A35A4w40 <= 0 && func_80037204((u8 *)D_800A3728) != 0) {
+            if (D_800A35A4w40 <= 0 && func_80037204(D_800A3728) != 0) {
                 D_800A3728 = 0;
                 D_800A347C->unk10 = D_800A2EC0nm[0];
             }
         } else {
-            if (func_8003702C((u8 *)D_800A3728, gPlayerCar[0]) < 0) {
-                if (-func_8003702C((u8 *)D_800A3728, gPlayerCaragain[0]) >=
-                    0x19) {
+            if (func_8003702C(D_800A3728, gPlayerCar[0]) < 0) {
+                if (-func_8003702C(D_800A3728, gPlayerCaragain[0]) >= 0x19) {
                     goto fail;
                 }
             } else {
-                if (func_8003702C((u8 *)D_800A3728, gPlayerCaragain[0]) >=
-                    0x19) {
+                if (func_8003702C(D_800A3728, gPlayerCaragain[0]) >= 0x19) {
                 fail:
                     func_8004875C();
                 }
@@ -2116,7 +2114,7 @@ void RaceUpdateCrashTrigger(void) {
                                 car->unk414 = -1;
                                 car->unk26C[5] = 1;
                                 car->unk3A4 |= 0x1000;
-                                func_80041848((u8 *)car, 13);
+                                func_80041848(car, 13);
                                 gCrashCar = car;
                             }
                         }
@@ -6004,7 +6002,7 @@ extern u8 *D_800A3A64Car asm("D_800A3A64");
 extern Car *gPlayerCarLui asm("gPlayerCarAbsolute");
 extern Car *gCarListLui asm("gCarListAbsolute");
 extern s32 D_800A2F00Sw[] asm("D_800A2F00");
-extern void CarUpdateState(u8 *);
+extern void CarUpdateState(Car *);
 void func_8005157C(void);
 
 /* Runs the caution period. While D_800A3764 is set it starts the yellow
