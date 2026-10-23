@@ -77,7 +77,7 @@ typedef struct EffectSlot {
 
 extern EffectSlot gEffectSlots[] asm("D_800AD9B0");
 
-void EffectSpawnParticles(u8 *car, s32 pointIndex) {
+void EffectSpawnParticles(Car *car, s32 pointIndex) {
     s32 spawnIndex;
     s32 slotIndex;
     s32 twenty;
@@ -95,34 +95,33 @@ void EffectSpawnParticles(u8 *car, s32 pointIndex) {
         if (slotIndex >= 0x28) {
             return;
         }
-        pointTable = *(EffectPoint **)(*(u8 **)(car + 0x370) + 0x40);
+        pointTable = *(EffectPoint **)((u8 *)car->shape + 0x40);
         gEffectSlots[slotIndex].active = 1;
         gEffectSlots[slotIndex].unk1D = 0xA;
-        gEffectSlots[slotIndex].unk1E = *(u16 *)(car + 0x1DE);
+        gEffectSlots[slotIndex].unk1E = (u16)car->unk1DE;
         point = &pointTable[pointIndex];
-        gEffectSlots[slotIndex].x = *(s32 *)car + point->x;
-        gEffectSlots[slotIndex].y = *(s32 *)(car + 4) + point->y;
-        gEffectSlots[slotIndex].z = *(s32 *)(car + 8) + point->z;
+        gEffectSlots[slotIndex].x = *(s32 *)(u8 *)car + point->x;
+        gEffectSlots[slotIndex].y = car->pos.y + point->y;
+        gEffectSlots[slotIndex].z = car->pos.z + point->z;
         gEffectSlots[slotIndex].unk1A = 0x1E;
         gEffectSlots[slotIndex].unk20 = gEffectSlots[slotIndex].unk24 =
-            *(s16 *)(car + 0x1E0);
+            car->segment;
         if (pointIndex < 5) {
             gEffectSlots[slotIndex].unkE = gEffectSlots[slotIndex].z;
         } else {
-            gEffectSlots[slotIndex].unkE = *(s32 *)(car + 8) + 0xF;
+            gEffectSlots[slotIndex].unkE = car->pos.z + 0xF;
         }
         gEffectSlots[slotIndex].unkC = 0;
         gEffectSlots[slotIndex].unk10 = RandomGetScaled16(twenty) + 0x1E;
         gEffectSlots[slotIndex].unk12 =
-            (*(u16 *)(car + 0x114) + 0x400 + RandomGetScaled16(ninetysix)) &
-            0x3FF;
-        gEffectSlots[slotIndex].unk14 = (*(s32 *)(car + 0x90) * 7) / 8 >> 16;
+            ((u16)car->heading + 0x400 + RandomGetScaled16(ninetysix)) & 0x3FF;
+        gEffectSlots[slotIndex].unk14 = (car->speed * 7) / 8 >> 16;
         if (gEffectSlots[slotIndex].unk14 < 0x14) {
             gEffectSlots[slotIndex].unk14 = twenty;
         }
-        gEffectSlots[slotIndex].unk28 = *(s32 *)(*(u8 **)(car + 0x370) + 0x38);
+        gEffectSlots[slotIndex].unk28 = *(s32 *)((u8 *)car->shape + 0x38);
         gEffectSlots[slotIndex].unk2C =
-            *(s32 *)(*(u8 **)(car + 0x370) + 0x40) + 0x90;
+            *(s32 *)((u8 *)car->shape + 0x40) + 0x90;
         /* ABS evaluates its argument twice: two LCG steps per field. */
         gEffectSlots[slotIndex].unk16 = ABS((s32)RandomGetScaled16(0x1000));
         gEffectSlots[slotIndex].unk18 = ABS((s32)RandomGetScaled16(0x1000));

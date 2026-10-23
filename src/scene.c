@@ -7171,7 +7171,7 @@ extern u8 D_80090F5E[], D_80090F6C[], D_80090F88[];
  * index + base into a block-local register, and the pins and the two
  * `asm` statements reproduce the register choice and the store order
  * that sched1 picks there. */
-void func_800525A8(u8 *arg0, s8 arg1) {
+void func_800525A8(Car *arg0, s8 arg1) {
     s16 coords[3][4];
     VECTOR vec;
     MATRIX m;
@@ -7201,16 +7201,16 @@ void func_800525A8(u8 *arg0, s8 arg1) {
     u8 uv;
     u8 *node;
 
-    diff = *(u16 *)(arg0 + 0x104) - *(u16 *)(arg0 + 0x114);
-    entry = arg0 + (arg1 * 0x28 + 0x2AC);
-    if (*(u16 *)(arg0 + 0x362) == 0 || *(u16 *)(arg0 + 0x364) == 0 ||
-        *(u16 *)(arg0 + 0x366) == 0 || *(u16 *)(arg0 + 0x368) == 0) {
+    diff = (u16)arg0->movementHeading - (u16)arg0->heading;
+    entry = (u8 *)arg0 + (arg1 * 0x28 + 0x2AC);
+    if (arg0->frontRightContact == 0 || arg0->frontLeftContact == 0 ||
+        arg0->rearRightContact == 0 || arg0->rearLeftContact == 0) {
         for (i = 0; i < 4; i++) {
             u8 *row;
 
-            row = arg0 + i * 0x28;
+            row = (u8 *)arg0 + i * 0x28;
             if (row[0x2CC] != 0) {
-                e = arg0 + (i * 0x28 + 0x2AC);
+                e = (u8 *)arg0 + (i * 0x28 + 0x2AC);
                 m2 = *(s16 *)(e + 0x26);
                 e[0x24] = 0;
                 e[0x20] = 0;
@@ -7247,12 +7247,11 @@ void func_800525A8(u8 *arg0, s8 arg1) {
         return;
     }
     if (arg1 == 0) {
-        if (entry[0x20] == 0 && *(s16 *)(arg0 + 0x20E) != 0 &&
-            D_800A34E4 == 0) {
-            if (*(s16 *)(arg0 + 0x20E) > 0) {
+        if (entry[0x20] == 0 && arg0->steering != 0 && D_800A34E4 == 0) {
+            if (arg0->steering > 0) {
                 D_800A34E4 = 1;
             }
-            if (*(s16 *)(arg0 + 0x20E) < 0) {
+            if (arg0->steering < 0) {
                 D_800A34E4 = -1;
             }
         } else {
@@ -7267,7 +7266,7 @@ void func_800525A8(u8 *arg0, s8 arg1) {
         }
         side2 = 1;
         if (d < 0x40) {
-            arg0[0x31C] = 0;
+            ((u8 *)arg0)[0x31C] = 0;
             return;
         }
         side1 = 1;
@@ -7279,7 +7278,7 @@ void func_800525A8(u8 *arg0, s8 arg1) {
         }
         side1 = 1;
         if (d < 0x40) {
-            arg0[0x344] = 0;
+            ((u8 *)arg0)[0x344] = 0;
             return;
         }
         side2 = -1;
@@ -7330,9 +7329,9 @@ loop2:
 
         c = (s16 *)(i * 2);
         c = (s16 *)((u8 *)c + (s32)coords);
-        c[0] = ((*(s32 *)(arg0 + 0) + vec.vx) >> 2) - ref[0];
-        c[4] = ((*(s32 *)(arg0 + 4) + vec.vy) >> 2) - ref[1];
-        c[8] = ((*(s32 *)(arg0 + 8) + vec.vz) >> 2) - ref[2];
+        c[0] = ((arg0->pos.x + vec.vx) >> 2) - ref[0];
+        c[4] = ((arg0->pos.y + vec.vy) >> 2) - ref[1];
+        c[8] = ((arg0->pos.z + vec.vz) >> 2) - ref[2];
     }
     i++;
     if (i < 2) {
@@ -7385,7 +7384,7 @@ loop2:
             s32 key;
 
             cur = D_800A34E8;
-            asm("" : "=r"(owner) : "0"(*(u16 *)(arg0 + 0x1E0)));
+            asm("" : "=r"(owner) : "0"((u16)arg0->segment));
             slot = (u8 *)((cur * 12 - cur) * 8);
             slot += D_800A34F4;
             key = (s16)owner;
@@ -7441,24 +7440,24 @@ loop2:
             *(u16 *)(entry + 0x26) = cur;
             next = (s16)(cur + 1);
             *(s32 *)(slot + 4) = head;
-            new_var4 = (arg0 + arg1 * 0x28) + 0x2B4;
-            *(s32 *)(arg0 + arg1 * 0x28 + 0x2B8) -=
+            new_var4 = ((u8 *)arg0 + arg1 * 0x28) + 0x2B4;
+            *(s32 *)((u8 *)arg0 + arg1 * 0x28 + 0x2B8) -=
                 (0x12C - *(s16 *)new_var4) >> 3;
             D_800A34E8 = next % 100;
         }
     }
     switch (arg1) {
     case 2:
-        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x362);
+        *(u16 *)(entry + 0x22) = arg0->frontRightContact;
         break;
     case 3:
-        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x364);
+        *(u16 *)(entry + 0x22) = arg0->frontLeftContact;
         break;
     case 0:
-        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x366);
+        *(u16 *)(entry + 0x22) = arg0->rearRightContact;
         break;
     case 1:
-        *(u16 *)(entry + 0x22) = *(u16 *)(arg0 + 0x368);
+        *(u16 *)(entry + 0x22) = arg0->rearLeftContact;
         break;
     }
 }

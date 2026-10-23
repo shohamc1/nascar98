@@ -1063,7 +1063,7 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
 extern u8 D_800A2F9D;
 extern Car *gPlayerCarnm[] asm("gPlayerCar.NON_MATCHING");
 
-void func_800409A0(u8 *object) {
+void func_800409A0(Car *object) {
     s32 id;
     Car *player;
 
@@ -1076,9 +1076,11 @@ void func_800409A0(u8 *object) {
         id = 0x15;
     }
     func_8003FC0C(
-        id, (s8)(*(s16 *)(object + 0x92) * 8 / *(s16 *)(object + 0x9A) + 0x2C),
+        id,
+        (s8)(*(s16 *)((u8 *)object + 0x92) * 8 / *(s16 *)((u8 *)object + 0x9A) +
+             0x2C),
         0);
-    if (*(s8 *)(object + 0x3B8) == 0) {
+    if (object->unk3B8 == 0) {
         /* A second name for the player table keeps cse from sharing the
          * address register across the call; the local reads it once. */
         player = gPlayerCarnm[0];
@@ -1088,21 +1090,21 @@ void func_800409A0(u8 *object) {
             SoundPlaySlot(0x15, 2);
         }
     }
-    *(u8 *)(object + 0x3B9) = 1;
-    if (*(s16 *)(object + 0x120) != 0) {
-        *(u8 *)(object + 0x3B8) = 0x17;
+    object->unk3B9 = 1;
+    if (object->unk120 != 0) {
+        object->unk3B8 = 0x17;
     }
-    *(u8 *)(object + 0x3B8) = *(u8 *)(object + 0x3B8) + 1;
-    if ((s8) * (u8 *)(object + 0x3B8) >= 0x19) {
-        *(u8 *)(object + 0x3B8) = 0x18;
+    object->unk3B8 = (u8)object->unk3B8 + 1;
+    if ((s8)(u8)object->unk3B8 >= 0x19) {
+        object->unk3B8 = 0x18;
     }
 }
 
-void func_80040AC0(u8 *object) {
-    object[0x3B9] = 0;
+void func_80040AC0(Car *object) {
+    object->unk3B9 = 0;
 }
 
-void func_80040AC8(u8 *object) {
+void func_80040AC8(Car *object) {
     s32 id;
     s32 count1;
     s32 count2;
@@ -1110,7 +1112,7 @@ void func_80040AC8(u8 *object) {
     s32 count4;
     s32 vol;
 
-    if (*(s8 *)(object + 0x20B) != 0) {
+    if (object->slot != 0) {
         id = 0x10;
     } else {
         id = 0xE;
@@ -1120,31 +1122,31 @@ void func_80040AC8(u8 *object) {
     count3 = 0;
     count4 = 0;
     vol = 0x40;
-    if (object[0xF4] != 0) {
-        if (*(s32 *)(object + 0x90) <= 0x1FFFFF) {
-            vol = *(s32 *)(object + 0x90) >> 15;
+    if (object->unkF4 != 0) {
+        if (object->speed <= 0x1FFFFF) {
+            vol = object->speed >> 15;
             if (vol < 0) {
                 vol = 0;
             }
         }
-        if (*(u16 *)(object + 0x362) == 2) {
+        if (object->frontRightContact == 2) {
             count1++;
-        } else if (*(u16 *)(object + 0x362) == 3) {
+        } else if (object->frontRightContact == 3) {
             count3++;
         }
-        if (*(u16 *)(object + 0x364) == 2) {
+        if (object->frontLeftContact == 2) {
             count2++;
-        } else if (*(u16 *)(object + 0x364) == 3) {
+        } else if (object->frontLeftContact == 3) {
             count4++;
         }
-        if (*(u16 *)(object + 0x366) == 2) {
+        if (object->rearRightContact == 2) {
             count1++;
-        } else if (*(u16 *)(object + 0x366) == 3) {
+        } else if (object->rearRightContact == 3) {
             count3++;
         }
-        if (*(u16 *)(object + 0x368) == 2) {
+        if (object->rearLeftContact == 2) {
             count2++;
-        } else if (*(u16 *)(object + 0x368) == 3) {
+        } else if (object->rearLeftContact == 3) {
             count4++;
         }
     }

@@ -4971,10 +4971,10 @@ void CarApplyVelocityDelta(s32 *p) {
 void func_800294A8(void *arg0) {
     extern s32 D_800A2EC0Lui asm("D_800A2EC0Absolute");
     extern s32 D_800A2E28;
-    extern void func_800409A0(u8 * object);
-    extern void func_80040AC0(u8 * object);
+    extern void func_800409A0(Car * object);
+    extern void func_80040AC0(Car * object);
     extern void func_800524A0(u8 * arg0, s8 arg1);
-    extern void func_800525A8(u8 * arg0, s8 arg1);
+    extern void func_800525A8(Car * arg0, s8 arg1);
     extern void EffectSpawnAtWheel(Car * arg0, s32 arg1);
     volatile s32 pad[8];
     s32 delta;
@@ -6270,7 +6270,7 @@ extern s32 D_800A3598Physics[] asm("D_800A3598.NON_MATCHING");
 extern s32 D_800A453CPhysics[] asm("D_800A453C.NON_MATCHING");
 extern void func_8002AF94(Car *);
 extern void func_8002B9AC(Car *, s32 *, s32 *);
-extern void func_8002D27C(u8 *);
+extern void func_8002D27C(Car *);
 
 #define CAR_OFFSET(field) ((u32) & ((Car *)0)->field)
 typedef char CheckVectorSize[(sizeof(VECTOR) == 16) ? 1 : -1];
@@ -7205,7 +7205,7 @@ typedef struct {
     s32 x, y, z;
 } Delta3;
 
-s32 CarTestDraft(u8 *arg0, u8 *arg1) {
+s32 CarTestDraft(Car *arg0, Car *arg1) {
     extern u8 *trigA asm("D_800A3A2CAbsolute");
     extern u8 *trigB asm("D_800A3A34Absolute");
     /* A struct member is not a plain decl, so fold hoists one load of the
@@ -7219,8 +7219,8 @@ s32 CarTestDraft(u8 *arg0, u8 *arg1) {
     s32 index;
 
     delta.x = *(s32 *)arg1 - *(s32 *)arg0;
-    delta.y = *(s32 *)(arg1 + 4) - *(s32 *)(arg0 + 4);
-    delta.z = *(s32 *)(arg1 + 8) - *(s32 *)(arg0 + 8);
+    delta.y = arg1->pos.y - arg0->pos.y;
+    delta.z = arg1->pos.z - arg0->pos.z;
     if (ABS(delta.x) > cull.dist) {
         return 0;
     }
@@ -7231,17 +7231,17 @@ s32 CarTestDraft(u8 *arg0, u8 *arg1) {
         return 0;
     }
     rot = delta;
-    index = (0x400 - *(s16 *)(arg0 + 0x114)) & 0x3FF;
+    index = (0x400 - arg0->heading) & 0x3FF;
     delta.x = (MathMultiplyFixed16(((s32 *)trigA)[index], rot.x << 16) -
                MathMultiplyFixed16(((s32 *)trigB)[index], rot.y << 16)) >>
               16;
     delta.y = (MathMultiplyFixed16(((s32 *)trigB)[index], rot.x << 16) +
                MathMultiplyFixed16(((s32 *)trigA)[index], rot.y << 16)) >>
               16;
-    if (*(s16 *)(*(s32 *)(arg0 + 0x370) + 0x22) * 2 > ABS(delta.y)) {
+    if (*(s16 *)(*(s32 *)((u8 *)arg0 + 0x370) + 0x22) * 2 > ABS(delta.y)) {
         if (ABS(delta.x) < cull.dist) {
             if (delta.x > 0) {
-                *(s32 *)(arg0 + 0x22C) =
+                arg0->speedBoost =
                     MathFixedDivide(cull.dist - delta.x, D_800A2E58);
                 D_800A38E4 = ABS(delta.x);
                 return 1;
@@ -7251,7 +7251,7 @@ s32 CarTestDraft(u8 *arg0, u8 *arg1) {
     return 0;
 }
 
-s32 CarTestDraft(u8 *, u8 *);
+s32 CarTestDraft(Car *, Car *);
 
 void func_8002D16C(Car *car) {
     u8 *other;
@@ -7300,15 +7300,15 @@ void func_8002D16C(Car *car) {
     }
 }
 
-void func_8002D27C(u8 *car) {
+void func_8002D27C(Car *car) {
     s32 value;
 
-    if (!(0x9FFFF < *(s32 *)(car + 0x90))) {
-        *(s16 *)(car + 0x120) = 0;
-        *(s16 *)(car + 0x11E) = 0;
+    if (!(0x9FFFF < car->speed)) {
+        car->unk120 = 0;
+        car->unk11E = 0;
     } else {
-        if (*(s16 *)(car + 0x120) > 0) {
-            *(s16 *)(car + 0x120) = *(s16 *)(car + 0x120) - 1;
+        if (car->unk120 > 0) {
+            car->unk120 = car->unk120 - 1;
             value = RandomScaledGet(4);
             if (value < 0) {
                 value = -RandomScaledGet(4);
@@ -7317,20 +7317,20 @@ void func_8002D27C(u8 *car) {
             }
             EffectSpawnAtWheel(car, value);
         }
-        if (*(s32 *)(car + 0x238) & 0x80) {
-            if (*(s8 *)(car + 0x3C4) == 4) {
-                *(u16 *)(car + 0x11E) += 1;
+        if (car->flags & 0x80) {
+            if (car->unk3C4 == 4) {
+                car->unk11E += 1;
             } else {
-                if (*(s32 *)(car + 0x3C0) >= MathFixedDivide(0xFA, 0x7D0)) {
-                    *(u16 *)(car + 0x11E) += 1;
+                if (car->unk3C0 >= MathFixedDivide(0xFA, 0x7D0)) {
+                    car->unk11E += 1;
                 }
             }
         } else {
-            *(s16 *)(car + 0x11E) = 0;
+            car->unk11E = 0;
         }
-        if (*(s16 *)(car + 0x11E) >= 0x13) {
-            *(s16 *)(car + 0x120) = 0x23;
-            *(s16 *)(car + 0x11E) = 0;
+        if (car->unk11E >= 0x13) {
+            car->unk120 = 0x23;
+            car->unk11E = 0;
         }
     }
 }
@@ -10950,7 +10950,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
     s32 count;
     u32 *otCursor;
     s16 *zCursor;
-    u8 *group;
+    Car *group;
     register u8 *obj asm("s0");
     u8 *poly;
     s32 i;
@@ -11001,20 +11001,22 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 }
             }
             counter = counter + 1;
-            if (*(u16 *)(group + 0xE) != 0) {
+            if (*(u16 *)((u8 *)group + 0xE) != 0) {
                 /* Already drawn. */
             } else if (lod < count) {
                 for (i = 0; i < 5; i++) {
                     if (mode) {
-                        gte_ldv3(((u8 **)(*(u8 **)group + 0x78))[i],
-                                 ((u8 **)(*(u8 **)(*(u8 **)(group + 4) + 4) +
-                                          0x78))[i],
-                                 ((u8 **)(*(u8 **)(*(u8 **)(group + 4) + 4) +
-                                          0x78))[i + 1]);
+                        gte_ldv3(
+                            ((u8 **)(*(u8 **)(u8 *)group + 0x78))[i],
+                            ((u8 **)(*(u8 **)(*(u8 **)((u8 *)group + 4) + 4) +
+                                     0x78))[i],
+                            ((u8 **)(*(u8 **)(*(u8 **)((u8 *)group + 4) + 4) +
+                                     0x78))[i + 1]);
                     } else {
-                        gte_ldv3(((u8 **)(group + 0x78))[i],
-                                 ((u8 **)(*(u8 **)(group + 4) + 0x78))[i],
-                                 ((u8 **)(*(u8 **)(group + 4) + 0x78))[i + 1]);
+                        gte_ldv3(
+                            ((u8 **)&group->orient[2].x)[i],
+                            ((u8 **)(*(u8 **)((u8 *)group + 4) + 0x78))[i],
+                            ((u8 **)(*(u8 **)((u8 *)group + 4) + 0x78))[i + 1]);
                     }
                     poly = prim;
                     gte_rtpt();
@@ -11033,9 +11035,9 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                     }
                     gte_avsz3();
                     if (mode) {
-                        vec = *(u8 **)(*(u8 **)group + (i << 2) + 0x7C);
+                        vec = *(u8 **)(*(u8 **)(u8 *)group + (i << 2) + 0x7C);
                     } else {
-                        vec = ((u8 **)(group + 0x78))[i + 1];
+                        vec = ((u8 **)&group->orient[2].x)[i + 1];
                     }
                     word0 = *(s32 *)vec;
                     word1 = *(s32 *)(vec + 4);
@@ -11055,10 +11057,10 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                     prim = prim + 0x28;
                 }
                 mode = 0;
-                *(u16 *)(group + 0xE) = 1;
+                *(u16 *)((u8 *)group + 0xE) = 1;
             } else {
-                n = *(u8 *)(group + 0x13);
-                obj = *(u8 **)(group + 0x20);
+                n = *(u8 *)((u8 *)group + 0x13);
+                obj = *(u8 **)((u8 *)group + 0x20);
                 count = count + n;
                 while (n-- > 0) {
                     gte_ldv3(*(u8 **)(obj + 0x18), *(u8 **)(obj + 0x1C),
@@ -11178,7 +11180,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 next2:
                     obj = (u8 *)word1;
                 }
-                *(u16 *)(group + 0xE) = 1;
+                *(u16 *)((u8 *)group + 0xE) = 1;
             }
         } while ((listA = listA) != endA || (listB = listB) != endB);
     }

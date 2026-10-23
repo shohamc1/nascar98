@@ -541,7 +541,7 @@ extern void EffectSpawnAtCarPoint(Car *, s32);
 extern void func_80043B68(u8 *, s32);
 
 extern s32 D_800A3A2CAbsolute[];
-void CarCheckGroundContact(u8 *car) {
+void CarCheckGroundContact(Car *car) {
     s32 i;
     s32 best;
     s32 bestIdx;
@@ -559,8 +559,8 @@ void CarCheckGroundContact(u8 *car) {
     bestIdx = 0;
     sinTab = *(s32 **)D_800A3A2CAbsolute;
     cosTab = *(s32 **)D_800A3A34Absolute;
-    idxA = *(s16 *)(car + 0x388);
-    idxB = *(s16 *)(car + 0x38A);
+    idxA = car->unk388;
+    idxB = car->unk38A;
     c = D_800B1FF0;
     for (i = 0; i < 8; c++, i++) {
         z = c->vz;
@@ -571,26 +571,25 @@ void CarCheckGroundContact(u8 *car) {
         c->sz = (sinTab[idxB] * z - cosTab[idxB] * x) >> 16;
         c->sy = (cosTab[idxB] * z + sinTab[idxB] * x) >> 16;
         c->sx = t;
-        idxC = *(s16 *)(car + 0x398);
+        idxC = *(s16 *)((u8 *)car + 0x398);
         z = ((sinTab[idxC] * c->sz - cosTab[idxC] * t) >> 16) + *(s32 *)car;
-        c->sx = ((cosTab[idxC] * c->sz + sinTab[idxC] * t) >> 16) +
-                *(s32 *)(car + 4);
+        c->sx = ((cosTab[idxC] * c->sz + sinTab[idxC] * t) >> 16) + car->pos.y;
         c->sz = z;
         if (c->sy < best) {
             best = c->sy;
             bestIdx = i;
         }
     }
-    if (best <= 0 && -best >= *(s16 *)(car + 0x39A)) {
-        *(s16 *)(car + 0x39A) = -best;
-        *(s16 *)(car + 0x1C0) = 0;
-        *(u16 *)(car + 0x396) |= 8;
+    if (best <= 0 && -best >= *(s16 *)((u8 *)car + 0x39A)) {
+        *(s16 *)((u8 *)car + 0x39A) = -best;
+        car->unk1C0 = 0;
+        *(u16 *)((u8 *)car + 0x396) |= 8;
         if (RandomScaledGet(3) < 0) {
             t = -RandomScaledGet(3);
         } else {
             t = RandomScaledGet(3);
         }
-        if (ABS(*(s16 *)(car + 0x394)) < 0x3C) {
+        if (ABS(*(s16 *)((u8 *)car + 0x394)) < 0x3C) {
             t += 2;
         }
         switch (bestIdx % 4) {
@@ -632,12 +631,12 @@ void CarCheckGroundContact(u8 *car) {
             break;
         }
     } else {
-        *(s16 *)(car + 0x1C0) = -1;
-        *(u16 *)(car + 0x396) &= ~8;
+        car->unk1C0 = -1;
+        *(u16 *)((u8 *)car + 0x396) &= ~8;
     }
     for (i = 0; i < 4; i++) {
-        *(u16 *)(car + 0x2AC + i * 0x28) = *(u16 *)(car + 0x39A);
-        *(u16 *)(car + 0x2B0 + i * 0x28) = 0;
+        *(u16 *)((u8 *)car + 0x2AC + i * 0x28) = *(u16 *)((u8 *)car + 0x39A);
+        *(u16 *)((u8 *)car + 0x2B0 + i * 0x28) = 0;
     }
 }
 
