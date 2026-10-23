@@ -567,11 +567,11 @@ typedef struct {
 typedef struct {
     u8 life;
     u8 pad1[3];
-    Vector3 position;
+    Vec3 position;
     ProjectileQuad quad;
-    Vector3 forward;
-    Vector3 right;
-    Vector3 up;
+    Vec3 forward;
+    Vec3 right;
+    Vec3 up;
     SVECTOR vertex[4];
 } Projectile;
 
@@ -626,9 +626,9 @@ void SceneUpdateProjectiles(u8 *owner) {
         pool = (Projectile *)(gProjectilePools[player] +
                               gProjectileWriteIndex[player] * 0x80);
         pool->life = 200;
-        pool->forward = *(Vector3 *)(owner + 0x3C);
-        pool->right = *(Vector3 *)(owner + 0x48);
-        pool->up = *(Vector3 *)(owner + 0x54);
+        pool->forward = *(Vec3 *)(owner + 0x3C);
+        pool->right = *(Vec3 *)(owner + 0x48);
+        pool->up = *(Vec3 *)(owner + 0x54);
         pool->position.x = *(s32 *)owner;
         pool->position.y = *(s32 *)(owner + 4);
         pool->position.z = *(s32 *)(owner + 8);
@@ -659,8 +659,7 @@ void SceneUpdateProjectiles(u8 *owner) {
                         if (*(s16 *)(other + 0x1EC) != 0) {
                             callback = (void (*)(void))func_8003AA20;
                         }
-                        ObjectSetCallbackIfAllowed((ObjectCallbackView *)other,
-                                                   callback);
+                        ObjectSetCallbackIfAllowed((Car *)other, callback);
                     }
                     hitEffect->life = 0;
                     goto nextEffect;

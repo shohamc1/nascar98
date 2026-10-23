@@ -10,6 +10,7 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "car.h"
 #include "graphics.h"
 #include "util.h"
 
@@ -801,11 +802,6 @@ void CameraBuildRotationMatrix(s32 cosYaw, s32 sinYaw, s32 cosPitch,
 }
 
 void func_8001F728(s32 arg0) {
-    typedef struct {
-        s32 x;
-        s32 y;
-        s32 z;
-    } Vec3;
     Vec3 *v;
     s32 x;
     s32 y;

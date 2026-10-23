@@ -9,6 +9,7 @@
 #include <psxsdk/libapi.h>
 #include <psxsdk/libspu.h>
 #include "game.h"
+#include "car.h"
 
 /* Startup and display. */
 
@@ -2507,11 +2508,6 @@ s32 MathFixedDivide(s32 numerator, s32 denominator) {
 }
 
 void func_80015EAC(u8 *car) {
-    typedef struct {
-        s32 x;
-        s32 y;
-        s32 z;
-    } Vector3;
     extern void func_800319D4(u8 *, s32);
     extern void func_8001EEC4(u8 *);
     extern void MatrixCombineState(void);
@@ -2537,9 +2533,9 @@ void func_80015EAC(u8 *car) {
     angles.vx = *(s32 *)(car + 0) - D_800A38AC[0];
     angles.vy = *(s32 *)(car + 4) - D_800A38AC[1];
     angles.vz = *(s32 *)(car + 8) - D_800A38AC[2] - *(u16 *)(car + 0xFE);
-    *(Vector3 *)&saved[0] = *(Vector3 *)(car + 0x3C);
-    *(Vector3 *)&saved[1] = *(Vector3 *)(car + 0x48);
-    *(Vector3 *)&saved[2] = *(Vector3 *)(car + 0x54);
+    *(Vec3 *)&saved[0] = *(Vec3 *)(car + 0x3C);
+    *(Vec3 *)&saved[1] = *(Vec3 *)(car + 0x48);
+    *(Vec3 *)&saved[2] = *(Vec3 *)(car + 0x54);
     func_800319D4(car, 1);
     func_8001EEC4(car);
     MatrixCombineState();
@@ -2568,9 +2564,9 @@ void func_80015EAC(u8 *car) {
     TransMatrix(&D_800A3A98, &position);
     SetTransMatrix(&D_800A3A98);
     SetRotMatrix(&D_800A3A98);
-    *(Vector3 *)(car + 0x3C) = *(Vector3 *)&saved[0];
-    *(Vector3 *)(car + 0x48) = *(Vector3 *)&saved[1];
-    *(Vector3 *)(car + 0x54) = *(Vector3 *)&saved[2];
+    *(Vec3 *)(car + 0x3C) = *(Vec3 *)&saved[0];
+    *(Vec3 *)(car + 0x48) = *(Vec3 *)&saved[1];
+    *(Vec3 *)(car + 0x54) = *(Vec3 *)&saved[2];
 }
 
 extern long RotTransPers3_nom();
