@@ -80,7 +80,7 @@ void func_8001C668(void *headPointer, void *tailPointer) {
     node = *head;
     next = NULL;
     prevNode = NULL;
-    *(u8 **)(*tail + 0x28) = 0;
+    ((Face *)*tail)->next = NULL;
     while (node != NULL) {
         next = node->next;
         while (next != NULL) {

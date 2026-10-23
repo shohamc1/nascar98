@@ -1699,6 +1699,20 @@ extern char gTrackFaceErrorFormat[];
 extern char gTrackReadSuccessMessage[];
 
 extern s32 D_800BE72C[];
+/* A 0x1C face record in a track file. TrackReadData expands each one
+   into a Face. */
+typedef struct {
+    s8 vertexCount; /* 0x00 */
+    u8 type;        /* 0x01 */
+    u8 unk2;
+    s8 unk3;       /* 0x03: nonzero sets Face.flags bit 0 */
+    s16 vertex[4]; /* 0x04: vertex indices */
+    u8 unkC[2];
+    u8 uv[4][2]; /* 0x0E */
+    s16 angle;   /* 0x16 */
+    s32 color;   /* 0x18: copied to Face.r0 */
+} DiskFace;
+
 void TrackReadData(s32 *trackData, s32 file) {
     register TrackResource *resource asm("s7");
     /* Only the first byte is accessed in the retail function. */
@@ -1979,51 +1993,49 @@ void TrackReadData(s32 *trackData, s32 file) {
         faceFields = diskFace + 0x13;
         do {
             face = D_800A3A40 + runtimeFaceOffset;
-            *(u8 **)((u8 *)face + (40)) = (void *)resource->faces;
+            *(u8 **)&((Face *)face)->next = (void *)resource->faces;
             resource->faces = face;
-            count = *(s8 *)diskFace;
-            *(u8 *)((u8 *)face + (18)) = count;
+            count = ((DiskFace *)diskFace)->vertexCount;
+            ((Face *)face)->vertexCount = count;
             if ((u32)count >= 5U) {
                 faceCodeSave = faceCode;
                 sprintf((char *)errorText, gTrackFaceErrorFormat, i);
                 GraphicsRenderFrame((s32)errorText);
             }
-            *(s32 *)((u8 *)face + (4)) =
-                (s32) * (s32 *)((u8 *)faceFields + (5));
-            byteValue = *(u8 *)(faceFields - 18);
+            *(s32 *)&((Face *)face)->r0 =
+                ((DiskFace *)(faceFields - 0x13))->color;
+            byteValue = ((DiskFace *)(faceFields - 0x13))->type;
             face->flags = 0;
             face->type = byteValue;
-            *(u16 *)((u8 *)face + (22)) =
-                (u16) * (s16 *)((u8 *)faceFields + (3));
-            if (*(s8 *)((u8 *)faceFields + (-16)) != 0) {
-                faceFlags = *(u8 *)((u8 *)face + (19));
-                *(u8 *)((u8 *)face + (19)) = (u8)(faceFlags | 1);
-                if (*(s8 *)((u8 *)faceFields + (-16)) == 1) {
-                    *(u8 *)((u8 *)face + (19)) = (u8)(faceFlags | 3);
+            *(u16 *)&((Face *)face)->angle =
+                (u16)((DiskFace *)(faceFields - 0x13))->angle;
+            if (((DiskFace *)(faceFields - 0x13))->unk3 != 0) {
+                faceFlags = ((Face *)face)->flags;
+                ((Face *)face)->flags = (u8)(faceFlags | 1);
+                if (((DiskFace *)(faceFields - 0x13))->unk3 == 1) {
+                    ((Face *)face)->flags = (u8)(faceFlags | 3);
                 }
             } else {
-                *(u16 *)((u8 *)face + (22)) =
+                *(u16 *)&((Face *)face)->angle =
                     (u16) * (u16 *)((u8 *)faceFields + (-7));
-                if ((s16) * (s16 *)((u8 *)faceFields + (3)) == faceCode) {
-                    *(u8 *)((u8 *)face + (19)) =
-                        (u8)(*(u8 *)((u8 *)face + (19)) | 4);
+                if ((s16)((DiskFace *)(faceFields - 0x13))->angle == faceCode) {
+                    ((Face *)face)->flags = (u8)(((Face *)face)->flags | 4);
                 }
             }
-            *(s8 *)((u8 *)face + (1)) = 0;
+            ((Face *)face)->depth = 0;
             if (*(s8 *)((u8 *)faceFields + (-17)) != 0x7F) {
-                *(u8 *)((u8 *)face + (19)) =
-                    (u8)(*(u8 *)((u8 *)face + (19)) | 0x80);
+                ((Face *)face)->flags = (u8)(((Face *)face)->flags | 0x80);
                 if ((u8) * (s8 *)((u8 *)faceFields + (-17)) == 0x81) {
-                    *(s8 *)((u8 *)face + (1)) = (s8)faceCode;
+                    ((Face *)face)->depth = (s8)faceCode;
                 }
                 if ((u8) * (s8 *)((u8 *)faceFields + (-17)) == 0x82) {
-                    *(s8 *)((u8 *)face + (1)) = 0;
+                    ((Face *)face)->depth = 0;
                 } else {
-                    *(s8 *)((u8 *)face + (1)) = (s8)faceCode;
+                    ((Face *)face)->depth = (s8)faceCode;
                 }
             } else {
-                *(s8 *)((u8 *)face + (1)) = (s8)faceCode;
-                faceMode = (s16) * (s16 *)((u8 *)faceFields + (3));
+                ((Face *)face)->depth = (s8)faceCode;
+                faceMode = (s16)((DiskFace *)(faceFields - 0x13))->angle;
                 switch (faceMode) {
                 case 1:
                     modeFlags = face->flags | 8;
@@ -2042,40 +2054,39 @@ void TrackReadData(s32 *trackData, s32 file) {
                 inputIndex = diskFace;
                 outputIndex = face;
                 do {
-                    vertexIndex = *(s16 *)((u8 *)inputIndex + (4));
+                    vertexIndex = ((DiskFace *)inputIndex)->vertex[0];
                     inputIndex += 2;
                     vertexSlot += 1;
-                    *(u8 **)((u8 *)outputIndex + (24)) =
-                        (u8 *)(vertices + (vertexIndex * 8));
+                    ((Face *)outputIndex)->vertex[0] =
+                        (SVECTOR *)(vertices + (vertexIndex * 8));
                     outputIndex += 4;
                 } while (vertexSlot < count);
             }
             if (vertexSlot == 3) {
-                *(u8 **)((u8 *)face + (36)) =
-                    (s32) * (u8 **)((u8 *)face + (24));
+                ((Face *)face)->vertex[3] = ((Face *)face)->vertex[0];
             }
             uvSlot = 0;
             inputUv = diskFace;
             outputUv = face;
         readFaceUv:
-            *(u8 *)((u8 *)outputUv + (8)) = (u8) * (u8 *)((u8 *)inputUv + (14));
-            byteValue = *(u8 *)((u8 *)inputUv + (15));
+            ((Face *)outputUv)->u0 = ((DiskFace *)inputUv)->uv[0][0];
+            byteValue = ((DiskFace *)inputUv)->uv[0][1];
             uvSlot += 1;
             inputUv += 2;
-            *(u8 *)((u8 *)outputUv + (9)) = byteValue;
+            ((Face *)outputUv)->v0 = byteValue;
             outputUv += 4;
             if (uvSlot < 3) {
                 goto readFaceUv;
             }
-            if ((u8) * (u8 *)((u8 *)face + (18)) >= 4U) {
-                *(u8 *)((u8 *)face + (16)) =
-                    (u8) * (u8 *)((u8 *)faceFields + (1));
-                *(u8 *)((u8 *)face + (17)) =
-                    (u8) * (u8 *)((u8 *)faceFields + (2));
-                *(u8 *)((u8 *)face + (20)) =
-                    (u8) * (u8 *)((u8 *)faceFields + (-1));
-                *(u8 *)((u8 *)face + (21)) =
-                    (u8) * (u8 *)((u8 *)faceFields + (0));
+            if ((u8)((Face *)face)->vertexCount >= 4U) {
+                ((Face *)face)->u2 =
+                    ((DiskFace *)(faceFields - 0x13))->uv[3][0];
+                ((Face *)face)->v2 =
+                    ((DiskFace *)(faceFields - 0x13))->uv[3][1];
+                ((Face *)face)->u3 =
+                    ((DiskFace *)(faceFields - 0x13))->uv[2][0];
+                ((Face *)face)->v3 =
+                    ((DiskFace *)(faceFields - 0x13))->uv[2][1];
             }
             faceFields += 0x1C;
             diskFace += 0x1C;
@@ -2126,19 +2137,18 @@ void TrackReadData(s32 *trackData, s32 file) {
             objectFaceCount = func_800157B0(callFirst, callHead, callFaces);
             face = sec->unk20;
             objectPolygonCount = 0;
-            if ((face != NULL) && !(*(u8 *)((u8 *)face + (19)) & 0x80)) {
+            if ((face != NULL) && !(((Face *)face)->flags & 0x80)) {
                 flagObject = (u8 *)sec;
                 faceColor = 0x808080;
                 do {
-                    if (*(s32 *)((u8 *)face + (4)) == specialFaceColor) {
+                    if (*(s32 *)&((Face *)face)->r0 == specialFaceColor) {
                         *(u32 *)((u8 *)flagObject + (16)) |= 0x10000;
                     } else {
-                        *(s32 *)((u8 *)face + (4)) = faceColor;
+                        *(s32 *)&((Face *)face)->r0 = faceColor;
                     }
-                    face = *(u8 **)((u8 *)face + (40));
+                    face = *(u8 **)&((Face *)face)->next;
                     objectPolygonCount += 1;
-                } while ((face != NULL) &&
-                         !(*(u8 *)((u8 *)face + (19)) & 0x80));
+                } while ((face != NULL) && !(((Face *)face)->flags & 0x80));
             }
             *(s8 *)&sec->unk13 = objectPolygonCount;
             func_80015870((u8 *)&sec->unk20, (u8 *)&sec->firstQuad);
@@ -2768,7 +2778,6 @@ void func_80016724(s32 value, s32 *next, s32 size) {
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 void func_80016744(u32 arg0) {
     s32 bank;
-    u32 entries;
     s32 oldEntry;
     s32 value;
     s32 offset;
@@ -2778,18 +2787,17 @@ void func_80016744(u32 arg0) {
     s32 extra;
 
     bank = gOrderingTableBankLui;
-    entries = (bank << 2) + arg0;
-    oldEntry = *(s32 *)(entries + 0x420);
+    oldEntry = ((Car *)arg0)->unk420[bank];
     if (oldEntry != 0) {
         value = ((Car *)arg0)->unk41C[bank];
         offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
         hw = ((Model *)offset)->faceCount;
         ptr = (u32)D_800A2D64;
         size = D_800A2D5C;
-        extra = *(s32 *)(entries + 0x430);
+        extra = ((Car *)arg0)->unk430[bank];
         *(s32 *)&((Model *)ptr)->faceList = oldEntry;
         D_800A2D64 = (s32 *)extra;
-        *(s32 *)(entries + 0x420) = 0;
+        ((Car *)arg0)->unk420[bank] = 0;
         D_800A2D5C = size + hw;
     }
     ((Car *)arg0)->unk41C[gOrderingTableBankLui] = -1;
@@ -2797,7 +2805,6 @@ void func_80016744(u32 arg0) {
 
 s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 bank;
-    u32 entries;
     s32 oldEntry;
     s32 value;
     s32 offset;
@@ -2817,17 +2824,16 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
             return 0;
         }
     } else {
-        entries = (bank << 2) + arg0;
-        oldEntry = *(s32 *)(entries + 0x420);
+        oldEntry = ((Car *)arg0)->unk420[bank];
         if (oldEntry != 0) {
             offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
             ptr = (u32)D_800A2D64;
             hw = ((Model *)offset)->faceCount;
-            extra = *(s32 *)(entries + 0x430);
+            extra = ((Car *)arg0)->unk430[bank];
             size = D_800A2D5C;
             *(s32 *)&((Model *)ptr)->faceList = oldEntry;
             do {
-                *(s32 *)(entries + 0x420) = 0;
+                ((Car *)arg0)->unk420[bank] = 0;
                 D_800A2D64 = (s32 *)extra;
                 D_800A2D5C = size + hw;
             } while (0);

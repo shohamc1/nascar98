@@ -2575,7 +2575,7 @@ void func_80025730(Car *obj) {
         i = 3;
         p = (u8 *)obj + 0x78;
         do {
-            *(s16 *)(p + 0x2B0) = value;
+            ((Wheel *)(p + 0x2AC))->effect = value;
             i--;
             p -= 0x28;
         } while (i >= 0);
@@ -3716,7 +3716,7 @@ s32 CarHandleWallCollision(void *object) {
         track = FAR_VAR(TrackSection *, gFarTrack);
         rowOffset = trackIndex * 0x90;
         rowOffset = (s32)track + rowOffset;
-        contact = *(Face **)(rowOffset + 0x28);
+        contact = ((TrackSection *)rowOffset)->firstQuad;
         if (contact == NULL) {
             contact = track->firstQuad;
         }
@@ -6414,7 +6414,7 @@ void func_8002BD48(Car *carBytes) {
             node = (u8 *)leader->order.node.next;
 
         nextCar:
-            leader = *((Car **)(node + 8));
+            leader = ((CarLink *)node)->car;
 
             if ((leader->type) != 0) {
                 goto findCar;
@@ -9529,14 +9529,14 @@ void func_80030CDC(s32 *point, s32 sectionIndex) {
     if (sectionIndex >= 0) {
         entries = (u8 *)gTrackSections[0];
         entries += sectionIndex * 0x90;
-        node = *(s8 **)(entries + 0x20);
+        node = (s8 *)((TrackSection *)entries)->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC(D_800A38AC[0], (s32 *)node, point) & 0xFF) !=
                  0)) {
                 return;
             }
-            node = *(s8 **)(node + 0x28);
+            node = (s8 *)((Face *)node)->next;
         }
     }
 }
@@ -9560,7 +9560,7 @@ void func_80030D80(Car *object, s32 *query) {
                  0)) {
                 return;
             }
-            node = *(s8 **)(node + 0x28);
+            node = (s8 *)((Face *)node)->next;
         }
         entry = entry->prev;
         object->segment = entry->section;
@@ -9571,9 +9571,9 @@ void func_80030D80(Car *object, s32 *query) {
                  0)) {
                 return;
             }
-            node = *(s8 **)(node + 0x28);
+            node = (s8 *)((Face *)node)->next;
         }
-        entry = *(TrackSection **)((u8 *)entry->next + 4);
+        entry = entry->next->next;
         object->segment = entry->section;
         node = (s8 *)entry->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
@@ -9582,7 +9582,7 @@ void func_80030D80(Car *object, s32 *query) {
                  0)) {
                 return;
             }
-            node = *(s8 **)(node + 0x28);
+            node = (s8 *)((Face *)node)->next;
         }
     }
 }
@@ -14426,7 +14426,7 @@ void func_800373B4(Car *object) {
                     }
                     tempA08 = ((u8 *)car->sectionLink.node.previous);
                     if (tempA08 != NULL) {
-                        followingCar = (*(Car **)((u8 *)tempA08 + 8));
+                        followingCar = (((CarLink *)tempA08)->car);
                         followAllowed = 1;
                         if ((followingCar->type) == 0) {
                             if (func_8003702C373B4(followingCar, car) < 0) {
@@ -14444,7 +14444,7 @@ void func_800373B4(Car *object) {
                             tempA09 = (u8 *)car->sectionLink.node.next;
                             if (tempA09 != NULL) {
                                 aheadOfFollowingCar =
-                                    (*(Car **)((u8 *)tempA09 + 8));
+                                    (((CarLink *)tempA09)->car);
                                 if (func_8003702C373B4(aheadOfFollowingCar,
                                                        car) < 0) {
                                     varA16 = -func_8003702C373B4(
@@ -16452,7 +16452,7 @@ void func_8003B464(void) {
         if (next == 0) {
             break;
         }
-        obj = *(Car **)(next + 8);
+        obj = ((CarLink *)next)->car;
     }
     D_800A2F65 = 0;
 }

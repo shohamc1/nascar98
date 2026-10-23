@@ -447,7 +447,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     TextFormatInt(D_800A3814C[0], D_800BA058);
     strcat(D_800BA058B, gTextLeadingSpaceLaps);
     entry2 = (u8 *)D_800A3788;
-    *(char **)(local + 8) = D_800BA058C;
+    ((MenuText *)local)->text = (s32)D_800BA058C;
     entry2->x = (u16)entry2->x + 0x71;
     entry2->targetX = 0x71;
     if ((arg3 & 0xFF) != 0) {
@@ -4544,8 +4544,8 @@ void func_80063874(void) {
     if (D_800A3658_w42[0] == 0) {
         func_8001E230(8, STACK_BLOCK_801A0000 + 0x1A000);
         head = D_800A37E4_w42[0];
-        src = *(u8 **)head;
-        end = *(u8 **)(head + 4);
+        src = ((u8 **)head)[0];
+        end = ((u8 **)head)[1];
         count = (u32)(end - src) >> 2;
         for (i = 0; i < count; i++) {
             D_800BE998_w42[i] = ((u32 *)src)[i];

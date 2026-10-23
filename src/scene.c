@@ -3567,9 +3567,9 @@ void HudDrawDashboard(void) {
             ot = (u32 *)gOrderingTable[0];
             out = dest + 0x18;
             do {
-                p0 = *(SVECTOR **)(source + 0x17);
-                p1 = *(SVECTOR **)(source + 0x1B);
-                p2 = *(SVECTOR **)(source + 0x1F);
+                p0 = ((Face *)(source - 1))->vertex[0];
+                p1 = ((Face *)(source - 1))->vertex[1];
+                p2 = ((Face *)(source - 1))->vertex[2];
                 gte_ldv3(p0, p1, p2);
                 asm volatile(
                     ".set\tnoreorder\n\tnop\n\tnop\n\trtpt\n\t.set\treorder");
@@ -3589,7 +3589,7 @@ void HudDrawDashboard(void) {
                 poly->uv2 = w3;
                 poly->uv3 = w4;
                 gte_stsxy3(dest + 8, dest + 0x10, dest + 0x20);
-                p0 = *(SVECTOR **)(source + 0x23);
+                p0 = ((Face *)(source - 1))->vertex[3];
                 gte_ldv0(p0);
                 asm volatile(
                     ".set\tnoreorder\n\tnop\n\tnop\n\trtps\n\t.set\treorder");
@@ -5052,7 +5052,7 @@ void HudUpdateTrafficGapData(void) {
             e0 = (u8 *)((CarLink *)car->order.node.next)->car;
             t1 = car->unk264;
             t2 = e0->unk264;
-            car = *(Car **)((u8 *)(e0) + 0x34C);
+            car = (Car *)e0->name;
             D_800A34BC = t1 - t2;
             strcpy(D_800A8A4C, (char *)car);
             D_800A34B4 = (s32)strtok(D_800A8A4C, gTextSpaceDelimiter);
@@ -7355,7 +7355,7 @@ loop2:
             if ((u8 *)node->next == 0) {
                 ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children = 0;
             } else {
-                while (*(u8 **)((u8 *)node->next + 0x54) != 0) {
+                while (node->next->next != 0) {
                     node = (u8 *)node->next;
                 }
                 node->next = 0;

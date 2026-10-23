@@ -2974,19 +2974,19 @@ void CardMenuCenterSelectedText(s32 arg0) {
         index = first;                                                         \
         if (limit >= index) {                                                  \
             do {                                                               \
-                entry = *(u8 **)(node + 0x20);                                 \
-                *(u32 *)(entry + 8) = (u32)(D_800B0A2C + index * 0x10);        \
+                entry = ((MenuObj *)node)->primitive;                          \
+                ((MenuText *)entry)->text = (s32)(D_800B0A2C + index * 0x10);  \
                 index++;                                                       \
-                node = *(u8 **)(node + 0x1C);                                  \
+                node = (u8 *)((MenuObj *)node)->next;                          \
             } while (limit >= index);                                          \
         }                                                                      \
         s = D_800A377C[0];                                                     \
         if (node != s) {                                                       \
             sentinel = s;                                                      \
             do {                                                               \
-                entry = *(u8 **)(node + 0x20);                                 \
-                *(u32 *)(entry + 8) = 0;                                       \
-                node = *(u8 **)(node + 0x1C);                                  \
+                entry = ((MenuObj *)node)->primitive;                          \
+                ((MenuText *)entry)->text = 0;                                 \
+                node = (u8 *)((MenuObj *)node)->next;                          \
             } while (node != sentinel);                                        \
         }                                                                      \
     }
@@ -3649,7 +3649,7 @@ void CardMenuShowMessage(s32 arg0) {
     s32 val2;
     obj = D_800A3908[0];
     menuId = gCardMenuMessage;
-    field20 = *((u8 **)(obj + 0x20));
+    field20 = ((MenuObj *)obj)->primitive;
     if (menuId == 0x1C) {
         if (gCardSlot != 0) {
             menuId = 0x1D;
@@ -3675,7 +3675,7 @@ void CardMenuShowMessage(s32 arg0) {
         ((MenuText *)field20)->text = D_8009AB00[menuId];
     }
     if ((arg0 & 0xFF) == 0) {
-        obj = *((u8 **)(obj + 0x1C));
+        obj = (u8 *)((MenuObj *)obj)->next;
         if (obj != D_800A377C[0]) {
             end = D_800A377C[0];
             do {
@@ -3684,7 +3684,7 @@ void CardMenuShowMessage(s32 arg0) {
                     ((MenuObj *)obj)->orderingDepth =
                         -((MenuObj *)obj)->orderingDepth;
                 }
-                obj = *((u8 **)(obj + 0x1C));
+                obj = (u8 *)((MenuObj *)obj)->next;
             } while (obj != end);
         }
         val2 = D_800A377C[0]->orderingDepth;

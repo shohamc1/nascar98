@@ -408,13 +408,13 @@ void func_80043B68(Car *object, s32 idx) {
         return;
     }
     row = (u8 *)object + idx;
-    if ((s8)++row[0x3AE] >= 4) {
-        row[0x3AE] = 3;
+    if ((s8)++object->unk3AE[idx] >= 4) {
+        object->unk3AE[idx] = 3;
     }
     flags = object->unk3A4;
     dcheck = D_800A2EB8[0];
     object->unk3A4 = flags | 0x8000;
-    if (dcheck == 0 && *(s8 *)(row + 0x3AE) == 3) {
+    if (dcheck == 0 && (s8)object->unk3AE[idx] == 3) {
         if (idx == 3) {
             object->unk3A4 = flags | 0x8080;
         } else {

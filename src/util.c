@@ -207,11 +207,14 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
                 if (drawMode != 0) {
                     s32 primitiveRow;
 
+                    /* car stepped by the bank row and part, so its
+                     * unk440[0][0] is car->unk440[bank][i]; retail keeps
+                     * the stepped pointer. */
                     primitiveRow =
                         gOrderingTableBankAbsolute[0] * 48 + (s32)car;
                     primitiveRow += i * 4;
                     func_80032760(model + part->firstFace * 44,
-                                  *(s32 *)(primitiveRow + 0x440),
+                                  ((Car *)primitiveRow)->unk440[0][0],
                                   part->faceCount);
                 } else {
                     func_800328AC(model + part->firstFace * 44,
@@ -373,7 +376,6 @@ void CarDrawAll(void) {
     s32 bankFlag;
     s32 slot;
     s32 bank;
-    u32 entries;
     s32 oldEntry;
     s32 value;
     s32 offset;
@@ -382,7 +384,6 @@ void CarDrawAll(void) {
     s32 size;
     s32 extra;
     s32 bank2;
-    u32 entries2;
     s32 oldEntry2;
     s32 value2;
     s32 offset2;
@@ -423,26 +424,24 @@ void CarDrawAll(void) {
         }
         if (released == 0) {
             bank = gOrderingTableBankLui;
-            entries = (bank << 2) + car;
-            oldEntry = *(s32 *)(entries + 0x420);
+            oldEntry = ((Car *)car)->unk420[bank];
             if (oldEntry != 0) {
                 value = ((Car *)car)->unk41C[bank];
                 offset = value * 0x44 + *(s32 *)&((Car *)car)->shape;
                 hw = ((Model *)offset)->faceCount;
                 ptr = (u32)D_800A2D64;
                 size = D_800A2D5C;
-                extra = *(s32 *)(entries + 0x430);
+                extra = ((Car *)car)->unk430[bank];
                 *(s32 *)&((Model *)ptr)->faceList = oldEntry;
                 D_800A2D64 = (s32 *)extra;
-                *(s32 *)(entries + 0x420) = 0;
+                ((Car *)car)->unk420[bank] = 0;
                 D_800A2D5C = size + hw;
             }
             ((Car *)car)->unk41C[gOrderingTableBankLui] = -1;
         }
         if (bankFlag != 0) {
             bank2 = gOrderingTableBankLui + 1;
-            entries2 = (bank2 << 2) + car;
-            oldEntry2 = *(s32 *)(entries2 + 0x420);
+            oldEntry2 = ((Car *)car)->unk420[bank2];
             gOrderingTableBankLui = bank2;
             if (oldEntry2 != 0) {
                 value2 = ((Car *)car)->unk41C[bank2];
@@ -450,10 +449,10 @@ void CarDrawAll(void) {
                 hw2 = ((Model *)offset2)->faceCount;
                 ptr2 = (u32)D_800A2D64;
                 size2 = D_800A2D5C;
-                extra2 = *(s32 *)(entries2 + 0x430);
+                extra2 = ((Car *)car)->unk430[bank2];
                 *(s32 *)&((Model *)ptr2)->faceList = oldEntry2;
                 D_800A2D64 = (s32 *)extra2;
-                *(s32 *)(entries2 + 0x420) = 0;
+                ((Car *)car)->unk420[bank2] = 0;
                 D_800A2D5C = size2 + hw2;
             }
             ((Car *)car)->unk41C[gOrderingTableBankLui] = -1;

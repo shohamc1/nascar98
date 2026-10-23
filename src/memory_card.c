@@ -1463,7 +1463,7 @@ void func_8005C020(MenuObj *object, u8 *dest) {
 }
 
 void MenuFormatTimeObject(MenuObj *object, s32 value) {
-    TextFormatTime(*(void **)((u8 *)object->primitive + 8), -1, value);
+    TextFormatTime(*(void **)&((MenuText *)object->primitive)->text, -1, value);
 }
 
 extern u8 *D_8009A05C[];
@@ -1952,7 +1952,7 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         D_800A35C9[length - 1] = 0;
         TextFormatInt(value, buffer + length);
         strcat(buffer, gFormatPercentWildcard);
-        strcpy(*((char **)(prim + 8)), (char *)buffer);
+        strcpy((char *)((MenuText *)prim)->text, (char *)buffer);
     } while (0);
     MenuFontSet(prim[1], prim[2]);
     *(&D_800BB9E4[id & 0xFF]->width) =
