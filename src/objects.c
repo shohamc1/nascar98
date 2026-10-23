@@ -9572,14 +9572,14 @@ void func_80030CDC(s32 *point, s32 sectionIndex) {
  * sched sinks it below the unk20 load as retail does. */
 void func_80030D80(Car *object, s32 *query) {
     s8 *node;
-    u8 *entry;
+    TrackSection *entry;
     s16 rot;
 
     rot = object->segment;
     if (rot >= 0) {
         D_800A3A80 = 0;
-        entry = object->segment * 0x90 + (u8 *)gTrackSections[0];
-        node = (s8 *)((TrackSection *)entry)->unk20;
+        entry = &((TrackSection *)gTrackSections[0])[object->segment];
+        node = (s8 *)(entry)->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC((s32 *)object, (s32 *)node, query) & 0xFF) !=
@@ -9588,9 +9588,9 @@ void func_80030D80(Car *object, s32 *query) {
             }
             node = *(s8 **)(node + 0x28);
         }
-        entry = *(u8 **)(entry + 0);
-        object->segment = *(u16 *)(entry + 8);
-        node = *(s8 **)(entry + 0x20);
+        entry = (u8 *)entry->prev;
+        object->segment = entry->section;
+        node = (s8 *)entry->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC((s32 *)object, (s32 *)node, query) & 0xFF) !=
@@ -9599,9 +9599,9 @@ void func_80030D80(Car *object, s32 *query) {
             }
             node = *(s8 **)(node + 0x28);
         }
-        entry = *(u8 **)(*(u8 **)(entry + 4) + 4);
-        object->segment = *(u16 *)(entry + 8);
-        node = *(s8 **)(entry + 0x20);
+        entry = *(u8 **)((u8 *)entry->next + 4);
+        object->segment = entry->section;
+        node = (s8 *)entry->unk20;
         while ((node != NULL) && (((u8)node[0x13] & 0x80) == 0)) {
             if ((node[2] < 0) &&
                 ((func_800309DC((s32 *)object, (s32 *)node, query) & 0xFF) !=
@@ -10915,7 +10915,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                 }
             }
             counter = counter + 1;
-            if (*(u16 *)((u8 *)group + 0xE) != 0) {
+            if (group->culled != 0) {
                 /* Already drawn. */
             } else if (lod < count) {
                 for (i = 0; i < 5; i++) {
@@ -10969,7 +10969,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     prim = prim + 0x28;
                 }
                 mode = 0;
-                *(u16 *)((u8 *)group + 0xE) = 1;
+                group->culled = 1;
             } else {
                 n = *(u8 *)((u8 *)group + 0x13);
                 obj = group->unk20;
@@ -11092,7 +11092,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                 next2:
                     obj = (u8 *)word1;
                 }
-                *(u16 *)((u8 *)group + 0xE) = 1;
+                group->culled = 1;
             }
         } while ((listA = listA) != endA || (listB = listB) != endB);
     }
@@ -13116,10 +13116,11 @@ void CarSteerTowardHeading(Car *car, s32 targetHeading) {
         if (speed != 0) {
             if (D_800A372C[0] != 0) {
                 if (D_800A38B8[0] == 0) {
-                    if ((ABS(MathGetAngleDelta(car->heading,
-                                               *(u16 *)(gTrackForSteering[0] +
-                                                        car->segment * 0x90 +
-                                                        0x10))) < 65) != 0) {
+                    if ((ABS(MathGetAngleDelta(
+                             car->heading,
+                             ((TrackSection *)
+                                  gTrackForSteering[0])[car->segment]
+                                 .angle)) < 65) != 0) {
                         goto scaleSteering;
                     }
                 }
@@ -15337,7 +15338,7 @@ void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
     register s32 i asm("a3");
     s32 sectionLimit;
     s32 previousSection;
-    u8 *sectionEntry;
+    TrackSection *sectionEntry;
     u16 heading;
     s32 trigIndex;
     s32 offsetX;
@@ -15357,9 +15358,9 @@ void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
     asm("" : "=r"(i) : "0"(sectionIndex));
     sectionLimit = gTrackSectionCount[0] - 1;
     previousSection = (i + sectionLimit) % gTrackSectionCount[0];
-    sectionEntry = (u8 *)gTrackSections[0] + i * 0x90;
+    sectionEntry = &((TrackSection *)gTrackSections[0])[i];
     *(s16 *)((u8 *)car + 0x24E) = previousSection;
-    heading = *(u16 *)(sectionEntry + 0x10);
+    heading = sectionEntry->angle;
     trigIndex = ((0x400 - heading) & 0x3FF) << 2;
     cosine = *(s32 *)(trigIndex + (u32)D_800A3A2CAbsolute[0]);
     sine = *(s32 *)(trigIndex + (u32)D_800A3A34Absolute[0]);
@@ -15414,23 +15415,21 @@ s32 func_80039274(Car *car, Car *other, u8 side) {
     s32 y;
     register s32 x asm("$3");
     s32 newY;
-    u8 *section;
+    TrackSection *section;
     s16 segment;
 
     segment = other->segment;
     if (segment != -1) {
-        section = (u8 *)gTrackSections[0] + segment * 0x90;
-        if (MathGetAngleDelta(other->heading, *(u16 *)(section + 0x10)) < 0) {
-            result =
-                -MathGetAngleDelta(other->heading, *(u16 *)(section + 0x10));
+        section = &((TrackSection *)gTrackSections[0])[segment];
+        if (MathGetAngleDelta(other->heading, section->angle) < 0) {
+            result = -MathGetAngleDelta(other->heading, section->angle);
         } else {
-            result =
-                MathGetAngleDelta(other->heading, *(u16 *)(section + 0x10));
+            result = MathGetAngleDelta(other->heading, section->angle);
         }
         if (result < 60) {
             result = (other->heading + other->steering + 0x400) % 1023;
         } else {
-            result = *(u16 *)(section + 0x10);
+            result = section->angle;
         }
         cosine = ((s32 **)D_800A3A2CAbsolute)[0][result];
         sine = ((s32 **)D_800A3A34Absolute)[0][result];
@@ -16537,8 +16536,8 @@ void func_8003B464(void) {
                 s32 result;
                 s32 otherVal;
 
-                temp = D_800A2EF4[0] - *(s32 *)((u8 *)gTrackSections[0] +
-                                                startPos * 0x90 + 0x50);
+                temp = D_800A2EF4[0] -
+                       ((TrackSection *)gTrackSections[0])[startPos].unk50;
                 scaled = temp << 3;
                 *(s32 *)(obj + 0x264) = temp;
                 temp = RandomScaledGet(8);

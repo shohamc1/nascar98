@@ -881,15 +881,15 @@ void SceneLinkLiveEntries(Car *car) {
     s8 i;
     s32 id;
     u16 flag;
-    u8 *p;
+    TrackSection *p;
 
     count = D_800A343C;
     base = D_800A3444[car->slot];
     for (n = 1, i = 1, tail = base + 4; i < count; i++) {
         entry = (s8 *)(i * 0x58 + (s32)base);
         id = *(s16 *)entry;
-        p = (u8 *)(id * 0x90 + gTrackSectionsv);
-        flag = *(u16 *)(p + 0xE);
+        p = (TrackSection *)(u8 *)(id * 0x90 + gTrackSectionsv);
+        flag = p->culled;
         if (flag != 0) {
             *(s32 *)(tail + 0x28) = (s32)(entry + 4);
             tail = entry + 4;
@@ -971,7 +971,7 @@ void SceneInitProjectiles(void) {
     for (i = 0; i < gTrackSectionCount[0]; i++) {
         objectPtr = object;
         pointPtr = point;
-        angle = *(u16 *)((u8 *)gTrackSections[0] + i * 0x90 + 0x10);
+        angle = ((TrackSection *)gTrackSections[0])[i].angle;
         *(u16 *)(object + 0x114) = angle;
         *(u16 *)(object + 0x116) = angle * 4;
         for (j = 0; j < 2; j++) {
@@ -2013,7 +2013,7 @@ void func_8004875C(void) {
     Car *w;
     s32 e;
 
-    val = *(u16 *)((u8 *)gTrackSections[0] + D_800A3728->segment * 0x90 + 0x10);
+    val = ((TrackSection *)gTrackSections[0])[D_800A3728->segment].angle;
     D_800A3728->heading = val;
     D_800A3728->movementHeading = val;
     D_800A3728->fineHeading = (u16)D_800A3728->heading * 4;
@@ -6057,9 +6057,9 @@ s32 RaceUpdateCaution(void) {
             if (car->unkF4 != 0 && (car->unk3A4 & 0xF) != 0) {
                 done = 0;
             }
-            if (ABS(MathGetAngleDelta(car->heading,
-                                      *(u16 *)((u8 *)gTrackSections[0] +
-                                               car->segment * 0x90 + 0x10))) >
+            if (ABS(MathGetAngleDelta(
+                    car->heading,
+                    ((TrackSection *)gTrackSections[0])[car->segment].angle)) >
                 0x40) {
                 D_800A3564u = 1;
             }
@@ -7323,11 +7323,9 @@ loop2:
         *(u16 *)(tex2 + 0x3E) = *(u16 *)(entry + 0x18) = coords[1][1];
         *(u16 *)(tex2 + 0x40) = *(u16 *)(entry + 0x1A) = coords[2][1];
         if (*(s16 *)tex2 != -1) {
-            node =
-                *(u8 **)((u8 *)gTrackSections[0] + *(s16 *)tex2 * 0x90 + 0x74);
+            node = ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children;
             if (*(u8 **)(node + 0x54) == 0) {
-                *(u8 **)((u8 *)gTrackSections[0] + *(s16 *)tex2 * 0x90 + 0x74) =
-                    0;
+                ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children = 0;
             } else {
                 while (*(u8 **)(*(u8 **)(node + 0x54) + 0x54) != 0) {
                     node = *(u8 **)(node + 0x54);
@@ -7349,8 +7347,8 @@ loop2:
             asm volatile("");
             *(u16 *)slot = owner;
             *(u8 **)(slot + 0x54) =
-                *(u8 **)((u8 *)gTrackSections[0] + key * 0x90 + 0x74);
-            *(u8 **)((u8 *)gTrackSections[0] + key * 0x90 + 0x74) = slot;
+                ((TrackSection *)gTrackSections[0])[key].children;
+            ((TrackSection *)gTrackSections[0])[key].children = slot;
         }
         if (*(u16 *)(entry + 0x22) == 2) {
             if (entry[0x24] != 0) {
@@ -7453,7 +7451,7 @@ void func_80052E18(void) {
     } while (i < 100);
     i = 0;
     while (i < gTrackSectionCount[0]) {
-        *(s32 *)((u8 *)gTrackSections[0] + i * 0x90 + 0x74) = 0;
+        ((TrackSection *)gTrackSections[0])[i].children = 0;
         i++;
     }
     p = gCarListNM[0];
