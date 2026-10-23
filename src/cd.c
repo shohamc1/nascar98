@@ -910,7 +910,7 @@ void func_8003DBA8(Car *object) {
     TrackSection *trailing;
     TrackSection *entry;
     u8 *targets;
-    u8 *previous;
+    TrackSection *previous;
     u8 *damage;
 
     sectionCount = gTrackSectionCountCarState[0];
@@ -932,17 +932,17 @@ void func_8003DBA8(Car *object) {
                      (s32)gTrackSectionCountCarState[0]) *
                     0x90);
         earlier = &gTrackSectionsCarState[0][earlierSection];
-        coordinate = *(s32 *)(previous + 0x40);
+        coordinate = previous->unk40;
         entry->unk40 = (s32)((coordinate - earlier->unk40) + coordinate);
-        coordinateY = *(s32 *)(previous + 0x44);
+        coordinateY = previous->unk44;
         entry->unk44 = (s32)((coordinateY - earlier->unk44) + coordinateY);
-        targetX = *(s32 *)(previous + 0x38);
+        targetX = previous->unk38;
         entry->unk38 = (s32)((targetX - earlier->unk38) + targetX);
-        targetY = *(s32 *)(previous + 0x3C);
+        targetY = previous->unk3C;
         entry->unk3C = (s32)((targetY - earlier->unk3C) + targetY);
-        trailingX = *(s32 *)(previous + 0x48);
+        trailingX = previous->unk48;
         entry->unk48 = (s32)((trailingX - earlier->unk48) + trailingX);
-        trailingY = *(s32 *)(previous + 0x4C);
+        trailingY = previous->unk4C;
         entry->unk4C = (s32)((trailingY - earlier->unk4C) + trailingY);
     }
     state = object->unk269;

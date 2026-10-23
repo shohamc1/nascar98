@@ -1171,18 +1171,18 @@ void MenuUpdateObjectPosition(MenuObj *first, u8 friction) {
     }
 }
 
-void MenuDrawF4Object(u8 *object, s32 orderingDepth, u8 semiTrans) {
+void MenuDrawF4Object(MenuObj *object, s32 orderingDepth, u8 semiTrans) {
     POLY_F4 *poly;
 
-    poly = (POLY_F4 *)*(u8 **)(object + 0x20);
-    poly->x0 = *(u16 *)(object + 0x6);
-    poly->y0 = *(u16 *)(object + 0x8);
-    poly->x1 = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
-    poly->y1 = *(u16 *)(object + 0x8);
-    poly->x2 = *(u16 *)(object + 0x6);
-    poly->y2 = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
-    poly->x3 = *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
-    poly->y3 = *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+    poly = (POLY_F4 *)(u8 *)object->primitive;
+    poly->x0 = (u16)object->x;
+    poly->y0 = (u16)object->y;
+    poly->x1 = (u16)object->x + (u16)object->width;
+    poly->y1 = (u16)object->y;
+    poly->x2 = (u16)object->x;
+    poly->y2 = (u16)object->y + (u16)object->height;
+    poly->x3 = (u16)object->x + (u16)object->width;
+    poly->y3 = (u16)object->y + (u16)object->height;
     if (semiTrans != 0xFF) {
         SetSemiTrans(poly, semiTrans);
     }
@@ -2404,7 +2404,7 @@ void func_8005DAD4(void) {
 s32 func_8005DCF0(void) {
     u8 done;
     s32 i;
-    u8 *object;
+    MenuObj *object;
     POLY_FT4 *poly;
     s16 sum;
 
@@ -2412,37 +2412,37 @@ s32 func_8005DCF0(void) {
     i = 9;
     do {
         object = (u8 *)D_800B12FC[i];
-        if (*(s16 *)(object + 0xE) != 0) {
-            sum = *(u16 *)(object + 6) + *(s16 *)(object + 0xE);
-            *(s16 *)(object + 6) = sum;
+        if (object->velocityX != 0) {
+            sum = (u16)object->x + object->velocityX;
+            object->x = sum;
             if (sum >= 0x141) {
-                *(s16 *)(object + 8) = 0xF0;
+                object->y = 0xF0;
                 if (i == 9) {
                     done = 1;
                 }
                 if (done != 0) {
-                    *(s16 *)(object + 0xE) = 2;
-                    *(s16 *)(object + 6) = *(u16 *)(object + 0xA);
-                    *(s16 *)(object + 8) = *(u16 *)(object + 0xC);
+                    object->velocityX = 2;
+                    object->x = (u16)object->targetX;
+                    object->y = (u16)object->targetY;
                 }
             }
-            if ((s16) * (u16 *)(object + 0xE) < 6) {
-                *(u16 *)(object + 0xE) =
-                    *(u16 *)(object + 0xE) + (s16) * (u16 *)(object + 0xE) / 2;
+            if ((s16)(u16)object->velocityX < 6) {
+                object->velocityX =
+                    (u16)object->velocityX + (s16)(u16)object->velocityX / 2;
             }
         }
         if (done == 0) {
             poly = (POLY_FT4 *)(GraphicsAllocPolyFT4(0));
-            *poly = *(POLY_FT4 *)*(u8 **)(object + 0x20);
-            poly->x0 = *(u16 *)(object + 6);
-            poly->y0 = *(u16 *)(object + 8);
-            poly->x1 = *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
-            poly->y1 = *(u16 *)(object + 8);
-            poly->x2 = *(u16 *)(object + 6);
-            poly->y2 = *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
-            poly->x3 = *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
-            poly->y3 = *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
-            AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4, poly);
+            *poly = *(POLY_FT4 *)(u8 *)object->primitive;
+            poly->x0 = (u16)object->x;
+            poly->y0 = (u16)object->y;
+            poly->x1 = (u16)object->x + (u16)object->width;
+            poly->y1 = (u16)object->y;
+            poly->x2 = (u16)object->x;
+            poly->y2 = (u16)object->y + (u16)object->height;
+            poly->x3 = (u16)object->x + (u16)object->width;
+            poly->y3 = (u16)object->y + (u16)object->height;
+            AddPrim(gOrderingTable[0] + object->orderingDepth * 4, poly);
         }
         i--;
     } while (i != 0);

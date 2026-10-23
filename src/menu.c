@@ -4175,7 +4175,7 @@ extern u8 D_800AEE43[];
 
 void func_80062F6C(s32 arg0, s32 arg1) {
     s32 i;
-    u8 *obj;
+    MenuObj *obj;
     s32 offset;
     s32 **entry;
     s32 b42;
@@ -4221,11 +4221,11 @@ void func_80062F6C(s32 arg0, s32 arg1) {
                 y = 0x67;
             }
             sum = val + y;
-            *(s16 *)(obj + 0x16) = sum;
+            obj->width = sum;
             if (sum >= 0x68) {
-                *(s16 *)(obj + 0x16) = 0x67;
+                obj->width = 0x67;
             }
-            *(s16 *)(obj + 0x12) = 0xAC - val;
+            obj->drawOffsetX = 0xAC - val;
             break;
         case 1:
         case 2:
@@ -4255,12 +4255,12 @@ void func_80062F6C(s32 arg0, s32 arg1) {
                     val = 0x30;
                 }
             }
-            *(s16 *)(obj + 0x18) = val;
+            obj->height = val;
             delta = val - 0x38;
-            *(s16 *)(obj + 0x14) = *(u16 *)((u8 *)entry[0] + 0x14) - delta;
+            obj->drawOffsetY = *(u16 *)((u8 *)entry[0] + 0x14) - delta;
             break;
         }
-        obj = *(u8 **)(obj + 0x1C);
+        obj = (u8 *)obj->next;
         offset = offset + 3;
     }
 }

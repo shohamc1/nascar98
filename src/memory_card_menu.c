@@ -2662,7 +2662,7 @@ void CardMenuBuildFileList(void) {
     MenuObj *prev;
     MenuObj *node;
     u8 *pkt;
-    u8 *obj;
+    MenuObj *obj;
 
     MenuFontSet(2, 2);
     y = 0x3C;
@@ -2704,28 +2704,28 @@ void CardMenuBuildFileList(void) {
     do {
         obj = (u8 *)MenuCreateFlatRect(0, y, 0x78, 0x60, 0, 0x20, 0x20, 0x40, 1,
                                        1);
-        *(s16 *)(obj + 0x6) = -0x78;
-        *(s16 *)(obj + 0xE) = 2;
-        *(s16 *)(obj + 0x1A) = 0xA;
-        prev->next = (MenuObj *)obj;
-        prev = (MenuObj *)obj;
+        obj->x = -0x78;
+        obj->velocityX = 2;
+        obj->orderingDepth = 0xA;
+        prev->next = obj;
+        prev = obj;
         i += 1;
     } while (i < 2);
     y = 0x55;
     i = 0;
     do {
         obj = (u8 *)MenuCreateTextObject(0, y);
-        *(s16 *)(obj + 0x1A) = 2;
-        MenuSetTextObject((MenuObj *)obj, 2, 2, (s32)(D_800B0A2C + i * 0x10), 0,
-                          *(s16 *)(obj + 0x1A));
-        *(s16 *)(obj + 0x12) = 0xB;
-        *(s16 *)(obj + 0xE) = 2;
-        *(s16 *)(obj + 0x6) = -0x6E;
+        obj->orderingDepth = 2;
+        MenuSetTextObject(obj, 2, 2, (s32)(D_800B0A2C + i * 0x10), 0,
+                          obj->orderingDepth);
+        obj->drawOffsetX = 0xB;
+        obj->velocityX = 2;
+        obj->x = -0x6E;
         if (i == 0) {
             D_800A3908[0] = obj;
         }
-        prev->next = (MenuObj *)obj;
-        prev = (MenuObj *)obj;
+        prev->next = obj;
+        prev = obj;
         i += 1;
         y += 9;
     } while (i < 7);
@@ -2758,16 +2758,16 @@ void CardMenuBuildFileList(void) {
         if (i == 0) {
             D_800A377C[0] = obj;
         }
-        prev->next = (MenuObj *)obj;
-        *(s16 *)(obj + 0xE) = 2;
-        *(s16 *)(obj + 0x1A) = 3;
+        prev->next = obj;
+        obj->velocityX = 2;
+        obj->orderingDepth = 3;
         if (i != 0) {
-            *(s16 *)(obj + 0x1A) = -1;
+            obj->orderingDepth = -1;
         }
-        prev = (MenuObj *)obj;
+        prev = obj;
         i += 1;
-        *(s16 *)(obj + 0x12) = 0xA;
-        *(s16 *)(obj + 0x6) = -0x6E;
+        obj->drawOffsetX = 0xA;
+        obj->x = -0x6E;
     } while (i < 2);
     D_800A3770 = 0;
 }
@@ -3074,7 +3074,7 @@ void MenuHideCurrentObject(void) {
 
 /* Keep the raw decrement and the byte index in separate values. */
 void func_8006C9F8(void) {
-    u8 *obj;
+    MenuObj *obj;
     u8 *ptr;
     s8 *entry;
     s32 status;
@@ -3084,25 +3084,25 @@ void func_8006C9F8(void) {
 
     obj = *(u8 **)(D_800A377C[0] + 0x1C);
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
-    *(s16 *)(obj + 0x1A) = 1;
+    obj->orderingDepth = 1;
     length = strlen((char *)entry);
-    *(u8 *)(obj + 5) = length;
+    obj->unk5 = length;
     if ((s8)length >= 0xF) {
-        *(u8 *)(obj + 5) = 0xE;
+        obj->unk5 = 0xE;
     }
-    val = *(u8 *)(obj + 5) - 1;
-    *(u8 *)(obj + 5) = val;
+    val = obj->unk5 - 1;
+    obj->unk5 = val;
     index = val;
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
     {
         s8 *text = entry;
-        s16 *cursor = (s16 *)(obj + 0x16);
+        s16 *cursor = &obj->width;
         s32 result;
         CARD_MENU_CURSOR_BODY(status =, 2, 2, index, text, cursor, result);
     }
     ptr = *(u8 **)D_800A377C;
-    *(s16 *)(obj + 6) = status + 0xA;
-    *(s16 *)(obj + 8) = *(u16 *)(ptr + 8) + 9;
+    obj->x = status + 0xA;
+    obj->y = *(u16 *)(ptr + 8) + 9;
 }
 #undef CARD_MENU_CURSOR_BODY
 
