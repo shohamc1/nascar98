@@ -613,7 +613,6 @@ extern u8 *D_800A3960w17[] asm("D_800A3960.NON_MATCHING");
 
 void func_80044114(Car *arg0) {
     s32 i;
-    u8 *entry;
 
     *(volatile s16 *)&arg0->unk3A4 = 0;
     for (i = 0; i < 8; i++) {
@@ -622,10 +621,9 @@ void func_80044114(Car *arg0) {
     }
     if (D_800A2EE0[0] != 0) {
         *(volatile s16 *)&arg0->unk1BC = 3;
-        for (i = 0, entry = arg0; i < 4; i++) {
-            *(volatile s16 *)(entry + 0x2AC) = 0;
-            *(volatile s16 *)(entry + 0x2B0) = 0;
-            entry += 0x28;
+        for (i = 0; i < 4; i++) {
+            *(volatile s16 *)&arg0->wheel[i].unk0 = 0;
+            *(volatile s16 *)&arg0->wheel[i].effect = 0;
         }
         *(volatile s16 *)&arg0->unk10C = 0;
     }
@@ -634,13 +632,12 @@ void func_80044114(Car *arg0) {
     }
 }
 
-void func_8004419C(u8 *object) {
+void func_8004419C(Car *object) {
     s32 i;
-    *(volatile s16 *)(object + 0x1BC) = 3;
+    *(volatile s16 *)&object->unk1BC = 3;
     for (i = 0; i < 4; i++) {
-        *(volatile s16 *)(object + 0x2AC) = 0;
-        *(volatile s16 *)(object + 0x2B0) = 0;
-        object += 0x28;
+        *(volatile s16 *)&object->wheel[i].unk0 = 0;
+        *(volatile s16 *)&object->wheel[i].effect = 0;
     }
 }
 

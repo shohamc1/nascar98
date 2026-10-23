@@ -1321,7 +1321,7 @@ extern s8 *D_8009ADD8[];
 extern void func_80025730(Car *);
 
 /* Draw the car place, laps, speed, times, and panel primitives. */
-void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
+void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     s8 text[24];
     register s32 byteValue asm("v1");
     s32 lapValue;
@@ -1360,10 +1360,10 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     register s16 *glyphWidth asm("s4");
     s32 scale;
 
-    if (*(s8 *)(car + 0x20C) == 0 || D_800A2EACAbsolute[0] != 0) {
+    if (car->cameraMode == 0 || D_800A2EACAbsolute[0] != 0) {
         return;
     }
-    switch (*(s8 *)(car + 0x209)) {
+    switch (car->unk209) {
     case 1:
     case 3:
         hideTimes = 1;
@@ -1372,7 +1372,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
     gFontColorRed = 60;
     gFontColorGreen = 100;
     gFontColorBlue = 60;
-    byteValue = *(u8 *)(car + 0x204);
+    byteValue = (u8)car->place;
     len = 0;
     yOffset = -(bank != 0) & 100;
     y = 135 - yOffset;
@@ -1405,7 +1405,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             x += D_800A2D8C;
         } while (*p != 0);
     }
-    lap = *(s16 *)(car + 0x1D6);
+    lap = car->lap;
     if (lap < 0)
         lap = 0;
     if (D_800A2EA8w15[0] < lap)
@@ -1457,9 +1457,9 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             x += D_800A2D8C;
         } while (*p != 0);
     }
-    fixedSpeed = *(s32 *)(car + 0x90);
+    fixedSpeed = car->speed;
     y = 181 - yOffset;
-    byteValue = *(u8 *)(car + 0xF7);
+    byteValue = car->unkF7;
     if (fixedSpeed < 0)
         fixedSpeed = 0;
     /* Retail keeps this mask after the byte load. */
@@ -1490,9 +1490,9 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
             x += D_800A2D8C;
         } while (*p != 0);
     }
-    FontDrawGlyph((s8)(*(u8 *)(car + 0x10C) + '1'), 60, 190 - yOffset, 2);
+    FontDrawGlyph((s8)(*(u8 *)((u8 *)car + 0x10C) + '1'), 60, 190 - yOffset, 2);
     if (hideTimes == 0) {
-        helperTime = *(void **)(car + 0x258);
+        helperTime = *(void **)((u8 *)car + 0x258);
         helperMode = 2;
         helperBuffer = (s32)text;
         asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
@@ -1510,7 +1510,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
                 x += *glyphWidth;
             } while (*p != 0);
         }
-        helperTime = *(void **)(car + 0x25C);
+        helperTime = *(void **)((u8 *)car + 0x25C);
         helperMode = 2;
         if ((s32)helperTime != 0x7FFFFFFF) {
             helperBuffer = (s32)text;
@@ -1542,7 +1542,7 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
                 } while (*p != 0);
             }
         }
-        func_800183C0(*(s32 *)(car + 0x260), 258, 183 - yOffset, 2);
+        func_800183C0(car->unk260, 258, 183 - yOffset, 2);
     }
     i = 17;
 
@@ -1554,14 +1554,14 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
         barQuad = quad;
         switch (i) {
         case 2:
-            func_80019A00(*(s16 *)(car + 0x108), quad, bank);
+            func_80019A00(car->unk108, quad, bank);
             goto queue;
         case 8:
-            if (*(s32 *)(car + 0x2B8) > 0xCE400)
+            if (car->wheel[0].unkC > 0xCE400)
                 goto next;
             goto queue;
         case 13:
-            width = (*(s32 *)(car + 0x28C) * 34) / 16000;
+            width = (car->unk28C * 34) / 16000;
             barY = 204;
             barX = 31;
             if (bank != 0)
@@ -1591,36 +1591,32 @@ void HudDrawCarPanel(u8 *car, s32 bank, s32 hideTimes) {
                 goto next;
             goto queue;
         case 15:
-            if (*(s32 *)(car + 0x28C) > 0)
+            if (car->unk28C > 0)
                 goto next;
             goto queue;
         case 16:
-            if (*(s16 *)(car + 0x1E0) == -1)
+            if (car->segment == -1)
                 break;
-            if (MathGetAngleDelta(*(s16 *)(car + 0x114),
+            if (MathGetAngleDelta(car->heading,
                                   *(u16 *)(gTrackSections[0] +
-                                           *(s16 *)(car + 0x1E0) * 144 + 16)) <
-                0) {
-                if (-MathGetAngleDelta(*(s16 *)(car + 0x114),
+                                           car->segment * 144 + 16)) < 0) {
+                if (-MathGetAngleDelta(car->heading,
                                        *(u16 *)(gTrackSections[0] +
-                                                *(s16 *)(car + 0x1E0) * 144 +
-                                                16)) < 300)
+                                                car->segment * 144 + 16)) < 300)
                     goto next;
             } else {
-                if (MathGetAngleDelta(*(s16 *)(car + 0x114),
+                if (MathGetAngleDelta(car->heading,
                                       *(u16 *)(gTrackSections[0] +
-                                               *(s16 *)(car + 0x1E0) * 144 +
-                                               16)) < 300)
+                                               car->segment * 144 + 16)) < 300)
                     goto next;
             }
             goto queue;
         case 17:
             if (D_800A2EE0w15[0] == 0 || D_800A2EC8[0] != 0)
                 break;
-            if (*(u8 *)(car + 0x3B7) != 0 ||
-                (*(u16 *)(car + 0x3A4) & 15) == 0) {
-                if (*(void (**)(u8 *))(car + 0x354) != func_80025730 ||
-                    *(s16 *)(car + 0x1BC) != 4)
+            if (car->unk3B7 != 0 || (car->unk3A4 & 15) == 0) {
+                if (*(void (**)(u8 *))((u8 *)car + 0x354) != func_80025730 ||
+                    car->unk1BC != 4)
                     break;
             }
             string = D_8009ADD8[0];
@@ -2144,7 +2140,7 @@ void func_8001BA94(s32 arg0) {
                 if (node != gPlayerCar) {
                     func_8001B82C(node, off);
                 }
-                node = *(Car **)(*(s32 *)((u8 *)node + 0x3E8) + 8);
+                node = ((CarLink *)node->order.node.previous)->car;
             }
         }
     }

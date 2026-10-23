@@ -846,19 +846,19 @@ void func_8001F828(s32 *p) {
     p[14] = i;
 }
 
-void MatrixStoreObjectBasis(s32 *object) {
-    object[0x60 / 4] = (s32)D_800A36B0;
-    object[0x6C / 4] = (s32)D_800A36B8;
-    object[0x78 / 4] = (s32)D_800A36C0;
-    object[0x64 / 4] = (s32)D_800A36C8;
-    object[0x70 / 4] = (s32)D_800A36D0;
-    object[0x7C / 4] = (s32)D_800A36D4;
-    object[0x68 / 4] = (s32)D_800A36D8;
-    object[0x74 / 4] = (s32)D_800A36DC;
-    object[0x80 / 4] = (s32)D_800A36E8;
+void MatrixStoreObjectBasis(Car *object) {
+    object->orient[0].x = (s32)D_800A36B0;
+    object->orient[1].x = (s32)D_800A36B8;
+    object->orient[2].x = (s32)D_800A36C0;
+    object->orient[0].y = (s32)D_800A36C8;
+    object->orient[1].y = (s32)D_800A36D0;
+    object->orient[2].y = (s32)D_800A36D4;
+    object->orient[0].z = (s32)D_800A36D8;
+    object->orient[1].z = (s32)D_800A36DC;
+    object->orient[2].z = (s32)D_800A36E8;
 }
 
-void MatrixStoreToObject(s32 *object) {
+void MatrixStoreToObject(Car *object) {
     s32 value0, value1, value2, value3, value4, value5, value6, value7, value8;
     value0 = D_800A3784;
     value1 = D_800A3790;
@@ -869,15 +869,15 @@ void MatrixStoreToObject(s32 *object) {
     value6 = D_800A37AC;
     value7 = D_800A37B4;
     value8 = D_800A37C4;
-    object[15] = value0;
-    object[18] = value1;
-    object[21] = value2;
-    object[16] = value3;
-    object[19] = value4;
-    object[22] = value5;
-    object[17] = value6;
-    object[20] = value7;
-    object[23] = value8;
+    object->rot[0].x = value0;
+    object->rot[1].x = value1;
+    object->rot[2].x = value2;
+    object->rot[0].y = value3;
+    object->rot[1].y = value4;
+    object->rot[2].y = value5;
+    object->rot[0].z = value6;
+    object->rot[1].z = value7;
+    object->rot[2].z = value8;
 }
 
 /* Wall: gcc schedules the second D_800A3A34 value reload (needed for the

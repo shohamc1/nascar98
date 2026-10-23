@@ -24,7 +24,7 @@ void GraphicsSetClearColor(u8 r, u8 g, u8 b);
 void GraphicsApplyDisplayEnvironments(void);
 void GraphicsPartitionWorkBuffers(void);
 void GraphicsInitDoubleBuffer(s32 mode);
-void MatrixStoreToObject(s32 *object);
+void MatrixStoreToObject(Car *object);
 void MatrixSaveState(void);
 void MatrixRestoreState(void);
 
