@@ -72,8 +72,8 @@ void GraphicsLoadImageBank(s32 fileName) {
     D_800A368C = (void *)STACK_BLOCK_80193000;
     FileRead((s32)STACK_BLOCK_80193000, 1, size, handle);
     image = (u8 *)D_800A368C;
-    w = *(u16 *)image;
-    h = *(u16 *)(image + 2);
+    w = ((ImageBankHeader *)image)->imageCount;
+    h = ((ImageBankHeader *)image)->textureCount;
     head = image + 4;
     D_800A37E4 = head;
     D_800A3754 = w;
@@ -115,7 +115,7 @@ void GraphicsSelectImageBank(s32 index) {
     image = (u8 *)D_800B9F44[index];
     D_800A368C = image;
     w = *(u16 *)image;
-    h = *(u16 *)(image + 2);
+    h = ((ImageBankHeader *)image)->textureCount;
     head = image + 4;
     D_800A37E4 = head;
     D_800A3754 = w;
@@ -183,8 +183,8 @@ void func_8001E230(s32 arg0, s32 arg1) {
     }
     FileRead((s32)D_800A368C, 1, size, handle);
     image = (u8 *)D_800A368C;
-    w = *(u16 *)image;
-    h = *(u16 *)(image + 2);
+    w = ((ImageBankHeader *)image)->imageCount;
+    h = ((ImageBankHeader *)image)->textureCount;
     head = image + 4;
     D_800A37E4 = head;
     D_800A3754 = w;
@@ -209,7 +209,7 @@ extern void *D_800A37E4;
 void GraphicsLoadImageWithXOffset(s32 xOffset) {
     RECT rect;
     RECT *image;
-    image = *(u8 **)((u8 *)D_800A37E4 + 4);
+    image = ((ImageBankEntry *)D_800A37E4)->image;
     rect.x = image->x + xOffset;
     rect.y = image->y;
     rect.w = image->w;

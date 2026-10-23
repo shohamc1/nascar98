@@ -1678,9 +1678,6 @@ typedef struct {
 typedef struct {
     s32 w[7];
 } TrackCopy28;
-typedef struct {
-    s32 w[135];
-} TrackNode;
 extern s32 FileSeek(s32, s32, s32);
 extern s32 FileRead(void *, s32, s32, s32);
 extern s32 sprintf(char *, char *, ...);
@@ -1801,7 +1798,7 @@ void TrackReadData(s32 *trackData, s32 file) {
     u8 *allocatedFaces;
     u8 *allocatedNodes;
     u8 *allocatedObjects;
-    u8 *node;
+    TrackCallback *node;
     u8 *objectFaceIndices;
     Face *face;
     u8 *nodeDataStart;
@@ -2226,12 +2223,11 @@ copyStart:
         nodeOffset = 0;
         inputNode = nodeData;
         do {
-            *(TrackNode *)((u8 *)(nodeOffset + (s32)D_800A39A4)) =
-                *(TrackNode *)inputNode;
-            node = (u8 *)(nodeOffset + (s32)D_800A39A4);
-            *(u8 **)((u8 *)node + (0)) =
-                (s32) * (u8 **)((*(s16 *)(node + 8) * 0x90) + objectData + 48);
-            *(u8 **)((*(s16 *)(node + 8) * 0x90) + objectData + 48) = node;
+            *(TrackCallback *)((u8 *)(nodeOffset + (s32)D_800A39A4)) =
+                *(TrackCallback *)inputNode;
+            node = (TrackCallback *)(nodeOffset + (s32)D_800A39A4);
+            node->next = ((TrackSection *)objectData)[node->section].callbacks;
+            ((TrackSection *)objectData)[node->section].callbacks = node;
             inputNode += 0x21C;
             i += 1;
             nodeOffset += 0x21C;
@@ -2734,7 +2730,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         }
         if (i < count - 1) {
             src += 0x2C;
-            poly = *(u8 **)((u8 *)poly + 0x34);
+            poly = (u8 *)((LinkedGT4 *)poly)->next;
         }
     }
     i = 0;
@@ -2749,9 +2745,9 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         } while (i < obj->partCount);
     }
     pool = D_800A2D5C;
-    next = *(s32 *)((u8 *)poly + 0x34);
+    next = (s32)((LinkedGT4 *)poly)->next;
     bank = gOrderingTableBankAbsolute[0];
-    *(s32 *)((u8 *)poly + 0x34) = 0;
+    ((LinkedGT4 *)poly)->next = NULL;
     D_800A2D5C = pool - count;
     D_800A2D60 = next;
     *(s32 *)(arg0 + bank * 4 + 0x430) = (s32)poly;

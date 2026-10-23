@@ -10302,7 +10302,7 @@ u8 *func_80032760(Face *entry, u8 *primitive, s32 remaining) {
         gte_ldv3(entry->vertex[0], entry->vertex[1], (s32 *)entry->vertex[2]);
         gte_rtpt();
         depthBias = entry->depth * 4;
-        nextPrim = *(u8 **)(primitive + 0x34);
+        nextPrim = (u8 *)((LinkedGT4 *)primitive)->next;
         gte_ReadFlag(gte);
         if (gte & flagMask) {
             goto next;

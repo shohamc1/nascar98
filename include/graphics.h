@@ -3,6 +3,20 @@
 
 #include "common.h"
 
+/* The header of an image bank file. One ImageBankEntry per image follows,
+ * then the ImageBankTexture table. */
+typedef struct {
+    u16 imageCount;   /* 0x00 */
+    u16 textureCount; /* 0x02 */
+} ImageBankHeader;
+
+/* One image in a loaded bank: two file offsets, made into pointers on load.
+ * image points at a RECT followed by the pixels. */
+typedef struct {
+    u8 *unk0;
+    u8 *image; /* 0x04 */
+} ImageBankEntry;
+
 /* A 0x10 texture in the loaded image bank: its texture page, the UV
  * offset within the page and its CLUT position. */
 typedef struct {

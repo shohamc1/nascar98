@@ -6,6 +6,12 @@
 #include "car.h"
 #include "track.h"
 
+/* A model's POLY_GT4 with a link to the next one in its draw list. */
+typedef struct LinkedGT4 {
+    POLY_GT4 prim;          /* 0x00 */
+    struct LinkedGT4 *next; /* 0x34 */
+} LinkedGT4;
+
 /* A 0x14 replay frame: one car's position and packed state. */
 typedef struct {
     s32 x;     /* 0x00 */

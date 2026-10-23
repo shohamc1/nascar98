@@ -37,12 +37,14 @@ typedef struct SkidMark {
     struct SkidMark *next;    /* 0x54 */
 } SkidMark;
 
-/* A callback node in a track section's callbacks list. ListDispatchCallbacks
+/* A 0x21C callback node in a track section's callbacks list, loaded from
+ * the track file's node records. ListDispatchCallbacks
  * runs D_80091080[callback] on each. The vertex handlers move count track
  * vertices (index[i]) to coord[i] plus offset. */
 typedef struct TrackCallback {
     struct TrackCallback *next; /* 0x00 */
-    u8 unk4[6];
+    u8 unk4[4];
+    s16 section;       /* 0x08: the section whose list holds it */
     s16 count;         /* 0x0A */
     s16 callback;      /* 0x0C */
     u8 unkE[2];
