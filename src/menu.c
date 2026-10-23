@@ -148,7 +148,7 @@ again:
     object->y = y;
     object->width = 0x78;
     object->height = (i == 0) ? 0x18 : 0x15;
-    prim = D_800AFDDC + primOffset;
+    prim = (POLY_FT4 *)(D_800AFDDC + primOffset);
     object->velocityX = 2;
     object->velocityY = 0;
     SetPolyFT4(prim);
@@ -202,7 +202,7 @@ again:
     panelOffset = 0;
 again2:
     index = gMenuObjectPoolCount;
-    panelPrim = D_800AE1BC + panelOffset;
+    panelPrim = (POLY_F4 *)(D_800AE1BC + panelOffset);
     gMenuObjectPoolCount = index + 1;
     panel = &gMenuObjectPool[index];
     panel->blue = 0;
@@ -225,7 +225,7 @@ again2:
     panel->green = color;
     panel->blue = panelB;
     if (panelPrim == 0) {
-        panelPrim = GraphicsAllocPolyF4(1);
+        panelPrim = (POLY_F4 *)(GraphicsAllocPolyF4(1));
     }
     panel->primitive = panelPrim;
     SetPolyF4(panelPrim);
@@ -548,7 +548,7 @@ void MenuDrawModel(s32 advanceSpin, s32 semiTrans, s32 fullScreenMode) {
     s32 y;
     s32 depth;
 
-    cursor = (u8 *)gPrimitiveCursor[0];
+    cursor = (POLY_F4 *)((u8 *)gPrimitiveCursor[0]);
     ot = (s32 *)gOrderingTable[0];
     if (fullScreenMode & 0xFF) {
         x = 0xA0;
@@ -805,7 +805,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     s16 k3, k9, k30;
     s32 m;
     s16 w1, g1, z1;
-    u8 *prim2;
+    POLY_FT4 *prim2;
     s32 i;
     s32 j;
     s32 yBase;
@@ -852,7 +852,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             obj1->height = g1;
             obj1->velocityX = 0;
             obj1->velocityY = 0;
-            pr1 = GraphicsAllocPolyFT4(1);
+            pr1 = (POLY_FT4 *)(GraphicsAllocPolyFT4(1));
             SetPolyFT4(pr1);
             SetShadeTex(pr1, 0);
             pr1->r0 = 0x80;
@@ -874,36 +874,34 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 u16 w;
                 u8 v;
                 w = (u16)entry->width;
-                *(s16 *)(prim2 + 0xE) =
-                    GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
-                *(s16 *)(prim2 + 0x16) = GetTPage(
-                    D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
-                prim2[0xC] = *(u8 *)((u8 *)D_8009AF22 + 4);
-                prim2[0xD] = *(u8 *)((u8 *)D_8009AF22 + 6);
-                prim2[0x14] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
-                prim2[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10);
-                prim2[0x1C] = *(u8 *)((u8 *)D_8009AF1E + 8);
-                prim2[0x1D] = *(u8 *)((u8 *)D_8009AF2A - 2) + 0xF;
-                prim2[0x24] = D_8009AF26[0] + w;
+                prim2->clut = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
+                prim2->tpage = GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0],
+                                        ((u16 *)D_8009AF1E)[1]);
+                prim2->u0 = *(u8 *)((u8 *)D_8009AF22 + 4);
+                prim2->v0 = *(u8 *)((u8 *)D_8009AF22 + 6);
+                prim2->u1 = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
+                prim2->v1 = *(u8 *)((u8 *)D_8009AF1E + 10);
+                prim2->u2 = *(u8 *)((u8 *)D_8009AF1E + 8);
+                prim2->v2 = *(u8 *)((u8 *)D_8009AF2A - 2) + 0xF;
+                prim2->u3 = D_8009AF26[0] + w;
                 v = *(u8 *)((u8 *)D_8009AF26 + 2) + 0xF;
-                prim2[0x25] = v;
+                prim2->v3 = v;
             } else {
                 u16 w;
                 u8 v;
                 w = (u16)entry->width;
-                *(s16 *)(prim2 + 0xE) =
-                    GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
-                *(s16 *)(prim2 + 0x16) = GetTPage(
-                    D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
-                prim2[0xC] = *(u8 *)((u8 *)D_8009AF22 + 4);
-                prim2[0xD] = *(u8 *)((u8 *)D_8009AF22 + 6) + 0x21;
-                prim2[0x14] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
-                prim2[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10) + 0x21;
-                prim2[0x1C] = *(u8 *)((u8 *)D_8009AF1E + 8);
-                prim2[0x1D] = *(u8 *)((u8 *)D_8009AF2A - 2) + 0x30;
-                prim2[0x24] = D_8009AF26[0] + w;
+                prim2->clut = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
+                prim2->tpage = GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0],
+                                        ((u16 *)D_8009AF1E)[1]);
+                prim2->u0 = *(u8 *)((u8 *)D_8009AF22 + 4);
+                prim2->v0 = *(u8 *)((u8 *)D_8009AF22 + 6) + 0x21;
+                prim2->u1 = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
+                prim2->v1 = *(u8 *)((u8 *)D_8009AF1E + 10) + 0x21;
+                prim2->u2 = *(u8 *)((u8 *)D_8009AF1E + 8);
+                prim2->v2 = *(u8 *)((u8 *)D_8009AF2A - 2) + 0x30;
+                prim2->u3 = D_8009AF26[0] + w;
                 v = *(u8 *)((u8 *)D_8009AF26 + 2) + 0x30;
-                prim2[0x25] = v;
+                prim2->v3 = v;
             }
             j++;
             x1 += 0xF;
@@ -941,7 +939,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             obj2->red = c2;
             obj2->green = c2;
             obj2->blue = b2;
-            pr2 = GraphicsAllocPolyF4(1);
+            pr2 = (POLY_F4 *)(GraphicsAllocPolyF4(1));
             obj2->primitive = pr2;
             SetPolyF4(pr2);
             SetSemiTrans(pr2, 1);
@@ -1083,7 +1081,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             obj4->height = g4;
             obj4->velocityX = 0;
             obj4->velocityY = 0;
-            pr4 = GraphicsAllocPolyFT4(1);
+            pr4 = (POLY_FT4 *)(GraphicsAllocPolyFT4(1));
             SetPolyFT4(pr4);
             SetShadeTex(pr4, 0);
             pr4->r0 = 0x80;
@@ -1101,18 +1099,18 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             entry->velocityX = 2;
             w = (u16)entry->width;
             hh = (u16)entry->height;
-            *(s16 *)(prim2 + 0xE) = GetClut(D_8009AEA2[1], D_8009AEA6[0]);
-            *(s16 *)(prim2 + 0x16) =
+            prim2->clut = GetClut(D_8009AEA2[1], D_8009AEA6[0]);
+            prim2->tpage =
                 GetTPage(*(u16 *)((u8 *)D_8009AEAA + 2), 3,
                          *(u16 *)((u8 *)D_8009AEA2 - 2), D_8009AEA2[0]);
-            prim2[0xC] = *(u8 *)((u8 *)D_8009AEAA - 2);
-            prim2[0xD] = D_8009AEAA[0];
-            prim2[0x14] = *(u8 *)((u8 *)D_8009AEA2 + 6) + w;
-            prim2[0x15] = *(u8 *)((u8 *)D_8009AEA6 + 4);
-            prim2[0x1C] = *(u8 *)((u8 *)D_8009AEA6 + 2);
-            prim2[0x1D] = *(u8 *)((u8 *)D_8009AEA2 + 8) + hh;
-            prim2[0x24] = *(u8 *)((u8 *)D_8009AEAE - 6) + w;
-            prim2[0x25] = *(u8 *)((u8 *)D_8009AEAE - 4) + hh;
+            prim2->u0 = *(u8 *)((u8 *)D_8009AEAA - 2);
+            prim2->v0 = D_8009AEAA[0];
+            prim2->u1 = *(u8 *)((u8 *)D_8009AEA2 + 6) + w;
+            prim2->v1 = *(u8 *)((u8 *)D_8009AEA6 + 4);
+            prim2->u2 = *(u8 *)((u8 *)D_8009AEA6 + 2);
+            prim2->v2 = *(u8 *)((u8 *)D_8009AEA2 + 8) + hh;
+            prim2->u3 = *(u8 *)((u8 *)D_8009AEAE - 6) + w;
+            prim2->v3 = *(u8 *)((u8 *)D_8009AEAE - 4) + hh;
             level = D_800A3860[arg0][(u8)i];
             scale = ((((level << 1) + level) << 2) + level) >> 3;
             if (scale == 0) {
@@ -1143,7 +1141,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 obj5->width = scale;
                 obj5->green = 0x60;
                 obj5->blue = 0x80;
-                pr5 = GraphicsAllocPolyF4(1);
+                pr5 = (POLY_F4 *)(GraphicsAllocPolyF4(1));
                 obj5->primitive = pr5;
                 SetPolyF4(pr5);
                 SetSemiTrans(pr5, 1);
@@ -1193,7 +1191,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         obj6->height = 0x30;
         obj6->velocityX = 0;
         obj6->velocityY = 0;
-        pr6 = GraphicsAllocPolyFT4(1);
+        pr6 = (POLY_FT4 *)(GraphicsAllocPolyFT4(1));
         SetPolyFT4(pr6);
         SetShadeTex(pr6, 0);
         pr6->r0 = 0x80;
@@ -1212,17 +1210,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         j = 0;
         D_800A39ACPtr = entry;
         entry->velocityY = 0;
-        *(s16 *)(prim2 + 0xE) = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
-        *(s16 *)(prim2 + 0x16) =
+        prim2->clut = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
+        prim2->tpage =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
-        prim2[0xC] = *(u8 *)((u8 *)D_8009AF22 + 4);
-        prim2[0xD] = *(u8 *)((u8 *)D_8009AF22 + 6);
-        prim2[0x14] = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
-        prim2[0x15] = *(u8 *)((u8 *)D_8009AF1E + 10);
-        prim2[0x1C] = *(u8 *)((u8 *)D_8009AF1E + 8);
-        prim2[0x1D] = *(u8 *)((u8 *)D_8009AF2A - 2) + hh;
-        prim2[0x24] = D_8009AF26[0] + w;
-        prim2[0x25] = *(u8 *)((u8 *)D_8009AF26 + 2) + hh;
+        prim2->u0 = *(u8 *)((u8 *)D_8009AF22 + 4);
+        prim2->v0 = *(u8 *)((u8 *)D_8009AF22 + 6);
+        prim2->u1 = *(u8 *)((u8 *)D_8009AF2A - 4) + w;
+        prim2->v1 = *(u8 *)((u8 *)D_8009AF1E + 10);
+        prim2->u2 = *(u8 *)((u8 *)D_8009AF1E + 8);
+        prim2->v2 = *(u8 *)((u8 *)D_8009AF2A - 2) + hh;
+        prim2->u3 = D_8009AF26[0] + w;
+        prim2->v3 = *(u8 *)((u8 *)D_8009AF26 + 2) + hh;
     }
     yBase = 0x2A;
     h = 0x78;
@@ -1253,7 +1251,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         obj7->red = 0x20;
         obj7->green = 0x20;
         obj7->blue = 0x40;
-        pr7 = GraphicsAllocPolyF4(1);
+        pr7 = (POLY_F4 *)(GraphicsAllocPolyF4(1));
         obj7->primitive = pr7;
         SetPolyF4(pr7);
         SetSemiTrans(pr7, 1);
@@ -1307,7 +1305,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         obj8->height = k7;
         obj8->velocityX = 0;
         obj8->velocityY = 0;
-        pr8 = GraphicsAllocPolyFT4(1);
+        pr8 = (POLY_FT4 *)(GraphicsAllocPolyFT4(1));
         SetPolyFT4(pr8);
         SetShadeTex(pr8, 0);
         pr8->r0 = 0x80;
@@ -1325,18 +1323,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         w = (u16)entry->width;
         hh = (u16)entry->height;
         x6 = yBase + 1;
-        *(s16 *)(prim2 + 0xE) =
-            GetClut(D_8009AEB2[0], *(u16 *)((u8 *)D_8009AEB2 + 2));
-        *(s16 *)(prim2 + 0x16) = GetTPage(D_8009AEBA[0], 3, *(u16 *)D_8009AEAE,
-                                          *(u16 *)((u8 *)D_8009AEB2 - 2));
-        prim2[0xC] = D_8009AEB6[0];
-        prim2[0xD] = *(u8 *)((u8 *)D_8009AEB2 + 6);
-        prim2[0x14] = *(u8 *)&D_8009AEAE[8] + w;
-        prim2[0x15] = *(u8 *)&D_8009AEAE[10];
-        prim2[0x1C] = *(u8 *)((u8 *)D_8009AEB2 + 4);
-        prim2[0x1D] = *(u8 *)((u8 *)D_8009AEBA - 2) + hh;
-        prim2[0x24] = *(u8 *)((u8 *)D_8009AEBA - 4) + w;
-        prim2[0x25] = *(u8 *)&D_8009AEB6[2] + hh;
+        prim2->clut = GetClut(D_8009AEB2[0], *(u16 *)((u8 *)D_8009AEB2 + 2));
+        prim2->tpage = GetTPage(D_8009AEBA[0], 3, *(u16 *)D_8009AEAE,
+                                *(u16 *)((u8 *)D_8009AEB2 - 2));
+        prim2->u0 = D_8009AEB6[0];
+        prim2->v0 = *(u8 *)((u8 *)D_8009AEB2 + 6);
+        prim2->u1 = *(u8 *)&D_8009AEAE[8] + w;
+        prim2->v1 = *(u8 *)&D_8009AEAE[10];
+        prim2->u2 = *(u8 *)((u8 *)D_8009AEB2 + 4);
+        prim2->v2 = *(u8 *)((u8 *)D_8009AEBA - 2) + hh;
+        prim2->u3 = *(u8 *)((u8 *)D_8009AEBA - 4) + w;
+        prim2->v3 = *(u8 *)&D_8009AEB6[2] + hh;
         {
             MenuObj *objB8;
             u8 *prC8;
@@ -1363,7 +1360,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             objB9->red = 0x40;
             objB9->green = 0x60;
             objB9->blue = 0x80;
-            prC9 = GraphicsAllocPolyF4(1);
+            prC9 = (POLY_F4 *)(GraphicsAllocPolyF4(1));
             objB9->primitive = prC9;
             SetPolyF4(prC9);
             SetSemiTrans(prC9, 0);
@@ -1644,7 +1641,7 @@ void func_800606D4(void) {
     MenuObj *entry;
     MenuObj *cur;
     MenuObj *row;
-    u8 *prim2;
+    POLY_FT4 *prim2;
     u16 width;
     MenuObj *sign;
     int new_var3;
@@ -1695,25 +1692,24 @@ void func_800606D4(void) {
         entry->primitive = prim;
         entry->orderingDepth = new_var3;
         asm volatile("" : : : "memory");
-        prim2 = (u8 *)entry->primitive;
+        prim2 = (POLY_FT4 *)((u8 *)entry->primitive);
         entry->velocityX = 0;
         entry->velocityY = 0;
         entry->x = -0x78;
         w = (u16)entry->width;
         h = (u16)entry->height;
         D_800A38A8 = entry;
-        *((s16 *)(prim2 + 0xE)) =
-            GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
-        *((s16 *)(prim2 + 0x16)) =
+        prim2->clut = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
+        prim2->tpage =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
-        prim2[0xC] = D_8009AF26[0];
-        prim2[0xD] = *((u8 *)(((u8 *)D_8009AF22) + 6));
-        prim2[0x14] = (*((u8 *)(((u8 *)D_8009AF1E) + 8))) + w;
-        prim2[0x15] = *((u8 *)(((u8 *)D_8009AF1E) + 10));
-        prim2[0x1C] = *((u8 *)(((u8 *)D_8009AF22) + 4));
-        prim2[0x1D] = (*((u8 *)(((u8 *)D_8009AF2A) - 2))) + h;
-        prim2[0x24] = (*((u8 *)(((u8 *)D_8009AF2A) - 4))) + w;
-        prim2[0x25] = (*((u8 *)(((u8 *)D_8009AF26) + 2))) + h;
+        prim2->u0 = D_8009AF26[0];
+        prim2->v0 = *((u8 *)(((u8 *)D_8009AF22) + 6));
+        prim2->u1 = (*((u8 *)(((u8 *)D_8009AF1E) + 8))) + w;
+        prim2->v1 = *((u8 *)(((u8 *)D_8009AF1E) + 10));
+        prim2->u2 = *((u8 *)(((u8 *)D_8009AF22) + 4));
+        prim2->v2 = (*((u8 *)(((u8 *)D_8009AF2A) - 2))) + h;
+        prim2->u3 = (*((u8 *)(((u8 *)D_8009AF2A) - 4))) + w;
+        prim2->v3 = (*((u8 *)(((u8 *)D_8009AF26) + 2))) + h;
     }
     {
         u8 index;
@@ -1840,7 +1836,7 @@ void func_800606D4(void) {
         panel->height = 5;
         panel->velocityX = 0;
         panel->velocityY = 0;
-        face = GraphicsAllocPolyFT4(1);
+        face = (POLY_FT4 *)(GraphicsAllocPolyFT4(1));
         SetPolyFT4(face);
         SetShadeTex(face, 0);
         face->r0 = 0x80;
@@ -1851,25 +1847,24 @@ void func_800606D4(void) {
         asm("" : "=r"(cur) : "0"(cur));
         panel->primitive = face;
         panel->orderingDepth = 1;
-        prim2 = (u8 *)cur->primitive;
+        prim2 = (POLY_FT4 *)((u8 *)cur->primitive);
         cur->velocityX = 2;
         asm("" : "=r"(x3) : "0"(8));
         cur->drawOffsetX = x3;
         w = (u16)cur->width;
         h = (u16)cur->height;
-        *((s16 *)(prim2 + 0xE)) =
-            GetClut(((u16 *)D_8009AEA2)[1], D_8009AEA6[0]);
-        *((s16 *)(prim2 + 0x16)) =
+        prim2->clut = GetClut(((u16 *)D_8009AEA2)[1], D_8009AEA6[0]);
+        *(s16 *)&prim2->tpage =
             GetTPage(((u16 *)D_8009AEAA)[1], 3,
                      *((u16 *)(((u8 *)D_8009AEA2) - 2)), D_8009AEA2[0]);
-        prim2[0xC] = *((u8 *)(((u8 *)D_8009AEAA) - 2));
-        prim2[0xD] = D_8009AEAA[0];
-        prim2[0x14] = (*((u8 *)(((u8 *)D_8009AEA2) + 6))) + w;
-        prim2[0x15] = *((u8 *)(((u8 *)D_8009AEA6) + 4));
-        prim2[0x1C] = *((u8 *)(((u8 *)D_8009AEA6) + 2));
-        prim2[0x1D] = (*((u8 *)(((u8 *)D_8009AEA2) + 8))) + h;
-        prim2[0x24] = (*((u8 *)(((u8 *)D_8009AEAE) - 6))) + w;
-        prim2[0x25] = (*((u8 *)(((u8 *)D_8009AEAE) - 4))) + h;
+        prim2->u0 = *((u8 *)(((u8 *)D_8009AEAA) - 2));
+        prim2->v0 = D_8009AEAA[0];
+        prim2->u1 = (*((u8 *)(((u8 *)D_8009AEA2) + 6))) + w;
+        prim2->v1 = *((u8 *)(((u8 *)D_8009AEA6) + 4));
+        prim2->u2 = *((u8 *)(((u8 *)D_8009AEA6) + 2));
+        prim2->v2 = (*((u8 *)(((u8 *)D_8009AEA2) + 8))) + h;
+        prim2->u3 = (*((u8 *)(((u8 *)D_8009AEAE) - 6))) + w;
+        prim2->v3 = (*((u8 *)(((u8 *)D_8009AEAE) - 4))) + h;
         index = gMenuObjectPoolCount;
         frame = &gMenuObjectPool[index];
         row->next = cur;
@@ -3967,7 +3962,7 @@ extern u8 D_8009B02A[];
 
 void MenuUpdatePadPicture(s32 playerSlot) {
     u8 *node;
-    u8 *prim;
+    POLY_FT4 *prim;
     s32 a;
     s32 c;
     u8 uc;
@@ -3986,7 +3981,7 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     while (*(u16 *)node != 1) {
         node = *(u8 **)(node + 0x1C);
     }
-    prim = *(u8 **)(node + 0x20);
+    prim = (POLY_FT4 *)(*(u8 **)(node + 0x20));
     if (gPadType[playerSlot & 0xFF] != ((s8 *)D_800A308C)[playerSlot & 0xFF] &&
         gPadType[playerSlot & 0xFF] != 0) {
         ((s8 *)gPadLayout)[playerSlot & 0xFF] = 0;
@@ -4006,24 +4001,24 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     id = (s8)c;
     off = id * 6;
     D_800A3088[idx] = c;
-    *(u16 *)(prim + 0xE) = GetClut(0x100, *(s16 *)&D_8009B028[off + 4]);
-    *(u16 *)(prim + 0x16) =
+    prim->clut = GetClut(0x100, *(s16 *)&D_8009B028[off + 4]);
+    prim->tpage =
         GetTPage(1, 0, *(s16 *)&D_8009B028[off], *(s16 *)&D_8009B02A[off]);
-    prim[0xC] = 0;
-    prim[0xD] = *(u16 *)&D_8009B02A[off];
-    prim[0x14] = *(u16 *)(node + 0x16);
-    prim[0x15] = *(u16 *)&D_8009B02A[off];
-    prim[0x1C] = 0;
-    prim[0x1D] = D_8009B02A[off] + node[0x18];
-    prim[0x24] = *(u16 *)(node + 0x16);
-    prim[0x25] = D_8009B02A[off] + node[0x18];
+    prim->u0 = 0;
+    prim->v0 = *(u16 *)&D_8009B02A[off];
+    prim->u1 = *(u16 *)(node + 0x16);
+    prim->v1 = *(u16 *)&D_8009B02A[off];
+    prim->u2 = 0;
+    prim->v2 = D_8009B02A[off] + node[0x18];
+    prim->u3 = *(u16 *)(node + 0x16);
+    prim->v3 = D_8009B02A[off] + node[0x18];
     node = *(u8 **)(node + 0x1C);
-    prim = *(u8 **)(node + 0x20);
+    prim = (POLY_FT4 *)(*(u8 **)(node + 0x20));
     if (id == 1 && (gPadType[playerSlot & 0xFF] == 5 ||
                     gPadType[playerSlot & 0xFF] == 7)) {
-        prim[4] = -(gPadType[playerSlot & 0xFF] == 7);
-        prim[5] = -(gPadType[playerSlot & 0xFF] == 5);
-        prim[6] = 0;
+        prim->r0 = -(gPadType[playerSlot & 0xFF] == 7);
+        prim->g0 = -(gPadType[playerSlot & 0xFF] == 5);
+        prim->b0 = 0;
         node[5] = 1;
     } else {
         node[5] = 0;
@@ -4971,7 +4966,7 @@ void func_80064208(void) {
 
 void func_800645A4(s32 arg0, s32 arg1) {
     MenuObj *node;
-    u8 *prim;
+    POLY_FT4 *prim;
     u8 *prim2;
     u8 *str;
     u32 idx;
@@ -4988,8 +4983,8 @@ void func_800645A4(s32 arg0, s32 arg1) {
 
     node = D_800A3744[arg0 & 0xFF];
     idx = arg1 & 0xFF;
-    prim = (u8 *)node->primitive;
-    *(s16 *)(prim + 0xE) = GetClut(0x100, 0x1E7 - idx);
+    prim = (POLY_FT4 *)((u8 *)node->primitive);
+    prim->clut = GetClut(0x100, 0x1E7 - idx);
     quotient = idx / 12;
     y = (quotient & 0xFF) * 0x48;
     y += 0x140;
@@ -4997,19 +4992,19 @@ void func_800645A4(s32 arg0, s32 arg1) {
     remainder <<= 5;
     u = remainder & 0x1F80;
     u += 0x140;
-    *(s16 *)(prim + 0x16) = GetTPage(1, 0, u, y);
+    prim->tpage = GetTPage(1, 0, u, y);
     /* Shift pair keeps the mask on idx; CSE would use arg1. */
     q = (idx << 30) >> 30;
     u = q << 6;
-    prim[0xC] = u;
-    prim[0xD] = y;
+    prim->u0 = u;
+    prim->v0 = y;
     q = u + 0x3F;
-    prim[0x14] = q;
-    prim[0x15] = y;
-    prim[0x1C] = u;
-    prim[0x1D] = y + 0x47;
-    prim[0x24] = q;
-    prim[0x25] = y + 0x47;
+    prim->u1 = q;
+    prim->v1 = y;
+    prim->u2 = u;
+    prim->v2 = y + 0x47;
+    prim->u3 = q;
+    prim->v3 = y + 0x47;
     node = node->next;
     MenuFontSet(2, 4);
     h = MenuFontLineHeight();

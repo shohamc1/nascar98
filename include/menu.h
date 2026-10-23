@@ -11,7 +11,8 @@ typedef struct MenuTextPacket {
 
 void MenuSetTextColor(u8, u8, u8);
 s16 MenuFontLineHeight(void);
-void MenuSetTexturedQuad(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay);
+void MenuSetTexturedQuad(POLY_FT4 *dst, u32 idx, u16 dx, u16 dy, u16 ax,
+                         u16 ay);
 MenuObj *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom,
                                 s32 depth, u8 texture, u8 semiTrans);
 void func_80064000(s32 mode, s32 a, s32 b);

@@ -71,7 +71,7 @@ void func_80017E08(void) {
     shade = 0x80;
     offsetA = 0;
     do {
-        prim = D_800BA064 + offsetA;
+        prim = (POLY_FT4 *)(D_800BA064 + offsetA);
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
         prim->r0 = shade;
@@ -103,7 +103,7 @@ void func_80017E08(void) {
     x0a = 0;
     offsetB = 0;
     do {
-        prim = D_800BA8D4 + offsetB;
+        prim = (POLY_FT4 *)(D_800BA8D4 + offsetB);
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
         cB = 0x80;
@@ -146,7 +146,7 @@ void func_80017E08(void) {
     offsetC = 0;
     xbase = 0;
     do {
-        prim = D_800BB144 + offsetC;
+        prim = (POLY_FT4 *)(D_800BB144 + offsetC);
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
         prim->r0 = rb;
@@ -266,7 +266,7 @@ void FontDrawGlyph(s32 ch, s32 x, s32 y, s32 page) {
     }
     pageOffset = page * 0x870;
     tileAddr = tile * 0x28 + (s32)D_800BA064;
-    src = (u8 *)(pageOffset + tileAddr);
+    src = (POLY_FT4 *)((u8 *)(pageOffset + tileAddr));
     *(u16 *)&src->x0 = x;
     *(u16 *)&src->y0 = y;
     *(u16 *)&src->x1 = x + w;
@@ -1355,7 +1355,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     s32 bottom;
     s8 *p;
     register u8 *quad asm("s5");
-    u8 *barQuad;
+    POLY_F4 *barQuad;
     s32 barY;
     POLY_FT4 *prim;
     u32 cursor;
@@ -1553,7 +1553,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
         bankOffset = bank * 720;
         quadBase = offset + (u8 *)D_800AE29C;
         quad = (u8 *)(bankOffset + (s32)quadBase);
-        barQuad = quad;
+        barQuad = (POLY_F4 *)quad;
         switch (i) {
         case 2:
             func_80019A00(car->rpm, quad, bank);
@@ -1573,15 +1573,15 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
             right = width + 31;
             width = 31;
             asm("" : "=r"(width) : "0"(width));
-            *(s16 *)(barQuad + 16) = width;
-            *(s16 *)(barQuad + 8) = barX;
+            barQuad->x2 = width;
+            barQuad->x0 = barX;
             bottom = barY + 2;
-            *(s16 *)(barQuad + 10) = barY;
-            *(s16 *)(barQuad + 12) = right;
-            *(s16 *)(barQuad + 14) = barY;
-            *(s16 *)(barQuad + 18) = bottom;
-            *(s16 *)(barQuad + 20) = right;
-            *(s16 *)(barQuad + 22) = bottom;
+            barQuad->y0 = barY;
+            barQuad->x1 = right;
+            barQuad->y1 = barY;
+            barQuad->y2 = bottom;
+            barQuad->x3 = right;
+            barQuad->y3 = bottom;
             goto queue;
         case 4:
         case 5:

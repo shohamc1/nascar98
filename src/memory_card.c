@@ -936,7 +936,8 @@ s32 TextCountLines(u8 *text) {
 }
 #endif
 
-void MenuSetTexturedQuad(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
+void MenuSetTexturedQuad(POLY_FT4 *dst, u32 idx, u16 dx, u16 dy, u16 ax,
+                         u16 ay) {
     struct Tab14 {
         u16 f0;
         u16 f2;
@@ -952,16 +953,16 @@ void MenuSetTexturedQuad(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
     struct Tab14 *entry;
 
     entry = &D_8009AEA0[idx & 0xFF];
-    *(u16 *)(dst + 0xE) = GetClut(entry->f4, entry->f6);
-    *(u16 *)(dst + 0x16) = GetTPage(entry->fC, 3, entry->f0, entry->f2);
-    dst[0xC] = entry->f8 + dx;
-    dst[0xD] = entry->fA + dy;
-    dst[0x14] = entry->f8 + dx + ax;
-    dst[0x15] = entry->fA + dy;
-    dst[0x1C] = entry->f8 + dx;
-    dst[0x1D] = entry->fA + dy + ay;
-    dst[0x24] = entry->f8 + dx + ax;
-    dst[0x25] = entry->fA + dy + ay;
+    dst->clut = GetClut(entry->f4, entry->f6);
+    dst->tpage = GetTPage(entry->fC, 3, entry->f0, entry->f2);
+    dst->u0 = entry->f8 + dx;
+    dst->v0 = entry->fA + dy;
+    dst->u1 = entry->f8 + dx + ax;
+    dst->v1 = entry->fA + dy;
+    dst->u2 = entry->f8 + dx;
+    dst->v2 = entry->fA + dy + ay;
+    dst->u3 = entry->f8 + dx + ax;
+    dst->v3 = entry->fA + dy + ay;
 }
 
 MenuObj *MenuObjAlloc(void) {
@@ -1122,7 +1123,7 @@ MenuObj *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom,
     object->height = bottom;
     object->velocityX = 0;
     object->velocityY = 0;
-    poly = GraphicsAllocPolyFT4(texture);
+    poly = (POLY_FT4 *)(GraphicsAllocPolyFT4(texture));
     SetPolyFT4(poly);
     SetShadeTex(poly, 0);
     poly->r0 = 0x80;
@@ -1203,7 +1204,7 @@ typedef struct {
 
 void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
     u8 *src;
-    u8 *poly;
+    POLY_F4 *poly;
     s32 semiTrans;
     s32 half;
     u8 scratch[0x40];
@@ -1217,12 +1218,12 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
             if (gScreenStateAbsolute[0] != 0xD || (s8)object->unk5 != 0) {
                 switch (*(u16 *)(object)) {
                 case 1: {
-                    u8 *prim;
+                    POLY_FT4 *prim;
                     u8 *src;
                     u8 *dst;
                     u8 *end;
 
-                    prim = GraphicsAllocPolyFT4(0);
+                    prim = (POLY_FT4 *)(GraphicsAllocPolyFT4(0));
                     src = (u8 *)object->primitive;
                     dst = prim;
                     end = src + 0x20;
@@ -1233,39 +1234,27 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                     } while (src != end);
                     *(UnkPrim8 *)dst = *(UnkPrim8 *)src;
                     if (gScreenStateAbsolute[0] == 0xD) {
-                        *(u16 *)(prim + 0x8) =
-                            (u16)object->x + (u16)object->drawOffsetX;
-                        *(u16 *)(prim + 0xA) =
-                            (u16)object->y + (u16)object->drawOffsetY;
-                        *(u16 *)(prim + 0x10) = (u16)object->x +
-                                                (u16)object->drawOffsetX +
-                                                (u16)object->width;
-                        *(u16 *)(prim + 0x12) =
-                            (u16)object->y + (u16)object->drawOffsetY;
-                        *(u16 *)(prim + 0x18) =
-                            (u16)object->x + (u16)object->drawOffsetX;
-                        *(u16 *)(prim + 0x1A) = (u16)object->y +
-                                                (u16)object->drawOffsetY +
-                                                (u16)object->height;
-                        *(u16 *)(prim + 0x20) = (u16)object->x +
-                                                (u16)object->drawOffsetX +
-                                                (u16)object->width;
-                        *(u16 *)(prim + 0x22) = (u16)object->y +
-                                                (u16)object->drawOffsetY +
-                                                (u16)object->height;
+                        prim->x0 = (u16)object->x + (u16)object->drawOffsetX;
+                        prim->y0 = (u16)object->y + (u16)object->drawOffsetY;
+                        prim->x1 = (u16)object->x + (u16)object->drawOffsetX +
+                                   (u16)object->width;
+                        prim->y1 = (u16)object->y + (u16)object->drawOffsetY;
+                        prim->x2 = (u16)object->x + (u16)object->drawOffsetX;
+                        prim->y2 = (u16)object->y + (u16)object->drawOffsetY +
+                                   (u16)object->height;
+                        prim->x3 = (u16)object->x + (u16)object->drawOffsetX +
+                                   (u16)object->width;
+                        prim->y3 = (u16)object->y + (u16)object->drawOffsetY +
+                                   (u16)object->height;
                     } else {
-                        *(u16 *)(prim + 0x8) = (u16)object->x;
-                        *(u16 *)(prim + 0xA) = (u16)object->y;
-                        *(u16 *)(prim + 0x10) =
-                            (u16)object->x + (u16)object->width;
-                        *(u16 *)(prim + 0x12) = (u16)object->y;
-                        *(u16 *)(prim + 0x18) = (u16)object->x;
-                        *(u16 *)(prim + 0x1A) =
-                            (u16)object->y + (u16)object->height;
-                        *(u16 *)(prim + 0x20) =
-                            (u16)object->x + (u16)object->width;
-                        *(u16 *)(prim + 0x22) =
-                            (u16)object->y + (u16)object->height;
+                        prim->x0 = (u16)object->x;
+                        prim->y0 = (u16)object->y;
+                        prim->x1 = (u16)object->x + (u16)object->width;
+                        prim->y1 = (u16)object->y;
+                        prim->x2 = (u16)object->x;
+                        prim->y2 = (u16)object->y + (u16)object->height;
+                        prim->x3 = (u16)object->x + (u16)object->width;
+                        prim->y3 = (u16)object->y + (u16)object->height;
                     }
                     AddPrim(gOrderingTable[0] + object->orderingDepth * 4,
                             prim);
@@ -1274,7 +1263,7 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                 case 2: {
                     u8 *src2;
 
-                    poly = GraphicsAllocPolyF4(0);
+                    poly = (POLY_F4 *)(GraphicsAllocPolyF4(0));
                     src2 = (u8 *)object->primitive;
                     *(UnkPrim18 *)poly = *(UnkPrim18 *)src2;
                     if (gScreenStateAbsolute[0] == 0xD) {
@@ -1284,39 +1273,27 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                         if (object->height == 0) {
                             break;
                         }
-                        *(u16 *)(poly + 0x8) =
-                            (u16)object->x + (u16)object->drawOffsetX;
-                        *(u16 *)(poly + 0xA) =
-                            (u16)object->y + (u16)object->drawOffsetY;
-                        *(u16 *)(poly + 0xC) = (u16)object->x +
-                                               (u16)object->drawOffsetX +
-                                               (u16)object->width;
-                        *(u16 *)(poly + 0xE) =
-                            (u16)object->y + (u16)object->drawOffsetY;
-                        *(u16 *)(poly + 0x10) =
-                            (u16)object->x + (u16)object->drawOffsetX;
-                        *(u16 *)(poly + 0x12) = (u16)object->y +
-                                                (u16)object->drawOffsetY +
-                                                (u16)object->height;
-                        *(u16 *)(poly + 0x14) = (u16)object->x +
-                                                (u16)object->drawOffsetX +
-                                                (u16)object->width;
-                        *(u16 *)(poly + 0x16) = (u16)object->y +
-                                                (u16)object->drawOffsetY +
-                                                (u16)object->height;
+                        poly->x0 = (u16)object->x + (u16)object->drawOffsetX;
+                        poly->y0 = (u16)object->y + (u16)object->drawOffsetY;
+                        poly->x1 = (u16)object->x + (u16)object->drawOffsetX +
+                                   (u16)object->width;
+                        poly->y1 = (u16)object->y + (u16)object->drawOffsetY;
+                        poly->x2 = (u16)object->x + (u16)object->drawOffsetX;
+                        poly->y2 = (u16)object->y + (u16)object->drawOffsetY +
+                                   (u16)object->height;
+                        poly->x3 = (u16)object->x + (u16)object->drawOffsetX +
+                                   (u16)object->width;
+                        poly->y3 = (u16)object->y + (u16)object->drawOffsetY +
+                                   (u16)object->height;
                     } else {
-                        *(u16 *)(poly + 0x8) = (u16)object->x;
-                        *(u16 *)(poly + 0xA) = (u16)object->y;
-                        *(u16 *)(poly + 0xC) =
-                            (u16)object->x + (u16)object->width;
-                        *(u16 *)(poly + 0xE) = (u16)object->y;
-                        *(u16 *)(poly + 0x10) = (u16)object->x;
-                        *(u16 *)(poly + 0x12) =
-                            (u16)object->y + (u16)object->height;
-                        *(u16 *)(poly + 0x14) =
-                            (u16)object->x + (u16)object->width;
-                        *(u16 *)(poly + 0x16) =
-                            (u16)object->y + (u16)object->height;
+                        poly->x0 = (u16)object->x;
+                        poly->y0 = (u16)object->y;
+                        poly->x1 = (u16)object->x + (u16)object->width;
+                        poly->y1 = (u16)object->y;
+                        poly->x2 = (u16)object->x;
+                        poly->y2 = (u16)object->y + (u16)object->height;
+                        poly->x3 = (u16)object->x + (u16)object->width;
+                        poly->y3 = (u16)object->y + (u16)object->height;
                     }
                     if (semiTrans != 0xFF) {
                         SetSemiTrans(poly, semiTrans);
@@ -1327,61 +1304,53 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                 }
                 case 7:
                 case 8:
-                    poly = GraphicsAllocPolyF4(0);
+                    poly = (POLY_F4 *)(GraphicsAllocPolyF4(0));
                     src = (u8 *)object->primitive;
                     *(UnkPrim14 *)poly = *(UnkPrim14 *)src;
                     if (*(u16 *)(object) == 7) {
                         half = object->width / 2;
                         if (object->height < 0) {
-                            *(u16 *)(poly + 0x8) =
+                            poly->x0 =
                                 (u16)object->x + (u16)object->drawOffsetX;
-                            *(u16 *)(poly + 0xA) =
+                            poly->y0 =
                                 (u16)object->y + (u16)object->drawOffsetY;
-                            *(u16 *)(poly + 0xC) = (u16)object->x +
-                                                   (u16)object->drawOffsetX -
-                                                   half;
-                            *(u16 *)(poly + 0xE) = (u16)object->y +
-                                                   (u16)object->drawOffsetY +
-                                                   (u16)object->height;
-                            *(u16 *)(poly + 0x10) = (u16)object->x +
-                                                    (u16)object->drawOffsetX +
-                                                    half;
-                            *(u16 *)(poly + 0x12) = (u16)object->y +
-                                                    (u16)object->drawOffsetY +
-                                                    (u16)object->height;
+                            poly->x1 = (u16)object->x +
+                                       (u16)object->drawOffsetX - half;
+                            poly->y1 = (u16)object->y +
+                                       (u16)object->drawOffsetY +
+                                       (u16)object->height;
+                            poly->x2 = (u16)object->x +
+                                       (u16)object->drawOffsetX + half;
+                            poly->y2 = (u16)object->y +
+                                       (u16)object->drawOffsetY +
+                                       (u16)object->height;
                         } else {
-                            *(u16 *)(poly + 0x8) =
+                            poly->x0 =
                                 (u16)object->x + (u16)object->drawOffsetX;
-                            *(u16 *)(poly + 0xA) =
+                            poly->y0 =
                                 (u16)object->y + (u16)object->drawOffsetY;
-                            *(u16 *)(poly + 0xC) = (u16)object->x +
-                                                   (u16)object->drawOffsetX +
-                                                   half;
-                            *(u16 *)(poly + 0xE) = (u16)object->y +
-                                                   (u16)object->drawOffsetY +
-                                                   (u16)object->height;
-                            *(u16 *)(poly + 0x10) = (u16)object->x +
-                                                    (u16)object->drawOffsetX -
-                                                    half;
-                            *(u16 *)(poly + 0x12) = (u16)object->y +
-                                                    (u16)object->drawOffsetY +
-                                                    (u16)object->height;
+                            poly->x1 = (u16)object->x +
+                                       (u16)object->drawOffsetX + half;
+                            poly->y1 = (u16)object->y +
+                                       (u16)object->drawOffsetY +
+                                       (u16)object->height;
+                            poly->x2 = (u16)object->x +
+                                       (u16)object->drawOffsetX - half;
+                            poly->y2 = (u16)object->y +
+                                       (u16)object->drawOffsetY +
+                                       (u16)object->height;
                         }
                     } else {
                         half = object->height / 2;
-                        *(u16 *)(poly + 0x8) =
-                            (u16)object->x + (u16)object->drawOffsetX;
-                        *(u16 *)(poly + 0xA) =
-                            (u16)object->y + (u16)object->drawOffsetY;
-                        *(u16 *)(poly + 0xC) = (u16)object->x +
-                                               (u16)object->drawOffsetX +
-                                               (u16)object->width;
-                        *(u16 *)(poly + 0xE) =
+                        poly->x0 = (u16)object->x + (u16)object->drawOffsetX;
+                        poly->y0 = (u16)object->y + (u16)object->drawOffsetY;
+                        poly->x1 = (u16)object->x + (u16)object->drawOffsetX +
+                                   (u16)object->width;
+                        poly->y1 =
                             (u16)object->y + (u16)object->drawOffsetY + half;
-                        *(u16 *)(poly + 0x10) = (u16)object->x +
-                                                (u16)object->drawOffsetX +
-                                                (u16)object->width;
-                        *(u16 *)(poly + 0x12) =
+                        poly->x2 = (u16)object->x + (u16)object->drawOffsetX +
+                                   (u16)object->width;
+                        poly->y2 =
                             (u16)object->y + (u16)object->drawOffsetY - half;
                     }
                     if (semiTrans != 0xFF) {
@@ -2383,7 +2352,7 @@ void func_8005DAD4(void) {
     primOffset = 0;
     do {
         index = gMenuObjectPoolCount;
-        prim = D_800B9990 + primOffset;
+        prim = (POLY_FT4 *)(D_800B9990 + primOffset);
         gMenuObjectPoolCount = index + 1;
         object = &gMenuObjectPool[index];
         object->kind = 1;
@@ -2463,7 +2432,7 @@ s32 func_8005DCF0(void) {
             }
         }
         if (done == 0) {
-            poly = GraphicsAllocPolyFT4(0);
+            poly = (POLY_FT4 *)(GraphicsAllocPolyFT4(0));
             *poly = *(POLY_FT4 *)*(u8 **)(object + 0x20);
             poly->x0 = *(u16 *)(object + 6);
             poly->y0 = *(u16 *)(object + 8);

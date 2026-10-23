@@ -10294,7 +10294,7 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
     u32 *otEntry;
 
     ot = (u32 *)(gOrderingTable[0] + 0x20);
-    prim = (u8 *)gPrimitiveCursor[0];
+    prim = (POLY_F4 *)((u8 *)gPrimitiveCursor[0]);
     while (remaining > 0) {
         gte_ldv3(*(s32 **)(entry + 0x18), *(s32 **)(entry + 0x1C),
                  *(s32 **)(entry + 0x20));
@@ -10335,7 +10335,7 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
         entry += 0x2C;
     }
     gPrimitiveCursor[0] = (u32)prim;
-    prim = entry;
+    prim = (POLY_F4 *)entry;
     return prim;
 }
 
@@ -10937,7 +10937,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                                  ((u8 **)((u8 *)group->next + 0x78))[i],
                                  ((u8 **)((u8 *)group->next + 0x78))[i + 1]);
                     }
-                    poly = prim;
+                    poly = (POLY_F4 *)prim;
                     gte_rtpt();
                     if (i == 2) {
                         *(s32 *)(prim + 4) = D_800A394CNM;
@@ -12641,7 +12641,7 @@ void func_80035B20(void) {
         *(u16 *)(entry + 0x26) = 0x10;
         j = 0;
         do {
-            prim = entry + 0x28 + j * 0x28;
+            prim = (POLY_FT4 *)(entry + 0x28 + j * 0x28);
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             prim->tpage = GetTPage(tex[0], 0, tex[-6], tex[-5]);
@@ -12668,7 +12668,7 @@ void func_80035B20(void) {
         *(u16 *)(entry + 0x26) = 0x100;
         j = 0;
         do {
-            prim = entry + 0x28 + j * 0x28;
+            prim = (POLY_FT4 *)(entry + 0x28 + j * 0x28);
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             prim->tpage = GetTPage(tex[0], 3, tex[-6], tex[-5]);
@@ -12697,7 +12697,7 @@ void func_80035B20(void) {
         *(u16 *)(entry + 0x26) = 0x100;
         j = 0;
         do {
-            prim = entry + 0x28 + j * 0x28;
+            prim = (POLY_FT4 *)(entry + 0x28 + j * 0x28);
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             prim->tpage = GetTPage(tex[0], 3, tex[-6], tex[-5]);

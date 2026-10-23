@@ -92,7 +92,7 @@ void func_80044BCC(s32 arg0) {
     u32 *ot;
 
     ot = (u32 *)(gOrderingTable[0] + 0x20);
-    prim = (u8 *)gPrimitiveCursor[0];
+    prim = (POLY_FT3 *)((u8 *)gPrimitiveCursor[0]);
     typeIndex = (s8)gCarListNM[0][arg0].driver;
     gte_ldv3(D_800992E4, D_800992EC, D_800992F4);
     gte_rtpt();
@@ -842,7 +842,7 @@ void SceneInitProjectilePrimitives(void) {
             b2 = D_800991EA[v0];
             do {
                 row = buf + j * 0x80;
-                poly = row + 0x10;
+                poly = (POLY_FT4 *)(row + 0x10);
                 SetPolyFT4(poly);
                 SetShadeTex(poly, 0);
                 row[0x11] = 0x24;
@@ -2862,7 +2862,7 @@ void HudInitRacePrims(void) {
         D_800A3484Small = D_800A3485 + strlen((char *)D_8009AE2C[0]);
         for (col = 0; col < 3; col += 2) {
             line = 0;
-            heap = (u8 *)HeapAlloc(D_800A3484Small * 0x28);
+            heap = (POLY_FT4 *)((u8 *)HeapAlloc(D_800A3484Small * 0x28));
             D_800A78C4[(s8)(entry + col)] = (s8 *)heap;
             for (; line < 7; line++) {
                 j = 0;
@@ -2917,7 +2917,7 @@ void HudInitRacePrims(void) {
         }
         func_8004AFE0(row, D_80099298, *(u16 **)slotBase);
         D_800A3488 = strlen((char *)((s8 **)D_8009AE14)[0]);
-        prim = (u8 *)D_800A78D4 + row * 0x28;
+        prim = (POLY_FT4 *)((u8 *)D_800A78D4 + row * 0x28);
         SetPolyFT4(prim);
         SetSemiTrans(prim, 1);
         prim->code |= 1;
@@ -3035,11 +3035,12 @@ void HudInitRacePrims(void) {
         f4base = (u8 *)D_800A7924;
         /* Keep these locals multi-set so loop.c does not hoist their values. */
         for (; col < 3; col++) {
-            p3 = (u8 *)((u32)(col * 0x10) + (u32)f4base);
+            p3 = (TILE *)((u8 *)((u32)(col * 0x10) + (u32)f4base));
             asm("addu %0,%1,%0" : "=r"(p3) : "r"(tileBytes), "0"(p3));
             SetTile(p3);
             SetSemiTrans(p3, 1);
-            p4 = (u8 *)((u32)tileBytes + (u32)(col * 0x10) + (u32)f4base);
+            p4 = (TILE *)((u8 *)((u32)tileBytes + (u32)(col * 0x10) +
+                                 (u32)f4base));
             tileX = 0xD;
             p4->x0 = tileX;
             tileX = 0;
@@ -3114,7 +3115,8 @@ void HudInitRacePrims(void) {
     SetPolyF4(D_800A7564);
     for (entry = 0; entry < 2; entry++) {
         for (col = 0; col < 0x18; col++) {
-            driverCall = (u8 *)((u32)(col * 0x28) + (u32)driverBase);
+            driverCall =
+                (POLY_FT4 *)((u8 *)((u32)(col * 0x28) + (u32)driverBase));
             asm("addu %0,%1,%0"
                 : "=r"(driverCall)
                 : "r"(entry * 0x3C0), "0"(driverCall));
@@ -4056,14 +4058,14 @@ void HudInitPrims(void) {
     SceneQuadTable quads;
     ScenePairTable corners;
     SceneTailTable tail;
-    u8 *prim2;
-    u8 *prim3;
-    u8 *p0;
-    u8 *p1;
-    u8 *p2;
-    u8 *p3;
-    u8 *p4;
-    u8 *p5;
+    POLY_FT4 *prim2;
+    POLY_F4 *prim3;
+    POLY_FT4 *p0;
+    POLY_FT4 *p1;
+    POLY_FT4 *p2;
+    POLY_FT4 *p3;
+    POLY_FT4 *p4;
+    POLY_FT4 *p5;
     u8 *f4base;
     u16 *primC;
     POLY_FT4 *poly;
@@ -4093,162 +4095,160 @@ void HudInitPrims(void) {
         for (j = 0; j < 6; j++) {
             s32 rowOff;
             s32 tmp;
-            u8 *prim;
+            POLY_FT4 *prim;
             s32 idx;
             rowOff = i * 0xF0;
             idx = j * 0x28;
             tmp = idx + (s32)D_800A8354;
-            prim = (u8 *)(rowOff + tmp);
-            SetPolyFT4((POLY_FT4 *)prim);
+            prim = (POLY_FT4 *)((u8 *)(rowOff + tmp));
+            SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             idx += rowOff;
             *(u16 *)(D_800A8362 + idx) = GetClut(tex->clutX, tex->clutY);
             *(u16 *)(D_800A836A + idx) =
                 GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-            prim2 = idx + D_800A8354;
-            prim2[0xC] = tex->u;
-            prim2[0xD] = tex->v;
-            prim2[0x14] = tex->u + 0x50;
-            prim2[0x15] = tex->v;
-            prim2[0x1C] = tex->u;
-            prim2[0x1D] = tex->v + 0x33;
-            prim2[0x24] = tex->u + 0x50;
-            prim2[0x25] = tex->v + 0x33;
+            prim2 = (POLY_FT4 *)(idx + D_800A8354);
+            prim2->u0 = tex->u;
+            prim2->v0 = tex->v;
+            prim2->u1 = tex->u + 0x50;
+            prim2->v1 = tex->v;
+            prim2->u2 = tex->u;
+            prim2->v2 = tex->v + 0x33;
+            prim2->u3 = tex->u + 0x50;
+            prim2->v3 = tex->v + 0x33;
         }
-        p0 = i * 0xF0 + D_800A8354;
-        *(s16 *)(p0 + 0x8) = 0x11C;
-        *(s16 *)(p0 + 0xA) = D_800A2FD4[i];
-        *(s16 *)(p0 + 0x10) = 0x16C;
-        *(s16 *)(p0 + 0x12) = D_800A2FD4[i];
-        *(s16 *)(p0 + 0x18) = 0x11C;
-        *(s16 *)(p0 + 0x1A) = D_800A2FD4[i] + 0x33;
-        *(s16 *)(p0 + 0x20) = 0x16C;
-        *(s16 *)(p0 + 0x22) = D_800A2FD4[i] + 0x33;
-        p1 = i * 0xF0 + (D_800A8354 + 0x28);
-        *(s16 *)(p1 + 0x8) = 0xCC;
-        *(s16 *)(p1 + 0xA) = D_800A2FD4[i];
-        *(s16 *)(p1 + 0x10) = 0x11C;
-        *(s16 *)(p1 + 0x12) = D_800A2FD4[i];
-        *(s16 *)(p1 + 0x18) = 0xCC;
-        *(s16 *)(p1 + 0x1A) = D_800A2FD4[i] + 0x33;
-        *(s16 *)(p1 + 0x20) = 0x11C;
-        *(s16 *)(p1 + 0x22) = D_800A2FD4[i] + 0x33;
-        p2 = i * 0xF0 + (D_800A8354 + 0x50);
-        *(s16 *)(p2 + 0x8) = 0x7C;
-        *(s16 *)(p2 + 0xA) = D_800A2FD4[i];
-        *(s16 *)(p2 + 0x10) = 0xCC;
-        *(s16 *)(p2 + 0x12) = D_800A2FD4[i];
-        *(s16 *)(p2 + 0x18) = 0x7C;
-        *(s16 *)(p2 + 0x1A) = D_800A2FD4[i] + 0x33;
-        *(s16 *)(p2 + 0x20) = 0xCC;
-        *(s16 *)(p2 + 0x22) = D_800A2FD4[i] + 0x33;
+        p0 = (POLY_FT4 *)(i * 0xF0 + D_800A8354);
+        p0->x0 = 0x11C;
+        p0->y0 = D_800A2FD4[i];
+        p0->x1 = 0x16C;
+        p0->y1 = D_800A2FD4[i];
+        p0->x2 = 0x11C;
+        p0->y2 = D_800A2FD4[i] + 0x33;
+        p0->x3 = 0x16C;
+        p0->y3 = D_800A2FD4[i] + 0x33;
+        p1 = (POLY_FT4 *)(i * 0xF0 + (D_800A8354 + 0x28));
+        p1->x0 = 0xCC;
+        p1->y0 = D_800A2FD4[i];
+        p1->x1 = 0x11C;
+        p1->y1 = D_800A2FD4[i];
+        p1->x2 = 0xCC;
+        p1->y2 = D_800A2FD4[i] + 0x33;
+        p1->x3 = 0x11C;
+        p1->y3 = D_800A2FD4[i] + 0x33;
+        p2 = (POLY_FT4 *)(i * 0xF0 + (D_800A8354 + 0x50));
+        p2->x0 = 0x7C;
+        p2->y0 = D_800A2FD4[i];
+        p2->x1 = 0xCC;
+        p2->y1 = D_800A2FD4[i];
+        p2->x2 = 0x7C;
+        p2->y2 = D_800A2FD4[i] + 0x33;
+        p2->x3 = 0xCC;
+        p2->y3 = D_800A2FD4[i] + 0x33;
         tex = &D_80090FCE[1];
         *(u16 *)(D_800A83DA + i * 0xF0) = GetClut(tex->clutX, tex->clutY);
         *(u16 *)(D_800A83E2 + i * 0xF0) =
             GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-        p3 = i * 0xF0 + (D_800A8354 + 0x78);
-        p3[0xC] = tex->u;
-        p3[0xD] = tex->v;
-        p3[0x14] = tex->u + 0x7C;
-        p3[0x15] = tex->v;
-        p3[0x1C] = tex->u;
-        p3[0x1D] = tex->v + 0x3B;
-        p3[0x24] = tex->u + 0x7C;
-        p3[0x25] = tex->v + 0x3B;
-        *(s16 *)(p3 + 0x8) = 0;
-        *(s16 *)(p3 + 0xA) = D_800A2FD4[i];
-        *(s16 *)(p3 + 0x10) = 0x7C;
-        *(s16 *)(p3 + 0x12) = D_800A2FD4[i];
-        *(s16 *)(p3 + 0x18) = 0;
-        *(s16 *)(p3 + 0x1A) = D_800A2FD4[i] + 0x3B;
-        *(s16 *)(p3 + 0x20) = 0x7C;
-        *(s16 *)(p3 + 0x22) = D_800A2FD4[i] + 0x3B;
+        p3 = (POLY_FT4 *)(i * 0xF0 + (D_800A8354 + 0x78));
+        p3->u0 = tex->u;
+        p3->v0 = tex->v;
+        p3->u1 = tex->u + 0x7C;
+        p3->v1 = tex->v;
+        p3->u2 = tex->u;
+        p3->v2 = tex->v + 0x3B;
+        p3->u3 = tex->u + 0x7C;
+        p3->v3 = tex->v + 0x3B;
+        p3->x0 = 0;
+        p3->y0 = D_800A2FD4[i];
+        p3->x1 = 0x7C;
+        p3->y1 = D_800A2FD4[i];
+        p3->x2 = 0;
+        p3->y2 = D_800A2FD4[i] + 0x3B;
+        p3->x3 = 0x7C;
+        p3->y3 = D_800A2FD4[i] + 0x3B;
         tex += 5;
         *(u16 *)(D_800A8402 + i * 0xF0) = GetClut(tex->clutX, tex->clutY);
         *(u16 *)(D_800A840A + i * 0xF0) =
             GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-        p4 = i * 0xF0 + (D_800A8354 + 0xA0);
-        p4[0xC] = tex->u;
-        p4[0xD] = tex->v + 0x4B;
-        p4[0x14] = tex->u;
-        p4[0x15] = tex->v;
-        p4[0x1C] = tex->u + 0xB1;
-        p4[0x1D] = tex->v + 0x4B;
-        p4[0x24] = tex->u + 0xB1;
-        p4[0x25] = tex->v;
-        *(s16 *)(p4 + 0x8) = 0;
-        *(s16 *)(p4 + 0xA) = D_800A2FD4[i] + 0x3B;
-        *(s16 *)(p4 + 0x10) = 0x4C;
-        *(s16 *)(p4 + 0x12) = D_800A2FD4[i] + 0x3B;
-        *(s16 *)(p4 + 0x18) = 0;
-        *(s16 *)(p4 + 0x1A) = D_800A2FD4[i] + 0xEC;
-        *(s16 *)(p4 + 0x20) = 0x4C;
-        *(s16 *)(p4 + 0x22) = D_800A2FD4[i] + 0xEC;
+        p4 = (POLY_FT4 *)(i * 0xF0 + (D_800A8354 + 0xA0));
+        p4->u0 = tex->u;
+        p4->v0 = tex->v + 0x4B;
+        p4->u1 = tex->u;
+        p4->v1 = tex->v;
+        p4->u2 = tex->u + 0xB1;
+        p4->v2 = tex->v + 0x4B;
+        p4->u3 = tex->u + 0xB1;
+        p4->v3 = tex->v;
+        p4->x0 = 0;
+        p4->y0 = D_800A2FD4[i] + 0x3B;
+        p4->x1 = 0x4C;
+        p4->y1 = D_800A2FD4[i] + 0x3B;
+        p4->x2 = 0;
+        p4->y2 = D_800A2FD4[i] + 0xEC;
+        p4->x3 = 0x4C;
+        p4->y3 = D_800A2FD4[i] + 0xEC;
         tex -= 17;
         *(u16 *)(D_800A842A + i * 0xF0) = GetClut(tex->clutX, tex->clutY);
         *(u16 *)(D_800A8432 + i * 0xF0) =
             GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-        p5 = i * 0xF0 + (D_800A8354 + 0xC8);
-        p5[0xC] = tex->u;
-        p5[0xD] = tex->v;
-        p5[0x14] = tex->u + 0xF4;
-        p5[0x15] = tex->v;
-        p5[0x1C] = tex->u;
-        p5[0x1D] = tex->v + 0x12;
-        p5[0x24] = tex->u + 0xF4;
-        p5[0x25] = tex->v + 0x12;
-        *(s16 *)(p5 + 0x8) = 0x4C;
-        *(s16 *)(p5 + 0xA) = D_800A2FD4[i] + 0x9A;
-        *(s16 *)(p5 + 0x10) = 0x140;
-        *(s16 *)(p5 + 0x12) = D_800A2FD4[i] + 0x9A;
-        *(s16 *)(p5 + 0x18) = 0x4C;
-        *(s16 *)(p5 + 0x1A) = D_800A2FD4[i] + 0xAC;
-        *(s16 *)(p5 + 0x20) = 0x140;
-        *(s16 *)(p5 + 0x22) = D_800A2FD4[i] + 0xAC;
+        p5 = (POLY_FT4 *)(i * 0xF0 + (D_800A8354 + 0xC8));
+        p5->u0 = tex->u;
+        p5->v0 = tex->v;
+        p5->u1 = tex->u + 0xF4;
+        p5->v1 = tex->v;
+        p5->u2 = tex->u;
+        p5->v2 = tex->v + 0x12;
+        p5->u3 = tex->u + 0xF4;
+        p5->v3 = tex->v + 0x12;
+        p5->x0 = 0x4C;
+        p5->y0 = D_800A2FD4[i] + 0x9A;
+        p5->x1 = 0x140;
+        p5->y1 = D_800A2FD4[i] + 0x9A;
+        p5->x2 = 0x4C;
+        p5->y2 = D_800A2FD4[i] + 0xAC;
+        p5->x3 = 0x140;
+        p5->y3 = D_800A2FD4[i] + 0xAC;
         f4base = D_800A80F4;
         for (j = 0; j < 3; j++) {
-            u8 *prim;
-            u8 *prim3;
+            POLY_FT4 *prim;
+            POLY_F4 *prim3;
             s32 t;
             s32 t2;
             t = j * 0x18 + (s32)f4base;
-            prim = (u8 *)(i * 0x48 + t);
+            prim = (POLY_FT4 *)((u8 *)(i * 0x48 + t));
             SetPolyF4((POLY_F4 *)prim);
             t2 = i * 0x48 + j * 0x18;
-            prim3 = (u8 *)(t2 + (s32)f4base);
-            prim3[4] = 8;
-            prim3[5] = 8;
-            prim3[6] = 8;
-            *(s16 *)(prim3 + 8) = quads.s[j].x0;
-            *(s16 *)(prim3 + 0xA) = quads.s[j].y0 + D_800A2FD4[i];
-            *(s16 *)(prim3 + 0xC) = quads.s[j].x1;
-            *(s16 *)(prim3 + 0xE) = quads.s[j].y1 + D_800A2FD4[i];
-            *(s16 *)(prim3 + 0x10) =
-                *(u16 *)(D_800A2FDC + j * 2) - (s8)D_800A2FD8[j];
-            *(s16 *)(prim3 + 0x12) = D_800A2FD4[i] + 0x9E;
-            *(s16 *)(prim3 + 0x14) =
-                *(u16 *)(D_800A2FDC + j * 2) + (s8)D_800A2FD8[j];
-            *(s16 *)(prim3 + 0x16) = D_800A2FD4[i] + 0x9E;
+            prim3 = (POLY_F4 *)((u8 *)(t2 + (s32)f4base));
+            prim3->r0 = 8;
+            prim3->g0 = 8;
+            prim3->b0 = 8;
+            prim3->x0 = quads.s[j].x0;
+            prim3->y0 = quads.s[j].y0 + D_800A2FD4[i];
+            prim3->x1 = quads.s[j].x1;
+            prim3->y1 = quads.s[j].y1 + D_800A2FD4[i];
+            prim3->x2 = *(u16 *)(D_800A2FDC + j * 2) - (s8)D_800A2FD8[j];
+            prim3->y2 = D_800A2FD4[i] + 0x9E;
+            prim3->x3 = *(u16 *)(D_800A2FDC + j * 2) + (s8)D_800A2FD8[j];
+            prim3->y3 = D_800A2FD4[i] + 0x9E;
         }
     }
     if (gSplitScreenMode[0] == 0) {
         tex = &D_80090FCE[4];
         for (i = 0; i < 4; i++) {
-            u8 *prim;
-            prim = i * 0x28 + D_800A8214;
-            SetPolyFT4((POLY_FT4 *)prim);
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(i * 0x28 + D_800A8214);
+            SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             *(u16 *)(D_800A8222 + i * 0x28) = GetClut(tex->clutX, tex->clutY);
             *(u16 *)(D_800A822A + i * 0x28) =
                 GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-            prim[0xC] = tex->u;
-            prim[0xD] = tex->v;
-            prim[0x14] = tex->u + 0x30;
-            prim[0x15] = tex->v;
-            prim[0x1C] = tex->u;
-            prim[0x1D] = tex->v + 0x40;
-            prim[0x24] = tex->u + 0x30;
-            prim[0x25] = tex->v + 0x40;
+            prim->u0 = tex->u;
+            prim->v0 = tex->v;
+            prim->u1 = tex->u + 0x30;
+            prim->v1 = tex->v;
+            prim->u2 = tex->u;
+            prim->v2 = tex->v + 0x40;
+            prim->u3 = tex->u + 0x30;
+            prim->v3 = tex->v + 0x40;
         }
         *(u16 *)(D_800A8214 + 0xE) = GetClut(D_80091018[0], D_8009101A[0]);
         *(u16 *)(D_800A8214 + 0x16) =
@@ -4296,9 +4296,9 @@ void HudInitPrims(void) {
         *(s16 *)(D_800A8214 + 0x98) = 0x140;
         *(s16 *)(D_800A8214 + 0x9A) = D_800A2FD4[0] + 0xEC;
         for (i = 0; i < 4; i++) {
-            u8 *prim;
-            prim = i * 0x28 + D_800A82B4;
-            SetPolyFT4((POLY_FT4 *)prim);
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(i * 0x28 + D_800A82B4);
+            SetPolyFT4(prim);
             SetShadeTex(prim, 1);
         }
         tex = &D_80091014;
@@ -4307,7 +4307,7 @@ void HudInitPrims(void) {
         primC[0] = GetClut(D_80091014.clutX, D_80091014.clutY);
         D_800A82CA[0] = GetTPage(D_80091014.tpage, 0, tex->tpx, D_80091014.tpy);
         u2 = D_8009101C[0];
-        poly = (u8 *)primC + 0x1A;
+        poly = (POLY_FT4 *)((u8 *)primC + 0x1A);
         tex++;
         v2 = D_8009101E[0];
         D_800A82C0[0] = u2;
@@ -4327,7 +4327,7 @@ void HudInitPrims(void) {
         D_800A82D4[0] = 0xC4;
         D_800A82D6[0] = D_800A2FD4[0] + 0xEC;
         for (; j < 3; j++) {
-            u8 *prim;
+            POLY_FT4 *prim;
             s32 next;
             s32 idx;
             u16 clut;
@@ -4337,23 +4337,23 @@ void HudInitPrims(void) {
             *(u16 *)((u8 *)D_800A82C2 + idx) = clut;
             *(u16 *)((u8 *)D_800A82CA + idx) =
                 GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
-            prim = (u8 *)(j * 0x28 + (s32)poly);
-            prim[0xC] = tex->u + 0x71;
-            prim[0xD] = tex->v + 0x10;
-            prim[0x14] = tex->u + 0x71;
-            prim[0x15] = tex->v;
-            prim[0x1C] = tex->u + 0xB1;
-            prim[0x1D] = tex->v + 0x10;
-            prim[0x24] = tex->u + 0xB1;
-            prim[0x25] = tex->v;
-            *(s16 *)(prim + 8) = (j << 4) + 0xC0;
-            *(s16 *)(prim + 0xA) = D_800A2FD4[0] + 0xAC;
-            *(s16 *)(prim + 0x10) = (j << 4) + 0xD0;
-            *(s16 *)(prim + 0x12) = D_800A2FD4[0] + 0xAC;
-            *(s16 *)(prim + 0x18) = (j << 4) + 0xC0;
-            *(s16 *)(prim + 0x1A) = D_800A2FD4[0] + 0xEC;
-            *(s16 *)(prim + 0x20) = (j << 4) + 0xD0;
-            *(s16 *)(prim + 0x22) = D_800A2FD4[0] + 0xEC;
+            prim = (POLY_FT4 *)((u8 *)(j * 0x28 + (s32)poly));
+            prim->u0 = tex->u + 0x71;
+            prim->v0 = tex->v + 0x10;
+            prim->u1 = tex->u + 0x71;
+            prim->v1 = tex->v;
+            prim->u2 = tex->u + 0xB1;
+            prim->v2 = tex->v + 0x10;
+            prim->u3 = tex->u + 0xB1;
+            prim->v3 = tex->v;
+            prim->x0 = (j << 4) + 0xC0;
+            prim->y0 = D_800A2FD4[0] + 0xAC;
+            prim->x1 = (j << 4) + 0xD0;
+            prim->y1 = D_800A2FD4[0] + 0xAC;
+            prim->x2 = (j << 4) + 0xC0;
+            prim->y2 = D_800A2FD4[0] + 0xEC;
+            prim->x3 = (j << 4) + 0xD0;
+            prim->y3 = D_800A2FD4[0] + 0xEC;
         }
         D_800A8334[0] = 0x6C;
         D_800A833C[0] = 0x7C;
@@ -4364,16 +4364,16 @@ void HudInitPrims(void) {
         D_800A8346[0] = D_800A2FD4[0] + 0xEC;
         D_800A834E[0] = D_800A2FD4[0] + 0xEC;
         for (i = 0; i < 4; i++) {
-            u8 *prim;
-            prim = i * 0x18 + D_800A81B4;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(i * 0x18 + D_800A81B4);
             SetPolyF4((POLY_F4 *)prim);
-            prim[4] = 0xFF;
-            prim[5] = 0;
-            prim[6] = 0;
+            prim->r0 = 0xFF;
+            prim->g0 = 0;
+            prim->b0 = 0;
         }
         tex = D_80090FCE;
         for (i = 35; i >= 0; i--) {
-            poly = i * 0x2C + D_800A7994;
+            poly = (POLY_FT4 *)(i * 0x2C + D_800A7994);
             SetPolyFT4(poly);
             SetShadeTex(poly, 1);
             *(u16 *)(D_800A799E + i * 0x2C) = GetClut(tex->clutX, tex->clutY);
@@ -4477,22 +4477,22 @@ void HudInitPrims(void) {
         }
         D_800A3494 = 0x300;
         for (i = 0; i < 3; i++) {
-            u8 *prim;
-            prim = i * 0x28 + D_800A8534;
-            SetPolyFT4((POLY_FT4 *)prim);
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(i * 0x28 + D_800A8534);
+            SetPolyFT4(prim);
             SetSemiTrans(prim, 1);
-            prim[7] = prim[7] & 0xFE;
+            prim->code = prim->code & 0xFE;
             *(u16 *)(D_800A854A + i * 0x28) = GetTPage(2, 2, 0x300, 0);
-            prim[0xC] = 0xFD;
-            prim[0xD] = 0;
-            prim[0x14] = 0xFE;
-            prim[0x15] = 0;
-            prim[0x1C] = 0xFD;
-            prim[0x1D] = 1;
-            prim[0x24] = 0xFE;
-            prim[0x25] = 1;
+            prim->u0 = 0xFD;
+            prim->v0 = 0;
+            prim->u1 = 0xFE;
+            prim->v1 = 0;
+            prim->u2 = 0xFD;
+            prim->v2 = 1;
+            prim->u3 = 0xFE;
+            prim->v3 = 1;
             yv = D_800A2FD4[0] + 0x9E;
-            *(s16 *)(prim + 0x12) = yv;
+            prim->y1 = yv;
             *(u16 *)(D_800A853E + i * 0x28) = yv;
         }
         for (i = 0; i < 2; i++) {
@@ -7422,7 +7422,7 @@ void func_80052E18(void) {
     i = 0;
     do {
         elem = (u8 *)D_800A34F4 + i * 0x58;
-        poly = elem + 8;
+        poly = (POLY_FT4 *)(elem + 8);
         SetPolyFT4(poly);
         SetSemiTrans(poly, 1);
         SetShadeTex(poly, 1);
