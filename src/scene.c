@@ -749,6 +749,16 @@ extern u8 D_800991E8[];
 extern u8 D_800991E9[];
 extern u8 D_800991EA[];
 
+/* A 0x80 face in a player's ten-entry pool from
+ * SceneInitProjectilePrimitives, tinted with the car's colour. */
+typedef struct {
+    u8 unk0;
+    u8 unk1[0xF];
+    Face face; /* 0x10 */
+    u8 unk3C[0x24];
+    SVECTOR vertex[4]; /* 0x60 */
+} ProjectileFace;
+
 #ifdef NON_MATCHING
 /* Wall: size and instruction shape exact (0x214), but gcc pins the
  * HeapAlloc result to s4 (slot 5) instead of fp no matter where buf
@@ -763,7 +773,7 @@ void SceneInitProjectilePrimitives(void) {
     s8 j;
     u8 *ptr;
     POLY_FT4 *poly;
-    u8 *row;
+    ProjectileFace *row;
     s32 v0;
     s32 v1;
 
@@ -781,29 +791,29 @@ void SceneInitProjectilePrimitives(void) {
             b1 = D_800991E9[v0];
             b2 = D_800991EA[v0];
             do {
-                row = buf + j * 0x80;
-                poly = row + 0x10;
+                row = (ProjectileFace *)buf + j;
+                poly = (POLY_FT4 *)&row->face;
                 SetPolyFT4(poly);
                 SetShadeTex(poly, 0);
-                row[0x11] = 0x24;
-                *(u32 *)(row + 0x28) = (u32)(row + 0x60);
-                *(u32 *)(row + 0x2C) = (u32)(row + 0x68);
-                *(u32 *)(row + 0x30) = (u32)(row + 0x78);
-                row[0x14] = b0;
-                row[0x15] = b1;
-                row[0x16] = b2;
-                *(u32 *)(row + 0x34) = (u32)(row + 0x70);
-                *(s16 *)(row + 0x1E) = GetTPage(
-                    *(u16 *)ptr, 0, *(u16 *)(ptr - 0xC), *(u16 *)(ptr - 0xA));
-                row[0x18] = ptr[-4] + 0x6F;
-                row[0x19] = *(u16 *)(ptr - 2);
-                row[0x1C] = ptr[-4] + 0x60;
-                row[0x1D] = *(u16 *)(ptr - 2);
-                row[0x20] = ptr[-4] + 0x6F;
-                row[0x21] = ptr[-2] + 0xF;
-                row[0x24] = ptr[-4] + 0x60;
-                row[0x25] = ptr[-2] + 0xF;
-                row[0x00] = 0;
+                row->face.depth = 0x24;
+                row->face.vertex[0] = &row->vertex[0];
+                row->face.vertex[1] = &row->vertex[1];
+                row->face.vertex[2] = &row->vertex[3];
+                row->face.r0 = b0;
+                row->face.g0 = b1;
+                row->face.b0 = b2;
+                row->face.vertex[3] = &row->vertex[2];
+                row->face.tpage = GetTPage(*(u16 *)ptr, 0, *(u16 *)(ptr - 0xC),
+                                           *(u16 *)(ptr - 0xA));
+                row->face.u0 = ptr[-4] + 0x6F;
+                row->face.v0 = *(u16 *)(ptr - 2);
+                row->face.u1 = ptr[-4] + 0x60;
+                row->face.v1 = *(u16 *)(ptr - 2);
+                row->face.u2 = ptr[-4] + 0x6F;
+                row->face.v2 = ptr[-2] + 0xF;
+                row->face.u3 = ptr[-4] + 0x60;
+                row->face.v3 = ptr[-2] + 0xF;
+                row->unk0 = 0;
                 j++;
             } while (j < 10);
             i++;
@@ -821,7 +831,7 @@ void SceneInitProjectilePrimitives(void) {
     s8 j;
     u8 *ptr;
     POLY_FT4 *poly;
-    u8 *row;
+    ProjectileFace *row;
     s32 t;
     s32 u;
     s32 v0;
@@ -843,29 +853,29 @@ void SceneInitProjectilePrimitives(void) {
             b1 = D_800991E9[v0];
             b2 = D_800991EA[v0];
             do {
-                row = buf + j * 0x80;
-                poly = (POLY_FT4 *)(row + 0x10);
+                row = (ProjectileFace *)buf + j;
+                poly = (POLY_FT4 *)&row->face;
                 SetPolyFT4(poly);
                 SetShadeTex(poly, 0);
-                row[0x11] = 0x24;
-                *(u32 *)(row + 0x28) = (u32)(row + 0x60);
-                *(u32 *)(row + 0x2C) = (u32)(row + 0x68);
-                *(u32 *)(row + 0x30) = (u32)(row + 0x78);
-                row[0x14] = b0;
-                row[0x15] = b1;
-                row[0x16] = b2;
-                *(u32 *)(row + 0x34) = (u32)(row + 0x70);
-                *(s16 *)(row + 0x1E) = GetTPage(
-                    *(u16 *)ptr, 0, *(u16 *)(ptr - 0xC), *(u16 *)(ptr - 0xA));
-                row[0x18] = ptr[-4] + 0x6F;
-                row[0x19] = *(u16 *)(ptr - 2);
-                row[0x1C] = ptr[-4] + 0x60;
-                row[0x1D] = *(u16 *)(ptr - 2);
-                row[0x20] = ptr[-4] + 0x6F;
-                row[0x21] = ptr[-2] + 0xF;
-                row[0x24] = ptr[-4] + 0x60;
-                row[0x25] = ptr[-2] + 0xF;
-                row[0x00] = 0;
+                row->face.depth = 0x24;
+                row->face.vertex[0] = &row->vertex[0];
+                row->face.vertex[1] = &row->vertex[1];
+                row->face.vertex[2] = &row->vertex[3];
+                row->face.r0 = b0;
+                row->face.g0 = b1;
+                row->face.b0 = b2;
+                row->face.vertex[3] = &row->vertex[2];
+                row->face.tpage = GetTPage(*(u16 *)ptr, 0, *(u16 *)(ptr - 0xC),
+                                           *(u16 *)(ptr - 0xA));
+                row->face.u0 = ptr[-4] + 0x6F;
+                row->face.v0 = *(u16 *)(ptr - 2);
+                row->face.u1 = ptr[-4] + 0x60;
+                row->face.v1 = *(u16 *)(ptr - 2);
+                row->face.u2 = ptr[-4] + 0x6F;
+                row->face.v2 = ptr[-2] + 0xF;
+                row->face.u3 = ptr[-4] + 0x60;
+                row->face.v3 = ptr[-2] + 0xF;
+                row->unk0 = 0;
                 j++;
             } while (j < 10);
             i++;
@@ -875,14 +885,24 @@ void SceneInitProjectilePrimitives(void) {
 
 #endif
 
+/* A 0x58 face pinned to a track section: one of the per-car pools in
+ * D_800A3444, linked for drawing while its section is visible. */
+typedef struct {
+    s16 section; /* 0x00 */
+    u8 unk2[2];
+    Face face;         /* 0x04 */
+    SVECTOR vertex[4]; /* 0x30 */
+    u8 unk50[8];
+} SectionDecal;
+
 extern s8 D_800A343C;
-extern s8 *D_800A3444[];
+extern SectionDecal *D_800A3444[];
 extern s32 gTrackSectionsv asm("gTrackSections");
 
 void SceneLinkLiveEntries(Car *car) {
-    s8 *base;
-    s8 *entry;
-    s8 *tail;
+    SectionDecal *base;
+    SectionDecal *entry;
+    Face *tail;
     s8 count;
     s8 n;
     s8 i;
@@ -892,18 +912,18 @@ void SceneLinkLiveEntries(Car *car) {
 
     count = D_800A343C;
     base = D_800A3444[car->slot];
-    for (n = 1, i = 1, tail = base + 4; i < count; i++) {
-        entry = (s8 *)(i * 0x58 + (s32)base);
-        id = *(s16 *)entry;
+    for (n = 1, i = 1, tail = &base->face; i < count; i++) {
+        entry = (SectionDecal *)(i * 0x58 + (s32)base);
+        id = entry->section;
         p = (TrackSection *)(u8 *)(id * 0x90 + gTrackSectionsv);
         flag = p->culled;
         if (flag != 0) {
-            *(s32 *)(tail + 0x28) = (s32)(entry + 4);
-            tail = entry + 4;
+            *(s32 *)&tail->next = (s32)&entry->face;
+            tail = &entry->face;
             n++;
         }
     }
-    func_80032DEC((s32)(base + 4), n);
+    func_80032DEC(&base->face, n);
 }
 
 typedef struct {
@@ -930,7 +950,7 @@ void SceneInitProjectiles(void) {
     s32 point[3];
     Car object;
     SceneTexture *tim;
-    u8 *elem;
+    SectionDecal *elem;
     Car *objectPtr;
     s32 *pointPtr;
     u8 u;
@@ -946,31 +966,31 @@ void SceneInitProjectiles(void) {
     for (i = 0; i < D_800A3424; i++) {
         D_800A3444[i] = HeapAlloc(D_800A343C * 0x58);
         for (j = 0; j < D_800A343C; j++) {
-            elem = (u8 *)D_800A3444[i] + j * 0x58;
-            SetPolyFT4((POLY_FT4 *)(elem + 4));
-            SetSemiTrans(elem + 4, 1);
-            SetShadeTex(elem + 4, 1);
-            *(s16 *)(elem + 0xE) = GetClut(tim->clutX, tim->clutY);
-            *(u32 *)(elem + 0x1C) = (u32)(elem + 0x30);
-            *(u32 *)(elem + 0x20) = (u32)(elem + 0x38);
-            *(u32 *)(elem + 0x24) = (u32)(elem + 0x48);
-            *(u8 *)(elem + 0x5) = 0;
-            *(u32 *)(elem + 0x28) = (u32)(elem + 0x40);
-            *(u32 *)(elem + 0x2C) = 0;
-            *(s16 *)(elem + 0x12) = GetTPage(tim->tpage, 2, tim->tpx, tim->tpy);
-            *(u8 *)(elem + 0x6) = 0xE;
+            elem = &D_800A3444[i][j];
+            SetPolyFT4((POLY_FT4 *)&elem->face);
+            SetSemiTrans(&elem->face, 1);
+            SetShadeTex(&elem->face, 1);
+            elem->face.clut = GetClut(tim->clutX, tim->clutY);
+            elem->face.vertex[0] = &elem->vertex[0];
+            elem->face.vertex[1] = &elem->vertex[1];
+            elem->face.vertex[2] = &elem->vertex[3];
+            elem->face.depth = 0;
+            elem->face.vertex[3] = &elem->vertex[2];
+            elem->face.next = 0;
+            elem->face.tpage = GetTPage(tim->tpage, 2, tim->tpx, tim->tpy);
+            elem->face.type = 0xE;
             u = tim->u;
-            *(u8 *)(elem + 0x10) = u;
-            *(u8 *)(elem + 0xC) = u;
+            elem->face.u1 = u;
+            elem->face.u0 = u;
             u = tim->u + 0x3F;
-            *(u8 *)(elem + 0x18) = u;
-            *(u8 *)(elem + 0x14) = u;
+            elem->face.u3 = u;
+            elem->face.u2 = u;
             v = tim->v + 0x1F;
-            *(u8 *)(elem + 0x15) = v;
-            *(u8 *)(elem + 0xD) = v;
+            elem->face.v2 = v;
+            elem->face.v0 = v;
             v = tim->v;
-            *(u8 *)(elem + 0x19) = v;
-            *(u8 *)(elem + 0x11) = v;
+            elem->face.v3 = v;
+            elem->face.v1 = v;
         }
     }
     object.unk118 = 0;
