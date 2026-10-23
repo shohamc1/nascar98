@@ -1884,7 +1884,7 @@ void HudDrawPitMenu(Car *car, s32 y) {
     if (D_800A2EAC[0] != 0) {
         return;
     }
-    if (D_800A2EE0w15[0] == 0 && (*(s32 *)((u8 *)car + 0x3A4) & 0x100F)) {
+    if (D_800A2EE0w15[0] == 0 && (*(s32 *)&car->unk3A4 & 0x100F)) {
         return;
     }
     if (car->unk268 == 0) {
@@ -1928,7 +1928,7 @@ void HudDrawPitMenu(Car *car, s32 y) {
                                 : gTextPitTuningPositiveSign,
                 0xC8, wedgeY, 0);
 
-    fuelTime = *(s16 *)((u8 *)car + 0x27E);
+    fuelTime = (s16)car->unk27E;
     if (fuelTime > 0) {
         HudDrawTime(fuelTime, 0x78, (s16)(y + 0x64), 0, 2);
         GraphicsDrawDoubleBorderRect(0x6E, (s16)(y + 0x63), 0x64, 0xC, 0, 0, 0,
@@ -2067,8 +2067,7 @@ void func_8001B82C(Car *obj, s32 arg1) {
             break;
         case 2:
             width = 8;
-            if (*(s8 *)((u8 *)gPlayerCar + 0x204) == 1 &&
-                D_800A2EB4[0] == *(s8 *)((u8 *)gPlayerCar + 0x204)) {
+            if (gPlayerCar->place == 1 && D_800A2EB4[0] == gPlayerCar->place) {
                 width = 10;
             }
             uOff = 48;
@@ -2320,7 +2319,7 @@ void MenuDrawResults(s32 reset) {
             if (!(i & 1)) {
                 off = -off;
             }
-            if (off == 0 && i == *(s8 *)((u8 *)gPlayerCar + 0x204) - 1) {
+            if (off == 0 && i == gPlayerCar->place - 1) {
                 rowY = baseY + i * 0xE;
                 gOrderingTableLui += 4;
                 GraphicsDrawRect(0, rowY + 0x25, 0x140, 0xF, 0, 0, -1, 1);
@@ -2391,18 +2390,18 @@ void func_8001C34C(void) {
     if (gSplitScreenModenm[0] == mode) {
         HudDrawPitMenu(gPlayerCarsmall, -0xA);
         HudDrawCar(gPlayerCarsmall, -0x6E);
-        prim = *(s32 *)((u8 *)gPlayerCarsmall + 0x3E0);
+        prim = *(s32 *)&gPlayerCarsmall->next;
         gOrderingTableBankLui = gOrderingTableBankLui + 1;
         gOrderingTableLui = gOrderingTableLui + 0x1004;
         HudDrawPitMenu(prim, -0x14);
-        HudDrawCar(*(s32 *)((u8 *)gPlayerCarsmall + 0x3E0), -0x7D);
+        HudDrawCar(*(s32 *)&gPlayerCarsmall->next, -0x7D);
         gOrderingTableBankLui = gOrderingTableBankLui - 1;
         gOrderingTableLui = gOrderingTableLui - 0x1004;
         return;
     }
     HudDrawPitMenu(gPlayerCarsmall, 0);
     HudDrawCar(gPlayerCarsmall, 0);
-    if (*(s8 *)((u8 *)gPlayerCarsmall + 0x209) == mode) {
+    if (gPlayerCarsmall->unk209 == mode) {
         func_8001BA94(0);
     }
 }

@@ -1292,8 +1292,7 @@ void SoundUpdateCar(u8 *car) {
                 func_8003FA84(0, (s8)pitch);
                 SoundSetSlotVolume(0, volume & 0xFF, volume & 0xFF);
             } else {
-                if (*(s16 *)((u8 *)gPlayerCar[0] + 0x3BA) >= 125 &&
-                    pitch >= 125) {
+                if (gPlayerCar[0]->unk3BA >= 125 && pitch >= 125) {
                     pitch = 120;
                 }
                 SoundSetSlotVolume(1, volume & 0xFF, volume & 0xFF);
@@ -1449,7 +1448,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (D_800A397C[0] == 2) {
         return;
     }
-    if (*(u8 *)((u8 *)gPlayerCar[0] + 0xF4) == 0 && gSplitScreenMode[0] == 0) {
+    if (gPlayerCar[0]->unkF4 == 0 && gSplitScreenMode[0] == 0) {
         return;
     }
     timer = D_800A2EC0Absolute[0];

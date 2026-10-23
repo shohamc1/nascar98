@@ -25,7 +25,7 @@ extern s32 D_800A39E0;
 extern void CarResetMotionCounters(u8 *);
 extern u8 D_800B9DA4[];
 void CarUpdateWheelVelocityComponents(s32 *car);
-s32 func_80029EF8(u8 *obj);
+s32 func_80029EF8(Car *obj);
 s32 func_800370B8(s32 a, s32 b);
 
 /* CD control and streaming. */
@@ -33,8 +33,8 @@ s32 func_800370B8(s32 a, s32 b);
 void RaceSetPlayerFirstStanding(void) {
     u8 index;
     s32 value;
-    index = ((u8 *)gPlayerCar[0])[0x376];
-    value = *(s32 *)((u8 *)gPlayerCar[0] + 0x25C);
+    index = gPlayerCar[0]->driver;
+    value = gPlayerCar[0]->time;
     gDriverOrder[0] = index;
     D_800AE1EC[0] = value;
     D_800B9DA4[index & 0xFF] = 0;
@@ -701,100 +701,100 @@ void func_8003D6F8(u8 *object) {
     }
 }
 
-void func_8003D754(u8 *object) {
+void func_8003D754(Car *object) {
     s32 buttons;
 
-    buttons = PadGetButtons(*(s8 *)(object + 0x20B));
-    if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x1000)) {
-        *(u8 *)(object + 0x26B) -= 1;
+    buttons = PadGetButtons(object->slot);
+    if (buttons & ((u16)~object->flags & 0x1000)) {
+        object->unk26B -= 1;
         SoundPlaySlotAtVolume(object, 10, 6);
-    } else if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x4000)) {
-        *(u8 *)(object + 0x26B) += 1;
+    } else if (buttons & ((u16)~object->flags & 0x4000)) {
+        object->unk26B += 1;
         SoundPlaySlotAtVolume(object, 10, 6);
     }
-    *(u8 *)(object + 0x26B) = (*(u8 *)(object + 0x26B) + 4) % 4;
-    if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x8000)) {
+    object->unk26B = (object->unk26B + 4) % 4;
+    if (buttons & ((u16)~object->flags & 0x8000)) {
         SoundPlaySlotAtVolume(object, 10, 6);
-        switch (*(u8 *)(object + 0x26B)) {
+        switch (object->unk26B) {
         case 0:
-            if (*(u8 *)(object + 0x26A) & 1) {
-                *(u8 *)(object + 0x26A) &= 0xFE;
+            if (object->unk26A & 1) {
+                object->unk26A &= 0xFE;
             } else {
-                *(u8 *)(object + 0x26A) |= 1;
+                object->unk26A |= 1;
             }
             break;
         case 1:
-            if (*(u8 *)(object + 0x26A) & 2) {
-                *(u8 *)(object + 0x26A) &= 0xFD;
+            if (object->unk26A & 2) {
+                object->unk26A &= 0xFD;
             } else {
-                *(u8 *)(object + 0x26A) |= 2;
+                object->unk26A |= 2;
             }
             break;
         case 2:
-            if (*(s16 *)(object + 0x2AA) >= -7) {
-                *(u16 *)(object + 0x2A8) -= 1;
-                *(u16 *)(object + 0x2AA) -= 1;
+            if (object->unk2AA >= -7) {
+                object->unk2A8 -= 1;
+                object->unk2AA -= 1;
             }
             break;
         case 3:
-            if (*(s16 *)(object + 0x2A4) >= -7) {
-                *(u16 *)(object + 0x2A2) -= 1;
-                *(u16 *)(object + 0x2A4) -= 1;
+            if (object->unk2A4 >= -7) {
+                object->unk2A2 -= 1;
+                object->unk2A4 -= 1;
             }
             break;
         }
-        if (*(s16 *)(object + 0x2A2) < -16) {
-            *(s16 *)(object + 0x2A2) = -16;
+        if (object->unk2A2 < -16) {
+            object->unk2A2 = -16;
         }
-        if (*(s16 *)(object + 0x2A8) < -16) {
-            *(s16 *)(object + 0x2A8) = -16;
+        if (object->unk2A8 < -16) {
+            object->unk2A8 = -16;
         }
     }
-    if (buttons & ((u16) ~*(s32 *)(object + 0x238) & 0x2000)) {
+    if (buttons & ((u16)~object->flags & 0x2000)) {
         SoundPlaySlotAtVolume(object, 10, 6);
-        switch (*(u8 *)(object + 0x26B)) {
+        switch (object->unk26B) {
         case 0:
-            if (*(u8 *)(object + 0x26A) & 1) {
-                *(u8 *)(object + 0x26A) &= 0xFE;
+            if (object->unk26A & 1) {
+                object->unk26A &= 0xFE;
             } else {
-                *(u8 *)(object + 0x26A) |= 1;
+                object->unk26A |= 1;
             }
             break;
         case 1:
-            if (*(u8 *)(object + 0x26A) & 2) {
-                *(u8 *)(object + 0x26A) &= 0xFD;
+            if (object->unk26A & 2) {
+                object->unk26A &= 0xFD;
             } else {
-                *(u8 *)(object + 0x26A) |= 2;
+                object->unk26A |= 2;
             }
             break;
         case 2:
-            if (*(s16 *)(object + 0x2AA) < 8) {
-                *(u16 *)(object + 0x2A8) += 1;
-                *(u16 *)(object + 0x2AA) += 1;
+            if (object->unk2AA < 8) {
+                object->unk2A8 += 1;
+                object->unk2AA += 1;
             }
             break;
         case 3:
-            if (*(s16 *)(object + 0x2A4) < 8) {
-                *(u16 *)(object + 0x2A2) += 1;
-                *(u16 *)(object + 0x2A4) += 1;
+            if (object->unk2A4 < 8) {
+                object->unk2A2 += 1;
+                object->unk2A4 += 1;
             }
             break;
         }
-        if (*(s16 *)(object + 0x2A2) >= 17) {
-            *(s16 *)(object + 0x2A2) = 16;
+        if (object->unk2A2 >= 17) {
+            object->unk2A2 = 16;
         }
-        if (*(s16 *)(object + 0x2A8) >= 17) {
-            *(s16 *)(object + 0x2A8) = 16;
+        if (object->unk2A8 >= 17) {
+            object->unk2A8 = 16;
         }
     }
-    *(u8 *)(object + 0x26A) &= 0xF3;
-    if (*(s16 *)(object + 0x2A2) != 0) {
-        *(u8 *)(object + 0x26A) |= 4;
+    object->unk26A &= 0xF3;
+    if (object->unk2A2 != 0) {
+        object->unk26A |= 4;
     }
-    if (*(s16 *)(object + 0x2A8) != 0) {
-        *(u8 *)(object + 0x26A) |= 8;
+    if (object->unk2A8 != 0) {
+        object->unk26A |= 8;
     }
-    *(s32 *)(object + 0x238) = buttons;
+    object->flags = buttons;
 }
 
 s32 TrackSectionIsAtOrAfter(s32 a, s32 b) {
@@ -843,8 +843,8 @@ s32 func_8003DB5C(s32 arg0, s32 arg1, s32 arg2) {
     return result;
 }
 
-extern void func_8003D754(u8 *);
-extern void CarSteerTowardHeading(u8 *, s32);
+extern void func_8003D754(Car *);
+extern void CarSteerTowardHeading(Car *, s32);
 extern void func_80041564(u8 *, s32);
 extern s32 D_800A2EA8CarState[] asm("D_800A2EA8");
 extern s32 D_800A2EACCarState[] asm("D_800A2EAC");
@@ -963,11 +963,10 @@ void func_8003DBA8(Car *object) {
         delta[1] = *(s32 *)(entry + 0x3C) - object->pos.y;
         delta[2] = 0;
         object->unk276 = 0xFU;
-        *(u16 *)((u8 *)object + 0x278) = 0U;
-        *(u16 *)((u8 *)object + 0x27E) = 0U;
-        if ((object->type == 0) &&
-            ((D_800A2EE0CarState[0] != 0) ||
-             !(*(s32 *)((u8 *)object + 0x3A4) & 0x100F))) {
+        object->unk278 = 0U;
+        object->unk27E = 0U;
+        if ((object->type == 0) && ((D_800A2EE0CarState[0] != 0) ||
+                                    !(*(s32 *)&object->unk3A4 & 0x100F))) {
             func_8003D754(object);
         }
         if (MathGetAngleDelta(object->heading,
@@ -1025,9 +1024,8 @@ void func_8003DBA8(Car *object) {
         }
         goto updateMotion;
     case 0x1:
-        if ((object->type == 0) &&
-            ((D_800A2EE0CarState[0] != 0) ||
-             !(*(s32 *)((u8 *)object + 0x3A4) & 0x100F))) {
+        if ((object->type == 0) && ((D_800A2EE0CarState[0] != 0) ||
+                                    !(*(s32 *)&object->unk3A4 & 0x100F))) {
             func_8003D754(object);
         }
         delta[0] = *(s32 *)(targets + 0x14) - object->pos.x;
@@ -1058,10 +1056,10 @@ void func_8003DBA8(Car *object) {
         }
         if ((u8)ringResult) {
             object->unk84 = 0x3D0000;
-            brake = *(u16 *)((u8 *)object + 0x27C) + 0x14;
-            *(u16 *)((u8 *)object + 0x27C) = brake;
+            brake = object->unk27C + 0x14;
+            object->unk27C = brake;
             if ((s16)brake >= 0x15F) {
-                *(u16 *)((u8 *)object + 0x27C) = 0x15EU;
+                object->unk27C = 0x15EU;
             }
         }
         {
@@ -1084,13 +1082,13 @@ void func_8003DBA8(Car *object) {
             ringResult = 3;
             ringV1 = object->unk2A2;
             object->unk269 = ringResult;
-            *(u16 *)((u8 *)object + 0x274) = 0;
+            object->unk274 = 0;
             if (ringV1 < 0)
                 ringV1 = -ringV1;
             ringResult = ringV1 * 10;
             asm("" : "=r"(ringResult) : "0"(ringResult) : "memory");
             ringV1 = object->unk2A8;
-            *(u16 *)((u8 *)object + 0x278) = ringResult;
+            object->unk278 = ringResult;
             if (ringV1 < 0)
                 ringV1 = -ringV1;
             ringResult = ringV1 * 5;
@@ -1100,7 +1098,7 @@ void func_8003DBA8(Car *object) {
             ringV1 = (u16)object->unk2A6;
             ringA1 = (u16)object->unk2A8;
             ringA2 = object->unk28C;
-            *(u16 *)((u8 *)object + 0x27A) = ringA3;
+            object->unk27A = ringA3;
             ringResult += ringA0;
             ringV1 += ringA1;
             object->unk2A0 = ringResult;
@@ -1123,7 +1121,7 @@ void func_8003DBA8(Car *object) {
                     i += 1;
                 } while (i < 8);
             }
-            *(u16 *)((u8 *)object + 0x280) = damageTime;
+            object->unk280 = damageTime;
         }
         goto updateMotion;
     case 0x2:
@@ -1134,15 +1132,15 @@ void func_8003DBA8(Car *object) {
         object->unk276 = 0U;
         goto updateMotion;
     case 0x3:
-        ringResult = *(u16 *)((u8 *)object + 0x27E);
+        ringResult = object->unk27E;
         ringV1 = D_800A2EACCarState[0];
         object->speed = 0;
         object->unk84 = 0;
         object->unk108 = 0;
         ringResult += 1;
-        *(u16 *)((u8 *)object + 0x27E) = ringResult;
+        object->unk27E = ringResult;
         if (ringV1 == 0) {
-            if (*(s32 *)((u8 *)object + 0x3A4) & 0x100F) {
+            if (*(s32 *)&object->unk3A4 & 0x100F) {
                 if (object == D_800A3960CarState[0]) {
                     D_800A3960CarStateStore[0] = 0;
                 }
@@ -1170,10 +1168,10 @@ void func_8003DBA8(Car *object) {
                         if ((oldWait << 0x10) <= 0) {
                             object->unk269 = 2U;
                         }
-                        newBrake = *(u16 *)((u8 *)object + 0x27C) - 0x1E;
-                        *(u16 *)((u8 *)object + 0x27C) = newBrake;
+                        newBrake = object->unk27C - 0x1E;
+                        object->unk27C = newBrake;
                         if ((newBrake << 16) < 0) {
-                            *(u16 *)((u8 *)object + 0x27C) = 0U;
+                            object->unk27C = 0U;
                         }
                     }
                     goto block_83;
@@ -1183,8 +1181,8 @@ void func_8003DBA8(Car *object) {
         block_83:
             if (object->unk3A4 != 0) {
             block_84:
-                oldDamageTime = *(u16 *)((u8 *)object + 0x280);
-                *(u16 *)((u8 *)object + 0x280) = (u16)(oldDamageTime - 1);
+                oldDamageTime = object->unk280;
+                object->unk280 = (u16)(oldDamageTime - 1);
                 if ((oldDamageTime << 16) < 0) {
                     object->unk3A4 = 0;
                     j = 0;
@@ -1200,13 +1198,11 @@ void func_8003DBA8(Car *object) {
                     func_8003D25C(object);
                 } else {
                     if (flags & 4) {
-                        steerTime = *(u16 *)((u8 *)object + 0x278);
+                        steerTime = object->unk278;
                         steerAmount = (s16)steerTime / 10;
-                        oldSteerTime =
-                            (*(volatile u16 *)((u8 *)object + 0x278));
+                        oldSteerTime = (*(volatile u16 *)&object->unk278);
 
-                        *(u16 *)((u8 *)object + 0x278) =
-                            (u16)(oldSteerTime - 1);
+                        object->unk278 = (u16)(oldSteerTime - 1);
                         object->unk2A2 = (s16)steerAmount;
                         if ((oldSteerTime << 16) < 0) {
                             object->unk2A2 = 0;
@@ -1214,13 +1210,11 @@ void func_8003DBA8(Car *object) {
                         }
                     }
                     if (object->unk26A & 8) {
-                        otherSteerTime = *(u16 *)((u8 *)object + 0x27A);
+                        otherSteerTime = object->unk27A;
                         otherSteerAmount = (s16)otherSteerTime / 10;
-                        oldOtherSteerTime =
-                            (*(volatile u16 *)((u8 *)object + 0x27A));
+                        oldOtherSteerTime = (*(volatile u16 *)&object->unk27A);
 
-                        *(u16 *)((u8 *)object + 0x27A) =
-                            (u16)(oldOtherSteerTime - 1);
+                        object->unk27A = (u16)(oldOtherSteerTime - 1);
                         object->unk2A8 = (s16)otherSteerAmount;
                         if ((oldOtherSteerTime << 16) < 0) {
                             object->unk2A8 = 0;
@@ -1245,7 +1239,7 @@ void func_8003DBA8(Car *object) {
                     mask = ~object->unk23C & 0x40;
                     if ((buttons & mask) != 0) {
                     pulse:
-                        *(s32 *)((u8 *)object + 0x290) = 0x7D000;
+                        object->unk290 = 0x7D000;
                         object->unk26A &= 0xDD;
                     }
                 }
@@ -1298,7 +1292,7 @@ void func_8003DBA8(Car *object) {
             object->fineHeading = (s16)(object->heading * 4);
             ObjectAdvanceAlongHeading(object);
             func_80029CB4(object);
-            (*(void (**)(u8 *))((u8 *)object + 0x354))(object);
+            object->callback(object);
             return;
         }
         return;
@@ -1329,7 +1323,7 @@ updateMotion:
     object->movementHeading = ringV1;
     ObjectAdvanceAlongHeading(object);
     func_80029CB4(object);
-    (*(void (**)(u8 *))((u8 *)object + 0x354))(object);
+    object->callback(object);
     if (object->unk269 == 3) {
         object->steering = 0;
     }
@@ -1611,7 +1605,7 @@ void func_8003ECB8(u8 *object) {
 
 extern s32 D_800A2F88;
 
-void func_8003EDA0(u8 *object) {
+void func_8003EDA0(Car *object) {
     u32 pace;
     s32 dist;
     s32 value;
@@ -1620,15 +1614,15 @@ void func_8003EDA0(u8 *object) {
 
     dist = gTrackSectionCount[0] * D_800A2EA8[0] / D_800A2F88;
     value = (D_800A2EA8[0] + dist) / (dist + 1) + 1;
-    *(s32 *)(object + 0x29C) = value;
-    *(s16 *)(object + 0x282) = value;
+    object->unk29C = value;
+    object->unk282 = value;
     if (dist != 0) {
         adjustment = 2;
-        pace = *(u32 *)(object + 0x29C);
+        pace = (u32)object->unk29C;
         if (RandomScaledGet(5) < 0)
             delta = (pace - adjustment) - RandomScaledGet(5);
         else
             delta = (pace - adjustment) + RandomScaledGet(5);
-        *(s32 *)(object + 0x29C) = delta;
+        object->unk29C = delta;
     }
 }

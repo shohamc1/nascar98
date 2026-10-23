@@ -12,8 +12,8 @@ void CarSetVelocityFromHeading(s32 *car, s32 index);
 void MatrixSetIdentity(s32 *arg0);
 void ScratchpadFillPattern(s32 arg0);
 void func_80032DEC(u8 *firstObject, s32 objectCount);
-void ObjectAdvanceAlongHeading(u8 *object);
-void func_800373B4(u8 *);
+void ObjectAdvanceAlongHeading(Car *object);
+void func_800373B4(Car *);
 void ObjectSetCallbackIfAllowed(Car *object, void (*callback)(void));
 void CarReduceSpeed(Car *object);
 

@@ -220,7 +220,7 @@ void PadRefreshTypes(void) {
     if (node != 0) {
         do {
             if (node->type == 0) {
-                ((u8 *)node)[0x3C4] = ((u8 *)gPadType)[node->slot];
+                node->unk3C4 = ((u8 *)gPadType)[node->slot];
             }
             node = node->next;
         } while (node != 0);

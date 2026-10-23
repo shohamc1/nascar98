@@ -1436,24 +1436,24 @@ MenuObj *MenuCreateTextObject(s32 left, s32 top) {
     object->green = 0;
     object->red = 0;
     primIndex = D_800A37BC;
-    *(u16 *)((u8 *)object + 0xA) = left;
-    *(u16 *)((u8 *)object + 0x6) = left;
+    *(u16 *)&object->targetX = left;
+    *(u16 *)&object->x = left;
     prim = (u8 *)D_800A3654;
-    *(u16 *)((u8 *)object + 0x12) = 0;
-    *(u16 *)((u8 *)object + 0x14) = 0;
-    *(u32 *)((u8 *)object + 0x1C) = 0;
-    *(u16 *)((u8 *)object + 0x1A) = 0;
-    *(u16 *)((u8 *)object + 0x0) = 0;
-    *(u16 *)((u8 *)object + 0xC) = top;
-    *(u16 *)((u8 *)object + 0x8) = top;
-    *(u16 *)((u8 *)object + 0xE) = 0;
-    *(u16 *)((u8 *)object + 0x10) = 0;
-    *(u16 *)((u8 *)object + 0x1A) = 0;
+    *(u16 *)&object->drawOffsetX = 0;
+    *(u16 *)&object->drawOffsetY = 0;
+    *(u32 *)&object->next = 0;
+    *(u16 *)&object->orderingDepth = 0;
+    *(u16 *)&object->kind = 0;
+    *(u16 *)&object->targetY = top;
+    *(u16 *)&object->y = top;
+    *(u16 *)&object->velocityX = 0;
+    *(u16 *)&object->velocityY = 0;
+    *(u16 *)&object->orderingDepth = 0;
     D_800A37BC = primIndex + 1;
     do {
     } while (0);
     prim += primIndex * 12;
-    *(u8 **)((u8 *)object + 0x20) = prim;
+    *(u8 **)&object->primitive = prim;
     prim[0] = 0;
     prim[3] = 0;
     *(s32 *)(prim + 4) = 0;
@@ -1864,8 +1864,7 @@ s32 func_8005CA4C(void) {
             MenuSetDriverNameLabel(1, D_800A36E1[0]);
             func_80063AE0(1, gPlayerDriver[1]);
         }
-        MenuSetLinkedObjectLayoutByIndex(
-            1, -0x3C, *(s16 *)((u8 *)D_800A35E8[0] + 0xA), 2);
+        MenuSetLinkedObjectLayoutByIndex(1, -0x3C, D_800A35E8[0]->targetX, 2);
     }
     D_800A3989[0] = D_800A3988[1] ^ 1;
     D_800A3988[0] = D_800A3989[-1] ^ 1;
@@ -1902,7 +1901,7 @@ void func_8005CC34(void) {
     s16 result;
     s16 height;
 
-    prim = *(u8 **)((u8 *)D_800A38F8 + 0x20);
+    prim = *(u8 **)&D_800A38F8->primitive;
     number = D_800A37D0[0];
     buffer = D_800A35C9 - 1;
     D_800A35C8 = 0x20;
@@ -1917,9 +1916,9 @@ void func_8005CC34(void) {
     MenuFontSet(prim[1], prim[2]);
     result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
-    *(s16 *)((u8 *)D_800A38F8 + 0x16) = result;
-    *(s16 *)((u8 *)D_800A38F8 + 6) = height;
-    *(s16 *)((u8 *)D_800A38F8 + 0xA) = height;
+    *(s16 *)&D_800A38F8->width = result;
+    *(s16 *)&D_800A38F8->x = height;
+    *(s16 *)&D_800A38F8->targetX = height;
 }
 
 /* buffer is pinned to s1 with an explicit-register local: gcc 2.7.2 hands
@@ -2035,7 +2034,7 @@ void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     if (textId == 0) {
         textId = *(s32 *)(prim + 8);
     }
-    if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 || window->blue != 0) {
+    if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 || window->blue != 0) {
         MenuSetTextColor(window->red, window->green, window->blue);
     } else if (prim[1] == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
@@ -2064,7 +2063,7 @@ void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     if (id == 0) {
         id = *(s32 *)(prim + 8);
     }
-    if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 || window->blue != 0) {
+    if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 || window->blue != 0) {
         MenuSetTextColor(window->red, window->green, window->blue);
     } else if (prim[1] == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
@@ -2180,7 +2179,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 MenuFontSet(drawPrim[1], drawPrim[2]);
                 drawPrim[0] = code;
                 drawId = *(s32 *)(drawPrim + 8);
-                if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 ||
+                if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 ||
                     window->blue != 0) {
                     MenuSetTextColor(window->red, window->green, window->blue);
                 } else if (drawPrim[1] == 2) {
@@ -2222,7 +2221,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
             MenuFontSet(drawPrim[1], drawPrim[2]);
             drawPrim[0] = 0;
             drawId = *(s32 *)(drawPrim + 8);
-            if ((*(s32 *)((u8 *)drawWindow + 0) & 0xFFFF0000) != 0 ||
+            if ((*(s32 *)&drawWindow->kind & 0xFFFF0000) != 0 ||
                 drawWindow->blue != 0) {
                 MenuSetTextColor(drawWindow->red, drawWindow->green,
                                  drawWindow->blue);
@@ -2253,7 +2252,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
             MenuFontSet(drawPrim[1], drawPrim[2]);
             drawPrim[0] = 0;
             drawId = *(s32 *)(drawPrim + 8);
-            if ((*(s32 *)((u8 *)drawWindow + 0) & 0xFFFF0000) != 0 ||
+            if ((*(s32 *)&drawWindow->kind & 0xFFFF0000) != 0 ||
                 drawWindow->blue != 0) {
                 MenuSetTextColor(drawWindow->red, drawWindow->green,
                                  drawWindow->blue);
@@ -2305,16 +2304,16 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         }
         if ((u8)(mode - 34) < 2 || (mode & 0xFF) == 36 || (mode & 0xFF) == 40 ||
             (mode & 0xFF) == 37 || (u8)(mode - 38) < 2 ||
-            ((mode & 0xFF) == 1 && *(s16 *)((u8 *)D_800A3A10 + 0xE) < 0)) {
+            ((mode & 0xFF) == 1 && D_800A3A10->velocityX < 0)) {
             MenuUpdateObjectPosition(D_800A3A10, 1);
             MenuDrawObjectList(D_800A3A10, 0xFF);
         }
-        if ((mode & 0xFF) == 1 && *(s16 *)((u8 *)D_800A3A10 + 0xE) == 0) {
+        if ((mode & 0xFF) == 1 && D_800A3A10->velocityX == 0) {
             MenuRestoreLinkedObjectValues(0);
         }
     }
     if ((mode & 0xFF) != 33) {
-        if ((mode & 0xFF) != 5 || *(s16 *)((u8 *)D_800A38A8 + 0xE) >= 0) {
+        if ((mode & 0xFF) != 5 || D_800A38A8->velocityX >= 0) {
             goto afterPanel;
         }
     } else {

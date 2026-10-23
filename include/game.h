@@ -137,7 +137,7 @@ extern void ReplayStepBack(void);
 extern void func_80023074(void);
 extern void func_80025454(s32);
 extern void func_80028754(u8 *, s32);
-extern void func_8002D3EC(u8 *);
+extern void func_8002D3EC(Car *);
 extern void ModelLoadGeometryByIndex(s32, s32);
 extern void ModelBuildReverseLinks(u8 *);
 extern void GteStoreDepthAndScreenCoordinates();

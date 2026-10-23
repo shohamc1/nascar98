@@ -477,24 +477,24 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     object->green = 0;
     object->red = 0;
     primIndex = D_800A37BC;
-    *(u16 *)((u8 *)object + 0xA) = arg1;
-    *(u16 *)((u8 *)object + 6) = arg1;
+    *(u16 *)&object->targetX = arg1;
+    *(u16 *)&object->x = arg1;
     prim = (u8 *)D_800A3654;
-    *(u16 *)((u8 *)object + 0x12) = 0;
-    *(u16 *)((u8 *)object + 0x14) = 0;
-    *(u32 *)((u8 *)object + 0x1C) = 0;
-    *(u16 *)((u8 *)object + 0x1A) = 0;
-    *(u16 *)((u8 *)object + 0x0) = 0;
-    *(u16 *)((u8 *)object + 0xC) = 0xAB;
-    *(u16 *)((u8 *)object + 0x8) = 0xAB;
-    *(u16 *)((u8 *)object + 0xE) = 0;
-    *(u16 *)((u8 *)object + 0x10) = 0;
-    *(u16 *)((u8 *)object + 0x1A) = 0;
+    *(u16 *)&object->drawOffsetX = 0;
+    *(u16 *)&object->drawOffsetY = 0;
+    *(u32 *)&object->next = 0;
+    *(u16 *)&object->orderingDepth = 0;
+    *(u16 *)&object->kind = 0;
+    *(u16 *)&object->targetY = 0xAB;
+    *(u16 *)&object->y = 0xAB;
+    *(u16 *)&object->velocityX = 0;
+    *(u16 *)&object->velocityY = 0;
+    *(u16 *)&object->orderingDepth = 0;
     D_800A37BC = primIndex + 1;
     do {
     } while (0);
     prim += primIndex * 12;
-    *(u8 **)((u8 *)object + 0x20) = prim;
+    *(u8 **)&object->primitive = prim;
     prim[0] = 0;
     prim[3] = 0;
     *(s32 *)(prim + 4) = 0;
@@ -872,7 +872,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             if (j == 0) {
                 u16 w;
                 u8 v;
-                w = *(u16 *)((u8 *)entry + 0x16);
+                w = (u16)entry->width;
                 *(s16 *)(prim2 + 0xE) =
                     GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
                 *(s16 *)(prim2 + 0x16) = GetTPage(
@@ -889,7 +889,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             } else {
                 u16 w;
                 u8 v;
-                w = *(u16 *)((u8 *)entry + 0x16);
+                w = (u16)entry->width;
                 *(s16 *)(prim2 + 0xE) =
                     GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
                 *(s16 *)(prim2 + 0x16) = GetTPage(
@@ -960,7 +960,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             obj2->velocityX = k2;
             obj2->x = -0xF5;
             obj2->velocityX = k2;
-            *(u8 **)((u8 *)entry + 0x1C) = obj2;
+            entry->next = obj2;
             entry = obj2;
             j++;
         }
@@ -1029,7 +1029,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 D_800BB9F4[n] = entry;
                 entry->velocityX = 2;
                 entry->width = value;
-                entry->x = *(u16 *)((u8 *)entry + 0xA) - 0xF5;
+                entry->x = (u16)entry->targetX - 0xF5;
                 entry->height = MenuFontLineHeight();
                 primLoad = entry->primitive;
                 primLoad[1] = 2;
@@ -1048,7 +1048,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         MenuObj *obj3;
         u8 *pr3;
         u8 *pq3;
-        yBase = *(s16 *)((u8 *)D_800B996C[0] + 0xC) + 0xD;
+        yBase = D_800B996C[0]->targetY + 0xD;
         k3 = 3;
         k9 = 9;
         w4 = 0x68;
@@ -1098,8 +1098,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             prim2 = entry->primitive;
             entry->x = -0xF5;
             entry->velocityX = 2;
-            w = *(u16 *)((u8 *)entry + 0x16);
-            hh = *(u16 *)((u8 *)entry + 0x18);
+            w = (u16)entry->width;
+            hh = (u16)entry->height;
             *(s16 *)(prim2 + 0xE) = GetClut(D_8009AEA2[1], D_8009AEA6[0]);
             *(s16 *)(prim2 + 0x16) =
                 GetTPage(*(u16 *)((u8 *)D_8009AEAA + 2), 3,
@@ -1205,8 +1205,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         do {
         } while (0);
         prim2 = entry->primitive;
-        w = *(u16 *)((u8 *)entry + 0x16);
-        hh = *(u16 *)((u8 *)entry + 0x18);
+        w = (u16)entry->width;
+        hh = (u16)entry->height;
         entry->velocityX = 2;
         j = 0;
         D_800A39ACPtr = entry;
@@ -1227,8 +1227,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     h = 0x78;
     k2b = 2;
     k30 = 0x30;
-    *(s16 *)((u8 *)D_800A39ACPtr + 6) = -0x7D;
-    *(s16 *)((u8 *)D_800A39ACPtr + 0xE) = 2;
+    D_800A39ACPtr->x = -0x7D;
+    D_800A39ACPtr->velocityX = 2;
     do {
         ix7 = gMenuObjectPoolCount;
         gMenuObjectPoolCount = ix7 + 1;
@@ -1271,7 +1271,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         obj7->velocityX = k2b;
         obj7->x = -0x7D;
         obj7->velocityX = k2b;
-        *(u8 **)((u8 *)entry + 0x1C) = obj7;
+        entry->next = obj7;
         entry = obj7;
         j++;
     } while (j < 2);
@@ -1321,8 +1321,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         prim2 = entry->primitive;
         entry->velocityX = 2;
         entry->x = -0x7D;
-        w = *(u16 *)((u8 *)entry + 0x16);
-        hh = *(u16 *)((u8 *)entry + 0x18);
+        w = (u16)entry->width;
+        hh = (u16)entry->height;
         x6 = yBase + 1;
         *(s16 *)(prim2 + 0xE) =
             GetClut(D_8009AEB2[0], *(u16 *)((u8 *)D_8009AEB2 + 2));
@@ -1472,7 +1472,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         primLoad[1] = 2;
         primLoad[2] = 2;
         *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
-        *(u8 **)((u8 *)entry + 0x1C) = ((u8 *)m);
+        entry->next = ((u8 *)m);
     }
     func_80060008(arg0);
 }
@@ -1556,7 +1556,7 @@ void func_80060008(u8 arg0) {
             q = 1;
         }
         node = D_800B60B8[diff];
-        entry = *(u8 **)(&((u8 *)node)[0x1C]);
+        entry = *(u8 **)(&*(u8 *)&node->next);
         *(s16 *)(&entry[0x16]) = q;
         diff++;
     } while (diff < 4);
@@ -1575,7 +1575,7 @@ static inline void MenuObjDrawText(MenuObj *window, u8 code, u8 first,
     if (textId == 0) {
         textId = *(s32 *)(prim + 8);
     }
-    if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 || window->blue != 0) {
+    if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 || window->blue != 0) {
         MenuSetTextColor(window->red, window->green, window->blue);
     } else if (prim[1] == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
@@ -1610,7 +1610,7 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
         if (scale == 0) {
             scale = 1;
         }
-        *(s16 *)(*(u8 **)((u8 *)D_800B9980[(u8)i] + 0x1C) + 0x16) = scale;
+        *(s16 *)((u8 *)D_800B9980[(u8)i]->next + 0x16) = scale;
         MenuDrawObjectList(D_800B996C[i], 0xFF);
         MenuDrawObjectList(D_800B9980[i], i != sel);
         first = i != sel;
@@ -2014,7 +2014,7 @@ void MenuSetVolume(s32 volumePercent, s32 volumeSettingIndex) {
     u8 *node;
     u8 x;
 
-    node = *(u8 **)((u8 *)D_800A38A8 + 0x1C);
+    node = (u8 *)D_800A38A8->next;
     volumeSettingIndex &= 0xFF;
     x = volumePercent;
     *(u16 *)(node + 0x16) = x;
@@ -4730,8 +4730,8 @@ extern u8 *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_80063E7C(void) {
     RECT rect;
     Car *entry;
-    u8 *prev1;
-    u8 *prev2;
+    Car *prev1;
+    Car *prev2;
     s32 i;
     s16 srcX;
     s16 tile;
@@ -4751,7 +4751,7 @@ void func_80063E7C(void) {
     entry = func_8002D874(0, 0, 0x1B, 0);
     entry->pos.x = 0x1F4;
     entry->pos.y = 0;
-    *(s32 *)(prev1 + 0x3E0) = (s32)entry;
+    prev1->next = (s32)entry;
     entry->prev = (s32)prev1;
     gPlayerCar[0] = entry;
     prev2 = entry;
@@ -4761,7 +4761,7 @@ void func_80063E7C(void) {
     srcX = 0x300;
     entry->pos.x = 0;
     entry->pos.y = 0;
-    *(s32 *)(prev2 + 0x3E0) = (s32)entry;
+    prev2->next = (s32)entry;
     entry->prev = (s32)prev2;
     entry->next = 0;
     while (i < 2) {
@@ -4831,7 +4831,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
                 }
                 result = v1 - ((v0 >> 0xC) << 0xC);
             } else {
-                result = *(u16 *)((u8 *)gPlayerCar[0] + 0x20E);
+                result = (u16)gPlayerCar[0]->steering;
             }
             *(s16 *)(obj + 0x20E) = result;
         }
@@ -4937,7 +4937,7 @@ void func_80064208(void) {
         prim->drawOffsetX = 0x2D;
         prim->height = 0x14;
         prim->orderingDepth = 0x39;
-        *(s16 *)((u8 *)prim + 0x20) = 0x54;
+        *(s16 *)&prim->primitive = 0x54;
         *(s16 *)((u8 *)prim + 0x22) = 0x39;
     }
 
@@ -6509,11 +6509,11 @@ void MenuDrawLoadScreen(void) {
     HudDrawText(gDriverNames[gPlayerDriver[0]], 0xA0, 0xB0, 0);
     HudDrawText(D_8009A400[34], 0xA0, 0xBE, 0);
     HudDrawText(D_800A3364, 0xE0, 0xBE, 0);
-    TextFormatTime(*(void **)((u8 *)gPlayerCarLui + 0x25C), 0, (s32)buf);
+    TextFormatTime(*(void **)&gPlayerCarLui->time, 0, (s32)buf);
     gTextColorLui[0] = 9;
     HudDrawText((u8 *)buf + 1, 0xEA, 0xBE, 0);
     SetGeomOffset(0xAA, 0x1E);
-    ((u8 *)gPlayerCarLui)[0x20C] = 1;
+    gPlayerCarLui->cameraMode = 1;
     func_8002EEFC(gPlayerCarLui);
     car = gPlayerCarLui;
     car->pos.x = 0;
@@ -6521,8 +6521,7 @@ void MenuDrawLoadScreen(void) {
     car->pos.z = 0;
     car->steering = 0xA00;
     ScratchpadFillPattern(0);
-    func_800168F8(*(u8 **)((u8 *)gPlayerCarLui + 0x36C),
-                  (s8)(*(s8 *)((u8 *)gPlayerCarLui + 0x200) / 5));
+    func_800168F8(gPlayerCarLui->unk36C, (s8)(gPlayerCarLui->mode / 5));
     end = gPrimitiveCursorLui;
     CarDrawPreviewModel(gPlayerCarLui, 0, 0x15E, 0x320);
     gOrderingTableLui = (s32)gOrderingTables;

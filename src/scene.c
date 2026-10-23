@@ -372,7 +372,7 @@ void func_80045288(void) {
     }
     obj = gPlayerCar[0];
     v = D_800A2FCC;
-    x = *(s32 *)((u8 *)obj + 0x3E0);
+    x = *(s32 *)&obj->next;
     D_800A3424 = flag;
     D_800A3960gp = 0;
     D_800A3590 = 0;
@@ -2038,7 +2038,7 @@ void SceneCreateSceneryCar(void) {
 void func_8004875C(void) {
     extern s32 gTrackSections[];
     extern void func_80031264(u8 * object);
-    extern void ObjectAdvanceAlongHeading(u8 * object);
+    extern void ObjectAdvanceAlongHeading(Car * object);
     extern s32 MathMultiplyFixed16(s32, s32);
     extern s32 D_800A2EC0Absolute[];
     u8 *src;
@@ -2136,7 +2136,7 @@ void RaceUpdateCrashTrigger(void) {
                                 car->unk414 -= 1;
                             } else if (car->type != 0
                                            ? D_800A2F50Absolute[0] * 9 / 10 <
-                                                 *(s16 *)((u8 *)car + 0x92)
+                                                 ((s16 *)&car->speed)[1]
                                            : car->maxSpeed - 0xA0000 <
                                                  car->speed) {
                                 D_800A35F8 = 1;
@@ -3397,11 +3397,9 @@ void HudDrawDashboard(void) {
             case 1:
                 if (D_800A2ED4[0] == 0) {
                     if (RandomScaledGet(2)) {
-                        productY = -RandomScaledGet(
-                            *(s32 *)((u8 *)gPlayerCar[0] + 0x90) >> 20);
+                        productY = -RandomScaledGet(gPlayerCar[0]->speed >> 20);
                     } else {
-                        productY = RandomScaledGet(
-                            *(s32 *)((u8 *)gPlayerCar[0] + 0x90) >> 20);
+                        productY = RandomScaledGet(gPlayerCar[0]->speed >> 20);
                     }
                     productY += 0x300;
                     D_800A3494 = productY;
@@ -3421,7 +3419,7 @@ void HudDrawDashboard(void) {
                 s64 wideProduct;
 
                 /* Scale speed by 768/16000 for the speedometer angle. */
-                speed = *(s32 *)((u8 *)gPlayerCar[0] + 0x28C);
+                speed = gPlayerCar[0]->unk28C;
                 factor = 0x10624DD3;
                 scaledSpeed = speed * 768;
                 asm("mult %1,%2"
@@ -3441,7 +3439,7 @@ void HudDrawDashboard(void) {
             }
             case 3:
                 angles[0] =
-                    ((s32)(((u8 *)gPlayerCar[0])[0x3FD] << 24) >> 21) + 0x2D8;
+                    ((s32)((u8)gPlayerCar[0]->unk3FD << 24) >> 21) + 0x2D8;
                 break;
             }
             vertex = 0;
@@ -4865,11 +4863,10 @@ void HudDrawLapSplit(void) {
     s32 track;
     s16 delay;
 
-    pos = *(s16 *)((u8 *)gPlayerCar[0] + 0x1D6) * gTrackSectionCount[0] +
-          *(s16 *)((u8 *)gPlayerCar[0] + 0x1E0);
+    pos = gPlayerCar[0]->lap * gTrackSectionCount[0] + gPlayerCar[0]->segment;
     if (pos >= gLapSplits[gLapSplitIndex].section) {
         HudRecordLapSplitStats();
-        gLapSplitTime = time = *(s32 *)((u8 *)gPlayerCar[0] + 0x258);
+        gLapSplitTime = time = gPlayerCar[0]->unk258;
         gLapSplitBest = gLapSplits[gLapSplitIndex].best;
         gLapSplitDelta = time - gLapSplitBest;
         gLapSplits[gLapSplitIndex].section += gTrackSectionCount[0];
@@ -4908,7 +4905,7 @@ void HudDrawLapSplit(void) {
         gLapSplitShowDelta = 0;
         return;
     }
-    if (*(u8 *)((u8 *)gPlayerCar[0] + 0x268) != 0) {
+    if (gPlayerCar[0]->unk268 != 0) {
         return;
     }
     GraphicsSetColor(0x80, 0x80, 0xC0);
@@ -4926,8 +4923,8 @@ void HudDrawLapSplit(void) {
     } else {
         HudDrawTimeLap(gLapSplits[gLapSplitIndex].best, 0x87,
                        gLapSplitPanelY + 0xB9, 0, 1);
-        HudDrawTimeLap(*(s32 *)((u8 *)gPlayerCar[0] + 0x258), 0x87,
-                       gLapSplitPanelY + 0xC3, 0, 1);
+        HudDrawTimeLap(gPlayerCar[0]->unk258, 0x87, gLapSplitPanelY + 0xC3, 0,
+                       1);
     }
     GraphicsDrawDoubleBorderRect(0x55, gLapSplitPanelY + 0xB4, 0x87, 0x28, 0, 0,
                                  0, 1);
@@ -5000,7 +4997,7 @@ void HudDrawTrafficGapPanel(void) {
     if ((s8)D_800A34AC < 0x3C) {
         D_800A34AC = (s8)D_800A34AC + 4;
     display:
-        if (*(u8 *)((u8 *)gPlayerCar[0] + 0x268) == 0) {
+        if (gPlayerCar[0]->unk268 == 0) {
             GraphicsSetColor(0x80, 0x80, 0xC0);
             func_80050028Lbl((char *)D_8009AE4C[0], 0x50, (s8)D_800A34AC + 0xB9,
                              0);
@@ -5064,7 +5061,7 @@ void HudUpdateTrafficGapData(void) {
     asm volatile("addu %0, %2, %1" : "=r"(cardist) : "0"(cardist), "r"(prod2));
     if (refDist - cardist < len) {
         if (car->place >= 2) {
-            e0 = *(u8 **)((u8 *)car->order.node.next + 8);
+            e0 = (u8 *)((CarLink *)car->order.node.next)->car;
             t1 = car->unk264;
             t2 = *(s32 *)(e0 + 0x264);
             car = *(s32 *)((u8 *)(e0) + 0x34C);
@@ -5074,8 +5071,8 @@ void HudUpdateTrafficGapData(void) {
             D_800A34B4 = (s32)strtok((char *)0, gTextSpaceDelimiter);
         }
         asm volatile("" : : : "memory");
-        if (*(s32 *)((u8 *)gPlayerCar[0] + 0x3E8) != 0) {
-            e0 = *(u8 **)(*(u8 **)((u8 *)gPlayerCar[0] + 0x3E8) + 8);
+        if (*(s32 *)&gPlayerCar[0]->order.node.previous != 0) {
+            e0 = (u8 *)((CarLink *)gPlayerCar[0]->order.node.previous)->car;
             len = gTrackSectionCount[0];
             other1d6 = *(s16 *)(e0 + 0x1D6);
             asm volatile("mult\t%0, %1" : : "r"(other1d6), "r"(len));
@@ -5085,8 +5082,8 @@ void HudUpdateTrafficGapData(void) {
                          : "0"(otherdist));
             if (refDist - otherdist < len) {
                 rel = *(s32 *)(e0 + 0x264);
-                if (*(s8 *)((u8 *)gPlayerCar[0] + 0x204) != 1) {
-                    rel -= *(s32 *)((u8 *)gPlayerCar[0] + 0x264);
+                if (gPlayerCar[0]->place != 1) {
+                    rel -= gPlayerCar[0]->unk264;
                 }
                 name2 = *(char **)(e0 + 0x34C);
                 D_800A34C0 = rel;
@@ -5134,8 +5131,8 @@ void MenuDrawTimingAndScoring(void) {
     u8 i;
 
     GraphicsSetColor(128, 128, 192);
-    sprintfHud(caption, D_8008D4F4, *(char **)((u8 *)gPlayerCar[0] + 0x34C),
-               D_8009A3F8[0], D_8009A31C[D_800A2CE0[0]]);
+    sprintfHud(caption, D_8008D4F4, gPlayerCar[0]->name, D_8009A3F8[0],
+               D_8009A31C[D_800A2CE0[0]]);
     titleTable = D_8009AE70;
     width = HudTextWidth((u8 *)titleTable[0]);
     /* Load the title before reusing the table register for screen width. */
@@ -5278,7 +5275,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
             if (speed == 0x7FFF) {
                 func_80050028Row(D_8009AE90[0], 215, y, 3);
             } else {
-                if (((u8 *)gPlayerCar[0])[0xF7]) {
+                if (gPlayerCar[0]->unkF7) {
                     speedValue = speed * 292 / 550;
                 } else {
                     speedValue = speed * 210 / 550;
@@ -5294,7 +5291,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         if (speed == 0x7FFF) {
             func_80050028Row(D_8009AE90[0], 215, textY, 3);
         } else {
-            if (((u8 *)gPlayerCar[0])[0xF7]) {
+            if (gPlayerCar[0]->unkF7) {
                 speedValue = speed * 292 / 550;
             } else {
                 speedValue = speed * 210 / 550;
@@ -5549,14 +5546,13 @@ void HudRecordLapSplitStats(void) {
     entry = (u8 *)(gLapSplitIndex * 4 + (s32)D_800A8A80[0]);
     slot = (LapTimeSlot *)(entry + 0x10);
     if (gLapSplitIndex == 0) {
-        lapTime = *(s32 *)((u8 *)gPlayerCar[0] + 0x258);
+        lapTime = gPlayerCar[0]->unk258;
     } else {
-        lapTime =
-            *(s32 *)((u8 *)gPlayerCar[0] + 0x258) - *(s32 *)(entry + 0x1C);
+        lapTime = gPlayerCar[0]->unk258 - *(s32 *)(entry + 0x1C);
     }
     car = gPlayerCar[0];
     slot->lapTime = lapTime;
-    speed = *(s16 *)((u8 *)car + 0x92);
+    speed = ((s16 *)&car->speed)[1];
     *(s16 *)(gLapSplitIndex * 2 + D_800A8A80[0] + 6) = speed;
     ((LapTotalSlot *)(gLapSplitIndex * 4 + D_800A8A80[0]))->unk20 = car->unk258;
     if (gLapSplitIndex == gTrackSplitCount[*(s32 *)(void *)D_800A2CE0] - 1) {
@@ -5593,9 +5589,9 @@ void HudRecordLapSplitStats(void) {
 
 extern u8 *D_800A8A80[];
 void RaceStoreLapRecordCarFields(void) {
-    D_800A8A80[0][0] = *(u16 *)((u8 *)gPlayerCar[0] + 0x2AA);
-    D_800A8A80[0][1] = *(u16 *)((u8 *)gPlayerCar[0] + 0x2A4);
-    *(u16 *)(D_800A8A80[0] + 4) = *(u16 *)((u8 *)gPlayerCar[0] + 0x1D6);
+    D_800A8A80[0][0] = (u16)gPlayerCar[0]->unk2AA;
+    D_800A8A80[0][1] = (u16)gPlayerCar[0]->unk2A4;
+    *(u16 *)(D_800A8A80[0] + 4) = (u16)gPlayerCar[0]->lap;
 }
 
 extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
@@ -5948,15 +5944,14 @@ void HudUpdateFlagOverlay(void) {
     if (D_800A2EFCLui[0] != 0) {
         if (D_800A35D4 == 0) {
             if (D_800A372C == 0 || D_800A3764 != 0) {
-                D_800A3414 = ((u8 *)gPlayerCar[0])[0x209];
-                ((u8 *)gPlayerCar[0])[0x209] =
-                    (s8)((u8 *)gPlayerCar[0])[0x209] > 0;
+                D_800A3414 = (u8)gPlayerCar[0]->unk209;
+                gPlayerCar[0]->unk209 = (s8)(u8)gPlayerCar[0]->unk209 > 0;
                 if (gSplitScreenMode[0] != 0) {
                     D_800A3418 = D_800A3428[0x209];
                     D_800A3428[0x209] = (s8)D_800A3428[0x209] > 0;
                 }
-                if (((u8 *)gPlayerCar[0])[0x268] != 0) {
-                    D_800A35D0 = *(s16 *)((u8 *)gPlayerCar[0] + 0x286);
+                if (gPlayerCar[0]->unk268 != 0) {
+                    D_800A35D0 = gPlayerCar[0]->unk286;
                 } else {
                     D_800A35D0 = D_800A2EC4Lui[0];
                 }
@@ -6016,11 +6011,11 @@ void HudUpdateFlagOverlay(void) {
     } else if (D_800A35D4 != 0) {
         D_800A35D4 = 0;
         if (D_800A2EACAbsolute[0] == 0 && D_800A372C == 0) {
-            ((u8 *)gPlayerCar[0])[0x209] = D_800A3414;
+            gPlayerCar[0]->unk209 = D_800A3414;
             if (gSplitScreenMode[0] != 0) {
                 D_800A3428[0x209] = D_800A3418;
             }
-            if (((u8 *)gPlayerCar[0])[0x268] == 0) {
+            if (gPlayerCar[0]->unk268 == 0) {
                 D_800A2EC4Lui[0] = D_800A35D0;
             }
         }
@@ -6062,7 +6057,7 @@ s32 RaceUpdateCaution(void) {
             ((Car *)gPlayerCarLui)->unk3FC = 0;
             side = CarGetTrackSide(gPlayerCarLui, 0);
             if (side == 1) {
-                *(s16 *)((u8 *)gPlayerCarLui + 0x288) = 1;
+                gPlayerCarLui->unk288 = 1;
             } else {
                 sideAhead = CarGetTrackSide(gPlayerCarLui, 5);
                 if (sideAhead == 1) {
@@ -6070,17 +6065,17 @@ s32 RaceUpdateCaution(void) {
                         (s8)CarGetTrackSide(gPlayerCarLui, 2) == sideAhead) {
                         D_800A38B8 = 1;
                     }
-                    if (*(u16 *)((u8 *)gPlayerCarLui + 0x360) == 5) {
-                        *(s16 *)((u8 *)gPlayerCarLui + 0x288) = 1;
+                    if (gPlayerCarLui->state == 5) {
+                        gPlayerCarLui->unk288 = 1;
                     }
                 } else {
-                    *(s16 *)((u8 *)gPlayerCarLui + 0x288) = 0;
+                    gPlayerCarLui->unk288 = 0;
                 }
             }
-            ((u8 *)gPlayerCarLui)[0xF9] = 0;
+            gPlayerCarLui->sliding = 0;
             D_800A2F00Sw[0] = 3;
-            D_800A3420 = ((u8 *)gPlayerCarLui)[0xF6];
-            ((u8 *)gPlayerCarLui)[0xF6] = 1;
+            D_800A3420 = gPlayerCarLui->unkF6;
+            gPlayerCarLui->unkF6 = 1;
             SoundStopConditionalSlots(0);
             D_800A35A4 = 600;
             D_800A39F8 = 1;
@@ -6093,7 +6088,7 @@ s32 RaceUpdateCaution(void) {
             D_800A38B8 = 0;
         }
         D_800A2EFCSw[0] = 1;
-        if (((u8 *)gPlayerCarLui)[0x268] == 0) {
+        if (gPlayerCarLui->unk268 == 0) {
             func_8002A1FC(gPlayerCarLui);
         }
         if (D_800A3564u != 0) {
@@ -6114,8 +6109,7 @@ s32 RaceUpdateCaution(void) {
             }
         }
         func_80028FCC(gCarListLui);
-        CarSetVelocityFromHeading((s32 *)gPlayerCarLui,
-                                  *(s16 *)((u8 *)gPlayerCarLui + 0x114));
+        CarSetVelocityFromHeading((s32 *)gPlayerCarLui, gPlayerCarLui->heading);
         if (done && D_800A35A4 <= 0) {
             D_800A3764 = 0;
             D_800A2EFCSw[0] = 0;
@@ -6148,9 +6142,8 @@ s32 RaceUpdateCaution(void) {
                     (*(void (**)(u8 *))(car + 0x350))(car);
                 } else {
                     func_800373B4(car);
-                    CarSetVelocityFromHeading(
-                        (s32 *)gPlayerCarLui,
-                        *(s16 *)((u8 *)gPlayerCarLui + 0x114));
+                    CarSetVelocityFromHeading((s32 *)gPlayerCarLui,
+                                              gPlayerCarLui->heading);
                 }
             }
             func_80028FCC(gCarListLui);
@@ -6237,43 +6230,35 @@ void HudInitFlagOverlay(void) {
     D_800A8B90[0] = x + 0x20;
     D_800A8B91[0] = y + 0x18;
     D_800A8AEC[0] =
-        (MathMultiplyFixed16(0x2D0000,
-                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0x600)) >>
+        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A2CAbsolute[0])[0x180]) >>
          0x10) +
         0x122;
     D_800A8AEE[0] =
-        (MathMultiplyFixed16(0x2D0000,
-                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0x600)) >>
+        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A34Absolute[0])[0x180]) >>
          0x10) +
         0x3C;
     D_800A8AF0[0] =
-        (MathMultiplyFixed16(0x140000,
-                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0x600)) >>
+        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A2CAbsolute[0])[0x180]) >>
          0x10) +
         0x122;
     D_800A8AF2[0] =
-        (MathMultiplyFixed16(0x140000,
-                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0x600)) >>
+        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A34Absolute[0])[0x180]) >>
          0x10) +
         0x3C;
     D_800A8AF4[0] =
-        (MathMultiplyFixed16(0x2D0000,
-                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0xA00)) >>
+        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A2CAbsolute[0])[0x280]) >>
          0x10) +
         0x122;
     D_800A8AF6[0] =
-        (MathMultiplyFixed16(0x2D0000,
-                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0xA00)) >>
+        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A34Absolute[0])[0x280]) >>
          0x10) +
         0x3C;
     D_800A8AF8[0] =
-        (MathMultiplyFixed16(0x140000,
-                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0xA00)) >>
+        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A2CAbsolute[0])[0x280]) >>
          0x10) +
         0x122;
     D_800A8AFA[0] =
-        (MathMultiplyFixed16(0x140000,
-                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0xA00)) >>
+        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A34Absolute[0])[0x280]) >>
          0x10) +
         0x3C;
 }
@@ -7550,7 +7535,7 @@ void func_8005301C(void) {
     if ((s8)obj->unk3B9 != 0) {
         func_8003FC0C(
             0x14,
-            (s8)(*(s16 *)((u8 *)obj + 0x92) * 8 / *(s16 *)((u8 *)obj + 0x9A) +
+            (s8)(((s16 *)&obj->speed)[1] * 8 / ((s16 *)&obj->maxSpeed)[1] +
                  0x2C),
             0);
         if (*(u8 *)&D_800A34EC == 0) {
@@ -7564,11 +7549,11 @@ void func_8005301C(void) {
     if (gSplitScreenModeAbsolute[0] == 0) {
         return;
     }
-    obj = *(u8 **)((u8 *)gPlayerCar[0] + 0x3E0);
+    obj = (u8 *)gPlayerCar[0]->next;
     if ((s8)obj->unk3B9 != 0) {
         func_8003FC0C(
             0x15,
-            (s8)(*(s16 *)((u8 *)obj + 0x92) * 8 / *(s16 *)((u8 *)obj + 0x9A) +
+            (s8)(((s16 *)&obj->speed)[1] * 8 / ((s16 *)&obj->maxSpeed)[1] +
                  0x2C),
             0);
         if (*(u8 *)&D_800A34F0 == 0) {

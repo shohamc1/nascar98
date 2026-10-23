@@ -47,19 +47,23 @@ typedef struct CarLink {
 /* A 0x500-byte race object in gCarList: player, AI and traffic cars. */
 typedef struct Car {
     Vec3 pos; /* 0x000 */
-    u8 unkC[0xC];
+    s32 unkC; /* 0x00C */
+    s32 unk10; /* 0x010 */
+    s32 unk14; /* 0x014 */
     Vec3 basis[3]; /* 0x018 */
     Vec3 rot[3]; /* 0x03C */
-    u8 unk60[0x4];
+    s32 unk60; /* 0x060 */
     s32 unk64; /* 0x064 */
-    u8 unk68[0x8];
+    u8 unk68[0x4];
+    s32 unk6C; /* 0x06C */
     s32 unk70; /* 0x070 */
-    u8 unk74[0x8];
+    u8 unk74[0x4];
+    s32 unk78; /* 0x078 */
     s32 unk7C; /* 0x07C */
     u8 unk80[0x4];
     s32 unk84; /* 0x084 */
     s32 driveScale; /* 0x088 */
-    u8 unk8C[0x4];
+    s32 unk8C; /* 0x08C */
     s32 speed; /* 0x090 */
     s32 unk94; /* 0x094 */
     s32 maxSpeed; /* 0x098 */
@@ -82,7 +86,9 @@ typedef struct Car {
     u8 unkF8; /* 0x0F8 */
     u8 sliding; /* 0x0F9 */
     s16 unkFA; /* 0x0FA */
-    u8 unkFC[0x6];
+    s16 unkFC; /* 0x0FC */
+    s16 unkFE; /* 0x0FE */
+    s16 unk100; /* 0x100 */
     s16 unk102; /* 0x102 */
     s16 movementHeading; /* 0x104 */
     u8 unk106[0x2];
@@ -91,35 +97,56 @@ typedef struct Car {
     s16 unk10C; /* 0x10C */
     s16 unk10E; /* 0x10E */
     s16 unk110; /* 0x110 */
-    u8 unk112[0x2];
+    s16 unk112; /* 0x112 */
     s16 heading; /* 0x114 */
     u16 fineHeading; /* 0x116 */
-    u8 unk118[0x8];
+    s16 unk118; /* 0x118 */
+    s16 unk11A; /* 0x11A */
+    s16 unk11C; /* 0x11C */
+    s16 unk11E; /* 0x11E */
     s16 unk120; /* 0x120 */
-    u8 unk122[0x9A];
+    u8 unk122[0x92];
+    s16 unk1B4; /* 0x1B4 */
+    s16 unk1B6; /* 0x1B6 */
+    s16 unk1B8; /* 0x1B8 */
+    s16 unk1BA; /* 0x1BA */
     s16 unk1BC; /* 0x1BC */
-    u8 unk1BE[0x6];
+    s16 unk1BE; /* 0x1BE */
+    s16 unk1C0; /* 0x1C0 */
+    s16 unk1C2; /* 0x1C2 */
     s16 unk1C4; /* 0x1C4 */
-    u8 unk1C6[0x10];
+    s16 unk1C6; /* 0x1C6 */
+    s16 unk1C8; /* 0x1C8 */
+    s16 unk1CA; /* 0x1CA */
+    s16 unk1CC; /* 0x1CC */
+    s16 unk1CE; /* 0x1CE */
+    s16 unk1D0; /* 0x1D0 */
+    s16 unk1D2; /* 0x1D2 */
+    s16 unk1D4; /* 0x1D4 */
     s16 lap; /* 0x1D6 */
-    u8 unk1D8[0x4];
+    s16 unk1D8; /* 0x1D8 */
+    u8 unk1DA[0x2];
     s16 unk1DC; /* 0x1DC */
     s16 unk1DE; /* 0x1DE */
     s16 segment; /* 0x1E0 */
-    u8 unk1E2[0xA];
+    s16 unk1E2; /* 0x1E2 */
+    s16 unk1E4; /* 0x1E4 */
+    u8 unk1E6[0x4];
+    s16 unk1EA; /* 0x1EA */
     s16 type; /* 0x1EC */
     u8 unk1EE[0x2];
     s32 sortKey; /* 0x1F0 */
     s32 lastSegment; /* 0x1F4 */
     s32 regionIndex; /* 0x1F8 */
-    u8 unk1FC[0x4];
+    s32 unk1FC; /* 0x1FC */
     s8 mode; /* 0x200 */
     u8 unk201[0x2];
     s8 unk203; /* 0x203 */
     s8 place; /* 0x204 */
     s8 assistRank; /* 0x205 */
     s8 lane; /* 0x206 */
-    u8 unk207[0x2];
+    u8 unk207; /* 0x207 */
+    u8 unk208; /* 0x208 */
     s8 unk209; /* 0x209 */
     u8 unk20A; /* 0x20A */
     s8 slot; /* 0x20B */
@@ -132,15 +159,18 @@ typedef struct Car {
     u8 unk216[0x2];
     s32 lateralSpeed; /* 0x218 */
     s32 unk21C; /* 0x21C */
-    u8 unk220[0xC];
+    u8 unk220[0x8];
+    s32 unk228; /* 0x228 */
     s32 speedBoost; /* 0x22C */
-    u8 unk230[0x8];
+    u8 unk230[0x4];
+    s32 unk234; /* 0x234 */
     s32 flags; /* 0x238 */
     s32 unk23C; /* 0x23C */
     s32 frontGrip; /* 0x240 */
     s32 rearGrip; /* 0x244 */
     s16 unk248; /* 0x248 */
-    u8 unk24A[0x4];
+    s16 unk24A; /* 0x24A */
+    s16 unk24C; /* 0x24C */
     s16 targetSegment; /* 0x24E */
     s32 avoidX; /* 0x250 */
     s32 avoidY; /* 0x254 */
@@ -152,15 +182,24 @@ typedef struct Car {
     u8 unk269; /* 0x269 */
     u8 unk26A; /* 0x26A */
     u8 unk26B; /* 0x26B */
-    u8 unk26C[0xA];
+    u8 unk26C[0x8];
+    u16 unk274; /* 0x274 */
     s16 unk276; /* 0x276 */
-    u8 unk278[0xC];
+    u16 unk278; /* 0x278 */
+    u16 unk27A; /* 0x27A */
+    u16 unk27C; /* 0x27C */
+    u16 unk27E; /* 0x27E */
+    u16 unk280; /* 0x280 */
+    s16 unk282; /* 0x282 */
     u16 unk284; /* 0x284 */
     s16 unk286; /* 0x286 */
     s16 unk288; /* 0x288 */
     s16 unk28A; /* 0x28A */
     s32 unk28C; /* 0x28C */
-    u8 unk290[0x10];
+    s32 unk290; /* 0x290 */
+    s32 unk294; /* 0x294 */
+    s32 unk298; /* 0x298 */
+    s32 unk29C; /* 0x29C */
     s16 unk2A0; /* 0x2A0 */
     s16 unk2A2; /* 0x2A2 */
     s16 unk2A4; /* 0x2A4 */
@@ -171,7 +210,8 @@ typedef struct Car {
     char *name; /* 0x34C */
     u32 update; /* 0x350 */
     void (*callback)(u8 *); /* 0x354 */
-    u8 unk358[0x8];
+    s8 unk358; /* 0x358 */
+    u8 unk359[0x7];
     u16 state; /* 0x360 */
     u16 frontRightContact; /* 0x362 */
     u16 frontLeftContact; /* 0x364 */
@@ -181,9 +221,10 @@ typedef struct Car {
     u8 *unk36C; /* 0x36C */
     struct ContactShape *shape; /* 0x370 */
     u8 unk374; /* 0x374 */
-    u8 unk375[0x1];
+    s8 unk375; /* 0x375 */
     u8 driver; /* 0x376 */
-    u8 unk377[0x9];
+    u8 unk377[0x5];
+    s32 unk37C; /* 0x37C */
     s32 cameraAngle; /* 0x380 */
     u8 unk384[0x4];
     s16 unk388; /* 0x388 */
@@ -191,18 +232,31 @@ typedef struct Car {
     u8 unk38C[0x14];
     s32 unk3A0; /* 0x3A0 */
     u16 unk3A4; /* 0x3A4 */
-    u8 unk3A6[0x11];
+    u8 unk3A6[0x8];
+    u8 unk3AE; /* 0x3AE */
+    u8 unk3AF; /* 0x3AF */
+    u8 unk3B0; /* 0x3B0 */
+    u8 unk3B1; /* 0x3B1 */
+    u8 unk3B2[0x4];
+    s8 unk3B6; /* 0x3B6 */
     u8 unk3B7; /* 0x3B7 */
-    u8 unk3B8[0x1];
+    s8 unk3B8; /* 0x3B8 */
     u8 unk3B9; /* 0x3B9 */
-    u8 unk3BA[0x2];
+    s16 unk3BA; /* 0x3BA */
     s32 driveInput; /* 0x3BC */
-    u8 unk3C0[0x9];
+    s32 unk3C0; /* 0x3C0 */
+    s8 unk3C4; /* 0x3C4 */
+    s8 unk3C5; /* 0x3C5 */
+    u8 unk3C6; /* 0x3C6 */
+    u8 unk3C7; /* 0x3C7 */
+    u8 unk3C8[0x1];
     u8 unk3C9; /* 0x3C9 */
-    u8 unk3CA[0x2];
+    s8 unk3CA; /* 0x3CA */
+    u8 unk3CB[0x1];
     s32 penalty; /* 0x3CC */
     s32 unk3D0; /* 0x3D0 */
-    u8 unk3D4[0x8];
+    u8 unk3D4[0x4];
+    s32 unk3D8; /* 0x3D8 */
     struct Car *prev; /* 0x3DC */
     struct Car *next; /* 0x3E0 */
     CarLink order; /* 0x3E4 */
