@@ -11,6 +11,7 @@
 #include <psxsdk/libspu.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "car.h"
 #include "graphics.h"
 #include "menu.h"
 #include "objects.h"
@@ -2102,43 +2103,14 @@ typedef struct CrashBox {
     s32 unk24;
 } CrashBox;
 
-typedef struct CrashCar {
-    s32 x;
-    s32 y;
-    s32 z;
-    u8 unkC[0x90 - 0xC];
-    s32 unk90;
-    s32 unk94;
-    s32 unk98;
-    u8 unk9C[0xF4 - 0x9C];
-    u8 unkF4;
-    u8 unkF5[0x1EC - 0xF5];
-    s16 unk1EC;
-    u8 unk1EE[0x268 - 0x1EE];
-    u8 unk268;
-    u8 unk269[0x276 - 0x269];
-    s16 unk276;
-    u8 unk278[0x370 - 0x278];
-    struct {
-        u8 unk0[0x40];
-        CrashBox *box;
-    } *unk370;
-    u8 unk374[0x38A - 0x374];
-    s16 unk38A;
-    u8 unk38C[0x3A4 - 0x38C];
-    u16 unk3A4;
-    u8 unk3A6[0x414 - 0x3A6];
-    s32 unk414;
-} CrashCar;
-
 typedef struct {
     u8 unk0[0x20];
     s16 unk20;
     u8 unk22[0xC8 - 0x22];
 } Unk800B8648;
 
-extern CrashCar *D_800A7550p[] asm("D_800A7550");
-extern CrashCar *gCrashCar asm("D_800A3960");
+extern Car *D_800A7550p[] asm("D_800A7550");
+extern Car *gCrashCar asm("D_800A3960");
 extern u8 D_800A35F8;
 extern u8 D_800A35FC;
 extern s32 D_800A2F50Absolute[];
@@ -2148,7 +2120,7 @@ extern Unk800B8648 D_800B8648[];
 void RaceUpdateCrashTrigger(void) {
     s32 pos[3];
     s8 i;
-    CrashCar *car;
+    Car *car;
     CrashBox *box;
     Unk800B8648 *row;
 
@@ -2163,11 +2135,11 @@ void RaceUpdateCrashTrigger(void) {
                         if (car->unk268 == 0) {
                             if (car->unk414 != 0) {
                                 car->unk414 -= 1;
-                            } else if (car->unk1EC != 0
+                            } else if (car->type != 0
                                            ? D_800A2F50Absolute[0] * 9 / 10 <
                                                  *(s16 *)((u8 *)car + 0x92)
-                                           : car->unk98 - 0xA0000 <
-                                                 car->unk90) {
+                                           : car->maxSpeed - 0xA0000 <
+                                                 car->speed) {
                                 D_800A35F8 = 1;
                                 car->unk414 = -1;
                                 car->unk276 = 1;
@@ -2196,7 +2168,7 @@ void RaceUpdateCrashTrigger(void) {
             return;
         }
         if (D_800A397C[0] == 2 &&
-            (gCrashCar->unk90 != 0 || gCrashCar->unk38A != 0x200)) {
+            (gCrashCar->speed != 0 || gCrashCar->unk38A != 0x200)) {
             row = D_800B8648;
             for (i = 0; i < 24; i++) {
                 row->unk20 = 0;
@@ -2206,15 +2178,15 @@ void RaceUpdateCrashTrigger(void) {
                 return;
             }
         }
-        box = gCrashCar->unk370->box;
+        box = (CrashBox *)gCrashCar->shape->corners;
         pos[0] = (box->unk4 + box->unk1C) >> 1;
         pos[1] = (box->unk8 + box->unk20) >> 1;
         pos[2] = (box->unkC + box->unk24) >> 1;
         func_8001EEC4((s32 *)gCrashCar);
         MatrixRotateVector(pos);
-        pos[0] += gCrashCar->x + RandomScaledGet(200) - 100;
-        pos[1] += gCrashCar->y + RandomScaledGet(200) - 100;
-        pos[2] += gCrashCar->z + 100;
+        pos[0] += gCrashCar->pos.x + RandomScaledGet(200) - 100;
+        pos[1] += gCrashCar->pos.y + RandomScaledGet(200) - 100;
+        pos[2] += gCrashCar->pos.z + 100;
         func_8003644C(D_800A35F8 == 1 ? 2 : 1, pos[0], pos[1], pos[2]);
     }
 }
@@ -2284,68 +2256,6 @@ void RaceInitCrashCandidates(void) {
  * needle, lap and place text, and the driver warning messages. yOffset moves
  * the whole layout vertically (split screen). The field names are placeholders
  * until the full Car layout is known. */
-typedef struct HudCar {
-    u8 unk0[0x84];
-    s32 unk84;
-    u8 unk88[0x90 - 0x88];
-    s32 unk90;
-    u8 unk94[0xF4 - 0x94];
-    u8 unkF4;
-    u8 unkF5;
-    u8 unkF6;
-    u8 unkF7;
-    u8 unkF8;
-    u8 unkF9;
-    u8 unkFA[0x108 - 0xFA];
-    s16 unk108;
-    u8 unk10A[0x10C - 0x10A];
-    s16 unk10C;
-    u8 unk10E[0x110 - 0x10E];
-    s16 unk110;
-    u8 unk112[0x114 - 0x112];
-    s16 unk114;
-    u8 unk116[0x1BC - 0x116];
-    s16 unk1BC;
-    u8 unk1BE[0x1D6 - 0x1BE];
-    s16 lap;
-    u8 unk1D8[0x1E0 - 0x1D8];
-    s16 unk1E0;
-    u8 unk1E2[0x204 - 0x1E2];
-    s8 place;
-    u8 unk205[0x209 - 0x205];
-    s8 unk209;
-    u8 unk20A;
-    u8 unk20B;
-    s8 unk20C;
-    u8 unk20D;
-    s16 unk20E;
-    u8 unk210[0x258 - 0x210];
-    s32 unk258;
-    s32 unk25C;
-    u8 unk260[0x268 - 0x260];
-    u8 unk268;
-    u8 unk269[0x28C - 0x269];
-    s32 unk28C;
-    u8 unk290[0x2B8 - 0x290];
-    s32 unk2B8;
-    u8 unk2BC[0x354 - 0x2BC];
-    void (*unk354)(u8 *);
-    u8 unk358[0x3A4 - 0x358];
-    u32 unk3A4;
-    u8 unk3A8[0x3B7 - 0x3A8];
-    u8 unk3B7;
-    u8 unk3B8[0x3FC - 0x3B8];
-    u8 unk3FC;
-    s8 unk3FD;
-    u8 unk3FE[0x401 - 0x3FE];
-    u8 unk401;
-    s16 unk402;
-    u8 unk404[0x40C - 0x404];
-    s32 unk40C;
-    u8 unk410;
-    u8 unk411[0x414 - 0x411];
-    s32 unk414;
-} HudCar;
 
 typedef struct HudLayout {
     s16 unk0;
@@ -2429,11 +2339,11 @@ extern void GraphicsSetColor(u8, u8, u8);
 extern s16 HudTextWidthS16(u8 *) asm("HudTextWidth");
 extern void HudDrawTextS16(char *, s32, s16, s32) asm("HudDrawText");
 extern void SoundStopConditionalSlots(s8);
-extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
+extern void func_80041564Hud(Car *, s32) asm("func_80041564");
 
 /* Value that D_800A3480 follows, the field at 0x20E of the car in
  * gPlayerCar. */
-#define HUD_STEER_TARGET (((HudCar *)gPlayerCar[0])->unk20E)
+#define HUD_STEER_TARGET (((Car *)gPlayerCar[0])->steering)
 
 /* Centred warning text with a box behind it. */
 #define HUD_MESSAGE(text, ty)                                                  \
@@ -2447,7 +2357,7 @@ extern void func_80041564Hud(HudCar *, s32) asm("func_80041564");
                                      0xD, 0, 0, 0, 1);                         \
     }
 
-void HudDrawCar(HudCar *car, s16 yOffset) {
+void HudDrawCar(Car *car, s16 yOffset) {
     char buf[8];
     HudPoint pts[4];
     u16 ang;
@@ -2474,7 +2384,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
 
     split = 0;
     flag = 0;
-    if (car->unk20C != 0 || gSplitScreenMode[0] != 0) {
+    if (car->cameraMode != 0 || gSplitScreenMode[0] != 0) {
         split = 1;
     }
     if (D_800A2ED4[0] == 0) {
@@ -2493,28 +2403,28 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
         } else if (level < cur) {
             car->unk3FD = cur - 1;
         }
-        if (D_800A372C != 0 && car->unk401 != 0) {
+        if (D_800A372C != 0 && (u8)car->unk401 != 0) {
             car->unk402 =
                 car->unk402 <= car->unk108 - 0x64
                     ? car->unk402 + 0x64
                     : (car->unk402 >= car->unk108 + 0x64 ? car->unk402 - 0x64
                                                          : car->unk108);
-            car->unk40C = car->unk90 - 0x10000 >= car->unk40C
+            car->unk40C = car->speed - 0x10000 >= car->unk40C
                               ? car->unk40C + 0x10000
-                              : (car->unk40C >= car->unk90 + 0x10000
+                              : (car->unk40C >= car->speed + 0x10000
                                      ? car->unk40C - 0x10000
-                                     : car->unk90);
+                                     : car->speed);
         } else {
             car->unk402 =
                 car->unk402 <= car->unk108 - 0x3E8
                     ? car->unk402 + 0x3E8
                     : (car->unk402 >= car->unk108 + 0x3E8 ? car->unk402 - 0x3E8
                                                           : car->unk108);
-            car->unk40C = car->unk90 - 0x140000 >= car->unk40C
+            car->unk40C = car->speed - 0x140000 >= car->unk40C
                               ? car->unk40C + 0x140000
-                              : (car->unk40C >= car->unk90 + 0x140000
+                              : (car->unk40C >= car->speed + 0x140000
                                      ? car->unk40C - 0x140000
-                                     : car->unk90);
+                                     : car->speed);
         }
         /* D_800A3480 eases toward the target by 1, 4 or 8 a frame and is then
          * clamped. The three stores in the first arms name the byte three ways
@@ -2563,7 +2473,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
         if (car->unk209 != 0) {
             gOrderingTableAbsolute[0] = gOrderingTable[0] + 4;
             if (split) {
-                if (car == (HudCar *)gPlayerCar[0]) {
+                if (car == (Car *)gPlayerCar[0]) {
                     seg = D_800A757C;
                     needle = D_800A78D4;
                     tiles = D_800A7924;
@@ -2666,7 +2576,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
             FontDrawString(buf, layout->unkC, layout->unkE + yOffset, 2);
             func_80018768((void *)(car->lap != 0 ? car->unk258 : 0x7FFFFFFF),
                           layout->unk10, layout->unk12 + yOffset, 2);
-            func_80018768((void *)car->unk25C, layout->unk14,
+            func_80018768((void *)car->time, layout->unk14,
                           layout->unk16 + yOffset, 2);
             if (split) {
                 func_800188B0(car->unk40C, car->unkF7, layout->unk0,
@@ -2684,18 +2594,19 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
         }
         if (D_800A2EC8[0] == 0) {
             if (D_800A2EDC[0] != 0 && car->unkF4 != 0 &&
-                (car->unk354 != func_80025730 ? (car->unk3A4 & 0x100F) != 0
-                                              : car->unk1BC == 4)) {
+                (car->callback != func_80025730
+                     ? (*(u32 *)&car->unk3A4 & 0x100F) != 0
+                     : car->unk1BC == 4)) {
                 if (D_800A2EE0[0] != 0) {
                     if (car->unk3B7 == 0) {
                         GraphicsSetColor(0xFF, 0x40, 0x40);
                         HUD_MESSAGE(D_8009ADD8, 0xA5);
                     }
-                } else if (car->unk90 == 0) {
-                    car->unkF9 = 0;
-                    car->unk90 = 0;
+                } else if (car->speed == 0) {
+                    car->sliding = 0;
+                    car->speed = 0;
                     car->unk84 = 0;
-                    car->unk410 = 0;
+                    car->reverseSpeed = 0;
                     car->unk414 = -1;
                     SoundStopConditionalSlots(0);
                     func_80041564Hud(car, 0x44);
@@ -2705,7 +2616,7 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                 D_800A3910 = 0x7FFF;
             }
             if (gSplitScreenMode[0] != 0 && D_800A2EDC[0] != 0 &&
-                D_800A2EE0[0] == 0 && (car->unk3A4 & 0x100F)) {
+                D_800A2EE0[0] == 0 && (*(u32 *)&car->unk3A4 & 0x100F)) {
                 GraphicsSetColor(0xFF, 0x40, 0x40);
                 HUD_MESSAGE(D_8009AE10, 0xD2);
                 return;
@@ -2714,9 +2625,9 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                 if (car->unk28C == 0) {
                     GraphicsSetColor(0xFF, 0x40, 0x40);
                     HUD_MESSAGE(D_8009ADFC, 0xB4);
-                    if (car->unkF4 != 0 && car->unk90 == 0) {
+                    if (car->unkF4 != 0 && car->speed == 0) {
                         car->unk414 = -1;
-                        SoundStopSlot((s8)(car->unk20B * 2 + 0xE));
+                        SoundStopSlot((s8)((u8)car->slot * 2 + 0xE));
                         func_80041564Hud(car, 0x44);
                         car->unkF4 = 0;
                     }
@@ -2726,17 +2637,18 @@ void HudDrawCar(HudCar *car, s16 yOffset) {
                         HUD_MESSAGE(D_8009AE0C, 0xB4);
                         func_80041564Hud(car, 0x41);
                     }
-                    if (car->unk2B8 <= 0xCE3FF) {
+                    if (car->wheel[0].unkC <= 0xCE3FF) {
                         GraphicsSetColor(
                             0xFF,
-                            (((car->unk2B8 - 0xA0000) << 7) / 189440) + 0x40,
+                            (((car->wheel[0].unkC - 0xA0000) << 7) / 189440) +
+                                0x40,
                             0x40);
                         HUD_MESSAGE(D_8009ADF8, 0xC3);
                         func_80041564Hud(car, 0x48);
                     }
                     if (ABS(MathGetAngleDelta(
-                            car->unk114,
-                            ((HudNode *)gTrackSections[0])[car->unk1E0]
+                            car->heading,
+                            ((HudNode *)gTrackSections[0])[car->segment]
                                 .unk10)) > 0x120) {
                         GraphicsSetColor(0xFF, 0x40, 0x40);
                         HUD_MESSAGE(D_8009AE00, 0xD2);
@@ -2756,7 +2668,7 @@ extern s8 D_800A2FD4[4];
 extern u32 gGlareCursorLui asm("gPrimitiveCursorAbsolute");
 extern s32 D_800A38AC[];
 
-void SceneDrawSunGlare(HudCar *car) {
+void SceneDrawSunGlare(Car *car) {
     VECTOR sunDir;
     MATRIX unused;
     SVECTOR sun;
@@ -2788,7 +2700,7 @@ void SceneDrawSunGlare(HudCar *car) {
     if (D_800A2CE0[0] == 3 && D_800A3A60gp != 0) {
         return;
     }
-    if (car->unk20C != 6) {
+    if (car->cameraMode != 6) {
         if (angle < 0x200) {
             glare = 0xFF - angle;
         } else {
@@ -2800,7 +2712,7 @@ void SceneDrawSunGlare(HudCar *car) {
     if (glare <= 0) {
         return;
     }
-    if (car->unk20C == 0) {
+    if (car->cameraMode == 0) {
         D_800A7984[0].r0 = glare;
         D_800A7984[0].g0 = glare;
         D_800A7984[0].b0 = glare;
@@ -4690,32 +4602,6 @@ extern char *D_8009ADEC[];
 extern char *D_8009ADF0[];
 extern char *D_8009ADF4[];
 extern char *D_8009AE94[];
-typedef struct Car {
-    u8 unk0[0xF4];
-    u8 unkF4;
-    u8 unkF5[0x1D6 - 0xF5];
-    s16 lap;
-    u8 unk1D8[0x1E0 - 0x1D8];
-    s16 unk1E0;
-    u8 unk1E2[0x1EC - 0x1E2];
-    s16 unk1EC;
-    u8 unk1EE[0x204 - 0x1EE];
-    s8 place;
-    u8 unk205[0x25C - 0x205];
-    s32 unk25C;
-    s32 unk260;
-    s32 unk264;
-    u8 unk268[0x34C - 0x268];
-    char *name;
-    u8 unk350[0x3E8 - 0x350];
-    struct CarLink *unk3E8;
-} Car;
-
-typedef struct CarLink {
-    u8 unk0[8];
-    Car *next;
-} CarLink;
-
 extern s32 sprintfRow(char *, char *, ...) asm("sprintf");
 extern void func_80050028Row(char *, s32, s32, s32);
 asm(".globl func_80050028Row\nfunc_80050028Row = HudDrawText");
@@ -4756,7 +4642,7 @@ void HudDrawStandings(s8 firstRow, s32 y) {
                     gTextColor = 9;
                     FontDrawColoredIntegerRow(((Car *)gPlayerCar[0])->lap,
                                               gStandingsLapX + 8, textY, 0);
-                    HudDrawTimeRow(((Car *)gPlayerCar[0])->unk25C,
+                    HudDrawTimeRow(((Car *)gPlayerCar[0])->time,
                                    gStandingsTimeX, textY, 0, 1);
                     GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80,
                                      0);
@@ -4810,7 +4696,7 @@ void HudDrawStandings(s8 firstRow, s32 y) {
     }
     entry = (Car *)D_800A35E0[0];
     for (rowIndex = 0; rowIndex < (u8)firstRow; rowIndex++) {
-        entry = entry->unk3E8->next;
+        entry = ((CarLink *)entry->order.node.previous)->car;
     }
     rowIndex = firstRow;
     row = 1;
@@ -4855,9 +4741,9 @@ void HudDrawStandings(s8 firstRow, s32 y) {
                 } else {
                     gap = (s16)(((((Car *)D_800A35E0[0])->lap *
                                       gTrackSectionCount[0] +
-                                  ((Car *)D_800A35E0[0])->unk1E0) -
+                                  ((Car *)D_800A35E0[0])->segment) -
                                  (entry->lap * gTrackSectionCount[0] +
-                                  entry->unk1E0)) /
+                                  entry->segment)) /
                                 gTrackSectionCount[0]);
                     gTextColor = 9;
                     if (gap > 0) {
@@ -4886,7 +4772,7 @@ void HudDrawStandings(s8 firstRow, s32 y) {
                     }
                 }
             }
-            if (entry->unk1EC == 0 && D_800A2E94[0] >= 3) {
+            if (entry->type == 0 && D_800A2E94[0] >= 3) {
                 GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
             if (row == 15) {
@@ -4894,7 +4780,7 @@ void HudDrawStandings(s8 firstRow, s32 y) {
             }
             rowIndex++;
             row++;
-            entry = entry->unk3E8->next;
+            entry = ((CarLink *)entry->order.node.previous)->car;
             y += 12;
         } while (rowIndex < D_800A2E94[0]);
     }
@@ -6153,15 +6039,6 @@ extern s32 D_800A2F00Sw[] asm("D_800A2F00");
 extern void CarUpdateState(u8 *);
 void func_8005157C(void);
 
-typedef struct CautionCar {
-    u8 unk0[0x120];
-    s16 unk120;
-    u8 unk122[0x3FC - 0x122];
-    u8 unk3FC;
-    u8 unk3FD[0x410 - 0x3FD];
-    u8 unk410;
-} CautionCar;
-
 /* Runs the caution period. While D_800A3764 is set it starts the yellow
  * flag on the first frame, then updates every car and returns 1 until all
  * cars are settled and the 600-frame timer runs out. Afterwards it counts
@@ -6175,14 +6052,14 @@ s32 RaceUpdateCaution(void) {
 
     if (D_800A3764 != 0) {
         if (D_800A39F8 == 0) {
-            CautionCar *player;
+            Car *player;
 
             D_800A3564u = 1;
             D_800A34DC = 1;
-            player = (CautionCar *)gPlayerCarLui;
-            player->unk410 = 0;
+            player = (Car *)gPlayerCarLui;
+            player->reverseSpeed = 0;
             player->unk120 = 0;
-            ((CautionCar *)gPlayerCarLui)->unk3FC = 0;
+            ((Car *)gPlayerCarLui)->unk3FC = 0;
             side = CarGetTrackSide(gPlayerCarLui, 0);
             if (side == 1) {
                 *(s16 *)(gPlayerCarLui + 0x288) = 1;
@@ -6436,44 +6313,17 @@ void SceneSetOverlayColor(u8 arg0, u8 arg1, u8 arg2) {
 
 extern s32 D_800A3598[];
 
-/* The car block as the restart-order queue sees it: unk3F4 chains the
- * field list, unk404/unk408 receive the rebuilt order. */
-typedef struct QueueCar {
-    u8 unk0[0xF4];
-    u8 unkF4;
-    u8 unkF5[0x1D6 - 0xF5];
-    s16 lap;
-    u8 unk1D8[0x1E0 - 0x1D8];
-    s16 unk1E0;
-    u8 unk1E2[0x288 - 0x1E2];
-    s16 unk288;
-    u8 unk28A[0x3A4 - 0x28A];
-    u16 unk3A4;
-    u8 unk3A6[0x3F4 - 0x3A6];
-    struct QueueCarLink *unk3F4;
-    u8 unk3F8[0x3FE - 0x3F8];
-    s8 unk3FE;
-    s8 unk3FF;
-    s8 unk400;
-    s8 unk401;
-    struct QueueCar *unk404;
-    s8 unk408;
-    s8 unk409;
-} QueueCar;
+/* The restart-order queue walks the section list (sectionLink) and
+ * rebuilds the order into unk404/unk408. */
 
-typedef struct QueueCarLink {
-    u8 unk0[8];
-    QueueCar *next;
-} QueueCarLink;
-
-extern QueueCar *D_800A37C0;
-extern QueueCar *D_800A3A64;
+extern Car *D_800A37C0;
+extern Car *D_800A3A64;
 extern u8 D_800A3670;
 extern s8 D_800A3564;
 
 void func_8005157C(void) {
-    QueueCar *arr[0x60];
-    QueueCar *car;
+    Car *arr[0x60];
+    Car *car;
     s32 playerDist;
     s8 i;
     s8 ahead;
@@ -6484,8 +6334,8 @@ void func_8005157C(void) {
     s8 dir;
     s32 pos;
 
-    car = (QueueCar *)D_800A35E0[0];
-    playerDist = (car->lap - 1) * gTrackSectionCount[0] + car->unk1E0;
+    car = (Car *)D_800A35E0[0];
+    playerDist = (car->lap - 1) * gTrackSectionCount[0] + car->segment;
     ahead = 0;
     linked = 0;
     behind = 0;
@@ -6523,7 +6373,7 @@ void func_8005157C(void) {
                         D_800A3A64 = car;
                     }
                 } else if (playerDist <
-                           car->lap * gTrackSectionCount[0] + car->unk1E0) {
+                           car->lap * gTrackSectionCount[0] + car->segment) {
                     car->unk3FE = -1;
                     car->unk3FF = -1;
                     arr[ahead * 2] = car;
@@ -6544,10 +6394,10 @@ void func_8005157C(void) {
                 }
             }
         }
-        car = car->unk3F4->next;
+        car = ((CarLink *)car->sectionLink.node.previous)->car;
     }
     if (D_800A3A64 == 0) {
-        D_800A3A64 = (QueueCar *)gPlayerCar[0];
+        D_800A3A64 = (Car *)gPlayerCar[0];
     }
     car = D_800A3A64;
     pos = 0;

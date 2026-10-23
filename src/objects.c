@@ -12,6 +12,7 @@
 #include <psxsdk/libc.h>
 #include <psxsdk/kernel.h>
 #include "game.h"
+#include "car.h"
 #include "cd.h"
 #include "graphics.h"
 #include "list.h"
@@ -100,12 +101,6 @@ void ReplayAllocBuffer(void) {
     D_800A2DF4Small = 1;
     gReplayLengthSmall = quotient;
 }
-
-typedef struct {
-    s32 x;
-    s32 y;
-    s32 z;
-} Vec3;
 
 /* Shared layout of a car and the camera that follows it. */
 typedef struct {
@@ -3644,21 +3639,6 @@ typedef struct TrackContact {
     ContactPoint *point3;
     struct TrackContact *next;
 } TrackContact;
-typedef struct ContactCorner {
-    u8 unk0[4];
-    s32 x;
-    s32 y;
-    u8 unkC[12];
-} ContactCorner;
-typedef struct ContactShape {
-    u8 unk0[28];
-    s16 frontExtent;
-    s16 rearExtent;
-    u8 unk20[2];
-    s16 halfWidth;
-    u8 unk24[28];
-    ContactCorner *corners;
-} ContactShape;
 typedef struct ContactCar {
     s32 x;
     s32 y;
@@ -5948,15 +5928,6 @@ s32 CarGetSteeringDivisor(s32 *car) {
 }
 
 extern s32 D_800A2E34;
-/* One 0x28-byte record per wheel, starting at car + 0x2AC. */
-typedef struct {
-    s16 unk0;
-    u8 unk2[0x2];
-    s16 unk4;
-    u8 unk6[0x6];
-    s32 unkC;
-    u8 unk10[0x18];
-} Wheel;
 typedef struct {
     u8 unk0[0x44];
     s32 dragScale;
@@ -6374,7 +6345,7 @@ s32 CarGetWheelGrip(CarDynamics *car, s16 surface, s32 idx) {
                         MathMultiplyFixed16(car->rearVelocityY, scale);
                     if (D_800A2E5A && car->speed > 0x12C0000) {
                         range = car->speed >> 20;
-                        if (car->wheel[idx].unk4 == 0) {
+                        if (car->wheel[idx].effect == 0) {
                             wheelBase = (u8 *)car + idx * 0x28;
                             if (RandomScaledGet(range) + 4 < 0) {
                                 *(s16 *)(wheelBase + 0x2B0) =
@@ -6383,8 +6354,8 @@ s32 CarGetWheelGrip(CarDynamics *car, s16 surface, s32 idx) {
                                 *(s16 *)(wheelBase + 0x2B0) =
                                     RandomScaledGet(car->speed >> 20) + 4;
                             }
-                            if (car->wheel[idx].unk4 > 14) {
-                                car->wheel[idx].unk4 = 14;
+                            if (car->wheel[idx].effect > 14) {
+                                car->wheel[idx].effect = 14;
                             }
                         }
                     }
@@ -6398,7 +6369,7 @@ s32 CarGetWheelGrip(CarDynamics *car, s16 surface, s32 idx) {
                     MathMultiplyFixed16(car->frontVelocityY, scale);
                 if (D_800A2E5A && car->speed > 0x12C0000) {
                     range = car->speed >> 20;
-                    if (car->wheel[idx].unk4 == 0) {
+                    if (car->wheel[idx].effect == 0) {
                         wheelBase = (u8 *)car + idx * 0x28;
                         if (RandomScaledGet(range) + 4 < 0) {
                             *(s16 *)(wheelBase + 0x2B0) =
@@ -6407,8 +6378,8 @@ s32 CarGetWheelGrip(CarDynamics *car, s16 surface, s32 idx) {
                             *(s16 *)(wheelBase + 0x2B0) =
                                 RandomScaledGet(car->speed >> 20) + 4;
                         }
-                        if (car->wheel[idx].unk4 > 14) {
-                            car->wheel[idx].unk4 = 14;
+                        if (car->wheel[idx].effect > 14) {
+                            car->wheel[idx].effect = 14;
                         }
                     }
                 }
