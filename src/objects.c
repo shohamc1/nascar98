@@ -12889,15 +12889,16 @@ void func_800365B8(s32 *out) {
     mask3 = 0x3FFFFF;
     entry = (u8 *)D_800B7398;
 head:
-    if (*(s16 *)(entry + 0x10) == 0) {
+    if (((Spark *)(entry - 0x10))->life == 0) {
         goto tail;
     }
     value = *out;
-    value = (value & mask1) | ((*(s32 *)(entry - 8) >> 7) & 0x7FF);
+    value = (value & mask1) | ((((Spark *)(entry - 0x10))->pos.x >> 7) & 0x7FF);
     *out = value;
-    value = (value & mask2) | (((*(s32 *)(entry - 4) >> 7) & 0x7FF) << 11);
+    value = (value & mask2) |
+            (((((Spark *)(entry - 0x10))->pos.y >> 7) & 0x7FF) << 11);
     *out = value;
-    temp = *(s32 *)entry;
+    temp = ((Spark *)(entry - 0x10))->pos.z;
     if (temp < 0) {
         temp = temp + 15;
     }
@@ -15538,12 +15539,12 @@ void func_80039B74(Car *arg0, s32 arg1) {
         entryAddr = (u8 *)(off12 + base);
         objX = *(s32 *)obj;
         eptr = *(u8 **)gTrackSections;
-        entryX = *(s32 *)entryAddr;
+        entryX = ((Vec3 *)entryAddr)->x;
         ptr = eptr + idx * 0x90;
-        w = (0x400 - *(u16 *)(ptr + 0x10)) & 0x3FF;
+        w = (0x400 - ((TrackSection *)ptr)->angle) & 0x3FF;
         tableA = ((s32 **)D_800A3A34Absolute)[0][w];
         prod = tableA * (objX - entryX);
-        entryY = *(s32 *)(entryAddr + 4);
+        entryY = ((Vec3 *)entryAddr)->y;
         objY = obj->pos.y;
         prod2 = ((s32 **)D_800A3A2CAbsolute)[0][w] * (objY - entryY);
         result = (prod + prod2) >> 16;

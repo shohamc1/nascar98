@@ -2831,7 +2831,7 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         }
     }
     if (*(s8 *)&((Car *)arg0)->unk374 == 4) {
-        *(s8 *)(arg0 + ((s32 *)D_800A2CF8)[-1] + 0x41C) = -1;
+        ((Car *)arg0)->unk41C[((s32 *)D_800A2CF8)[-1]] = -1;
         return 1;
     }
     speed = *(u8 *)&((Car *)arg0)->mode;

@@ -184,9 +184,9 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
             }
             gte_nclip();
             rv = r;
-            *(u8 *)(pe - 0x9) = g;
-            *(u8 *)(pe - 0x8) = b;
-            *(u8 *)(pe - 0xA) = rv;
+            ((LINE_F4 *)(pe - 0xE))->g0 = g;
+            ((LINE_F4 *)(pe - 0xE))->b0 = b;
+            ((LINE_F4 *)(pe - 0xE))->r0 = rv;
             gte_mfc2(gte, 24);
             if (D_800A2DE0[0] != 0) {
                 if (gte < 0) {
@@ -213,23 +213,23 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
             prim += 0x1C;
             pe += 0x1C;
             SetLineF2(prim);
-            xy0 = *(u16 *)(pe - 0x20);
-            xy1 = *(u16 *)(pe - 0x16);
-            xy2 = *(u16 *)(pe - 0x14);
-            *(u8 *)(pe - 0xA) = rgb[0];
-            xy3 = *(u16 *)(pe - 0x22);
+            xy0 = ((LINE_F4 *)(pe - 0x2A))->y0;
+            xy1 = ((LINE_F4 *)(pe - 0x2A))->x3;
+            xy2 = ((LINE_F4 *)(pe - 0x2A))->y3;
+            ((LINE_F2 *)(pe - 0xE))->r0 = rgb[0];
+            xy3 = ((LINE_F4 *)(pe - 0x2A))->x0;
             a0arg = (u32 *)otEntry;
-            *(u8 *)(pe - 0x9) = rgb[1];
+            ((LINE_F2 *)(pe - 0xE))->g0 = rgb[1];
             btmp = rgb[2];
-            xy3 = *(u16 *)((u8 *)(pe) + -0x22);
+            xy3 = ((LINE_F4 *)(pe - 0x2A))->x0;
             a1arg = (u32 *)prim;
             asm volatile("lui %0, 0x300" : "=r"(a2arg));
             prim += 0x10;
-            *(u16 *)(pe - 0x4) = xy0;
-            *(u16 *)(pe - 0x2) = xy1;
-            *(u16 *)(pe + 0x0) = xy2;
-            *(u16 *)(pe - 0x6) = xy3;
-            *(u8 *)(pe - 0x8) = btmp;
+            ((LINE_F2 *)(pe - 0xE))->y0 = xy0;
+            ((LINE_F2 *)(pe - 0xE))->x1 = xy1;
+            ((LINE_F2 *)(pe - 0xE))->y1 = xy2;
+            ((LINE_F2 *)(pe - 0xE))->x0 = xy3;
+            ((LINE_F2 *)(pe - 0xE))->b0 = btmp;
             GraphicsAddTaggedPrimitive(a0arg, a1arg, a2arg);
             pe += 0x10;
         next:
@@ -12059,6 +12059,14 @@ void CdSetMixVolume(s32 arg) {
     CdMix(&vol);
 }
 
+/* The head of the file func_8005978C loads. A TIM image starts timOffset
+ * bytes in. */
+typedef struct SceneFileHeader {
+    u32 unk0;
+    u8 unk4[12];   /* 0x04: D_800A381C points here */
+    s32 timOffset; /* 0x10 */
+} SceneFileHeader;
+
 extern s32 FileSeekArgs(void *, s32, s32);
 extern void FileSeekArgsV(void *, s32, s32);
 extern void FileCloseArgs(s32);
@@ -12085,7 +12093,7 @@ void func_8005978C(void) {
     buf = tmp;
     FileRead(buf, 1, size, sector);
     FileCloseArgs(sector);
-    next = *(s32 *)(buf + 0x10);
+    next = ((SceneFileHeader *)buf)->timOffset;
     D_800A381C = buf + 4;
     D_800A3638 = buf;
     buf += next;

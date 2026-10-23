@@ -2752,20 +2752,26 @@ s32 AudioGetStreamFreeSpace(s32 *size) {
     return D_800A351C[0] - difference;
 }
 
+/* The head of a movie stream chunk. Both words are big-endian. */
+typedef struct StreamChunk {
+    u32 tag;  /* 0x00: four characters, such as "ad20" or "au00" */
+    u32 size; /* 0x04: bytes, header included */
+} StreamChunk;
+
 #define SWAP32(w)                                                              \
     (((w) >> 24) | (((w) >> 8) & 0xFF00) | (((w) & 0xFF00) << 8) | ((w) << 24))
 
-u32 AudioGetAdpcmSize(u32 *header) {
+u32 AudioGetAdpcmSize(StreamChunk *header) {
     u32 swapped;
     u32 size;
     u32 isAd2;
 
-    swapped = SWAP32(header[0]);
+    swapped = SWAP32(header->tag);
     isAd2 = (swapped & 0xFFFFFF00) == 0x61643200;
     if ((swapped & 0xFFFF0000) == 0x61640000) {
-        size = SWAP32(header[1]) - 0x10;
+        size = SWAP32(header->size) - 0x10;
     } else {
-        size = SWAP32(header[1]) - 0xC;
+        size = SWAP32(header->size) - 0xC;
     }
     if (isAd2) {
         size >>= 1;
@@ -2788,14 +2794,14 @@ void AudioQueueAdpcm(u8 *block) {
     u8 *rightSource;
     u8 *secondSource;
 
-    swapped = SWAP32(*((u32 *)block));
+    swapped = SWAP32(((StreamChunk *)block)->tag);
     isAd2 = (swapped & 0xFFFFFF00) == 0x61643200;
     if ((swapped & 0xFFFF0000) == 0x61640000) {
         leftSource = block + 0x10;
-        size = SWAP32(*((u32 *)(block + 4))) - 0x10;
+        size = SWAP32(((StreamChunk *)block)->size) - 0x10;
     } else {
         leftSource = block + 0xC;
-        size = SWAP32(*((u32 *)(block + 4))) - 0xC;
+        size = SWAP32(((StreamChunk *)block)->size) - 0xC;
     }
     rightSource = leftSource;
     if (isAd2) {
@@ -2927,7 +2933,7 @@ void AudioQueueStereoAdpcm(u8 *block) {
     volatile u32 *rightState;
     volatile u32 *tailState;
 
-    headerWord = *(u32 *)(block + 4);
+    headerWord = ((StreamChunk *)block)->size;
     headerSize = SWAP32(headerWord) - 0x10;
     encodedLength = headerSize >> 1;
     blockCount = encodedLength / 15;

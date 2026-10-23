@@ -293,8 +293,8 @@ s32 CardOpenFile(char *path, s32 flags) {
 
 extern void _new_card(void);
 extern void _card_read(s32, s32, s32);
-s32 CardReadSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
-                    s32 buffer) {
+s32 CardReadSectors(struct DIRENTRY *entry, s32 firstSector, s32 sectorCount,
+                    s32 slot, s32 buffer) {
     s32 channel;
     s32 sector;
     s32 offset;
@@ -306,7 +306,7 @@ s32 CardReadSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
     if (buffer == 0)
         goto success;
     retries = offset = 0;
-    sector = (firstSector & 0xFF) + *(s32 *)(entry + 0x20);
+    sector = (firstSector & 0xFF) + entry->head;
     limit = (sector & 0xFFFF) + sectorCount;
     if ((sector & 0xFFFF) >= limit)
         goto success;
@@ -330,8 +330,8 @@ success:
 }
 
 extern void _card_write(s32, s32, s32);
-s32 CardWriteSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
-                     s32 buffer) {
+s32 CardWriteSectors(struct DIRENTRY *entry, s32 firstSector, s32 sectorCount,
+                     s32 slot, s32 buffer) {
     s32 sector;
     u32 retries;
     s32 offset;
@@ -341,7 +341,7 @@ s32 CardWriteSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
 
     offset = 0;
     retries = 0;
-    sector = (firstSector & 0xFF) + *(s32 *)(entry + 0x20);
+    sector = (firstSector & 0xFF) + entry->head;
     channel = ((slot & 0xFF) != 0) * 0x10;
     limit = (sector & 0xFFFF) + (sectorCount & 0xFF);
     if ((sector & 0xFFFF) < limit) {

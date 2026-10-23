@@ -48,10 +48,10 @@ s32 CardFindFirstFile(char *path, struct DIRENTRY *entry);
 s32 CardFormat(s32 slot);
 s32 func_80059F0C(s32 slot);
 s32 CardOpenFile(char *path, s32 flags);
-s32 CardReadSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
-                    s32 buffer);
-s32 CardWriteSectors(s32 entry, s32 firstSector, s32 sectorCount, s32 slot,
-                     s32 buffer);
+s32 CardReadSectors(struct DIRENTRY *entry, s32 firstSector, s32 sectorCount,
+                    s32 slot, s32 buffer);
+s32 CardWriteSectors(struct DIRENTRY *entry, s32 firstSector, s32 sectorCount,
+                     s32 slot, s32 buffer);
 s32 CardCountOtherFileBlocks(s32 slot, char *excludedName);
 s16 MenuCharWidth(s8 arg0);
 void MenuSetAllObjectOrderingDepths(s16 value);
@@ -662,6 +662,14 @@ extern MenuObj *D_800A3918;
 MenuObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
 MenuObj *MenuCreateTextObject(s32, s32);
 
+/* One of the 17 rows of the records table at D_800B9BB4. */
+typedef struct RecordRow {
+    u8 initials[4]; /* 0x00: four characters, blank-filled */
+    s16 unk4;
+    s16 unk6;
+    s32 unk8; /* 0x08: starts at 0x7FFFFFFF, likely a best time */
+} RecordRow;
+
 void func_80068CE4(void) {
     extern char *D_8009A498[];
     extern char *D_8009A4B0[];
@@ -838,17 +846,17 @@ void func_80068CE4(void) {
                 break;
 
             case 1:
-                value = *((s16 *)(record + 4));
+                value = ((RecordRow *)record)->unk4;
                 flag = 1;
                 break;
 
             case 2:
-                value = *((s16 *)(record + 6));
+                value = ((RecordRow *)record)->unk6;
                 flag = 1;
                 break;
 
             case 3:
-                value = *((s32 *)(record + 8));
+                value = ((RecordRow *)record)->unk8;
                 break;
             }
 
@@ -1635,8 +1643,8 @@ s32 CardLoadNameList(u8 requestedSlot) {
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
         return 1;
     }
-    if ((CardReadSectors((s32)&entry, 0x1A, 1, gCardSlot, (s32)D_800A3A0C) &
-         0xFF) == 0) {
+    if ((CardReadSectors(&entry, 0x1A, 1, gCardSlot, (s32)D_800A3A0C) & 0xFF) ==
+        0) {
         gCardMenuMessage = 7;
         return 0;
     }
@@ -1651,8 +1659,7 @@ s32 CardLoadNameList(u8 requestedSlot) {
         return 0;
     }
     sectors = (count * 0x13C + 0x83) >> 7;
-    if ((CardReadSectors((s32)&entry, 0x1A, sectors, gCardSlot,
-                         (s32)D_800A3A0C) &
+    if ((CardReadSectors(&entry, 0x1A, sectors, gCardSlot, (s32)D_800A3A0C) &
          0xFF) != 0) {
         src = D_800A3A0C + 4;
         for (i = 0; i < D_800A3968; i++) {
@@ -1707,7 +1714,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
             gCardMenuMessage = 0xA;
             return 0;
         }
-        if ((CardWriteSectors((s32)&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
+        if ((CardWriteSectors(&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
              0xFF) == 0) {
             gCardMenuMessage = 8;
             return 0;
@@ -1744,8 +1751,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
                 }
             }
         }
-        if ((CardWriteSectors((s32)&entry, 4, 0x16, gCardSlot,
-                              (s32)D_800A366C) &
+        if ((CardWriteSectors(&entry, 4, 0x16, gCardSlot, (s32)D_800A366C) &
              0xFF) == 0) {
             gCardMenuMessage = 8;
             return 0;
@@ -1759,8 +1765,7 @@ s32 CardWriteSaveSlot(char *record, u8 overwrite, u8 index) {
         slots[D_800A3968 - 1] = *(SaveSlot *)record;
     }
     sectors = (D_800A3968 * 0x13C + 0x83) >> 7;
-    if ((CardWriteSectors((s32)&entry, 0x1A, sectors, gCardSlot,
-                          (s32)D_800A3A0C) &
+    if ((CardWriteSectors(&entry, 0x1A, sectors, gCardSlot, (s32)D_800A3A0C) &
          0xFF) == 0) {
         gCardMenuMessage = 8;
         return 0;
@@ -1823,8 +1828,8 @@ s32 CardLoadSaveTable(u8 updateDriverRecords) {
     if ((CardFindFirstFile(path, &entry) & 0xFF) == 0) {
         return 1;
     }
-    if ((CardReadSectors((s32)&entry, 4, 1, gCardSlot, (s32)D_800A366C) &
-         0xFF) == 0) {
+    if ((CardReadSectors(&entry, 4, 1, gCardSlot, (s32)D_800A366C) & 0xFF) ==
+        0) {
         return 1;
     }
     c = *(u8 *)D_800A3978;
@@ -1839,8 +1844,7 @@ s32 CardLoadSaveTable(u8 updateDriverRecords) {
         return 0;
     }
     D_800A35B0 = (s32)D_800A366C;
-    if ((CardReadSectors((s32)&entry, 5, 0x15, gCardSlot,
-                         (s32)D_800A366C + 0x80) &
+    if ((CardReadSectors(&entry, 5, 0x15, gCardSlot, (s32)D_800A366C + 0x80) &
          0xFF) != 0) {
         D_800A3A58 = 0;
         D_800A3604 = (char *)D_800A35B0;
@@ -1897,13 +1901,13 @@ s32 func_8006AA70(void) {
         }
     }
     if (created != 0) {
-        if ((CardWriteSectors((s32)&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
+        if ((CardWriteSectors(&entry, 0, 4, gCardSlot, (s32)D_8009B1E4) &
              0xFF) == 0) {
             gCardMenuMessage = 8;
             return 0;
         }
     }
-    if ((CardWriteSectors((s32)&entry, 4, 0x16, gCardSlot, (s32)D_800A3604) &
+    if ((CardWriteSectors(&entry, 4, 0x16, gCardSlot, (s32)D_800A3604) &
          0xFF) == 0) {
         gCardMenuMessage = 8;
         return 0;
@@ -1914,8 +1918,7 @@ s32 func_8006AA70(void) {
         clear[4] = 0;
         clear[0x14] = 0;
         clear[0x34] = 0;
-        if ((CardWriteSectors((s32)&entry, 0x1A, 3, gCardSlot,
-                              (s32)D_800A3A0C) &
+        if ((CardWriteSectors(&entry, 0x1A, 3, gCardSlot, (s32)D_800A3A0C) &
              0xFF) == 0) {
             gCardMenuMessage = 8;
             return 0;
@@ -2454,9 +2457,9 @@ void func_8006BA68(void) {
         entry = D_800B9BB4 + i * 0xC;
         k = 3;
         byte = entry + 3;
-        *(s16 *)(entry + 4) = ffff;
-        *(s16 *)(entry + 6) = ffff;
-        *(s32 *)(entry + 8) = magic;
+        ((RecordRow *)entry)->unk4 = ffff;
+        ((RecordRow *)entry)->unk6 = ffff;
+        ((RecordRow *)entry)->unk8 = magic;
         do {
             *byte = fill;
             k -= 1;

@@ -27,7 +27,8 @@ typedef struct {
     u8 status;   /* 0x00 */
     u8 type;     /* 0x01 */
     u16 buttons; /* 0x02 */
-    u8 unk4[8];
+    u32 analog;  /* 0x04: four stick bytes */
+    u8 unk8[4];
 } PadBuffer;
 
 extern s32 gPadBuffers[];
@@ -363,9 +364,9 @@ void func_800420D8(u32 *input, u32 flags, u16 *output) {
     mode = (u8 *)gPadType;
     settingPtr += 2;
     do {
-        setting = *(u16 *)settingPtr;
+        setting = ((PadBuffer *)(settingPtr - 2))->buttons;
         data = *(u32 *)current;
-        fields = *(u32 *)(settingPtr + 2);
+        fields = ((PadBuffer *)(settingPtr - 2))->analog;
         state = ~(((setting & 0xFF) << 8) | (setting >> 8));
         outputState = state;
         *mode = (data & 0xF000) >> 12;

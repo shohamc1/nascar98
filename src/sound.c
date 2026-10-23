@@ -1503,7 +1503,7 @@ void func_80041564(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
         }
         arg2 = 0xF;
         arg3 = 0x190;
-        arg1 += *(s32 *)((u8 *)D_800A2EACAbsolute + 0x14) & 1;
+        arg1 += D_800A2EC0Absolute[0] & 1;
         break;
     case 0x24:
         if (D_800A2E90[0] < 6) {

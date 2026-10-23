@@ -271,6 +271,13 @@ void MenuAllocateObjectBuffer(void) {
     D_800A399C[0] = HeapAlloc(0x2580);
 }
 
+/* One model face: three corner vertices plus a fourth, 32 bytes. The pad
+ * halfword of each vertex holds the face colour (v[0..2]) or the
+ * semi-transparency flag (v[3]). */
+typedef struct {
+    SVECTOR v[4];
+} ModelQuad;
+
 #ifdef NON_MATCHING
 /* Wall: body, registers, stores and lhu/sb shapes all match; retail's
  * frame is 0x30, ours 0x28. Tried: a live s16 local (kept in reg), and
@@ -296,11 +303,11 @@ void func_8005E4A4(u8 *table) {
             entry = (u8 *)(D_800A393C + i * 32);
             prim = D_800A399C[0] + primOffset;
             SetPolyF4(prim);
-            color = *(s16 *)(entry + 6);
+            color = ((ModelQuad *)entry)->v[0].pad;
             prim->r0 = color;
-            color = *(s16 *)(entry + 0xE);
+            color = ((ModelQuad *)entry)->v[1].pad;
             prim->g0 = color;
-            color = *(s16 *)(entry + 0x16);
+            color = ((ModelQuad *)entry)->v[2].pad;
             prim->b0 = color;
             i++;
             primOffset += 0x18;
@@ -329,11 +336,11 @@ void func_8005E4A4(u8 *table) {
             entry = (u8 *)(D_800A393C + i * 32);
             prim = D_800A399C[0] + primOffset;
             SetPolyF4(prim);
-            color = *(s16 *)(entry + 6);
+            color = ((ModelQuad *)entry)->v[0].pad;
             prim->r0 = color;
-            color = *(s16 *)(entry + 0xE);
+            color = ((ModelQuad *)entry)->v[1].pad;
             prim->g0 = color;
-            color = *(s16 *)(entry + 0x16);
+            color = ((ModelQuad *)entry)->v[2].pad;
             prim->b0 = color;
             i++;
             primOffset += 0x18;
@@ -517,12 +524,6 @@ extern s32 D_800A3344;
 extern u16 D_8009AFA8[];
 extern MATRIX D_800A8C70;
 extern u8 gSelectedTrack[];
-/* One model face: three corner vertices plus a fourth, 32 bytes. The pad
- * halfword of each vertex holds the face colour (v[0..2]) or the
- * semi-transparency flag (v[3]). */
-typedef struct {
-    SVECTOR v[4];
-} ModelQuad;
 
 /* Draws the spinning model that sits in a menu window as one POLY_F4 per
  * face. advanceSpin changes the spin angle, semiTrans forces semi-transparency, and
