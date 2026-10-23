@@ -1364,7 +1364,7 @@ void MenuUpdateItemRow(s32 itemCode) {
     obj = (MenuObj *)D_800A3914View[0];
     obj->x = value;
     obj->orderingDepth = 0x32;
-    child = (u8 *)obj->primitive;
+    child = obj->primitive;
     if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
         *((s32 *)(child + 8)) = D_8009A2F4[index];
     } else {
@@ -1426,7 +1426,7 @@ void MenuCreateItemRow(s32 itemCode) {
         rowA = (MenuObj *)D_800A3914View[0];
         timerA = rowA->orderingDepth;
         textA = D_8009A2F4[index];
-        pktA = (u8 *)rowA->primitive;
+        pktA = rowA->primitive;
         pktA[1] = 2;
         pktA[2] = 2;
         *((s32 *)(pktA + 8)) = textA;
@@ -1441,7 +1441,7 @@ void MenuCreateItemRow(s32 itemCode) {
         rowB = (MenuObj *)D_800A3914View[0];
         timerB = rowB->orderingDepth;
         textB = D_8009A2D4[index];
-        pktB = (u8 *)rowB->primitive;
+        pktB = rowB->primitive;
         pktB[1] = 2;
         pktB[2] = 2;
         *((s32 *)(pktB + 8)) = textB;

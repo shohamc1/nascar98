@@ -31,7 +31,7 @@ typedef struct Face {
 typedef struct SkidMark {
     u16 section; /* 0x00: owning track section, or -1 */
     u8 unk2[2];
-    s32 unk4;
+    s32 depth;             /* 0x04: drawn when the view reaches it */
     Face face;                /* 0x08 */
     SVECTOR vertex[4];        /* 0x34 */
     struct SkidMark *next;    /* 0x54 */
@@ -67,7 +67,7 @@ typedef struct TrackSection {
     s32 unk4C;
     s32 unk50; /* 0x50 */
     u8 unk54[0x20];
-    u8 *children;  /* 0x74: drawn by func_8002E240, linked at + 0x54 */
+    struct SkidMark *children; /* 0x74: drawn by func_8002E240 */
     u8 *unk78[6];  /* 0x78 */
 } TrackSection;
 

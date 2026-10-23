@@ -1565,17 +1565,17 @@ void func_80060008(u8 arg0) {
  * in the loop. */
 static inline void MenuObjDrawText(MenuObj *window, u8 code, u8 first,
                                    u8 second, s32 textId) {
-    u8 *prim;
+    MenuText *prim;
 
-    prim = (u8 *)window->primitive;
-    MenuFontSet(prim[1], prim[2]);
-    prim[0] = code;
+    prim = window->primitive;
+    MenuFontSet(prim->font, prim->scale);
+    prim->shade = code;
     if (textId == 0) {
-        textId = *(s32 *)(prim + 8);
+        textId = prim->text;
     }
     if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 || window->blue != 0) {
         MenuSetTextColor(window->red, window->green, window->blue);
-    } else if (prim[1] == 2) {
+    } else if (prim->font == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
         MenuSetTextColor(0, 0, 0);
@@ -1583,10 +1583,10 @@ static inline void MenuObjDrawText(MenuObj *window, u8 code, u8 first,
     if (gScreenState[0] == 0xD) {
         MenuDrawString(textId, (s16)((u16)window->x + (u16)window->drawOffsetX),
                        (s16)((u16)window->y + (u16)window->drawOffsetY),
-                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+                       prim->center, prim->shade, prim->otz, first, second);
     } else {
-        MenuDrawString(textId, window->x, window->y, prim[3], prim[0],
-                       *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId, window->x, window->y, prim->center, prim->shade,
+                       prim->otz, first, second);
     }
 }
 
@@ -1599,7 +1599,7 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
     u32 scale;
     MenuObj *node;
     MenuObj *window;
-    u8 *prim;
+    MenuText *prim;
 
     sel = selectedColumn - 2;
     for (i = 0; i < 4; i++) {
@@ -1614,11 +1614,11 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
         first = i != sel;
         for (j = 0; j < 3; j++) {
             window = D_800BB9F4[i * 3 + j];
-            prim = (u8 *)window->primitive;
+            prim = window->primitive;
             if (i == sel) {
-                *(s32 *)(prim + 4) = 0;
+                prim->otz = 0;
             } else {
-                *(s32 *)(prim + 4) = 0x3ED;
+                prim->otz = 0x3ED;
             }
             MenuObjDrawText(window, 0, first, 0, 0);
         }
@@ -1898,7 +1898,7 @@ void func_800606D4(void) {
         tile[0] = 0;
         tile[3] = 0;
         *((s32 *)(tile + 4)) = 0;
-        tile2 = (u8 *)cur->primitive;
+        tile2 = cur->primitive;
         width = 0xCA;
         two = 2;
         D_800A3A68Store = cur;
@@ -1957,7 +1957,7 @@ void func_800606D4(void) {
         cur->drawOffsetX = x;
         cur->width = value;
         cur->height = MenuFontLineHeight();
-        cell = (u8 *)cur->primitive;
+        cell = cur->primitive;
         cur->velocityX = two;
         *new_var2 = 0;
         cell[1] = two;
@@ -2084,7 +2084,7 @@ void func_80060FD8(void) {
 
     {
         register u32 initialIndex asm("$4");
-        register u8 *cell asm("$16");
+        register MenuText *cell asm("$16");
         s32 centered;
         initialIndex = gMenuObjectPoolCount;
         rowList = *(MenuRowList *)D_800A3348;
@@ -2154,7 +2154,7 @@ void func_80060FD8(void) {
                      : "=r"(currentNode), "=r"(cell)
                      : "r"(initialIndex)
                      : "$2", "$3", "$4", "$5", "$31", "memory");
-        centered = MenuTextCenterOffset(0x140, *(s32 *)(cell + 8));
+        centered = MenuTextCenterOffset(0x140, cell->text);
         asm volatile("lui $a0,%%hi(D_800A3644)\n"
                      "lbu $a0,%%lo(D_800A3644)($a0)\n"
                      "sh $v0,0x12($s6)\n"
@@ -2655,7 +2655,7 @@ panelLoop:
         textLeftX = textCenterX - 5;
     loopC:
         {
-            u8 *cell;
+            MenuText *cell;
             /* Text object and cell pools must be loaded independently. */
             asm volatile(".set\tnoreorder\n"
                          "lbu        $a0, gMenuObjectPoolCount\n"
@@ -3965,7 +3965,7 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     s8 i;
     s8 j;
     s32 idx;
-    u8 *prim2;
+    MenuText *prim2;
 
     node = (u8 *)gPadPictureMenuLists[playerSlot & 0xFF];
     while (*(u16 *)node != 1) {
@@ -4018,7 +4018,7 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
     prim2 = *(u8 **)(node + 0x20);
-    *(s32 *)(prim2 + 8) = ((s8 *)gPadLayout)[playerSlot & 0xFF] + 1;
+    prim2->text = ((s8 *)gPadLayout)[playerSlot & 0xFF] + 1;
     uc = gPadType[playerSlot & 0xFF];
     c = gPadType[playerSlot & 0xFF];
     ghost = c;
@@ -4034,7 +4034,7 @@ void MenuUpdatePadPicture(s32 playerSlot) {
             node = *(u8 **)(node + 0x1C);
             f = ((s8 *)D_800A3350)[(s8)c];
             prim2 = *(u8 **)(node + 0x20);
-            *(s32 *)(prim2 + 8) =
+            prim2->text =
                 D_8009A4E0[f][((s8 *)gPadLayout)[(u8)playerSlot]][7 * i + j];
         }
     }
@@ -4465,7 +4465,7 @@ void MenuSetDriverNameLabel(u8 index, u8 kind) {
     s32 value;
 
     node = D_800A3868[index];
-    object = (u8 *)node->primitive;
+    object = node->primitive;
     *(u8 **)(object + 8) = gDriverNames[kind];
     MenuFontSet(object[1], object[2]);
     value = MenuTextCenterOffset(0x64, *(s32 *)(object + 8));
@@ -4524,7 +4524,7 @@ extern u8 D_800A3658_w42[] asm("D_800A3658.NON_MATCHING");
 extern s32 D_800A36F4_w42 asm("D_800A36F4.NON_MATCHING");
 extern u8 *D_800A37E4_w42[] asm("D_800A37E4.NON_MATCHING");
 extern s32 D_800BE998_w42[] asm("D_800BE998.NON_MATCHING");
-extern u8 *D_800A36CC_w42[] asm("D_800A36CC.NON_MATCHING");
+extern u8 *gImageBankTextures_w42[] asm("gImageBankTextures.NON_MATCHING");
 extern s32 D_800A353C_w42[] asm("D_800A353C.NON_MATCHING");
 extern s32 D_800A3538_w42[] asm("D_800A3538.NON_MATCHING");
 extern s32 D_800A3758_w42[] asm("D_800A3758.NON_MATCHING");
@@ -4560,7 +4560,7 @@ void func_80063874(void) {
         }
         D_800A3658_w42[0] = 1;
     }
-    D_800A36CC_w42[0] = (u8 *)D_800BE998_w42;
+    gImageBankTextures_w42[0] = (u8 *)D_800BE998_w42;
     D_800A353C_w42[0] = MathFixedDivide(6, 0xF);
     D_800A3758_w42[0] = MathFixedDivide(1, 2);
     D_800A3630_w42[0] = 2;
@@ -4779,7 +4779,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     height = (u16)entry->targetX;
     do {
         if (height < 0x140U || entry->x != (s16)height) {
-            obj = (u8 *)entry->primitive;
+            obj = entry->primitive;
             if (arg2 & 0xFF) {
                 SetGeomOffset(entry->x, 0x2D);
             } else {
@@ -4957,7 +4957,7 @@ void func_80064208(void) {
 void func_800645A4(s32 arg0, s32 arg1) {
     MenuObj *node;
     POLY_FT4 *prim;
-    u8 *prim2;
+    MenuText *prim2;
     u8 *str;
     u32 idx;
     s32 y;
@@ -5001,12 +5001,12 @@ void func_800645A4(s32 arg0, s32 arg1) {
     x = node->y;
     offset = *(s32 *)(D_800A3A5C + idx * 4);
     for (i = 0; i < 6; i++) {
-        prim2 = (u8 *)node->primitive;
+        prim2 = node->primitive;
         if (i == 0) {
-            *(u8 **)(prim2 + 8) = gDriverNames[idx];
+            prim2->text = gDriverNames[idx];
         } else {
             str = (u8 *)(D_800A3358 + offset);
-            *(u8 **)(prim2 + 8) = str;
+            prim2->text = str;
             while (*str != 0) {
                 str++;
                 offset++;
@@ -5018,7 +5018,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
             x = h + 0x32;
         } else {
             if (i == 1 || (u32)(i - 4) < 2) {
-                y = TextCountLines(*(u8 **)(prim2 + 8)) * h;
+                y = TextCountLines(*(u8 **)&prim2->text) * h;
             } else {
                 y = h;
             }

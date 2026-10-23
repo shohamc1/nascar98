@@ -7820,8 +7820,8 @@ void func_8002E240(Car *viewCar, TrackSection *firstSection,
     MATRIX *matrix;
     s32 *camera;
     TrackSection *node;
-    u8 *child;
-    u8 *tail;
+    SkidMark *child;
+    Face *tail;
     s32 count;
     s32 depth;
 
@@ -7858,12 +7858,12 @@ void func_8002E240(Car *viewCar, TrackSection *firstSection,
                     }
                     if (child != NULL) {
                         do {
-                            if (*(s32 *)(child + 4) <= depth) {
-                                *(u8 **)(child + 0x30) = tail;
-                                tail = child + 8;
+                            if (child->depth <= depth) {
+                                child->face.next = tail;
+                                tail = &child->face;
                                 count = count + 1;
                             }
-                            child = *(u8 **)(child + 0x54);
+                            child = child->next;
                         } while (child != NULL);
                     }
                 }
@@ -7879,9 +7879,9 @@ void func_8002E240(Car *viewCar, TrackSection *firstSection,
                     D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
                     if (child != NULL) {
                         do {
-                            *(u8 **)(child + 0x30) = tail;
-                            tail = child + 8;
-                            child = *(u8 **)(child + 0x54);
+                            child->face.next = tail;
+                            tail = &child->face;
+                            child = child->next;
                             count = count + 1;
                         } while (child != NULL);
                     }

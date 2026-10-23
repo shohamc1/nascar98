@@ -1030,23 +1030,19 @@ void func_8001DB20(Face *arg0, s32 arg1) {
     saved = arg0->depth;
     if (tex != 0) {
         if (mode != 0) {
-            prim->tpage = GetTPage(*(u16 *)((u8 *)tex + 0), 0,
-                                   *(u16 *)((u8 *)tex + 2) - 0x100,
-                                   *(u16 *)((u8 *)tex + 4));
-            x = *(u16 *)((u8 *)tex + 0xA);
+            prim->tpage = GetTPage(tex->mode, 0, tex->x - 0x100, tex->y);
+            x = tex->clutX;
             x = x - 0x100;
-            y = *(u16 *)((u8 *)tex + 0xC);
+            y = tex->clutY;
         } else {
-            prim->tpage =
-                GetTPage(*(u16 *)((u8 *)tex + 0), 0, *(u16 *)((u8 *)tex + 2),
-                         *(u16 *)((u8 *)tex + 4));
-            x = *(u16 *)((u8 *)tex + 0xA);
-            y = *(u16 *)((u8 *)tex + 0xC);
+            prim->tpage = GetTPage(tex->mode, 0, tex->x, tex->y);
+            x = tex->clutX;
+            y = tex->clutY;
         }
         prim->clut = GetClut(x, y);
         for (i = 0; i < 4; i++) {
-            vert[i * 4 + 8] = vert[i * 4 + 8] + tex->pad[6];
-            vert[i * 4 + 9] = vert[i * 4 + 9] + tex->pad[8];
+            vert[i * 4 + 8] = vert[i * 4 + 8] + tex->u;
+            vert[i * 4 + 9] = vert[i * 4 + 9] + tex->v;
         }
         if (*(s32 *)&arg0->r0 < 0) {
             SetSemiTrans(prim, 1);

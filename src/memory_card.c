@@ -1224,7 +1224,7 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                     u8 *end;
 
                     prim = (POLY_FT4 *)(GraphicsAllocPolyFT4(0));
-                    src = (u8 *)object->primitive;
+                    src = object->primitive;
                     dst = prim;
                     end = src + 0x20;
                     do {
@@ -1264,7 +1264,7 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                     u8 *src2;
 
                     poly = (POLY_F4 *)(GraphicsAllocPolyF4(0));
-                    src2 = (u8 *)object->primitive;
+                    src2 = object->primitive;
                     *(UnkPrim18 *)poly = *(UnkPrim18 *)src2;
                     if (gScreenStateAbsolute[0] == 0xD) {
                         if (object->width == 0) {
@@ -1305,7 +1305,7 @@ void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
                 case 7:
                 case 8:
                     poly = (POLY_F4 *)(GraphicsAllocPolyF4(0));
-                    src = (u8 *)object->primitive;
+                    src = object->primitive;
                     *(UnkPrim14 *)poly = *(UnkPrim14 *)src;
                     if (*(u16 *)(object) == 7) {
                         half = object->width / 2;
@@ -1761,7 +1761,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
 
 void func_8005C8D8(u8 index) {
     MenuObj *window;
-    u8 *prim;
+    MenuText *prim;
     s32 i;
     s16 result;
     s16 height;
@@ -1770,32 +1770,32 @@ void func_8005C8D8(u8 index) {
     for (i = 0; i < index; i++) {
         window++;
     }
-    prim = (u8 *)window->primitive;
+    prim = window->primitive;
     switch (D_800A3988[index]) {
     case 0:
     case 0x80:
-        *(s32 *)(prim + 8) = *(s32 *)(D_800A3690 + index * 4 + 4);
+        prim->text = *(s32 *)(D_800A3690 + index * 4 + 4);
         if (D_800A3988[index] == 0x80) {
-            prim[0] |= 2;
+            prim->shade |= 2;
         } else {
-            prim[0] = 0;
+            prim->shade = 0;
         }
         break;
     case 1:
     case 0x81:
-        *(s32 *)(prim + 8) = *(s32 *)(D_800A39C0 + index * 4 + 4);
+        prim->text = *(s32 *)(D_800A39C0 + index * 4 + 4);
         if (D_800A3988[index] == 0x81) {
-            prim[0] |= 2;
+            prim->shade |= 2;
         } else {
-            prim[0] = 0;
+            prim->shade = 0;
         }
         break;
     case 2:
-        *(s32 *)(prim + 8) = *(s32 *)(D_800A3A28 + index * 4 + 4);
+        prim->text = *(s32 *)(D_800A3A28 + index * 4 + 4);
         break;
     }
     MenuFontSet(0, 0);
-    result = MenuStringWidth(*(s32 *)(prim + 8));
+    result = MenuStringWidth(prim->text);
     height = 0x131 - result;
     window->width = result;
     window->x = height;
@@ -1861,7 +1861,7 @@ void TextFormatPercentage(s32 number) {
 }
 
 void func_8005CC34(void) {
-    u8 *prim;
+    MenuText *prim;
     u8 *buffer;
     s32 number;
     s32 length;
@@ -1880,8 +1880,8 @@ void func_8005CC34(void) {
     D_800A35C9[length - 1] = 0;
     TextFormatInt(number, buffer + length);
     strcat(buffer, gFormatPercentWildcard);
-    MenuFontSet(prim[1], prim[2]);
-    result = MenuStringWidth(*(s32 *)(prim + 8));
+    MenuFontSet(prim->font, prim->scale);
+    result = MenuStringWidth(prim->text);
     height = 0x131 - result;
     D_800A38F8->width = result;
     D_800A38F8->x = height;
@@ -1990,17 +1990,17 @@ void MenuRefreshSixEntryValues(void) {
 #ifdef NON_MATCHING
 extern void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
-    register u8 *prim asm("s3");
+    register MenuText *prim asm("s3");
 
-    prim = (u8 *)window->primitive;
-    MenuFontSet(prim[1], prim[2]);
-    prim[0] = code;
+    prim = window->primitive;
+    MenuFontSet(prim->font, prim->scale);
+    prim->shade = code;
     if (textId == 0) {
-        textId = *(s32 *)(prim + 8);
+        textId = prim->text;
     }
     if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 || window->blue != 0) {
         MenuSetTextColor(window->red, window->green, window->blue);
-    } else if (prim[1] == 2) {
+    } else if (prim->font == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
         MenuSetTextColor(0, 0, 0);
@@ -2008,28 +2008,28 @@ void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     if (gScreenState[0] == 0xD) {
         MenuDrawString(textId, (s16)((u16)window->x + (u16)window->drawOffsetX),
                        (s16)((u16)window->y + (u16)window->drawOffsetY),
-                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+                       prim->center, prim->shade, prim->otz, first, second);
     } else {
-        MenuDrawString(textId, window->x, window->y, prim[3], prim[0],
-                       *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId, window->x, window->y, prim->center, prim->shade,
+                       prim->otz, first, second);
     }
 }
 #else
 extern void MenuDrawString(u8 *, s16, s16, u8, u8, s32, u8, u8);
 void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
-    u8 *prim;
+    MenuText *prim;
     s32 id;
 
-    prim = (u8 *)window->primitive;
-    MenuFontSet(prim[1], prim[2]);
-    prim[0] = code;
+    prim = window->primitive;
+    MenuFontSet(prim->font, prim->scale);
+    prim->shade = code;
     id = textId;
     if (id == 0) {
-        id = *(s32 *)(prim + 8);
+        id = prim->text;
     }
     if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 || window->blue != 0) {
         MenuSetTextColor(window->red, window->green, window->blue);
-    } else if (prim[1] == 2) {
+    } else if (prim->font == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
         MenuSetTextColor(0, 0, 0);
@@ -2037,11 +2037,11 @@ void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     if (gScreenState[0] == 0xD) {
         MenuDrawString(id, (s16)((u16)window->x + (u16)window->drawOffsetX),
                        (s16)((u16)window->y + (u16)window->drawOffsetY),
-                       prim[3], prim[0], *(s32 *)(prim + 4), first & 0xFF,
+                       prim->center, prim->shade, prim->otz, first & 0xFF,
                        second & 0xFF);
     } else {
-        MenuDrawString(id, window->x, window->y, prim[3], prim[0],
-                       *(s32 *)(prim + 4), first & 0xFF, second & 0xFF);
+        MenuDrawString(id, window->x, window->y, prim->center, prim->shade,
+                       prim->otz, first & 0xFF, second & 0xFF);
     }
 }
 
@@ -2135,18 +2135,18 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         }
         if (window->orderingDepth >= 0) {
             {
-                u8 *drawPrim;
+                MenuText *drawPrim;
                 s32 drawId;
                 u8 drawFirst;
                 drawFirst = i != 0;
-                drawPrim = (u8 *)window->primitive;
-                MenuFontSet(drawPrim[1], drawPrim[2]);
-                drawPrim[0] = code;
-                drawId = *(s32 *)(drawPrim + 8);
+                drawPrim = window->primitive;
+                MenuFontSet(drawPrim->font, drawPrim->scale);
+                drawPrim->shade = code;
+                drawId = drawPrim->text;
                 if ((*(s32 *)&window->kind & 0xFFFF0000) != 0 ||
                     window->blue != 0) {
                     MenuSetTextColor(window->red, window->green, window->blue);
-                } else if (drawPrim[1] == 2) {
+                } else if (drawPrim->font == 2) {
                     MenuSetTextColor(0xFF, 0x80, 0x40);
                 } else {
                     MenuSetTextColor(0, 0, 0);
@@ -2156,12 +2156,12 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                         drawId,
                         (s16)((u16)window->x + (u16)window->drawOffsetX),
                         (s16)((u16)window->y + (u16)window->drawOffsetY),
-                        drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
+                        drawPrim->center, drawPrim->shade, drawPrim->otz,
                         drawFirst & 0xFF, 0);
                 } else {
-                    MenuDrawString(drawId, window->x, window->y, drawPrim[3],
-                                   drawPrim[0], *(s32 *)(drawPrim + 4),
-                                   drawFirst & 0xFF, 0);
+                    MenuDrawString(drawId, window->x, window->y,
+                                   drawPrim->center, drawPrim->shade,
+                                   drawPrim->otz, drawFirst & 0xFF, 0);
                 }
             }
         }
@@ -2178,18 +2178,18 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         MenuUpdateObjectPosition(D_800A3740, 1);
         {
             MenuObj *drawWindow;
-            u8 *drawPrim;
+            MenuText *drawPrim;
             s32 drawId;
             drawWindow = D_800A3740;
-            drawPrim = (u8 *)drawWindow->primitive;
-            MenuFontSet(drawPrim[1], drawPrim[2]);
-            drawPrim[0] = 0;
-            drawId = *(s32 *)(drawPrim + 8);
+            drawPrim = drawWindow->primitive;
+            MenuFontSet(drawPrim->font, drawPrim->scale);
+            drawPrim->shade = 0;
+            drawId = drawPrim->text;
             if ((*(s32 *)&drawWindow->kind & 0xFFFF0000) != 0 ||
                 drawWindow->blue != 0) {
                 MenuSetTextColor(drawWindow->red, drawWindow->green,
                                  drawWindow->blue);
-            } else if (drawPrim[1] == 2) {
+            } else if (drawPrim->font == 2) {
                 MenuSetTextColor(0xFF, 0x80, 0x40);
             } else {
                 MenuSetTextColor(0, 0, 0);
@@ -2199,28 +2199,28 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                     drawId,
                     (s16)((u16)drawWindow->x + (u16)drawWindow->drawOffsetX),
                     (s16)((u16)drawWindow->y + (u16)drawWindow->drawOffsetY),
-                    drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
+                    drawPrim->center, drawPrim->shade, drawPrim->otz, 1, 0);
             } else {
                 MenuDrawString(drawId, drawWindow->x, drawWindow->y,
-                               drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
+                               drawPrim->center, drawPrim->shade, drawPrim->otz,
                                1, 0);
             }
         }
         MenuUpdateObjectPosition(D_800A3788, 1);
         {
             MenuObj *drawWindow;
-            u8 *drawPrim;
+            MenuText *drawPrim;
             s32 drawId;
             drawWindow = D_800A3788;
-            drawPrim = (u8 *)drawWindow->primitive;
-            MenuFontSet(drawPrim[1], drawPrim[2]);
-            drawPrim[0] = 0;
-            drawId = *(s32 *)(drawPrim + 8);
+            drawPrim = drawWindow->primitive;
+            MenuFontSet(drawPrim->font, drawPrim->scale);
+            drawPrim->shade = 0;
+            drawId = drawPrim->text;
             if ((*(s32 *)&drawWindow->kind & 0xFFFF0000) != 0 ||
                 drawWindow->blue != 0) {
                 MenuSetTextColor(drawWindow->red, drawWindow->green,
                                  drawWindow->blue);
-            } else if (drawPrim[1] == 2) {
+            } else if (drawPrim->font == 2) {
                 MenuSetTextColor(0xFF, 0x80, 0x40);
             } else {
                 MenuSetTextColor(0, 0, 0);
@@ -2230,10 +2230,10 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                     drawId,
                     (s16)((u16)drawWindow->x + (u16)drawWindow->drawOffsetX),
                     (s16)((u16)drawWindow->y + (u16)drawWindow->drawOffsetY),
-                    drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
+                    drawPrim->center, drawPrim->shade, drawPrim->otz, 1, 0);
             } else {
                 MenuDrawString(drawId, drawWindow->x, drawWindow->y,
-                               drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
+                               drawPrim->center, drawPrim->shade, drawPrim->otz,
                                1, 0);
             }
         }

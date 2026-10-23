@@ -27,10 +27,10 @@ void func_8001DA48(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 
 /* Images and matrix state. */
 
-extern ImageBankTexture *D_800A36CC;
+extern ImageBankTexture *gImageBankTextures;
 
 ImageBankTexture *GraphicsGetImageBankTexture(s32 i) {
-    return &D_800A36CC[i];
+    return &gImageBankTextures[i];
 }
 
 void GraphicsLoadImageBank(s32 fileName) {
@@ -79,7 +79,7 @@ void GraphicsLoadImageBank(s32 fileName) {
     D_800A3754 = w;
     count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (ImageBankTexture *)(head + count * 8);
+    gImageBankTextures = (ImageBankTexture *)(head + count * 8);
     if (count > 0) {
         i = 0;
         base = (u32)image;
@@ -121,7 +121,7 @@ void GraphicsSelectImageBank(s32 index) {
     D_800A3754 = w;
     count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (ImageBankTexture *)(head + count * 8);
+    gImageBankTextures = (ImageBankTexture *)(head + count * 8);
     i = 0;
     if (count > 0) {
         base = (u32)image;
@@ -190,7 +190,7 @@ void func_8001E230(s32 arg0, s32 arg1) {
     D_800A3754 = w;
     count = (s16)w;
     D_800A3738 = h;
-    D_800A36CC = (ImageBankTexture *)(head + count * 8);
+    gImageBankTextures = (ImageBankTexture *)(head + count * 8);
     if (count > 0) {
         i = 0;
         base = (u32)image;
@@ -208,13 +208,13 @@ void func_8001E230(s32 arg0, s32 arg1) {
 extern void *D_800A37E4;
 void GraphicsLoadImageWithXOffset(s32 xOffset) {
     RECT rect;
-    u8 *image;
+    RECT *image;
     image = *(u8 **)((u8 *)D_800A37E4 + 4);
-    rect.x = *(s16 *)(image + 0) + xOffset;
-    rect.y = *(s16 *)(image + 2);
-    rect.w = *(s16 *)(image + 4);
-    rect.h = *(s16 *)(image + 6);
-    LoadImage(&rect, (u_long *)(image + 8));
+    rect.x = image->x + xOffset;
+    rect.y = image->y;
+    rect.w = image->w;
+    rect.h = image->h;
+    LoadImage(&rect, (u_long *)((u8 *)image + 8));
 }
 
 extern s32 D_800A2DC8;

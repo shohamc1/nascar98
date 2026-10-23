@@ -3,8 +3,19 @@
 
 #include "common.h"
 
+/* A 0x10 texture in the loaded image bank: its texture page, the UV
+ * offset within the page and its CLUT position. */
 typedef struct {
-    u8 pad[16];
+    u16 mode; /* 0x00: texture page colour mode */
+    u16 x;    /* 0x02: page position in VRAM */
+    u16 y;    /* 0x04 */
+    u8 u;     /* 0x06 */
+    u8 unk7;
+    u8 v; /* 0x08 */
+    u8 unk9;
+    u16 clutX; /* 0x0A */
+    u16 clutY; /* 0x0C */
+    u8 unkE[2];
 } ImageBankTexture;
 void MatrixCombineState(void);
 void MatrixRotateVector(s32 *vec);
