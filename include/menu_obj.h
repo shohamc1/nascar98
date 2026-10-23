@@ -21,7 +21,7 @@ typedef struct MenuObj {
     s16 height;
     s16 orderingDepth;
     struct MenuObj *next;
-    u8 *primitive;
+    void *primitive;
 } MenuObj;
 
 #endif /* MENU_OBJ_H */

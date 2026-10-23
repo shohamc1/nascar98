@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "common.h"
+#include "menu_obj.h"
 
 /* Game symbols declared by more than one source file. Types follow the
    decompiled callers; placeholder names stay until their purpose is known. */
@@ -48,23 +49,23 @@ extern u8 D_800A331C[];
 extern u8 D_800A331CAbsolute[];
 extern u8 D_800A3320[];
 extern s32 D_800A3558[];
-extern u8 *D_800A35E8[];
+extern MenuObj *D_800A35E8[];
 extern s32 D_800A3654;
 extern s32 D_800A3668Absolute[];
-extern u8 *gMenuObjectPool;
+extern MenuObj *gMenuObjectPool;
 extern s32 D_800A36D0Absolute[];
 extern u8 D_800A36E1[];
 extern u8 D_800A37BC;
-extern u8 *D_800A3854Absolute[];
+extern MenuObj *D_800A3854Absolute[];
 extern u8 D_800A3860[][4];
-extern u8 *D_800A38A8;
-extern u8 *D_800A38FC[];
-extern u8 *D_800A392C;
+extern MenuObj *D_800A38A8;
+extern MenuObj *D_800A38FC[];
+extern MenuObj *D_800A392C;
 extern u8 *D_800A3960[];
 extern s32 D_800A397CAbsolute[];
 extern u8 D_800A3980[];
 extern s32 D_800A3984[];
-extern u8 *D_800A39A0[];
+extern MenuObj *D_800A39A0[];
 extern u8 D_800A39B0[];
 extern u8 D_800A39C4;
 extern u8 gScreenState[];
@@ -177,9 +178,9 @@ extern void MenuFontBuildPrimitives(u8, u8);
 extern void MenuFontSet(u8, u8);
 extern void MenuSetShadeColors(u8, u8, u8);
 extern s32 MenuDrawStringW();
-extern void func_8005C020(u8 *, u8 *);
-extern void MenuFormatTimeObject(u8 *, s32);
-extern void func_8005CF34(u8 *, u8, u8, u8, s32);
+extern void func_8005C020(MenuObj *, u8 *);
+extern void MenuFormatTimeObject(MenuObj *, s32);
+extern void func_8005CF34(MenuObj *, u8, u8, u8, s32);
 extern void MenuAllocateObjectBuffer(void);
 extern void MenuLoadOffsetResources(s32);
 extern void MenuAllocateObjectList(void);

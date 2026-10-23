@@ -28,8 +28,8 @@ extern u8 gPlayerDriver[];
 extern char *strcat(char *, char *);
 extern u8 *D_800AE178[];
 extern s32 D_8009A31C[];
-extern void MenuUpdateObjectPosition(u8 *first, u8 friction);
-extern void MenuDrawObjectList(u8 *first, s32 value);
+extern void MenuUpdateObjectPosition(MenuObj *first, u8 friction);
+extern void MenuDrawObjectList(MenuObj *first, s32 value);
 extern u8 gSelectedTrack[];
 extern void MenuFontSetS32(s32, s32) asm("MenuFontSet");
 extern s32 MenuTextCenterOffset(s16, s32);
@@ -59,26 +59,13 @@ void MenuSetTrackLabel(s32 index);
 void func_80062D38(s32 arg0, s32 arg1, u8 *arg2);
 void func_80062F6C(s32 arg0, s32 arg1);
 void func_800641EC(void);
-void MenuSetTextObject(MenuTextObjectView *obj, u8 a, u8 b, s32 c, u8 d, s32 e);
+void MenuSetTextObject(MenuObj *obj, u8 a, u8 b, s32 c, u8 d, s32 e);
 
 void func_80067F34(s32 page, s32 track) {
-    typedef struct RecordTableTextObject {
-        u16 kind;
-        u8 unk2[4];
-        u16 x;
-        u16 y;
-        u16 targetX;
-        u8 unkC[6];
-        u16 drawOffsetX;
-        u8 unk14[6];
-        s16 orderingDepth;
-        struct RecordTableTextObject *next;
-        MenuTextPacket *textPacket;
-    } RecordTableTextObject;
     extern char *D_8009A474[];
     extern s32 D_8009AC80[];
-    RecordTableTextObject *obj;
-    RecordTableTextObject *next;
+    MenuObj *obj;
+    MenuObj *next;
     u8 *name;
     u8 *entry;
     s32 value;
@@ -94,8 +81,7 @@ void func_80067F34(s32 page, s32 track) {
     s32 cnt;
     char buf[0x48];
 
-    obj = *(RecordTableTextObject **)((u8 *)D_800A3668Absolute - 0x5C +
-                                      (page & 0xFF) * 4);
+    obj = *(MenuObj **)((u8 *)D_800A3668Absolute - 0x5C + (page & 0xFF) * 4);
     MenuFontSetS32(2, 3);
     strcpy(buf, D_8009A474[0]);
     strcat(buf, (char *)D_8009A31C[track & 0xFF]);
@@ -110,11 +96,11 @@ void func_80067F34(s32 page, s32 track) {
         s32 hdrH;
         MenuTextPacket *pktH;
         hdrH = next->orderingDepth;
-        sum2 = obj->x + w;
+        sum2 = (u16)obj->x + w;
         next->x = sum2;
         next->drawOffsetX = sum2;
         string = (char *)D_8009A31C[track & 0xFF];
-        pktH = next->textPacket;
+        pktH = next->primitive;
         pktH->unk1 = 2;
         pktH->unk2 = 3;
         pktH->unk3 = 0;
@@ -123,8 +109,7 @@ void func_80067F34(s32 page, s32 track) {
         pktH->text = (s32)string;
         next->orderingDepth = hdrH;
     }
-    obj = *(RecordTableTextObject **)((u8 *)D_800A3854Absolute +
-                                      (page & 0xFF) * 4 + 4);
+    obj = *(MenuObj **)((u8 *)D_800A3854Absolute + (page & 0xFF) * 4 + 4);
     i = 0;
     if (cnt > 0) {
         recordOff = (track & 0xFF) * 0xC;
@@ -184,7 +169,7 @@ void func_80067F34(s32 page, s32 track) {
                     asm("" : : "r"(t));
                 }
                 hdrL = obj->orderingDepth;
-                pktL = obj->textPacket;
+                pktL = obj->primitive;
                 pktL->unk1 = 2;
                 pktL->unk2 = 3;
                 pktL->text = value;
@@ -200,49 +185,29 @@ void func_80067F34(s32 page, s32 track) {
 }
 
 void CardMenuCreateRecordTable(u8 track) {
-    typedef struct CardRecordTableTextObject {
-        s16 kind;
-        u8 unk2;
-        u8 unk3;
-        u8 unk4;
-        u8 unk5;
-        s16 x;
-        s16 y;
-        s16 targetX;
-        u8 unkC[6];
-        s16 drawOffsetX;
-        u8 unk14[6];
-        s16 orderingDepth;
-        struct CardRecordTableTextObject *next;
-        MenuTextPacket *textPacket;
-    } CardRecordTableTextObject;
     extern char *D_8009A474[];
     extern s8 D_800A3944;
     extern s8 D_800A39DC;
-    extern u8 *D_800A3870;
+    extern MenuObj *D_800A3870;
     extern u8 D_800A3894;
-    extern u8 *D_800A37D4;
+    extern MenuObj *D_800A37D4;
     extern s16 MenuStringWidth(s32 text);
-    extern CardRecordTableTextObject *MenuCreateFlatRect(
-        s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
-    extern CardRecordTableTextObject *MenuCreateTextObject(s32, s32);
+    extern MenuObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, s32, s32, s32,
+                                       s32, s32);
+    extern MenuObj *MenuCreateTextObject(s32, s32);
     extern s32 D_8009A478[];
     extern s16 D_8009B1AC[];
     extern s16 D_8009B1BA[];
     extern s32 D_8009A48C[];
     extern u8 D_800A3A58Lui asm("D_800A3A58Absolute");
-    extern CardRecordTableTextObject *D_800A3900Obj asm(
-        "D_800A3900.NON_MATCHING");
+    extern MenuObj *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
     /* Sized, so [0] goes through $gp; [page] needs the lui alias. */
-    extern CardRecordTableTextObject *D_800A360C[2];
-    extern CardRecordTableTextObject *D_800A360CArr[] asm(
-        "D_800A360C.NON_MATCHING");
-    extern CardRecordTableTextObject *D_800A3858Arr[] asm(
-        "D_800A3858.NON_MATCHING");
-    extern CardRecordTableTextObject *D_800A3918Arr[] asm(
-        "D_800A3918.NON_MATCHING");
-    CardRecordTableTextObject *tail;
-    CardRecordTableTextObject *obj;
+    extern MenuObj *D_800A360C[2];
+    extern MenuObj *D_800A360CArr[] asm("D_800A360C.NON_MATCHING");
+    extern MenuObj *D_800A3858Arr[] asm("D_800A3858.NON_MATCHING");
+    extern MenuObj *D_800A3918Arr[] asm("D_800A3918.NON_MATCHING");
+    MenuObj *tail;
+    MenuObj *obj;
     s32 i;
     s32 j;
     s32 page;
@@ -274,7 +239,7 @@ void CardMenuCreateRecordTable(u8 track) {
             s32 str;
             MenuTextPacket *pkt;
             str = D_8009A48C[0];
-            pkt = tail->textPacket;
+            pkt = tail->primitive;
             pkt->unk1 = 2;
             pkt->unk2 = 3;
             pkt->text = str;
@@ -296,16 +261,16 @@ void CardMenuCreateRecordTable(u8 track) {
         tail->x = x;
         tail->targetX = x;
         tail->orderingDepth = 0x32;
-        tail->unk2 = 0x80;
-        tail->unk3 = 0x80;
-        tail->unk4 = 0xC0;
+        tail->red = 0x80;
+        tail->green = 0x80;
+        tail->blue = 0xC0;
         {
             s32 hdr;
             s32 str;
             MenuTextPacket *pkt;
             hdr = tail->orderingDepth;
             str = (s32)D_8009A474[0];
-            pkt = tail->textPacket;
+            pkt = tail->primitive;
             pkt->unk1 = 2;
             pkt->unk2 = 3;
             pkt->text = str;
@@ -317,15 +282,15 @@ void CardMenuCreateRecordTable(u8 track) {
         obj = MenuCreateTextObject(tail->x + w, 0x2A);
         obj->drawOffsetX = obj->x;
         obj->orderingDepth = 0x32;
-        obj->unk2 = 0x80;
-        obj->unk3 = 0x80;
-        obj->unk4 = 0xC0;
+        obj->red = 0x80;
+        obj->green = 0x80;
+        obj->blue = 0xC0;
         {
             s32 str;
             MenuTextPacket *pkt;
             s32 hdr;
             str = D_8009A31C[track];
-            pkt = obj->textPacket;
+            pkt = obj->primitive;
             hdr = obj->orderingDepth;
             pkt->unk1 = 2;
             pkt->unk2 = 3;
@@ -349,20 +314,20 @@ void CardMenuCreateRecordTable(u8 track) {
             obj->drawOffsetX = colX;
             obj->orderingDepth = 0x32;
             if (i & 1) {
-                obj->unk2 = 0xFF;
-                obj->unk3 = 0x80;
-                obj->unk4 = 0x40;
+                obj->red = 0xFF;
+                obj->green = 0x80;
+                obj->blue = 0x40;
             } else {
-                obj->unk2 = 0xC8;
-                obj->unk3 = 0x40;
-                obj->unk4 = 0x20;
+                obj->red = 0xC8;
+                obj->green = 0x40;
+                obj->blue = 0x20;
             }
             {
                 s32 str;
                 MenuTextPacket *pkt;
                 s32 hdr;
                 str = D_8009A478[i];
-                pkt = obj->textPacket;
+                pkt = obj->primitive;
                 hdr = obj->orderingDepth;
                 pkt->unk1 = 2;
                 pkt->unk2 = 3;
@@ -394,20 +359,20 @@ void CardMenuCreateRecordTable(u8 track) {
                 case 4:
                     obj->kind = 5;
                     if (j & 1) {
-                        obj->unk2 = 0xC8;
-                        obj->unk3 = 0x40;
-                        obj->unk4 = 0x20;
+                        obj->red = 0xC8;
+                        obj->green = 0x40;
+                        obj->blue = 0x20;
                     } else {
-                        obj->unk2 = 0xFF;
-                        obj->unk3 = 0x80;
-                        obj->unk4 = 0x40;
+                        obj->red = 0xFF;
+                        obj->green = 0x80;
+                        obj->blue = 0x40;
                     }
                     break;
                 case 5:
                     obj->kind = 6;
-                    obj->unk2 = 0xC8;
-                    obj->unk3 = 0x40;
-                    obj->unk4 = 0x20;
+                    obj->red = 0xC8;
+                    obj->green = 0x40;
+                    obj->blue = 0x20;
                     break;
                 }
                 {
@@ -415,7 +380,7 @@ void CardMenuCreateRecordTable(u8 track) {
                     MenuTextPacket *pkt;
                     s32 hdr;
                     flag = (j != 0 && j != 5);
-                    pkt = obj->textPacket;
+                    pkt = obj->primitive;
                     hdr = obj->orderingDepth;
                     pkt->unk1 = 2;
                     pkt->unk2 = 3;
@@ -443,13 +408,13 @@ void CardMenuCreateRecordTable(u8 track) {
 
 void func_800686FC(s32 arg0, s32 arg1) {
     extern s32 D_800A3914[];
-    extern u8 *D_800A37D4;
-    extern u8 *D_800A3870;
+    extern MenuObj *D_800A37D4;
+    extern MenuObj *D_800A3870;
     extern s8 D_800A3944;
     extern s8 D_800A39DC;
-    extern u8 *D_800A3900Ptr asm("D_800A3900.NON_MATCHING");
-    extern u8 *D_800A360C;
-    extern u8 *D_800A3858;
+    extern MenuObj *D_800A3900Ptr asm("D_800A3900.NON_MATCHING");
+    extern MenuObj *D_800A360C;
+    extern MenuObj *D_800A3858;
 
     MenuDrawObjectList(D_800A3900Ptr, 0xFF);
     if ((arg0 & 0xFF) == 9 && ((u8 *)D_800A3A54)[4] != 0) {
@@ -465,7 +430,7 @@ void func_800686FC(s32 arg0, s32 arg1) {
         MenuDrawObjectList(D_800A360C, 0xFF);
     }
     if (D_800A3914[0] != 0) {
-        MenuDrawObjectList((u8 *)D_800A3914[0], 0xFF);
+        MenuDrawObjectList((MenuObj *)D_800A3914[0], 0xFF);
     }
     switch ((arg0 & 0xFF) - 9) {
     case 0:
@@ -514,9 +479,9 @@ void __maspsx_include_asm_hack_jtblpad_800686FC() {
 }
 
 void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
-    extern MenuObjectNode *D_800A360C[];
-    extern MenuObjectNode *D_800A3858Absolute[] asm("D_800A3858.NON_MATCHING");
-    MenuObjectNode *node;
+    extern MenuObj *D_800A360C[];
+    extern MenuObj *D_800A3858Absolute[] asm("D_800A3858.NON_MATCHING");
+    MenuObj *node;
     u8 *other;
     s32 index;
     s32 v1;
@@ -586,7 +551,7 @@ extern s32 D_800A37F0Absolute3[];
 extern u8 gScreenStateNM[] asm("gScreenState.NON_MATCHING");
 extern u8 D_800A3A58NM[] asm("D_800A3A58.NON_MATCHING");
 extern s16 D_800B9B84NM[] asm("D_800B9B84.NON_MATCHING");
-extern u8 *D_800A3858NM[] asm("D_800A3858.NON_MATCHING");
+extern MenuObj *D_800A3858NM[] asm("D_800A3858.NON_MATCHING");
 extern u8 *D_800A3918NM[] asm("D_800A3918.NON_MATCHING");
 extern u8 *D_800A3918NB[] asm("D_800A3918.NON_MATCHING");
 void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
@@ -602,9 +567,9 @@ void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
     s32 dneg;
     s32 val;
     s32 idx;
-    u8 *head;
+    MenuObj *head;
     u8 *other;
-    u8 *walk;
+    MenuObj *walk;
     threshold = 5;
     if (arg0 & (~arg1)) {
         D_800A3830Absolute2[0] = 0;
@@ -656,7 +621,7 @@ noStore:
         idx = D_800A3944;
     }
     head = D_800A3858NM[idx];
-    if ((*((s16 *)(head + 8))) >= 0) {
+    if ((head->y) >= 0) {
         if ((*((s16 *)(D_800A3918NM[idx] + 8))) < limit) {
             return;
         }
@@ -665,10 +630,10 @@ noStore:
     delta2 = delta;
     zero = (s32)0;
     if (delta2 > 0) {
-        sum = (*((s16 *)(head + 8))) + delta2;
+        sum = (head->y) + delta2;
         posflag = zero < ((s32)sum);
         if (posflag != 0) {
-            delta2 = -(*((s16 *)(head + 8)));
+            delta2 = -(head->y);
         }
     } else if (delta2 < 0) {
         if (((*((s16 *)(other + 8))) + delta2) < limit) {
@@ -681,28 +646,13 @@ noStore:
     walk = head;
     if (walk != 0) {
         do {
-            *((u16 *)(walk + 8)) += delta2;
-            walk = *((u8 **)(walk + 0x1C));
+            walk->y += delta2;
+            walk = walk->next;
         } while (walk != 0);
     }
 }
 
-typedef struct UnkTextObj {
-    s16 unk0;
-    u8 unk2;
-    u8 unk3;
-    u8 unk4;
-    u8 unk5;
-    s16 unk6;
-    s16 unk8;
-    s16 unkA;
-    u8 unkC[6];
-    s16 unk12;
-    u8 unk14[6];
-    s16 unk1A;
-    struct UnkTextObj *unk1C;
-    MenuTextPacket *unk20;
-} UnkTextObj;
+typedef MenuObj UnkTextObj;
 extern UnkTextObj *D_800A3900Obj asm("D_800A3900.NON_MATCHING");
 extern UnkTextObj *D_800A360C;
 extern UnkTextObj *D_800A3858;
@@ -745,9 +695,9 @@ void func_80068CE4(void) {
         if (i == 0) {
             D_800A3900Obj = tail;
         } else {
-            D_800A3900Obj->unk1C = tail;
+            D_800A3900Obj->next = tail;
         }
-        tail->unk1A = 0x3FD;
+        tail->orderingDepth = 0x3FD;
     }
 
     tail = MenuCreateTextObject(0, 0x2A);
@@ -759,33 +709,33 @@ void func_80068CE4(void) {
     y = 0x39;
     titleW = MenuStringWidth((s32)buf);
     titleX = (0x140 - titleW) / 2;
-    tail->unk6 = titleX;
-    tail->unkA = titleX;
-    tail->unk1A = 0x32;
-    titlePkt = tail->unk20;
+    tail->x = titleX;
+    tail->targetX = titleX;
+    tail->orderingDepth = 0x32;
+    titlePkt = tail->primitive;
     titlePkt->unk1 = 2;
     titlePkt->unk2 = 3;
     titlePkt->text = (s32)D_800B9B54;
     titlePkt->unk3 = 0;
     titlePkt->orderingDepth = 0x32;
-    tail->unk1A = 0x32;
+    tail->orderingDepth = 0x32;
     titleW = MenuStringWidth((s32)D_800B9B54);
-    obj = MenuCreateTextObject(tail->unk6 + titleW, 0x2A);
-    obj->unk1A = 0x32;
+    obj = MenuCreateTextObject(tail->x + titleW, 0x2A);
+    obj->orderingDepth = 0x32;
     value = (s32)D_8009A498[0];
-    subPkt = obj->unk20;
+    subPkt = obj->primitive;
     subPkt->unk1 = 2;
     subPkt->unk2 = 3;
     subPkt->text = value;
     subPkt->unk3 = 0;
     subPkt->orderingDepth = 0x32;
-    obj->unk1A = 0x32;
-    tail->unk1C = obj;
+    obj->orderingDepth = 0x32;
+    tail->next = obj;
     tail = obj;
     for (i = 0; i < 5; i++) {
         for (j = 0; j < 2; j++) {
             obj = MenuCreateTextObject((j != 0) ? (0xF0) : (0x40), y);
-            obj->unk1A = 0x32;
+            obj->orderingDepth = 0x32;
             if (j != 0) {
                 switch (i) {
                 case 0:
@@ -809,20 +759,20 @@ void func_80068CE4(void) {
                     break;
                 }
 
-                obj->unk0 = 5;
+                obj->kind = 5;
             } else {
                 value = (s32)D_8009A498[i + 1];
             }
 
-            w = obj->unk1A;
-            rowPkt = obj->unk20;
+            w = obj->orderingDepth;
+            rowPkt = obj->primitive;
             rowPkt->unk1 = 2;
             rowPkt->unk2 = 3;
             rowPkt->text = value;
             rowPkt->unk3 = j;
             rowPkt->orderingDepth = w;
-            obj->unk1A = w;
-            tail->unk1C = obj;
+            obj->orderingDepth = w;
+            tail->next = obj;
             tail = obj;
         }
 
@@ -846,16 +796,16 @@ void func_80068CE4(void) {
         }
 
         obj = MenuCreateTextObject(x, 0x89);
-        obj->unk1A = 0x32;
+        obj->orderingDepth = 0x32;
         label = (s32)D_8009A4B0[i];
-        hdrPkt = obj->unk20;
+        hdrPkt = obj->primitive;
         hdrPkt->unk1 = 2;
         hdrPkt->unk2 = 3;
         hdrPkt->text = label;
         hdrPkt->unk3 = ((u32)(i - 1)) < 2;
         hdrPkt->orderingDepth = 0x32;
-        obj->unk1A = 0x32;
-        tail->unk1C = obj;
+        obj->orderingDepth = 0x32;
+        tail->next = obj;
         tail = obj;
     }
 
@@ -867,17 +817,17 @@ void func_80068CE4(void) {
             if ((i == 0) && (j == 0)) {
                 D_800A3858 = obj;
             } else {
-                tail->unk1C = obj;
+                tail->next = obj;
             }
-            obj->unk1A = 0;
+            obj->orderingDepth = 0;
             switch (j) {
             case 1:
             case 2:
-                obj->unk0 = 5;
+                obj->kind = 5;
                 break;
 
             case 3:
-                obj->unk0 = 6;
+                obj->kind = 6;
                 break;
             }
             flag = 0;
@@ -901,13 +851,13 @@ void func_80068CE4(void) {
                 break;
             }
 
-            cellPkt = obj->unk20;
+            cellPkt = obj->primitive;
             cellPkt->unk1 = 2;
             cellPkt->unk2 = 3;
             cellPkt->text = value;
             cellPkt->unk3 = flag;
             cellPkt->orderingDepth = 0;
-            obj->unk1A = 0;
+            obj->orderingDepth = 0;
             tail = obj;
         }
 
@@ -934,14 +884,14 @@ static __inline__ void MenuSetText(UnkTextObj *obj, s32 text, s32 flag, s32 two,
                                    s32 three) {
     MenuTextPacket *pkt;
     s32 h;
-    pkt = obj->unk20;
-    h = obj->unk1A;
+    pkt = obj->primitive;
+    h = obj->orderingDepth;
     pkt->unk1 = two;
     pkt->unk2 = three;
     pkt->text = text;
     pkt->unk3 = flag;
     pkt->orderingDepth = h;
-    obj->unk1A = h;
+    obj->orderingDepth = h;
 }
 
 void CardMenuCreateStandingsTable(void) {
@@ -990,9 +940,9 @@ void CardMenuCreateStandingsTable(void) {
         if (i == 0) {
             D_800A3900 = tail;
         } else {
-            D_800A3900->unk1C = tail;
+            D_800A3900->next = tail;
         }
-        tail->unk1A = 0x3FD;
+        tail->orderingDepth = 0x3FD;
     }
 
     one = 1;
@@ -1000,15 +950,15 @@ void CardMenuCreateStandingsTable(void) {
     sMenuHead[0] = tail;
     MenuFontSetS32(2, 3);
     h = (0x140 - MenuStringWidth((s32)D_8009A490[0])) / 2;
-    tail->unk6 = h;
-    tail->unkA = h;
-    tail->unk1A = 0x32;
+    tail->x = h;
+    tail->targetX = h;
+    tail->orderingDepth = 0x32;
     MenuSetText(tail, (s32)D_8009A490[0], 0, 2, 3);
     if (D_800B9B84[0] == 0) {
         obj = MenuCreateTextObject(
             MenuTextCenterOffset(0x140, (s32)D_8009A494[0]), 0x66);
-        obj->unk12 = 0;
-        obj->unk1A = 0x32;
+        obj->drawOffsetX = 0;
+        obj->orderingDepth = 0x32;
         MenuSetText(obj, (s32)D_8009A494[0], 0, 2, 3);
         sMenuList[0] = obj;
     } else {
@@ -1048,12 +998,12 @@ void CardMenuCreateStandingsTable(void) {
                 if ((i == 0) && (j == 0)) {
                     sMenuList[0] = obj;
                 } else {
-                    tail->unk1C = obj;
+                    tail->next = obj;
                 }
-                obj->unk1A = 0;
+                obj->orderingDepth = 0;
                 flag = one;
                 if (j != flag) {
-                    obj->unk0 = 5;
+                    obj->kind = 5;
                 }
                 flag = 0;
                 if (j == one)
@@ -1123,10 +1073,10 @@ void CardMenuCreateStandingsTable(void) {
             y += 0xF;
         }
 
-        obj = MenuCreateFlatRect(0, mine->unk8 - 2, 0x140, 0xF, 0, 0, 0, 0xFF,
-                                 1, 1);
-        obj->unk1A = mine->unk1A + 2;
-        tail->unk1C = obj;
+        obj =
+            MenuCreateFlatRect(0, mine->y - 2, 0x140, 0xF, 0, 0, 0, 0xFF, 1, 1);
+        obj->orderingDepth = mine->orderingDepth + 2;
+        tail->next = obj;
     }
     MenuSetAllObjectOrderingDepths(0x3E8);
 }
@@ -1194,9 +1144,9 @@ void func_800697EC(u8 mode) {
         if (j == 0) {
             D_800A3900Obj = prev;
         } else {
-            D_800A3900Obj->unk1C = prev;
+            D_800A3900Obj->next = prev;
         }
-        prev->unk1A = 0x3FD;
+        prev->orderingDepth = 0x3FD;
         j += 1;
     } while (j < 2);
 
@@ -1204,17 +1154,17 @@ void func_800697EC(u8 mode) {
     D_800A360C = prev;
     MenuFontSetS32(2, 3);
     w = MenuTextCenterOffset(0x140, (s32)D_8009AD58[mode]);
-    prev->unk6 = w;
-    prev->unkA = w;
-    prev->unk1A = 0x32;
+    prev->x = w;
+    prev->targetX = w;
+    prev->orderingDepth = 0x32;
     title = (s32)D_8009AD58[mode];
-    titlePkt = prev->unk20;
+    titlePkt = prev->primitive;
     titlePkt->unk1 = 2;
     titlePkt->unk2 = 3;
     titlePkt->text = title;
     titlePkt->unk3 = 0;
     titlePkt->orderingDepth = 0x32;
-    prev->unk1A = 0x32;
+    prev->orderingDepth = 0x32;
     if (mode == 0) {
         buf = (s8 *)D_800A3370;
     } else {
@@ -1238,27 +1188,27 @@ void func_800697EC(u8 mode) {
             obj = MenuCreateTextObject(0, x);
             if (*p == '*') {
                 p = buf + ((s16)i + 1);
-                obj->unk2 = 0xF0;
-                obj->unk3 = 0x40;
-                obj->unk4 = 0x40;
+                obj->red = 0xF0;
+                obj->green = 0x40;
+                obj->blue = 0x40;
             }
             pktMode = 4;
             w = MenuTextCenterOffset(0x140, (s32)p);
-            rowPkt = obj->unk20;
-            obj->unk12 = w;
-            obj->unk6 = w;
-            obj->unkA = w;
-            obj->unk1A = 0;
+            rowPkt = obj->primitive;
+            obj->drawOffsetX = w;
+            obj->x = w;
+            obj->targetX = w;
+            obj->orderingDepth = 0;
             rowPkt->unk1 = pktType;
             rowPkt->unk2 = pktMode;
             rowPkt->text = (s32)p;
             rowPkt->unk3 = 0;
             rowPkt->orderingDepth = 0;
-            obj->unk1A = 0;
+            obj->orderingDepth = 0;
             if ((i << 16) == 0) {
                 D_800A3858 = obj;
             } else {
-                prev->unk1C = obj;
+                prev->next = obj;
             }
             prev = obj;
         }
@@ -1326,7 +1276,7 @@ void MenuUpdateItemRow(s32 itemCode) {
     s32 group;
     s32 index;
     s32 value;
-    u8 *obj;
+    MenuObj *obj;
     u8 *child;
     switch (itemCode & 0xFF) {
     case 0:
@@ -1398,10 +1348,10 @@ void MenuUpdateItemRow(s32 itemCode) {
     group8 = group;
     index = group8;
     if (group == 0xFF) {
-        u8 *retObj;
-        retObj = (u8 *)D_800A3914[0];
+        MenuObj *retObj;
+        retObj = (MenuObj *)D_800A3914[0];
         if (retObj != 0) {
-            *((s16 *)(retObj + 0x1A)) = -0x32;
+            retObj->orderingDepth = -0x32;
             return;
         }
     }
@@ -1411,10 +1361,10 @@ void MenuUpdateItemRow(s32 itemCode) {
     } else {
         value = MenuTextCenterOffset(0x140, D_8009A2D4[index]);
     }
-    obj = (u8 *)D_800A3914[0];
-    *((s16 *)(obj + 6)) = value;
-    *((s16 *)(obj + 0x1A)) = 0x32;
-    child = *((u8 **)(obj + 0x20));
+    obj = (MenuObj *)D_800A3914[0];
+    obj->x = value;
+    obj->orderingDepth = 0x32;
+    child = (u8 *)obj->primitive;
     if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
         *((s32 *)(child + 8)) = D_8009A2F4[index];
     } else {
@@ -1469,35 +1419,35 @@ void MenuCreateItemRow(s32 itemCode) {
     }
     ((u8 *)D_800A3914[0])[4] = 0x40;
     if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
-        u8 *rowA;
+        MenuObj *rowA;
         u8 *pktA;
         s32 textA;
         s32 timerA;
-        rowA = (u8 *)D_800A3914[0];
-        timerA = *((s16 *)(rowA + 0x1A));
+        rowA = (MenuObj *)D_800A3914[0];
+        timerA = rowA->orderingDepth;
         textA = D_8009A2F4[index];
-        pktA = *((u8 **)(rowA + 0x20));
+        pktA = (u8 *)rowA->primitive;
         pktA[1] = 2;
         pktA[2] = 2;
         *((s32 *)(pktA + 8)) = textA;
         pktA[3] = 0;
         *((s32 *)(pktA + 4)) = timerA;
-        *((s16 *)(rowA + 0x1A)) = timerA;
+        rowA->orderingDepth = timerA;
     } else {
-        u8 *rowB;
+        MenuObj *rowB;
         u8 *pktB;
         s32 textB;
         s32 timerB;
-        rowB = (u8 *)D_800A3914[0];
-        timerB = *((s16 *)(rowB + 0x1A));
+        rowB = (MenuObj *)D_800A3914[0];
+        timerB = rowB->orderingDepth;
         textB = D_8009A2D4[index];
-        pktB = *((u8 **)(rowB + 0x20));
+        pktB = (u8 *)rowB->primitive;
         pktB[1] = 2;
         pktB[2] = 2;
         *((s32 *)(pktB + 8)) = textB;
         pktB[3] = 0;
         *((s32 *)(pktB + 4)) = timerB;
-        *((s16 *)(rowB + 0x1A)) = timerB;
+        rowB->orderingDepth = timerB;
     }
 }
 
@@ -2710,7 +2660,7 @@ void CardMenuBuildFileList(void) {
     s32 y;
     s32 h;
     UnkTextObj *prev;
-    u8 *node;
+    MenuObj *node;
     u8 *pkt;
     u8 *obj;
 
@@ -2719,19 +2669,19 @@ void CardMenuBuildFileList(void) {
     x = MenuStringWidth(D_8009A4C0[0]);
     x = (0x78 - x) / 2;
     prev = MenuCreateTextObject(x, 0x43);
-    prev->unk1A = 7;
-    prev->unk12 = x;
+    prev->orderingDepth = 7;
+    prev->drawOffsetX = x;
     i = 0;
     *(UnkTextObj **)D_800A3A10Obj = prev;
-    MenuSetTextObject((MenuTextObjectView *)prev, 2, 2, D_8009A4C0[0], 0,
-                      prev->unk1A);
+    MenuSetTextObject((MenuObj *)prev, 2, 2, D_8009A4C0[0], 0,
+                      prev->orderingDepth);
     do {
         node = MenuCreateTexturedRect(0, y, 0x78, 0x18, 9, 1, 0);
-        prev->unk1C = (UnkTextObj *)node;
-        pkt = *(u8 **)(node + 0x20);
-        *(s16 *)(node + 0xE) = 2;
-        *(s16 *)(node + 0x6) = -0x78;
-        *(s16 *)(node + 0x10) = 0;
+        prev->next = (UnkTextObj *)node;
+        pkt = node->primitive;
+        node->velocityX = 2;
+        node->x = -0x78;
+        node->velocityY = 0;
         switch (i) {
         case 0:
             h = 0;
@@ -2744,10 +2694,9 @@ void CardMenuBuildFileList(void) {
             h = 0x18;
             break;
         }
-        MenuSetTexturedQuad(pkt, 9, 0, h, *(u16 *)(node + 0x16),
-                            *(u16 *)(node + 0x18));
+        MenuSetTexturedQuad(pkt, 9, 0, h, (u16)node->width, (u16)node->height);
         i += 1;
-        y += *(s16 *)(node + 0x18);
+        y += node->height;
         prev = (UnkTextObj *)node;
     } while (i < 4);
     y = 0x3C;
@@ -2758,7 +2707,7 @@ void CardMenuBuildFileList(void) {
         *(s16 *)(obj + 0x6) = -0x78;
         *(s16 *)(obj + 0xE) = 2;
         *(s16 *)(obj + 0x1A) = 0xA;
-        prev->unk1C = (UnkTextObj *)obj;
+        prev->next = (UnkTextObj *)obj;
         prev = (UnkTextObj *)obj;
         i += 1;
     } while (i < 2);
@@ -2767,8 +2716,7 @@ void CardMenuBuildFileList(void) {
     do {
         obj = (u8 *)MenuCreateTextObject(0, y);
         *(s16 *)(obj + 0x1A) = 2;
-        MenuSetTextObject((MenuTextObjectView *)obj, 2, 2,
-                          (s32)(D_800B0A2C + i * 0x10), 0,
+        MenuSetTextObject((MenuObj *)obj, 2, 2, (s32)(D_800B0A2C + i * 0x10), 0,
                           *(s16 *)(obj + 0x1A));
         *(s16 *)(obj + 0x12) = 0xB;
         *(s16 *)(obj + 0xE) = 2;
@@ -2776,7 +2724,7 @@ void CardMenuBuildFileList(void) {
         if (i == 0) {
             D_800A3908[0] = obj;
         }
-        prev->unk1C = (UnkTextObj *)obj;
+        prev->next = (UnkTextObj *)obj;
         prev = (UnkTextObj *)obj;
         i += 1;
         y += 9;
@@ -2810,7 +2758,7 @@ void CardMenuBuildFileList(void) {
         if (i == 0) {
             D_800A377C[0] = obj;
         }
-        prev->unk1C = (UnkTextObj *)obj;
+        prev->next = (UnkTextObj *)obj;
         *(s16 *)(obj + 0xE) = 2;
         *(s16 *)(obj + 0x1A) = 3;
         if (i != 0) {
@@ -2923,28 +2871,16 @@ void func_8006C2D0(s32 arg0) {
     D_800A3770 = 0;
 }
 
-typedef struct ColorNode {
-    u8 unk0[5];
-    u8 unk5;
-    u16 unk6;
-    u16 unk8;
-    u16 unkA;
-    u16 unkC;
-    u16 unkE;
-    u16 unk10;
-    u16 unk12;
-    u8 unk14[8];
-    struct ColorNode *next;
-} ColorNode;
+typedef MenuObj ColorNode;
 extern ColorNode *D_800A3A10[];
 void CardMenuSetColorNodeLayout(s32 low, s32 high, s32 color) {
     ColorNode *node;
     node = D_800A3A10[0];
     while (node != NULL) {
         node->unk5 = color;
-        node->unkE = color;
-        node->unk6 = node->unk12 + low;
-        node->unkA = node->unk12 + high;
+        node->velocityX = color;
+        node->x = node->drawOffsetX + low;
+        node->targetX = node->drawOffsetX + high;
         node = node->next;
     }
 }
@@ -2992,7 +2928,7 @@ void CardMenuCenterSelectedText(s32 arg0) {
     node = D_800A3A10[0];
     value = temp / 2;
     *(s32 *)(obj + 8) = elem;
-    node->unk12 = value;
+    node->drawOffsetX = value;
 }
 
 #endif
@@ -3746,8 +3682,8 @@ extern u8 *D_8009AB80nm[] asm("D_8009AB80.NON_MATCHING");
 extern void *D_800A3908nm[] asm("D_800A3908.NON_MATCHING");
 
 void func_8006DA40(void) {
-    u8 *node;
-    u8 *prev;
+    MenuObj *node;
+    MenuObj *prev;
     u8 *pkt;
     u8 *field10;
     u8 idx;
@@ -3762,13 +3698,13 @@ void func_8006DA40(void) {
         if (i == 0) {
             D_800A3A10[0] = (ColorNode *)node;
         } else {
-            *((u8 **)(prev + 0x1C)) = node;
+            prev->next = node;
         }
-        field10 = node + 0x10;
-        pkt = *((u8 **)(node + 0x20));
-        *((s16 *)(node + 0xE)) = 2;
+        field10 = (u8 *)node + 0x10;
+        pkt = node->primitive;
+        node->velocityX = 2;
         *((s16 *)field10) = 0;
-        *((s16 *)(node + 0x6)) = -0x78;
+        node->x = -0x78;
         switch (i) {
         case 0:
             height = 0;
@@ -3783,27 +3719,27 @@ void func_8006DA40(void) {
             break;
         }
 
-        MenuSetTexturedQuad(pkt, 9, 0, height, *((u16 *)(node + 0x16)),
-                            *((u16 *)(node + 0x18)));
-        y += *((s16 *)(node + 0x18));
+        MenuSetTexturedQuad(pkt, 9, 0, height, (u16)node->width,
+                            (u16)node->height);
+        y += node->height;
         prev = node;
         i += 1;
     } while (i < 3);
     y = 0x50;
     i = 0;
     do {
-        node = (u8 *)MenuCreateFlatRect(0x64, y, 0x78, 0x48, 0, 0x20, 0x20,
-                                        0x40, 1, 1);
-        *((s16 *)(node + 0x6)) = -0x78;
-        *((s16 *)(node + 0xE)) = 2;
-        *((s16 *)(node + 0x1A)) = 0xA;
-        *((u8 **)(prev + 0x1C)) = node;
+        node =
+            MenuCreateFlatRect(0x64, y, 0x78, 0x48, 0, 0x20, 0x20, 0x40, 1, 1);
+        node->x = -0x78;
+        node->velocityX = 2;
+        node->orderingDepth = 0xA;
+        prev->next = node;
         prev = node;
         i += 1;
     } while (i < 2);
-    node = (u8 *)MenuCreateTextObject(0x71, 0x55);
+    node = MenuCreateTextObject(0x71, 0x55);
     err = gCardMenuMessage;
-    *((s16 *)(node + 0x1A)) = 2;
+    node->orderingDepth = 2;
     if (err == 2) {
         idx = 0x1B;
     } else if (err == 0x1C) {
@@ -3818,17 +3754,17 @@ void func_8006DA40(void) {
         }
     }
     if (gPadType_nm[0] == 2) {
-        MenuSetTextObject((MenuTextObjectView *)node, 2, 2,
-                          (s32)D_8009AB80nm[idx], 0, *((s16 *)(node + 0x1A)));
+        MenuSetTextObject((MenuObj *)node, 2, 2, (s32)D_8009AB80nm[idx], 0,
+                          node->orderingDepth);
     } else {
-        MenuSetTextObject((MenuTextObjectView *)node, 2, 2,
-                          (s32)D_8009AB00nm[idx], 0, *((s16 *)(node + 0x1A)));
+        MenuSetTextObject((MenuObj *)node, 2, 2, (s32)D_8009AB00nm[idx], 0,
+                          node->orderingDepth);
     }
-    *((s16 *)(node + 0xE)) = 2;
-    *((s16 *)(node + 0x12)) = 0xB;
-    *((s16 *)(node + 0x6)) = -0x6B;
+    node->velocityX = 2;
+    node->drawOffsetX = 0xB;
+    node->x = -0x6B;
     D_800A3908nm[0] = node;
-    *((u8 **)(prev + 0x1C)) = node;
+    prev->next = node;
 }
 
 void MenuUpdateAndDrawObjectLists(void) {

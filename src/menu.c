@@ -49,9 +49,9 @@ void SystemSetGlobalPointer(s32 gp);
 void MenuFontCopyGlyphPrimitives(u8 id, s32 arg1, void *dest);
 s32 MenuTextCenterOffset(s16 arg0, s32 arg1);
 s32 TextCountLines(u8 *text);
-u8 *MenuObjAlloc(void);
-void MenuUpdateObjectPosition(u8 *first, u8 friction);
-void MenuDrawObjectList(u8 *object, s32 arg1);
+MenuObj *MenuObjAlloc(void);
+void MenuUpdateObjectPosition(MenuObj *first, u8 friction);
+void MenuDrawObjectList(MenuObj *object, s32 arg1);
 
 /* Menu entries and panels. */
 
@@ -105,12 +105,12 @@ void func_8005DFA0(void) {
     s32 y;
     s32 primOffset;
     u8 index;
-    u8 *object;
-    u8 *slot;
+    MenuObj *object;
+    MenuObj *slot;
     s32 panelH;
     s32 panelB;
     u8 *prim;
-    u8 *panel;
+    MenuObj *panel;
     u8 *panelPrim;
     s32 panelY;
     s32 panelW;
@@ -125,29 +125,29 @@ void func_8005DFA0(void) {
     primOffset = 0;
 again:
     index = gMenuObjectPoolCount++;
-    slot = gMenuObjectPool + index * 36;
-    *(s16 *)(slot + 0x12) = 0;
+    slot = &gMenuObjectPool[index];
+    slot->drawOffsetX = 0;
     object = slot;
-    *(s16 *)(object + 0x14) = 0;
-    *(s32 *)(object + 0x1C) = 0;
-    object[4] = 0;
-    object[3] = 0;
-    object[2] = 0;
-    *(s16 *)(object + 0x1A) = 0;
-    *(s16 *)(object + 0) = 1;
+    object->drawOffsetY = 0;
+    object->next = 0;
+    object->blue = 0;
+    object->green = 0;
+    object->red = 0;
+    object->orderingDepth = 0;
+    object->kind = 1;
     if (i == 0) {
         D_800A392C = object;
     } else {
-        *(u8 **)(D_800A392C + 0x1C) = object;
+        D_800A392C->next = object;
     }
-    *(s16 *)(object + 0xA) = 0;
-    *(s16 *)(object + 0xC) = y;
-    *(s16 *)(object + 8) = y;
-    *(s16 *)(object + 0x16) = 0x78;
-    *(s16 *)(object + 0x18) = (i == 0) ? 0x18 : 0x15;
+    object->targetX = 0;
+    object->targetY = y;
+    object->y = y;
+    object->width = 0x78;
+    object->height = (i == 0) ? 0x18 : 0x15;
     prim = D_800AFDDC + primOffset;
-    *(s16 *)(object + 0xE) = 2;
-    *(s16 *)(object + 0x10) = 0;
+    object->velocityX = 2;
+    object->velocityY = 0;
     SetPolyFT4(prim);
     SetShadeTex(prim, 0);
     prim[4] = 0x80;
@@ -157,8 +157,8 @@ again:
     if (i == 0) {
         u16 w;
         u16 h;
-        w = *(u16 *)(object + 0x16);
-        h = *(u16 *)(object + 0x18);
+        w = (u16)object->width;
+        h = (u16)object->height;
         *(s16 *)(prim + 0xE) = GetClut(D_8009AF22[0], D_8009AF24[0]);
         *(s16 *)(prim + 0x16) =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], D_8009AF20[0]);
@@ -172,7 +172,7 @@ again:
         prim[0x25] = *(u8 *)((u8 *)D_8009AF2A - 2) + h;
     } else {
         u16 w;
-        w = *(u16 *)(object + 0x16);
+        w = (u16)object->width;
         *(s16 *)(prim + 0xE) = GetClut(D_8009AF22[0], D_8009AF24[0]);
         *(s16 *)(prim + 0x16) =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], D_8009AF20[0]);
@@ -188,8 +188,8 @@ again:
     y += 0x18;
     primOffset += 0x28;
     i++;
-    *(s16 *)(object + 0x1A) = 0x3FC;
-    *(u8 **)(object + 0x20) = prim;
+    object->orderingDepth = 0x3FC;
+    object->primitive = prim;
     if (i < 2) {
         goto again;
     }
@@ -203,30 +203,30 @@ again2:
     index = gMenuObjectPoolCount;
     panelPrim = D_800AE1BC + panelOffset;
     gMenuObjectPoolCount = index + 1;
-    panel = gMenuObjectPool + index * 36;
-    panel[4] = 0;
-    *(s16 *)(panel + 0x18) = panelH;
-    *(s16 *)(panel + 0x12) = 0;
-    *(s16 *)(panel + 0x14) = 0;
-    *(s32 *)(panel + 0x1C) = 0;
-    panel[3] = 0;
-    panel[2] = 0;
-    *(s16 *)(panel + 0x1A) = 0;
-    *(s16 *)(panel + 0) = code;
-    *(s16 *)(panel + 6) = 0;
-    *(s16 *)(panel + 0xA) = 0;
-    *(s16 *)(panel + 8) = panelY;
-    *(s16 *)(panel + 0xC) = panelY;
-    *(s16 *)(panel + 0xE) = 0;
-    *(s16 *)(panel + 0x10) = 0;
-    *(s16 *)(panel + 0x16) = panelW;
-    panel[2] = color;
-    panel[3] = color;
-    panel[4] = panelB;
+    panel = &gMenuObjectPool[index];
+    panel->blue = 0;
+    panel->height = panelH;
+    panel->drawOffsetX = 0;
+    panel->drawOffsetY = 0;
+    panel->next = 0;
+    panel->green = 0;
+    panel->red = 0;
+    panel->orderingDepth = 0;
+    panel->kind = code;
+    panel->x = 0;
+    panel->targetX = 0;
+    panel->y = panelY;
+    panel->targetY = panelY;
+    panel->velocityX = 0;
+    panel->velocityY = 0;
+    panel->width = panelW;
+    panel->red = color;
+    panel->green = color;
+    panel->blue = panelB;
     if (panelPrim == 0) {
         panelPrim = GraphicsAllocPolyF4(1);
     }
-    *(u8 **)(panel + 0x20) = panelPrim;
+    panel->primitive = panelPrim;
     SetPolyF4(panelPrim);
     SetSemiTrans(panelPrim, 1);
     panelPrim[4] = color;
@@ -240,9 +240,9 @@ again2:
     *(s16 *)(panelPrim + 0xE) = panelY;
     *(s16 *)(panelPrim + 0x10) = 0;
     *(s16 *)(panelPrim + 0x14) = panelW;
-    *(s16 *)(panel + 0xE) = code;
-    *(s16 *)(panel + 0x1A) = 0x3FD;
-    *(u8 **)(object + 0x1C) = panel;
+    panel->velocityX = code;
+    panel->orderingDepth = 0x3FD;
+    object->next = panel;
     object = panel;
     i++;
     panelOffset += 0x18;
@@ -362,34 +362,34 @@ void MenuLoadOffsetResources(s32 fileId) {
 }
 
 void func_8005E5BC(s32 unused, s32 x, s16 y, s32 flag) {
-    u8 *entry;
+    MenuObj *entry;
     u8 count;
     s32 height;
     s32 fieldValue;
     count = gMenuObjectPoolCount;
     gMenuObjectPoolCount = count + 1;
-    entry = gMenuObjectPool + count * 36;
-    *(s16 *)(entry + 0) = 3;
+    entry = &gMenuObjectPool[count];
+    entry->kind = 3;
     height = 0x3C;
-    *(s16 *)(entry + 0x12) = 0;
-    *(s16 *)(entry + 0x14) = 0;
-    *(s32 *)(entry + 0x1C) = 0;
-    entry[4] = 0;
-    entry[3] = 0;
-    entry[2] = 0;
-    *(s16 *)(entry + 0x1A) = 0;
+    entry->drawOffsetX = 0;
+    entry->drawOffsetY = 0;
+    entry->next = 0;
+    entry->blue = 0;
+    entry->green = 0;
+    entry->red = 0;
+    entry->orderingDepth = 0;
     D_800A3634 = (Df50Fields *)entry;
-    *(s16 *)(entry + 6) = x + 0x3C;
-    *(s16 *)(entry + 0xA) = height;
+    entry->x = x + 0x3C;
+    entry->targetX = height;
     if (flag & 0xFF) {
-        *(s16 *)(entry + 0xA) = 0xB9;
+        entry->targetX = 0xB9;
     }
     fieldValue = D_800A393C;
-    *(s16 *)(entry + 8) = 0xB9;
-    *(s16 *)(entry + 0xC) = 0xB9;
-    *(s16 *)(entry + 0xE) = y;
-    *(s16 *)(entry + 0x10) = 0;
-    *(s32 *)(entry + 0x20) = fieldValue;
+    entry->y = 0xB9;
+    entry->targetY = 0xB9;
+    entry->velocityX = y;
+    entry->velocityY = 0;
+    entry->primitive = (void *)fieldValue;
 }
 
 extern u8 D_8009AF84[];
@@ -400,7 +400,7 @@ extern char D_800BA058B[] asm("D_800BA058");
 extern char D_800BA058C[] asm("D_800BA058");
 void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     u8 count;
-    u8 *entry;
+    MenuObj *entry;
     u8 count2;
     u8 *subBase;
     u8 *sub;
@@ -410,31 +410,31 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 
     count = gMenuObjectPoolCount;
     gMenuObjectPoolCount = count + 1;
-    entry = gMenuObjectPool + count * 36;
-    entry[4] = 0;
-    entry[3] = 0;
-    entry[2] = 0;
+    entry = &gMenuObjectPool[count];
+    entry->blue = 0;
+    entry->green = 0;
+    entry->red = 0;
     count2 = D_800A37BC;
-    *(s16 *)(entry + 0xA) = arg1;
-    *(s16 *)(entry + 6) = arg1;
+    entry->targetX = arg1;
+    entry->x = arg1;
     subBase = (u8 *)D_800A3654;
-    *(s16 *)(entry + 0x12) = 0;
-    *(s16 *)(entry + 0x14) = 0;
-    *(s32 *)(entry + 0x1C) = 0;
-    *(s16 *)(entry + 0x1A) = 0;
-    *(s16 *)(entry + 0) = 0;
-    *(s16 *)(entry + 0xC) = 0xC8;
-    *(s16 *)(entry + 8) = 0xC8;
-    *(s16 *)(entry + 0xE) = 0;
-    *(s16 *)(entry + 0x10) = 0;
-    *(s16 *)(entry + 0x1A) = 0;
+    entry->drawOffsetX = 0;
+    entry->drawOffsetY = 0;
+    entry->next = 0;
+    entry->orderingDepth = 0;
+    entry->kind = 0;
+    entry->targetY = 0xC8;
+    entry->y = 0xC8;
+    entry->velocityX = 0;
+    entry->velocityY = 0;
+    entry->orderingDepth = 0;
     D_800A37BC = count2 + 1;
     sub = subBase + count2 * 12;
-    *(u8 **)(entry + 0x20) = sub;
+    entry->primitive = sub;
     sub[0] = 0;
     sub[3] = 0;
     *(s32 *)(sub + 4) = 0;
-    local = *(u8 **)(entry + 0x20);
+    local = entry->primitive;
     D_800A3788 = (Df50Fields *)entry;
     local[1] = 2;
     local[2] = 2;
@@ -460,7 +460,7 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern s32 D_8009A31C[];
     u8 index;
     u8 primIndex;
-    u8 *object;
+    MenuObj *object;
     s32 panelH;
     s32 panelB;
     u8 *prim;
@@ -472,33 +472,33 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 stride;
 
     index = gMenuObjectPoolCount++;
-    object = gMenuObjectPool + index * 36;
-    object[4] = 0;
-    object[3] = 0;
-    object[2] = 0;
+    object = &gMenuObjectPool[index];
+    object->blue = 0;
+    object->green = 0;
+    object->red = 0;
     primIndex = D_800A37BC;
-    *(u16 *)(object + 0xA) = arg1;
-    *(u16 *)(object + 6) = arg1;
+    *(u16 *)((u8 *)object + 0xA) = arg1;
+    *(u16 *)((u8 *)object + 6) = arg1;
     prim = (u8 *)D_800A3654;
-    *(u16 *)(object + 0x12) = 0;
-    *(u16 *)(object + 0x14) = 0;
-    *(u32 *)(object + 0x1C) = 0;
-    *(u16 *)(object + 0x1A) = 0;
-    *(u16 *)(object + 0x0) = 0;
-    *(u16 *)(object + 0xC) = 0xAB;
-    *(u16 *)(object + 0x8) = 0xAB;
-    *(u16 *)(object + 0xE) = 0;
-    *(u16 *)(object + 0x10) = 0;
-    *(u16 *)(object + 0x1A) = 0;
+    *(u16 *)((u8 *)object + 0x12) = 0;
+    *(u16 *)((u8 *)object + 0x14) = 0;
+    *(u32 *)((u8 *)object + 0x1C) = 0;
+    *(u16 *)((u8 *)object + 0x1A) = 0;
+    *(u16 *)((u8 *)object + 0x0) = 0;
+    *(u16 *)((u8 *)object + 0xC) = 0xAB;
+    *(u16 *)((u8 *)object + 0x8) = 0xAB;
+    *(u16 *)((u8 *)object + 0xE) = 0;
+    *(u16 *)((u8 *)object + 0x10) = 0;
+    *(u16 *)((u8 *)object + 0x1A) = 0;
     D_800A37BC = primIndex + 1;
     do {
     } while (0);
     prim += primIndex * 12;
-    *(u32 *)(object + 0x20) = prim;
+    *(u8 **)((u8 *)object + 0x20) = prim;
     prim[0] = 0;
     prim[3] = 0;
     *(s32 *)(prim + 4) = 0;
-    prim2 = *(u8 **)(object + 0x20);
+    prim2 = object->primitive;
     offset = arg0 & 0xFF;
     stride = 4;
     offset = offset * stride;
@@ -743,12 +743,12 @@ extern u16 D_8009AEA2[];
 extern u16 D_8009AEA6[];
 extern u16 D_8009AEB2[];
 extern u16 D_8009AEBA[];
-extern u8 *D_800B996C[];
-extern u8 *D_800B9980[];
-extern u8 *D_800BB9F4[];
-extern u8 *D_800AE168[];
-extern u8 *D_800B60B8[];
-extern u8 *D_800A39ACPtr asm("D_800A39AC");
+extern MenuObj *D_800B996C[];
+extern MenuObj *D_800B9980[];
+extern MenuObj *D_800BB9F4[];
+extern MenuObj *D_800AE168[];
+extern MenuObj *D_800B60B8[];
+extern MenuObj *D_800A39ACPtr asm("D_800A39AC");
 extern s32 D_8009A268[];
 extern s32 D_8009A298[];
 extern void func_80060008(u8);
@@ -772,19 +772,19 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     u8 ix8;
     u8 ix9;
     u8 ixB10;
-    u8 *obj1;
-    u8 *obj11;
-    u8 *obj2;
-    u8 *obj3;
-    u8 *obj4;
-    u8 *obj5;
-    u8 *obj6;
-    u8 *obj7;
-    u8 *obj8;
-    u8 *objB8;
-    u8 *objB9;
-    u8 *objC10;
-    u8 *objC9;
+    MenuObj *obj1;
+    MenuObj *obj11;
+    MenuObj *obj2;
+    MenuObj *obj3;
+    MenuObj *obj4;
+    MenuObj *obj5;
+    MenuObj *obj6;
+    MenuObj *obj7;
+    MenuObj *obj8;
+    MenuObj *objB8;
+    MenuObj *objB9;
+    MenuObj *objC10;
+    MenuObj *objC9;
     u8 *pq3;
     u8 *pr1;
     u8 *pr2;
@@ -813,9 +813,9 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     s32 x4;
     s32 x6;
     s32 value;
-    u8 *entry;
+    MenuObj *entry;
     s32 *strP;
-    u8 **list;
+    MenuObj **list;
 
     h = 0;
     yBase = 0x5C;
@@ -823,7 +823,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     list = D_800B996C;
     do {
         s32 y1;
-        u8 **listSlot;
+        MenuObj **listSlot;
         x1 = yBase;
         j = 0;
         listSlot = list;
@@ -834,23 +834,23 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         {
             ix1 = gMenuObjectPoolCount;
             gMenuObjectPoolCount = ix1 + 1;
-            obj1 = gMenuObjectPool + ix1 * 36;
-            ((MenuObj *)obj1)->drawOffsetX = 0;
-            ((MenuObj *)obj1)->drawOffsetY = 0;
-            ((MenuObj *)obj1)->next = 0;
-            obj1[4] = 0;
-            obj1[3] = 0;
-            obj1[2] = 0;
-            ((MenuObj *)obj1)->orderingDepth = 0;
-            ((MenuObj *)obj1)->kind = 1;
-            ((MenuObj *)obj1)->width = w1;
-            ((MenuObj *)obj1)->targetX = h;
-            ((MenuObj *)obj1)->x = h;
-            ((MenuObj *)obj1)->targetY = x1;
-            ((MenuObj *)obj1)->y = x1;
-            ((MenuObj *)obj1)->height = g1;
-            ((MenuObj *)obj1)->velocityX = 0;
-            ((MenuObj *)obj1)->velocityY = 0;
+            obj1 = &gMenuObjectPool[ix1];
+            obj1->drawOffsetX = 0;
+            obj1->drawOffsetY = 0;
+            obj1->next = 0;
+            obj1->blue = 0;
+            obj1->green = 0;
+            obj1->red = 0;
+            obj1->orderingDepth = 0;
+            obj1->kind = 1;
+            obj1->width = w1;
+            obj1->targetX = h;
+            obj1->x = h;
+            obj1->targetY = x1;
+            obj1->y = x1;
+            obj1->height = g1;
+            obj1->velocityX = 0;
+            obj1->velocityY = 0;
             pr1 = GraphicsAllocPolyFT4(1);
             SetPolyFT4((POLY_FT4 *)pr1);
             SetShadeTex(pr1, 0);
@@ -859,20 +859,20 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             pr1[6] = 0x80;
             SetSemiTrans(pr1, 0);
             entry = obj1;
-            ((MenuObj *)entry)->primitive = pr1;
-            ((MenuObj *)entry)->orderingDepth = z1;
+            entry->primitive = pr1;
+            entry->orderingDepth = z1;
             if (j == 0) {
                 *listSlot = entry;
             } else {
-                *(u8 **)(*listSlot + 0x1C) = entry;
+                (*listSlot)->next = entry;
             }
-            prim2 = ((MenuObj *)entry)->primitive;
-            ((MenuObj *)entry)->x = -0xF5;
-            ((MenuObj *)entry)->velocityX = 2;
+            prim2 = entry->primitive;
+            entry->x = -0xF5;
+            entry->velocityX = 2;
             if (j == 0) {
                 u16 w;
                 u8 v;
-                w = *(u16 *)(entry + 0x16);
+                w = *(u16 *)((u8 *)entry + 0x16);
                 *(s16 *)(prim2 + 0xE) =
                     GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
                 *(s16 *)(prim2 + 0x16) = GetTPage(
@@ -889,7 +889,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             } else {
                 u16 w;
                 u8 v;
-                w = *(u16 *)(entry + 0x16);
+                w = *(u16 *)((u8 *)entry + 0x16);
                 *(s16 *)(prim2 + 0xE) =
                     GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
                 *(s16 *)(prim2 + 0x16) = GetTPage(
@@ -920,28 +920,28 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         {
             ix2 = gMenuObjectPoolCount;
             gMenuObjectPoolCount = ix2 + 1;
-            obj2 = gMenuObjectPool + ix2 * 36;
-            obj2[4] = 0;
-            ((MenuObj *)obj2)->height = g2;
-            ((MenuObj *)obj2)->drawOffsetX = 0;
-            ((MenuObj *)obj2)->drawOffsetY = 0;
-            ((MenuObj *)obj2)->next = 0;
-            obj2[3] = 0;
-            obj2[2] = 0;
-            ((MenuObj *)obj2)->orderingDepth = 0;
-            ((MenuObj *)obj2)->kind = k2;
-            ((MenuObj *)obj2)->x = 0;
-            ((MenuObj *)obj2)->targetX = 0;
-            ((MenuObj *)obj2)->y = yBase;
-            ((MenuObj *)obj2)->targetY = yBase;
-            ((MenuObj *)obj2)->velocityX = 0;
-            ((MenuObj *)obj2)->velocityY = 0;
-            ((MenuObj *)obj2)->width = w2;
-            obj2[2] = c2;
-            obj2[3] = c2;
-            obj2[4] = b2;
+            obj2 = &gMenuObjectPool[ix2];
+            obj2->blue = 0;
+            obj2->height = g2;
+            obj2->drawOffsetX = 0;
+            obj2->drawOffsetY = 0;
+            obj2->next = 0;
+            obj2->green = 0;
+            obj2->red = 0;
+            obj2->orderingDepth = 0;
+            obj2->kind = k2;
+            obj2->x = 0;
+            obj2->targetX = 0;
+            obj2->y = yBase;
+            obj2->targetY = yBase;
+            obj2->velocityX = 0;
+            obj2->velocityY = 0;
+            obj2->width = w2;
+            obj2->red = c2;
+            obj2->green = c2;
+            obj2->blue = b2;
             pr2 = GraphicsAllocPolyF4(1);
-            ((MenuObj *)obj2)->primitive = pr2;
+            obj2->primitive = pr2;
             SetPolyF4(pr2);
             SetSemiTrans(pr2, 1);
             y1 = yBase + 0x1E;
@@ -956,11 +956,11 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             *(s16 *)(pr2 + 0x12) = y1;
             *(s16 *)(pr2 + 0x14) = w2;
             *(s16 *)(pr2 + 0x16) = y1;
-            ((MenuObj *)obj2)->orderingDepth = 0x3FD;
-            ((MenuObj *)obj2)->velocityX = k2;
-            ((MenuObj *)obj2)->x = -0xF5;
-            ((MenuObj *)obj2)->velocityX = k2;
-            *(u8 **)(entry + 0x1C) = obj2;
+            obj2->orderingDepth = 0x3FD;
+            obj2->velocityX = k2;
+            obj2->x = -0xF5;
+            obj2->velocityX = k2;
+            *(u8 **)((u8 *)entry + 0x1C) = obj2;
             entry = obj2;
             j++;
         }
@@ -978,10 +978,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         i = 0;
         do {
             s16 yLoad;
-            u8 *node;
+            MenuObj *node;
             node = D_800B996C[i];
             m = 0;
-            yLoad = *(s16 *)(node + 0xC);
+            yLoad = node->targetY;
             yBase = yLoad + 3;
             do {
                 u8 primIdx;
@@ -1002,36 +1002,36 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 }
                 ix3 = gMenuObjectPoolCount;
                 gMenuObjectPoolCount = ix3 + 1;
-                obj3 = gMenuObjectPool + ix3 * 36;
-                obj3[4] = 0;
-                obj3[3] = 0;
-                obj3[2] = 0;
+                obj3 = &gMenuObjectPool[ix3];
+                obj3->blue = 0;
+                obj3->green = 0;
+                obj3->red = 0;
                 primIdx = D_800A37BC;
                 entry = obj3;
-                ((MenuObj *)entry)->drawOffsetX = 0;
-                ((MenuObj *)entry)->drawOffsetY = 0;
-                ((MenuObj *)entry)->next = 0;
-                ((MenuObj *)entry)->orderingDepth = 0;
-                ((MenuObj *)entry)->kind = 0;
-                ((MenuObj *)entry)->targetX = h;
-                ((MenuObj *)entry)->x = h;
-                ((MenuObj *)entry)->targetY = yBase;
-                ((MenuObj *)entry)->y = yBase;
-                ((MenuObj *)entry)->velocityX = 0;
-                ((MenuObj *)entry)->velocityY = 0;
-                ((MenuObj *)entry)->orderingDepth = 0;
+                entry->drawOffsetX = 0;
+                entry->drawOffsetY = 0;
+                entry->next = 0;
+                entry->orderingDepth = 0;
+                entry->kind = 0;
+                entry->targetX = h;
+                entry->x = h;
+                entry->targetY = yBase;
+                entry->y = yBase;
+                entry->velocityX = 0;
+                entry->velocityY = 0;
+                entry->orderingDepth = 0;
                 D_800A37BC = primIdx + 1;
                 textPrim = (u8 *)D_800A3654 + primIdx * 12;
-                ((MenuObj *)entry)->primitive = textPrim;
+                entry->primitive = textPrim;
                 textPrim[0] = 0;
                 textPrim[3] = 0;
                 *(s32 *)(textPrim + 4) = 0;
                 D_800BB9F4[n] = entry;
-                ((MenuObj *)entry)->velocityX = 2;
-                ((MenuObj *)entry)->width = value;
-                ((MenuObj *)entry)->x = *(u16 *)(entry + 0xA) - 0xF5;
-                ((MenuObj *)entry)->height = MenuFontLineHeight();
-                primLoad = ((MenuObj *)entry)->primitive;
+                entry->velocityX = 2;
+                entry->width = value;
+                entry->x = *(u16 *)((u8 *)entry + 0xA) - 0xF5;
+                entry->height = MenuFontLineHeight();
+                primLoad = entry->primitive;
                 primLoad[1] = 2;
                 primLoad[2] = 2;
                 *(s32 *)(primLoad + 8) = D_8009A268[n];
@@ -1045,10 +1045,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         } while (i < 4);
     }
     {
-        u8 *obj3;
+        MenuObj *obj3;
         u8 *pr3;
         u8 *pq3;
-        yBase = *(s16 *)(D_800B996C[0] + 0xC) + 0xD;
+        yBase = *(s16 *)((u8 *)D_800B996C[0] + 0xC) + 0xD;
         k3 = 3;
         k9 = 9;
         w4 = 0x68;
@@ -1057,31 +1057,31 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         h = 8;
         i = 0;
         do {
-            u8 **slot;
-            u8 **tbl;
+            MenuObj **slot;
+            MenuObj **tbl;
             u16 w;
             u16 hh;
             u32 scale;
             u32 level;
             ix4 = gMenuObjectPoolCount;
             gMenuObjectPoolCount = ix4 + 1;
-            obj4 = gMenuObjectPool + ix4 * 36;
-            ((MenuObj *)obj4)->kind = 1;
-            ((MenuObj *)obj4)->width = w4;
-            ((MenuObj *)obj4)->drawOffsetX = 0;
-            ((MenuObj *)obj4)->drawOffsetY = 0;
-            ((MenuObj *)obj4)->next = 0;
-            obj4[4] = 0;
-            obj4[3] = 0;
-            obj4[2] = 0;
-            ((MenuObj *)obj4)->orderingDepth = 0;
-            ((MenuObj *)obj4)->targetX = h;
-            ((MenuObj *)obj4)->x = h;
-            ((MenuObj *)obj4)->targetY = yBase;
-            ((MenuObj *)obj4)->y = yBase;
-            ((MenuObj *)obj4)->height = g4;
-            ((MenuObj *)obj4)->velocityX = 0;
-            ((MenuObj *)obj4)->velocityY = 0;
+            obj4 = &gMenuObjectPool[ix4];
+            obj4->kind = 1;
+            obj4->width = w4;
+            obj4->drawOffsetX = 0;
+            obj4->drawOffsetY = 0;
+            obj4->next = 0;
+            obj4->blue = 0;
+            obj4->green = 0;
+            obj4->red = 0;
+            obj4->orderingDepth = 0;
+            obj4->targetX = h;
+            obj4->x = h;
+            obj4->targetY = yBase;
+            obj4->y = yBase;
+            obj4->height = g4;
+            obj4->velocityX = 0;
+            obj4->velocityY = 0;
             pr4 = GraphicsAllocPolyFT4(1);
             SetPolyFT4((POLY_FT4 *)pr4);
             SetShadeTex(pr4, 0);
@@ -1090,16 +1090,16 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             pr4[6] = 0x80;
             SetSemiTrans(pr4, 0);
             entry = obj4;
-            ((MenuObj *)entry)->primitive = pr4;
-            ((MenuObj *)entry)->orderingDepth = z4;
+            entry->primitive = pr4;
+            entry->orderingDepth = z4;
             tbl = D_800B9980;
             slot = tbl + i;
             *slot = entry;
-            prim2 = ((MenuObj *)entry)->primitive;
-            ((MenuObj *)entry)->x = -0xF5;
-            ((MenuObj *)entry)->velocityX = 2;
-            w = *(u16 *)(entry + 0x16);
-            hh = *(u16 *)(entry + 0x18);
+            prim2 = entry->primitive;
+            entry->x = -0xF5;
+            entry->velocityX = 2;
+            w = *(u16 *)((u8 *)entry + 0x16);
+            hh = *(u16 *)((u8 *)entry + 0x18);
             *(s16 *)(prim2 + 0xE) = GetClut(D_8009AEA2[1], D_8009AEA6[0]);
             *(s16 *)(prim2 + 0x16) =
                 GetTPage(*(u16 *)((u8 *)D_8009AEAA + 2), 3,
@@ -1122,28 +1122,28 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 s16 y2;
                 ix5 = gMenuObjectPoolCount;
                 gMenuObjectPoolCount = ix5 + 1;
-                obj5 = gMenuObjectPool + ix5 * 36;
-                ((MenuObj *)obj5)->kind = 2;
-                ((MenuObj *)obj5)->x = k9;
-                ((MenuObj *)obj5)->targetX = k9;
-                obj5[2] = 0;
-                ((MenuObj *)obj5)->height = k3;
-                obj5[4] = 0;
-                obj5[2] = 0x40;
-                ((MenuObj *)obj5)->drawOffsetX = 0;
-                ((MenuObj *)obj5)->drawOffsetY = 0;
-                ((MenuObj *)obj5)->next = 0;
-                obj5[3] = 0;
-                ((MenuObj *)obj5)->orderingDepth = 0;
-                ((MenuObj *)obj5)->y = x4;
-                ((MenuObj *)obj5)->targetY = x4;
-                ((MenuObj *)obj5)->velocityX = 0;
-                ((MenuObj *)obj5)->velocityY = 0;
-                ((MenuObj *)obj5)->width = scale;
-                obj5[3] = 0x60;
-                obj5[4] = 0x80;
+                obj5 = &gMenuObjectPool[ix5];
+                obj5->kind = 2;
+                obj5->x = k9;
+                obj5->targetX = k9;
+                obj5->red = 0;
+                obj5->height = k3;
+                obj5->blue = 0;
+                obj5->red = 0x40;
+                obj5->drawOffsetX = 0;
+                obj5->drawOffsetY = 0;
+                obj5->next = 0;
+                obj5->green = 0;
+                obj5->orderingDepth = 0;
+                obj5->y = x4;
+                obj5->targetY = x4;
+                obj5->velocityX = 0;
+                obj5->velocityY = 0;
+                obj5->width = scale;
+                obj5->green = 0x60;
+                obj5->blue = 0x80;
                 pr5 = GraphicsAllocPolyF4(1);
-                ((MenuObj *)obj5)->primitive = pr5;
+                obj5->primitive = pr5;
                 SetPolyF4(pr5);
                 SetSemiTrans(pr5, 1);
                 pr5[4] = 0x40;
@@ -1162,10 +1162,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 *(s16 *)(pr5 + 0x12) = yBase + 4;
                 *(s16 *)(pr5 + 0x16) = yBase + 4;
                 *(s16 *)(pr5 + 0x14) = y2;
-                ((MenuObj *)entry)->orderingDepth = 0x3E8;
-                *(u8 **)(*slot + 0x1C) = entry;
-                ((MenuObj *)entry)->x = -0xF5;
-                ((MenuObj *)entry)->velocityX = 2;
+                entry->orderingDepth = 0x3E8;
+                (*slot)->next = entry;
+                entry->x = -0xF5;
+                entry->velocityX = 2;
             }
             yBase += 0x1E;
         } while (i < 4);
@@ -1175,23 +1175,23 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         u16 hh;
         ix6 = gMenuObjectPoolCount;
         gMenuObjectPoolCount = ix6 + 1;
-        obj6 = gMenuObjectPool + ix6 * 36;
-        ((MenuObj *)obj6)->drawOffsetX = 0;
-        ((MenuObj *)obj6)->drawOffsetY = 0;
-        ((MenuObj *)obj6)->next = 0;
-        obj6[4] = 0;
-        obj6[3] = 0;
-        obj6[2] = 0;
-        ((MenuObj *)obj6)->orderingDepth = 0;
-        ((MenuObj *)obj6)->kind = 1;
-        ((MenuObj *)obj6)->targetY = 0x2A;
-        ((MenuObj *)obj6)->targetX = 0;
-        ((MenuObj *)obj6)->y = 0x2A;
-        ((MenuObj *)obj6)->width = 0x78;
-        ((MenuObj *)obj6)->x = 0;
-        ((MenuObj *)obj6)->height = 0x30;
-        ((MenuObj *)obj6)->velocityX = 0;
-        ((MenuObj *)obj6)->velocityY = 0;
+        obj6 = &gMenuObjectPool[ix6];
+        obj6->drawOffsetX = 0;
+        obj6->drawOffsetY = 0;
+        obj6->next = 0;
+        obj6->blue = 0;
+        obj6->green = 0;
+        obj6->red = 0;
+        obj6->orderingDepth = 0;
+        obj6->kind = 1;
+        obj6->targetY = 0x2A;
+        obj6->targetX = 0;
+        obj6->y = 0x2A;
+        obj6->width = 0x78;
+        obj6->x = 0;
+        obj6->height = 0x30;
+        obj6->velocityX = 0;
+        obj6->velocityY = 0;
         pr6 = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)pr6);
         SetShadeTex(pr6, 0);
@@ -1200,17 +1200,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         pr6[6] = 0x80;
         SetSemiTrans(pr6, 0);
         entry = obj6;
-        ((MenuObj *)entry)->primitive = pr6;
-        ((MenuObj *)entry)->orderingDepth = 0x3FC;
+        entry->primitive = pr6;
+        entry->orderingDepth = 0x3FC;
         do {
         } while (0);
-        prim2 = ((MenuObj *)entry)->primitive;
-        w = *(u16 *)(entry + 0x16);
-        hh = *(u16 *)(entry + 0x18);
-        ((MenuObj *)entry)->velocityX = 2;
+        prim2 = entry->primitive;
+        w = *(u16 *)((u8 *)entry + 0x16);
+        hh = *(u16 *)((u8 *)entry + 0x18);
+        entry->velocityX = 2;
         j = 0;
         D_800A39ACPtr = entry;
-        ((MenuObj *)entry)->velocityY = 0;
+        entry->velocityY = 0;
         *(s16 *)(prim2 + 0xE) = GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
         *(s16 *)(prim2 + 0x16) =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
@@ -1227,33 +1227,33 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     h = 0x78;
     k2b = 2;
     k30 = 0x30;
-    *(s16 *)(D_800A39ACPtr + 6) = -0x7D;
-    *(s16 *)(D_800A39ACPtr + 0xE) = 2;
+    *(s16 *)((u8 *)D_800A39ACPtr + 6) = -0x7D;
+    *(s16 *)((u8 *)D_800A39ACPtr + 0xE) = 2;
     do {
         ix7 = gMenuObjectPoolCount;
         gMenuObjectPoolCount = ix7 + 1;
-        obj7 = gMenuObjectPool + ix7 * 36;
-        obj7[4] = 0;
-        ((MenuObj *)obj7)->height = k30;
-        ((MenuObj *)obj7)->drawOffsetX = 0;
-        ((MenuObj *)obj7)->drawOffsetY = 0;
-        ((MenuObj *)obj7)->next = 0;
-        obj7[3] = 0;
-        obj7[2] = 0;
-        ((MenuObj *)obj7)->orderingDepth = 0;
-        ((MenuObj *)obj7)->kind = k2b;
-        ((MenuObj *)obj7)->x = 0;
-        ((MenuObj *)obj7)->targetX = 0;
-        ((MenuObj *)obj7)->y = yBase;
-        ((MenuObj *)obj7)->targetY = yBase;
-        ((MenuObj *)obj7)->velocityX = 0;
-        ((MenuObj *)obj7)->velocityY = 0;
-        ((MenuObj *)obj7)->width = h;
-        obj7[2] = 0x20;
-        obj7[3] = 0x20;
-        obj7[4] = 0x40;
+        obj7 = &gMenuObjectPool[ix7];
+        obj7->blue = 0;
+        obj7->height = k30;
+        obj7->drawOffsetX = 0;
+        obj7->drawOffsetY = 0;
+        obj7->next = 0;
+        obj7->green = 0;
+        obj7->red = 0;
+        obj7->orderingDepth = 0;
+        obj7->kind = k2b;
+        obj7->x = 0;
+        obj7->targetX = 0;
+        obj7->y = yBase;
+        obj7->targetY = yBase;
+        obj7->velocityX = 0;
+        obj7->velocityY = 0;
+        obj7->width = h;
+        obj7->red = 0x20;
+        obj7->green = 0x20;
+        obj7->blue = 0x40;
         pr7 = GraphicsAllocPolyF4(1);
-        ((MenuObj *)obj7)->primitive = pr7;
+        obj7->primitive = pr7;
         SetPolyF4(pr7);
         SetSemiTrans(pr7, 1);
         pr7[4] = 0x20;
@@ -1267,11 +1267,11 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         *(s16 *)(pr7 + 0xE) = yBase;
         *(s16 *)(pr7 + 0x10) = 0;
         *(s16 *)(pr7 + 0x14) = h;
-        ((MenuObj *)obj7)->orderingDepth = 0x3FD;
-        ((MenuObj *)obj7)->velocityX = k2b;
-        ((MenuObj *)obj7)->x = -0x7D;
-        ((MenuObj *)obj7)->velocityX = k2b;
-        *(u8 **)(entry + 0x1C) = obj7;
+        obj7->orderingDepth = 0x3FD;
+        obj7->velocityX = k2b;
+        obj7->x = -0x7D;
+        obj7->velocityX = k2b;
+        *(u8 **)((u8 *)entry + 0x1C) = obj7;
         entry = obj7;
         j++;
     } while (j < 2);
@@ -1283,29 +1283,29 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     i = 0;
     do {
         s32 iOff;
-        u8 **slot;
+        MenuObj **slot;
         u8 *prD7;
         u16 w;
         u16 hh;
         ix8 = gMenuObjectPoolCount;
         gMenuObjectPoolCount = ix8 + 1;
-        obj8 = gMenuObjectPool + ix8 * 36;
-        ((MenuObj *)obj8)->kind = 1;
-        ((MenuObj *)obj8)->targetX = k41;
-        ((MenuObj *)obj8)->x = k41;
-        ((MenuObj *)obj8)->width = k32;
-        ((MenuObj *)obj8)->drawOffsetX = 0;
-        ((MenuObj *)obj8)->drawOffsetY = 0;
-        ((MenuObj *)obj8)->next = 0;
-        obj8[4] = 0;
-        obj8[3] = 0;
-        obj8[2] = 0;
-        ((MenuObj *)obj8)->orderingDepth = 0;
-        ((MenuObj *)obj8)->targetY = yBase;
-        ((MenuObj *)obj8)->y = yBase;
-        ((MenuObj *)obj8)->height = k7;
-        ((MenuObj *)obj8)->velocityX = 0;
-        ((MenuObj *)obj8)->velocityY = 0;
+        obj8 = &gMenuObjectPool[ix8];
+        obj8->kind = 1;
+        obj8->targetX = k41;
+        obj8->x = k41;
+        obj8->width = k32;
+        obj8->drawOffsetX = 0;
+        obj8->drawOffsetY = 0;
+        obj8->next = 0;
+        obj8->blue = 0;
+        obj8->green = 0;
+        obj8->red = 0;
+        obj8->orderingDepth = 0;
+        obj8->targetY = yBase;
+        obj8->y = yBase;
+        obj8->height = k7;
+        obj8->velocityX = 0;
+        obj8->velocityY = 0;
         pr8 = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)pr8);
         SetShadeTex(pr8, 0);
@@ -1314,15 +1314,15 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         pr8[6] = 0x80;
         SetSemiTrans(pr8, 0);
         entry = obj8;
-        ((MenuObj *)entry)->primitive = pr8;
-        ((MenuObj *)entry)->orderingDepth = 1;
+        entry->primitive = pr8;
+        entry->orderingDepth = 1;
         slot = &D_800B60B8[i];
         *slot = entry;
-        prim2 = ((MenuObj *)entry)->primitive;
-        ((MenuObj *)entry)->velocityX = 2;
-        ((MenuObj *)entry)->x = -0x7D;
-        w = *(u16 *)(entry + 0x16);
-        hh = *(u16 *)(entry + 0x18);
+        prim2 = entry->primitive;
+        entry->velocityX = 2;
+        entry->x = -0x7D;
+        w = *(u16 *)((u8 *)entry + 0x16);
+        hh = *(u16 *)((u8 *)entry + 0x18);
         x6 = yBase + 1;
         *(s16 *)(prim2 + 0xE) =
             GetClut(D_8009AEB2[0], *(u16 *)((u8 *)D_8009AEB2 + 2));
@@ -1337,33 +1337,33 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         prim2[0x24] = *(u8 *)((u8 *)D_8009AEBA - 4) + w;
         prim2[0x25] = *(u8 *)&D_8009AEB6[2] + hh;
         {
-            u8 *objB8;
+            MenuObj *objB8;
             u8 *prC8;
             s16 y2;
             ix9 = gMenuObjectPoolCount;
             gMenuObjectPoolCount = ix9 + 1;
-            objB9 = gMenuObjectPool + ix9 * 36;
-            ((MenuObj *)objB9)->kind = 2;
-            ((MenuObj *)objB9)->x = 0x42;
-            ((MenuObj *)objB9)->drawOffsetX = 0;
-            ((MenuObj *)objB9)->drawOffsetY = 0;
-            ((MenuObj *)objB9)->next = 0;
-            objB9[4] = 0;
-            objB9[3] = 0;
-            objB9[2] = 0;
-            ((MenuObj *)objB9)->orderingDepth = 0;
-            ((MenuObj *)objB9)->targetX = 0x42;
-            ((MenuObj *)objB9)->y = x6;
-            ((MenuObj *)objB9)->targetY = x6;
-            ((MenuObj *)objB9)->velocityX = 0;
-            ((MenuObj *)objB9)->velocityY = 0;
-            ((MenuObj *)objB9)->width = 0x30;
-            ((MenuObj *)objB9)->height = 5;
-            objB9[2] = 0x40;
-            objB9[3] = 0x60;
-            objB9[4] = 0x80;
+            objB9 = &gMenuObjectPool[ix9];
+            objB9->kind = 2;
+            objB9->x = 0x42;
+            objB9->drawOffsetX = 0;
+            objB9->drawOffsetY = 0;
+            objB9->next = 0;
+            objB9->blue = 0;
+            objB9->green = 0;
+            objB9->red = 0;
+            objB9->orderingDepth = 0;
+            objB9->targetX = 0x42;
+            objB9->y = x6;
+            objB9->targetY = x6;
+            objB9->velocityX = 0;
+            objB9->velocityY = 0;
+            objB9->width = 0x30;
+            objB9->height = 5;
+            objB9->red = 0x40;
+            objB9->green = 0x60;
+            objB9->blue = 0x80;
             prC9 = GraphicsAllocPolyF4(1);
-            ((MenuObj *)objB9)->primitive = prC9;
+            objB9->primitive = prC9;
             SetPolyF4(prC9);
             SetSemiTrans(prC9, 0);
             prC9[6] = 0x80;
@@ -1382,51 +1382,51 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 *(s16 *)(prC9 + 0x16) = y6;
             }
             entry = objB9;
-            *(u8 **)(*slot + 0x1C) = entry;
-            ((MenuObj *)entry)->x = -0x7D;
-            ((MenuObj *)entry)->velocityX = 2;
-            ((MenuObj *)entry)->orderingDepth = 0;
+            (*slot)->next = entry;
+            entry->x = -0x7D;
+            entry->velocityX = 2;
+            entry->orderingDepth = 0;
         }
         MenuFontSet(2, 2);
         strP = &D_8009A298[i];
         value = (s16)func_8005A8EI(*strP);
         {
             u8 primIdx;
-            u8 *objC9;
+            MenuObj *objC9;
             u8 *textPrim;
             ixB10 = gMenuObjectPoolCount;
             gMenuObjectPoolCount = ixB10 + 1;
-            objC10 = gMenuObjectPool + ixB10 * 36;
-            objC10[4] = 0;
-            objC10[3] = 0;
-            objC10[2] = 0;
+            objC10 = &gMenuObjectPool[ixB10];
+            objC10->blue = 0;
+            objC10->green = 0;
+            objC10->red = 0;
             primIdx = D_800A37BC;
             entry = objC10;
             h = 0x3E - value;
-            ((MenuObj *)entry)->drawOffsetX = 0;
-            ((MenuObj *)entry)->drawOffsetY = 0;
-            ((MenuObj *)entry)->next = 0;
-            ((MenuObj *)entry)->orderingDepth = 0;
-            ((MenuObj *)entry)->kind = 0;
-            ((MenuObj *)entry)->targetX = h;
-            ((MenuObj *)entry)->x = h;
-            ((MenuObj *)entry)->targetY = yBase;
-            ((MenuObj *)entry)->y = yBase;
-            ((MenuObj *)entry)->velocityX = 0;
-            ((MenuObj *)entry)->velocityY = 0;
-            ((MenuObj *)entry)->orderingDepth = 0;
+            entry->drawOffsetX = 0;
+            entry->drawOffsetY = 0;
+            entry->next = 0;
+            entry->orderingDepth = 0;
+            entry->kind = 0;
+            entry->targetX = h;
+            entry->x = h;
+            entry->targetY = yBase;
+            entry->y = yBase;
+            entry->velocityX = 0;
+            entry->velocityY = 0;
+            entry->orderingDepth = 0;
             D_800A37BC = primIdx + 1;
             textPrim = (u8 *)D_800A3654 + primIdx * 12;
-            ((MenuObj *)entry)->primitive = textPrim;
+            entry->primitive = textPrim;
             textPrim[0] = 0;
             textPrim[3] = 0;
             *(s32 *)(textPrim + 4) = 0;
             D_800AE168[i] = entry;
-            ((MenuObj *)entry)->velocityX = 2;
-            ((MenuObj *)entry)->width = value;
-            ((MenuObj *)entry)->x = ((MenuObj *)entry)->targetX - 0xAD;
-            ((MenuObj *)entry)->height = MenuFontLineHeight();
-            prD10 = ((MenuObj *)entry)->primitive;
+            entry->velocityX = 2;
+            entry->width = value;
+            entry->x = entry->targetX - 0xAD;
+            entry->height = MenuFontLineHeight();
+            prD10 = entry->primitive;
             prD10[1] = 2;
             prD10[2] = 2;
         }
@@ -1440,10 +1440,10 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         u8 *primLoad;
         ix11 = gMenuObjectPoolCount;
         gMenuObjectPoolCount = ix11 + 1;
-        obj11 = gMenuObjectPool + ix11 * 36;
-        obj11[4] = 0;
-        obj11[3] = 0;
-        obj11[2] = 0;
+        obj11 = &gMenuObjectPool[ix11];
+        obj11->blue = 0;
+        obj11->green = 0;
+        obj11->red = 0;
         primIdx = D_800A37BC;
         m = (s32)obj11;
         ((MenuObj *)m)->targetX = 5;
@@ -1472,13 +1472,13 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         primLoad[1] = 2;
         primLoad[2] = 2;
         *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
-        *(u8 **)(entry + 0x1C) = ((u8 *)m);
+        *(u8 **)((u8 *)entry + 0x1C) = ((u8 *)m);
     }
     func_80060008(arg0);
 }
 
 void MenuUpdateObjectGroups(void) {
-    extern u8 *D_800A39ACSmall asm("D_800A39AC.NON_MATCHING");
+    extern MenuObj *D_800A39ACSmall asm("D_800A39AC.NON_MATCHING");
     s32 i;
     s32 j;
 
@@ -1496,12 +1496,12 @@ void MenuUpdateObjectGroups(void) {
     }
 }
 
-u8 *MenuSetGridObjectScale(u8 x, u8 y) {
+MenuObj *MenuSetGridObjectScale(u8 x, u8 y) {
     u32 scale;
     u32 level;
     u32 result;
-    u8 *node;
-    u8 *entry;
+    MenuObj *node;
+    MenuObj *entry;
 
     level = D_800A3860[x][y];
     scale = ((level << 1) + level) << 2;
@@ -1511,8 +1511,8 @@ u8 *MenuSetGridObjectScale(u8 x, u8 y) {
         result = 1;
     }
     node = D_800B9980[y];
-    entry = *(u8 **)(node + 0x1C);
-    *(s16 *)(entry + 0x16) = result;
+    entry = node->next;
+    entry->width = result;
     return entry;
 }
 
@@ -1526,7 +1526,7 @@ void func_80060008(u8 arg0) {
     s32 aCol;
     s32 cCol;
     s32 q;
-    u8 *node;
+    MenuObj *node;
     u8 *entry;
 
     vals[0] = (0x3F - D_800A3861U8[arg0][0]) * 700 / 1000 +
@@ -1556,7 +1556,7 @@ void func_80060008(u8 arg0) {
             q = 1;
         }
         node = D_800B60B8[diff];
-        entry = *(u8 **)(&node[0x1C]);
+        entry = *(u8 **)(&((u8 *)node)[0x1C]);
         *(s16 *)(&entry[0x16]) = q;
         diff++;
     } while (diff < 4);
@@ -1565,31 +1565,30 @@ void func_80060008(u8 arg0) {
 /* Same body as func_8005CF34. Retail emits it out of line there and inlines
  * it at each call site below; the inline parameter copies place the moves
  * in the loop. */
-static inline void MenuObjDrawText(u8 *window, u8 code, u8 first, u8 second,
-                                   s32 textId) {
+static inline void MenuObjDrawText(MenuObj *window, u8 code, u8 first,
+                                   u8 second, s32 textId) {
     u8 *prim;
 
-    prim = *(u8 **)(window + 0x20);
+    prim = (u8 *)window->primitive;
     MenuFontSet(prim[1], prim[2]);
     prim[0] = code;
     if (textId == 0) {
         textId = *(s32 *)(prim + 8);
     }
-    if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
-        MenuSetTextColor(window[2], window[3], window[4]);
+    if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 || window->blue != 0) {
+        MenuSetTextColor(window->red, window->green, window->blue);
     } else if (prim[1] == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
         MenuSetTextColor(0, 0, 0);
     }
     if (gScreenState[0] == 0xD) {
-        MenuDrawString(textId,
-                       (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-                       (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+        MenuDrawString(textId, (s16)((u16)window->x + (u16)window->drawOffsetX),
+                       (s16)((u16)window->y + (u16)window->drawOffsetY),
                        prim[3], prim[0], *(s32 *)(prim + 4), first, second);
     } else {
-        MenuDrawString(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
-                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId, window->x, window->y, prim[3], prim[0],
+                       *(s32 *)(prim + 4), first, second);
     }
 }
 
@@ -1600,8 +1599,8 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
     s8 sel;
     u32 level;
     u32 scale;
-    u8 *node;
-    u8 *window;
+    MenuObj *node;
+    MenuObj *window;
     u8 *prim;
 
     sel = selectedColumn - 2;
@@ -1611,13 +1610,13 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
         if (scale == 0) {
             scale = 1;
         }
-        *(s16 *)(*(u8 **)(D_800B9980[(u8)i] + 0x1C) + 0x16) = scale;
+        *(s16 *)(*(u8 **)((u8 *)D_800B9980[(u8)i] + 0x1C) + 0x16) = scale;
         MenuDrawObjectList(D_800B996C[i], 0xFF);
         MenuDrawObjectList(D_800B9980[i], i != sel);
         first = i != sel;
         for (j = 0; j < 3; j++) {
             window = D_800BB9F4[i * 3 + j];
-            prim = *(u8 **)(window + 0x20);
+            prim = (u8 *)window->primitive;
             if (i == sel) {
                 *(s32 *)(prim + 4) = 0;
             } else {
@@ -1631,22 +1630,22 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
         MenuDrawObjectList(D_800B60B8[i], 0xFF);
         MenuObjDrawText(D_800AE168[i], 0, 0, 0, 0);
     }
-    node = *(u8 **)(D_800AE168[3] + 0x1C);
+    node = D_800AE168[3]->next;
     if (node != 0) {
         MenuDrawObjectList(node, 0xFF);
     }
 }
 
-extern u8 *D_800A3A68Store asm("D_800A3A68");
+extern MenuObj *D_800A3A68Store asm("D_800A3A68");
 extern s32 D_8009A2B0[];
 extern s32 D_8009A2BC[];
 void func_800606D4(void) {
-    u8 *entry;
-    u8 *cur;
-    u8 *row;
+    MenuObj *entry;
+    MenuObj *cur;
+    MenuObj *row;
     u8 *prim2;
     u16 width;
-    u8 *sign;
+    MenuObj *sign;
     int new_var3;
     s16 *new_var2;
     u8 *mark;
@@ -1660,30 +1659,30 @@ void func_800606D4(void) {
     s32 *table;
     {
         u8 index;
-        u8 *object;
+        MenuObj *object;
         u8 *prim;
         u16 w;
         u16 h;
         index = gMenuObjectPoolCount++;
-        object = gMenuObjectPool + (index * 36);
-        *((s16 *)(object + 0)) = 1;
-        *((s16 *)(object + 0xC)) = 0xA7;
-        *((s16 *)(object + 8)) = 0xA7;
-        *((s16 *)(object + 0x16)) = 0x78;
-        *((s16 *)(object + 0x12)) = 0;
-        *((s16 *)(object + 0x14)) = 0;
-        *((s32 *)(object + 0x1C)) = 0;
-        object[4] = 0;
-        object[3] = 0;
-        object[2] = 0;
+        object = &gMenuObjectPool[index];
+        object->kind = 1;
+        object->targetY = 0xA7;
+        object->y = 0xA7;
+        object->width = 0x78;
+        object->drawOffsetX = 0;
+        object->drawOffsetY = 0;
+        object->next = 0;
+        object->blue = 0;
+        object->green = 0;
+        object->red = 0;
         new_var3 = 2;
-        *((s16 *)(object + 0x1A)) = 0;
-        *((s16 *)(object + 0xA)) = 0;
+        object->orderingDepth = 0;
+        object->targetX = 0;
         idx2 = 0x30;
-        *((s16 *)(object + 6)) = 0;
-        *((s16 *)(object + 0x18)) = idx2;
-        *((s16 *)(object + 0xE)) = 0;
-        *((s16 *)(object + 0x10)) = 0;
+        object->x = 0;
+        object->height = idx2;
+        object->velocityX = 0;
+        object->velocityY = 0;
         prim = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)prim);
         SetShadeTex(prim, 0);
@@ -1692,15 +1691,15 @@ void func_800606D4(void) {
         prim[6] = 0x80;
         SetSemiTrans(prim, 0);
         entry = object;
-        *((u8 **)(entry + 0x20)) = prim;
-        *((s16 *)(entry + 0x1A)) = new_var3;
+        entry->primitive = prim;
+        entry->orderingDepth = new_var3;
         asm volatile("" : : : "memory");
-        prim2 = *((u8 **)(entry + 0x20));
-        *((s16 *)(entry + 0xE)) = 0;
-        *((s16 *)(entry + 0x10)) = 0;
-        *((s16 *)(entry + 6)) = -0x78;
-        w = *((u16 *)(entry + 0x16));
-        h = *((u16 *)(entry + 0x18));
+        prim2 = (u8 *)entry->primitive;
+        entry->velocityX = 0;
+        entry->velocityY = 0;
+        entry->x = -0x78;
+        w = (u16)entry->width;
+        h = (u16)entry->height;
         D_800A38A8 = entry;
         *((s16 *)(prim2 + 0xE)) =
             GetClut(D_8009AF22[0], ((u16 *)D_8009AF22)[1]);
@@ -1717,32 +1716,32 @@ void func_800606D4(void) {
     }
     {
         u8 index;
-        u8 *object;
+        MenuObj *object;
         u8 *prim;
         index = gMenuObjectPoolCount++;
-        object = gMenuObjectPool + (index * 36);
-        *((s16 *)(object + 0x12)) = 0;
-        *((s16 *)(object + 0x14)) = 0;
-        *((s32 *)(object + 0x1C)) = 0;
-        object[4] = 0;
-        object[3] = 0;
-        object[2] = 0;
+        object = &gMenuObjectPool[index];
+        object->drawOffsetX = 0;
+        object->drawOffsetY = 0;
+        object->next = 0;
+        object->blue = 0;
+        object->green = 0;
+        object->red = 0;
         new_var3 = 2;
-        *((s16 *)(object + 0x1A)) = 0;
-        *((s16 *)(object + 0)) = 2;
-        *((s16 *)(object + 6)) = 0xA;
-        *((s16 *)(object + 0xA)) = 0xA;
-        *((s16 *)(object + 8)) = 0xC6;
-        *((s16 *)(object + 0xC)) = 0xC6;
-        *((s16 *)(object + 0xE)) = 0;
-        *((s16 *)(object + 0x10)) = 0;
-        *((s16 *)(object + 0x16)) = 0x32;
-        *((s16 *)(object + 0x18)) = 3;
-        object[2] = 0x40;
-        object[3] = 0x60;
-        object[4] = 0x80;
+        object->orderingDepth = 0;
+        object->kind = 2;
+        object->x = 0xA;
+        object->targetX = 0xA;
+        object->y = 0xC6;
+        object->targetY = 0xC6;
+        object->velocityX = 0;
+        object->velocityY = 0;
+        object->width = 0x32;
+        object->height = 3;
+        object->red = 0x40;
+        object->green = 0x60;
+        object->blue = 0x80;
         prim = GraphicsAllocPolyF4(1);
-        *((u8 **)(object + 0x20)) = prim;
+        object->primitive = prim;
         SetPolyF4(prim);
         SetSemiTrans(prim, 0);
         cur = object;
@@ -1757,10 +1756,10 @@ void func_800606D4(void) {
         *((s16 *)(prim + 0x12)) = 0xC9;
         *((s16 *)(prim + 0x14)) = 0x3C;
         *((s16 *)(prim + 0x16)) = 0xC9;
-        *((s16 *)(cur + 0x12)) = 9;
-        *((s16 *)(cur + 0xE)) = 2;
-        *((s16 *)(cur + 0x1A)) = 0;
-        *((u8 **)(entry + 0x1C)) = cur;
+        cur->drawOffsetX = 9;
+        cur->velocityX = 2;
+        cur->orderingDepth = 0;
+        entry->next = cur;
         entry = cur;
     }
     i = 0;
@@ -1768,28 +1767,28 @@ void func_800606D4(void) {
         u8 index;
         u8 *prim;
         index = gMenuObjectPoolCount++;
-        row = gMenuObjectPool + (index * 36);
-        *((s16 *)(row + 0)) = 2;
-        *((s16 *)(row + 8)) = 0xA7;
-        *((s16 *)(row + 0xC)) = 0xA7;
-        *((s16 *)(row + 0x16)) = 0x78;
-        row[4] = 0;
-        *((s16 *)(row + 0x18)) = idx2;
-        *((s16 *)(row + 0x12)) = 0;
-        *((s16 *)(row + 0x14)) = 0;
-        *((s32 *)(row + 0x1C)) = 0;
-        row[3] = 0;
-        row[2] = 0;
-        *((s16 *)(row + 0x1A)) = 0;
-        *((s16 *)(row + 6)) = 0;
-        *((s16 *)(row + 0xA)) = 0;
-        *((s16 *)(row + 0xE)) = 0;
-        *((s16 *)(row + 0x10)) = 0;
-        row[2] = 0x20;
-        row[3] = 0x20;
-        row[4] = 0x40;
+        row = &gMenuObjectPool[index];
+        row->kind = 2;
+        row->y = 0xA7;
+        row->targetY = 0xA7;
+        row->width = 0x78;
+        row->blue = 0;
+        row->height = idx2;
+        row->drawOffsetX = 0;
+        row->drawOffsetY = 0;
+        row->next = 0;
+        row->green = 0;
+        row->red = 0;
+        row->orderingDepth = 0;
+        row->x = 0;
+        row->targetX = 0;
+        row->velocityX = 0;
+        row->velocityY = 0;
+        row->red = 0x20;
+        row->green = 0x20;
+        row->blue = 0x40;
         prim = GraphicsAllocPolyF4(1);
-        *((u8 **)(row + 0x20)) = prim;
+        row->primitive = prim;
         SetPolyF4(prim);
         SetSemiTrans(prim, 1);
         cur = row;
@@ -1804,42 +1803,42 @@ void func_800606D4(void) {
         *((s16 *)(prim + 8)) = 0;
         *((s16 *)(prim + 0x10)) = 0;
         *((s16 *)(prim + 0x14)) = 0x78;
-        *((s16 *)(cur + 6)) = -0x78;
-        *((s16 *)(cur + 0xE)) = 2;
-        *((s16 *)(cur + 0x1A)) = 3;
-        *((u8 **)(entry + 0x1C)) = cur;
+        cur->x = -0x78;
+        cur->velocityX = 2;
+        cur->orderingDepth = 3;
+        entry->next = cur;
         entry = cur;
     }
 
     {
         u8 index;
         u8 primIndex;
-        u8 *panel;
+        MenuObj *panel;
         u8 *face;
-        u8 *frame;
+        MenuObj *frame;
         u8 *tile;
         u8 *tile2;
         u16 w;
         u16 h;
         s16 x3;
         index = gMenuObjectPoolCount++;
-        panel = gMenuObjectPool + (index * 36);
-        *((s16 *)(panel + 0xA)) = 8;
-        *((s16 *)(panel + 6)) = 8;
-        *((s16 *)(panel + 0xC)) = 0xC5;
-        *((s16 *)(panel + 8)) = 0xC5;
-        *((s16 *)(panel + 0x16)) = 0x68;
-        *((s16 *)(panel + 0x12)) = 0;
-        *((s16 *)(panel + 0x14)) = 0;
-        *((s32 *)(panel + 0x1C)) = 0;
-        panel[4] = 0;
-        panel[3] = 0;
-        panel[2] = 0;
-        *((s16 *)(panel + 0x1A)) = 0;
-        *((s16 *)(panel + 0)) = 1;
-        *((s16 *)(panel + 0x18)) = 5;
-        *((s16 *)(panel + 0xE)) = 0;
-        *((s16 *)(panel + 0x10)) = 0;
+        panel = &gMenuObjectPool[index];
+        panel->targetX = 8;
+        panel->x = 8;
+        panel->targetY = 0xC5;
+        panel->y = 0xC5;
+        panel->width = 0x68;
+        panel->drawOffsetX = 0;
+        panel->drawOffsetY = 0;
+        panel->next = 0;
+        panel->blue = 0;
+        panel->green = 0;
+        panel->red = 0;
+        panel->orderingDepth = 0;
+        panel->kind = 1;
+        panel->height = 5;
+        panel->velocityX = 0;
+        panel->velocityY = 0;
         face = GraphicsAllocPolyFT4(1);
         SetPolyFT4((POLY_FT4 *)face);
         SetShadeTex(face, 0);
@@ -1849,14 +1848,14 @@ void func_800606D4(void) {
         SetSemiTrans(face, 0);
         cur = panel;
         asm("" : "=r"(cur) : "0"(cur));
-        *((u8 **)(panel + 0x20)) = face;
-        *((s16 *)(panel + 0x1A)) = 1;
-        prim2 = *((u8 **)(cur + 0x20));
-        *((s16 *)(cur + 0xE)) = 2;
+        panel->primitive = face;
+        panel->orderingDepth = 1;
+        prim2 = (u8 *)cur->primitive;
+        cur->velocityX = 2;
         asm("" : "=r"(x3) : "0"(8));
-        *((s16 *)(cur + 0x12)) = x3;
-        w = *((u16 *)(cur + 0x16));
-        h = *((u16 *)(cur + 0x18));
+        cur->drawOffsetX = x3;
+        w = (u16)cur->width;
+        h = (u16)cur->height;
         *((s16 *)(prim2 + 0xE)) =
             GetClut(((u16 *)D_8009AEA2)[1], D_8009AEA6[0]);
         *((s16 *)(prim2 + 0x16)) =
@@ -1871,41 +1870,41 @@ void func_800606D4(void) {
         prim2[0x24] = (*((u8 *)(((u8 *)D_8009AEAE) - 6))) + w;
         prim2[0x25] = (*((u8 *)(((u8 *)D_8009AEAE) - 4))) + h;
         index = gMenuObjectPoolCount;
-        frame = gMenuObjectPool + (index * 36);
-        *((u8 **)(row + 0x1C)) = cur;
+        frame = &gMenuObjectPool[index];
+        row->next = cur;
         gMenuObjectPoolCount = index + 1;
-        *((s16 *)(frame + 0x12)) = 0;
-        *((s16 *)(frame + 0x14)) = 0;
-        *((s32 *)(frame + 0x1C)) = 0;
-        frame[4] = 0;
-        frame[3] = 0;
-        frame[2] = 0;
-        *((s16 *)(frame + 0x1A)) = 0;
-        *((s16 *)(frame + 0)) = 0;
-        *((s16 *)(frame + 0xA)) = 0;
-        *((s16 *)(frame + 6)) = 0;
-        *((s16 *)(frame + 0xC)) = 0xB1;
-        *((s16 *)(frame + 8)) = 0xB1;
-        *((s16 *)(frame + 0xE)) = 0;
+        frame->drawOffsetX = 0;
+        frame->drawOffsetY = 0;
+        frame->next = 0;
+        frame->blue = 0;
+        frame->green = 0;
+        frame->red = 0;
+        frame->orderingDepth = 0;
+        frame->kind = 0;
+        frame->targetX = 0;
+        frame->x = 0;
+        frame->targetY = 0xB1;
+        frame->y = 0xB1;
+        frame->velocityX = 0;
         primIndex = D_800A37BC;
         asm volatile("" : : "r"(cur));
         cur = frame;
         asm volatile("" : : "r"(cur), "r"(primIndex));
         tile = (u8 *)D_800A3654;
-        *((s16 *)(cur + 0x10)) = 0;
-        *((s16 *)(cur + 0x1A)) = 0;
+        cur->velocityY = 0;
+        cur->orderingDepth = 0;
         asm volatile("" : : "r"(primIndex));
         D_800A37BC = primIndex + 1;
         tile += primIndex * 12;
-        *((u8 **)(cur + 0x20)) = tile;
+        cur->primitive = tile;
         tile[0] = 0;
         tile[3] = 0;
         *((s32 *)(tile + 4)) = 0;
-        tile2 = *((u8 **)(cur + 0x20));
+        tile2 = (u8 *)cur->primitive;
         width = 0xCA;
         two = 2;
         D_800A3A68Store = cur;
-        *((s16 *)(cur + 0x1A)) = 0;
+        cur->orderingDepth = 0;
         tile2[1] = 2;
         tile2[2] = 2;
         do {
@@ -1915,7 +1914,7 @@ void func_800606D4(void) {
         asm("" : "=r"(p) : "0"(table));
         p = table;
         entry = cur;
-        *((u8 **)(panel + 0x1C)) = entry;
+        panel->next = entry;
     }
     do {
         s32 x;
@@ -1929,45 +1928,45 @@ void func_800606D4(void) {
                 x = 8;
             }
             idx2 = gMenuObjectPoolCount++;
-            sign = gMenuObjectPool + (idx2 * 36);
-            sign[4] = 0;
-            sign[3] = 0;
-            sign[2] = 0;
+            sign = &gMenuObjectPool[idx2];
+            sign->blue = 0;
+            sign->green = 0;
+            sign->red = 0;
             primIdx2 = D_800A37BC;
         } while (0);
         cur = sign;
         mark = (u8 *)D_800A3654;
-        *((s16 *)(cur + 0x12)) = 0;
-        *((s16 *)(cur + 0x14)) = 0;
-        *((s32 *)(cur + 0x1C)) = 0;
-        new_var2 = (s16 *)(cur + 0x1A);
+        cur->drawOffsetX = 0;
+        cur->drawOffsetY = 0;
+        cur->next = 0;
+        new_var2 = (s16 *)((u8 *)cur + 0x1A);
         *new_var2 = 0;
-        *((s16 *)(cur + 0)) = 0;
-        *((s16 *)(cur + 0xA)) = x;
-        *((s16 *)(cur + 6)) = x;
-        *((s16 *)(cur + 0xC)) = width;
-        *((s16 *)(cur + 8)) = width;
-        *((s16 *)(cur + 0xE)) = 0;
-        *((s16 *)(cur + 0x10)) = 0;
+        cur->kind = 0;
+        cur->targetX = x;
+        cur->x = x;
+        cur->targetY = width;
+        cur->y = width;
+        cur->velocityX = 0;
+        cur->velocityY = 0;
         *new_var2 = 0;
         asm volatile("" ::: "memory");
         D_800A37BC = primIdx2 + 1;
         mark += primIdx2 * 12;
-        *((u8 **)(cur + 0x20)) = mark;
+        cur->primitive = mark;
         mark[0] = 0;
         mark[3] = 0;
         *((s32 *)(mark + 4)) = 0;
-        *((s16 *)(cur + 0x12)) = x;
-        *((s16 *)(cur + 0x16)) = value;
-        *((s16 *)(cur + 0x18)) = MenuFontLineHeight();
-        cell = *((u8 **)(cur + 0x20));
-        *((s16 *)(cur + 0xE)) = two;
+        cur->drawOffsetX = x;
+        cur->width = value;
+        cur->height = MenuFontLineHeight();
+        cell = (u8 *)cur->primitive;
+        cur->velocityX = two;
         *new_var2 = 0;
         cell[1] = two;
         cell[2] = two;
         *((s32 *)(cell + 8)) = *p;
         p++;
-        *((u8 **)(entry + 0x1C)) = cur;
+        entry->next = cur;
         entry = cur;
     } while ((s32)p < (s32)(table + 2));
     asm("" : : "r"(two), "r"(two));
@@ -2000,13 +1999,13 @@ void MenuCenterText(s32 textIndex) {
 }
 
 void MenuSetLinkedObjectLayout(s32 a, s32 b, s16 c) {
-    u8 *node;
+    MenuObj *node;
     node = D_800A38A8;
     while (node != 0) {
-        *(s16 *)(node + 14) = c;
-        *(s16 *)(node + 6) = *(u16 *)(node + 18) + a;
-        *(s16 *)(node + 10) = *(u16 *)(node + 18) + b;
-        node = *(u8 **)(node + 0x1C);
+        node->velocityX = c;
+        node->x = (u16)node->drawOffsetX + a;
+        node->targetX = (u16)node->drawOffsetX + b;
+        node = node->next;
     }
 }
 
@@ -2015,7 +2014,7 @@ void MenuSetVolume(s32 volumePercent, s32 volumeSettingIndex) {
     u8 *node;
     u8 x;
 
-    node = *(u8 **)(D_800A38A8 + 0x1C);
+    node = *(u8 **)((u8 *)D_800A38A8 + 0x1C);
     volumeSettingIndex &= 0xFF;
     x = volumePercent;
     *(u16 *)(node + 0x16) = x;
@@ -2040,9 +2039,9 @@ typedef struct {
     s8 tab[7];
 } MenuRowList;
 extern s8 D_800A3348[];
-extern s32 *gPadPictureMenuLists[];
+extern MenuObj *gPadPictureMenuLists[];
 extern u8 *D_800A3A1C[];
-extern u8 *D_800A3888[];
+extern MenuObj *D_800A3888[];
 extern u8 *D_800A3A84[];
 extern u8 *D_800A37FC[];
 extern void *D_800A37F8;
@@ -2054,10 +2053,8 @@ extern u16 D_8009AEA0[];
 extern u16 D_8009AEA4[];
 extern u16 D_8009AEAC[];
 extern u8 D_8009AEA8[];
-struct MenuTextObjectView;
-extern void MenuSetTextObject(struct MenuTextObjectView *, u8, u8, s32, u8,
-                              s32);
-extern void ListSetFieldsAndEnable(u8 *, s16, s16, s16);
+extern void MenuSetTextObject(MenuObj *, u8, u8, s32, u8, s32);
+extern void ListSetFieldsAndEnable(MenuObj *, s16, s16, s16);
 extern u8 D_800A3644[9];
 
 void func_80060FD8(void) {
@@ -4065,22 +4062,22 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     }
 }
 
-s32 ListHasClearFlags(u8 *node) {
+s32 ListHasClearFlags(MenuObj *node) {
     while (node != 0) {
-        if (*(s16 *)(node + 0xE) != 0)
+        if (node->velocityX != 0)
             return 0;
-        node = *(u8 **)(node + 0x1C);
+        node = node->next;
     }
     return 1;
 }
 
-void ListSetFieldsAndEnable(u8 *node, s16 field6, s16 fieldA, s16 fieldE) {
+void ListSetFieldsAndEnable(MenuObj *node, s16 field6, s16 fieldA, s16 fieldE) {
     while (node != 0) {
-        *(s16 *)(node + 6) = field6;
-        *(s16 *)(node + 10) = fieldA;
-        *(s16 *)(node + 14) = fieldE;
-        node[5] = 1;
-        node = *(u8 **)(node + 0x1C);
+        node->x = field6;
+        node->targetX = fieldA;
+        node->velocityX = fieldE;
+        node->unk5 = 1;
+        node = node->next;
     }
 }
 
@@ -4292,19 +4289,19 @@ void MenuAllocateObjectList(void) {
     D_800A3984[0] = (s32)HeapAlloc(0xF00);
 }
 
-extern u8 *D_800A35E4[];
-extern u8 *D_800A3868[];
-extern u8 *MenuCreateTextObject(s32, s32);
-extern u8 *MenuCreateFlatRect(s32, s32, s32, s32, s32, u8, u8, u8, u8, u8);
+extern MenuObj *D_800A35E4[];
+extern MenuObj *D_800A3868[];
+extern MenuObj *MenuCreateTextObject(s32, s32);
+extern MenuObj *MenuCreateFlatRect(s32, s32, s32, s32, s32, u8, u8, u8, u8, u8);
 extern u8 gPlayerDriver[];
 
 void func_800631DC(s32 left, s32 top, s32 code) {
-    u8 *node;
+    MenuObj *node;
     u8 *entry;
     s32 mode;
     s32 base;
     s32 x;
-    u8 *object;
+    MenuObj *object;
     s32 xoff;
     s32 y;
     s32 dx;
@@ -4326,17 +4323,17 @@ void func_800631DC(s32 left, s32 top, s32 code) {
         node = MenuObjAlloc();
         mode = gScreenState[0];
         D_800A35E4[i] = node;
-        *(s16 *)(node + 0) = 4;
-        *(s16 *)(node + 0x6) = left;
-        *(s16 *)(node + 0xA) = top;
-        *(s16 *)(node + 0x8) = base;
-        *(s16 *)(node + 0xC) = base;
-        *(s16 *)(node + 0xE) = code;
-        *(s16 *)(node + 0x10) = 0;
+        node->kind = 4;
+        node->x = left;
+        node->targetX = top;
+        node->y = base;
+        node->targetY = base;
+        node->velocityX = code;
+        node->velocityY = 0;
         if (mode != 0xE) {
             base += 0x33;
         }
-        *(u8 **)(node + 0x20) = entry;
+        node->primitive = entry;
         entry = *(u8 **)(entry + 0x3E0);
         if (mode == 7 || mode == 0xE) {
             continue;
@@ -4344,12 +4341,12 @@ void func_800631DC(s32 left, s32 top, s32 code) {
         x = MenuTextCenterOffset(0x64, (s32)gDriverNames[gPlayerDriver[i]]) -
             0x32;
         object = MenuCreateTextObject(left + x, base - 6);
-        *(s16 *)(object + 0xA) = top + x;
-        *(s16 *)(object + 0x12) = x;
-        *(s16 *)(object + 0xE) = code;
-        MenuSetTextObject((struct MenuTextObjectView *)object, 2, 2,
+        object->targetX = top + x;
+        object->drawOffsetX = x;
+        object->velocityX = code;
+        MenuSetTextObject((MenuObj *)object, 2, 2,
                           (s32)gDriverNames[gPlayerDriver[i]], 0, 0);
-        *(u8 **)(node + 0x1C) = object;
+        node->next = object;
         node = object;
         D_800A3868[i] = node;
         width = 0x32;
@@ -4379,35 +4376,35 @@ void func_800631DC(s32 left, s32 top, s32 code) {
                 break;
             }
             object = MenuCreateTexturedRect(left + xoff, y, width, 7, 1, 1, 0);
-            packet = *(u8 **)(object + 0x20);
-            *(s16 *)(object + 0x12) = xoff;
-            *(s16 *)(object + 0xA) = top + xoff;
-            *(s16 *)(object + 0xE) = code;
+            packet = object->primitive;
+            object->drawOffsetX = xoff;
+            object->targetX = top + xoff;
+            object->velocityX = code;
             MenuSetTexturedQuad(packet, 9, dx, dy, width, 7);
-            *(u8 **)(node + 0x1C) = object;
+            node->next = object;
             node = object;
         }
         for (k = 0; k < 2; k++) {
             object = MenuCreateFlatRect(left - 0x32, base - 9, 0x64, 0xE, 0,
                                         0x20, 0x20, 0x40, 1, 1);
-            *(s16 *)(object + 0x1A) = 3;
-            *(s16 *)(object + 0x12) = -0x32;
-            *(s16 *)(object + 0xA) = top - 0x32;
-            *(s16 *)(object + 0xE) = code;
-            *(u8 **)(node + 0x1C) = object;
+            object->orderingDepth = 3;
+            object->drawOffsetX = -0x32;
+            object->targetX = top - 0x32;
+            object->velocityX = code;
+            node->next = object;
             node = object;
         }
     }
 }
 
 void func_80063538(s32 arg0, s32 arg1) {
-    extern u8 *MenuCreateFlatTriangle(s32, s32, s32, s32, s32, s32, s32, s32,
-                                      s32, s32, s32);
-    extern u8 *D_800A3628[];
+    extern MenuObj *MenuCreateFlatTriangle(s32, s32, s32, s32, s32, s32, s32,
+                                           s32, s32, s32, s32);
+    extern MenuObj *D_800A3628[];
     s32 cmd;
-    u8 **table;
-    u8 *node;
-    u8 *prev;
+    MenuObj **table;
+    MenuObj *node;
+    MenuObj *prev;
     s32 i;
     s32 j;
     s32 offs;
@@ -4423,18 +4420,18 @@ void func_80063538(s32 arg0, s32 arg1) {
             }
             node = MenuCreateFlatTriangle(arg1, cmd, offs, 8, 0, 0x28, 0x64,
                                           0xC8, 0, 1, 0);
-            *(s16 *)(node + 0x1A) = 0;
+            node->orderingDepth = 0;
             if (i != 0) {
-                *(s16 *)(node + 0x12) = 0x2E;
+                node->drawOffsetX = 0x2E;
             } else {
-                *(s16 *)(node + 0x12) = -0x2E;
+                node->drawOffsetX = -0x2E;
             }
-            *(s16 *)(node + 0x14) = 0;
-            *(s16 *)(node + 0x0E) = 0;
+            node->drawOffsetY = 0;
+            node->velocityX = 0;
             if (i == 0) {
                 *table = node;
             } else {
-                *(u8 **)(prev + 0x1C) = node;
+                prev->next = node;
             }
             prev = node;
         }
@@ -4443,11 +4440,11 @@ void func_80063538(s32 arg0, s32 arg1) {
     }
 }
 
-extern u8 *D_800A3628[];
+extern MenuObj *D_800A3628[];
 void func_80063638(u8 mode) {
     s16 left;
     s16 width;
-    u8 *node;
+    MenuObj *node;
     s32 i;
 
     if (mode != 0) {
@@ -4459,77 +4456,77 @@ void func_80063638(u8 mode) {
     }
     node = D_800A3628[0];
     for (i = 0; i < 2; i++) {
-        *(s16 *)(node + 8) = left;
-        *(s16 *)(node + 0xC) = left;
-        *(s16 *)(node + 0x12) = width;
+        node->y = left;
+        node->targetY = left;
+        node->drawOffsetX = width;
         if (i == 0) {
-            *(s16 *)(node + 0x12) = -width;
+            node->drawOffsetX = -width;
         }
-        node = *(u8 **)(node + 0x1C);
+        node = node->next;
     }
 }
 
 void MenuSetLinkedObjectLayoutByIndex(u8 index, s16 dx, s16 dy, s16 code) {
-    u8 *node;
+    MenuObj *node;
 
     node = D_800A35E4[index];
     if (node != 0) {
         do {
-            *(s16 *)(node + 6) = *(s16 *)(node + 0x12) + dx;
-            *(s16 *)(node + 0xE) = code;
-            node[5] = code;
-            *(s16 *)(node + 0xA) = *(s16 *)(node + 0x12) + dy;
-            node = *(u8 **)(node + 0x1C);
+            node->x = node->drawOffsetX + dx;
+            node->velocityX = code;
+            node->unk5 = code;
+            node->targetX = node->drawOffsetX + dy;
+            node = node->next;
         } while (node != 0);
     }
 }
 
 void MenuSetDriverNameLabel(u8 index, u8 kind) {
-    u8 *node;
+    MenuObj *node;
     u8 *object;
     s32 value;
 
     node = D_800A3868[index];
-    object = *(u8 **)(node + 0x20);
+    object = (u8 *)node->primitive;
     *(u8 **)(object + 8) = gDriverNames[kind];
     MenuFontSet(object[1], object[2]);
     value = MenuTextCenterOffset(0x64, *(s32 *)(object + 8));
-    *(s16 *)(node + 6) = value + 0xA;
-    *(s16 *)(node + 0x12) = value - 0x32;
+    node->x = value + 0xA;
+    node->drawOffsetX = value - 0x32;
 }
 
 void MenuNegateLinkedObjectValues(u8 index) {
-    u8 *node;
+    MenuObj *node;
     s16 value;
 
     node = D_800A3868[index];
     if (node != 0) {
         do {
-            value = *(s16 *)(node + 0x1A);
+            value = node->orderingDepth;
             if (value > 0) {
-                *(s16 *)(node + 0x1A) = -value;
+                node->orderingDepth = -value;
             } else if (value == 0) {
-                *(s16 *)(node + 0x1A) = -0x8000;
+                node->orderingDepth = -0x8000;
             }
-            node = *(u8 **)(node + 0x1C);
+            node = node->next;
         } while (node != 0);
     }
 }
 
 void MenuRestoreLinkedObjectValues(u8 index) {
-    u8 *node;
+    MenuObj *node;
     s16 value;
 
     node = D_800A3868[index];
     if (node != 0) {
         do {
-            value = *(s16 *)(node + 0x1A);
+            value = node->orderingDepth;
             if (value == -0x8000) {
-                *(s16 *)(node + 0x1A) = 0;
+                node->orderingDepth = 0;
             } else if (value < 0) {
-                *(s16 *)(node + 0x1A) = -value;
+                node->orderingDepth = -value;
             }
-            node = *(u8 **)(node + 0x1C);
+            node = node->next;
         } while (node != 0);
     }
 }
@@ -4788,7 +4785,7 @@ void func_80063E7C(void) {
  * handing them s1, s2, s3 like retail. */
 void CarDrawPreviewModel(void *arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
-    u8 *entry;
+    MenuObj *entry;
     u8 *obj;
     u16 height;
     s32 x;
@@ -4801,14 +4798,14 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     u16 result;
 
     entry = D_800A35E4[arg0 & 0xFF];
-    height = *(u16 *)(entry + 0xA);
+    height = (u16)entry->targetX;
     do {
-        if (height < 0x140U || *(s16 *)(entry + 6) != (s16)height) {
-            obj = *(u8 **)(entry + 0x20);
+        if (height < 0x140U || entry->x != (s16)height) {
+            obj = (u8 *)entry->primitive;
             if (arg2 & 0xFF) {
-                SetGeomOffset(*(s16 *)(entry + 6), 0x2D);
+                SetGeomOffset(entry->x, 0x2D);
             } else {
-                SetGeomOffset(*(s16 *)(entry + 6), *(s16 *)(entry + 8));
+                SetGeomOffset(entry->x, entry->y);
             }
             if (arg1 & 0xFF) {
                 i = 0;
@@ -4869,22 +4866,21 @@ extern u8 D_800A3060[];
 extern s8 D_800A39FC;
 extern s8 D_800A3594;
 extern s8 D_800A3A14;
-extern u8 *D_800A3744[];
-extern u8 *D_800A3958[];
-extern u8 *D_800A3900[];
+extern MenuObj *D_800A3744[];
+extern MenuObj *D_800A3958[];
+extern MenuObj *D_800A3900[];
 extern u8 *D_800A35E0Alias[] asm("D_800A35E0Absolute");
 extern u8 DriverFindIndexById(s8);
 extern void func_800645A4(s32, s32);
-struct MenuObjectNode;
-extern void ListSetRangeFields(struct MenuObjectNode *, s32, s32, s16);
+extern void ListSetRangeFields(MenuObj *, s32, s32, s16);
 
 void func_80064208(void) {
-    u8 *tail;
-    u8 *node;
-    u8 *prim;
-    u8 *entry;
+    MenuObj *tail;
+    MenuObj *node;
+    MenuObj *prim;
+    MenuObj *entry;
     u8 *obj;
-    u8 **linkSlot;
+    MenuObj **linkSlot;
     s32 y;
     s32 height;
     s32 h;
@@ -4903,13 +4899,12 @@ void func_80064208(void) {
     for (i = 0; i < 2; i++) {
         tail = MenuCreateTexturedRect(0x14, 0x41, 0x40, 0x48, 1, 1, 0);
         D_800A3744[i] = tail;
-        *((s16 *)(tail + 0x12)) = 0x14;
+        tail->drawOffsetX = 0x14;
         node = MenuCreateTextObject(0x5F, 0x2D);
         kind = D_800A39FC;
-        ((MenuObj *)node)->drawOffsetX = 0x5F;
-        MenuSetTextObject((struct MenuTextObjectView *)node, 2, 3,
-                          gDriverNames[kind], 0, 0);
-        *((u8 **)(tail + 0x1C)) = node;
+        node->drawOffsetX = 0x5F;
+        MenuSetTextObject(node, 2, 3, gDriverNames[kind], 0, 0);
+        tail->next = node;
         tail = node;
         MenuFontSet(2, 3);
         height = MenuFontLineHeight();
@@ -4919,11 +4914,10 @@ void func_80064208(void) {
         for (j = 0; j < 5; j++) {
             node = MenuCreateTextObject(0x5F, y);
             kind2 = D_800A39FC;
-            *((s16 *)(node + 0x12)) = 0x5F;
-            MenuSetTextObject((struct MenuTextObjectView *)node, 2, 4,
-                              gDriverNames[kind2], 0, 0);
+            node->drawOffsetX = 0x5F;
+            MenuSetTextObject(node, 2, 4, gDriverNames[kind2], 0, 0);
             y += height;
-            *((u8 **)(tail + 0x1C)) = node;
+            tail->next = node;
             tail = node;
             if (j == 2) {
                 y += 5;
@@ -4933,18 +4927,18 @@ void func_80064208(void) {
         prim = MenuCreateTexturedRect(0x14, 0x2B, 0x40, 0xC, 1, 1, 0);
         node = prim;
         D_800A3958[i] = prim;
-        *((s16 *)(node + 0x12)) = 0x14;
-        *((u8 **)(tail + 0x1C)) = node;
-        prim = *((u8 **)(prim + 0x20));
+        node->drawOffsetX = 0x14;
+        tail->next = node;
+        prim = prim->primitive;
         MenuSetTexturedQuad(prim, 2, 0, 0, 0x40, 0xC);
-        *((s16 *)(prim + 8)) = 0x14;
-        *((s16 *)(prim + 0xA)) = 0x2D;
-        *((s16 *)(prim + 0x10)) = 0x54;
-        *((s16 *)(prim + 0x12)) = 0x2D;
-        *((s16 *)(prim + 0x18)) = 0x14;
-        *((s16 *)(prim + 0x1A)) = 0x39;
-        *((s16 *)(prim + 0x20)) = 0x54;
-        *((s16 *)(prim + 0x22)) = 0x39;
+        prim->y = 0x14;
+        prim->targetX = 0x2D;
+        prim->velocityY = 0x54;
+        prim->drawOffsetX = 0x2D;
+        prim->height = 0x14;
+        prim->orderingDepth = 0x39;
+        *(s16 *)((u8 *)prim + 0x20) = 0x54;
+        *(s16 *)((u8 *)prim + 0x22) = 0x39;
     }
 
     for (k = 0; k < 2; k++) {
@@ -4953,9 +4947,9 @@ void func_80064208(void) {
         if (k == 0) {
             D_800A3900[0] = tail;
         } else {
-            *(linkSlot = (u8 **)(D_800A3900[0] + 0x1C)) = tail;
+            *(linkSlot = &D_800A3900[0]->next) = tail;
         }
-        *((s16 *)(tail + 0x1A)) = 0x3FD;
+        tail->orderingDepth = 0x3FD;
     }
 
     idx = (u8)D_800A39FC;
@@ -4964,14 +4958,14 @@ void func_80064208(void) {
     entry = D_800A3744[D_800A3A14];
     D_800A39A0[0] = 0;
     D_800A38FC[0] = entry;
-    ListSetRangeFields((struct MenuObjectNode *)entry, -0x140, 0, 2);
+    ListSetRangeFields(entry, -0x140, 0, 2);
     func_800631DC(-0x10C, 0x34, 2);
     /* D_800A35E4[0] via the D_800A35E0 alias: a distinct symbol keeps the
      * base load below from being shared with the height lookup. */
     obj = D_800A35E0Alias[1];
-    h = *((s16 *)(D_800A35E4[D_800A3A14] + 0xA));
+    h = *((s16 *)((u8 *)D_800A35E4[D_800A3A14] + 0xA));
     while (obj != 0) {
-        node = obj + 0xE;
+        node = (MenuObj *)(obj + 0xE);
         *((s16 *)node) = 2;
         obj[5] = 2;
         *((s16 *)(obj + 6)) = (*((u16 *)(obj + 0x12))) - 0x10C;
@@ -4983,7 +4977,7 @@ void func_80064208(void) {
 }
 
 void func_800645A4(s32 arg0, s32 arg1) {
-    u8 *node;
+    MenuObj *node;
     u8 *prim;
     u8 *prim2;
     u8 *str;
@@ -5001,7 +4995,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
 
     node = D_800A3744[arg0 & 0xFF];
     idx = arg1 & 0xFF;
-    prim = *(u8 **)(node + 0x20);
+    prim = (u8 *)node->primitive;
     *(s16 *)(prim + 0xE) = GetClut(0x100, 0x1E7 - idx);
     quotient = idx / 12;
     y = (quotient & 0xFF) * 0x48;
@@ -5023,13 +5017,13 @@ void func_800645A4(s32 arg0, s32 arg1) {
     prim[0x1D] = y + 0x47;
     prim[0x24] = q;
     prim[0x25] = y + 0x47;
-    node = *(u8 **)(node + 0x1C);
+    node = node->next;
     MenuFontSet(2, 4);
     h = MenuFontLineHeight();
-    x = *(s16 *)(node + 8);
+    x = node->y;
     offset = *(s32 *)(D_800A3A5C + idx * 4);
     for (i = 0; i < 6; i++) {
-        prim2 = *(u8 **)(node + 0x20);
+        prim2 = (u8 *)node->primitive;
         if (i == 0) {
             *(u8 **)(prim2 + 8) = gDriverNames[idx];
         } else {
@@ -5041,7 +5035,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
             }
             offset++;
         }
-        *(s16 *)(node + 8) = x;
+        node->y = x;
         if (i == 0) {
             x = h + 0x32;
         } else {
@@ -5055,22 +5049,22 @@ void func_800645A4(s32 arg0, s32 arg1) {
         if (i == 3) {
             x += 5;
         }
-        node = *(u8 **)(node + 0x1C);
+        node = node->next;
     }
     func_80063AE0(arg0 & 0xFF, arg1 & 0xFF);
     if ((arg1 & 0xFF) == 2 || (arg1 & 0xFF) == 5 || (arg1 & 0xFF) == 7 ||
         (u32)((arg1 - 9) & 0xFF) < 2 || (arg1 & 0xFF) == 0x11 ||
         (u32)((arg1 - 0x15) & 0xFF) < 2) {
-        str = D_800A3958[arg0 & 0xFF];
+        str = (u8 *)D_800A3958[arg0 & 0xFF];
         advance = -1;
     } else {
-        str = D_800A3958[arg0 & 0xFF];
+        str = (u8 *)D_800A3958[arg0 & 0xFF];
         advance = 1;
     }
     *(s16 *)(str + 0x1A) = advance;
 }
 
-void ListSetRangeFields(MenuObjectNode *node, s32 low, s32 high, s16 value) {
+void ListSetRangeFields(MenuObj *node, s32 low, s32 high, s16 value) {
     while (node != NULL) {
         node->velocityX = value;
         node->x = node->drawOffsetX + low;
@@ -5079,8 +5073,8 @@ void ListSetRangeFields(MenuObjectNode *node, s32 low, s32 high, s16 value) {
     }
 }
 
-extern u8 *D_800A39A4nm[] asm("D_800A39A4.NON_MATCHING");
-extern u8 *D_800A39AC[];
+extern MenuObj *D_800A39A4nm[] asm("D_800A39A4.NON_MATCHING");
+extern MenuObj *D_800A39AC[];
 
 void MenuDrawObjectGroups(void) {
     MenuDrawObjectList(D_800A38FC[1], 0xFF);
@@ -6767,10 +6761,9 @@ void MenuStartVBlankEventAlternate(void) {
     ExitCriticalSection();
 }
 
-void MenuSetTextObject(MenuTextObjectView *obj, u8 a, u8 b, s32 c, u8 d,
-                       s32 e) {
+void MenuSetTextObject(MenuObj *obj, u8 a, u8 b, s32 c, u8 d, s32 e) {
     MenuTextPacket *p;
-    p = obj->textPacket;
+    p = obj->primitive;
     p->unk1 = a;
     p->unk2 = b;
     p->text = c;

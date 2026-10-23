@@ -8096,8 +8096,8 @@ void func_80053C00(s32 arg0, s32 arg1) {
     extern s32 D_800A3914[];
     extern s32 D_800A3914NM[] asm("D_800A3914.NON_MATCHING");
     extern void MenuUpdateAndDrawObjectLists(void);
-    extern void MenuUpdateObjectPosition(u8 *, u8);
-    extern void MenuDrawObjectList(u8 *, u8);
+    extern void MenuUpdateObjectPosition(MenuObj *, u8);
+    extern void MenuDrawObjectList(MenuObj *, u8);
     extern void MenuDrawObjectGroups(void);
     extern void func_800686FC(u8, u8);
     extern void func_8005D094(s32, u8, u8);
@@ -8107,17 +8107,17 @@ void func_80053C00(s32 arg0, s32 arg1) {
         MenuUpdateAndDrawObjectLists();
     } else {
         if (D_800A3914[0] != 0) {
-            MenuUpdateObjectPosition((u8 *)D_800A3914[0], 1);
+            MenuUpdateObjectPosition((MenuObj *)D_800A3914[0], 1);
         }
         if ((gScreenStateSmall >= 9 && gScreenStateSmall <= 10) ||
             gScreenStateSmall == 12 ||
             (gScreenStateSmall >= 16 && gScreenStateSmall <= 17)) {
             func_800686FC(gScreenStateSmall, arg0);
         } else if (gScreenStateSmall == 14) {
-            MenuDrawObjectList((u8 *)D_800A3914NM[0], 0xFF);
+            MenuDrawObjectList((MenuObj *)D_800A3914NM[0], 0xFF);
             MenuDrawObjectGroups();
         } else {
-            MenuDrawObjectList((u8 *)D_800A3914NM[0], 0xFF);
+            MenuDrawObjectList((MenuObj *)D_800A3914NM[0], 0xFF);
             func_8005D094(gScreenStateSmall, D_800A3059, arg1);
         }
     }
@@ -8215,8 +8215,8 @@ __asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
         "D_800A3059.MainLoopPostUp = D_800A3059\n"
         "D_800A3059.MainLoopPostDown = D_800A3059\n");
 
-s32 ListHasClearFlagsMainLoop(u8 *node) asm("ListHasClearFlags");
-void ListSetFieldsAndEnableMainLoop(u8 *, s32, s32,
+s32 ListHasClearFlagsMainLoop(MenuObj *node) asm("ListHasClearFlags");
+void ListSetFieldsAndEnableMainLoop(MenuObj *, s32, s32,
                                     s32) asm("ListSetFieldsAndEnable");
 void GraphicsSelectPrimitiveBufferMainLoop(s32 arg0) asm(
     "GraphicsSelectPrimitiveBuffer");
@@ -8356,24 +8356,24 @@ extern s32
 extern u32 *gOrderingTableMainLoopSite10[] asm("gOrderingTable.MainLoop10");
 extern u32 *gOrderingTableMainLoopSite11[] asm("gOrderingTable.MainLoop11");
 extern u8 D_800A3685MainLoopSite12[] asm("D_800A3685.MainLoop12");
-extern u8 *
+extern MenuObj *
     gPadPictureMenuListsMainLoopSite13[] asm("gPadPictureMenuLists.MainLoop13");
-extern u8 *D_800A37DCMainLoopSite14[] asm("D_800A37DC.MainLoop14");
+extern MenuObj *D_800A37DCMainLoopSite14[] asm("D_800A37DC.MainLoop14");
 extern u8 D_800A3684MainLoopSite15[] asm("D_800A3684.MainLoop15");
 extern s8 gPadTypeMainLoopSite16[] asm("gPadType.MainLoop16");
 extern u8 D_800A3684MainLoopSite17[] asm("D_800A3684.MainLoop17");
 extern s8 gPadTypeMainLoopSite18[] asm("gPadType.MainLoop18");
 extern s8 gPadLayoutMainLoopSite19[] asm("gPadLayout.MainLoop19");
 extern s8 gPadTypeMainLoopSite20[] asm("gPadType.MainLoop20");
-extern u8 *D_800A3888MainLoopSite21[] asm("D_800A3888.MainLoop21");
+extern MenuObj *D_800A3888MainLoopSite21[] asm("D_800A3888.MainLoop21");
 extern u8 D_800A3684MainLoopSite22[] asm("D_800A3684.MainLoop22");
 extern s8 gPadLayoutMainLoopSite23[] asm("gPadLayout.MainLoop23");
 extern s8 gPadTypeMainLoopSite24[] asm("gPadType.MainLoop24");
-extern u8 *D_800A3888MainLoopSite25[] asm("D_800A3888.MainLoop25");
+extern MenuObj *D_800A3888MainLoopSite25[] asm("D_800A3888.MainLoop25");
 extern u8 D_800A3684MainLoopSite26[] asm("D_800A3684.MainLoop26");
 extern u8 D_800A36E4MainLoopSite27[] asm("D_800A36E4.MainLoop27");
 extern u8 D_800A3685MainLoopSite28[] asm("D_800A3685.MainLoop28");
-extern u8 *D_800A37F8MainLoopSite29[] asm("D_800A37F8.MainLoop29");
+extern MenuObj *D_800A37F8MainLoopSite29[] asm("D_800A37F8.MainLoop29");
 extern u8 D_800A3684MainLoopSite30[] asm("D_800A3684.MainLoop30");
 extern s8 gPadTypeMainLoopSite31[] asm("gPadType.MainLoop31");
 extern s8 gPadLayoutMainLoopSite32[] asm("gPadLayout.MainLoop32");
@@ -8426,7 +8426,7 @@ void func_80053D40(void) {
     s32 animateX;
     s32 animateY;
     s32 animateStep;
-    register u8 **animationNodeSlot asm("v0");
+    register MenuObj **animationNodeSlot asm("v0");
     s32 padBits;
     s32 previousPadInverse;
     s32 nextIdleFrames;
@@ -8845,7 +8845,8 @@ void func_80053D40(void) {
                                             animationNodeSlot =
                                                 D_800A3888MainLoopSite21;
                                             animationNodeSlot =
-                                                (u8 **)((index * 4) +
+                                                (MenuObj *
+                                                     *)((index * 4) +
                                                         (u32)animationNodeSlot);
                                             if (index != 0) {
                                                 animationStartX = 0x140;
@@ -8877,8 +8878,9 @@ void func_80053D40(void) {
                                         animationNodeSlot =
                                             D_800A3888MainLoopSite25;
                                         animationNodeSlot =
-                                            (u8 **)((index * 4) +
-                                                    (u32)animationNodeSlot);
+                                            (MenuObj **)((index * 4) +
+                                                         (u32)
+                                                             animationNodeSlot);
                                         if (index != 0) {
                                             animationEndX = -0x140;
                                         }
@@ -9939,11 +9941,11 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern s8 D_800A3A14R5[] asm("D_800A3A14.NON_MATCHING");
     extern s8 D_800A3A14R6[] asm("D_800A3A14.NON_MATCHING");
     extern s8 D_800A3A14R7[] asm("D_800A3A14.NON_MATCHING");
-    extern u8 *D_800A38FCR2[] asm("D_800A38FC.NON_MATCHING");
-    extern u8 *D_800A38FCR3[] asm("D_800A38FC.NON_MATCHING");
-    extern u8 *D_800A38FCR4[] asm("D_800A38FC.NON_MATCHING");
-    extern u8 *D_800A39A0R2[] asm("D_800A39A0.NON_MATCHING");
-    extern u8 *D_800A39A0R3[] asm("D_800A39A0.NON_MATCHING");
+    extern MenuObj *D_800A38FCR2[] asm("D_800A38FC.NON_MATCHING");
+    extern MenuObj *D_800A38FCR3[] asm("D_800A38FC.NON_MATCHING");
+    extern MenuObj *D_800A38FCR4[] asm("D_800A38FC.NON_MATCHING");
+    extern MenuObj *D_800A39A0R2[] asm("D_800A39A0.NON_MATCHING");
+    extern MenuObj *D_800A39A0R3[] asm("D_800A39A0.NON_MATCHING");
     extern s8 D_800A39FCR2[] asm("D_800A39FC.NON_MATCHING");
     extern s8 D_800A3594R2[] asm("D_800A3594.NON_MATCHING");
     extern s8 D_800A3944R2[] asm("D_800A3944.NON_MATCHING");
@@ -10023,7 +10025,7 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern void func_8006894C(s8, s32, s32, s32, s32);
     extern void MenuSetVolume(s16, s32);
     extern void func_8006CF90(u8);
-    extern void ListSetRangeFields(struct MenuObjectNode *, s32, s32, s16);
+    extern void ListSetRangeFields(MenuObj *, s32, s32, s16);
     s32 limit;
     s32 value;
     s32 tableByte;
@@ -10390,21 +10392,17 @@ dispatch:
         D_800A39FC[0] = tableByte;
         func_800645A4(D_800A3A14R3[0], (s8)tableByte);
         func_80063AE0(D_800A3A14R4[0], D_800A39FCR2[0]);
-        D_800A38FCR2[0] = (u8 *)D_800A3744[D_800A3A14R5[0]];
+        D_800A38FCR2[0] = (MenuObj *)D_800A3744[D_800A3A14R5[0]];
         if (arg2 == 0) {
-            ListSetRangeFields((struct MenuObjectNode *)D_800A39A0R3[0], 0,
-                               -0x140, -2);
+            ListSetRangeFields((MenuObj *)D_800A39A0R3[0], 0, -0x140, -2);
             MenuSetLinkedObjectLayoutByIndexKR(arg1, 0x34, -0x10C, -2);
-            ListSetRangeFields((struct MenuObjectNode *)D_800A38FCR4[0], 0x140,
-                               0, -2);
+            ListSetRangeFields((MenuObj *)D_800A38FCR4[0], 0x140, 0, -2);
             MenuSetLinkedObjectLayoutByIndexKR(D_800A3A14R7[0], 0x174, 0x34,
                                                -2);
         } else {
-            ListSetRangeFields((struct MenuObjectNode *)D_800A39A0R2[0], 0,
-                               0x140, 2);
+            ListSetRangeFields((MenuObj *)D_800A39A0R2[0], 0, 0x140, 2);
             MenuSetLinkedObjectLayoutByIndexKR(arg1, 0x34, 0x174, 2);
-            ListSetRangeFields((struct MenuObjectNode *)D_800A38FCR3[0], -0x140,
-                               0, 2);
+            ListSetRangeFields((MenuObj *)D_800A38FCR3[0], -0x140, 0, 2);
             MenuSetLinkedObjectLayoutByIndexKR(D_800A3A14R6[0], -0x10C, 0x34,
                                                2);
         }

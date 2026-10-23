@@ -964,18 +964,18 @@ void MenuSetTexturedQuad(u8 *dst, u32 idx, u16 dx, u16 dy, u16 ax, u16 ay) {
     dst[0x25] = entry->fA + dy + ay;
 }
 
-u8 *MenuObjAlloc(void) {
+MenuObj *MenuObjAlloc(void) {
     u8 index;
-    u8 *object;
+    MenuObj *object;
     index = gMenuObjectPoolCount++;
-    object = gMenuObjectPool + index * 36;
-    *(s16 *)(object + 0x12) = 0;
-    *(s16 *)(object + 0x14) = 0;
-    *(s32 *)(object + 0x1C) = 0;
-    object[4] = 0;
-    object[3] = 0;
-    object[2] = 0;
-    *(s16 *)(object + 0x1A) = 0;
+    object = &gMenuObjectPool[index];
+    object->drawOffsetX = 0;
+    object->drawOffsetY = 0;
+    object->next = 0;
+    object->blue = 0;
+    object->green = 0;
+    object->red = 0;
+    object->orderingDepth = 0;
     return object;
 }
 
@@ -989,8 +989,8 @@ void MenuObjRestorePoolCursor(void) {
     gMenuObjectPoolCount = D_800A39C4;
 }
 
-struct UnkTextObj *MenuCreateFlatRect(x, y, width, height, poly, red, green,
-                                      blue, semiTrans, texture)
+MenuObj *MenuCreateFlatRect(x, y, width, height, poly, red, green, blue,
+                            semiTrans, texture)
 s32 x;
 s32 y;
 s32 width;
@@ -1003,33 +1003,33 @@ u8 semiTrans;
 u8 texture;
 {
     u8 index;
-    u8 *object;
+    MenuObj *object;
 
     index = gMenuObjectPoolCount++;
-    object = gMenuObjectPool + index * 36;
-    *(s16 *)(object + 0x12) = 0;
-    *(s16 *)(object + 0x14) = 0;
-    *(s32 *)(object + 0x1C) = 0;
-    object[4] = 0;
-    object[3] = 0;
-    object[2] = 0;
-    *(s16 *)(object + 0x1A) = 0;
-    *(s16 *)(object + 0x0) = 2;
-    *(s16 *)(object + 0x6) = x;
-    *(s16 *)(object + 0xA) = x;
-    *(s16 *)(object + 0x8) = y;
-    *(s16 *)(object + 0xC) = y;
-    *(s16 *)(object + 0xE) = 0;
-    *(s16 *)(object + 0x10) = 0;
-    *(s16 *)(object + 0x16) = width;
-    *(s16 *)(object + 0x18) = height;
-    object[2] = red;
-    object[3] = green;
-    object[4] = blue;
+    object = &gMenuObjectPool[index];
+    object->drawOffsetX = 0;
+    object->drawOffsetY = 0;
+    object->next = 0;
+    object->blue = 0;
+    object->green = 0;
+    object->red = 0;
+    object->orderingDepth = 0;
+    object->kind = 2;
+    object->x = x;
+    object->targetX = x;
+    object->y = y;
+    object->targetY = y;
+    object->velocityX = 0;
+    object->velocityY = 0;
+    object->width = width;
+    object->height = height;
+    object->red = red;
+    object->green = green;
+    object->blue = blue;
     if (poly == 0) {
         poly = (s32)GraphicsAllocPolyF4(texture);
     }
-    *(u8 **)(object + 0x20) = (u8 *)poly;
+    object->primitive = (u8 *)poly;
     SetPolyF4((u8 *)poly);
     SetSemiTrans((void *)poly, semiTrans);
     ((u8 *)poly)[4] = red;
@@ -1043,12 +1043,12 @@ u8 texture;
     *(s16 *)((u8 *)poly + 0x12) = y + height;
     *(s16 *)((u8 *)poly + 0x14) = x + width;
     *(s16 *)((u8 *)poly + 0x16) = y + height;
-    return (struct UnkTextObj *)object;
+    return (MenuObj *)object;
 }
 
 extern void SetPolyF3(POLY_F3 *);
-u8 *MenuCreateFlatTriangle(x, y, width, height, poly, red, green, blue,
-                           semiTrans, texture, mode)
+MenuObj *MenuCreateFlatTriangle(x, y, width, height, poly, red, green, blue,
+                                semiTrans, texture, mode)
 s32 x;
 s32 y;
 s32 width;
@@ -1062,35 +1062,35 @@ u8 texture;
 u8 mode;
 {
     u8 index;
-    u8 *fresh;
-    u8 *object;
+    MenuObj *fresh;
+    MenuObj *object;
 
     index = gMenuObjectPoolCount++;
-    fresh = gMenuObjectPool + index * 36;
+    fresh = &gMenuObjectPool[index];
     asm("" : "=r"(object) : "0"(fresh));
-    *(s16 *)(fresh + 0x12) = 0;
-    *(s16 *)(fresh + 0x14) = 0;
-    *(s32 *)(fresh + 0x1C) = 0;
-    fresh[4] = 0;
-    fresh[3] = 0;
-    fresh[2] = 0;
-    *(s16 *)(fresh + 0x1A) = 0;
-    *(s16 *)(object + 0x0) = mode != 0 ? 7 : 8;
-    *(s16 *)(object + 0x6) = x;
-    *(s16 *)(object + 0xA) = x;
-    *(s16 *)(object + 0x8) = y;
-    *(s16 *)(object + 0xC) = y;
-    *(s16 *)(object + 0xE) = 0;
-    *(s16 *)(object + 0x10) = 0;
-    *(s16 *)(object + 0x16) = width;
-    *(s16 *)(object + 0x18) = height;
-    object[2] = red;
-    object[3] = green;
-    object[4] = blue;
+    fresh->drawOffsetX = 0;
+    fresh->drawOffsetY = 0;
+    fresh->next = 0;
+    fresh->blue = 0;
+    fresh->green = 0;
+    fresh->red = 0;
+    fresh->orderingDepth = 0;
+    object->kind = mode != 0 ? 7 : 8;
+    object->x = x;
+    object->targetX = x;
+    object->y = y;
+    object->targetY = y;
+    object->velocityX = 0;
+    object->velocityY = 0;
+    object->width = width;
+    object->height = height;
+    object->red = red;
+    object->green = green;
+    object->blue = blue;
     if (poly == 0) {
         poly = (s32)GraphicsAllocPolyF4(texture);
     }
-    *(u8 **)(object + 0x20) = (u8 *)poly;
+    object->primitive = (u8 *)poly;
     SetPolyF3((POLY_F3 *)poly);
     SetSemiTrans((void *)poly, semiTrans);
     ((u8 *)poly)[4] = red;
@@ -1099,29 +1099,29 @@ u8 mode;
     return object;
 }
 
-u8 *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
-                           u8 texture, u8 semiTrans) {
+MenuObj *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom,
+                                s32 depth, u8 texture, u8 semiTrans) {
     u8 index;
-    u8 *object;
+    MenuObj *object;
     POLY_FT4 *poly;
     index = gMenuObjectPoolCount++;
-    object = gMenuObjectPool + index * 36;
-    *(s16 *)(object + 0x12) = 0;
-    *(s16 *)(object + 0x14) = 0;
-    *(s32 *)(object + 0x1C) = 0;
-    object[4] = 0;
-    object[3] = 0;
-    object[2] = 0;
-    *(s16 *)(object + 0x1A) = 0;
-    *(s16 *)(object + 0x0) = 1;
-    *(s16 *)(object + 0xA) = left;
-    *(s16 *)(object + 0x6) = left;
-    *(s16 *)(object + 0xC) = top;
-    *(s16 *)(object + 0x8) = top;
-    *(s16 *)(object + 0x16) = right;
-    *(s16 *)(object + 0x18) = bottom;
-    *(s16 *)(object + 0xE) = 0;
-    *(s16 *)(object + 0x10) = 0;
+    object = &gMenuObjectPool[index];
+    object->drawOffsetX = 0;
+    object->drawOffsetY = 0;
+    object->next = 0;
+    object->blue = 0;
+    object->green = 0;
+    object->red = 0;
+    object->orderingDepth = 0;
+    object->kind = 1;
+    object->targetX = left;
+    object->x = left;
+    object->targetY = top;
+    object->y = top;
+    object->width = right;
+    object->height = bottom;
+    object->velocityX = 0;
+    object->velocityY = 0;
     poly = GraphicsAllocPolyFT4(texture);
     SetPolyFT4(poly);
     SetShadeTex(poly, 0);
@@ -1129,48 +1129,44 @@ u8 *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom, s32 depth,
     ((u8 *)poly)[5] = 0x80;
     ((u8 *)poly)[6] = 0x80;
     SetSemiTrans(poly, semiTrans);
-    *(POLY_FT4 **)(object + 0x20) = poly;
-    *(s16 *)(object + 0x1A) = depth;
+    object->primitive = poly;
+    object->orderingDepth = depth;
     return object;
 }
 
-void MenuUpdateObjectPosition(u8 *first, u8 friction) {
-    u8 *object;
+void MenuUpdateObjectPosition(MenuObj *first, u8 friction) {
+    MenuObj *object;
     s16 sum;
 
     object = first;
     if (object != 0) {
         do {
-            if (*(s16 *)(object + 0xE) != 0) {
-                sum = *(u16 *)(object + 0x6) + *(s16 *)(object + 0xE);
-                *(s16 *)(object + 0x6) = sum;
-                if ((*(s16 *)(object + 0xE) < 0 &&
-                     sum < *(s16 *)(object + 0xA)) ||
-                    (*(s16 *)(object + 0xE) > 0 &&
-                     *(s16 *)(object + 0xA) < sum)) {
-                    *(s16 *)(object + 0xE) = 0;
-                    *(u16 *)(object + 0x6) = *(u16 *)(object + 0xA);
+            if (object->velocityX != 0) {
+                sum = (u16)object->x + object->velocityX;
+                object->x = sum;
+                if ((object->velocityX < 0 && sum < object->targetX) ||
+                    (object->velocityX > 0 && object->targetX < sum)) {
+                    object->velocityX = 0;
+                    object->x = (u16)object->targetX;
                 } else if (friction != 0) {
-                    *(u16 *)(object + 0xE) = *(u16 *)(object + 0xE) +
-                                             (s16) * (u16 *)(object + 0xE) / 2;
+                    object->velocityX = (u16)object->velocityX +
+                                        (s16) * (u16 *)((u8 *)object + 0xE) / 2;
                 }
             }
-            if (*(s16 *)(object + 0x10) != 0) {
-                sum = *(u16 *)(object + 0x8) + *(s16 *)(object + 0x10);
-                *(s16 *)(object + 0x8) = sum;
-                if ((*(s16 *)(object + 0x10) < 0 &&
-                     sum < *(s16 *)(object + 0xC)) ||
-                    (*(s16 *)(object + 0x10) > 0 &&
-                     *(s16 *)(object + 0xC) < sum)) {
-                    *(s16 *)(object + 0x10) = 0;
-                    *(u16 *)(object + 0x8) = *(u16 *)(object + 0xC);
+            if (object->velocityY != 0) {
+                sum = (u16)object->y + object->velocityY;
+                object->y = sum;
+                if ((object->velocityY < 0 && sum < object->targetY) ||
+                    (object->velocityY > 0 && object->targetY < sum)) {
+                    object->velocityY = 0;
+                    object->y = (u16)object->targetY;
                 } else if (friction != 0) {
-                    *(u16 *)(object + 0x10) =
-                        *(u16 *)(object + 0x10) +
-                        (s16) * (u16 *)(object + 0x10) / 2;
+                    object->velocityY =
+                        (u16)object->velocityY +
+                        (s16) * (u16 *)((u8 *)object + 0x10) / 2;
                 }
             }
-            object = (u8 *)((MenuObj *)object)->next;
+            object = object->next;
         } while (object != 0);
     }
 }
@@ -1206,7 +1202,7 @@ typedef struct {
     u32 unk0[2];
 } UnkPrim8;
 
-void MenuDrawObjectList(u8 *object, s32 semiTransMode) {
+void MenuDrawObjectList(MenuObj *object, s32 semiTransMode) {
     u8 *src;
     u8 *poly;
     s32 semiTrans;
@@ -1217,9 +1213,9 @@ void MenuDrawObjectList(u8 *object, s32 semiTransMode) {
         return;
     }
     semiTrans = semiTransMode & 0xFF;
-    for (; object != 0; object = (u8 *)((MenuObj *)object)->next) {
-        if (*(s16 *)(object + 0x1A) >= 0) {
-            if (gScreenStateAbsolute[0] != 0xD || *(s8 *)(object + 5) != 0) {
+    for (; object != 0; object = object->next) {
+        if (object->orderingDepth >= 0) {
+            if (gScreenStateAbsolute[0] != 0xD || (s8)object->unk5 != 0) {
                 switch (*(u16 *)(object)) {
                 case 1: {
                     u8 *prim;
@@ -1228,7 +1224,7 @@ void MenuDrawObjectList(u8 *object, s32 semiTransMode) {
                     u8 *end;
 
                     prim = GraphicsAllocPolyFT4(0);
-                    src = *(u8 **)(object + 0x20);
+                    src = (u8 *)object->primitive;
                     dst = prim;
                     end = src + 0x20;
                     do {
@@ -1239,40 +1235,40 @@ void MenuDrawObjectList(u8 *object, s32 semiTransMode) {
                     *(UnkPrim8 *)dst = *(UnkPrim8 *)src;
                     if (gScreenStateAbsolute[0] == 0xD) {
                         *(u16 *)(prim + 0x8) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                            (u16)object->x + (u16)object->drawOffsetX;
                         *(u16 *)(prim + 0xA) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
-                        *(u16 *)(prim + 0x10) = *(u16 *)(object + 0x6) +
-                                                *(u16 *)(object + 0x12) +
-                                                *(u16 *)(object + 0x16);
+                            (u16)object->y + (u16)object->drawOffsetY;
+                        *(u16 *)(prim + 0x10) = (u16)object->x +
+                                                (u16)object->drawOffsetX +
+                                                (u16)object->width;
                         *(u16 *)(prim + 0x12) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                            (u16)object->y + (u16)object->drawOffsetY;
                         *(u16 *)(prim + 0x18) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
-                        *(u16 *)(prim + 0x1A) = *(u16 *)(object + 0x8) +
-                                                *(u16 *)(object + 0x14) +
-                                                *(u16 *)(object + 0x18);
-                        *(u16 *)(prim + 0x20) = *(u16 *)(object + 0x6) +
-                                                *(u16 *)(object + 0x12) +
-                                                *(u16 *)(object + 0x16);
-                        *(u16 *)(prim + 0x22) = *(u16 *)(object + 0x8) +
-                                                *(u16 *)(object + 0x14) +
-                                                *(u16 *)(object + 0x18);
+                            (u16)object->x + (u16)object->drawOffsetX;
+                        *(u16 *)(prim + 0x1A) = (u16)object->y +
+                                                (u16)object->drawOffsetY +
+                                                (u16)object->height;
+                        *(u16 *)(prim + 0x20) = (u16)object->x +
+                                                (u16)object->drawOffsetX +
+                                                (u16)object->width;
+                        *(u16 *)(prim + 0x22) = (u16)object->y +
+                                                (u16)object->drawOffsetY +
+                                                (u16)object->height;
                     } else {
-                        *(u16 *)(prim + 0x8) = *(u16 *)(object + 0x6);
-                        *(u16 *)(prim + 0xA) = *(u16 *)(object + 0x8);
+                        *(u16 *)(prim + 0x8) = (u16)object->x;
+                        *(u16 *)(prim + 0xA) = (u16)object->y;
                         *(u16 *)(prim + 0x10) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
-                        *(u16 *)(prim + 0x12) = *(u16 *)(object + 0x8);
-                        *(u16 *)(prim + 0x18) = *(u16 *)(object + 0x6);
+                            (u16)object->x + (u16)object->width;
+                        *(u16 *)(prim + 0x12) = (u16)object->y;
+                        *(u16 *)(prim + 0x18) = (u16)object->x;
                         *(u16 *)(prim + 0x1A) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                            (u16)object->y + (u16)object->height;
                         *(u16 *)(prim + 0x20) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+                            (u16)object->x + (u16)object->width;
                         *(u16 *)(prim + 0x22) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                            (u16)object->y + (u16)object->height;
                     }
-                    AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4,
+                    AddPrim(gOrderingTable[0] + object->orderingDepth * 4,
                             prim);
                     break;
                 }
@@ -1280,119 +1276,119 @@ void MenuDrawObjectList(u8 *object, s32 semiTransMode) {
                     u8 *src2;
 
                     poly = GraphicsAllocPolyF4(0);
-                    src2 = *(u8 **)(object + 0x20);
+                    src2 = (u8 *)object->primitive;
                     *(UnkPrim18 *)poly = *(UnkPrim18 *)src2;
                     if (gScreenStateAbsolute[0] == 0xD) {
-                        if (*(s16 *)(object + 0x16) == 0) {
+                        if (object->width == 0) {
                             break;
                         }
-                        if (*(s16 *)(object + 0x18) == 0) {
+                        if (object->height == 0) {
                             break;
                         }
                         *(u16 *)(poly + 0x8) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                            (u16)object->x + (u16)object->drawOffsetX;
                         *(u16 *)(poly + 0xA) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
-                        *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
-                                               *(u16 *)(object + 0x12) +
-                                               *(u16 *)(object + 0x16);
+                            (u16)object->y + (u16)object->drawOffsetY;
+                        *(u16 *)(poly + 0xC) = (u16)object->x +
+                                               (u16)object->drawOffsetX +
+                                               (u16)object->width;
                         *(u16 *)(poly + 0xE) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
+                            (u16)object->y + (u16)object->drawOffsetY;
                         *(u16 *)(poly + 0x10) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
-                        *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
-                                                *(u16 *)(object + 0x14) +
-                                                *(u16 *)(object + 0x18);
-                        *(u16 *)(poly + 0x14) = *(u16 *)(object + 0x6) +
-                                                *(u16 *)(object + 0x12) +
-                                                *(u16 *)(object + 0x16);
-                        *(u16 *)(poly + 0x16) = *(u16 *)(object + 0x8) +
-                                                *(u16 *)(object + 0x14) +
-                                                *(u16 *)(object + 0x18);
+                            (u16)object->x + (u16)object->drawOffsetX;
+                        *(u16 *)(poly + 0x12) = (u16)object->y +
+                                                (u16)object->drawOffsetY +
+                                                (u16)object->height;
+                        *(u16 *)(poly + 0x14) = (u16)object->x +
+                                                (u16)object->drawOffsetX +
+                                                (u16)object->width;
+                        *(u16 *)(poly + 0x16) = (u16)object->y +
+                                                (u16)object->drawOffsetY +
+                                                (u16)object->height;
                     } else {
-                        *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6);
-                        *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8);
+                        *(u16 *)(poly + 0x8) = (u16)object->x;
+                        *(u16 *)(poly + 0xA) = (u16)object->y;
                         *(u16 *)(poly + 0xC) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
-                        *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8);
-                        *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6);
+                            (u16)object->x + (u16)object->width;
+                        *(u16 *)(poly + 0xE) = (u16)object->y;
+                        *(u16 *)(poly + 0x10) = (u16)object->x;
                         *(u16 *)(poly + 0x12) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                            (u16)object->y + (u16)object->height;
                         *(u16 *)(poly + 0x14) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x16);
+                            (u16)object->x + (u16)object->width;
                         *(u16 *)(poly + 0x16) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x18);
+                            (u16)object->y + (u16)object->height;
                     }
                     if (semiTrans != 0xFF) {
                         SetSemiTrans(poly, semiTrans);
                     }
-                    AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4,
+                    AddPrim(gOrderingTable[0] + object->orderingDepth * 4,
                             poly);
                     break;
                 }
                 case 7:
                 case 8:
                     poly = GraphicsAllocPolyF4(0);
-                    src = *(u8 **)(object + 0x20);
+                    src = (u8 *)object->primitive;
                     *(UnkPrim14 *)poly = *(UnkPrim14 *)src;
                     if (*(u16 *)(object) == 7) {
-                        half = *(s16 *)(object + 0x16) / 2;
-                        if (*(s16 *)(object + 0x18) < 0) {
-                            *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6) +
-                                                   *(u16 *)(object + 0x12);
-                            *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8) +
-                                                   *(u16 *)(object + 0x14);
-                            *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
-                                                   *(u16 *)(object + 0x12) -
+                        half = object->width / 2;
+                        if (object->height < 0) {
+                            *(u16 *)(poly + 0x8) =
+                                (u16)object->x + (u16)object->drawOffsetX;
+                            *(u16 *)(poly + 0xA) =
+                                (u16)object->y + (u16)object->drawOffsetY;
+                            *(u16 *)(poly + 0xC) = (u16)object->x +
+                                                   (u16)object->drawOffsetX -
                                                    half;
-                            *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8) +
-                                                   *(u16 *)(object + 0x14) +
-                                                   *(u16 *)(object + 0x18);
-                            *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6) +
-                                                    *(u16 *)(object + 0x12) +
+                            *(u16 *)(poly + 0xE) = (u16)object->y +
+                                                   (u16)object->drawOffsetY +
+                                                   (u16)object->height;
+                            *(u16 *)(poly + 0x10) = (u16)object->x +
+                                                    (u16)object->drawOffsetX +
                                                     half;
-                            *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
-                                                    *(u16 *)(object + 0x14) +
-                                                    *(u16 *)(object + 0x18);
+                            *(u16 *)(poly + 0x12) = (u16)object->y +
+                                                    (u16)object->drawOffsetY +
+                                                    (u16)object->height;
                         } else {
-                            *(u16 *)(poly + 0x8) = *(u16 *)(object + 0x6) +
-                                                   *(u16 *)(object + 0x12);
-                            *(u16 *)(poly + 0xA) = *(u16 *)(object + 0x8) +
-                                                   *(u16 *)(object + 0x14);
-                            *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
-                                                   *(u16 *)(object + 0x12) +
+                            *(u16 *)(poly + 0x8) =
+                                (u16)object->x + (u16)object->drawOffsetX;
+                            *(u16 *)(poly + 0xA) =
+                                (u16)object->y + (u16)object->drawOffsetY;
+                            *(u16 *)(poly + 0xC) = (u16)object->x +
+                                                   (u16)object->drawOffsetX +
                                                    half;
-                            *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8) +
-                                                   *(u16 *)(object + 0x14) +
-                                                   *(u16 *)(object + 0x18);
-                            *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6) +
-                                                    *(u16 *)(object + 0x12) -
+                            *(u16 *)(poly + 0xE) = (u16)object->y +
+                                                   (u16)object->drawOffsetY +
+                                                   (u16)object->height;
+                            *(u16 *)(poly + 0x10) = (u16)object->x +
+                                                    (u16)object->drawOffsetX -
                                                     half;
-                            *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
-                                                    *(u16 *)(object + 0x14) +
-                                                    *(u16 *)(object + 0x18);
+                            *(u16 *)(poly + 0x12) = (u16)object->y +
+                                                    (u16)object->drawOffsetY +
+                                                    (u16)object->height;
                         }
                     } else {
-                        half = *(s16 *)(object + 0x18) / 2;
+                        half = object->height / 2;
                         *(u16 *)(poly + 0x8) =
-                            *(u16 *)(object + 0x6) + *(u16 *)(object + 0x12);
+                            (u16)object->x + (u16)object->drawOffsetX;
                         *(u16 *)(poly + 0xA) =
-                            *(u16 *)(object + 0x8) + *(u16 *)(object + 0x14);
-                        *(u16 *)(poly + 0xC) = *(u16 *)(object + 0x6) +
-                                               *(u16 *)(object + 0x12) +
-                                               *(u16 *)(object + 0x16);
-                        *(u16 *)(poly + 0xE) = *(u16 *)(object + 0x8) +
-                                               *(u16 *)(object + 0x14) + half;
-                        *(u16 *)(poly + 0x10) = *(u16 *)(object + 0x6) +
-                                                *(u16 *)(object + 0x12) +
-                                                *(u16 *)(object + 0x16);
-                        *(u16 *)(poly + 0x12) = *(u16 *)(object + 0x8) +
-                                                *(u16 *)(object + 0x14) - half;
+                            (u16)object->y + (u16)object->drawOffsetY;
+                        *(u16 *)(poly + 0xC) = (u16)object->x +
+                                               (u16)object->drawOffsetX +
+                                               (u16)object->width;
+                        *(u16 *)(poly + 0xE) =
+                            (u16)object->y + (u16)object->drawOffsetY + half;
+                        *(u16 *)(poly + 0x10) = (u16)object->x +
+                                                (u16)object->drawOffsetX +
+                                                (u16)object->width;
+                        *(u16 *)(poly + 0x12) =
+                            (u16)object->y + (u16)object->drawOffsetY - half;
                     }
                     if (semiTrans != 0xFF) {
                         SetSemiTrans(poly, semiTrans);
                     }
-                    AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4,
+                    AddPrim(gOrderingTable[0] + object->orderingDepth * 4,
                             poly);
                     break;
 
@@ -1426,42 +1422,42 @@ s32 MenuAllocTextPacket(void) {
     return D_800A3654 + index * 12;
 }
 
-struct UnkTextObj *MenuCreateTextObject(s32 left, s32 top) {
+MenuObj *MenuCreateTextObject(s32 left, s32 top) {
     u8 spriteIndex;
     u8 primIndex;
-    u8 *object;
+    MenuObj *object;
     u8 *prim;
-    u8 *base;
+    MenuObj *base;
 
     spriteIndex = gMenuObjectPoolCount++;
     base = gMenuObjectPool;
-    object = base + spriteIndex * 36;
-    object[4] = 0;
-    object[3] = 0;
-    object[2] = 0;
+    object = &base[spriteIndex];
+    object->blue = 0;
+    object->green = 0;
+    object->red = 0;
     primIndex = D_800A37BC;
-    *(u16 *)(object + 0xA) = left;
-    *(u16 *)(object + 0x6) = left;
+    *(u16 *)((u8 *)object + 0xA) = left;
+    *(u16 *)((u8 *)object + 0x6) = left;
     prim = (u8 *)D_800A3654;
-    *(u16 *)(object + 0x12) = 0;
-    *(u16 *)(object + 0x14) = 0;
-    *(u32 *)(object + 0x1C) = 0;
-    *(u16 *)(object + 0x1A) = 0;
-    *(u16 *)(object + 0x0) = 0;
-    *(u16 *)(object + 0xC) = top;
-    *(u16 *)(object + 0x8) = top;
-    *(u16 *)(object + 0xE) = 0;
-    *(u16 *)(object + 0x10) = 0;
-    *(u16 *)(object + 0x1A) = 0;
+    *(u16 *)((u8 *)object + 0x12) = 0;
+    *(u16 *)((u8 *)object + 0x14) = 0;
+    *(u32 *)((u8 *)object + 0x1C) = 0;
+    *(u16 *)((u8 *)object + 0x1A) = 0;
+    *(u16 *)((u8 *)object + 0x0) = 0;
+    *(u16 *)((u8 *)object + 0xC) = top;
+    *(u16 *)((u8 *)object + 0x8) = top;
+    *(u16 *)((u8 *)object + 0xE) = 0;
+    *(u16 *)((u8 *)object + 0x10) = 0;
+    *(u16 *)((u8 *)object + 0x1A) = 0;
     D_800A37BC = primIndex + 1;
     do {
     } while (0);
     prim += primIndex * 12;
-    *(u32 *)(object + 0x20) = prim;
+    *(u8 **)((u8 *)object + 0x20) = prim;
     prim[0] = 0;
     prim[3] = 0;
     *(s32 *)(prim + 4) = 0;
-    return (struct UnkTextObj *)object;
+    return (MenuObj *)object;
 }
 
 typedef struct {
@@ -1478,10 +1474,10 @@ typedef struct {
 extern Unk4 gTextThreeDashes[];
 extern Unk4 gTextDnf[];
 extern Unk3 gTextTwoSpaces[];
-void func_8005C020(u8 *object, u8 *dest) {
+void func_8005C020(MenuObj *object, u8 *dest) {
     s32 id;
 
-    id = *(s16 *)(*(u8 **)(object + 0x20) + 8);
+    id = *(s16 *)((u8 *)object->primitive + 8);
     if (gScreenState[0] == 0xA) {
         if (id == 0xFF) {
             *(Unk4 *)dest = gTextThreeDashes[0];
@@ -1500,8 +1496,8 @@ void func_8005C020(u8 *object, u8 *dest) {
     TextFormatInt(id, dest);
 }
 
-void MenuFormatTimeObject(u8 *object, s32 value) {
-    TextFormatTime(*(void **)(*(u8 **)(object + 0x20) + 8), -1, value);
+void MenuFormatTimeObject(MenuObj *object, s32 value) {
+    TextFormatTime(*(void **)((u8 *)object->primitive + 8), -1, value);
 }
 
 extern u8 *D_8009A05C[];
@@ -1527,23 +1523,23 @@ extern u8 D_8009AF74[];
 extern u8 *D_800A3690;
 extern u8 *D_800A39C0;
 extern u8 *D_800A3A28;
-extern u8 *D_800A39B8;
-extern u8 *D_800A36F0;
-extern u8 *D_800A38F8;
+extern MenuObj *D_800A39B8;
+extern MenuObj *D_800A36F0;
+extern MenuObj *D_800A38F8;
 extern u8 D_800A38E8;
 extern u8 D_800A3644[];
 extern u8 D_800A3950[];
 extern u8 D_800A3988[];
 extern u8 D_800A3989[];
-extern u8 *D_800AE27C[];
-extern u8 *D_800BB9E4[];
+extern MenuObj *D_800AE27C[];
+extern MenuObj *D_800BB9E4[];
 extern u8 gFormatLeadingSpacesZeroesPercentWildcard[];
 extern u8 D_800AD980[];
 extern u8 D_800A35C8Text[] asm("D_800A35C8");
 extern void TextFormatPercentage(s32);
 void func_8005C124(u8 menuId, u8 selRow) {
     s32 slots[3][4];
-    u8 *item;
+    MenuObj *item;
     u8 *entry;
     u8 *text;
     s32 i;
@@ -1624,23 +1620,23 @@ void func_8005C124(u8 menuId, u8 selRow) {
     for (i = 0; i < rows; i++) {
         {
             u8 index;
-            u8 *object;
+            MenuObj *object;
 
             index = gMenuObjectPoolCount++;
-            object = gMenuObjectPool + index * 36;
-            *(s16 *)(object + 0x12) = 0;
-            *(s16 *)(object + 0x14) = 0;
-            *(s32 *)(object + 0x1C) = 0;
-            object[4] = 0;
-            object[3] = 0;
-            object[2] = 0;
-            *(s16 *)(object + 0x1A) = 0;
+            object = &gMenuObjectPool[index];
+            object->drawOffsetX = 0;
+            object->drawOffsetY = 0;
+            object->next = 0;
+            object->blue = 0;
+            object->green = 0;
+            object->red = 0;
+            object->orderingDepth = 0;
             item = object;
         }
-        *(s16 *)(item + 0) = 0;
-        *(s16 *)(item + 0x1A) = 0;
-        *(s16 *)(item + 0xC) = y;
-        *(s16 *)(item + 8) = y;
+        item->kind = 0;
+        item->orderingDepth = 0;
+        item->targetY = y;
+        item->y = y;
         if (menuId == 2) {
             if (i >= 5) {
                 D_800AE27C[i] = item;
@@ -1656,25 +1652,25 @@ void func_8005C124(u8 menuId, u8 selRow) {
                         goto lastRow;
                     goto rowDone;
                 lowRow:
-                    *(s16 *)(item + 8) = 0xF1;
+                    item->y = 0xF1;
                     goto rowDone;
                 lastRow:
-                    *(s16 *)(item + 8) = savedY;
+                    item->y = savedY;
                 }
             }
         } else if (menuId == 5 && i == 6) {
-            *(s16 *)(item + 8) = y + 0xF;
-            *(s16 *)(item + 0xC) = y + 0xF;
-            item[2] = 0xC8;
-            item[3] = 0x40;
-            item[4] = 0x40;
+            item->y = y + 0xF;
+            item->targetY = y + 0xF;
+            item->red = 0xC8;
+            item->green = 0x40;
+            item->blue = 0x40;
             D_800AE290[0] = (s16 *)item;
         } else {
-            *(s16 *)(item + 8) = y;
+            item->y = y;
         }
     rowDone:
         entry = (u8 *)(D_800A3654 + D_800A37BC++ * 0xC);
-        *(u8 **)(item + 0x20) = entry;
+        item->primitive = entry;
         if (i == selRow + 1) {
             entry[0] = 1;
         } else {
@@ -1713,14 +1709,14 @@ void func_8005C124(u8 menuId, u8 selRow) {
     noFlag:
         entry[3] = 0;
         *(s32 *)(entry + 4) = 0;
-        *(s16 *)(item + 0x10) = 0;
+        item->velocityY = 0;
         if (i == 0) {
             D_800A39B8 = item;
             MenuFontSet(1, 1);
             entry[2] = 1;
             entry[1] = 1;
             *(u8 **)(entry + 8) = *(u8 **)D_800A3690;
-            *(s16 *)(item + 0xE) = -2;
+            item->velocityX = -2;
         } else {
             if (i == 1) {
                 D_800A36F0 = item;
@@ -1760,33 +1756,32 @@ void func_8005C124(u8 menuId, u8 selRow) {
                     break;
                 }
             }
-            *(s16 *)(item + 0xE) = 2;
+            item->velocityX = 2;
         }
-        *(s16 *)(item + 0x16) = MenuStringWidth(*(s32 *)(entry + 8));
-        *(s16 *)(item + 0x18) = MenuFontLineHeight();
-        *(s16 *)(item + 0xA) = 0x131 - *(u16 *)(item + 0x16);
-        *(s16 *)(item + 6) = x - *(u16 *)(item + 0x16);
+        item->width = MenuStringWidth(*(s32 *)(entry + 8));
+        item->height = MenuFontLineHeight();
+        item->targetX = 0x131 - (u16)item->width;
+        item->x = x - (u16)item->width;
         if ((menuId == 4 && i == 1) || (menuId == 0xB && (u32)(i - 2) < 5)) {
             width =
                 MenuStringWidth((s32)gFormatLeadingSpacesZeroesPercentWildcard);
-            *(s16 *)(item + 0xA) = *(u16 *)(item + 0xA) - width;
+            item->targetX = (u16)item->targetX - width;
             slots[1][count] = y;
             slots[2][count] = x;
             count++;
-            *(s16 *)(item + 6) = *(u16 *)(item + 6) - width;
+            item->x = (u16)item->x - width;
         }
-        y += *(s16 *)(item + 0x18);
+        y += item->height;
         if (i == 0) {
             y += 8;
-            *(s16 *)(item + 6) = 0x140;
-            *(s16 *)(item + 0xA) = *(u16 *)(item + 0xA) - 10;
+            item->x = 0x140;
+            item->targetX = (u16)item->targetX - 10;
         } else {
             if (menuId == 4 || menuId == 0xB) {
                 if (D_800A38E8 < i) {
-                    *(s16 *)(item + 6) =
-                        slots[2][i - D_800A38E8 - 1] - *(u16 *)(item + 0x16);
-                    *(s16 *)(item + 0xC) = slots[1][i - D_800A38E8 - 1];
-                    *(s16 *)(item + 8) = slots[1][i - D_800A38E8 - 1];
+                    item->x = slots[2][i - D_800A38E8 - 1] - (u16)item->width;
+                    item->targetY = slots[1][i - D_800A38E8 - 1];
+                    item->y = slots[1][i - D_800A38E8 - 1];
                     if (selRow == 0) {
                         entry[0] = 1;
                     }
@@ -1798,7 +1793,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
 }
 
 void func_8005C8D8(u8 index) {
-    u8 *window;
+    MenuObj *window;
     u8 *prim;
     s32 i;
     s16 result;
@@ -1806,9 +1801,9 @@ void func_8005C8D8(u8 index) {
 
     window = D_800A36F0;
     for (i = 0; i < index; i++) {
-        window += 36;
+        window++;
     }
-    prim = *(u8 **)(window + 0x20);
+    prim = (u8 *)window->primitive;
     switch (D_800A3988[index]) {
     case 0:
     case 0x80:
@@ -1835,9 +1830,9 @@ void func_8005C8D8(u8 index) {
     MenuFontSet(0, 0);
     result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
-    *(s16 *)(window + 0x16) = result;
-    *(s16 *)(window + 6) = height;
-    *(s16 *)(window + 0xA) = height;
+    window->width = result;
+    window->x = height;
+    window->targetX = height;
 }
 
 extern u8 *D_800AE294[];
@@ -1869,8 +1864,8 @@ s32 func_8005CA4C(void) {
             MenuSetDriverNameLabel(1, D_800A36E1[0]);
             func_80063AE0(1, gPlayerDriver[1]);
         }
-        MenuSetLinkedObjectLayoutByIndex(1, -0x3C,
-                                         *(s16 *)(D_800A35E8[0] + 0xA), 2);
+        MenuSetLinkedObjectLayoutByIndex(
+            1, -0x3C, *(s16 *)((u8 *)D_800A35E8[0] + 0xA), 2);
     }
     D_800A3989[0] = D_800A3988[1] ^ 1;
     D_800A3988[0] = D_800A3989[-1] ^ 1;
@@ -1907,7 +1902,7 @@ void func_8005CC34(void) {
     s16 result;
     s16 height;
 
-    prim = *(u8 **)(D_800A38F8 + 0x20);
+    prim = *(u8 **)((u8 *)D_800A38F8 + 0x20);
     number = D_800A37D0[0];
     buffer = D_800A35C9 - 1;
     D_800A35C8 = 0x20;
@@ -1922,9 +1917,9 @@ void func_8005CC34(void) {
     MenuFontSet(prim[1], prim[2]);
     result = MenuStringWidth(*(s32 *)(prim + 8));
     height = 0x131 - result;
-    *(s16 *)(D_800A38F8 + 0x16) = result;
-    *(s16 *)(D_800A38F8 + 6) = height;
-    *(s16 *)(D_800A38F8 + 0xA) = height;
+    *(s16 *)((u8 *)D_800A38F8 + 0x16) = result;
+    *(s16 *)((u8 *)D_800A38F8 + 6) = height;
+    *(s16 *)((u8 *)D_800A38F8 + 0xA) = height;
 }
 
 /* buffer is pinned to s1 with an explicit-register local: gcc 2.7.2 hands
@@ -1980,7 +1975,7 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         D_800A331CAbsolute[id & 0xFF] = max;
         inRange = 0;
     }
-    prim = *((u8 **)(D_800BB9E4[id & 0xFF] + 0x20));
+    prim = *((u8 **)((u8 *)D_800BB9E4[id & 0xFF] + 0x20));
     value = D_800A331CAbsolute[id & 0xFF];
     buffer = D_800A35C9 - 1;
     D_800A35C8 = 0x20;
@@ -1996,12 +1991,12 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         strcpy(*((char **)(prim + 8)), (char *)buffer);
     } while (0);
     MenuFontSet(prim[1], prim[2]);
-    *((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)) =
+    *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 0x16)) =
         MenuStringWidth(*((s32 *)(prim + 8)));
-    *((s16 *)(D_800BB9E4[id & 0xFF] + 6)) =
-        0x131 - (*((s16 *)(D_800BB9E4[id & 0xFF] + 0x16)));
-    *((s16 *)(D_800BB9E4[id & 0xFF] + 0xA)) =
-        *((s16 *)(D_800BB9E4[id & 0xFF] + 6));
+    *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 6)) =
+        0x131 - (*((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 0x16)));
+    *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 0xA)) =
+        *((s16 *)((u8 *)D_800BB9E4[id & 0xFF] + 6));
     return inRange;
 }
 
@@ -2031,94 +2026,92 @@ void MenuRefreshSixEntryValues(void) {
 
 #ifdef NON_MATCHING
 extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
-void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
+void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     register u8 *prim asm("s3");
 
-    prim = *(u8 **)(window + 0x20);
+    prim = (u8 *)window->primitive;
     MenuFontSet(prim[1], prim[2]);
     prim[0] = code;
     if (textId == 0) {
         textId = *(s32 *)(prim + 8);
     }
-    if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
-        MenuSetTextColor(window[2], window[3], window[4]);
+    if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 || window->blue != 0) {
+        MenuSetTextColor(window->red, window->green, window->blue);
     } else if (prim[1] == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
         MenuSetTextColor(0, 0, 0);
     }
     if (gScreenState[0] == 0xD) {
-        MenuDrawString(textId,
-                       (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-                       (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+        MenuDrawString(textId, (s16)((u16)window->x + (u16)window->drawOffsetX),
+                       (s16)((u16)window->y + (u16)window->drawOffsetY),
                        prim[3], prim[0], *(s32 *)(prim + 4), first, second);
     } else {
-        MenuDrawString(textId, *(s16 *)(window + 6), *(s16 *)(window + 8),
-                       prim[3], prim[0], *(s32 *)(prim + 4), first, second);
+        MenuDrawString(textId, window->x, window->y, prim[3], prim[0],
+                       *(s32 *)(prim + 4), first, second);
     }
 }
 #else
 extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
-void func_8005CF34(u8 *window, u8 code, u8 first, u8 second, s32 textId) {
+void func_8005CF34(MenuObj *window, u8 code, u8 first, u8 second, s32 textId) {
     u8 *prim;
     s32 id;
 
-    prim = *(u8 **)(window + 0x20);
+    prim = (u8 *)window->primitive;
     MenuFontSet(prim[1], prim[2]);
     prim[0] = code;
     id = textId;
     if (id == 0) {
         id = *(s32 *)(prim + 8);
     }
-    if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 || window[4] != 0) {
-        MenuSetTextColor(window[2], window[3], window[4]);
+    if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 || window->blue != 0) {
+        MenuSetTextColor(window->red, window->green, window->blue);
     } else if (prim[1] == 2) {
         MenuSetTextColor(0xFF, 0x80, 0x40);
     } else {
         MenuSetTextColor(0, 0, 0);
     }
     if (gScreenState[0] == 0xD) {
-        MenuDrawString(
-            id, (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-            (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)), prim[3],
-            prim[0], *(s32 *)(prim + 4), first & 0xFF, second & 0xFF);
-    } else {
-        MenuDrawString(id, *(s16 *)(window + 6), *(s16 *)(window + 8), prim[3],
-                       prim[0], *(s32 *)(prim + 4), first & 0xFF,
+        MenuDrawString(id, (s16)((u16)window->x + (u16)window->drawOffsetX),
+                       (s16)((u16)window->y + (u16)window->drawOffsetY),
+                       prim[3], prim[0], *(s32 *)(prim + 4), first & 0xFF,
                        second & 0xFF);
+    } else {
+        MenuDrawString(id, window->x, window->y, prim[3], prim[0],
+                       *(s32 *)(prim + 4), first & 0xFF, second & 0xFF);
     }
 }
 
 #endif
 
-extern u8 *D_800A35E4;
-extern u8 *D_800A3628;
-extern u8 *D_800A362C[];
-extern u8 *D_800A3634;
-extern u8 *D_800A3740;
-extern u8 *D_800A3788;
-extern u8 *gPadPictureMenuLists[];
-extern u8 *D_800A37F8;
-extern u8 *D_800A3888[];
-extern u8 *D_800A3A10;
+extern MenuObj *D_800A35E4;
+extern MenuObj *D_800A3628;
+extern MenuObj *D_800A362C[];
+extern MenuObj *D_800A3634;
+extern MenuObj *D_800A3740;
+extern MenuObj *D_800A3788;
+extern MenuObj *gPadPictureMenuLists[];
+extern MenuObj *D_800A37F8;
+extern MenuObj *D_800A3888[];
+extern MenuObj *D_800A3A10;
 extern u8 D_800A3684[];
 extern u8 D_800A3685[];
 extern u8 D_800A361CStore[] asm("D_800A361C.NON_MATCHING");
-extern u8 *D_800A35E8Read[] asm("D_800A35E8.NON_MATCHING");
-extern u8 *D_800A362CRead[] asm("D_800A362C.NON_MATCHING");
+extern MenuObj *D_800A35E8Read[] asm("D_800A35E8.NON_MATCHING");
+extern MenuObj *D_800A362CRead[] asm("D_800A362C.NON_MATCHING");
 extern void MenuUpdateObjectGroups(void);
 extern void MenuDrawLevelBars(s8, u8);
 extern void func_80063638(u8);
 extern void MenuRestoreLinkedObjectValues(u8);
 void func_8005D094(s32 mode, u8 selection, u8 second) {
-    u8 *window;
+    MenuObj *window;
     s32 count;
     s32 i;
     u8 code;
     u8 active;
     s32 selected;
-    u8 **entry;
-    u8 **other;
+    MenuObj **entry;
+    MenuObj **other;
     s32 offset;
 
     window = D_800A39B8;
@@ -2139,7 +2132,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
             ((mode & 0xFF) == 4 && D_800A3644[0] != 0 && i == 6)) {
             code |= 2;
         }
-        if (*(s16 *)(window + 0xE) != 0) {
+        if (window->velocityX != 0) {
             MenuUpdateObjectPosition(window, 1);
         } else if (i == count - 1 && D_800A361C[0] == 0) {
             D_800A361CStore[0] = 1;
@@ -2149,7 +2142,7 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 code = 1;
                 if (selection != 0)
                     code = 0;
-            } else if ((**(u8 **)(window + 0x20)) & 2) {
+            } else if ((*(u8 *)window->primitive) & 2) {
                 code |= 2;
             }
         } else if ((mode & 0xFF) == 11 && D_800A38E8 < i) {
@@ -2177,19 +2170,19 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 break;
             }
         }
-        if (*(s16 *)(window + 0x1A) >= 0) {
+        if (window->orderingDepth >= 0) {
             {
                 u8 *drawPrim;
                 s32 drawId;
                 u8 drawFirst;
                 drawFirst = i != 0;
-                drawPrim = *(u8 **)(window + 0x20);
+                drawPrim = (u8 *)window->primitive;
                 MenuFontSet(drawPrim[1], drawPrim[2]);
                 drawPrim[0] = code;
                 drawId = *(s32 *)(drawPrim + 8);
-                if ((*(s32 *)(window + 0) & 0xFFFF0000) != 0 ||
-                    window[4] != 0) {
-                    MenuSetTextColor(window[2], window[3], window[4]);
+                if ((*(s32 *)((u8 *)window + 0) & 0xFFFF0000) != 0 ||
+                    window->blue != 0) {
+                    MenuSetTextColor(window->red, window->green, window->blue);
                 } else if (drawPrim[1] == 2) {
                     MenuSetTextColor(0xFF, 0x80, 0x40);
                 } else {
@@ -2198,19 +2191,18 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
                 if (gScreenState[0] == 0xD) {
                     MenuDrawString(
                         drawId,
-                        (s16)(*(u16 *)(window + 6) + *(u16 *)(window + 0x12)),
-                        (s16)(*(u16 *)(window + 8) + *(u16 *)(window + 0x14)),
+                        (s16)((u16)window->x + (u16)window->drawOffsetX),
+                        (s16)((u16)window->y + (u16)window->drawOffsetY),
                         drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
                         drawFirst & 0xFF, 0);
                 } else {
-                    MenuDrawString(drawId, *(s16 *)(window + 6),
-                                   *(s16 *)(window + 8), drawPrim[3],
+                    MenuDrawString(drawId, window->x, window->y, drawPrim[3],
                                    drawPrim[0], *(s32 *)(drawPrim + 4),
                                    drawFirst & 0xFF, 0);
                 }
             }
         }
-        window += 0x24;
+        window++;
     }
     if (D_800A361C[0] == 1) {
         MenuUpdateObjectPosition(D_800A392C, 1);
@@ -2222,66 +2214,64 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         MenuDrawModel(1, active, 0);
         MenuUpdateObjectPosition(D_800A3740, 1);
         {
-            u8 *drawWindow;
+            MenuObj *drawWindow;
             u8 *drawPrim;
             s32 drawId;
             drawWindow = D_800A3740;
-            drawPrim = *(u8 **)(drawWindow + 0x20);
+            drawPrim = (u8 *)drawWindow->primitive;
             MenuFontSet(drawPrim[1], drawPrim[2]);
             drawPrim[0] = 0;
             drawId = *(s32 *)(drawPrim + 8);
-            if ((*(s32 *)(drawWindow + 0) & 0xFFFF0000) != 0 ||
-                drawWindow[4] != 0) {
-                MenuSetTextColor(drawWindow[2], drawWindow[3], drawWindow[4]);
+            if ((*(s32 *)((u8 *)drawWindow + 0) & 0xFFFF0000) != 0 ||
+                drawWindow->blue != 0) {
+                MenuSetTextColor(drawWindow->red, drawWindow->green,
+                                 drawWindow->blue);
             } else if (drawPrim[1] == 2) {
                 MenuSetTextColor(0xFF, 0x80, 0x40);
             } else {
                 MenuSetTextColor(0, 0, 0);
             }
             if (gScreenState[0] == 0xD) {
-                MenuDrawString(drawId,
-                               (s16)(*(u16 *)(drawWindow + 6) +
-                                     *(u16 *)(drawWindow + 0x12)),
-                               (s16)(*(u16 *)(drawWindow + 8) +
-                                     *(u16 *)(drawWindow + 0x14)),
+                MenuDrawString(
+                    drawId,
+                    (s16)((u16)drawWindow->x + (u16)drawWindow->drawOffsetX),
+                    (s16)((u16)drawWindow->y + (u16)drawWindow->drawOffsetY),
+                    drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
+            } else {
+                MenuDrawString(drawId, drawWindow->x, drawWindow->y,
                                drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
                                1, 0);
-            } else {
-                MenuDrawString(drawId, *(s16 *)(drawWindow + 6),
-                               *(s16 *)(drawWindow + 8), drawPrim[3],
-                               drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
             }
         }
         MenuUpdateObjectPosition(D_800A3788, 1);
         {
-            u8 *drawWindow;
+            MenuObj *drawWindow;
             u8 *drawPrim;
             s32 drawId;
             drawWindow = D_800A3788;
-            drawPrim = *(u8 **)(drawWindow + 0x20);
+            drawPrim = (u8 *)drawWindow->primitive;
             MenuFontSet(drawPrim[1], drawPrim[2]);
             drawPrim[0] = 0;
             drawId = *(s32 *)(drawPrim + 8);
-            if ((*(s32 *)(drawWindow + 0) & 0xFFFF0000) != 0 ||
-                drawWindow[4] != 0) {
-                MenuSetTextColor(drawWindow[2], drawWindow[3], drawWindow[4]);
+            if ((*(s32 *)((u8 *)drawWindow + 0) & 0xFFFF0000) != 0 ||
+                drawWindow->blue != 0) {
+                MenuSetTextColor(drawWindow->red, drawWindow->green,
+                                 drawWindow->blue);
             } else if (drawPrim[1] == 2) {
                 MenuSetTextColor(0xFF, 0x80, 0x40);
             } else {
                 MenuSetTextColor(0, 0, 0);
             }
             if (gScreenState[0] == 0xD) {
-                MenuDrawString(drawId,
-                               (s16)(*(u16 *)(drawWindow + 6) +
-                                     *(u16 *)(drawWindow + 0x12)),
-                               (s16)(*(u16 *)(drawWindow + 8) +
-                                     *(u16 *)(drawWindow + 0x14)),
+                MenuDrawString(
+                    drawId,
+                    (s16)((u16)drawWindow->x + (u16)drawWindow->drawOffsetX),
+                    (s16)((u16)drawWindow->y + (u16)drawWindow->drawOffsetY),
+                    drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
+            } else {
+                MenuDrawString(drawId, drawWindow->x, drawWindow->y,
                                drawPrim[3], drawPrim[0], *(s32 *)(drawPrim + 4),
                                1, 0);
-            } else {
-                MenuDrawString(drawId, *(s16 *)(drawWindow + 6),
-                               *(s16 *)(drawWindow + 8), drawPrim[3],
-                               drawPrim[0], *(s32 *)(drawPrim + 4), 1, 0);
             }
         }
         if ((mode & 0xFF) != 7 || second == 0) {
@@ -2315,16 +2305,16 @@ void func_8005D094(s32 mode, u8 selection, u8 second) {
         }
         if ((u8)(mode - 34) < 2 || (mode & 0xFF) == 36 || (mode & 0xFF) == 40 ||
             (mode & 0xFF) == 37 || (u8)(mode - 38) < 2 ||
-            ((mode & 0xFF) == 1 && *(s16 *)(D_800A3A10 + 0xE) < 0)) {
+            ((mode & 0xFF) == 1 && *(s16 *)((u8 *)D_800A3A10 + 0xE) < 0)) {
             MenuUpdateObjectPosition(D_800A3A10, 1);
             MenuDrawObjectList(D_800A3A10, 0xFF);
         }
-        if ((mode & 0xFF) == 1 && *(s16 *)(D_800A3A10 + 0xE) == 0) {
+        if ((mode & 0xFF) == 1 && *(s16 *)((u8 *)D_800A3A10 + 0xE) == 0) {
             MenuRestoreLinkedObjectValues(0);
         }
     }
     if ((mode & 0xFF) != 33) {
-        if ((mode & 0xFF) != 5 || *(s16 *)(D_800A38A8 + 0xE) >= 0) {
+        if ((mode & 0xFF) != 5 || *(s16 *)((u8 *)D_800A38A8 + 0xE) >= 0) {
             goto afterPanel;
         }
     } else {
@@ -2346,7 +2336,7 @@ afterPanel:
                 MenuDrawObjectList(*entry, 0xFF);
                 if (D_800A3684[i] == 1) {
                     other = D_800A3888;
-                    other = (u8 **)((u8 *)other + offset);
+                    other = (MenuObj **)((u8 *)other + offset);
                     MenuUpdateObjectPosition(*other, 1);
                     MenuDrawObjectList(*other, 0xFF);
                 }
@@ -2388,7 +2378,7 @@ void func_8005DAD4(void) {
     s32 primOffset;
     s16 x;
     u8 index;
-    u8 *object;
+    MenuObj *object;
     u8 *prim;
     u16 value;
     u16 w;
@@ -2401,36 +2391,36 @@ void func_8005DAD4(void) {
         index = gMenuObjectPoolCount;
         prim = D_800B9990 + primOffset;
         gMenuObjectPoolCount = index + 1;
-        object = gMenuObjectPool + index * 36;
-        *(s16 *)(object + 0) = 1;
-        *(s16 *)(object + 0x12) = 0;
-        *(s16 *)(object + 0x14) = 0;
-        *(s32 *)(object + 0x1C) = 0;
-        object[4] = 0;
-        object[3] = 0;
-        object[2] = 0;
-        *(s16 *)(object + 0x1A) = 0;
+        object = &gMenuObjectPool[index];
+        object->kind = 1;
+        object->drawOffsetX = 0;
+        object->drawOffsetY = 0;
+        object->next = 0;
+        object->blue = 0;
+        object->green = 0;
+        object->red = 0;
+        object->orderingDepth = 0;
         D_800B12FC[i] = (s16 *)object;
-        *(s16 *)(object + 6) = x;
+        object->x = x;
         x = x - 1;
         x = x - i;
-        *(s16 *)(object + 8) = 0x10;
-        *(s16 *)(object + 0xC) = 0x10;
-        *(s16 *)(object + 0xE) = 2;
-        *(s16 *)(object + 0x16) = 0x40;
-        *(s16 *)(object + 0x10) = 0;
-        *(s16 *)(object + 0x18) = 0x13;
-        *(s16 *)(object + 0x1A) = 0;
-        value = *(u16 *)(object + 6);
-        *(s16 *)(object + 0xA) = value;
+        object->y = 0x10;
+        object->targetY = 0x10;
+        object->velocityX = 2;
+        object->width = 0x40;
+        object->velocityY = 0;
+        object->height = 0x13;
+        object->orderingDepth = 0;
+        value = (u16)object->x;
+        object->targetX = value;
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
         prim[4] = 0x80;
         prim[5] = 0x80;
         prim[6] = 0x80;
         SetSemiTrans(prim, 1);
-        w = *(u16 *)(object + 0x16);
-        h = *(u16 *)(object + 0x18);
+        w = (u16)object->width;
+        h = (u16)object->height;
         *(s16 *)(prim + 0xE) = GetClut(D_8009AEDC[0], D_8009AEDE[0]);
         primOffset += 0x28;
         *(s16 *)(prim + 0x16) =
@@ -2444,7 +2434,7 @@ void func_8005DAD4(void) {
         prim[0x24] = D_8009AEAA[54] + w;
         prim[0x25] = D_8009AEB6[44] + h;
         i++;
-        *(u8 **)(object + 0x20) = prim;
+        object->primitive = prim;
     } while (i < 10);
     D_800A39C4 = gMenuObjectPoolCount;
 }
@@ -2514,15 +2504,15 @@ void MenuSetAllObjectOrderingDepths(s16 value) {
 }
 
 void MenuSetLinkedObjectMotion(s32 a, s32 b, s32 c, u8 flag) {
-    u8 *object;
+    MenuObj *object;
     object = D_800A392C;
     while (object) {
-        *(s16 *)(object + 6) = a;
-        *(s16 *)(object + 0xE) = c;
-        *(s16 *)(object + 0xA) = b;
-        object[5] = c;
+        object->x = a;
+        object->velocityX = c;
+        object->targetX = b;
+        object->unk5 = c;
         if (flag)
-            *(s16 *)(object + 0xA) = 125;
-        object = (u8 *)((MenuObj *)object)->next;
+            object->targetX = 125;
+        object = object->next;
     }
 }
