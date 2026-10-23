@@ -2053,7 +2053,7 @@ void func_80060FD8(void) {
         s32 fifth;
         s32 sixth;
     } labelArgs;
-    register u8 *currentNode asm("$22");
+    register MenuObj *currentNode asm("$22");
     u8 *previousNode;
     MenuRowList rowList;
     MenuCounterHome panelIndex;
@@ -3779,7 +3779,7 @@ panelLoop:
                                  :
                                  : "r"(currentNode), "r"(panelValue)
                                  : "$2", "$12", "memory");
-                    *(s16 *)(currentNode + 0x12) = rowX;
+                    currentNode->drawOffsetX = rowX;
                     asm volatile(
                         ".set\tnoreorder\nlw $t3,%2\nlui $t4,%%hi(gPadPictureMenuLists)\naddiu $t4,$t4,%%lo(gPadPictureMenuLists)\naddu $v0,$t3,$t4\nlw $v0,0($v0)"
                         : "=r"(panelNode), "=r"(panelTableBase)
@@ -3787,7 +3787,7 @@ panelLoop:
                         : "$11");
                     rowX += 0xF;
                     asm volatile("" : : "r"(rowX) : "memory");
-                    *(s16 *)(currentNode + 0x14) =
+                    currentNode->drawOffsetY =
                         *(u16 *)(panelNode + 0x14) + 0x37;
                     *(u8 **)(previousNode + 0x1C) = currentNode;
                     previousNode = currentNode;
@@ -3879,7 +3879,7 @@ panelLoop:
                 primitive[4] = red;
                 primitive[5] = green;
                 primitive[6] = blue;
-                *(s16 *)(currentNode + 0x1A) = 0;
+                currentNode->orderingDepth = 0;
                 asm volatile(".set\tnoreorder\n"
                              "lbu\t$t4, 0x20($sp)\n"
                              "nop\t\n"
@@ -3896,8 +3896,8 @@ panelLoop:
                              :
                              : "r"(currentNode), "m"(panelIndex.value)
                              : "$2", "$11", "$12", "memory");
-                *(s16 *)(currentNode + 0x12) = 0xAC;
-                *(s16 *)(currentNode + 0x14) = xpos;
+                currentNode->drawOffsetX = 0xAC;
+                currentNode->drawOffsetY = xpos;
                 *(u8 **)(previousNode + 0x1C) = currentNode;
                 previousNode = currentNode;
                 arrowIndex++;
@@ -3916,7 +3916,7 @@ panelsDone:
 }
 
 void func_80062874(s32 arg0, s32 arg1) {
-    u8 *node;
+    MenuObj *node;
     s16 flag;
     s32 index;
 
@@ -3929,15 +3929,15 @@ void func_80062874(s32 arg0, s32 arg1) {
     }
     if (node != 0) {
         do {
-            if (*(u16 *)(node + 6) < 0x141U) {
-                *(u16 *)(node + 0xE) = 2 - flag * 4;
+            if ((u16)node->x < 0x141U) {
+                node->velocityX = 2 - flag * 4;
                 if (flag != 0) {
-                    *(s16 *)(node + 0xA) = -0xA0;
+                    node->targetX = -0xA0;
                 } else {
-                    *(u16 *)(node + 0xA) = 0x1E0;
+                    node->targetX = 0x1E0;
                 }
             }
-            node = *(u8 **)(node + 0x1C);
+            node = node->next;
         } while (node != 0);
     }
 }
@@ -3951,7 +3951,7 @@ extern u8 D_8009B028[];
 extern u8 D_8009B02A[];
 
 void MenuUpdatePadPicture(s32 playerSlot) {
-    u8 *node;
+    MenuObj *node;
     POLY_FT4 *prim;
     s32 a;
     s32 c;
@@ -3969,9 +3969,9 @@ void MenuUpdatePadPicture(s32 playerSlot) {
 
     node = (u8 *)gPadPictureMenuLists[playerSlot & 0xFF];
     while (*(u16 *)node != 1) {
-        node = *(u8 **)(node + 0x1C);
+        node = node->next;
     }
-    prim = (POLY_FT4 *)(*(u8 **)(node + 0x20));
+    prim = (POLY_FT4 *)((u8 *)node->primitive);
     if (gPadType[playerSlot & 0xFF] != ((s8 *)D_800A308C)[playerSlot & 0xFF] &&
         gPadType[playerSlot & 0xFF] != 0) {
         ((s8 *)gPadLayout)[playerSlot & 0xFF] = 0;
@@ -3996,28 +3996,28 @@ void MenuUpdatePadPicture(s32 playerSlot) {
         GetTPage(1, 0, *(s16 *)&D_8009B028[off], *(s16 *)&D_8009B02A[off]);
     prim->u0 = 0;
     prim->v0 = *(u16 *)&D_8009B02A[off];
-    prim->u1 = *(u16 *)(node + 0x16);
+    prim->u1 = (u16)node->width;
     prim->v1 = *(u16 *)&D_8009B02A[off];
     prim->u2 = 0;
-    prim->v2 = D_8009B02A[off] + node[0x18];
-    prim->u3 = *(u16 *)(node + 0x16);
-    prim->v3 = D_8009B02A[off] + node[0x18];
-    node = *(u8 **)(node + 0x1C);
-    prim = (POLY_FT4 *)(*(u8 **)(node + 0x20));
+    prim->v2 = D_8009B02A[off] + ((u8 *)node)[0x18];
+    prim->u3 = (u16)node->width;
+    prim->v3 = D_8009B02A[off] + ((u8 *)node)[0x18];
+    node = node->next;
+    prim = (POLY_FT4 *)((u8 *)node->primitive);
     if (id == 1 && (gPadType[playerSlot & 0xFF] == 5 ||
                     gPadType[playerSlot & 0xFF] == 7)) {
         prim->r0 = -(gPadType[playerSlot & 0xFF] == 7);
         prim->g0 = -(gPadType[playerSlot & 0xFF] == 5);
         prim->b0 = 0;
-        node[5] = 1;
+        node->unk5 = 1;
     } else {
-        node[5] = 0;
+        node->unk5 = 0;
     }
-    node = *(u8 **)(node + 0x1C);
-    node[5] = !gPadType[playerSlot & 0xFF];
-    node = *(u8 **)(node + 0x1C);
-    node = *(u8 **)(node + 0x1C);
-    prim2 = *(u8 **)(node + 0x20);
+    node = node->next;
+    node->unk5 = !gPadType[playerSlot & 0xFF];
+    node = node->next;
+    node = node->next;
+    prim2 = (u8 *)node->primitive;
     prim2->text = ((s8 *)gPadLayout)[playerSlot & 0xFF] + 1;
     uc = gPadType[playerSlot & 0xFF];
     c = gPadType[playerSlot & 0xFF];
@@ -4031,9 +4031,9 @@ void MenuUpdatePadPicture(s32 playerSlot) {
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 7; j++) {
-            node = *(u8 **)(node + 0x1C);
+            node = node->next;
             f = ((s8 *)D_800A3350)[(s8)c];
-            prim2 = *(u8 **)(node + 0x20);
+            prim2 = (u8 *)node->primitive;
             prim2->text =
                 D_8009A4E0[f][((s8 *)gPadLayout)[(u8)playerSlot]][7 * i + j];
         }
@@ -4062,7 +4062,7 @@ void ListSetFieldsAndEnable(MenuObj *node, s16 field6, s16 fieldA, s16 fieldE) {
 extern u8 D_800AEE41[];
 
 void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
-    u8 *obj;
+    MenuObj *obj;
     s32 j;
     s32 i;
     s32 base9;
@@ -4075,7 +4075,7 @@ void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
 
     obj = D_800A37FC[arg0 & 0xFF];
     for (i = 2; i >= 0; i--) {
-        obj = *(u8 **)(obj + 0x1C);
+        obj = obj->next;
     }
     for (i = 0; i < 3; i++) {
         mode = arg1 & 0xFF;
@@ -4121,17 +4121,17 @@ void func_80062D38(s32 arg0, s32 arg1, u8 *arg2) {
                 }
                 val -= 0x37;
                 tmp = *(u16 *)((u8 *)entry[0] + 0x14);
-                *(s16 *)(obj + 0x14) = tmp - val;
+                obj->drawOffsetY = tmp - val;
                 break;
             case 2:
                 val = (arg2[2] * 103) >> 8;
                 if (val >= 0x68) {
                     val = 0x67;
                 }
-                *(s16 *)(obj + 0x12) = val + 0x78;
+                obj->drawOffsetX = val + 0x78;
                 break;
             }
-            obj = *(u8 **)(obj + 0x1C);
+            obj = obj->next;
             j++;
         } while (j < 2);
     }

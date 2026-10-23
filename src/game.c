@@ -1643,6 +1643,31 @@ void TrackAllocateGeometryBuffers(s32 vertexCount, s32 faceCount,
 typedef struct {
     s32 x, y, z;
 } FileVertex;
+
+/* The header of a track file. Each offset counts from the file start. */
+typedef struct {
+    s16 vertexCount; /* 0x00 */
+    s16 unk2;        /* 0x02: node scale */
+    s16 objectCount; /* 0x04 */
+    u8 unk6[2];
+    s32 vertexOffset;   /* 0x08 */
+    s32 faceOffset;     /* 0x0C */
+    s32 objectOffset;   /* 0x10 */
+    s32 copy16Offset;   /* 0x14 */
+    s32 positionOffset; /* 0x18 */
+    s32 nodesOffset;    /* 0x1C */
+    s32 sectionsOffset; /* 0x20 */
+} TrackFileHeader;
+
+/* One object in a track file, followed by its face indices. */
+typedef struct {
+    u16 type; /* 0x00 */
+    u16 unk2;
+    s16 unk4;
+    u16 unk6;
+    FileVertex position; /* 0x08 */
+    s16 corner[6];       /* 0x14 */
+} TrackFileObject;
 typedef struct {
     s32 vertexCount, objectCount, faceCount;
     u8 *vertices, *objects, *faces;
@@ -1662,7 +1687,7 @@ extern s32 sprintf(char *, char *, ...);
 extern void func_8001D218(char *, ...);
 extern s32 func_800157B0(s16 *, void *, u8 *);
 extern void func_80015870(u8 *, void *);
-extern void func_80015930(u8 *, void *, s32);
+extern void func_80015930(TrackSection *, void *, s32);
 extern s32 D_800A2F80[], D_800A39E0[], D_800A376C[];
 extern s32 D_800B1348[];
 extern s32 D_800B134C[];
@@ -1730,7 +1755,8 @@ void TrackReadData(s32 *trackData, s32 file) {
     register u8 *outputZ;
     FileVertex *inputVertex;
     register u8 *data asm("s2");
-    u8 *fileData;
+    register TrackSection *sec asm("s2");
+    TrackFileHeader *fileData;
     s32 sectionCount;
     s32 fileSize;
     register u32 nodeScale asm("a0");
@@ -1785,24 +1811,24 @@ void TrackReadData(s32 *trackData, s32 file) {
     u8 *inputPosition;
     u8 *inputNode;
     register u8 *faceFields asm("s2");
-    register u8 *diskObject asm("s5");
+    register TrackFileObject *diskObject asm("s5");
     u8 *outputIndex;
     u8 *outputUv;
     register u32 boundLimit;
 
     resource = (TrackResource *)trackData;
     fileSize = FileSeek(file, 0, 2);
-    fileData = (u8 *)((0x1F4000 - fileSize) | RAM_CACHED_BASE);
+    fileData = (TrackFileHeader *)((0x1F4000 - fileSize) | RAM_CACHED_BASE);
     FileSeek(file, 0, 0);
     FileRead(fileData, fileSize, 1, file);
-    vertexOffset = (u8 *)*(s32 *)(fileData + 8);
-    faceOffset = (u8 *)*(s32 *)(fileData + 12);
-    objectOffset = (u8 *)*(s32 *)(fileData + 16);
-    copy16Offset = *(s32 *)(fileData + 20);
-    positionOffset = *(s32 *)(fileData + 24);
-    nodesOffset = *(s32 *)(fileData + 28);
-    sectionsOffset = *(s32 *)(fileData + 32);
-    vertexCount = *(s16 *)(fileData + 0);
+    vertexOffset = (u8 *)fileData->vertexOffset;
+    faceOffset = (u8 *)fileData->faceOffset;
+    objectOffset = (u8 *)fileData->objectOffset;
+    copy16Offset = fileData->copy16Offset;
+    positionOffset = fileData->positionOffset;
+    nodesOffset = fileData->nodesOffset;
+    sectionsOffset = fileData->sectionsOffset;
+    vertexCount = fileData->vertexCount;
     asm volatile(""
                  :
                  : "g"(vertexOffset), "g"(faceOffset), "g"(objectOffset),
@@ -1811,26 +1837,26 @@ void TrackReadData(s32 *trackData, s32 file) {
                  : "memory");
     /* Inverse of 135 for the aligned 540-byte node records. */
     nodeScale = 0xE1A8C537;
-    nodeDataStart = fileData + nodesOffset;
-    sectionHeaderData = fileData + sectionsOffset;
+    nodeDataStart = (u8 *)fileData + nodesOffset;
+    sectionHeaderData = (u8 *)fileData + sectionsOffset;
     resource->vertexCount = (s32)vertexCount;
     nodeData = nodeDataStart;
     sectionHeader = sectionHeaderData;
     asm volatile("lh %0,%2"
                  : "=r"(faceCount), "=r"(nodeScale)
-                 : "m"(*(s16 *)(fileData + 2)), "1"(nodeScale), "g"(nodeData),
+                 : "m"(fileData->unk2), "1"(nodeScale), "g"(nodeData),
                    "g"(sectionHeader), "m"(resource->vertexCount));
     nodeCount =
         (s32)((u32)(sectionHeaderData - nodeDataStart) * nodeScale) >> 2;
     initText = gTrackInitMessage;
     asm("" : "=r"(initText) : "0"(initText));
-    data = fileData + (s32)vertexOffset;
-    diskFace = fileData + (s32)faceOffset;
+    data = (u8 *)fileData + (s32)vertexOffset;
+    diskFace = (u8 *)fileData + (s32)faceOffset;
     resource->faceCount = (s32)faceCount;
-    diskObject = fileData + (s32)objectOffset;
-    resource->objectCount = (s32) * (s16 *)(fileData + 4);
-    copy16Data = fileData + copy16Offset;
-    positionData = fileData + positionOffset;
+    diskObject = (TrackFileObject *)((u8 *)fileData + (s32)objectOffset);
+    resource->objectCount = (s32)fileData->objectCount;
+    copy16Data = (u8 *)fileData + copy16Offset;
+    positionData = (u8 *)fileData + positionOffset;
     func_8001D218(initText, vertexOffset, faceOffset, objectOffset);
     allocatedVertices = HeapAlloc(vertexCount * 8);
     D_800BE97C[0] = allocatedVertices;
@@ -2063,47 +2089,46 @@ void TrackReadData(s32 *trackData, s32 file) {
     shade = 0x80;
     i = 0;
     if (count > 0) {
-        data = objectData;
+        sec = (TrackSection *)objectData;
         specialFaceColor = 0x4A4A4A;
         nextObjectOffset = 0x90;
         prevObjectOffset = -0x90;
         do {
-            *(u8 **)((u8 *)data + (0)) = objectData + prevObjectOffset;
-            *(u8 **)((u8 *)data + (4)) =
-                (void *)(objectData + nextObjectOffset);
-            objectFlags = *(u32 *)((u8 *)data + (16));
-            typeA = *(u16 *)diskObject;
-            *(u16 *)(data + 10) = typeA;
-            typeC = *(u16 *)(diskObject + 2);
+            *(u8 **)&sec->prev = objectData + prevObjectOffset;
+            *(u8 **)&sec->next = (void *)(objectData + nextObjectOffset);
+            objectFlags = *(u32 *)&sec->angle;
+            typeA = diskObject->type;
+            sec->type = typeA;
+            typeC = diskObject->unk2;
             objectFlags &= 0xFFFEFFFF;
-            *(s16 *)((u8 *)data + (8)) = i;
-            *(u32 *)((u8 *)data + (16)) = objectFlags;
-            *(u16 *)(data + 12) = typeC;
-            typeA = *(s16 *)(diskObject + 4);
-            *(u32 *)((u8 *)data + (16)) =
+            *(s16 *)&sec->section = i;
+            *(u32 *)&sec->angle = objectFlags;
+            sec->unkC = typeC;
+            typeA = diskObject->unk4;
+            *(u32 *)&sec->angle =
                 (objectFlags & 0xFF01FFFF) | ((typeA & 0x7F) << 17);
-            typeA = *(u16 *)(diskObject + 6);
-            objectFaceIndices = diskObject + 0x20;
+            typeA = diskObject->unk6;
+            objectFaceIndices = (u8 *)(diskObject + 1);
             asm("" : : "r"(typeA), "r"(objectFaceIndices));
-            *(u16 *)(data + 16) = typeA;
-            *(FileVertex *)(data + 20) = *(FileVertex *)(diskObject + 8);
+            sec->angle = typeA;
+            *(FileVertex *)&sec->x = diskObject->position;
             asm volatile("" : : : "memory");
             callFaces = D_800A3A40;
             callFirst = (s16 *)objectFaceIndices;
-            callHead = data + 32;
-            *(u8 **)((u8 *)data + (48)) = 0;
-            *(s32 *)((u8 *)data + (80)) = 0;
-            *(u16 *)((u8 *)data + (14)) = 0;
-            *(s32 *)((u8 *)data + (36)) = 0;
-            *(u8 **)((u8 *)data + (32)) = NULL;
-            *(s32 *)((u8 *)data + (44)) = 0;
-            *(s32 *)((u8 *)data + (40)) = 0;
-            *(s16 *)(data + 52) = -1;
+            callHead = (u8 *)&sec->unk20;
+            sec->callbacks = 0;
+            sec->unk50 = 0;
+            sec->culled = 0;
+            sec->unk24 = 0;
+            sec->unk20 = NULL;
+            sec->unk2C = 0;
+            *(s32 *)&sec->firstQuad = 0;
+            sec->unk34 = -1;
             objectFaceCount = func_800157B0(callFirst, callHead, callFaces);
-            face = *(u8 **)((u8 *)data + (32));
+            face = sec->unk20;
             objectPolygonCount = 0;
             if ((face != NULL) && !(*(u8 *)((u8 *)face + (19)) & 0x80)) {
-                flagObject = data;
+                flagObject = (u8 *)sec;
                 faceColor = 0x808080;
                 do {
                     if (*(s32 *)((u8 *)face + (4)) == specialFaceColor) {
@@ -2116,8 +2141,8 @@ void TrackReadData(s32 *trackData, s32 file) {
                 } while ((face != NULL) &&
                          !(*(u8 *)((u8 *)face + (19)) & 0x80));
             }
-            *(s8 *)((u8 *)data + (19)) = objectPolygonCount;
-            func_80015870(data + 0x20, data + 0x28);
+            *(s8 *)&sec->unk13 = objectPolygonCount;
+            func_80015870((u8 *)&sec->unk20, (u8 *)&sec->firstQuad);
             randomValue = RandomScaledGet(3);
             shadeBase = shade - 1;
             shade = shadeBase + randomValue;
@@ -2126,26 +2151,27 @@ void TrackReadData(s32 *trackData, s32 file) {
             } else if (shade < 0x50) {
                 shade = 0x50;
             }
-            func_80015930(data, resource, shade);
-            nextDataOffset = *(s16 *)(diskObject + 26);
-            *(u8 **)(data + 120) = vertices + nextDataOffset * 8;
-            nextDataOffset = *(s16 *)(diskObject + 24);
-            *(u8 **)(data + 124) = vertices + nextDataOffset * 8;
-            nextDataOffset = *(s16 *)(diskObject + 20);
-            *(u8 **)(data + 128) = vertices + nextDataOffset * 8;
-            nextDataOffset = *(s16 *)(diskObject + 22);
-            *(u8 **)(data + 132) = vertices + nextDataOffset * 8;
+            func_80015930((u8 *)sec, resource, shade);
+            nextDataOffset = diskObject->corner[3];
+            sec->unk78[0] = vertices + nextDataOffset * 8;
+            nextDataOffset = diskObject->corner[2];
+            sec->unk78[1] = vertices + nextDataOffset * 8;
+            nextDataOffset = diskObject->corner[0];
+            sec->unk78[2] = vertices + nextDataOffset * 8;
+            nextDataOffset = diskObject->corner[1];
+            sec->unk78[3] = vertices + nextDataOffset * 8;
             nextObjectOffset += 0x90;
             prevObjectOffset += 0x90;
-            nextDataOffset = *(s16 *)(diskObject + 28);
-            *(u8 **)(data + 136) = vertices + nextDataOffset * 8;
+            nextDataOffset = diskObject->corner[4];
+            sec->unk78[4] = vertices + nextDataOffset * 8;
             i += 1;
-            lastCorner = *(s16 *)(diskObject + 30);
+            lastCorner = diskObject->corner[5];
             nextDataOffset = objectFaceCount * 2 + 2;
-            diskObject = objectFaceIndices + nextDataOffset;
+            diskObject =
+                (TrackFileObject *)(objectFaceIndices + nextDataOffset);
             lastCorner = (s32)vertices + lastCorner * 8;
-            *(u8 **)(data + 140) = (u8 *)lastCorner;
-            data += 0x90;
+            sec->unk78[5] = (u8 *)lastCorner;
+            sec++;
         } while (i < count);
         asm volatile(""
                      :
@@ -2291,7 +2317,7 @@ void func_80015870(u8 *arg0, void *arg1) {
     }
 }
 
-void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
+void func_80015930(TrackSection *arg0, void *arg1, s32 arg2) {
     s32 minX;
     s32 minY;
     s32 minZ;
@@ -2308,7 +2334,7 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
     minZ = 0x7FFF;
     minY = 0x7FFF;
     minX = 0x7FFF;
-    node = *(u8 **)(arg0 + 0x20);
+    node = arg0->unk20;
     maxZ = -0x7D00;
     maxY = -0x7D00;
     maxX = -0x7D00;
@@ -2341,25 +2367,25 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
                 }
             }
             if (!(node->flags & 0x80)) {
-                if (*(u32 *)(arg0 + 0x10) & 0x10000) {
+                if (*(u32 *)&arg0->angle & 0x10000) {
                     *(u32 *)&node->r0 = 0x4A4A4A;
                 }
             }
             node = node->next;
         } while (node != NULL);
     }
-    *(s16 *)(arg0 + 0x54) = minX;
-    *(s16 *)(arg0 + 0x56) = minY;
-    *(s16 *)(arg0 + 0x5C) = maxX;
-    *(s16 *)(arg0 + 0x5E) = minY;
-    *(s16 *)(arg0 + 0x64) = minX;
-    *(s16 *)(arg0 + 0x66) = maxY;
-    *(s16 *)(arg0 + 0x6C) = maxX;
-    *(s16 *)(arg0 + 0x6E) = maxY;
-    *(s16 *)(arg0 + 0x58) = 0;
-    *(s16 *)(arg0 + 0x60) = 0;
-    *(s16 *)(arg0 + 0x68) = 0;
-    *(s16 *)(arg0 + 0x70) = 0;
+    arg0->bounds[0].vx = minX;
+    arg0->bounds[0].vy = minY;
+    arg0->bounds[1].vx = maxX;
+    arg0->bounds[1].vy = minY;
+    arg0->bounds[2].vx = minX;
+    arg0->bounds[2].vy = maxY;
+    arg0->bounds[3].vx = maxX;
+    arg0->bounds[3].vy = maxY;
+    arg0->bounds[0].vz = 0;
+    arg0->bounds[1].vz = 0;
+    arg0->bounds[2].vz = 0;
+    arg0->bounds[3].vz = 0;
 }
 
 void TrackLoadFromFile(s32 arg0) {

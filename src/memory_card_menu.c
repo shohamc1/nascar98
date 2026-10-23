@@ -2780,11 +2780,11 @@ void func_8006C668(s32 start, s32 arg1);
  * steps the cursor, scrolling the row window when it reaches the edge. */
 void func_8006C2D0(s32 arg0) {
     s32 i;
-    register u8 *node;
+    register MenuObj *node;
     u8 *entry;
     u8 *s;
     u8 *sentinel;
-    u8 *head;
+    MenuObj *head;
     u8 *cursor;
     s32 row;
     s32 row16;
@@ -2794,21 +2794,21 @@ void func_8006C2D0(s32 arg0) {
     if (gScreenState[0] == 0x28) {
         node = D_800A3908[0];
         for (i = 0; i < 2; i++) {
-            entry = *(u8 **)(node + 0x20);
+            entry = (u8 *)node->primitive;
             *(u32 *)(entry + 8) = D_8009A4D8[i];
-            if (*(s16 *)(node + 0x1A) < 0) {
-                *(s16 *)(node + 0x1A) = -*(s16 *)(node + 0x1A);
+            if (node->orderingDepth < 0) {
+                node->orderingDepth = -node->orderingDepth;
             }
-            node = *(u8 **)(node + 0x1C);
+            node = node->next;
         }
         s = D_800A377C[0];
         if (node != s) {
             sentinel = s;
             do {
-                if (*(s16 *)(node + 0x1A) > 0) {
-                    *(s16 *)(node + 0x1A) = -*(s16 *)(node + 0x1A);
+                if (node->orderingDepth > 0) {
+                    node->orderingDepth = -node->orderingDepth;
                 }
-                node = *(u8 **)(node + 0x1C);
+                node = node->next;
             } while (node != sentinel);
             s = D_800A377C[0];
         }
@@ -2861,10 +2861,10 @@ void func_8006C2D0(s32 arg0) {
         head = D_800A3908[0];
         if (head != cursor) {
             do {
-                if (*(s16 *)(head + 0x1A) < 0) {
-                    *(s16 *)(head + 0x1A) = -*(s16 *)(head + 0x1A);
+                if (head->orderingDepth < 0) {
+                    head->orderingDepth = -head->orderingDepth;
                 }
-                head = *(u8 **)(head + 0x1C);
+                head = head->next;
             } while (head != cursor);
         }
     }
@@ -2977,7 +2977,7 @@ void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
     s32 result;
     s32 target;
     s32 gear;
-    u8 *node;
+    MenuObj *node;
     s32 old;
     s32 start;
     s32 tmp;
@@ -2994,7 +2994,7 @@ void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
     }
 
     node = D_800A377C[0];
-    gear = *(s8 *)(node + 5);
+    gear = (s8)node->unk5;
     result = 1;
     if ((arg0 & 0xFF) != 0) {
         if (gear >= 6)
@@ -3003,10 +3003,10 @@ void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
             goto scrollForward;
         {
             old = D_800A358C;
-            tmp = *(u16 *)(node + 8);
+            tmp = (u16)node->y;
             old = old + 1;
             tmp = tmp + 9;
-            *(u16 *)(node + 8) = tmp;
+            node->y = tmp;
             D_800A358C = old;
             gear = gear + 1;
             goto finish;
@@ -3025,12 +3025,12 @@ void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
         s32 tmpBack;
 
         oldBack = D_800A358C;
-        tmpBack = *(u16 *)(node + 8);
+        tmpBack = (u16)node->y;
         gear = gear - 1;
         oldBack = oldBack - 1;
         tmpBack = tmpBack - 9;
         D_800A358C = oldBack;
-        *(u16 *)(node + 8) = tmpBack;
+        node->y = tmpBack;
     } else {
         s32 oldTop;
         u8 newTop;
@@ -3132,7 +3132,7 @@ void func_8006CB40(void) {
 void func_8006CB80(s32 arg0, s32 arg1, s32 arg2) {
     s32 threshold;
     s32 limitSave;
-    u8 *st;
+    MenuObj *st;
     s32 ch;
     s32 adj;
     s8 *entry;
@@ -3161,12 +3161,12 @@ void func_8006CB80(s32 arg0, s32 arg1, s32 arg2) {
     D_800A37F0Absolute3[0] = limitSave;
 noStore:
     st = *(u8 **)(D_800A377C[0] + 0x1C);
-    if (*(s8 *)(st + 5) >= strlen(cardNames[D_800A358C])) {
-        cardNames[D_800A358C][*(s8 *)(st + 5)] = ' ';
-        cardNames[D_800A358C][*(s8 *)(st + 5) + 1] = 0;
+    if ((s8)st->unk5 >= strlen(cardNames[D_800A358C])) {
+        cardNames[D_800A358C][(s8)st->unk5] = ' ';
+        cardNames[D_800A358C][(s8)st->unk5 + 1] = 0;
         ch = 0x21;
     } else {
-        ch = (u8)cardNames[D_800A358C][*(s8 *)(st + 5)] - 0x20;
+        ch = (u8)cardNames[D_800A358C][(s8)st->unk5] - 0x20;
     }
     if ((arg0 & 0xFF) == 0) {
         adj = ch - D_800A37F0Absolute3[0];
@@ -3202,18 +3202,18 @@ noStore:
         }
     }
     ch += 0x20;
-    cardNames[D_800A358C][*(s8 *)(st + 5)] = ch;
-    idx = *(u8 *)(st + 5);
+    cardNames[D_800A358C][(s8)st->unk5] = ch;
+    idx = st->unk5;
     entry = (s8 *)cardNames[D_800A358C];
     MenuFontSetS32(2, 2);
     if (*entry == 0) {
-        *(s16 *)(st + 0x16) = MenuCharWidth(0x20);
+        st->width = MenuCharWidth(0x20);
         result = 0;
     } else {
         result = MenuPrefixWidth(idx, entry);
-        *(s16 *)(st + 0x16) = MenuCharWidth(entry[idx]);
+        st->width = MenuCharWidth(entry[idx]);
     }
-    *(s16 *)(st + 6) = result + 0xA;
+    st->x = result + 0xA;
 }
 
 extern char D_800B0A2D[];
@@ -3250,7 +3250,7 @@ void CardMenuAppendTrackName(void) {
 void func_8006CF90(u32 mode) {
     extern u8 gMemoryCardNameInitialCharacter[];
     u8 *node;
-    u8 *st;
+    MenuObj *st;
     char *entry;
     s8 c;
     s8 t;
@@ -3262,33 +3262,33 @@ void func_8006CF90(u32 mode) {
     st = *(u8 **)(node + 0x1C);
     mode &= 0xFF;
     if (mode != 0) {
-        if (*(s8 *)(st + 5) > 0) {
-            *(s8 *)(st + 5) = *(s8 *)(st + 5) - 1;
+        if ((s8)st->unk5 > 0) {
+            st->unk5 = (s8)st->unk5 - 1;
         }
     } else {
-        t = *(s8 *)(st + 5);
+        t = (s8)st->unk5;
         c = t;
         if (t < 14) {
             c = c + 1;
-            *(s8 *)(st + 5) = c;
+            st->unk5 = c;
             if (c == strlen(&D_800B0A2C[D_800A358C * 16])) {
                 strcat(&D_800B0A2C[D_800A358C * 16],
                        gMemoryCardNameInitialCharacter);
             }
         }
     }
-    idx = *(u8 *)(st + 5);
+    idx = st->unk5;
     entry = D_800B0A2C + D_800A358C * 16;
     MenuFontSetS32(2, 2);
     ch = *entry;
     if (ch == 0) {
-        *(u16 *)(st + 0x16) = MenuCharWidth(0x20);
+        st->width = MenuCharWidth(0x20);
         result = 0;
     } else {
         result = MenuPrefixWidth(idx, entry);
-        *(u16 *)(st + 0x16) = MenuCharWidth(*(s8 *)(entry + idx));
+        st->width = MenuCharWidth(*(s8 *)(entry + idx));
     }
-    *(u16 *)(st + 6) = result + 10;
+    st->x = result + 10;
 }
 
 s32 CardMenuCheckTrackNameCapacity(void) {

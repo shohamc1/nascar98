@@ -3249,7 +3249,8 @@ void func_8004B128(Car *arg0) {
 /* These calls keep the preceding result in the delay slot. */
 extern void HudMultiplyVoid(s32, s32) asm("MathMultiplyFixed16");
 extern u32 gHudPrimitiveCursor asm("gPrimitiveCursorAbsolute");
-extern u8 D_800A8184[], D_800A81B4[], D_800A8214[], D_800A82B4[];
+extern u8 D_800A8184[], D_800A81B4[], D_800A82B4[];
+extern POLY_FT4 D_800A8214[];
 extern u8 D_800A80F4[], D_800A8354[], D_800A8534[], D_800A7995[];
 extern u16 D_8009934C[], D_8009934E[];
 extern s16 D_8009935C[], D_8009936C[];
@@ -3605,7 +3606,7 @@ void HudDrawDashboard(void) {
             u32 raw;
             POLY_FT4 *entry;
             POLY_FT4 *prim;
-            prim = (POLY_FT4 *)(D_800A8214 + (s16)i * 40);
+            prim = &D_800A8214[(s16)i];
             raw = gHudPrimitiveCursor;
             gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
             entry = (POLY_FT4 *)raw;
@@ -4255,7 +4256,7 @@ void HudInitPrims(void) {
         tex = &D_80090FCE[4];
         for (i = 0; i < 4; i++) {
             POLY_FT4 *prim;
-            prim = (POLY_FT4 *)(i * 0x28 + D_800A8214);
+            prim = &D_800A8214[i];
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             *(u16 *)(D_800A8222 + i * 0x28) = GetClut(tex->clutX, tex->clutY);
@@ -4270,8 +4271,8 @@ void HudInitPrims(void) {
             prim->u3 = tex->u + 0x30;
             prim->v3 = tex->v + 0x40;
         }
-        *(u16 *)(D_800A8214 + 0xE) = GetClut(D_80091018[0], D_8009101A[0]);
-        *(u16 *)(D_800A8214 + 0x16) =
+        D_800A8214[0].clut = GetClut(D_80091018[0], D_8009101A[0]);
+        D_800A8214[0].tpage =
             GetTPage(D_80091020[0], 0, D_80091014.tpx, D_80091016[0]);
         u = D_8009101C[0];
         v = D_8009101E[0];
@@ -4291,30 +4292,30 @@ void HudInitPrims(void) {
         D_800A822E[0] = D_800A2FD4[0] + 0xEC;
         D_800A8234[0] = 0xBC;
         D_800A8236[0] = D_800A2FD4[0] + 0xEC;
-        *(s16 *)(D_800A8214 + 0x30) = 0x3C;
-        *(s16 *)(D_800A8214 + 0x32) = D_800A2FD4[0] + 0xAC;
-        *(s16 *)(D_800A8214 + 0x38) = 0x6C;
-        *(s16 *)(D_800A8214 + 0x3A) = D_800A2FD4[0] + 0xAC;
-        *(s16 *)(D_800A8214 + 0x40) = 0x3C;
-        *(s16 *)(D_800A8214 + 0x42) = D_800A2FD4[0] + 0xEC;
-        *(s16 *)(D_800A8214 + 0x48) = 0x6C;
-        *(s16 *)(D_800A8214 + 0x4A) = D_800A2FD4[0] + 0xEC;
-        *(s16 *)(D_800A8214 + 0x58) = 0xE0;
-        *(s16 *)(D_800A8214 + 0x5A) = D_800A2FD4[0] + 0xAC;
-        *(s16 *)(D_800A8214 + 0x60) = 0x110;
-        *(s16 *)(D_800A8214 + 0x62) = D_800A2FD4[0] + 0xAC;
-        *(s16 *)(D_800A8214 + 0x68) = 0xE0;
-        *(s16 *)(D_800A8214 + 0x6A) = D_800A2FD4[0] + 0xEC;
-        *(s16 *)(D_800A8214 + 0x70) = 0x110;
-        *(s16 *)(D_800A8214 + 0x72) = D_800A2FD4[0] + 0xEC;
-        *(s16 *)(D_800A8214 + 0x80) = 0x110;
-        *(s16 *)(D_800A8214 + 0x82) = D_800A2FD4[0] + 0xAC;
-        *(s16 *)(D_800A8214 + 0x88) = 0x140;
-        *(s16 *)(D_800A8214 + 0x8A) = D_800A2FD4[0] + 0xAC;
-        *(s16 *)(D_800A8214 + 0x90) = 0x110;
-        *(s16 *)(D_800A8214 + 0x92) = D_800A2FD4[0] + 0xEC;
-        *(s16 *)(D_800A8214 + 0x98) = 0x140;
-        *(s16 *)(D_800A8214 + 0x9A) = D_800A2FD4[0] + 0xEC;
+        D_800A8214[1].x0 = 0x3C;
+        D_800A8214[1].y0 = D_800A2FD4[0] + 0xAC;
+        D_800A8214[1].x1 = 0x6C;
+        D_800A8214[1].y1 = D_800A2FD4[0] + 0xAC;
+        D_800A8214[1].x2 = 0x3C;
+        D_800A8214[1].y2 = D_800A2FD4[0] + 0xEC;
+        D_800A8214[1].x3 = 0x6C;
+        D_800A8214[1].y3 = D_800A2FD4[0] + 0xEC;
+        D_800A8214[2].x0 = 0xE0;
+        D_800A8214[2].y0 = D_800A2FD4[0] + 0xAC;
+        D_800A8214[2].x1 = 0x110;
+        D_800A8214[2].y1 = D_800A2FD4[0] + 0xAC;
+        D_800A8214[2].x2 = 0xE0;
+        D_800A8214[2].y2 = D_800A2FD4[0] + 0xEC;
+        D_800A8214[2].x3 = 0x110;
+        D_800A8214[2].y3 = D_800A2FD4[0] + 0xEC;
+        D_800A8214[3].x0 = 0x110;
+        D_800A8214[3].y0 = D_800A2FD4[0] + 0xAC;
+        D_800A8214[3].x1 = 0x140;
+        D_800A8214[3].y1 = D_800A2FD4[0] + 0xAC;
+        D_800A8214[3].x2 = 0x110;
+        D_800A8214[3].y2 = D_800A2FD4[0] + 0xEC;
+        D_800A8214[3].x3 = 0x140;
+        D_800A8214[3].y3 = D_800A2FD4[0] + 0xEC;
         for (i = 0; i < 4; i++) {
             POLY_FT4 *prim;
             prim = (POLY_FT4 *)(i * 0x28 + D_800A82B4);

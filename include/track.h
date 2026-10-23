@@ -43,7 +43,8 @@ typedef struct TrackSection {
     struct TrackSection *prev; /* 0x00 */
     struct TrackSection *next; /* 0x04 */
     u16 section;               /* 0x08 */
-    u8 unkA[4];
+    u16 type;                  /* 0x0A: object type from the track file */
+    u16 unkC;
     u16 culled;                  /* 0x0E */
     u16 angle;                   /* 0x10 */
     u8 unk12;                    /* point index in bits 1 to 7 */
@@ -53,9 +54,9 @@ typedef struct TrackSection {
     u16 height0;                 /* 0x1C */
     s16 height1;                 /* 0x1E */
     u8 *unk20;                   /* 0x20 */
-    u8 unk24[4];
+    s32 unk24;
     struct Face *firstQuad; /* 0x28 */
-    u8 unk2C[4];
+    s32 unk2C;
     u8 *callbacks; /* 0x30: nodes run by ListDispatchCallbacks */
     s16 unk34;
     s16 unk36;
@@ -66,7 +67,7 @@ typedef struct TrackSection {
     s32 unk48;
     s32 unk4C;
     s32 unk50; /* 0x50 */
-    u8 unk54[0x20];
+    SVECTOR bounds[4]; /* 0x54: the corners of its bounding box */
     struct SkidMark *children; /* 0x74: drawn by func_8002E240 */
     u8 *unk78[6];  /* 0x78 */
 } TrackSection;
