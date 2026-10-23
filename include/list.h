@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-struct Car;
+struct TrackSection;
 
 #include "common.h"
 
@@ -20,6 +20,6 @@ void ListRemoveNodeWithTail(RenderListNode *node, RenderListNode **head,
                             RenderListNode **tail);
 void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
                                DoublyLinkedNode **first);
-void ListDispatchCallbacks(struct Car *owner);
+void ListDispatchCallbacks(struct TrackSection *owner);
 
 #endif /* LIST_H */

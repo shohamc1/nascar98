@@ -613,10 +613,10 @@ void func_8001CF38(u8 *arg0) {
 }
 
 extern void (*D_80091080[])(void *);
-void ListDispatchCallbacks(Car *owner) {
+void ListDispatchCallbacks(TrackSection *owner) {
     u8 *node;
     void (*callback)(void *);
-    node = *(u8 **)((u8 *)owner + 0x30);
+    node = owner->callbacks;
     while (node != 0) {
         callback = D_80091080[*(s16 *)(node + 0xC)];
         callback(node);

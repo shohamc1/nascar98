@@ -7873,7 +7873,8 @@ void func_8002E230(void) {
 
 extern void PushMatrix(void);
 extern void PopMatrix(void);
-extern void func_80033000(Car *arg0, Car *arg1, Car *arg2);
+extern void func_80033000(TrackSection *arg0, TrackSection *arg1,
+                          TrackSection *arg2);
 extern void SceneLinkLiveEntries(u8 *arg0);
 extern void SceneUpdateProjectiles(Car *arg0);
 extern void func_800345E0(void);
@@ -7894,14 +7895,14 @@ extern s32 D_800B9D74[];
 extern s32 D_800A397C[];
 extern s32 D_800B9D60[];
 
-void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
-                   Car *currentSection) {
+void func_8002E240(Car *viewCar, TrackSection *firstSection,
+                   TrackSection *sectionEnd, TrackSection *currentSection) {
     SVECTOR rotation;
     VECTOR translation;
     long flag[2];
     MATRIX *matrix;
     s32 *camera;
-    Car *node;
+    TrackSection *node;
     u8 *child;
     u8 *tail;
     s32 count;
@@ -7924,8 +7925,8 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
         if (firstSection != sectionEnd) {
             do {
                 ListDispatchCallbacks(node);
-                if (*(u16 *)((u8 *)node + 0xE) == 0) {
-                    child = *(u8 **)((u8 *)node + 0x74);
+                if (node->culled == 0) {
+                    child = node->children;
                     D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
                     if (gReplayIndex[0] < ((s32 *)gPlayerCarAbsolute)[-1]) {
                         depth = D_800A2EC0 -
@@ -7949,15 +7950,15 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
                         } while (child != NULL);
                     }
                 }
-                node = *(Car **)node;
+                node = node->prev;
             } while (node != sectionEnd);
         }
     } else {
         if (firstSection != sectionEnd) {
             do {
                 ListDispatchCallbacks(node);
-                if (*(u16 *)((u8 *)node + 0xE) == 0) {
-                    child = *(u8 **)((u8 *)node + 0x74);
+                if (node->culled == 0) {
+                    child = node->children;
                     D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
                     if (child != NULL) {
                         do {
@@ -7968,7 +7969,7 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
                         } while (child != NULL);
                     }
                 }
-                node = *(Car **)node;
+                node = node->prev;
             } while (node != sectionEnd);
         }
     }
@@ -7989,8 +7990,8 @@ void func_8002E240(Car *viewCar, Car *firstSection, Car *sectionEnd,
     func_80048568();
     if (firstSection != sectionEnd) {
         do {
-            ((u16 *)&firstSection->unkC)[1] = 0;
-            firstSection = *(Car **)firstSection;
+            firstSection->culled = 0;
+            firstSection = firstSection->prev;
         } while (firstSection != sectionEnd);
     }
     D_800B9D60[0] += GetRCnt(0xF2000001) - D_800B9D74[0];
@@ -10917,14 +10918,15 @@ extern s32 D_800A396CNM asm("D_800A396C.NON_MATCHING");
  *
  * word0 and word1 are scratch words reused for colour words, the fourth
  * vertex, and the next object's vertex list. */
-void func_80033000(Car *endB, Car *endA, Car *firstA) {
+void func_80033000(TrackSection *endB, TrackSection *endA,
+                   TrackSection *firstA) {
     u8 *prim;
-    Car *listA;
-    Car *listB;
+    TrackSection *listA;
+    TrackSection *listB;
     s32 count;
     u32 *otCursor;
     s16 *zCursor;
-    Car *group;
+    TrackSection *group;
     register u8 *obj asm("s0");
     u8 *poly;
     s32 i;
@@ -10950,7 +10952,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
     counter = 0;
     mode = 1;
     listA = firstA;
-    listB = *(Car **)listA;
+    listB = listA->prev;
     otCursor = (u32 *)((u8 *)D_800B022C + old * 4);
     lod = D_800A2F08NM[0];
     ot = (u32 *)gOrderingTable[0] + 0x10;
@@ -10959,18 +10961,18 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
         do {
             if (counter & 1) {
                 if (listA == endA) {
-                    listB = *(Car **)&listB->pos.y;
+                    listB = listB->next;
                     group = listB;
                 } else {
-                    listA = *(Car **)listA;
+                    listA = listA->prev;
                     group = listA;
                 }
             } else {
                 if (listB != endB) {
-                    listB = *(Car **)&listB->pos.y;
+                    listB = listB->next;
                     group = listB;
                 } else {
-                    listA = *(Car **)listA;
+                    listA = listA->prev;
                     group = listA;
                 }
             }
@@ -10981,15 +10983,14 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 for (i = 0; i < 5; i++) {
                     if (mode) {
                         gte_ldv3(((u8 **)(*(u8 **)(u8 *)group + 0x78))[i],
-                                 ((u8 **)(*(u8 **)(*(u8 **)&group->pos.y + 4) +
+                                 ((u8 **)(*(u8 **)((u8 *)group->next + 4) +
                                           0x78))[i],
-                                 ((u8 **)(*(u8 **)(*(u8 **)&group->pos.y + 4) +
+                                 ((u8 **)(*(u8 **)((u8 *)group->next + 4) +
                                           0x78))[i + 1]);
                     } else {
-                        gte_ldv3(
-                            ((u8 **)&group->orient[2].x)[i],
-                            ((u8 **)(*(u8 **)&group->pos.y + 0x78))[i],
-                            ((u8 **)(*(u8 **)&group->pos.y + 0x78))[i + 1]);
+                        gte_ldv3(group->unk78[i],
+                                 ((u8 **)((u8 *)group->next + 0x78))[i],
+                                 ((u8 **)((u8 *)group->next + 0x78))[i + 1]);
                     }
                     poly = prim;
                     gte_rtpt();
@@ -11010,7 +11011,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                     if (mode) {
                         vec = *(u8 **)(*(u8 **)(u8 *)group + (i << 2) + 0x7C);
                     } else {
-                        vec = ((u8 **)&group->orient[2].x)[i + 1];
+                        vec = group->unk78[i + 1];
                     }
                     word0 = *(s32 *)vec;
                     word1 = *(s32 *)(vec + 4);
@@ -11033,7 +11034,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 *(u16 *)((u8 *)group + 0xE) = 1;
             } else {
                 n = *(u8 *)((u8 *)group + 0x13);
-                obj = *(u8 **)&group->basis[0].z;
+                obj = group->unk20;
                 count = count + n;
                 while (n-- > 0) {
                     gte_ldv3(*(u8 **)(obj + 0x18), *(u8 **)(obj + 0x1C),

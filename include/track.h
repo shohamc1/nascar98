@@ -19,9 +19,14 @@ typedef struct TrackSection {
     s32 z;                       /* 0x18 */
     u16 height0;                 /* 0x1C */
     s16 height1;                 /* 0x1E */
-    u8 unk20[8];
+    u8 *unk20;                   /* 0x20 */
+    u8 unk24[4];
     struct TrackQuad *firstQuad; /* 0x28 */
-    u8 unk2C[0x64];
+    u8 unk2C[4];
+    u8 *callbacks; /* 0x30: nodes run by ListDispatchCallbacks */
+    u8 unk34[0x40];
+    u8 *children;  /* 0x74: drawn by func_8002E240, linked at + 0x54 */
+    u8 *unk78[6];  /* 0x78 */
 } TrackSection;
 
 #endif /* TRACK_H */
