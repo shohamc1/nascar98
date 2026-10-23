@@ -18,10 +18,12 @@ typedef struct {
     Vec3 world;    /* 0x08 */
 } ModelVertex;
 
-/* A 0x18 model part: a run of the model's faces with its own rotation. */
+/* A 0x18 model part: a run of the model's vertices and faces placed
+ * around its own origin. */
 typedef struct {
-    s32 unk0;
-    Vec3 rotation; /* 0x04 */
+    s16 firstVertex; /* 0x00 */
+    s16 lastVertex;  /* 0x02 */
+    Vec3 origin;     /* 0x04 */
     s16 firstFace; /* 0x10 */
     s16 faceCount; /* 0x12 */
     s16 kind;      /* 0x14: negative for animated vertices */
@@ -36,15 +38,16 @@ typedef struct Model {
     s16 unk1E;
     u8 unk20[2];
     s16 unk22;
-    u8 unk24[6];
-    s16 faceCount; /* 0x2A */
-    s16 partCount; /* 0x2C */
-    u8 unk2E[2];
-    s16 clut;      /* 0x30 */
-    s16 scroll;    /* 0x32 */
-    u8 unk34[4];
-    Face *faces;      /* 0x38 */
-    u8 unk3C[4];
+    u8 unk24[4];
+    s16 vertexCount; /* 0x28 */
+    s16 faceCount;   /* 0x2A */
+    s16 partCount;   /* 0x2C */
+    s16 specialPart; /* 0x2E */
+    s16 clut;        /* 0x30 */
+    s16 scroll;      /* 0x32 */
+    Face *faceList;  /* 0x34: the faces, linked through next */
+    Face *faces;     /* 0x38: the face array */
+    void *unk3C;
     ModelPart *parts; /* 0x40 */
 } Model;
 

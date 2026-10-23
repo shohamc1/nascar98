@@ -146,9 +146,9 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
                 primitiveCount -= part->faceCount;
             } else {
                 PushMatrix();
-                angles.vx = part->rotation.x;
-                angles.vy = part->rotation.y;
-                angles.vz = part->rotation.z;
+                angles.vx = part->origin.x;
+                angles.vy = part->origin.y;
+                angles.vz = part->origin.z;
                 RotTrans(&angles, &partPosition, &flag);
                 switch ((s16)((u16)part->kind - 1)) {
                 case 0:
@@ -183,9 +183,9 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
                         func_80015EAC(car);
                     }
                     part = &car->model->parts[i];
-                    angles.vx = part->rotation.x;
-                    angles.vy = part->rotation.y;
-                    angles.vz = part->rotation.z;
+                    angles.vx = part->origin.x;
+                    angles.vy = part->origin.y;
+                    angles.vz = part->origin.z;
                     RotTrans(&angles, &partPosition, &flag);
                     TransMatrix(&D_800A3B38, &partPosition);
                     SetTransMatrix(&D_800A3B38);
@@ -306,9 +306,9 @@ void CarDrawPreviewModel(Car *arg0, s32 x, s32 y, s32 z) {
         if (entry->kind >= 0) {
             if (entry->kind != 10) {
                 PushMatrix();
-                rot.vx = entry->rotation.x;
-                rot.vy = entry->rotation.y;
-                rot.vz = entry->rotation.z;
+                rot.vx = entry->origin.x;
+                rot.vy = entry->origin.y;
+                rot.vz = entry->origin.z;
                 RotTrans(&rot, &trans[1], &flag);
                 if (entry->kind < 5) {
                     rot.vx = 0;

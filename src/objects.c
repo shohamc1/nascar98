@@ -9927,82 +9927,50 @@ void func_800319D4(Car *object, s32 arg1) {
 }
 extern s32 D_800A3574Lui asm("D_800A3574Absolute");
 
-typedef struct ModelVector {
-    SVECTOR point;
-    s32 x;
-    s32 y;
-    s32 z;
-} ModelVector;
-
-typedef struct ModelFace {
-    u8 unk0;
-    s8 depthOffset;
-    u8 mode;
-    u8 unk3;
-    u32 color;
-    u8 u0, v0;
-    u16 unkA;
-    u8 u1, v1;
-    u16 unkE;
-    u8 u2, v2;
-    u8 vertexCount;
-    u8 flags;
-    u8 u3, v3;
-    u16 tpage;
-    ModelVector *vectors[4];
-    struct ModelFace *next;
-} ModelFace;
-
-typedef struct ModelOffset {
-    s16 first;
-    s16 last;
-    s32 x;
-    s32 y;
-    s32 z;
-    s16 unk10;
-    s16 unk12;
-    s16 type;
-    s16 unk16;
-} ModelOffset;
-
-typedef struct ModelGeometry {
-    u8 unk0[0x14];
-    ModelVector *vectors;
-    u8 unk18[0x10];
-    s16 vectorCount;
-    s16 faceCount;
-    u16 offsetCount;
-    s16 specialOffset;
-    s16 unk30;
-    s16 unk32;
-    ModelFace *faces;
-    ModelFace *faceStorage;
-    void *unk3C;
-    ModelOffset *offsets;
-} ModelGeometry;
-
 extern s32 D_800A353CLui asm("D_800A353CAbsolute");
 extern s32 D_800A3758Lui asm("D_800A3758Absolute");
 extern s32 D_800A2F30;
-extern ModelVector *D_800AE130[];
+extern ModelVertex *D_800AE130[];
 extern char gObjectVectorsAllocationError[], gObjectFacesAllocationError[],
     gObjectOffsetsAllocationError[];
 
-void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
-    ModelFace *faceTable[1436];
+/* The header of a model file. Each offset counts from the file start;
+ * the parts run from partOffset to partEnd in the file's ModelPart form. */
+typedef struct {
+    s16 vertexCount; /* 0x00 */
+    s16 faceCount;   /* 0x02 */
+    u8 unk4[4];
+    u32 vertexOffset; /* 0x08 */
+    u32 faceOffset;   /* 0x0C */
+    u32 partOffset;   /* 0x10 */
+    u32 partEnd;      /* 0x14 */
+} ModelFileHeader;
+
+/* A 0x18 face in a model file. */
+typedef struct {
+    u8 flags;      /* 0x00: bit 0 marks a quad */
+    s8 depth;      /* 0x01 */
+    s16 vertex[4]; /* 0x02 */
+    u16 texture;   /* 0x0A */
+    u8 uv[8];      /* 0x0C */
+    u32 colour;    /* 0x14 */
+} ModelFileFace;
+
+void ObjectLoadGeometry(Model *model, ModelFileHeader *data, s32 reuse) {
+    Face *faceTable[1436];
     s32 offsetCount;
     u8 *offsetData;
-    ModelVector *vector;
+    ModelVertex *vector;
     s16 *sourceVector;
     u8 *sourceFace;
-    ModelFace *faces;
+    Face *faces;
     s32 vectorCount;
     s32 faceCount;
     s32 i;
     s32 j;
     s32 count;
-    ModelFace *face;
-    ModelOffset *offset;
+    Face *face;
+    ModelPart *offset;
     s32 span;
     s32 x;
     s32 y;
@@ -10010,73 +9978,73 @@ void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
     u32 vectorOffset;
     u32 faceOffset;
     u32 offsetsOffset;
-    u8 *offsetSource;
+    ModelPart *offsetSource;
 
     vectorCount = *(s16 *)data;
-    vectorOffset = *(u32 *)(data + 8);
-    faceOffset = *(u32 *)(data + 12);
-    offsetsOffset = *(u32 *)(data + 16);
-    model->vectorCount = vectorCount;
-    faceCount = *(s16 *)(data + 2);
+    vectorOffset = data->vertexOffset;
+    faceOffset = data->faceOffset;
+    offsetsOffset = data->partOffset;
+    model->vertexCount = vectorCount;
+    faceCount = data->faceCount;
     model->faceCount = faceCount;
-    sourceVector = (s16 *)(data + vectorOffset);
-    sourceFace = data + faceOffset;
-    offsetCount = (*(u32 *)(data + 20) - *(u32 *)(data + 16)) / 24;
-    offsetData = data + offsetsOffset;
-    model->unk32 = 0;
-    model->unk30 = -1;
-    model->offsetCount = offsetCount;
+    sourceVector = (s16 *)((u8 *)data + vectorOffset);
+    sourceFace = (u8 *)data + faceOffset;
+    offsetCount = (data->partEnd - data->partOffset) / 24;
+    offsetData = (u8 *)data + offsetsOffset;
+    model->scroll = 0;
+    model->clut = -1;
+    model->partCount = offsetCount;
     if (reuse == -1) {
-        vector = HeapAlloc((vectorCount + 2) * sizeof(ModelVector));
+        vector = HeapAlloc((vectorCount + 2) * sizeof(ModelVertex));
         if (vector == NULL) {
             SystemShowFatalError(gObjectVectorsAllocationError);
         }
-        model->vectors = vector;
+        model->vertices = vector;
         D_800AE130[D_800A2F30++] = vector;
     } else {
         vector = D_800AE130[reuse];
-        model->vectors = vector;
+        model->vertices = vector;
     }
-    faces = HeapAlloc(faceCount * sizeof(ModelFace));
+    faces = HeapAlloc(faceCount * sizeof(Face));
     if (faces == NULL) {
         SystemShowFatalError(gObjectFacesAllocationError);
     }
-    model->faceStorage = faces;
+    model->faces = faces;
     if (offsetCount != 0) {
-        model->offsets = HeapAlloc(offsetCount * sizeof(ModelOffset));
-        if (model->offsets == NULL) {
+        model->parts = HeapAlloc(offsetCount * sizeof(ModelPart));
+        if (model->parts == NULL) {
             SystemShowFatalError(gObjectOffsetsAllocationError);
         }
     } else {
-        model->offsets = NULL;
+        model->parts = NULL;
     }
     if (reuse == -1) {
         for (i = 0; i < vectorCount; i++) {
-            vector->y =
+            vector->world.y =
                 -(MathMultiplyFixed16(sourceVector[0] << 16, D_800A3758Lui) >>
                   16);
-            vector->x =
+            vector->world.x =
                 MathMultiplyFixed16(sourceVector[1] << 16, D_800A353CLui) >> 16;
-            vector->z =
+            vector->world.z =
                 MathMultiplyFixed16(sourceVector[2] << 16, D_800A353CLui) >> 16;
             /* Keep one vector cursor and reload all three coordinates. */
             asm("" : "=r"(vector) : "0"(vector));
-            x = vector->x;
-            y = vector->y;
-            z = vector->z;
-            vector->point.vx = x;
-            vector->point.vy = y;
-            vector->point.vz = z;
+            x = vector->world.x;
+            y = vector->world.y;
+            z = vector->world.z;
+            vector->local.vx = x;
+            vector->local.vy = y;
+            vector->local.vz = z;
             sourceVector += 3;
             vector++;
         }
     }
-    model->faces = NULL;
+    model->faceList = NULL;
     for (i = 0; i < faceCount; i++) {
         face = faces + i;
         faceTable[i] = face;
-        face->next = model->faces;
-        model->faces = face;
+        face->next = model->faceList;
+        model->faceList = face;
         if (sourceFace[0] & 1) {
             count = 4;
             face->vertexCount = 4;
@@ -10086,27 +10054,28 @@ void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
         }
         if (sourceFace[0] & 2) {
             if (sourceFace[0] & 8) {
-                face->mode = 6;
+                face->type = 6;
             } else {
-                face->mode = 0;
+                face->type = 0;
             }
         } else if (sourceFace[0] & 8) {
-            face->mode = 5;
+            face->type = 5;
         } else if (sourceFace[0] & 4) {
-            face->mode = 4;
+            face->type = 4;
         } else {
-            face->mode = 3;
+            face->type = 3;
         }
-        face->color = *(u32 *)(sourceFace + 20);
-        face->depthOffset = sourceFace[1];
+        *(u32 *)&face->r0 = *(u32 *)(sourceFace + 20);
+        face->depth = sourceFace[1];
         face->flags = 0;
         for (j = 0; j < count; j++) {
-            face->vectors[j] = model->vectors + ((s16 *)sourceFace)[j + 1];
+            face->vertex[j] =
+                (SVECTOR *)(model->vertices + ((s16 *)sourceFace)[j + 1]);
         }
         if (j == 3) {
-            face->vectors[3] = face->vectors[0];
+            face->vertex[3] = face->vertex[0];
         }
-        face->tpage = *(u16 *)(sourceFace + 10);
+        face->angle = *(u16 *)(sourceFace + 10);
         for (j = 0; j < 3; j++) {
             ((u8 *)face)[8 + j * 4] = sourceFace[12 + j * 2];
             ((u8 *)face)[9 + j * 4] = sourceFace[13 + j * 2];
@@ -10122,36 +10091,33 @@ void ObjectLoadGeometry(ModelGeometry *model, u8 *data, s32 reuse) {
     model->unk3C = NULL;
     for (i = 0; i < offsetCount; i++) {
         offsetSource = offsetData + i * 24;
-        model->offsets[i].first = *(u16 *)(offsetSource + 0);
-        model->offsets[i].last = *(u16 *)(offsetSource + 2);
-        model->offsets[i].unk10 = *(u16 *)(offsetSource + 16);
-        model->offsets[i].unk12 = *(u16 *)(offsetSource + 18);
-        model->offsets[i].type = *(u16 *)(offsetSource + 20);
-        model->offsets[i].y =
-            -(MathMultiplyFixed16(*(s32 *)(offsetSource + 4) << 16,
-                                  D_800A3758Lui) >>
-              16);
-        model->offsets[i].x =
-            MathMultiplyFixed16(*(s32 *)(offsetSource + 8) << 16,
-                                D_800A353CLui) >>
+        model->parts[i].firstVertex = (u16)offsetSource->firstVertex;
+        model->parts[i].lastVertex = (u16)offsetSource->lastVertex;
+        model->parts[i].firstFace = (u16)offsetSource->firstFace;
+        model->parts[i].faceCount = (u16)offsetSource->faceCount;
+        model->parts[i].kind = (u16)offsetSource->kind;
+        model->parts[i].origin.y = -(
+            MathMultiplyFixed16(offsetSource->origin.x << 16, D_800A3758Lui) >>
+            16);
+        model->parts[i].origin.x =
+            MathMultiplyFixed16(offsetSource->origin.y << 16, D_800A353CLui) >>
             16;
-        model->offsets[i].z =
-            MathMultiplyFixed16(*(s32 *)(offsetSource + 12) << 16,
-                                D_800A353CLui) >>
+        model->parts[i].origin.z =
+            MathMultiplyFixed16(offsetSource->origin.z << 16, D_800A353CLui) >>
             16;
-        if (*(s16 *)(offsetSource + 20) < 0) {
-            if (*(s16 *)(offsetSource + 20) == -1) {
-                model->specialOffset = i;
+        if (offsetSource->kind < 0) {
+            if (offsetSource->kind == -1) {
+                model->specialPart = i;
             }
         } else {
-            offset = model->offsets + i;
-            vector = model->vectors + offset->first;
-            span = offset->last - offset->first + 1;
-            if (offset->type != 10) {
+            offset = model->parts + i;
+            vector = model->vertices + offset->firstVertex;
+            span = offset->lastVertex - offset->firstVertex + 1;
+            if (offset->kind != 10) {
                 for (count = 0; count < span; count++) {
-                    vector->point.vx = vector->x - offset->x;
-                    vector->point.vy = vector->y - offset->y;
-                    vector->point.vz = vector->z - offset->z;
+                    vector->local.vx = vector->world.x - offset->origin.x;
+                    vector->local.vy = vector->world.y - offset->origin.y;
+                    vector->local.vz = vector->world.z - offset->origin.z;
                     vector++;
                 }
             }
@@ -10163,7 +10129,7 @@ extern s32 FileOpenCall32328(s32, void *) asm("FileOpen");
 extern s32 FileSeekCall32328(void *, s32, s32) asm("FileSeek");
 extern void FileReadCall32328(s32, s32, s32, s32) asm("FileRead");
 extern void FileCloseCall32328(s32) asm("FileClose");
-extern void ObjectLoadGeometry(ModelGeometry *, u8 *, s32);
+extern void ObjectLoadGeometry(Model *, ModelFileHeader *, s32);
 extern char gErrorModelFileOpen[];
 extern void *gModelFileMode[];
 extern s32 D_800A3574[];
@@ -10179,8 +10145,7 @@ void ModelLoadGeometryFromFile(s32 fileId) {
     fileSize = FileSeekCall32328(handle, 0, 2);
     FileSeekCall32328(handle, 0, 0);
     FileReadCall32328(STACK_BLOCK_801C0000, fileSize, 1, handle);
-    ObjectLoadGeometry((ModelGeometry *)D_800A3574Lui,
-                       (u8 *)STACK_BLOCK_801C0000, -1);
+    ObjectLoadGeometry((Model *)D_800A3574Lui, (u8 *)STACK_BLOCK_801C0000, -1);
     D_800A2D4C[0] = 1;
     func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;
@@ -10194,7 +10159,7 @@ void ModelLoadGeometryFromFile(s32 fileId) {
  * the %lo displacement (0x36D0 - 0x15C = 0x3574).
  */
 void ModelLoadGeometryByIndex(s32 modelIndex, s32 reuse) {
-    ObjectLoadGeometry((ModelGeometry *)D_800A3574Lui,
+    ObjectLoadGeometry((Model *)D_800A3574Lui,
                        *(u8 **)(D_800B9F44 + modelIndex), reuse);
     D_800A2D4C[0] = 1;
     func_80025454(D_800A3574Lui);
@@ -10202,8 +10167,7 @@ void ModelLoadGeometryByIndex(s32 modelIndex, s32 reuse) {
 }
 
 void ModelLoadGeometryFromAddress(s32 dataAddress, s32 reuse) {
-    ObjectLoadGeometry((ModelGeometry *)D_800A3574[0], (u8 *)dataAddress,
-                       reuse);
+    ObjectLoadGeometry((Model *)D_800A3574[0], (u8 *)dataAddress, reuse);
     D_800A2D4C[0] = 1;
     D_800A2D4D[0] = 0;
 }

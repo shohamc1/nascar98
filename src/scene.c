@@ -2766,7 +2766,7 @@ asm(".globl D_800A3484Small\nD_800A3484Small = D_800A3484");
 extern s8 *D_8009AE2C[];
 
 extern u8 D_8009AE14[];
-extern u8 D_80098BD0[];
+extern Glyph gHudGlyphs[];
 extern s8 *D_800A78CC[];
 extern u16 D_800A78E2[];
 extern u16 D_800A78EA[];
@@ -2837,7 +2837,7 @@ void HudInitRacePrims(void) {
     s32 tileX;
     u8 *tileHeightBase;
     POLY_FT4 *heap;
-    u8 *glyph;
+    Glyph *glyph;
     s8 entry;
     s8 col;
     s8 line;
@@ -2907,22 +2907,22 @@ void HudInitRacePrims(void) {
                             slot =
                                 (s8 **)((u32)(glyphOffset) - -(u32)addressBase);
                         }
-                        glyph = &D_80098BD0[(*slot)[j] * 10];
+                        glyph = &gHudGlyphs[(*slot)[j]];
                         SetPolyFT4(heap);
                         heap->clut = GetClut(0x390, 0x3C);
                         heap->r0 = 0x80;
                         heap->g0 = 0x80;
                         heap->b0 = 0xC0;
-                        heap->tpage = GetTPage(0, 0, *(s16 *)&glyph[0],
-                                               *(s16 *)&glyph[2]);
-                        heap->u0 = glyph[4];
-                        heap->v0 = glyph[5];
-                        heap->u1 = glyph[4] + glyph[6];
-                        heap->v1 = glyph[5];
-                        heap->u2 = glyph[4];
-                        heap->v2 = glyph[5] + glyph[8];
-                        heap->u3 = glyph[4] + glyph[6];
-                        heap->v3 = glyph[5] + glyph[8];
+                        heap->tpage = GetTPage(0, 0, *(s16 *)&((u8 *)glyph)[0],
+                                               *(s16 *)&((u8 *)glyph)[2]);
+                        heap->u0 = glyph->u;
+                        heap->v0 = glyph->v;
+                        heap->u1 = glyph->u + *(u8 *)&glyph->width;
+                        heap->v1 = glyph->v;
+                        heap->u2 = glyph->u;
+                        heap->v2 = glyph->v + *(u8 *)&glyph->height;
+                        heap->u3 = glyph->u + *(u8 *)&glyph->width;
+                        heap->v3 = glyph->v + *(u8 *)&glyph->height;
                         j++;
                         heap++;
                     } while ((*slot)[j] != 0);
@@ -3204,7 +3204,7 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
             inner:
                 do {
                     t = (*((s8 **)((u32)(i24 >> 22) + (u32)a914)))[j];
-                    glyph = (s16 *)(&D_80098BD0[t * 10]);
+                    glyph = (s16 *)&gHudGlyphs[t];
                     v0 = glyph[3];
                     out[-13] = x;
                     out[-12] = w;
@@ -5579,7 +5579,7 @@ extern u8 D_80098D18[];
 extern POLY_FT4 D_800A8AC4[];
 extern u8 D_800A8ADA[];
 
-/* Draws TEXT with the glyph table at D_80098BD0, one POLY_FT4 per glyph.
+/* Draws TEXT with the glyph table at gHudGlyphs, one POLY_FT4 per glyph.
  * Retail's allocation needs a few odd spellings: the y and mode copies
  * order the prologue moves, the s32 width keeps x first in `x + width`,
  * the two gTextColor paths share cellRightX so its sum isn't scheduled
@@ -5589,7 +5589,7 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
     POLY_FT4 *prim;
     u8 *p;
     u8 *cp;
-    u8 *glyph;
+    Glyph *glyph;
     u16 w;
     s32 width;
     u8 i;
@@ -5640,20 +5640,20 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
             lineH = y + lineH;
             while (text[i] != 0) {
                 u8 v3;
-                glyph = &D_80098BD0[text[i] * 10];
-                tc = GetTPage(0, 1, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
+                glyph = &gHudGlyphs[text[i]];
+                tc = GetTPage(0, 1, glyph->x, glyph->y);
                 *(u16 *)p = tc;
-                width = *(u16 *)(glyph + 6);
+                width = (u16)glyph->width;
                 w = width;
-                *(u8 *)(p - 0xA) = glyph[4];
-                *(u8 *)(p - 0x9) = glyph[5];
-                *(u8 *)(p - 0x2) = glyph[4] + w;
-                *(u8 *)(p - 0x1) = glyph[5];
-                *(u8 *)(p + 0x6) = glyph[4];
-                *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
-                *(u8 *)(p + 0xE) = glyph[4] + w;
+                *(u8 *)(p - 0xA) = glyph->u;
+                *(u8 *)(p - 0x9) = glyph->v;
+                *(u8 *)(p - 0x2) = glyph->u + w;
+                *(u8 *)(p - 0x1) = glyph->v;
+                *(u8 *)(p + 0x6) = glyph->u;
+                *(u8 *)(p + 0x7) = glyph->v + *(u8 *)&glyph->height;
+                *(u8 *)(p + 0xE) = glyph->u + w;
                 tc = gTextColorS;
-                v3 = glyph[5] + glyph[8];
+                v3 = glyph->v + *(u8 *)&glyph->height;
                 *(u8 *)(p + 0xF) = v3;
                 if (tc != 0) {
                     s32 newX;
@@ -5696,18 +5696,17 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
             p = D_800A8ADA;
             while (text[i] != 0) {
                 s32 rightX;
-                glyph = &D_80098BD0[text[i] * 10];
-                *(u16 *)p =
-                    GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
-                *(u8 *)(p - 0xA) = glyph[4];
-                *(u8 *)(p - 0x9) = glyph[5];
-                *(u8 *)(p - 0x2) = glyph[4] + glyph[6];
-                *(u8 *)(p - 0x1) = glyph[5];
-                *(u8 *)(p + 0x6) = glyph[4];
-                *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
-                *(u8 *)(p + 0xE) = glyph[4] + glyph[6];
-                *(u8 *)(p + 0xF) = glyph[5] + glyph[8];
-                rightX = x + ((*(s16 *)(glyph + 6) * 3) >> 2);
+                glyph = &gHudGlyphs[text[i]];
+                *(u16 *)p = GetTPage(0, 0, glyph->x, glyph->y);
+                *(u8 *)(p - 0xA) = glyph->u;
+                *(u8 *)(p - 0x9) = glyph->v;
+                *(u8 *)(p - 0x2) = glyph->u + *(u8 *)&glyph->width;
+                *(u8 *)(p - 0x1) = glyph->v;
+                *(u8 *)(p + 0x6) = glyph->u;
+                *(u8 *)(p + 0x7) = glyph->v + *(u8 *)&glyph->height;
+                *(u8 *)(p + 0xE) = glyph->u + *(u8 *)&glyph->width;
+                *(u8 *)(p + 0xF) = glyph->v + *(u8 *)&glyph->height;
+                rightX = x + ((glyph->width * 3) >> 2);
                 *(s16 *)(p - 0xE) = x;
                 *(s16 *)(p - 0xC) = y;
                 *(s16 *)(p - 0x4) = y;
@@ -5729,19 +5728,18 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
             while (text[i] != 0) {
                 s32 newX;
                 s32 yy;
-                glyph = &D_80098BD0[text[i] * 10];
-                *(u16 *)D_800A8ADA =
-                    GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
-                width = *(u16 *)(glyph + 6);
+                glyph = &gHudGlyphs[text[i]];
+                *(u16 *)D_800A8ADA = GetTPage(0, 0, glyph->x, glyph->y);
+                width = (u16)glyph->width;
                 w = width;
-                *(u8 *)(D_800A8ADA - 0xA) = glyph[4];
-                *(u8 *)(D_800A8ADA - 0x9) = glyph[5];
-                *(u8 *)(D_800A8ADA - 0x2) = glyph[4] + w;
-                *(u8 *)(D_800A8ADA - 0x1) = glyph[5];
-                *(u8 *)(D_800A8ADA + 0x6) = glyph[4];
-                *(u8 *)(D_800A8ADA + 0x7) = glyph[5] + glyph[8];
-                *(u8 *)(D_800A8ADA + 0xE) = glyph[4] + w;
-                *(u8 *)(D_800A8ADA + 0xF) = glyph[5] + glyph[8];
+                *(u8 *)(D_800A8ADA - 0xA) = glyph->u;
+                *(u8 *)(D_800A8ADA - 0x9) = glyph->v;
+                *(u8 *)(D_800A8ADA - 0x2) = glyph->u + w;
+                *(u8 *)(D_800A8ADA - 0x1) = glyph->v;
+                *(u8 *)(D_800A8ADA + 0x6) = glyph->u;
+                *(u8 *)(D_800A8ADA + 0x7) = glyph->v + *(u8 *)&glyph->height;
+                *(u8 *)(D_800A8ADA + 0xE) = glyph->u + w;
+                *(u8 *)(D_800A8ADA + 0xF) = glyph->v + *(u8 *)&glyph->height;
                 newX = x + ((gTextColorS - (s16)width) >> 1);
                 x = x + gTextColorS;
                 cellRightX = width + newX;
@@ -5766,19 +5764,18 @@ void HudDrawText(u8 *text, s32 x, s32 yArg, s8 modeArg) {
         while (text[i] != 0) {
             s32 rightX;
             u8 v3;
-            glyph = &D_80098BD0[text[i] * 10];
-            *(u16 *)p =
-                GetTPage(0, 0, *(s16 *)(glyph + 0), *(s16 *)(glyph + 2));
-            width = *(u16 *)(glyph + 6);
+            glyph = &gHudGlyphs[text[i]];
+            *(u16 *)p = GetTPage(0, 0, glyph->x, glyph->y);
+            width = (u16)glyph->width;
             w = width;
-            *(u8 *)(p - 0xA) = glyph[4];
-            *(u8 *)(p - 0x9) = glyph[5];
-            *(u8 *)(p - 0x2) = glyph[4] + w;
-            *(u8 *)(p - 0x1) = glyph[5];
-            *(u8 *)(p + 0x6) = glyph[4];
-            *(u8 *)(p + 0x7) = glyph[5] + glyph[8];
-            *(u8 *)(p + 0xE) = glyph[4] + w;
-            v3 = glyph[5] + glyph[8];
+            *(u8 *)(p - 0xA) = glyph->u;
+            *(u8 *)(p - 0x9) = glyph->v;
+            *(u8 *)(p - 0x2) = glyph->u + w;
+            *(u8 *)(p - 0x1) = glyph->v;
+            *(u8 *)(p + 0x6) = glyph->u;
+            *(u8 *)(p + 0x7) = glyph->v + *(u8 *)&glyph->height;
+            *(u8 *)(p + 0xE) = glyph->u + w;
+            v3 = glyph->v + *(u8 *)&glyph->height;
             rightX = x + width;
             *(s16 *)(p - 0xE) = x;
             *(s16 *)(p + 0x2) = x;
