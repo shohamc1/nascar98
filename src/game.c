@@ -2326,7 +2326,7 @@ void func_80015930(TrackSection *arg0, void *arg1, s32 arg2) {
     s32 maxZ;
     s16 value;
     Face *node;
-    u8 *point;
+    SVECTOR *point;
     u8 **cursor;
     s32 i;
     u8 count;
@@ -2344,21 +2344,21 @@ void func_80015930(TrackSection *arg0, void *arg1, s32 arg2) {
             cursor = (u8 **)&node->vertex[0];
             for (i = 0; i < count; i++) {
                 point = cursor[i];
-                value = *(s16 *)(point + 0);
+                value = point->vx;
                 if (value < minX) {
                     minX = value;
                 }
                 if (maxX < value) {
                     maxX = value;
                 }
-                value = *(s16 *)(point + 2);
+                value = point->vy;
                 if (value < minY) {
                     minY = value;
                 }
                 if (maxY < value) {
                     maxY = value;
                 }
-                value = *(s16 *)(point + 4);
+                value = point->vz;
                 if (value < minZ) {
                     minZ = value;
                 }

@@ -1424,7 +1424,7 @@ void func_80023454(void) {
     register s32 selectionIndex asm("$3");
     s32 navigationState;
     u8 monoMode;
-    u8 *otherObject;
+    Car *otherObject;
     Car *object;
 
     /* Keep retail's frame gap and the switch table's 8-byte alignment. */
@@ -1566,9 +1566,9 @@ void func_80023454(void) {
                             }
                             if (gSplitScreenModeControl == 2) {
                                 otherObject = (u8 *)gPlayerCarControl->next;
-                                if (*(u8 *)(otherObject + 0x268) == 0) {
-                                    *(s8 *)(otherObject + 0x20C) =
-                                        (u8) * (u8 *)(otherObject + 0x20D);
+                                if (otherObject->unk268 == 0) {
+                                    otherObject->cameraMode =
+                                        (u8)otherObject->unk20D;
                                 }
                             }
                             break;
@@ -12272,7 +12272,7 @@ extern u32 gPrimitiveCursorAdv2[] asm("gPrimitiveCursor");
 extern u32 gPrimitiveCursorAdv3[] asm("gPrimitiveCursor");
 
 void GraphicsDrawHorizonWalls(void) {
-    u8 *obj;
+    Car *obj;
     POLY_FT4 *tpl;
     POLY_FT4 *prim;
     s32 x;
@@ -12305,9 +12305,9 @@ void GraphicsDrawHorizonWalls(void) {
     s32 count;
 
     obj = (u8 *)D_800A2EA0[0];
-    if (*(s16 *)(obj + 0x1EC) == 0 && *(s8 *)(obj + 0x20C) <= 0 &&
-        ((*(s32 *)(obj + 0x354) == (s32)func_80025730 && D_800A397C[0] != 2) ||
-         (D_800A397C[0] == 2 && *(s32 *)(obj + 0x388) != 0))) {
+    if (obj->type == 0 && obj->cameraMode <= 0 &&
+        (((s32)obj->callback == (s32)func_80025730 && D_800A397C[0] != 2) ||
+         (D_800A397C[0] == 2 && *(s32 *)((u8 *)obj + 0x388) != 0))) {
         tpl = D_800B1ED0;
         D_800B1ED8[0] = 0;
         D_800B1EDA[0] = 0;
@@ -13772,7 +13772,7 @@ void func_800373B4(Car *object) {
     void *tempA03;
     void *tempA08;
     void *tempA09;
-    register u8 *overlappingCar;
+    register Car *overlappingCar;
     register void *tempV02;
 
     car = object;
@@ -14898,8 +14898,7 @@ void func_800373B4(Car *object) {
                                     tempV015 = (*(s8 *)((u8 *)overlappingCar +
                                                         0x206)) +
                                                1;
-                                    (*(s8 *)((u8 *)overlappingCar + 0x206)) =
-                                        tempV015;
+                                    (overlappingCar->lane) = tempV015;
                                     if ((s8)tempV015 >= 2) {
                                         (*(s8 *)((u8 *)overlappingCar +
                                                  0x206)) = 1U;
@@ -14908,8 +14907,7 @@ void func_800373B4(Car *object) {
                                     tempV016 = (*(s8 *)((u8 *)overlappingCar +
                                                         0x206)) -
                                                1;
-                                    (*(s8 *)((u8 *)overlappingCar + 0x206)) =
-                                        tempV016;
+                                    (overlappingCar->lane) = tempV016;
                                     if ((s8)tempV016 < -1) {
                                         (*(s8 *)((u8 *)overlappingCar +
                                                  0x206)) = -1U;
@@ -14920,14 +14918,13 @@ void func_800373B4(Car *object) {
                                         (car->lane) = 1;
                                     }
                                 }
-                                collisionNeighborOrder =
-                                    ((Car *)overlappingCar)->unk248;
+                                collisionNeighborOrder = overlappingCar->unk248;
                                 collisionCarOrder = car->unk248;
                                 if (collisionCarOrder <
                                     collisionNeighborOrder) {
                                     goto collisionSlowCar;
                                 }
-                                *(s32 *)(overlappingCar + 0x90) -= 0x10000;
+                                overlappingCar->speed -= 0x10000;
                                 goto collisionDone;
                             } else {
                                 goto block_289;
@@ -15587,16 +15584,16 @@ void func_80039B74(Car *arg0, s32 arg1) {
     obj->lane = result;
 }
 
-s8 TrackGetLateralOffset(u8 *section, s32 worldX, s32 worldY) {
+s8 TrackGetLateralOffset(TrackSection *section, s32 worldX, s32 worldY) {
     s32 heading;
     s32 sectionX;
     s32 index;
     s32 sectionY;
 
-    heading = *(u16 *)(section + 0x10);
-    sectionX = *(s32 *)(section + 0x14);
+    heading = section->angle;
+    sectionX = section->x;
     index = (0x400 - heading) & 0x3FF;
-    sectionY = *(s32 *)(section + 0x18);
+    sectionY = section->z;
     return -((((s32 **)D_800A3A34Absolute)[0][index] * (worldX - sectionX) +
               ((s32 **)D_800A3A2CAbsolute)[0][index] * (worldY - sectionY)) >>
              16) /
@@ -16417,7 +16414,7 @@ void func_8003B464(void) {
     s32 rank;
     s32 startPos;
     s32 next;
-    u8 *other;
+    Car *other;
 
     if (D_800A2E94[0] == 1) {
         return;
@@ -16448,7 +16445,7 @@ void func_8003B464(void) {
                 next = (s32)obj->order.node.next;
                 obj->unk264 = result;
                 other = *(u8 **)(next + 8);
-                otherVal = *(s32 *)(other + 0x264);
+                otherVal = other->unk264;
                 if ((u32)otherVal >= (u32)result &&
                     other != (u8 *)D_800A35E0[0]) {
                     obj->unk264 = otherVal + 1;
@@ -16460,10 +16457,10 @@ void func_8003B464(void) {
                 next = (s32)obj->order.node.next;
                 other = *(u8 **)(next + 8);
                 if (other == (u8 *)D_800A35E0[0]) {
-                    *(s32 *)(other + 0x264) = 0;
+                    other->unk264 = 0;
                 }
                 objVal = obj->unk264;
-                otherVal = *(s32 *)(other + 0x264);
+                otherVal = other->unk264;
                 if (otherVal >= objVal) {
                     obj->unk264 = otherVal + 1;
                 }

@@ -6,6 +6,17 @@
 #include "car.h"
 #include "track.h"
 
+/* A 0x0A font glyph: its texture page position, UV and size. The first
+   glyph of a menu font holds the font's line height. */
+typedef struct {
+    s16 x;      /* 0x00: texture page position */
+    s16 y;      /* 0x02 */
+    u8 u;       /* 0x04 */
+    u8 v;       /* 0x05 */
+    s16 width;  /* 0x06 */
+    s16 height; /* 0x08 */
+} Glyph;
+
 /* Game symbols declared by more than one source file. Types follow the
    decompiled callers; placeholder names stay until their purpose is known. */
 

@@ -637,7 +637,7 @@ void func_8003D5F8(u8 *object) {
     u16 flags;
     s32 i;
     u32 total;
-    u8 *entry;
+    Car *entry;
 
     flags = *(u16 *)(object + 0x3A4);
     total = 0;
@@ -645,11 +645,11 @@ void func_8003D5F8(u8 *object) {
         i = 0;
         do {
             entry = object + i;
-            if (*(s8 *)(entry + 0x3A6) == 0) {
+            if ((s8)entry->unk3A6[0] == 0) {
                 total = total + 0x14;
             }
-            if (*(s8 *)(entry + 0x3AE) != 0) {
-                total = total + *(s8 *)(entry + 0x3AE) * 3;
+            if ((s8)entry->unk3AE[0] != 0) {
+                total = total + (s8)entry->unk3AE[0] * 3;
             }
             i = i + 1;
         } while (i < 8);
@@ -657,17 +657,17 @@ void func_8003D5F8(u8 *object) {
     *(u16 *)(object + 0x280) = total;
 }
 
-void func_8003D654(u8 *object) {
+void func_8003D654(Car *object) {
     s32 i;
     u16 count;
-    count = *(u16 *)(object + 0x280);
-    *(u16 *)(object + 0x280) = count - 1;
+    count = (u16)object->unk26C[10];
+    object->unk26C[10] = count - 1;
     if ((s16)count < 0) {
-        *(s16 *)(object + 0x3A4) = 0;
+        object->unk3A4 = 0;
         i = 0;
         do {
-            *(object + i + 0x3A6) = 1;
-            *(object + i + 0x3AE) = 0;
+            *((u8 *)object + i + 0x3A6) = 1;
+            *((u8 *)object + i + 0x3AE) = 0;
             i++;
         } while (i < 8);
     }

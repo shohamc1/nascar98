@@ -229,7 +229,27 @@ extern void PushMatrix(void);
 extern void PopMatrix(void);
 extern void MulRotMatrix(MATRIX *matrix);
 
-void EffectDrawParticle(u8 *object) {
+/* A 0x30 particle in the D_800AD9B0 pool. */
+typedef struct {
+    Vec3 pos; /* 0x00 */
+    u16 unkC;
+    u8 pad0E[2];
+    u16 unk10;
+    u16 unk12;
+    u16 unk14;
+    u16 unk16;
+    u16 unk18;
+    u16 unk1A;
+    u8 unk1C;
+    s8 unk1D;
+    s8 unk1E;
+    u8 pad1F[5];
+    s32 unk24;
+    u32 unk28; /* 0x28: model faces */
+    u8 *unk2C;
+} Particle;
+
+void EffectDrawParticle(Particle *object) {
     SVECTOR input;
     VECTOR trans;
     MATRIX matrix;
@@ -241,32 +261,32 @@ void EffectDrawParticle(u8 *object) {
 
     PushMatrix();
     camera = (s32 *)D_800A38AC[0];
-    input.vx = *(s32 *)(object + 0) - camera[0];
-    input.vy = *(s32 *)(object + 4) - camera[1];
-    input.vz = *(s32 *)(object + 8) - camera[2];
+    input.vx = object->pos.x - camera[0];
+    input.vy = object->pos.y - camera[1];
+    input.vz = object->pos.z - camera[2];
     RotTrans(&input, &trans, &lvm[16]);
     TransMatrix(&matrix, &trans);
-    if (*(s8 *)(object + 0x1D) == 0xA) {
+    if (object->unk1D == 0xA) {
         input.vx = 0;
-        input.vy = *(u16 *)(object + 0x18);
-        input.vz = *(u16 *)(object + 0x16);
+        input.vy = object->unk18;
+        input.vz = object->unk16;
         RotMatrix(&input, &matrix);
         MulRotMatrix(&matrix);
         SetTransMatrix(&matrix);
         SetRotMatrix(&matrix);
-        func_80044BCC(*(s8 *)(object + 0x1E));
+        func_80044BCC(object->unk1E);
     } else {
         input.vx = 0;
         input.vy = 0;
-        input.vz = *(u16 *)(object + 0x16);
+        input.vz = object->unk16;
         RotMatrix(&input, &matrix);
         MulRotMatrix(&matrix);
         SetTransMatrix(&matrix);
         SetRotMatrix(&matrix);
-        node = *(u8 **)(object + 0x2C);
+        node = object->unk2C;
         angle1 = *(s16 *)(node + 0x10);
         angle2 = *(s16 *)(node + 0x12);
-        func_800328AC((void *)(*(u32 *)(object + 0x28) + angle1 * 44), angle2);
+        func_800328AC((void *)(object->unk28 + angle1 * 44), angle2);
     }
     PopMatrix();
 }
@@ -276,25 +296,8 @@ extern s32 pairTable4382CA[] asm("D_800A3A34");
 extern u8 D_800AD9B0p[] asm("D_800AD9B0");
 extern s8 D_800AD9CCp[] asm("D_800AD9CC");
 extern s32 D_800A38ACw38[] asm("D_800A38AC");
-typedef struct {
-    s32 unk0;
-    s32 unk4;
-    s32 unk8;
-    u16 unkC;
-    u8 pad0E[2];
-    u16 unk10;
-    u16 unk12;
-    u16 unk14;
-    u16 unk16;
-    u16 unk18;
-    u16 unk1A;
-    u8 unk1C;
-    s8 unk1D;
-    u8 pad1E[6];
-    s32 unk24;
-} EffectRow30;
 void EffectUpdateAndDrawParticles(void) {
-    EffectRow30 *fx;
+    Particle *fx;
     s32 i;
     s8 *flagPtr;
     s32 x;
@@ -314,7 +317,7 @@ void EffectUpdateAndDrawParticles(void) {
         if (flagPtr[i * 0x30] == 0) {
             continue;
         }
-        fx = (EffectRow30 *)(D_800AD9B0p + i * 0x30);
+        fx = (Particle *)(D_800AD9B0p + i * 0x30);
         if (D_800A2ED4[0] == 0) {
             if ((s16)fx->unk1A-- < 0) {
                 flagPtr[i * 0x30] = 0;
@@ -328,7 +331,7 @@ void EffectUpdateAndDrawParticles(void) {
             if (dx >= 0x3E81) {
                 continue;
             }
-            y = *(volatile s32 *)((u8 *)fx + 4);
+            y = *(volatile s32 *)&fx->pos.y;
             dy = y - ((s32 *)D_800A38ACw38[0])[1];
             if (dy < 0) {
                 dy = ((s32 *)D_800A38ACw38[0])[1] - y;
@@ -337,8 +340,8 @@ void EffectUpdateAndDrawParticles(void) {
                 continue;
             }
             idx4 = (s16)fx->unk12 * 4;
-            scratch[0] = fx->unk0;
-            scratch[1] = fx->unk4;
+            scratch[0] = fx->pos.x;
+            scratch[1] = fx->pos.y;
             scratch[0] =
                 scratch[0] +
                 ((*(s32 *)(idx4 + pairTable4382C[0]) * (s16)fx->unk14) >> 16);
@@ -349,18 +352,18 @@ void EffectUpdateAndDrawParticles(void) {
             if (TrackFindSection(scratch[0], scratch[1], &fx->unk24,
                                  &scratch[2], &scratch[4]) == -1) {
                 fx->unk24 = oldSection;
-                scratch[0] = fx->unk0;
-                scratch[1] = fx->unk4;
+                scratch[0] = fx->pos.x;
+                scratch[1] = fx->pos.y;
                 fx->unk14 = (s16)fx->unk14 * 2 / 3;
                 fx->unk12 = (fx->unk12 + 0x200) & 0x3FF;
             }
             f10v = fx->unk10;
-            *(volatile s32 *)&fx->unk0 = scratch[0];
-            *(volatile s32 *)&fx->unk4 = scratch[1];
+            *(volatile s32 *)&fx->pos.x = scratch[0];
+            *(volatile s32 *)&fx->pos.y = scratch[1];
             ground = scratch[2] * 4 + (s16)fx->unkC;
             value = *(volatile u16 *)&fx->unkC + f10v;
             fx->unkC = value;
-            fx->unk8 = ground;
+            fx->pos.z = ground;
             if ((s16)value <= 0) {
                 fx->unkC = 0;
                 f10 = -((s16)fx->unk10 * 2 / 3) - 2;
@@ -383,7 +386,7 @@ void EffectUpdateAndDrawParticles(void) {
             }
             fx->unk18 = (fx->unk18 + 0x80) & 0xFFF;
         }
-        EffectDrawParticle((u8 *)fx);
+        EffectDrawParticle(fx);
     }
 }
 
@@ -774,7 +777,7 @@ pass1:
 void ReplayReadEffects(u8 *arg0) {
     u32 *wp;
     u8 *rec;
-    u8 *typ;
+    Car *typ;
     s32 i;
     s8 *bp;
     u8 *fp;
@@ -802,22 +805,22 @@ void ReplayReadEffects(u8 *arg0) {
         word = *wp;
         typ = (u8 *)gCarListw15[0] + ((word >> 24) & 0x1F) * 0x500;
         if ((word & 0xE0000000) == 0x80000000) {
-            src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40);
+            src40 = *(u32 *)((u8 *)typ->shape + 0x40);
             fp[3] = 10;
         } else {
             do {
                 mode = word >> 29;
-                src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40) + mode * 0x18;
+                src40 = *(u32 *)((u8 *)typ->shape + 0x40) + mode * 0x18;
                 fp[3] = mode;
             } while (0);
         }
     } while (0);
     *(s32 *)rec = (*(s8 *)wp << 6) + *(s32 *)typ;
-    *(s32 *)(fp - 0x16) = (bp[-1] << 6) + *(s32 *)(typ + 4);
+    *(s32 *)(fp - 0x16) = (bp[-1] << 6) + typ->pos.y;
     w = ((u8 *)wp)[3];
     *(u32 *)(fp + 0x12) = src40;
     fp[4] = w & 0x1F;
-    val38 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x38);
+    val38 = *(u32 *)((u8 *)typ->shape + 0x38);
     i++;
     rec += 0x30;
     *(u32 *)(fp + 0xA) = 0;

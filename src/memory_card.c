@@ -612,7 +612,7 @@ void MenuFontCopyGlyphPrimitives(u8 fontId, s32 fontScale, void *dest) {
 extern s32 D_800A35A0;
 extern u8 D_800A3534;
 extern s32 D_800A3750;
-extern s32 D_800A35AC;
+extern Glyph *gFontGlyphs;
 extern s32 D_80099FE4[][3];
 void MenuFontSet(u8 fontId, u8 fontScale) {
     s32 *entry;
@@ -623,7 +623,7 @@ void MenuFontSet(u8 fontId, u8 fontScale) {
     D_800A35A0 = (s32)entry;
     D_800A3534 = fontScale;
     D_800A3750 = word;
-    D_800A35AC = entry[2];
+    gFontGlyphs = (Glyph *)entry[2];
 }
 
 extern u8 D_800A37C8, D_800A37A8, D_800A378C;
@@ -652,14 +652,14 @@ void MenuResetTextColor(void) {
 s16 MenuFontLineHeight(void) {
     s32 res;
     if (D_800A3534 == 2) {
-        res = *(s16 *)(D_800A35AC + 8) * 3;
+        res = gFontGlyphs->height * 3;
         if (res < 0)
             res += 3;
         return (s16)((res << 0xE) >> 0x10);
     } else if (D_800A3534 == 4) {
-        return (s16)((*(s16 *)(D_800A35AC + 8) * 9 / 10 << 0x10) >> 0x10);
+        return (s16)((gFontGlyphs->height * 9 / 10 << 0x10) >> 0x10);
     }
-    return *(s16 *)(D_800A35AC + 8);
+    return gFontGlyphs->height;
 }
 
 s16 MenuStringWidth(u8 *text) {
@@ -684,11 +684,11 @@ s16 MenuStringWidth(u8 *text) {
                 }
             }
             if (D_800A3534 == 2) {
-                total += *(s16 *)(D_800A35AC + idx * 10 + 6) * 3 / 4;
+                total += gFontGlyphs[idx].width * 3 / 4;
             } else if (D_800A3534 == 4) {
-                total += *(s16 *)(D_800A35AC + idx * 10 + 6) * 9 / 10;
+                total += gFontGlyphs[idx].width * 9 / 10;
             } else {
-                total += *(u16 *)(D_800A35AC + idx * 10 + 6);
+                total += (u16)gFontGlyphs[idx].width;
             }
             if (D_800A3534 < 2) {
                 total -= 1;
@@ -700,7 +700,7 @@ s16 MenuStringWidth(u8 *text) {
 }
 
 /* Draws a string as one POLY_FT4 per glyph, starting at (x, y). The glyph
-   templates (D_800A3750) and metrics (D_800A35AC) come from the font loaded
+   templates (D_800A3750) and metrics (gFontGlyphs) come from the font loaded
    by the function above; D_800A3534 picks the scale (2 = 3/4 with its own
    CLUT, 4 = 9/10). '\n' returns to x and moves down one line. center
    right-aligns the string to end at x, shade picks the tint, semi sets
@@ -737,11 +737,11 @@ void MenuDrawString(u8 *text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
             if (ch == '\n') {
                 penX = x;
                 if (D_800A3534 == 2) {
-                    lineH = *(s16 *)(D_800A35AC + 8) * 3 / 4;
+                    lineH = gFontGlyphs->height * 3 / 4;
                 } else if (D_800A3534 == 4) {
-                    lineH = *(s16 *)(D_800A35AC + 8) * 9 / 10;
+                    lineH = gFontGlyphs->height * 9 / 10;
                 } else {
-                    lineH = *(s16 *)(D_800A35AC + 8);
+                    lineH = gFontGlyphs->height;
                 }
                 y += lineH;
                 i++;
@@ -752,7 +752,7 @@ void MenuDrawString(u8 *text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
                     idx = 0;
                 }
                 tmpl = (POLY_FT4 *)D_800A3750 + idx;
-                glyph = (u8 *)D_800A35AC + idx * 10;
+                glyph = (u8 *)&gFontGlyphs[idx];
                 if (D_800A3534 == 2) {
                     h = *(s16 *)(glyph + 8) * 3 / 4;
                     w = *(s16 *)(glyph + 6) * 3 / 4;
@@ -821,7 +821,7 @@ void MenuDrawString(u8 *text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
 }
 
 /* Sums the glyph widths of the first count characters of str. The glyph
-   table (D_800A35AC) holds 10-byte records with the width at offset 6;
+   table (gFontGlyphs) holds 10-byte records with the width at offset 6;
    D_800A3534 picks the scale (2 = 3/4, 4 = 9/10) and subtracts 1 per
    character when below 2. */
 s16 MenuPrefixWidth(u8 count, u8 *text) {
@@ -846,11 +846,11 @@ s16 MenuPrefixWidth(u8 count, u8 *text) {
                 }
             }
             if (D_800A3534 == 2) {
-                total += *(s16 *)(D_800A35AC + idx * 10 + 6) * 3 / 4;
+                total += gFontGlyphs[idx].width * 3 / 4;
             } else if (D_800A3534 == 4) {
-                total += *(s16 *)(D_800A35AC + idx * 10 + 6) * 9 / 10;
+                total += gFontGlyphs[idx].width * 9 / 10;
             } else {
-                total += *(u16 *)(D_800A35AC + idx * 10 + 6);
+                total += (u16)gFontGlyphs[idx].width;
             }
             if (D_800A3534 < 2) {
                 total -= 1;
@@ -874,18 +874,18 @@ s16 MenuCharWidth(s8 character) {
         index = character - 0x20;
     }
     if (D_800A3534 == 2) {
-        scaled = (*((s16 *)((D_800A35AC + (index * 0xA)) + 6))) * 3;
+        scaled = gFontGlyphs[index].width * 3;
         value = ((u32)scaled) >> 2;
         if (scaled < 0) {
             scaled += 3;
             value = ((u32)scaled) >> 2;
         }
     } else if (D_800A3534 == 4) {
-        value = *((s16 *)((D_800A35AC + (index * 0xA)) + 6));
+        value = gFontGlyphs[index].width;
         product = value * 9;
         value = product / 10;
     } else {
-        value = *((u16 *)((D_800A35AC + (index * 0xA)) + 6));
+        value = (u16)gFontGlyphs[index].width;
     }
     if (D_800A3534 < 2U) {
         value -= 1;
