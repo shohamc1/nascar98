@@ -16521,7 +16521,7 @@ extern u8 D_800A2F65;
 extern s32 D_800A35E0[];
 
 void func_8003B464(void) {
-    u8 *obj;
+    Car *obj;
     s32 scaled;
     s32 rank;
     s32 startPos;
@@ -16534,12 +16534,12 @@ void func_8003B464(void) {
     if (gSessionTypeAbsolute[0] == 1) {
         return;
     }
-    obj = (u8 *)D_800A35E0[0];
+    obj = (Car *)D_800A35E0[0];
     while (obj != 0) {
-        rank = *(s16 *)(obj + 0x1D6);
-        startPos = *(s16 *)(obj + 0x1E0);
-        if ((rank = rank) > 0 && startPos >= 0 && *(s8 *)(obj + 0x204) != 1) {
-            if (*(s32 *)(obj + 0x3CC) == 0) {
+        rank = obj->lap;
+        startPos = obj->segment;
+        if ((rank = rank) > 0 && startPos >= 0 && obj->place != 1) {
+            if (obj->penalty == 0) {
                 s32 temp;
                 s32 result;
                 s32 otherVal;
@@ -16547,42 +16547,42 @@ void func_8003B464(void) {
                 temp = D_800A2EF4[0] -
                        ((TrackSection *)gTrackSections[0])[startPos].unk50;
                 scaled = temp << 3;
-                *(s32 *)(obj + 0x264) = temp;
+                obj->unk264 = temp;
                 temp = RandomScaledGet(8);
                 if (temp < 0) {
                     result = scaled - RandomScaledGet(8);
                 } else {
                     result = scaled + RandomScaledGet(8);
                 }
-                next = *(s32 *)(obj + 0x3E4);
-                *(s32 *)(obj + 0x264) = result;
+                next = (s32)obj->order.node.next;
+                obj->unk264 = result;
                 other = *(u8 **)(next + 8);
                 otherVal = *(s32 *)(other + 0x264);
                 if ((u32)otherVal >= (u32)result &&
                     other != (u8 *)D_800A35E0[0]) {
-                    *(s32 *)(obj + 0x264) = otherVal + 1;
+                    obj->unk264 = otherVal + 1;
                 }
             } else {
                 s32 otherVal;
                 s32 objVal;
 
-                next = *(s32 *)(obj + 0x3E4);
+                next = (s32)obj->order.node.next;
                 other = *(u8 **)(next + 8);
                 if (other == (u8 *)D_800A35E0[0]) {
                     *(s32 *)(other + 0x264) = 0;
                 }
-                objVal = *(s32 *)(obj + 0x264);
+                objVal = obj->unk264;
                 otherVal = *(s32 *)(other + 0x264);
                 if (otherVal >= objVal) {
-                    *(s32 *)(obj + 0x264) = otherVal + 1;
+                    obj->unk264 = otherVal + 1;
                 }
             }
         }
-        next = *(s32 *)(obj + 0x3E8);
+        next = (s32)obj->order.node.previous;
         if (next == 0) {
             break;
         }
-        obj = *(u8 **)(next + 8);
+        obj = *(Car **)(next + 8);
     }
     D_800A2F65 = 0;
 }
