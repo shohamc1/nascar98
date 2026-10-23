@@ -106,7 +106,7 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     register s32 buf asm("s2");
     s32 retries;
     u8 result[0x10];
-    register s32 status asm("a1");
+    s32 status;
     s32 *ptr;
     s32 i;
     s32 words;

@@ -796,7 +796,7 @@ void TrackLoad(u8 selectTrack) {
     s32 buttons;
     s32 offset;
     s32 adjustment;
-    register s32 product asm("a0");
+    s32 product;
     s32 base;
     s32 limit;
     s32 scaled;
