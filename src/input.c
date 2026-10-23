@@ -93,7 +93,7 @@ u16 PadReadObjectState(u8 *object) {
         return 0;
     }
     data = *(u32 *)((u8 *)D_8008CA08 + bank * 8);
-    if (((s8 *)gPadType)[bank] == 2) {
+    if (gPadType[bank] == 2) {
         object[0x3C6] = data >> 8;
         object[0x3C7] = data >> 0x10;
         object[0x3C5] = data;
@@ -293,12 +293,12 @@ void func_80041F54(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
         w2 = *(u32 *)((u16 *)w + 2);
         hs = ((u16 *)w)[1];
         swap = ~(((hs & 0xFF) << 8) | (hs >> 8));
-        ((s8 *)gPadType)[i] = (word & 0xF000) >> 12;
+        gPadType[i] = (word & 0xF000) >> 12;
         out = swap;
         if ((word & 0xFF) == 0xFF) {
-            ((s8 *)gPadType)[i] = 0;
+            gPadType[i] = 0;
         }
-        type = ((s8 *)gPadType)[i];
+        type = gPadType[i];
         if (type == 2) {
             b1 = (w2 & 0xFF00) >> 8;
             b2 = (w2 & mask2) >> 16;

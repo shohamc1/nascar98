@@ -38,8 +38,6 @@ typedef struct RoadSection {
 
 extern RenderListNode *D_800A3A40Absolute[];
 extern s32 D_800A2EC4w15[] asm("D_800A2EC4.NON_MATCHING");
-extern u8 *D_800A3A2C;
-extern u8 *D_800A3A34;
 void func_8001D108(RoadSection *arg0);
 void func_8001D1E4(void);
 void func_8001ED4C(s32 *p);
@@ -1907,8 +1905,7 @@ void ReplayHandleInput(void) {
     D_800A2ED4[0] = 0;
     buttons = PadGetButtons(D_800A3620);
     D_800A2DFC = 0;
-    if ((buttons & 0x100) ||
-        (((s8 *)gPadType)[D_800A3620] == 2 && (buttons & 0x800))) {
+    if ((buttons & 0x100) || (gPadType[D_800A3620] == 2 && (buttons & 0x800))) {
         D_800A2DF8 = buttons;
         func_80023074();
         return;

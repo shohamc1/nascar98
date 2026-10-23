@@ -3997,17 +3997,15 @@ void MenuUpdatePadPicture(s32 playerSlot) {
         node = *(u8 **)(node + 0x1C);
     }
     prim = *(u8 **)(node + 0x20);
-    if (((s8 *)gPadType)[playerSlot & 0xFF] !=
-            ((s8 *)D_800A308C)[playerSlot & 0xFF] &&
-        ((s8 *)gPadType)[playerSlot & 0xFF] != 0) {
+    if (gPadType[playerSlot & 0xFF] != ((s8 *)D_800A308C)[playerSlot & 0xFF] &&
+        gPadType[playerSlot & 0xFF] != 0) {
         ((s8 *)gPadLayout)[playerSlot & 0xFF] = 0;
     }
-    if (((s8 *)gPadType)[playerSlot & 0xFF] != 0) {
-        ((s8 *)D_800A308C)[playerSlot & 0xFF] =
-            ((s8 *)gPadType)[playerSlot & 0xFF];
+    if (gPadType[playerSlot & 0xFF] != 0) {
+        ((s8 *)D_800A308C)[playerSlot & 0xFF] = gPadType[playerSlot & 0xFF];
     }
     idx = playerSlot & 0xFF;
-    a = ((s8 *)gPadType)[idx];
+    a = gPadType[idx];
     if (a != 0) {
         fontId = ((s8 *)D_800A3350)[a];
         chars = D_8009B00C;
@@ -4031,23 +4029,23 @@ void MenuUpdatePadPicture(s32 playerSlot) {
     prim[0x25] = D_8009B02A[off] + node[0x18];
     node = *(u8 **)(node + 0x1C);
     prim = *(u8 **)(node + 0x20);
-    if (id == 1 && (((s8 *)gPadType)[playerSlot & 0xFF] == 5 ||
-                    ((s8 *)gPadType)[playerSlot & 0xFF] == 7)) {
-        prim[4] = -(((s8 *)gPadType)[playerSlot & 0xFF] == 7);
-        prim[5] = -(((s8 *)gPadType)[playerSlot & 0xFF] == 5);
+    if (id == 1 && (gPadType[playerSlot & 0xFF] == 5 ||
+                    gPadType[playerSlot & 0xFF] == 7)) {
+        prim[4] = -(gPadType[playerSlot & 0xFF] == 7);
+        prim[5] = -(gPadType[playerSlot & 0xFF] == 5);
         prim[6] = 0;
         node[5] = 1;
     } else {
         node[5] = 0;
     }
     node = *(u8 **)(node + 0x1C);
-    node[5] = !((s8 *)gPadType)[playerSlot & 0xFF];
+    node[5] = !gPadType[playerSlot & 0xFF];
     node = *(u8 **)(node + 0x1C);
     node = *(u8 **)(node + 0x1C);
     prim2 = *(u8 **)(node + 0x20);
     *(s32 *)(prim2 + 8) = ((s8 *)gPadLayout)[playerSlot & 0xFF] + 1;
-    uc = ((s8 *)gPadType)[playerSlot & 0xFF];
-    c = ((s8 *)gPadType)[playerSlot & 0xFF];
+    uc = gPadType[playerSlot & 0xFF];
+    c = gPadType[playerSlot & 0xFF];
     ghost = c;
     if (uc == 0) {
         c = D_800A308C[playerSlot & 0xFF];

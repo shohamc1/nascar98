@@ -69,7 +69,9 @@ extern u8 D_800A39B0[];
 extern u8 D_800A39C4;
 extern u8 gScreenState[];
 extern u8 gScreenStateAbsolute[];
-extern void *gPadType[];
+extern s8 gPadType[];
+/* Pointers to the two 0x400-entry 16.16 trig tables. */
+extern s32 *D_800A3A2C, *D_800A3A34;
 extern s8 D_800A3A25[];
 extern s32 D_800A3A2CAbsolute2[];
 extern s32 D_800A3A34Absolute2[];

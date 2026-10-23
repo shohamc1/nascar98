@@ -352,7 +352,7 @@ void func_8006EB18(u8 *obj) {
                 obj[0x3C5] = 0;
             }
         } else {
-            if (((s8 *)gPadType)[id] >= 5) {
+            if (gPadType[id] >= 5) {
                 if (i == 0) {
                     u8 target;
 

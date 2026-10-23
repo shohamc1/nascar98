@@ -1406,7 +1406,7 @@ void MenuUpdateItemRow(s32 itemCode) {
         }
     }
     MenuFontSetS32(2, 2);
-    if (((s8 *)gPadType)[0] == 2) {
+    if (gPadType[0] == 2) {
         value = MenuTextCenterOffset(0x140, D_8009A2F4[index]);
     } else {
         value = MenuTextCenterOffset(0x140, D_8009A2D4[index]);
@@ -1415,7 +1415,7 @@ void MenuUpdateItemRow(s32 itemCode) {
     *((s16 *)(obj + 6)) = value;
     *((s16 *)(obj + 0x1A)) = 0x32;
     child = *((u8 **)(obj + 0x20));
-    if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
+    if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
         *((s32 *)(child + 8)) = D_8009A2F4[index];
     } else {
         *((s32 *)(child + 8)) = D_8009A2D4[index];
@@ -1447,7 +1447,7 @@ void MenuCreateItemRow(s32 itemCode) {
         return;
     }
     MenuFontSetS32(2, 2);
-    if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
+    if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
         text = D_8009A2F4[group];
     } else {
         text = D_8009A2D4[index];
@@ -1468,7 +1468,7 @@ void MenuCreateItemRow(s32 itemCode) {
         next[3] = 0x80;
     }
     ((u8 *)D_800A3914[0])[4] = 0x40;
-    if ((((s8 *)gPadType)[0] == 2) && (gPadLayout[0] != 6)) {
+    if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
         u8 *rowA;
         u8 *pktA;
         s32 textA;
@@ -3713,7 +3713,7 @@ void CardMenuShowMessage(s32 arg0) {
             menuId = 0x19;
         }
     }
-    if (((s8 *)gPadType)[0] == 2) {
+    if (gPadType[0] == 2) {
         *((s32 *)(field20 + 8)) = D_8009AB80[menuId];
     } else {
         *((s32 *)(field20 + 8)) = D_8009AB00[menuId];

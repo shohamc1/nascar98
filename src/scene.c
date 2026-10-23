@@ -27,8 +27,6 @@ extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
 extern s32 gReplayIndexAbsolute[];
 extern s32 D_800A3A34Absolute[];
 extern s32 D_800A397C[];
-extern u8 *D_800A3A2C;
-extern u8 *D_800A3A34;
 extern u8 D_800A3680[];
 extern void func_80025730(u8 *);
 extern u8 *gPlayerCar[];
@@ -2754,7 +2752,7 @@ extern u8 D_800A2ED8[];
 extern u16 D_800A348C;
 extern POLY_FT4 D_800A789C[];
 extern TILE D_800A7984[];
-extern u8 D_800A2FD4[4];
+extern s8 D_800A2FD4[4];
 extern u32 gGlareCursorLui asm("gPrimitiveCursorAbsolute");
 extern s32 D_800A38AC[];
 
@@ -2853,15 +2851,15 @@ void SceneDrawSunGlare(HudCar *car) {
         /* Always true, but retail keeps the copy end inside the loop. */
         if (flare != NULL) {
             D_800A789C[0].x0 = x - size;
-            D_800A789C[0].y0 = (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size);
+            D_800A789C[0].y0 = D_800A2FD4[D_800A2ED9[0]] + (y - size);
             D_800A789C[0].x1 = x - size + size * 2;
-            D_800A789C[0].y1 = (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size);
+            D_800A789C[0].y1 = D_800A2FD4[D_800A2ED9[0]] + (y - size);
             D_800A789C[0].x2 = x - size;
             D_800A789C[0].y2 =
-                (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size) + size * 2;
+                D_800A2FD4[D_800A2ED9[0]] + (y - size) + size * 2;
             D_800A789C[0].x3 = x - size + size * 2;
             D_800A789C[0].y3 =
-                (s8)D_800A2FD4[D_800A2ED9[0]] + (y - size) + size * 2;
+                D_800A2FD4[D_800A2ED9[0]] + (y - size) + size * 2;
         }
         entry = gGlareCursorLui;
         gGlareCursorLui = entry + sizeof(POLY_FT4);
@@ -3593,7 +3591,7 @@ void HudDrawDashboard(void) {
             argA = cosine;
             product = callResult;
             callResult = MathMultiplyFixed16(argA, argB << 16);
-            screenY = D_800A2FD4[0];
+            screenY = (u8)D_800A2FD4[0];
 
             nextVertex = vertex + 1;
             vertex = nextVertex;
@@ -3863,7 +3861,7 @@ void HudDrawDashboard(void) {
                         argA += screenY;
                         *(s16 *)(rowOffset + (u32)D_800A854C) = argA;
 
-                        screenY = D_800A2FD4[0];
+                        screenY = (u8)D_800A2FD4[0];
                         asm("" : "=r"(screenY) : "0"(screenY));
                         argA = (product + callResult) >> 16;
                         screenY = (s8)screenY;
@@ -3877,7 +3875,7 @@ void HudDrawDashboard(void) {
                         screenY += productX;
                         *(s16 *)(rowOffset + (u32)D_800A8554) = screenY;
                         asm volatile("" : : : "memory");
-                        screenY = D_800A2FD4[0];
+                        screenY = (u8)D_800A2FD4[0];
                         asm("" : "=r"(screenY) : "0"(screenY));
                         product -= callResult;
                         product >>= 16;
@@ -4236,7 +4234,7 @@ void HudInitPrims(void) {
     quads = D_8008D4CC;
     corners = D_8008D4E4;
     tail = D_800A3014[0];
-    D_800A2FD4[0] = -(gSplitScreenMode[0] != 0) & 0xD8;
+    D_800A2FD4[0] = -(gSplitScreenMode[0] != 0) & -0x28;
     for (i = 0; i < D_800A3424; i++) {
         tex = D_80090FCE;
         for (j = 0; j < 6; j++) {
@@ -4266,31 +4264,31 @@ void HudInitPrims(void) {
         }
         p0 = i * 0xF0 + D_800A8354;
         *(s16 *)(p0 + 0x8) = 0x11C;
-        *(s16 *)(p0 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p0 + 0xA) = D_800A2FD4[i];
         *(s16 *)(p0 + 0x10) = 0x16C;
-        *(s16 *)(p0 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p0 + 0x12) = D_800A2FD4[i];
         *(s16 *)(p0 + 0x18) = 0x11C;
-        *(s16 *)(p0 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p0 + 0x1A) = D_800A2FD4[i] + 0x33;
         *(s16 *)(p0 + 0x20) = 0x16C;
-        *(s16 *)(p0 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p0 + 0x22) = D_800A2FD4[i] + 0x33;
         p1 = i * 0xF0 + (D_800A8354 + 0x28);
         *(s16 *)(p1 + 0x8) = 0xCC;
-        *(s16 *)(p1 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p1 + 0xA) = D_800A2FD4[i];
         *(s16 *)(p1 + 0x10) = 0x11C;
-        *(s16 *)(p1 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p1 + 0x12) = D_800A2FD4[i];
         *(s16 *)(p1 + 0x18) = 0xCC;
-        *(s16 *)(p1 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p1 + 0x1A) = D_800A2FD4[i] + 0x33;
         *(s16 *)(p1 + 0x20) = 0x11C;
-        *(s16 *)(p1 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p1 + 0x22) = D_800A2FD4[i] + 0x33;
         p2 = i * 0xF0 + (D_800A8354 + 0x50);
         *(s16 *)(p2 + 0x8) = 0x7C;
-        *(s16 *)(p2 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p2 + 0xA) = D_800A2FD4[i];
         *(s16 *)(p2 + 0x10) = 0xCC;
-        *(s16 *)(p2 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p2 + 0x12) = D_800A2FD4[i];
         *(s16 *)(p2 + 0x18) = 0x7C;
-        *(s16 *)(p2 + 0x1A) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p2 + 0x1A) = D_800A2FD4[i] + 0x33;
         *(s16 *)(p2 + 0x20) = 0xCC;
-        *(s16 *)(p2 + 0x22) = (s8)D_800A2FD4[i] + 0x33;
+        *(s16 *)(p2 + 0x22) = D_800A2FD4[i] + 0x33;
         tex = &D_80090FCE[1];
         *(u16 *)(D_800A83DA + i * 0xF0) = GetClut(tex->clutX, tex->clutY);
         *(u16 *)(D_800A83E2 + i * 0xF0) =
@@ -4305,13 +4303,13 @@ void HudInitPrims(void) {
         p3[0x24] = tex->u + 0x7C;
         p3[0x25] = tex->v + 0x3B;
         *(s16 *)(p3 + 0x8) = 0;
-        *(s16 *)(p3 + 0xA) = (s8)D_800A2FD4[i];
+        *(s16 *)(p3 + 0xA) = D_800A2FD4[i];
         *(s16 *)(p3 + 0x10) = 0x7C;
-        *(s16 *)(p3 + 0x12) = (s8)D_800A2FD4[i];
+        *(s16 *)(p3 + 0x12) = D_800A2FD4[i];
         *(s16 *)(p3 + 0x18) = 0;
-        *(s16 *)(p3 + 0x1A) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p3 + 0x1A) = D_800A2FD4[i] + 0x3B;
         *(s16 *)(p3 + 0x20) = 0x7C;
-        *(s16 *)(p3 + 0x22) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p3 + 0x22) = D_800A2FD4[i] + 0x3B;
         tex += 5;
         *(u16 *)(D_800A8402 + i * 0xF0) = GetClut(tex->clutX, tex->clutY);
         *(u16 *)(D_800A840A + i * 0xF0) =
@@ -4326,13 +4324,13 @@ void HudInitPrims(void) {
         p4[0x24] = tex->u + 0xB1;
         p4[0x25] = tex->v;
         *(s16 *)(p4 + 0x8) = 0;
-        *(s16 *)(p4 + 0xA) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p4 + 0xA) = D_800A2FD4[i] + 0x3B;
         *(s16 *)(p4 + 0x10) = 0x4C;
-        *(s16 *)(p4 + 0x12) = (s8)D_800A2FD4[i] + 0x3B;
+        *(s16 *)(p4 + 0x12) = D_800A2FD4[i] + 0x3B;
         *(s16 *)(p4 + 0x18) = 0;
-        *(s16 *)(p4 + 0x1A) = (s8)D_800A2FD4[i] + 0xEC;
+        *(s16 *)(p4 + 0x1A) = D_800A2FD4[i] + 0xEC;
         *(s16 *)(p4 + 0x20) = 0x4C;
-        *(s16 *)(p4 + 0x22) = (s8)D_800A2FD4[i] + 0xEC;
+        *(s16 *)(p4 + 0x22) = D_800A2FD4[i] + 0xEC;
         tex -= 17;
         *(u16 *)(D_800A842A + i * 0xF0) = GetClut(tex->clutX, tex->clutY);
         *(u16 *)(D_800A8432 + i * 0xF0) =
@@ -4347,13 +4345,13 @@ void HudInitPrims(void) {
         p5[0x24] = tex->u + 0xF4;
         p5[0x25] = tex->v + 0x12;
         *(s16 *)(p5 + 0x8) = 0x4C;
-        *(s16 *)(p5 + 0xA) = (s8)D_800A2FD4[i] + 0x9A;
+        *(s16 *)(p5 + 0xA) = D_800A2FD4[i] + 0x9A;
         *(s16 *)(p5 + 0x10) = 0x140;
-        *(s16 *)(p5 + 0x12) = (s8)D_800A2FD4[i] + 0x9A;
+        *(s16 *)(p5 + 0x12) = D_800A2FD4[i] + 0x9A;
         *(s16 *)(p5 + 0x18) = 0x4C;
-        *(s16 *)(p5 + 0x1A) = (s8)D_800A2FD4[i] + 0xAC;
+        *(s16 *)(p5 + 0x1A) = D_800A2FD4[i] + 0xAC;
         *(s16 *)(p5 + 0x20) = 0x140;
-        *(s16 *)(p5 + 0x22) = (s8)D_800A2FD4[i] + 0xAC;
+        *(s16 *)(p5 + 0x22) = D_800A2FD4[i] + 0xAC;
         f4base = D_800A80F4;
         for (j = 0; j < 3; j++) {
             u8 *prim;
@@ -4369,15 +4367,15 @@ void HudInitPrims(void) {
             prim3[5] = 8;
             prim3[6] = 8;
             *(s16 *)(prim3 + 8) = quads.s[j].x0;
-            *(s16 *)(prim3 + 0xA) = quads.s[j].y0 + (s8)D_800A2FD4[i];
+            *(s16 *)(prim3 + 0xA) = quads.s[j].y0 + D_800A2FD4[i];
             *(s16 *)(prim3 + 0xC) = quads.s[j].x1;
-            *(s16 *)(prim3 + 0xE) = quads.s[j].y1 + (s8)D_800A2FD4[i];
+            *(s16 *)(prim3 + 0xE) = quads.s[j].y1 + D_800A2FD4[i];
             *(s16 *)(prim3 + 0x10) =
                 *(u16 *)(D_800A2FDC + j * 2) - (s8)D_800A2FD8[j];
-            *(s16 *)(prim3 + 0x12) = (s8)D_800A2FD4[i] + 0x9E;
+            *(s16 *)(prim3 + 0x12) = D_800A2FD4[i] + 0x9E;
             *(s16 *)(prim3 + 0x14) =
                 *(u16 *)(D_800A2FDC + j * 2) + (s8)D_800A2FD8[j];
-            *(s16 *)(prim3 + 0x16) = (s8)D_800A2FD4[i] + 0x9E;
+            *(s16 *)(prim3 + 0x16) = D_800A2FD4[i] + 0x9E;
         }
     }
     if (gSplitScreenMode[0] == 0) {
@@ -4413,37 +4411,37 @@ void HudInitPrims(void) {
         D_800A8238[0] = u + 0x40;
         D_800A8239[0] = v + 0x40;
         D_800A821C[0] = 0x7C;
-        D_800A821E[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A821E[0] = D_800A2FD4[0] + 0xAC;
         D_800A8224[0] = 0xBC;
-        D_800A8226[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A8226[0] = D_800A2FD4[0] + 0xAC;
         D_800A822C[0] = 0x7C;
-        D_800A822E[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A822E[0] = D_800A2FD4[0] + 0xEC;
         D_800A8234[0] = 0xBC;
-        D_800A8236[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A8236[0] = D_800A2FD4[0] + 0xEC;
         *(s16 *)(D_800A8214 + 0x30) = 0x3C;
-        *(s16 *)(D_800A8214 + 0x32) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(D_800A8214 + 0x32) = D_800A2FD4[0] + 0xAC;
         *(s16 *)(D_800A8214 + 0x38) = 0x6C;
-        *(s16 *)(D_800A8214 + 0x3A) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(D_800A8214 + 0x3A) = D_800A2FD4[0] + 0xAC;
         *(s16 *)(D_800A8214 + 0x40) = 0x3C;
-        *(s16 *)(D_800A8214 + 0x42) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(D_800A8214 + 0x42) = D_800A2FD4[0] + 0xEC;
         *(s16 *)(D_800A8214 + 0x48) = 0x6C;
-        *(s16 *)(D_800A8214 + 0x4A) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(D_800A8214 + 0x4A) = D_800A2FD4[0] + 0xEC;
         *(s16 *)(D_800A8214 + 0x58) = 0xE0;
-        *(s16 *)(D_800A8214 + 0x5A) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(D_800A8214 + 0x5A) = D_800A2FD4[0] + 0xAC;
         *(s16 *)(D_800A8214 + 0x60) = 0x110;
-        *(s16 *)(D_800A8214 + 0x62) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(D_800A8214 + 0x62) = D_800A2FD4[0] + 0xAC;
         *(s16 *)(D_800A8214 + 0x68) = 0xE0;
-        *(s16 *)(D_800A8214 + 0x6A) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(D_800A8214 + 0x6A) = D_800A2FD4[0] + 0xEC;
         *(s16 *)(D_800A8214 + 0x70) = 0x110;
-        *(s16 *)(D_800A8214 + 0x72) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(D_800A8214 + 0x72) = D_800A2FD4[0] + 0xEC;
         *(s16 *)(D_800A8214 + 0x80) = 0x110;
-        *(s16 *)(D_800A8214 + 0x82) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(D_800A8214 + 0x82) = D_800A2FD4[0] + 0xAC;
         *(s16 *)(D_800A8214 + 0x88) = 0x140;
-        *(s16 *)(D_800A8214 + 0x8A) = (s8)D_800A2FD4[0] + 0xAC;
+        *(s16 *)(D_800A8214 + 0x8A) = D_800A2FD4[0] + 0xAC;
         *(s16 *)(D_800A8214 + 0x90) = 0x110;
-        *(s16 *)(D_800A8214 + 0x92) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(D_800A8214 + 0x92) = D_800A2FD4[0] + 0xEC;
         *(s16 *)(D_800A8214 + 0x98) = 0x140;
-        *(s16 *)(D_800A8214 + 0x9A) = (s8)D_800A2FD4[0] + 0xEC;
+        *(s16 *)(D_800A8214 + 0x9A) = D_800A2FD4[0] + 0xEC;
         for (i = 0; i < 4; i++) {
             u8 *prim;
             prim = i * 0x28 + D_800A82B4;
@@ -4468,13 +4466,13 @@ void HudInitPrims(void) {
         D_800A82D8[0] = u2 + 1;
         D_800A82D9[0] = v2 + 0x40;
         D_800A82BC[0] = 0xBC;
-        D_800A82BE[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A82BE[0] = D_800A2FD4[0] + 0xAC;
         D_800A82C4[0] = 0xC4;
-        D_800A82C6[0] = (s8)D_800A2FD4[0] + 0xAC;
+        D_800A82C6[0] = D_800A2FD4[0] + 0xAC;
         D_800A82CC[0] = 0xBC;
-        D_800A82CE[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A82CE[0] = D_800A2FD4[0] + 0xEC;
         D_800A82D4[0] = 0xC4;
-        D_800A82D6[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A82D6[0] = D_800A2FD4[0] + 0xEC;
         for (; j < 3; j++) {
             u8 *prim;
             s32 next;
@@ -4496,22 +4494,22 @@ void HudInitPrims(void) {
             prim[0x24] = tex->u + 0xB1;
             prim[0x25] = tex->v;
             *(s16 *)(prim + 8) = (j << 4) + 0xC0;
-            *(s16 *)(prim + 0xA) = (s8)D_800A2FD4[0] + 0xAC;
+            *(s16 *)(prim + 0xA) = D_800A2FD4[0] + 0xAC;
             *(s16 *)(prim + 0x10) = (j << 4) + 0xD0;
-            *(s16 *)(prim + 0x12) = (s8)D_800A2FD4[0] + 0xAC;
+            *(s16 *)(prim + 0x12) = D_800A2FD4[0] + 0xAC;
             *(s16 *)(prim + 0x18) = (j << 4) + 0xC0;
-            *(s16 *)(prim + 0x1A) = (s8)D_800A2FD4[0] + 0xEC;
+            *(s16 *)(prim + 0x1A) = D_800A2FD4[0] + 0xEC;
             *(s16 *)(prim + 0x20) = (j << 4) + 0xD0;
-            *(s16 *)(prim + 0x22) = (s8)D_800A2FD4[0] + 0xEC;
+            *(s16 *)(prim + 0x22) = D_800A2FD4[0] + 0xEC;
         }
         D_800A8334[0] = 0x6C;
         D_800A833C[0] = 0x7C;
         D_800A8344[0] = 0x6C;
         D_800A834C[0] = 0x7C;
-        D_800A8336[0] = (s8)D_800A2FD4[0] + 0xAC;
-        D_800A833E[0] = (s8)D_800A2FD4[0] + 0xAC;
-        D_800A8346[0] = (s8)D_800A2FD4[0] + 0xEC;
-        D_800A834E[0] = (s8)D_800A2FD4[0] + 0xEC;
+        D_800A8336[0] = D_800A2FD4[0] + 0xAC;
+        D_800A833E[0] = D_800A2FD4[0] + 0xAC;
+        D_800A8346[0] = D_800A2FD4[0] + 0xEC;
+        D_800A834E[0] = D_800A2FD4[0] + 0xEC;
         for (i = 0; i < 4; i++) {
             u8 *prim;
             prim = i * 0x18 + D_800A81B4;
@@ -4640,7 +4638,7 @@ void HudInitPrims(void) {
             prim[0x1D] = 1;
             prim[0x24] = 0xFE;
             prim[0x25] = 1;
-            yv = (s8)D_800A2FD4[0] + 0x9E;
+            yv = D_800A2FD4[0] + 0x9E;
             *(s16 *)(prim + 0x12) = yv;
             *(u16 *)(D_800A853E + i * 0x28) = yv;
         }
@@ -6361,35 +6359,43 @@ void HudInitFlagOverlay(void) {
     D_800A8B90[0] = x + 0x20;
     D_800A8B91[0] = y + 0x18;
     D_800A8AEC[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[2] + 0x600)) >>
+        (MathMultiplyFixed16(0x2D0000,
+                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0x600)) >>
          0x10) +
         0x122;
     D_800A8AEE[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[4] + 0x600)) >>
+        (MathMultiplyFixed16(0x2D0000,
+                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0x600)) >>
          0x10) +
         0x3C;
     D_800A8AF0[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[2] + 0x600)) >>
+        (MathMultiplyFixed16(0x140000,
+                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0x600)) >>
          0x10) +
         0x122;
     D_800A8AF2[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[4] + 0x600)) >>
+        (MathMultiplyFixed16(0x140000,
+                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0x600)) >>
          0x10) +
         0x3C;
     D_800A8AF4[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[2] + 0xA00)) >>
+        (MathMultiplyFixed16(0x2D0000,
+                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0xA00)) >>
          0x10) +
         0x122;
     D_800A8AF6[0] =
-        (MathMultiplyFixed16(0x2D0000, *(s32 *)((u8 *)gPadType[4] + 0xA00)) >>
+        (MathMultiplyFixed16(0x2D0000,
+                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0xA00)) >>
          0x10) +
         0x3C;
     D_800A8AF8[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[2] + 0xA00)) >>
+        (MathMultiplyFixed16(0x140000,
+                             *(s32 *)((u8 *)D_800A3A2CAbsolute[0] + 0xA00)) >>
          0x10) +
         0x122;
     D_800A8AFA[0] =
-        (MathMultiplyFixed16(0x140000, *(s32 *)((u8 *)gPadType[4] + 0xA00)) >>
+        (MathMultiplyFixed16(0x140000,
+                             *(s32 *)((u8 *)D_800A3A34Absolute[0] + 0xA00)) >>
          0x10) +
         0x3C;
 }
