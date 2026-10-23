@@ -490,7 +490,7 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     Face *node;
     s8 i, j;
     s32 tmp;
-    s32 sinValue, cosValue;
+    s32 cosValue, sinValue;
     s32 dot;
     s32 result;
 
@@ -515,12 +515,12 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     origin[0] = entry->x;
     origin[1] = entry->z;
     i = 0;
-    sinValue = gCosTableAbsolute[0][0x3FF - entry->angle];
-    cosValue = gSinTableAbsolute[0][0x3FF - entry->angle];
+    cosValue = gCosTableAbsolute[0][0x3FF - entry->angle];
+    sinValue = gSinTableAbsolute[0][0x3FF - entry->angle];
     do {
         lateral[i] =
-            (MathMultiplyFixed16(cosValue, (center[i][0] - origin[0]) << 16) +
-             MathMultiplyFixed16(sinValue, (center[i][1] - origin[1]) << 16)) >>
+            (MathMultiplyFixed16(sinValue, (center[i][0] - origin[0]) << 16) +
+             MathMultiplyFixed16(cosValue, (center[i][1] - origin[1]) << 16)) >>
             16;
         i++;
     } while (i < 4);
@@ -2352,8 +2352,8 @@ void HudDrawCar(Car *car, s16 yOffset) {
     u8 *prim;
     u8 count;
     s16 tw;
-    s32 sinV;
     s32 cosV;
+    s32 sinV;
     s16 idx;
     s32 scaled;
     s32 green;
@@ -2483,17 +2483,17 @@ void HudDrawCar(Car *car, s16 yOffset) {
                            ? scaled / 10000
                            : scaled / 9000) +
                       0x200;
-                sinV = gCosTableAbsolute[0][idx];
-                cosV = gSinTableAbsolute[0][idx];
+                cosV = gCosTableAbsolute[0][idx];
+                sinV = gSinTableAbsolute[0][idx];
                 for (i = 0; i < 4; i++) {
                     pts[i].x =
-                        ((MathMultiplyFixed16(sinV, D_8009933C[i].x << 16) -
-                          MathMultiplyFixed16(cosV, D_8009933C[i].y << 16)) >>
+                        ((MathMultiplyFixed16(cosV, D_8009933C[i].x << 16) -
+                          MathMultiplyFixed16(sinV, D_8009933C[i].y << 16)) >>
                          16) +
                         0x12C;
                     pts[i].y =
-                        ((MathMultiplyFixed16(cosV, D_8009933C[i].x << 16) +
-                          MathMultiplyFixed16(sinV, D_8009933C[i].y << 16)) >>
+                        ((MathMultiplyFixed16(sinV, D_8009933C[i].x << 16) +
+                          MathMultiplyFixed16(cosV, D_8009933C[i].y << 16)) >>
                          16) +
                         (yOffset + 0xD6);
                 }
