@@ -658,4 +658,29 @@ LDFLAGS += --defsym=D_800A3980Small=D_800A3980 \
            --defsym=D_800A3968Absolute=D_800A3968 \
            --defsym=D_800A35F4Absolute=D_800A35F4 \
            --defsym=gCardSlotAbsolute=gCardSlot \
+           --defsym=D_800A2EDAAbsolute=D_800A2EDA \
+           --defsym=D_800A2F58Absolute=D_800A2F58 \
+           --defsym=D_800A36B0Absolute=D_800A36B0 \
+           --defsym=D_800A36B8Absolute=D_800A36B8 \
+           --defsym=D_800A36C8Absolute=D_800A36C8 \
+           --defsym=D_800A2DE1Absolute=D_800A2DE1 \
+           --defsym=gMenuObjectPoolCountAbsolute=gMenuObjectPoolCount \
+           --defsym=D_800A3073Absolute=D_800A3073 \
+           --defsym=D_800A306EAbsolute=D_800A306E \
+           --defsym=D_800A306FAbsolute=D_800A306F \
+           --defsym=D_800A3072Absolute=D_800A3072 \
+           --defsym=gReplayLengthAbsolute=gReplayLength \
+           --defsym=D_800A2D8CAbsolute=D_800A2D8C \
+           --defsym=gPlayerDriverAbsolute3=gPlayerDriver \
+           --defsym=gPlayerDriverAbsolute4=gPlayerDriver \
+           --defsym=D_800A2D08Absolute3=D_800A2D08 \
+           --defsym=D_800A2D08Absolute4=D_800A2D08 \
+           --defsym=D_800A2CE0Absolute3=D_800A2CE0 \
+           --defsym=D_800A2CE0Absolute4=D_800A2CE0 \
+           --defsym=gOrderingTableAbsolute3=gOrderingTable \
+           --defsym=gOrderingTableAbsolute4=gOrderingTable \
+           --defsym=gOrderingTableAbsolute5=gOrderingTable \
+           --defsym=gOrderingTableAbsolute6=gOrderingTable \
+           --defsym=gOrderingTableBankAbsolute3=gOrderingTableBank \
+           --defsym=gOrderingTableBankAbsolute4=gOrderingTableBank \
            --defsym=gCardMenuMessageAbsolute=gCardMenuMessage

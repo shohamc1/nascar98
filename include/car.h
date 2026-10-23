@@ -329,7 +329,8 @@ typedef struct Car {
     s16 unk41A; /* 0x41A */
     s8 unk41C[4]; /* 0x41C */
     s32 unk420[4]; /* 0x420 */
-    u8 unk430[0xD0];
+    s32 unk430[4]; /* 0x430 */
+    u8 unk440[0xC0];
 } Car;
 
 #endif /* CAR_H */

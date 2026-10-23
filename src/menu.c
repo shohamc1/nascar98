@@ -1696,13 +1696,13 @@ void func_800606D4(void) {
         prim2->tpage =
             GetTPage(D_8009AF2A[0], 3, D_8009AF1E[0], ((u16 *)D_8009AF1E)[1]);
         prim2->u0 = D_8009AF26[0];
-        prim2->v0 = *((u8 *)(((u8 *)D_8009AF22) + 6));
-        prim2->u1 = (*((u8 *)(((u8 *)D_8009AF1E) + 8))) + w;
-        prim2->v1 = *((u8 *)(((u8 *)D_8009AF1E) + 10));
-        prim2->u2 = *((u8 *)(((u8 *)D_8009AF22) + 4));
-        prim2->v2 = (*((u8 *)(((u8 *)D_8009AF2A) - 2))) + h;
-        prim2->u3 = (*((u8 *)(((u8 *)D_8009AF2A) - 4))) + w;
-        prim2->v3 = (*((u8 *)(((u8 *)D_8009AF26) + 2))) + h;
+        prim2->v0 = *(u8 *)(((u8 *)D_8009AF22) + 6);
+        prim2->u1 = *(u8 *)(((u8 *)D_8009AF1E) + 8) + w;
+        prim2->v1 = *(u8 *)(((u8 *)D_8009AF1E) + 10);
+        prim2->u2 = *(u8 *)(((u8 *)D_8009AF22) + 4);
+        prim2->v2 = *(u8 *)(((u8 *)D_8009AF2A) - 2) + h;
+        prim2->u3 = *(u8 *)(((u8 *)D_8009AF2A) - 4) + w;
+        prim2->v3 = *(u8 *)(((u8 *)D_8009AF26) + 2) + h;
     }
     {
         u8 index;
@@ -1738,14 +1738,14 @@ void func_800606D4(void) {
         prim[4] = 0x40;
         prim[5] = 0x60;
         prim[6] = 0x80;
-        *((s16 *)(prim + 8)) = 0xA;
-        *((s16 *)(prim + 0xA)) = 0xC6;
-        *((s16 *)(prim + 0xC)) = 0x3C;
-        *((s16 *)(prim + 0xE)) = 0xC6;
-        *((s16 *)(prim + 0x10)) = 0xA;
-        *((s16 *)(prim + 0x12)) = 0xC9;
-        *((s16 *)(prim + 0x14)) = 0x3C;
-        *((s16 *)(prim + 0x16)) = 0xC9;
+        *(s16 *)(prim + 8) = 0xA;
+        *(s16 *)(prim + 0xA) = 0xC6;
+        *(s16 *)(prim + 0xC) = 0x3C;
+        *(s16 *)(prim + 0xE) = 0xC6;
+        *(s16 *)(prim + 0x10) = 0xA;
+        *(s16 *)(prim + 0x12) = 0xC9;
+        *(s16 *)(prim + 0x14) = 0x3C;
+        *(s16 *)(prim + 0x16) = 0xC9;
         cur->drawOffsetX = 9;
         cur->velocityX = 2;
         cur->orderingDepth = 0;
@@ -1783,16 +1783,16 @@ void func_800606D4(void) {
         SetSemiTrans(prim, 1);
         cur = row;
         prim[6] = 0x40;
-        *((s16 *)(prim + 0xA)) = 0xA7;
-        *((s16 *)(prim + 0xC)) = 0x78;
-        *((s16 *)(prim + 0xE)) = 0xA7;
-        *((s16 *)(prim + 0x12)) = 0xD7;
-        *((s16 *)(prim + 0x16)) = 0xD7;
+        *(s16 *)(prim + 0xA) = 0xA7;
+        *(s16 *)(prim + 0xC) = 0x78;
+        *(s16 *)(prim + 0xE) = 0xA7;
+        *(s16 *)(prim + 0x12) = 0xD7;
+        *(s16 *)(prim + 0x16) = 0xD7;
         prim[4] = 0x20;
         prim[5] = 0x20;
-        *((s16 *)(prim + 8)) = 0;
-        *((s16 *)(prim + 0x10)) = 0;
-        *((s16 *)(prim + 0x14)) = 0x78;
+        *(s16 *)(prim + 8) = 0;
+        *(s16 *)(prim + 0x10) = 0;
+        *(s16 *)(prim + 0x14) = 0x78;
         cur->x = -0x78;
         cur->velocityX = 2;
         cur->orderingDepth = 3;
@@ -1849,15 +1849,15 @@ void func_800606D4(void) {
         prim2->clut = GetClut(((u16 *)D_8009AEA2)[1], D_8009AEA6[0]);
         *(s16 *)&prim2->tpage =
             GetTPage(((u16 *)D_8009AEAA)[1], 3,
-                     *((u16 *)(((u8 *)D_8009AEA2) - 2)), D_8009AEA2[0]);
-        prim2->u0 = *((u8 *)(((u8 *)D_8009AEAA) - 2));
+                     *(u16 *)(((u8 *)D_8009AEA2) - 2), D_8009AEA2[0]);
+        prim2->u0 = *(u8 *)(((u8 *)D_8009AEAA) - 2);
         prim2->v0 = D_8009AEAA[0];
-        prim2->u1 = (*((u8 *)(((u8 *)D_8009AEA2) + 6))) + w;
-        prim2->v1 = *((u8 *)(((u8 *)D_8009AEA6) + 4));
-        prim2->u2 = *((u8 *)(((u8 *)D_8009AEA6) + 2));
-        prim2->v2 = (*((u8 *)(((u8 *)D_8009AEA2) + 8))) + h;
-        prim2->u3 = (*((u8 *)(((u8 *)D_8009AEAE) - 6))) + w;
-        prim2->v3 = (*((u8 *)(((u8 *)D_8009AEAE) - 4))) + h;
+        prim2->u1 = *(u8 *)(((u8 *)D_8009AEA2) + 6) + w;
+        prim2->v1 = *(u8 *)(((u8 *)D_8009AEA6) + 4);
+        prim2->u2 = *(u8 *)(((u8 *)D_8009AEA6) + 2);
+        prim2->v2 = *(u8 *)(((u8 *)D_8009AEA2) + 8) + h;
+        prim2->u3 = *(u8 *)(((u8 *)D_8009AEAE) - 6) + w;
+        prim2->v3 = *(u8 *)(((u8 *)D_8009AEAE) - 4) + h;
         index = gMenuObjectPoolCount;
         frame = &gMenuObjectPool[index];
         row->next = cur;
@@ -1888,7 +1888,7 @@ void func_800606D4(void) {
         cur->primitive = tile;
         tile[0] = 0;
         tile[3] = 0;
-        *((s32 *)(tile + 4)) = 0;
+        *(s32 *)(tile + 4) = 0;
         tile2 = cur->primitive;
         width = 0xCA;
         two = 2;
@@ -1898,7 +1898,7 @@ void func_800606D4(void) {
         tile2[2] = 2;
         do {
         } while (0);
-        *((s32 *)(tile2 + 8)) = D_8009A2B0[0];
+        *(s32 *)(tile2 + 8) = D_8009A2B0[0];
         table = D_8009A2BC;
         asm("" : "=r"(p) : "0"(table));
         p = table;
@@ -1944,7 +1944,7 @@ void func_800606D4(void) {
         cur->primitive = mark;
         mark[0] = 0;
         mark[3] = 0;
-        *((s32 *)(mark + 4)) = 0;
+        *(s32 *)(mark + 4) = 0;
         cur->drawOffsetX = x;
         cur->width = value;
         cur->height = MenuFontLineHeight();
@@ -1953,7 +1953,7 @@ void func_800606D4(void) {
         *new_var2 = 0;
         cell[1] = two;
         cell[2] = two;
-        *((s32 *)(cell + 8)) = *p;
+        *(s32 *)(cell + 8) = *p;
         p++;
         entry->next = cur;
         entry = cur;

@@ -12,6 +12,8 @@
 #include "game.h"
 #include "sound.h"
 #include "util.h"
+
+extern u8 D_800A2EDAAbsolute[];
 extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
                         short rightVolume);
 
@@ -1431,7 +1433,7 @@ void func_80041564(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
 
     arg2 = 15;
     arg3 = -1;
-    if (((u8 *)D_800A2EDC)[-2] != 0) {
+    if (D_800A2EDAAbsolute[0] != 0) {
         return;
     }
     if (D_800A2F9D == 0) {

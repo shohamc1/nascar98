@@ -14,6 +14,7 @@
 #include "scene.h"
 #include "graphics.h"
 #include "util.h"
+extern s32 D_800A2D8CAbsolute[];
 
 void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode);
 
@@ -280,7 +281,7 @@ void FontDrawGlyph(s32 ch, s32 x, s32 y, s32 page) {
     src->g0 = gFontColorGreen;
     src->b0 = gFontColorBlue;
     cursor = gPrimitiveCursor[0];
-    ((s32 *)D_800A36D0Absolute)[-67] = cursor + 0x28;
+    gPrimitiveCursorLui = cursor + 0x28;
     prim = (POLY_FT4 *)cursor;
     *prim = *src;
     AddPrim((u8 *)gOrderingTable[0], prim);
@@ -1505,7 +1506,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
         scale = 2;
         start = text;
         if (text[0] != 0) {
-            glyphWidth = (s16 *)&D_800A2EACAbsolute[-72];
+            glyphWidth = (s16 *)&D_800A2D8CAbsolute[0];
             p = start;
             do {
                 FontDrawGlyph(*p, x, y, scale);
@@ -1524,7 +1525,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
             scale = 2;
             start = text;
             if (text[0] != 0) {
-                glyphWidth = (s16 *)&D_800A2EACAbsolute[-72];
+                glyphWidth = (s16 *)&D_800A2D8CAbsolute[0];
                 p = start;
                 do {
                     FontDrawGlyph(*p, x, y, scale);

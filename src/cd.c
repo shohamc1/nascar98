@@ -666,8 +666,8 @@ void func_8003D654(Car *object) {
         object->unk3A4 = 0;
         i = 0;
         do {
-            *((u8 *)object + i + 0x3A6) = 1;
-            *((u8 *)object + i + 0x3AE) = 0;
+            object->unk3A6[i] = 1;
+            object->unk3AE[i] = 0;
             i++;
         } while (i < 8);
     }
@@ -677,7 +677,7 @@ void func_8003D69C(Car *object) {
     s32 value;
     s32 now;
 
-    value = *(volatile u16 *)((u8 *)object + 0x278);
+    value = *(volatile u16 *)&object->unk26C[6];
     now = (u16)object->unk26C[6];
     object->unk26C[6] = now - 1;
     object->unk2A2 = (s16)value / 10;
@@ -691,7 +691,7 @@ void func_8003D6F8(Car *object) {
     s32 value;
     s32 now;
 
-    value = *(volatile u16 *)((u8 *)object + 0x27A);
+    value = *(volatile u16 *)&object->unk26C[7];
     now = (u16)object->unk26C[7];
     object->unk26C[7] = now - 1;
     object->unk2A8 = (s16)value / 10;
@@ -1390,9 +1390,9 @@ void func_8003EA94(u8 *object, s32 *arg1, s32 arg2) {
     s32 i;
     i = 0;
     entries = arg1;
-    count = ((*((s16 *)(object + 2))) - (*((s16 *)(object + 0)))) + 1;
-    value = (*((s32 *)(object + 8))) + arg2;
-    *((s32 *)(object + 8)) = value;
+    count = (*(s16 *)(object + 2) - *(s16 *)(object + 0)) + 1;
+    value = *(s32 *)(object + 8) + arg2;
+    *(s32 *)(object + 8) = value;
     if (count <= 0) {
         goto done;
     }

@@ -13,6 +13,7 @@
 #include "car.h"
 #include "graphics.h"
 #include "util.h"
+extern s32 gOrderingTableAbsolute[];
 
 extern s32 func_8001E7EC(void *, s32, s32);
 
@@ -323,7 +324,7 @@ s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2) {
         AddPrim(otFFC, D_800A43BCw15 + (D_800A2DC4w15 << 6));
         ot1FFC = (u8 *)arg0 + 0x1FFC;
         AddPrim(ot1FFC, D_800A43BCw15 + 0x80 + (D_800A2DC4w15 << 6));
-        D_800A39CCw15[-1] = (s32)ot1000;
+        gOrderingTableAbsolute[0] = (s32)ot1000;
         if ((D_800A2ED0w15[0] & 8) == 0) {
             GraphicsDrawRect(0, 0x77, 0x140, 2, 8, 8, 8, 0);
         }

@@ -13,6 +13,13 @@
 #include "pad_axis.h"
 #include "input.h"
 #include "menu.h"
+extern u8 gPlayerDriverAbsolute3[];
+extern u8 gPlayerDriverAbsolute4[];
+extern u8 D_800A3072AbsoluteU8[] asm("D_800A3072Absolute");
+extern u8 D_800A306FAbsoluteU8[] asm("D_800A306FAbsolute");
+extern u8 D_800A306EAbsoluteU8[] asm("D_800A306EAbsolute");
+extern u8 D_800A306DAbsoluteU8[] asm("D_800A306DAbsolute");
+extern u8 D_800A306CAbsoluteU8[] asm("D_800A306CAbsolute");
 
 void func_8006BD68(void);
 
@@ -625,7 +632,7 @@ noStore:
     }
     head = D_800A3858NM[idx];
     if ((head->y) >= 0) {
-        if ((*((s16 *)(D_800A3918NM[idx] + 8))) < limit) {
+        if (*(s16 *)(D_800A3918NM[idx] + 8) < limit) {
             return;
         }
     }
@@ -639,8 +646,8 @@ noStore:
             delta2 = -(head->y);
         }
     } else if (delta2 < 0) {
-        if (((*((s16 *)(other + 8))) + delta2) < limit) {
-            delta2 = limit - (*((s16 *)(other + 8)));
+        if ((*(s16 *)(other + 8) + delta2) < limit) {
+            delta2 = limit - *(s16 *)(other + 8);
         }
     }
     if (delta2 == 0) {
@@ -1375,9 +1382,9 @@ void MenuUpdateItemRow(s32 itemCode) {
     obj->orderingDepth = 0x32;
     child = obj->primitive;
     if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
-        *((s32 *)(child + 8)) = D_8009A2F4[index];
+        *(s32 *)(child + 8) = D_8009A2F4[index];
     } else {
-        *((s32 *)(child + 8)) = D_8009A2D4[index];
+        *(s32 *)(child + 8) = D_8009A2D4[index];
     }
     asm(".rdata");
     asm(".long 0");
@@ -1415,15 +1422,15 @@ void MenuCreateItemRow(s32 itemCode) {
     D_800A3914View[0] = obj;
     if (((itemCode & 0xFF) != 0xC) && ((u32)((itemCode - 9) & 0xFF) >= 2U) &&
         ((u32)((itemCode - 0x10) & 0xFF) >= 2U)) {
-        *((s16 *)(obj + 0xE)) = 2;
-        *((u16 *)(obj + 6)) = *((u16 *)(obj + 6)) - 0x140;
+        *(s16 *)(obj + 0xE) = 2;
+        *(u16 *)(obj + 6) = *(u16 *)(obj + 6) - 0x140;
     }
     {
         u8 *fields = D_800A3910f[1];
         u8 *next;
         fields[2] = 0xFF;
         next = D_800A3918n[-1];
-        *((s16 *)(fields + 0x1A)) = 0x32;
+        *(s16 *)(fields + 0x1A) = 0x32;
         next[3] = 0x80;
     }
     ((u8 *)D_800A3914View[0])[4] = 0x40;
@@ -1438,9 +1445,9 @@ void MenuCreateItemRow(s32 itemCode) {
         pktA = rowA->primitive;
         pktA[1] = 2;
         pktA[2] = 2;
-        *((s32 *)(pktA + 8)) = textA;
+        *(s32 *)(pktA + 8) = textA;
         pktA[3] = 0;
-        *((s32 *)(pktA + 4)) = timerA;
+        *(s32 *)(pktA + 4) = timerA;
         rowA->orderingDepth = timerA;
     } else {
         MenuObj *rowB;
@@ -1453,9 +1460,9 @@ void MenuCreateItemRow(s32 itemCode) {
         pktB = rowB->primitive;
         pktB[1] = 2;
         pktB[2] = 2;
-        *((s32 *)(pktB + 8)) = textB;
+        *(s32 *)(pktB + 8) = textB;
         pktB[3] = 0;
-        *((s32 *)(pktB + 4)) = timerB;
+        *(s32 *)(pktB + 4) = timerB;
         rowB->orderingDepth = timerB;
     }
 }
@@ -2277,9 +2284,9 @@ void func_8006B464(void) {
     a1 = b0 & 3;
     do {
     } while (0);
-    D_800A3073[-4] = ((u8)b0 >> 2) & 1;
-    D_800A3073[-5] = a1;
-    D_800A3073[-7] = ((u8)b0 >> 6) & 1;
+    D_800A306FAbsoluteU8[0] = ((u8)b0 >> 2) & 1;
+    D_800A306EAbsoluteU8[0] = a1;
+    D_800A306CAbsoluteU8[0] = ((u8)b0 >> 6) & 1;
     D_800A3073[-3] = (u8)b0 >> 7;
     bB = rec[0xB];
     D_800A3073[-2] = bB & 1;
@@ -2288,13 +2295,13 @@ void func_8006B464(void) {
             D_800A3073[-2] = 0;
         }
     }
-    D_800A3073[-1] = (bB >> 1) & 1;
+    D_800A3072AbsoluteU8[0] = (bB >> 1) & 1;
     rec2 = D_800A3604Vol;
     gCdVolumew15[0] = rec2[1];
     b2 = rec2[2];
     gMusicVolumew15[0] = b2;
     gMusicVolumeScaledR[0] = b2 * 127 / 100;
-    if (D_800A306D[-1] != 0) {
+    if (D_800A306CAbsoluteU8[0] != 0) {
         gStereoEnabledR[0] = 0;
     } else {
         gStereoEnabledR[0] = 1;
@@ -2319,11 +2326,11 @@ extern u16 gCdVolumeAbsolute[];
 void CardMenuSaveSettings(void) {
     s32 i;
 
-    D_800A3604Vol[0] = D_800A3073[-3] << 7 | D_800A3073[-7] << 6 |
-                       D_800A3073[-6] << 5 | D_800A3073[-4] << 2 |
-                       D_800A3073[-5];
+    D_800A3604Vol[0] = D_800A3073[-3] << 7 | D_800A306CAbsoluteU8[0] << 6 |
+                       D_800A306DAbsoluteU8[0] << 5 |
+                       D_800A306FAbsoluteU8[0] << 2 | D_800A306EAbsoluteU8[0];
     D_800A3604Vol[0xB] =
-        D_800A3073[2] << 2 | D_800A3073[-1] << 1 | D_800A3073[-2] & 1;
+        D_800A3073[2] << 2 | D_800A3072AbsoluteU8[0] << 1 | D_800A3073[-2] & 1;
     D_800A3604Vol[1] = gCdVolumeAbsolute[0];
     D_800A3604Vol[2] = gCdVolumeAbsolute[1];
     D_800A3604Vol[3] = D_800A3078[0];
@@ -2616,7 +2623,7 @@ void func_8006BD68(void) {
     dest = D_800B9B44;
     strcpy((char *)dest, D_8009A31CStr[gSelectedTrack[0]]);
     strcpy((char *)dest + 0x10, gDriverNames[gPlayerDriver[0]]);
-    D_800B9B73[0] = D_800A36E1[-1];
+    D_800B9B73[0] = gPlayerDriverAbsolute3[0];
     D_800B9B74[0] = gSelectedTrackR[0];
     D_800B9B75[0] =
         D_800A306ER[0] |
@@ -3240,17 +3247,17 @@ void func_8006CE64(void) {
     D_800B0A2C[offset] = 0x41;
     D_800B0A2D[D_800A358C * 0x10] = 0;
     obj = (u8 *)D_800A377C[0]->next;
-    *((u8 *)(obj + 5)) = 0;
+    *(u8 *)(obj + 5) = 0;
     entry = ((s8 *)D_800B0A2C) + ((index = D_800A358C) * 0x10);
     MenuFontSetS32(2, 2);
     if ((*entry) == 0) {
-        *((s16 *)(obj + 0x16)) = MenuCharWidth(0x20);
+        *(s16 *)(obj + 0x16) = MenuCharWidth(0x20);
         status = 0;
     } else {
         status = MenuPrefixWidth(0, entry);
-        *((s16 *)(obj + 0x16)) = MenuCharWidth(*entry);
+        *(s16 *)(obj + 0x16) = MenuCharWidth(*entry);
     }
-    *((s16 *)(obj + 6)) = status + 0xA;
+    *(s16 *)(obj + 6) = status + 0xA;
 }
 
 void CardMenuAppendTrackName(void) {
@@ -3398,9 +3405,9 @@ s32 func_8006D258(void) {
     MenuFormatLapCount(gSelectedTrackR3[0]);
     gPlayerDriver[0] = D_800B9B73[0];
     func_80063AE0(0, gPlayerDriver[0]);
-    MenuSetDriverNameLabel(0, D_800A36E1[-1]);
+    MenuSetDriverNameLabel(0, gPlayerDriverAbsolute3[0]);
     for (i = 0; i < 0x18; i++) {
-        if (D_800A36E1w15[-1] == D_8009AD40[i]) {
+        if (gPlayerDriverAbsolute4[0] == D_8009AD40[i]) {
             match = i;
             break;
         }
@@ -3663,18 +3670,18 @@ void CardMenuShowMessage(s32 arg0) {
         }
     }
     if (gPadType[0] == 2) {
-        *((s32 *)(field20 + 8)) = D_8009AB80[menuId];
+        *(s32 *)(field20 + 8) = D_8009AB80[menuId];
     } else {
-        *((s32 *)(field20 + 8)) = D_8009AB00[menuId];
+        *(s32 *)(field20 + 8) = D_8009AB00[menuId];
     }
     if ((arg0 & 0xFF) == 0) {
         obj = *((u8 **)(obj + 0x1C));
         if (obj != D_800A377C[0]) {
             end = D_800A377C[0];
             do {
-                val = *((s16 *)(obj + 0x1A));
+                val = *(s16 *)(obj + 0x1A);
                 if (val > 0) {
-                    *((s16 *)(obj + 0x1A)) = -(*((s16 *)(obj + 0x1A)));
+                    *(s16 *)(obj + 0x1A) = -*(s16 *)(obj + 0x1A);
                 }
                 obj = *((u8 **)(obj + 0x1C));
             } while (obj != end);

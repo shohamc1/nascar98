@@ -18,6 +18,19 @@
 #include "scene.h"
 #include "sound.h"
 #include "util.h"
+extern s32 gOrderingTableBankAbsolute3[];
+extern s32 gOrderingTableBankAbsolute4[];
+extern s32 gOrderingTableAbsolute3[];
+extern s32 gOrderingTableAbsolute4[];
+extern s32 gOrderingTableAbsolute5[];
+extern s32 gOrderingTableAbsolute6[];
+extern s32 D_800A2CE0Absolute3[];
+extern s32 D_800A2CE0Absolute4[];
+extern u8 gCardMenuMessageAbsoluteU8[] asm("gCardMenuMessageAbsolute");
+extern s32 D_800A2EA8Absolute[];
+
+extern u8 D_800A2F58Absolute[];
+extern u8 gMenuObjectPoolCountAbsolute[];
 
 extern void SetPolyFT4(POLY_FT4 *);
 extern u8 *D_800A3428View asm("D_800A3428");
@@ -2468,7 +2481,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                 ang = (car->unk402 * 0x1F40) / 13250 + 0x3E8;
                 scaled = (s16)ang << 8;
                 idx = (car->automatic != 0 || car->gearIndex == car->unk110 ||
-                               ((u8 *)D_800A2F9DAbsolute)[-0x45] != 0
+                               D_800A2F58Absolute[0] != 0
                            ? scaled / 10000
                            : scaled / 9000) +
                       0x200;
@@ -2556,7 +2569,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                 FontSetColor(0x40, 0x40, 0x40);
                 func_80018B18(car->gearIndex + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
-                D_800A39CCnm[-1] = D_800A39C4nm[1] - 0x2C;
+                gOrderingTableAbsolute3[0] = D_800A39C4nm[1] - 0x2C;
             }
             gOrderingTableAbsolute[0] = gOrderingTable[0] - 4;
         }
@@ -5017,8 +5030,8 @@ void HudUpdateTrafficGapData(void) {
     car1d6 = car->lap;
     asm volatile("mflo %0" : "=r"(prod1));
     asm volatile("mult\t%0, %1" : : "r"(car1d6), "r"(len));
-    e0dist = *(s16 *)((u8 *)(e0) + 0x1E0);
-    cardist = *(s16 *)((u8 *)(car) + 0x1E0);
+    e0dist = e0->segment;
+    cardist = car->segment;
     asm volatile("sw\t$zero, %gp_rel(D_800A34C0)($gp)");
     asm volatile("sw\t$zero, %gp_rel(D_800A34BC)($gp)");
     refDist = prod1 + e0dist;
@@ -6756,15 +6769,16 @@ void SceneSkyFadeDraw(void) {
                     GraphicsAddPolyFT4((u8 *)idx);
                     GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                     if (gSplitScreenModeAbsolute[0] != 0) {
-                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        gReplayIndexAbsolute[-29] =
+                        gOrderingTableBankAbsolute3[0] =
+                            gOrderingTableBankAbsolute4[0] + 1;
+                        gOrderingTableAbsolute6[0] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
-                        D_800A3A34Absolute[-27] =
-                            D_800A3A2CAbsolute[-25] - 0x1004;
+                        gOrderingTableAbsolute5[0] =
+                            gOrderingTableAbsolute4[0] - 0x1004;
                     }
                 } else {
                     {
@@ -6796,14 +6810,15 @@ void SceneSkyFadeDraw(void) {
                     argument = idx;
                     GraphicsAddPolyFT4((u8 *)argument);
                     if (gSplitScreenModeAbsolute[0] != 0) {
-                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        gReplayIndexAbsolute[-29] =
+                        gOrderingTableBankAbsolute3[0] =
+                            gOrderingTableBankAbsolute4[0] + 1;
+                        gOrderingTableAbsolute6[0] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
-                        D_800A3A34Absolute[-27] =
-                            D_800A3A2CAbsolute[-25] - 0x1004;
+                        gOrderingTableAbsolute5[0] =
+                            gOrderingTableAbsolute4[0] - 0x1004;
                     }
                 }
             }
@@ -6934,15 +6949,16 @@ void SceneSkyFadeDraw(void) {
                     GraphicsAddPolyFT4((u8 *)idx);
                     GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                     if (gSplitScreenModeAbsolute[0] != 0) {
-                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        gReplayIndexAbsolute[-29] =
+                        gOrderingTableBankAbsolute3[0] =
+                            gOrderingTableBankAbsolute4[0] + 1;
+                        gOrderingTableAbsolute6[0] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
-                        D_800A3A34Absolute[-27] =
-                            D_800A3A2CAbsolute[-25] - 0x1004;
+                        gOrderingTableAbsolute5[0] =
+                            gOrderingTableAbsolute4[0] - 0x1004;
                     }
                 } else {
                     {
@@ -6974,14 +6990,15 @@ void SceneSkyFadeDraw(void) {
                     }
                     GraphicsAddPolyFT4((u8 *)argument);
                     if (gSplitScreenModeAbsolute[0] != 0) {
-                        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-                        gReplayIndexAbsolute[-29] =
+                        gOrderingTableBankAbsolute3[0] =
+                            gOrderingTableBankAbsolute4[0] + 1;
+                        gOrderingTableAbsolute6[0] =
                             D_800A397CAbsolute[19] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
-                        D_800A3A34Absolute[-27] =
-                            D_800A3A2CAbsolute[-25] - 0x1004;
+                        gOrderingTableAbsolute5[0] =
+                            gOrderingTableAbsolute4[0] - 0x1004;
                     }
                 }
             }
@@ -7065,13 +7082,13 @@ void SceneSkyFadeDraw(void) {
     GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
     GraphicsDrawRect((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
     if (gSplitScreenModeAbsolute[0] != 0) {
-        D_800A2DF0Absolute[-63] = D_800A2DF4Absolute[-64] + 1;
-        gReplayIndexAbsolute[-29] = D_800A397CAbsolute[19] + 0x1004;
+        gOrderingTableBankAbsolute3[0] = gOrderingTableBankAbsolute4[0] + 1;
+        gOrderingTableAbsolute6[0] = D_800A397CAbsolute[19] + 0x1004;
         GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
         GraphicsDrawRect((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
         bank = gOrderingTableBankAbsolute[0] - 1;
         gOrderingTableBankSmall[0] = bank;
-        D_800A3A34Absolute[-27] = D_800A3A2CAbsolute[-25] - 0x1004;
+        gOrderingTableAbsolute5[0] = gOrderingTableAbsolute4[0] - 0x1004;
     }
 }
 
@@ -10540,18 +10557,18 @@ void func_80057008(s32 arg0) {
         if (D_800A3059 == 2) {
             func_8006BD68();
             D_800A3928 = 0;
-            gCardMenuMessageb[-12] = 0;
+            gCardMenuMessageAbsoluteU8[0] = 0;
             gScreenStateSmall = 0x22;
             CardMenuCenterSelectedText(0);
         } else if (D_800A3059 == 1) {
             if (D_800A3968a[0] == 0) {
-                gCardMenuMessagec[-4] = 0x14;
+                gCardMenuMessageAbsoluteU8[0] = 0x14;
                 CardMenuShowMessage(0);
                 D_800A3928 = 2;
                 gScreenStateSmall = 0x24;
                 CardMenuCenterSelectedText(1);
             } else {
-                gCardMenuMessaged[-8] = 0;
+                gCardMenuMessageAbsoluteU8[0] = 0;
                 gScreenStateSmall = 0x24;
                 if (D_800A3950nm == 0) {
                     D_800A3928 = 1;
@@ -10957,7 +10974,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
 extern s32 D_800A3654Lui asm("D_800A3654Absolute");
 void SceneAllocateRuntimeBuffers(void) {
     ((s32 *)D_800A3668Absolute)[4] = (s32)HeapAlloc(0x1AB8);
-    ((u8 *)D_800A3668Absolute)[-0x7C] = 0;
+    gMenuObjectPoolCountAbsolute[0] = 0;
     D_800A3654Lui = (s32)HeapAlloc(0x834);
     ((u8 *)D_800A37B4Absolute)[8] = 0;
 }
@@ -11060,7 +11077,7 @@ extern s32 D_800A3650;
  * gives loads->v0/v1 in C order with both addius before the first store;
  * the asm("") form splits too far (+8, reloads after the store).
  * gPrimitiveCursor[0] += 0x28 also ICEs cc1 at this TU position (0-symbol
- * object); read/store it via D_800A36D0Absolute[-67] instead. */
+ * object); read/store it via gPrimitiveCursorAbsolute[0] instead. */
 void GraphicsAllocPolyFT4(s32 arg0) {
     s32 cursor;
 
@@ -11070,8 +11087,8 @@ void GraphicsAllocPolyFT4(s32 arg0) {
         D_800A3A18 += 0x28;
     } else if (gScreenStateSmall != 0x80) {
         D_800A3964 += 1;
-        cursor = D_800A36D0Absolute[-67];
-        D_800A36D0Absolute[-67] = cursor + 0x28;
+        cursor = gPrimitiveCursorAbsolute[0];
+        gPrimitiveCursorAbsolute[0] = cursor + 0x28;
     } else {
         D_800A36D0Absolute[-21] = D_800A36D0Absolute[-21] + 0x28;
     }
@@ -11086,8 +11103,8 @@ void GraphicsAllocPolyF4(s32 arg0) {
         D_800A35B8 += 0x18;
     } else if (gScreenStateSmall != 0x80) {
         D_800A3650 += 1;
-        cursor = D_800A36D0Absolute[-67];
-        D_800A36D0Absolute[-67] = cursor + 0x28;
+        cursor = gPrimitiveCursorAbsolute[0];
+        gPrimitiveCursorAbsolute[0] = cursor + 0x28;
     } else {
         D_800A36D0Absolute[-21] = D_800A36D0Absolute[-21] + 0x28;
     }
@@ -11913,11 +11930,11 @@ void func_8005957C(void) {
     u8 seed;
 
     gSessionTypeAbsolute[0] = -1;
-    gSessionTypeAbsolute[-2] = 3;
+    D_800A2EA8Absolute[0] = 3;
     value = RandomScaledGet(0x11);
     D_800A2E24Absolute[-0x151] = value;
     if (value == 0x10) {
-        gSessionTypeAbsolute[-0x74] = RandomScaledGet(0x10);
+        D_800A2CE0Absolute4[0] = RandomScaledGet(0x10);
     }
     seed = gPlayerDriver;
     gSplitScreenMode[0] = 0;
@@ -11944,11 +11961,11 @@ void func_8005957C(void) {
     u8 seed;
 
     gSessionTypeAbsolute[0] = -1;
-    gSessionTypeAbsolute[-2] = 3;
+    D_800A2EA8Absolute[0] = 3;
     value = RandomScaledGet(0x11);
-    D_800A2E24Absolute[-0x51] = value;
+    D_800A2CE0Absolute3[0] = value;
     if (value == 0x10) {
-        gSessionTypeAbsolute[-0x74] = RandomScaledGet(0x10);
+        D_800A2CE0Absolute4[0] = RandomScaledGet(0x10);
     }
     seed = gPlayerDriverNM;
     gSplitScreenModeNM[0] = 0;

@@ -162,11 +162,11 @@ void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     if (pointIndex >= 8) {
         return;
     }
-    if (*(s8 *)((u8 *)car + flagOffset + 0x3A5) == 0) {
+    if ((s8)car->unk3A6[flagOffset - 1] == 0) {
         return;
     }
     car->unk3A4 |= 1 << pointIndex;
-    *(u8 *)((u8 *)car + pointIndex + 0x3A6) = 0;
+    car->unk3A6[pointIndex] = 0;
     gEffectSlots[slotIndex].active = 1;
     gEffectSlots[slotIndex].unk1D = pointIndex;
     gEffectSlots[slotIndex].unk1E = (u16)car->unk1DE;
@@ -608,7 +608,7 @@ void func_80044114(Car *arg0) {
     *(volatile s16 *)&arg0->unk3A4 = 0;
     for (i = 0; i < 8; i++) {
         *(volatile u8 *)((u8 *)arg0 + i + 0x3A6) = 1;
-        *(volatile u8 *)((u8 *)arg0 + i + 0x3AE) = 0;
+        *(volatile u8 *)&arg0->unk3AE[i] = 0;
     }
     if (D_800A2EE0[0] != 0) {
         *(volatile s16 *)&arg0->unk1BC = 3;

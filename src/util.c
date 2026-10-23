@@ -141,8 +141,7 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
                 if ((u8)func_80016ACC(car, (s16 *)part)) {
                     primitiveCount -= part->faceCount;
                 }
-            } else if (part->kind < 9 &&
-                       *(s8 *)((u8 *)car + part->kind + 0x3A5) == 0) {
+            } else if (part->kind < 9 && (s8)car->unk3A6[part->kind - 1] == 0) {
                 primitiveCount -= part->faceCount;
             } else {
                 PushMatrix();

@@ -20,6 +20,15 @@
 #include "scene.h"
 #include "sound.h"
 #include "util.h"
+extern s32 D_800A2D08Absolute3[];
+extern s32 D_800A2D08Absolute4[];
+extern s32 gReplayLengthAbsolute[];
+
+extern u8 D_800A2F58Absolute[];
+extern s32 D_800A36B0Absolute[];
+extern s32 D_800A36B8Absolute[];
+extern s32 D_800A36C8Absolute[];
+extern u8 D_800A2DE1Absolute[];
 void func_8003A54C(void);
 
 void func_800365B8(s32 *out);
@@ -2399,13 +2408,13 @@ void TrackLoadResource(s32 arg0) {
     FileSeekCall(handle, 0, 0);
     D_800A3A54Small = (RAM_RESOURCE_BOUNDARY - total) | RAM_CACHED_BASE;
     FileRead(D_800A3A54Small, 1, total, handle);
-    cursor = *((volatile s32 *)(&D_800A3A54Small));
+    cursor = *(volatile s32 *)(&D_800A3A54Small);
     D_800A3A54Small = cursor + 4;
     row0 = *((s32 *)cursor);
     D_800A3A54Small = cursor + 8;
     D_800A2E08 = row0;
     headerSize = 8;
-    row1 = *((s32 *)(cursor + 4));
+    row1 = *(s32 *)(cursor + 4);
     D_800A3838 = cursor + headerSize;
     D_800A3810 = (cursor + headerSize) + (row0 << 4);
     row1Shift = row1 << 3;
@@ -4949,7 +4958,7 @@ Visible:
     }
     func_800409A0(car);
     for (i = 0, shade = 0; i < 4; shade += 0x1000000, i++) {
-        if (car->wheel[i].unk0 == 0 && *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
+        if (car->wheel[i].unk0 == 0 && (s8)car->unk3A6[i] != 0) {
             func_800525A8(car, shade >> 24);
             if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
                 func_80041848(car, 0x57);
@@ -4968,8 +4977,7 @@ Other:
         }
         func_800409A0(car);
         for (i = 0, shade2 = 0; i < 4; shade2 += 0x1000000, i++) {
-            if (car->wheel[i].unk0 == 0 &&
-                *(s8 *)((u8 *)car + i + 0x3A6) != 0) {
+            if (car->wheel[i].unk0 == 0 && (s8)car->unk3A6[i] != 0) {
                 func_800525A8(car, shade2 >> 24);
                 if (D_800A2EC0Lui - D_800A2E28 >= 0x191) {
                     func_80041848(car, 0x57);
@@ -5189,8 +5197,8 @@ void func_80029E44(void) {
     ((Car *)ptr)->rot[0] = ((Car *)ptr)->basis[0];
     ((Car *)ptr)->rot[1] = ((Car *)ptr)->basis[1];
     ((Car *)ptr)->rot[2] = ((Car *)ptr)->basis[2];
-    x = *((s16 *)(ptr + 0x1C6));
-    y = *((s16 *)(ptr + 0x1C8));
+    x = ((Car *)ptr)->unk1C6;
+    y = ((Car *)ptr)->unk1C8;
     rowA = ptr + 0x3C;
     secondRow = ptr + 0x48;
     rowB = secondRow;
@@ -6455,7 +6463,7 @@ void func_8002BD48(Car *carBytes) {
         MathMultiplyFixed16(*((s32 *)steeringRaw), car->frontVelocityX);
     frontXBefore =
         frontXProductBefore -
-        MathMultiplyFixed16(*((s32 *)(frontOffset + gFarSinTable.unk[0])),
+        MathMultiplyFixed16(*(s32 *)(frontOffset + gFarSinTable.unk[0]),
                             car->frontVelocityY);
     local.frontForward = frontXBefore;
     local.axleVelocity.vx = frontXBefore;
@@ -6464,7 +6472,7 @@ void func_8002BD48(Car *carBytes) {
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->frontVelocityX);
     frontYBefore =
         frontYProduct +
-        MathMultiplyFixed16(*((s32 *)(frontOffset + gFarCosTable.unk[0])),
+        MathMultiplyFixed16(*(s32 *)(frontOffset + gFarCosTable.unk[0]),
                             car->frontVelocityY);
     local.frontSide = frontYBefore;
     local.axleVelocity.vy = frontYBefore;
@@ -6513,7 +6521,7 @@ void func_8002BD48(Car *carBytes) {
         if (driveInputValue <= driveThreshold) {
             goto noSliding;
         }
-        speedHigh = *((s16 *)(((u8 *)car) + 0x92));
+        speedHigh = *(s16 *)(((u8 *)car) + 0x92);
         if (speedHigh < 0x96) {
             /* Scale front and rear grip by (speedHigh + 50), then divide
              * the two signed products by 200 and 400. */
@@ -6607,7 +6615,7 @@ noSliding:
         MathMultiplyFixed16(*((s32 *)cosBase), local.axleVelocity.vx);
     car->frontVelocityX =
         (s32)(frontXProduct -
-              MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+              MathMultiplyFixed16(*(s32 *)(tableOffset + gFarSinTable.unk[0]),
                                   local.axleVelocity.vy));
     thirdTableAddress = tableOffset + sinAnchor[0];
     asm("" : : "r"(thirdTableAddress));
@@ -6615,7 +6623,7 @@ noSliding:
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), local.axleVelocity.vx);
     car->frontVelocityY =
         (s32)(frontYProductAfter +
-              MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+              MathMultiplyFixed16(*(s32 *)(tableOffset + gFarCosTable.unk[0]),
                                   local.axleVelocity.vy));
     do {
         local.force.vy = 0;
@@ -6700,7 +6708,7 @@ noSliding:
     frontXLocal = MathMultiplyFixed16(firstCos, frontXValue);
     local.axleVelocity.vx =
         frontXLocal -
-        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+        MathMultiplyFixed16(*(s32 *)(tableOffset + gFarSinTable.unk[0]),
                             car->frontVelocityY);
     thirdTableAddress = tableOffset + gFarSinTable.unk[0];
     asm("" : : "r"(thirdTableAddress));
@@ -6708,7 +6716,7 @@ noSliding:
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->frontVelocityX);
     local.axleVelocity.vy =
         frontYLocal +
-        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+        MathMultiplyFixed16(*(s32 *)(tableOffset + gFarCosTable.unk[0]),
                             car->frontVelocityY);
     forwardSpeed = ((s16 *)(&local.axleVelocity.vx))[1];
     if (speedLimit < forwardSpeed) {
@@ -6723,9 +6731,8 @@ noSliding:
         steeringRaw = (s32)((u32)tableOffset - -(u32)steeringRaw);
         limitedFrontXProduct =
             MathMultiplyFixed16(*((s32 *)steeringRaw), limitedFrontX);
-        fixedValue =
-            MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
-                                local.axleVelocity.vy);
+        fixedValue = MathMultiplyFixed16(
+            *(s32 *)(tableOffset + gFarSinTable.unk[0]), local.axleVelocity.vy);
         gripBase = gFarSinTable.unk[0];
         car->frontVelocityX = limitedFrontXProduct - fixedValue;
         frontXValue = local.axleVelocity.vx;
@@ -6735,7 +6742,7 @@ noSliding:
         car->frontVelocityY =
             (s32)(limitedFrontYProduct +
                   MathMultiplyFixed16(
-                      *((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                      *(s32 *)(tableOffset + gFarCosTable.unk[0]),
                       local.axleVelocity.vy));
     }
     headingValue = car->heading;
@@ -6748,17 +6755,16 @@ noSliding:
     rearIndex <<= 2;
     cosBase = rearIndex + cosBase;
     rearXProductBefore = MathMultiplyFixed16(*((s32 *)cosBase), frontXValue);
-    rearXBefore =
-        rearXProductBefore -
-        MathMultiplyFixed16(*((s32 *)(rearIndex + gFarSinTable.unk[0])),
-                            car->rearVelocityY);
+    rearXBefore = rearXProductBefore -
+                  MathMultiplyFixed16(*(s32 *)(rearIndex + gFarSinTable.unk[0]),
+                                      car->rearVelocityY);
     local.rearForward = rearXBefore;
     local.axleVelocity.vx = rearXBefore;
     thirdTableAddress = rearIndex + gFarSinTable.unk[0];
     rearYProduct =
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->rearVelocityX);
     rearFourthProduct = MathMultiplyFixed16(
-        *((s32 *)(rearIndex + gFarCosTable.unk[0])), car->rearVelocityY);
+        *(s32 *)(rearIndex + gFarCosTable.unk[0]), car->rearVelocityY);
     asm("addu %0,%1,%2"
         : "=&r"(sideState)
         : "r"(rearYProduct), "r"(rearFourthProduct));
@@ -6824,9 +6830,9 @@ noSliding:
     rearHeading = car->heading;
     tableOffset = rearHeading << 2;
     rearXProduct = MathMultiplyFixed16(
-        *((s32 *)(tableOffset + gFarCosTable.unk[0])), local.axleVelocity.vx);
+        *(s32 *)(tableOffset + gFarCosTable.unk[0]), local.axleVelocity.vx);
     fixedValue = MathMultiplyFixed16(
-        *((s32 *)(tableOffset + gFarSinTable.unk[0])), local.axleVelocity.vy);
+        *(s32 *)(tableOffset + gFarSinTable.unk[0]), local.axleVelocity.vy);
     gripBase = gFarSinTable.unk[0];
     car->rearVelocityX = rearXProduct - fixedValue;
     frontXValue = local.axleVelocity.vx;
@@ -6834,7 +6840,7 @@ noSliding:
     rearYProductAfter = MathMultiplyFixed16(*((s32 *)gripBase), frontXValue);
     car->rearVelocityY =
         (s32)(rearYProductAfter +
-              MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+              MathMultiplyFixed16(*(s32 *)(tableOffset + gFarCosTable.unk[0]),
                                   local.axleVelocity.vy));
     *((Vec3 *)D_800A453CPhysics) = *((Vec3 *)(&local.force));
     local.force.vy = 0;
@@ -6915,7 +6921,7 @@ noSliding:
     rearXLocal = MathMultiplyFixed16(firstCos, frontXValue);
     local.axleVelocity.vx =
         rearXLocal -
-        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
+        MathMultiplyFixed16(*(s32 *)(tableOffset + gFarSinTable.unk[0]),
                             car->rearVelocityY);
     thirdTableAddress = tableOffset + gFarSinTable.unk[0];
     asm("" : : "r"(thirdTableAddress));
@@ -6923,7 +6929,7 @@ noSliding:
         MathMultiplyFixed16(*((s32 *)thirdTableAddress), car->rearVelocityX);
     local.axleVelocity.vy =
         rearYLocal +
-        MathMultiplyFixed16(*((s32 *)(tableOffset + gFarCosTable.unk[0])),
+        MathMultiplyFixed16(*(s32 *)(tableOffset + gFarCosTable.unk[0]),
                             car->rearVelocityY);
     forwardSpeed = ((s16 *)(&local.axleVelocity.vx))[1];
     if (speedLimit < forwardSpeed) {
@@ -6933,10 +6939,9 @@ noSliding:
         limitedRearHeading = car->heading;
         tableOffset = limitedRearHeading << 2;
         limitedRearXProduct = MathMultiplyFixed16(
-            *((s32 *)(tableOffset + gFarCosTable.unk[0])), limitedRearX);
-        fixedValue =
-            MathMultiplyFixed16(*((s32 *)(tableOffset + gFarSinTable.unk[0])),
-                                local.axleVelocity.vy);
+            *(s32 *)(tableOffset + gFarCosTable.unk[0]), limitedRearX);
+        fixedValue = MathMultiplyFixed16(
+            *(s32 *)(tableOffset + gFarSinTable.unk[0]), local.axleVelocity.vy);
         asm("lui %0,%%hi(D_800A3A34)\n\tlw %0,%%lo(D_800A3A34)(%0)"
             : "=r"(gripBase));
         car->rearVelocityX = limitedRearXProduct - fixedValue;
@@ -6949,7 +6954,7 @@ noSliding:
         car->rearVelocityY =
             (s32)(limitedRearYProduct +
                   MathMultiplyFixed16(
-                      *((s32 *)(tableOffset + gFarCosTable.unk[0])),
+                      *(s32 *)(tableOffset + gFarCosTable.unk[0]),
                       local.axleVelocity.vy));
     }
     /* Save the axle velocities before the heading update. */
@@ -7015,7 +7020,7 @@ noSliding:
     velocitySumX = ((s32)local.frontVelocity.vx) + ((s32)local.rearVelocity.vx);
     car->velocityX =
         (s32)(((s32)(velocitySumX + (velocitySumX >> 0x1F))) >> 0x11);
-    velocityX = *((volatile s32 *)(((u8 *)car) + 0xB0));
+    velocityX = *(volatile s32 *)(((u8 *)car) + 0xB0);
     velocitySumY = local.frontVelocity.vy + local.rearVelocity.vy;
     car->velocityY =
         (s32)(((s32)(velocitySumY + (velocitySumY >> 0x1F))) >> 0x11);
@@ -7849,7 +7854,7 @@ void func_8002E240(Car *viewCar, TrackSection *firstSection,
                 ListDispatchCallbacks(node);
                 if (node->culled == 0) {
                     child = node->children;
-                    D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
+                    D_800A2D08Absolute4[0] = D_800A2D08Absolute3[0] + 1;
                     if (gReplayIndex[0] < ((s32 *)gPlayerCarAbsolute)[-1]) {
                         depth = D_800A2EC0 -
                                 (((s32 *)gPlayerCarAbsolute)[-1] -
@@ -7858,7 +7863,7 @@ void func_8002E240(Car *viewCar, TrackSection *firstSection,
                     } else {
                         depth = D_800A2EC0 -
                                 (((s32 *)gPlayerCarAbsolute)[-1] +
-                                 (D_800A3A94Scene[-1] - gReplayIndex[0])) +
+                                 (gReplayLengthAbsolute[0] - gReplayIndex[0])) +
                                 1;
                     }
                     if (child != NULL) {
@@ -7881,7 +7886,7 @@ void func_8002E240(Car *viewCar, TrackSection *firstSection,
                 ListDispatchCallbacks(node);
                 if (node->culled == 0) {
                     child = node->children;
-                    D_800A2D0CStore[-1] = D_800A2D0CScene[-1] + 1;
+                    D_800A2D08Absolute4[0] = D_800A2D08Absolute3[0] + 1;
                     if (child != NULL) {
                         do {
                             child->face.next = tail;
@@ -8286,7 +8291,7 @@ extern s32 D_800A2EACSmall;
 void func_8002F1A0(void) {
     Car *node;
 
-    if (((u8 *)D_800A2F9DAbsolute)[-0x45] != 0) {
+    if (D_800A2F58Absolute[0] != 0) {
         func_8003A440();
         func_80028FCC(gCarList);
         return;
@@ -12051,7 +12056,7 @@ void GraphicsLinkFt4Primitive(u8 *prim) {
     u32 cursor;
 
     cursor = gPrimitiveCursor[0];
-    ((s32 *)D_800A36D0Absolute)[-67] = cursor + sizeof(POLY_FT4);
+    gPrimitiveCursorLui = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)prim;
     AddPrim((u8 *)gOrderingTable[0] + 0xFF8, entry);
@@ -12067,9 +12072,9 @@ __inline__ void MatrixSetFromViewValues(void) {
     s32 c;
     s32 d;
 
-    a = ((s32 *)D_800A36D0Absolute)[-8];
-    b = ((s32 *)D_800A36D0Absolute)[-6];
-    c = ((s32 *)D_800A36D0Absolute)[-2];
+    a = D_800A36B0Absolute[0];
+    b = D_800A36B8Absolute[0];
+    c = D_800A36C8Absolute[0];
     d = D_800A36D0Absolute[0];
     D_800A3794Absolute[0] = 0;
     D_800A37A4Absolute[0] = 0;
@@ -12140,7 +12145,7 @@ void CameraUpdateHorizon(void) {
     if (D_800A2F3C[0] > 0x78) {
         gCameraBaseScreenY += 6;
     }
-    a = D_800A36D0Absolute[-2] - (D_800A36D0Absolute[-2] >> 2);
+    a = D_800A36C8Absolute[0] - (D_800A36C8Absolute[0] >> 2);
     y = D_800A36D0Absolute[0] - (D_800A36D0Absolute[0] >> 2);
     gCameraBaseScreenY += 0xA;
     b = D_800A36D4Absolute[0] - (D_800A36D4Absolute[0] >> 2);
@@ -12280,7 +12285,7 @@ void GraphicsDrawHorizonWalls(void) {
     obj = (u8 *)D_800A2EA0[0];
     if (obj->type == 0 && obj->cameraMode <= 0 &&
         (((s32)obj->callback == (s32)func_80025730 && D_800A397C[0] != 2) ||
-         (D_800A397C[0] == 2 && *(s32 *)((u8 *)obj + 0x388) != 0))) {
+         (D_800A397C[0] == 2 && *(s32 *)&obj->unk388 != 0))) {
         tpl = D_800B1ED0;
         D_800B1ED8[0] = 0;
         D_800B1EDA[0] = 0;
@@ -12465,7 +12470,7 @@ void GraphicsUpdateSkyAndHorizon(s32 orderingTable) {
      *   D_800A2E24-0x43 = 0x2DE1, D_800A2E24+70*4 = 0x2F3C */
     D_800A2DE1[0] = 1;
     func_8002F0A8((Car *)D_800A2E9C[0]);
-    ((u8 *)D_800A2E24Absolute)[-0x43] = 0;
+    D_800A2DE1Absolute[0] = 0;
     D_800A2F3C[0] = 0x23;
     CameraUpdateHorizon();
     func_80035720(orderingTable);
@@ -13203,9 +13208,9 @@ s32 CarTestLateralSeparation(Car *car, Car *headingCar, s32 sideThreshold) {
 
     idx = (headingCar->heading) << 2;
     dx = *(s32 *)car - *(s32 *)headingCar;
-    tA = *((s32 *)(idx + ((u32)D_800A3A2CAbsolute[0])));
+    tA = *(s32 *)(idx + ((u32)D_800A3A2CAbsolute[0]));
     dy = car->pos.y - headingCar->pos.y;
-    tB = *((s32 *)(idx + ((u32)D_800A3A34Absolute[0])));
+    tB = *(s32 *)(idx + ((u32)D_800A3A34Absolute[0]));
     return sideThreshold < ((tA * dx - tB * dy) >> 16);
 }
 
@@ -13216,7 +13221,7 @@ s32 CarIsAheadOfHeading(s32 *a, s32 *b) {
     s32 x;
     s32 y;
 
-    index = *(s16 *)(((u8 *)b) + 0x114) << 2;
+    index = ((Car *)b)->heading << 2;
     x = a[0] - b[0];
     t1 = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
     y = a[1] - b[1];
@@ -14869,22 +14874,22 @@ void func_800373B4(Car *object) {
                                     if ((s8)tempV014 < -1) {
                                         (car->lane) = -1;
                                     }
-                                    tempV015 = (*(s8 *)((u8 *)overlappingCar +
-                                                        0x206)) +
-                                               1;
+                                    tempV015 =
+                                        *(s8 *)((u8 *)overlappingCar + 0x206) +
+                                        1;
                                     (overlappingCar->lane) = tempV015;
                                     if ((s8)tempV015 >= 2) {
-                                        (*(s8 *)((u8 *)overlappingCar +
-                                                 0x206)) = 1U;
+                                        *(s8 *)((u8 *)overlappingCar + 0x206) =
+                                            1U;
                                     }
                                 } else {
-                                    tempV016 = (*(s8 *)((u8 *)overlappingCar +
-                                                        0x206)) -
-                                               1;
+                                    tempV016 =
+                                        *(s8 *)((u8 *)overlappingCar + 0x206) -
+                                        1;
                                     (overlappingCar->lane) = tempV016;
                                     if ((s8)tempV016 < -1) {
-                                        (*(s8 *)((u8 *)overlappingCar +
-                                                 0x206)) = -1U;
+                                        *(s8 *)((u8 *)overlappingCar + 0x206) =
+                                            -1U;
                                     }
                                     tempV017 = (u8)(car->lane) + 1;
                                     (car->lane) = tempV017;
@@ -15699,15 +15704,14 @@ void CarPlaceOnStartingGrid(void) {
             }
             sectionOffset = section * 0xC;
             (car->pos.x) = (s32) * (s32 *)(sectionOffset + D_800AE154[0]);
-            (car->pos.y) = (s32)(*(s32 *)(sectionOffset + D_800AE154[0] + 0x4));
+            (car->pos.y) = (s32) * (s32 *)(sectionOffset + D_800AE154[0] + 0x4);
             ObjectSetHeading(
-                car, 0x400 - ((*(u16 *)(sectionOffset + D_800AE154[0] + 0xA)) &
+                car, 0x400 - (*(u16 *)(sectionOffset + D_800AE154[0] + 0xA) &
                               0x3FFF));
             (car->speed) =
-                (s32)(((*(s16 *)(sectionOffset + D_800AE154[0] + 0x8))
-                       << 0x11) /
+                (s32)((*(s16 *)(sectionOffset + D_800AE154[0] + 0x8) << 0x11) /
                       3);
-            gridSpeed = (*(s16 *)(sectionOffset + D_800AE154[0] + 0x8)) << 0x10;
+            gridSpeed = *(s16 *)(sectionOffset + D_800AE154[0] + 0x8) << 0x10;
             (car->segment) = section;
             (car->lastSegment) = (s32)(s16)section;
             (car->speed) = gridSpeed;
@@ -15721,7 +15725,7 @@ void CarPlaceOnStartingGrid(void) {
                 *(s32 *)(((u8 *)gGridCameraX0) + ((car->slot) * 0xC)) =
                     *(s32 *)(cameraSectionOffset + D_800AE154[0]);
                 *(s32 *)(((u8 *)gGridCameraY0) + ((car->slot) * 0xC)) =
-                    (*(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4));
+                    *(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4);
                 workValue = *(u16 *)(cameraSectionOffset + D_800AE154[0] + 0xA);
                 cameraWork = car->slot;
                 workValue &= 0x3FFF;
@@ -15768,7 +15772,7 @@ void CarPlaceOnStartingGrid(void) {
                     *(s32 *)(((u8 *)gGridCameraX5) + ((car->slot) * 0xC)) =
                         *(s32 *)(cameraSectionOffset + D_800AE154[0]);
                     *(s32 *)(((u8 *)gGridCameraY5) + ((car->slot) * 0xC)) =
-                        (*(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4));
+                        *(s32 *)(cameraSectionOffset + D_800AE154[0] + 0x4);
                     retryX =
                         *(s32 *)(((u8 *)gGridCameraX6) + ((car->slot) * 0xC));
                     if (retryX < 0) {

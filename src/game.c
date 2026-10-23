@@ -626,6 +626,8 @@ u8 *TextFormatLong(s32 value, u8 *buffer) {
 #include "util.h"
 #include "graphics.h"
 #include "list.h"
+extern u8 gPlayerDriverAbsoluteU8[] asm("gPlayerDriverAbsolute");
+extern u8 D_800A3073AbsoluteU8[] asm("D_800A3073Absolute");
 /* Counter and frame control. */
 
 void SystemInitCounter(void) {
@@ -1357,7 +1359,7 @@ loop:
         tbl[0x12] = c20;
         tbl[0x0] = 0;
     } while (0);
-    *((s16 *)(tbl + 0x14)) = c2BC;
+    *(s16 *)(tbl + 0x14) = c2BC;
     tbl[0x7] = c6;
     tbl[0x8] = c7;
     tbl[0x6] = c4;
@@ -1422,7 +1424,7 @@ dispatchDone:
     }
     if (gSplitScreenModew15[0] == 2) {
         D_800A2EE4w15[0] = D_800A3074w15[0];
-        D_800A2EDBw15[0] = D_800A3074w15[-1];
+        D_800A2EDBw15[0] = D_800A3073AbsoluteU8[0];
     } else {
         D_800A2EE4w15[0] = 0;
         D_800A2EDBw15[0] = 0;
@@ -1430,9 +1432,9 @@ dispatchDone:
     if (D_800A2EDAw15[0] != 0) {
         D_800A2EA8w15[0] = 10;
         if (RandomScaledGet(0x18) < 0) {
-            D_800A36E1w15[-1] = -RandomScaledGet(0x18);
+            gPlayerDriverAbsoluteU8[0] = -RandomScaledGet(0x18);
         } else {
-            D_800A36E1w15[-1] = RandomScaledGet(0x18);
+            gPlayerDriverAbsoluteU8[0] = RandomScaledGet(0x18);
         }
         i = 0;
         p = D_800B9DA4w15;
@@ -2624,7 +2626,7 @@ void func_8001636C(void) {
     tailp = base;
     entry = tailp;
 again:
-    *((s32 *)(entry + 0x34)) = (s32)(base + offset);
+    *(s32 *)(entry + 0x34) = (s32)(base + offset);
 
     offset += 0x38;
     count += 1;
@@ -2635,7 +2637,7 @@ again:
     entry = (u8 *)D_800A2D60;
     D_800A2D5C = 0x898;
     tailp = (u8 *)((count * 0x38) + ((s32)entry));
-    *((s32 *)(tailp + 0x34)) = zero;
+    *(s32 *)(tailp + 0x34) = zero;
     D_800A2D64 = (s32 *)tailp;
 }
 
@@ -2831,7 +2833,7 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         }
     }
     if (*(s8 *)&((Car *)arg0)->unk374 == 4) {
-        ((Car *)arg0)->unk41C[((s32 *)D_800A2CF8)[-1]] = -1;
+        ((Car *)arg0)->unk41C[gOrderingTableBankLui] = -1;
         return 1;
     }
     speed = *(u8 *)&((Car *)arg0)->mode;
