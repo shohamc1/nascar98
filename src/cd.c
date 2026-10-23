@@ -1571,7 +1571,7 @@ void func_8003ECB8(u8 *object) {
                 asm("" : "=r"(dst) : "0"(object));
                 do {
                     current = src;
-                    value = *(s16 *)((u8 *)current + 0x94);
+                    value = *(s16 *)&current->unk94;
                     extra = *(s32 *)(object + 0x218);
                     u16v = *(u16 *)(dst + 0x10);
                     row = (u8 *)((u32)(u16v << 3) + (u32)base);

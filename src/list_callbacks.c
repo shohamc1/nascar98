@@ -18,15 +18,9 @@ extern s32 gOrderingTable[];
 
 /* Lists and callbacks. */
 
-struct RenderListNode {
-    u8 unk0[0x28];
-    RenderListNode *next;
-};
-
-void ListInsertBefore(RenderListNode **head, RenderListNode *node,
-                      RenderListNode *before) {
-    RenderListNode *current;
-    RenderListNode *previous;
+void ListInsertBefore(Face **head, Face *node, Face *before) {
+    Face *current;
+    Face *previous;
 
     if (before == 0) {
         node->next = *head;
@@ -52,9 +46,9 @@ void ListInsertBefore(RenderListNode **head, RenderListNode *node,
     }
 }
 
-void ListRemoveNode(RenderListNode **head, RenderListNode *target) {
-    RenderListNode *current;
-    RenderListNode *previous;
+void ListRemoveNode(Face **head, Face *target) {
+    Face *current;
+    Face *previous;
 
     current = *head;
     previous = current;
@@ -213,10 +207,9 @@ void ListPushFront(u8 *node, u8 **head, u8 **tail) {
     }
 }
 
-void ListRemoveNodeWithTail(RenderListNode *node, RenderListNode **head,
-                            RenderListNode **tail) {
-    RenderListNode *previous;
-    RenderListNode *current;
+void ListRemoveNodeWithTail(Face *node, Face **head, Face **tail) {
+    Face *previous;
+    Face *current;
     current = *head;
     previous = current;
     if (current != 0) {
@@ -349,7 +342,7 @@ void func_8001CBD4(u8 *arg0) {
    0x40 at +8/+0xC and reuse the variable for 0xBF); (c) the != 0 arm is the
    fall-through; (d) if-arm +0xD/+0x15 store c (0x78), +9/+0x11 store 0;
    (e) gOTB test must be `!= 0` with the 0-arg call as fall-through. */
-extern RenderListNode *D_800A3A40Absolute[];
+extern Face *D_800A3A40Absolute[];
 
 /* Sets up a shade-tex primitive (0x2C entry) from the D_800A3A40 pool:
    entry +0xE tpage, +0xA clut (first arm only), +8..+0x15 palette bytes. */
@@ -413,7 +406,7 @@ void func_8001CC7C(u8 *arg0) {
     }
 }
 #else
-extern RenderListNode *D_800A3A40Absolute[];
+extern Face *D_800A3A40Absolute[];
 
 void func_8001CC7C(u8 *arg0) {
     s32 pal;
@@ -481,7 +474,7 @@ void func_8001CC7C(u8 *arg0) {
 }
 
 #endif
-extern RenderListNode *D_800A3A40Absolute[];
+extern Face *D_800A3A40Absolute[];
 
 void func_8001CDDC(u8 *arg0) {
     s32 pal;
@@ -980,7 +973,7 @@ typedef struct {
     s16 y;
 } XyPair;
 
-void func_8001DB20(RenderListNode *arg0, s32 arg1) {
+void func_8001DB20(Face *arg0, s32 arg1) {
     POLY_FT4 poly;
     POLY_FT4 *prim;
     ImageBankTexture *tex;
@@ -996,14 +989,14 @@ void func_8001DB20(RenderListNode *arg0, s32 arg1) {
     s32 saved;
     s32 pad[8];
 
-    flag = *(u8 *)((u8 *)arg0 + 0x13);
+    flag = arg0->flags;
     mode = arg1;
     vert = (u8 *)arg0;
     if ((flag & 1) != 0) {
         return;
     }
     prim = &poly;
-    if (*(u8 *)((u8 *)arg0 + 0x12) != 3) {
+    if (arg0->vertexCount != 3) {
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
         prim->r0 = 0x80;
@@ -1033,10 +1026,10 @@ void func_8001DB20(RenderListNode *arg0, s32 arg1) {
         prim->v2 = 0x7F;
     }
     tex = 0;
-    if (*(s16 *)((u8 *)arg0 + 0x16) >= 0) {
-        tex = GraphicsGetImageBankTexture(*(s16 *)((u8 *)arg0 + 0x16));
+    if (arg0->angle >= 0) {
+        tex = GraphicsGetImageBankTexture(arg0->angle);
     }
-    saved = *(s8 *)((u8 *)arg0 + 1);
+    saved = arg0->depth;
     if (tex != 0) {
         if (mode != 0) {
             prim->tpage = GetTPage(*(u16 *)((u8 *)tex + 0), 0,
@@ -1057,7 +1050,7 @@ void func_8001DB20(RenderListNode *arg0, s32 arg1) {
             vert[i * 4 + 8] = vert[i * 4 + 8] + tex->pad[6];
             vert[i * 4 + 9] = vert[i * 4 + 9] + tex->pad[8];
         }
-        if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+        if (*(s32 *)&arg0->r0 < 0) {
             SetSemiTrans(prim, 1);
         }
     } else {
@@ -1074,78 +1067,77 @@ void func_8001DB20(RenderListNode *arg0, s32 arg1) {
         vert[0x14] = 0x7F;
         vert[0x15] = 0x7F;
         if (mode == 0) {
-            *(u8 *)((u8 *)arg0 + 2) = 3;
-            *(u8 *)((u8 *)arg0 + 1) = 0;
-            r = *(u8 *)((u8 *)arg0 + 6);
-            g = *(u8 *)((u8 *)arg0 + 5);
-            b = *(u8 *)((u8 *)arg0 + 4);
+            arg0->type = 3;
+            arg0->depth = 0;
+            r = arg0->b0;
+            g = arg0->g0;
+            b = arg0->r0;
             prim->r0 = r;
             prim->g0 = g;
             prim->b0 = b;
-            if (*(u8 *)((u8 *)arg0 + 0x12) != 3) {
+            if (arg0->vertexCount != 3) {
                 SetPolyF4((POLY_F4 *)prim);
-                if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+                if (*(s32 *)&arg0->r0 < 0) {
                     SetSemiTrans(prim, 1);
                 }
-                *(u8 *)((u8 *)arg0 + 1) = 0x10;
+                arg0->depth = 0x10;
             } else {
                 SetPolyF3((POLY_F3 *)prim);
-                if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+                if (*(s32 *)&arg0->r0 < 0) {
                     SetSemiTrans(prim, 1);
                 }
             }
         }
     }
     if (mode != 0) {
-        if (*(u8 *)((u8 *)arg0 + 0x12) == 3) {
+        if (arg0->vertexCount == 3) {
             SetPolyFT4(prim);
-            *(s32 *)((u8 *)arg0 + 0x24) = *(s32 *)((u8 *)arg0 + 0x20);
+            arg0->vertex[3] = (s32)arg0->vertex[2];
             *(XyPair *)(vert + 0x14) = *(XyPair *)(vert + 0x10);
         }
     } else {
-        if (*(u8 *)((u8 *)arg0 + 0x12) == 3) {
-            *(s32 *)((u8 *)arg0 + 0x24) = *(s32 *)((u8 *)arg0 + 0x20);
+        if (arg0->vertexCount == 3) {
+            arg0->vertex[3] = (s32)arg0->vertex[2];
             *(XyPair *)(vert + 0x14) = *(XyPair *)(vert + 0x10);
-            if (*(s8 *)((u8 *)arg0 + 2) == 6) {
-                *(u8 *)((u8 *)arg0 + 7) = *(u8 *)((u8 *)arg0 + 6);
+            if (arg0->type == 6) {
+                arg0->code = arg0->b0;
             }
         }
-        if (*(s8 *)((u8 *)arg0 + 2) < 3) {
+        if (arg0->type < 3) {
             SetPolyGT4((POLY_GT4 *)prim);
-            *(u8 *)((u8 *)arg0 + 2) = 6;
-            *(s32 *)((u8 *)arg0 + 4) = 0x80808080;
+            arg0->type = 6;
+            *(s32 *)&arg0->r0 = 0x80808080;
         }
     }
-    r = *(u8 *)((u8 *)arg0 + 6);
-    g = *(u8 *)((u8 *)arg0 + 5);
-    b = *(u8 *)((u8 *)arg0 + 4);
+    r = arg0->b0;
+    g = arg0->g0;
+    b = arg0->r0;
     prim->r0 = r;
     prim->g0 = g;
     prim->b0 = b;
-    if (*(s32 *)((u8 *)arg0 + 4) < 0) {
+    if (*(s32 *)&arg0->r0 < 0) {
         SetSemiTrans(prim, 1);
     }
-    if (*(s32 *)((u8 *)arg0 + 4) == 0xADADAD ||
-        *(s32 *)((u8 *)arg0 + 4) == 0xFFFFFF) {
-        *(u8 *)((u8 *)arg0 + 0x13) = *(u8 *)((u8 *)arg0 + 0x13) & 0xEF;
+    if (*(s32 *)&arg0->r0 == 0xADADAD || *(s32 *)&arg0->r0 == 0xFFFFFF) {
+        arg0->flags = arg0->flags & 0xEF;
     } else {
-        *(u8 *)((u8 *)arg0 + 0x13) = *(u8 *)((u8 *)arg0 + 0x13) | 0x10;
+        arg0->flags = arg0->flags | 0x10;
     }
-    *(u8 *)((u8 *)arg0 + 3) = *(u8 *)((u8 *)prim + 3);
-    if (*(s8 *)((u8 *)arg0 + 2) != 6) {
-        *(s32 *)((u8 *)arg0 + 4) = *(s32 *)&prim->r0;
+    arg0->len = *(u8 *)((u8 *)prim + 3);
+    if (arg0->type != 6) {
+        *(s32 *)&arg0->r0 = *(s32 *)&prim->r0;
     }
-    *(u16 *)((u8 *)arg0 + 0xA) = prim->clut;
-    *(u16 *)((u8 *)arg0 + 0xE) = prim->tpage;
+    arg0->clut = prim->clut;
+    arg0->tpage = prim->tpage;
     if (mode == 0) {
-        *(u8 *)((u8 *)arg0 + 1) = saved;
+        arg0->depth = saved;
     }
     func_80032D94((s8 *)arg0);
 }
 
 extern s32 D_800BE978[];
 
-extern void func_8001DB20(RenderListNode *, s32);
+extern void func_8001DB20(Face *, s32);
 
 void RenderDrawGeometryList(void) {
     s32 count;
@@ -1154,21 +1146,20 @@ void RenderDrawGeometryList(void) {
     count = D_800BE978[0];
     i = 0;
     while (i < count) {
-        func_8001DB20(
-            (RenderListNode *)((u8 *)D_800A3A40Absolute[0] + i * 0x2C), 1);
+        func_8001DB20((Face *)((u8 *)D_800A3A40Absolute[0] + i * 0x2C), 1);
         i += 1;
     }
 }
 
 void RenderDrawFiveLinkedLists(void) {
-    extern RenderListNode D_800AE8C0[];
+    extern Face D_800AE8C0[];
     s32 offset;
     s32 i;
-    RenderListNode *node;
+    Face *node;
     i = 0;
     offset = 0;
     do {
-        node = *(RenderListNode **)((u8 *)D_800AE8C0 + offset);
+        node = *(Face **)((u8 *)D_800AE8C0 + offset);
         if (node != NULL) {
             do {
                 func_8001DB20(node, 0);

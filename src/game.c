@@ -1975,7 +1975,7 @@ void TrackReadData(s32 *trackData, s32 file) {
                 (s32) * (s32 *)((u8 *)faceFields + (5));
             byteValue = *(u8 *)(faceFields - 18);
             face->flags = 0;
-            face->unk2[0] = byteValue;
+            face->type = byteValue;
             *(u16 *)((u8 *)face + (22)) =
                 (u16) * (s16 *)((u8 *)faceFields + (3));
             if (*(s8 *)((u8 *)faceFields + (-16)) != 0) {

@@ -49,7 +49,7 @@ extern s32 gOrderingTable[];
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
 extern s32 D_800A3A34Absolute[];
 
-extern RenderListNode *D_800A3A40Absolute[];
+extern Face *D_800A3A40Absolute[];
 extern s32 D_800A2EC4w15[] asm("D_800A2EC4.NON_MATCHING");
 void func_8001D108(TrackSection *arg0);
 void func_8001D1E4(void);
@@ -10318,7 +10318,7 @@ u8 *func_80032544(Face *entry, s32 remaining) {
     draw:
         gte_avsz3();
         gte_mfc2(gte, 7);
-        gte += entry->kind * 4;
+        gte += entry->depth * 4;
         gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
         gte_ldv0(entry->vertex[3]);
         gte_rtps();
@@ -10374,7 +10374,7 @@ u8 *func_80032760(Face *entry, u8 *primitive, s32 remaining) {
     while (remaining > 0) {
         gte_ldv3(entry->vertex[0], entry->vertex[1], (s32 *)entry->vertex[2]);
         gte_rtpt();
-        depthBias = entry->kind * 4;
+        depthBias = entry->depth * 4;
         nextPrim = *(u8 **)(primitive + 0x34);
         gte_ReadFlag(gte);
         if (gte & flagMask) {
@@ -10613,12 +10613,12 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
             vb = (s32 *)obj->vertex[1];
             vc = (s32 *)obj->vertex[2];
             gte_ldv3(va, vb, vc);
-            w4 = (s32)obj->rgbCode;
-            w8 = (s32)obj->uvClut;
+            w4 = *(s32 *)&obj->r0;
+            w8 = *(s32 *)&obj->u0;
             gte_op(rtpt);
-            wC = (s32)obj->uvTpage;
-            w10 = *(s32 *)&obj->uv2;
-            w14 = *(s32 *)&obj->uv3;
+            wC = *(s32 *)&obj->u1;
+            w10 = *(s32 *)&obj->u2;
+            w14 = *(s32 *)&obj->u3;
             *(s32 *)(p18a - 4) = wC;
             *(s32 *)(p18a - 0x14) = w4;
             *(s32 *)(p18a - 0xC) = w8;
@@ -10635,7 +10635,7 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
                 gte_mtc2(w4, 0);
                 gte_mtc2(w8, 1);
                 gte_rtps();
-                ix = obj->kind;
+                ix = obj->depth;
                 ix = ix << 2;
                 ix = ix + (s32)otBase;
                 otEntry = (u32 *)ix;
@@ -10660,12 +10660,12 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
             vb = *(s32 **)(p18a + 4);
             vc = *(s32 **)(p18a + 8);
             gte_ldv3(va, vb, vc);
-            w4 = (s32)obj->rgbCode;
-            w8 = (s32)obj->uvClut;
+            w4 = *(s32 *)&obj->r0;
+            w8 = *(s32 *)&obj->u0;
             gte_op(rtpt);
-            wC = (s32)obj->uvTpage;
-            w10 = *(s32 *)&obj->uv2;
-            w14 = *(s32 *)&obj->uv3;
+            wC = *(s32 *)&obj->u1;
+            w10 = *(s32 *)&obj->u2;
+            w14 = *(s32 *)&obj->u3;
             *(s32 *)(p18b - 0x14) = w4;
             *(s32 *)(p18b - 0xC) = w8;
             *(s32 *)(p18b - 4) = wC;
@@ -10702,7 +10702,7 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
             *(s32 *)(p18b + 0xC) = w14;
             gte_op(rtps);
             mask = flag >> 2;
-            flag = mask + obj->kind;
+            flag = mask + obj->depth;
             if (flag > 0x3B6) {
                 flag = 0x3B6;
             }
@@ -10784,12 +10784,12 @@ void func_80032DEC(Face *firstObject, s32 objectCount) {
         prim18 = prim + 0x18;
         do {
             gte_ldv3(obj->vertex[0], obj->vertex[1], (s32 *)obj->vertex[2]);
-            w4 = (s32)obj->rgbCode;
-            w8 = (s32)obj->uvClut;
+            w4 = *(s32 *)&obj->r0;
+            w8 = *(s32 *)&obj->u0;
             gte_op(rtpt);
-            wC = (s32)obj->uvTpage;
-            w10 = *(s32 *)&obj->uv2;
-            w14 = *(s32 *)&obj->uv3;
+            wC = *(s32 *)&obj->u1;
+            w10 = *(s32 *)&obj->u2;
+            w14 = *(s32 *)&obj->u3;
             *(s32 *)(prim18 - 0xC) = w8;
             *(s32 *)(prim18 - 0x14) = w4;
             *(s32 *)(prim18 - 4) = wC;
@@ -10806,7 +10806,7 @@ void func_80032DEC(Face *firstObject, s32 objectCount) {
             if (otz < 0x9B) {
                 gte_op(rtps);
                 if (func_800337EC() != 0 && entryCount < 0x1FF) {
-                    otz = otz + obj->kind;
+                    otz = otz + obj->depth;
                     if (otz >= 0) {
                         entryCount = entryCount + 1;
                         *objCursor = (u32)obj;
@@ -10819,7 +10819,7 @@ void func_80032DEC(Face *firstObject, s32 objectCount) {
                 }
             }
             gte_op(rtps);
-            tmpa1 = obj->kind;
+            tmpa1 = obj->depth;
             wC = (otz >> 2) << 2;
             wC = wC + (s32)otBase40;
             mask = 0xFF0000;
@@ -10979,12 +10979,12 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                 count = count + n;
                 while (n-- > 0) {
                     gte_ldv3(obj->vertex[0], obj->vertex[1], obj->vertex[2]);
-                    word0 = (s32)obj->rgbCode;
-                    word1 = (s32)obj->uvClut;
+                    word0 = *(s32 *)&obj->r0;
+                    word1 = *(s32 *)&obj->u0;
                     gte_op(rtpt);
-                    wC = (s32)obj->uvTpage;
-                    w10 = *(s32 *)&obj->uv2;
-                    w14 = *(s32 *)&obj->uv3;
+                    wC = *(s32 *)&obj->u1;
+                    w10 = *(s32 *)&obj->u2;
+                    w14 = *(s32 *)&obj->u3;
                     *(s32 *)&prim->u1 = wC;
                     *(s32 *)&prim->r0 = word0;
                     *(s32 *)&prim->u0 = word1;
@@ -11001,7 +11001,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     if (otz < 0x9B) {
                         gte_op(rtps);
                         if (func_800337EC() != 0) {
-                            otz = otz + obj->kind * 2;
+                            otz = otz + obj->depth * 2;
                             if (otz >= 0) {
                                 *otCursor++ = (u32)obj;
                                 *zCursor++ = otz << 2;
@@ -11010,7 +11010,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                         }
                     }
                     gte_op(rtps);
-                    otz = (otz >> 2) + obj->kind;
+                    otz = (otz >> 2) + obj->depth;
                     if (otz >= 0x3B7) {
                         otz = 0x3B6;
                     }
@@ -11029,12 +11029,12 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     verts = (u8 *)word0;
                     gte_ldv3(*(u8 **)verts, *(u8 **)(verts + 4),
                              *(u8 **)(verts + 8));
-                    word0 = (s32)obj->rgbCode;
-                    word1 = (s32)obj->uvClut;
+                    word0 = *(s32 *)&obj->r0;
+                    word1 = *(s32 *)&obj->u0;
                     gte_op(rtpt);
-                    wC = (s32)obj->uvTpage;
-                    w10 = *(s32 *)&obj->uv2;
-                    w14 = *(s32 *)&obj->uv3;
+                    wC = *(s32 *)&obj->u1;
+                    w10 = *(s32 *)&obj->u2;
+                    w14 = *(s32 *)&obj->u3;
                     *(s32 *)&prim->r0 = word0;
                     *(s32 *)&prim->u0 = word1;
                     *(s32 *)&prim->u1 = wC;
@@ -11072,7 +11072,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     if (otz < 0x9B) {
                         gte_op(rtps);
                         if (func_800337EC() != 0) {
-                            otz = otz + obj->kind;
+                            otz = otz + obj->depth;
                             if (otz >= 0) {
                                 *otCursor++ = (u32)obj;
                                 *zCursor++ = otz << 2;
@@ -11081,7 +11081,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                         }
                     }
                     gte_op(rtps);
-                    otz = (otz >> 2) + obj->kind;
+                    otz = (otz >> 2) + obj->depth;
                     if (otz < 0x4B1) {
                         if (otz >= 0x3B7) {
                             otz = 0x3B6;
@@ -11329,7 +11329,7 @@ extern u32 *gSubdivisionOt[] asm("gScratchpad+24");
 u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
                                   s32 recursionLevel) {
     SubdivisionVertex *grid;
-    register u8 *prim asm("t5");
+    register POLY_FT4 *prim asm("t5");
     s32 level;
     s32 limit;
     register SubdivisionVertex *row1 asm("t3");
@@ -11362,7 +11362,7 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     register u32 mask asm("t2");
     u16 uv;
     SubdivisionVertex *mid;
-    register u8 *packet asm("v0");
+    register POLY_FT4 *packet asm("v0");
     grid = vertices;
     asm("" : : "r"(grid) : "t5");
     prim = primCursor;
@@ -11522,10 +11522,10 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
     } else {
         word0 = gSubdivisionTemplate0[0];
-        *(s32 *)(prim + 8) = grid[0].screen;
-        *(s32 *)(prim + 16) = grid[1].screen;
-        *(s32 *)(prim + 24) = grid[3].screen;
-        *(s32 *)(prim + 32) = grid[4].screen;
+        *(s32 *)&prim->x0 = grid[0].screen;
+        *(s32 *)&prim->x1 = grid[1].screen;
+        *(s32 *)&prim->x2 = grid[3].screen;
+        *(s32 *)&prim->x3 = grid[4].screen;
         uv = *(u16 *)&grid[0].u;
         word1 = gSubdivisionTemplate1[0];
         asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
@@ -11543,12 +11543,12 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         *(s32 *)packet = word0;
         ot = gSubdivisionOt[0];
         mask = 0xFFFFFF;
-        *(s32 *)(packet + 4) = word1;
-        *(s32 *)(packet + 12) = word2;
-        *(s32 *)(packet + 20) = word3;
-        *(s32 *)(packet + 28) = word4;
-        *(s32 *)(packet + 36) = word5;
-        prim += 0x28;
+        *(s32 *)&packet->r0 = word1;
+        *(s32 *)&packet->u0 = word2;
+        *(s32 *)&packet->u1 = word3;
+        *(s32 *)&packet->u2 = word4;
+        *(s32 *)&packet->u3 = word5;
+        prim++;
         *(u32 *)packet = *ot | 0x09000000;
         *ot = (u32)packet & mask;
     }
@@ -11574,10 +11574,10 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
     } else {
         word0 = gSubdivisionTemplate0[0];
-        *(s32 *)(prim + 8) = grid[1].screen;
-        *(s32 *)(prim + 16) = grid[2].screen;
-        *(s32 *)(prim + 24) = grid[4].screen;
-        *(s32 *)(prim + 32) = grid[5].screen;
+        *(s32 *)&prim->x0 = grid[1].screen;
+        *(s32 *)&prim->x1 = grid[2].screen;
+        *(s32 *)&prim->x2 = grid[4].screen;
+        *(s32 *)&prim->x3 = grid[5].screen;
         uv = *(u16 *)&grid[1].u;
         word1 = gSubdivisionTemplate1[0];
         asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
@@ -11595,12 +11595,12 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         *(s32 *)packet = word0;
         ot = gSubdivisionOt[0];
         mask = 0xFFFFFF;
-        *(s32 *)(packet + 4) = word1;
-        *(s32 *)(packet + 12) = word2;
-        *(s32 *)(packet + 20) = word3;
-        *(s32 *)(packet + 28) = word4;
-        *(s32 *)(packet + 36) = word5;
-        prim += 0x28;
+        *(s32 *)&packet->r0 = word1;
+        *(s32 *)&packet->u0 = word2;
+        *(s32 *)&packet->u1 = word3;
+        *(s32 *)&packet->u2 = word4;
+        *(s32 *)&packet->u3 = word5;
+        prim++;
         *(u32 *)packet = *ot | 0x09000000;
         *ot = (u32)packet & mask;
     }
@@ -11626,10 +11626,10 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
     } else {
         word0 = gSubdivisionTemplate0[0];
-        *(s32 *)(prim + 8) = grid[3].screen;
-        *(s32 *)(prim + 16) = grid[4].screen;
-        *(s32 *)(prim + 24) = grid[6].screen;
-        *(s32 *)(prim + 32) = grid[7].screen;
+        *(s32 *)&prim->x0 = grid[3].screen;
+        *(s32 *)&prim->x1 = grid[4].screen;
+        *(s32 *)&prim->x2 = grid[6].screen;
+        *(s32 *)&prim->x3 = grid[7].screen;
         uv = *(u16 *)&grid[3].u;
         word1 = gSubdivisionTemplate1[0];
         asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
@@ -11647,12 +11647,12 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         *(s32 *)packet = word0;
         ot = gSubdivisionOt[0];
         mask = 0xFFFFFF;
-        *(s32 *)(packet + 4) = word1;
-        *(s32 *)(packet + 12) = word2;
-        *(s32 *)(packet + 20) = word3;
-        *(s32 *)(packet + 28) = word4;
-        *(s32 *)(packet + 36) = word5;
-        prim += 0x28;
+        *(s32 *)&packet->r0 = word1;
+        *(s32 *)&packet->u0 = word2;
+        *(s32 *)&packet->u1 = word3;
+        *(s32 *)&packet->u2 = word4;
+        *(s32 *)&packet->u3 = word5;
+        prim++;
         *(u32 *)packet = *ot | 0x09000000;
         *ot = (u32)packet & mask;
     }
@@ -11678,10 +11678,10 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         prim = GraphicsSubdivideTexturedQuad(grid + 9, prim, level + 1);
     } else {
         word0 = gSubdivisionTemplate0[0];
-        *(s32 *)(prim + 8) = grid[4].screen;
-        *(s32 *)(prim + 16) = grid[5].screen;
-        *(s32 *)(prim + 24) = grid[7].screen;
-        *(s32 *)(prim + 32) = grid[8].screen;
+        *(s32 *)&prim->x0 = grid[4].screen;
+        *(s32 *)&prim->x1 = grid[5].screen;
+        *(s32 *)&prim->x2 = grid[7].screen;
+        *(s32 *)&prim->x3 = grid[8].screen;
         uv = *(u16 *)&grid[4].u;
         word1 = gSubdivisionTemplate1[0];
         asm volatile("sh %0, gScratchpad+8" : : "r"(uv) : "memory");
@@ -11699,12 +11699,12 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
         *(s32 *)packet = word0;
         ot = gSubdivisionOt[0];
         mask = 0xFFFFFF;
-        *(s32 *)(packet + 4) = word1;
-        *(s32 *)(packet + 12) = word2;
-        *(s32 *)(packet + 20) = word3;
-        *(s32 *)(packet + 28) = word4;
-        *(s32 *)(packet + 36) = word5;
-        prim += 0x28;
+        *(s32 *)&packet->r0 = word1;
+        *(s32 *)&packet->u0 = word2;
+        *(s32 *)&packet->u1 = word3;
+        *(s32 *)&packet->u2 = word4;
+        *(s32 *)&packet->u3 = word5;
+        prim++;
         *(u32 *)packet = *ot | 0x09000000;
         *ot = (u32)packet & mask;
     }

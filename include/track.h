@@ -4,21 +4,24 @@
 #include "common.h"
 #include <psxsdk/libgte.h>
 
-/* A model or road face: the colour and texture words copied into its
- * POLY_FT4, four vertex pointers and the next face. Collision code keeps
- * flags in the pad byte of uv2 and the facing angle in the pad of uv3. */
+/* A 0x2C model or road face. Bytes 0x04 to 0x17 mirror a POLY_FT4 from
+ * r0 on, so draw code copies them a word at a time; road faces keep
+ * flags in the pad after v2 and the facing angle after v3. */
 typedef struct Face {
     u8 unk0;
-    s8 kind; /* 0x01 */
-    u8 unk2[2];
-    u32 rgbCode;        /* 0x04: r, g, b and the GPU code */
-    u32 uvClut;         /* 0x08 */
-    u32 uvTpage;        /* 0x0C */
-    u16 uv2;            /* 0x10 */
-    u8 unk12;
+    s8 depth; /* 0x01: added to the ordering-table index */
+    s8 type;  /* 0x02 */
+    u8 len;   /* 0x03: primitive length, copied from the tag */
+    u8 r0, g0, b0, code;
+    u8 u0, v0;
+    u16 clut;
+    u8 u1, v1;
+    u16 tpage;
+    u8 u2, v2;
+    u8 vertexCount;     /* 0x12: 3 for a triangle */
     u8 flags;           /* 0x13 */
-    u16 uv3;            /* 0x14 */
-    s16 angle;          /* 0x16 */
+    u8 u3, v3;
+    s16 angle;          /* 0x16: texture index on model faces */
     SVECTOR *vertex[4]; /* 0x18 */
     struct Face *next;  /* 0x28 */
 } Face;

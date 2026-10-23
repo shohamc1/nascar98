@@ -5123,23 +5123,23 @@ extern u8 D_8009B04A[];
 extern u16 D_8009B050[][7];
 extern u16 D_8009B054[][7];
 
-void MenuInitializeTexturedQuad(u8 *prim, u8 idx) {
+void MenuInitializeTexturedQuad(POLY_FT4 *prim, u8 idx) {
     SetShadeTex(prim, 0);
-    ((u8 *)prim)[4] = 0x80;
-    ((u8 *)prim)[5] = 0x80;
-    ((u8 *)prim)[6] = 0x80;
+    prim->r0 = 0x80;
+    prim->g0 = 0x80;
+    prim->b0 = 0x80;
     SetSemiTrans(prim, 0);
-    *(s16 *)(prim + 0xE) = GetClut(0x140, 0xEF - idx);
-    *(s16 *)(prim + 0x16) =
+    prim->clut = GetClut(0x140, 0xEF - idx);
+    prim->tpage =
         GetTPage(D_8009B054[idx][0], 0, D_8009B048[idx][0], D_8009B048[idx][1]);
-    ((u8 *)prim)[0xC] = D_8009B050[idx][0];
-    ((u8 *)prim)[0xD] = D_8009B048[idx][5];
-    ((u8 *)prim)[0x14] = D_8009B04A[idx * 14 + 6] + 0x3F;
-    ((u8 *)prim)[0x15] = D_8009B054[idx][-1];
-    ((u8 *)prim)[0x1C] = D_8009B048[idx][4];
-    ((u8 *)prim)[0x1D] = D_8009B028[idx * 14 + 0x2A] + 0x47;
-    ((u8 *)prim)[0x24] = D_8009B00C[idx * 14 + 0x44] + 0x3F;
-    ((u8 *)prim)[0x25] = D_8009B02A[idx * 14 + 0x28] + 0x47;
+    prim->u0 = D_8009B050[idx][0];
+    prim->v0 = D_8009B048[idx][5];
+    prim->u1 = D_8009B04A[idx * 14 + 6] + 0x3F;
+    prim->v1 = D_8009B054[idx][-1];
+    prim->u2 = D_8009B048[idx][4];
+    prim->v2 = D_8009B028[idx * 14 + 0x2A] + 0x47;
+    prim->u3 = D_8009B00C[idx * 14 + 0x44] + 0x3F;
+    prim->v3 = D_8009B02A[idx * 14 + 0x28] + 0x47;
 }
 
 extern u8 *D_8009A3F0[];
