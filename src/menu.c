@@ -4145,7 +4145,7 @@ void func_80062F04(u8 index, u8 kind, u8 sub) {
         }
     }
     object = D_800A3A84[index];
-    target = *(s32 **)(object + 0x20);
+    target = *(s32 **)&((MenuObj *)object)->primitive;
     *(target + 2) = D_8009ABFC[code];
 }
 
@@ -4900,14 +4900,14 @@ void func_80064208(void) {
         tail->next = node;
         prim = prim->primitive;
         MenuSetTexturedQuad(prim, 2, 0, 0, 0x40, 0xC);
-        prim->y = 0x14;
-        prim->targetX = 0x2D;
-        prim->velocityY = 0x54;
-        prim->drawOffsetX = 0x2D;
-        prim->height = 0x14;
-        prim->orderingDepth = 0x39;
-        *(s16 *)&prim->primitive = 0x54;
-        *(s16 *)((u8 *)prim + 0x22) = 0x39;
+        ((POLY_FT4 *)prim)->x0 = 0x14;
+        ((POLY_FT4 *)prim)->y0 = 0x2D;
+        ((POLY_FT4 *)prim)->x1 = 0x54;
+        ((POLY_FT4 *)prim)->y1 = 0x2D;
+        ((POLY_FT4 *)prim)->x2 = 0x14;
+        ((POLY_FT4 *)prim)->y2 = 0x39;
+        ((POLY_FT4 *)prim)->x3 = 0x54;
+        ((POLY_FT4 *)prim)->y3 = 0x39;
     }
 
     for (k = 0; k < 2; k++) {

@@ -7182,19 +7182,22 @@ void func_800525A8(Car *arg0, s8 arg1) {
                         p = q + 0x18;
                         q += 0xE;
                     }
-                    tex->face.clut = GetClut(*(u16 *)(p - 6), *(u16 *)(p - 4));
-                    tex->face.tpage = GetTPage(*(u16 *)(p + 2), 0, *(u16 *)q,
-                                               *(u16 *)(p - 8));
-                    v = p[-2] + 0x3F;
+                    tex->face.clut =
+                        GetClut(((SceneTexture *)(p - 0xA))->clutX,
+                                ((SceneTexture *)(p - 0xA))->clutY);
+                    tex->face.tpage =
+                        GetTPage(((SceneTexture *)(p - 0xA))->tpage, 0,
+                                 *(u16 *)q, ((SceneTexture *)(p - 0xA))->tpy);
+                    v = ((SceneTexture *)(p - 0xA))->u + 0x3F;
                     tex->face.u1 = v;
                     tex->face.u0 = v;
-                    v = p[-2];
+                    v = ((SceneTexture *)(p - 0xA))->u;
                     tex->face.u3 = v;
                     tex->face.u2 = v;
-                    v = p[0];
+                    v = ((SceneTexture *)(p - 0xA))->v;
                     tex->face.v2 = v;
                     tex->face.v0 = v;
-                    v = p[0] + 0x1F;
+                    v = ((SceneTexture *)(p - 0xA))->v + 0x1F;
                     tex->face.v3 = v;
                     tex->face.v1 = v;
                 }

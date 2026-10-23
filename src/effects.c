@@ -44,15 +44,6 @@ void EffectInit(void) {
     EffectInitRandomOffsetTables();
 }
 
-typedef struct EffectPoint {
-    s32 unk0;
-    s32 x;
-    s32 y;
-    s32 z;
-    s32 unk10;
-    s32 unk14;
-} EffectPoint;
-
 typedef struct EffectSlot {
     s32 x;
     s32 y;
@@ -82,8 +73,8 @@ void EffectSpawnParticles(Car *car, s32 pointIndex) {
     s32 slotIndex;
     s32 twenty;
     s32 ninetysix;
-    EffectPoint *pointTable;
-    EffectPoint *point;
+    ModelPart *pointTable;
+    ModelPart *point;
 
     for (spawnIndex = 0, twenty = 20, ninetysix = 96; spawnIndex < 5;
          spawnIndex++) {
@@ -95,14 +86,14 @@ void EffectSpawnParticles(Car *car, s32 pointIndex) {
         if (slotIndex >= 0x28) {
             return;
         }
-        pointTable = (EffectPoint *)car->shape->parts;
+        pointTable = car->shape->parts;
         gEffectSlots[slotIndex].active = 1;
         gEffectSlots[slotIndex].unk1D = 0xA;
         gEffectSlots[slotIndex].unk1E = (u16)car->unk1DE;
         point = &pointTable[pointIndex];
-        gEffectSlots[slotIndex].x = *(s32 *)(u8 *)car + point->x;
-        gEffectSlots[slotIndex].y = car->pos.y + point->y;
-        gEffectSlots[slotIndex].z = car->pos.z + point->z;
+        gEffectSlots[slotIndex].x = car->pos.x + point->origin.x;
+        gEffectSlots[slotIndex].y = car->pos.y + point->origin.y;
+        gEffectSlots[slotIndex].z = car->pos.z + point->origin.z;
         gEffectSlots[slotIndex].unk1A = 0x1E;
         gEffectSlots[slotIndex].unk20 = gEffectSlots[slotIndex].unk24 =
             car->segment;
@@ -131,7 +122,7 @@ extern u8 D_800A2EE0[];
 
 void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     s32 slotIndex;
-    EffectPoint *point;
+    ModelPart *point;
     Model *carInfo;
     s32 flagOffset;
     s32 unk28;
@@ -163,8 +154,8 @@ void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     if (pointIndex >= carInfo->specialPart) {
         return;
     }
-    point = (EffectPoint *)((u8 *)carInfo->parts + pointIndex * 24);
-    flagOffset = *(s16 *)((u8 *)point + 0x14);
+    point = &carInfo->parts[pointIndex];
+    flagOffset = point->kind;
     if (flagOffset == 0) {
         return;
     }
@@ -179,9 +170,9 @@ void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     gEffectSlots[slotIndex].active = 1;
     gEffectSlots[slotIndex].unk1D = pointIndex;
     gEffectSlots[slotIndex].unk1E = (u16)car->unk1DE;
-    gEffectSlots[slotIndex].x = *(s32 *)(u8 *)car + point->x;
-    gEffectSlots[slotIndex].y = car->pos.y + point->y;
-    gEffectSlots[slotIndex].z = car->pos.z + point->z;
+    gEffectSlots[slotIndex].x = car->pos.x + point->origin.x;
+    gEffectSlots[slotIndex].y = car->pos.y + point->origin.y;
+    gEffectSlots[slotIndex].z = car->pos.z + point->origin.z;
     gEffectSlots[slotIndex].unk1A = 0xC8;
     gEffectSlots[slotIndex].unk20 = gEffectSlots[slotIndex].unk24 =
         car->segment;

@@ -22,6 +22,14 @@ void PadInitialize(void) {
     PadResetAndInitializeBuffers();
 }
 
+/* A 0x0C controller buffer: status, type and the button bits. */
+typedef struct {
+    u8 status;   /* 0x00 */
+    u8 type;     /* 0x01 */
+    u16 buttons; /* 0x02 */
+    u8 unk4[8];
+} PadBuffer;
+
 extern s32 gPadBuffers[];
 extern u32 D_8008CA04[];
 extern u32 D_8008CA08[];
@@ -152,11 +160,11 @@ s32 func_80041D60(void) {
 
     cursor = (u8 *)gPadBuffers;
     asm("" : "=r"(cursor) : "0"(cursor));
-    value1 = *(u16 *)(cursor + 2);
+    value1 = ((PadBuffer *)cursor)->buttons;
     pads[0] = ~(((value1 & 0xFF) << 8) | (value1 >> 8));
     cursor += 0xC;
     asm("" : "=r"(cursor) : "0"(cursor));
-    value2 = *(u16 *)(cursor + 2);
+    value2 = ((PadBuffer *)cursor)->buttons;
     pads[1] = ~(((value2 & 0xFF) << 8) | (value2 >> 8));
     if ((*(u32 *)gPadBuffers & 0xF000) == 0) {
         pads[0] = 0;

@@ -2882,10 +2882,9 @@ void func_8006C2D0(s32 arg0) {
     D_800A3770 = 0;
 }
 
-typedef MenuObj ColorNode;
-extern ColorNode *D_800A3A10[];
+extern MenuObj *D_800A3A10[];
 void CardMenuSetColorNodeLayout(s32 low, s32 high, s32 color) {
-    ColorNode *node;
+    MenuObj *node;
     node = D_800A3A10[0];
     while (node != NULL) {
         node->unk5 = color;
@@ -2927,9 +2926,9 @@ void CardMenuCenterSelectedText(s32 arg0) {
     s32 *tbl;
     s32 offset;
     s32 elem;
-    ColorNode *node;
+    MenuObj *node;
 
-    obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
+    obj = (u8 *)D_800A3A10[0]->primitive;
     offset = arg0 & 0xFF;
     tbl = D_8009A4C0;
     entry = tbl + offset;
@@ -3707,7 +3706,7 @@ void func_8006DA40(void) {
     do {
         node = MenuCreateTexturedRect(0x64, y, 0x78, 0x18, 9, 1, 0);
         if (i == 0) {
-            D_800A3A10[0] = (ColorNode *)node;
+            D_800A3A10[0] = (MenuObj *)node;
         } else {
             prev->next = node;
         }
