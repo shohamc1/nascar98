@@ -398,28 +398,28 @@ void CarDrawAll(void) {
     if (D_800A2EC4Lui == 0) {
         bankFlag = gSplitScreenModeLui == 0;
     }
-    for (car = gCarListLui; car != 0; car = *(u32 *)(car + 0x3E0)) {
+    for (car = gCarListLui; car != 0; car = *(u32 *)&((Car *)car)->next) {
         released = 0;
-        slot = *(s16 *)(car + 0x1E2);
-        if (slot != -1 && *(s16 *)(car + 0x1E4) != -1 &&
+        slot = ((Car *)car)->unk1E2;
+        if (slot != -1 && ((Car *)car)->unk1E4 != -1 &&
             *(u16 *)((carState = (u8 *)gTrackSections[0] + slot * 0x90) +
                      0xE) == 1 &&
-            *(s32 *)(car + 0x36C) != 0 && *(s8 *)(car + 0x374) < 4) {
+            *(s32 *)(car + 0x36C) != 0 && *(s8 *)&((Car *)car)->unk374 < 4) {
             D_800A3818 = 0x808080;
             if (func_800167BC((u8 *)car) & 0xFF) {
                 if (GraphicsHasFreePrimitives(
                         *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
                     func_800168F8(*(Model **)(car + 0x36C),
-                                  (s8)((s8) * (u8 *)(car + 0x200) / 5));
+                                  (s8)((s8) * (u8 *)&((Car *)car)->mode / 5));
                     CarDrawModel(car, 0);
                 }
                 continue;
             }
             released = 1;
             if (CarDrawModel(car, 1) & 0xFF) {
-                *(u8 *)(car + 0x358) = 1;
+                *(u8 *)&((Car *)car)->unk358 = 1;
             } else {
-                *(u8 *)(car + 0x358) = 0;
+                *(u8 *)&((Car *)car)->unk358 = 0;
             }
         }
         if (released == 0) {
@@ -428,7 +428,7 @@ void CarDrawAll(void) {
             oldEntry = *(s32 *)(entries + 0x420);
             if (oldEntry != 0) {
                 value = *(s8 *)(car + bank + 0x41C);
-                offset = value * 0x44 + *(s32 *)(car + 0x370);
+                offset = value * 0x44 + *(s32 *)&((Car *)car)->shape;
                 hw = *(s16 *)(offset + 0x2A);
                 ptr = (u32)D_800A2D64;
                 size = D_800A2D5C;
@@ -447,7 +447,7 @@ void CarDrawAll(void) {
             gOrderingTableBankLui = bank2;
             if (oldEntry2 != 0) {
                 value2 = *(s8 *)(car + bank2 + 0x41C);
-                offset2 = value2 * 0x44 + *(s32 *)(car + 0x370);
+                offset2 = value2 * 0x44 + *(s32 *)&((Car *)car)->shape;
                 hw2 = *(s16 *)(offset2 + 0x2A);
                 ptr2 = (u32)D_800A2D64;
                 size2 = D_800A2D5C;

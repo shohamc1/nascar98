@@ -69,8 +69,8 @@ s32 VectorGetMagnitude2D(void *object) {
     s32 dx;
     s32 dy;
 
-    dx = *(s32 *)((u8 *)object + 0x9C);
-    dy = *(s32 *)((u8 *)object + 0xA0);
+    dx = ((Car *)object)->toCamera.x;
+    dy = ((Car *)object)->toCamera.y;
     return MathSqrt(dx * dx + dy * dy);
 }
 
@@ -1993,10 +1993,31 @@ extern s32 D_800A2E08;
 extern s32 D_800A3838;
 s32 TrackTestPointInSection(s32, s32, u8 *);
 
+typedef struct {
+    u8 unk0;
+    u8 count;
+    s16 a;
+    s16 b;
+    s16 c;
+} GroupRec;
+
+/* A 0x10 track-lookup cell: its bounding box and its segment groups. */
+typedef struct {
+    u16 minX; /* 0x00 */
+    u16 minY;
+    u16 maxX;
+    u16 maxY;
+    u16 segIndex;
+    u16 groupIndex;
+    s16 base;
+    u8 unkE;
+    u8 groupCount;
+} SecRec;
+
 s32 TrackFindSectionForward(s32 x, s32 y, s32 *indexPtr) {
     s32 index;
     s32 remaining;
-    u8 *entry;
+    SecRec *entry;
     s32 count;
 
     count = D_800A2E08;
@@ -2007,15 +2028,15 @@ s32 TrackFindSectionForward(s32 x, s32 y, s32 *indexPtr) {
         index = 0;
     }
     remaining = count;
-    entry = (u8 *)D_800A3838 + (index * 0x10);
+    entry = (SecRec *)D_800A3838 + index;
     if (remaining > 0) {
         do {
             if (index >= count) {
                 index = 0;
-                entry = (u8 *)D_800A3838;
+                entry = (SecRec *)D_800A3838;
             }
-            if (x >= *(u16 *)(entry + 0) && *(u16 *)(entry + 4) >= x &&
-                y >= *(u16 *)(entry + 2) && *(u16 *)(entry + 6) >= y &&
+            if (x >= entry->minX && entry->maxX >= x && y >= entry->minY &&
+                entry->maxY >= y &&
                 (TrackTestPointInSection(x, y, entry) & 0xFF) != 0) {
                 *indexPtr = index;
                 if (index == count) {
@@ -2025,7 +2046,7 @@ s32 TrackFindSectionForward(s32 x, s32 y, s32 *indexPtr) {
             }
             remaining -= 1;
             index += 1;
-            entry += 0x10;
+            entry++;
         } while (remaining > 0);
     }
     *indexPtr = -1;
@@ -2035,7 +2056,7 @@ s32 TrackFindSectionForward(s32 x, s32 y, s32 *indexPtr) {
 s32 TrackFindSectionFromPrevious(s32 x, s32 y, s32 *indexPtr) {
     s32 index;
     s32 remaining;
-    u8 *entry;
+    SecRec *entry;
     s32 count;
     s32 countLessOne;
 
@@ -2050,15 +2071,15 @@ s32 TrackFindSectionFromPrevious(s32 x, s32 y, s32 *indexPtr) {
         index = (index + countLessOne) % count;
     }
     remaining = count;
-    entry = (u8 *)D_800A3838 + (index * 0x10);
+    entry = (SecRec *)D_800A3838 + index;
     if (remaining > 0) {
         do {
             if (index >= count) {
                 index = 0;
-                entry = (u8 *)D_800A3838;
+                entry = (SecRec *)D_800A3838;
             }
-            if (x >= *(u16 *)(entry + 0) && *(u16 *)(entry + 4) >= x &&
-                y >= *(u16 *)(entry + 2) && *(u16 *)(entry + 6) >= y &&
+            if (x >= entry->minX && entry->maxX >= x && y >= entry->minY &&
+                entry->maxY >= y &&
                 (TrackTestPointInSection(x, y, entry) & 0xFF) != 0) {
                 *indexPtr = index;
                 if (index == count) {
@@ -2068,7 +2089,7 @@ s32 TrackFindSectionFromPrevious(s32 x, s32 y, s32 *indexPtr) {
             }
             remaining -= 1;
             index += 1;
-            entry += 0x10;
+            entry++;
         } while (remaining > 0);
     }
     *indexPtr = -1;
@@ -2079,23 +2100,6 @@ extern s32 D_800A3810;
 extern u32 D_800A2E0C;
 extern u32 D_800A2E10;
 extern s32 D_800B6094[];
-
-typedef struct {
-    u8 unk0;
-    u8 count;
-    s16 a;
-    s16 b;
-    s16 c;
-} GroupRec;
-
-typedef struct {
-    u8 pad0[8];
-    u16 segIndex;
-    u16 groupIndex;
-    s16 base;
-    u8 unkE;
-    u8 groupCount;
-} SecRec;
 
 s32 TrackSampleSection(s32 x, s32 y, SecRec *section) {
     CurveSeg *seg;
@@ -2330,7 +2334,7 @@ static inline s32 SectionSample(s32 x, s32 y, SecRec *sec) {
 s32 TrackFindSection(s32 x, s32 y, s32 *indexPtr, s32 *outZ, s32 *outType) {
     s32 index;
     s32 remaining;
-    u8 *entry;
+    SecRec *entry;
     s32 count;
 
     count = D_800A2E08;
@@ -2342,16 +2346,15 @@ s32 TrackFindSection(s32 x, s32 y, s32 *indexPtr, s32 *outZ, s32 *outType) {
     }
     D_800A2E0C = 0;
     remaining = count;
-    entry = (u8 *)D_800A3838 + (index * 0x10);
+    entry = (SecRec *)D_800A3838 + index;
     if (remaining > 0) {
         do {
             if (index >= count) {
                 index = 0;
-                entry = (u8 *)D_800A3838;
+                entry = (SecRec *)D_800A3838;
             }
-            if (x >= *(u16 *)(entry + 0) && *(u16 *)(entry + 4) >= x &&
-                y >= *(u16 *)(entry + 2) && *(u16 *)(entry + 6) >= y &&
-                (SectionSample(x, y, (SecRec *)entry) & 0xFF) != 0) {
+            if (x >= entry->minX && entry->maxX >= x && y >= entry->minY &&
+                entry->maxY >= y && (SectionSample(x, y, entry) & 0xFF) != 0) {
                 *indexPtr = index;
                 *outZ = D_800A2E0C;
                 *outType = D_800A2E10;
@@ -2362,7 +2365,7 @@ s32 TrackFindSection(s32 x, s32 y, s32 *indexPtr, s32 *outZ, s32 *outType) {
             }
             remaining -= 1;
             index += 1;
-            entry += 0x10;
+            entry++;
         } while (remaining > 0);
     }
     *indexPtr = -1;
@@ -4465,23 +4468,23 @@ void func_80028754(u8 *arg0, s32 arg1) {
 
     flag = D_800A2EB8[0];
     table = D_800980A4;
-    *(s16 *)(arg0 + 0x10E) = arg1;
+    ((Car *)arg0)->unk10E = arg1;
     if (flag == 0) {
         D_800A2E18 = 4;
         table = D_80098134;
     }
-    if (*(s16 *)(arg0 + 0x1EC) != 0) {
+    if (((Car *)arg0)->type != 0) {
         if (D_800A2E18 > 0) {
             i = 0;
             count = D_800A2E18;
             src = table;
         loop1:
-            *(s32 *)(arg0 + 0x124) = src[0];
-            *(s32 *)(arg0 + 0x128) = src[1];
-            *(s32 *)(arg0 + 0x12C) = src[2];
-            *(s32 *)(arg0 + 0x130) = src[3];
-            *(s32 *)(arg0 + 0x134) = src[4];
-            *(s32 *)(arg0 + 0x138) = src[5];
+            ((Car *)arg0)->gear[0].ratio = src[0];
+            ((Car *)arg0)->gear[0].startSpeed = src[1];
+            ((Car *)arg0)->gear[0].endSpeed = src[2];
+            ((Car *)arg0)->gear[0].lowRpm = src[3];
+            ((Car *)arg0)->gear[0].highRpm = src[4];
+            ((Car *)arg0)->gear[0].index = src[5];
             src += 6;
             arg0 += 0x18;
             i++;
@@ -4506,26 +4509,28 @@ void func_80028754(u8 *arg0, s32 arg1) {
         scale = MathFixedDivide(v, 0x3E8);
         do {
         } while (0);
-        *(s32 *)(dst + 0x124) =
+        ((Car *)dst)->gear[0].ratio =
             MathMultiplyFixed16(MathFixedDivide(D_800A2E78[0], 0x4D), scale);
         if (i > 0) {
-            *(s32 *)(dst + 0x128) = *(s32 *)(offset + (s32)table + 4) -
-                                    (*(s32 *)(offset + (s32)table - 0x10) -
-                                     *(s32 *)(offset + (s32)table - 0x14)) /
-                                        5;
+            ((Car *)dst)->gear[0].startSpeed =
+                *(s32 *)(offset + (s32)table + 4) -
+                (*(s32 *)(offset + (s32)table - 0x10) -
+                 *(s32 *)(offset + (s32)table - 0x14)) /
+                    5;
         } else {
-            *(s32 *)(dst + 0x128) = *(s32 *)(offset + (s32)table + 4);
+            ((Car *)dst)->gear[0].startSpeed =
+                *(s32 *)(offset + (s32)table + 4);
         }
-        *(s32 *)(dst + 0x12C) = cur[2];
-        *(s32 *)(dst + 0x130) = cur[3];
-        *(s32 *)(dst + 0x134) = 0x32C8;
+        ((Car *)dst)->gear[0].endSpeed = cur[2];
+        ((Car *)dst)->gear[0].lowRpm = cur[3];
+        ((Car *)dst)->gear[0].highRpm = 0x32C8;
         MathMultiplyFixed16(0x17700000, scale);
         offset += 0x18;
         arr194++;
         arr1E4++;
         cur += 6;
         limit = D_800A2E18;
-        *(s32 *)(dst + 0x138) = i;
+        ((Car *)dst)->gear[0].index = i;
         dst += 0x18;
         i++;
         if (i < limit) {
@@ -5992,7 +5997,7 @@ s32 CarGetWheelGrip(Car *car, s16 surface, s32 idx) {
     extern u8 D_800A2E5B;
     s32 scale;
     s32 range;
-    u8 *wheelBase;
+    Car *wheelBase;
 
     if (surface != 0) {
         if (surface == 5 && car->speed > 0x15E0000 &&
@@ -6031,10 +6036,10 @@ s32 CarGetWheelGrip(Car *car, s16 surface, s32 idx) {
                         if (car->wheel[idx].effect == 0) {
                             wheelBase = (u8 *)car + idx * 0x28;
                             if (RandomScaledGet(range) + 4 < 0) {
-                                *(s16 *)(wheelBase + 0x2B0) =
+                                wheelBase->wheel[0].effect =
                                     -(RandomScaledGet(car->speed >> 20) + 4);
                             } else {
-                                *(s16 *)(wheelBase + 0x2B0) =
+                                wheelBase->wheel[0].effect =
                                     RandomScaledGet(car->speed >> 20) + 4;
                             }
                             if (car->wheel[idx].effect > 14) {
@@ -6055,10 +6060,10 @@ s32 CarGetWheelGrip(Car *car, s16 surface, s32 idx) {
                     if (car->wheel[idx].effect == 0) {
                         wheelBase = (u8 *)car + idx * 0x28;
                         if (RandomScaledGet(range) + 4 < 0) {
-                            *(s16 *)(wheelBase + 0x2B0) =
+                            wheelBase->wheel[0].effect =
                                 -(RandomScaledGet(car->speed >> 20) + 4);
                         } else {
-                            *(s16 *)(wheelBase + 0x2B0) =
+                            wheelBase->wheel[0].effect =
                                 RandomScaledGet(car->speed >> 20) + 4;
                         }
                         if (car->wheel[idx].effect > 14) {
@@ -8451,13 +8456,13 @@ void func_8002F5F4(void) {
     s32 temp;
 
     node = D_800A2E9CSmall;
-    node = *(s32 *)(node + 0x3E0);
+    node = *(s32 *)((u8 *)node + 0x3E0);
     D_800A2E9CSmall = node;
-    if (node != 0 && *(s32 *)(node + 0x350) != (s32)func_80029E34) {
+    if (node != 0 && *(s32 *)((u8 *)node + 0x350) != (s32)func_80029E34) {
         return;
     }
     node = gCarList;
-    temp = *(s32 *)(node + 0x350);
+    temp = *(s32 *)((u8 *)node + 0x350);
     f = (s32)func_80029E34;
     D_800A2E9CSmall = node;
     if (temp != f) {
@@ -8465,8 +8470,8 @@ void func_8002F5F4(void) {
     }
     do {
         node = D_800A2E9CSmall;
-        node = *(s32 *)(node + 0x3E0);
-        temp = *(s32 *)(node + 0x350);
+        node = *(s32 *)((u8 *)node + 0x3E0);
+        temp = *(s32 *)((u8 *)node + 0x350);
         D_800A2E9CSmall = node;
     } while (temp == f);
 }
@@ -12915,7 +12920,7 @@ extern u8 D_800B7388Base[] asm("D_800B7388.NON_MATCHING");
 extern u8 gSparksBase[] asm("gSparks.NON_MATCHING");
 
 void func_8003667C(u32 *list) {
-    u8 *p;
+    Spark *p;
     s32 i;
     s32 tmp;
     s32 flag;
@@ -12926,21 +12931,21 @@ void func_8003667C(u32 *list) {
     for (; i < 0x14; i++, list++) {
         if (*list == 0) {
             while (i < 0x18) {
-                *(s16 *)(p + 0x20) = 0;
+                p->life = 0;
                 i++;
-                p += 0xC8;
+                p++;
             }
             p = gSparksBase;
             i = 0x17;
             do {
-                *(s16 *)(p + 0x20) = 0;
-                p += 0xC8;
+                p->life = 0;
+                p++;
                 i--;
             } while (i >= 0);
             return;
         }
         flag = D_800A2ED4[0];
-        *(s16 *)(p + 0x20) = 5;
+        p->life = 5;
         if (flag == 0) {
             extern u32 RandomGetScaled16(s32);
             tmp = (*list & 0x7FF) << 7;
@@ -12949,7 +12954,7 @@ void func_8003667C(u32 *list) {
             } else {
                 v = tmp + RandomGetScaled16(0x20);
             }
-            *(s32 *)(p + 8) = v;
+            p->pos.x = v;
             tmp = ((*list >> 11) & 0x7FF) << 7;
             if ((s32)RandomGetScaled16(0x20) < 0) {
                 v = RandomGetScaled16(0x20);
@@ -12957,11 +12962,10 @@ void func_8003667C(u32 *list) {
             } else {
                 v = tmp + RandomGetScaled16(0x20);
             }
-            *(s32 *)(p + 0xC) = v;
-            *(s32 *)(p + 0x10) =
-                ((s32)*list >> 22) * 0x10 + RandomGetScaled16(8);
+            p->pos.y = v;
+            p->pos.z = ((s32)*list >> 22) * 0x10 + RandomGetScaled16(8);
         }
-        p += 0xC8;
+        p++;
     }
 }
 
@@ -13269,7 +13273,7 @@ s32 func_8003702C(s32 arg0, s32 arg1) {
     s32 x;
     s32 y;
 
-    diff = *(s16 *)(arg0 + 0x1E0) - *(s16 *)(arg1 + 0x1E0);
+    diff = arg0->segment - arg1->segment;
     half = gTrackSectionCount[0] >> 1;
     if (diff >= 0) {
         if (diff < half) {
@@ -13280,8 +13284,8 @@ s32 func_8003702C(s32 arg0, s32 arg1) {
             return diff;
         }
     }
-    x = *(s16 *)(arg0 + 0x1E0);
-    y = *(s16 *)(arg1 + 0x1E0);
+    x = arg0->segment;
+    y = arg1->segment;
     if (y < x) {
         y += gTrackSectionCount[0];
         diff = x - y;
@@ -13877,9 +13881,9 @@ void func_800373B4(Car *object) {
                 tempV02 = ((u8 *)car->order.node.next);
                 if (tempV02 != NULL) {
                     tempA03 = (*(u8 **)((u8 *)tempV02 + 8));
-                    if ((car->segment) == (*(s16 *)((u8 *)tempA03 + 0x1E0))) {
+                    if ((car->segment) == (((Car *)tempA03)->segment)) {
                         slowDelta = -0x40000;
-                        tempV03 = (*(s32 *)((u8 *)tempA03 + 0x90));
+                        tempV03 = (((Car *)tempA03)->speed);
                         tempV03 += slowDelta;
                         (car->speed) = tempV03;
                         (car->unk84) = tempV03;
@@ -15586,15 +15590,15 @@ void CarUpdateTrackSideOffsets(void) {
         if (sectionIndex != -1) {
             section = *(u8 **)gTrackSections;
             section += sectionIndex * 0x90;
-            heading = *(u16 *)(section + 0x10);
+            heading = ((TrackSection *)section)->angle;
             objX = *(s32 *)car;
-            entryX = *(s32 *)(section + 0x14);
+            entryX = ((TrackSection *)section)->x;
             angle = heading;
             index = ((0x400 - angle) & 0x3FF) << 2;
             tableA = *(s32 *)(index + (u32)D_800A3A34Absolute[0]);
             prodA = tableA * (objX - entryX);
             objY = car->pos.y;
-            entryY = *(s32 *)(section + 0x18);
+            entryY = ((TrackSection *)section)->z;
             tableB = *(s32 *)(index + (u32)D_800A3A2CAbsolute[0]);
             value = prodA + tableB * (objY - entryY);
             car->unk203 = (-(value >> 16)) / 250;

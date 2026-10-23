@@ -999,9 +999,9 @@ s32 ObjectGetMagnitude3D(void *object) {
     s32 dy;
     s32 dz;
 
-    dx = *(s32 *)((u8 *)object + 0x9C);
-    dy = *(s32 *)((u8 *)object + 0xA0);
-    dz = *(s32 *)((u8 *)object + 0xA4);
+    dx = ((Car *)object)->toCamera.x;
+    dy = ((Car *)object)->toCamera.y;
+    dz = ((Car *)object)->toCamera.z;
     return MathSqrt(dx * dx + dy * dy + dz * dz);
 }
 

@@ -633,18 +633,18 @@ void func_8003D528(Car *object) {
     object->unk23C = result;
 }
 
-void func_8003D5F8(u8 *object) {
+void func_8003D5F8(Car *object) {
     u16 flags;
     s32 i;
     u32 total;
     Car *entry;
 
-    flags = *(u16 *)(object + 0x3A4);
+    flags = object->unk3A4;
     total = 0;
     if (flags != 0) {
         i = 0;
         do {
-            entry = object + i;
+            entry = (u8 *)object + i;
             if ((s8)entry->unk3A6[0] == 0) {
                 total = total + 0x14;
             }
@@ -654,7 +654,7 @@ void func_8003D5F8(u8 *object) {
             i = i + 1;
         } while (i < 8);
     }
-    *(u16 *)(object + 0x280) = total;
+    object->unk26C[10] = total;
 }
 
 void func_8003D654(Car *object) {
@@ -912,7 +912,7 @@ void func_8003DBA8(Car *object) {
     TrackSection *entry;
     u8 *targets;
     TrackSection *previous;
-    u8 *damage;
+    Car *damage;
 
     sectionCount = gTrackSectionCountCarState[0];
     section = object->segment;
@@ -1103,10 +1103,10 @@ void func_8003DBA8(Car *object) {
                 i = 0;
                 do {
                     damage = (u8 *)object + i;
-                    if (*(s8 *)(damage + 0x3A6) == 0) {
+                    if ((s8)damage->unk3A6[0] == 0) {
                         damageTime += 0x14;
                     }
-                    severity = *(s8 *)(damage + 0x3AE);
+                    severity = (s8)damage->unk3AE[0];
                     if (severity != 0) {
                         damageTime += severity * 3;
                     }

@@ -7338,7 +7338,7 @@ loop2:
             key = (s16)owner;
             asm volatile("");
             *(u16 *)slot = owner;
-            *(u8 **)(slot + 0x54) =
+            *(u8 **)&((SkidMark *)slot)->next =
                 ((TrackSection *)gTrackSections[0])[key].children;
             ((TrackSection *)gTrackSections[0])[key].children = slot;
         }
@@ -7387,7 +7387,7 @@ loop2:
             slot += (s32)base;
             entry->skidMark = cur;
             next = (s16)(cur + 1);
-            *(s32 *)(slot + 4) = head;
+            ((SkidMark *)slot)->depth = head;
             new_var4 = ((u8 *)arg0 + arg1 * 0x28) + 0x2B4;
             arg0->wheel[arg1].unkC -= (0x12C - *(s16 *)new_var4) >> 3;
             D_800A34E8 = next % 100;

@@ -484,8 +484,8 @@ __inline__ void func_80018768(void *arg0, s32 x, s32 y, s32 format) {
 extern void func_800183C0(s32, s32, s32, s32);
 void TextDrawTwoObjectStrings(void *object, s32 x, s32 y) {
     s32 value;
-    func_800183C0(*(s32 *)((u8 *)object + 0x258), x, y, 0);
-    value = *(s32 *)((u8 *)object + 0x25C);
+    func_800183C0(((Car *)object)->unk258, x, y, 0);
+    value = ((Car *)object)->time;
     if (value != 0x7FFFFFFF) {
         func_800183C0(value, x, y + 0x10, 0);
     }
@@ -2267,7 +2267,7 @@ void MenuDrawResults(s32 reset) {
                 if (!(i & 1)) {
                     off = -off;
                 }
-                if (off == 0 && *(s16 *)((u8 *)node + 0x1EC) == 0 &&
+                if (off == 0 && ((Car *)node)->type == 0 &&
                     D_800A2E94[0] >= 3) {
                     gOrderingTableLui += 4;
                     GraphicsDrawRect(0, baseY + (i * 0xE) + 0x25, 0x140, 0xF, 0,
@@ -2277,7 +2277,7 @@ void MenuDrawResults(s32 reset) {
                 TextFormatInt(i + 1, text);
                 func_80050028Text(text, (s16)(off + 0x10),
                                   (s16)(baseY + (i * 0xE) + 0x28), 0);
-                func_80050028Text(*(u8 **)((u8 *)node + 0x34C),
+                func_80050028Text(*(u8 **)&((Car *)node)->name,
                                   (s16)(off + 0x32),
                                   (s16)(baseY + (i * 0xE) + 0x28), 0);
                 if (times[i] > -1) {
@@ -2303,7 +2303,9 @@ void MenuDrawResults(s32 reset) {
                                       (s16)(baseY + (i * 0xE) + 0x28), 0);
                 }
                 i++;
-                node = *(void **)((u8 *)*(void **)((u8 *)node + 0x3E8) + 8);
+                node = *(void **)((u8 *)*(void **)&((Car *)node)
+                                      ->order.node.previous +
+                                  8);
             } while (D_800A2E90[0] >= i);
         }
     } else {

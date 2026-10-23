@@ -713,7 +713,7 @@ void MenuDrawString(u8 *text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
     u16 limit;
     POLY_FT4 *prim;
     POLY_FT4 *tmpl;
-    u8 *glyph;
+    Glyph *glyph;
     s16 idx;
     s32 w;
     s32 h;
@@ -754,14 +754,14 @@ void MenuDrawString(u8 *text, s16 x, s16 y, u8 center, u8 shade, s32 otz,
                 tmpl = (POLY_FT4 *)D_800A3750 + idx;
                 glyph = (u8 *)&gFontGlyphs[idx];
                 if (D_800A3534 == 2) {
-                    h = *(s16 *)(glyph + 8) * 3 / 4;
-                    w = *(s16 *)(glyph + 6) * 3 / 4;
+                    h = glyph->height * 3 / 4;
+                    w = glyph->width * 3 / 4;
                 } else if (D_800A3534 == 4) {
-                    h = *(s16 *)(glyph + 8) * 9 / 10;
-                    w = *(s16 *)(glyph + 6) * 9 / 10;
+                    h = glyph->height * 9 / 10;
+                    w = glyph->width * 9 / 10;
                 } else {
-                    h = *(s16 *)(glyph + 8);
-                    w = *(s16 *)(glyph + 6);
+                    h = glyph->height;
+                    w = glyph->width;
                 }
                 if (penX + w >= 0 && penX < 0x140 && y + h >= 0 && y < 0xF0) {
                     prim = (POLY_FT4 *)GraphicsAllocPolyFT4(0);
@@ -1508,7 +1508,7 @@ extern void TextFormatPercentage(s32);
 void func_8005C124(u8 menuId, u8 selRow) {
     s32 slots[3][4];
     MenuObj *item;
-    u8 *entry;
+    MenuText *entry;
     u8 *text;
     s32 i;
     s32 rows;
@@ -1640,9 +1640,9 @@ void func_8005C124(u8 menuId, u8 selRow) {
         entry = (u8 *)(D_800A3654 + D_800A37BC++ * 0xC);
         item->primitive = entry;
         if (i == selRow + 1) {
-            entry[0] = 1;
+            entry->shade = 1;
         } else {
-            entry[0] = 0;
+            entry->shade = 0;
         }
         if (menuId == 1)
             goto check1;
@@ -1673,60 +1673,60 @@ void func_8005C124(u8 menuId, u8 selRow) {
         if (i != 6)
             goto noFlag;
     setFlag:
-        entry[0] |= 2;
+        entry->shade |= 2;
     noFlag:
-        entry[3] = 0;
-        *(s32 *)(entry + 4) = 0;
+        entry->center = 0;
+        entry->otz = 0;
         item->velocityY = 0;
         if (i == 0) {
             D_800A39B8 = item;
             MenuFontSet(1, 1);
-            entry[2] = 1;
-            entry[1] = 1;
-            *(u8 **)(entry + 8) = *(u8 **)D_800A3690;
+            entry->scale = 1;
+            entry->font = 1;
+            entry->text = *(u8 **)D_800A3690;
             item->velocityX = -2;
         } else {
             if (i == 1) {
                 D_800A36F0 = item;
                 MenuFontSet(0, 0);
             }
-            entry[2] = 0;
-            entry[1] = 0;
+            entry->scale = 0;
+            entry->font = 0;
             if (menuId == 4 && D_800A38E8 < i) {
                 D_800A38F8 = item;
                 TextFormatPercentage(D_800A37D0[0]);
-                *(u8 **)(entry + 8) = D_800A35C8Text;
+                entry->text = D_800A35C8Text;
             } else if (menuId == 0xB && (d = D_800A38E8) < i) {
                 d = i - d;
                 D_800BB9E4[d - 1] = item;
                 TextFormatPercentage(D_800A331C[d - 1]);
                 text = D_800AD980 + (i - D_800A38E8) * 8;
-                *(u8 **)(entry + 8) = text;
+                entry->text = text;
                 strcpy(text, D_800A35C8Text);
             } else {
                 switch (D_800A3989[i - 2]) {
                 case 0:
                 case 0x80:
-                    *(u8 **)(entry + 8) = ((u8 **)D_800A3690)[i];
+                    entry->text = ((u8 **)D_800A3690)[i];
                     if (D_800A3989[i - 2] == 0x80) {
-                        entry[0] |= 2;
+                        entry->shade |= 2;
                     }
                     break;
                 case 1:
                 case 0x81:
-                    *(u8 **)(entry + 8) = ((u8 **)D_800A39C0)[i];
+                    entry->text = ((u8 **)D_800A39C0)[i];
                     if (D_800A3989[i - 2] == 0x81) {
-                        entry[0] |= 2;
+                        entry->shade |= 2;
                     }
                     break;
                 case 2:
-                    *(u8 **)(entry + 8) = ((u8 **)D_800A3A28)[i];
+                    entry->text = ((u8 **)D_800A3A28)[i];
                     break;
                 }
             }
             item->velocityX = 2;
         }
-        item->width = MenuStringWidth(*(s32 *)(entry + 8));
+        item->width = MenuStringWidth(entry->text);
         item->height = MenuFontLineHeight();
         item->targetX = 0x131 - (u16)item->width;
         item->x = x - (u16)item->width;
@@ -1750,7 +1750,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
                     item->targetY = slots[1][i - D_800A38E8 - 1];
                     item->y = slots[1][i - D_800A38E8 - 1];
                     if (selRow == 0) {
-                        entry[0] = 1;
+                        entry->shade = 1;
                     }
                 }
             }

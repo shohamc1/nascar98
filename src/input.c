@@ -81,30 +81,30 @@ extern u8 D_8008CA06[];
 /* Retail keeps an empty 8-byte frame; `framePad` reproduces it. The `u16 mode`
  * keeps the nor result and the or-accumulator in separate registers, and the
  * 0x3C8 store sits in both arms so jump2 cross-jumps only the final sb. */
-u16 PadReadObjectState(u8 *object) {
+u16 PadReadObjectState(Car *object) {
     s32 bank;
     u32 data;
     u16 pad;
     u16 mode;
     volatile s32 framePad[2];
 
-    bank = *(s8 *)(object + 0x20B);
+    bank = object->slot;
     if (bank < 0) {
         return 0;
     }
     data = *(u32 *)((u8 *)D_8008CA08 + bank * 8);
     if (gPadType[bank] == 2) {
-        object[0x3C6] = data >> 8;
-        object[0x3C7] = data >> 0x10;
-        object[0x3C5] = data;
-        object[0x3C8] = data >> 0x18;
+        object->unk3C6 = data >> 8;
+        object->unk3C7 = data >> 0x10;
+        object->unk3C5 = data;
+        ((u8 *)object)[0x3C8] = data >> 0x18;
     } else {
-        object[0x3C6] = data >> 8;
-        object[0x3C5] = data >> 0x10;
-        object[0x3C7] = data;
-        object[0x3C8] = data >> 0x18;
+        object->unk3C6 = data >> 8;
+        object->unk3C5 = data >> 0x10;
+        object->unk3C7 = data;
+        ((u8 *)object)[0x3C8] = data >> 0x18;
     }
-    pad = *(u16 *)(D_8008CA06 + *(s8 *)(object + 0x20B) * 8);
+    pad = *(u16 *)(D_8008CA06 + object->slot * 8);
     mode = ~(((pad & 0xFF) << 8) | (pad >> 8));
     if (mode & 0x1000) {
         mode |= 8;

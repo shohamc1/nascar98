@@ -984,8 +984,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             yBase = yLoad + 3;
             do {
                 u8 primIdx;
-                u8 *textPrim;
-                u8 *primLoad;
+                MenuText *textPrim;
+                MenuText *primLoad;
                 MenuFontSet(2, 2);
                 value = (s16)func_8005A8EI(D_8009A268[n]);
                 switch (m) {
@@ -1022,18 +1022,18 @@ void func_8005ED74(u8 arg0, u8 arg1) {
                 D_800A37BC = primIdx + 1;
                 textPrim = (u8 *)D_800A3654 + primIdx * 12;
                 entry->primitive = textPrim;
-                textPrim[0] = 0;
-                textPrim[3] = 0;
-                *(s32 *)(textPrim + 4) = 0;
+                textPrim->shade = 0;
+                textPrim->center = 0;
+                textPrim->otz = 0;
                 D_800BB9F4[n] = entry;
                 entry->velocityX = 2;
                 entry->width = value;
                 entry->x = (u16)entry->targetX - 0xF5;
                 entry->height = MenuFontLineHeight();
                 primLoad = entry->primitive;
-                primLoad[1] = 2;
-                primLoad[2] = 2;
-                *(s32 *)(primLoad + 8) = D_8009A268[n];
+                primLoad->font = 2;
+                primLoad->scale = 2;
+                primLoad->text = D_8009A268[n];
                 n++;
                 if (m == 0) {
                     yBase += 0x10;
@@ -1391,7 +1391,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         {
             u8 primIdx;
             MenuObj *objC9;
-            u8 *textPrim;
+            MenuText *textPrim;
             ixB10 = gMenuObjectPoolCount;
             gMenuObjectPoolCount = ixB10 + 1;
             objC10 = &gMenuObjectPool[ixB10];
@@ -1416,9 +1416,9 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             D_800A37BC = primIdx + 1;
             textPrim = (u8 *)D_800A3654 + primIdx * 12;
             entry->primitive = textPrim;
-            textPrim[0] = 0;
-            textPrim[3] = 0;
-            *(s32 *)(textPrim + 4) = 0;
+            textPrim->shade = 0;
+            textPrim->center = 0;
+            textPrim->otz = 0;
             D_800AE168[i] = entry;
             entry->velocityX = 2;
             entry->width = value;
@@ -1434,8 +1434,8 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     } while (i < 4);
     if (arg1 != 0) {
         u8 primIdx;
-        u8 *textPrim;
-        u8 *primLoad;
+        MenuText *textPrim;
+        MenuText *primLoad;
         ix11 = gMenuObjectPoolCount;
         gMenuObjectPoolCount = ix11 + 1;
         obj11 = &gMenuObjectPool[ix11];
@@ -1459,17 +1459,17 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         D_800A37BC = primIdx + 1;
         textPrim = (u8 *)D_800A3654 + primIdx * 12;
         ((MenuObj *)m)->primitive = textPrim;
-        textPrim[0] = 0;
-        textPrim[3] = 0;
-        *(s32 *)(textPrim + 4) = 0;
+        textPrim->shade = 0;
+        textPrim->center = 0;
+        textPrim->otz = 0;
         ((MenuObj *)m)->velocityX = 2;
         ((MenuObj *)m)->width = value;
         ((MenuObj *)m)->x = *(u16 *)(((u8 *)m) + 0xA) - 0xAD;
         ((MenuObj *)m)->height = MenuFontLineHeight();
         primLoad = ((MenuObj *)m)->primitive;
-        primLoad[1] = 2;
-        primLoad[2] = 2;
-        *(s32 *)(primLoad + 8) = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
+        primLoad->font = 2;
+        primLoad->scale = 2;
+        primLoad->text = *(s32 *)((u8 *)D_8009A298 + arg0 * 4 + 0x10);
         entry->next = (MenuObj *)m;
     }
     func_80060008(arg0);
@@ -2054,7 +2054,7 @@ void func_80060FD8(void) {
         s32 sixth;
     } labelArgs;
     register MenuObj *currentNode asm("$22");
-    u8 *previousNode;
+    MenuObj *previousNode;
     MenuRowList rowList;
     MenuCounterHome panelIndex;
     s8 backgroundIndex;
@@ -2184,7 +2184,7 @@ void func_80060FD8(void) {
 panelLoop:
     {
         {
-            u8 *node;
+            MenuObj *node;
             register u8 *primitive asm("$17");
             s32 panelNumber;
             s32 panelByteOffset;
@@ -3692,7 +3692,7 @@ panelLoop:
             register s32 widthDelta asm("$5");
             s32 allocateMode;
             register s32 nodeBlue asm("$12");
-            u8 *node;
+            MenuObj *node;
             register u8 *primitive asm("$17");
             u8 *panelNode;
             asm volatile(".set\tnoreorder\n"
@@ -3755,9 +3755,9 @@ panelLoop:
                                    "=r"(nodeBlue)
                                  : "r"(widthDelta), "r"(colorS)
                                  : "$2", "$3", "$11", "memory");
-                    node[4] = nodeBlue;
+                    node->blue = nodeBlue;
                     primitive = GraphicsAllocPolyF4(allocateMode);
-                    *(u8 **)(node + 0x20) = primitive;
+                    node->primitive = primitive;
                     SetPolyF3(primitive);
                     SetSemiTrans(primitive, 0);
                     asm volatile("" : "=r"(currentNode) : "0"(node));
@@ -3789,7 +3789,7 @@ panelLoop:
                     asm volatile("" : : "r"(rowX) : "memory");
                     currentNode->drawOffsetY =
                         *(u16 *)(panelNode + 0x14) + 0x37;
-                    *(u8 **)(previousNode + 0x1C) = currentNode;
+                    previousNode->next = currentNode;
                     previousNode = currentNode;
                     triangleColumn++;
                 } while (triangleColumn < 2);
@@ -3806,7 +3806,7 @@ panelLoop:
             s8 arrowIndex;
             register s32 heightDelta asm("$5");
             s32 allocateMode;
-            u8 *node;
+            MenuObj *node;
             register u8 *primitive asm("$17");
             register s32 red asm("$12");
             register s32 green asm("$11");
@@ -3868,9 +3868,9 @@ panelLoop:
                              : "=r"(node), "=r"(allocateMode)
                              : "r"(heightDelta), "r"(colorS), "r"(blue)
                              : "$2", "$3", "$11", "$12", "memory");
-                node[4] = blue;
+                node->blue = blue;
                 primitive = GraphicsAllocPolyF4(allocateMode);
-                *(u8 **)(node + 0x20) = primitive;
+                node->primitive = primitive;
                 SetPolyF3(primitive);
                 SetSemiTrans(primitive, 0);
                 asm volatile("" : "=r"(currentNode) : "0"(node));
@@ -3898,7 +3898,7 @@ panelLoop:
                              : "$2", "$11", "$12", "memory");
                 currentNode->drawOffsetX = 0xAC;
                 currentNode->drawOffsetY = xpos;
-                *(u8 **)(previousNode + 0x1C) = currentNode;
+                previousNode->next = currentNode;
                 previousNode = currentNode;
                 arrowIndex++;
                 xpos += 0xC;
@@ -4461,14 +4461,14 @@ void MenuSetLinkedObjectLayoutByIndex(u8 index, s16 dx, s16 dy, s16 code) {
 
 void MenuSetDriverNameLabel(u8 index, u8 kind) {
     MenuObj *node;
-    u8 *object;
+    MenuText *object;
     s32 value;
 
     node = D_800A3868[index];
     object = node->primitive;
-    *(u8 **)(object + 8) = gDriverNames[kind];
-    MenuFontSet(object[1], object[2]);
-    value = MenuTextCenterOffset(0x64, *(s32 *)(object + 8));
+    object->text = gDriverNames[kind];
+    MenuFontSet(object->font, object->scale);
+    value = MenuTextCenterOffset(0x64, object->text);
     node->x = value + 0xA;
     node->drawOffsetX = value - 0x32;
 }
@@ -4764,7 +4764,7 @@ void func_80063E7C(void) {
 void CarDrawPreviewModel(Car *arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     MenuObj *entry;
-    u8 *obj;
+    Car *obj;
     u16 height;
     s32 x;
     u32 i;
@@ -4800,7 +4800,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
             CarDrawPreviewModel(obj, 0, 0xFA, 0x44C);
             if (!(arg0 & 0xFF) || (arg2 & 0xFF) || gScreenState[0] == 0xE) {
                 asm("" : : "r"(arg1));
-                t = *(s16 *)(obj + 0x20E);
+                t = obj->steering;
                 v1 = t + 0xFEC;
                 if (v1 < 0) {
                     v0 = t + 0x1FEB;
@@ -4811,7 +4811,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
             } else {
                 result = (u16)gPlayerCar[0]->steering;
             }
-            *(s16 *)(obj + 0x20E) = result;
+            obj->steering = result;
         }
     } while (0);
 }
@@ -5337,9 +5337,9 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             green = 0;
             blue = 0x80;
             yBase = 0x3E;
-            prim[4] = 0;
-            prim[5] = 0;
-            prim[6] = blue;
+            ((POLY_F4 *)prim)->r0 = 0;
+            ((POLY_F4 *)prim)->g0 = 0;
+            ((POLY_F4 *)prim)->b0 = blue;
             break;
         case 1:
             height = 0x48;
@@ -5347,9 +5347,9 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             green = 0;
             blue = 0x4C;
             yBase = 0x5A;
-            prim[4] = 0;
-            prim[5] = 0;
-            prim[6] = blue;
+            ((POLY_F4 *)prim)->r0 = 0;
+            ((POLY_F4 *)prim)->g0 = 0;
+            ((POLY_F4 *)prim)->b0 = blue;
             break;
         case 2:
             height = 0x12;
@@ -5357,9 +5357,9 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             green = 0;
             blue = 0xC0;
             yBase = 0xA2;
-            prim[4] = 0;
-            prim[5] = 0;
-            prim[6] = blue;
+            ((POLY_F4 *)prim)->r0 = 0;
+            ((POLY_F4 *)prim)->g0 = 0;
+            ((POLY_F4 *)prim)->b0 = blue;
             break;
         case 3:
             if (slots[0] != 0xFF) {
@@ -5388,17 +5388,17 @@ void MenuDrawCarPick(u8 id, s32 shift) {
             }
             break;
         }
-        prim[4] = red;
-        prim[5] = green;
-        prim[6] = blue;
-        *(s16 *)(prim + 8) = x0;
-        *(s16 *)(prim + 0xA) = yBase;
-        *(s16 *)(prim + 0xC) = x0 + x1off;
-        *(s16 *)(prim + 0xE) = yBase;
-        *(s16 *)(prim + 0x10) = x0;
-        *(s16 *)(prim + 0x12) = yBase + height;
-        *(s16 *)(prim + 0x14) = x0 + x1off;
-        *(s16 *)(prim + 0x16) = yBase + height;
+        ((POLY_F4 *)prim)->r0 = red;
+        ((POLY_F4 *)prim)->g0 = green;
+        ((POLY_F4 *)prim)->b0 = blue;
+        ((POLY_F4 *)prim)->x0 = x0;
+        ((POLY_F4 *)prim)->y0 = yBase;
+        ((POLY_F4 *)prim)->x1 = x0 + x1off;
+        ((POLY_F4 *)prim)->y1 = yBase;
+        ((POLY_F4 *)prim)->x2 = x0;
+        ((POLY_F4 *)prim)->y2 = yBase + height;
+        ((POLY_F4 *)prim)->x3 = x0 + x1off;
+        ((POLY_F4 *)prim)->y3 = yBase + height;
         if (i < 3) {
             AddPrim((u8 *)D_800A38C4 + 0xC, prim);
         } else {
@@ -5413,23 +5413,23 @@ void MenuDrawCarPick(u8 id, s32 shift) {
         SetPolyFT4((POLY_FT4 *)prim);
         MenuInitializeTexturedQuad(prim, color);
         if (i == 0) {
-            *(s16 *)(prim + 8) = leftX;
-            *(s16 *)(prim + 0xA) = 0x5A;
-            *(s16 *)(prim + 0x10) = xOffset + 0x57;
-            *(s16 *)(prim + 0x12) = 0x5A;
-            *(s16 *)(prim + 0x18) = leftX;
-            *(s16 *)(prim + 0x1A) = 0xA2;
-            *(s16 *)(prim + 0x20) = xOffset + 0x57;
-            *(s16 *)(prim + 0x22) = 0xA2;
+            ((POLY_FT4 *)prim)->x0 = leftX;
+            ((POLY_FT4 *)prim)->y0 = 0x5A;
+            ((POLY_FT4 *)prim)->x1 = xOffset + 0x57;
+            ((POLY_FT4 *)prim)->y1 = 0x5A;
+            ((POLY_FT4 *)prim)->x2 = leftX;
+            ((POLY_FT4 *)prim)->y2 = 0xA2;
+            ((POLY_FT4 *)prim)->x3 = xOffset + 0x57;
+            ((POLY_FT4 *)prim)->y3 = 0xA2;
         } else {
-            *(s16 *)(prim + 8) = xOffset + 0xA5;
-            *(s16 *)(prim + 0xA) = 0x5A;
-            *(s16 *)(prim + 0x10) = xOffset + 0xE5;
-            *(s16 *)(prim + 0x12) = 0x5A;
-            *(s16 *)(prim + 0x18) = xOffset + 0xA5;
-            *(s16 *)(prim + 0x1A) = 0xA2;
-            *(s16 *)(prim + 0x20) = xOffset + 0xE5;
-            *(s16 *)(prim + 0x22) = 0xA2;
+            ((POLY_FT4 *)prim)->x0 = xOffset + 0xA5;
+            ((POLY_FT4 *)prim)->y0 = 0x5A;
+            ((POLY_FT4 *)prim)->x1 = xOffset + 0xE5;
+            ((POLY_FT4 *)prim)->y1 = 0x5A;
+            ((POLY_FT4 *)prim)->x2 = xOffset + 0xA5;
+            ((POLY_FT4 *)prim)->y2 = 0xA2;
+            ((POLY_FT4 *)prim)->x3 = xOffset + 0xE5;
+            ((POLY_FT4 *)prim)->y3 = 0xA2;
         }
         AddPrim((u8 *)D_800A38C4 + 8, prim);
     }
@@ -5497,10 +5497,10 @@ void MenuDrawCarPick(u8 id, s32 shift) {
     D_800A3970 = end;
     if (xOffset != 0) {
         for (prim = D_800A3568; prim != end; prim += 0x28) {
-            *(u16 *)(prim + 8) += xOffset;
-            *(u16 *)(prim + 0x10) += xOffset;
-            *(u16 *)(prim + 0x18) += xOffset;
-            *(u16 *)(prim + 0x20) += xOffset;
+            *(u16 *)&((POLY_FT4 *)prim)->x0 += xOffset;
+            *(u16 *)&((POLY_FT4 *)prim)->x1 += xOffset;
+            *(u16 *)&((POLY_FT4 *)prim)->x2 += xOffset;
+            *(u16 *)&((POLY_FT4 *)prim)->x3 += xOffset;
         }
     }
     D_800A3940Signed = 2;

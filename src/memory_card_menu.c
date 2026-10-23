@@ -484,7 +484,7 @@ void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
     extern MenuObj *D_800A360C[];
     extern MenuObj *D_800A3858Absolute[] asm("D_800A3858.NON_MATCHING");
     MenuObj *node;
-    u8 *other;
+    MenuObj *other;
     s32 index;
     s32 v1;
 
@@ -502,8 +502,8 @@ void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
     node = D_800A3858Absolute[arg0 & 0xFF];
     if (arg4 != 0) {
         other = (u8 *)D_800A3858Absolute[(arg0 ^ 1) & 0xFF];
-        v1 = *(s16 *)(other + 8);
-        v1 -= *(s16 *)(other + 0xC);
+        v1 = other->y;
+        v1 -= other->targetY;
     } else {
         v1 = 0;
     }
@@ -520,26 +520,27 @@ void func_8006894C(s32 arg0, s16 arg1, s16 arg2, s16 arg3, u8 arg4) {
     }
 }
 
-void func_80068A3C(u8 *head, u8 *other, s32 delta, s32 limit, s32 mid) {
+void func_80068A3C(MenuObj *head, MenuObj *other, s32 delta, s32 limit,
+                   s32 mid) {
     s16 base;
 
     if (delta > 0) {
-        base = *(s16 *)(head + 8);
+        base = head->y;
         if (limit < base + delta) {
             delta = limit - base;
         }
     } else {
         if (delta < 0) {
-            if ((s32) * (s16 *)(other + 8) + delta < mid) {
-                delta = mid - *(s16 *)(other + 8);
+            if ((s32)other->y + delta < mid) {
+                delta = mid - other->y;
             }
         }
     }
     if (delta != 0) {
         if (head != 0) {
             do {
-                *(u16 *)(head + 8) += delta;
-                head = *(u8 **)(head + 0x1C);
+                head->y += delta;
+                head = head->next;
             } while (head != 0);
         }
     }
@@ -2785,7 +2786,7 @@ void func_8006C2D0(s32 arg0) {
     u8 *s;
     u8 *sentinel;
     MenuObj *head;
-    u8 *cursor;
+    MenuObj *cursor;
     s32 row;
     s32 row16;
     s32 gear;
@@ -2854,9 +2855,9 @@ void func_8006C2D0(s32 arg0) {
     }
 
     cursor = D_800A377C[0];
-    gear = *(s8 *)(cursor + 5);
+    gear = (s8)cursor->unk5;
     mode = gScreenState[0];
-    *(s16 *)(cursor + 8) = gear * 9 + 0x54;
+    cursor->y = gear * 9 + 0x54;
     if (mode != 0x28) {
         head = D_800A3908[0];
         if (head != cursor) {
@@ -2897,20 +2898,20 @@ void CardMenuSetColorNodeLayout(s32 low, s32 high, s32 color) {
  */
 void CardMenuCenterSelectedText(s32 textIndex) {
     s32 *entry;
-    u8 *obj;
+    MenuText *obj;
     register s32 value asm("v1");
 
     obj = *(u8 **)((u8 *)D_800A3A10[0] + 0x20);
     entry = &D_8009A4C0[textIndex & 0xFF];
     value = MenuStringWidth(*entry);
     value = (0x78 - value) / 2;
-    *(s32 *)(obj + 8) = *entry;
+    obj->text = *entry;
     *(u16 *)((u8 *)D_800A3A10[0] + 0x12) = value;
 }
 #else
 void CardMenuCenterSelectedText(s32 arg0) {
     s32 *entry;
-    u8 *obj;
+    MenuText *obj;
     s32 value;
     s32 temp;
     s32 *tbl;
@@ -2927,7 +2928,7 @@ void CardMenuCenterSelectedText(s32 arg0) {
     temp = 0x78 - value;
     node = D_800A3A10[0];
     value = temp / 2;
-    *(s32 *)(obj + 8) = elem;
+    obj->text = elem;
     node->drawOffsetX = value;
 }
 

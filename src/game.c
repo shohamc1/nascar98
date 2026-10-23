@@ -2813,7 +2813,7 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 
     bank = gOrderingTableBankLui;
     value = *(s8 *)(arg0 + bank + 0x41C);
-    if (value == *(s8 *)(arg0 + 0x374)) {
+    if (value == *(s8 *)&((Car *)arg0)->unk374) {
         if (*(s32 *)((bank << 2) + arg0 + 0x420) != 0) {
             return 0;
         }
@@ -2821,7 +2821,7 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         entries = (bank << 2) + arg0;
         oldEntry = *(s32 *)(entries + 0x420);
         if (oldEntry != 0) {
-            offset = value * 0x44 + *(s32 *)(arg0 + 0x370);
+            offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
             ptr = (u32)D_800A2D64;
             hw = *(s16 *)(offset + 0x2A);
             extra = *(s32 *)(entries + 0x430);
@@ -2834,11 +2834,11 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
             } while (0);
         }
     }
-    if (*(s8 *)(arg0 + 0x374) == 4) {
+    if (*(s8 *)&((Car *)arg0)->unk374 == 4) {
         *(s8 *)(arg0 + ((s32 *)D_800A2CF8)[-1] + 0x41C) = -1;
         return 1;
     }
-    speed = *(u8 *)(arg0 + 0x200);
+    speed = *(u8 *)&((Car *)arg0)->mode;
     q = speed / 5;
     ret = (s32)func_800163E8(arg0, q);
     bank2 = gOrderingTableBankLui;
@@ -2846,7 +2846,7 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (ret == 0) {
         return 1;
     }
-    *(s8 *)(arg0 + bank2 + 0x41C) = *(u8 *)(arg0 + 0x374);
+    *(s8 *)(arg0 + bank2 + 0x41C) = ((Car *)arg0)->unk374;
     return 0;
 }
 
