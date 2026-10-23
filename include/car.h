@@ -20,7 +20,8 @@ typedef struct {
     s16 unk8;
     s16 unkA;
     s32 unkC;
-    u8 unk10[0x10];
+    u8 unk10[0xC];
+    s32 unk1C;
     u8 unk20;
     u8 unk21;
     u16 unk22;
@@ -89,7 +90,9 @@ typedef struct Car {
     u8 unkCC[0x4];
     s32 rearVelocityX; /* 0x0D0 */
     s32 rearVelocityY; /* 0x0D4 */
-    u8 unkD8[0x1C];
+    u8 unkD8[0x4];
+    Vec3 unkDC; /* 0x0DC */
+    u8 unkE8[0xC];
     u8 unkF4; /* 0x0F4 */
     u8 collisionPending; /* 0x0F5 */
     u8 automatic; /* 0x0F6: picks gears by speed; manual shifts need 0 */
@@ -143,7 +146,8 @@ typedef struct Car {
     s16 segment; /* 0x1E0 */
     s16 unk1E2; /* 0x1E2 */
     s16 unk1E4; /* 0x1E4 */
-    u8 unk1E6[0x4];
+    s16 unk1E6; /* 0x1E6 */
+    s16 unk1E8; /* 0x1E8 */
     s16 unk1EA; /* 0x1EA */
     s16 type; /* 0x1EC */
     u8 unk1EE[0x2];
@@ -231,7 +235,16 @@ typedef struct Car {
     u8 unk384[0x4];
     s16 unk388; /* 0x388 */
     s16 unk38A; /* 0x38A */
-    u8 unk38C[0x14];
+    s16 unk38C; /* 0x38C */
+    s16 unk38E; /* 0x38E */
+    s16 unk390; /* 0x390 */
+    s16 unk392; /* 0x392 */
+    s16 unk394; /* 0x394 */
+    u16 unk396; /* 0x396 */
+    s16 unk398; /* 0x398 */
+    s16 unk39A; /* 0x39A */
+    s16 unk39C; /* 0x39C */
+    s16 unk39E; /* 0x39E */
     s32 unk3A0; /* 0x3A0 */
     u16 unk3A4; /* 0x3A4 */
     u8 unk3A6[8]; /* 0x3A6 */

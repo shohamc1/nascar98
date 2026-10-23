@@ -920,9 +920,9 @@ void func_8003DBA8(Car *object) {
     }
     entry = &((TrackSection *)gTrackSectionsCarState[0])[section];
     targets = (u8 *)entry + 0x34;
-    if (*(s16 *)((u8 *)entry + 0x34) != section) {
-        *(s16 *)((u8 *)entry + 0x34) = section;
-        *(s16 *)((u8 *)entry + 0x36) = 0;
+    if (entry->unk34 != section) {
+        entry->unk34 = section;
+        entry->unk36 = 0;
         previousOffset = gTrackSectionCountCarState[0] - 1;
         earlierOffset = gTrackSectionCountCarState[0] - 2;
         earlierSection =
@@ -933,23 +933,17 @@ void func_8003DBA8(Car *object) {
                                          0x90);
         earlier = &((TrackSection *)gTrackSectionsCarState[0])[earlierSection];
         coordinate = *(s32 *)(previous + 0x40);
-        *(s32 *)((u8 *)entry + 0x40) =
-            (s32)((coordinate - *(s32 *)((u8 *)earlier + 0x40)) + coordinate);
+        entry->unk40 = (s32)((coordinate - earlier->unk40) + coordinate);
         coordinateY = *(s32 *)(previous + 0x44);
-        *(s32 *)((u8 *)entry + 0x44) =
-            (s32)((coordinateY - *(s32 *)((u8 *)earlier + 0x44)) + coordinateY);
+        entry->unk44 = (s32)((coordinateY - earlier->unk44) + coordinateY);
         targetX = *(s32 *)(previous + 0x38);
-        *(s32 *)((u8 *)entry + 0x38) =
-            (s32)((targetX - *(s32 *)((u8 *)earlier + 0x38)) + targetX);
+        entry->unk38 = (s32)((targetX - earlier->unk38) + targetX);
         targetY = *(s32 *)(previous + 0x3C);
-        *(s32 *)((u8 *)entry + 0x3C) =
-            (s32)((targetY - *(s32 *)((u8 *)earlier + 0x3C)) + targetY);
+        entry->unk3C = (s32)((targetY - earlier->unk3C) + targetY);
         trailingX = *(s32 *)(previous + 0x48);
-        *(s32 *)((u8 *)entry + 0x48) =
-            (s32)((trailingX - *(s32 *)((u8 *)earlier + 0x48)) + trailingX);
+        entry->unk48 = (s32)((trailingX - earlier->unk48) + trailingX);
         trailingY = *(s32 *)(previous + 0x4C);
-        *(s32 *)((u8 *)entry + 0x4C) =
-            (s32)((trailingY - *(s32 *)((u8 *)earlier + 0x4C)) + trailingY);
+        entry->unk4C = (s32)((trailingY - earlier->unk4C) + trailingY);
     }
     state = object->unk269;
     offset = object->unk28A;
@@ -957,8 +951,8 @@ void func_8003DBA8(Car *object) {
     object->speedBoost = 0;
     switch (state) {
     case 0x0:
-        delta[0] = *(s32 *)((u8 *)entry + 0x38) - object->pos.x;
-        delta[1] = *(s32 *)((u8 *)entry + 0x3C) - object->pos.y;
+        delta[0] = entry->unk38 - object->pos.x;
+        delta[1] = entry->unk3C - object->pos.y;
         delta[2] = 0;
         object->unk26C[5] = 0xFU;
         object->unk26C[6] = 0U;
@@ -1124,8 +1118,8 @@ void func_8003DBA8(Car *object) {
         }
         goto updateMotion;
     case 0x2:
-        delta[0] = *(s32 *)((u8 *)entry + 0x40) - object->pos.x;
-        delta[1] = *(s32 *)((u8 *)entry + 0x44) - object->pos.y;
+        delta[0] = entry->unk40 - object->pos.x;
+        delta[1] = entry->unk44 - object->pos.y;
         D_800A2F4CCarState[0] = 4;
         delta[2] = 0;
         object->unk26C[5] = 0U;
@@ -1258,9 +1252,9 @@ void func_8003DBA8(Car *object) {
             object->unk84 = 0xA0000;
             trailing =
                 &((TrackSection *)gTrackSectionsCarState[0])[trailingSection];
-            if (*(s16 *)((u8 *)trailing + 0x34) == trailingSection) {
-                delta[0] = *(s32 *)((u8 *)trailing + 0x38) - object->pos.x;
-                delta[1] = *(s32 *)((u8 *)trailing + 0x3C) - object->pos.y;
+            if (trailing->unk34 == trailingSection) {
+                delta[0] = trailing->unk38 - object->pos.x;
+                delta[1] = trailing->unk3C - object->pos.y;
                 delta[2] = 0;
                 goto updateMotion;
             }

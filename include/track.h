@@ -23,7 +23,8 @@ typedef struct TrackSection {
     u8 unkA[4];
     u16 culled;                  /* 0x0E */
     u16 angle;                   /* 0x10 */
-    u8 unk12[2];                 /* point index in bits 1 to 7 of 0x12 */
+    u8 unk12;                    /* point index in bits 1 to 7 */
+    u8 unk13;
     s32 x;                       /* 0x14 */
     s32 z;                       /* 0x18 */
     u16 height0;                 /* 0x1C */
@@ -33,7 +34,14 @@ typedef struct TrackSection {
     struct TrackQuad *firstQuad; /* 0x28 */
     u8 unk2C[4];
     u8 *callbacks; /* 0x30: nodes run by ListDispatchCallbacks */
-    u8 unk34[0x1C];
+    s16 unk34;
+    s16 unk36;
+    s32 unk38;
+    s32 unk3C;
+    s32 unk40;
+    s32 unk44;
+    s32 unk48;
+    s32 unk4C;
     s32 unk50; /* 0x50 */
     u8 unk54[0x20];
     u8 *children;  /* 0x74: drawn by func_8002E240, linked at + 0x54 */

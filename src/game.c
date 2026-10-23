@@ -2533,9 +2533,9 @@ void func_80015EAC(Car *car) {
     angles.vx = car->pos.x - D_800A38AC[0];
     angles.vy = car->pos.y - D_800A38AC[1];
     angles.vz = car->pos.z - D_800A38AC[2] - (u16)car->unkFE;
-    *(Vec3 *)&saved[0] = *(Vec3 *)((u8 *)car + 0x3C);
-    *(Vec3 *)&saved[1] = *(Vec3 *)((u8 *)car + 0x48);
-    *(Vec3 *)&saved[2] = *(Vec3 *)((u8 *)car + 0x54);
+    *(Vec3 *)&saved[0] = car->rot[0];
+    *(Vec3 *)&saved[1] = car->rot[1];
+    *(Vec3 *)&saved[2] = car->rot[2];
     func_800319D4(car, 1);
     func_8001EEC4(car);
     MatrixCombineState();
@@ -2564,9 +2564,9 @@ void func_80015EAC(Car *car) {
     TransMatrix(&D_800A3A98, &position);
     SetTransMatrix(&D_800A3A98);
     SetRotMatrix(&D_800A3A98);
-    *(Vec3 *)((u8 *)car + 0x3C) = *(Vec3 *)&saved[0];
-    *(Vec3 *)((u8 *)car + 0x48) = *(Vec3 *)&saved[1];
-    *(Vec3 *)((u8 *)car + 0x54) = *(Vec3 *)&saved[2];
+    car->rot[0] = *(Vec3 *)&saved[0];
+    car->rot[1] = *(Vec3 *)&saved[1];
+    car->rot[2] = *(Vec3 *)&saved[2];
 }
 
 extern long RotTransPers3_nom();

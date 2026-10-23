@@ -164,25 +164,24 @@ void func_8001FF3C(Car *camera, Car *car) {
     sp18 = -1;
     if ((s16)TrackFindSection(camera->pos.x, camera->pos.y, &sp18, &sp1C,
                               &sp20) == -1) {
-        value0 = MathMultiplyFixed16(*(s32 *)((u8 *)car + 0xDC),
-                                     ((s32)camera->pos.x >> 2) << 0x10);
-        value4 = MathMultiplyFixed16(*(s32 *)((u8 *)car + 0xE0),
-                                     ((s32)camera->pos.y >> 2) << 0x10);
-        value3 = MathMultiplyFixed16(*(s32 *)((u8 *)car + 0xE4),
-                                     ((s32)camera->pos.z >> 2) << 0x10);
-        value1 = MathMultiplyFixed16(*(s32 *)((u8 *)car + 0xDC),
-                                     ((s32)car->pos.x >> 2) << 0x10);
-        value2 = MathMultiplyFixed16(*(s32 *)((u8 *)car + 0xE0),
-                                     ((s32)car->pos.y >> 2) << 0x10);
-        sp1C =
-            ((((s32)camera->pos.z >> 2) -
-              ((s32)((value0 + value4 + value3) -
-                     (value1 + value2 +
-                      MathMultiplyFixed16(*(s32 *)((u8 *)car + 0xE4),
-                                          ((s32)car->pos.z >> 2) << 0x10))) >>
-               0x10)) *
-             4) +
-            0x12C;
+        value0 = MathMultiplyFixed16(car->unkDC.x, ((s32)camera->pos.x >> 2)
+                                                       << 0x10);
+        value4 = MathMultiplyFixed16(car->unkDC.y, ((s32)camera->pos.y >> 2)
+                                                       << 0x10);
+        value3 = MathMultiplyFixed16(car->unkDC.z, ((s32)camera->pos.z >> 2)
+                                                       << 0x10);
+        value1 =
+            MathMultiplyFixed16(car->unkDC.x, ((s32)car->pos.x >> 2) << 0x10);
+        value2 =
+            MathMultiplyFixed16(car->unkDC.y, ((s32)car->pos.y >> 2) << 0x10);
+        sp1C = ((((s32)camera->pos.z >> 2) -
+                 ((s32)((value0 + value4 + value3) -
+                        (value1 + value2 +
+                         MathMultiplyFixed16(
+                             car->unkDC.z, ((s32)car->pos.z >> 2) << 0x10))) >>
+                  0x10)) *
+                4) +
+               0x12C;
     } else {
         sp1C = (sp1C * 4) + 0x12C;
     }
@@ -2615,8 +2614,8 @@ s32 func_80025938(Car *firstCar, Car *secondCar) {
     s32 dist[3];
     s32 radius;
 
-    radius = *(s32 *)(*(s32 *)((u8 *)firstCar + 0x370) + 0x18) +
-             *(s32 *)(*(s32 *)((u8 *)secondCar + 0x370) + 0x18);
+    radius = *(s32 *)((s32)firstCar->shape + 0x18) +
+             *(s32 *)((s32)secondCar->shape + 0x18);
     dist[0] = (firstCar->pos.x - secondCar->pos.x < 0
                    ? secondCar->pos.x - firstCar->pos.x
                    : firstCar->pos.x - secondCar->pos.x);
@@ -2934,7 +2933,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     original = separation;
     midpoint.x = (s32)((otherCar->pos.x) + (car->pos.x)) / 2;
     midpoint.y = (s32)((otherCar->pos.y) + (car->pos.y)) / 2;
-    if ((*(s32 *)((u8 *)car + 0x354)) == (s32)func_80025730) {
+    if (((s32)car->callback) == (s32)func_80025730) {
         contactAngle = (car->unk38A);
         angleFromHalfTurn = contactAngle - 0x200;
         if (angleFromHalfTurn >= 0) {
@@ -2987,7 +2986,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     work0 += MathMultiplyFixed16(callA0, callA1 << 16);
     work0 >>= 16;
     separation.y = work0;
-    tmp0 = *(s32 *)((u8 *)car + 0x370);
+    tmp0 = (s32)car->shape;
     tmp0 = *(s16 *)(tmp0 + 0x1E);
     tmp1 = separation.x;
     collisionHalfWidth = tmp0 - 10;
@@ -3067,11 +3066,11 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
             work2 = -work2;
         }
         if ((scratchA0 == tmp0) && ((otherCar->type) == scratchA0)) {
-            tmp0 = *(s32 *)((u8 *)car + 0x370);
+            tmp0 = (s32)car->shape;
             tmp0 = *(s16 *)(tmp0 + 0x22);
             scratchV1 = tmp0 - 0x1E;
         } else {
-            tmp0 = *(s32 *)((u8 *)car + 0x370);
+            tmp0 = (s32)car->shape;
             tmp0 = *(s16 *)(tmp0 + 0x22);
             scratchV1 = tmp0 - 0xF;
         }
@@ -3327,9 +3326,9 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                 nextCallback = (s32)ObjectSetResetCallback;
                 if ((((car->type) != work3) ||
                      (nextCallback != (s32)func_80025730)) &&
-                    ((*(s32 *)((u8 *)car + 0x354)) != (s32)func_80025730) &&
+                    (((s32)car->callback) != (s32)func_80025730) &&
                     ((car->mode) != 4)) {
-                    (*(s32 *)((u8 *)car + 0x354)) = nextCallback;
+                    ((s32)car->callback) = nextCallback;
                 }
                 if ((car->type) == 0) {
                     if ((otherCar->type) != 0) {
@@ -3436,16 +3435,15 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                 block_125:
                     asm("" : "=r"(callA0) : "0"((s32)func_80025730));
                     (car->unk1CE) = responseCode;
-                    if ((tmp0 != 1) &&
-                        ((*(s32 *)((u8 *)car + 0x354)) != callA0) &&
+                    if ((tmp0 != 1) && (((s32)car->callback) != callA0) &&
                         ((car->mode) != 4)) {
-                        (*(s32 *)((u8 *)car + 0x354)) = callA0;
+                        ((s32)car->callback) = callA0;
                     }
                     if (((otherCar->type) == 0)) {
-                        tmp0 = *(s32 *)((u8 *)otherCar + 0x354);
+                        tmp0 = (s32)otherCar->callback;
                         callA0 = (s32)func_80025730;
                         if ((tmp0 != callA0) && ((otherCar->mode) != 4)) {
-                            (*(s32 *)((u8 *)otherCar + 0x354)) = callA0;
+                            ((s32)otherCar->callback) = callA0;
                         }
                     }
                     result = 4;
@@ -3513,9 +3511,9 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                 nextCallback = (s32)CarApplyRandomHeadingImpulse;
                 if ((((car->type) != 1) ||
                      (nextCallback != (s32)func_80025730)) &&
-                    ((*(s32 *)((u8 *)car + 0x354)) != (s32)func_80025730) &&
+                    (((s32)car->callback) != (s32)func_80025730) &&
                     ((car->mode) != 4)) {
-                    (*(s32 *)((u8 *)car + 0x354)) = nextCallback;
+                    ((s32)car->callback) = nextCallback;
                 }
                 result = 2;
                 if ((car->type) == 0) {
@@ -5031,8 +5029,7 @@ void EffectSpawnAtWheel(Car *car, s32 wheelIndex) {
     u8 *entry;
 
     if (car->unkF4 != 0) {
-        entry = (u8 *)(*(s32 *)(*(s32 *)((u8 *)car + 0x370) + 0x40) +
-                       wheelIndex * 0x18);
+        entry = (u8 *)(*(s32 *)((s32)car->shape + 0x40) + wheelIndex * 0x18);
         pos[0] = *(s32 *)(entry + 4);
         pos[1] = *(s32 *)(entry + 8);
         pos[2] = *(s32 *)(entry + 0xC);
@@ -7156,7 +7153,7 @@ s32 CarTestDraft(Car *arg0, Car *arg1) {
     delta.y = (MathMultiplyFixed16(((s32 *)trigB)[index], rot.x << 16) +
                MathMultiplyFixed16(((s32 *)trigA)[index], rot.y << 16)) >>
               16;
-    if (*(s16 *)(*(s32 *)((u8 *)arg0 + 0x370) + 0x22) * 2 > ABS(delta.y)) {
+    if (*(s16 *)((s32)arg0->shape + 0x22) * 2 > ABS(delta.y)) {
         if (ABS(delta.x) < cull.dist) {
             if (delta.x > 0) {
                 arg0->speedBoost =
@@ -9643,7 +9640,7 @@ u16 func_80030F24(Car *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     }
     *(s16 *)&object->segment = (s16)TrackFindSection(
         pointArray[0], pointArray[1], D_800A2F2CAbsolute, &outX, &outZ);
-    *(Vec3 *)((u8 *)object + 0xDC) = *(Vec3 *)D_800B6094;
+    object->unkDC = *(Vec3 *)D_800B6094;
     result16 = *(s16 *)&object->segment;
     if (result16 == -1) {
         *(u8 *)&object->collisionPending = 1;
@@ -9753,10 +9750,10 @@ void func_80031264(Car *object) {
     if (object->rearLeftContact == 0) {
         corners[1][2] = object->pos.z;
     }
-    *(s32 *)((u8 *)object + 0x318) = corners[3][2];
-    *(s32 *)((u8 *)object + 0x340) = corners[0][2];
-    *(s32 *)((u8 *)object + 0x2C8) = corners[2][2];
-    *(s32 *)((u8 *)object + 0x2F0) = corners[1][2];
+    object->wheel[2].unk1C = corners[3][2];
+    object->wheel[3].unk1C = corners[0][2];
+    object->wheel[0].unk1C = corners[2][2];
+    object->wheel[1].unk1C = corners[1][2];
     sum = corners[0][2] + corners[1][2] + corners[2][2] + corners[3][2];
     if (sum < 0) {
         sum += 3;
@@ -9776,14 +9773,13 @@ void func_80031264(Car *object) {
         object->unkFE = result;
     } else {
         for (i = 0; i < 4; i++) {
-            *(u16 *)((u8 *)object + i * 0x28 + 0x2AC) =
-                *(u16 *)((u8 *)object + 0x39A);
+            *(u16 *)((u8 *)object + i * 0x28 + 0x2AC) = (u16)object->unk39A;
         }
-        object->unkFE = *(u16 *)((u8 *)object + 0x39A);
+        object->unkFE = (u16)object->unk39A;
     }
     object->pos.z = object->unkFE + sum4;
-    *(s16 *)((u8 *)object + 0x1E8) = (u16)object->unk1E4;
-    *(s16 *)((u8 *)object + 0x1E6) = (u16)object->unk1E2;
+    object->unk1E8 = (u16)object->unk1E4;
+    object->unk1E6 = (u16)object->unk1E2;
     edge2Y = corners[2][1] - corners[1][1];
     sum4 = corners[2][2] - corners[1][2];
     edge0Y = corners[0][1] - corners[1][1];
@@ -9918,8 +9914,8 @@ void func_800319D4(Car *object, s32 arg1) {
         *(s16 *)&object->rearRightContact = *(u16 *)&object->frontRightContact;
         *(s16 *)&object->rearLeftContact = *(u16 *)&object->frontRightContact;
     }
-    vecA[0] = *(s32 *)((u8 *)object + 0xDC);
-    vecA[1] = *(s32 *)((u8 *)object + 0xE0);
+    vecA[0] = object->unkDC.x;
+    vecA[1] = object->unkDC.y;
     index = *(s16 *)&object->heading * 4;
     temp1 = (*(s32 *)(index + (u32)D_800A3A2CAbsolute[0]) << 8) >> 16;
     temp2 = (*(s32 *)(index + (u32)D_800A3A34Absolute[0]) << 8) >> 16;
@@ -9939,8 +9935,8 @@ void func_800319D4(Car *object, s32 arg1) {
         sum4 = sum / 4;
         *(s16 *)&object->unk1BE = sum4;
         *(s32 *)&object->pos.z = corners[3][2] + (s16)sum4;
-        *(s16 *)((u8 *)object + 0x1E8) = *(u16 *)&object->unk1E4;
-        *(s16 *)((u8 *)object + 0x1E6) = *(u16 *)&object->unk1E2;
+        object->unk1E8 = *(u16 *)&object->unk1E4;
+        object->unk1E6 = *(u16 *)&object->unk1E2;
     } else {
         *(s16 *)&object->unk1E4 = -1;
         *(s16 *)&object->unk1E2 = -1;
@@ -10971,7 +10967,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                 mode = 0;
                 group->culled = 1;
             } else {
-                n = *(u8 *)((u8 *)group + 0x13);
+                n = group->unk13;
                 obj = group->unk20;
                 count = count + n;
                 while (n-- > 0) {

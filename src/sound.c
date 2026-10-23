@@ -1496,7 +1496,7 @@ void func_80041564(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
         arg2 = 5;
         break;
     case 0x26:
-        if (*(s32 *)((u8 *)arg0 + 0x354) != (s32)CarResetMotionCounters) {
+        if ((s32)arg0->callback != (s32)CarResetMotionCounters) {
             return;
         }
         if (D_800A38B0[0] != 0) {
