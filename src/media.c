@@ -825,24 +825,35 @@ void SoundSetMasterVolume(s16 left, s16 right) {
     SpuSetCommonAttr(&attr);
 }
 
-extern s32 *D_800A3398;
+/* The movie player's context, pointed to by gMovieContext. */
+typedef struct MovieContext {
+    RECT uploadRects[2]; /* 0x00 */
+    s32 activeRect;      /* 0x10 */
+    s32 unk14;
+    s32 unk18;
+    u16 uploadX; /* 0x1C */
+    u16 uploadY;
+    u16 imageWidth;
+    u16 imageHeight;
+    u_long *imageBuffer;   /* 0x24 */
+    u32 decodeBuffers[2];  /* 0x28 */
+    s32 decodeBufferIndex; /* 0x30 */
+    DRAWENV draw[2];       /* 0x34 */
+    DISPENV disp[2];       /* 0xEC */
+    s32 displayIndex;      /* 0x114: the buffer on screen */
+    s32 unk118;
+    s32 uploadComplete;   /* 0x11C */
+    s32 dctOutCallback;   /* 0x120 */
+    s32 dctInCallback;    /* 0x124 */
+    s32 drawSyncCallback; /* 0x128 */
+    s32 unk12C;
+} MovieContext;
+
+extern MovieContext *gMovieContext;
 extern s32 D_800A33A0;
 void func_8006FAAC(void) {
-    typedef struct {
-        RECT uploadRects[2];
-        s32 activeRect;
-        s32 unk14;
-        s32 unk18;
-        u16 uploadX;
-        u16 uploadY;
-        u16 imageWidth;
-        u16 imageHeight;
-        u_long *imageBuffer;
-        u8 unk28[0xF4];
-        s32 uploadComplete;
-    } StreamVram;
-    volatile StreamVram *st;
-    volatile StreamVram *st2;
+    volatile MovieContext *st;
+    volatile MovieContext *st2;
     s16 *ex;
     s16 *ew;
     s32 xv;
@@ -853,9 +864,9 @@ void func_8006FAAC(void) {
     u_long *buf;
     s32 n;
 
-    st = (volatile StreamVram *)D_800A3398;
+    st = (volatile MovieContext *)gMovieContext;
     LoadImage((RECT *)&st->uploadX, st->imageBuffer);
-    st2 = (volatile StreamVram *)D_800A3398;
+    st2 = (volatile MovieContext *)gMovieContext;
     st2->uploadX = st2->uploadX + D_800A33A0 * 8;
     xv = (s16)st2->uploadX;
     ex = &st2->uploadRects[st2->activeRect].x;
@@ -880,24 +891,8 @@ extern void func_800708D8(void *, s32);
 extern s32 D_800A339C;
 
 void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
-    typedef struct {
-        RECT uploadRects[2];
-        s32 activeRect;
-        s32 unk14;
-        s32 unk18;
-        u16 uploadX;
-        u16 uploadY;
-        u16 imageWidth;
-        u16 imageHeight;
-        u_long *imageBuffer;
-        u32 decodeBuffers[2];
-        s32 decodeBufferIndex;
-        u8 unk34[0xE4];
-        s32 unk118;
-        s32 uploadComplete;
-    } StreamVram;
-    StreamVram *st;
-    StreamVram *st2;
+    MovieContext *st;
+    MovieContext *st2;
     register u32 bsw asm("$5");
     u32 nsec;
     u32 w8;
@@ -910,7 +905,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     u32 xv;
     u32 mdecId;
     register u32 prod asm("$10");
-    volatile StreamVram *vst;
+    volatile MovieContext *vst;
     u32 mdecId2;
     s32 magic;
     u32 h16u;
@@ -921,7 +916,7 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     u32 i;
 
     word = *(u32 *)frameData;
-    st = (StreamVram *)D_800A3398;
+    st = gMovieContext;
 
     bsw = word >> 0x18;
     bsw = bsw | ((word >> 8) & 0xFF00);
@@ -964,12 +959,12 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
             func_800708D8(frameData + 0x10,
                           (s32)st->decodeBuffers[st->decodeBufferIndex]);
         }
-        ((volatile s32 *)D_800A3398)[0x47] = 0;
+        ((volatile MovieContext *)gMovieContext)->uploadComplete = 0;
     } else {
         st->uploadComplete = 0;
         DecDCTin((u_long *)st->decodeBuffers[1 - st->decodeBufferIndex],
                  D_800A339C);
-        st2 = (StreamVram *)D_800A3398;
+        st2 = gMovieContext;
         asm volatile("lhu %0, 0x20(%1)" : "=r"(bsw) : "r"(st2));
         asm volatile("lhu %0, 0x22(%1)" : "=r"(h16u) : "r"(st2));
         w32 = (s16)bsw;
@@ -980,12 +975,12 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
         DecDCTout(outp, prod2 / 2);
         mdecId2 = 0x4D444543;
         if (magic == mdecId2) {
-            st2 = (StreamVram *)D_800A3398;
+            st2 = gMovieContext;
             func_800708D8(frameData + 0x10,
                           (s32)st2->decodeBuffers[st2->decodeBufferIndex]);
         }
         DecDCToutSync(0);
-        vst = (volatile StreamVram *)D_800A3398;
+        vst = (volatile MovieContext *)gMovieContext;
         i = 0;
         if (vst->uploadComplete == 0) {
             bsw = 0x30D40;
@@ -1001,8 +996,8 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     }
 done:
     DecDCTReset(1);
-    D_800A3398[0x46] = D_800A3398[0x46] + 1;
-    D_800A3398[0xC] = 1 - D_800A3398[0xC];
+    gMovieContext->unk118 = gMovieContext->unk118 + 1;
+    gMovieContext->decodeBufferIndex = 1 - gMovieContext->decodeBufferIndex;
 }
 asm(".globl func_8006FBB0\nfunc_8006FBB0 = func_8006FBB0Args");
 
@@ -1026,7 +1021,7 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     magic = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) |
             (word << 0x18);
     rect.y = y;
-    str = D_800A3398;
+    str = gMovieContext;
     height16 = (wA >> 8) | ((wA & 0xFF) << 8);
     rect.x = (u32)(x * D_800A33A0) >> 1;
     nsectors16 = (w8 >> 8) | ((w8 & 0xFF) << 8);
@@ -1040,7 +1035,7 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
             func_800708D8(frameData + 0x10,
                           *(s32 *)((s32)str + str[0xC] * 4 + 0x28));
         }
-        ((volatile s32 *)D_800A3398)[0x47] = 0;
+        ((volatile MovieContext *)gMovieContext)->uploadComplete = 0;
     } else {
         output = str[9];
         DecDCTin((u_long *)*(s32 *)((s32)str + (1 - str[0xC]) * 4 + 0x28),
@@ -1049,9 +1044,10 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
         DecDCTout((u_long *)output,
                   ((u32)(height16 * stride) >> 1) * (nsectors16 >> 4));
         if (magic == 0x4D444543) {
-            func_800708D8(
-                frameData + 0x10,
-                *(s32 *)((s32)D_800A3398 + D_800A3398[0xC] * 4 + 0x28));
+            func_800708D8(frameData + 0x10,
+                          *(s32 *)((s32)gMovieContext +
+                                   gMovieContext->decodeBufferIndex * 4 +
+                                   0x28));
         }
         DecDCToutSync(0);
         i = 0;
@@ -1063,18 +1059,18 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
                 output += rect.w * rect.h * 2;
             } while (i < nsectors16);
         }
-        D_800A3398[0x47] = 1;
+        gMovieContext->uploadComplete = 1;
     }
     DecDCTReset(1);
-    D_800A3398[0x46] = D_800A3398[0x46] + 1;
-    D_800A3398[0xC] = 1 - D_800A3398[0xC];
+    gMovieContext->unk118 = gMovieContext->unk118 + 1;
+    gMovieContext->decodeBufferIndex = 1 - gMovieContext->decodeBufferIndex;
 }
 
 void func_8006FBB0(void);
 extern void func_8006FDDCNoArgs(void);
 asm(".globl func_8006FDDCNoArgs\nfunc_8006FDDCNoArgs = func_8006FDDC");
 void MovieDispatchFrameUpdate(void) {
-    if (D_800A3398[0x12C / 4])
+    if (gMovieContext->unk12C)
         func_8006FBB0();
     else
         func_8006FDDCNoArgs();
@@ -1085,12 +1081,12 @@ void VideoSwapDisplayAndDrawEnvironments(void) {
     s32 *s2;
     s32 other;
 
-    if (D_800A3398[0x11C / 4] != 0) {
+    if (gMovieContext->uploadComplete != 0) {
         DrawSync(0);
         VSync(0);
-        s = D_800A3398;
+        s = gMovieContext;
         PutDispEnv((DISPENV *)((u8 *)s + (s[0x114 / 4] * 20 + 0xEC)));
-        s2 = D_800A3398;
+        s2 = gMovieContext;
         other = 1 - s2[0x114 / 4];
         s2[0x114 / 4] = other;
         PutDrawEnv((DRAWENV *)((u8 *)s2 + (other * 92 + 0x34)));
@@ -1153,18 +1149,18 @@ void MdecStreamShutdown(s32 arg0) {
     DRAWENV env;
     DISPENV disp;
 
-    if (D_800A3398 != 0) {
-        D_800A3578[0] = (u8)D_800A3398[0x45];
+    if (gMovieContext != 0) {
+        D_800A3578[0] = (u8)gMovieContext->displayIndex;
         DecDCTinSync(0);
         DecDCToutSync(0);
         DrawSync(0);
         SwEnterCriticalSection();
-        DecDCToutCallback((void (*)(void))D_800A3398[0x48]);
-        DecDCTinCallback((void (*)(void))D_800A3398[0x49]);
-        DrawSyncCallback((void (*)())D_800A3398[0x4A]);
-        D_800A3398[0x48] = 0;
-        D_800A3398[0x49] = 0;
-        D_800A3398[0x4A] = 0;
+        DecDCToutCallback((void (*)(void))gMovieContext->dctOutCallback);
+        DecDCTinCallback((void (*)(void))gMovieContext->dctInCallback);
+        DrawSyncCallback((void (*)())gMovieContext->drawSyncCallback);
+        gMovieContext->dctOutCallback = 0;
+        gMovieContext->dctInCallback = 0;
+        gMovieContext->drawSyncCallback = 0;
         SwExitCriticalSection();
         DecDCTReset(1);
         if (D_800A3397 == 1 && (arg0 & 0xFF)) {
@@ -1187,7 +1183,7 @@ void MdecStreamShutdown(s32 arg0) {
         } else {
             SetDispMask(0);
         }
-        D_800A3398 = 0;
+        gMovieContext = 0;
     }
 }
 
@@ -1203,7 +1199,7 @@ s32 func_800703D0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     if (arg0 != 0) {
         if (arg1 != 0 && arg2 != 0 && arg3 != 0) {
             bzero(arg0, 0x130);
-            D_800A3398 = arg0;
+            gMovieContext = arg0;
             DrawSync(0);
             DecDCTinSync(0);
             DecDCToutSync(0);
@@ -1225,57 +1221,54 @@ s32 func_800703D0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
                     DrawSync(0);
                 }
             }
-            SetDefDrawEnv((DRAWENV *)((u8 *)D_800A3398 + 0x34), 0, 0, 0x140,
+            SetDefDrawEnv(&gMovieContext->draw[0], 0, 0, 0x140, 0xF0);
+            SetDefDispEnv(&gMovieContext->disp[0], 0, 0, 0x140, 0xF0);
+            SetDefDrawEnv(&gMovieContext->draw[1], D_800A33A0 * 0xA0, 0, 0x140,
                           0xF0);
-            SetDefDispEnv((DISPENV *)((u8 *)D_800A3398 + 0xEC), 0, 0, 0x140,
+            SetDefDispEnv(&gMovieContext->disp[1], D_800A33A0 * 0xA0, 0, 0x140,
                           0xF0);
-            SetDefDrawEnv((DRAWENV *)((u8 *)D_800A3398 + 0x90),
-                          D_800A33A0 * 0xA0, 0, 0x140, 0xF0);
-            SetDefDispEnv((DISPENV *)((u8 *)D_800A3398 + 0x100),
-                          D_800A33A0 * 0xA0, 0, 0x140, 0xF0);
             if (D_800A339C == 1) {
-                *(u8 *)((u8 *)D_800A3398 + 0xFD) = 1;
-                *(u8 *)((u8 *)D_800A3398 + 0x111) = 1;
+                gMovieContext->disp[0].isrgb24 = 1;
+                gMovieContext->disp[1].isrgb24 = 1;
             } else {
-                *(u8 *)((u8 *)D_800A3398 + 0xFD) = 0;
-                *(u8 *)((u8 *)D_800A3398 + 0x111) = 0;
+                gMovieContext->disp[0].isrgb24 = 0;
+                gMovieContext->disp[1].isrgb24 = 0;
             }
-            *(u8 *)((u8 *)D_800A3398 + 0xFC) = 0;
-            *(u8 *)((u8 *)D_800A3398 + 0x110) = 0;
-            D_800A3398[0x114 / 4] = 0;
-            *(u16 *)((u8 *)D_800A3398 + 0xF6) = 0;
-            *(u16 *)((u8 *)D_800A3398 + 0x10A) = 0;
+            gMovieContext->disp[0].isinter = 0;
+            gMovieContext->disp[1].isinter = 0;
+            gMovieContext->displayIndex = 0;
+            *(u16 *)&gMovieContext->disp[0].screen.y = 0;
+            *(u16 *)&gMovieContext->disp[1].screen.y = 0;
             if (arg6 != 0) {
                 VSync(0);
                 PutDrawEnv(
-                    (DRAWENV *)((u8 *)D_800A3398 +
-                                ((1 - D_800A3398[0x114 / 4]) * 92 + 0x34)));
+                    &gMovieContext->draw[1 - gMovieContext->displayIndex]);
                 PutDispEnv(
-                    (DISPENV *)((u8 *)D_800A3398 +
-                                ((1 - D_800A3398[0x114 / 4]) * 20 + 0xEC)));
+                    &gMovieContext->disp[1 - gMovieContext->displayIndex]);
                 SetDispMask(1);
             }
-            D_800A3398[0x28 / 4] = arg1;
-            D_800A3398[0x2C / 4] = arg2;
-            D_800A3398[0x24 / 4] = arg3;
+            gMovieContext->decodeBuffers[0] = arg1;
+            gMovieContext->decodeBuffers[1] = arg2;
+            gMovieContext->imageBuffer = arg3;
             DecDCTReset(0);
             SwEnterCriticalSection();
-            D_800A3398[0x12C / 4] = arg4;
+            gMovieContext->unk12C = arg4;
             if (arg4 != 0) {
-                D_800A3398[0x120 / 4] = DecDCToutCallback(func_8006FAAC);
-                D_800A3398[0x124 / 4] = DecDCTinCallback(0);
-                D_800A3398[0x128 / 4] = DrawSyncCallback(0);
+                gMovieContext->dctOutCallback =
+                    DecDCToutCallback(func_8006FAAC);
+                gMovieContext->dctInCallback = DecDCTinCallback(0);
+                gMovieContext->drawSyncCallback = DrawSyncCallback(0);
                 if (D_800A339C == 1) {
                     D_800A33B0[0] = D_800A339C;
                 }
             } else {
                 s32 cb;
 
-                D_800A3398[0x120 / 4] = DecDCToutCallback(0);
-                D_800A3398[0x124 / 4] = DecDCTinCallback(0);
+                gMovieContext->dctOutCallback = DecDCToutCallback(0);
+                gMovieContext->dctInCallback = DecDCTinCallback(0);
                 cb = DrawSyncCallback(0);
                 D_800A33B0[0] = 0;
-                D_800A3398[0x128 / 4] = cb;
+                gMovieContext->drawSyncCallback = cb;
             }
             SwExitCriticalSection();
             return 1;

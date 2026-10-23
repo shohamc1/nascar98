@@ -1388,3 +1388,4 @@ gSparks = 0x800B60C8;
 gImageBankTextures = 0x800A36CC;
 gFontGlyphs = 0x800A35AC;
 gHudGlyphs = 0x80098BD0;
+gMovieContext = 0x800A3398;
