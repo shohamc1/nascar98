@@ -14,7 +14,7 @@
 #include "util.h"
 
 extern Car *gCarListnm[] asm("gCarList.NON_MATCHING");
-void PadResetAndInitializeBuffers();
+void PadResetAndInitializeBuffers(void);
 
 /* Controller state and input. */
 

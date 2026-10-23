@@ -634,8 +634,10 @@ extern void SpuFree(unsigned long addr);
 extern void AudioDisableStream(void);
 extern s32 MdecBuildVlcLookup(u8 *first, u8 *second, u8 *table);
 extern s32 CdStreamInit();
-extern s32 AudioInit();
-extern s32 func_800703D0();
+extern s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
+                     s32 arg5, s32 arg6);
+extern s32 func_800703D0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4,
+                         s32 arg5, s32 arg6);
 extern void CdStreamShutdown(void);
 extern void AudioShutdown(void);
 extern s32 AudioGetContextSize(void);

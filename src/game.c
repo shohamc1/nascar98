@@ -646,7 +646,7 @@ void TextureLoadAll(void) {
         u8 b[8];
     } XBytes;
     extern u8 D_800A2D1CNM[] asm("D_800A2D1C.NON_MATCHING");
-    extern void TextureLoadTim();
+    extern void TextureLoadTim(void *timImage);
     XBytes env;
     RECT rect;
     s32 i;

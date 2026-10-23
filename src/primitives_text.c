@@ -1660,8 +1660,10 @@ extern u8 *D_8009AE50[];
 extern void GraphicsSetColor(s32, s32, s32);
 extern void HudDrawText(u8 *, s32, s32, s8);
 extern void GraphicsDrawRect();
-extern void MenuDrawArrow();
-extern void GraphicsDrawDoubleBorderRect();
+extern void MenuDrawArrow(s32 x, s32 y, s32 dir, s32 size);
+extern void GraphicsDrawDoubleBorderRect(s16 x, s16 y, s16 width, s16 height,
+                                         u8 red, u8 green, u8 blue,
+                                         u8 semiTrans);
 void MenuDrawPauseListPanel(void *unused, s32 selection, u8 flags, s32 y) {
     s8 i;
     s32 cursorY;

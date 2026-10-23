@@ -29,7 +29,7 @@ extern void HeapFree(void *ptr);
 extern s32 D_800A38AC[];
 extern s32 D_800A37C4Absolute[];
 extern void SetPolyF4(u8 *prim);
-void PadResetAndInitializeBuffers();
+void PadResetAndInitializeBuffers(void);
 extern s32 D_800A37D0[];
 void SetPolyFT4(POLY_FT4 *);
 extern u8 gCardMenuMessageb[] asm("D_800A3814.NON_MATCHING");

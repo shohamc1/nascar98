@@ -2547,7 +2547,7 @@ void ObjectSetResetCallback(u8 *obj) {
 void func_80025730(Car *obj) {
     extern u8 D_800A35F8[];
     extern s16 D_800A3910[];
-    extern void CarUpdateTumble();
+    extern void CarUpdateTumble(Car * car);
     extern void func_8004419C(Car *);
     s32 y;
     s32 value;
@@ -5329,8 +5329,8 @@ void func_8002A1D0(void) {
 }
 
 extern s32 D_800A35D4[];
-extern s32 func_80029EF8();
-extern void CameraCycleModeCallback();
+extern s32 func_80029EF8(Car *obj);
+extern void CameraCycleModeCallback(Car *car);
 
 /* Sets bit D_800A2EC4 when the object's 0x209 counter wraps to 3 and the
    0x238 status mask from func_80029EF8 asks for the counter update.
@@ -7478,7 +7478,7 @@ Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     extern void func_800373B4(Car *);
     extern void func_80029E34(void);
     extern void CarResetMotionCounters(Car *);
-    extern void CarInitDefaults();
+    extern void CarInitDefaults(Car * car);
     Car *entry;
     /* Retail stores the tail fields through the return register: obj is
      * v0 from the copy on. No plain-C spelling found yet. */
@@ -7641,7 +7641,7 @@ extern u8 *D_800A3574_b[] asm("D_800A3570.NON_MATCHING");
 extern s32 D_800A3630_nm asm("D_800A3630.NON_MATCHING");
 extern s32 D_800A2F30_nm[] asm("D_800A2F30.NON_MATCHING");
 extern u8 D_800AE99C_nm[] asm("D_800AE99C.NON_MATCHING");
-extern void GraphicsSelectImageBank();
+extern void GraphicsSelectImageBank(s32 index);
 void func_8002DC2C(void) {
     u8 *entry;
     s32 cursor;
@@ -15326,7 +15326,7 @@ void CarUpdateAi(Car *arg0) {
 }
 
 s32 CarCanPassOther(Car *car, Car *otherCar) {
-    extern s32 func_8003702C();
+    extern s32 func_8003702C(Car * objectA, Car * objectB);
     volatile s32 pad[4];
     s32 result;
 
@@ -16758,7 +16758,7 @@ void RaceUpdatePositions(u8 force) {
     }
 }
 
-extern void CarInitDefaults();
+extern void CarInitDefaults(Car *car);
 extern s32 D_800BE730[];
 extern s16 D_800BE738[];
 

@@ -22,7 +22,7 @@ s32 func_8003702C(Car *, Car *);
 extern void HeapFree(void *ptr);
 extern s32 D_800A359C[];
 extern void CarResetMotionCounters(Car *);
-extern void FileRead();
+extern void FileRead(s32 buffer, s32 size, s32 count, s32 handle);
 extern u8 gStereoEnabled;
 void VectorRotate2D(s32 angleIndex, s32 x, s32 y, s16 *rotatedPoint);
 void *FileOpen(s32 fileId, void *mode);
