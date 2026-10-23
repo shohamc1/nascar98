@@ -14,6 +14,8 @@
 #include "input.h"
 #include "menu.h"
 
+void func_8006BD68(void);
+
 extern s32 strlen(char *);
 extern s16 gMusicVolumew15[] asm("gMusicVolume.NON_MATCHING");
 extern s16 gCdVolumew15[] asm("gCdVolume.NON_MATCHING");
@@ -555,7 +557,7 @@ extern MenuObj *D_800A3858NM[] asm("D_800A3858.NON_MATCHING");
 extern u8 *D_800A3918NM[] asm("D_800A3918.NON_MATCHING");
 extern u8 *D_800A3918NB[] asm("D_800A3918.NON_MATCHING");
 void func_80068AC4(s32 arg0, s32 arg1, s32 arg2) {
-    extern u8 D_800A3944;
+    extern u8 D_800A3944Unsigned asm("D_800A3944");
     s32 zero;
     s32 delta;
     s32 threshold;
@@ -618,7 +620,7 @@ noStore:
     }
     idx = 0;
     if (gScreenStateNM[0] == 9) {
-        idx = D_800A3944;
+        idx = D_800A3944Unsigned;
     }
     head = D_800A3858NM[idx];
     if ((head->y) >= 0) {
@@ -1266,7 +1268,7 @@ void __maspsx_include_asm_hack_jtblpad_80069A90() {
 }
 
 void MenuUpdateItemRow(s32 itemCode) {
-    extern void *D_800A3914[];
+    extern void *D_800A3914View[] asm("D_800A3914");
     extern s8 gPadLayout[];
     extern s32 D_8009A2D4[];
     extern s32 D_8009A2F4[];
@@ -1347,7 +1349,7 @@ void MenuUpdateItemRow(s32 itemCode) {
     index = group8;
     if (group == 0xFF) {
         MenuObj *retObj;
-        retObj = (MenuObj *)D_800A3914[0];
+        retObj = (MenuObj *)D_800A3914View[0];
         if (retObj != 0) {
             retObj->orderingDepth = -0x32;
             return;
@@ -1359,7 +1361,7 @@ void MenuUpdateItemRow(s32 itemCode) {
     } else {
         value = MenuTextCenterOffset(0x140, D_8009A2D4[index]);
     }
-    obj = (MenuObj *)D_800A3914[0];
+    obj = (MenuObj *)D_800A3914View[0];
     obj->x = value;
     obj->orderingDepth = 0x32;
     child = (u8 *)obj->primitive;
@@ -1378,7 +1380,7 @@ void MenuUpdateItemRow(s32 itemCode) {
  * lookup reads `group`, the others read `index`. Each arm of the last test
  * holds its own copy of the row setup, so the locals stay block-local. */
 void MenuCreateItemRow(s32 itemCode) {
-    extern void *D_800A3914[];
+    extern void *D_800A3914View[] asm("D_800A3914");
     extern u8 *D_800A3910f[] asm("D_800A3910");
     extern u8 *D_800A3918n[] asm("D_800A3918");
     extern s8 gPadLayout[];
@@ -1391,7 +1393,7 @@ void MenuCreateItemRow(s32 itemCode) {
     group = func_80069A90(itemCode);
     index = group;
     if (group == 0xFF) {
-        D_800A3914[0] = 0;
+        D_800A3914View[0] = 0;
         return;
     }
     MenuFontSetS32(2, 2);
@@ -1401,7 +1403,7 @@ void MenuCreateItemRow(s32 itemCode) {
         text = D_8009A2D4[index];
     }
     obj = (u8 *)MenuCreateTextObject(MenuTextCenterOffset(0x140, text), 0xDC);
-    D_800A3914[0] = obj;
+    D_800A3914View[0] = obj;
     if (((itemCode & 0xFF) != 0xC) && ((u32)((itemCode - 9) & 0xFF) >= 2U) &&
         ((u32)((itemCode - 0x10) & 0xFF) >= 2U)) {
         *((s16 *)(obj + 0xE)) = 2;
@@ -1415,13 +1417,13 @@ void MenuCreateItemRow(s32 itemCode) {
         *((s16 *)(fields + 0x1A)) = 0x32;
         next[3] = 0x80;
     }
-    ((u8 *)D_800A3914[0])[4] = 0x40;
+    ((u8 *)D_800A3914View[0])[4] = 0x40;
     if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
         MenuObj *rowA;
         u8 *pktA;
         s32 textA;
         s32 timerA;
-        rowA = (MenuObj *)D_800A3914[0];
+        rowA = (MenuObj *)D_800A3914View[0];
         timerA = rowA->orderingDepth;
         textA = D_8009A2F4[index];
         pktA = (u8 *)rowA->primitive;
@@ -1436,7 +1438,7 @@ void MenuCreateItemRow(s32 itemCode) {
         u8 *pktB;
         s32 textB;
         s32 timerB;
-        rowB = (MenuObj *)D_800A3914[0];
+        rowB = (MenuObj *)D_800A3914View[0];
         timerB = rowB->orderingDepth;
         textB = D_8009A2D4[index];
         pktB = (u8 *)rowB->primitive;
@@ -2408,7 +2410,7 @@ void CardUpdateDriverRecords(u8 arg0, s8 arg1, u8 arg2, u8 arg3) {
 
 extern u8 D_800B9BB4[];
 
-extern u8 D_800B9B6E[];
+extern s8 D_800B9B6E[];
 void func_8006BA68(void) {
     u8 *base;
     u8 *entry;
@@ -2489,7 +2491,7 @@ void func_8006BB1C(void) {
     extern u8 D_800A3071NM[] asm("D_800A3071.NON_MATCHING");
     extern u8 D_800A3072[];
     extern u8 D_800A308C[];
-    extern u8 gPadLayout[];
+    extern s8 gPadLayout[];
     extern s32 D_800A37D0[];
     extern u8 gMusicVolumeScaled[];
     extern u8 gStereoEnabled[];
@@ -2581,7 +2583,7 @@ void func_8006BD68(void) {
     extern u8 D_800A3071R[] asm("D_800A3071.NON_MATCHING");
     extern u8 D_800A3072R[] asm("D_800A3072.NON_MATCHING");
     extern u8 D_800A3075[];
-    extern u8 gPadLayout[];
+    extern s8 gPadLayout[];
     extern u16 gCdVolumeR[] asm("gCdVolume.NON_MATCHING");
     extern u16 gMusicVolume[];
     extern u8 D_800B9B44[];
@@ -3298,7 +3300,7 @@ s32 CardMenuCheckTrackNameCapacity(void) {
     }
 }
 
-extern char D_800B9B44[];
+extern u8 D_800B9B44[];
 void CardMenuWriteSaveSlot(void) {
     s32 isCurrent;
     isCurrent = D_800A358C < D_800A3968;
@@ -3778,12 +3780,12 @@ void func_8006DD28(u32 arg0, u32 arg1) {
     s32 m;
     u32 n;
     s32 pos;
-    extern u8 gPadLayout[];
+    extern u8 gPadLayoutUnsigned[] asm("gPadLayout");
     extern u8 D_800A36E4[];
 
     m = (u8)arg0;
     n = (u8)arg1;
-    PadCalibrateCenter(m, n, gPadLayout[m]);
+    PadCalibrateCenter(m, n, gPadLayoutUnsigned[m]);
     pos = (m << 3) + m;
     for (i = 0; i < 3; i++) {
         if (i == 2) {

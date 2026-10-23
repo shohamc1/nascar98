@@ -14,6 +14,9 @@
 #include "cd.h"
 #include "input.h"
 #include "scene.h"
+extern s32 SpuSetReverbVoice(s32, s32);
+
+void SpuSetTransferStartAddr(s32);
 
 extern s32 gOrderingTable[];
 extern void HeapFree(void *ptr);
@@ -3047,8 +3050,6 @@ void func_800739E0(void) {
     D_800A351C[0x7B24 / 4] = 0;
     SwExitCriticalSection();
 }
-
-extern void SpuSetReverbVoice(s32, s32);
 
 void AudioApplyStreamReverbVoices(void) {
     SpuSetKey(0, D_800A351C[0x7B64 / 4] | D_800A351C[0x7B68 / 4]);

@@ -183,7 +183,9 @@ void GameRunSession(void) {
     extern void func_80014440(void);
     extern void CdApplyMixVolume(void);
     extern void func_8002F2CC(void);
-    extern void GraphicsSetClearColor(u32, u32, u32);
+    /* Unpromoted u32 view: the u8 prototype would truncate the arguments. */
+    extern void GraphicsSetClearColorWide(u32, u32,
+                                          u32) asm("GraphicsSetClearColor");
     extern void func_80045288(void);
     extern void func_80014A70(void);
     extern void ReplayAllocBuffer(void);
@@ -198,7 +200,7 @@ void GameRunSession(void) {
     extern void GraphicsDrawRaceViews(void);
     extern void func_8001C34C(void);
     extern void CdStopIfPlaybackChanged(void);
-    extern void func_8001E7EC(void *, s32 *, s32);
+    extern s32 func_8001E7EC(void *arg0, s32 arg1, s32 arg2);
     extern void func_8003CF04(void);
     extern void SoundShutdownAll(void);
     extern void GraphicsSetColor(s32, s32, s32);
@@ -261,9 +263,9 @@ void GameRunSession(void) {
     }
     CdApplyMixVolume();
     func_8002F2CC();
-    GraphicsSetClearColor((u32)(D_800A3948 & 0x7C00) >> 7,
-                          (u32)(D_800A3948 & 0x3E0) >> 2,
-                          (D_800A3948 & 31) << 3);
+    GraphicsSetClearColorWide((u32)(D_800A3948 & 0x7C00) >> 7,
+                              (u32)(D_800A3948 & 0x3E0) >> 2,
+                              (D_800A3948 & 31) << 3);
     func_80045288();
     func_80014A70();
     ReplayAllocBuffer();
@@ -540,7 +542,7 @@ void FrameWaitForCounterPhase(s32 waitForCounterPhase) {
     } while (frame >= 0x1F);
 }
 
-extern void *D_800A3A8C;
+extern u8 *D_800A3A8C;
 void HeapAllocateLargeBlock(void) {
     D_800A3A8C = HeapAlloc(0x35B60);
 }
@@ -669,7 +671,7 @@ void TextureLoadFileByIndex(s32 fileIndex) {
     TextureLoadTim((void *)STACK_BLOCK_801E0000);
 }
 
-extern void func_8001E7EC(void *, s32, s32);
+extern s32 func_8001E7EC(void *, s32, s32);
 
 void GraphicsRenderFrame(s32 arg0) {
     s32 value0;

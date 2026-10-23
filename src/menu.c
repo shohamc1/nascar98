@@ -18,6 +18,9 @@
 #include "graphics.h"
 #include "sound.h"
 
+void func_80065838(s32 arg0);
+extern s32 D_800A3930Plain asm("D_800A3930");
+
 extern s32 strlen(char *);
 
 extern s32 gOrderingTable[];
@@ -5227,7 +5230,7 @@ void func_80064E6C(void) {
     extern u8 *D_8009A414[];
     extern u8 D_800A3778;
     extern u8 D_800A35DC;
-    extern void MenuDrawCarPick(s32, s32);
+    extern void MenuDrawCarPick(u8 id, s32 shift);
     extern void func_80065F80(void);
     extern void MenuDrawCarPickPair(s32);
     u8 **base;
@@ -5655,7 +5658,7 @@ void func_80065C3C(void) {
     extern s32 GetGp(void);
     extern s32 D_8008CA4C[];
     extern volatile u16 D_800A3940;
-    extern volatile u8 D_800A3778;
+    extern volatile u8 D_800A3778Vol asm("D_800A3778");
     extern u8 D_800A35DC;
     extern u8 D_800A3884;
     extern volatile u8 D_800A3360;
@@ -5680,7 +5683,7 @@ void func_80065C3C(void) {
             D_800A3940 = D_800A3940 - 1, D_800A3940;
         }
         if ((s16)D_800A3940 < -0xB4) {
-            if (D_800A3778 == D_800A35DC) {
+            if (D_800A3778Vol == D_800A35DC) {
                 D_800A3940 = 0;
                 if (*(volatile u8 *)&D_800A3884 == 1) {
                     ClearOTagR(D_800A38C4, 4);
@@ -5698,14 +5701,14 @@ void func_80065C3C(void) {
                     }
                     D_800A367C =
                         (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
-                    MenuDrawCarPick(D_800A3778, 0);
+                    MenuDrawCarPick(D_800A3778Vol, 0);
                     D_800A3884 = 2;
                 }
             } else {
                 D_800A3940 = 2;
                 D_800A3760 = D_800A3760 ^ 1;
                 if (D_800A3760 == 1) {
-                    D_800A3778 = D_800A3778 + 1, D_800A3778;
+                    D_800A3778Vol = D_800A3778Vol + 1, D_800A3778Vol;
                     ClearOTagR(D_800A38C4, 4);
                     if (D_800A3884 == 0) {
                         text = (char *)D_8009A400[0];
@@ -5734,7 +5737,7 @@ void func_80065C3C(void) {
                     }
                     D_800A367C =
                         (s32)(D_800A369C + *(volatile u8 *)&D_800A3698 * 0x28);
-                    MenuDrawCarPick(D_800A3778, 1);
+                    MenuDrawCarPick(D_800A3778Vol, 1);
                 }
             }
         }
@@ -5862,8 +5865,8 @@ void MenuDrawCarPickPair(s32 shiftPanels) {
 
 void func_800663B0(void) {
     extern s32 D_8008CA4C[];
-    extern u16 D_800A3940;
-    extern u8 D_800A3760;
+    extern volatile u16 D_800A3940;
+    extern volatile u8 D_800A3760;
     extern volatile u8 D_800A3360;
     extern void func_8006594C(s32, s32);
     extern void MenuDrawCarPickPair(s32);
@@ -6185,7 +6188,6 @@ extern u16 *D_800A36BC;
 extern s32 D_800A365C;
 extern s32 D_800A39F4;
 extern u8 D_800A36A0;
-extern s32 D_800A3930;
 void func_80066CFC(void) {
     POLY_FT4 *dst;
     POLY_FT4 *prim;
@@ -6260,7 +6262,7 @@ void func_80066CFC(void) {
     DrawSync(0);
     SetDispMask(1);
     D_800A3884 = 0;
-    D_800A3930 = 0;
+    D_800A3930Plain = 0;
 }
 
 void MenuOffsetTexturedQuadY(u8 *start, u8 *end, u8 delta) {
@@ -6387,14 +6389,17 @@ void func_80067228(void) {
     }
 }
 
+/* gcc merges a later volatile redeclaration into the file-scope one, so
+ * D_800A3930 is volatile from here to the end of the file. */
+extern volatile s32 D_800A3930;
 void func_8006733C(void) {
     extern s32 D_800A3848[];
     extern u8 *D_8009A428[];
-    extern volatile s32 D_800A3930;
     extern void SystemSetGlobalPointer(s32);
     extern void PadResetAndInitializeBuffersArg(s32) asm(
         "PadResetAndInitializeBuffers");
-    extern void func_8006709C();
+    /* Unprototyped view: the u8 prototype would truncate flag. */
+    extern void func_8006709CPromoted() asm("func_8006709C");
     s32 oldGp;
     s32 input;
     s8 flag;
@@ -6422,7 +6427,7 @@ void func_8006733C(void) {
         }
         if (flag != 0) {
             if ((D_800A3930 & 1) != 0) {
-                func_8006709C(flag);
+                func_8006709CPromoted(flag);
             }
         }
         if (*(volatile u8 *)&D_800A3884 == 1) {
@@ -6610,7 +6615,6 @@ void func_80067AB4(void) {
     extern u8 *D_8009A428[];
     extern DISPENV D_800BDE04[];
     extern DRAWENV D_800BDD4C[];
-    extern volatile s32 D_800A3930;
     extern volatile u16 D_800A3940;
     extern u8 *D_800A3568;
     extern s32 D_800A367C;

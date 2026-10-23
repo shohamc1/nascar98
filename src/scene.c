@@ -19,6 +19,13 @@
 #include "sound.h"
 #include "util.h"
 
+extern void SetPolyFT4(POLY_FT4 *);
+extern u8 *D_800A3428View asm("D_800A3428");
+void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode);
+void func_800539F0(void);
+void GraphicsInitDoubleBufferSwapped(void);
+void TextureLoadTim(void *timImage);
+
 extern s32 strlen(char *);
 extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
 
@@ -1011,7 +1018,6 @@ extern SceneRoadPoint D_800A45C0[][2];
 extern SceneRoadPoint D_800A45D8[][2];
 
 extern MATRIX D_800992FC[];
-extern u8 *D_800A3428;
 extern s16 D_800A45D8X[] asm("D_800A45D8");
 extern s16 D_800A45DA[];
 extern s16 D_800A45DC[];
@@ -1060,7 +1066,7 @@ void SceneInitRoadStrip(void) {
             sectionBase = D_800A3440;
             sectionPtr = sectionBase + slot;
             if (slot != 0) {
-                car = D_800A3428;
+                car = D_800A3428View;
             } else {
                 car = gPlayerCar[0];
             }
@@ -5903,8 +5909,8 @@ void HudUpdateFlagOverlay(void) {
                 D_800A3414 = (u8)gPlayerCar[0]->unk209;
                 gPlayerCar[0]->unk209 = (s8)(u8)gPlayerCar[0]->unk209 > 0;
                 if (gSplitScreenMode[0] != 0) {
-                    D_800A3418 = D_800A3428[0x209];
-                    D_800A3428[0x209] = (s8)D_800A3428[0x209] > 0;
+                    D_800A3418 = D_800A3428View[0x209];
+                    D_800A3428View[0x209] = (s8)D_800A3428View[0x209] > 0;
                 }
                 if (gPlayerCar[0]->unk268 != 0) {
                     D_800A35D0 = gPlayerCar[0]->unk26C[13];
@@ -5969,7 +5975,7 @@ void HudUpdateFlagOverlay(void) {
         if (D_800A2EACAbsolute[0] == 0 && D_800A372C == 0) {
             gPlayerCar[0]->unk209 = D_800A3414;
             if (gSplitScreenMode[0] != 0) {
-                D_800A3428[0x209] = D_800A3418;
+                D_800A3428View[0x209] = D_800A3418;
             }
             if (gPlayerCar[0]->unk268 == 0) {
                 D_800A2EC4Lui[0] = D_800A35D0;
@@ -10362,7 +10368,7 @@ void func_80056C84(s32 arg0, s32 arg1) {
     extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");
     extern u8 D_800A3988NM asm("D_800A3988.NON_MATCHING");
     extern u8 D_800A3073NM asm("D_800A3073.NON_MATCHING");
-    extern u8 D_800A3078NM asm("D_800A3078.NON_MATCHING");
+    extern s8 D_800A3078NM asm("D_800A3078.NON_MATCHING");
     extern u8 D_800A3988[];
     extern u8 D_800A3988B[] asm("D_800A3988");
     extern u8 D_800A3988C[] asm("D_800A3988");

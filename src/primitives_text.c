@@ -15,6 +15,8 @@
 #include "graphics.h"
 #include "util.h"
 
+void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode);
+
 extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
 extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
 extern s32 gSplitScreenModew15[] asm("gSplitScreenMode.NON_MATCHING");
@@ -2344,10 +2346,10 @@ extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
 extern Car *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
-extern s32 D_800A3A34Absolute[];
+extern u8 D_800A3A34Absolute[];
 
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-extern s32 D_800A3A2CAbsolute[];
+extern u8 D_800A3A2CAbsolute[];
 void func_8001C34C(void) {
     s32 mode;
     s32 value;

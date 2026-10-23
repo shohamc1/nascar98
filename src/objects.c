@@ -20,6 +20,25 @@
 #include "scene.h"
 #include "sound.h"
 #include "util.h"
+void func_8003A54C(void);
+
+void func_800365B8(s32 *out);
+void SoundStopConditionalSlots(s8 arg0);
+void CarUpdateEngineRpm(Car *obj);
+void func_8003667C(u32 *list);
+void func_80041328(void);
+void func_8002B538(u8 *arg0);
+void func_8002D16C(Car *car);
+void func_8002B258(u8 *arg0);
+void func_8003A440(void);
+void CarUpdateAi(Car *arg0);
+void CarUpdateTrackSideOffsets(void);
+void CarUpdateState(Car *object);
+void func_80034990(void);
+void func_80035B20(void);
+void RaceUpdateLapProgress(void);
+void CameraUpdateHorizon(void);
+void func_80034834(void);
 
 extern u16 D_800A38C0[];
 extern s32 D_800A2E90w15[] asm("D_800A2E90.NON_MATCHING");
@@ -2593,8 +2612,8 @@ void func_80025730(Car *obj) {
             D_800A3914[19] = 0;
         }
         if (D_800A3910[0] > 0) {
-            extern s16 D_800A3914[];
-            D_800A3914[-2] = 0;
+            extern s16 D_800A3914View[] asm("D_800A3914");
+            D_800A3914View[-2] = 0;
         }
         break;
     default:
@@ -4758,7 +4777,7 @@ void func_80028FCC(Car *car) {
     }
 }
 
-extern u8 D_800A2E18;
+extern s8 D_800A2E18;
 void CarShiftUp(Car *car) {
     u16 newIndex;
     if (car->automatic == 0) {
@@ -4978,12 +4997,13 @@ Other:
 }
 
 void func_800297D0(Car *car) {
-    extern void func_80031264(void);
+    /* Called without its car argument; a0 still holds it. */
+    extern void func_80031264NoArgs(void) asm("func_80031264");
     extern void func_800294A8(void *);
     extern s32 CarHandleWallCollision(void *);
     extern s32 D_800A2EC8NM[] asm("D_800A2EC8.NON_MATCHING");
 
-    func_80031264();
+    func_80031264NoArgs();
     car->unk375 = 1;
     func_800294A8(car);
     if (gSessionTypeAbsolute[0] <= 0) {
@@ -6096,7 +6116,7 @@ s32 CarGetWheelGrip(Car *car, s16 surface, s32 idx) {
 
 void func_8002B9AC(Car *car, s32 *frontGrip, s32 *rearGrip) {
     extern s32 MathFixedDivide(s32, s32);
-    extern s8 D_800A2E5B;
+    extern s8 D_800A2E5BSigned asm("D_800A2E5B");
     s32 grip;
     s32 num;
     s32 cnt;
@@ -6104,7 +6124,7 @@ void func_8002B9AC(Car *car, s32 *frontGrip, s32 *rearGrip) {
     s32 flags;
     s32 ratio;
 
-    D_800A2E5B = 0;
+    D_800A2E5BSigned = 0;
     grip = CarGetWheelGrip(car, car->frontRightContact, 0);
     grip = grip + CarGetWheelGrip(car, car->frontLeftContact, 1);
     grip = MathMultiplyFixed16(car->wheel[2].unkC + car->wheel[3].unkC, grip);
@@ -6126,7 +6146,7 @@ void func_8002B9AC(Car *car, s32 *frontGrip, s32 *rearGrip) {
     grip = CarGetWheelGrip(car, car->rearRightContact, 2);
     grip = grip + CarGetWheelGrip(car, car->rearLeftContact, 3);
     grip = MathMultiplyFixed16(car->wheel[0].unkC + car->wheel[1].unkC, grip);
-    if (D_800A2E5B == 4) {
+    if (D_800A2E5BSigned == 4) {
         func_80041848(car, 3);
     }
     count = car->unk2A6;
@@ -16744,7 +16764,7 @@ extern void CarInitDefaults();
 extern s32 D_800BE730[];
 extern s16 D_800BE738[];
 
-extern s32 D_800BE72C[];
+extern s32 D_800BE72CView[] asm("D_800BE72C");
 void func_8003BCAC(void) {
     s32 count;
     s32 offset;
@@ -16756,7 +16776,7 @@ void func_8003BCAC(void) {
         offset = 0;
         do {
             CarInitDefaults(object);
-            object->pos.x = *(s32 *)((u8 *)D_800BE72C + offset);
+            object->pos.x = *(s32 *)((u8 *)D_800BE72CView + offset);
             object->pos.y = *(s32 *)((u8 *)D_800BE730 + offset);
             object->pos.z = 0;
             ObjectSetHeading(object, *(s16 *)((u8 *)D_800BE738 + offset));
@@ -16766,7 +16786,7 @@ void func_8003BCAC(void) {
         } while (object != 0);
     }
     object = ((Car **)D_800A3854Absolute)[9];
-    object->pos.x = *(s32 *)((u8 *)D_800BE72C + count * 0x10);
+    object->pos.x = *(s32 *)((u8 *)D_800BE72CView + count * 0x10);
     object->pos.y = *(s32 *)((u8 *)D_800BE730 + count * 0x10);
     object->pos.z = 0;
     CarInitDefaults(object);

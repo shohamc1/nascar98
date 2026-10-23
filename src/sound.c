@@ -12,6 +12,8 @@
 #include "game.h"
 #include "sound.h"
 #include "util.h"
+extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
+                        short rightVolume);
 
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern Car *gPlayerCar[];
@@ -276,9 +278,6 @@ void SoundReplaySequence(void) {
         SsSeqReplay(gSequenceId);
     }
 }
-
-extern void SsSeqSetVol(short seqAccessNum, short leftVolume,
-                        short rightVolume);
 
 void SoundSetSequenceVolume(u8 leftVolume, u8 rightVolume) {
     if (gSequenceId != -1) {
