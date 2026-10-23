@@ -34,10 +34,11 @@ typedef struct {
 typedef struct Model {
     u8 unk0[0x14];
     ModelVertex *vertices; /* 0x14 */
-    u8 unk18[6];
-    s16 unk1E;
-    u8 unk20[2];
-    s16 unk22;
+    u8 unk18[4];
+    s16 frontExtent; /* 0x1C: the collision outline */
+    s16 rearExtent;  /* 0x1E */
+    s16 unk20;
+    s16 halfWidth;   /* 0x22 */
     u8 unk24[4];
     s16 vertexCount; /* 0x28 */
     s16 faceCount;   /* 0x2A */
@@ -83,22 +84,6 @@ typedef struct {
     s32 index;      /* 0x14 */
 } Gear;
 
-/* The collision outline a car points to at 0x370. */
-typedef struct ContactCorner {
-    u8 unk0[4];
-    s32 x;
-    s32 y;
-    u8 unkC[12];
-} ContactCorner;
-typedef struct ContactShape {
-    u8 unk0[28];
-    s16 frontExtent;
-    s16 rearExtent;
-    s16 unk20;
-    s16 halfWidth;
-    u8 unk24[28];
-    ContactCorner *corners;
-} ContactShape;
 
 /* A race-order or section list node, followed by the car that owns it. */
 typedef struct CarLink {
@@ -267,7 +252,7 @@ typedef struct Car {
     u16 rearLeftContact; /* 0x368 */
     u8 unk36A[0x2];
     Model *model; /* 0x36C */
-    struct ContactShape *shape; /* 0x370 */
+    Model *shape; /* 0x370: one Model per level of detail */
     u8 unk374; /* 0x374 */
     s8 unk375; /* 0x375 */
     u8 driver; /* 0x376 */

@@ -3590,8 +3590,8 @@ s32 CarHandleWallCollision(void *object) {
         s32 effect[3];
         s32 reserved2;
     } workspace;
-    ContactCorner *corners;
-    ContactCorner *corners2;
+    ModelPart *corners;
+    ModelPart *corners2;
     SVECTOR *wallPoint;
     ContactRegion *region;
     Face *nearestContact;
@@ -3631,7 +3631,7 @@ s32 CarHandleWallCollision(void *object) {
     register s32 normalAddress asm("$3");
     register s32 rearNormalAddress asm("$5");
     s32 secondProjection;
-    ContactShape *shape;
+    Model *shape;
     s32 shapeWidth;
     register s32 projectedVelocity asm("$2");
     s32 *cosTable;
@@ -3844,9 +3844,9 @@ s32 CarHandleWallCollision(void *object) {
                 car->pos.x -= MathMultiplyFixed16(car->basis[0].y, value1);
                 car->pos.y -= MathMultiplyFixed16(car->basis[1].y, value1);
                 car->pos.z -= MathMultiplyFixed16(car->basis[2].y, value1);
-                corners = car->shape->corners;
-                workspace.effect[0] = corners->x;
-                workspace.effect[1] = corners->y;
+                corners = car->shape->parts;
+                workspace.effect[0] = corners->origin.x;
+                workspace.effect[1] = corners->origin.y;
                 workspace.effect[2] = 0x4B;
                 func_8001EEC4(car);
                 MatrixRotateVector(&workspace.effect[0]);
@@ -4010,9 +4010,9 @@ s32 CarHandleWallCollision(void *object) {
                     car->wheel[2].effect = leftRearEffect + 0xA;
                 }
                 car->lateralSpeed = 0;
-                corners2 = car->shape->corners;
-                workspace.effect[0] = corners2[1].x;
-                workspace.effect[1] = corners2[1].y;
+                corners2 = car->shape->parts;
+                workspace.effect[0] = corners2[1].origin.x;
+                workspace.effect[1] = corners2[1].origin.y;
                 workspace.effect[2] = 0x4B;
                 func_8001EEC4(car);
                 MatrixRotateVector(&workspace.effect[0]);
@@ -9667,7 +9667,7 @@ extern s16 TrackFindSectionForwards16(s32, s32,
 void func_80031264(Car *object) {
     s32 corners[5][4];
     s32 normals[3][4];
-    ContactShape *state;
+    Model *state;
     s32 length;
     s32 sum;
     s32 result;
@@ -14821,7 +14821,7 @@ void func_800373B4(Car *object) {
                             collisionArgument0, collisionArgument1);
                         lateralSinProduct -= collisionReturn;
                         lateralGap = lateralSinProduct >> 16;
-                        tempV112 = (car->model->unk1E) * 2;
+                        tempV112 = (car->model->rearExtent) * 2;
                         collisionWidthCopy = tempV112;
                         if (lateralGap >= 0) {
                             if (lateralGap >= tempV112) {
@@ -14848,7 +14848,7 @@ void func_800373B4(Car *object) {
                                 collisionArgument0, collisionArgument1);
                             longitudinalGap += collisionReturn;
                             longitudinalGap >>= 16;
-                            tempV113 = (car->model->unk22) * 2;
+                            tempV113 = (car->model->halfWidth) * 2;
                             collisionWidthCopy = tempV113;
                             if (longitudinalGap >= 0) {
                                 lateralGap = longitudinalGap < tempV113;

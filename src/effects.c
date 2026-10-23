@@ -95,7 +95,7 @@ void EffectSpawnParticles(Car *car, s32 pointIndex) {
         if (slotIndex >= 0x28) {
             return;
         }
-        pointTable = *(EffectPoint **)((u8 *)car->shape + 0x40);
+        pointTable = (EffectPoint *)car->shape->parts;
         gEffectSlots[slotIndex].active = 1;
         gEffectSlots[slotIndex].unk1D = 0xA;
         gEffectSlots[slotIndex].unk1E = (u16)car->unk1DE;
@@ -119,9 +119,8 @@ void EffectSpawnParticles(Car *car, s32 pointIndex) {
         if (gEffectSlots[slotIndex].unk14 < 0x14) {
             gEffectSlots[slotIndex].unk14 = twenty;
         }
-        gEffectSlots[slotIndex].unk28 = *(s32 *)((u8 *)car->shape + 0x38);
-        gEffectSlots[slotIndex].unk2C =
-            *(s32 *)((u8 *)car->shape + 0x40) + 0x90;
+        gEffectSlots[slotIndex].unk28 = (s32)car->shape->faces;
+        gEffectSlots[slotIndex].unk2C = (s32)car->shape->parts + 0x90;
         /* ABS evaluates its argument twice: two LCG steps per field. */
         gEffectSlots[slotIndex].unk16 = ABS((s32)RandomGetScaled16(0x1000));
         gEffectSlots[slotIndex].unk18 = ABS((s32)RandomGetScaled16(0x1000));
@@ -133,7 +132,7 @@ extern u8 D_800A2EE0[];
 void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     s32 slotIndex;
     EffectPoint *point;
-    u8 *carInfo;
+    Model *carInfo;
     s32 flagOffset;
     s32 unk28;
     s32 gate;
@@ -161,10 +160,10 @@ void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
         return;
     }
     carInfo = (u8 *)car->shape;
-    if (pointIndex >= *(s16 *)(carInfo + 0x2E)) {
+    if (pointIndex >= carInfo->specialPart) {
         return;
     }
-    point = (EffectPoint *)(*(u8 **)(carInfo + 0x40) + pointIndex * 24);
+    point = (EffectPoint *)((u8 *)carInfo->parts + pointIndex * 24);
     flagOffset = *(s16 *)((u8 *)point + 0x14);
     if (flagOffset == 0) {
         return;
@@ -211,7 +210,7 @@ void EffectSpawnAtCarPoint(Car *car, s32 pointIndex) {
     if (gEffectSlots[slotIndex].unk14 < 0x14) {
         gEffectSlots[slotIndex].unk14 = 0x14;
     }
-    unk28 = *(s32 *)((u8 *)car->shape + 0x38);
+    unk28 = (s32)car->shape->faces;
     gate = D_8008CA28[0];
     gEffectSlots[slotIndex].unk2C = (s32)point;
     gEffectSlots[slotIndex].unk16 = 0;
@@ -398,7 +397,7 @@ typedef struct {
 } FxVertex;
 
 void func_80043B68(Car *object, s32 idx) {
-    u8 *fx;
+    Model *fx;
     u8 *row;
     FxVertex *prim;
     s32 i;
@@ -431,8 +430,8 @@ void func_80043B68(Car *object, s32 idx) {
             object->unk3A4 = flags | 0x8000 | (1 << (idx + 5));
         }
     }
-    base = *(s16 *)(fx + 0x2E);
-    table = *(u8 **)(fx + 0x40);
+    base = fx->specialPart;
+    table = (u8 *)fx->parts;
     if (idx >= 0) {
         base += idx;
     } else {
@@ -440,7 +439,7 @@ void func_80043B68(Car *object, s32 idx) {
     }
     row = table + base * 24;
     start = *(s16 *)row;
-    verts = *(u8 **)(fx + 0x14);
+    verts = (u8 *)fx->vertices;
     limit = *(s16 *)(row + 2) - start + 1;
     prim = (FxVertex *)(verts + start * 20);
     for (i = 0; i < limit; i++) {
@@ -805,12 +804,12 @@ void ReplayReadEffects(u8 *arg0) {
         word = *wp;
         typ = (u8 *)gCarListw15[0] + ((word >> 24) & 0x1F) * 0x500;
         if ((word & 0xE0000000) == 0x80000000) {
-            src40 = *(u32 *)((u8 *)typ->shape + 0x40);
+            src40 = (u32)typ->shape->parts;
             fp[3] = 10;
         } else {
             do {
                 mode = word >> 29;
-                src40 = *(u32 *)((u8 *)typ->shape + 0x40) + mode * 0x18;
+                src40 = (u32)typ->shape->parts + mode * 0x18;
                 fp[3] = mode;
             } while (0);
         }
@@ -820,7 +819,7 @@ void ReplayReadEffects(u8 *arg0) {
     w = ((u8 *)wp)[3];
     *(u32 *)(fp + 0x12) = src40;
     fp[4] = w & 0x1F;
-    val38 = *(u32 *)((u8 *)typ->shape + 0x38);
+    val38 = (u32)typ->shape->faces;
     i++;
     rec += 0x30;
     *(u32 *)(fp + 0xA) = 0;

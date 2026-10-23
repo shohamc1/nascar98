@@ -1409,33 +1409,32 @@ done:
     (void)(&pad);
 }
 
-void func_8003EAE8(u8 *object, s32 index) {
+void func_8003EAE8(Car *object, s32 index) {
     s32 pad[4];
-    u8 *group;
-    u8 *entry;
+    Model *group;
+    ModelPart *entry;
     s32 count;
     s32 total;
     s32 *base;
     s32 *ptr;
     s32 i;
 
-    group = *(u8 **)(object + 0x370);
-    entry = *(u8 **)(group + 0x150);
-    entry += index * 0x18;
-    count = *(s32 *)(entry + 8);
+    group = object->shape;
+    entry = &group[4].parts[index];
+    count = entry->origin.y;
     if (count > 0) {
         {
             s32 low;
             s32 *table;
 
-            low = *(s16 *)(entry + 0);
-            table = *(s32 **)(group + 0x124);
+            low = entry->firstVertex;
+            table = (s32 *)group[4].vertices;
             i = 0;
-            *(s32 *)(entry + 8) = count + 0xE;
+            entry->origin.y = count + 0xE;
             {
                 s32 high;
 
-                high = *(s16 *)(entry + 2);
+                high = entry->lastVertex;
                 base = (s32 *)(low * 20 + (u32)table);
                 total = high - low + 1;
             }
@@ -1453,14 +1452,14 @@ void func_8003EAE8(u8 *object, s32 index) {
             s32 low;
             s32 *table;
 
-            low = *(s16 *)(entry + 0);
-            table = *(s32 **)(group + 0x124);
+            low = entry->firstVertex;
+            table = (s32 *)group[4].vertices;
             i = 0;
-            *(s32 *)(entry + 8) = count - 0xE;
+            entry->origin.y = count - 0xE;
             {
                 s32 high;
 
-                high = *(s16 *)(entry + 2);
+                high = entry->lastVertex;
                 base = (s32 *)(low * 20 + (u32)table);
                 total = high - low + 1;
             }
@@ -1476,9 +1475,9 @@ void func_8003EAE8(u8 *object, s32 index) {
     }
 }
 
-void func_8003EBD0(u8 *object, s32 index) {
-    u8 *group;
-    u8 *entry;
+void func_8003EBD0(Car *object, s32 index) {
+    Model *group;
+    ModelPart *entry;
     s32 count;
     s32 total;
     s32 *base;
@@ -1486,21 +1485,20 @@ void func_8003EBD0(u8 *object, s32 index) {
     s32 i;
     volatile s32 pad[4];
 
-    group = *(u8 **)(object + 0x370);
-    entry = *(u8 **)(group + 0x150);
-    entry += index * 0x18;
-    count = *(s32 *)(entry + 8);
+    group = object->shape;
+    entry = &group[4].parts[index];
+    count = entry->origin.y;
     if (count > 0) {
         {
             s32 low;
             s32 *table;
 
-            low = *(s16 *)(entry + 0);
-            table = *(s32 **)(group + 0x124);
+            low = entry->firstVertex;
+            table = (s32 *)group[4].vertices;
             i = 0;
-            *(s32 *)(entry + 8) = count - 0xE;
+            entry->origin.y = count - 0xE;
             base = (s32 *)(low * 0x14 + (u32)table);
-            total = *(s16 *)(entry + 2) - low + 1;
+            total = entry->lastVertex - low + 1;
         }
         if (total > 0) {
             ptr = base + 3;
@@ -1515,12 +1513,12 @@ void func_8003EBD0(u8 *object, s32 index) {
             s32 low;
             s32 *table;
 
-            low = *(s16 *)(entry + 0);
-            table = *(s32 **)(group + 0x124);
+            low = entry->firstVertex;
+            table = (s32 *)group[4].vertices;
             i = 0;
-            *(s32 *)(entry + 8) = count + 0xE;
+            entry->origin.y = count + 0xE;
             base = (s32 *)(low * 0x14 + (u32)table);
-            total = *(s16 *)(entry + 2) - low + 1;
+            total = entry->lastVertex - low + 1;
         }
         if (total > 0) {
             ptr = base + 3;

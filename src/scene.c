@@ -2152,7 +2152,7 @@ void RaceUpdateCrashTrigger(void) {
                 return;
             }
         }
-        box = (CrashBox *)gCrashCarSmall->shape->corners;
+        box = (CrashBox *)gCrashCarSmall->shape->parts;
         pos[0] = (box->unk4 + box->unk1C) >> 1;
         pos[1] = (box->unk8 + box->unk20) >> 1;
         pos[2] = (box->unkC + box->unk24) >> 1;
