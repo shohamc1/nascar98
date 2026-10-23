@@ -2670,7 +2670,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     s32 next;
     s32 bank;
 
-    obj = *(Model **)(arg0 + 0x36C);
+    obj = ((Car *)arg0)->model;
     poly = (u8 *)D_800A2D60;
     count = obj->faceCount;
     array = (u8 *)obj->faces;
@@ -2741,7 +2741,8 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         polyTable = polys;
         off = 0;
         do {
-            ot[i] = polyTable[*(s16 *)((u8 *)obj->parts + off + 0x10)];
+            ot[i] =
+                polyTable[((ModelPart *)((u8 *)obj->parts + off))->firstFace];
             off += 0x18;
             i++;
         } while (i < obj->partCount);
@@ -2752,7 +2753,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     ((LinkedGT4 *)poly)->next = NULL;
     D_800A2D5C = pool - count;
     D_800A2D60 = next;
-    *(s32 *)(arg0 + bank * 4 + 0x430) = (s32)poly;
+    ((Car *)arg0)->unk430[bank] = (s32)poly;
     return first;
 }
 
@@ -2780,7 +2781,7 @@ void func_80016744(u32 arg0) {
     entries = (bank << 2) + arg0;
     oldEntry = *(s32 *)(entries + 0x420);
     if (oldEntry != 0) {
-        value = *(s8 *)((u8 *)arg0 + bank + 0x41C);
+        value = ((Car *)arg0)->unk41C[bank];
         offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
         hw = ((Model *)offset)->faceCount;
         ptr = (u32)D_800A2D64;
@@ -2791,7 +2792,7 @@ void func_80016744(u32 arg0) {
         *(s32 *)(entries + 0x420) = 0;
         D_800A2D5C = size + hw;
     }
-    *(s8 *)((u8 *)arg0 + gOrderingTableBankLui + 0x41C) = -1;
+    ((Car *)arg0)->unk41C[gOrderingTableBankLui] = -1;
 }
 
 s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -2810,9 +2811,9 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 ret;
 
     bank = gOrderingTableBankLui;
-    value = *(s8 *)(arg0 + bank + 0x41C);
+    value = ((Car *)arg0)->unk41C[bank];
     if (value == *(s8 *)&((Car *)arg0)->unk374) {
-        if (*(s32 *)((bank << 2) + arg0 + 0x420) != 0) {
+        if (((Car *)arg0)->unk420[bank] != 0) {
             return 0;
         }
     } else {
@@ -2840,11 +2841,11 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     q = speed / 5;
     ret = (s32)func_800163E8(arg0, q);
     bank2 = gOrderingTableBankLui;
-    *(s32 *)((bank2 << 2) + arg0 + 0x420) = ret;
+    ((Car *)arg0)->unk420[bank2] = ret;
     if (ret == 0) {
         return 1;
     }
-    *(s8 *)(arg0 + bank2 + 0x41C) = ((Car *)arg0)->unk374;
+    ((Car *)arg0)->unk41C[bank2] = ((Car *)arg0)->unk374;
     return 0;
 }
 
@@ -2890,16 +2891,16 @@ void func_800168F8(Model *arg0, s32 arg1) {
             if (count > 0) {
                 p = array + 0x15;
             again:
-                if (*(s16 *)(p - 0xB) == clutOld) {
-                    x0 = *(u8 *)(p - 0xC);
-                    x1 = *(u8 *)(p - 0x8);
-                    x2 = *(u8 *)(p - 0x4);
+                if (*(s16 *)&((Face *)(p - 0x15))->clut == clutOld) {
+                    x0 = ((Face *)(p - 0x15))->v0;
+                    x1 = ((Face *)(p - 0x15))->v1;
+                    x2 = ((Face *)(p - 0x15))->v2;
                     x3 = *(u8 *)(p);
-                    *(s16 *)(p - 0xB) = clutNew;
-                    *(s16 *)(p - 0x7) = tpage;
-                    *(u8 *)(p - 0xC) = x0 + scroll;
-                    *(u8 *)(p - 0x8) = x1 + scroll;
-                    *(u8 *)(p - 0x4) = x2 + scroll;
+                    *(s16 *)&((Face *)(p - 0x15))->clut = clutNew;
+                    *(s16 *)&((Face *)(p - 0x15))->tpage = tpage;
+                    ((Face *)(p - 0x15))->v0 = x0 + scroll;
+                    ((Face *)(p - 0x15))->v1 = x1 + scroll;
+                    ((Face *)(p - 0x15))->v2 = x2 + scroll;
                     *(u8 *)(p) = x3 + scroll;
                 }
                 i++;

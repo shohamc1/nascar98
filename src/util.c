@@ -401,14 +401,14 @@ void CarDrawAll(void) {
         released = 0;
         slot = ((Car *)car)->unk1E2;
         if (slot != -1 && ((Car *)car)->unk1E4 != -1 &&
-            *(u16 *)((carState = (u8 *)gTrackSections[0] + slot * 0x90) +
-                     0xE) == 1 &&
-            *(s32 *)(car + 0x36C) != 0 && *(s8 *)&((Car *)car)->unk374 < 4) {
+            ((TrackSection *)(carState = (u8 *)gTrackSections[0] + slot * 0x90))
+                    ->culled == 1 &&
+            *(s32 *)&((Car *)car)->model != 0 &&
+            *(s8 *)&((Car *)car)->unk374 < 4) {
             D_800A3818 = 0x808080;
             if (func_800167BC((u8 *)car) & 0xFF) {
-                if (GraphicsHasFreePrimitives(
-                        *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
-                    func_800168F8(*(Model **)(car + 0x36C),
+                if (GraphicsHasFreePrimitives(((Car *)car)->model->faceCount)) {
+                    func_800168F8(((Car *)car)->model,
                                   (s8)((s8) * (u8 *)&((Car *)car)->mode / 5));
                     CarDrawModel(car, 0);
                 }
@@ -426,7 +426,7 @@ void CarDrawAll(void) {
             entries = (bank << 2) + car;
             oldEntry = *(s32 *)(entries + 0x420);
             if (oldEntry != 0) {
-                value = *(s8 *)(car + bank + 0x41C);
+                value = ((Car *)car)->unk41C[bank];
                 offset = value * 0x44 + *(s32 *)&((Car *)car)->shape;
                 hw = ((Model *)offset)->faceCount;
                 ptr = (u32)D_800A2D64;
@@ -437,7 +437,7 @@ void CarDrawAll(void) {
                 *(s32 *)(entries + 0x420) = 0;
                 D_800A2D5C = size + hw;
             }
-            *(s8 *)(car + gOrderingTableBankLui + 0x41C) = -1;
+            ((Car *)car)->unk41C[gOrderingTableBankLui] = -1;
         }
         if (bankFlag != 0) {
             bank2 = gOrderingTableBankLui + 1;
@@ -445,7 +445,7 @@ void CarDrawAll(void) {
             oldEntry2 = *(s32 *)(entries2 + 0x420);
             gOrderingTableBankLui = bank2;
             if (oldEntry2 != 0) {
-                value2 = *(s8 *)(car + bank2 + 0x41C);
+                value2 = ((Car *)car)->unk41C[bank2];
                 offset2 = value2 * 0x44 + *(s32 *)&((Car *)car)->shape;
                 hw2 = ((Model *)offset2)->faceCount;
                 ptr2 = (u32)D_800A2D64;
@@ -456,7 +456,7 @@ void CarDrawAll(void) {
                 *(s32 *)(entries2 + 0x420) = 0;
                 D_800A2D5C = size2 + hw2;
             }
-            *(s8 *)(car + gOrderingTableBankLui + 0x41C) = -1;
+            ((Car *)car)->unk41C[gOrderingTableBankLui] = -1;
             gOrderingTableBankLui--;
         }
     }

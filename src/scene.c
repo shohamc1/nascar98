@@ -1024,7 +1024,7 @@ void SceneInitProjectiles(void) {
             func_80030F24(objectPtr, pointPtr, 0, dist, 0);
             heights[j] = point[2];
         }
-        *(s32 *)((u8 *)gTrackSections[0] + i * 0x90 + 0x1C) =
+        *(s32 *)&((TrackSection *)gTrackSections[0])[i].height0 =
             ((heights[0] + 0x4000) << 0x10) | (heights[1] + 0x4000);
     }
     SceneInitRoadStrip();
@@ -5460,15 +5460,15 @@ void func_8004F880(void) {
     loopM:
         *(u16 *)(D_800A8AB4 + i * 4) =
             0x12C - D_80099230[idx * 2] -
-            *(s32 *)((u8 *)gTrackSections[0] +
-                     (i * q[0] / *(s8 *)(idx + pm)) * 0x90 + 0x14) /
+            ((TrackSection *)gTrackSections[0])[i * q[0] / *(s8 *)(idx + pm)]
+                    .x /
                 w -
             4;
         uvBase = q[0];
         *(u16 *)(D_800A8AB6 + i * 4) =
             D_80099231[idx * 2] +
-            *(s32 *)((u8 *)gTrackSections[0] +
-                     (i * uvBase / *(s8 *)(idx + pm)) * 0x90 + 0x18) /
+            ((TrackSection *)gTrackSections[0])[i * uvBase / *(s8 *)(idx + pm)]
+                    .z /
                 w +
             0xE;
         i++;

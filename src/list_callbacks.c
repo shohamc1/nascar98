@@ -295,7 +295,7 @@ void func_8001CAB8(TrackCallback *arg0) {
     }
 }
 
-void func_8001CBD4(u8 *arg0) {
+void func_8001CBD4(TrackCallback *arg0) {
     s32 temp;
     s32 i;
     s32 idx;
@@ -311,18 +311,18 @@ void func_8001CBD4(u8 *arg0) {
     } else {
         temp = 0x20 - temp;
     }
-    if (*(s16 *)(arg0 + 0xA) > 0) {
+    if (arg0->count > 0) {
         do {
             i = 0;
             strideNeg = -(temp * 0x14);
         } while (0);
         do {
-            idx = *(u16 *)((arg0 + 0x10) + (i * 2));
-            val = *(s16 *)((arg0 + 0x94) + (i * 6));
-            base = *(s32 *)(arg0 + 0x218);
-            *(s32 *)((table + (idx * 0x14)) + 0x10) = (val + base) + strideNeg;
+            idx = arg0->index[i];
+            val = arg0->coord[i][2];
+            base = arg0->offset[2];
+            ((ModelVertex *)table)[idx].world.z = (val + base) + strideNeg;
             i += 1;
-        } while (i < *(s16 *)(arg0 + 0xA));
+        } while (i < arg0->count);
     }
 }
 
@@ -469,130 +469,128 @@ void func_8001CC7C(TrackCallback *arg0) {
 #endif
 extern Face *D_800A3A40Absolute[];
 
-void func_8001CDDC(u8 *arg0) {
+void func_8001CDDC(TrackCallback *arg0) {
     s32 pal;
     s32 c;
     s32 d;
-    u8 *entry;
-    if (*(s16 *)(arg0 + 0xA) != 4) {
+    Face *entry;
+    if (arg0->count != 4) {
         return;
     }
-    entry = ((u8 *)D_800A3A40Absolute[0]) +
-            (((((*(u16 *)(arg0 + 0x18) * 2) + *(u16 *)(arg0 + 0x18)) * 4) -
-              *(u16 *)(arg0 + 0x18)) *
-             4);
+    entry =
+        ((u8 *)D_800A3A40Absolute[0]) +
+        (((((arg0->index[4] * 2) + arg0->index[4]) * 4) - arg0->index[4]) * 4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
         d = 0x100;
         do {
-            *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, d);
-            *(s16 *)(entry + 0xA) = GetClut(0x200, 0x1FF);
+            entry->tpage = GetTPage(1, 0, 0x200, d);
+            entry->clut = GetClut(0x200, 0x1FF);
         } while (0);
         pal = 0x80;
         c = 0xA7;
         d = 0xFD;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0x9F;
-        *(u8 *)(entry + 0x9) = c;
-        *(u8 *)(entry + 0xD) = d;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = c;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = d;
+        entry->v0 = c;
+        entry->v1 = d;
+        entry->u2 = pal;
+        entry->v2 = c;
+        entry->u3 = pal;
+        entry->v3 = d;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         d = 0x78;
         pal = 0x1F;
-        *(u8 *)(entry + 0x8) = 0;
-        *(u8 *)(entry + 0x9) = 0;
-        *(u8 *)(entry + 0xC) = 0;
-        *(u8 *)(entry + 0xD) = d;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = 0;
+        entry->u0 = 0;
+        entry->v0 = 0;
+        entry->u1 = 0;
+        entry->v1 = d;
+        entry->u2 = pal;
+        entry->v2 = 0;
     } else {
         c = 0x3C;
         d = 0xBF;
         pal = 0x1F;
-        *(u8 *)(entry + 0x8) = 0;
-        *(u8 *)(entry + 0x9) = c;
-        *(u8 *)(entry + 0xC) = 0;
-        *(u8 *)(entry + 0xD) = d;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = c;
+        entry->u0 = 0;
+        entry->v0 = c;
+        entry->u1 = 0;
+        entry->v1 = d;
+        entry->u2 = pal;
+        entry->v2 = c;
     }
-    *(u8 *)(entry + 0x14) = pal;
-    *(u8 *)(entry + 0x15) = d;
+    entry->u3 = pal;
+    entry->v3 = d;
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0xC0, 0);
+        entry->tpage = GetTPage(2, 0, 0xC0, 0);
     } else {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x200, 0);
+        entry->tpage = GetTPage(2, 0, 0x200, 0);
     }
 }
 
-void func_8001CF38(u8 *arg0) {
+void func_8001CF38(TrackCallback *arg0) {
     s32 pal;
     s32 c;
     s32 d;
-    u8 *entry;
-    if (*(s16 *)(arg0 + 0xA) != 4) {
+    Face *entry;
+    if (arg0->count != 4) {
         return;
     }
-    entry = ((u8 *)D_800A3A40Absolute[0]) +
-            (((((*(u16 *)(arg0 + 0x18) * 2) + *(u16 *)(arg0 + 0x18)) * 4) -
-              *(u16 *)(arg0 + 0x18)) *
-             4);
+    entry =
+        ((u8 *)D_800A3A40Absolute[0]) +
+        (((((arg0->index[4] * 2) + arg0->index[4]) * 4) - arg0->index[4]) * 4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
-        *(s16 *)(entry + 0xA) = GetClut(0x200, 0x1FF);
+        entry->tpage = GetTPage(1, 0, 0x200, 0x100);
+        entry->clut = GetClut(0x200, 0x1FF);
         do {
             pal = 0xA0;
             d = 0xA7;
             c = 0xFD;
-            *(u8 *)(entry + 0x8) = pal;
-            *(u8 *)(entry + 0xC) = pal;
+            entry->u0 = pal;
+            entry->u1 = pal;
             pal = 0xBF;
         } while (0);
-        *(u8 *)(entry + 0x9) = d;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = d;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = c;
+        entry->v0 = d;
+        entry->v1 = c;
+        entry->u2 = pal;
+        entry->v2 = d;
+        entry->u3 = pal;
+        entry->v3 = c;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         pal = 0x20;
         c = 0x78;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0x3F;
-        *(u8 *)(entry + 0x9) = 0;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = 0;
+        entry->v0 = 0;
+        entry->v1 = c;
+        entry->u2 = pal;
+        entry->v2 = 0;
     } else {
         pal = 0x20;
         d = 0x3C;
         c = 0xBF;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0x3F;
-        *(u8 *)(entry + 0x9) = d;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = d;
+        entry->v0 = d;
+        entry->v1 = c;
+        entry->u2 = pal;
+        entry->v2 = d;
     }
-    *(u8 *)(entry + 0x14) = pal;
-    *(u8 *)(entry + 0x15) = c;
+    entry->u3 = pal;
+    entry->v3 = c;
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0xC0, 0);
+        entry->tpage = GetTPage(2, 0, 0xC0, 0);
     } else {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x200, 0);
+        entry->tpage = GetTPage(2, 0, 0x200, 0);
     }
 }
 

@@ -1601,17 +1601,20 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
         case 16:
             if (car->segment == -1)
                 break;
-            if (MathGetAngleDelta(car->heading,
-                                  *(u16 *)(gTrackSections[0] +
-                                           car->segment * 144 + 16)) < 0) {
-                if (-MathGetAngleDelta(car->heading,
-                                       *(u16 *)(gTrackSections[0] +
-                                                car->segment * 144 + 16)) < 300)
+            if (MathGetAngleDelta(
+                    car->heading,
+                    ((TrackSection *)gTrackSections[0])[car->segment].angle) <
+                0) {
+                if (-MathGetAngleDelta(
+                        car->heading,
+                        ((TrackSection *)gTrackSections[0])[car->segment]
+                            .angle) < 300)
                     goto next;
             } else {
-                if (MathGetAngleDelta(car->heading,
-                                      *(u16 *)(gTrackSections[0] +
-                                               car->segment * 144 + 16)) < 300)
+                if (MathGetAngleDelta(
+                        car->heading,
+                        ((TrackSection *)gTrackSections[0])[car->segment]
+                            .angle) < 300)
                     goto next;
             }
             goto queue;

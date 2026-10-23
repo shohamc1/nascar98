@@ -905,7 +905,7 @@ void CameraUpdateForCar(Car *cam, Car *car, s32 mode) {
         car->pos.x = dx;
         car->pos.y = dy;
         car->pos.z = dz;
-        *(s16 *)(FAR_VAR(u8 *, gFarPlayer) + 0x1E0) = 0;
+        ((Car *)FAR_VAR(u8 *, gFarPlayer))->segment = 0;
         break;
     }
 }
@@ -2640,8 +2640,7 @@ s32 func_80025938(Car *firstCar, Car *secondCar) {
     s32 dist[3];
     s32 radius;
 
-    radius = *(s32 *)((s32)firstCar->shape + 0x18) +
-             *(s32 *)((s32)secondCar->shape + 0x18);
+    radius = firstCar->shape->unk18 + secondCar->shape->unk18;
     dist[0] = (firstCar->pos.x - secondCar->pos.x < 0
                    ? secondCar->pos.x - firstCar->pos.x
                    : firstCar->pos.x - secondCar->pos.x);
@@ -2720,7 +2719,7 @@ scan:
     if (D_800A2E94[0] < 4) {
         return 0;
     }
-    other = *(Car **)(*(s32 *)(*(s32 *)&arg0->sectionLink.node.next + 0) + 8);
+    other = ((CarLink *)arg0->sectionLink.node.next->next)->car;
     if (other != 0) {
         do {
             if (arg0 == other) {
@@ -2749,8 +2748,7 @@ scan:
             other = ((CarLink *)other->sectionLink.node.next)->car;
         } while (other != 0);
     }
-    other =
-        *(Car **)(*(s32 *)(*(s32 *)&arg0->sectionLink.node.previous + 4) + 8);
+    other = ((CarLink *)arg0->sectionLink.node.previous->previous)->car;
     if (other != 0) {
         do {
             if (arg0 == other) {
@@ -2814,8 +2812,7 @@ void func_80025F40(Car *arg0, s32 arg1) {
     s32 y2;
     u8 *entry;
 
-    entry =
-        (u8 *)(*(s32 *)((s32)arg0->shape + 0x40) + (1 - (arg1 & 0xFF)) * 0x18);
+    entry = (u8 *)((s32)arg0->shape->parts + (1 - (arg1 & 0xFF)) * 0x18);
     pos[0] = ((ModelPart *)entry)->origin.x;
     pos[1] = ((ModelPart *)entry)->origin.y;
     pos[2] = 0x4B;
@@ -3567,9 +3564,9 @@ s32 VectorProjectAgainstHeading(void *vector, s32 heading) {
 
     index = (0x400 - heading) & 0x3FF;
     product = ((s32 **)D_800A3A2CAbsolute)[0][index];
-    product *= *(s32 *)vector;
-    result = product -
-             ((s32 **)D_800A3A34Absolute)[0][index] * *(s32 *)((s32)vector + 4);
+    product *= ((Vec3 *)vector)->x;
+    result =
+        product - ((s32 **)D_800A3A34Absolute)[0][index] * ((Vec3 *)vector)->y;
     result = -(result >> 16) * 3;
     if (result < 0) {
         result += 3;
@@ -4522,13 +4519,13 @@ void func_80028754(u8 *arg0, s32 arg1) {
             MathMultiplyFixed16(MathFixedDivide(D_800A2E78[0], 0x4D), scale);
         if (i > 0) {
             ((Car *)dst)->gear[0].startSpeed =
-                *(s32 *)(offset + (s32)table + 4) -
-                (*(s32 *)(offset + (s32)table - 0x10) -
-                 *(s32 *)(offset + (s32)table - 0x14)) /
+                ((Gear *)(offset + (s32)table))->startSpeed -
+                (((Gear *)(offset + (s32)table))[-1].endSpeed -
+                 ((Gear *)(offset + (s32)table))[-1].startSpeed) /
                     5;
         } else {
             ((Car *)dst)->gear[0].startSpeed =
-                *(s32 *)(offset + (s32)table + 4);
+                ((Gear *)(offset + (s32)table))->startSpeed;
         }
         ((Car *)dst)->gear[0].endSpeed = cur[2];
         ((Car *)dst)->gear[0].lowRpm = cur[3];
@@ -5049,7 +5046,7 @@ void EffectSpawnAtWheel(Car *car, s32 wheelIndex) {
     u8 *entry;
 
     if (car->unkF4 != 0) {
-        entry = (u8 *)(*(s32 *)((s32)car->shape + 0x40) + wheelIndex * 0x18);
+        entry = (u8 *)((s32)car->shape->parts + wheelIndex * 0x18);
         pos[0] = ((ModelPart *)entry)->origin.x;
         pos[1] = ((ModelPart *)entry)->origin.y;
         pos[2] = ((ModelPart *)entry)->origin.z;
@@ -7135,7 +7132,7 @@ s32 CarTestDraft(Car *arg0, Car *arg1) {
     delta.y = (MathMultiplyFixed16(trigB[index], rot.x << 16) +
                MathMultiplyFixed16(trigA[index], rot.y << 16)) >>
               16;
-    if (*(s16 *)((s32)arg0->shape + 0x22) * 2 > ABS(delta.y)) {
+    if (arg0->shape->maxY * 2 > ABS(delta.y)) {
         if (ABS(delta.x) < cull.dist) {
             if (delta.x > 0) {
                 arg0->speedBoost =
@@ -9823,12 +9820,12 @@ void func_80031874(Face *quad, s32 *normal) {
         return;
     }
     back = (u8 *)&quad->vertex[1];
-    vecA[0] = quad->vertex[2]->vx - *(s16 *)(*(u8 **)back + 0);
-    vecA[1] = quad->vertex[2]->vy - *(s16 *)(*(u8 **)back + 2);
-    vecA[2] = quad->vertex[2]->vz - *(s16 *)(*(u8 **)back + 4);
-    vecB[0] = quad->vertex[0]->vx - *(s16 *)(*(u8 **)back + 0);
-    vecB[1] = quad->vertex[0]->vy - *(s16 *)(*(u8 **)back + 2);
-    vecB[2] = quad->vertex[0]->vz - *(s16 *)(*(u8 **)back + 4);
+    vecA[0] = quad->vertex[2]->vx - (*(SVECTOR **)back)->vx;
+    vecA[1] = quad->vertex[2]->vy - (*(SVECTOR **)back)->vy;
+    vecA[2] = quad->vertex[2]->vz - (*(SVECTOR **)back)->vz;
+    vecB[0] = quad->vertex[0]->vx - (*(SVECTOR **)back)->vx;
+    vecB[1] = quad->vertex[0]->vy - (*(SVECTOR **)back)->vy;
+    vecB[2] = quad->vertex[0]->vz - (*(SVECTOR **)back)->vz;
     OuterProduct0(vecA, vecB, cross);
     crossX = cross[0];
     crossY = cross[1];
@@ -11758,7 +11755,7 @@ u32 func_800342D8(u32 *entry, u8 *primCursor) {
     quad[0x33] = w2;
     quad[0x43] = w3;
 
-    kind = *(s8 *)(*(u8 **)entry + 2);
+    kind = (*(Face **)entry)->type;
     if (kind >= 13) {
         if (kind == 13) {
             *entry = 0;
@@ -13511,7 +13508,7 @@ s32 func_80037204(Car *obj) {
         obj->pos.x = ((TrackSection *)entry)->unk48;
         obj->pos.y = ((TrackSection *)entry)->unk4C;
         b2 = (u8 *)gTrackSectionsz[0];
-        val = *(u16 *)(idx + (s32)b2 + 0x10);
+        val = ((TrackSection *)(idx + (s32)b2))->angle;
         counter = (obj->lap = (u16)obj->lap - 2);
         obj->movementHeading = val;
         obj->heading = val;
@@ -14875,21 +14872,17 @@ void func_800373B4(Car *object) {
                                         (car->lane) = -1;
                                     }
                                     tempV015 =
-                                        *(s8 *)((u8 *)overlappingCar + 0x206) +
-                                        1;
+                                        ((Car *)overlappingCar)->lane + 1;
                                     (overlappingCar->lane) = tempV015;
                                     if ((s8)tempV015 >= 2) {
-                                        *(s8 *)((u8 *)overlappingCar + 0x206) =
-                                            1U;
+                                        ((Car *)overlappingCar)->lane = 1U;
                                     }
                                 } else {
                                     tempV016 =
-                                        *(s8 *)((u8 *)overlappingCar + 0x206) -
-                                        1;
+                                        ((Car *)overlappingCar)->lane - 1;
                                     (overlappingCar->lane) = tempV016;
                                     if ((s8)tempV016 < -1) {
-                                        *(s8 *)((u8 *)overlappingCar + 0x206) =
-                                            -1U;
+                                        ((Car *)overlappingCar)->lane = -1U;
                                     }
                                     tempV017 = (u8)(car->lane) + 1;
                                     (car->lane) = tempV017;
@@ -16348,8 +16341,8 @@ void RaceUpdateLapProgress(void) {
                 progress = car->lap * 1000 + section;
                 if (progress >= D_800A2F68Lap) {
                     D_800A2F68Lap = progress;
-                    *(s32 *)(gTrackSectionsLap + section * 144 + 0x50) =
-                        D_800A2EF4Lap;
+                    *(u32 *)&((TrackSection *)gTrackSectionsLap)[section]
+                         .unk50 = D_800A2EF4Lap;
                 }
             }
         }
@@ -16363,7 +16356,8 @@ void RaceUpdateLapProgress(void) {
             if (section < end) {
                 tick = D_800A2EF4Lap;
                 do {
-                    *(s32 *)(gTrackSectionsLap + section * 144 + 0x50) = tick;
+                    *(u32 *)&((TrackSection *)gTrackSectionsLap)[section]
+                         .unk50 = tick;
                     section++;
                 } while (section < end);
             }

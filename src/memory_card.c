@@ -1445,7 +1445,7 @@ extern Unk3 gTextTwoSpaces[];
 void func_8005C020(MenuObj *object, u8 *dest) {
     s32 id;
 
-    id = *(s16 *)((u8 *)object->primitive + 8);
+    id = *(s16 *)&((MenuText *)object->primitive)->text;
     if (gScreenState[0] == 0xA) {
         if (id == 0xFF) {
             *(Unk4 *)dest = gTextThreeDashes[0];
@@ -1957,7 +1957,8 @@ s32 func_8005CCEC(s32 id, s32 delta, s32 max, s32 min) {
         strcpy(*((char **)(prim + 8)), (char *)buffer);
     } while (0);
     MenuFontSet(prim[1], prim[2]);
-    *(&D_800BB9E4[id & 0xFF]->width) = MenuStringWidth(*(s32 *)(prim + 8));
+    *(&D_800BB9E4[id & 0xFF]->width) =
+        MenuStringWidth(((MenuText *)prim)->text);
     *(&D_800BB9E4[id & 0xFF]->x) = 0x131 - (*(&D_800BB9E4[id & 0xFF]->width));
     *(&D_800BB9E4[id & 0xFF]->targetX) = *(&D_800BB9E4[id & 0xFF]->x);
     return inRange;

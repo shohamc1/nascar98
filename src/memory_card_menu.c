@@ -632,7 +632,7 @@ noStore:
     }
     head = D_800A3858NM[idx];
     if ((head->y) >= 0) {
-        if (*(s16 *)(D_800A3918NM[idx] + 8) < limit) {
+        if (((MenuObj *)D_800A3918NM[idx])->y < limit) {
             return;
         }
     }
@@ -646,8 +646,8 @@ noStore:
             delta2 = -(head->y);
         }
     } else if (delta2 < 0) {
-        if ((*(s16 *)(other + 8) + delta2) < limit) {
-            delta2 = limit - *(s16 *)(other + 8);
+        if ((((MenuObj *)other)->y + delta2) < limit) {
+            delta2 = limit - ((MenuObj *)other)->y;
         }
     }
     if (delta2 == 0) {
@@ -1382,9 +1382,9 @@ void MenuUpdateItemRow(s32 itemCode) {
     obj->orderingDepth = 0x32;
     child = obj->primitive;
     if ((gPadType[0] == 2) && (gPadLayout[0] != 6)) {
-        *(s32 *)(child + 8) = D_8009A2F4[index];
+        ((MenuText *)child)->text = D_8009A2F4[index];
     } else {
-        *(s32 *)(child + 8) = D_8009A2D4[index];
+        ((MenuText *)child)->text = D_8009A2D4[index];
     }
     asm(".rdata");
     asm(".long 0");
@@ -1422,15 +1422,15 @@ void MenuCreateItemRow(s32 itemCode) {
     D_800A3914View[0] = obj;
     if (((itemCode & 0xFF) != 0xC) && ((u32)((itemCode - 9) & 0xFF) >= 2U) &&
         ((u32)((itemCode - 0x10) & 0xFF) >= 2U)) {
-        *(s16 *)(obj + 0xE) = 2;
-        *(u16 *)(obj + 6) = *(u16 *)(obj + 6) - 0x140;
+        ((MenuObj *)obj)->velocityX = 2;
+        *(u16 *)&((MenuObj *)obj)->x = *(u16 *)&((MenuObj *)obj)->x - 0x140;
     }
     {
         u8 *fields = D_800A3910f[1];
         u8 *next;
         fields[2] = 0xFF;
         next = D_800A3918n[-1];
-        *(s16 *)(fields + 0x1A) = 0x32;
+        ((MenuObj *)fields)->orderingDepth = 0x32;
         next[3] = 0x80;
     }
     ((u8 *)D_800A3914View[0])[4] = 0x40;
@@ -1445,9 +1445,9 @@ void MenuCreateItemRow(s32 itemCode) {
         pktA = rowA->primitive;
         pktA[1] = 2;
         pktA[2] = 2;
-        *(s32 *)(pktA + 8) = textA;
+        ((MenuText *)pktA)->text = textA;
         pktA[3] = 0;
-        *(s32 *)(pktA + 4) = timerA;
+        ((MenuText *)pktA)->otz = timerA;
         rowA->orderingDepth = timerA;
     } else {
         MenuObj *rowB;
@@ -1460,9 +1460,9 @@ void MenuCreateItemRow(s32 itemCode) {
         pktB = rowB->primitive;
         pktB[1] = 2;
         pktB[2] = 2;
-        *(s32 *)(pktB + 8) = textB;
+        ((MenuText *)pktB)->text = textB;
         pktB[3] = 0;
-        *(s32 *)(pktB + 4) = timerB;
+        ((MenuText *)pktB)->otz = timerB;
         rowB->orderingDepth = timerB;
     }
 }
@@ -3247,17 +3247,17 @@ void func_8006CE64(void) {
     D_800B0A2C[offset] = 0x41;
     D_800B0A2D[D_800A358C * 0x10] = 0;
     obj = (u8 *)D_800A377C[0]->next;
-    *(u8 *)(obj + 5) = 0;
+    ((MenuObj *)obj)->unk5 = 0;
     entry = ((s8 *)D_800B0A2C) + ((index = D_800A358C) * 0x10);
     MenuFontSetS32(2, 2);
     if ((*entry) == 0) {
-        *(s16 *)(obj + 0x16) = MenuCharWidth(0x20);
+        ((MenuObj *)obj)->width = MenuCharWidth(0x20);
         status = 0;
     } else {
         status = MenuPrefixWidth(0, entry);
-        *(s16 *)(obj + 0x16) = MenuCharWidth(*entry);
+        ((MenuObj *)obj)->width = MenuCharWidth(*entry);
     }
-    *(s16 *)(obj + 6) = status + 0xA;
+    ((MenuObj *)obj)->x = status + 0xA;
 }
 
 void CardMenuAppendTrackName(void) {
@@ -3670,18 +3670,19 @@ void CardMenuShowMessage(s32 arg0) {
         }
     }
     if (gPadType[0] == 2) {
-        *(s32 *)(field20 + 8) = D_8009AB80[menuId];
+        ((MenuText *)field20)->text = D_8009AB80[menuId];
     } else {
-        *(s32 *)(field20 + 8) = D_8009AB00[menuId];
+        ((MenuText *)field20)->text = D_8009AB00[menuId];
     }
     if ((arg0 & 0xFF) == 0) {
         obj = *((u8 **)(obj + 0x1C));
         if (obj != D_800A377C[0]) {
             end = D_800A377C[0];
             do {
-                val = *(s16 *)(obj + 0x1A);
+                val = ((MenuObj *)obj)->orderingDepth;
                 if (val > 0) {
-                    *(s16 *)(obj + 0x1A) = -*(s16 *)(obj + 0x1A);
+                    ((MenuObj *)obj)->orderingDepth =
+                        -((MenuObj *)obj)->orderingDepth;
                 }
                 obj = *((u8 **)(obj + 0x1C));
             } while (obj != end);

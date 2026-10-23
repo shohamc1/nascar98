@@ -1455,7 +1455,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         textPrim->otz = 0;
         ((MenuObj *)m)->velocityX = 2;
         ((MenuObj *)m)->width = value;
-        ((MenuObj *)m)->x = *(u16 *)(((u8 *)m) + 0xA) - 0xAD;
+        ((MenuObj *)m)->x = (u16)((MenuObj *)m)->targetX - 0xAD;
         ((MenuObj *)m)->height = MenuFontLineHeight();
         primLoad = ((MenuObj *)m)->primitive;
         primLoad->font = 2;
@@ -1599,7 +1599,7 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
         if (scale == 0) {
             scale = 1;
         }
-        *(s16 *)((u8 *)D_800B9980[(u8)i]->next + 0x16) = scale;
+        D_800B9980[(u8)i]->next->width = scale;
         MenuDrawObjectList(D_800B996C[i], 0xFF);
         MenuDrawObjectList(D_800B9980[i], i != sel);
         first = i != sel;
@@ -1738,14 +1738,14 @@ void func_800606D4(void) {
         prim[4] = 0x40;
         prim[5] = 0x60;
         prim[6] = 0x80;
-        *(s16 *)(prim + 8) = 0xA;
-        *(s16 *)(prim + 0xA) = 0xC6;
-        *(s16 *)(prim + 0xC) = 0x3C;
-        *(s16 *)(prim + 0xE) = 0xC6;
-        *(s16 *)(prim + 0x10) = 0xA;
-        *(s16 *)(prim + 0x12) = 0xC9;
-        *(s16 *)(prim + 0x14) = 0x3C;
-        *(s16 *)(prim + 0x16) = 0xC9;
+        ((POLY_F4 *)prim)->x0 = 0xA;
+        ((POLY_F4 *)prim)->y0 = 0xC6;
+        ((POLY_F4 *)prim)->x1 = 0x3C;
+        ((POLY_F4 *)prim)->y1 = 0xC6;
+        ((POLY_F4 *)prim)->x2 = 0xA;
+        ((POLY_F4 *)prim)->y2 = 0xC9;
+        ((POLY_F4 *)prim)->x3 = 0x3C;
+        ((POLY_F4 *)prim)->y3 = 0xC9;
         cur->drawOffsetX = 9;
         cur->velocityX = 2;
         cur->orderingDepth = 0;
@@ -1783,16 +1783,16 @@ void func_800606D4(void) {
         SetSemiTrans(prim, 1);
         cur = row;
         prim[6] = 0x40;
-        *(s16 *)(prim + 0xA) = 0xA7;
-        *(s16 *)(prim + 0xC) = 0x78;
-        *(s16 *)(prim + 0xE) = 0xA7;
-        *(s16 *)(prim + 0x12) = 0xD7;
-        *(s16 *)(prim + 0x16) = 0xD7;
+        ((POLY_F4 *)prim)->y0 = 0xA7;
+        ((POLY_F4 *)prim)->x1 = 0x78;
+        ((POLY_F4 *)prim)->y1 = 0xA7;
+        ((POLY_F4 *)prim)->y2 = 0xD7;
+        ((POLY_F4 *)prim)->y3 = 0xD7;
         prim[4] = 0x20;
         prim[5] = 0x20;
-        *(s16 *)(prim + 8) = 0;
-        *(s16 *)(prim + 0x10) = 0;
-        *(s16 *)(prim + 0x14) = 0x78;
+        ((POLY_F4 *)prim)->x0 = 0;
+        ((POLY_F4 *)prim)->x2 = 0;
+        ((POLY_F4 *)prim)->x3 = 0x78;
         cur->x = -0x78;
         cur->velocityX = 2;
         cur->orderingDepth = 3;
@@ -1888,7 +1888,7 @@ void func_800606D4(void) {
         cur->primitive = tile;
         tile[0] = 0;
         tile[3] = 0;
-        *(s32 *)(tile + 4) = 0;
+        ((MenuText *)tile)->otz = 0;
         tile2 = cur->primitive;
         width = 0xCA;
         two = 2;
@@ -1898,7 +1898,7 @@ void func_800606D4(void) {
         tile2[2] = 2;
         do {
         } while (0);
-        *(s32 *)(tile2 + 8) = D_8009A2B0[0];
+        ((MenuText *)tile2)->text = D_8009A2B0[0];
         table = D_8009A2BC;
         asm("" : "=r"(p) : "0"(table));
         p = table;
@@ -1944,7 +1944,7 @@ void func_800606D4(void) {
         cur->primitive = mark;
         mark[0] = 0;
         mark[3] = 0;
-        *(s32 *)(mark + 4) = 0;
+        ((MenuText *)mark)->otz = 0;
         cur->drawOffsetX = x;
         cur->width = value;
         cur->height = MenuFontLineHeight();
@@ -1953,7 +1953,7 @@ void func_800606D4(void) {
         *new_var2 = 0;
         cell[1] = two;
         cell[2] = two;
-        *(s32 *)(cell + 8) = *p;
+        ((MenuText *)cell)->text = *p;
         p++;
         entry->next = cur;
         entry = cur;

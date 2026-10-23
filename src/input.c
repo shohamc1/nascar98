@@ -493,7 +493,7 @@ void CarInitTumble(Car *car) {
     cb = D_800B1FF0;
     vxb = &cb->vx;
     vzb = &cb->vz;
-    height = *(s16 *)((u8 *)car->shape + 0x26);
+    height = car->shape->maxZ;
     pvx = vxb;
     c = cb;
     pvz = vzb;
@@ -503,36 +503,36 @@ void CarInitTumble(Car *car) {
         switch (i) {
         case 0:
         case 4:
-            c->sz = *(u16 *)((u8 *)car->shape + 0x1E);
+            c->sz = (u16)car->shape->maxX;
             *pvz = c->sz;
-            c->sx = *(u16 *)((u8 *)car->shape + 0x20);
+            c->sx = (u16)car->shape->minY;
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
             break;
         case 1:
         case 5:
-            c->sz = *(u16 *)((u8 *)car->shape + 0x1E);
+            c->sz = (u16)car->shape->maxX;
             *pvz = c->sz;
-            c->sx = *(u16 *)((u8 *)car->shape + 0x22);
+            c->sx = (u16)car->shape->maxY;
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
             break;
         case 2:
         case 6:
-            c->sz = *(u16 *)((u8 *)car->shape + 0x1C);
+            c->sz = (u16)car->shape->minX;
             *pvz = c->sz;
-            c->sx = *(u16 *)((u8 *)car->shape + 0x22);
+            c->sx = (u16)car->shape->maxY;
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
             break;
         case 3:
         case 7:
-            c->sz = *(u16 *)((u8 *)car->shape + 0x1C);
+            c->sz = (u16)car->shape->minX;
             *pvz = c->sz;
-            c->sx = *(u16 *)((u8 *)car->shape + 0x20);
+            c->sx = (u16)car->shape->minY;
             *pvx = c->sx;
             y = (i / 4) * height;
             c->sy = y;
