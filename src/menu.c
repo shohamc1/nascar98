@@ -61,7 +61,7 @@ void MenuDrawObjectList(MenuObj *object, s32 arg1);
 extern MenuObj *D_800A3634;
 extern s32 **D_800A3740;
 extern MenuObj *D_800A3788;
-extern s32 D_800A3A2CAbsolute[];
+extern s32 *D_800A3A2CAbsolute[];
 void func_8005DF50(s32 arg0, s32 arg1, s32 arg2) {
     MenuObj *p0;
     MenuObj *p1;
@@ -378,7 +378,7 @@ void func_8005E5BC(s32 unused, s32 x, s16 y, s32 flag) {
     entry->green = 0;
     entry->red = 0;
     entry->orderingDepth = 0;
-    D_800A3634 = (MenuObj *)entry;
+    D_800A3634 = entry;
     entry->x = x + 0x3C;
     entry->targetX = height;
     if (flag & 0xFF) {
@@ -435,7 +435,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     sub->center = 0;
     sub->otz = 0;
     local = entry->primitive;
-    D_800A3788 = (MenuObj *)entry;
+    D_800A3788 = entry;
     local[1] = 2;
     local[2] = 2;
     local[3] = 1;
@@ -4177,7 +4177,7 @@ void func_80062F6C(s32 arg0, s32 arg1) {
     s16 sum;
 
     idx = arg0 & 0xFF;
-    obj = (u8 *)D_800A37FC[idx];
+    obj = D_800A37FC[idx];
     i = 0;
     base9 = idx * 9;
     base2 = (s32)gPadPictureMenuLists;
@@ -4249,9 +4249,9 @@ void func_80062F6C(s32 arg0, s32 arg1) {
 
 void func_80063180(s32 enabled) {
     if (enabled & 0xFF) {
-        D_800AE290[0][0x1A / 2] = 0;
+        D_800AE290[0]->orderingDepth = 0;
     } else {
-        D_800AE290[0][0x1A / 2] = -1;
+        D_800AE290[0]->orderingDepth = -1;
     }
 }
 
@@ -4314,8 +4314,8 @@ void func_800631DC(s32 left, s32 top, s32 code) {
         object->targetX = top + x;
         object->drawOffsetX = x;
         object->velocityX = code;
-        MenuSetTextObject((MenuObj *)object, 2, 2,
-                          (s32)gDriverNames[gPlayerDriver[i]], 0, 0);
+        MenuSetTextObject(object, 2, 2, (s32)gDriverNames[gPlayerDriver[i]], 0,
+                          0);
         node->next = object;
         node = object;
         D_800A3868[i] = node;
@@ -4713,7 +4713,7 @@ void func_80063E7C(void) {
     entry->pos.y = 0xC8;
     entry->pos.z = 0xC8;
     entry->cameraMode = 4;
-    D_800A3558[0] = (s32)entry;
+    D_800A3558[0] = entry;
     D_800A38AC[0] = (s32)entry;
     entry->prev = 0;
     D_800A2E94[0] = 0;
@@ -5865,7 +5865,7 @@ void func_800663B0(void) {
                 PutDrawEnv(D_800BDD4C);
                 ClearOTagR(D_800A38C4, 4);
                 count = D_800A3A4C;
-                walk = (u8 *)D_800A369C;
+                walk = D_800A369C;
                 walk += count * 0x28;
                 if (gSessionTypeAbsolute[0] == 0) {
                     text = (char *)D_8009A3F0[0];

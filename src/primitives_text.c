@@ -1276,16 +1276,16 @@ void func_80019A00(s16 arg0, POLY_FT4 *arg1, s32 arg2) {
     s32 off;
     s32 off3;
     extern s16 D_80091072[];
-    extern u8 D_800A3A2CAbsolute[];
-    extern u8 D_800A3A34Absolute[];
+    extern s32 *D_800A3A2CAbsolute[];
+    extern s32 *D_800A3A34Absolute[];
 
     num = 0x230;
     den = 0x32C8;
     rem = num % den;
     rem = (rem << 15) / den;
     result = MathMultiplyFixed16(rem << 1, (s32)arg0 << 16);
-    radiusA = (*(s32 **)D_800A3A2CAbsolute)[((result >> 16) + 0x1D6) & 0x3FF];
-    radiusB = (*(s32 **)D_800A3A34Absolute)[((result >> 16) + 0x1D6) & 0x3FF];
+    radiusA = D_800A3A2CAbsolute[0][((result >> 16) + 0x1D6) & 0x3FF];
+    radiusB = D_800A3A34Absolute[0][((result >> 16) + 0x1D6) & 0x3FF];
     i = 0;
     ptrB = D_80091072;
     ptrA = ptrB - 1;
@@ -1601,20 +1601,16 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
         case 16:
             if (car->segment == -1)
                 break;
-            if (MathGetAngleDelta(
-                    car->heading,
-                    ((TrackSection *)gTrackSections[0])[car->segment].angle) <
-                0) {
-                if (-MathGetAngleDelta(
-                        car->heading,
-                        ((TrackSection *)gTrackSections[0])[car->segment]
-                            .angle) < 300)
+            if (MathGetAngleDelta(car->heading,
+                                  gTrackSections[0][car->segment].angle) < 0) {
+                if (-MathGetAngleDelta(car->heading,
+                                       gTrackSections[0][car->segment].angle) <
+                    300)
                     goto next;
             } else {
-                if (MathGetAngleDelta(
-                        car->heading,
-                        ((TrackSection *)gTrackSections[0])[car->segment]
-                            .angle) < 300)
+                if (MathGetAngleDelta(car->heading,
+                                      gTrackSections[0][car->segment].angle) <
+                    300)
                     goto next;
             }
             goto queue;
@@ -2354,10 +2350,10 @@ extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
 extern Car *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
-extern u8 D_800A3A34Absolute[];
+extern s32 *D_800A3A34Absolute[];
 
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
-extern u8 D_800A3A2CAbsolute[];
+extern s32 *D_800A3A2CAbsolute[];
 void func_8001C34C(void) {
     s32 mode;
     s32 value;

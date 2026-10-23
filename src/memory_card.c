@@ -1423,7 +1423,7 @@ MenuObj *MenuCreateTextObject(s32 left, s32 top) {
     ((MenuText *)prim)->shade = 0;
     ((MenuText *)prim)->center = 0;
     ((MenuText *)prim)->otz = 0;
-    return (MenuObj *)object;
+    return object;
 }
 
 typedef struct {
@@ -1630,7 +1630,7 @@ void func_8005C124(u8 menuId, u8 selRow) {
             item->red = 0xC8;
             item->green = 0x40;
             item->blue = 0x40;
-            D_800AE290[0] = (s16 *)item;
+            D_800AE290[0] = item;
         } else {
             item->y = y;
         }
@@ -1809,10 +1809,10 @@ s32 func_8005CA4C(void) {
     s16 value;
 
     if (D_800A3988[0] != 0) {
-        ((MenuObj *)D_800AE290[0])->y = 0xF1;
+        D_800AE290[0]->y = 0xF1;
         ((MenuObj *)D_800AE294[0])->y = 0xF1;
         prim = D_800AE298[0];
-        value = *(u16 *)&((MenuObj *)D_800AE290[0])->targetY;
+        value = *(u16 *)&D_800AE290[0]->targetY;
         D_800A3644[0] = 0;
         ((MenuObj *)prim)->y = value;
     } else {
@@ -1820,8 +1820,7 @@ s32 func_8005CA4C(void) {
             return 0;
         }
         for (i = 0; i < 3; i++) {
-            ((MenuObj *)D_800AE290[i])->y =
-                *(u16 *)&((MenuObj *)D_800AE290[i])->targetY;
+            D_800AE290[i]->y = *(u16 *)&D_800AE290[i]->targetY;
         }
         D_800A3644[0] = 1;
         if (gPlayerDriver[0] == gPlayerDriver[1]) {

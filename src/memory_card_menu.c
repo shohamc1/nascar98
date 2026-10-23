@@ -2696,11 +2696,10 @@ void CardMenuBuildFileList(void) {
     prev->drawOffsetX = x;
     i = 0;
     *(MenuObj **)D_800A3A10Obj = prev;
-    MenuSetTextObject((MenuObj *)prev, 2, 2, D_8009A4C0[0], 0,
-                      prev->orderingDepth);
+    MenuSetTextObject(prev, 2, 2, D_8009A4C0[0], 0, prev->orderingDepth);
     do {
         node = MenuCreateTexturedRect(0, y, 0x78, 0x18, 9, 1, 0);
-        prev->next = (MenuObj *)node;
+        prev->next = node;
         pkt = node->primitive;
         node->velocityX = 2;
         node->x = -0x78;
@@ -2720,7 +2719,7 @@ void CardMenuBuildFileList(void) {
         MenuSetTexturedQuad(pkt, 9, 0, h, (u16)node->width, (u16)node->height);
         i += 1;
         y += node->height;
-        prev = (MenuObj *)node;
+        prev = node;
     } while (i < 4);
     y = 0x3C;
     i = 0;
@@ -2922,12 +2921,12 @@ void CardMenuCenterSelectedText(s32 textIndex) {
     MenuText *obj;
     register s32 value asm("v1");
 
-    obj = *(u8 **)&((MenuObj *)D_800A3A10[0])->primitive;
+    obj = *(u8 **)&D_800A3A10[0]->primitive;
     entry = &D_8009A4C0[textIndex & 0xFF];
     value = MenuStringWidth(*entry);
     value = (0x78 - value) / 2;
     obj->text = *entry;
-    *(u16 *)&((MenuObj *)D_800A3A10[0])->drawOffsetX = value;
+    *(u16 *)&D_800A3A10[0]->drawOffsetX = value;
 }
 #else
 void CardMenuCenterSelectedText(s32 arg0) {
@@ -3718,7 +3717,7 @@ void func_8006DA40(void) {
     do {
         node = MenuCreateTexturedRect(0x64, y, 0x78, 0x18, 9, 1, 0);
         if (i == 0) {
-            D_800A3A10[0] = (MenuObj *)node;
+            D_800A3A10[0] = node;
         } else {
             prev->next = node;
         }
@@ -3776,10 +3775,10 @@ void func_8006DA40(void) {
         }
     }
     if (gPadType_nm[0] == 2) {
-        MenuSetTextObject((MenuObj *)node, 2, 2, (s32)D_8009AB80nm[idx], 0,
+        MenuSetTextObject(node, 2, 2, (s32)D_8009AB80nm[idx], 0,
                           node->orderingDepth);
     } else {
-        MenuSetTextObject((MenuObj *)node, 2, 2, (s32)D_8009AB00nm[idx], 0,
+        MenuSetTextObject(node, 2, 2, (s32)D_8009AB00nm[idx], 0,
                           node->orderingDepth);
     }
     node->velocityX = 2;

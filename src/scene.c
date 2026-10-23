@@ -46,7 +46,7 @@ extern s32 gOrderingTable[];
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
 extern s32 gOrderingTablenm[] asm("gOrderingTable.NON_MATCHING");
 extern s32 gReplayIndexAbsolute[];
-extern s32 D_800A3A34Absolute[];
+extern s32 *D_800A3A34Absolute[];
 extern s32 D_800A397C[];
 extern u8 D_800A3680[];
 extern void func_80025730(Car *);
@@ -56,7 +56,7 @@ extern void HeapFree(void *ptr);
 extern s32 D_800A37B4Absolute[];
 extern s32 D_800A359C[];
 extern void SetPolyF4(u8 *prim);
-extern s32 D_800A35E0[];
+extern Car *D_800A35E0[];
 extern void CarInitDefaults(Car *car);
 extern Car *gCarListnm[] asm("gCarList.NON_MATCHING");
 extern void FileRead(s32 buffer, s32 size, s32 count, s32 handle);
@@ -96,7 +96,7 @@ extern SVECTOR D_800992EC[];
 extern SVECTOR D_800992F4[];
 extern void SetPolyFT3(POLY_FT3 *prim);
 
-extern s32 D_800A3A2CAbsolute[];
+extern s32 *D_800A3A2CAbsolute[];
 void func_80044BCC(s32 arg0) {
     s32 v;
     s32 typeIndex;
@@ -509,8 +509,8 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
     origin[0] = entry->x;
     origin[1] = entry->z;
     i = 0;
-    sinValue = ((s32 *)D_800A3A2CAbsolute[0])[0x3FF - entry->angle];
-    cosValue = ((s32 *)D_800A3A34Absolute[0])[0x3FF - entry->angle];
+    sinValue = D_800A3A2CAbsolute[0][0x3FF - entry->angle];
+    cosValue = D_800A3A34Absolute[0][0x3FF - entry->angle];
     do {
         lateral[i] =
             (MathMultiplyFixed16(cosValue, (center[i][0] - origin[0]) << 16) +
@@ -538,9 +538,9 @@ s32 CarGetTrackSide(Car *car, s16 offset) {
         }
     }
     tmp = 0x3FF - ((quads[1]->angle + quads[2]->angle) / 2);
-    dot = (MathMultiplyFixed16(((s32 *)D_800A3A34Absolute[0])[tmp],
+    dot = (MathMultiplyFixed16(D_800A3A34Absolute[0][tmp],
                                (car->pos.x - center[1][0]) << 16) +
-           MathMultiplyFixed16(((s32 *)D_800A3A2CAbsolute[0])[tmp],
+           MathMultiplyFixed16(D_800A3A2CAbsolute[0][tmp],
                                (car->pos.y - center[1][1]) << 16)) >>
           16;
     if (D_800A2F84[0] != 0) {
@@ -1021,7 +1021,7 @@ void SceneInitProjectiles(void) {
     for (i = 0; i < gTrackSectionCount[0]; i++) {
         objectPtr = &object;
         pointPtr = point;
-        angle = ((TrackSection *)gTrackSections[0])[i].angle;
+        angle = gTrackSections[0][i].angle;
         object.heading = angle;
         object.fineHeading = angle * 4;
         for (j = 0; j < 2; j++) {
@@ -1034,7 +1034,7 @@ void SceneInitProjectiles(void) {
             func_80030F24(objectPtr, pointPtr, 0, dist, 0);
             heights[j] = point[2];
         }
-        *(s32 *)&((TrackSection *)gTrackSections[0])[i].height0 =
+        *(s32 *)&gTrackSections[0][i].height0 =
             ((heights[0] + 0x4000) << 0x10) | (heights[1] + 0x4000);
     }
     SceneInitRoadStrip();
@@ -1121,7 +1121,7 @@ void SceneInitRoadStrip(void) {
             sectionPosition =
                 ((s16)section + lookBehind - 1) % gTrackSectionCount[0];
             count = D_800A343C;
-            node = (TrackSection *)gTrackSections[0] + sectionPosition;
+            node = gTrackSections[0] + sectionPosition;
             index = 0;
             if (count > 0) {
                 s32 slotBits;
@@ -1149,7 +1149,7 @@ void SceneInitRoadStrip(void) {
                     quadBase = *base;
                     rotation.vx = 0;
                     rotationPtr = &rotation;
-                    nodes = (TrackSection *)gTrackSections[0];
+                    nodes = gTrackSections[0];
                     sectionValue = (s16)section;
                     rotation.vy = nodes[sectionValue].angle * 4;
                     sectionIndex = sectionValue;
@@ -1186,14 +1186,10 @@ void SceneInitRoadStrip(void) {
                             ((SVECTOR *)(firstPoint + 0x30))->vy = y;
                             cameraZ = origin[2];
                             if (side) {
-                                z = ((TrackSection *)
-                                         gTrackSections[0])[sectionIndex]
-                                        .height0 -
+                                z = gTrackSections[0][sectionIndex].height0 -
                                     0x4000;
                             } else {
-                                z = ((TrackSection *)
-                                         gTrackSections[0])[sectionIndex]
-                                        .height1 -
+                                z = gTrackSections[0][sectionIndex].height1 -
                                     0x4000;
                             }
                             firstCache->z = (z >> 2) - cameraZ;
@@ -1248,13 +1244,11 @@ void SceneInitRoadStrip(void) {
                             ((SVECTOR *)(nextPoint + 0x30))->vy = y;
                             cameraZ = origin[2];
                             if (side) {
-                                z = ((TrackSection *)
-                                         gTrackSections[0])[nextSectionIndex]
+                                z = gTrackSections[0][nextSectionIndex]
                                         .height0 -
                                     0x4000;
                             } else {
-                                z = ((TrackSection *)
-                                         gTrackSections[0])[nextSectionIndex]
+                                z = gTrackSections[0][nextSectionIndex]
                                         .height1 -
                                     0x4000;
                             }
@@ -1347,13 +1341,12 @@ void SceneUpdateRoadStrip(Car *car) {
             s32 cameraZ;
 
             count = 0;
-            node = (TrackSection *)gTrackSections[0] +
+            node = gTrackSections[0] +
                    (D_800A3440[slot] + D_800A3438) % gTrackSectionCount[0];
             while (count < distance) {
                 section = node->section;
                 rotation.vx = 0;
-                rotation.vy =
-                    ((TrackSection *)gTrackSections[0])[(s16)section].angle * 4;
+                rotation.vy = gTrackSections[0][(s16)section].angle * 4;
                 rotation.vz = 0;
                 RotMatrix(&rotation, &D_8009931C);
                 SetRotMatrix(&D_8009931C);
@@ -1386,13 +1379,9 @@ void SceneUpdateRoadStrip(Car *car) {
                     point->vy = y;
                     cameraZ = origin[2];
                     if (side) {
-                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
-                                .height0 -
-                            0x4000;
+                        z = gTrackSections[0][(s16)section].height0 - 0x4000;
                     } else {
-                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
-                                .height1 -
-                            0x4000;
+                        z = gTrackSections[0][(s16)section].height1 - 0x4000;
                     }
                     cache->z = (z >> 2) - cameraZ;
                     /* Reload the cached height before both stores. */
@@ -1427,14 +1416,12 @@ void SceneUpdateRoadStrip(Car *car) {
             asm("" : "=r"(sectionIndex) : "0"(sectionIndex));
             length = gTrackSectionCount[0];
             lastSection = length - 1;
-            node = (TrackSection *)gTrackSections[0] +
-                   (sectionIndex + lastSection) % length;
+            node = gTrackSections[0] + (sectionIndex + lastSection) % length;
             distance = -distance;
             while (count < distance) {
                 section = node->section;
                 rotation.vx = 0;
-                rotation.vy =
-                    ((TrackSection *)gTrackSections[0])[(s16)section].angle * 4;
+                rotation.vy = gTrackSections[0][(s16)section].angle * 4;
                 rotation.vz = 0;
                 RotMatrix(&rotation, &D_8009931C);
                 SetRotMatrix(&D_8009931C);
@@ -1466,13 +1453,9 @@ void SceneUpdateRoadStrip(Car *car) {
                     point->vy = y;
                     cameraZ = origin[2];
                     if (side) {
-                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
-                                .height0 -
-                            0x4000;
+                        z = gTrackSections[0][(s16)section].height0 - 0x4000;
                     } else {
-                        z = ((TrackSection *)gTrackSections[0])[(s16)section]
-                                .height1 -
-                            0x4000;
+                        z = gTrackSections[0][(s16)section].height1 - 0x4000;
                     }
                     cache->z = (z >> 2) - cameraZ;
                     point->vz = cache->z =
@@ -2035,7 +2018,6 @@ void SceneCreateSceneryCar(void) {
 }
 
 void func_8004875C(void) {
-    extern s32 gTrackSections[];
     extern void func_80031264(Car * object);
     extern void ObjectAdvanceAlongHeading(Car * object);
     extern s32 MathMultiplyFixed16(s32, s32);
@@ -2049,7 +2031,7 @@ void func_8004875C(void) {
     Car *w;
     s32 e;
 
-    val = ((TrackSection *)gTrackSections[0])[D_800A3728->segment].angle;
+    val = gTrackSections[0][D_800A3728->segment].angle;
     D_800A3728->heading = val;
     D_800A3728->movementHeading = val;
     D_800A3728->fineHeading = (u16)D_800A3728->heading * 4;
@@ -2334,7 +2316,7 @@ extern void func_80041564Hud(Car *, s32) asm("func_80041564");
 
 /* Value that D_800A3480 follows, the field at 0x20E of the car in
  * gPlayerCar. */
-#define HUD_STEER_TARGET (((Car *)gPlayerCar[0])->steering)
+#define HUD_STEER_TARGET (gPlayerCar[0]->steering)
 
 /* Centred warning text with a box behind it. */
 #define HUD_MESSAGE(text, ty)                                                  \
@@ -2464,7 +2446,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
         if (car->unk209 != 0) {
             gOrderingTableAbsolute[0] = gOrderingTable[0] + 4;
             if (split) {
-                if (car == (Car *)gPlayerCar[0]) {
+                if (car == gPlayerCar[0]) {
                     seg = D_800A757C;
                     needle = D_800A78D4;
                     tiles = D_800A7924;
@@ -2495,8 +2477,8 @@ void HudDrawCar(Car *car, s16 yOffset) {
                            ? scaled / 10000
                            : scaled / 9000) +
                       0x200;
-                sinV = ((s32 *)D_800A3A2CAbsolute[0])[idx];
-                cosV = ((s32 *)D_800A3A34Absolute[0])[idx];
+                sinV = D_800A3A2CAbsolute[0][idx];
+                cosV = D_800A3A34Absolute[0][idx];
                 for (i = 0; i < 4; i++) {
                     pts[i].x =
                         ((MathMultiplyFixed16(sinV, D_8009933C[i].x << 16) -
@@ -2639,8 +2621,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                     }
                     if (ABS(MathGetAngleDelta(
                             car->heading,
-                            ((TrackSection *)gTrackSections[0])[car->segment]
-                                .angle)) > 0x120) {
+                            gTrackSections[0][car->segment].angle)) > 0x120) {
                         GraphicsSetColor(0xFF, 0x40, 0x40);
                         HUD_MESSAGE(D_8009AE00, 0xD2);
                         func_80041564Hud(car, 0x25);
@@ -4618,16 +4599,16 @@ void HudDrawStandings(s8 firstRow, s32 y) {
             gTextColor = 9;
             textY = (u8)y;
             func_80050028Row(text, gStandingsPlaceX + 3, textY, 0);
-            if (place == ((Car *)gPlayerCar[0])->place) {
+            if (place == gPlayerCar[0]->place) {
                 if (selected == 0 && D_800A2EACAbsolute[0] == 0) {
                     gTextColor = 0;
-                    func_80050028Row(((Car *)gPlayerCar[0])->name,
-                                     gStandingsNameX, textY, 0);
+                    func_80050028Row(gPlayerCar[0]->name, gStandingsNameX,
+                                     textY, 0);
                     gTextColor = 9;
-                    FontDrawColoredIntegerRow(((Car *)gPlayerCar[0])->lap,
+                    FontDrawColoredIntegerRow(gPlayerCar[0]->lap,
                                               gStandingsLapX + 8, textY, 0);
-                    HudDrawTimeRow(((Car *)gPlayerCar[0])->time,
-                                   gStandingsTimeX, textY, 0, 1);
+                    HudDrawTimeRow(gPlayerCar[0]->time, gStandingsTimeX, textY,
+                                   0, 1);
                     GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80,
                                      0);
                     if (row == 15) {
@@ -4644,8 +4625,8 @@ void HudDrawStandings(s8 firstRow, s32 y) {
                                place);
                     func_80050028Row(text, gStandingsPlaceX + 3, (u8)y, 0);
                 }
-                if (place == ((Car *)gPlayerCar[0])->place &&
-                    D_800A2EA8[0] >= ((Car *)gPlayerCar[0])->lap) {
+                if (place == gPlayerCar[0]->place &&
+                    D_800A2EA8[0] >= gPlayerCar[0]->lap) {
                     goto skipBlank;
                 }
             }
@@ -4654,21 +4635,18 @@ void HudDrawStandings(s8 firstRow, s32 y) {
             gTextColor = 0;
             limit = (u8)firstRow + 1;
             index = rowIndex;
-            if (((Car *)gPlayerCar[0])->place < limit &&
-                D_800A2EACAbsolute[0] == 0) {
+            if (gPlayerCar[0]->place < limit && D_800A2EACAbsolute[0] == 0) {
                 index = rowIndex - 1;
             }
             textY = (u8)y;
             func_80050028Row(gDriverNames[gDriverOrder[index]], gStandingsNameX,
                              textY, 0);
-            if (place == ((Car *)gPlayerCar[0])->place &&
-                ((Car *)gPlayerCar[0])->lap < 2) {
+            if (place == gPlayerCar[0]->place && gPlayerCar[0]->lap < 2) {
                 func_80050028Row(D_8009ADF4[0], gStandingsTimeX, textY, 0);
             } else {
                 HudDrawTimeRow(D_800AE1EC[index], gStandingsTimeX, (u8)y, 0, 1);
             }
-            if (D_800A2EACAbsolute[0] != 0 &&
-                place == ((Car *)gPlayerCar[0])->place) {
+            if (D_800A2EACAbsolute[0] != 0 && place == gPlayerCar[0]->place) {
                 GraphicsDrawRect(0, (y & 0xFF) - 1, 0x140, 0xC, 0, 0, 0x80, 0);
             }
             rowIndex++;
@@ -4678,7 +4656,7 @@ void HudDrawStandings(s8 firstRow, s32 y) {
         } while (row < 16);
         return;
     }
-    entry = (Car *)D_800A35E0[0];
+    entry = D_800A35E0[0];
     for (rowIndex = 0; rowIndex < (u8)firstRow; rowIndex++) {
         entry = ((CarLink *)entry->order.node.previous)->car;
     }
@@ -4720,12 +4698,11 @@ void HudDrawStandings(s8 firstRow, s32 y) {
                 func_80050028Row(text, gStandingsLapX - 4, textY, 0);
                 if (entry->lap == 0) {
                     HudDrawTimeRow(0x7FFFFFFF, gStandingsTimeX, textY, 0, 0);
-                } else if (entry == (Car *)D_800A35E0[0]) {
+                } else if (entry == D_800A35E0[0]) {
                     HudDrawTimeRow(entry->unk260, gStandingsTimeX, textY, 0, 0);
                 } else {
-                    gap = (s16)(((((Car *)D_800A35E0[0])->lap *
-                                      gTrackSectionCount[0] +
-                                  ((Car *)D_800A35E0[0])->segment) -
+                    gap = (s16)(((D_800A35E0[0]->lap * gTrackSectionCount[0] +
+                                  D_800A35E0[0]->segment) -
                                  (entry->lap * gTrackSectionCount[0] +
                                   entry->segment)) /
                                 gTrackSectionCount[0]);
@@ -5190,7 +5167,7 @@ typedef struct {
     s32 splitTotal[4]; /* 0x20 */
 } LapRecord;
 
-extern u8 *D_800A8A74[];
+extern LapRecord *D_800A8A74[];
 extern char *D_8009AE64[];
 extern char *D_8009AE74[];
 extern char *D_8009AE78[];
@@ -5223,7 +5200,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     char *sign;
 
     top = 47;
-    speed = ((LapRecord *)D_800A8A74[lap])->unk4;
+    speed = D_800A8A74[lap]->unk4;
     if (speed == 0x7FFF) {
         strcpy(title, D_8009AE64[lap]);
     } else {
@@ -5244,14 +5221,13 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     case 0:
         func_80050028Row(D_8009AE7C[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            HudDrawTimeRow(((LapRecord *)D_800A8A74[lap])->splitTime[i], 215, y,
-                           3, 1);
+            HudDrawTimeRow(D_800A8A74[lap]->splitTime[i], 215, y, 3, 1);
             y += 12;
         }
         y += 6;
         textY = y;
         func_80050028Row(D_8009AE80[0], 20, textY, 3);
-        lapData = D_800A8A74[lap];
+        lapData = (u8 *)D_800A8A74[lap];
         lapData += gTrackSplitCount[D_800A2CE0[0]] * 4;
         /* lapData is the record stepped by the split count, so this is
          * splitTotal[count - 1]. */
@@ -5263,7 +5239,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
 
         func_80050028Row(D_8009AE84[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            speed = ((LapRecord *)D_800A8A74[lap])->splitSpeed[i];
+            speed = D_800A8A74[lap]->splitSpeed[i];
             if (speed == 0x7FFF) {
                 func_80050028Row(D_8009AE90[0], 215, y, 3);
             } else {
@@ -5279,7 +5255,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
         y += 6;
         textY = y;
         func_80050028Row(D_8009AE88[0], 20, textY, 3);
-        speed = *(s16 *)&((LapRecord *)D_800A8A74[lap])->unk2;
+        speed = *(s16 *)&D_800A8A74[lap]->unk2;
         if (speed == 0x7FFF) {
             func_80050028Row(D_8009AE90[0], 215, textY, 3);
         } else {
@@ -5296,14 +5272,13 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
     case 2:
         func_80050028Row(D_8009AE8C[0], 215, top, 3);
         for (i = 0; i < gTrackSplitCount[D_800A2CE0[0]]; i++) {
-            HudDrawTimeRow(((LapRecord *)D_800A8A74[lap])->splitTotal[i], 215,
-                           y, 3, 1);
+            HudDrawTimeRow(D_800A8A74[lap]->splitTotal[i], 215, y, 3, 1);
             y += 12;
         }
         break;
     }
     top = 169;
-    if (*(s8 *)&((LapRecord *)D_800A8A74[lap])->unk0 == 127) {
+    if (*(s8 *)&D_800A8A74[lap]->unk0 == 127) {
         for (i = 0; i < 2; i++) {
             sprintfRow(title, gFormatStringString, D_8009AE98[i],
                        D_8009AE98[-2]);
@@ -5324,7 +5299,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
 
         for (i = 0; i < 2; i++) {
             setupIndex = i;
-            setting = *(s8 *)(D_800A8A74[lap] + setupIndex);
+            setting = *(s8 *)((u8 *)D_800A8A74[lap] + setupIndex);
             valueBuffer = valueText;
             /* Set the buffer argument before the sign test. */
             asm("" : : "r"(valueBuffer), "r"(setting));
@@ -5363,7 +5338,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
                 : "0"(labelWidth), "r"(setupIndex), "r"(setupIndex),
                   "r"(setupIndex), "r"(setupIndex), "r"(screenX));
             sign = gTextPositiveSign;
-            if (*(s8 *)(D_800A8A74[lap] + setupIndex) < 0) {
+            if (*(s8 *)((u8 *)D_800A8A74[lap] + setupIndex) < 0) {
                 sign = gTextNegativeSign;
             }
             number = screenX + (u8)labelWidth;
@@ -5460,7 +5435,7 @@ void func_8004F880(void) {
         }
     }
     for (i = 0; i < 4; i++) {
-        D_800A8A74[i] = D_800A8AB0[0] + i * 0x30;
+        D_800A8A74[i] = (LapRecord *)(D_800A8AB0[0] + i * 0x30);
     }
     x = D_801F3FF8[0];
     D_800A34C4 = x * 4;
@@ -5474,17 +5449,11 @@ void func_8004F880(void) {
     loopM:
         *(u16 *)(D_800A8AB4 + i * 4) =
             0x12C - D_80099230[idx * 2] -
-            ((TrackSection *)gTrackSections[0])[i * q[0] / *(s8 *)(idx + pm)]
-                    .x /
-                w -
-            4;
+            gTrackSections[0][i * q[0] / *(s8 *)(idx + pm)].x / w - 4;
         uvBase = q[0];
         *(u16 *)(D_800A8AB6 + i * 4) =
             D_80099231[idx * 2] +
-            ((TrackSection *)gTrackSections[0])[i * uvBase / *(s8 *)(idx + pm)]
-                    .z /
-                w +
-            0xE;
+            gTrackSections[0][i * uvBase / *(s8 *)(idx + pm)].z / w + 0xE;
         i++;
         if (i < *(s8 *)(idx + pm)) {
             goto loopM;
@@ -5515,7 +5484,7 @@ typedef struct {
 
 void HudRecordLapSplitStats(void) {
     extern u8 D_800A3688;
-    extern u8 *D_800A8A80[];
+    extern LapRecord *D_800A8A80[];
     u8 *entry;
     Car *car;
     LapTimeSlot *slot;
@@ -5539,8 +5508,8 @@ void HudRecordLapSplitStats(void) {
     car = gPlayerCar[0];
     slot->lapTime = lapTime;
     speed = ((s16 *)&car->speed)[1];
-    ((LapRecord *)D_800A8A80[0])->splitSpeed[gLapSplitIndex] = speed;
-    ((LapRecord *)D_800A8A80[0])->splitTotal[gLapSplitIndex] = car->unk258;
+    D_800A8A80[0]->splitSpeed[gLapSplitIndex] = speed;
+    D_800A8A80[0]->splitTotal[gLapSplitIndex] = car->unk258;
     if (gLapSplitIndex == gTrackSplitCount[*(s32 *)(void *)D_800A2CE0] - 1) {
         if (D_800A3688 != 0 && gSessionTypeAbsolute[0] == 0) {
             D_800A34B0 = *(s32 *)(void *)D_800A2CE0 == 3 ? 0x28 : 0x32;
@@ -5549,19 +5518,18 @@ void HudRecordLapSplitStats(void) {
         i = 0;
         if (gTrackSplitCount[D_800A2CE0[0]] > 0) {
             do {
-                sum += (u16)((LapRecord *)D_800A8A80[0])->splitSpeed[i];
+                sum += (u16)D_800A8A80[0]->splitSpeed[i];
                 i++;
             } while (i < gTrackSplitCount[D_800A2CE0[0]]);
         }
-        ((LapRecord *)D_800A8A80[0])->unk2 =
-            (s16)sum / gTrackSplitCount[D_800A2CE0[0]];
+        D_800A8A80[0]->unk2 = (s16)sum / gTrackSplitCount[D_800A2CE0[0]];
         idx = gLapSplitIndex;
         for (i = 0; i < 3; i++) {
             j = i + 1;
             if (j < 4) {
                 do {
-                    if (((LapRecord *)D_800A8A74[j])->splitTotal[idx] <
-                        ((LapRecord *)D_800A8A74[i])->splitTotal[idx]) {
+                    if (D_800A8A74[j]->splitTotal[idx] <
+                        D_800A8A74[i]->splitTotal[idx]) {
                         tmp = D_800A8A74[i];
                         D_800A8A74[i] = D_800A8A74[j];
                         D_800A8A74[j] = tmp;
@@ -5573,11 +5541,11 @@ void HudRecordLapSplitStats(void) {
     }
 }
 
-extern u8 *D_800A8A80[];
+extern LapRecord *D_800A8A80[];
 void RaceStoreLapRecordCarFields(void) {
-    D_800A8A80[0][0] = (u16)gPlayerCar[0]->unk2AA;
-    D_800A8A80[0][1] = (u16)gPlayerCar[0]->unk2A4;
-    *(u16 *)&((LapRecord *)D_800A8A80[0])->unk4 = (u16)gPlayerCar[0]->lap;
+    *(u8 *)&D_800A8A80[0]->unk0 = (u16)gPlayerCar[0]->unk2AA;
+    ((u8 *)D_800A8A80[0])[1] = (u16)gPlayerCar[0]->unk2A4;
+    *(u16 *)&D_800A8A80[0]->unk4 = (u16)gPlayerCar[0]->lap;
 }
 
 extern s8 gTextColorS asm("gTextColor.NON_MATCHING");
@@ -6038,10 +6006,10 @@ s32 RaceUpdateCaution(void) {
 
             D_800A3564u = 1;
             D_800A34DC = 1;
-            player = (Car *)gPlayerCarLui;
+            player = gPlayerCarLui;
             player->reverseSpeed = 0;
             player->unk120 = 0;
-            ((Car *)gPlayerCarLui)->unk3FC = 0;
+            gPlayerCarLui->unk3FC = 0;
             side = CarGetTrackSide(gPlayerCarLui, 0);
             if (side == 1) {
                 gPlayerCarLui->unk26C[14] = 1;
@@ -6088,9 +6056,8 @@ s32 RaceUpdateCaution(void) {
             if (car->unkF4 != 0 && (car->unk3A4 & 0xF) != 0) {
                 done = 0;
             }
-            if (ABS(MathGetAngleDelta(
-                    car->heading,
-                    ((TrackSection *)gTrackSections[0])[car->segment].angle)) >
+            if (ABS(MathGetAngleDelta(car->heading,
+                                      gTrackSections[0][car->segment].angle)) >
                 0x40) {
                 D_800A3564u = 1;
             }
@@ -6216,36 +6183,28 @@ void HudInitFlagOverlay(void) {
     D_800A8B90[0] = x + 0x20;
     D_800A8B91[0] = y + 0x18;
     D_800A8AEC[0] =
-        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A2CAbsolute[0])[0x180]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x2D0000, D_800A3A2CAbsolute[0][0x180]) >> 0x10) +
         0x122;
     D_800A8AEE[0] =
-        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A34Absolute[0])[0x180]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x2D0000, D_800A3A34Absolute[0][0x180]) >> 0x10) +
         0x3C;
     D_800A8AF0[0] =
-        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A2CAbsolute[0])[0x180]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x140000, D_800A3A2CAbsolute[0][0x180]) >> 0x10) +
         0x122;
     D_800A8AF2[0] =
-        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A34Absolute[0])[0x180]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x140000, D_800A3A34Absolute[0][0x180]) >> 0x10) +
         0x3C;
     D_800A8AF4[0] =
-        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A2CAbsolute[0])[0x280]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x2D0000, D_800A3A2CAbsolute[0][0x280]) >> 0x10) +
         0x122;
     D_800A8AF6[0] =
-        (MathMultiplyFixed16(0x2D0000, ((s32 *)D_800A3A34Absolute[0])[0x280]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x2D0000, D_800A3A34Absolute[0][0x280]) >> 0x10) +
         0x3C;
     D_800A8AF8[0] =
-        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A2CAbsolute[0])[0x280]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x140000, D_800A3A2CAbsolute[0][0x280]) >> 0x10) +
         0x122;
     D_800A8AFA[0] =
-        (MathMultiplyFixed16(0x140000, ((s32 *)D_800A3A34Absolute[0])[0x280]) >>
-         0x10) +
+        (MathMultiplyFixed16(0x140000, D_800A3A34Absolute[0][0x280]) >> 0x10) +
         0x3C;
 }
 
@@ -6306,7 +6265,7 @@ void func_8005157C(void) {
     s8 dir;
     s32 pos;
 
-    car = (Car *)D_800A35E0[0];
+    car = D_800A35E0[0];
     playerDist = (car->lap - 1) * gTrackSectionCount[0] + car->segment;
     ahead = 0;
     linked = 0;
@@ -6369,7 +6328,7 @@ void func_8005157C(void) {
         car = ((CarLink *)car->sectionLink.node.previous)->car;
     }
     if (D_800A3A64 == 0) {
-        D_800A3A64 = (Car *)gPlayerCar[0];
+        D_800A3A64 = gPlayerCar[0];
     }
     car = D_800A3A64;
     pos = 0;
@@ -7357,9 +7316,9 @@ loop2:
         tex2->vertex[1].vy = entry->edge1[1] = coords[1][1];
         tex2->vertex[1].vz = entry->edge1[2] = coords[2][1];
         if (*(s16 *)tex2 != -1) {
-            node = ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children;
+            node = gTrackSections[0][*(s16 *)tex2].children;
             if ((u8 *)node->next == 0) {
-                ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children = 0;
+                gTrackSections[0][*(s16 *)tex2].children = 0;
             } else {
                 while (node->next->next != 0) {
                     node = (u8 *)node->next;
@@ -7380,9 +7339,8 @@ loop2:
             key = (s16)owner;
             asm volatile("");
             *(u16 *)slot = owner;
-            *(u8 **)&((SkidMark *)slot)->next =
-                ((TrackSection *)gTrackSections[0])[key].children;
-            ((TrackSection *)gTrackSections[0])[key].children = slot;
+            *(u8 **)&((SkidMark *)slot)->next = gTrackSections[0][key].children;
+            gTrackSections[0][key].children = slot;
         }
         if (entry->surface == 2) {
             if (entry->unk24 != 0) {
@@ -7484,7 +7442,7 @@ void func_80052E18(void) {
     } while (i < 100);
     i = 0;
     while (i < gTrackSectionCount[0]) {
-        ((TrackSection *)gTrackSections[0])[i].children = 0;
+        gTrackSections[0][i].children = 0;
         i++;
     }
     p = gCarListNM[0];
@@ -7535,7 +7493,7 @@ void func_8005301C(void) {
     if (gSplitScreenModeAbsolute[0] == 0) {
         return;
     }
-    obj = (Car *)gPlayerCar[0]->next;
+    obj = gPlayerCar[0]->next;
     if ((s8)obj->unk3B9 != 0) {
         func_8003FC0C(
             0x15,
@@ -10207,15 +10165,15 @@ dispatch:
         func_80063AE0(D_800A3A14R4[0], D_800A39FCR2[0]);
         D_800A38FCR2[0] = (MenuObj *)D_800A3744[D_800A3A14R5[0]];
         if (arg2 == 0) {
-            ListSetRangeFields((MenuObj *)D_800A39A0R3[0], 0, -0x140, -2);
+            ListSetRangeFields(D_800A39A0R3[0], 0, -0x140, -2);
             MenuSetLinkedObjectLayoutByIndexKR(arg1, 0x34, -0x10C, -2);
-            ListSetRangeFields((MenuObj *)D_800A38FCR4[0], 0x140, 0, -2);
+            ListSetRangeFields(D_800A38FCR4[0], 0x140, 0, -2);
             MenuSetLinkedObjectLayoutByIndexKR(D_800A3A14R7[0], 0x174, 0x34,
                                                -2);
         } else {
-            ListSetRangeFields((MenuObj *)D_800A39A0R2[0], 0, 0x140, 2);
+            ListSetRangeFields(D_800A39A0R2[0], 0, 0x140, 2);
             MenuSetLinkedObjectLayoutByIndexKR(arg1, 0x34, 0x174, 2);
-            ListSetRangeFields((MenuObj *)D_800A38FCR3[0], -0x140, 0, 2);
+            ListSetRangeFields(D_800A38FCR3[0], -0x140, 0, 2);
             MenuSetLinkedObjectLayoutByIndexKR(D_800A3A14R6[0], -0x10C, 0x34,
                                                2);
         }
@@ -11632,7 +11590,7 @@ void func_80058D14(u16 *src, u16 *dst, s32 arg2) {
 void func_80058D8C(void) {
 }
 
-extern u8 *D_800A34FC;
+extern POLY_FT4 *D_800A34FC;
 extern s32 gOrderingTablestore[] asm("gOrderingTable");
 extern s32 gOrderingTabledraw[] asm("gOrderingTable");
 extern DISPENV D_800BDE18put[] asm("D_800BDE18");
@@ -11715,26 +11673,26 @@ void func_80058D94(void) {
     DrawSync(0);
     TextureLoadTim(fileBuf + offsets[2]);
     DrawSync(0);
-    D_800A34FC = D_800B9990;
+    D_800A34FC = (POLY_FT4 *)D_800B9990;
     frame = 0;
     SetPolyFT4((POLY_FT4 *)D_800B9990);
     SetShadeTex(D_800A34FC, 0);
-    ((POLY_FT4 *)D_800A34FC)->r0 = 0x80;
-    ((POLY_FT4 *)D_800A34FC)->g0 = 0x80;
-    ((POLY_FT4 *)D_800A34FC)->b0 = 0x80;
+    D_800A34FC->r0 = 0x80;
+    D_800A34FC->g0 = 0x80;
+    D_800A34FC->b0 = 0x80;
     SetSemiTrans(D_800A34FC, 0);
     tpage = GetTPage(2, 0, 0x100, 0x100);
-    prim = D_800A34FC;
-    ((POLY_FT4 *)D_800A34FC)->u0 = 0x40;
-    envByte = D_800A34FC + 0xD;
+    prim = (u8 *)D_800A34FC;
+    D_800A34FC->u0 = 0x40;
+    envByte = (u8 *)D_800A34FC + 0xD;
     ((POLY_FT4 *)prim)->tpage = tpage;
     envByte[0] = 0x24;
-    ((POLY_FT4 *)D_800A34FC)->u1 = 0xA0;
-    ((POLY_FT4 *)D_800A34FC)->v1 = 0x24;
-    ((POLY_FT4 *)D_800A34FC)->u2 = 0x40;
-    ((POLY_FT4 *)D_800A34FC)->v2 = 0x39;
-    ((POLY_FT4 *)D_800A34FC)->u3 = 0xA0;
-    ((POLY_FT4 *)D_800A34FC)->v3 = 0x39;
+    D_800A34FC->u1 = 0xA0;
+    D_800A34FC->v1 = 0x24;
+    D_800A34FC->u2 = 0x40;
+    D_800A34FC->v2 = 0x39;
+    D_800A34FC->u3 = 0xA0;
+    D_800A34FC->v3 = 0x39;
     xy = (s16 *)D_800A34FC;
     cond = (u32)(gSessionTypeAbsolute[0] + 3) < 2;
     xy[4] = (xa = 0x73);

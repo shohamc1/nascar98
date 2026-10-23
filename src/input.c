@@ -544,11 +544,11 @@ void CarInitTumble(Car *car) {
     }
 }
 
-extern s32 D_800A3A34Absolute[];
+extern s32 *D_800A3A34Absolute[];
 extern void EffectSpawnAtCarPoint(Car *, s32);
 extern void func_80043B68(Car *, s32);
 
-extern s32 D_800A3A2CAbsolute[];
+extern s32 *D_800A3A2CAbsolute[];
 void CarCheckGroundContact(Car *car) {
     s32 i;
     s32 best;
@@ -565,8 +565,8 @@ void CarCheckGroundContact(Car *car) {
 
     best = 0x7FFF;
     bestIdx = 0;
-    sinTab = *(s32 **)D_800A3A2CAbsolute;
-    cosTab = *(s32 **)D_800A3A34Absolute;
+    sinTab = D_800A3A2CAbsolute[0];
+    cosTab = D_800A3A34Absolute[0];
     idxA = car->unk388;
     idxB = car->unk38A;
     c = D_800B1FF0;
@@ -676,8 +676,7 @@ void CarUpdateTumble(Car *car) {
         if (car->unk396 & 1) {
             r = car->unk388 % 512;
             heading = car->unk398;
-            t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[r],
-                                    car->speed / 3);
+            t = MathMultiplyFixed16(D_800A3A34Absolute[0][r], car->speed / 3);
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[heading], t);
             car->unk38C = t >> 16;
             if (*(u16 *)&car->unk38A > 0x100 && *(u16 *)&car->unk38A < 0x300) {
@@ -686,7 +685,7 @@ void CarUpdateTumble(Car *car) {
             r = car->unk38A % 512;
             t = MathMultiplyFixed16((*(s32 **)D_800A3A34Small)[r],
                                     car->speed / 3);
-            t = MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[heading], t);
+            t = MathMultiplyFixed16(D_800A3A2CAbsolute[0][heading], t);
             car->unk38E = t >> 16;
             car->speed = car->speed * 9 / 10;
             if (car->speed < 0) {
