@@ -7980,7 +7980,7 @@ void SceneDrawView(Car *arg0) {
     }
     D_800A3674Frame = arg0;
     D_800B9D78[0] = GetRCnt(0xF2000001);
-    index = *(s16 *)((u8 *)D_800A38AC[0] + 0x1E0);
+    index = ((Car *)D_800A38AC[0])->segment;
     if (index == -1) {
         index = 0;
     }
@@ -8155,7 +8155,7 @@ void CarKeepOnTrack(Car *car) {
             }
         }
     } else {
-        *(u16 *)((u8 *)D_800A38AC[0] + 0x1E0) =
+        *(u16 *)&((Car *)D_800A38AC[0])->segment =
             TrackFindSectionForward(car->pos.x, car->pos.y, &car->regionIndex);
     }
 }
@@ -8193,9 +8193,9 @@ void func_8002EEFC(Car *arg0) {
     s32 ySq;
     s32 zSq;
 
-    refX = *(s32 *)((u8 *)D_800A38AC[0] + 0x0);
-    refY = *(s32 *)((u8 *)D_800A38AC[0] + 0x4);
-    refZ = *(s32 *)((u8 *)D_800A38AC[0] + 0x8);
+    refX = ((Car *)D_800A38AC[0])->pos.x;
+    refY = ((Car *)D_800A38AC[0])->pos.y;
+    refZ = ((Car *)D_800A38AC[0])->pos.z;
     node = gCarList;
     if (node == NULL) {
         return;
@@ -8260,7 +8260,7 @@ void func_8002F0A8(Car *focusCar) {
     if (focusCar != owner) {
         *(u16 *)(owner + 0x1E0) = (u16)focusCar->segment;
     } else {
-        *(u16 *)((u8 *)D_800A38AC[0] + 0x1E0) = TrackFindSectionForward(
+        *(u16 *)&((Car *)D_800A38AC[0])->segment = TrackFindSectionForward(
             focusCar->pos.x, focusCar->pos.y, &focusCar->regionIndex);
     }
     MatrixSetIdentity((s32 *)D_800A38AC[0]);
@@ -9213,8 +9213,9 @@ void GraphicsDrawRaceViews(void) {
     if (focusCar != mainCamera) {
         (*(u16 *)(mainCamera + 0x1E0)) = (u16)((u16)focusCar->segment);
     } else {
-        (*(u16 *)(D_800A38ACFrame2[0] + 0x1E0)) = TrackFindSectionForward(
-            (focusCar->pos.x), (focusCar->pos.y), &focusCar->regionIndex);
+        (*(u16 *)&((Car *)D_800A38ACFrame2[0])->segment) =
+            TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
+                                    &focusCar->regionIndex);
     }
     MatrixSetIdentity((s32 *)D_800A38ACFrame3[0]);
     if (D_800A2ED8Frame != 0) {
@@ -9270,8 +9271,9 @@ void GraphicsDrawRaceViews(void) {
         if (focusCar != secondCamera) {
             (*(u16 *)(secondCamera + 0x1E0)) = (u16)((u16)focusCar->segment);
         } else {
-            (*(u16 *)(D_800A38ACFrame8[0] + 0x1E0)) = TrackFindSectionForward(
-                (focusCar->pos.x), (focusCar->pos.y), &focusCar->regionIndex);
+            (*(u16 *)&((Car *)D_800A38ACFrame8[0])->segment) =
+                TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
+                                        &focusCar->regionIndex);
         }
         MatrixSetIdentity((s32 *)D_800A38ACFrame9[0]);
         if (D_800A2ED8Frame != 0) {
@@ -9338,8 +9340,9 @@ void GraphicsDrawRaceViews(void) {
         if (focusCar != insetCamera) {
             (*(u16 *)(insetCamera + 0x1E0)) = (u16)((u16)focusCar->segment);
         } else {
-            (*(u16 *)(D_800A38ACFrame14[0] + 0x1E0)) = TrackFindSectionForward(
-                (focusCar->pos.x), (focusCar->pos.y), &focusCar->regionIndex);
+            (*(u16 *)&((Car *)D_800A38ACFrame14[0])->segment) =
+                TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
+                                        &focusCar->regionIndex);
         }
         MatrixSetIdentity((s32 *)D_800A38ACFrame15[0]);
         if (D_800A2ED8Frame != 0) {
@@ -10370,26 +10373,26 @@ void func_800328AC(void *objects, s32 count) {
     object = (u8 *)objects + 1;
     prim20 = primitive + 0x20;
     do {
-        vec0 = *(s32 **)(object + 0x17);
-        vec1 = *(s32 **)(object + 0x1B);
-        vec2 = *(s32 **)(object + 0x1F);
+        vec0 = *(s32 **)&((Face *)(object - 0x1))->vertex[0];
+        vec1 = *(s32 **)&((Face *)(object - 0x1))->vertex[1];
+        vec2 = *(s32 **)&((Face *)(object - 0x1))->vertex[2];
         gte_ldv3(vec0, vec1, vec2);
-        w8 = *(s32 *)(object + 0x7);
-        wC = *(s32 *)(object + 0xB);
+        w8 = *(s32 *)&((Face *)(object - 0x1))->u0;
+        wC = *(s32 *)&((Face *)(object - 0x1))->u1;
         gte_op(rtpt);
-        w10 = *(s32 *)(object + 0xF);
-        w14 = *(s32 *)(object + 0x13);
-        *(s32 *)(prim20 - 0x14) = w8;
-        *(s32 *)(prim20 - 0x8) = wC;
-        *(s32 *)(prim20 + 0x4) = w10;
-        *(s32 *)(prim20 + 0x10) = w14;
+        w10 = *(s32 *)&((Face *)(object - 0x1))->u2;
+        w14 = *(s32 *)&((Face *)(object - 0x1))->u3;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u0 = w8;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u1 = wC;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u2 = w10;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u3 = w14;
         gte_cfc2(gteWord, 31);
         v0s = gteWord & flagMask;
         if (v0s != 0) {
             goto incr;
         }
         gte_op(nclip);
-        w8 = *(s32 *)(object + 0x3);
+        w8 = *(s32 *)&((Face *)(object - 0x1))->r0;
         asm volatile("nop");
         wC = w8 & 0xFF;
         w8 >>= 8;
@@ -10421,15 +10424,15 @@ void func_800328AC(void *objects, s32 count) {
         gte_op(avsz3);
         v0s = 0x3C000000;
         v0s = wC | v0s;
-        *(u32 *)(prim20 + 0x8) = w14;
-        *(u32 *)(prim20 - 0x4) = w8;
-        *(u32 *)(prim20 - 0x1C) = v0s;
-        *(u32 *)(prim20 - 0x10) = w10;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r3 = w14;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r2 = w8;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r0 = v0s;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r1 = w10;
         gte_stsxy3(primitive + 0x8, primitive + 0x14, primitive + 0x2C);
-        vec0 = *(s32 **)(object + 0x23);
+        vec0 = *(s32 **)&((Face *)(object - 0x1))->vertex[3];
         gte_ldv0(vec0);
         gte_mfc2_nonop(gteWord, 7);
-        v0s = *(s8 *)object;
+        v0s = ((Face *)(object - 0x1))->depth;
         asm volatile("nop");
         gteWord = gteWord + v0s * 4;
         gte_op(rtps);
@@ -10543,9 +10546,9 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
             wC = *(s32 *)&obj->u1;
             w10 = *(s32 *)&obj->u2;
             w14 = *(s32 *)&obj->u3;
-            *(s32 *)(p18a - 4) = wC;
-            *(s32 *)(p18a - 0x14) = w4;
-            *(s32 *)(p18a - 0xC) = w8;
+            *(s32 *)&((POLY_FT4 *)(p18a - 0x18))->u1 = wC;
+            *(s32 *)&((POLY_FT4 *)(p18a - 0x18))->r0 = w4;
+            *(s32 *)&((POLY_FT4 *)(p18a - 0x18))->u0 = w8;
             gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
             gte_cfc2_nonop(flag, 31);
             if (stale == 0) {
@@ -10553,8 +10556,8 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
                 w4 = v0p[0];
                 w8 = v0p[1];
                 gte_op(avsz3);
-                *(s32 *)(p18a + 4) = w10;
-                *(s32 *)(p18a + 0xC) = w14;
+                *(s32 *)&((POLY_FT4 *)(p18a - 0x18))->u2 = w10;
+                *(s32 *)&((POLY_FT4 *)(p18a - 0x18))->u3 = w14;
                 gte_mfc2_nonop(flag, 7);
                 gte_mtc2(w4, 0);
                 gte_mtc2(w8, 1);
@@ -10580,9 +10583,9 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
         p18b = (u8 *)&prim->x2;
         do {
             p18a = vpNext;
-            va = *(s32 **)(p18a + 0);
-            vb = *(s32 **)(p18a + 4);
-            vc = *(s32 **)(p18a + 8);
+            va = *(s32 **)&((Face *)(p18a - 0x18))->vertex[0];
+            vb = *(s32 **)&((Face *)(p18a - 0x18))->vertex[1];
+            vc = *(s32 **)&((Face *)(p18a - 0x18))->vertex[2];
             gte_ldv3(va, vb, vc);
             w4 = *(s32 *)&obj->r0;
             w8 = *(s32 *)&obj->u0;
@@ -10590,15 +10593,15 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
             wC = *(s32 *)&obj->u1;
             w10 = *(s32 *)&obj->u2;
             w14 = *(s32 *)&obj->u3;
-            *(s32 *)(p18b - 0x14) = w4;
-            *(s32 *)(p18b - 0xC) = w8;
-            *(s32 *)(p18b - 4) = wC;
+            *(s32 *)&((POLY_FT4 *)(p18b - 0x18))->r0 = w4;
+            *(s32 *)&((POLY_FT4 *)(p18b - 0x18))->u0 = w8;
+            *(s32 *)&((POLY_FT4 *)(p18b - 0x18))->u1 = wC;
             gte_cfc2_nonop(flag, 31);
             gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
             tst = flag & flagMask;
             if (tst == 0) {
                 gte_op(nclip);
-                v0p = *(s32 **)(p18a + 0xC);
+                v0p = *(s32 **)&((Face *)(p18a - 0x18))->vertex[3];
                 w4 = v0p[0];
                 w8 = v0p[1];
                 gte_mfc2_nonop(flag, 24);
@@ -10622,8 +10625,8 @@ void ModelDrawFt4List(Face *firstObject, s32 remaining) {
             w8 = (s32)obj->next;
             vpNext = (u8 *)w8 + 0x18;
             gte_mfc2_nonop(flag, 7);
-            *(s32 *)(p18b + 4) = w10;
-            *(s32 *)(p18b + 0xC) = w14;
+            *(s32 *)&((POLY_FT4 *)(p18b - 0x18))->u2 = w10;
+            *(s32 *)&((POLY_FT4 *)(p18b - 0x18))->u3 = w14;
             gte_op(rtps);
             mask = flag >> 2;
             flag = mask + obj->depth;
@@ -10714,16 +10717,16 @@ void func_80032DEC(Face *firstObject, s32 objectCount) {
             wC = *(s32 *)&obj->u1;
             w10 = *(s32 *)&obj->u2;
             w14 = *(s32 *)&obj->u3;
-            *(s32 *)(prim18 - 0xC) = w8;
-            *(s32 *)(prim18 - 0x14) = w4;
-            *(s32 *)(prim18 - 4) = wC;
+            *(s32 *)&((POLY_FT4 *)(prim18 - 0x18))->u0 = w8;
+            *(s32 *)&((POLY_FT4 *)(prim18 - 0x18))->r0 = w4;
+            *(s32 *)&((POLY_FT4 *)(prim18 - 0x18))->u1 = wC;
             gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
             normal = (s32 *)obj->vertex[3];
             w4 = normal[0];
             old = normal[1];
             gte_op(avsz3);
-            *(s32 *)(prim18 + 4) = w10;
-            *(s32 *)(prim18 + 0xC) = w14;
+            *(s32 *)&((POLY_FT4 *)(prim18 - 0x18))->u2 = w10;
+            *(s32 *)&((POLY_FT4 *)(prim18 - 0x18))->u3 = w14;
             gte_mfc2_nonop(otz, 7);
             gte_mtc2(w4, 0);
             gte_mtc2(old, 1);
@@ -10878,8 +10881,8 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     } else {
                         vec = group->unk78[i + 1];
                     }
-                    word0 = *(s32 *)vec;
-                    word1 = *(s32 *)(vec + 4);
+                    word0 = *(s32 *)&((SVECTOR *)vec)->vx;
+                    word1 = *(s32 *)&((SVECTOR *)vec)->vz;
                     gte_mfc2_nonop(otz, 7);
                     gte_mtc2(word0, 0);
                     gte_mtc2(word1, 1);
@@ -10914,8 +10917,8 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     *(s32 *)&prim->u0 = word1;
                     gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
                     vec = (u8 *)obj->vertex[3];
-                    word0 = *(s32 *)vec;
-                    word1 = *(s32 *)(vec + 4);
+                    word0 = *(s32 *)&((SVECTOR *)vec)->vx;
+                    word1 = *(s32 *)&((SVECTOR *)vec)->vz;
                     gte_op(avsz3);
                     *(s32 *)&prim->u2 = w10;
                     *(s32 *)&prim->u3 = w14;
@@ -10969,8 +10972,8 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     }
                     gte_op(nclip);
                     vec = *(u8 **)(verts + 0xC);
-                    word0 = *(s32 *)vec;
-                    word1 = *(s32 *)(vec + 4);
+                    word0 = *(s32 *)&((SVECTOR *)vec)->vx;
+                    word1 = *(s32 *)&((SVECTOR *)vec)->vz;
                     *(s32 *)&prim->u2 = w10;
                     *(s32 *)&prim->u3 = w14;
                     gte_mfc2_nonop(otz, 24);
@@ -11740,10 +11743,10 @@ u32 func_800342D8(u32 *entry, u8 *primCursor) {
     spad[0x20] = w3;
     spad[0x21] = u1;
 
-    w0 = *(u16 *)p8;
-    w1 = *(u16 *)(p8 + 4);
-    w2 = *(u16 *)(p8 + 8);
-    w3 = *(u16 *)(p8 + 0xC);
+    w0 = *(u16 *)&((Face *)(p8 - 0x8))->u0;
+    w1 = *(u16 *)&((Face *)(p8 - 0x8))->u1;
+    w2 = *(u16 *)&((Face *)(p8 - 0x8))->u2;
+    w3 = *(u16 *)&((Face *)(p8 - 0x8))->u3;
     quad[3] = w0;
     quad[0x13] = w1;
     quad[0x33] = w2;
@@ -13895,8 +13898,8 @@ void func_800373B4(Car *object) {
                     (car->unk84), MathFixedDivide373B4(0x41, 0x64));
             }
         } else {
-            if (((*(s16 *)((u8 *)D_800A35E0373B4[0] + 0x1EC)) == 0) &&
-                ((*(s16 *)((u8 *)D_800A35E0373B4[0] + 0x284)) >=
+            if (((((Car *)D_800A35E0373B4[0])->type) == 0) &&
+                ((((Car *)D_800A35E0373B4[0])->unk26C[12]) >=
                  (car->unk26C[12])) &&
                 (routeSelection != 1) &&
                 (tempV04 = D_800A2F5C373B4 + 1, D_800A2F5C373B4 = tempV04,
@@ -14563,7 +14566,7 @@ void func_800373B4(Car *object) {
                         }
                     }
                     if (D_800A372C373B4[0] != 0) {
-                        tempV09 = (*(s8 *)((u8 *)D_800A3728373B4[0] + 0x203));
+                        tempV09 = (((Car *)D_800A3728373B4[0])->unk203);
                         if (tempV09 >= 0) {
                             if (tempV09 < 4) {
                                 goto block_223;
@@ -14585,7 +14588,7 @@ void func_800373B4(Car *object) {
                                 : "memory");
                             if (func_8003702C373B4(middleOther, car) < 5) {
                                 tempV010 =
-                                    (*(s8 *)((u8 *)D_800A3728373B4[0] + 0x203));
+                                    (((Car *)D_800A3728373B4[0])->unk203);
                                 if (tempV010 != 0) {
                                     desiredLane = -1;
                                     if (tempV010 > 0) {
@@ -16246,7 +16249,7 @@ void RaceUpdateLapProgress(void) {
                 func_8003EDA0(car);
             }
             if (gSessionTypeLap == 0 &&
-                (lapLimit = D_800A2EA8Lap) < *(s16 *)(D_800A35E0Lap + 0x1D6) &&
+                (lapLimit = D_800A2EA8Lap) < ((Car *)D_800A35E0Lap)->lap &&
                 (advancingLap = car->lap) < lapLimit) {
                 car->lap = advancingLap + 1;
                 car->unk41A = 1;
@@ -16825,8 +16828,7 @@ void func_8003C1CC(void) {
                         if (car->lap == 0) {
                             slot = (s32)base;
                             dst = (u8 *)(off + slot);
-                            *(s32 *)dst =
-                                -*(s16 *)((u8 *)D_800A35E0[0] + 0x1D6);
+                            *(s32 *)dst = -((Car *)D_800A35E0[0])->lap;
                             goto tailSkip;
                         }
                         goto general;
@@ -16835,7 +16837,7 @@ void func_8003C1CC(void) {
                 } else {
                 general:
                     if (car->unkF4 != 0) {
-                        laps = car->lap - *(s16 *)((u8 *)D_800A35E0[0] + 0x1D6);
+                        laps = car->lap - ((Car *)D_800A35E0[0])->lap;
                         val = laps + 1;
                         if ((u16)car->unk41A != 0) {
                             val = laps;

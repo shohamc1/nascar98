@@ -2644,7 +2644,7 @@ void func_8006BD68(void) {
 extern s32 D_8009A4C0[];
 extern u8 D_800A3A10Obj[] asm("D_800A3A10");
 extern u8 *D_800A3908[];
-extern u8 *D_800A377C[];
+extern MenuObj *D_800A377C[];
 extern u8 D_800A358C;
 extern u8 D_800A3770;
 
@@ -2837,9 +2837,9 @@ void func_8006C2D0(s32 arg0) {
     }
     if ((arg0 & 0xFF) != 0 && gScreenState[0] != 0x28) {
         if (D_800A358C >= 7) {
-            *(u8 *)(D_800A377C[0] + 5) = 6;
+            D_800A377C[0]->unk5 = 6;
         } else {
-            *(u8 *)(D_800A377C[0] + 5) = D_800A358C;
+            D_800A377C[0]->unk5 = D_800A358C;
         }
         if (D_800A358C < 6) {
             func_8006C668(0, D_800A358C);
@@ -2847,7 +2847,7 @@ void func_8006C2D0(s32 arg0) {
             func_8006C668((s8)(D_800A358C - 6), D_800A358C);
         }
     } else {
-        *(u8 *)(D_800A377C[0] + 5) = 0;
+        D_800A377C[0]->unk5 = 0;
         D_800A358C = 0;
         if (gScreenState[0] != 0x28) {
             func_8006C668(0, D_800A3968 - 1);
@@ -3046,7 +3046,7 @@ void func_8006C668(s32 start, s32 arg1) CARD_MENU_SET_ROWS(start, arg1)
         }
     }
 finish:
-    *(s8 *)(D_800A377C[0] + 5) = gear;
+    *(s8 *)&D_800A377C[0]->unk5 = gear;
     return result;
 }
 
@@ -3070,7 +3070,7 @@ s32 func_8006C94C(u8 arg0, u8 arg1, u8 arg2, s8 *arg3, s16 *arg4) {
 }
 
 void MenuHideCurrentObject(void) {
-    *(s16 *)(*(u8 **)(D_800A377C[0] + 0x1C) + 0x1A) = -1;
+    D_800A377C[0]->next->orderingDepth = -1;
 }
 
 /* Keep the raw decrement and the byte index in separate values. */
@@ -3083,7 +3083,7 @@ void func_8006C9F8(void) {
     s32 length;
     u8 index;
 
-    obj = *(u8 **)(D_800A377C[0] + 0x1C);
+    obj = (u8 *)D_800A377C[0]->next;
     entry = (s8 *)D_800B0A2C + D_800A358C * 0x10;
     obj->orderingDepth = 1;
     length = strlen((char *)entry);
@@ -3109,25 +3109,25 @@ void func_8006C9F8(void) {
 
 void func_8006CB00(void) {
     s32 value;
-    value = *(s16 *)(D_800A377C[0] + 0x1A);
+    value = D_800A377C[0]->orderingDepth;
     if (value > 0)
         value = -value;
     else if (value == 0)
         value = -255;
-    *(s16 *)(D_800A377C[0] + 0x1A) = value;
+    D_800A377C[0]->orderingDepth = value;
 }
 
 void func_8006CB40(void) {
     s32 value;
     s8 zero;
-    value = *((s16 *)(D_800A377C[0] + 0x1A));
+    value = D_800A377C[0]->orderingDepth;
     if (value < 0) {
         value = -value;
     } else if (value == (-255)) {
         zero = 0;
         value = zero;
     }
-    *((s16 *)(D_800A377C[0] + 0x1A)) = value;
+    D_800A377C[0]->orderingDepth = value;
 }
 
 void func_8006CB80(s32 arg0, s32 arg1, s32 arg2) {
@@ -3161,7 +3161,7 @@ void func_8006CB80(s32 arg0, s32 arg1, s32 arg2) {
     }
     D_800A37F0Absolute3[0] = limitSave;
 noStore:
-    st = *(u8 **)(D_800A377C[0] + 0x1C);
+    st = (u8 *)D_800A377C[0]->next;
     if ((s8)st->unk5 >= strlen(cardNames[D_800A358C])) {
         cardNames[D_800A358C][(s8)st->unk5] = ' ';
         cardNames[D_800A358C][(s8)st->unk5 + 1] = 0;
@@ -3227,7 +3227,7 @@ void func_8006CE64(void) {
     offset = 0x10 * D_800A358C;
     D_800B0A2C[offset] = 0x41;
     D_800B0A2D[D_800A358C * 0x10] = 0;
-    obj = *((u8 **)(D_800A377C[0] + 0x1C));
+    obj = (u8 *)D_800A377C[0]->next;
     *((u8 *)(obj + 5)) = 0;
     entry = ((s8 *)D_800B0A2C) + ((index = D_800A358C) * 0x10);
     MenuFontSetS32(2, 2);
@@ -3667,13 +3667,13 @@ void CardMenuShowMessage(s32 arg0) {
                 obj = *((u8 **)(obj + 0x1C));
             } while (obj != end);
         }
-        val2 = *((s16 *)(D_800A377C[0] + 0x1A));
+        val2 = D_800A377C[0]->orderingDepth;
         if (val2 > 0) {
             val2 = -val2;
         } else if (val2 == 0) {
             val2 = -0xFF;
         }
-        *((s16 *)(D_800A377C[0] + 0x1A)) = val2;
+        D_800A377C[0]->orderingDepth = val2;
     }
     D_800A3770 = 1;
 }
