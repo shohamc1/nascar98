@@ -835,7 +835,7 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
     s32 level;
     s32 dy;
     s32 dist;
-    u8 *obj;
+    Car *obj;
     s32 dx;
     s32 prev;
     s32 delta;
@@ -861,9 +861,9 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
     if (ABS(func_8003702C(car, obj)) > 0x28) {
         goto silence;
     }
-    dx = (*(s32 *)(obj + 0) - camX) >> 4;
-    dy = (*(s32 *)(obj + 4) - camY) >> 4;
-    dist = (*(s32 *)(obj + 8) - camZ) >> 4;
+    dx = (obj->pos.x - camX) >> 4;
+    dy = (obj->pos.y - camY) >> 4;
+    dist = (obj->pos.z - camZ) >> 4;
     dist = MathSqrt(dx * dx + dy * dy + dist * dist);
     if (dist >= 0x579) {
     silence:
@@ -884,14 +884,12 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
     if (level >= 0x100) {
         level = 0xFF;
     }
-    pitch = (*(s16 *)(obj + 0x108) + *(s16 *)(obj + 0x10A)) / 110;
+    pitch = (obj->unk108 + obj->unk10A) / 110;
     if (first) {
-        *(s16 *)(obj + 0x3BA) = pitch;
+        obj->unk3BA = pitch;
     }
-    pitch = (pitch + *(s16 *)(obj + 0x3BA) + *(s16 *)(obj + 0x3BA) +
-             *(s16 *)(obj + 0x3BA)) /
-            4;
-    *(s16 *)(obj + 0x3BA) = pitch;
+    pitch = (pitch + obj->unk3BA + obj->unk3BA + obj->unk3BA) / 4;
+    obj->unk3BA = pitch;
     pitch = MathFixedDivide(pitch * 110, rate) >> 16;
     if (pitch >= 0x80) {
         pitch = 0x7F;
@@ -1169,16 +1167,10 @@ void func_80040AC8(Car *object) {
     }
 }
 
-typedef struct SoundCarLink {
-    struct SoundCarLink *next;
-    struct SoundCarLink *previous;
-    u8 *car;
-} SoundCarLink;
-
 void SoundUpdateCar(Car *car) {
     extern u32 RandomGetScaled16(s32);
     extern void SoundUpdateOpponentVoice(Car *, s32);
-    extern void func_800400D8Pair(u8 *, u8 *) asm("func_800400D8");
+    extern void func_800400D8Pair(Car *, Car *) asm("func_800400D8");
     extern s8 D_800A354F[];
     s32 i;
     s32 distance;
@@ -1192,8 +1184,8 @@ void SoundUpdateCar(Car *car) {
     s32 shiftedRpm;
     s8 *clearFlags;
     u16 rpm;
-    SoundCarLink *next;
-    SoundCarLink *previous;
+    CarLink *next;
+    CarLink *previous;
     s8 *flags;
     s8 *fade;
     s32 *handles;
@@ -1301,8 +1293,8 @@ void SoundUpdateCar(Car *car) {
             }
             i = 3;
             if (D_800A2E94[0] == 24) {
-                next = (SoundCarLink *)car->sectionLink.node.next;
-                previous = (SoundCarLink *)car->sectionLink.node.previous;
+                next = (CarLink *)car->sectionLink.node.next;
+                previous = (CarLink *)car->sectionLink.node.previous;
                 clearFlags = D_800A354F;
                 D_800A39D0B = 0;
                 do {
@@ -1314,10 +1306,10 @@ void SoundUpdateCar(Car *car) {
                     distance = ABS(func_8003702C(car, next->car));
                     if (distance < ABS(func_8003702C(car, previous->car))) {
                         func_800400D8Pair(next->car, car);
-                        next = next->next;
+                        next = (CarLink *)next->node.next;
                     } else {
                         func_800400D8Pair(previous->car, car);
-                        previous = previous->previous;
+                        previous = (CarLink *)previous->node.previous;
                     }
                 }
                 channel = 0;

@@ -2857,7 +2857,7 @@ extern s32 pairSinTable4[] asm("D_800A3A34");
 extern void EffectSpawnAtCarPoint(Car *, s32);
 extern void func_80043B68(Car *, s32);
 extern void func_8003AC18(Car *, s32, s32, s32);
-extern void CollisionApplyImpulse(u8 *, u8 *, Vec3, s32,
+extern void CollisionApplyImpulse(Car *, Car *, Vec3, s32,
                                   s32) asm("func_80026074");
 
 /* Resolves car-to-car contact and applies separation and velocity impulses.
@@ -5067,18 +5067,18 @@ void func_800297D0(Car *car) {
     }
 }
 
-void CarUpdateWheelVelocityComponents(s32 *car) {
+void CarUpdateWheelVelocityComponents(Car *car) {
     s32 index;
 
-    index = ((s16 *)car)[0x8A];
-    car[0x31] =
-        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car[0x24]);
-    car[0x32] =
-        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car[0x24]);
-    car[0x34] =
-        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute2)[index], car[0x24]);
-    car[0x35] =
-        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[index], car[0x24]);
+    index = car->heading;
+    car->frontVelocityX =
+        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute)[index], car->speed);
+    car->frontVelocityY =
+        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute)[index], car->speed);
+    car->rearVelocityX =
+        MathMultiplyFixed16((*(s32 **)D_800A3A2CAbsolute2)[index], car->speed);
+    car->rearVelocityY =
+        MathMultiplyFixed16((*(s32 **)D_800A3A34Absolute2)[index], car->speed);
 }
 
 void EffectSpawnAtWheel(Car *car, s32 wheelIndex) {
@@ -5159,19 +5159,17 @@ void func_80029A78(Car *car) {
 
 extern s32 D_800A3A04nm[] asm("D_800A3A04.NON_MATCHING");
 
-void func_80029CB4(s32 *car) {
+void func_80029CB4(Car *car) {
     s32 speed;
     s32 limit;
     s32 i;
-    s32 off;
     s16 *entry;
     s16 angle;
 
     speed = D_800A3A04nm[0];
     limit = speed * 4;
     for (i = 0; i < 4; i++) {
-        off = 0x2AC + i * 0x28;
-        entry = (s16 *)((u8 *)car + off);
+        entry = &car->wheel[i].unk0;
         if (entry[2] != 0 || entry[0] != 0) {
             entry[0] += entry[2];
             if (entry[0] < 0) {
@@ -8667,7 +8665,7 @@ void func_8002F86C(void *arg0, s32 arg1) {
 }
 
 /* Separate symbol views preserve the retail GP and absolute accesses. */
-extern void func_80023454RaceStep(u8 *) asm("func_80023454");
+extern void func_80023454RaceStep(Car *) asm("func_80023454");
 asm(".globl gSplitScreenModeRaceStep\ngSplitScreenModeRaceStep = gSplitScreenMode\n"
     ".globl D_800A2EA8RaceStep\nD_800A2EA8RaceStep = D_800A2EA8\n"
     ".globl D_800A2EACRaceStep\nD_800A2EACRaceStep = D_800A2EAC\n"
@@ -13689,14 +13687,14 @@ extern s32 gTrackSectionCount373B4[];
 extern s32 func_800A2CE0373B4[];
 extern s32 MathFixedDivide373B4(s32, s32) asm("MathFixedDivide");
 extern s32 MathMultiplyFixed16373B4(s32, s32) asm("MathMultiplyFixed16");
-extern void ObjectSetCallbackIfAllowed373B4(u8 *, void (*)(void)) asm(
+extern void ObjectSetCallbackIfAllowed373B4(Car *, void (*)(void)) asm(
     "ObjectSetCallbackIfAllowed");
 extern s32 RandomScaledGet373B4(s32) asm("RandomScaledGet");
 extern void
 MatrixSetRotationFromAngle373B4(Car *, s32) asm("MatrixSetRotationFromAngle");
 extern void func_8001FB28373B4(Car *, s16) asm("func_8001FB28");
-extern void func_80029CB4373B4(u8 *) asm("func_80029CB4");
-extern void func_8002A1D0373B4(u8 *) asm("func_8002A1D0");
+extern void func_80029CB4373B4(Car *) asm("func_80029CB4");
+extern void func_8002A1D0373B4(Car *) asm("func_8002A1D0");
 extern void func_8002BC88373B4(Car *) asm("func_8002BC88");
 extern void func_8002D16C373B4(Car *) asm("func_8002D16C");
 extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
@@ -13781,14 +13779,14 @@ void func_800373B4(Car *object) {
         s32 reserved78[10];
     } workspace;
 
-    void (*tempV118)(u8 *, s32);
+    void (*tempV118)(Car *, s32);
     s32 tempA22;
     s32 tempV114;
     s32 tailMinusOne;
     s32 tailSegment;
     s32 tailRouteLength;
     register s32 tailTargetValue asm("$9");
-    u8 *tailCarArg;
+    Car *tailCarArg;
     register s32 tailPositionZ asm("$5");
 
     s32 varV04;
@@ -13891,7 +13889,7 @@ void func_800373B4(Car *object) {
     workspace.useSameSegment = 0;
     if (active != 0) {
         if ((car->type) == 0) {
-            if ((void (*)(u8 *, s32))car->callback == func_80025730373B4) {
+            if ((void (*)(Car *, s32))car->callback == func_80025730373B4) {
                 car->update(car);
                 return;
             }
@@ -14302,7 +14300,7 @@ void func_800373B4(Car *object) {
             (tempA13 = (car->unk3A4), ((tempA13 & 0xF) != 0))) {
             tempA06 = (car->unk3B7);
             if (tempA06 != 0) {
-                if (((void (*)(u8 *, s32))car->callback ==
+                if (((void (*)(Car *, s32))car->callback ==
                      CarResetMotionCounters373B4) &&
                     (tempA06 == 0x64) && ((car->type) != 0)) {
                     if (tempA13 & 3) {
@@ -15276,7 +15274,7 @@ void func_800373B4(Car *object) {
             } else {
                 (car->unk201) = 0;
             }
-            tempV118 = (void (*)(u8 *, s32))car->callback;
+            tempV118 = (void (*)(Car *, s32))car->callback;
             if (tempV118 == CarResetMotionCounters373B4) {
                 CarSteerTowardHeading373B4(car, varA19);
                 (car->movementHeading) = (u16)(car->heading);
@@ -15328,7 +15326,7 @@ void func_800373B4(Car *object) {
                            "=x"(multiplierState)
                          : "r"(car)
                          : "$2", "$3", "$6", "$7", "$8", "accum", "memory");
-            *(s32 *)(tailCarArg + 8) = tailPositionZ;
+            tailCarArg->pos.z = tailPositionZ;
             func_80029CB4373B4(tailCarArg);
         }
     }

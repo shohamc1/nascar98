@@ -6,7 +6,7 @@
 
 s32 MathGetAngleDelta(s32 arg0, s32 arg1);
 s32 TrackFindSection(s32, s32, s32 *, s32 *, s32 *);
-void func_80029CB4(s32 *car);
+void func_80029CB4(Car *car);
 void func_8002A1FC(Car *);
 void CarSetVelocityFromHeading(s32 *car, s32 index);
 void MatrixSetIdentity(s32 *arg0);
