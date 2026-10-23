@@ -2438,8 +2438,8 @@ void func_80025454(s32 track) {
     minX = 0;
     i = 0;
     maxZ = 0;
-    count = *(s16 *)((u8 *)track + 0x28);
-    cursor = *(s32 **)((u8 *)track + 0x14);
+    count = ((Model *)track)->vertexCount;
+    cursor = *(s32 **)&((Model *)track)->vertices;
     for (; i < count; i++) {
         x = cursor[2];
         if (x < minX) {
@@ -2482,13 +2482,13 @@ void func_80025454(s32 track) {
     if (limit < maxZ) {
         limit = maxZ;
     }
-    *(s32 *)((u8 *)track + 0x18) = limit - 5;
-    *(s16 *)((u8 *)track + 0x1C) = minX;
-    *(s16 *)((u8 *)track + 0x20) = minY;
-    *(s16 *)((u8 *)track + 0x24) = minZ;
-    *(s16 *)((u8 *)track + 0x1E) = maxX;
-    *(s16 *)((u8 *)track + 0x22) = maxY;
-    *(s16 *)((u8 *)track + 0x26) = maxZ;
+    ((Model *)track)->unk18 = limit - 5;
+    ((Model *)track)->minX = minX;
+    ((Model *)track)->minY = minY;
+    ((Model *)track)->minZ = minZ;
+    ((Model *)track)->maxX = maxX;
+    ((Model *)track)->maxY = maxY;
+    ((Model *)track)->maxZ = maxZ;
 }
 
 void CarResetMotionCounters(Car *object) {
@@ -3835,7 +3835,7 @@ s32 CarHandleWallCollision(void *object) {
                 shape = car->shape;
                 value0 += secondProjection;
                 value1 = value0 >> 16;
-                shapeWidth = shape->halfWidth;
+                shapeWidth = shape->maxY;
                 roundedDistance = value1;
                 if (value1 < 0) {
                     roundedDistance = value1 + 3;
@@ -3986,7 +3986,7 @@ s32 CarHandleWallCollision(void *object) {
                 shape = car->shape;
                 value0 += secondProjection;
                 value1 = value0 >> 16;
-                shapeWidth = shape->halfWidth;
+                shapeWidth = shape->maxY;
                 roundedDistance2 = value1;
                 if (value1 < 0) {
                     roundedDistance2 = value1 + 3;
@@ -4215,7 +4215,7 @@ s32 CarHandleWallCollision(void *object) {
             value0 += secondProjection;
             value1 = value0 >> 16;
             basisValue = car->basis[0].x;
-            shapeExtent = shape->frontExtent;
+            shapeExtent = shape->minX;
             value0 = (u32)value0 >> 31;
             value0 = value1 + value0;
             value0 >>= 1;
@@ -4325,7 +4325,7 @@ s32 CarHandleWallCollision(void *object) {
             value0 += secondProjection;
             value1 = value0 >> 16;
             basisValue = car->basis[0].x;
-            shapeExtent = shape->rearExtent;
+            shapeExtent = shape->maxX;
             value0 = (u32)value0 >> 31;
             value0 = value1 + value0;
             value0 >>= 1;
@@ -9702,14 +9702,14 @@ void func_80031264(Car *object) {
     object->unk1E4 = -1;
     object->collisionPending = 0;
     D_800A2F2C = object->regionIndex;
-    object->frontRightContact = func_80030F24(
-        object, corners[3], state->rearExtent, state->halfWidth, 0);
+    object->frontRightContact =
+        func_80030F24(object, corners[3], state->maxX, state->maxY, 0);
     object->frontLeftContact =
-        func_80030F24(object, corners[0], state->rearExtent, state->unk20, 0);
-    object->rearRightContact = func_80030F24(
-        object, corners[2], state->frontExtent, state->halfWidth, 0);
+        func_80030F24(object, corners[0], state->maxX, state->minY, 0);
+    object->rearRightContact =
+        func_80030F24(object, corners[2], state->minX, state->maxY, 0);
     object->rearLeftContact =
-        func_80030F24(object, corners[1], state->frontExtent, state->unk20, 0);
+        func_80030F24(object, corners[1], state->minX, state->minY, 0);
     object->segment = TrackFindSectionForwards16(object->pos.x, object->pos.y,
                                                  (u8 *)object + 0x1F8);
     if (object->frontRightContact == 0) {
@@ -14821,7 +14821,7 @@ void func_800373B4(Car *object) {
                             collisionArgument0, collisionArgument1);
                         lateralSinProduct -= collisionReturn;
                         lateralGap = lateralSinProduct >> 16;
-                        tempV112 = (car->model->rearExtent) * 2;
+                        tempV112 = (car->model->maxX) * 2;
                         collisionWidthCopy = tempV112;
                         if (lateralGap >= 0) {
                             if (lateralGap >= tempV112) {
@@ -14848,7 +14848,7 @@ void func_800373B4(Car *object) {
                                 collisionArgument0, collisionArgument1);
                             longitudinalGap += collisionReturn;
                             longitudinalGap >>= 16;
-                            tempV113 = (car->model->halfWidth) * 2;
+                            tempV113 = (car->model->maxY) * 2;
                             collisionWidthCopy = tempV113;
                             if (longitudinalGap >= 0) {
                                 lateralGap = longitudinalGap < tempV113;

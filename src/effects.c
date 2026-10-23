@@ -796,45 +796,45 @@ void ReplayReadEffects(u8 *arg0) {
     loop:
         if (*wp == 0) {
             for (; i < 0x28; i++, fp += 0x30) {
-                fp[2] = 0;
+                ((Particle *)(fp - 0x1A))->unk1C = 0;
             }
             return;
         }
-        fp[2] = 1;
+        ((Particle *)(fp - 0x1A))->unk1C = 1;
         word = *wp;
         typ = (u8 *)gCarListw15[0] + ((word >> 24) & 0x1F) * 0x500;
         if ((word & 0xE0000000) == 0x80000000) {
             src40 = (u32)typ->shape->parts;
-            fp[3] = 10;
+            *(u8 *)&((Particle *)(fp - 0x1A))->unk1D = 10;
         } else {
             do {
                 mode = word >> 29;
                 src40 = (u32)typ->shape->parts + mode * 0x18;
-                fp[3] = mode;
+                *(u8 *)&((Particle *)(fp - 0x1A))->unk1D = mode;
             } while (0);
         }
     } while (0);
     *(s32 *)rec = (*(s8 *)wp << 6) + *(s32 *)typ;
-    *(s32 *)(fp - 0x16) = (bp[-1] << 6) + typ->pos.y;
+    ((Particle *)(fp - 0x1A))->pos.y = (bp[-1] << 6) + typ->pos.y;
     w = ((u8 *)wp)[3];
-    *(u32 *)(fp + 0x12) = src40;
-    fp[4] = w & 0x1F;
+    *(u32 *)&((Particle *)(fp - 0x1A))->unk2C = src40;
+    *(u8 *)&((Particle *)(fp - 0x1A))->unk1E = w & 0x1F;
     val38 = (u32)typ->shape->faces;
     i++;
     rec += 0x30;
-    *(u32 *)(fp + 0xA) = 0;
-    *(u32 *)(fp + 0x6) = 0;
-    *(s16 *)(fp - 0x8) = 0;
-    *(s16 *)(fp - 0x6) = 0;
-    *(u32 *)(fp + 0xE) = val38;
+    *(u32 *)&((Particle *)(fp - 0x1A))->unk24 = 0;
+    *(u32 *)&((Particle *)(fp - 0x1A))->pad1F[1] = 0;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unk12 = 0;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unk14 = 0;
+    ((Particle *)(fp - 0x1A))->unk28 = val38;
     z = *bp;
     wp++;
     bp += 4;
-    *(s16 *)fp = 0xC8;
-    *(s16 *)(fp - 0xA) = 0;
-    *(s16 *)(fp - 4) = 0;
-    *(s16 *)(fp - 2) = 0;
-    *(s16 *)(fp - 0xE) = z << 5;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unk1A = 0xC8;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unk10 = 0;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unk16 = 0;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unk18 = 0;
+    *(s16 *)&((Particle *)(fp - 0x1A))->unkC = z << 5;
     fp += 0x30;
     if (i < 10) {
         goto loop;

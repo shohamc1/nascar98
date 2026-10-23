@@ -58,40 +58,32 @@ void MenuDrawObjectList(MenuObj *object, s32 arg1);
 
 /* Menu entries and panels. */
 
-typedef struct Df50Fields {
-    u8 pad0[5];
-    s8 unk5;
-    u8 pad6[4];
-    s16 unkA;
-    u8 padC[2];
-    s16 unkE;
-} Df50Fields;
-extern Df50Fields *D_800A3634;
+extern MenuObj *D_800A3634;
 extern s32 **D_800A3740;
-extern Df50Fields *D_800A3788;
+extern MenuObj *D_800A3788;
 extern s32 D_800A3A2CAbsolute[];
 void func_8005DF50(s32 arg0, s32 arg1, s32 arg2) {
-    Df50Fields *p0;
-    Df50Fields *p1;
-    Df50Fields *p2;
-    Df50Fields *p3;
-    Df50Fields *p4;
-    Df50Fields *p5;
+    MenuObj *p0;
+    MenuObj *p1;
+    MenuObj *p2;
+    MenuObj *p3;
+    MenuObj *p4;
+    MenuObj *p5;
     p0 = D_800A3634;
     p0->unk5 = arg2;
-    p0->unkE = arg2;
+    p0->velocityX = arg2;
     p1 = D_800A3634;
-    p1->unkA = arg1 + 0x3C;
-    p2 = (Df50Fields *)D_800A3740;
+    p1->targetX = arg1 + 0x3C;
+    p2 = (MenuObj *)D_800A3740;
     p2->unk5 = arg2;
-    p2->unkE = arg2;
-    p3 = (Df50Fields *)D_800A3740;
-    p3->unkA = arg1 + 5;
+    p2->velocityX = arg2;
+    p3 = (MenuObj *)D_800A3740;
+    p3->targetX = arg1 + 5;
     p4 = D_800A3788;
     p4->unk5 = arg2;
-    p4->unkE = arg2;
+    p4->velocityX = arg2;
     p5 = D_800A3788;
-    p5->unkA = arg1 + 0x71;
+    p5->targetX = arg1 + 0x71;
 }
 
 extern u16 D_8009AF1E[];
@@ -379,7 +371,7 @@ void func_8005E5BC(s32 unused, s32 x, s16 y, s32 flag) {
     entry->green = 0;
     entry->red = 0;
     entry->orderingDepth = 0;
-    D_800A3634 = (Df50Fields *)entry;
+    D_800A3634 = (MenuObj *)entry;
     entry->x = x + 0x3C;
     entry->targetX = height;
     if (flag & 0xFF) {
@@ -407,7 +399,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     MenuText *sub;
     u8 *local;
     s32 value;
-    u8 *entry2;
+    MenuObj *entry2;
 
     count = gMenuObjectPoolCount;
     gMenuObjectPoolCount = count + 1;
@@ -436,7 +428,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     sub->center = 0;
     sub->otz = 0;
     local = entry->primitive;
-    D_800A3788 = (Df50Fields *)entry;
+    D_800A3788 = (MenuObj *)entry;
     local[1] = 2;
     local[2] = 2;
     local[3] = 1;
@@ -449,12 +441,12 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     strcat(D_800BA058B, gTextLeadingSpaceLaps);
     entry2 = (u8 *)D_800A3788;
     *(char **)(local + 8) = D_800BA058C;
-    *(u16 *)(entry2 + 6) = *(u16 *)(entry2 + 6) + 0x71;
-    *(s16 *)(entry2 + 0xA) = 0x71;
+    entry2->x = (u16)entry2->x + 0x71;
+    entry2->targetX = 0x71;
     if ((arg3 & 0xFF) != 0) {
-        *(s16 *)(entry2 + 0xA) = 0xEE;
+        entry2->targetX = 0xEE;
     }
-    *(s16 *)((u8 *)D_800A3788 + 0xE) = arg2;
+    D_800A3788->velocityX = arg2;
 }
 
 void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -466,7 +458,7 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 panelB;
     u8 *prim;
     MenuText *prim2;
-    u8 *cur;
+    MenuObj *cur;
     s32 value;
     s32 word;
     s32 offset;
@@ -509,16 +501,16 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     value = *(s32 *)((u8 *)D_8009A31C + offset);
     cur = (u8 *)D_800A3740;
     prim2->text = value;
-    word = *(u16 *)(cur + 6);
+    word = (u16)cur->x;
     word = word + 5;
-    *(u16 *)(cur + 6) = word;
+    cur->x = word;
     word = 5;
-    *(u16 *)(cur + 0xA) = word;
+    cur->targetX = word;
     if (arg3 & 0xFF) {
         word = 0x82;
-        *(u16 *)(cur + 0xA) = word;
+        cur->targetX = word;
     }
-    *(u16 *)((u8 *)D_800A3740 + 0xE) = arg2;
+    *(u16 *)&((MenuObj *)D_800A3740)->velocityX = arg2;
 }
 
 extern s32 D_800A3344;
@@ -602,14 +594,12 @@ void MenuDrawModel(s32 advanceSpin, s32 semiTrans, s32 fullScreenMode) {
         /* The two arms are identical: cross-jumping merges them. The copy
          * lengthens otz's live range so the allocator ranks it below i and q,
          * as in the original. */
-        SetGeomOffset(*(s16 *)((u8 *)D_800A3634 + 6),
-                      *(s16 *)((u8 *)D_800A3634 + 8));
+        SetGeomOffset(D_800A3634->x, D_800A3634->y);
         angles.vy = D_800A3344;
         angles.vx = 0xC8;
         angles.vz = 0;
     } else {
-        SetGeomOffset(*(s16 *)((u8 *)D_800A3634 + 6),
-                      *(s16 *)((u8 *)D_800A3634 + 8));
+        SetGeomOffset(D_800A3634->x, D_800A3634->y);
         angles.vy = D_800A3344;
         angles.vx = 0xC8;
         angles.vz = 0;

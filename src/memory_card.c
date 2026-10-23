@@ -1811,19 +1811,19 @@ s32 func_8005CA4C(void) {
     s16 value;
 
     if (D_800A3988[0] != 0) {
-        *(s16 *)((u8 *)D_800AE290[0] + 8) = 0xF1;
-        *(s16 *)(D_800AE294[0] + 8) = 0xF1;
+        ((MenuObj *)D_800AE290[0])->y = 0xF1;
+        ((MenuObj *)D_800AE294[0])->y = 0xF1;
         prim = D_800AE298[0];
-        value = *(u16 *)((u8 *)D_800AE290[0] + 0xC);
+        value = *(u16 *)&((MenuObj *)D_800AE290[0])->targetY;
         D_800A3644[0] = 0;
-        *(s16 *)(prim + 8) = value;
+        ((MenuObj *)prim)->y = value;
     } else {
         if (D_800A3A25[0] == 0) {
             return 0;
         }
         for (i = 0; i < 3; i++) {
-            *(s16 *)((u8 *)D_800AE290[i] + 8) =
-                *(u16 *)((u8 *)D_800AE290[i] + 0xC);
+            ((MenuObj *)D_800AE290[i])->y =
+                *(u16 *)&((MenuObj *)D_800AE290[i])->targetY;
         }
         D_800A3644[0] = 1;
         if (gPlayerDriver[0] == gPlayerDriver[1]) {

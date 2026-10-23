@@ -34,12 +34,13 @@ typedef struct {
 typedef struct Model {
     u8 unk0[0x14];
     ModelVertex *vertices; /* 0x14 */
-    u8 unk18[4];
-    s16 frontExtent; /* 0x1C: the collision outline */
-    s16 rearExtent;  /* 0x1E */
-    s16 unk20;
-    s16 halfWidth;   /* 0x22 */
-    u8 unk24[4];
+    s32 unk18;
+    s16 minX; /* 0x1C: bounding box, set by func_80025454 */
+    s16 maxX;
+    s16 minY;
+    s16 maxY;
+    s16 minZ;
+    s16 maxZ; /* 0x26 */
     s16 vertexCount; /* 0x28 */
     s16 faceCount;   /* 0x2A */
     s16 partCount;   /* 0x2C */
