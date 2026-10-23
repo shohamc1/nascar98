@@ -1036,14 +1036,14 @@ u8 texture;
     ((u8 *)poly)[4] = red;
     ((u8 *)poly)[5] = green;
     ((u8 *)poly)[6] = blue;
-    *(s16 *)((u8 *)poly + 0x8) = x;
-    *(s16 *)((u8 *)poly + 0xA) = y;
-    *(s16 *)((u8 *)poly + 0xC) = x + width;
-    *(s16 *)((u8 *)poly + 0xE) = y;
-    *(s16 *)((u8 *)poly + 0x10) = x;
-    *(s16 *)((u8 *)poly + 0x12) = y + height;
-    *(s16 *)((u8 *)poly + 0x14) = x + width;
-    *(s16 *)((u8 *)poly + 0x16) = y + height;
+    ((POLY_F4 *)poly)->x0 = x;
+    ((POLY_F4 *)poly)->y0 = y;
+    ((POLY_F4 *)poly)->x1 = x + width;
+    ((POLY_F4 *)poly)->y1 = y;
+    ((POLY_F4 *)poly)->x2 = x;
+    ((POLY_F4 *)poly)->y2 = y + height;
+    ((POLY_F4 *)poly)->x3 = x + width;
+    ((POLY_F4 *)poly)->y3 = y + height;
     return (MenuObj *)object;
 }
 
