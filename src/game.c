@@ -2315,7 +2315,7 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
     if (node != NULL) {
         do {
             count = node->vertexCount;
-            cursor = (u8 **)((u8 *)node + 0x18);
+            cursor = (u8 **)&node->vertex[0];
             for (i = 0; i < count; i++) {
                 point = cursor[i];
                 value = *(s16 *)(point + 0);
@@ -2342,7 +2342,7 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
             }
             if (!(node->flags & 0x80)) {
                 if (*(u32 *)(arg0 + 0x10) & 0x10000) {
-                    *(u32 *)((u8 *)node + 0x4) = 0x4A4A4A;
+                    *(u32 *)&node->r0 = 0x4A4A4A;
                 }
             }
             node = node->next;
@@ -2622,7 +2622,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     u8 *polys[250];
     u8 *first;
     POLY_GT4 *poly;
-    u8 *obj;
+    Model *obj;
     u8 *array;
     u8 *src;
     s32 *ot;
@@ -2646,19 +2646,19 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     s32 next;
     s32 bank;
 
-    obj = *(u8 **)(arg0 + 0x36C);
+    obj = *(Model **)(arg0 + 0x36C);
     poly = (u8 *)D_800A2D60;
-    count = *(s16 *)(obj + 0x2A);
-    array = *(u8 **)(obj + 0x38);
+    count = obj->faceCount;
+    array = (u8 *)obj->faces;
     lut = (s32 *)0x1F800000;
     first = poly;
     if (count >= D_800A2D5C) {
         return NULL;
     }
-    clutCur = *(s16 *)(obj + 0x30);
+    clutCur = obj->clut;
     if (clutCur == -1) {
         clutOld = GetClut(0x300, 0x3F);
-        *(s16 *)(obj + 0x30) = clutOld;
+        obj->clut = clutOld;
     } else {
         clutOld = clutCur;
     }
@@ -2671,7 +2671,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         tpage = GetTPage(0, 0, (arg1 % 4) * 64 + 0x300, 0x100);
         scroll = ((arg1 - 12) / 4) * 64 - 0x40;
     }
-    scroll -= *(s16 *)(obj + 0x32);
+    scroll -= obj->scroll;
     src = array + 0x18;
     for (i = 0; i < count; i++) {
         polys[i] = poly;
@@ -2712,15 +2712,15 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         }
     }
     i = 0;
-    if (i < *(s16 *)(obj + 0x2C)) {
+    if (i < obj->partCount) {
         ot = (s32 *)(gOrderingTableBankAbsolute[0] * 0x30 + (s32)arg0 + 0x440);
         polyTable = polys;
         off = 0;
         do {
-            ot[i] = polyTable[*(s16 *)(*(u8 **)(obj + 0x40) + off + 0x10)];
+            ot[i] = polyTable[*(s16 *)((u8 *)obj->parts + off + 0x10)];
             off += 0x18;
             i++;
-        } while (i < *(s16 *)(obj + 0x2C));
+        } while (i < obj->partCount);
     }
     pool = D_800A2D5C;
     next = *(s32 *)((u8 *)poly + 0x34);
@@ -2824,7 +2824,7 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     return 0;
 }
 
-void func_800168F8(u8 *arg0, s32 arg1) {
+void func_800168F8(Model *arg0, s32 arg1) {
     s32 pad[2];
     s16 clutCur;
     s32 clutNew;
@@ -2841,13 +2841,13 @@ void func_800168F8(u8 *arg0, s32 arg1) {
     u8 x3;
 
     (void)&pad;
-    clutCur = *(s16 *)(arg0 + 0x30);
-    count = *(s16 *)(arg0 + 0x2A);
-    array = *(u8 **)(arg0 + 0x38);
+    clutCur = arg0->clut;
+    count = arg0->faceCount;
+    array = (u8 *)arg0->faces;
     if (clutCur == -1) {
         clutOld = GetClut(0x300, 0x3F);
-        *(s16 *)(arg0 + 0x30) = clutOld;
-        *(s16 *)(arg0 + 0x32) = 0;
+        arg0->clut = clutOld;
+        arg0->scroll = 0;
     } else {
         clutOld = clutCur;
     }
@@ -2861,7 +2861,7 @@ void func_800168F8(u8 *arg0, s32 arg1) {
             scroll = ((arg1 - 12) / 4) * 64 - 0x40;
         }
         do {
-            scroll -= *(s16 *)(arg0 + 0x32);
+            scroll -= arg0->scroll;
             i = 0;
             if (count > 0) {
                 p = array + 0x15;
@@ -2885,8 +2885,8 @@ void func_800168F8(u8 *arg0, s32 arg1) {
                 }
             }
         } while (0);
-        *(s16 *)(arg0 + 0x30) = clutNew;
-        *(s16 *)(arg0 + 0x32) = *(u16 *)(arg0 + 0x32) + scroll;
+        arg0->clut = clutNew;
+        arg0->scroll = (u16)arg0->scroll + scroll;
     }
 }
 
@@ -2897,7 +2897,7 @@ s32 func_80016ACC(Car *arg0, s16 *arg1) {
     register s32 fade asm("a1");
     s32 y0;
     s32 y1;
-    u8 *base;
+    Model *base;
     u8 *p;
     s32 count;
     u8 *lp;
@@ -2917,9 +2917,9 @@ s32 func_80016ACC(Car *arg0, s16 *arg1) {
 
     (void)&pad;
     y0 = arg1[0];
-    base = arg0->unk36C;
+    base = arg0->model;
     f = arg0->reverseSpeed;
-    p = *(u8 **)(base + 0x14) + y0 * 0x14;
+    p = (u8 *)base->vertices + y0 * 0x14;
     y1 = arg1[1];
     count = y1 - y0 + 1;
     if (f < 0x31U) {

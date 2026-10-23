@@ -1384,3 +1384,4 @@ MenuCreateTexturedRect = 0x8005B598; // type:func
 MenuCreateTextObject = 0x8005BF8C; // type:func
 gCrashCar = 0x800A3960;
 gSkidMarks = 0x800A34F4;
+gSparks = 0x800B60C8;

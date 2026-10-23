@@ -11,6 +11,43 @@ typedef struct {
     s32 z;
 } Vec3;
 
+/* A 0x14 model vertex: its local position, then the world position
+   derived from it by RenderTransformVerticesWithOffset. */
+typedef struct {
+    SVECTOR local; /* 0x00 */
+    Vec3 world;    /* 0x08 */
+} ModelVertex;
+
+/* A 0x18 model part: a run of the model's faces with its own rotation. */
+typedef struct {
+    s32 unk0;
+    Vec3 rotation; /* 0x04 */
+    s16 firstFace; /* 0x10 */
+    s16 faceCount; /* 0x12 */
+    s16 kind;      /* 0x14: negative for animated vertices */
+    s16 unk16;
+} ModelPart;
+
+/* A 0x44 model, one per level of detail: its vertices, faces and parts. */
+typedef struct Model {
+    u8 unk0[0x14];
+    ModelVertex *vertices; /* 0x14 */
+    u8 unk18[6];
+    s16 unk1E;
+    u8 unk20[2];
+    s16 unk22;
+    u8 unk24[6];
+    s16 faceCount; /* 0x2A */
+    s16 partCount; /* 0x2C */
+    u8 unk2E[2];
+    s16 clut;      /* 0x30 */
+    s16 scroll;    /* 0x32 */
+    u8 unk34[4];
+    Face *faces;      /* 0x38 */
+    u8 unk3C[4];
+    ModelPart *parts; /* 0x40 */
+} Model;
+
 /* One 0x28-byte record per wheel, starting at car + 0x2AC. While the
  * wheel skids it lays a SkidMark between its last two edge points. */
 typedef struct {
@@ -226,7 +263,7 @@ typedef struct Car {
     u16 rearRightContact; /* 0x366 */
     u16 rearLeftContact; /* 0x368 */
     u8 unk36A[0x2];
-    u8 *unk36C; /* 0x36C */
+    Model *model; /* 0x36C */
     struct ContactShape *shape; /* 0x370 */
     u8 unk374; /* 0x374 */
     s8 unk375; /* 0x375 */

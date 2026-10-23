@@ -6,7 +6,7 @@
 u32 MathSqrt(u32 value);
 s32 RandomScaledGet(s32);
 u8 *TextFormatInt(s32, u8 *);
-void func_800168F8(u8 *, s32);
+void func_800168F8(struct Model *, s32);
 void SystemShowFatalError(char *message);
 void RandomCountMark(void);
 s32 RandomSeedGet(void);

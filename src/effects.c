@@ -561,7 +561,7 @@ extern u8 D_800B19E4[];
 void func_80043F7C(Car *arg0, s16 *arg1) {
     s16 first;
     s32 count;
-    u8 *e;
+    ModelVertex *e;
     u8 *src;
     s8 delta;
     s32 off;
@@ -571,7 +571,7 @@ void func_80043F7C(Car *arg0, s16 *arg1) {
     s32 mv;
 
     first = arg1[0];
-    e = *(u8 **)(arg0->unk36C + 0x14) + first * 0x14;
+    e = &arg0->model->vertices[first];
     count = arg1[1] - first + 1;
     w = arg1[10];
     if (*(s8 *)((w >= 0) ? (b = (u8 *)arg0 + 0x3AD, b + w)
@@ -591,18 +591,18 @@ void func_80043F7C(Car *arg0, s16 *arg1) {
             src = (u8 *)(mv + off);
         }
         for (i = 0; i < count; i++) {
-            *(s16 *)(e + 0) = (s8)src[0] + *(s32 *)(e + 8);
-            *(s16 *)(e + 2) = (s8)src[1] + *(s32 *)(e + 12);
-            *(s16 *)(e + 4) = (s8)src[2] + *(s32 *)(e + 16);
+            e->local.vx = (s8)src[0] + e->world.x;
+            e->local.vy = (s8)src[1] + e->world.y;
+            e->local.vz = (s8)src[2] + e->world.z;
             src += 4;
-            e += 0x14;
+            e++;
         }
     } else {
         for (i = 0; i < count; i++) {
-            *(s16 *)(e + 0) = *(s32 *)(e + 8);
-            *(s16 *)(e + 2) = *(s32 *)(e + 12);
-            *(s16 *)(e + 4) = *(s32 *)(e + 16);
-            e += 0x14;
+            e->local.vx = e->world.x;
+            e->local.vy = e->world.y;
+            e->local.vz = e->world.z;
+            e++;
         }
     }
 }

@@ -7239,7 +7239,7 @@ void ObjectSetModelDataVariant(Car *object, s32 index) {
         data = D_800AE88C;
     }
     object->shape = data;
-    object->unk36C = data;
+    object->model = (Model *)data;
     object->unk374 = 0;
     object->mode = index;
 }
@@ -7452,7 +7452,7 @@ Car *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         data = D_800AE88C;
     }
     entry->shape = data;
-    entry->unk36C = data;
+    entry->model = (Model *)data;
     entry->unk374 = 0;
     entry->mode = arg3;
     MatrixSetIdentity((s32 *)entry);
@@ -8200,7 +8200,7 @@ void func_8002EEFC(Car *arg0) {
         if (node == arg0 && node->type == 0 && D_800A2ED8 == 0 &&
             node->cameraMode == 0) {
             node->unk374 = level;
-            node->unk36C = *(u32 *)&node->shape + 0x110;
+            node->model = (Model *)(*(u32 *)&node->shape + 0x110);
         } else {
             delta = node->pos.x;
             dist = delta - refX;
@@ -8234,7 +8234,7 @@ void func_8002EEFC(Car *arg0) {
                 node->unk374 = 0;
             }
             lod = (s8)node->unk374;
-            node->unk36C = *(u32 *)&node->shape + (lod * 0x44);
+            node->model = (Model *)(*(u32 *)&node->shape + (lod * 0x44));
         }
         node = node->next;
     } while (node != NULL);
@@ -9191,11 +9191,13 @@ void GraphicsDrawRaceViews(void) {
         }
         if (D_800A2EC0Frame == ((D_800A2EC0Frame / 120) * 0x78)) {
             if (RandomScaledGet(0x18) < 0) {
-                D_800A2E9CFrame = (Car *)(D_800A3984Frame[0] +
-                                  ((-RandomScaledGet(0x18) + 1) * 0x500));
+                D_800A2E9CFrame =
+                    (Car *)(D_800A3984Frame[0] +
+                            ((-RandomScaledGet(0x18) + 1) * 0x500));
             } else {
-                D_800A2E9CFrame = (Car *)(D_800A3984Frame[0] +
-                                  ((RandomScaledGet(0x18) + 1) * 0x500));
+                D_800A2E9CFrame =
+                    (Car *)(D_800A3984Frame[0] +
+                            ((RandomScaledGet(0x18) + 1) * 0x500));
             }
         }
     }
@@ -12564,31 +12566,44 @@ s32 func_800358EC(s32 *direction) {
 
 extern u16 D_80090F24[];
 extern u16 D_80091004[];
-extern s32 D_800B60C8[];
+/* One of the 0x48 sparks in gSparks: three banks of 24, the first with
+ * 16x16 art and the other two translucent 64x64 art. */
+typedef struct Spark {
+    u8 unk0[8];
+    Vec3 pos;         /* 0x08: world position */
+    Vec3 view;        /* 0x14: pos in camera space */
+    s16 life;         /* 0x20: frames left; 0 is free */
+    s16 kind;         /* 0x22: bank, 0 to 2 */
+    s16 width;        /* 0x24 */
+    s16 height;       /* 0x26 */
+    POLY_FT4 prim[4]; /* 0x28 */
+} Spark;
 
-/* Initialise the 0x48-entry 0xC8-stride tile table at D_800B60C8: three
+extern Spark gSparks[];
+
+/* Initialise the 0x48-entry 0xC8-stride tile table at gSparks: three
  * banks of 24 entries. poly[1..4] of each entry become textured POLY_FT4s;
  * the 4 u16s at entry+0x20 prime poly[0]'s tail (counter/type/uv). Bank 0
  * takes 16x16 tiles from D_80090F24; banks 1-2 take translucent 64x64
  * tiles from D_80091004 (v3 = u+0x3F here is the original's quirk). */
 void func_80035B20(void) {
-    u8 *entry;
+    Spark *entry;
     POLY_FT4 *prim;
     u16 *tex;
     s32 i;
     s32 j;
 
-    entry = (u8 *)D_800B60C8;
+    entry = gSparks;
     i = 0;
     tex = D_80090F24;
     do {
-        *(u16 *)(entry + 0x20) = 0;
-        *(u16 *)(entry + 0x22) = 0;
-        *(u16 *)(entry + 0x24) = 0x10;
-        *(u16 *)(entry + 0x26) = 0x10;
+        entry->life = 0;
+        entry->kind = 0;
+        entry->width = 0x10;
+        entry->height = 0x10;
         j = 0;
         do {
-            prim = (POLY_FT4 *)(entry + 0x28 + j * 0x28);
+            prim = &entry->prim[j];
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             prim->tpage = GetTPage(tex[0], 0, tex[-6], tex[-5]);
@@ -12602,20 +12617,20 @@ void func_80035B20(void) {
             prim->v3 = tex[-1] + 0xF;
             j++;
         } while (j < 4);
-        entry += 0xC8;
+        entry++;
         i++;
     } while (i < 0x18);
 
     i = 0;
     tex = D_80091004;
     do {
-        *(u16 *)(entry + 0x22) = 1;
-        *(u16 *)(entry + 0x24) = 0x80;
-        *(u16 *)(entry + 0x20) = 0;
-        *(u16 *)(entry + 0x26) = 0x100;
+        entry->kind = 1;
+        entry->width = 0x80;
+        entry->life = 0;
+        entry->height = 0x100;
         j = 0;
         do {
-            prim = (POLY_FT4 *)(entry + 0x28 + j * 0x28);
+            prim = &entry->prim[j];
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             prim->tpage = GetTPage(tex[0], 3, tex[-6], tex[-5]);
@@ -12631,20 +12646,20 @@ void func_80035B20(void) {
             prim->v3 = tex[-2] + 0x3F;
             j++;
         } while (j < 4);
-        entry += 0xC8;
+        entry++;
         i++;
     } while (i < 0x18);
 
     i = 0;
     tex = D_80091004;
     do {
-        *(u16 *)(entry + 0x22) = 2;
-        *(u16 *)(entry + 0x24) = 0x80;
-        *(u16 *)(entry + 0x20) = 0;
-        *(u16 *)(entry + 0x26) = 0x100;
+        entry->kind = 2;
+        entry->width = 0x80;
+        entry->life = 0;
+        entry->height = 0x100;
         j = 0;
         do {
-            prim = (POLY_FT4 *)(entry + 0x28 + j * 0x28);
+            prim = &entry->prim[j];
             SetPolyFT4(prim);
             SetShadeTex(prim, 1);
             prim->tpage = GetTPage(tex[0], 3, tex[-6], tex[-5]);
@@ -12661,7 +12676,7 @@ void func_80035B20(void) {
             j++;
         } while (j < 4);
         i++;
-        entry += 0xC8;
+        entry++;
     } while (i < 0x18);
 }
 
@@ -12679,38 +12694,39 @@ __inline__ void CameraProjectPointToScreen(s32 *src, s32 *outX, s32 *outY) {
  * entry position (+0x14) offset by +-dx and +0..dy in camera space, each
  * run through the inline CameraProjectPointToScreen projection; the OT slot comes from
  * the z depth. Entries with a nonzero +0x22 flag shrink with their age. */
-s32 EffectDrawSpark(u8 *p) {
+s32 EffectDrawSpark(Spark *p) {
     POLY_FT4 *prim;
     Vec3 vec;
     s32 sx, sy;
     s32 dx, dy;
 
-    prim = (POLY_FT4 *)(p + (gOrderingTableBankAbsolute[0] * 0x28 + 0x28));
-    if (*(s16 *)(p + 0x22) != 0) {
-        dx = *(s16 *)(p + 0x24) * (0x23 - *(s16 *)(p + 0x20)) / 10;
-        dy = *(s16 *)(p + 0x26) * (0x23 - *(s16 *)(p + 0x20)) / 10;
+    prim =
+        (POLY_FT4 *)((u8 *)p + (gOrderingTableBankAbsolute[0] * 0x28 + 0x28));
+    if ((s16)p->kind != 0) {
+        dx = p->width * (0x23 - (s16)p->life) / 10;
+        dy = p->height * (0x23 - (s16)p->life) / 10;
     } else {
-        dx = *(s16 *)(p + 0x24);
-        dy = *(s16 *)(p + 0x26);
+        dx = p->width;
+        dy = p->height;
     }
-    vec = *(Vec3 *)(p + 0x14);
+    vec = p->view;
     vec.x -= dx;
     vec.y += dy;
     CameraProjectPointToScreen(&vec.x, &sx, &sy);
     prim->x0 = sx;
     prim->y0 = sy;
-    vec = *(Vec3 *)(p + 0x14);
+    vec = p->view;
     vec.x += dx;
     vec.y += dy;
     CameraProjectPointToScreen(&vec.x, &sx, &sy);
     prim->x1 = sx;
     prim->y1 = sy;
-    vec = *(Vec3 *)(p + 0x14);
+    vec = p->view;
     vec.x += dx;
     CameraProjectPointToScreen(&vec.x, &sx, &sy);
     prim->x3 = sx;
     prim->y3 = sy;
-    vec = *(Vec3 *)(p + 0x14);
+    vec = p->view;
     vec.x -= dx;
     CameraProjectPointToScreen(&vec.x, &sx, &sy);
     prim->x2 = sx;
@@ -12730,11 +12746,11 @@ extern u8 D_800A2ED8Arr[];
 
 asm(".globl D_800A2ED8Arr\nD_800A2ED8Arr = D_800A2ED8");
 
-/* Per-frame update of the 0xC8-stride entry table at D_800B60C8: builds a
+/* Per-frame update of the 0xC8-stride entry table at gSparks: builds a
  * camera-relative SVECTOR, ages the active counter, transforms the position
  * and hands visible entries to EffectDrawSpark. */
 void func_80036264(void) {
-    u8 *p;
+    Spark *p;
     s32 i;
     register s32 dz asm("v0");
     s32 *camera;
@@ -12747,32 +12763,31 @@ void func_80036264(void) {
     SVECTOR sv;
     long flag;
 
-    for (p = (u8 *)D_800B60C8, i = 0; i < 0x48; i++, p += 0xC8) {
-        if (*(s16 *)(p + 0x20) == 0) {
+    for (p = gSparks, i = 0; i < 0x48; i++, p++) {
+        if (p->life == 0) {
             continue;
         }
-        dz = *(s32 *)(p + 0x10);
+        dz = p->pos.z;
         camera = (s32 *)D_800A38AC[0];
         flagval = D_800A2ED4[0];
         cx = camera[0];
         cy = camera[1];
         dz = dz - camera[2];
-        dx = *(s32 *)(p + 0x8) - cx;
-        dy = *(s32 *)(p + 0xC) - cy;
+        dx = p->pos.x - cx;
+        dy = p->pos.y - cy;
         sv.vz = dz;
         sv.vx = dx;
         sv.vy = dy;
         if (flagval == 0 && D_800A2ED8Arr[0] == 0 && D_800A2ED9[0] == 0) {
-            count = *(u16 *)(p + 0x20) - 1;
-            *(s16 *)(p + 0x20) = count;
-            if (*(s16 *)(p + 0x22) >= 2) {
-                *(s32 *)(p + 0x10) =
-                    *(s32 *)(p + 0x10) + ((0x2D - (s16)count) * 2);
+            count = p->life - 1;
+            p->life = count;
+            if (p->kind >= 2) {
+                p->pos.z = p->pos.z + ((0x2D - (s16)count) * 2);
             } else {
                 if ((s16)count >= 6) {
-                    *(s32 *)(p + 0x10) = *(s32 *)(p + 0x10) + 5;
+                    p->pos.z = p->pos.z + 5;
                 } else {
-                    *(s32 *)(p + 0x10) = *(s32 *)(p + 0x10) - 5;
+                    p->pos.z = p->pos.z - 5;
                 }
             }
         }
@@ -12780,16 +12795,14 @@ void func_80036264(void) {
         if (dz) {
             dz = dy >= 0 ? dy < 0x3E81 : -dy < 0x3E81;
             if (dz) {
-                RotTrans(&sv, (VECTOR *)(p + 0x14), &flag);
-                if (*(s32 *)(p + 0x1C) >= 0x14) {
-                    if (2 * *(s32 *)(p + 0x1C) < (*(s32 *)(p + 0x14) < 0
-                                                      ? -*(s32 *)(p + 0x14)
-                                                      : *(s32 *)(p + 0x14))) {
+                RotTrans(&sv, (VECTOR *)&p->view, &flag);
+                if (p->view.z >= 0x14) {
+                    if (2 * p->view.z <
+                        (p->view.x < 0 ? -p->view.x : p->view.x)) {
                         continue;
                     }
-                    if (2 * *(s32 *)(p + 0x1C) < (*(s32 *)(p + 0x18) < 0
-                                                      ? -*(s32 *)(p + 0x18)
-                                                      : *(s32 *)(p + 0x18))) {
+                    if (2 * p->view.z <
+                        (p->view.y < 0 ? -p->view.y : p->view.y)) {
                         continue;
                     }
                     EffectDrawSpark(p);
@@ -12836,7 +12849,7 @@ void EffectCopyPrimitiveBufferToList(void) {
     u8 *dst;
     u8 *src;
 
-    for (i = 0, dst = (u8 *)D_800AEE50, offset = 0, src = (u8 *)D_800B60C8;
+    for (i = 0, dst = (u8 *)D_800AEE50, offset = 0, src = (u8 *)gSparks;
          i < 0x48; offset += 0x28, i++, src += 0xC8) {
         *(Primitive40 *)(offset + (u32)dst) = *(Primitive40 *)src;
     }
@@ -12846,7 +12859,7 @@ void EffectRestorePrimitiveBuffer(void) {
     s32 i;
 
     for (i = 0; i < 0x48; i++) {
-        *(Primitive40 *)((u8 *)D_800B60C8 + i * 0xC8) =
+        *(Primitive40 *)((u8 *)gSparks + i * 0xC8) =
             *(Primitive40 *)((u8 *)D_800AEE50 + i * 0x28);
     }
 }
@@ -12935,7 +12948,7 @@ check:
 #endif
 
 extern u8 D_800B7388Base[] asm("D_800B7388.NON_MATCHING");
-extern u8 D_800B60C8Base[] asm("D_800B60C8.NON_MATCHING");
+extern u8 gSparksBase[] asm("gSparks.NON_MATCHING");
 
 void func_8003667C(u32 *list) {
     u8 *p;
@@ -12953,7 +12966,7 @@ void func_8003667C(u32 *list) {
                 i++;
                 p += 0xC8;
             }
-            p = D_800B60C8Base;
+            p = gSparksBase;
             i = 0x17;
             do {
                 *(s16 *)(p + 0x20) = 0;
@@ -14837,7 +14850,7 @@ void func_800373B4(Car *object) {
                             collisionArgument0, collisionArgument1);
                         lateralSinProduct -= collisionReturn;
                         lateralGap = lateralSinProduct >> 16;
-                        tempV112 = (*(s16 *)(car->unk36C + 0x1E)) * 2;
+                        tempV112 = (car->model->unk1E) * 2;
                         collisionWidthCopy = tempV112;
                         if (lateralGap >= 0) {
                             if (lateralGap >= tempV112) {
@@ -14864,7 +14877,7 @@ void func_800373B4(Car *object) {
                                 collisionArgument0, collisionArgument1);
                             longitudinalGap += collisionReturn;
                             longitudinalGap >>= 16;
-                            tempV113 = (*(s16 *)(car->unk36C + 0x22)) * 2;
+                            tempV113 = (car->model->unk22) * 2;
                             collisionWidthCopy = tempV113;
                             if (longitudinalGap >= 0) {
                                 lateralGap = longitudinalGap < tempV113;

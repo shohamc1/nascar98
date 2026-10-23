@@ -52,14 +52,14 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
     s32 value;
     s32 speed;
     s32 i;
-    u8 *part;
+    ModelPart *part;
 
     spinAngle = 0;
-    primitiveCount = *(s16 *)(car->unk36C + 0x2A);
+    primitiveCount = car->model->faceCount;
     dx = car->pos.x - D_800A38AC[0];
     dy = car->pos.y - D_800A38AC[1];
     dz = car->pos.z - D_800A38AC[2];
-    model = *(s32 *)(car->unk36C + 0x38);
+    model = (s32)car->model->faces;
     basePrimitive = car->unk420[gOrderingTableBankAbsolute[0]];
     if ((dx >= 0 ? dx < 30001 : -dx < 30001) == 0 ||
         (dy >= 0 ? dy < 30001 : -dy < 30001) == 0 ||
@@ -133,25 +133,24 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
     }
     if ((s8)car->unk374 < 2 || (car == D_800A2EA0[0] && car->type == 0 &&
                                 D_800A2ED8[0] == 0 && car->cameraMode == 0)) {
-        for (i = 0; i < *(s16 *)(car->unk36C + 0x2C); i++) {
-            part = *(u8 **)(car->unk36C + 0x40) + i * 24;
-            if (*(s16 *)(part + 0x14) < 0) {
+        for (i = 0; i < car->model->partCount; i++) {
+            part = &car->model->parts[i];
+            if (part->kind < 0) {
                 func_80043F7C(car, part);
-            } else if (*(s16 *)(part + 0x14) == 10) {
+            } else if (part->kind == 10) {
                 if ((u8)func_80016ACC(car, (s16 *)part)) {
-                    primitiveCount -= *(s16 *)(part + 0x12);
+                    primitiveCount -= part->faceCount;
                 }
-            } else if (*(s16 *)(part + 0x14) < 9 &&
-                       *(s8 *)((u8 *)car + *(s16 *)(part + 0x14) + 0x3A5) ==
-                           0) {
-                primitiveCount -= *(s16 *)(part + 0x12);
+            } else if (part->kind < 9 &&
+                       *(s8 *)((u8 *)car + part->kind + 0x3A5) == 0) {
+                primitiveCount -= part->faceCount;
             } else {
                 PushMatrix();
-                angles.vx = *(s32 *)(part + 4);
-                angles.vy = *(s32 *)(part + 8);
-                angles.vz = *(s32 *)(part + 12);
+                angles.vx = part->rotation.x;
+                angles.vy = part->rotation.y;
+                angles.vz = part->rotation.z;
                 RotTrans(&angles, &partPosition, &flag);
-                switch ((s16)((u16) * (s16 *)(part + 0x14) - 1)) {
+                switch ((s16)((u16)part->kind - 1)) {
                 case 0:
                 case 1:
                     angles.vx = 0;
@@ -183,15 +182,15 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
                             func_80025730) {
                         func_80015EAC(car);
                     }
-                    part = *(u8 **)(car->unk36C + 0x40) + i * 24;
-                    angles.vx = *(s32 *)(part + 4);
-                    angles.vy = *(s32 *)(part + 8);
-                    angles.vz = *(s32 *)(part + 12);
+                    part = &car->model->parts[i];
+                    angles.vx = part->rotation.x;
+                    angles.vy = part->rotation.y;
+                    angles.vz = part->rotation.z;
                     RotTrans(&angles, &partPosition, &flag);
                     TransMatrix(&D_800A3B38, &partPosition);
                     SetTransMatrix(&D_800A3B38);
-                    func_80032544(model + *(s16 *)(part + 0x10) * 44,
-                                  *(s16 *)(part + 0x12));
+                    func_80032544(model + part->firstFace * 44,
+                                  part->faceCount);
                     goto partDone;
                 case 5:
                 case 6:
@@ -212,15 +211,15 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
                     primitiveRow =
                         gOrderingTableBankAbsolute[0] * 48 + (s32)car;
                     primitiveRow += i * 4;
-                    func_80032760(model + *(s16 *)(part + 0x10) * 44,
+                    func_80032760(model + part->firstFace * 44,
                                   *(s32 *)(primitiveRow + 0x440),
-                                  *(s16 *)(part + 0x12));
+                                  part->faceCount);
                 } else {
-                    func_800328AC(model + *(s16 *)(part + 0x10) * 44,
-                                  *(s16 *)(part + 0x12));
+                    func_800328AC(model + part->firstFace * 44,
+                                  part->faceCount);
                 }
             partDone:
-                primitiveCount -= *(s16 *)(part + 0x12);
+                primitiveCount -= part->faceCount;
                 PopMatrix();
             }
         }
@@ -287,11 +286,11 @@ void CarDrawPreviewModel(Car *arg0, s32 x, s32 y, s32 z) {
     s32 depth;
     u8 *model;
     s32 i;
-    u8 *entry;
+    ModelPart *entry;
     MATRIX *m3Ptr;
 
-    depth = *(s16 *)(arg0->unk36C + 0x2A);
-    model = *(u8 **)(arg0->unk36C + 0x38);
+    depth = arg0->model->faceCount;
+    model = (u8 *)arg0->model->faces;
     rot.vx = 0x400;
     rot.vy = 0;
     rot.vz = (u16)arg0->steering;
@@ -301,23 +300,23 @@ void CarDrawPreviewModel(Car *arg0, s32 x, s32 y, s32 z) {
     m1.t[2] = z;
     SetTransMatrix(&m1);
     SetRotMatrix(&m1);
-    for (i = 0; i < *(s16 *)(arg0->unk36C + 0x2C); i++) {
+    for (i = 0; i < arg0->model->partCount; i++) {
         m3Ptr = &m3;
-        entry = *(u8 **)(arg0->unk36C + 0x40) + i * 0x18;
-        if (*(s16 *)(entry + 0x14) >= 0) {
-            if (*(s16 *)(entry + 0x14) != 10) {
+        entry = &arg0->model->parts[i];
+        if (entry->kind >= 0) {
+            if (entry->kind != 10) {
                 PushMatrix();
-                rot.vx = *(s32 *)(entry + 4);
-                rot.vy = *(s32 *)(entry + 8);
-                rot.vz = *(s32 *)(entry + 0xC);
+                rot.vx = entry->rotation.x;
+                rot.vy = entry->rotation.y;
+                rot.vz = entry->rotation.z;
                 RotTrans(&rot, &trans[1], &flag);
-                if (*(s16 *)(entry + 0x14) < 5) {
+                if (entry->kind < 5) {
                     rot.vx = 0;
                     rot.vy = 0;
                     rot.vz = 0;
                     RotMatrix(&rot, &m2);
                 }
-                switch ((s16)(*(u16 *)(entry + 0x14) - 1)) {
+                switch ((s16)((u16)entry->kind - 1)) {
                 case 0:
                 case 1:
                     rot.vx = 0;
@@ -342,13 +341,13 @@ void CarDrawPreviewModel(Car *arg0, s32 x, s32 y, s32 z) {
                     TransMatrix(m3Ptr, &trans[1]);
                     SetTransMatrix(m3Ptr);
                     SetRotMatrix(m3Ptr);
-                    func_800328AC(model + *(s16 *)(entry + 0x10) * 44,
-                                  *(s16 *)(entry + 0x12));
-                    depth -= *(s16 *)(entry + 0x12);
+                    func_800328AC(model + entry->firstFace * 44,
+                                  entry->faceCount);
+                    depth -= entry->faceCount;
                     PopMatrix();
                     break;
                 case 4:
-                    depth -= *(s16 *)(entry + 0x12);
+                    depth -= entry->faceCount;
                     PopMatrix();
                     break;
                 }
@@ -410,7 +409,7 @@ void CarDrawAll(void) {
             if (func_800167BC((u8 *)car) & 0xFF) {
                 if (GraphicsHasFreePrimitives(
                         *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A))) {
-                    func_800168F8(*(u8 **)(car + 0x36C),
+                    func_800168F8(*(Model **)(car + 0x36C),
                                   (s8)((s8) * (u8 *)(car + 0x200) / 5));
                     CarDrawModel(car, 0);
                 }

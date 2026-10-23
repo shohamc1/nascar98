@@ -6500,7 +6500,7 @@ void MenuDrawLoadScreen(void) {
     car->pos.z = 0;
     car->steering = 0xA00;
     ScratchpadFillPattern(0);
-    func_800168F8(gPlayerCarLui->unk36C, (s8)(gPlayerCarLui->mode / 5));
+    func_800168F8(gPlayerCarLui->model, (s8)(gPlayerCarLui->mode / 5));
     end = gPrimitiveCursorLui;
     CarDrawPreviewModel(gPlayerCarLui, 0, 0x15E, 0x320);
     gOrderingTableLui = (s32)gOrderingTables;

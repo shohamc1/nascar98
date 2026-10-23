@@ -254,7 +254,7 @@ void ListPushFrontDoublyLinked(DoublyLinkedNode *node, DoublyLinkedNode **last,
 void RenderTransformVerticesWithOffset(u8 *object) {
     s32 i;
     s32 *vec;
-    u8 *el;
+    ModelVertex *el;
     u8 *base;
 
     base = D_800BE97C[0];
@@ -262,20 +262,20 @@ void RenderTransformVerticesWithOffset(u8 *object) {
     func_8001F2C4(0, 0, (D_800A2EC0Absolute[0] & 0x1F) << 5);
     for (i = 0; i < *(s16 *)(object + 0xA); i++) {
         el = base + *(u16 *)(object + 0x10 + i * 2) * 0x14;
-        *(u16 *)(el + 0) = *(u16 *)(object + 0x90 + i * 6);
-        *(u16 *)(el + 2) = *(u16 *)(object + 0x92 + i * 6);
-        *(u16 *)(el + 4) = *(u16 *)(object + 0x94 + i * 6);
+        el->local.vx = *(u16 *)(object + 0x90 + i * 6);
+        el->local.vy = *(u16 *)(object + 0x92 + i * 6);
+        el->local.vz = *(u16 *)(object + 0x94 + i * 6);
         MatrixTransformVector((s32 *)el);
-        *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
-        *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
-        *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
+        el->world.x = el->local.vx + vec[0];
+        el->world.y = el->local.vy + vec[1];
+        el->world.z = el->local.vz + vec[2];
     }
 }
 
 void func_8001CAB8(u8 *arg0) {
     s32 i;
     s32 *vec;
-    u8 *el;
+    ModelVertex *el;
     u8 *base;
     s32 temp;
 
@@ -285,13 +285,13 @@ void func_8001CAB8(u8 *arg0) {
     func_8001F2C4(temp, 0, temp);
     for (i = 0; i < *(s16 *)(arg0 + 0xA); i++) {
         el = base + *(u16 *)(arg0 + 0x10 + i * 2) * 0x14;
-        *(u16 *)(el + 0) = *(u16 *)(arg0 + 0x90 + i * 6);
-        *(u16 *)(el + 2) = *(u16 *)(arg0 + 0x92 + i * 6);
-        *(u16 *)(el + 4) = *(u16 *)(arg0 + 0x94 + i * 6);
+        el->local.vx = *(u16 *)(arg0 + 0x90 + i * 6);
+        el->local.vy = *(u16 *)(arg0 + 0x92 + i * 6);
+        el->local.vz = *(u16 *)(arg0 + 0x94 + i * 6);
         MatrixTransformVector((s32 *)el);
-        *(s32 *)(el + 8) = *(s16 *)(el + 0) + vec[0];
-        *(s32 *)(el + 12) = *(s16 *)(el + 2) + vec[1];
-        *(s32 *)(el + 16) = *(s16 *)(el + 4) + vec[2];
+        el->world.x = el->local.vx + vec[0];
+        el->world.y = el->local.vy + vec[1];
+        el->world.z = el->local.vz + vec[2];
     }
 }
 
