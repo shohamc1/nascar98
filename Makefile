@@ -686,4 +686,22 @@ LDFLAGS += --defsym=D_800A3980Small=D_800A3980 \
            --defsym=D_800A360CAbsolute=D_800A360C \
            --defsym=D_800A3858Absolute=D_800A3858 \
            --defsym=D_800A35F4Absolute2=D_800A35F4 \
+           --defsym=gOrderingTableAbsolute2=gOrderingTable \
+           --defsym=D_800A2ED9Absolute2=D_800A2ED9 \
+           --defsym=gPrimitiveCursorAbsolute2=gPrimitiveCursor \
+           --defsym=gMusicVolumeAbsolute3=gMusicVolume \
+           --defsym=D_800A2F3CAbsolute2=D_800A2F3C \
+           --defsym=D_800A306DAbsolute2=D_800A306D \
+           --defsym=D_800A38ACAbsolute2=D_800A38AC \
+           --defsym=D_800A38ACAbsolute3=D_800A38AC \
+           --defsym=D_800A38ACAbsolute4=D_800A38AC \
+           --defsym=D_800A38ACAbsolute5=D_800A38AC \
+           --defsym=gCdVolumeAbsolute3=gCdVolume \
+           --defsym=gCrashCarAbsolute2=gCrashCar \
+           --defsym=D_800A2EB4Absolute2=D_800A2EB4 \
+           --defsym=gCardMenuMessageAbsolute2=gCardMenuMessage \
+           --defsym=gMenuObjectPoolAbsolute2=gMenuObjectPool \
+           --defsym=gOrderingTableAbsolute7=gOrderingTable \
+           --defsym=gOrderingTableAbsolute8=gOrderingTable \
+           --defsym=D_800A367CAbsolute2=D_800A367C \
            --defsym=gCardMenuMessageAbsolute=gCardMenuMessage

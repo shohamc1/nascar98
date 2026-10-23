@@ -13,6 +13,8 @@
 #include "graphics.h"
 #include "list.h"
 #include "util.h"
+extern u32 gPrimitiveCursorAbsolute2[];
+extern u8 D_800A2ED9Absolute2[];
 
 extern s32 gOrderingTable[];
 
@@ -368,7 +370,7 @@ void func_8001CC7C(TrackCallback *arg0) {
         entry->v3 = 0xFD;
         return;
     }
-    pal = ((u8 *)D_800A2EC8Absolute)[0x11];
+    pal = D_800A2ED9Absolute2[0];
     if (pal != 0) {
         pal = 0x40;
         c = 0x78;
@@ -433,7 +435,7 @@ void func_8001CC7C(TrackCallback *arg0) {
         entry->v3 = c;
         return;
     }
-    pal = ((u8 *)D_800A2EC8Absolute)[0x11];
+    pal = D_800A2ED9Absolute2[0];
     if (pal != 0) {
         pal = 0x40;
         c = 0x78;
@@ -501,7 +503,7 @@ void func_8001CDDC(TrackCallback *arg0) {
         entry->v3 = d;
         return;
     }
-    pal = ((u8 *)D_800A2EC8Absolute)[0x11];
+    pal = D_800A2ED9Absolute2[0];
     if (pal != 0) {
         d = 0x78;
         pal = 0x1F;
@@ -562,7 +564,7 @@ void func_8001CF38(TrackCallback *arg0) {
         entry->v3 = c;
         return;
     }
-    pal = ((u8 *)D_800A2EC8Absolute)[0x11];
+    pal = D_800A2ED9Absolute2[0];
     if (pal != 0) {
         pal = 0x20;
         c = 0x78;
@@ -751,7 +753,7 @@ void DebugDrawMeterBar(s32 value, s32 scale, s32 y, s32 colorIdx) {
         break;
     }
     cursor = gPrimitiveCursor[0];
-    D_800A35C0[1] = cursor + sizeof(POLY_FT4);
+    gPrimitiveCursorAbsolute2[0] = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)bar;
     AddPrim((u8 *)gOrderingTable[0], entry);
@@ -803,7 +805,7 @@ void DebugDrawMeterBar(s32 value, s32 scale, s32 y, s32 colorIdx) {
             break;
         }
         cursor2 = gPrimitiveCursor[0];
-        D_800A35C0[1] = cursor2 + sizeof(POLY_FT4);
+        gPrimitiveCursorAbsolute2[0] = cursor2 + sizeof(POLY_FT4);
         entry2 = (POLY_FT4 *)cursor2;
         *entry2 = *(POLY_FT4 *)mark;
         AddPrim((u8 *)gOrderingTable[0], entry2);
@@ -856,7 +858,7 @@ color:
     prim->g0 = 0;
     prim->b0 = 0;
     cursor = gPrimitiveCursor[0];
-    D_800A35C0[1] = cursor + sizeof(POLY_FT4);
+    gPrimitiveCursorAbsolute2[0] = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *(POLY_FT4 *)prim;
     AddPrim((u8 *)gOrderingTable[0], entry);
@@ -895,7 +897,7 @@ void GraphicsDrawRect(s32 x, s32 y, s32 w, s32 h, u8 r, u8 g, u8 b,
     prim->b0 = b;
     cursor = gPrimitiveCursor[0];
     /* Store through the neighbour label: keeps the second lui. */
-    D_800A35C0[1] = cursor + sizeof(POLY_FT4);
+    gPrimitiveCursorAbsolute2[0] = cursor + sizeof(POLY_FT4);
     entry = (POLY_FT4 *)cursor;
     *entry = *prim;
     AddPrim((u8 *)gOrderingTable[0], entry);

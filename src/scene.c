@@ -1,6 +1,7 @@
 #include "common.h"
 #include "libpress.h"
 #include "fixed_addrs.h"
+extern s32 D_800A367CAbsolute2[];
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -18,6 +19,11 @@
 #include "scene.h"
 #include "sound.h"
 #include "util.h"
+extern s32 gOrderingTableAbsolute7[];
+extern s32 gOrderingTableAbsolute8[];
+extern s32 gMenuObjectPoolAbsolute2[];
+extern u8 gCardMenuMessageAbsolute2[];
+extern s32 D_800A2EB4Absolute2[];
 extern s32 gOrderingTableBankAbsolute3[];
 extern s32 gOrderingTableBankAbsolute4[];
 extern s32 gOrderingTableAbsolute3[];
@@ -809,7 +815,7 @@ void SceneInitProjectilePrimitives(void) {
     s32 v1;
 
     i = 0;
-    if (gSessionTypeAbsolute[1] > 0) {
+    if (D_800A2EB4Absolute2[0] > 0) {
         ptr = D_80090F32;
         do {
             D_800A342C[i] = 0;
@@ -850,7 +856,7 @@ void SceneInitProjectilePrimitives(void) {
                 j++;
             } while (j < 10);
             i++;
-        } while (i < gSessionTypeAbsolute[1]);
+        } while (i < D_800A2EB4Absolute2[0]);
     }
 }
 #else
@@ -871,7 +877,7 @@ void SceneInitProjectilePrimitives(void) {
     s32 v1;
 
     i = 0;
-    if (gSessionTypeAbsolute[1] > 0) {
+    if (D_800A2EB4Absolute2[0] > 0) {
         ptr = D_80090F32;
         do {
             D_800A342C[i] = 0;
@@ -914,7 +920,7 @@ void SceneInitProjectilePrimitives(void) {
                 j++;
             } while (j < 10);
             i++;
-        } while (i < gSessionTypeAbsolute[1]);
+        } while (i < D_800A2EB4Absolute2[0]);
     }
 }
 
@@ -2561,7 +2567,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                 FontSetColor(0x40, 0x40, 0x40);
                 func_80018B18(car->gearIndex + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
-                gOrderingTableAbsolute3[0] = D_800A39C4nm[1] - 0x2C;
+                gOrderingTableAbsolute3[0] = gOrderingTableAbsolute8[0] - 0x2C;
             }
             gOrderingTableAbsolute[0] = gOrderingTable[0] - 4;
         }
@@ -6747,7 +6753,7 @@ void SceneSkyFadeDraw(void) {
                         gOrderingTableBankAbsolute3[0] =
                             gOrderingTableBankAbsolute4[0] + 1;
                         gOrderingTableAbsolute6[0] =
-                            D_800A397CAbsolute[19] + 0x1004;
+                            gOrderingTableAbsolute7[0] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                         gOrderingTableBankSmall[0] =
@@ -6788,7 +6794,7 @@ void SceneSkyFadeDraw(void) {
                         gOrderingTableBankAbsolute3[0] =
                             gOrderingTableBankAbsolute4[0] + 1;
                         gOrderingTableAbsolute6[0] =
-                            D_800A397CAbsolute[19] + 0x1004;
+                            gOrderingTableAbsolute7[0] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
@@ -6927,7 +6933,7 @@ void SceneSkyFadeDraw(void) {
                         gOrderingTableBankAbsolute3[0] =
                             gOrderingTableBankAbsolute4[0] + 1;
                         gOrderingTableAbsolute6[0] =
-                            D_800A397CAbsolute[19] + 0x1004;
+                            gOrderingTableAbsolute7[0] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         GraphicsAddPolyFT4((u8 *)secondPrimitive - 8);
                         gOrderingTableBankSmall[0] =
@@ -6968,7 +6974,7 @@ void SceneSkyFadeDraw(void) {
                         gOrderingTableBankAbsolute3[0] =
                             gOrderingTableBankAbsolute4[0] + 1;
                         gOrderingTableAbsolute6[0] =
-                            D_800A397CAbsolute[19] + 0x1004;
+                            gOrderingTableAbsolute7[0] + 0x1004;
                         GraphicsAddPolyFT4((u8 *)idx);
                         gOrderingTableBankSmall[0] =
                             gOrderingTableBankAbsolute[0] - 1;
@@ -7058,7 +7064,7 @@ void SceneSkyFadeDraw(void) {
     GraphicsDrawRect((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
     if (gSplitScreenModeAbsolute[0] != 0) {
         gOrderingTableBankAbsolute3[0] = gOrderingTableBankAbsolute4[0] + 1;
-        gOrderingTableAbsolute6[0] = D_800A397CAbsolute[19] + 0x1004;
+        gOrderingTableAbsolute6[0] = gOrderingTableAbsolute7[0] + 0x1004;
         GraphicsAddPolyFT4((u8 *)D_800A8B34 - 8);
         GraphicsDrawRect((s8)D_800A34D4 + 0xEB, 0x14, 0x46, 0x50, 0, 0, 0, 1);
         bank = gOrderingTableBankAbsolute[0] - 1;
@@ -10572,7 +10578,7 @@ void func_80057160(s32 arg0) {
     if (result != 0) {
         CardMenuSetColorNodeLayout(-0x78, 0, 2);
     }
-    if (((u8 *)D_800A36D0Absolute)[0x138] == 0) {
+    if (gCardMenuMessageAbsolute2[0] == 0) {
         func_8006C2D0(D_800A3059 == 2);
         func_8006CB40();
     }
@@ -10947,7 +10953,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
 
 extern s32 D_800A3654Lui asm("D_800A3654Absolute");
 void SceneAllocateRuntimeBuffers(void) {
-    ((s32 *)D_800A3668Absolute)[4] = (s32)HeapAlloc(0x1AB8);
+    gMenuObjectPoolAbsolute2[0] = (s32)HeapAlloc(0x1AB8);
     gMenuObjectPoolCountAbsolute[0] = 0;
     D_800A3654Lui = (s32)HeapAlloc(0x834);
     ((u8 *)D_800A37B4Absolute)[8] = 0;
@@ -11098,7 +11104,7 @@ u8 *GraphicsAllocPolyFT4(s32 arg0) {
         return prim;
     }
     if (gScreenStateSmall == 0x80) {
-        prim = (u8 *)D_800A3668Absolute[5];
+        prim = (u8 *)D_800A367CAbsolute2[0];
         D_800A367CLui = (s32)prim + 0x28;
         return prim;
     }
@@ -11119,7 +11125,7 @@ u8 *GraphicsAllocPolyF4(s32 arg0) {
         return prim;
     }
     if (gScreenStateSmall == 0x80) {
-        prim = (u8 *)D_800A3668Absolute[5];
+        prim = (u8 *)D_800A367CAbsolute2[0];
         D_800A367CLui = (s32)prim + 0x28;
         return prim;
     }

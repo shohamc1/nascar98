@@ -13,6 +13,7 @@
 #include "pad_axis.h"
 #include "input.h"
 #include "menu.h"
+extern u16 gMusicVolumeAbsolute3[];
 
 /* A 0x0C per-track entry in a DriverRecord. */
 typedef struct {
@@ -2335,7 +2336,7 @@ void CardMenuSaveSettings(void) {
     D_800A3604Vol[0xB] =
         D_800A3073[2] << 2 | D_800A3072AbsoluteU8[0] << 1 | D_800A3073[-2] & 1;
     D_800A3604Vol[1] = gCdVolumeAbsolute[0];
-    D_800A3604Vol[2] = gCdVolumeAbsolute[1];
+    D_800A3604Vol[2] = gMusicVolumeAbsolute3[0];
     D_800A3604Vol[3] = D_800A3078[0];
     for (i = 0; i < 6; i++) {
         (D_800A3604Vol + i)[4] = D_800A331CAbsolute[i];

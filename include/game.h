@@ -101,7 +101,7 @@ extern u8 D_800A3320[];
 extern Car *D_800A3558[];
 extern MenuObj *D_800A35E8[];
 extern s32 D_800A3654;
-extern s32 D_800A3668Absolute[];
+extern u8 *D_800A3668Absolute[];
 extern MenuObj *gMenuObjectPool;
 extern s32 D_800A36D0Absolute[];
 extern u8 D_800A36E1[];

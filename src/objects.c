@@ -20,6 +20,14 @@
 #include "scene.h"
 #include "sound.h"
 #include "util.h"
+extern s32 gCrashCarAbsolute2[];
+extern s16 gCdVolumeAbsolute3[];
+extern s32 D_800A38ACAbsolute2[];
+extern s32 D_800A38ACAbsolute3[];
+extern s32 D_800A38ACAbsolute4[];
+extern s32 D_800A38ACAbsolute5[];
+extern char D_800A306DAbsolute2[];
+extern s32 D_800A2F3CAbsolute2[];
 extern s32 D_800A2D08Absolute3[];
 extern s32 D_800A2D08Absolute4[];
 extern s32 gReplayLengthAbsolute[];
@@ -1865,9 +1873,9 @@ void func_80023454(void) {
 void CdApplyMixVolume(void) {
     CdlATV vol;
 
-    if (gTextPositiveSign[0x35] == 0) {
+    if (D_800A306DAbsolute2[0] == 0) {
         vol.val0 = vol.val1 = vol.val2 = vol.val3 =
-            ((s16 *)D_800A3668Absolute)[22] * 125 / 100;
+            gCdVolumeAbsolute3[0] * 125 / 100;
         CdMix(&vol);
     }
 }
@@ -2618,7 +2626,7 @@ void func_80025730(Car *obj) {
         obj->unk38A = 0;
         if (current == obj) {
             extern s32 D_800A3914[];
-            D_800A3914[19] = 0;
+            gCrashCarAbsolute2[0] = 0;
         }
         if (D_800A3910[0] > 0) {
             extern s16 D_800A3914View[] asm("D_800A3914");
@@ -3058,7 +3066,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
         tmp0 = car->velocityX;
         productX = otherCar->velocityX;
         tmp1 = direction.x;
-        scratchA0 = D_800A3668Absolute[0];
+        scratchA0 = (s32)D_800A3668Absolute[0];
         tmp0 -= productX;
         productX = tmp0 * tmp0;
         tmp1 = __builtin_abs(tmp1);
@@ -8264,14 +8272,14 @@ void func_8002F0A8(Car *focusCar) {
     }
     MatrixSetIdentity((s32 *)D_800A38AC[0]);
     if (D_800A2ED8 != 0) {
-        CameraUpdateForCar((Car *)D_800A37C4Absolute[0x3A], focusCar,
+        CameraUpdateForCar((Car *)D_800A38ACAbsolute5[0], focusCar,
                            D_800A2EC4 + 4);
     } else {
-        CameraUpdateForCar((Car *)D_800A37B4Absolute[0x3E], focusCar,
+        CameraUpdateForCar((Car *)D_800A38ACAbsolute4[0], focusCar,
                            focusCar->cameraMode);
     }
-    MatrixLoadObjectBasis((s32 *)D_800A37ACAbsolute[0x40]);
-    MatrixBuildRotationFromTransform((s32 *)D_800A37A4Absolute[0x42],
+    MatrixLoadObjectBasis((s32 *)D_800A38ACAbsolute3[0]);
+    MatrixBuildRotationFromTransform((s32 *)D_800A38ACAbsolute2[0],
                                      (s32 *)local);
     local[7] = 0;
     local[6] = 0;
@@ -12203,27 +12211,27 @@ void CameraUpdateHorizon(void) {
     }
     if (a >= 0 && y >= 0) {
         if (a >= y) {
-            b = ((u8 *)D_800A3668Absolute[0])[y >> 4];
+            b = D_800A3668Absolute[0][y >> 4];
         } else {
-            b = 0x100 - ((u8 *)D_800A3668Absolute[0])[a >> 4];
+            b = 0x100 - D_800A3668Absolute[0][a >> 4];
         }
     } else if (a < 0 && y >= 0) {
         if (-a >= y) {
-            b = 0x200 - ((u8 *)D_800A3668Absolute[0])[y >> 4];
+            b = 0x200 - D_800A3668Absolute[0][y >> 4];
         } else {
-            b = ((u8 *)D_800A3668Absolute[0])[-a >> 4] + 0x100;
+            b = D_800A3668Absolute[0][-a >> 4] + 0x100;
         }
     } else if (a >= 0 && y < 0) {
         if (a >= -y) {
-            b = 0x200 - ((u8 *)D_800A3668Absolute[0])[-y >> 4];
+            b = 0x200 - D_800A3668Absolute[0][-y >> 4];
         } else {
-            b = ((u8 *)D_800A3668Absolute[0])[a >> 4] + 0x100;
+            b = D_800A3668Absolute[0][a >> 4] + 0x100;
         }
     } else {
         if (-y <= -a) {
-            b = ((u8 *)D_800A3668Absolute[0])[-y >> 4];
+            b = D_800A3668Absolute[0][-y >> 4];
         } else {
-            b = 0x100 - ((u8 *)D_800A3668Absolute[0])[-a >> 4];
+            b = 0x100 - D_800A3668Absolute[0][-a >> 4];
         }
     }
     D_800A33DC = b;
@@ -12464,7 +12472,7 @@ void GraphicsUpdateSkyAndHorizon(s32 orderingTable) {
     D_800A2F3C[0] = 0x23;
     CameraUpdateHorizon();
     func_80035720(orderingTable);
-    ((s32 *)D_800A2E24Absolute)[70] = 0x82;
+    D_800A2F3CAbsolute2[0] = 0x82;
 }
 
 /* D_800A38A4 is reached through $gp here but through lui in
@@ -12502,30 +12510,30 @@ s32 func_800358EC(s32 *direction) {
     }
     if (x >= 0 && y >= 0) {
         if (x >= y) {
-            angle = ((u8 *)D_800A3668Absolute[0])[y >> 4];
+            angle = D_800A3668Absolute[0][y >> 4];
         } else {
-            angle = 0x100 - ((u8 *)D_800A3668Absolute[0])[x >> 4];
+            angle = 0x100 - D_800A3668Absolute[0][x >> 4];
         }
     } else if (x < 0 && y >= 0) {
         ax = -x;
         if (ax >= y) {
-            angle = 0x200 - ((u8 *)D_800A3668Absolute[0])[y >> 4];
+            angle = 0x200 - D_800A3668Absolute[0][y >> 4];
         } else {
-            angle = ((u8 *)D_800A3668Absolute[0])[ax >> 4] + 0x100;
+            angle = D_800A3668Absolute[0][ax >> 4] + 0x100;
         }
     } else if (x >= 0 && y < 0) {
         ay = -y;
         if (x >= ay) {
-            angle = 0x200 - ((u8 *)D_800A3668Absolute[0])[ay >> 4];
+            angle = 0x200 - D_800A3668Absolute[0][ay >> 4];
         } else {
-            angle = ((u8 *)D_800A3668Absolute[0])[x >> 4] + 0x100;
+            angle = D_800A3668Absolute[0][x >> 4] + 0x100;
         }
         angle += 0x200;
     } else {
         if (-y <= -x) {
-            angle = ((u8 *)D_800A3668Absolute[0])[-y >> 4];
+            angle = D_800A3668Absolute[0][-y >> 4];
         } else {
-            angle = 0x100 - ((u8 *)D_800A3668Absolute[0])[-x >> 4];
+            angle = 0x100 - D_800A3668Absolute[0][-x >> 4];
         }
         angle += 0x200;
     }
