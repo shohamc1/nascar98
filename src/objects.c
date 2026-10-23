@@ -8966,7 +8966,7 @@ extern void SetPolyF4(u8 *prim);
 extern void SetSemiTrans(void *p, s32 abe);
 extern void AddPrim(void *ot, void *p);
 void func_8002FFB8(s32 arg0) {
-    u8 *prim;
+    POLY_F4 *prim;
     s32 cursorVal;
     s32 grey;
     s32 red;
@@ -8981,54 +8981,54 @@ void func_8002FFB8(s32 arg0) {
             if (arg0 == 1) {
                 cursorVal = gPrimitiveCursor[0];
                 asm("" : "=r"(prim) : "0"(cursorVal));
-                gPrimitiveCursor2[0] = (u32)prim + 0x28;
+                gPrimitiveCursor2[0] = (u32)(u8 *)prim + 0x28;
                 SetPolyF4(prim);
-                prim[4] = grey;
-                prim[5] = grey;
-                prim[6] = grey;
-                *(s16 *)(prim + 8) = 0;
-                *(s16 *)(prim + 0xA) = 0;
-                *(s16 *)(prim + 0xC) = 0x140;
-                *(s16 *)(prim + 0xE) = 0;
-                *(s16 *)(prim + 0x10) = 0;
-                *(s16 *)(prim + 0x12) = 0xF0;
-                *(s16 *)(prim + 0x14) = 0x140;
-                *(s16 *)(prim + 0x16) = 0xF0;
+                prim->r0 = grey;
+                prim->g0 = grey;
+                prim->b0 = grey;
+                prim->x0 = 0;
+                prim->y0 = 0;
+                prim->x1 = 0x140;
+                prim->y1 = 0;
+                prim->x2 = 0;
+                prim->y2 = 0xF0;
+                prim->x3 = 0x140;
+                prim->y3 = 0xF0;
                 SetSemiTrans(prim, 1);
                 AddPrim((void *)(gOrderingTableb[0] + 0xC), prim);
                 cursorVal = gPrimitiveCursor3[0];
                 asm("" : "=r"(prim) : "0"(cursorVal));
-                gPrimitiveCursor4[0] = (u32)prim + 0x28;
+                gPrimitiveCursor4[0] = (u32)(u8 *)prim + 0x28;
                 SetPolyF4(prim);
-                prim[4] = grey;
-                prim[5] = grey;
-                prim[6] = grey;
-                *(s16 *)(prim + 8) = 0;
-                *(s16 *)(prim + 0xA) = 0;
-                *(s16 *)(prim + 0xC) = 0x140;
-                *(s16 *)(prim + 0xE) = 0;
-                *(s16 *)(prim + 0x10) = 0;
-                *(s16 *)(prim + 0x12) = 0xF0;
-                *(s16 *)(prim + 0x14) = 0x140;
-                *(s16 *)(prim + 0x16) = 0xF0;
+                prim->r0 = grey;
+                prim->g0 = grey;
+                prim->b0 = grey;
+                prim->x0 = 0;
+                prim->y0 = 0;
+                prim->x1 = 0x140;
+                prim->y1 = 0;
+                prim->x2 = 0;
+                prim->y2 = 0xF0;
+                prim->x3 = 0x140;
+                prim->y3 = 0xF0;
                 SetSemiTrans(prim, 1);
                 AddPrim((void *)(gOrderingTablec[0] + 0x190), prim);
                 grey = 0x50;
                 cursorVal = gPrimitiveCursor5[0];
                 asm("" : "=r"(prim) : "0"(cursorVal));
-                gPrimitiveCursor6[0] = (u32)prim + 0x28;
+                gPrimitiveCursor6[0] = (u32)(u8 *)prim + 0x28;
                 SetPolyF4(prim);
-                prim[4] = grey;
-                prim[5] = grey;
-                prim[6] = grey;
-                *(s16 *)(prim + 8) = 0;
-                *(s16 *)(prim + 0xA) = 0;
-                *(s16 *)(prim + 0xC) = 0x140;
-                *(s16 *)(prim + 0xE) = 0;
-                *(s16 *)(prim + 0x10) = 0;
-                *(s16 *)(prim + 0x12) = 0xF0;
-                *(s16 *)(prim + 0x14) = 0x140;
-                *(s16 *)(prim + 0x16) = 0xF0;
+                prim->r0 = grey;
+                prim->g0 = grey;
+                prim->b0 = grey;
+                prim->x0 = 0;
+                prim->y0 = 0;
+                prim->x1 = 0x140;
+                prim->y1 = 0;
+                prim->x2 = 0;
+                prim->y2 = 0xF0;
+                prim->x3 = 0x140;
+                prim->y3 = 0xF0;
                 SetSemiTrans(prim, 1);
                 AddPrim((void *)(gOrderingTabled[0] + 0x320), prim);
             } else {
@@ -9036,19 +9036,19 @@ void func_8002FFB8(s32 arg0) {
                 SetFogFar(0x7D0, grey);
                 cursorVal = gPrimitiveCursor7[0];
                 asm("" : "=r"(prim) : "0"(cursorVal));
-                gPrimitiveCursor6[0] = (u32)prim + 0x28;
+                gPrimitiveCursor6[0] = (u32)(u8 *)prim + 0x28;
                 SetPolyF4(prim);
-                prim[4] = red;
-                prim[5] = green;
-                prim[6] = grey;
-                *(s16 *)(prim + 8) = 0;
-                *(s16 *)(prim + 0xA) = 0;
-                *(s16 *)(prim + 0xC) = 0x140;
-                *(s16 *)(prim + 0xE) = 0;
-                *(s16 *)(prim + 0x10) = 0;
-                *(s16 *)(prim + 0x12) = 0xF0;
-                *(s16 *)(prim + 0x14) = 0x140;
-                *(s16 *)(prim + 0x16) = 0xF0;
+                prim->r0 = red;
+                prim->g0 = green;
+                prim->b0 = grey;
+                prim->x0 = 0;
+                prim->y0 = 0;
+                prim->x1 = 0x140;
+                prim->y1 = 0;
+                prim->x2 = 0;
+                prim->y2 = 0xF0;
+                prim->x3 = 0x140;
+                prim->y3 = 0xF0;
                 SetSemiTrans(prim, 1);
                 AddPrim((void *)(gOrderingTablee[0] + 0xAF0), prim);
             }
@@ -10288,7 +10288,7 @@ void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag) {
 }
 
 u8 *func_80032544(u8 *entry, s32 remaining) {
-    u8 *prim;
+    POLY_F4 *prim;
     u32 *ot;
     s32 gte;
     u32 *otEntry;
@@ -10306,9 +10306,9 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
             goto next;
         }
         gte_nclip();
-        prim[4] = 16;
-        prim[5] = 16;
-        prim[6] = 16;
+        prim->r0 = 16;
+        prim->g0 = 16;
+        prim->b0 = 16;
         gte_mfc2(gte, 24);
         if (D_800A2DE0[0] != 0) {
             if (gte >= 0) {
@@ -10322,14 +10322,14 @@ u8 *func_80032544(u8 *entry, s32 remaining) {
         gte_avsz3();
         gte_mfc2(gte, 7);
         gte += *(s8 *)(entry + 1) * 4;
-        gte_stsxy3(prim + 8, prim + 0xC, prim + 0x14);
+        gte_stsxy3((u8 *)prim + 8, (u8 *)prim + 0xC, (u8 *)prim + 0x14);
         gte_ldv0(*(s32 **)(entry + 0x24));
         gte_rtps();
-        gte_stsxy(prim + 0x10);
+        gte_stsxy((u8 *)prim + 0x10);
         otEntry = (u32 *)(((gte >> 4) << 2) + (s32)ot);
         *(u32 *)prim = *otEntry | 0x05000000;
         *otEntry = (u32)prim & 0xFFFFFF;
-        prim += 0x18;
+        prim++;
     next:
         remaining--;
         entry += 0x2C;
@@ -10873,7 +10873,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
     s16 *zCursor;
     TrackSection *group;
     register u8 *obj asm("s0");
-    u8 *poly;
+    POLY_F4 *poly;
     s32 i;
     s32 n;
     s32 otz;
@@ -10948,7 +10948,8 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     }
                     SetPolyF4(poly);
                     gte_cfc2_nonop(otz, 31);
-                    gte_stsxy3(poly + 8, poly + 0xC, poly + 0x14);
+                    gte_stsxy3((u8 *)poly + 8, (u8 *)poly + 0xC,
+                               (u8 *)poly + 0x14);
                     if (otz & 0x6000) {
                         continue;
                     }
@@ -10972,7 +10973,7 @@ void func_80033000(TrackSection *endB, TrackSection *endA,
                     }
                     *(u32 *)prim = ot[otz >> 2] | 0x05000000;
                     ot[otz >> 2] = (u32)prim & 0xFFFFFF;
-                    gte_stsxy(poly + 0x10);
+                    gte_stsxy((u8 *)poly + 0x10);
                     prim = prim + 0x28;
                 }
                 mode = 0;
@@ -12323,7 +12324,7 @@ extern u32 gPrimitiveCursorAdv3[] asm("gPrimitiveCursor");
 
 void GraphicsDrawHorizonWalls(void) {
     u8 *obj;
-    u8 *tpl;
+    POLY_FT4 *tpl;
     POLY_FT4 *prim;
     s32 x;
     s32 w;
@@ -12370,7 +12371,7 @@ void GraphicsDrawHorizonWalls(void) {
         drawCursor = gPrimitiveCursor[0];
         drawPrim = (POLY_FT4 *)drawCursor;
         gPrimitiveCursorAdv1[0] = drawCursor + 0x28;
-        *drawPrim = *(POLY_FT4 *)tpl;
+        *drawPrim = *tpl;
         AddPrim((u8 *)gOrderingTable[0] + 0xFF8, drawPrim);
         return;
     }
@@ -12451,7 +12452,7 @@ void GraphicsDrawHorizonWalls(void) {
     cursorEnd = gPrimitiveCursor[0];
     gPrimitiveCursorAdv3[0] = cursorEnd + 0x28;
     entry = (POLY_FT4 *)cursorEnd;
-    *entry = *(POLY_FT4 *)tpl;
+    *entry = *tpl;
     AddPrim((u8 *)gOrderingTable[0] + 0xFF8, entry);
 }
 
@@ -12625,7 +12626,7 @@ extern s32 D_800B60C8[];
  * tiles from D_80091004 (v3 = u+0x3F here is the original's quirk). */
 void func_80035B20(void) {
     u8 *entry;
-    u8 *prim;
+    POLY_FT4 *prim;
     u16 *tex;
     s32 i;
     s32 j;
@@ -12641,17 +12642,17 @@ void func_80035B20(void) {
         j = 0;
         do {
             prim = entry + 0x28 + j * 0x28;
-            SetPolyFT4((POLY_FT4 *)prim);
+            SetPolyFT4(prim);
             SetShadeTex(prim, 1);
-            *(u16 *)(prim + 0x16) = GetTPage(tex[0], 0, tex[-6], tex[-5]);
-            *(u8 *)(prim + 0xC) = tex[-2];
-            *(u8 *)(prim + 0xD) = tex[-1];
-            *(u8 *)(prim + 0x14) = tex[-2] + 0xF;
-            *(u8 *)(prim + 0x15) = tex[-1];
-            *(u8 *)(prim + 0x1C) = tex[-2];
-            *(u8 *)(prim + 0x1D) = tex[-1] + 0xF;
-            *(u8 *)(prim + 0x24) = tex[-2] + 0xF;
-            *(u8 *)(prim + 0x25) = tex[-1] + 0xF;
+            prim->tpage = GetTPage(tex[0], 0, tex[-6], tex[-5]);
+            prim->u0 = tex[-2];
+            prim->v0 = tex[-1];
+            prim->u1 = tex[-2] + 0xF;
+            prim->v1 = tex[-1];
+            prim->u2 = tex[-2];
+            prim->v2 = tex[-1] + 0xF;
+            prim->u3 = tex[-2] + 0xF;
+            prim->v3 = tex[-1] + 0xF;
             j++;
         } while (j < 4);
         entry += 0xC8;
@@ -12668,19 +12669,19 @@ void func_80035B20(void) {
         j = 0;
         do {
             prim = entry + 0x28 + j * 0x28;
-            SetPolyFT4((POLY_FT4 *)prim);
+            SetPolyFT4(prim);
             SetShadeTex(prim, 1);
-            *(u16 *)(prim + 0x16) = GetTPage(tex[0], 3, tex[-6], tex[-5]);
-            *(u16 *)(prim + 0xE) = GetClut(tex[-4], tex[-3]);
+            prim->tpage = GetTPage(tex[0], 3, tex[-6], tex[-5]);
+            prim->clut = GetClut(tex[-4], tex[-3]);
             SetSemiTrans(prim, 1);
-            *(u8 *)(prim + 0xC) = tex[-2];
-            *(u8 *)(prim + 0xD) = tex[-1];
-            *(u8 *)(prim + 0x14) = tex[-2] + 0x3F;
-            *(u8 *)(prim + 0x15) = tex[-1];
-            *(u8 *)(prim + 0x1C) = tex[-2];
-            *(u8 *)(prim + 0x1D) = tex[-1] + 0x3F;
-            *(u8 *)(prim + 0x24) = tex[-2] + 0x3F;
-            *(u8 *)(prim + 0x25) = tex[-2] + 0x3F;
+            prim->u0 = tex[-2];
+            prim->v0 = tex[-1];
+            prim->u1 = tex[-2] + 0x3F;
+            prim->v1 = tex[-1];
+            prim->u2 = tex[-2];
+            prim->v2 = tex[-1] + 0x3F;
+            prim->u3 = tex[-2] + 0x3F;
+            prim->v3 = tex[-2] + 0x3F;
             j++;
         } while (j < 4);
         entry += 0xC8;
@@ -12697,19 +12698,19 @@ void func_80035B20(void) {
         j = 0;
         do {
             prim = entry + 0x28 + j * 0x28;
-            SetPolyFT4((POLY_FT4 *)prim);
+            SetPolyFT4(prim);
             SetShadeTex(prim, 1);
-            *(u16 *)(prim + 0x16) = GetTPage(tex[0], 3, tex[-6], tex[-5]);
-            *(u16 *)(prim + 0xE) = GetClut(tex[-4], tex[-3]);
+            prim->tpage = GetTPage(tex[0], 3, tex[-6], tex[-5]);
+            prim->clut = GetClut(tex[-4], tex[-3]);
             SetSemiTrans(prim, 1);
-            *(u8 *)(prim + 0xC) = tex[-2];
-            *(u8 *)(prim + 0xD) = tex[-1];
-            *(u8 *)(prim + 0x14) = tex[-2] + 0x3F;
-            *(u8 *)(prim + 0x15) = tex[-1];
-            *(u8 *)(prim + 0x1C) = tex[-2];
-            *(u8 *)(prim + 0x1D) = tex[-1] + 0x3F;
-            *(u8 *)(prim + 0x24) = tex[-2] + 0x3F;
-            *(u8 *)(prim + 0x25) = tex[-2] + 0x3F;
+            prim->u0 = tex[-2];
+            prim->v0 = tex[-1];
+            prim->u1 = tex[-2] + 0x3F;
+            prim->v1 = tex[-1];
+            prim->u2 = tex[-2];
+            prim->v2 = tex[-1] + 0x3F;
+            prim->u3 = tex[-2] + 0x3F;
+            prim->v3 = tex[-2] + 0x3F;
             j++;
         } while (j < 4);
         i++;

@@ -1125,9 +1125,9 @@ MenuObj *MenuCreateTexturedRect(s32 left, s32 top, s32 right, s32 bottom,
     poly = GraphicsAllocPolyFT4(texture);
     SetPolyFT4(poly);
     SetShadeTex(poly, 0);
-    ((u8 *)poly)[4] = 0x80;
-    ((u8 *)poly)[5] = 0x80;
-    ((u8 *)poly)[6] = 0x80;
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
     SetSemiTrans(poly, semiTrans);
     object->primitive = poly;
     object->orderingDepth = depth;
@@ -2373,7 +2373,7 @@ void func_8005DAD4(void) {
     s16 x;
     u8 index;
     MenuObj *object;
-    u8 *prim;
+    POLY_FT4 *prim;
     u16 value;
     u16 w;
     u16 h;
@@ -2409,24 +2409,23 @@ void func_8005DAD4(void) {
         object->targetX = value;
         SetPolyFT4(prim);
         SetShadeTex(prim, 0);
-        prim[4] = 0x80;
-        prim[5] = 0x80;
-        prim[6] = 0x80;
+        prim->r0 = 0x80;
+        prim->g0 = 0x80;
+        prim->b0 = 0x80;
         SetSemiTrans(prim, 1);
         w = (u16)object->width;
         h = (u16)object->height;
-        *(s16 *)(prim + 0xE) = GetClut(D_8009AEDC[0], D_8009AEDE[0]);
+        prim->clut = GetClut(D_8009AEDC[0], D_8009AEDE[0]);
         primOffset += 0x28;
-        *(s16 *)(prim + 0x16) =
-            GetTPage(D_8009AEE4[0], 3, D_8009AED8[0], D_8009AEDA[0]);
-        prim[0xC] = D_8009AEE0[0];
-        prim[0xD] = D_8009AEE2[0];
-        prim[0x14] = D_8009AEA2[62] + w;
-        prim[0x15] = D_8009AEAE[52];
-        prim[0x1C] = D_8009AEA6[58];
-        prim[0x1D] = D_8009AEB2[48] + h;
-        prim[0x24] = D_8009AEAA[54] + w;
-        prim[0x25] = D_8009AEB6[44] + h;
+        prim->tpage = GetTPage(D_8009AEE4[0], 3, D_8009AED8[0], D_8009AEDA[0]);
+        prim->u0 = D_8009AEE0[0];
+        prim->v0 = D_8009AEE2[0];
+        prim->u1 = D_8009AEA2[62] + w;
+        prim->v1 = D_8009AEAE[52];
+        prim->u2 = D_8009AEA6[58];
+        prim->v2 = D_8009AEB2[48] + h;
+        prim->u3 = D_8009AEAA[54] + w;
+        prim->v3 = D_8009AEB6[44] + h;
         i++;
         object->primitive = prim;
     } while (i < 10);
@@ -2466,18 +2465,14 @@ s32 func_8005DCF0(void) {
         if (done == 0) {
             poly = GraphicsAllocPolyFT4(0);
             *poly = *(POLY_FT4 *)*(u8 **)(object + 0x20);
-            *(u16 *)((u8 *)poly + 8) = *(u16 *)(object + 6);
-            *(u16 *)((u8 *)poly + 0xA) = *(u16 *)(object + 8);
-            *(u16 *)((u8 *)poly + 0x10) =
-                *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
-            *(u16 *)((u8 *)poly + 0x12) = *(u16 *)(object + 8);
-            *(u16 *)((u8 *)poly + 0x18) = *(u16 *)(object + 6);
-            *(u16 *)((u8 *)poly + 0x1A) =
-                *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
-            *(u16 *)((u8 *)poly + 0x20) =
-                *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
-            *(u16 *)((u8 *)poly + 0x22) =
-                *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
+            poly->x0 = *(u16 *)(object + 6);
+            poly->y0 = *(u16 *)(object + 8);
+            poly->x1 = *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
+            poly->y1 = *(u16 *)(object + 8);
+            poly->x2 = *(u16 *)(object + 6);
+            poly->y2 = *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
+            poly->x3 = *(u16 *)(object + 6) + *(u16 *)(object + 0x16);
+            poly->y3 = *(u16 *)(object + 8) + *(u16 *)(object + 0x18);
             AddPrim(gOrderingTable[0] + *(s16 *)(object + 0x1A) * 4, poly);
         }
         i--;
