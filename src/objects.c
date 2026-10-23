@@ -966,7 +966,7 @@ void func_8002267C(void) {
 }
 
 extern Car *gCarListw15[] asm("gCarList.NON_MATCHING");
-extern u8 *D_800A3960w15[] asm("D_800A3960.NON_MATCHING");
+extern Car *D_800A3960w15[] asm("D_800A3960.NON_MATCHING");
 extern Car *gPlayerCar[];
 
 void ReplayStepForward(void) {
@@ -1019,7 +1019,7 @@ void ReplayStepForward(void) {
                 if ((bits & 3) == 1) {
                     D_800A3960w15[0] = gPlayerCar[0];
                 } else if ((bits & 3) == 2) {
-                    D_800A3960w15[0] = (u8 *)gPlayerCar[0]->next;
+                    D_800A3960w15[0] = gPlayerCar[0]->next;
                 } else {
                     D_800A3960w15[0] = 0;
                 }
@@ -1105,7 +1105,7 @@ void ReplayStepBack(void) {
                 if ((bits & 3) == 1) {
                     D_800A3960w15[0] = gPlayerCar[0];
                 } else if ((bits & 3) == 2) {
-                    D_800A3960w15[0] = (u8 *)gPlayerCar[0]->next;
+                    D_800A3960w15[0] = gPlayerCar[0]->next;
                 } else {
                     D_800A3960w15[0] = 0;
                 }
@@ -7343,7 +7343,7 @@ u8 *CarAllocateObjectRecord(void) {
 }
 
 extern u8 D_800AE88C[];
-void ObjectSetModelDataVariant(u8 *object, s32 index) {
+void ObjectSetModelDataVariant(Car *object, s32 index) {
     u8 *data;
     if (index < 0) {
         index = -index;
@@ -7351,10 +7351,10 @@ void ObjectSetModelDataVariant(u8 *object, s32 index) {
     } else {
         data = D_800AE88C;
     }
-    *(u8 **)(object + 0x370) = data;
-    *(u8 **)(object + 0x36C) = data;
-    object[0x374] = 0;
-    object[0x200] = index;
+    object->shape = data;
+    object->unk36C = data;
+    object->unk374 = 0;
+    object->mode = index;
 }
 
 extern s32 D_800A2E7Cgp asm("D_800A2E7C.NON_MATCHING");
@@ -8036,7 +8036,7 @@ extern u8 D_800A2EDAFrame;
 extern s32 D_800A2F04Frame[1];
 extern s32 D_800A2F08Frame;
 extern s32 D_800A2F10Frame;
-extern u8 *D_800A3674Frame;
+extern Car *D_800A3674Frame;
 extern s32 D_800A359C[];
 extern s32 D_800A2D50[];
 extern s32 D_800B9D58[];
@@ -8161,7 +8161,7 @@ void SceneDrawView(Car *arg0) {
     EffectUpdateAndDrawParticles();
 }
 
-void func_80031264(u8 *object);
+void func_80031264(Car *object);
 
 /* Pulls a car whose corners left the track 250 units toward the centre of
  * its section (dx, dz is the car-to-section vector, dist its length). If a
@@ -9209,7 +9209,7 @@ asm(".globl D_800A2E8CFrame\nD_800A2E8CFrame = D_800A2E8C\n"
     ".globl gOrderingTableFrame8Read\ngOrderingTableFrame8Read = gOrderingTable\n");
 extern s32 D_800A2E98Frame;
 extern u8 *D_800A2E9CFrame;
-extern u8 *D_800A2EA0Frame;
+extern Car *D_800A2EA0Frame;
 extern s32 D_800A2EBCFrame;
 extern s32 D_800A2EC0Frame;
 extern s32 D_800A2EC4Frame;
@@ -9699,7 +9699,7 @@ extern s32 D_800A2F2C;
 extern s32 D_800A2F2CAbsolute[];
 extern s32 D_800A384CAbsolute[];
 extern s32 D_800AE848[];
-u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
+u16 func_80030F24(Car *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     s32 point[3];
     s32 outX;
     s32 outZ;
@@ -9709,8 +9709,8 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     s32 value;
     s16 result16;
 
-    offset =
-        (*(s16 *)(object + 0x116) + *(s16 *)(object + 0x118) + 0x1000) & 0xFFF;
+    offset = (*(s16 *)&object->fineHeading + *(s16 *)&object->unk118 + 0x1000) &
+             0xFFF;
     tableA = (s16 *)D_800A384CAbsolute[0];
     tableB = (s16 *)D_800A3854Absolute[0];
     pointArray[0] +=
@@ -9718,45 +9718,45 @@ u16 func_80030F24(u8 *object, s32 *pointArray, s32 arg2, s32 arg3, s32 arg4) {
     pointArray[1] +=
         ((tableB[offset] * arg2 + tableA[offset] * arg3) >> 16) * 4;
     pointArray[2] = 0;
-    if (*(s16 *)(object + 0x1EC) == 0) {
+    if (*(s16 *)&object->type == 0) {
         if (D_800A2F2C > 0) {
             D_800A2F2C = D_800A2F2C - 1;
         }
     }
-    *(s16 *)(object + 0x1E0) = (s16)TrackFindSection(
+    *(s16 *)&object->segment = (s16)TrackFindSection(
         pointArray[0], pointArray[1], D_800A2F2CAbsolute, &outX, &outZ);
-    *(Vec3 *)(object + 0xDC) = *(Vec3 *)D_800B6094;
-    result16 = *(s16 *)(object + 0x1E0);
+    *(Vec3 *)((u8 *)object + 0xDC) = *(Vec3 *)D_800B6094;
+    result16 = *(s16 *)&object->segment;
     if (result16 == -1) {
-        *(u8 *)(object + 0xF5) = 1;
+        *(u8 *)&object->collisionPending = 1;
         return 0;
     }
-    *(s32 *)(object + 0x1F8) = result16;
-    if ((*(s16 *)(object + 0x1EC) == 0) && (outZ == 2)) {
+    *(s32 *)&object->regionIndex = result16;
+    if ((*(s16 *)&object->type == 0) && (outZ == 2)) {
         point[0] = pointArray[0] / 4 - D_800AE844[0];
         point[1] = pointArray[1] / 4 - D_800AE848[0];
-        func_80030D80((Car *)object, point);
+        func_80030D80(object, point);
         pointArray[2] = (point[2] + D_800AE84C[0]) * 4;
         if (D_800A3A80 == 0 || (*(u8 *)((u8 *)D_800A3A80 + 0x13) & 8) == 0) {
             value = 5;
         } else {
             value = 2;
         }
-        *(s16 *)(object + 0x360) = value;
+        *(s16 *)&object->state = value;
         if (D_800A3A80 == 0) {
             pointArray[2] = outX * 4;
         }
     } else {
         pointArray[2] = outX * 4;
-        *(s16 *)(object + 0x360) = outZ;
+        *(s16 *)&object->state = outZ;
     }
-    if (*(s16 *)(object + 0x1E0) < *(s16 *)(object + 0x1E2)) {
-        *(s16 *)(object + 0x1E2) = *(s16 *)(object + 0x1E0);
+    if (*(s16 *)&object->segment < *(s16 *)&object->unk1E2) {
+        *(s16 *)&object->unk1E2 = *(s16 *)&object->segment;
     }
-    if (*(s16 *)(object + 0x1E4) < *(s16 *)(object + 0x1E0)) {
-        *(s16 *)(object + 0x1E4) = *(s16 *)(object + 0x1E0);
+    if (*(s16 *)&object->unk1E4 < *(s16 *)&object->segment) {
+        *(s16 *)&object->unk1E4 = *(s16 *)&object->segment;
     }
-    return *(u16 *)(object + 0x360);
+    return *(u16 *)&object->state;
 }
 
 void VectorNormalize3D(s32 x, s32 y, s32 z, s32 *out) {
@@ -9771,8 +9771,8 @@ void VectorNormalize3D(s32 x, s32 y, s32 z, s32 *out) {
     out[2] = MathFixedDivide(z, length);
 }
 
-void func_800319D4(u8 *, s32);
-u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
+void func_800319D4(Car *, s32);
+u16 func_80030F24(Car *, s32 *, s32, s32, s32);
 extern s16 TrackFindSectionForwards16(s32, s32,
                                       void *) asm("TrackFindSectionForward");
 typedef struct {
@@ -9783,7 +9783,7 @@ typedef struct {
     s16 unk22;
 } ObjectBounds;
 
-void func_80031264(u8 *object) {
+void func_80031264(Car *object) {
     s32 corners[5][4];
     s32 normals[3][4];
     ObjectBounds *state;
@@ -9801,78 +9801,79 @@ void func_80031264(u8 *object) {
     s32 crossY;
     s32 crossZ;
 
-    state = *(ObjectBounds **)(object + 0x370);
-    if (*(s16 *)(object + 0x1EC) != 0) {
+    state = (ObjectBounds *)object->shape;
+    if (object->type != 0) {
         func_800319D4(object, 0);
         return;
     }
     corners[0][0] = corners[1][0] = corners[2][0] = corners[3][0] =
-        corners[4][0] = *(s32 *)(object + 0x0);
+        corners[4][0] = object->pos.x;
     corners[0][1] = corners[1][1] = corners[2][1] = corners[3][1] =
-        corners[4][1] = *(s32 *)(object + 0x4);
+        corners[4][1] = object->pos.y;
     corners[0][2] = corners[1][2] = corners[2][2] = corners[3][2] =
-        corners[4][2] = *(s32 *)(object + 0x8);
-    *(Vec3 *)(object + 0x3C) = *(Vec3 *)(object + 0x18);
-    *(Vec3 *)(object + 0x48) = *(Vec3 *)(object + 0x24);
-    *(Vec3 *)(object + 0x54) = *(Vec3 *)(object + 0x30);
+        corners[4][2] = object->pos.z;
+    *(Vec3 *)&object->rot[0].x = *(Vec3 *)&object->basis[0].x;
+    *(Vec3 *)&object->rot[1].x = *(Vec3 *)&object->basis[1].x;
+    *(Vec3 *)&object->rot[2].x = *(Vec3 *)&object->basis[2].x;
     func_8001EEC4((s32 *)object);
     func_8001F198();
-    *(s16 *)(object + 0x1E2) = 0x7D00;
-    *(s16 *)(object + 0x1E4) = -1;
-    *(u8 *)(object + 0xF5) = 0;
-    D_800A2F2C = *(s32 *)(object + 0x1F8);
-    *(s16 *)(object + 0x362) =
+    object->unk1E2 = 0x7D00;
+    object->unk1E4 = -1;
+    object->collisionPending = 0;
+    D_800A2F2C = object->regionIndex;
+    object->frontRightContact =
         func_80030F24(object, corners[3], state->unk1E, state->unk22, 0);
-    *(s16 *)(object + 0x364) =
+    object->frontLeftContact =
         func_80030F24(object, corners[0], state->unk1E, state->unk20, 0);
-    *(s16 *)(object + 0x366) =
+    object->rearRightContact =
         func_80030F24(object, corners[2], state->unk1C, state->unk22, 0);
-    *(s16 *)(object + 0x368) =
+    object->rearLeftContact =
         func_80030F24(object, corners[1], state->unk1C, state->unk20, 0);
-    *(s16 *)(object + 0x1E0) = TrackFindSectionForwards16(
-        *(s32 *)(object + 0x0), *(s32 *)(object + 0x4), object + 0x1F8);
-    if (*(u16 *)(object + 0x362) == 0) {
-        corners[3][2] = *(s32 *)(object + 0x8);
+    object->segment = TrackFindSectionForwards16(object->pos.x, object->pos.y,
+                                                 (u8 *)object + 0x1F8);
+    if (object->frontRightContact == 0) {
+        corners[3][2] = object->pos.z;
     }
-    if (*(u16 *)(object + 0x364) == 0) {
-        corners[0][2] = *(s32 *)(object + 0x8);
+    if (object->frontLeftContact == 0) {
+        corners[0][2] = object->pos.z;
     }
-    if (*(u16 *)(object + 0x366) == 0) {
-        corners[2][2] = *(s32 *)(object + 0x8);
+    if (object->rearRightContact == 0) {
+        corners[2][2] = object->pos.z;
     }
-    if (*(u16 *)(object + 0x368) == 0) {
-        corners[1][2] = *(s32 *)(object + 0x8);
+    if (object->rearLeftContact == 0) {
+        corners[1][2] = object->pos.z;
     }
-    *(s32 *)(object + 0x318) = corners[3][2];
-    *(s32 *)(object + 0x340) = corners[0][2];
-    *(s32 *)(object + 0x2C8) = corners[2][2];
-    *(s32 *)(object + 0x2F0) = corners[1][2];
+    *(s32 *)((u8 *)object + 0x318) = corners[3][2];
+    *(s32 *)((u8 *)object + 0x340) = corners[0][2];
+    *(s32 *)((u8 *)object + 0x2C8) = corners[2][2];
+    *(s32 *)((u8 *)object + 0x2F0) = corners[1][2];
     sum = corners[0][2] + corners[1][2] + corners[2][2] + corners[3][2];
     if (sum < 0) {
         sum += 3;
     }
     sum4 = sum >> 2;
-    if ((*(s16 *)(object + 0x1BC) == 0) || (D_800A397C[0] == 2)) {
-        corners[0][2] += *(s16 *)(object + 0x324);
-        corners[1][2] += *(s16 *)(object + 0x2D4);
-        corners[2][2] += *(s16 *)(object + 0x2AC);
-        corners[3][2] += *(s16 *)(object + 0x2FC);
-        result = *(s16 *)(object + 0x324) + *(s16 *)(object + 0x2D4) +
-                 *(s16 *)(object + 0x2AC) + *(s16 *)(object + 0x2FC);
+    if ((object->unk1BC == 0) || (D_800A397C[0] == 2)) {
+        corners[0][2] += object->wheel[3].unk0;
+        corners[1][2] += object->wheel[1].unk0;
+        corners[2][2] += object->wheel[0].unk0;
+        corners[3][2] += object->wheel[2].unk0;
+        result = object->wheel[3].unk0 + object->wheel[1].unk0 +
+                 object->wheel[0].unk0 + object->wheel[2].unk0;
         if (result < 0) {
             result += 3;
         }
         result >>= 2;
-        *(s16 *)(object + 0xFE) = result;
+        object->unkFE = result;
     } else {
         for (i = 0; i < 4; i++) {
-            *(u16 *)(object + i * 0x28 + 0x2AC) = *(u16 *)(object + 0x39A);
+            *(u16 *)((u8 *)object + i * 0x28 + 0x2AC) =
+                *(u16 *)((u8 *)object + 0x39A);
         }
-        *(s16 *)(object + 0xFE) = *(u16 *)(object + 0x39A);
+        object->unkFE = *(u16 *)((u8 *)object + 0x39A);
     }
-    *(s32 *)(object + 0x8) = *(s16 *)(object + 0xFE) + sum4;
-    *(s16 *)(object + 0x1E8) = *(u16 *)(object + 0x1E4);
-    *(s16 *)(object + 0x1E6) = *(u16 *)(object + 0x1E2);
+    object->pos.z = object->unkFE + sum4;
+    *(s16 *)((u8 *)object + 0x1E8) = (u16)object->unk1E4;
+    *(s16 *)((u8 *)object + 0x1E6) = (u16)object->unk1E2;
     edge2Y = corners[2][1] - corners[1][1];
     sum4 = corners[2][2] - corners[1][2];
     edge0Y = corners[0][1] - corners[1][1];
@@ -9909,11 +9910,11 @@ void func_80031264(u8 *object) {
     normals[1][0] = MathFixedDivide(edge2X, length);
     normals[1][1] = MathFixedDivide(edge2Y, length);
     normals[1][2] = MathFixedDivide(sum4, length);
-    *(Vec3 *)(object + 0x3C) = *(Vec3 *)normals[0];
-    *(Vec3 *)(object + 0x48) = *(Vec3 *)normals[1];
-    *(Vec3 *)(object + 0x54) = *(Vec3 *)normals[2];
-    func_8001F5BC(0, (0x3FF - *(s16 *)(object + 0x38A)) & 0x3FF,
-                  *(u16 *)(object + 0x388) & 0x3FF);
+    *(Vec3 *)&object->rot[0].x = *(Vec3 *)normals[0];
+    *(Vec3 *)&object->rot[1].x = *(Vec3 *)normals[1];
+    *(Vec3 *)&object->rot[2].x = *(Vec3 *)normals[2];
+    func_8001F5BC(0, (0x3FF - object->unk38A) & 0x3FF,
+                  (u16)object->unk388 & 0x3FF);
     MatrixLoadObjectBasis((s32 *)object);
     MatrixCombineState();
     MatrixStoreToObject((s32 *)object);
@@ -9959,7 +9960,7 @@ void func_80031874(u8 *quad, s32 *normal) {
 /* VectorNormal reads two arguments here; a third one changes the load order
  * before its call. The three-axis copies at the end are Vec3 assignments. */
 extern void VectorNormal2(s32 *, s32 *) asm("VectorNormal");
-void func_800319D4(u8 *object, s32 arg1) {
+void func_800319D4(Car *object, s32 arg1) {
     s32 corners[5][4];
     s32 vecA[3];
     s32 cross[3];
@@ -9972,44 +9973,44 @@ void func_800319D4(u8 *object, s32 arg1) {
     s32 value;
     u16 result;
 
-    value = *(s32 *)(object + 0x0);
+    value = *(s32 *)&object->pos.x;
     corners[4][0] = value;
     corners[3][0] = value;
     corners[2][0] = value;
     corners[1][0] = value;
     corners[0][0] = value;
-    value = *(s32 *)(object + 0x4);
+    value = *(s32 *)&object->pos.y;
     corners[4][1] = value;
     corners[3][1] = value;
     corners[2][1] = value;
     corners[1][1] = value;
     corners[0][1] = value;
-    value = *(s32 *)(object + 0x8);
+    value = *(s32 *)&object->pos.z;
     corners[4][2] = value;
     corners[3][2] = value;
     corners[2][2] = value;
     corners[1][2] = value;
     corners[0][2] = value;
-    *(Vec3 *)(object + 0x3C) = *(Vec3 *)(object + 0x18);
-    *(Vec3 *)(object + 0x48) = *(Vec3 *)(object + 0x24);
-    *(Vec3 *)(object + 0x54) = *(Vec3 *)(object + 0x30);
+    *(Vec3 *)&object->rot[0].x = *(Vec3 *)&object->basis[0].x;
+    *(Vec3 *)&object->rot[1].x = *(Vec3 *)&object->basis[1].x;
+    *(Vec3 *)&object->rot[2].x = *(Vec3 *)&object->basis[2].x;
     func_8001EEC4((s32 *)object);
     func_8001F198();
-    *(u8 *)(object + 0xF5) = 0;
-    *(s16 *)(object + 0x116) = *(s16 *)(object + 0x114) * 4;
+    *(u8 *)&object->collisionPending = 0;
+    *(s16 *)&object->fineHeading = *(s16 *)&object->heading * 4;
     if (arg1 == 0) {
-        *(s16 *)(object + 0x1E2) = 0x7D00;
-        *(s16 *)(object + 0x1E4) = -1;
-        D_800A2F2C = *(s32 *)(object + 0x1F8);
+        *(s16 *)&object->unk1E2 = 0x7D00;
+        *(s16 *)&object->unk1E4 = -1;
+        D_800A2F2C = *(s32 *)&object->regionIndex;
         result = func_80030F24(object, corners[3], 0, 0, 0);
-        *(s16 *)(object + 0x362) = result;
-        *(s16 *)(object + 0x364) = result;
-        *(s16 *)(object + 0x366) = *(u16 *)(object + 0x362);
-        *(s16 *)(object + 0x368) = *(u16 *)(object + 0x362);
+        *(s16 *)&object->frontRightContact = result;
+        *(s16 *)&object->frontLeftContact = result;
+        *(s16 *)&object->rearRightContact = *(u16 *)&object->frontRightContact;
+        *(s16 *)&object->rearLeftContact = *(u16 *)&object->frontRightContact;
     }
-    vecA[0] = *(s32 *)(object + 0xDC);
-    vecA[1] = *(s32 *)(object + 0xE0);
-    index = *(s16 *)(object + 0x114) * 4;
+    vecA[0] = *(s32 *)((u8 *)object + 0xDC);
+    vecA[1] = *(s32 *)((u8 *)object + 0xE0);
+    index = *(s16 *)&object->heading * 4;
     temp1 = (*(s32 *)(index + (u32)D_800A3A2CAbsolute[0]) << 8) >> 16;
     temp2 = (*(s32 *)(index + (u32)D_800A3A34Absolute[0]) << 8) >> 16;
     corners[0][0] = temp1;
@@ -10019,18 +10020,20 @@ void func_800319D4(u8 *object, s32 arg1) {
     corners[0][2] = -((vecA[0] * temp1 + vecA[1] * temp2) >> 16);
     corners[1][2] = -((vecA[0] * -temp2 + vecA[1] * temp1) >> 16);
     if (arg1 == 0) {
-        corners[0][2] += *(s16 *)(object + 0x324) - *(s16 *)(object + 0x2D4);
-        corners[1][2] += *(s16 *)(object + 0x2AC) - *(s16 *)(object + 0x2D4);
-        sum = *(s16 *)(object + 0x324) + *(s16 *)(object + 0x2D4) +
-              *(s16 *)(object + 0x2AC) + *(s16 *)(object + 0x2FC);
+        corners[0][2] +=
+            *(s16 *)&object->wheel[3].unk0 - *(s16 *)&object->wheel[1].unk0;
+        corners[1][2] +=
+            *(s16 *)&object->wheel[0].unk0 - *(s16 *)&object->wheel[1].unk0;
+        sum = *(s16 *)&object->wheel[3].unk0 + *(s16 *)&object->wheel[1].unk0 +
+              *(s16 *)&object->wheel[0].unk0 + *(s16 *)&object->wheel[2].unk0;
         sum4 = sum / 4;
-        *(s16 *)(object + 0x1BE) = sum4;
-        *(s32 *)(object + 0x8) = corners[3][2] + (s16)sum4;
-        *(s16 *)(object + 0x1E8) = *(u16 *)(object + 0x1E4);
-        *(s16 *)(object + 0x1E6) = *(u16 *)(object + 0x1E2);
+        *(s16 *)&object->unk1BE = sum4;
+        *(s32 *)&object->pos.z = corners[3][2] + (s16)sum4;
+        *(s16 *)((u8 *)object + 0x1E8) = *(u16 *)&object->unk1E4;
+        *(s16 *)((u8 *)object + 0x1E6) = *(u16 *)&object->unk1E2;
     } else {
-        *(s16 *)(object + 0x1E4) = -1;
-        *(s16 *)(object + 0x1E2) = -1;
+        *(s16 *)&object->unk1E4 = -1;
+        *(s16 *)&object->unk1E2 = -1;
     }
     OuterProduct0(corners[0], corners[1], cross);
     cross[0] >>= 6;
@@ -10048,9 +10051,9 @@ void func_800319D4(u8 *object, s32 arg1) {
     cross[0] = cross[0] * 16;
     cross[1] = cross[1] * 16;
     cross[2] = cross[2] * 16;
-    *(Vec3 *)(object + 0x3C) = *(Vec3 *)vecA;
-    *(Vec3 *)(object + 0x48) = *(Vec3 *)cross;
-    *(Vec3 *)(object + 0x54) = *(Vec3 *)normalOut;
+    *(Vec3 *)&object->rot[0].x = *(Vec3 *)vecA;
+    *(Vec3 *)&object->rot[1].x = *(Vec3 *)cross;
+    *(Vec3 *)&object->rot[2].x = *(Vec3 *)normalOut;
 }
 extern s32 D_800A3574Lui asm("D_800A3574Absolute");
 
@@ -10985,7 +10988,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
         do {
             if (counter & 1) {
                 if (listA == endA) {
-                    listB = *(u8 **)((u8 *)listB + 4);
+                    listB = *(u8 **)&listB->pos.y;
                     group = listB;
                 } else {
                     listA = *(u8 **)listA;
@@ -10993,7 +10996,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 }
             } else {
                 if (listB != endB) {
-                    listB = *(u8 **)((u8 *)listB + 4);
+                    listB = *(u8 **)&listB->pos.y;
                     group = listB;
                 } else {
                     listA = *(u8 **)listA;
@@ -11006,17 +11009,16 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
             } else if (lod < count) {
                 for (i = 0; i < 5; i++) {
                     if (mode) {
-                        gte_ldv3(
-                            ((u8 **)(*(u8 **)(u8 *)group + 0x78))[i],
-                            ((u8 **)(*(u8 **)(*(u8 **)((u8 *)group + 4) + 4) +
-                                     0x78))[i],
-                            ((u8 **)(*(u8 **)(*(u8 **)((u8 *)group + 4) + 4) +
-                                     0x78))[i + 1]);
+                        gte_ldv3(((u8 **)(*(u8 **)(u8 *)group + 0x78))[i],
+                                 ((u8 **)(*(u8 **)(*(u8 **)&group->pos.y + 4) +
+                                          0x78))[i],
+                                 ((u8 **)(*(u8 **)(*(u8 **)&group->pos.y + 4) +
+                                          0x78))[i + 1]);
                     } else {
                         gte_ldv3(
                             ((u8 **)&group->orient[2].x)[i],
-                            ((u8 **)(*(u8 **)((u8 *)group + 4) + 0x78))[i],
-                            ((u8 **)(*(u8 **)((u8 *)group + 4) + 0x78))[i + 1]);
+                            ((u8 **)(*(u8 **)&group->pos.y + 0x78))[i],
+                            ((u8 **)(*(u8 **)&group->pos.y + 0x78))[i + 1]);
                     }
                     poly = prim;
                     gte_rtpt();
@@ -11060,7 +11062,7 @@ void func_80033000(Car *endB, Car *endA, Car *firstA) {
                 *(u16 *)((u8 *)group + 0xE) = 1;
             } else {
                 n = *(u8 *)((u8 *)group + 0x13);
-                obj = *(u8 **)((u8 *)group + 0x20);
+                obj = *(u8 **)&group->basis[0].z;
                 count = count + n;
                 while (n-- > 0) {
                     gte_ldv3(*(u8 **)(obj + 0x18), *(u8 **)(obj + 0x1C),

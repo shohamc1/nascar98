@@ -27,15 +27,15 @@ extern u8 D_800A2EDA[];
 extern u8 *D_800A2EA0[];
 extern s16 D_800A2D68;
 extern void func_8001EEC4(u8 *);
-extern void func_80043F7C(u8 *, u8 *);
-extern s32 func_80016ACC(u8 *, s16 *);
-extern void func_80015EAC(u8 *);
+extern void func_80043F7C(Car *, u8 *);
+extern s32 func_80016ACC(Car *, s16 *);
+extern void func_80015EAC(Car *);
 extern void func_80025730(void);
 extern void func_80032760();
 extern void func_800328AC();
 extern void func_80032544();
 
-u8 CarDrawModel(u8 *car, s32 drawMode) {
+u8 CarDrawModel(Car *car, s32 drawMode) {
     SVECTOR angles;
     VECTOR position;
     VECTOR partPosition;
@@ -55,12 +55,13 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
     u8 *part;
 
     spinAngle = 0;
-    primitiveCount = *(s16 *)(*(u8 **)(car + 0x36C) + 0x2A);
-    dx = *(s32 *)(car + 0) - D_800A38AC[0];
-    dy = *(s32 *)(car + 4) - D_800A38AC[1];
-    dz = *(s32 *)(car + 8) - D_800A38AC[2];
-    model = *(s32 *)(*(u8 **)(car + 0x36C) + 0x38);
-    basePrimitive = *(s32 *)(car + gOrderingTableBankAbsolute[0] * 4 + 0x420);
+    primitiveCount = *(s16 *)(car->unk36C + 0x2A);
+    dx = car->pos.x - D_800A38AC[0];
+    dy = car->pos.y - D_800A38AC[1];
+    dz = car->pos.z - D_800A38AC[2];
+    model = *(s32 *)(car->unk36C + 0x38);
+    basePrimitive =
+        *(s32 *)((u8 *)car + gOrderingTableBankAbsolute[0] * 4 + 0x420);
     if ((dx >= 0 ? dx < 30001 : -dx < 30001) == 0 ||
         (dy >= 0 ? dy < 30001 : -dy < 30001) == 0 ||
         (dz >= 0 ? dz < 30001 : -dz < 30001) == 0) {
@@ -87,7 +88,7 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
     SetRotMatrix(&D_800A3AF8);
     if (car == D_800A3674[0]) {
         if (D_800A2ED8[0] == 0) {
-            if (*(s8 *)(car + 0x20C) == -2 || *(s8 *)(car + 0x20C) == 0) {
+            if (car->cameraMode == -2 || car->cameraMode == 0) {
                 PopMatrix();
                 return 0;
             }
@@ -96,33 +97,33 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
             return 0;
         }
     }
-    if (D_800A2ED4[0] == 0 && (*(s8 *)(car + 0x3B9) == 0 || car[0xF9] != 0 ||
-                               *(s16 *)(car + 0x92) > 400)) {
-        if (*(s32 *)(car + 0x90) != 0) {
-            wheelAngle = (*(s32 *)(car + 0x90) >> 16) * 5;
+    if (D_800A2ED4[0] == 0 && ((s8)car->unk3B9 == 0 || car->sliding != 0 ||
+                               *(s16 *)((u8 *)car + 0x92) > 400)) {
+        if (car->speed != 0) {
+            wheelAngle = (car->speed >> 16) * 5;
             if (wheelAngle > 1536)
                 wheelAngle = 1536;
-            *(u16 *)(car + 0x1BA) += wheelAngle;
-        } else if (!(*(s32 *)(car + 0x238) & 0x80)) {
-            *(u16 *)(car + 0x1BA) -= car[0x410] * 5;
+            car->unk1BA += wheelAngle;
+        } else if (!(car->flags & 0x80)) {
+            car->unk1BA -= car->reverseSpeed * 5;
         }
-        if (car[0xF9] != 0) {
+        if (car->sliding != 0) {
             D_800A2D68 = (D_800A2D68 + 1024) % 4096;
             spinAngle = D_800A2D68;
         }
     }
-    wheelAngle = (s16)(*(s16 *)(car + 0x1BA) % 4096);
-    spinAngle = (spinAngle + *(s16 *)(car + 0x1BA)) % 4096;
+    wheelAngle = (s16)(car->unk1BA % 4096);
+    spinAngle = (spinAngle + car->unk1BA) % 4096;
     {
         s32 turnValue;
         s32 turnScale;
         s32 turnSum;
 
         if (D_800A2EB8[0] == 0) {
-            turnValue = *(s16 *)(car + 0x20E);
+            turnValue = car->steering;
             turnScale = turnValue * 8;
         } else {
-            turnValue = *(s16 *)(car + 0x20E);
+            turnValue = car->steering;
             turnScale = turnValue * 4;
         }
         turnSum = turnScale + turnValue;
@@ -131,11 +132,10 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
         /* Keep the car-state load after this angle update. */
         asm volatile("" : : : "memory");
     }
-    if (*(s8 *)(car + 0x374) < 2 ||
-        (car == D_800A2EA0[0] && *(s16 *)(car + 0x1EC) == 0 &&
-         D_800A2ED8[0] == 0 && *(s8 *)(car + 0x20C) == 0)) {
-        for (i = 0; i < *(s16 *)(*(u8 **)(car + 0x36C) + 0x2C); i++) {
-            part = *(u8 **)(*(u8 **)(car + 0x36C) + 0x40) + i * 24;
+    if ((s8)car->unk374 < 2 || (car == D_800A2EA0[0] && car->type == 0 &&
+                                D_800A2ED8[0] == 0 && car->cameraMode == 0)) {
+        for (i = 0; i < *(s16 *)(car->unk36C + 0x2C); i++) {
+            part = *(u8 **)(car->unk36C + 0x40) + i * 24;
             if (*(s16 *)(part + 0x14) < 0) {
                 func_80043F7C(car, part);
             } else if (*(s16 *)(part + 0x14) == 10) {
@@ -143,7 +143,8 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
                     primitiveCount -= *(s16 *)(part + 0x12);
                 }
             } else if (*(s16 *)(part + 0x14) < 9 &&
-                       *(s8 *)(car + *(s16 *)(part + 0x14) + 0x3A5) == 0) {
+                       *(s8 *)((u8 *)car + *(s16 *)(part + 0x14) + 0x3A5) ==
+                           0) {
                 primitiveCount -= *(s16 *)(part + 0x12);
             } else {
                 PushMatrix();
@@ -178,11 +179,12 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
                     RotMatrix(&angles, &D_800A3B18);
                     break;
                 case 4:
-                    if (*(s16 *)(car + 0xFE) >= 6 ||
-                        *(void (**)(void))(car + 0x354) == func_80025730) {
+                    if (car->unkFE >= 6 ||
+                        *(void (**)(void))((u8 *)car + 0x354) ==
+                            func_80025730) {
                         func_80015EAC(car);
                     }
-                    part = *(u8 **)(*(u8 **)(car + 0x36C) + 0x40) + i * 24;
+                    part = *(u8 **)(car->unk36C + 0x40) + i * 24;
                     angles.vx = *(s32 *)(part + 4);
                     angles.vy = *(s32 *)(part + 8);
                     angles.vz = *(s32 *)(part + 12);
@@ -225,10 +227,10 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
         }
     }
     if (D_800A2EB8[0] == 0) {
-        wheelAngle = ((*(u16 *)(car + 0x1BA) >> 9) & 15) - 8;
+        wheelAngle = (((u16)car->unk1BA >> 9) & 15) - 8;
         if (wheelAngle > 0)
             wheelAngle = -wheelAngle;
-        speed = (*(s32 *)(car + 0x228) * 3 >> 16) + 10;
+        speed = (car->unk228 * 3 >> 16) + 10;
         if (speed > 70) {
             speed = 70;
             value = (wheelAngle + 4) * 2;
@@ -237,13 +239,13 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
         }
         speed += 4096;
         wheelAngle = (value + speed) % 4096;
-        steeringValue = *(s16 *)(car + 0x20E) * 5;
+        steeringValue = car->steering * 5;
     } else {
-        wheelAngle = ((*(u16 *)(car + 0x1BA) >> 9) & 15) - 8;
+        wheelAngle = (((u16)car->unk1BA >> 9) & 15) - 8;
         if (wheelAngle > 0)
             wheelAngle = -wheelAngle;
         wheelAngle = (wheelAngle + 4100) % 4096;
-        steeringValue = *(s16 *)(car + 0x20E) * 3;
+        steeringValue = car->steering * 3;
     }
     steeringAngle = steeringValue >> 2;
     if (steeringValue < 0)
@@ -252,7 +254,7 @@ u8 CarDrawModel(u8 *car, s32 drawMode) {
     angles.vy = wheelAngle;
     angles.vz = 0;
     RotMatrix(&angles, &D_800A3B18);
-    if (*(s16 *)(car + 0x1D0) == 0)
+    if (car->unk1D0 == 0)
         steeringAngle = 0;
     if (steeringAngle > 64)
         steeringAngle = 64;

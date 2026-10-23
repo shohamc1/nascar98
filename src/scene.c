@@ -52,7 +52,7 @@ void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
                       u8 arg6, s32 arg7);
 void func_8001EEC4(s32 *arg0);
 void func_80028FCC(Car *arg0);
-void ObjectSetModelDataVariant(u8 *object, s32 index);
+void ObjectSetModelDataVariant(Car *object, s32 index);
 void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag);
 s32 func_80037204(Car *obj);
 void func_8003A880(s32 car);
@@ -934,14 +934,14 @@ extern u8 D_800A3424;
 extern s8 D_800A3438;
 
 void SceneInitProjectiles(void) {
-    extern u16 func_80030F24(u8 *, s32 *, s32, s32, s32);
+    extern u16 func_80030F24(Car *, s32 *, s32, s32, s32);
     extern void SetPolyFT4(POLY_FT4 *);
     s32 heights[2];
     s32 point[3];
     u8 object[0x500];
     SceneTexture *tim;
     u8 *elem;
-    u8 *objectPtr;
+    Car *objectPtr;
     s32 *pointPtr;
     u8 u;
     u8 v;
@@ -1974,9 +1974,9 @@ void SceneInitHandModel(void) {
 extern s32 gReplayHead[];
 extern s32 gReplayLength[];
 extern s16 D_800A35A4w40;
-extern u8 *D_800A347C;
-extern void *D_800A3728;
-extern u8 CarDrawModel(u8 *, s32);
+extern Car *D_800A347C;
+extern Car *D_800A3728;
+extern u8 CarDrawModel(Car *, s32);
 extern void func_8004875C(void);
 extern Car *gPlayerCaragain[];
 asm(".globl gPlayerCaragain\ngPlayerCaragain = gPlayerCar");
@@ -1993,16 +1993,15 @@ void func_80048568(void) {
                      (gReplayHead[0] + (gReplayLength[0] - gReplayIndex[0])) +
                      1;
         }
-        if (target >= *(s32 *)(D_800A347C + 0xC) &&
-            *(s32 *)(D_800A347C + 0x10) >= target) {
+        if (target >= D_800A347C->unkC && D_800A347C->unk10 >= target) {
             CarDrawModel(D_800A347C, 0);
         }
     } else if (D_800A3728 != 0) {
-        if (D_800A347C[0x401] != 0) {
+        if ((u8)D_800A347C->unk401 != 0) {
             CarDrawModel(D_800A347C, 0);
             if (D_800A35A4w40 <= 0 && func_80037204((u8 *)D_800A3728) != 0) {
                 D_800A3728 = 0;
-                *(s32 *)(D_800A347C + 0x10) = D_800A2EC0nm[0];
+                D_800A347C->unk10 = D_800A2EC0nm[0];
             }
         } else {
             if (func_8003702C((u8 *)D_800A3728, gPlayerCar[0]) < 0) {
@@ -2026,68 +2025,67 @@ extern void CarInitDefaults(Car *);
 void SceneCreateSceneryCar(void) {
     D_800A3728 = 0;
     D_800A347C = HeapAlloc(0x500);
-    *(s16 *)(D_800A347C + 0x1EC) = 2;
+    D_800A347C->type = 2;
     MatrixSetIdentity((s32 *)D_800A347C);
     CarInitDefaults(D_800A347C);
     ObjectSetModelDataVariant(D_800A347C, -4);
-    *(s32 *)(D_800A347C + 0x10) = -1;
-    *(s32 *)(D_800A347C + 0xC) = -1;
+    D_800A347C->unk10 = -1;
+    D_800A347C->unkC = -1;
 }
 
 void func_8004875C(void) {
     extern s32 gTrackSections[];
-    extern void func_80031264(u8 * object);
+    extern void func_80031264(Car * object);
     extern void ObjectAdvanceAlongHeading(Car * object);
     extern s32 MathMultiplyFixed16(s32, s32);
     extern s32 D_800A2EC0Absolute[];
-    u8 *src;
+    Car *src;
     Car *dst;
     u16 val;
     s32 t;
-    u8 *p;
-    u8 *q;
-    u8 *w;
+    Car *p;
+    Car *q;
+    Car *w;
     s32 e;
 
-    val = *(u16 *)((u8 *)gTrackSections[0] +
-                   *(s16 *)(D_800A3728 + 0x1E0) * 0x90 + 0x10);
-    *(u16 *)(D_800A3728 + 0x114) = val;
-    *(u16 *)(D_800A3728 + 0x104) = val;
-    *(u16 *)(D_800A3728 + 0x116) = *(u16 *)(D_800A3728 + 0x114) * 4;
+    val = *(u16 *)((u8 *)gTrackSections[0] + D_800A3728->segment * 0x90 + 0x10);
+    D_800A3728->heading = val;
+    D_800A3728->movementHeading = val;
+    D_800A3728->fineHeading = (u16)D_800A3728->heading * 4;
     func_80031264(D_800A3728);
     ObjectAdvanceAlongHeading(D_800A3728);
     src = D_800A3728;
     dst = D_800A347C;
-    dst->pos.x = *(u32 *)(src + 0);
-    dst->pos.y = *(u32 *)(src + 4);
-    dst->pos.z = *(u32 *)(src + 8);
-    dst->movementHeading = dst->heading = *(u16 *)(src + 0x114);
-    dst->fineHeading = *(u16 *)(src + 0x116);
+    dst->pos.x = (u32)src->pos.x;
+    dst->pos.y = (u32)src->pos.y;
+    dst->pos.z = (u32)src->pos.z;
+    dst->movementHeading = dst->heading = (u16)src->heading;
+    dst->fineHeading = src->fineHeading;
     ObjectAdvanceAlongHeading(dst);
     func_80031264(D_800A347C);
-    t = MathMultiplyFixed16(*(s32 *)(D_800A347C + 0x3C), 0x3200000);
+    t = MathMultiplyFixed16(D_800A347C->rot[0].x, 0x3200000);
     p = D_800A347C;
-    *(s32 *)(p + 0) += t >> 16;
-    t = MathMultiplyFixed16(*(s32 *)(p + 0x40), 0x3200000);
+    p->pos.x += t >> 16;
+    t = MathMultiplyFixed16(p->rot[0].y, 0x3200000);
     p = D_800A347C;
-    *(s32 *)(p + 4) += t >> 16;
-    t = MathMultiplyFixed16(*(s32 *)(p + 0x44), 0x3200000);
+    p->pos.y += t >> 16;
+    t = MathMultiplyFixed16(p->rot[0].z, 0x3200000);
     q = D_800A347C;
-    *(u8 *)(q + 0x401) = 1;
-    t = *(s32 *)(q + 8) + (t >> 16);
+    q->unk401 = 1;
+    t = q->pos.z + (t >> 16);
     w = D_800A347C;
     e = D_800A2EC0Absolute[0];
-    *(s32 *)(q + 8) = t;
-    *(s32 *)(w + 0xC) = e;
-    *(s32 *)(w + 0x10) = 0x7FFFFFFF;
+    q->pos.z = t;
+    w->unkC = e;
+    w->unk10 = 0x7FFFFFFF;
 }
 
-void SceneSetCameraTarget(u8 *object) {
-    u8 *state;
+void SceneSetCameraTarget(Car *object) {
+    Car *state;
     state = D_800A347C;
-    *(s32 *)(object + 0x90) = 0;
+    object->speed = 0;
     D_800A3728 = object;
-    state[0x401] = 0;
+    state->unk401 = 0;
 }
 
 typedef struct CrashBox {

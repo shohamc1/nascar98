@@ -2507,8 +2507,8 @@ s32 MathFixedDivide(s32 numerator, s32 denominator) {
     return (quotient << 16) + numerator;
 }
 
-void func_80015EAC(u8 *car) {
-    extern void func_800319D4(u8 *, s32);
+void func_80015EAC(Car *car) {
+    extern void func_800319D4(Car *, s32);
     extern void func_8001EEC4(u8 *);
     extern void MatrixCombineState(void);
     extern s32 *D_800A38AC;
@@ -2530,12 +2530,12 @@ void func_80015EAC(u8 *car) {
     s32 flag;
     s32 *camera;
 
-    angles.vx = *(s32 *)(car + 0) - D_800A38AC[0];
-    angles.vy = *(s32 *)(car + 4) - D_800A38AC[1];
-    angles.vz = *(s32 *)(car + 8) - D_800A38AC[2] - *(u16 *)(car + 0xFE);
-    *(Vec3 *)&saved[0] = *(Vec3 *)(car + 0x3C);
-    *(Vec3 *)&saved[1] = *(Vec3 *)(car + 0x48);
-    *(Vec3 *)&saved[2] = *(Vec3 *)(car + 0x54);
+    angles.vx = car->pos.x - D_800A38AC[0];
+    angles.vy = car->pos.y - D_800A38AC[1];
+    angles.vz = car->pos.z - D_800A38AC[2] - (u16)car->unkFE;
+    *(Vec3 *)&saved[0] = *(Vec3 *)((u8 *)car + 0x3C);
+    *(Vec3 *)&saved[1] = *(Vec3 *)((u8 *)car + 0x48);
+    *(Vec3 *)&saved[2] = *(Vec3 *)((u8 *)car + 0x54);
     func_800319D4(car, 1);
     func_8001EEC4(car);
     MatrixCombineState();
@@ -2564,9 +2564,9 @@ void func_80015EAC(u8 *car) {
     TransMatrix(&D_800A3A98, &position);
     SetTransMatrix(&D_800A3A98);
     SetRotMatrix(&D_800A3A98);
-    *(Vec3 *)(car + 0x3C) = *(Vec3 *)&saved[0];
-    *(Vec3 *)(car + 0x48) = *(Vec3 *)&saved[1];
-    *(Vec3 *)(car + 0x54) = *(Vec3 *)&saved[2];
+    *(Vec3 *)((u8 *)car + 0x3C) = *(Vec3 *)&saved[0];
+    *(Vec3 *)((u8 *)car + 0x48) = *(Vec3 *)&saved[1];
+    *(Vec3 *)((u8 *)car + 0x54) = *(Vec3 *)&saved[2];
 }
 
 extern long RotTransPers3_nom();
@@ -2901,7 +2901,7 @@ void func_800168F8(u8 *arg0, s32 arg1) {
     }
 }
 
-s32 func_80016ACC(u8 *arg0, s16 *arg1) {
+s32 func_80016ACC(Car *arg0, s16 *arg1) {
     extern s32 D_800A3A34Absolute[];
     s32 pad[4];
     register s32 f asm("a0");
@@ -2928,8 +2928,8 @@ s32 func_80016ACC(u8 *arg0, s16 *arg1) {
 
     (void)&pad;
     y0 = arg1[0];
-    base = *(u8 **)(arg0 + 0x36C);
-    f = arg0[0x410];
+    base = arg0->unk36C;
+    f = arg0->reverseSpeed;
     p = *(u8 **)(base + 0x14) + y0 * 0x14;
     y1 = arg1[1];
     count = y1 - y0 + 1;

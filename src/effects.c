@@ -560,7 +560,7 @@ void EffectInitRandomOffsetTables(void) {
 
 extern u8 D_800B19E4[];
 
-void func_80043F7C(u8 *arg0, s16 *arg1) {
+void func_80043F7C(Car *arg0, s16 *arg1) {
     s16 first;
     s32 count;
     u8 *e;
@@ -573,13 +573,13 @@ void func_80043F7C(u8 *arg0, s16 *arg1) {
     s32 mv;
 
     first = arg1[0];
-    e = *(u8 **)(*(u8 **)(arg0 + 0x36C) + 0x14) + first * 0x14;
+    e = *(u8 **)(arg0->unk36C + 0x14) + first * 0x14;
     count = arg1[1] - first + 1;
     w = arg1[10];
-    if (*(s8 *)((w >= 0) ? (b = arg0 + 0x3AD, b + w) : (arg0 + (0x3AD - w))) !=
-        0) {
+    if (*(s8 *)((w >= 0) ? (b = (u8 *)arg0 + 0x3AD, b + w)
+                         : ((u8 *)arg0 + (0x3AD - w))) != 0) {
         w = arg1[10];
-        b = arg0 + 0x3AD;
+        b = (u8 *)arg0 + 0x3AD;
         delta = *(s8 *)((w >= 0) ? (b + w) : (b - w));
         w = arg1[10];
         off = delta * 0x40;
