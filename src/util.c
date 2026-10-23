@@ -279,7 +279,7 @@ u8 CarDrawModel(Car *car, s32 drawMode) {
     return 1;
 }
 
-void CarDrawPreviewModel(u8 *arg0, s32 x, s32 y, s32 z) {
+void CarDrawPreviewModel(Car *arg0, s32 x, s32 y, s32 z) {
     SVECTOR rot;
     MATRIX m1, m2, m3;
     VECTOR trans[3];
@@ -290,20 +290,20 @@ void CarDrawPreviewModel(u8 *arg0, s32 x, s32 y, s32 z) {
     u8 *entry;
     MATRIX *m3Ptr;
 
-    depth = *(s16 *)(*(u8 **)(arg0 + 0x36C) + 0x2A);
-    model = *(u8 **)(*(u8 **)(arg0 + 0x36C) + 0x38);
+    depth = *(s16 *)(arg0->unk36C + 0x2A);
+    model = *(u8 **)(arg0->unk36C + 0x38);
     rot.vx = 0x400;
     rot.vy = 0;
-    rot.vz = *(u16 *)(arg0 + 0x20E);
+    rot.vz = (u16)arg0->steering;
     RotMatrix(&rot, &m1);
     m1.t[0] = x;
     m1.t[1] = y;
     m1.t[2] = z;
     SetTransMatrix(&m1);
     SetRotMatrix(&m1);
-    for (i = 0; i < *(s16 *)(*(u8 **)(arg0 + 0x36C) + 0x2C); i++) {
+    for (i = 0; i < *(s16 *)(arg0->unk36C + 0x2C); i++) {
         m3Ptr = &m3;
-        entry = *(u8 **)(*(u8 **)(arg0 + 0x36C) + 0x40) + i * 0x18;
+        entry = *(u8 **)(arg0->unk36C + 0x40) + i * 0x18;
         if (*(s16 *)(entry + 0x14) >= 0) {
             if (*(s16 *)(entry + 0x14) != 10) {
                 PushMatrix();

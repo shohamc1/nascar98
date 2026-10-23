@@ -4771,7 +4771,7 @@ void func_80063E7C(void) {
 /* The empty asm input of arg1 (and where it sits) stretches arg1's live
  * range so global allocation ranks the three parameters arg2, arg1, arg0,
  * handing them s1, s2, s3 like retail. */
-void CarDrawPreviewModel(u8 *arg0, s32 arg1, s32 arg2, s32 arg3);
+void CarDrawPreviewModel(Car *arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     MenuObj *entry;
     u8 *obj;
