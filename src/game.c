@@ -2509,7 +2509,7 @@ s32 MathFixedDivide(s32 numerator, s32 denominator) {
 
 void func_80015EAC(Car *car) {
     extern void func_800319D4(Car *, s32);
-    extern void func_8001EEC4(u8 *);
+    extern void func_8001EEC4(Car *);
     extern void MatrixCombineState(void);
     extern s32 *D_800A38AC;
     extern s32 D_800A3798Absolute[], D_800A37ACAbsolute[], D_800A3784Absolute[];

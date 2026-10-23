@@ -50,7 +50,7 @@ void func_80018768(void *arg0, s32 x, s32 y, s32 scale);
 void func_80018B18(s32 value, s32 x, s32 y, s32 scale);
 void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
                       u8 arg6, s32 arg7);
-void func_8001EEC4(s32 *arg0);
+void func_8001EEC4(Car *arg0);
 void func_80028FCC(Car *arg0);
 void ObjectSetModelDataVariant(Car *object, s32 index);
 void GraphicsAddTaggedPrimitive(u32 *orderingTable, u32 *primitive, u32 tag);
@@ -2152,7 +2152,7 @@ void RaceUpdateCrashTrigger(void) {
         pos[0] = (box->unk4 + box->unk1C) >> 1;
         pos[1] = (box->unk8 + box->unk20) >> 1;
         pos[2] = (box->unkC + box->unk24) >> 1;
-        func_8001EEC4((s32 *)gCrashCar);
+        func_8001EEC4(gCrashCar);
         MatrixRotateVector(pos);
         pos[0] += gCrashCar->pos.x + RandomScaledGet(200) - 100;
         pos[1] += gCrashCar->pos.y + RandomScaledGet(200) - 100;
@@ -6080,7 +6080,7 @@ s32 RaceUpdateCaution(void) {
             }
         }
         func_80028FCC(gCarListLui);
-        CarSetVelocityFromHeading((s32 *)gPlayerCarLui, gPlayerCarLui->heading);
+        CarSetVelocityFromHeading(gPlayerCarLui, gPlayerCarLui->heading);
         if (done && D_800A35A4 <= 0) {
             D_800A3764 = 0;
             D_800A2EFCSw[0] = 0;
@@ -6112,7 +6112,7 @@ s32 RaceUpdateCaution(void) {
                     car->update(car);
                 } else {
                     func_800373B4(car);
-                    CarSetVelocityFromHeading((s32 *)gPlayerCarLui,
+                    CarSetVelocityFromHeading(gPlayerCarLui,
                                               gPlayerCarLui->heading);
                 }
             }
@@ -7096,21 +7096,22 @@ extern s8 D_800A34E4;
 extern s32 D_800A34F4;
 extern u8 D_80090F7A[];
 
-void func_800524A0(u8 *arg0, s8 arg1) {
+void func_800524A0(Car *car, s8 arg1) {
+    Wheel *wheel;
     u8 *table;
     u8 *entry;
     u16 w;
     u32 v;
     s32 m2;
 
-    arg0 += arg1 * 0x28 + 0x2AC;
-    m2 = *(s16 *)(arg0 + 0x26);
-    arg0[0x24] = 0;
-    arg0[0x20] = 0;
+    wheel = &car->wheel[arg1];
+    m2 = wheel->unk26;
+    wheel->unk24 = 0;
+    wheel->unk20 = 0;
     D_800A34E4 = 0;
     if (m2 != -1) {
         table = D_80090F7A;
-        w = *(u16 *)(arg0 + 0x22);
+        w = wheel->unk22;
         entry = (u8 *)D_800A34F4 + (m2 * 12 - m2) * 8;
         if (w == 2) {
             table += 0xE;

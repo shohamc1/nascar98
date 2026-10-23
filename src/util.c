@@ -26,7 +26,7 @@ extern u8 D_800A2ED8[];
 extern u8 D_800A2EDA[];
 extern u8 *D_800A2EA0[];
 extern s16 D_800A2D68;
-extern void func_8001EEC4(u8 *);
+extern void func_8001EEC4(Car *);
 extern void func_80043F7C(Car *, u8 *);
 extern s32 func_80016ACC(Car *, s16 *);
 extern void func_80015EAC(Car *);

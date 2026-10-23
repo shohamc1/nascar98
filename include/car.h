@@ -20,7 +20,13 @@ typedef struct {
     s16 unk8;
     s16 unkA;
     s32 unkC;
-    u8 unk10[0x18];
+    u8 unk10[0x10];
+    u8 unk20;
+    u8 unk21;
+    u16 unk22;
+    u8 unk24;
+    u8 unk25;
+    s16 unk26;
 } Wheel;
 
 /* The collision outline a car points to at 0x370. */

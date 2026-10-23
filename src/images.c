@@ -569,17 +569,17 @@ void func_8001EE74(s32 *transform) {
     D_800A37C4 = i;
 }
 
-void func_8001EEC4(s32 *transform) {
+void func_8001EEC4(Car *transform) {
     s32 a, b, c, d, e, f, g, h, i;
-    a = transform[15];
-    b = transform[18];
-    c = transform[21];
-    d = transform[16];
-    e = transform[19];
-    f = transform[22];
-    g = transform[17];
-    h = transform[20];
-    i = transform[23];
+    a = transform->rot[0].x;
+    b = transform->rot[1].x;
+    c = transform->rot[2].x;
+    d = transform->rot[0].y;
+    e = transform->rot[1].y;
+    f = transform->rot[2].y;
+    g = transform->rot[0].z;
+    h = transform->rot[1].z;
+    i = transform->rot[2].z;
     D_800A3784 = a;
     D_800A3790 = b;
     D_800A3794 = c;

@@ -761,5 +761,5 @@ void CarUpdateTumble(Car *car) {
             *(s16 *)&car->unk1BC = 4;
         }
     }
-    CarSetVelocityFromHeading((s32 *)car, *(s16 *)&car->movementHeading);
+    CarSetVelocityFromHeading(car, *(s16 *)&car->movementHeading);
 }
