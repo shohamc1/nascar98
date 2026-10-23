@@ -133,7 +133,7 @@ void SoundReloadVabAndResetSlots(s32 vabSource) {
 }
 
 #ifdef NON_MATCHING
-extern s32 SoundVabOpen(s32, s32);
+extern s32 SoundVabOpen(void *, void *);
 
 void SoundLoadVab(s32 arg0) {
     s32 value;

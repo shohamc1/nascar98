@@ -1356,7 +1356,7 @@ void func_80023074(void) {
 }
 
 extern void CdApplyMixVolume(void);
-extern void func_8002F86C(void *, s32);
+extern void func_8002F86C(Car *, s32);
 extern s8 D_800A2D0CControl asm("D_800A2D0CAbsolute");
 extern s32 D_800A2DF8Control asm("D_800A2DF8");
 extern s32 gSplitScreenModeControl asm("gSplitScreenModeAbsolute");
@@ -2807,7 +2807,7 @@ void func_80025DD4(Car *firstCar, Car *secondCar) {
 extern void func_8001EEC4Args(u8 *, s32);
 asm(".globl func_8001EEC4Args\nfunc_8001EEC4Args = func_8001EEC4");
 
-void func_80025F40(u8 *arg0, s32 arg1) {
+void func_80025F40(Car *arg0, s32 arg1) {
     s32 pos[3];
     s32 x;
     s32 y;
@@ -2815,16 +2815,16 @@ void func_80025F40(u8 *arg0, s32 arg1) {
     s32 y2;
     u8 *entry;
 
-    entry = (u8 *)(*(s32 *)(*(s32 *)(arg0 + 0x370) + 0x40) +
-                   (1 - (arg1 & 0xFF)) * 0x18);
+    entry =
+        (u8 *)(*(s32 *)((s32)arg0->shape + 0x40) + (1 - (arg1 & 0xFF)) * 0x18);
     pos[0] = *(s32 *)(entry + 4);
     pos[1] = *(s32 *)(entry + 8);
     pos[2] = 0x4B;
     func_8001EEC4Args(arg0, arg1 & 0xFF);
     MatrixRotateVector(pos);
-    pos[0] += *(s32 *)(arg0 + 0);
-    pos[1] += *(s32 *)(arg0 + 4);
-    pos[2] += *(s32 *)(arg0 + 8);
+    pos[0] += arg0->pos.x;
+    pos[1] += arg0->pos.y;
+    pos[2] += arg0->pos.z;
     x = pos[0] + RandomScaledGet(25);
     y = pos[1] + RandomScaledGet(25);
     func_8003644C(0, x, y, pos[2] + RandomScaledGet(50));
@@ -2833,7 +2833,8 @@ void func_80025F40(u8 *arg0, s32 arg1) {
     func_8003644C(1, x2, y2, pos[2] + RandomScaledGet(50));
 }
 
-void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
+void func_80026074(Car *arg0, Car *arg1, s32 arg2, s32 arg3, s32 arg4,
+                   s32 arg5) {
     s32 ld5;
     s32 flag;
     volatile s32 pad[16];
@@ -2844,29 +2845,29 @@ void func_80026074(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     ld5 = ld5 << 24;
     if (ld5 != 0) {
         dx = arg2 << 16;
-        *(s32 *)(arg0 + 0xC4) -= dx;
-        *(s32 *)(arg0 + 0xC8) -= *(volatile s32 *)&arg3 << 16;
-        *(s32 *)(arg0 + 0xD0) -= (*(volatile s32 *)&arg2 << 16) >> 1;
-        *(s32 *)(arg0 + 0xD4) -= (*(volatile s32 *)&arg3 << 16) >> 1;
+        *(u32 *)&arg0->frontVelocityX -= dx;
+        *(u32 *)&arg0->frontVelocityY -= *(volatile s32 *)&arg3 << 16;
+        *(u32 *)&arg0->rearVelocityX -= (*(volatile s32 *)&arg2 << 16) >> 1;
+        arg0->rearVelocityY -= (*(volatile s32 *)&arg3 << 16) >> 1;
     } else {
         dx = arg2 << 16;
         dx = dx >> 1;
-        *(s32 *)(arg0 + 0xC4) -= dx;
-        *(s32 *)(arg0 + 0xC8) -= (*(volatile s32 *)&arg3 << 16) >> 1;
-        *(s32 *)(arg0 + 0xD0) -= *(volatile s32 *)&arg2 << 16;
-        *(s32 *)(arg0 + 0xD4) -= *(volatile s32 *)&arg3 << 16;
+        *(u32 *)&arg0->frontVelocityX -= dx;
+        *(u32 *)&arg0->frontVelocityY -= (*(volatile s32 *)&arg3 << 16) >> 1;
+        *(u32 *)&arg0->rearVelocityX -= *(volatile s32 *)&arg2 << 16;
+        arg0->rearVelocityY -= *(volatile s32 *)&arg3 << 16;
     }
     ld5 = flag << 24;
     if (ld5 != 0) {
-        *(s32 *)(arg1 + 0xC4) += *(volatile s32 *)&arg2 << 16;
-        *(s32 *)(arg1 + 0xC8) += *(volatile s32 *)&arg3 << 16;
-        *(s32 *)(arg1 + 0xD0) += (*(volatile s32 *)&arg2 << 16) >> 1;
-        *(s32 *)(arg1 + 0xD4) += (*(volatile s32 *)&arg3 << 16) >> 1;
+        *(u32 *)&arg1->frontVelocityX += *(volatile s32 *)&arg2 << 16;
+        *(u32 *)&arg1->frontVelocityY += *(volatile s32 *)&arg3 << 16;
+        *(u32 *)&arg1->rearVelocityX += (*(volatile s32 *)&arg2 << 16) >> 1;
+        arg1->rearVelocityY += (*(volatile s32 *)&arg3 << 16) >> 1;
     } else {
-        *(s32 *)(arg1 + 0xC4) += (*(volatile s32 *)&arg2 << 16) >> 1;
-        *(s32 *)(arg1 + 0xC8) += (*(volatile s32 *)&arg3 << 16) >> 1;
-        *(s32 *)(arg1 + 0xD0) += *(volatile s32 *)&arg2 << 16;
-        *(s32 *)(arg1 + 0xD4) += *(volatile s32 *)&arg3 << 16;
+        *(u32 *)&arg1->frontVelocityX += (*(volatile s32 *)&arg2 << 16) >> 1;
+        *(u32 *)&arg1->frontVelocityY += (*(volatile s32 *)&arg3 << 16) >> 1;
+        *(u32 *)&arg1->rearVelocityX += *(volatile s32 *)&arg2 << 16;
+        arg1->rearVelocityY += *(volatile s32 *)&arg3 << 16;
     }
 }
 
@@ -8599,7 +8600,7 @@ void func_8003B464(void);
 void func_8003C1CC(void);
 void func_8003C3FC(void);
 
-void func_8002F86C(void *arg0, s32 arg1) {
+void func_8002F86C(Car *arg0, s32 arg1) {
 
     RaceUpdatePositions(1);
     func_8003B464();
@@ -8608,13 +8609,13 @@ void func_8002F86C(void *arg0, s32 arg1) {
     }
     if (gSessionType == 1) {
         func_8003C3FC();
-        *(u8 *)((u8 *)arg0 + 0x20C) = 3;
+        arg0->cameraMode = 3;
     } else {
         func_8003C1CC();
-        if (*(s8 *)((u8 *)arg0 + 0x204) == 1) {
-            *(u8 *)((u8 *)arg0 + 0x20C) = 0xD;
+        if (arg0->place == 1) {
+            arg0->cameraMode = 0xD;
         } else {
-            *(u8 *)((u8 *)arg0 + 0x20C) = 0x10;
+            arg0->cameraMode = 0x10;
         }
     }
     D_800A2EAC = arg1;
@@ -9701,7 +9702,7 @@ void VectorNormalize3D(s32 x, s32 y, s32 z, s32 *out) {
 void func_800319D4(Car *, s32);
 u16 func_80030F24(Car *, s32 *, s32, s32, s32);
 extern s16 TrackFindSectionForwards16(s32, s32,
-                                      void *) asm("TrackFindSectionForward");
+                                      s32 *) asm("TrackFindSectionForward");
 void func_80031264(Car *object) {
     s32 corners[5][4];
     s32 normals[3][4];
@@ -11718,7 +11719,7 @@ extern u32 gScratchpad[];
 extern s32 D_800A3640[];
 extern u8 D_800A2ED8Abs[] asm("D_800A2ED8.NON_MATCHING");
 
-u32 func_800342D8(u32 *entry, u32 primCursor) {
+u32 func_800342D8(u32 *entry, u8 *primCursor) {
     u8 *obj;
     register s32 *spad asm("s1");
     s32 w0;
@@ -11834,19 +11835,19 @@ u32 func_800342D8(u32 *entry, u32 primCursor) {
         if (kind == 13) {
             *entry = 0;
             return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
-                                                      (u8 *)primCursor, 2);
+                                                      primCursor, 2);
         } else {
             *entry = 0;
             return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
-                                                      (u8 *)primCursor, 1);
+                                                      primCursor, 1);
         }
     } else {
         if (gSplitScreenModeAbsolute[0] != 0 || D_800A2ED8Abs[0] != 0) {
             return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
-                                                      (u8 *)primCursor, 2);
+                                                      primCursor, 2);
         } else {
             return (u32)GraphicsSubdivideTexturedQuad((SubdivisionVertex *)spad,
-                                                      (u8 *)primCursor, 0);
+                                                      primCursor, 0);
         }
     }
 }
@@ -15339,7 +15340,7 @@ s32 CarCanPassOther(Car *car, Car *otherCar) {
 extern u8 D_800A2F84w44[] asm("D_800A2F84");
 extern s32 D_800A3730, D_800A3734;
 
-void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
+void func_800390A0(Car *car, Car *other, s32 side, s32 unused) {
     s32 sectionIndex;
     register s32 i asm("a3");
     s32 sectionLimit;
@@ -15357,7 +15358,7 @@ void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
     s32 targetY;
     s8 otherLateralOffset;
 
-    sectionIndex = *(s16 *)((u8 *)other + 0x1E0);
+    sectionIndex = other->segment;
     if (sectionIndex == -1) {
         return;
     }
@@ -15365,12 +15366,12 @@ void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
     sectionLimit = gTrackSectionCount[0] - 1;
     previousSection = (i + sectionLimit) % gTrackSectionCount[0];
     sectionEntry = &((TrackSection *)gTrackSections[0])[i];
-    *(s16 *)((u8 *)car + 0x24E) = previousSection;
+    car->targetSegment = previousSection;
     heading = sectionEntry->angle;
     trigIndex = ((0x400 - heading) & 0x3FF) << 2;
     cosine = *(s32 *)(trigIndex + (u32)D_800A3A2CAbsolute[0]);
     sine = *(s32 *)(trigIndex + (u32)D_800A3A34Absolute[0]);
-    if (*(s16 *)((u8 *)car + 0x288) != 0) {
+    if (car->unk26C[14] != 0) {
         offsetX = (sine * 0x6D6) >> 16;
         offsetY = (cosine * 0x6D6) >> 16;
         side = D_800A2F84w44[0];
@@ -15378,8 +15379,8 @@ void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
         offsetX = (sine * 0x6D6) >> 16;
         offsetY = (cosine * 0x6D6) >> 16;
     }
-    if (*(s16 *)((u8 *)car + 0x288) == 0) {
-        otherLateralOffset = *(s8 *)((u8 *)other + 0x203);
+    if (car->unk26C[14] == 0) {
+        otherLateralOffset = other->unk203;
         if (otherLateralOffset >= 0) {
             if (otherLateralOffset >= 7) {
                 goto bad;
@@ -15391,12 +15392,12 @@ void func_800390A0(s32 car, s32 other, s32 side, s32 unused) {
             }
         }
     bad:
-        *(s16 *)((u8 *)car + 0x24E) = -1;
+        car->targetSegment = -1;
         return;
     }
 ok:
     otherX = *(s32 *)((u8 *)other);
-    otherY = *(s32 *)((u8 *)other + 4);
+    otherY = other->pos.y;
     if ((side & 0xFF) == 0) {
         D_800A3730 = otherX + offsetX;
         *(volatile s32 *)&D_800A3734 = otherY + offsetY;
@@ -15408,8 +15409,8 @@ ok:
     targetY = *(volatile s32 *)&D_800A3734;
     D_800A3730 = offsetX;
     D_800A3734 = offsetY;
-    *(s32 *)((u8 *)car + 0x250) = targetX;
-    *(s32 *)((u8 *)car + 0x254) = targetY;
+    car->avoidX = targetX;
+    car->avoidY = targetY;
 }
 
 s32 func_80039274(Car *car, Car *other, u8 side) {
@@ -16290,14 +16291,14 @@ void func_8003AC18(Car *object, s32 arg1, s32 arg2, s32 arg3) {
     }
 }
 
-void func_800390A0(s32, s32, s32, s32);
+void func_800390A0(Car *, Car *, s32, s32);
 struct EffectSpawnOffset {
     s32 x;
     s32 y;
     s32 z;
 };
 void func_8003AD08(struct EffectSpawnOffset *spawnOffset) {
-    func_800390A0(D_800A3558[0], (s32)gPlayerCar[0], 0, 0);
+    func_800390A0((Car *)D_800A3558[0], gPlayerCar[0], 0, 0);
     FontDrawPaddedNumber(D_800A3730, 0x64, 0xC8, 0);
     FontDrawPaddedNumber(D_800A3734, 0xC8, 0xC8, 0);
     func_8003644C(1, D_800A3730 + spawnOffset->x, D_800A3734 + spawnOffset->y,

@@ -3049,7 +3049,7 @@ finish:
     return result;
 }
 
-extern s32 MenuPrefixWidth(u32, void *);
+extern s32 MenuPrefixWidth(u32, u8 *);
 /* Expand the cursor helper here and in its caller with the same byte types. */
 #define CARD_MENU_CURSOR_BODY(finish, font, size, index, text, cursor, result) \
     {                                                                          \
@@ -3868,36 +3868,36 @@ void func_8006DE68(u32 arg0, u32 mode) {
 /* A mode above 2 falls off the end of the switch, as in retail: the return
  * value is whatever the dispatch left in v0 (2). The narrow `u8 arg3`
  * parameter makes gcc keep a raw copy of a3 for the mode 0 and 1 tests. */
-u8 PadReadObjectAxis(void *arg0, s32 arg1, s32 arg2, u8 arg3) {
+u8 PadReadObjectAxis(u8 *arg0, s32 arg1, s32 arg2, u8 arg3) {
     u8 mode;
 
     mode = arg1;
     switch (mode) {
     case 0:
         if ((u8)arg2 != 2) {
-            return ((u8 *)arg0)[0x3C6];
+            return (arg0)[0x3C6];
         } else if (arg3 == 0 || arg3 == (u8)arg2) {
-            return ((u8 *)arg0)[0x3C7];
+            return (arg0)[0x3C7];
         } else {
-            return ((u8 *)arg0)[0x3C6];
+            return (arg0)[0x3C6];
         }
     case 1:
         if ((u8)arg2 != 2) {
-            return ((u8 *)arg0)[0x3C6];
+            return (arg0)[0x3C6];
         } else if (arg3 != 0 && arg3 != (u8)arg2) {
-            return ((u8 *)arg0)[0x3C7];
+            return (arg0)[0x3C7];
         } else {
-            return ((u8 *)arg0)[0x3C6];
+            return (arg0)[0x3C6];
         }
     case 2:
         if ((u8)arg2 == mode) {
             if ((u8)(arg3 - 2) < 2) {
-                return (u8) ~((u8 *)arg0)[0x3C5];
+                return (u8) ~(arg0)[0x3C5];
             } else {
-                return ((u8 *)arg0)[0x3C5];
+                return (arg0)[0x3C5];
             }
         } else {
-            return ((u8 *)arg0)[0x3C5];
+            return (arg0)[0x3C5];
         }
     }
 }

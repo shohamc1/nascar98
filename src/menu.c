@@ -762,7 +762,7 @@ extern void func_80060008(u8);
  * the locals below (k2b is pinned to $19, the empty asm statements make the
  * primitive pointers function-wide). */
 void func_8005ED74(u8 arg0, u8 arg1) {
-    extern s32 func_8005A8EI(s32) asm("MenuStringWidth");
+    extern s32 func_8005A8EI(u8 *) asm("MenuStringWidth");
     register s32 k2b asm("$19");
     u8 ix1;
     u8 ix11;
@@ -4778,7 +4778,7 @@ void func_80063E7C(void) {
 /* The empty asm input of arg1 (and where it sits) stretches arg1's live
  * range so global allocation ranks the three parameters arg2, arg1, arg0,
  * handing them s1, s2, s3 like retail. */
-void CarDrawPreviewModel(void *arg0, s32 arg1, s32 arg2, s32 arg3);
+void CarDrawPreviewModel(u8 *arg0, s32 arg1, s32 arg2, s32 arg3);
 void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
     MenuObj *entry;
     u8 *obj;

@@ -2783,7 +2783,7 @@ void func_80016744(u32 arg0) {
     *(s8 *)(arg0 + gOrderingTableBankLui + 0x41C) = -1;
 }
 
-s32 func_800167BC(u8 *arg0, s32 arg1, s32 arg2, s32 arg3) {
+s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 bank;
     u32 entries;
     s32 oldEntry;
@@ -2799,16 +2799,16 @@ s32 func_800167BC(u8 *arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 ret;
 
     bank = gOrderingTableBankLui;
-    value = *(s8 *)((s32)arg0 + bank + 0x41C);
-    if (value == *(s8 *)((s32)arg0 + 0x374)) {
-        if (*(s32 *)((bank << 2) + (s32)arg0 + 0x420) != 0) {
+    value = *(s8 *)(arg0 + bank + 0x41C);
+    if (value == *(s8 *)(arg0 + 0x374)) {
+        if (*(s32 *)((bank << 2) + arg0 + 0x420) != 0) {
             return 0;
         }
     } else {
-        entries = (bank << 2) + (s32)arg0;
+        entries = (bank << 2) + arg0;
         oldEntry = *(s32 *)(entries + 0x420);
         if (oldEntry != 0) {
-            offset = value * 0x44 + *(s32 *)((s32)arg0 + 0x370);
+            offset = value * 0x44 + *(s32 *)(arg0 + 0x370);
             ptr = (u32)D_800A2D64;
             hw = *(s16 *)(offset + 0x2A);
             extra = *(s32 *)(entries + 0x430);
@@ -2821,19 +2821,19 @@ s32 func_800167BC(u8 *arg0, s32 arg1, s32 arg2, s32 arg3) {
             } while (0);
         }
     }
-    if (*(s8 *)((s32)arg0 + 0x374) == 4) {
-        *(s8 *)((s32)arg0 + ((s32 *)D_800A2CF8)[-1] + 0x41C) = -1;
+    if (*(s8 *)(arg0 + 0x374) == 4) {
+        *(s8 *)(arg0 + ((s32 *)D_800A2CF8)[-1] + 0x41C) = -1;
         return 1;
     }
-    speed = *(u8 *)((s32)arg0 + 0x200);
+    speed = *(u8 *)(arg0 + 0x200);
     q = speed / 5;
     ret = (s32)func_800163E8(arg0, q);
     bank2 = gOrderingTableBankLui;
-    *(s32 *)((bank2 << 2) + (s32)arg0 + 0x420) = ret;
+    *(s32 *)((bank2 << 2) + arg0 + 0x420) = ret;
     if (ret == 0) {
         return 1;
     }
-    *(s8 *)((s32)arg0 + bank2 + 0x41C) = *(u8 *)((s32)arg0 + 0x374);
+    *(s8 *)(arg0 + bank2 + 0x41C) = *(u8 *)(arg0 + 0x374);
     return 0;
 }
 

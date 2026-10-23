@@ -7822,7 +7822,7 @@ extern s32 D_800A37F0NM asm("D_800A37F0.NON_MATCHING");
 extern s32 D_800A3830NM asm("D_800A3830.NON_MATCHING");
 
 void func_800539F0(void) {
-    void *table;
+    s32 *table;
     u8 i;
     void *base;
 
@@ -7836,28 +7836,28 @@ void func_800539F0(void) {
     SceneAllocateRuntimeBuffers();
     MenuFontReset();
     base = FileLoadOffsetTable(9, &table, 0);
-    TextureLoadTim(base + ((s32 *)table)[0xB]);
+    TextureLoadTim(base + (table)[0xB]);
     DrawSync(0);
-    TextureLoadTim(base + ((s32 *)table)[6]);
+    TextureLoadTim(base + (table)[6]);
     DrawSync(0);
-    TextureLoadTim(base + ((s32 *)table)[0xA]);
+    TextureLoadTim(base + (table)[0xA]);
     DrawSync(0);
     while (i < 5) {
-        TextureLoadTim(base + ((s32 *)table)[i + 1]);
+        TextureLoadTim(base + (table)[i + 1]);
         DrawSync(0);
         i++;
     }
     i = 0;
-    TextureLoadTim(base + ((s32 *)table)[9]);
+    TextureLoadTim(base + (table)[9]);
     DrawSync(0);
     while (i < 2) {
-        TextureLoadTim(base + ((s32 *)table)[i + 7]);
+        TextureLoadTim(base + (table)[i + 7]);
         DrawSync(0);
         i++;
     }
-    TextureLoadTim(base + ((s32 *)table)[0xC]);
+    TextureLoadTim(base + (table)[0xC]);
     DrawSync(0);
-    TextureLoadTim(base + ((s32 *)table)[0]);
+    TextureLoadTim(base + (table)[0]);
     DrawSync(0);
     GraphicsLoadPaletteRow();
     HeapFree(base);
@@ -9798,7 +9798,7 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern s32 func_8005CCEC(u8, s32);
     extern void func_8005CC34(void);
     extern void MenuRefreshSixEntryValues(void);
-    extern void func_8005E4A4(s32);
+    extern void func_8005E4A4(u8 *);
     extern void MenuSetTrackLabel(u8);
     extern void MenuFormatLapCount(u8);
     extern void func_80060008(u8);
@@ -10606,7 +10606,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
     extern s32 gSessionTypeTransition[] asm("gSessionType.NON_MATCHING");
     extern char D_800B9B73[];
     extern void func_8006BA68(void);
-    extern void func_8005E4A4(s32);
+    extern void func_8005E4A4(u8 *);
     extern void func_80063C34(u8, u8);
     extern s32 CardFindSavedDriverRecord(char *);
     extern void CardMenuCopyRecordNames(u8, u8);
