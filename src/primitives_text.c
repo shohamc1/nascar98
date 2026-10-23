@@ -1869,7 +1869,7 @@ extern u8 gTextColorAbs asm("gTextColorAbsolute");
  * and wedge (+0x2A4) settings as signed half-unit "%i.%i" readouts, the fuel
  * time (+0x27E), the four row labels, highlight boxes for the chosen services
  * (+0x26A bits) and the cursor arrows for row +0x26B. */
-void HudDrawPitMenu(u8 *car, s32 y) {
+void HudDrawPitMenu(Car *car, s32 y) {
     u8 text[0x18];
     s32 wedgeY;
     s16 value;
@@ -1884,21 +1884,21 @@ void HudDrawPitMenu(u8 *car, s32 y) {
     if (D_800A2EAC[0] != 0) {
         return;
     }
-    if (D_800A2EE0w15[0] == 0 && (*(s32 *)(car + 0x3A4) & 0x100F)) {
+    if (D_800A2EE0w15[0] == 0 && (*(s32 *)((u8 *)car + 0x3A4) & 0x100F)) {
         return;
     }
-    if (car[0x268] == 0) {
+    if (car->unk268 == 0) {
         return;
     }
-    if (car[0x269] == 2) {
+    if (car->unk269 == 2) {
         return;
     }
-    if (car[0x269] == 0xFF) {
+    if (car->unk269 == 0xFF) {
         return;
     }
     GraphicsSetColor(0x80, 0xC0, 0x80);
 
-    setting = *(s16 *)(car + 0x2AA);
+    setting = car->unk2AA;
     value = setting;
     if (setting >= 0) {
         i = value;
@@ -1908,7 +1908,7 @@ void HudDrawPitMenu(u8 *car, s32 y) {
     sprintfArgs((s8 *)text, gFormatIntegerDotInteger, i >> 1, (i % 2) * 5);
     HudDrawText(text, 0xD2, (s16)(y + 0x40), 0);
 
-    setting = *(s16 *)(car + 0x2A4);
+    setting = car->unk2A4;
     value = setting;
     if (setting >= 0) {
         i = value;
@@ -1919,16 +1919,16 @@ void HudDrawPitMenu(u8 *car, s32 y) {
     wedgeY = (s16)(y + 0x4C);
     HudDrawText(text, 0xD2, wedgeY, 0);
 
-    spoiler = *(s16 *)(car + 0x2AA);
+    spoiler = car->unk2AA;
     gTextColorAbs = 9;
     HudDrawText(spoiler < 0 ? gTextPitTuningNegativeSign
                             : gTextPitTuningPositiveSign,
                 0xC8, (s16)(y + 0x40), 0);
-    HudDrawText(*(s16 *)(car + 0x2A4) < 0 ? gTextPitTuningNegativeSign
-                                          : gTextPitTuningPositiveSign,
+    HudDrawText(car->unk2A4 < 0 ? gTextPitTuningNegativeSign
+                                : gTextPitTuningPositiveSign,
                 0xC8, wedgeY, 0);
 
-    fuelTime = *(s16 *)(car + 0x27E);
+    fuelTime = *(s16 *)((u8 *)car + 0x27E);
     if (fuelTime > 0) {
         HudDrawTime(fuelTime, 0x78, (s16)(y + 0x64), 0, 2);
         GraphicsDrawDoubleBorderRect(0x6E, (s16)(y + 0x63), 0x64, 0xC, 0, 0, 0,
@@ -1943,26 +1943,26 @@ void HudDrawPitMenu(u8 *car, s32 y) {
         HudDrawText(D_8009AE50[i], 0x5A, (s16)(y + 0x28 + i * 12), 0);
         i++;
     } while (i < 4);
-    if (car[0x26A] & 1) {
+    if (car->unk26A & 1) {
         GraphicsDrawRect(0x53, y + 0x27, 0x9A, 1, 0x40, 0x40, -0x80, 1);
         GraphicsDrawRect(0x52, y + 0x28, 0x9C, 1, 0x40, 0x40, -0x80, 1);
         GraphicsDrawRect(0x51, y + 0x29, 0x9E, 10, 0x40, 0x40, -0x80, 1);
     }
-    if (car[0x26A] & 2) {
+    if (car->unk26A & 2) {
         GraphicsDrawRect(0x51, y + 0x33, 0x9E, 12, 0x40, 0x40, -0x80, 1);
     }
-    if (car[0x26A] & 8) {
+    if (car->unk26A & 8) {
         GraphicsDrawRect(0x51, y + 0x3F, 0x9E, 12, 0x40, 0x40, -0x80, 1);
     }
-    if (car[0x26A] & 4) {
+    if (car->unk26A & 4) {
         GraphicsDrawRect(0x51, y + 0x4B, 0x9E, 11, 0x40, 0x40, -0x80, 1);
         GraphicsDrawRect(0x52, y + 0x56, 0x9C, 1, 0x40, 0x40, -0x80, 1);
         GraphicsDrawRect(0x53, y + 0x57, 0x9A, 1, 0x40, 0x40, -0x80, 1);
     }
     GraphicsDrawDoubleBorderRect(0x51, (s16)(y + 0x27), 0x9E, 0x31, 0, 0, 0, 1);
-    if (car[0x269] < 2) {
-        MenuDrawArrow(0x4F, y + 0x2D + car[0x26B] * 12, 0, 5);
-        MenuDrawArrow(0xF0, y + 0x2D + car[0x26B] * 12, 1, 5);
+    if (car->unk269 < 2) {
+        MenuDrawArrow(0x4F, y + 0x2D + car->unk26B * 12, 0, 5);
+        MenuDrawArrow(0xF0, y + 0x2D + car->unk26B * 12, 1, 5);
     }
 }
 
@@ -2032,13 +2032,13 @@ void ReplayDrawControls(void) {
     }
 }
 
-extern u8 *gPlayerCar;
+extern Car *gPlayerCar;
 extern u16 D_80090F30b[] asm("D_80090F30");
 extern u16 D_80090F30c[] asm("D_80090F30");
 extern u8 D_80090F30d[] asm("D_80090F30");
 extern u8 D_80090F30e[] asm("D_80090F30");
 extern void AddPrim(void *ot, void *p);
-void func_8001B82C(u8 *obj, s32 arg1) {
+void func_8001B82C(Car *obj, s32 arg1) {
     POLY_FT4 *prim;
     s32 x;
     s32 y;
@@ -2047,19 +2047,19 @@ void func_8001B82C(u8 *obj, s32 arg1) {
     s32 mode;
 
     x = 300 - *(s32 *)obj / arg1;
-    y = *(s32 *)(obj + 4) / arg1 + 18;
+    y = obj->pos.y / arg1 + 18;
     prim =
         (POLY_FT4 *)(D_800B0B7C + (gOrderingTableBankAbsolute[0] >> 1) * 0x3C0 +
-                     *(s8 *)(obj + 0x376) * 0x28);
-    if (*(s16 *)(obj + 0x1EC) == 0) {
+                     (s8)obj->driver * 0x28);
+    if (obj->type == 0) {
         width = 10;
         if (D_800A2EB4[0] >= 2) {
-            uOff = *(s16 *)(obj + 0x1DE) * 16 + 32;
+            uOff = obj->unk1DE * 16 + 32;
         } else {
             uOff = 16;
         }
     } else {
-        mode = *(s8 *)(obj + 0x204);
+        mode = obj->place;
         switch (mode) {
         case 1:
             width = 10;
@@ -2067,8 +2067,8 @@ void func_8001B82C(u8 *obj, s32 arg1) {
             break;
         case 2:
             width = 8;
-            if (*(s8 *)(gPlayerCar + 0x204) == 1 &&
-                D_800A2EB4[0] == *(s8 *)(gPlayerCar + 0x204)) {
+            if (*(s8 *)((u8 *)gPlayerCar + 0x204) == 1 &&
+                D_800A2EB4[0] == *(s8 *)((u8 *)gPlayerCar + 0x204)) {
                 width = 10;
             }
             uOff = 48;
@@ -2107,7 +2107,7 @@ void func_8001B82C(u8 *obj, s32 arg1) {
 extern s32 D_801F3FFC[];
 extern s32 D_800A2ED0[];
 extern void *D_800A35E0;
-extern void func_8001B82C(u8 *obj, s32 arg1);
+extern void func_8001B82C(Car *obj, s32 arg1);
 void func_8001BA94(s32 arg0) {
     s32 shade;
     u8 mode;
@@ -2320,7 +2320,7 @@ void MenuDrawResults(s32 reset) {
             if (!(i & 1)) {
                 off = -off;
             }
-            if (off == 0 && i == *(s8 *)(gPlayerCar + 0x204) - 1) {
+            if (off == 0 && i == *(s8 *)((u8 *)gPlayerCar + 0x204) - 1) {
                 rowY = baseY + i * 0xE;
                 gOrderingTableLui += 4;
                 GraphicsDrawRect(0, rowY + 0x25, 0x140, 0xF, 0, 0, -1, 1);
@@ -2348,7 +2348,7 @@ extern u8 D_800A2D0Cnm[] asm("D_800A2D0C.NON_MATCHING");
 extern u8 *D_800A2ECCnm[] asm("D_800A2ECC.NON_MATCHING");
 extern s8 D_800A2ED0nm[] asm("D_800A2ED0.NON_MATCHING");
 extern s32 gSplitScreenModenm[] asm("gSplitScreenMode.NON_MATCHING");
-extern u8 *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
+extern Car *gPlayerCarsmall asm("gPlayerCar.NON_MATCHING");
 extern s32 D_800A3A34Absolute[];
 
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
@@ -2391,18 +2391,18 @@ void func_8001C34C(void) {
     if (gSplitScreenModenm[0] == mode) {
         HudDrawPitMenu(gPlayerCarsmall, -0xA);
         HudDrawCar(gPlayerCarsmall, -0x6E);
-        prim = *(s32 *)(gPlayerCarsmall + 0x3E0);
+        prim = *(s32 *)((u8 *)gPlayerCarsmall + 0x3E0);
         gOrderingTableBankLui = gOrderingTableBankLui + 1;
         gOrderingTableLui = gOrderingTableLui + 0x1004;
         HudDrawPitMenu(prim, -0x14);
-        HudDrawCar(*(s32 *)(gPlayerCarsmall + 0x3E0), -0x7D);
+        HudDrawCar(*(s32 *)((u8 *)gPlayerCarsmall + 0x3E0), -0x7D);
         gOrderingTableBankLui = gOrderingTableBankLui - 1;
         gOrderingTableLui = gOrderingTableLui - 0x1004;
         return;
     }
     HudDrawPitMenu(gPlayerCarsmall, 0);
     HudDrawCar(gPlayerCarsmall, 0);
-    if (*(s8 *)(gPlayerCarsmall + 0x209) == mode) {
+    if (*(s8 *)((u8 *)gPlayerCarsmall + 0x209) == mode) {
         func_8001BA94(0);
     }
 }

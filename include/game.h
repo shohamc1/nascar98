@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "menu_obj.h"
+#include "car.h"
 
 /* Game symbols declared by more than one source file. Types follow the
    decompiled callers; placeholder names stay until their purpose is known. */

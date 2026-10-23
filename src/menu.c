@@ -21,7 +21,7 @@
 extern s32 strlen(char *);
 
 extern s32 gOrderingTable[];
-extern u8 *gPlayerCar[];
+extern Car *gPlayerCar[];
 extern void HeapFree(void *ptr);
 extern s32 D_800A38AC[];
 extern s32 D_800A37C4Absolute[];
@@ -42,7 +42,7 @@ extern void MenuDrawString(s32, s16, s16, u8, u8, s32, u8, u8);
 void GraphicsDrawRect(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, u8 arg5,
                       u8 arg6, s32 arg7);
 void func_8001E230(s32 arg0, s32 arg1);
-void func_8002EEFC(u8 *arg0);
+void func_8002EEFC(Car *arg0);
 void ModelLoadGeometryFromAddress(s32 first, s32 second);
 void PadResetAndInitializeBuffers(void);
 void SystemSetGlobalPointer(s32 gp);
@@ -4297,7 +4297,7 @@ extern u8 gPlayerDriver[];
 
 void func_800631DC(s32 left, s32 top, s32 code) {
     MenuObj *node;
-    u8 *entry;
+    Car *entry;
     s32 mode;
     s32 base;
     s32 x;
@@ -4334,7 +4334,7 @@ void func_800631DC(s32 left, s32 top, s32 code) {
             base += 0x33;
         }
         node->primitive = entry;
-        entry = *(u8 **)(entry + 0x3E0);
+        entry = entry->next;
         if (mode == 7 || mode == 0xE) {
             continue;
         }
@@ -4729,7 +4729,7 @@ extern u8 *func_8002D874(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 
 void func_80063E7C(void) {
     RECT rect;
-    u8 *entry;
+    Car *entry;
     u8 *prev1;
     u8 *prev2;
     s32 i;
@@ -4739,31 +4739,31 @@ void func_80063E7C(void) {
     func_80063874();
     D_800A2E84Absolute[0] = 0;
     entry = func_8002D874(-1, 0, 0, -1);
-    *(s32 *)(entry + 0) = -0x2EE;
-    *(s32 *)(entry + 4) = 0xC8;
-    *(s32 *)(entry + 8) = 0xC8;
-    *(u8 *)(entry + 0x20C) = 4;
+    entry->pos.x = -0x2EE;
+    entry->pos.y = 0xC8;
+    entry->pos.z = 0xC8;
+    entry->cameraMode = 4;
     D_800A3558[0] = (s32)entry;
     D_800A38AC[0] = (s32)entry;
-    *(s32 *)(entry + 0x3DC) = 0;
+    entry->prev = 0;
     D_800A2E94[0] = 0;
     prev1 = entry;
     entry = func_8002D874(0, 0, 0x1B, 0);
-    *(s32 *)(entry + 0) = 0x1F4;
-    *(s32 *)(entry + 4) = 0;
+    entry->pos.x = 0x1F4;
+    entry->pos.y = 0;
     *(s32 *)(prev1 + 0x3E0) = (s32)entry;
-    *(s32 *)(entry + 0x3DC) = (s32)prev1;
+    entry->prev = (s32)prev1;
     gPlayerCar[0] = entry;
     prev2 = entry;
     entry = func_8002D874(0, 1, 0x18, -1);
     i = 0;
     tile = 0x40;
     srcX = 0x300;
-    *(s32 *)(entry + 0) = 0;
-    *(s32 *)(entry + 4) = 0;
+    entry->pos.x = 0;
+    entry->pos.y = 0;
     *(s32 *)(prev2 + 0x3E0) = (s32)entry;
-    *(s32 *)(entry + 0x3DC) = (s32)prev2;
-    *(s32 *)(entry + 0x3E0) = 0;
+    entry->prev = (s32)prev2;
+    entry->next = 0;
     while (i < 2) {
         rect.x = (i % 4) * 0x40 + 0x300;
         rect.y = tile;
@@ -4831,7 +4831,7 @@ void func_80064000(s32 arg0, s32 arg1, s32 arg2) {
                 }
                 result = v1 - ((v0 >> 0xC) << 0xC);
             } else {
-                result = *(u16 *)(gPlayerCar[0] + 0x20E);
+                result = *(u16 *)((u8 *)gPlayerCar[0] + 0x20E);
             }
             *(s16 *)(obj + 0x20E) = result;
         }
@@ -6490,7 +6490,7 @@ extern volatile u16 D_800A3940;
 extern u8 D_800A3364[];
 extern u32 D_800A3570Lui asm("D_800A3570Absolute");
 extern u32 gPrimitiveCursorLui asm("gPrimitiveCursorAbsolute");
-extern u8 *gPlayerCarLui asm("gPlayerCarAbsolute");
+extern Car *gPlayerCarLui asm("gPlayerCarAbsolute");
 
 void MenuDrawLoadScreen(void) {
     char buf[16];
@@ -6500,7 +6500,7 @@ void MenuDrawLoadScreen(void) {
     u32 end;
     s32 depth;
     POLY_GT4 *gt4;
-    u8 *car;
+    Car *car;
     POLY_GT4 *prim;
 
     func_80066B70();
@@ -6509,20 +6509,20 @@ void MenuDrawLoadScreen(void) {
     HudDrawText(gDriverNames[gPlayerDriver[0]], 0xA0, 0xB0, 0);
     HudDrawText(D_8009A400[34], 0xA0, 0xBE, 0);
     HudDrawText(D_800A3364, 0xE0, 0xBE, 0);
-    TextFormatTime(*(void **)(gPlayerCarLui + 0x25C), 0, (s32)buf);
+    TextFormatTime(*(void **)((u8 *)gPlayerCarLui + 0x25C), 0, (s32)buf);
     gTextColorLui[0] = 9;
     HudDrawText((u8 *)buf + 1, 0xEA, 0xBE, 0);
     SetGeomOffset(0xAA, 0x1E);
-    gPlayerCarLui[0x20C] = 1;
+    ((u8 *)gPlayerCarLui)[0x20C] = 1;
     func_8002EEFC(gPlayerCarLui);
     car = gPlayerCarLui;
-    *(s32 *)(car + 0) = 0;
-    *(s32 *)(car + 4) = 0;
-    *(s32 *)(car + 8) = 0;
-    *(u16 *)(car + 0x20E) = 0xA00;
+    car->pos.x = 0;
+    car->pos.y = 0;
+    car->pos.z = 0;
+    car->steering = 0xA00;
     ScratchpadFillPattern(0);
-    func_800168F8(*(u8 **)(gPlayerCarLui + 0x36C),
-                  (s8)(*(s8 *)(gPlayerCarLui + 0x200) / 5));
+    func_800168F8(*(u8 **)((u8 *)gPlayerCarLui + 0x36C),
+                  (s8)(*(s8 *)((u8 *)gPlayerCarLui + 0x200) / 5));
     end = gPrimitiveCursorLui;
     CarDrawPreviewModel(gPlayerCarLui, 0, 0x15E, 0x320);
     gOrderingTableLui = (s32)gOrderingTables;

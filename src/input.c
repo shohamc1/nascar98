@@ -13,7 +13,7 @@
 #include "objects.h"
 #include "util.h"
 
-extern u8 *gCarListnm[] asm("gCarList.NON_MATCHING");
+extern Car *gCarListnm[] asm("gCarList.NON_MATCHING");
 void PadResetAndInitializeBuffers();
 
 /* Controller state and input. */
@@ -182,7 +182,7 @@ extern u32 D_8008CA48[];
 void PadRefreshTypes(void) {
     u32 padWord;
     u32 padType;
-    u8 *node;
+    Car *node;
     s32 i;
     u32 pad0;
     u32 pad1;
@@ -219,10 +219,10 @@ void PadRefreshTypes(void) {
     D_800A3A27[0] = 0;
     if (node != 0) {
         do {
-            if (*(s16 *)(node + 0x1EC) == 0) {
-                node[0x3C4] = ((u8 *)gPadType)[*(s8 *)(node + 0x20B)];
+            if (node->type == 0) {
+                ((u8 *)node)[0x3C4] = ((u8 *)gPadType)[node->slot];
             }
-            node = *(u8 **)(node + 0x3E0);
+            node = node->next;
         } while (node != 0);
     }
     i = 7;

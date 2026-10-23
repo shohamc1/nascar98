@@ -14,7 +14,7 @@
 #include "util.h"
 
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
-extern u8 *gPlayerCar[];
+extern Car *gPlayerCar[];
 void CarResetMotionCounters();
 s32 func_8003702C(u8 *, u8 *);
 extern void HeapFree(void *ptr);
@@ -941,7 +941,7 @@ void SoundUpdateOpponentVoice(u8 *car, s32 id) {
     SoundSetSlotVolume(id, dx & 0xFF, dy & 0xFF);
 }
 
-void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
+void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     extern u8 D_800A2F9DSmall;
     u8 *car;
     u8 *obj;
@@ -972,9 +972,9 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
     register s32 quot asm("v1");
     s32 sign;
 
-    camX = *(s32 *)(arg0 + 0);
-    camY = *(s32 *)(arg0 + 4);
-    camZ = *(s32 *)(arg0 + 8);
+    camX = arg0->pos.x;
+    camY = arg0->pos.y;
+    camZ = arg0->pos.z;
     car = arg0;
     obj = arg1;
     if (D_800A2F9DSmall == 0) {
@@ -1061,11 +1061,11 @@ void func_800406D0(u8 *arg0, u8 *arg1, s32 arg2, s32 arg3) {
 }
 
 extern u8 D_800A2F9D;
-extern u8 *gPlayerCarnm[] asm("gPlayerCar.NON_MATCHING");
+extern Car *gPlayerCarnm[] asm("gPlayerCar.NON_MATCHING");
 
 void func_800409A0(u8 *object) {
     s32 id;
-    u8 *player;
+    Car *player;
 
     if (D_800A2F9D == 0) {
         return;
@@ -1084,8 +1084,7 @@ void func_800409A0(u8 *object) {
         player = gPlayerCarnm[0];
         if (object == player) {
             SoundPlaySlot(0x14, 2);
-        } else if (object == *(u8 **)(player + 0x3E0) &&
-                   gSplitScreenMode[0] == 2) {
+        } else if (object == player->next && gSplitScreenMode[0] == 2) {
             SoundPlaySlot(0x15, 2);
         }
     }
@@ -1293,7 +1292,8 @@ void SoundUpdateCar(u8 *car) {
                 func_8003FA84(0, (s8)pitch);
                 SoundSetSlotVolume(0, volume & 0xFF, volume & 0xFF);
             } else {
-                if (*(s16 *)(gPlayerCar[0] + 0x3BA) >= 125 && pitch >= 125) {
+                if (*(s16 *)((u8 *)gPlayerCar[0] + 0x3BA) >= 125 &&
+                    pitch >= 125) {
                     pitch = 120;
                 }
                 SoundSetSlotVolume(1, volume & 0xFF, volume & 0xFF);
@@ -1449,7 +1449,7 @@ void func_80041564(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (D_800A397C[0] == 2) {
         return;
     }
-    if (*(u8 *)(gPlayerCar[0] + 0xF4) == 0 && gSplitScreenMode[0] == 0) {
+    if (*(u8 *)((u8 *)gPlayerCar[0] + 0xF4) == 0 && gSplitScreenMode[0] == 0) {
         return;
     }
     timer = D_800A2EC0Absolute[0];

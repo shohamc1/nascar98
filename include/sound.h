@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-void func_800406D0(u8 *, u8 *, s32, s32);
+void func_800406D0(Car *, Car *, s32, s32);
 s32 func_80041848(u8 *, s32);
 void SoundShutdownAll(void);
 void SoundLoadVab(s32 arg0);

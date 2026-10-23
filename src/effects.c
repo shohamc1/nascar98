@@ -14,7 +14,7 @@
 #include "scene.h"
 #include "sound.h"
 
-extern u8 *gCarListw15[] asm("gCarList.NON_MATCHING");
+extern Car *gCarListw15[] asm("gCarList.NON_MATCHING");
 extern s32 D_800A38AC[];
 extern s32 gRandomSeed16;
 void EffectSpawnAtWheel(u8 *arg0, s32 arg1);
@@ -689,7 +689,7 @@ void func_800442C8(u8 *arg0, u8 *arg1) {
     }
 }
 
-extern u8 *gCarListPack asm("gCarListAbsolute");
+extern Car *gCarListPack asm("gCarListAbsolute");
 
 /* One replay entry: position of an effect slot relative to its owner object
    in 64-unit steps (dz in 32-unit steps), then the owner index in word bits
@@ -725,7 +725,7 @@ void ReplayWriteEffects(EffectPacked *out) {
     clearKind = 0x1FFFFFFF;
 pass1:
     if (slot->active != 0 && (s8)slot->unk1D != kindSpawned) {
-        object = gCarListPack + (s8)slot->unk1E * 0x500;
+        object = (u8 *)gCarListPack + (s8)slot->unk1E * 0x500;
         out->dx = (slot->x - *(s32 *)object) / 64;
         out->dy = (slot->y - *(s32 *)(object + 4)) / 64;
         out->dz = slot->unkC / 32;
@@ -746,7 +746,7 @@ pass1:
         if (count < 10) {
             for (;;) {
                 if (slot->active != 0 && (s8)slot->unk1D == kindSpawned) {
-                    object = gCarListPack + (s8)slot->unk1E * 0x500;
+                    object = (u8 *)gCarListPack + (s8)slot->unk1E * 0x500;
                     out->dx = (slot->x - *(s32 *)object) / 64;
                     out->dy = (slot->y - *(s32 *)(object + 4)) / 64;
                     out->dz = slot->unkC / 32;
@@ -806,7 +806,7 @@ void ReplayReadEffects(u8 *arg0) {
         }
         fp[2] = 1;
         word = *wp;
-        typ = gCarListw15[0] + ((word >> 24) & 0x1F) * 0x500;
+        typ = (u8 *)gCarListw15[0] + ((word >> 24) & 0x1F) * 0x500;
         if ((word & 0xE0000000) == 0x80000000) {
             src40 = *(u32 *)(*(u8 **)(typ + 0x370) + 0x40);
             fp[3] = 10;
