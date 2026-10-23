@@ -70,8 +70,8 @@ void ListRemoveNode(Face **head, Face *target) {
 void func_8001C668(void *headPointer, void *tailPointer) {
     u8 **head;
     u8 **tail;
-    u8 *node;
-    u8 *next;
+    Face *node;
+    Face *next;
     u8 *prevNode;
     u8 *temp;
 
@@ -82,35 +82,34 @@ void func_8001C668(void *headPointer, void *tailPointer) {
     prevNode = NULL;
     *(u8 **)(*tail + 0x28) = 0;
     while (node != NULL) {
-        next = *(u8 **)(node + 0x28);
+        next = node->next;
         while (next != NULL) {
-            if ((node[0x13] & 0x80) != 0 && (next[0x13] & 0x80) == 0) {
+            if ((node->flags & 0x80) != 0 && (next->flags & 0x80) == 0) {
                 {
-                    u8 *current;
-                    u8 *previous;
+                    Face *current;
+                    Face *previous;
                     current = *head;
                     previous = current;
                     while (current != 0) {
                         if (current == node) {
                             if (current == previous) {
-                                *head = *(u8 **)(current + 0x28);
+                                *head = current->next;
                             } else {
-                                *(u8 **)(previous + 0x28) =
-                                    *(u8 **)(current + 0x28);
+                                previous->next = current->next;
                             }
                             goto remove1Done;
                         }
                         if (current != *head)
-                            previous = *(u8 **)(previous + 0x28);
-                        current = *(u8 **)(current + 0x28);
+                            previous = previous->next;
+                        current = current->next;
                     }
                 remove1Done:;
                 }
                 {
-                    u8 *current;
-                    u8 *previous;
+                    Face *current;
+                    Face *previous;
                     if (next == 0) {
-                        *(u8 **)(node + 0x28) = *head;
+                        node->next = *head;
                         *head = node;
                         goto insert2Done;
                     }
@@ -119,46 +118,45 @@ void func_8001C668(void *headPointer, void *tailPointer) {
                     while (current != 0) {
                         if (current == next) {
                             if (current == previous) {
-                                *(u8 **)(node + 0x28) = *head;
+                                node->next = *head;
                                 *head = node;
                             } else {
-                                *(u8 **)(node + 0x28) = current;
-                                *(u8 **)(previous + 0x28) = node;
+                                node->next = current;
+                                previous->next = node;
                             }
                             goto insert2Done;
                         }
                         if (current != *head)
-                            previous = *(u8 **)(previous + 0x28);
-                        current = *(u8 **)(current + 0x28);
+                            previous = previous->next;
+                        current = current->next;
                     }
                 insert2Done:;
                 }
                 {
-                    u8 *current;
-                    u8 *previous;
+                    Face *current;
+                    Face *previous;
                     current = *head;
                     previous = current;
                     while (current != 0) {
                         if (current == next) {
                             if (current == previous) {
-                                *head = *(u8 **)(current + 0x28);
+                                *head = current->next;
                             } else {
-                                *(u8 **)(previous + 0x28) =
-                                    *(u8 **)(current + 0x28);
+                                previous->next = current->next;
                             }
                             goto remove3Done;
                         }
                         if (current != *head)
-                            previous = *(u8 **)(previous + 0x28);
-                        current = *(u8 **)(current + 0x28);
+                            previous = previous->next;
+                        current = current->next;
                     }
                 remove3Done:;
                 }
                 {
-                    u8 *current;
-                    u8 *previous;
+                    Face *current;
+                    Face *previous;
                     if (prevNode == 0) {
-                        *(u8 **)(next + 0x28) = *head;
+                        next->next = *head;
                         *head = next;
                         goto insert4Done;
                     }
@@ -167,17 +165,17 @@ void func_8001C668(void *headPointer, void *tailPointer) {
                     while (current != 0) {
                         if (current == prevNode) {
                             if (current == previous) {
-                                *(u8 **)(next + 0x28) = *head;
+                                next->next = *head;
                                 *head = next;
                             } else {
-                                *(u8 **)(next + 0x28) = current;
-                                *(u8 **)(previous + 0x28) = next;
+                                next->next = current;
+                                previous->next = next;
                             }
                             goto insert4Done;
                         }
                         if (current != *head)
-                            previous = *(u8 **)(previous + 0x28);
-                        current = *(u8 **)(current + 0x28);
+                            previous = previous->next;
+                        current = current->next;
                     }
                 insert4Done:;
                 }
@@ -185,24 +183,24 @@ void func_8001C668(void *headPointer, void *tailPointer) {
                 next = node;
                 node = temp;
             }
-            next = *(u8 **)(next + 0x28);
+            next = next->next;
         }
         prevNode = node;
         next = node;
-        node = *(u8 **)(next + 0x28);
+        node = next->next;
     }
     *tail = next;
 }
 
-void ListPushFront(u8 *node, u8 **head, u8 **tail) {
+void ListPushFront(Face *node, u8 **head, u8 **tail) {
     u8 *oldHead;
     oldHead = *head;
     if (oldHead == 0) {
         *tail = node;
         *head = node;
-        *(u8 **)(node + 0x28) = 0;
+        node->next = 0;
     } else {
-        *(u8 **)(node + 0x28) = oldHead;
+        node->next = oldHead;
         *head = node;
     }
 }
@@ -350,7 +348,7 @@ void func_8001CC7C(u8 *arg0) {
     s32 idx;
     s32 pal;
     s32 c;
-    u8 *entry;
+    Face *entry;
 
     if (*(s16 *)(arg0 + 0xA) != 4) {
         return;
@@ -361,48 +359,48 @@ void func_8001CC7C(u8 *arg0) {
                 4;
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(1, 0, 0x200, 0x100);
-        *(s16 *)(entry + 0xA) = GetClut(0x200, 0x1FF);
-        *(u8 *)(entry + 0x8) = 0;
-        *(u8 *)(entry + 0x9) = 0xA7;
-        *(u8 *)(entry + 0xC) = 0;
-        *(u8 *)(entry + 0xD) = 0xFD;
-        *(u8 *)(entry + 0x10) = 0x7F;
-        *(u8 *)(entry + 0x11) = 0xA7;
-        *(u8 *)(entry + 0x14) = 0x7F;
-        *(u8 *)(entry + 0x15) = 0xFD;
+        entry->tpage = GetTPage(1, 0, 0x200, 0x100);
+        entry->clut = GetClut(0x200, 0x1FF);
+        entry->u0 = 0;
+        entry->v0 = 0xA7;
+        entry->u1 = 0;
+        entry->v1 = 0xFD;
+        entry->u2 = 0x7F;
+        entry->v2 = 0xA7;
+        entry->u3 = 0x7F;
+        entry->v3 = 0xFD;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         pal = 0x40;
         c = 0x78;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0xBF;
-        *(u8 *)(entry + 0x9) = 0;
-        *(u8 *)(entry + 0xD) = c;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = 0;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = c;
+        entry->v0 = 0;
+        entry->v1 = c;
+        entry->u2 = pal;
+        entry->v2 = 0;
+        entry->u3 = pal;
+        entry->v3 = c;
     } else {
         pal = 0x40;
         c = 0x3C;
-        *(u8 *)(entry + 0x8) = pal;
-        *(u8 *)(entry + 0xC) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0xBF;
-        *(u8 *)(entry + 0x9) = c;
-        *(u8 *)(entry + 0xD) = pal;
-        *(u8 *)(entry + 0x10) = pal;
-        *(u8 *)(entry + 0x11) = c;
-        *(u8 *)(entry + 0x14) = pal;
-        *(u8 *)(entry + 0x15) = c;
+        entry->v0 = c;
+        entry->v1 = pal;
+        entry->u2 = pal;
+        entry->v2 = c;
+        entry->u3 = pal;
+        entry->v3 = c;
     }
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0, 0);
+        entry->tpage = GetTPage(2, 0, 0, 0);
     } else {
-        *(s16 *)(entry + 0xE) = GetTPage(2, 0, 0x140, 0);
+        entry->tpage = GetTPage(2, 0, 0x140, 0);
     }
 }
 #else
@@ -413,7 +411,7 @@ void func_8001CC7C(u8 *arg0) {
     u16 clut;
     s32 c;
     s32 d;
-    u8 *entry;
+    Face *entry;
     if ((*((s16 *)(arg0 + 0xA))) != 4) {
         return;
     }
@@ -424,52 +422,52 @@ void func_8001CC7C(u8 *arg0) {
          4);
     SetShadeTex(entry, 1);
     if (D_800A2EC8Absolute[0] != 0) {
-        *((s16 *)(entry + 0xE)) = GetTPage(1, 0, 0x200, 0x100);
+        entry->tpage = GetTPage(1, 0, 0x200, 0x100);
         clut = GetClut(0x200, 0x1FF);
         d = 0xA7;
         c = 0xFD;
-        *((s16 *)(entry + 0xA)) = clut;
+        entry->clut = clut;
         pal = 0x7F;
-        *((u8 *)(entry + 0x8)) = 0;
-        *((u8 *)(entry + 0x9)) = d;
-        *((u8 *)(entry + 0xC)) = 0;
-        *((u8 *)(entry + 0xD)) = 0xFD;
-        *((u8 *)(entry + 0x10)) = 0x7F;
-        *((u8 *)(entry + 0x11)) = d;
-        *((u8 *)(entry + 0x14)) = pal;
-        *((u8 *)(entry + 0x15)) = c;
+        entry->u0 = 0;
+        entry->v0 = d;
+        entry->u1 = 0;
+        entry->v1 = 0xFD;
+        entry->u2 = 0x7F;
+        entry->v2 = d;
+        entry->u3 = pal;
+        entry->v3 = c;
         return;
     }
     pal = ((u8 *)D_800A2EC8Absolute)[0x11];
     if (pal != 0) {
         pal = 0x40;
         c = 0x78;
-        *((u8 *)(entry + 0x8)) = pal;
-        *((u8 *)(entry + 0xC)) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0xBF;
-        *((u8 *)(entry + 0x9)) = 0;
-        *((u8 *)(entry + 0xD)) = c;
-        *((u8 *)(entry + 0x10)) = pal;
-        *((u8 *)(entry + 0x11)) = 0;
-        *((u8 *)(entry + 0x14)) = pal;
-        *((u8 *)(entry + 0x15)) = c;
+        entry->v0 = 0;
+        entry->v1 = c;
+        entry->u2 = pal;
+        entry->v2 = 0;
+        entry->u3 = pal;
+        entry->v3 = c;
     } else {
         pal = 0x40;
         c = 0x3C;
-        *((u8 *)(entry + 0x8)) = pal;
-        *((u8 *)(entry + 0xC)) = pal;
+        entry->u0 = pal;
+        entry->u1 = pal;
         pal = 0xBF;
-        *((u8 *)(entry + 0x9)) = c;
-        *((u8 *)(entry + 0xD)) = pal;
-        *((u8 *)(entry + 0x10)) = pal;
-        *((u8 *)(entry + 0x11)) = c;
-        *((u8 *)(entry + 0x14)) = pal;
-        *((u8 *)(entry + 0x15)) = pal;
+        entry->v0 = c;
+        entry->v1 = pal;
+        entry->u2 = pal;
+        entry->v2 = c;
+        entry->u3 = pal;
+        entry->v3 = pal;
     }
     if (gOrderingTableBankAbsolute[0] != 0) {
-        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0, 0);
+        entry->tpage = GetTPage(2, 0, 0, 0);
     } else {
-        *((s16 *)(entry + 0xE)) = GetTPage(2, 0, 0x140, 0);
+        entry->tpage = GetTPage(2, 0, 0x140, 0);
     }
 }
 

@@ -11,7 +11,8 @@ typedef struct {
     s32 z;
 } Vec3;
 
-/* One 0x28-byte record per wheel, starting at car + 0x2AC. */
+/* One 0x28-byte record per wheel, starting at car + 0x2AC. While the
+ * wheel skids it lays a SkidMark between its last two edge points. */
 typedef struct {
     s16 unk0;
     s16 unk2;
@@ -20,14 +21,15 @@ typedef struct {
     s16 unk8;
     s16 unkA;
     s32 unkC;
-    u8 unk10[0xC];
+    u16 edge0[3]; /* 0x10: last skid edge, x y z */
+    u16 edge1[3]; /* 0x16 */
     s32 unk1C;
-    u8 unk20;
+    u8 skidding;  /* 0x20 */
     u8 unk21;
-    u16 unk22;
+    u16 surface;  /* 0x22: contact surface; 2 picks the second skid art */
     u8 unk24;
     u8 unk25;
-    s16 unk26;
+    s16 skidMark; /* 0x26: index into gSkidMarks, or -1 */
 } Wheel;
 
 /* One 0x18-byte gear record, six from car + 0x124, filled from the

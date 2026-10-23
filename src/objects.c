@@ -4963,7 +4963,7 @@ Visible:
                 func_80041848(car, 0x57);
             }
             D_800A2E28 = D_800A2EC0Lui;
-        } else if (car->wheel[i].unk20 != 0) {
+        } else if (car->wheel[i].skidding != 0) {
             func_800524A0(car, shade >> 24);
         }
     }
@@ -4983,7 +4983,7 @@ Other:
                     func_80041848(car, 0x57);
                 }
                 D_800A2E28 = D_800A2EC0Lui;
-            } else if (car->wheel[i].unk20 != 0) {
+            } else if (car->wheel[i].skidding != 0) {
                 func_800524A0(car, shade2 >> 24);
             }
         }
@@ -4991,7 +4991,7 @@ Other:
     }
     func_80040AC0(car);
     for (i = 0; i < 4; i++) {
-        if (car->wheel[i].unk20 != 0) {
+        if (car->wheel[i].skidding != 0) {
             func_800524A0(car, i);
         }
     }
@@ -11715,7 +11715,7 @@ extern s32 D_800A3640[];
 extern u8 D_800A2ED8Abs[] asm("D_800A2ED8.NON_MATCHING");
 
 u32 func_800342D8(u32 *entry, u8 *primCursor) {
-    u8 *obj;
+    Face *obj;
     register s32 *spad asm("s1");
     s32 w0;
     s32 w1;
@@ -11740,17 +11740,17 @@ u32 func_800342D8(u32 *entry, u8 *primCursor) {
     asm volatile("lui %0, %%hi(gScratchpad)" : "=r"(spad));
     quad = (u16 *)0x1F80001C;
     asm volatile("addiu %0, %1, 0x18" : "=r"(v18base) : "r"(obj));
-    p8 = obj + 8;
+    p8 = (u8 *)obj + 8;
 
     vec = v18base[0];
     gte_ldv0(vec);
-    w0 = *(s32 *)(obj + 0);
-    w1 = *(s32 *)(obj + 4);
+    w0 = *(s32 *)&obj->unk0;
+    w1 = *(s32 *)&obj->r0;
     gte_op(rtps);
-    w2 = *(s32 *)(obj + 8);
-    w3 = *(s32 *)(obj + 0xC);
-    w4 = *(s32 *)(obj + 0x10);
-    w5 = *(s32 *)(obj + 0x14);
+    w2 = *(s32 *)&obj->u0;
+    w3 = *(s32 *)&obj->u1;
+    w4 = *(s32 *)&obj->u2;
+    w5 = *(s32 *)&obj->u3;
     vec = v18base[1];
     gte_ldv0(vec);
     func_80033704((s16 *)0x1F80001C);
@@ -11765,15 +11765,15 @@ u32 func_800342D8(u32 *entry, u8 *primCursor) {
     gte_op(rtps);
     gScratchpad[4] = w4;
     gScratchpad[5] = w5;
-    v18p = *(s32 **)(obj + 0x18);
+    v18p = (s32 *)obj->vertex[0];
     vec = v18base[2];
     w0 = v18p[0];
     w4 = v18p[1];
     gte_ldv0(vec);
     func_80033704((s16 *)0x1F800044);
     gte_op(rtps);
-    v1Cp = *(s32 **)(obj + 0x1C);
-    v24p = *(s32 **)(obj + 0x24);
+    v1Cp = (s32 *)obj->vertex[1];
+    v24p = (s32 *)obj->vertex[3];
     w1 = v1Cp[0];
     w5 = v1Cp[1];
     w2 = v24p[0];
@@ -11910,10 +11910,10 @@ s32 func_800346D0(s32 threshold) {
 }
 
 void func_80034834(void) {
-    u8 *prim;
+    POLY_FT4 *prim;
     u8 *ot;
     s32 i;
-    u8 *obj;
+    Face *obj;
     s32 t0;
     s32 t1;
     s32 t2;
@@ -11924,36 +11924,36 @@ void func_80034834(void) {
     prim = (u8 *)gPrimitiveCursor[0];
     for (i = 0; i < D_800A2F38[0]; i++) {
         obj = (u8 *)D_800B022C[i];
-        if (obj != 0 && (*(u8 *)(obj + 0x13) & 0x80) == 0) {
-            gte_ldv3(*(u32 **)(obj + 0x18), *(u32 **)(obj + 0x1C),
-                     *(u32 **)(obj + 0x20));
+        if (obj != 0 && (obj->flags & 0x80) == 0) {
+            gte_ldv3((u32 *)obj->vertex[0], (u32 *)obj->vertex[1],
+                     (u32 *)obj->vertex[2]);
             /*
              * t0 to t2 are reused for the normal vector load below: that
              * gives each value two live ranges, so global allocation
              * (not local) picks their registers, as in retail.
              */
-            t0 = *(s32 *)(obj + 0x4);
-            t1 = *(s32 *)(obj + 0x8);
+            t0 = *(s32 *)&obj->r0;
+            t1 = *(s32 *)&obj->u0;
             gte_op(rtpt);
-            t2 = *(s32 *)(obj + 0xC);
-            t3 = *(s32 *)(obj + 0x10);
-            t4 = *(s32 *)(obj + 0x14);
-            *(s32 *)(prim + 0x4) = t0;
-            *(s32 *)(prim + 0xC) = t1;
-            *(s32 *)(prim + 0x14) = t2;
-            gte_stsxy3(prim + 8, prim + 0x10, prim + 0x20);
-            t2 = *(s32 *)(obj + 0x24);
+            t2 = *(s32 *)&obj->u1;
+            t3 = *(s32 *)&obj->u2;
+            t4 = *(s32 *)&obj->u3;
+            *(s32 *)&prim->r0 = t0;
+            *(s32 *)&prim->u0 = t1;
+            *(s32 *)&prim->u1 = t2;
+            gte_stsxy3((u8 *)prim + 8, (u8 *)prim + 0x10, (u8 *)prim + 0x20);
+            t2 = (s32)obj->vertex[3];
             t0 = *(s32 *)(t2 + 0);
             t1 = *(s32 *)(t2 + 4);
-            *(s32 *)(prim + 0x1C) = t3;
-            *(s32 *)(prim + 0x24) = t4;
+            *(s32 *)&prim->u2 = t3;
+            *(s32 *)&prim->u3 = t4;
             gte_mtc2(t0, 0);
             gte_mtc2(t1, 1);
             gte_rtps();
             GraphicsAddTaggedPrimitive((u32 *)(ot + 0xC0), (u32 *)prim,
                                        0x09000000);
-            gte_stsxy(prim + 0x18);
-            prim += 0x28;
+            gte_stsxy((u8 *)prim + 0x18);
+            prim++;
         }
     }
     gPrimitiveCursor[0] = (u32)prim;

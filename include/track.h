@@ -26,6 +26,17 @@ typedef struct Face {
     struct Face *next;  /* 0x28 */
 } Face;
 
+/* A 0x58 skid mark from the gSkidMarks pool. Its face is drawn with the
+ * track section it lies on, which links it through next. */
+typedef struct SkidMark {
+    u16 section; /* 0x00: owning track section, or -1 */
+    u8 unk2[2];
+    s32 unk4;
+    Face face;                /* 0x08 */
+    SVECTOR vertex[4];        /* 0x34 */
+    struct SkidMark *next;    /* 0x54 */
+} SkidMark;
+
 /* A 0x90-byte track section. gTrackSections[0] points to the array, and
  * prev and next link each section to its neighbours. */
 typedef struct TrackSection {

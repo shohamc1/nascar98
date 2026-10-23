@@ -2110,7 +2110,7 @@ extern void func_8001B82C(Car *obj, s32 arg1);
 void func_8001BA94(s32 arg0) {
     s32 shade;
     u8 mode;
-    u8 *tile;
+    POLY_F4 *tile;
     Car *node;
     s32 cursor;
     POLY_FT4 *prim;
@@ -2153,40 +2153,40 @@ void func_8001BA94(s32 arg0) {
                   (RAM_RESOURCE_BOUNDARY - 8 - (count * stride)));
     for (j = 0; j < count; j++) {
         shade = 0x80;
-        *(u32 *)(tile + 0) = 0x05000000;
+        tile->tag = 0x05000000;
         if (mode != 0) {
-            tile[4] = shade;
-            tile[5] = 0xC0;
-            tile[6] = shade;
+            tile->r0 = shade;
+            tile->g0 = 0xC0;
+            tile->b0 = shade;
             idx = D_800A2CE0[0] * 2;
-            xy0 = *(u32 *)(tile + 8);
-            ((POLY_F4 *)tile)->x0 -= D_80099230[idx];
-            ((POLY_F4 *)tile)->y0 += D_80099231[idx];
-            xy1 = *(u32 *)(tile + 0xC);
-            ((POLY_F4 *)tile)->x1 -= D_80099230[idx];
-            ((POLY_F4 *)tile)->y1 += D_80099231[idx];
-            xy2 = *(u32 *)(tile + 0x10);
-            ((POLY_F4 *)tile)->x2 -= D_80099230[idx];
-            ((POLY_F4 *)tile)->y2 += D_80099231[idx];
+            xy0 = *(u32 *)&tile->x0;
+            tile->x0 -= D_80099230[idx];
+            tile->y0 += D_80099231[idx];
+            xy1 = *(u32 *)&tile->x1;
+            tile->x1 -= D_80099230[idx];
+            tile->y1 += D_80099231[idx];
+            xy2 = *(u32 *)&tile->x2;
+            tile->x2 -= D_80099230[idx];
+            tile->y2 += D_80099231[idx];
             cursor = gPrimitiveCursorLui;
-            xy3 = *(u32 *)(tile + 0x14);
-            ((POLY_F4 *)tile)->x3 -= D_80099230[idx];
-            ((POLY_F4 *)tile)->y3 += D_80099231[idx];
+            xy3 = *(u32 *)&tile->x3;
+            tile->x3 -= D_80099230[idx];
+            tile->y3 += D_80099231[idx];
             prim = (POLY_FT4 *)cursor;
             gPrimitiveCursorLui = cursor + 0x28;
             *prim = *(POLY_FT4 *)tile;
             AddPrim((void *)gOrderingTable[0], prim);
-            *(u32 *)(tile + 8) = xy0;
-            *(u32 *)(tile + 0xC) = xy1;
-            *(u32 *)(tile + 0x10) = xy2;
-            *(u32 *)(tile + 0x14) = xy3;
-            tile[4] = 0;
-            tile[5] = 0;
-            tile[6] = 0;
+            *(u32 *)&tile->x0 = xy0;
+            *(u32 *)&tile->x1 = xy1;
+            *(u32 *)&tile->x2 = xy2;
+            *(u32 *)&tile->x3 = xy3;
+            tile->r0 = 0;
+            tile->g0 = 0;
+            tile->b0 = 0;
         } else {
             AddPrim((void *)gOrderingTable[0], tile);
         }
-        tile += 0x18;
+        tile++;
     }
 }
 

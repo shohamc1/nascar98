@@ -2283,19 +2283,19 @@ extern u8 gErrorSeparateWalls[];
 
 void func_80015870(u8 *arg0, void *arg1) {
     char buffer[0x40];
-    u8 *node;
+    Face *node;
     u8 *next;
 
     node = *(u8 **)arg0;
     if (node != NULL) {
         do {
-            next = *(u8 **)(node + 0x28);
-            if (*(u8 *)(node + 0x13) & 1) {
+            next = node->next;
+            if (node->flags & 1) {
                 D_800A2D44 += 1;
                 ListRemoveNodeWithTail(node, arg0, arg0 + 4);
                 ListPushFront(node, (u8 **)arg1, (u8 **)((u8 *)arg1 + 4));
             }
-            if (*(u8 *)(node + 0x12) >= 5) {
+            if (node->vertexCount >= 5) {
                 sprintf(buffer, gErrorSeparateWalls);
                 GraphicsRenderFrame((s32)buffer);
             }
@@ -2312,7 +2312,7 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
     s32 maxY;
     s32 maxZ;
     s16 value;
-    u8 *node;
+    Face *node;
     u8 *point;
     u8 **cursor;
     s32 i;
@@ -2327,8 +2327,8 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
     maxX = -0x7D00;
     if (node != NULL) {
         do {
-            count = *(u8 *)(node + 0x12);
-            cursor = (u8 **)(node + 0x18);
+            count = node->vertexCount;
+            cursor = (u8 **)((u8 *)node + 0x18);
             for (i = 0; i < count; i++) {
                 point = cursor[i];
                 value = *(s16 *)(point + 0);
@@ -2353,12 +2353,12 @@ void func_80015930(u8 *arg0, void *arg1, s32 arg2) {
                     maxZ = value;
                 }
             }
-            if (!(*(u8 *)(node + 0x13) & 0x80)) {
+            if (!(node->flags & 0x80)) {
                 if (*(u32 *)(arg0 + 0x10) & 0x10000) {
-                    *(u32 *)(node + 0x4) = 0x4A4A4A;
+                    *(u32 *)((u8 *)node + 0x4) = 0x4A4A4A;
                 }
             }
-            node = *(u8 **)(node + 0x28);
+            node = node->next;
         } while (node != NULL);
     }
     *(s16 *)(arg0 + 0x54) = minX;
@@ -2634,7 +2634,7 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
     extern s32 gOrderingTableBankAbsolute[];
     u8 *polys[250];
     u8 *first;
-    u8 *poly;
+    POLY_GT4 *poly;
     u8 *obj;
     u8 *array;
     u8 *src;
@@ -2692,12 +2692,12 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         w1 = *(s32 *)(src - 0xC);
         w2 = *(s32 *)(src - 8);
         w3 = *(s32 *)(src - 4);
-        *(s32 *)(poly + 0xC) = w0;
-        *(s32 *)(poly + 0x18) = w1;
-        *(s32 *)(poly + 0x24) = w2;
-        *(s32 *)(poly + 0x30) = w3;
+        *(s32 *)&poly->u0 = w0;
+        *(s32 *)&poly->u1 = w1;
+        *(s32 *)&poly->u2 = w2;
+        *(s32 *)&poly->u3 = w3;
         w0 = *(s32 *)(src - 0x14);
-        cba = *(u16 *)(poly + 0xE);
+        cba = poly->clut;
         w1 = w0 & 0xFF;
         w0 >>= 8;
         w2 = w0 & 0xFF;
@@ -2707,21 +2707,21 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         w2 = lut[w2];
         w3 = lut[w3];
         w0 = lut[(w0 >> 8) & 0xFF];
-        *(s32 *)(poly + 0x4) = w1 | 0x3C000000;
-        *(s32 *)(poly + 0x10) = w2;
-        *(s32 *)(poly + 0x28) = w3;
-        *(s32 *)(poly + 0x1C) = w0;
+        *(s32 *)&poly->r0 = w1 | 0x3C000000;
+        *(s32 *)&poly->r1 = w2;
+        *(s32 *)&poly->r3 = w3;
+        *(s32 *)&poly->r2 = w0;
         if (cba == clutOld) {
-            *(u16 *)(poly + 0xE) = clutNew;
-            *(u16 *)(poly + 0x1A) = tpage;
-            *(u8 *)(poly + 0xD) += scroll;
-            *(u8 *)(poly + 0x19) += scroll;
-            *(u8 *)(poly + 0x25) += scroll;
-            *(u8 *)(poly + 0x31) += scroll;
+            poly->clut = clutNew;
+            poly->tpage = tpage;
+            poly->v0 += scroll;
+            poly->v1 += scroll;
+            poly->v2 += scroll;
+            poly->v3 += scroll;
         }
         if (i < count - 1) {
             src += 0x2C;
-            poly = *(u8 **)(poly + 0x34);
+            poly = *(u8 **)((u8 *)poly + 0x34);
         }
     }
     i = 0;
@@ -2736,9 +2736,9 @@ void *func_800163E8(u8 *arg0, s32 arg1) {
         } while (i < *(s16 *)(obj + 0x2C));
     }
     pool = D_800A2D5C;
-    next = *(s32 *)(poly + 0x34);
+    next = *(s32 *)((u8 *)poly + 0x34);
     bank = gOrderingTableBankAbsolute[0];
-    *(s32 *)(poly + 0x34) = 0;
+    *(s32 *)((u8 *)poly + 0x34) = 0;
     D_800A2D5C = pool - count;
     D_800A2D60 = next;
     *(s32 *)(arg0 + bank * 4 + 0x430) = (s32)poly;

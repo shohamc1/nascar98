@@ -1503,7 +1503,7 @@ void func_800474A0(void) {
     s8 count;
     s8 fade;
     u8 *rec;
-    u8 *node;
+    Face *node;
     MATRIX *transPtr;
     u8 *prim;
     u8 *primNext;
@@ -1808,19 +1808,18 @@ void func_800474A0(void) {
             otBaseW = gOrderingTable[0];
             primNext = prim + 0x10;
             do {
-                verts = (SVECTOR **)(node + 0x18);
+                verts = &node->vertex[0];
                 gte_ldv3(verts[0], verts[1], verts[2]);
                 gte_rtpt();
                 gte_avsz3();
-                *(u32 *)(primNext - 0xC) = *(u32 *)(node + 4);
+                *(u32 *)(primNext - 0xC) = *(u32 *)&node->r0;
                 gte_stsxy3(prim + 8, prim + 0xC, prim + 0x14);
                 gte_ldv0(verts[3]);
                 gte_rtps();
                 gte_stsxy(primNext);
-                GraphicsAddTaggedPrimitive(
-                    (u32 *)(otBaseW + *(s8 *)(node + 1) * 4), (u32 *)prim,
-                    0x05000000);
-                node = *(u8 **)(node + 0x28);
+                GraphicsAddTaggedPrimitive((u32 *)(otBaseW + node->depth * 4),
+                                           (u32 *)prim, 0x05000000);
+                node = node->next;
                 primCount--;
                 primNext += 0x18;
                 prim += 0x18;
@@ -7066,45 +7065,44 @@ void SceneSkyFadeDraw(void) {
 }
 
 extern s8 D_800A34E4;
-extern s32 D_800A34F4;
+extern SkidMark *gSkidMarks;
 extern u8 D_80090F7A[];
 
 void func_800524A0(Car *car, s8 arg1) {
     Wheel *wheel;
     u8 *table;
-    u8 *entry;
+    SkidMark *entry;
     u16 w;
     u32 v;
     s32 m2;
 
     wheel = &car->wheel[arg1];
-    m2 = wheel->unk26;
+    m2 = wheel->skidMark;
     wheel->unk24 = 0;
-    wheel->unk20 = 0;
+    wheel->skidding = 0;
     D_800A34E4 = 0;
     if (m2 != -1) {
         table = D_80090F7A;
-        w = wheel->unk22;
-        entry = (u8 *)D_800A34F4 + (m2 * 12 - m2) * 8;
+        w = wheel->surface;
+        entry = &gSkidMarks[m2];
         if (w == 2) {
             table += 0xE;
         }
-        *(s16 *)(entry + 0x12) =
-            GetClut(*(u16 *)(table + 4), *(u16 *)(table + 6));
-        *(s16 *)(entry + 0x16) = GetTPage(
-            *(u16 *)(table + 0xC), 0, *(u16 *)(table + 0), *(u16 *)(table + 2));
+        entry->face.clut = GetClut(*(u16 *)(table + 4), *(u16 *)(table + 6));
+        entry->face.tpage = GetTPage(*(u16 *)(table + 0xC), 0,
+                                     *(u16 *)(table + 0), *(u16 *)(table + 2));
         v = table[8] + 0x3F;
-        entry[0x14] = v;
-        entry[0x10] = v;
+        entry->face.u1 = v;
+        entry->face.u0 = v;
         v = table[8];
-        entry[0x1C] = v;
-        entry[0x18] = v;
+        entry->face.u3 = v;
+        entry->face.u2 = v;
         v = table[0xA];
-        entry[0x19] = v;
-        entry[0x11] = v;
+        entry->face.v2 = v;
+        entry->face.v0 = v;
         v = table[0xA] + 0x1F;
-        entry[0x1D] = v;
-        entry[0x15] = v;
+        entry->face.v3 = v;
+        entry->face.v1 = v;
     }
 }
 
@@ -7127,13 +7125,13 @@ void func_800525A8(Car *arg0, s8 arg1) {
     SVECTOR rot;
     VECTOR out;
     long flag;
-    u8 *entry;
+    Wheel *entry;
     s32 diff;
-    u8 *e;
+    Wheel *e;
     s32 m2;
     u16 w;
-    u8 *tex;
-    u8 *tex2;
+    SkidMark *tex;
+    SkidMark *tex2;
     u8 *q;
     u8 *p;
     u32 v;
@@ -7145,7 +7143,7 @@ void func_800525A8(Car *arg0, s8 arg1) {
     SceneTexture *tim;
     u8 u;
     u8 uv;
-    u8 *node;
+    SkidMark *node;
 
     diff = (u16)arg0->movementHeading - (u16)arg0->heading;
     entry = (u8 *)arg0 + (arg1 * 0x28 + 0x2AC);
@@ -7157,43 +7155,42 @@ void func_800525A8(Car *arg0, s8 arg1) {
             row = (u8 *)arg0 + i * 0x28;
             if (row[0x2CC] != 0) {
                 e = (u8 *)arg0 + (i * 0x28 + 0x2AC);
-                m2 = *(s16 *)(e + 0x26);
-                e[0x24] = 0;
-                e[0x20] = 0;
+                m2 = e->skidMark;
+                e->unk24 = 0;
+                e->skidding = 0;
                 D_800A34E4 = 0;
                 if (m2 != -1) {
                     d = (s32)D_80090F7A;
                     p = (u8 *)d + 0xA;
                     asm("" : "=r"(q) : "0"((u8 *)d));
-                    tex = (u8 *)D_800A34F4 + (m2 * 12 - m2) * 8;
-                    w = *(u16 *)(e + 0x22);
+                    tex = &gSkidMarks[m2];
+                    w = e->surface;
                     if (w == 2) {
                         p = q + 0x18;
                         q += 0xE;
                     }
-                    *(s16 *)(tex + 0x12) =
-                        GetClut(*(u16 *)(p - 6), *(u16 *)(p - 4));
-                    *(s16 *)(tex + 0x16) = GetTPage(*(u16 *)(p + 2), 0,
-                                                    *(u16 *)q, *(u16 *)(p - 8));
+                    tex->face.clut = GetClut(*(u16 *)(p - 6), *(u16 *)(p - 4));
+                    tex->face.tpage = GetTPage(*(u16 *)(p + 2), 0, *(u16 *)q,
+                                               *(u16 *)(p - 8));
                     v = p[-2] + 0x3F;
-                    tex[0x14] = v;
-                    tex[0x10] = v;
+                    tex->face.u1 = v;
+                    tex->face.u0 = v;
                     v = p[-2];
-                    tex[0x1C] = v;
-                    tex[0x18] = v;
+                    tex->face.u3 = v;
+                    tex->face.u2 = v;
                     v = p[0];
-                    tex[0x19] = v;
-                    tex[0x11] = v;
+                    tex->face.v2 = v;
+                    tex->face.v0 = v;
                     v = p[0] + 0x1F;
-                    tex[0x1D] = v;
-                    tex[0x15] = v;
+                    tex->face.v3 = v;
+                    tex->face.v1 = v;
                 }
             }
         }
         return;
     }
     if (arg1 == 0) {
-        if (entry[0x20] == 0 && arg0->steering != 0 && D_800A34E4 == 0) {
+        if (entry->skidding == 0 && arg0->steering != 0 && D_800A34E4 == 0) {
             if (arg0->steering > 0) {
                 D_800A34E4 = 1;
             }
@@ -7212,7 +7209,7 @@ void func_800525A8(Car *arg0, s8 arg1) {
         }
         side2 = 1;
         if (d < 0x40) {
-            arg0->wheel[2].unk20 = 0;
+            arg0->wheel[2].skidding = 0;
             return;
         }
         side1 = 1;
@@ -7224,7 +7221,7 @@ void func_800525A8(Car *arg0, s8 arg1) {
         }
         side1 = 1;
         if (d < 0x40) {
-            arg0->wheel[3].unk20 = 0;
+            arg0->wheel[3].skidding = 0;
             return;
         }
         side2 = -1;
@@ -7283,42 +7280,42 @@ loop2:
     if (i < 2) {
         goto loop2;
     }
-    if (entry[0x20] == 0) {
-        *(u16 *)(entry + 0x10) = coords[0][0];
-        *(u16 *)(entry + 0x12) = coords[1][0];
-        *(u16 *)(entry + 0x14) = coords[2][0];
-        *(u16 *)(entry + 0x16) = coords[0][1];
-        *(u16 *)(entry + 0x18) = coords[1][1];
-        *(u16 *)(entry + 0x1A) = coords[2][1];
-        entry[0x20] = 1;
+    if (entry->skidding == 0) {
+        entry->edge0[0] = coords[0][0];
+        entry->edge0[1] = coords[1][0];
+        entry->edge0[2] = coords[2][0];
+        entry->edge1[0] = coords[0][1];
+        entry->edge1[1] = coords[1][1];
+        entry->edge1[2] = coords[2][1];
+        entry->skidding = 1;
     } else {
         {
             s32 cur;
 
             cur = D_800A34E8;
-            tex2 = (u8 *)D_800A34F4 + (cur * 12 - cur) * 8;
+            tex2 = &gSkidMarks[cur];
         }
-        *(u16 *)(tex2 + 0x44) = *(u16 *)(entry + 0x10);
-        *(u16 *)(tex2 + 0x46) = *(u16 *)(entry + 0x12);
-        *(u16 *)(tex2 + 0x48) = *(u16 *)(entry + 0x14);
-        *(u16 *)(tex2 + 0x34) = *(u16 *)(entry + 0x10) = coords[0][0];
-        *(u16 *)(tex2 + 0x36) = *(u16 *)(entry + 0x12) = coords[1][0];
-        *(u16 *)(tex2 + 0x38) = *(u16 *)(entry + 0x14) = coords[2][0];
-        *(u16 *)(tex2 + 0x4C) = *(u16 *)(entry + 0x16);
-        *(u16 *)(tex2 + 0x4E) = *(u16 *)(entry + 0x18);
-        *(u16 *)(tex2 + 0x50) = *(u16 *)(entry + 0x1A);
-        *(u16 *)(tex2 + 0x3C) = *(u16 *)(entry + 0x16) = coords[0][1];
-        *(u16 *)(tex2 + 0x3E) = *(u16 *)(entry + 0x18) = coords[1][1];
-        *(u16 *)(tex2 + 0x40) = *(u16 *)(entry + 0x1A) = coords[2][1];
+        tex2->vertex[2].vx = entry->edge0[0];
+        tex2->vertex[2].vy = entry->edge0[1];
+        tex2->vertex[2].vz = entry->edge0[2];
+        tex2->vertex[0].vx = entry->edge0[0] = coords[0][0];
+        tex2->vertex[0].vy = entry->edge0[1] = coords[1][0];
+        tex2->vertex[0].vz = entry->edge0[2] = coords[2][0];
+        tex2->vertex[3].vx = entry->edge1[0];
+        tex2->vertex[3].vy = entry->edge1[1];
+        tex2->vertex[3].vz = entry->edge1[2];
+        tex2->vertex[1].vx = entry->edge1[0] = coords[0][1];
+        tex2->vertex[1].vy = entry->edge1[1] = coords[1][1];
+        tex2->vertex[1].vz = entry->edge1[2] = coords[2][1];
         if (*(s16 *)tex2 != -1) {
             node = ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children;
-            if (*(u8 **)(node + 0x54) == 0) {
+            if ((u8 *)node->next == 0) {
                 ((TrackSection *)gTrackSections[0])[*(s16 *)tex2].children = 0;
             } else {
-                while (*(u8 **)(*(u8 **)(node + 0x54) + 0x54) != 0) {
-                    node = *(u8 **)(node + 0x54);
+                while (*(u8 **)((u8 *)node->next + 0x54) != 0) {
+                    node = (u8 *)node->next;
                 }
-                *(u8 **)(node + 0x54) = 0;
+                node->next = 0;
             }
         }
         {
@@ -7330,7 +7327,7 @@ loop2:
             cur = D_800A34E8;
             asm("" : "=r"(owner) : "0"((u16)arg0->segment));
             slot = (u8 *)((cur * 12 - cur) * 8);
-            slot += D_800A34F4;
+            slot += (s32)gSkidMarks;
             key = (s16)owner;
             asm volatile("");
             *(u16 *)slot = owner;
@@ -7338,37 +7335,37 @@ loop2:
                 ((TrackSection *)gTrackSections[0])[key].children;
             ((TrackSection *)gTrackSections[0])[key].children = slot;
         }
-        if (*(u16 *)(entry + 0x22) == 2) {
-            if (entry[0x24] != 0) {
+        if (entry->surface == 2) {
+            if (entry->unk24 != 0) {
                 tim = (SceneTexture *)D_80090F6C;
             } else {
                 tim = (SceneTexture *)D_80090F88;
-                entry[0x24] = 1;
+                entry->unk24 = 1;
             }
         } else {
-            if (entry[0x24] != 0) {
+            if (entry->unk24 != 0) {
                 tim = (SceneTexture *)D_80090F5E;
             } else {
                 tim = (SceneTexture *)D_80090F7A;
-                entry[0x24] = 1;
+                entry->unk24 = 1;
             }
         }
         tex2 =
-            (new_var4 = (u8 *)D_800A34F4 + (D_800A34E8 * 12 - D_800A34E8) * 8);
-        *(s16 *)(tex2 + 0x12) = GetClut(tim->clutX, tim->clutY);
-        *(s16 *)(tex2 + 0x16) = GetTPage(tim->tpage, 0, tim->tpx, tim->tpy);
+            (new_var4 = (u8 *)gSkidMarks + (D_800A34E8 * 12 - D_800A34E8) * 8);
+        tex2->face.clut = GetClut(tim->clutX, tim->clutY);
+        tex2->face.tpage = GetTPage(tim->tpage, 0, tim->tpx, tim->tpy);
         u = tim->u;
-        tex2[0x14] = u;
-        tex2[0x10] = u;
+        tex2->face.u1 = u;
+        tex2->face.u0 = u;
         u = tim->u + 0x3F;
-        tex2[0x1C] = u;
-        tex2[0x18] = u;
+        tex2->face.u3 = u;
+        tex2->face.u2 = u;
         uv = tim->v + 0x1F;
-        tex2[0x19] = uv;
-        tex2[0x11] = uv;
+        tex2->face.v2 = uv;
+        tex2->face.v0 = uv;
         uv = tim->v;
-        tex2[0x1D] = uv;
-        tex2[0x15] = uv;
+        tex2->face.v3 = uv;
+        tex2->face.v1 = uv;
         {
             register u16 cur asm("$5");
             register u8 *base asm("$6");
@@ -7377,11 +7374,11 @@ loop2:
             u8 *slot;
 
             cur = D_800A34E8;
-            base = (u8 *)D_800A34F4;
+            base = (u8 *)gSkidMarks;
             head = D_800A2EC0Absolute[0];
             slot = (u8 *)(((s16)cur * 12 - (s16)cur) * 8);
             slot += (s32)base;
-            *(u16 *)(entry + 0x26) = cur;
+            entry->skidMark = cur;
             next = (s16)(cur + 1);
             *(s32 *)(slot + 4) = head;
             new_var4 = ((u8 *)arg0 + arg1 * 0x28) + 0x2B4;
@@ -7391,16 +7388,16 @@ loop2:
     }
     switch (arg1) {
     case 2:
-        *(u16 *)(entry + 0x22) = arg0->frontRightContact;
+        entry->surface = arg0->frontRightContact;
         break;
     case 3:
-        *(u16 *)(entry + 0x22) = arg0->frontLeftContact;
+        entry->surface = arg0->frontLeftContact;
         break;
     case 0:
-        *(u16 *)(entry + 0x22) = arg0->rearRightContact;
+        entry->surface = arg0->rearRightContact;
         break;
     case 1:
-        *(u16 *)(entry + 0x22) = arg0->rearLeftContact;
+        entry->surface = arg0->rearLeftContact;
         break;
     }
 }
@@ -7410,7 +7407,7 @@ extern s8 D_800A34F0;
 
 void func_80052E18(void) {
     s16 i;
-    u8 *elem;
+    SkidMark *elem;
     POLY_FT4 *poly;
     Car *p;
     u8 *entry;
@@ -7418,22 +7415,22 @@ void func_80052E18(void) {
     D_800A34E8 = 0;
     D_800A34F0 = 0;
     D_800A34EC = 0;
-    D_800A34F4 = (s32)HeapAlloc(0x2260);
+    gSkidMarks = (SkidMark *)HeapAlloc(0x2260);
     i = 0;
     do {
-        elem = (u8 *)D_800A34F4 + i * 0x58;
-        poly = (POLY_FT4 *)(elem + 8);
+        elem = &gSkidMarks[i];
+        poly = (POLY_FT4 *)&elem->face;
         SetPolyFT4(poly);
         SetSemiTrans(poly, 1);
         SetShadeTex(poly, 1);
-        elem[9] = 0x10;
-        *(u32 *)(elem + 0x20) = (u32)(elem + 0x34);
-        *(u32 *)(elem + 0x24) = (u32)(elem + 0x3C);
-        *(u32 *)(elem + 0x28) = (u32)(elem + 0x4C);
-        *(u32 *)(elem + 0x2C) = (u32)(elem + 0x44);
-        elem[0xA] = 0xD;
-        *(s32 *)(elem + 0x30) = 0;
-        *(s16 *)elem = -1;
+        elem->face.depth = 0x10;
+        elem->face.vertex[0] = &elem->vertex[0];
+        elem->face.vertex[1] = &elem->vertex[1];
+        elem->face.vertex[2] = &elem->vertex[3];
+        elem->face.vertex[3] = &elem->vertex[2];
+        elem->face.type = 0xD;
+        elem->face.next = 0;
+        *(s16 *)&elem->section = -1;
         i++;
     } while (i < 100);
     i = 0;
