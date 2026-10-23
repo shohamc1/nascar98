@@ -404,7 +404,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     MenuObj *entry;
     u8 count2;
     u8 *subBase;
-    u8 *sub;
+    MenuText *sub;
     u8 *local;
     s32 value;
     u8 *entry2;
@@ -432,9 +432,9 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     D_800A37BC = count2 + 1;
     sub = subBase + count2 * 12;
     entry->primitive = sub;
-    sub[0] = 0;
-    sub[3] = 0;
-    *(s32 *)(sub + 4) = 0;
+    sub->shade = 0;
+    sub->center = 0;
+    sub->otz = 0;
     local = entry->primitive;
     D_800A3788 = (Df50Fields *)entry;
     local[1] = 2;
@@ -465,7 +465,7 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 panelH;
     s32 panelB;
     u8 *prim;
-    u8 *prim2;
+    MenuText *prim2;
     u8 *cur;
     s32 value;
     s32 word;
@@ -496,19 +496,19 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     } while (0);
     prim += primIndex * 12;
     *(u8 **)&object->primitive = prim;
-    prim[0] = 0;
-    prim[3] = 0;
-    *(s32 *)(prim + 4) = 0;
+    ((MenuText *)prim)->shade = 0;
+    ((MenuText *)prim)->center = 0;
+    ((MenuText *)prim)->otz = 0;
     prim2 = object->primitive;
     offset = arg0 & 0xFF;
     stride = 4;
     offset = offset * stride;
     D_800A3740 = (s32 **)object;
-    prim2[1] = 2;
-    prim2[2] = 2;
+    prim2->font = 2;
+    prim2->scale = 2;
     value = *(s32 *)((u8 *)D_8009A31C + offset);
     cur = (u8 *)D_800A3740;
-    *(s32 *)(prim2 + 8) = value;
+    prim2->text = value;
     word = *(u16 *)(cur + 6);
     word = word + 5;
     *(u16 *)(cur + 6) = word;
@@ -797,7 +797,7 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     POLY_FT4 *pr8;
     u8 *prC8;
     POLY_F4 *prC9;
-    u8 *prD10;
+    MenuText *prD10;
     u8 *prD7;
     s16 w2, c2, k2, g2, b2;
     s16 w4, g4, z4;
@@ -1425,11 +1425,11 @@ void func_8005ED74(u8 arg0, u8 arg1) {
             entry->x = entry->targetX - 0xAD;
             entry->height = MenuFontLineHeight();
             prD10 = entry->primitive;
-            prD10[1] = 2;
-            prD10[2] = 2;
+            prD10->font = 2;
+            prD10->scale = 2;
         }
         i++;
-        *(s32 *)(prD10 + 8) = *strP;
+        prD10->text = *strP;
         yBase += 0xA;
     } while (i < 4);
     if (arg1 != 0) {
@@ -2001,13 +2001,13 @@ void MenuSetLinkedObjectLayout(s32 a, s32 b, s16 c) {
 
 extern u8 gMusicVolumeScaledLui asm("gMusicVolumeScaledAbsolute");
 void MenuSetVolume(s32 volumePercent, s32 volumeSettingIndex) {
-    u8 *node;
+    MenuObj *node;
     u8 x;
 
     node = (u8 *)D_800A38A8->next;
     volumeSettingIndex &= 0xFF;
     x = volumePercent;
-    *(u16 *)(node + 0x16) = x;
+    node->width = x;
     if (volumeSettingIndex != 0) {
         x = volumePercent;
         gMusicVolumeScaledLui = (x * 127) / 100;
@@ -3694,7 +3694,7 @@ panelLoop:
             register s32 nodeBlue asm("$12");
             MenuObj *node;
             register u8 *primitive asm("$17");
-            u8 *panelNode;
+            MenuObj *panelNode;
             asm volatile(".set\tnoreorder\n"
                          "lw\t$t4, 0x40($sp)\n"
                          "lbu\t$t3, 0x20($sp)\n"
@@ -3788,7 +3788,7 @@ panelLoop:
                     rowX += 0xF;
                     asm volatile("" : : "r"(rowX) : "memory");
                     currentNode->drawOffsetY =
-                        *(u16 *)(panelNode + 0x14) + 0x37;
+                        (u16)panelNode->drawOffsetY + 0x37;
                     previousNode->next = currentNode;
                     previousNode = currentNode;
                     triangleColumn++;
@@ -4857,7 +4857,7 @@ void func_80064208(void) {
     MenuObj *node;
     MenuObj *prim;
     MenuObj *entry;
-    u8 *obj;
+    MenuObj *obj;
     MenuObj **linkSlot;
     s32 y;
     s32 height;
@@ -4943,12 +4943,12 @@ void func_80064208(void) {
     obj = D_800A35E0Alias[1];
     h = *(&D_800A35E4[D_800A3A14]->targetX);
     while (obj != 0) {
-        node = (MenuObj *)(obj + 0xE);
+        node = (MenuObj *)&obj->velocityX;
         *((s16 *)node) = 2;
-        obj[5] = 2;
-        *((s16 *)(obj + 6)) = (*((u16 *)(obj + 0x12))) - 0x10C;
-        *((s16 *)(obj + 0xA)) = (*((u16 *)(obj + 0x12))) + h;
-        obj = *(u8 **)(obj + 0x1C);
+        obj->unk5 = 2;
+        obj->x = ((u16)obj->drawOffsetX) - 0x10C;
+        obj->targetX = ((u16)obj->drawOffsetX) + h;
+        obj = obj->next;
     }
 
     func_80063AE0(D_800A3A14, D_800A39FC);
@@ -5039,7 +5039,7 @@ void func_800645A4(s32 arg0, s32 arg1) {
         str = (u8 *)D_800A3958[arg0 & 0xFF];
         advance = 1;
     }
-    *(s16 *)(str + 0x1A) = advance;
+    ((MenuObj *)str)->orderingDepth = advance;
 }
 
 void ListSetRangeFields(MenuObj *node, s32 low, s32 high, s16 value) {

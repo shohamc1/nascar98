@@ -1422,9 +1422,9 @@ MenuObj *MenuCreateTextObject(s32 left, s32 top) {
     } while (0);
     prim += primIndex * 12;
     *(u8 **)&object->primitive = prim;
-    prim[0] = 0;
-    prim[3] = 0;
-    *(s32 *)(prim + 4) = 0;
+    ((MenuText *)prim)->shade = 0;
+    ((MenuText *)prim)->center = 0;
+    ((MenuText *)prim)->otz = 0;
     return (MenuObj *)object;
 }
 

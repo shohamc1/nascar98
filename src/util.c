@@ -429,11 +429,11 @@ void CarDrawAll(void) {
             if (oldEntry != 0) {
                 value = *(s8 *)(car + bank + 0x41C);
                 offset = value * 0x44 + *(s32 *)&((Car *)car)->shape;
-                hw = *(s16 *)(offset + 0x2A);
+                hw = ((Model *)offset)->faceCount;
                 ptr = (u32)D_800A2D64;
                 size = D_800A2D5C;
                 extra = *(s32 *)(entries + 0x430);
-                *(s32 *)(ptr + 0x34) = oldEntry;
+                *(s32 *)&((Model *)ptr)->faceList = oldEntry;
                 D_800A2D64 = (s32 *)extra;
                 *(s32 *)(entries + 0x420) = 0;
                 D_800A2D5C = size + hw;
@@ -448,11 +448,11 @@ void CarDrawAll(void) {
             if (oldEntry2 != 0) {
                 value2 = *(s8 *)(car + bank2 + 0x41C);
                 offset2 = value2 * 0x44 + *(s32 *)&((Car *)car)->shape;
-                hw2 = *(s16 *)(offset2 + 0x2A);
+                hw2 = ((Model *)offset2)->faceCount;
                 ptr2 = (u32)D_800A2D64;
                 size2 = D_800A2D5C;
                 extra2 = *(s32 *)(entries2 + 0x430);
-                *(s32 *)(ptr2 + 0x34) = oldEntry2;
+                *(s32 *)&((Model *)ptr2)->faceList = oldEntry2;
                 D_800A2D64 = (s32 *)extra2;
                 *(s32 *)(entries2 + 0x420) = 0;
                 D_800A2D5C = size2 + hw2;

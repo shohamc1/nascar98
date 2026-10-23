@@ -1944,7 +1944,7 @@ typedef struct {
     s32 scale;
 } CurveSeg;
 
-s32 TrackTestPointInSection(s32 x, s32 y, u8 *section) {
+s32 TrackTestPointInSection(s32 x, s32 y, TrackSection *section) {
     CurveSeg *seg;
     s32 *crossingXs;
     s32 segmentCount;
@@ -1956,8 +1956,8 @@ s32 TrackTestPointInSection(s32 x, s32 y, u8 *section) {
 
     crossingCount = 0;
     crossingXs = (s32 *)SCRATCHPAD_BASE;
-    seg = (CurveSeg *)D_800A356C + *(u16 *)(section + 8);
-    segmentCount = section[0xE];
+    seg = (CurveSeg *)D_800A356C + section->section;
+    segmentCount = ((u8 *)section)[0xE];
     for (i = segmentCount; i > 0; i--, seg++) {
         if (y >= seg->lo && y < seg->hi) {
             crossingX = seg->base + ((seg->scale * (y - seg->lo)) >> 16);
@@ -1991,7 +1991,7 @@ s32 TrackTestPointInSection(s32 x, s32 y, u8 *section) {
 
 extern s32 D_800A2E08;
 extern s32 D_800A3838;
-s32 TrackTestPointInSection(s32, s32, u8 *);
+s32 TrackTestPointInSection(s32, s32, TrackSection *);
 
 typedef struct {
     u8 unk0;
@@ -2566,7 +2566,7 @@ void func_80025730(Car *obj) {
         i = 3;
         p = (u8 *)obj + 0x78;
         do {
-            *(s16 *)(p + 0x2B0) = value;
+            ((Car *)p)->wheel[0].effect = value;
             i--;
             p -= 0x28;
         } while (i >= 0);
@@ -8103,11 +8103,11 @@ void CarKeepOnTrack(Car *car) {
     s32 dz;
     s32 dist;
     s32 heading;
-    u8 *camera;
+    Car *camera;
 
     camera = (u8 *)D_800A38AC[0];
     if (car != camera) {
-        *(u16 *)(camera + 0x1E0) = (u16)car->segment;
+        camera->segment = (u16)car->segment;
         if (car->unk375 == 0) {
             func_80031264(car);
             if (D_800A2EC8Small != 0) {
@@ -8253,12 +8253,12 @@ extern s32 D_800A37ACAbsolute[];
 extern s32 D_800A37A4Absolute[];
 void func_8002F0A8(Car *focusCar) {
     s32 local[8];
-    u8 *owner;
+    Car *owner;
 
     D_800A2EA0Small = focusCar;
     owner = (u8 *)D_800A38AC[0];
     if (focusCar != owner) {
-        *(u16 *)(owner + 0x1E0) = (u16)focusCar->segment;
+        owner->segment = (u16)focusCar->segment;
     } else {
         *(u16 *)&((Car *)D_800A38AC[0])->segment = TrackFindSectionForward(
             focusCar->pos.x, focusCar->pos.y, &focusCar->regionIndex);
@@ -8456,13 +8456,13 @@ void func_8002F5F4(void) {
     s32 temp;
 
     node = D_800A2E9CSmall;
-    node = *(s32 *)((u8 *)node + 0x3E0);
+    node = *(s32 *)&((Car *)node)->next;
     D_800A2E9CSmall = node;
-    if (node != 0 && *(s32 *)((u8 *)node + 0x350) != (s32)func_80029E34) {
+    if (node != 0 && *(s32 *)&((Car *)node)->update != (s32)func_80029E34) {
         return;
     }
     node = gCarList;
-    temp = *(s32 *)((u8 *)node + 0x350);
+    temp = *(s32 *)&((Car *)node)->update;
     f = (s32)func_80029E34;
     D_800A2E9CSmall = node;
     if (temp != f) {
@@ -8470,8 +8470,8 @@ void func_8002F5F4(void) {
     }
     do {
         node = D_800A2E9CSmall;
-        node = *(s32 *)((u8 *)node + 0x3E0);
-        temp = *(s32 *)((u8 *)node + 0x350);
+        node = *(s32 *)&((Car *)node)->next;
+        temp = *(s32 *)&((Car *)node)->update;
         D_800A2E9CSmall = node;
     } while (temp == f);
 }
@@ -8505,7 +8505,7 @@ void func_8002F674(void) {
             D_800A2F24 = 4;
             D_800A2F1C = 0;
             D_800A2F20 = 0;
-            *(u8 *)(D_800A3558[0] + 0x20C) = 4;
+            *(u8 *)&((Car *)D_800A3558[0])->cameraMode = 4;
             D_800A2F14 = 0;
             D_800A2F18 = 100;
         } else {
@@ -8515,13 +8515,13 @@ void func_8002F674(void) {
                 D_800A2F18 -= 1;
             }
             if (D_800A2F20 > 100) {
-                value = *(s32 *)(D_800A2E9CSmall + 0x3E0);
+                value = *(s32 *)&((Car *)D_800A2E9CSmall)->next;
                 D_800A2F20 = 0;
                 D_800A2E9CSmall = value;
                 if (value == 0) {
                     D_800A2E9CSmall = (s32)gPlayerCar[0];
                 }
-                *(u8 *)(D_800A3558[0] + 0x20C) = D_800A2F24;
+                *(u8 *)&((Car *)D_800A3558[0])->cameraMode = D_800A2F24;
                 r = RandomGetScaled16(4);
                 if (r < 0) {
                     r = -RandomGetScaled16(4);
@@ -8531,19 +8531,19 @@ void func_8002F674(void) {
                 switch (r) {
                 case 0:
                     D_800A2F24 = 11;
-                    *(u8 *)(D_800A3558[0] + 0x20C) = 11;
+                    *(u8 *)&((Car *)D_800A3558[0])->cameraMode = 11;
                     break;
                 case 1:
                     D_800A2F24 = 4;
-                    *(u8 *)(D_800A3558[0] + 0x20C) = 4;
+                    *(u8 *)&((Car *)D_800A3558[0])->cameraMode = 4;
                     break;
                 case 2:
                     D_800A2F24 = 4;
-                    *(u8 *)(D_800A3558[0] + 0x20C) = 4;
+                    *(u8 *)&((Car *)D_800A3558[0])->cameraMode = 4;
                     break;
                 case 3:
                     D_800A2F24 = 6;
-                    *(u8 *)(D_800A3558[0] + 0x20C) = 6;
+                    *(u8 *)&((Car *)D_800A3558[0])->cameraMode = 6;
                     break;
                 }
             }
@@ -9169,9 +9169,9 @@ void GraphicsDrawRaceViews(void) {
     MATRIX rotation;
     Car *drawCar;
     s32 bank;
-    u8 *mainCamera;
-    u8 *secondCamera;
-    u8 *insetCamera;
+    Car *mainCamera;
+    Car *secondCamera;
+    Car *insetCamera;
     s32 secondTable;
     s32 tableOffset;
     s32 ticks;
@@ -9211,7 +9211,7 @@ void GraphicsDrawRaceViews(void) {
     D_800B9D54Frame[0] = ticks - D_800B9D54Frame[0];
     mainCamera = D_800A38ACFrame1[0];
     if (focusCar != mainCamera) {
-        (*(u16 *)(mainCamera + 0x1E0)) = (u16)((u16)focusCar->segment);
+        ((u16)mainCamera->segment) = (u16)((u16)focusCar->segment);
     } else {
         (*(u16 *)&((Car *)D_800A38ACFrame2[0])->segment) =
             TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
@@ -9269,7 +9269,7 @@ void GraphicsDrawRaceViews(void) {
         D_800A2EA0Frame = focusCar;
         secondCamera = D_800A38ACFrame7[0];
         if (focusCar != secondCamera) {
-            (*(u16 *)(secondCamera + 0x1E0)) = (u16)((u16)focusCar->segment);
+            ((u16)secondCamera->segment) = (u16)((u16)focusCar->segment);
         } else {
             (*(u16 *)&((Car *)D_800A38ACFrame8[0])->segment) =
                 TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
@@ -9338,7 +9338,7 @@ void GraphicsDrawRaceViews(void) {
         D_800A2EA0Frame = focusCar;
         insetCamera = D_800A38ACFrame13[0];
         if (focusCar != insetCamera) {
-            (*(u16 *)(insetCamera + 0x1E0)) = (u16)((u16)focusCar->segment);
+            ((u16)insetCamera->segment) = (u16)((u16)focusCar->segment);
         } else {
             (*(u16 *)&((Car *)D_800A38ACFrame14[0])->segment) =
                 TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
@@ -11092,17 +11092,17 @@ void GteStoreScreenCoordinates(void *vertex) {
     asm volatile("swc2 $14, 0x8(%0)\n\t.set\tnoreorder" : : "r"(vertex));
 }
 
-void GteStoreDepthAndScreenCoordinates(u8 *vertex) {
+void GteStoreDepthAndScreenCoordinates(SVECTOR *vertex) {
     register u32 depth asm("$6");
 
     /* Retail reads GTE IR3 (SZ average) and stores SXY2 for one vertex. */
     asm("mfc2 %0, $11" : "=r"(depth));
     asm("swc2 $14, 0x14($a0)");
     depth >>= 2;
-    *(u16 *)(vertex + 6) = depth;
+    vertex->pad = depth;
 }
 
-void func_8003379C(u8 *arg0, u8 *arg1, u8 *arg2) {
+void func_8003379C(SVECTOR *arg0, SVECTOR *arg1, SVECTOR *arg2) {
     register u32 depthA asm("$3");
     register u32 depthB;
 
@@ -11111,17 +11111,17 @@ void func_8003379C(u8 *arg0, u8 *arg1, u8 *arg2) {
     asm volatile("mfc2 %0, $17" : "=r"(depthA));
     asm("swc2 $12, 0x14($a0)");
     depthA >>= 2;
-    *(u16 *)(arg0 + 6) = depthA;
+    arg0->pad = depthA;
 
     asm volatile("mfc2 %0, $18" : "=r"(depthB));
     asm("swc2 $13, 0x14($a1)");
     depthB >>= 2;
-    *(u16 *)(arg1 + 6) = depthB;
+    arg1->pad = depthB;
 
     asm volatile("mfc2 %0, $19" : "=r"(depthA));
     asm("swc2 $14, 0x14($a2)");
     depthA >>= 2;
-    *(u16 *)(arg2 + 6) = depthA;
+    arg2->pad = depthA;
 }
 
 s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {

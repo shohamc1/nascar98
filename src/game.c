@@ -2782,18 +2782,18 @@ void func_80016744(u32 arg0) {
     entries = (bank << 2) + arg0;
     oldEntry = *(s32 *)(entries + 0x420);
     if (oldEntry != 0) {
-        value = *(s8 *)(arg0 + bank + 0x41C);
-        offset = value * 0x44 + *(s32 *)(arg0 + 0x370);
-        hw = *(s16 *)(offset + 0x2A);
+        value = *(s8 *)((u8 *)arg0 + bank + 0x41C);
+        offset = value * 0x44 + *(s32 *)((u8 *)arg0 + 0x370);
+        hw = ((Model *)offset)->faceCount;
         ptr = (u32)D_800A2D64;
         size = D_800A2D5C;
         extra = *(s32 *)(entries + 0x430);
-        *(s32 *)(ptr + 0x34) = oldEntry;
+        *(s32 *)&((Model *)ptr)->faceList = oldEntry;
         D_800A2D64 = (s32 *)extra;
         *(s32 *)(entries + 0x420) = 0;
         D_800A2D5C = size + hw;
     }
-    *(s8 *)(arg0 + gOrderingTableBankLui + 0x41C) = -1;
+    *(s8 *)((u8 *)arg0 + gOrderingTableBankLui + 0x41C) = -1;
 }
 
 s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -2823,10 +2823,10 @@ s32 func_800167BC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
         if (oldEntry != 0) {
             offset = value * 0x44 + *(s32 *)&((Car *)arg0)->shape;
             ptr = (u32)D_800A2D64;
-            hw = *(s16 *)(offset + 0x2A);
+            hw = ((Model *)offset)->faceCount;
             extra = *(s32 *)(entries + 0x430);
             size = D_800A2D5C;
-            *(s32 *)(ptr + 0x34) = oldEntry;
+            *(s32 *)&((Model *)ptr)->faceList = oldEntry;
             do {
                 *(s32 *)(entries + 0x420) = 0;
                 D_800A2D64 = (s32 *)extra;

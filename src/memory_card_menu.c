@@ -2782,8 +2782,8 @@ void func_8006C668(s32 start, s32 arg1);
 void func_8006C2D0(s32 arg0) {
     s32 i;
     register MenuObj *node;
-    u8 *entry;
-    u8 *s;
+    MenuText *entry;
+    MenuObj *s;
     u8 *sentinel;
     MenuObj *head;
     MenuObj *cursor;
@@ -2796,7 +2796,7 @@ void func_8006C2D0(s32 arg0) {
         node = D_800A3908[0];
         for (i = 0; i < 2; i++) {
             entry = (u8 *)node->primitive;
-            *(u32 *)(entry + 8) = D_8009A4D8[i];
+            entry->text = D_8009A4D8[i];
             if (node->orderingDepth < 0) {
                 node->orderingDepth = -node->orderingDepth;
             }
@@ -2813,7 +2813,7 @@ void func_8006C2D0(s32 arg0) {
             } while (node != sentinel);
             s = D_800A377C[0];
         }
-        *(u8 *)(s + 5) = 0;
+        s->unk5 = 0;
         D_800A358C = 0;
     } else {
         if ((arg0 & 0xFF) != 0) {
@@ -3250,7 +3250,7 @@ void CardMenuAppendTrackName(void) {
 
 void func_8006CF90(u32 mode) {
     extern u8 gMemoryCardNameInitialCharacter[];
-    u8 *node;
+    MenuObj *node;
     MenuObj *st;
     char *entry;
     s8 c;
@@ -3260,7 +3260,7 @@ void func_8006CF90(u32 mode) {
     s32 result;
 
     node = D_800A377C[0];
-    st = *(u8 **)(node + 0x1C);
+    st = node->next;
     mode &= 0xFF;
     if (mode != 0) {
         if ((s8)st->unk5 > 0) {

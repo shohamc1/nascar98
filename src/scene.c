@@ -1526,7 +1526,7 @@ void func_800474A0(void) {
     s32 c8val;
     s8 count;
     s8 fade;
-    u8 *rec;
+    ModelVertex *rec;
     Face *node;
     MATRIX *transPtr;
     u8 *prim;
@@ -1775,14 +1775,14 @@ void func_800474A0(void) {
                 do {
                     rec = s4Off + gHandSegments + s1v * 336 +
                           ((s16)s2v * 20 + 0xB0);
-                    vec.vx = *(u32 *)(rec + 8);
-                    vec.vy = *(u32 *)(rec + 0xC);
-                    vec.vz = *(u32 *)(rec + 0x10);
+                    vec.vx = (u32)rec->world.x;
+                    vec.vy = (u32)rec->world.y;
+                    vec.vz = (u32)rec->world.z;
                     RotTrans(&vec, &out, &gteFlag);
                     *(u16 *)rec = out.vx;
-                    *(u16 *)(rec + 2) = out.vy;
+                    rec->local.vy = out.vy;
                 } while (0);
-                *(u16 *)(rec + 4) = out.vz;
+                rec->local.vz = out.vz;
                 s2v += 1;
                 if (s2v < 8) {
                     goto vtxLoopA;
@@ -1794,18 +1794,18 @@ void func_800474A0(void) {
                 do {
                     rec = s4Off + gHandSegments + s1v * 336 +
                           ((s16)s2v * 20 + 0xB0);
-                    vec.vx = *(u32 *)(rec + 8);
-                    vec.vy = *(u32 *)(rec + 0xC);
+                    vec.vx = (u32)rec->world.x;
+                    vec.vy = (u32)rec->world.y;
                     if ((u16)(s2v - 2) < 2 || (u16)(s2v - 6) < 2) {
-                        vec.vz = *(u32 *)(rec + 0x10) + (s16)absA3 * 3 - 0x1E;
+                        vec.vz = (u32)rec->world.z + (s16)absA3 * 3 - 0x1E;
                     } else {
-                        vec.vz = *(u32 *)(rec + 0x10);
+                        vec.vz = (u32)rec->world.z;
                     }
                     RotTrans(&vec, &out, &gteFlag);
                     *(u16 *)rec = out.vx;
-                    *(u16 *)(rec + 2) = out.vy;
+                    rec->local.vy = out.vy;
                 } while (0);
-                *(u16 *)(rec + 4) = out.vz;
+                rec->local.vz = out.vz;
                 s2v += 1;
                 if (s2v < 8) {
                     goto vtxLoopB;
@@ -7421,7 +7421,7 @@ void func_80052E18(void) {
     SkidMark *elem;
     POLY_FT4 *poly;
     Car *p;
-    u8 *entry;
+    Car *entry;
 
     D_800A34E8 = 0;
     D_800A34F0 = 0;
@@ -7453,9 +7453,9 @@ void func_80052E18(void) {
     while (p != 0) {
         for (i = 0; i < 4; i++) {
             entry = (u8 *)p + i * 0x28;
-            *(s16 *)(entry + 0x2D2) = -1;
-            entry[0x2D0] = 0;
-            entry[0x2CC] = 0;
+            entry->wheel[0].skidMark = -1;
+            entry->wheel[0].unk24 = 0;
+            entry->wheel[0].skidding = 0;
         }
         p->unk3B9 = 0;
         p = p->next;
