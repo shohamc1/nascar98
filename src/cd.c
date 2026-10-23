@@ -1020,8 +1020,8 @@ void func_8003DBA8(Car *object) {
                                     !(*(s32 *)&object->unk3A4 & 0x100F))) {
             func_8003D754(object);
         }
-        delta[0] = *(s32 *)(targets + 0x14) - object->pos.x;
-        ringResult = *(s32 *)(targets + 0x18);
+        delta[0] = ((TrackSection *)(targets - 0x34))->unk48 - object->pos.x;
+        ringResult = ((TrackSection *)(targets - 0x34))->unk4C;
         ringV1 = object->pos.y;
         ringResult -= ringV1;
         ringV1 = D_800A39E0CarState;
@@ -1533,7 +1533,7 @@ void func_8003EBD0(Car *object, s32 index) {
 
 extern u8 D_800A387C[];
 
-void func_8003ECB8(u8 *object) {
+void func_8003ECB8(TrackCallback *object) {
     Car *current;
     register u8 *base;
     s32 id;
@@ -1551,7 +1551,7 @@ void func_8003ECB8(u8 *object) {
     current = *(u8 **)(D_800A387C - 4);
     base = D_800BE97C[0];
     if (current != 0) {
-        id = *(s16 *)(object + 0xC) - 1;
+        id = object->callback - 1;
         for (; current != 0; current = (u8 *)current->next) {
             if (current->unk1DE == id) {
                 break;
@@ -1560,27 +1560,28 @@ void func_8003ECB8(u8 *object) {
         if (current != 0 && current->type != 1 && current->unk268 != 0) {
             depth = current->unk26C[8];
             i = 0;
-            if (i < *(s16 *)(object + 0xA)) {
+            if (i < object->count) {
                 s32 *adjust;
 
                 adjust = D_800AE84C;
-                src = object;
-                dst = object;
+                src = (u8 *)object;
+                dst = (u8 *)object;
                 do {
-                    value = *(s16 *)&((Car *)src)->unk94;
-                    extra = *(s32 *)(object + 0x218);
-                    u16v = *(u16 *)(dst + 0x10);
+                    /* src and dst step through coord[i] and index[i]. */
+                    value = ((TrackCallback *)src)->coord[0][2];
+                    extra = object->offset[2];
+                    u16v = ((TrackCallback *)dst)->index[0];
                     row = (u8 *)((u32)(u16v << 3) + (u32)base);
                     sum = value + extra;
                     moved = sum - depth;
                     if (moved < 0) {
                         moved += 3;
                     }
-                    *(s16 *)(row + 4) = (moved >> 2) - adjust[0];
+                    ((SVECTOR *)row)->vz = (moved >> 2) - adjust[0];
                     src += 6;
                     dst += 2;
                     i++;
-                } while (i < *(s16 *)(object + 0xA));
+                } while (i < object->count);
             }
         }
     }

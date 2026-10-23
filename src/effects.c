@@ -283,8 +283,8 @@ void EffectDrawParticle(Particle *object) {
         SetTransMatrix(&matrix);
         SetRotMatrix(&matrix);
         node = object->unk2C;
-        angle1 = *(s16 *)(node + 0x10);
-        angle2 = *(s16 *)(node + 0x12);
+        angle1 = ((ModelPart *)node)->firstFace;
+        angle2 = ((ModelPart *)node)->faceCount;
         func_800328AC((void *)(object->unk28 + angle1 * 44), angle2);
     }
     PopMatrix();
@@ -663,15 +663,15 @@ void EffectRestoreSlots(void) {
     }
 }
 
-void func_800442C8(u8 *arg0, u8 *arg1) {
+void func_800442C8(u8 *arg0, ReplayFrame *arg1) {
     u32 bits;
     s32 i;
 
-    bits = *(u32 *)(arg1 + 8);
+    bits = arg1->state;
     if (D_800A2EDC[0] != 0) {
         i = 0;
         do {
-            if ((*(u16 *)(arg1 + 0xC) >> i & 1) != 0) {
+            if ((arg1->unkC >> i & 1) != 0) {
                 *(u8 *)(arg0 + 0x3A6 + i) = 0;
             } else {
                 *(u8 *)(arg0 + 0x3A6 + i) = 1;

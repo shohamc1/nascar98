@@ -890,6 +890,15 @@ void func_8006FAAC(void) {
 extern void func_800708D8(void *, s32);
 extern s32 D_800A339C;
 
+/* The header of a decoded movie frame; the image follows at 0x10. */
+typedef struct {
+    u32 header; /* 0x00 */
+    u32 unk4;
+    u16 width;  /* 0x08 */
+    u16 height; /* 0x0A */
+    u8 unkC[4];
+} MovieFrame;
+
 void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     MovieContext *st;
     MovieContext *st2;
@@ -915,17 +924,17 @@ void func_8006FBB0Args(u8 *frameData, s32 x, s16 y) {
     s32 h32;
     u32 i;
 
-    word = *(u32 *)frameData;
+    word = ((MovieFrame *)frameData)->header;
     st = gMovieContext;
 
     bsw = word >> 0x18;
     bsw = bsw | ((word >> 8) & 0xFF00);
     bsw = bsw | ((word & 0xFF00) << 8);
     magic = bsw | (word << 0x18);
-    wA = *(u16 *)(frameData + 0xA);
+    wA = ((MovieFrame *)frameData)->height;
     asm volatile("srl %0, %1, 8" : "=r"(cnt) : "r"(wA));
     wAlo = wA & 0xFF;
-    w8 = *(u16 *)(frameData + 8);
+    w8 = ((MovieFrame *)frameData)->width;
     wAlo = wAlo << 8;
     bsw = cnt | wAlo;
     cnt = *(s32 *)((u8 *)(st) + 0x118);
@@ -1015,9 +1024,9 @@ void func_8006FDDC(u8 *frameData, s32 x, s16 y) {
     u32 nsectors16;
     s32 stride;
 
-    word = *(u32 *)frameData;
-    w8 = *(u16 *)(frameData + 8);
-    wA = *(u16 *)(frameData + 0xA);
+    word = ((MovieFrame *)frameData)->header;
+    w8 = ((MovieFrame *)frameData)->width;
+    wA = ((MovieFrame *)frameData)->height;
     magic = (word >> 24) | ((word >> 8) & 0xFF00) | ((word & 0xFF00) << 8) |
             (word << 0x18);
     rect.y = y;

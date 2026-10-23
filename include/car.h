@@ -30,6 +30,15 @@ typedef struct {
     s16 unk16;
 } ModelPart;
 
+/* A run of a model's faces, linked from Model.runs. ModelBuildReverseLinks
+ * chains the runs' faces into the model's face list. */
+typedef struct FaceRun {
+    s32 unk0;
+    struct FaceRun *next; /* 0x04 */
+    Face *first;          /* 0x08 */
+    Face *last;           /* 0x0C */
+} FaceRun;
+
 /* A 0x44 model, one per level of detail: its vertices, faces and parts. */
 typedef struct Model {
     u8 unk0[0x14];
@@ -49,7 +58,7 @@ typedef struct Model {
     s16 scroll;      /* 0x32 */
     Face *faceList;  /* 0x34: the faces, linked through next */
     Face *faces;     /* 0x38: the face array */
-    void *unk3C;
+    FaceRun *runs;   /* 0x3C */
     ModelPart *parts; /* 0x40 */
 } Model;
 

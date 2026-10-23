@@ -5415,8 +5415,8 @@ void func_8004F880(void) {
             p = (s8 *)D_800A2CE0[0];
         } while (0);
         p = (s8 *)((s32)p + (s32)pb);
-        *(u16 *)(uvBase + 4) = lim;
-        *(u16 *)(uvBase + 2) = lim;
+        *(u16 *)&((LapRecord *)uvBase)->unk4 = lim;
+        ((LapRecord *)uvBase)->unk2 = lim;
         j = 0;
         if (j < p[0]) {
             pj = p;

@@ -2009,6 +2009,13 @@ extern u8 gPadTypew17[] asm("gPadType.NON_MATCHING");
 extern u8 gPadLayoutw17[] asm("gPadLayout.NON_MATCHING");
 extern u8 D_800BBA24w17[] asm("D_800BBA24.NON_MATCHING");
 
+/* A 0x0C entry in a memory-card slot's record table at D_800A35F4. */
+typedef struct {
+    u8 count[4]; /* 0x00 */
+    u32 best;    /* 0x04 */
+    u32 unk8;
+} CardRecord;
+
 void func_8006ADC4(u8 arg0, char *arg1, u8 arg2, u8 arg3, s32 arg4, u8 arg5,
                    u8 arg6, u8 arg7) {
     typedef struct {
@@ -2076,39 +2083,39 @@ outer:
         if (i == arg2) {
             if (arg5 == 0) {
                 if ((d3 = d3) == 0 && arg6 == 0) {
-                    rec[1] = one;
+                    ((CardRecord *)rec)->count[1] = one;
                 } else {
-                    rec[1] = 0;
+                    ((CardRecord *)rec)->count[1] = 0;
                 }
                 if (d7 == 2) {
-                    rec[2] = 0;
-                    rec[3] = 0;
+                    ((CardRecord *)rec)->count[2] = 0;
+                    ((CardRecord *)rec)->count[3] = 0;
                 } else {
                     if (lt5 != 0) {
-                        rec[2] = one;
+                        ((CardRecord *)rec)->count[2] = one;
                     } else {
-                        rec[2] = 0;
+                        ((CardRecord *)rec)->count[2] = 0;
                     }
                     if ((lt10 = lt10) != 0 && lt11 == 0) {
-                        rec[3] = one;
+                        ((CardRecord *)rec)->count[3] = one;
                     } else {
-                        rec[3] = 0;
+                        ((CardRecord *)rec)->count[3] = 0;
                     }
                 }
-                rec[0] = one;
+                ((CardRecord *)rec)->count[0] = one;
             } else {
-                rec[0] = 0;
-                rec[1] = 0;
-                rec[2] = 0;
-                rec[3] = 0;
+                ((CardRecord *)rec)->count[0] = 0;
+                ((CardRecord *)rec)->count[1] = 0;
+                ((CardRecord *)rec)->count[2] = 0;
+                ((CardRecord *)rec)->count[3] = 0;
             }
-            *(s32 *)(rec + 4) = arg4;
+            *(s32 *)&((CardRecord *)rec)->best = arg4;
         } else {
-            rec[0] = 0;
-            rec[1] = 0;
-            rec[2] = 0;
-            rec[3] = 0;
-            *(s32 *)(rec + 4) = 0x7FFFFFFF;
+            ((CardRecord *)rec)->count[0] = 0;
+            ((CardRecord *)rec)->count[1] = 0;
+            ((CardRecord *)rec)->count[2] = 0;
+            ((CardRecord *)rec)->count[3] = 0;
+            *(s32 *)&((CardRecord *)rec)->best = 0x7FFFFFFF;
         }
         sum = (d0x16 + d0) * 4 + table;
         src = (u8 *)(i * 4 + sum);
@@ -2168,25 +2175,28 @@ void func_8006B1CC(u8 arg0, s32 arg1, u8 arg2, u8 arg3, u32 arg4, u8 arg5,
     driver = arg0;
     seven = arg7;
     if (arg5 == 0) {
-        rec[0] = rec[0] + 1;
+        ((CardRecord *)rec)->count[0] = ((CardRecord *)rec)->count[0] + 1;
         if (arg3 == 0) {
             if (arg6 == 0) {
-                rec[1] = rec[1] + 1;
+                ((CardRecord *)rec)->count[1] =
+                    ((CardRecord *)rec)->count[1] + 1;
             }
         }
         if (seven >= 6) {
             if (arg3 < 5) {
-                rec[2] = rec[2] + 1;
+                ((CardRecord *)rec)->count[2] =
+                    ((CardRecord *)rec)->count[2] + 1;
             }
         }
         if (seven >= 0xB) {
             if (arg3 < 0xA) {
-                rec[3] = rec[3] + 1;
+                ((CardRecord *)rec)->count[3] =
+                    ((CardRecord *)rec)->count[3] + 1;
             }
         }
     }
-    if (arg4 < *(u32 *)(rec + 4)) {
-        *(u32 *)(rec + 4) = arg4;
+    if (arg4 < ((CardRecord *)rec)->best) {
+        ((CardRecord *)rec)->best = arg4;
     }
     i = 0;
     row = (slot & 0xFF) * 0xE8;

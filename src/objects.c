@@ -906,16 +906,6 @@ extern Car *gCarListRecord[] asm("gCarList.NON_MATCHING");
 extern Car *D_800A3960Record[] asm("gCrashCar.NON_MATCHING");
 extern Car *gPlayerCarRecord[] asm("gPlayerCar.NON_MATCHING");
 
-/* A 0x14 replay frame: one car's position and packed state. */
-typedef struct {
-    s32 x;     /* 0x00 */
-    s32 y;     /* 0x04 */
-    u32 state; /* 0x08: heading, steering, damage, gear and flags */
-    u16 unkC;  /* 0x0C: Car.unk3A4 */
-    u16 speed; /* 0x0E: speed and reverse speed */
-    u32 unk10; /* 0x10 */
-} ReplayFrame;
-
 void func_8002267C(void) {
     Car *node;
     s32 base;
@@ -2817,8 +2807,8 @@ void func_80025F40(Car *arg0, s32 arg1) {
 
     entry =
         (u8 *)(*(s32 *)((s32)arg0->shape + 0x40) + (1 - (arg1 & 0xFF)) * 0x18);
-    pos[0] = *(s32 *)(entry + 4);
-    pos[1] = *(s32 *)(entry + 8);
+    pos[0] = ((ModelPart *)entry)->origin.x;
+    pos[1] = ((ModelPart *)entry)->origin.y;
     pos[2] = 0x4B;
     func_8001EEC4Args(arg0, arg1 & 0xFF);
     MatrixRotateVector(pos);
@@ -10106,7 +10096,7 @@ void ObjectLoadGeometry(Model *model, ModelFileHeader *data, s32 reuse) {
         }
         sourceFace += 24;
     }
-    model->unk3C = NULL;
+    model->runs = NULL;
     for (i = 0; i < offsetCount; i++) {
         offsetSource = offsetData + i * 24;
         model->parts[i].firstVertex = (u16)offsetSource->firstVertex;
@@ -10191,17 +10181,17 @@ void ModelLoadGeometryFromAddress(s32 dataAddress, s32 reuse) {
 }
 
 void ModelBuildReverseLinks(Model *object) {
-    u8 *node;
+    FaceRun *node;
 
-    node = (u8 *)object->unk3C;
+    node = object->runs;
     if (node != NULL) {
         object->faceList = 0;
         do {
-            if (*(s32 *)(node + 0x8) != 0) {
-                *(s32 *)(*(s32 *)(node + 0xC) + 0x28) = (s32)object->faceList;
-                object->faceList = *(s32 *)(node + 0x8);
+            if (node->first != NULL) {
+                node->last->next = object->faceList;
+                object->faceList = node->first;
             }
-            node = *(u8 **)(node + 0x4);
+            node = node->next;
         } while (node != NULL);
     }
 }
@@ -11881,8 +11871,8 @@ void func_80034834(void) {
             *(s32 *)&prim->u1 = t2;
             gte_stsxy3((u8 *)prim + 8, (u8 *)prim + 0x10, (u8 *)prim + 0x20);
             t2 = (s32)obj->vertex[3];
-            t0 = *(s32 *)(t2 + 0);
-            t1 = *(s32 *)(t2 + 4);
+            t0 = *(s32 *)&((SVECTOR *)t2)->vx;
+            t1 = *(s32 *)&((SVECTOR *)t2)->vz;
             *(s32 *)&prim->u2 = t3;
             *(s32 *)&prim->u3 = t4;
             gte_mtc2(t0, 0);
@@ -13512,8 +13502,8 @@ s32 func_80037204(Car *obj) {
         base = (u8 *)gTrackSections[0];
         idx = rem * 0x90;
         entry = base + idx;
-        obj->pos.x = *(s32 *)(entry + 0x48);
-        obj->pos.y = *(s32 *)(entry + 0x4C);
+        obj->pos.x = ((TrackSection *)entry)->unk48;
+        obj->pos.y = ((TrackSection *)entry)->unk4C;
         b2 = (u8 *)gTrackSectionsz[0];
         val = *(u16 *)(idx + (s32)b2 + 0x10);
         counter = (obj->lap = (u16)obj->lap - 2);

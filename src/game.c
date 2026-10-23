@@ -2981,10 +2981,10 @@ s32 func_80016ACC(Car *arg0, s16 *arg1) {
     if (count > 0) {
         lp = p + 4;
         do {
-            w = *(s32 *)(lp + 0xC);
+            w = ((ModelVertex *)(lp - 0x4))->world.z;
             i++;
             w = w + fade;
-            *(s16 *)lp = w;
+            ((ModelVertex *)(lp - 0x4))->local.vz = w;
             lp += 0x14;
         } while (i < count);
     }
@@ -2994,7 +2994,8 @@ copyOnly:
     if (count > 0) {
         lp = p + 4;
         do {
-            *(s16 *)lp = *(s32 *)(lp + 0xC);
+            ((ModelVertex *)(lp - 0x4))->local.vz =
+                ((ModelVertex *)(lp - 0x4))->world.z;
             i++;
             lp += 0x14;
         } while (i < count);

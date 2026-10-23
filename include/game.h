@@ -6,6 +6,16 @@
 #include "car.h"
 #include "track.h"
 
+/* A 0x14 replay frame: one car's position and packed state. */
+typedef struct {
+    s32 x;     /* 0x00 */
+    s32 y;     /* 0x04 */
+    u32 state; /* 0x08: heading, steering, damage, gear and flags */
+    u16 unkC;  /* 0x0C: Car.unk3A4 */
+    u16 speed; /* 0x0E: speed and reverse speed */
+    u32 unk10; /* 0x10 */
+} ReplayFrame;
+
 /* A 0x0A font glyph: its texture page position, UV and size. The first
    glyph of a menu font holds the font's line height. */
 typedef struct {
