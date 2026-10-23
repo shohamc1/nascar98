@@ -3558,20 +3558,6 @@ s32 VectorProjectAgainstHeading(void *vector, s32 heading) {
     return result >> 2;
 }
 
-typedef struct {
-    s16 x, y, z, pad;
-} ContactPoint;
-typedef struct TrackContact {
-    u8 unk0[19];
-    u8 flags;
-    u8 unk14[2];
-    s16 heading;
-    ContactPoint *point0;
-    ContactPoint *point1;
-    ContactPoint *point2;
-    ContactPoint *point3;
-    struct TrackContact *next;
-} TrackContact;
 typedef struct ContactRegion {
     u16 minX;
     u16 minY;
@@ -3579,11 +3565,6 @@ typedef struct ContactRegion {
     u16 maxY;
     u8 unk8[8];
 } ContactRegion;
-typedef struct ContactTrack {
-    u8 unk0[40];
-    TrackContact *contacts;
-    u8 unk2C[100];
-} ContactTrack;
 extern char D_8008CFE0[];
 extern s32 *gContactCosTable asm("D_800A3A2CAbsolute2");
 extern s32 *gContactSinTable asm("D_800A3A34Absolute2");
@@ -3601,10 +3582,10 @@ s32 CarHandleWallCollision(void *object) {
     } workspace;
     ContactCorner *corners;
     ContactCorner *corners2;
-    ContactPoint *wallPoint;
+    SVECTOR *wallPoint;
     ContactRegion *region;
-    TrackContact *nearestContact;
-    register TrackContact *contact asm("$19");
+    TrackQuad *nearestContact;
+    register TrackQuad *contact asm("$19");
     s32 heading;
     s32 impulse;
     s32 trackIndex;
@@ -3630,7 +3611,7 @@ s32 CarHandleWallCollision(void *object) {
     s32 shapeExtent;
     ContactRegion *regionBase;
     register s32 *sinSubtract asm("$4");
-    ContactTrack *track;
+    TrackSection *track;
     register s32 rowOffset asm("$2");
     register s32 originX asm("$3");
     register s32 originY asm("$2");
@@ -3716,12 +3697,12 @@ s32 CarHandleWallCollision(void *object) {
     }
     {
         /* All four contact flags can retain the incoming impulse register. */
-        track = FAR_VAR(ContactTrack *, gFarTrack);
+        track = FAR_VAR(TrackSection *, gFarTrack);
         rowOffset = trackIndex * 0x90;
         rowOffset = (s32)track + rowOffset;
-        contact = *(TrackContact **)(rowOffset + 0x28);
+        contact = *(TrackQuad **)(rowOffset + 0x28);
         if (contact == NULL) {
-            contact = track->contacts;
+            contact = track->firstQuad;
         }
         currentX = car->pos.x;
         if (currentX < 0) {
@@ -3740,15 +3721,15 @@ s32 CarHandleWallCollision(void *object) {
         if (contact != NULL) {
             do {
 
-                sumX = contact->point0->x + contact->point1->x +
-                       contact->point2->x + contact->point3->x;
+                sumX = contact->vertex[0]->vx + contact->vertex[1]->vx +
+                       contact->vertex[2]->vx + contact->vertex[3]->vx;
                 centerX = sumX >> 2;
                 if (sumX < 0) {
                     centerX = (s32)(sumX + 3) >> 2;
                 }
                 workspace.point[0] = centerX;
-                meanY = (s32)(contact->point0->y + contact->point1->y +
-                              contact->point2->y + contact->point3->y) /
+                meanY = (s32)(contact->vertex[0]->vy + contact->vertex[1]->vy +
+                              contact->vertex[2]->vy + contact->vertex[3]->vy) /
                         4;
                 absDy = meanY - value0;
                 workspace.point[1] = meanY;
@@ -3780,12 +3761,12 @@ s32 CarHandleWallCollision(void *object) {
         if (nearestContact == NULL) {
             SystemShowFatalError(D_8008CFE0);
         }
-        wallPoint = contact->point0;
+        wallPoint = contact->vertex[0];
         workspace.point[0] =
-            ((wallPoint->x + FAR_VAR(s32, gFarOffsetX)) * 4) - car->pos.x;
+            ((wallPoint->vx + FAR_VAR(s32, gFarOffsetX)) * 4) - car->pos.x;
         workspace.point[1] =
-            ((wallPoint->y + FAR_VAR(s32, gFarOffsetY)) * 4) - car->pos.y;
-        headingDelta = contact->heading;
+            ((wallPoint->vy + FAR_VAR(s32, gFarOffsetY)) * 4) - car->pos.y;
+        headingDelta = contact->angle;
         carHeading = car->heading;
         headingDelta -= carHeading;
         positiveDelta = headingDelta + 0x400;
@@ -3886,9 +3867,9 @@ s32 CarHandleWallCollision(void *object) {
                 }
                 car->lateralSpeed = 0;
                 if (contact->flags & 2) {
-                    normalHeading = contact->heading + 0x300;
+                    normalHeading = contact->angle + 0x300;
                 } else {
-                    normalHeading = contact->heading + 0x100;
+                    normalHeading = contact->angle + 0x100;
                 }
                 value1 = normalHeading & 0x3FF;
                 asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
@@ -4037,9 +4018,9 @@ s32 CarHandleWallCollision(void *object) {
                 func_8003644C(1, value1, value0,
                               workspace.effect[2] + RandomScaledGet(0x32));
                 if (contact->flags & 2) {
-                    normalHeading2 = contact->heading + 0x300;
+                    normalHeading2 = contact->angle + 0x300;
                 } else {
-                    normalHeading2 = contact->heading + 0x100;
+                    normalHeading2 = contact->angle + 0x100;
                 }
                 value1 = normalHeading2 & 0x3FF;
                 asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
@@ -4233,9 +4214,9 @@ s32 CarHandleWallCollision(void *object) {
             car->pos.y += MathMultiplyFixed16(car->basis[1].x, value1);
             car->pos.z += MathMultiplyFixed16(car->basis[2].x, value1);
             if (contact->flags & 2) {
-                normalHeading3 = contact->heading + 0x300;
+                normalHeading3 = contact->angle + 0x300;
             } else {
-                normalHeading3 = contact->heading + 0x100;
+                normalHeading3 = contact->angle + 0x100;
             }
             value1 = normalHeading3 & 0x3FF;
             asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
@@ -4343,9 +4324,9 @@ s32 CarHandleWallCollision(void *object) {
             car->pos.y += MathMultiplyFixed16(car->basis[1].x, value1);
             car->pos.z += MathMultiplyFixed16(car->basis[2].x, value1);
             if (contact->flags & 2) {
-                normalHeading4 = contact->heading + 0x300;
+                normalHeading4 = contact->angle + 0x300;
             } else {
-                normalHeading4 = contact->heading + 0x100;
+                normalHeading4 = contact->angle + 0x100;
             }
             value1 = normalHeading4 & 0x3FF;
             reverseHeading6 = 0x400;
@@ -9712,18 +9693,10 @@ void func_800319D4(Car *, s32);
 u16 func_80030F24(Car *, s32 *, s32, s32, s32);
 extern s16 TrackFindSectionForwards16(s32, s32,
                                       void *) asm("TrackFindSectionForward");
-typedef struct {
-    u8 pad[0x1C];
-    s16 unk1C;
-    s16 unk1E;
-    s16 unk20;
-    s16 unk22;
-} ObjectBounds;
-
 void func_80031264(Car *object) {
     s32 corners[5][4];
     s32 normals[3][4];
-    ObjectBounds *state;
+    ContactShape *state;
     s32 length;
     s32 sum;
     s32 result;
@@ -9738,7 +9711,7 @@ void func_80031264(Car *object) {
     s32 crossY;
     s32 crossZ;
 
-    state = (ObjectBounds *)object->shape;
+    state = object->shape;
     if (object->type != 0) {
         func_800319D4(object, 0);
         return;
@@ -9758,14 +9731,14 @@ void func_80031264(Car *object) {
     object->unk1E4 = -1;
     object->collisionPending = 0;
     D_800A2F2C = object->regionIndex;
-    object->frontRightContact =
-        func_80030F24(object, corners[3], state->unk1E, state->unk22, 0);
+    object->frontRightContact = func_80030F24(
+        object, corners[3], state->rearExtent, state->halfWidth, 0);
     object->frontLeftContact =
-        func_80030F24(object, corners[0], state->unk1E, state->unk20, 0);
-    object->rearRightContact =
-        func_80030F24(object, corners[2], state->unk1C, state->unk22, 0);
+        func_80030F24(object, corners[0], state->rearExtent, state->unk20, 0);
+    object->rearRightContact = func_80030F24(
+        object, corners[2], state->frontExtent, state->halfWidth, 0);
     object->rearLeftContact =
-        func_80030F24(object, corners[1], state->unk1C, state->unk20, 0);
+        func_80030F24(object, corners[1], state->frontExtent, state->unk20, 0);
     object->segment = TrackFindSectionForwards16(object->pos.x, object->pos.y,
                                                  (u8 *)object + 0x1F8);
     if (object->frontRightContact == 0) {
@@ -16607,24 +16580,6 @@ void func_8003B464(void) {
     D_800A2F65 = 0;
 }
 
-/* One 0x90-byte entry of gTrackSections, as the running order reads it. */
-typedef struct {
-    u8 unk0[0x10];
-    u16 heading;
-    u8 unk12[2];
-    s32 x;
-    s32 z;
-    u8 unk1C[0x90 - 0x1C];
-} RankSection;
-
-/* The car fields the running order reads and writes. */
-
-/* A list node followed by the car that owns it. */
-typedef struct {
-    DoublyLinkedNode link;
-    Car *car;
-} RankLink;
-
 extern s32 D_800A2F60;
 extern Car *gRankCarList[] asm("gCarListAbsolute");
 extern Car *gRankPlayerCar[] asm("gPlayerCarAbsolute");
@@ -16636,7 +16591,7 @@ extern u8 D_800A306DAbsolute[];
 __inline__ u8 CarIsAheadOnSection(Car *car, Car *other) {
     s32 unused[2];
     s32 section;
-    RankSection *sec;
+    TrackSection *sec;
     s32 angle;
     s32 cs;
     s32 sn;
@@ -16652,8 +16607,8 @@ __inline__ u8 CarIsAheadOnSection(Car *car, Car *other) {
     if (section == -1) {
         return 0;
     }
-    sec = &((RankSection *)gTrackSections[0])[section];
-    angle = (0x400 - sec->heading) & 0x3FF;
+    sec = &((TrackSection *)gTrackSections[0])[section];
+    angle = (0x400 - sec->angle) & 0x3FF;
     cs = ((s32 **)D_800A3A2CAbsolute)[0][angle];
     sn = ((s32 **)D_800A3A34Absolute)[0][angle];
     dx = car->pos.x - sec->x;
@@ -16747,7 +16702,7 @@ void RaceUpdatePositions(u8 force) {
             best->order.car = best;
             ListPushFrontDoublyLinked(&best->order, &first, &last);
         }
-        leader = ((RankLink *)first)->car;
+        leader = ((CarLink *)first)->car;
         last->previous = NULL;
         D_800A35E0[0] = (s32)leader;
         if (D_800A2EF0Absolute == 0 && leader->penalty != 0) {
@@ -16779,8 +16734,8 @@ void RaceUpdatePositions(u8 force) {
                            prevPlace[assist] < 16) {
                     if ((D_800A306DAbsolute[0] != 0 ||
                          player->place < prevPlace[assist] - 1) &&
-                        ((RankLink *)player->order.node.previous)
-                                ->car->unk268 == 0) {
+                        ((CarLink *)player->order.node.previous)->car->unk268 ==
+                            0) {
                         func_80041564(player, 0x26);
                     }
                 } else if (prevPlace[assist] < player->place) {

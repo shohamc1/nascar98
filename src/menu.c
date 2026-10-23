@@ -1976,26 +1976,18 @@ typedef struct PanelChild {
     u8 pad0[8];
     s32 text;
 } PanelChild;
-typedef struct PanelState {
-    u8 pad0[0x12];
-    s16 textX;
-    u8 pad14[2];
-    s16 textWidth;
-    u8 pad18[8];
-    PanelChild *child;
-} PanelState;
-extern PanelState *D_800A3A68;
+extern MenuObj *D_800A3A68;
 void MenuCenterText(s32 textIndex) {
     s32 text;
     s32 textWidth;
     s32 textX;
     MenuFontSet(2, 2);
     text = D_8009A2B0[textIndex & 0xFF];
-    D_800A3A68->child->text = text;
+    ((PanelChild *)D_800A3A68->primitive)->text = text;
     textWidth = MenuStringWidth(text);
     textX = (0x78 - textWidth) / 2;
-    D_800A3A68->textX = textX;
-    D_800A3A68->textWidth = (s16)textWidth;
+    D_800A3A68->drawOffsetX = textX;
+    D_800A3A68->width = (s16)textWidth;
 }
 
 void MenuSetLinkedObjectLayout(s32 a, s32 b, s16 c) {

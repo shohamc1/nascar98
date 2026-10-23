@@ -51,7 +51,7 @@ typedef struct ContactShape {
     u8 unk0[28];
     s16 frontExtent;
     s16 rearExtent;
-    u8 unk20[2];
+    s16 unk20;
     s16 halfWidth;
     u8 unk24[28];
     ContactCorner *corners;

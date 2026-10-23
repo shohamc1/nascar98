@@ -452,13 +452,6 @@ extern s32 D_800A2F84[];
 
 /* One track surface quad. The vertices hold ground-plane x in vx and z in
  * vy. */
-typedef struct TrackQuad {
-    u8 pad0[0x16];
-    s16 angle;
-    SVECTOR *vertex[4];
-    struct TrackQuad *next;
-} TrackQuad;
-
 /* One 0x90-byte entry of the array at gTrackSections. */
 
 /* Sorts the quads of one track section across the track and returns +1 or
@@ -2252,12 +2245,6 @@ typedef struct HudVertex {
     s16 y;
 } HudVertex;
 
-typedef struct HudNode {
-    u8 unk0[0x10];
-    u16 unk10;
-    u8 unk12[0x90 - 0x12];
-} HudNode;
-
 extern s16 D_800A38E4[];
 extern s32 gOrderingTableAbsolute[];
 extern s32 D_800A39C4nm[] asm("D_800A39C4.NON_MATCHING");
@@ -2616,8 +2603,8 @@ void HudDrawCar(Car *car, s16 yOffset) {
                     }
                     if (ABS(MathGetAngleDelta(
                             car->heading,
-                            ((HudNode *)gTrackSections[0])[car->segment]
-                                .unk10)) > 0x120) {
+                            ((TrackSection *)gTrackSections[0])[car->segment]
+                                .angle)) > 0x120) {
                         GraphicsSetColor(0xFF, 0x40, 0x40);
                         HUD_MESSAGE(D_8009AE00, 0xD2);
                         func_80041564Hud(car, 0x25);

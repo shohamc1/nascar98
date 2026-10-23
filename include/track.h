@@ -2,8 +2,17 @@
 #define TRACK_H
 
 #include "common.h"
+#include <psxsdk/libgte.h>
 
-struct TrackQuad;
+/* A road quad in a section's list: four vertices and its facing. */
+typedef struct TrackQuad {
+    u8 unk0[0x13];
+    u8 flags;               /* 0x13 */
+    u8 unk14[2];
+    s16 angle;              /* 0x16 */
+    SVECTOR *vertex[4];     /* 0x18 */
+    struct TrackQuad *next; /* 0x28 */
+} TrackQuad;
 
 /* A 0x90-byte track section. gTrackSections[0] points to the array, and
  * prev and next link each section to its neighbours. */
