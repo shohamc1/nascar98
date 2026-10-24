@@ -3040,11 +3040,15 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
         tmp0 = MathMultiplyFixed16(callA0, work3);
         tmp1 = pairSinTable3[0];
         tmp1 = work1 + tmp1;
-        callA0 = *(s32 *)tmp1;
-        asm("" : "=r"(work2) : "0"(work2), "r"(callA0));
+        do {
+            callA0 = *(s32 *)tmp1;
+        } while (0);
+
         work2 <<= 16;
-        callA1 = work2;
-        asm("" : "=r"(tmp0) : "0"(tmp0), "r"(callA0), "r"(callA1));
+        do {
+            callA1 = work2;
+        } while (0);
+
         work0 = tmp0;
         tmp0 = MathMultiplyFixed16(callA0, callA1);
         tmp1 = pairSinTable4[0];
@@ -3896,8 +3900,10 @@ s32 CarHandleWallCollision(Car *object) {
                 } else {
                     normalHeading = contact->angle + 0x100;
                 }
-                value1 = normalHeading & 0x3FF;
-                asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+                do {
+                    value1 = normalHeading & 0x3FF;
+                } while (0);
+
                 if (car->frontRightContact == 0) {
                     s32 impulseX;
                     s32 normalCoefficient;
@@ -4047,8 +4053,10 @@ s32 CarHandleWallCollision(Car *object) {
                 } else {
                     normalHeading2 = contact->angle + 0x100;
                 }
-                value1 = normalHeading2 & 0x3FF;
-                asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+                do {
+                    value1 = normalHeading2 & 0x3FF;
+                } while (0);
+
                 if (car->frontLeftContact == 0) {
                     s32 impulseX;
                     s32 normalCoefficient;
@@ -5383,7 +5391,7 @@ extern s32 D_800A397CPlayerStep[];
 void CarUpdatePlayer(Car *object) {
     u8 frameScratch[0x48];
     Car *car;
-    register s32 zeroRoll asm("s5");
+    s32 zeroRoll;
     register s32 zeroPitch asm("s4");
     s16 speed;
     register s32 steeringValue asm("v0");
@@ -5471,8 +5479,10 @@ void CarUpdatePlayer(Car *object) {
     D_800A2E24PlayerStep = 0x01EF0000 - ((D_800A2E1CPlayerStep - 3) * 0x30000);
     unkF8 = (u8) * (s8 *)&car->unkF8;
     asm("" : : "r"(unkF8) : "s3");
-    controlFlags = (*(u32 *)&car->flags);
-    asm("" : : "r"(controlFlags) : "s5", "s4");
+    do {
+        controlFlags = (*(u32 *)&car->flags);
+    } while (0);
+
     zeroRoll = 0;
     zeroPitch = 0;
     if (unkF8 == 0) {
@@ -11263,9 +11273,9 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     register POLY_FT4 *prim asm("t5");
     s32 level;
     s32 limit;
-    register SubdivisionVertex *row1 asm("t3");
+    SubdivisionVertex *row1;
     SubdivisionVertex *row2;
-    register SubdivisionVertex *center asm("t1");
+    SubdivisionVertex *center;
     register SubdivisionVertex *right asm("t0");
     s32 work0;
     s32 work1;
@@ -11385,18 +11395,15 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     grid[5].y = work0;
     asm volatile("" : : "m"(grid[5].y) : "memory");
     work0 = grid[2].z;
-    asm volatile("" : : "r"(work0) : "memory");
     work1 = grid[8].z;
-    asm volatile("" : : "r"(work1) : "memory");
     work2 = grid[2].u;
-    asm volatile("" : : "r"(work2) : "memory");
     work4 = grid[8].u;
-    asm volatile("" : : "r"(work4) : "memory");
     work3 = grid[2].v;
-    asm volatile("" : : "r"(work3) : "memory");
     work5 = grid[8].v;
     asm volatile("" : : "r"(work5) : "memory");
-    center = grid + 4;
+    do {
+        center = grid + 4;
+    } while (0);
     grid[5].z = (work0 + work1) / 2;
     grid[5].u = (work2 + work4) >> 1;
     grid[5].v = (work3 + work5) >> 1;
@@ -12257,14 +12264,13 @@ void GraphicsDrawHorizonWalls(void) {
     s32 ry;
     s32 e1;
     s32 e0;
-    register s32 rym2 asm("$6");
     register u32 drawCursor asm("$4");
     POLY_FT4 *drawPrim;
     POLY_FT4 *entry;
     register u32 cursorLoop asm("$3");
     u32 cursorEnd;
     s32 yFixed;
-    register s32 nextY asm("$6");
+    s32 nextY;
     register s32 step asm("$2");
     s32 y0v;
     s32 y1t;
@@ -12309,13 +12315,13 @@ void GraphicsDrawHorizonWalls(void) {
     offX = D_800A36A8;
     offY = D_800A36AC;
     yInt = ly - 2;
-    rym2 = ry - 2;
+    nextY = ry - 2;
     if (yInt < 0) {
         e1 = yInt;
         x = 0;
     }
-    if (rym2 < 0) {
-        e0 = rym2;
+    if (nextY < 0) {
+        e0 = nextY;
         w = 0x140;
     }
     D_800B1EE2[0] = yInt;
@@ -12326,7 +12332,7 @@ void GraphicsDrawHorizonWalls(void) {
     D_800B1EDE[0] = e0;
     D_800B1EE0[0] = x;
     D_800B1EE4[0] = w;
-    D_800B1EE6[0] = rym2;
+    D_800B1EE6[0] = nextY;
     scale = MathFixedDivide(ry - yInt, 0x180);
     tpl = D_800B1ED0;
     x = -0x20;
@@ -13954,8 +13960,10 @@ void func_800373B4(Car *object) {
                     varA0 = D_800A3320373B4[0];
                     routeDenominator <<= 3;
                     paceTimer -= 1;
-                    D_800A2F5C373B4 = paceTimer;
-                    asm volatile("" : : "r"(paceTimer));
+                    do {
+                        D_800A2F5C373B4 = paceTimer;
+                    } while (0);
+
                     varV0 = 0x66;
                     timerBase <<= 3;
                     tireAge2 <<= 2;
@@ -15740,9 +15748,11 @@ void CarPlaceOnStartingGrid(void) {
                 cameraOffset = (car->slot) * 0xC;
                 tableWork += cameraWork;
                 cameraWork = *(s32 *)tableWork;
-                /* (124 + 1) * 8 keeps the camera load between scales. */
-                product = cameraWork * 124;
-                asm volatile("" : "=r"(product) : "0"(product));
+                do {
+                    /* (124 + 1) * 8 keeps the camera load between scales. */
+                    product = cameraWork * 124;
+                } while (0);
+
                 workValue = *(s32 *)(((u8 *)gGridCameraY0) + cameraOffset);
                 product = (product + cameraWork) * 8;
                 workValue -= product >> 16;

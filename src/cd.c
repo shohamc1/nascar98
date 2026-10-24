@@ -103,7 +103,6 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     s32 total;
     s32 sectors;
     s32 hnd = handle;
-    register s32 buf asm("s2");
     s32 retries;
     u8 result[0x10];
     s32 status;
@@ -116,7 +115,6 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     total = total * size;
     DrawSync(0);
     do {
-        buf = buffer;
         VSync(0);
         VSync(0);
         total += 0x7FF;
@@ -129,7 +127,7 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
         while (CdControl(2, (u_char *)hnd, 0) == 0) {
         }
         CdSeekToSector(D_80098340[D_800A37CC * 3] + 0x13C);
-        CdRead(sectors, buf, 0x80);
+        CdRead(sectors, buffer, 0x80);
         do {
             status = CdReadSync(1, 0);
         } while (status > 0);
@@ -137,7 +135,7 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
             goto retry;
         }
     } while (0);
-    ptr = (s32 *)buf;
+    ptr = (s32 *)buffer;
     i = 0;
     words = sectors << 9;
     total = 0;
@@ -159,10 +157,13 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
             goto retry;
         }
         GraphicsInit();
-        FntPrint(sChecksumFailureFormat, D_80098348fp[D_800A37CC * 3], total);
-        FntPrint(sFileInfoFormat, buf & 0x7FFFFFFF, D_800A37CC);
-        FntPrint(sFileSizeFormat, D_80098344nm[D_800A37CC * 3]);
-        FntPrint(sFileLocationFormat, D_80098340w4[D_800A37CC * 3] + 0x13C);
+        do {
+            FntPrint(sChecksumFailureFormat, D_80098348fp[D_800A37CC * 3],
+                     total);
+            FntPrint(sFileInfoFormat, buffer & 0x7FFFFFFF, D_800A37CC);
+            FntPrint(sFileSizeFormat, D_80098344nm[D_800A37CC * 3]);
+            FntPrint(sFileLocationFormat, D_80098340w4[D_800A37CC * 3] + 0x13C);
+        } while (0);
         FntFlush(-1);
         while (1) {
         }

@@ -1875,10 +1875,11 @@ void func_800606D4(void) {
         frame->targetY = 0xB1;
         frame->y = 0xB1;
         frame->velocityX = 0;
-        primIndex = D_800A37BC;
-        asm volatile("" : : "r"(cur));
+        do {
+            primIndex = D_800A37BC;
+        } while (0);
+
         cur = frame;
-        asm volatile("" : : "r"(cur), "r"(primIndex));
         tile = (u8 *)D_800A3654;
         cur->velocityY = 0;
         cur->orderingDepth = 0;
@@ -1938,8 +1939,11 @@ void func_800606D4(void) {
         cur->velocityX = 0;
         cur->velocityY = 0;
         *new_var2 = 0;
-        asm volatile("" ::: "memory");
-        D_800A37BC = primIdx2 + 1;
+
+        do {
+            D_800A37BC = primIdx2 + 1;
+        } while (0);
+
         mark += primIdx2 * 12;
         cur->primitive = mark;
         mark[0] = 0;
@@ -3785,8 +3789,10 @@ panelLoop:
                     triangleColumn++;
                 } while (triangleColumn < 2);
                 nextRow = triangleRow + 1;
-                triangleRow = nextRow;
-                asm("" : "=r"(nextRow) : "0"(nextRow));
+                do {
+                    triangleRow = nextRow;
+                } while (0);
+
             } while ((s8)nextRow < 2);
         }
         {

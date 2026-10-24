@@ -1759,7 +1759,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     register s32 copy16Offset;
     register s32 positionOffset;
     register u8 *outputVertices;
-    register u8 *vertices asm("s4");
+    u8 *vertices;
     register SVECTOR *outputVertex asm("a0");
     register s32 minimumZ;
     u8 *outputRecord;
@@ -1776,7 +1776,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     u8 *sectionHeaderData;
     register u8 *outputZ;
     FileVertex *inputVertex;
-    register u8 *data asm("s2");
+    u8 *data;
     register TrackSection *sec asm("s2");
     TrackFileHeader *fileData;
     s32 sectionCount;
@@ -1812,7 +1812,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     u8 *inputIndex;
     u8 *inputUv;
     u8 *diskFace;
-    register s32 count asm("s6");
+    s32 count;
     register s32 objectPolygonCount asm("a1");
     register s32 faceColor;
     register u8 *flagObject;
@@ -1833,7 +1833,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     u8 *inputPosition;
     u8 *inputNode;
     register u8 *faceFields asm("s2");
-    register TrackFileObject *diskObject asm("s5");
+    TrackFileObject *diskObject;
     u8 *outputIndex;
     u8 *outputUv;
     register u32 boundLimit;
@@ -2121,11 +2121,12 @@ void TrackReadData(TrackResource *trackData, s32 file) {
             *(u32 *)&sec->angle =
                 (objectFlags & 0xFF01FFFF) | ((typeA & 0x7F) << 17);
             typeA = diskObject->unk6;
-            objectFaceIndices = (u8 *)(diskObject + 1);
-            asm("" : : "r"(typeA), "r"(objectFaceIndices));
+            do {
+                objectFaceIndices = (u8 *)(diskObject + 1);
+            } while (0);
+
             sec->angle = typeA;
             *(FileVertex *)&sec->x = diskObject->position;
-            asm volatile("" : : : "memory");
             callFaces = D_800A3A40;
             callFirst = (s16 *)objectFaceIndices;
             callHead = (u8 *)&sec->unk20;

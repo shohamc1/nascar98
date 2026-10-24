@@ -737,12 +737,14 @@ void SceneUpdateProjectiles(Car *owner) {
                 gte_rtpt();
                 gte_avsz3();
                 uv1 = drawQuad->uv[1];
-                asm("" : : "r"(uv1) : "memory");
-                color = drawQuad->color;
+
+                do {
+                    color = drawQuad->color;
+                } while (0);
+
                 uv0 = drawQuad->uv[0];
                 uv2 = drawQuad->uv[2];
                 uv3 = drawQuad->uv[3];
-                asm("" : : "r"(color), "r"(uv0));
                 *(u32 *)&prim->u1 = uv1;
                 *(u32 *)&prim->u0 = uv0;
                 *(u32 *)&prim->r0 = color;
@@ -1324,6 +1326,7 @@ void SceneUpdateRoadStrip(Car *car) {
     SVECTOR *points;
     SceneRoadPoint *cache;
     register s32 row asm("a2");
+    SVECTOR *heightPoint;
     s32 mode;
 
     slot = car->slot;
@@ -1413,7 +1416,7 @@ void SceneUpdateRoadStrip(Car *car) {
             s32 sectionIndex;
             s32 length;
             s32 cameraZ;
-            register SVECTOR *point asm("a0");
+            register SVECTOR *point;
             register s32 pointOffset;
 
             count = 0;
@@ -1456,7 +1459,8 @@ void SceneUpdateRoadStrip(Car *car) {
                     y = (D_800AE15C[0][(s16)section].y + result.vx >> 2) -
                         origin[1];
                     cache->y = y;
-                    point->vy = y;
+                    heightPoint = point;
+                    heightPoint->vy = y;
                     cameraZ = origin[2];
                     if (side) {
                         z = gTrackSections[0][(s16)section].height0 - 0x4000;
@@ -1464,7 +1468,7 @@ void SceneUpdateRoadStrip(Car *car) {
                         z = gTrackSections[0][(s16)section].height1 - 0x4000;
                     }
                     cache->z = (z >> 2) - cameraZ;
-                    point->vz = cache->z =
+                    heightPoint->vz = cache->z =
                         ((volatile SceneRoadPoint *)cache)->z;
                     D_800A45C0[slot][side].x =
                         D_800A344C[slot]->prev->points[side].vx;
@@ -2855,12 +2859,12 @@ void HudInitRacePrims(void) {
     s8 row;
     u16 *page;
     s32 markerOffset;
-    register u8 *driver asm("$17");
+    u8 *driver;
     u8 driverR;
     register s32 line24 asm("$22");
     s8 **slot;
     s8 **lineSlot;
-    register s32 glyphOffset asm("$17");
+    s32 glyphOffset;
     s32 cornerOffset;
     s32 value;
     u8 *slotBase;
@@ -2912,7 +2916,9 @@ void HudInitRacePrims(void) {
                         {
                             register u8 *addressBase asm("$8");
 
-                            glyphOffset = line24 >> 22;
+                            do {
+                                glyphOffset = line24 >> 22;
+                            } while (0);
                             addressBase = (u8 *)D_8009AE14;
                             slot =
                                 (s8 **)((u32)(glyphOffset) - -(u32)addressBase);
@@ -3085,7 +3091,7 @@ void HudInitRacePrims(void) {
             register s32 tileRow asm("$6");
             u8 *green;
             register u8 *red asm("$3");
-            register u8 *back asm("$4");
+            u8 *back;
             s32 offset;
             s32 color;
 
@@ -3093,9 +3099,10 @@ void HudInitRacePrims(void) {
             red = (u8 *)D_800A7924;
             offset = tileRow * 0x30;
             green = (u8 *)((u32)offset + (u32)red);
-            color = 0xFF;
-            asm("" : : "r"(green), "r"(color));
-            red += 0x10;
+            do {
+                color = 0xFF;
+                red += 0x10;
+            } while (0);
             red = (u8 *)((u32)offset + (u32)red);
             {
                 register u8 *addressBase asm("$8");
@@ -3314,8 +3321,10 @@ void HudDrawDashboard(void) {
             *entry = *prim;
             AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
             next = i + 1;
-            i = next;
-            asm("" : "=r"(next) : "0"(next));
+            do {
+                i = next;
+            } while (0);
+
             if ((s16)next < 2)
                 goto copyHud1;
         }
@@ -3362,9 +3371,10 @@ void HudDrawDashboard(void) {
                 numerator >>= 31;
                 quotient -= numerator;
                 quotient += 256;
+                do {
 
-                angles[0] = quotient;
-                asm("" : : "m"(angles[0]) : "$10", "memory");
+                    angles[0] = quotient;
+                } while (0);
             }
                 baseCorner = D_8009936C;
 
@@ -3512,8 +3522,10 @@ void HudDrawDashboard(void) {
             needle->x3 = points[6];
             needle->y3 = points[7];
             next = i + 1;
-            i = next;
-            asm("" : "=r"(next) : "0"(next));
+            do {
+                i = next;
+            } while (0);
+
         } while ((s16)next < 4);
         D_800A3008 = D_800A3480 * -15;
         RotMatrix(D_800A3004, D_800A7FC4);
@@ -3604,8 +3616,10 @@ void HudDrawDashboard(void) {
             *entry = *prim;
             AddPrim((void *)(gOrderingTable[0] + 8), entry);
             next = i + 1;
-            i = next;
-            asm("" : "=r"(next) : "0"(next));
+            do {
+                i = next;
+            } while (0);
+
             if ((s16)next < 4)
                 goto copyHud2;
         }
@@ -3622,8 +3636,10 @@ void HudDrawDashboard(void) {
             *entry = *prim;
             AddPrim((void *)(gOrderingTable[0] + 16), entry);
             next = i + 1;
-            i = next;
-            asm("" : "=r"(next) : "0"(next));
+            do {
+                i = next;
+            } while (0);
+
             if ((s16)next < 4)
                 goto copyHud3;
         }
@@ -3640,8 +3656,10 @@ void HudDrawDashboard(void) {
             *entry = *prim;
             AddPrim((void *)(gOrderingTable[0] + 16), entry);
             next = i + 1;
-            i = next;
-            asm("" : "=r"(next) : "0"(next));
+            do {
+                i = next;
+            } while (0);
+
             if ((s16)next < 4)
                 goto copyHud4;
         }
@@ -3708,8 +3726,11 @@ void HudDrawDashboard(void) {
                             centerValue -= width;
                             centerValue = argB + centerValue;
                             *(s16 *)(rowOffset + (u32)D_800A853C) = centerValue;
-                            asm volatile("" : : : "memory");
-                            callResult = D_800A2FD8[index];
+
+                            do {
+                                callResult = D_800A2FD8[index];
+                            } while (0);
+
                             asm("" : "=r"(callResult) : "0"(callResult));
                             centerValue = *center;
                             argA = (s32)hudCosine;
@@ -3759,8 +3780,11 @@ void HudDrawDashboard(void) {
                         productX >>= 16;
                         screenY += productX;
                         *(s16 *)(rowOffset + (u32)D_800A8554) = screenY;
-                        asm volatile("" : : : "memory");
-                        screenY = (u8)D_800A2FD4[0];
+
+                        do {
+                            screenY = (u8)D_800A2FD4[0];
+                        } while (0);
+
                         asm("" : "=r"(screenY) : "0"(screenY));
                         product -= callResult;
                         product >>= 16;
@@ -3801,8 +3825,10 @@ void HudDrawDashboard(void) {
                     streakAngles[0] = angleNext;
                 }
                 next = i + 1;
-                i = next;
-                asm("" : "=r"(next) : "0"(next));
+                do {
+                    i = next;
+                } while (0);
+
             } while ((s16)next < 3);
         }
         PopMatrix();
@@ -3811,10 +3837,10 @@ void HudDrawDashboard(void) {
 copyHud5:
     {
         register u32 raw asm("a1");
-        register u32 mode asm("v0");
+        u32 mode;
         s32 row;
         register s32 copyOffset asm("v1");
-        register s32 modeOffset asm("v1");
+        s32 modeOffset;
         s32 rowOffset;
         register POLY_FT4 *entry asm("t0");
         POLY_FT4 *copyDest;
@@ -3822,10 +3848,14 @@ copyHud5:
         POLY_FT4 *prim;
         mode = D_800A2ED9[0];
         row = (s16)i;
-        asm volatile("" : "=r"(row) : "0"(row), "r"(mode) : "memory");
-        raw = gHudPrimitiveCursor;
-        asm("" : "=r"(raw) : "0"(raw));
-        modeOffset = mode * 240;
+
+        do {
+            raw = gHudPrimitiveCursor;
+        } while (0);
+
+        do {
+            modeOffset = mode * 240;
+        } while (0);
 
         rowOffset = row * 40;
 
@@ -3840,8 +3870,10 @@ copyHud5:
         *copyDest = *prim;
         AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
         next = i + 1;
-        i = next;
-        asm("" : "=r"(next) : "0"(next));
+        do {
+            i = next;
+        } while (0);
+
         if ((s16)next < 6)
             goto copyHud5;
     }
@@ -3850,7 +3882,7 @@ copyHud6:
     {
         register u32 raw asm("a1");
         register u32 mode asm("v0");
-        register s32 row asm("v1");
+        s32 row;
         s32 copyOffset;
         s32 modeOffset;
         register POLY_FT4 *entry asm("t0");
@@ -3863,8 +3895,10 @@ copyHud6:
         raw = gHudPrimitiveCursor;
         asm("" : "=r"(raw) : "0"(raw));
         modeOffset = mode * 9;
-        asm("" : "=r"(modeOffset) : "0"(modeOffset));
-        copyOffset = row * 3;
+
+        do {
+            copyOffset = row * 3;
+        } while (0);
 
         copyOffset += modeOffset;
         copyOffset <<= 3;
@@ -3878,8 +3912,10 @@ copyHud6:
         *copyDest = *prim;
         AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
         next = i + 1;
-        i = next;
-        asm("" : "=r"(next) : "0"(next));
+        do {
+            i = next;
+        } while (0);
+
         if ((s16)next < 3)
             goto copyHud6;
     }
@@ -6563,16 +6599,19 @@ void SceneSkyFadeDraw(void) {
         }
         result = MathMultiplyFixed16(argument, factor);
         {
-            asm volatile("" : : : "fp");
-            byteValue = D_800A34D8;
+
+            do {
+                byteValue = D_800A34D8;
+            } while (0);
+
             argument = (s32)gSinTableNext[0];
             asm(""
                 : "=r"(byteValue), "=r"(argument)
                 : "0"(byteValue), "1"(argument), "r"(result));
-            yStep = 0x3C;
-            asm(""
-                : "=r"(yStep)
-                : "0"(yStep), "r"(byteValue), "r"(argument), "r"(result));
+            do {
+                yStep = 0x3C;
+            } while (0);
+
             byteValue -= 0x180;
             byteValue <<= 4;
             byteValue += argument;
@@ -7041,8 +7080,10 @@ void SceneSkyFadeDraw(void) {
         accum = callOut;
         callOut = MathMultiplyFixed16(argA, argB);
         nextI = loopI + 1;
-        loopI = nextI;
-        asm("" : "=r"(loopI) : "0"(loopI));
+        do {
+            loopI = nextI;
+        } while (0);
+
         accum += callOut;
         accum >>= 16;
         accum = yStep + accum;
@@ -9234,13 +9275,11 @@ void func_80053D40(void) {
                                                 } else {
                                                     wrappedItemUp -= 1;
                                                 }
-                                                D_800A3059MainLoop =
-                                                    wrappedItemUp;
-                                                asm volatile(
-                                                    ""
-                                                    :
-                                                    : "m"(D_800A3059MainLoop)
-                                                    : "memory");
+                                                do {
+                                                    D_800A3059MainLoop =
+                                                        wrappedItemUp;
+                                                } while (0);
+
                                                 if (gScreenStateMainLoop ==
                                                     two) {
 

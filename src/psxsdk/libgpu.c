@@ -1426,8 +1426,10 @@ u32 get_cs(s16 x, s16 y) {
         }
         clipX = xv;
     }
-    x = clipX;
-    asm("" : "=r"(x) : "0"(x));
+    do {
+        x = clipX;
+    } while (0);
+
     yv = y;
     clipY = 0;
     if (yv >= 0) {
@@ -1487,8 +1489,10 @@ u32 get_ce(s16 x, s16 y) {
         }
         clipX = xv;
     }
-    x = clipX;
-    asm("" : "=r"(x) : "0"(x));
+    do {
+        x = clipX;
+    } while (0);
+
     yv = y;
     clipY = 0;
     if (yv >= 0) {
@@ -1874,8 +1878,10 @@ s32 _addque2(Callback func, s32 *arg, s32 size, s32 arg2) {
     }
     old = SetIntrMaskFull(0);
     D_8009DA98[0] = 1;
-    debugFlag = D_8009DA91[0];
-    asm("");
+    do {
+        debugFlag = D_8009DA91[0];
+    } while (0);
+
     D_8009DB9C[0] = old;
     spinMask = 0x4000000;
     if (debugFlag != 0) {

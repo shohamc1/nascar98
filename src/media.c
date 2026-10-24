@@ -1816,7 +1816,7 @@ void CdUpdateStream(void) {
     s32 *restartReadStream;
     s32 *serviceStream;
     s32 *ringStream;
-    register s32 *refillSeekStream asm("v1");
+    s32 *refillSeekStream;
     register s32 *refillReadStream asm("a0");
     volatile s32 *restartSeekQueue;
     volatile s32 *restartReadQueue;
@@ -1840,8 +1840,11 @@ void CdUpdateStream(void) {
         }
         completeStatus = CdlComplete;
         SwEnterCriticalSection();
-        asm("" : : "r"(completeStatus));
-        stoppedStream = gCdStream;
+
+        do {
+            stoppedStream = gCdStream;
+        } while (0);
+
         noCallback = 0;
         asm("" : : "r"(noCallback));
         stoppedStream[0x410 / 4] = 0;
@@ -1988,10 +1991,15 @@ void CdUpdateStream(void) {
             refillRecord = (s32 *)refillSeekStream[0x430 / 4];
             refillSeekStream[0x44C / 4] =
                 refillSeekStream[0x448 / 4] + readSectors;
-            asm("" : : : "v0", "memory");
-            requestState = 2;
-            pendingPosition = (u8 *)refillRecord + 0x24;
-            asm("" : "=r"(refillRecord) : "0"(refillRecord), "r"(requestState));
+
+            do {
+                requestState = 2;
+            } while (0);
+
+            do {
+                pendingPosition = (u8 *)refillRecord + 0x24;
+            } while (0);
+
             refillPosition = pendingPosition;
             refillSeekStream[0x418 / 4] = requestState;
             asm(""
