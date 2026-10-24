@@ -7,8 +7,10 @@ user data, a 4-byte EDC (error-detection code), and 276 bytes of ECC
 
 The EDC is a reflected CRC-32 with polynomial 0xD8018001 over the
 subheader and user data. The ECC is Reed-Solomon parity over GF(2^8),
-computed with the header treated as zero, as Mode 2 requires. The
-column-parallel ECC below follows the layout in ECMA-130 annex A.
+computed with the header treated as zero, as Mode 2 requires. Some
+mastering tools included the header anyway; ecc_header=True reproduces
+that. The column-parallel ECC below follows the layout in ECMA-130
+annex A.
 """
 
 import operator
@@ -85,13 +87,15 @@ def edc(data: bytes) -> int:
     return value
 
 
-def encode_form1(lba: int, subheader: bytes, user: bytes) -> bytes:
+def encode_form1(lba: int, subheader: bytes, user: bytes, ecc_header: bool = False) -> bytes:
     """Return the raw Mode 2 Form 1 sector for lba holding subheader and user."""
     if len(subheader) != 8 or len(user) != 2048:
         raise ValueError(f"Form 1 needs an 8-byte subheader and 2048 bytes, not {len(subheader)} and {len(user)}")
     body = subheader + user
     body += struct.pack("<I", edc(body))
+    header = msf(lba) + b"\x02"
     # ECC covers the header too, zeroed for Mode 2.
-    p = parity(bytes(4) + body, P_STEPS)
-    q = parity(bytes(4) + body + p, Q_STEPS)
-    return SYNC + msf(lba) + b"\x02" + body + p + q
+    covered = (header if ecc_header else bytes(4)) + body
+    p = parity(covered, P_STEPS)
+    q = parity(covered + p, Q_STEPS)
+    return SYNC + header + body + p + q

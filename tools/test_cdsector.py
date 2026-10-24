@@ -25,6 +25,12 @@ class CdsectorTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             cdsector.encode_form1(0, bytes(8), bytes(2047))
 
+    def test_ecc_header_changes_only_ecc(self) -> None:
+        plain = cdsector.encode_form1(316, bytes(8), bytes(2048))
+        covered = cdsector.encode_form1(316, bytes(8), bytes(2048), ecc_header=True)
+        self.assertEqual(plain[:2076], covered[:2076])
+        self.assertNotEqual(plain[2076:], covered[2076:])
+
     @unittest.skipUnless(TRACK1.is_file(), "needs the disc image")
     def test_real_sectors_re_encode(self) -> None:
         count = TRACK1.stat().st_size // cdsector.SECTOR
