@@ -32,6 +32,8 @@ def to_msf(frames: int) -> str:
 
 def parse_cue(cue: pathlib.Path) -> list[Track]:
     """Return the cue sheet's tracks, with paths relative to the sheet."""
+    if not cue.is_file():
+        sys.exit(f"{cue}: no such cue sheet; set CUE=path/to/the.cue")
     tracks = []
     path = None
     current: dict | None = None
