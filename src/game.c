@@ -1,6 +1,6 @@
 #include "common.h"
 #include "libpress.h"
-#include "fixed_addrs.h"
+#include "memory_map.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -543,7 +543,7 @@ void HeapAllocateLargeBlock(void) {
 }
 
 void func_80012E28(void) {
-    D_800A3A8C = (void *)STACK_BLOCK_801D6C00;
+    D_800A3A8C = (void *)PRIMITIVE_BUFFER_0;
 }
 
 extern s32 strlen(char *);
@@ -654,7 +654,7 @@ void TextureLoadAll(void) {
     rect.w = 2;
     rect.h = 2;
     LoadImage(&rect, (u_long *)&env);
-    GraphicsLoadImagePointerTable(0x40, (void *)STACK_BLOCK_80180000);
+    GraphicsLoadImagePointerTable(0x40, (void *)HUD_SPRITE_BUFFER);
     for (i = 0; i < 0x16; i++) {
         TextureLoadTim(gImagePointerTable[i]);
     }
@@ -664,8 +664,8 @@ void TextureLoadFileByIndex(s32 fileIndex) {
     extern void CdLoadFileByIndex(s32, s32);
     extern void TextureLoadTim(void *);
 
-    CdLoadFileByIndex(STACK_BLOCK_801E0000, fileIndex);
-    TextureLoadTim((void *)STACK_BLOCK_801E0000);
+    CdLoadFileByIndex(TIM_LOAD_BUFFER, fileIndex);
+    TextureLoadTim((void *)TIM_LOAD_BUFFER);
 }
 
 extern s32 func_8001E7EC(void *, s32, s32);
@@ -949,8 +949,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xA8;
         TrackLoadFromFile(0x41);
         GraphicsLoadImageBank(0x42);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x43);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x43);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x44);
         RaceLoadComputerReplay(0x45);
         RaceLoadComputerReplay(0x46);
@@ -964,8 +964,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xA9;
         TrackLoadFromFile(0x47);
         GraphicsLoadImageBank(0x48);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x49);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x49);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x4A);
         RaceLoadComputerReplay(0x4B);
         RaceLoadComputerReplay(0x4C);
@@ -977,8 +977,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xAA;
         TrackLoadFromFile(0x4D);
         GraphicsLoadImageBank(0x4E);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x4F);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x4F);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x50);
         RaceLoadComputerReplay(0x51);
         RaceLoadComputerReplay(0x52);
@@ -991,8 +991,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xAB;
         TrackLoadFromFile(0x53);
         GraphicsLoadImageBank(0x54);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x55);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x55);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x56);
         RaceLoadComputerReplay(0x57);
         RaceLoadComputerReplay(0x58);
@@ -1005,8 +1005,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xAC;
         TrackLoadFromFile(0x59);
         GraphicsLoadImageBank(0x5A);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x5B);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x5B);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x5C);
         RaceLoadComputerReplay(0x5D);
         RaceLoadComputerReplay(0x5E);
@@ -1019,8 +1019,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xAD;
         TrackLoadFromFile(0x5F);
         GraphicsLoadImageBank(0x60);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x61);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x61);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x62);
         RaceLoadComputerReplay(0x63);
         RaceLoadComputerReplay(0x64);
@@ -1032,8 +1032,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xAE;
         TrackLoadFromFile(0x65);
         GraphicsLoadImageBank(0x66);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x67);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x67);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x68);
         RaceLoadComputerReplay(0x69);
         RaceLoadComputerReplay(0x6A);
@@ -1048,8 +1048,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xAF;
         TrackLoadFromFile(0x6B);
         GraphicsLoadImageBank(0x6C);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x6D);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x6D);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x6E);
         RaceLoadComputerReplay(0x6F);
         RaceLoadComputerReplay(0x70);
@@ -1065,8 +1065,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB0;
         TrackLoadFromFile(0x71);
         GraphicsLoadImageBank(0x72);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x73);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x73);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x74);
         RaceLoadComputerReplay(0x75);
         RaceLoadComputerReplay(0x76);
@@ -1082,8 +1082,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB1;
         TrackLoadFromFile(0x77);
         GraphicsLoadImageBank(0x78);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x79);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x79);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x7A);
         RaceLoadComputerReplay(0x7B);
         RaceLoadComputerReplay(0x7C);
@@ -1097,8 +1097,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB2;
         TrackLoadFromFile(0x7D);
         GraphicsLoadImageBank(0x7E);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x7F);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x7F);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x80);
         RaceLoadComputerReplay(0x81);
         RaceLoadComputerReplay(0x82);
@@ -1115,8 +1115,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB3;
         TrackLoadFromFile(0x83);
         GraphicsLoadImageBank(0x84);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x85);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x85);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x86);
         RaceLoadComputerReplay(0x87);
         RaceLoadComputerReplay(0x88);
@@ -1134,8 +1134,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB4;
         TrackLoadFromFile(0x89);
         GraphicsLoadImageBank(0x8A);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x8B);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x8B);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x8C);
         RaceLoadComputerReplay(0x8D);
         RaceLoadComputerReplay(0x8E);
@@ -1150,8 +1150,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB5;
         TrackLoadFromFile(0x8F);
         GraphicsLoadImageBank(0x90);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x91);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x91);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x92);
         RaceLoadComputerReplay(0x93);
         RaceLoadComputerReplay(0x94);
@@ -1175,8 +1175,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB6;
         TrackLoadFromFile(0x95);
         GraphicsLoadImageBank(0x96);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x97);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x97);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x98);
         RaceLoadComputerReplay(0x99);
         RaceLoadComputerReplay(0x9A);
@@ -1191,8 +1191,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB7;
         TrackLoadFromFile(0x9B);
         GraphicsLoadImageBank(0x9C);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x9D);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0x9D);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0x9E);
         RaceLoadComputerReplay(0x9F);
         RaceLoadComputerReplay(0xA0);
@@ -1210,8 +1210,8 @@ void TrackLoad(u8 selectTrack) {
         gTrackSurfaceFileId = 0xB8;
         TrackLoadFromFile(0xA1);
         GraphicsLoadImageBank(0xA2);
-        CdLoadFileByIndex(STACK_BLOCK_801E0000, 0xA3);
-        TextureLoadTim(STACK_BLOCK_801E0000);
+        CdLoadFileByIndex(TIM_LOAD_BUFFER, 0xA3);
+        TextureLoadTim(TIM_LOAD_BUFFER);
         RaceLoadComputerReplay(0xA4);
         RaceLoadComputerReplay(0xA5);
         RaceLoadComputerReplay(0xA6);
@@ -1578,9 +1578,9 @@ extern u32 gPrimitiveCursorNonMatching asm("gPrimitiveCursor.NON_MATCHING");
 
 void GraphicsSelectPrimitiveBuffer(s32 bufferIndex) {
     if ((bufferIndex & 0xFF) != 0) {
-        gPrimitiveCursorNonMatching = (u32)STACK_BLOCK_801E6600;
+        gPrimitiveCursorNonMatching = (u32)PRIMITIVE_BUFFER_1;
     } else {
-        gPrimitiveCursorNonMatching = (u32)STACK_BLOCK_801D6C00;
+        gPrimitiveCursorNonMatching = (u32)PRIMITIVE_BUFFER_0;
     }
 }
 
@@ -1840,7 +1840,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
 
     resource = trackData;
     fileSize = FileSeek(file, 0, 2);
-    fileData = (TrackFileHeader *)((0x1F4000 - fileSize) | RAM_CACHED_BASE);
+    fileData = (TrackFileHeader *)LOAD_BELOW_TOP(fileSize);
     FileSeek(file, 0, 0);
     FileRead(fileData, fileSize, 1, file);
     vertexOffset = (u8 *)fileData->vertexOffset;

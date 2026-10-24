@@ -1,6 +1,6 @@
 #include "common.h"
 #include "libpress.h"
-#include "fixed_addrs.h"
+#include "memory_map.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -2151,8 +2151,7 @@ void func_8001BA94(s32 arg0) {
         }
     }
     stride = ((gOrderingTableBankAbsolute[0] / 2) + 1) * 24;
-    tile = (u8 *)(RAM_CACHED_BASE |
-                  (RAM_RESOURCE_BOUNDARY - 8 - (count * stride)));
+    tile = (u8 *)LOAD_BELOW_TOP(8 + count * stride);
     for (j = 0; j < count; j++) {
         shade = 0x80;
         tile->tag = 0x05000000;

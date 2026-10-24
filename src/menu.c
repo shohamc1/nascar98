@@ -4548,7 +4548,7 @@ void MenuLoadCarModels(void) {
 
     D_800A36F4_w42 = (s32)FileLoadOffsetTable(7, &table, SCRATCH_TOP);
     if (D_800A3658_w42[0] == 0) {
-        func_8001E230(8, STACK_BLOCK_801A0000 + 0x1A000);
+        func_8001E230(8, CAR_MODEL_BUFFER + 0x1A000);
         head = D_800A37E4_w42[0];
         src = ((u8 **)head)[0];
         end = ((u8 **)head)[1];

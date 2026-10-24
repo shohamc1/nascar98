@@ -71,8 +71,8 @@ void GraphicsLoadImageBank(s32 fileName) {
     }
     size = FileSeek(handle, 0, 2);
     FileSeek(handle, 0, 0);
-    D_800A368C = (void *)STACK_BLOCK_80193000;
-    FileRead((s32)STACK_BLOCK_80193000, 1, size, handle);
+    D_800A368C = (void *)IMAGE_BANK_BUFFER;
+    FileRead((s32)IMAGE_BANK_BUFFER, 1, size, handle);
     image = (u8 *)D_800A368C;
     w = ((ImageBankHeader *)image)->imageCount;
     h = ((ImageBankHeader *)image)->textureCount;

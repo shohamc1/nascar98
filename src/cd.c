@@ -1,6 +1,6 @@
 #include "common.h"
 #include "libpress.h"
-#include "fixed_addrs.h"
+#include "memory_map.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -381,7 +381,7 @@ void GraphicsLoadImagePointerTable(s32 fileId) {
         SystemShowFatalError(sInputOpenError);
     }
     posValue = gCurrentFileSize[0];
-    base = (0x1F4000 - posValue) | RAM_CACHED_BASE;
+    base = LOAD_BELOW_TOP(posValue);
     FileRead(base, posValue, 1, pos);
     src = (s32 *)base;
     count = *src++;

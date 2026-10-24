@@ -144,7 +144,7 @@ void SoundLoadVab(s32 arg0) {
     if (gVabId != -1)
         SsVabClose(gVabId);
     gVabHead = (s32)FileLoadBlock((void *)(arg0 + 1), 0);
-    value = (s32)FileLoadBlock((void *)arg0, 0x80140000);
+    value = (s32)FileLoadBlock((void *)arg0, SOUND_BANK_BUFFER);
     gVabBody = (void *)value;
     gVabId = SoundVabOpen(gVabHead, value);
 }
@@ -160,7 +160,7 @@ void SoundLoadVab(s32 arg0) {
         SsVabClose(gVabId);
     }
     gVabHead = FileLoadBlock((void *)(s32 *)arg0 + 1, 0);
-    body = FileLoadBlock((void *)arg0, (void *)0x80140000);
+    body = FileLoadBlock((void *)arg0, (void *)SOUND_BANK_BUFFER);
     gVabBody = body;
     gVabId = SoundVabOpen((void *)gVabHead, (void *)body);
 }

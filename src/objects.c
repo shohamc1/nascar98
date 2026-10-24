@@ -1,6 +1,6 @@
 #include "common.h"
 #include "libpress.h"
-#include "fixed_addrs.h"
+#include "memory_map.h"
 #include <psxsdk/libgpu.h>
 #include <psxsdk/libsnd.h>
 #include <psxsdk/libetc.h>
@@ -2416,7 +2416,7 @@ void TrackLoadResource(s32 arg0) {
     row1 = FileSeekCall(handle, 0, 2);
     total = row1;
     FileSeekCall(handle, 0, 0);
-    D_800A3A54Small = (RAM_RESOURCE_BOUNDARY - total) | RAM_CACHED_BASE;
+    D_800A3A54Small = LOAD_BELOW_TOP(total);
     FileRead(D_800A3A54Small, 1, total, handle);
     cursor = *(volatile s32 *)(&D_800A3A54Small);
     D_800A3A54Small = cursor + 4;
@@ -7638,7 +7638,7 @@ void func_8002DC2C(void) {
     D_800A3758_a[0] = MathFixedDivide(1, 2);
     D_800A3630_nm = 0x18;
     D_800A3758_b[1] = D_800A353C_c[1];
-    GraphicsLoadImagePointerTable(0xA7, (void *)STACK_BLOCK_801A0000);
+    GraphicsLoadImagePointerTable(0xA7, (void *)CAR_MODEL_BUFFER);
     GraphicsSelectImageBank(6);
     D_800A2F30_nm[0] = 0;
     cursor = 0;
@@ -10169,8 +10169,8 @@ void ModelLoadGeometryFromFile(s32 fileId) {
     }
     fileSize = FileSeekCall32328(handle, 0, 2);
     FileSeekCall32328(handle, 0, 0);
-    FileReadCall32328(STACK_BLOCK_801C0000, fileSize, 1, handle);
-    ObjectLoadGeometry(D_800A3574Lui, (u8 *)STACK_BLOCK_801C0000, -1);
+    FileReadCall32328(GEOMETRY_BUFFER, fileSize, 1, handle);
+    ObjectLoadGeometry(D_800A3574Lui, (u8 *)GEOMETRY_BUFFER, -1);
     D_800A2D4C[0] = 1;
     func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;

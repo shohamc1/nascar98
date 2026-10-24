@@ -653,16 +653,17 @@ SoundStart = 0x8003EEA4; // type:func
 SoundInitTables = 0x8003F014; // type:func
 GraphicsSetClearColor = 0x8001EB3C; // type:func
 
-// Numeric RAM addresses the original C used as constants (fixed_address).
-STACK_BLOCK_801D6C00 = 0x801D6C00; // absolute:True fixed_address
-STACK_BLOCK_801E6600 = 0x801E6600; // absolute:True fixed_address
-STACK_BLOCK_801E0000 = 0x801E0000; // absolute:True fixed_address
-STACK_BLOCK_80180000 = 0x80180000; // absolute:True fixed_address
-STACK_BLOCK_80193000 = 0x80193000; // absolute:True fixed_address
-STACK_BLOCK_801A0000 = 0x801A0000; // absolute:True fixed_address
+// Fixed RAM regions the original C used as constants (fixed_address);
+// include/memory_map.h describes the layout.
+PRIMITIVE_BUFFER_0 = 0x801D6C00; // absolute:True fixed_address
+PRIMITIVE_BUFFER_1 = 0x801E6600; // absolute:True fixed_address
+TIM_LOAD_BUFFER = 0x801E0000; // absolute:True fixed_address
+HUD_SPRITE_BUFFER = 0x80180000; // absolute:True fixed_address
+IMAGE_BANK_BUFFER = 0x80193000; // absolute:True fixed_address
+CAR_MODEL_BUFFER = 0x801A0000; // absolute:True fixed_address
 SCRATCH_TOP = 0x801F2800; // absolute:True fixed_address
-STACK_BLOCK_801C0000 = 0x801C0000; // absolute:True fixed_address
-USER_RAM_TOP = 0x80140000; // absolute:True fixed_address
+GEOMETRY_BUFFER = 0x801C0000; // absolute:True fixed_address
+SOUND_BANK_BUFFER = 0x80140000; // absolute:True fixed_address
 
 // Data labels tracked so guarded drafts can reference them directly (wave 6-8 requests).
 D_8008CFC0 = 0x8008CFC0; // force_not_migration:True
