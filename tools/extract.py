@@ -10,7 +10,7 @@ reads the data track (track 1, MODE2/2352) and writes:
   disc/dat/NNN.<ext>                                   NASCAR.DAT's entries
 
 NASCAR.DAT has no directory of its own. The EXE holds its file table: 185
-records of {sector, size, name hash} at 0x80098340 (see dat_table()).
+records of {sector, size, name hash} at 0x80098340 (see datfile.py).
 Everything written here is copyrighted. disc/ is gitignored: keep it so.
 """
 
@@ -20,13 +20,10 @@ import struct
 import sys
 
 import cue
+import datfile
 
 SECTOR = 2352
 USER_DATA = 24  # sync (12) + header (4) + XA subheader (8)
-FILE_TABLE_VRAM = 0x80098340
-FILE_TABLE_COUNT = 185
-EXE_VRAM = 0x80012000
-EXE_HEADER = 0x800
 
 
 def sha1(path: pathlib.Path) -> str:
@@ -100,13 +97,6 @@ class Disc:
                 yield f"{prefix}{name}", elba, esize
 
 
-def dat_table(exe: bytes):
-    """Yield (sector, size, name_hash) for each NASCAR.DAT entry."""
-    base = FILE_TABLE_VRAM - EXE_VRAM + EXE_HEADER
-    for i in range(FILE_TABLE_COUNT):
-        yield struct.unpack_from("<3I", exe, base + 12 * i)
-
-
 def guess_ext(data: bytes) -> str:
     magic = data[:4]
     if magic == b"\x10\0\0\0":
@@ -142,12 +132,12 @@ def main() -> None:
     (out / "dat").mkdir(exist_ok=True)
     with (out / "dat" / "index.tsv").open("w") as index:
         index.write("index\tsector\tsize\thash\tfile\n")
-        for i, (lba, size, name_hash) in enumerate(dat_table(exe)):
-            data = dat[lba * 2048 : lba * 2048 + size]
+        for i, entry in enumerate(datfile.read_table(exe)):
+            data = dat[entry.sector * 2048 : entry.sector * 2048 + entry.size]
             path = out / "dat" / f"{i:03d}.{guess_ext(data)}"
             path.write_bytes(data)
-            index.write(f"{i}\t{lba}\t{size}\t{name_hash:08x}\t{path.name}\n")
-    print(f"wrote {FILE_TABLE_COUNT} NASCAR.DAT entries to {out / 'dat'}")
+            index.write(f"{i}\t{entry.sector}\t{entry.size}\t{entry.name_hash:08x}\t{path.name}\n")
+    print(f"wrote {datfile.TABLE_COUNT} NASCAR.DAT entries to {out / 'dat'}")
 
 
 if __name__ == "__main__":
