@@ -5,8 +5,12 @@ rectangle measured in 16-bit words. The PNG holds the pixels at their real
 width: 4 and 8 bits per pixel give an indexed PNG whose palette is the
 first 16 or 256 CLUT entries, 16 bits per pixel gives RGBA, and 24 bits per
 pixel gives RGB. A JSON-able sidecar keeps what PNG can't: the VRAM
-rectangles, the rest of the CLUT, any bytes after the image, and block
-lengths that disagree with the rectangle.
+rectangles, the palette, the rest of the CLUT, any bytes after the image,
+and block lengths that disagree with the rectangle.
+
+An indexed TIM also accepts a truecolour PNG, as editors often save one,
+provided every pixel uses a colour from the original palette. Edits made
+in the PNG's own palette need it saved as an indexed PNG.
 
 Alpha carries the semi-transparency (STP) bit of each 15-bit colour word:
 
@@ -173,6 +177,7 @@ def tim_to_png(tim: Tim) -> tuple[bytes, dict]:
             "y": c.y,
             "w": c.w,
             "h": c.h,
+            "palette": c.data[: palette_size(tim) * 2].hex(),
             "rest": c.data[palette_size(tim) * 2 :].hex(),
             "bnum": c.bnum,
         }
@@ -184,6 +189,46 @@ def read_rgba(image: Image.Image) -> bytes:
     if image.mode in ("I", "I;16", "I;16B"):
         image = image.point(lambda v: v / 257).convert("L")
     return image.convert("RGBA").tobytes()
+
+
+def read_indexed(image: Image.Image, c: dict) -> tuple[bytes, bytes]:
+    """Return an indexed PNG's pixels and its palette as CLUT words."""
+    count = c["w"] * c["h"] - len(bytes.fromhex(c["rest"])) // 2
+    indexes = image.tobytes()
+    if any(i >= count for i in indexes):
+        raise ValueError(f"PNG uses a palette index past the {count} colours this TIM has")
+    rgb = image.getpalette("RGB") or []
+    rgb += [0] * (count * 3 - len(rgb))
+    alpha = image.info.get("transparency", b"")
+    if isinstance(alpha, int):
+        alpha = bytes(255 if i != alpha else 0 for i in range(count))
+    alpha += b"\xff" * (count - len(alpha))
+    words = (rgba_to_word(*rgb[i * 3 : i * 3 + 3], alpha[i]) for i in range(count))
+    return indexes, struct.pack(f"<{count}H", *words)
+
+
+def map_to_palette(image: Image.Image, c: dict, width: int) -> tuple[bytes, bytes]:
+    """Return a truecolour PNG's pixels as indexes into the sidecar's palette.
+
+    A palette that lists a colour twice maps it to the first entry.
+    """
+    palette = bytes.fromhex(c["palette"])
+    words = struct.unpack(f"<{len(palette) // 2}H", palette)
+    index = {}
+    for i, word in enumerate(words):
+        index.setdefault(word, i)
+    rgba = read_rgba(image)
+    indexes = bytearray()
+    for i in range(0, len(rgba), 4):
+        word = rgba_to_word(*rgba[i : i + 4])
+        if word not in index:
+            at = (i // 4 % width, i // 4 // width)
+            raise ValueError(
+                f"pixel {at} is RGBA {tuple(rgba[i : i + 4])}, which isn't in this "
+                "TIM's palette; save the PNG as Indexed to change the palette"
+            )
+        indexes.append(index[word])
+    return bytes(indexes), palette
 
 
 def png_to_tim(png: bytes, sidecar: dict) -> Tim:
@@ -209,20 +254,11 @@ def png_to_tim(png: bytes, sidecar: dict) -> Tim:
             f"<{width * h}H", *(rgba_to_word(*rgba[i : i + 4]) for i in range(0, len(rgba), 4))
         )
     else:
-        if image.mode != "P":
-            raise ValueError(f"PNG is {image.mode}; a {bpp}-bit TIM needs an indexed (palette) PNG")
-        count = (c["w"] * c["h"] - len(bytes.fromhex(c["rest"])) // 2) if c else 0
-        indexes = image.tobytes()
-        if any(i >= count for i in indexes):
-            raise ValueError(f"PNG uses a palette index past the {count} colours this TIM has")
-        rgb = image.getpalette("RGB") or []
-        rgb += [0] * (count * 3 - len(rgb))
-        alpha = image.info.get("transparency", b"")
-        if isinstance(alpha, int):
-            alpha = bytes(255 if i != alpha else 0 for i in range(count))
-        alpha += b"\xff" * (count - len(alpha))
-        words = (rgba_to_word(*rgb[i * 3 : i * 3 + 3], alpha[i]) for i in range(count))
-        clut.data = struct.pack(f"<{count}H", *words) + bytes.fromhex(c["rest"])
+        if image.mode == "P":
+            indexes, palette = read_indexed(image, c)
+        else:
+            indexes, palette = map_to_palette(image, c, width)
+        clut.data = palette + bytes.fromhex(c["rest"])
         if bpp == 4:
             indexes = bytes(indexes[i] | indexes[i + 1] << 4 for i in range(0, len(indexes), 2))
         tim.pixels = indexes

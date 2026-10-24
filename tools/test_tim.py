@@ -87,13 +87,26 @@ class TimTest(unittest.TestCase):
         self.assertIn("4x3", str(caught.exception))
         self.assertIn("5x3", str(caught.exception))
 
-    def test_indexed_tim_rejects_truecolour_png(self) -> None:
-        _, sidecar = tim.tim_to_png(tim.parse_tim(make_tim(1, 2, 2, (256, 1))))
+    def test_indexed_tim_accepts_truecolour_png_in_palette(self) -> None:
+        data = make_tim(0, 4, 3, (16, 2))
+        words = struct.unpack_from("<16H", data, 20)
+        self.assertEqual(len(set(words)), 16)  # unique, so the mapping is exact
+        png, sidecar = tim.tim_to_png(tim.parse_tim(data))
         out = io.BytesIO()
-        Image.new("RGB", (4, 2)).save(out, "PNG")
+        Image.open(io.BytesIO(png)).convert("RGBA").save(out, "PNG")
+        self.assertEqual(tim.serialise_tim(tim.png_to_tim(out.getvalue(), sidecar)), data)
+
+    def test_truecolour_png_with_new_colour_is_named(self) -> None:
+        png, sidecar = tim.tim_to_png(tim.parse_tim(make_tim(1, 2, 2, (256, 1))))
+        image = Image.open(io.BytesIO(png)).convert("RGBA")
+        image.putpixel((3, 1), (1, 2, 3, 255))
+        out = io.BytesIO()
+        image.save(out, "PNG")
         with self.assertRaises(ValueError) as caught:
             tim.png_to_tim(out.getvalue(), sidecar)
-        self.assertIn("indexed", str(caught.exception))
+        message = str(caught.exception)
+        self.assertIn("(3, 1)", message)
+        self.assertIn("Indexed", message)
 
     def test_png_variants_accepted(self) -> None:
         _, sidecar = tim.tim_to_png(tim.parse_tim(make_tim(2, 4, 2, None)))
@@ -128,6 +141,10 @@ class TimTest(unittest.TestCase):
             with self.subTest(file=path.name):
                 data = path.read_bytes()
                 self.assertEqual(round_trip(data), data)
+                png, sidecar = tim.tim_to_png(tim.parse_tim(data))
+                out = io.BytesIO()
+                Image.open(io.BytesIO(png)).convert("RGBA").save(out, "PNG")
+                self.assertEqual(tim.serialise_tim(tim.png_to_tim(out.getvalue(), sidecar)), data)
         bundle = next(DAT.glob("000.*")).read_bytes()
         parts, meta = tim.split_bundle(bundle)
         self.assertEqual(tim.join_bundle([round_trip(p) for p in parts], meta), bundle)
