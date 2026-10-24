@@ -14,7 +14,7 @@ tracks, and writes:
   assets/dat/000-K.png, .json and 000.json  the TIMs bundled in entry 0
   assets/dat/NNN.<ext>       every other NASCAR.DAT entry, unchanged
   assets/SYSTEM.CNF
-  assets/manifest.json       entry order, name hashes, and file names
+  assets/manifest.json       entry order and file names
 
 config/asset_names.txt can give an entry or audio track a name, which
 replaces NNN or NN in its file names: `dat/005 = title_screen` writes
@@ -22,7 +22,7 @@ dat/title_screen.png. The manifest records the names, so build follows.
 
 An entry is converted only if its converted form rebuilds it byte for
 byte; otherwise it stays raw. build packs NASCAR.DAT from the assets,
-writes the new file table into the EXE, and writes NASCAR.DAT, the seven
+writes the new file table, with recomputed checksums, into the EXE, and writes NASCAR.DAT, the seven
 track files, and the cue sheet to DIR. It reads the original data track
 only for directory metadata and filler sectors.
 
@@ -169,7 +169,6 @@ def convert(
             name = f"dat/{stem}{pathlib.PurePath(row['file']).suffix}"
             claim(name, key).write_bytes(data)
             entry = {"kind": "raw", "file": name}
-        entry["hash"] = row["hash"]
         entries.append(entry)
     print(f"wrote {len(entries)} NASCAR.DAT entries to {out / 'dat'}")
 
@@ -196,7 +195,6 @@ def rebuild_tim(root: pathlib.Path, entry: dict) -> bytes:
 def build_dat(root: pathlib.Path) -> tuple[bytes, list[datfile.DatEntry]]:
     """Return NASCAR.DAT packed from the assets under root, and its table."""
     payloads = []
-    hashes = []
     for entry in load_manifest(root)["dat"]:
         if entry["kind"] == "tim":
             payloads.append(rebuild_tim(root, entry))
@@ -205,8 +203,7 @@ def build_dat(root: pathlib.Path) -> tuple[bytes, list[datfile.DatEntry]]:
             payloads.append(tim.join_bundle(parts, json.loads(read_file(root, entry["meta"]))))
         else:
             payloads.append(read_file(root, entry["file"]))
-        hashes.append(int(entry["hash"], 16))
-    return datfile.pack_dat(payloads, hashes)
+    return datfile.pack_dat(payloads)
 
 
 def build(sheet: pathlib.Path, exe: pathlib.Path, root: pathlib.Path, out: pathlib.Path) -> None:

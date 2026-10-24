@@ -78,7 +78,9 @@ class AssetsTest(unittest.TestCase):
         image.save(png)
 
         edited, after = assets.build_dat(self.out)
-        self.assertEqual(after, before)  # same size, so the same table
+        # Same size, so only the edited entry's checksum changes.
+        self.assertNotEqual(after[index].checksum, before[index].checksum)
+        self.assertEqual(after[:index] + after[index + 1 :], before[:index] + before[index + 1 :])
         for i, entry in enumerate(after):
             span = slice(entry.sector * datfile.SECTOR, entry.sector * datfile.SECTOR + entry.size)
             if i == index:

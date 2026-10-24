@@ -10,7 +10,7 @@ reads the data track (track 1, MODE2/2352) and writes:
   disc/dat/NNN.<ext>                                   NASCAR.DAT's entries
 
 NASCAR.DAT has no directory of its own. The EXE holds its file table: 185
-records of {sector, size, name hash} at 0x80098340 (see datfile.py).
+records of {sector, size, checksum} at 0x80098340 (see datfile.py).
 Everything written here is copyrighted. disc/ is gitignored: keep it so.
 """
 
@@ -131,12 +131,12 @@ def main() -> None:
     dat = (out / "NASCAR.DAT").read_bytes()
     (out / "dat").mkdir(exist_ok=True)
     with (out / "dat" / "index.tsv").open("w") as index:
-        index.write("index\tsector\tsize\thash\tfile\n")
+        index.write("index\tsector\tsize\tchecksum\tfile\n")
         for i, entry in enumerate(datfile.read_table(exe)):
             data = dat[entry.sector * 2048 : entry.sector * 2048 + entry.size]
             path = out / "dat" / f"{i:03d}.{guess_ext(data)}"
             path.write_bytes(data)
-            index.write(f"{i}\t{entry.sector}\t{entry.size}\t{entry.name_hash:08x}\t{path.name}\n")
+            index.write(f"{i}\t{entry.sector}\t{entry.size}\t{entry.checksum:08x}\t{path.name}\n")
     print(f"wrote {datfile.TABLE_COUNT} NASCAR.DAT entries to {out / 'dat'}")
 
 

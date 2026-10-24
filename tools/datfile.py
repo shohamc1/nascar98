@@ -2,9 +2,11 @@
 
 NASCAR.DAT has no header or directory. Each entry starts on a 2048-byte
 sector and is followed by zero bytes up to the next sector. The EXE holds
-the directory: 185 records of {sector, size, name hash} at 0x80098340,
-which is file offset 0x86B40. The name hash function is unknown, so hashes
-pass through as opaque values.
+the directory: 185 records of {sector, size, checksum} at 0x80098340,
+which is file offset 0x86B40. The checksum is the 32-bit sum of every
+little-endian word in the entry's sectors, zero padding included. FileRead
+(src/cd.c) checks it after each read and hangs on a mismatch, so an
+edited entry needs its checksum recomputed.
 """
 
 import dataclasses
@@ -21,7 +23,7 @@ TABLE_SIZE = RECORD.size * TABLE_COUNT
 class DatEntry:
     sector: int
     size: int
-    name_hash: int
+    checksum: int
 
 
 def read_table(exe: bytes) -> list[DatEntry]:
@@ -34,7 +36,7 @@ def read_table(exe: bytes) -> list[DatEntry]:
 def build_table(entries: list[DatEntry]) -> bytes:
     if len(entries) != TABLE_COUNT:
         raise ValueError(f"the EXE's file table holds {TABLE_COUNT} entries, not {len(entries)}")
-    return b"".join(RECORD.pack(e.sector, e.size, e.name_hash) for e in entries)
+    return b"".join(RECORD.pack(e.sector, e.size, e.checksum) for e in entries)
 
 
 def patch_exe_table(exe: bytes, entries: list[DatEntry]) -> bytes:
@@ -45,13 +47,17 @@ def patch_exe_table(exe: bytes, entries: list[DatEntry]) -> bytes:
     return exe[:TABLE_FILE_OFFSET] + build_table(entries) + exe[end:]
 
 
-def pack_dat(payloads: list[bytes], hashes: list[int]) -> tuple[bytes, list[DatEntry]]:
+def checksum(payload: bytes) -> int:
+    """Return the sum of payload's 32-bit words, as FileRead computes it."""
+    padded = payload + bytes(-len(payload) % 4)
+    return sum(struct.unpack(f"<{len(padded) // 4}I", padded)) & 0xFFFFFFFF
+
+
+def pack_dat(payloads: list[bytes]) -> tuple[bytes, list[DatEntry]]:
     """Return NASCAR.DAT holding payloads in order, and the table that finds them."""
-    if len(payloads) != len(hashes):
-        raise ValueError(f"{len(payloads)} payloads but {len(hashes)} name hashes")
     out = bytearray()
     entries = []
-    for payload, name_hash in zip(payloads, hashes):
-        entries.append(DatEntry(len(out) // SECTOR, len(payload), name_hash))
+    for payload in payloads:
+        entries.append(DatEntry(len(out) // SECTOR, len(payload), checksum(payload)))
         out += payload + bytes(-len(payload) % SECTOR)
     return bytes(out), entries

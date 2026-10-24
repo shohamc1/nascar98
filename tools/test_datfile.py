@@ -20,9 +20,9 @@ def payloads() -> list[bytes]:
 class DatfileTest(unittest.TestCase):
     def test_pack_aligns_entries_and_pads_tail(self) -> None:
         parts = payloads()
-        dat, entries = datfile.pack_dat(parts, [1, 2, 3, 4])
+        dat, entries = datfile.pack_dat(parts)
         self.assertEqual(len(dat) % 2048, 0)
-        self.assertEqual([e.name_hash for e in entries], [1, 2, 3, 4])
+        self.assertEqual([e.checksum for e in entries], [datfile.checksum(p) for p in parts])
         end = 0
         for part, entry in zip(parts, entries):
             at = entry.sector * 2048
@@ -33,11 +33,24 @@ class DatfileTest(unittest.TestCase):
 
     def test_growing_an_entry_shifts_later_sectors(self) -> None:
         parts = payloads()
-        _, before = datfile.pack_dat(parts, [0] * 4)
+        _, before = datfile.pack_dat(parts)
         parts[1] += bytes(2048)
-        _, after = datfile.pack_dat(parts, [0] * 4)
+        _, after = datfile.pack_dat(parts)
         self.assertEqual([e.sector for e in after[:2]], [e.sector for e in before[:2]])
         self.assertEqual([e.sector - 1 for e in after[2:]], [e.sector for e in before[2:]])
+
+    def test_checksum_is_word_sum(self) -> None:
+        self.assertEqual(datfile.checksum(b"\x01\0\0\0\x02\0\0\0"), 3)
+        self.assertEqual(datfile.checksum(b"\xff\xff\xff\xff\x02\0\0\0"), 1)  # wraps at 32 bits
+        self.assertEqual(datfile.checksum(b"\x05"), 5)  # zero padding counts as zero
+
+    def test_edit_changes_checksum(self) -> None:
+        parts = payloads()
+        _, before = datfile.pack_dat(parts)
+        parts[2] = b"\x01" + parts[2][1:]
+        _, after = datfile.pack_dat(parts)
+        self.assertNotEqual(after[2].checksum, before[2].checksum)
+        self.assertEqual(after[:2] + after[3:], before[:2] + before[3:])
 
     def exe(self) -> bytes:
         return random.Random(9).randbytes(datfile.TABLE_FILE_OFFSET + datfile.TABLE_SIZE + 64)
@@ -67,7 +80,7 @@ class DatfileTest(unittest.TestCase):
         with (DISC / "dat" / "index.tsv").open() as f:
             rows = list(csv.DictReader(f, delimiter="\t"))
         parts = [(DISC / "dat" / row["file"]).read_bytes() for row in rows]
-        dat, entries = datfile.pack_dat(parts, [int(row["hash"], 16) for row in rows])
+        dat, entries = datfile.pack_dat(parts)
         original = (DISC / "NASCAR.DAT").read_bytes()
         self.assertEqual(hashlib.sha1(dat).hexdigest(), hashlib.sha1(original).hexdigest())
         exe = (DISC / "SLUS_005.21").read_bytes()
