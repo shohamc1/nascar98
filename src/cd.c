@@ -386,7 +386,7 @@ void GraphicsLoadImagePointerTable(s32 fileId) {
     src = (s32 *)base;
     count = *src++;
     for (i = 0; i < count; i++) {
-        gImagePointerTable[i] = *src++ + base;
+        gImagePointerTable[i] = (u8 *)(*src++ + base);
     }
 }
 

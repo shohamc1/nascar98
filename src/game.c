@@ -656,7 +656,7 @@ void TextureLoadAll(void) {
     LoadImage(&rect, (u_long *)&env);
     GraphicsLoadImagePointerTable(0x40, (void *)STACK_BLOCK_80180000);
     for (i = 0; i < 0x16; i++) {
-        TextureLoadTim((void *)gImagePointerTable[i]);
+        TextureLoadTim(gImagePointerTable[i]);
     }
 }
 

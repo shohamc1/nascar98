@@ -7562,7 +7562,7 @@ extern u8 gCdVolume;
 extern u8 D_800A3950;
 extern u8 D_800A3644;
 extern u8 gScreenStateSmall;
-extern s32 gMenuBackground;
+extern void *gMenuBackground;
 extern u16 *D_800A35F0;
 extern s32 D_800A305C;
 extern RECT D_800A3710[2];
@@ -7871,8 +7871,8 @@ void MenuLoadResources(void) {
     u8 i;
     void *base;
 
-    gMenuBackground = (s32)HeapAlloc(0x26000);
-    CdLoadFileByIndex(gMenuBackground, 5);
+    gMenuBackground = HeapAlloc(0x26000);
+    CdLoadFileByIndex((s32)gMenuBackground, 5);
     MenuLoadOffsetResources(6);
     SceneInitPrimPools();
     i = 0;
@@ -11065,7 +11065,7 @@ void func_80057BFC(void) {
     MenuFreeResourceBlock();
     MenuFreeObjectBuffer();
     if (gMenuBackground != 0) {
-        HeapFree((void *)gMenuBackground);
+        HeapFree(gMenuBackground);
     }
     gMenuBackground = 0;
     if (gMenuObjectPoolLui != 0) {
@@ -11706,9 +11706,9 @@ void func_80058D94(void) {
         fileBuf = (u8 *)D_800A3638;
         offsets = (s32 *)D_800A381C;
     }
-    gMenuBackground = (s32)(fileBuf + offsets[0]);
+    gMenuBackground = fileBuf + offsets[0];
     texBuf = HeapAlloc(0x25800);
-    TextureLoadTim((void *)gMenuBackground);
+    TextureLoadTim(gMenuBackground);
     D_800A3710[0] = D_800A39B0[0];
     D_800A35F0 = (u16 *)D_800A36B4w6c[0];
     DrawSync(0);
@@ -12131,7 +12131,7 @@ void func_8005978C(void) {
     D_800A381C = buf + 4;
     D_800A3638 = buf;
     buf += next;
-    gMenuBackground = buf;
+    gMenuBackground = (void *)buf;
     TextureLoadTim((void *)buf);
     DrawSync(0);
     SetDefDispEnv(&env, 0x140, 0, 0x140, 0xF0);

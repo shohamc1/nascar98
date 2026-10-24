@@ -136,7 +136,7 @@ extern u8 D_800AEE3E[];
 extern u8 D_800B0B7C[];
 extern u8 D_800B9990[];
 extern s32 D_800B9D54[];
-extern s32 gImagePointerTable[];
+extern u8 *gImagePointerTable[];
 extern char D_800BB9B4[];
 extern u8 gDriverOrder[];
 extern s32 gTrackSectionCount[];

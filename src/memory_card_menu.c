@@ -58,7 +58,7 @@ extern char *strcpy(char *, const char *);
 extern u8 gPlayerDriver[];
 extern char *strcat(char *, char *);
 extern u8 *D_800AE178[];
-extern s32 gTrackShortNames[];
+extern char *gTrackShortNames[];
 extern void MenuUpdateObjectPosition(MenuObj *first, u8 friction);
 extern void MenuDrawObjectList(MenuObj *first, s32 value);
 extern u8 gSelectedTrack[];
@@ -115,7 +115,7 @@ void func_80067F34(s32 page, s32 track) {
     obj = D_800A360CAbsolute[page & 0xFF];
     MenuFontSetS32(2, 3);
     strcpy(buf, D_8009A474[0]);
-    strcat(buf, (char *)gTrackShortNames[track & 0xFF]);
+    strcat(buf, gTrackShortNames[track & 0xFF]);
     w = MenuStringWidth(buf);
     sum = (0x140 - w) / 2;
     obj->x = sum;
@@ -130,7 +130,7 @@ void func_80067F34(s32 page, s32 track) {
         sum2 = (u16)obj->x + w;
         next->x = sum2;
         next->drawOffsetX = sum2;
-        string = (char *)gTrackShortNames[track & 0xFF];
+        string = gTrackShortNames[track & 0xFF];
         pktH = next->primitive;
         pktH->font = 2;
         pktH->scale = 3;
@@ -286,7 +286,7 @@ void CardMenuCreateRecordTable(u8 track) {
         D_800A360CArr[page] = tail;
         MenuFontSetS32(2, 3);
         strcpy(buf, D_8009A474[0]);
-        strcat(buf, (char *)gTrackShortNames[track]);
+        strcat(buf, gTrackShortNames[track]);
         w = (s16)MenuStringWidth(buf);
         x = (0x140 - w) / 2;
         tail->x = x;
@@ -320,7 +320,7 @@ void CardMenuCreateRecordTable(u8 track) {
             s32 str;
             MenuText *pkt;
             s32 hdr;
-            str = gTrackShortNames[track];
+            str = (s32)gTrackShortNames[track];
             pkt = obj->primitive;
             hdr = obj->orderingDepth;
             pkt->font = 2;
@@ -871,7 +871,7 @@ void func_80068CE4(void) {
             flag = 0;
             switch (j) {
             case 0:
-                value = gTrackShortNames[i];
+                value = (s32)gTrackShortNames[i];
                 break;
 
             case 1:
@@ -3265,7 +3265,7 @@ void func_8006CE64(void) {
 void CardMenuAppendTrackName(void) {
     if (D_800A358C < D_800A3968) {
         strcpy(D_800B0A2C + D_800A358C * 16,
-               (char *)gTrackShortNames[gSelectedTrack[0]]);
+               gTrackShortNames[gSelectedTrack[0]]);
     }
 }
 

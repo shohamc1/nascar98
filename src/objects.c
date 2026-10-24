@@ -10184,8 +10184,7 @@ void ModelLoadGeometryFromFile(s32 fileId) {
  * the %lo displacement (0x36D0 - 0x15C = 0x3574).
  */
 void ModelLoadGeometryByIndex(s32 modelIndex, s32 reuse) {
-    ObjectLoadGeometry(D_800A3574Lui, *(u8 **)(gImagePointerTable + modelIndex),
-                       reuse);
+    ObjectLoadGeometry(D_800A3574Lui, gImagePointerTable[modelIndex], reuse);
     D_800A2D4C[0] = 1;
     func_80025454(D_800A3574Lui);
     D_800A2D4D[0] = 0;
