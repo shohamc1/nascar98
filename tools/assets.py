@@ -3,6 +3,7 @@
 
 Usage:
   python3 tools/assets.py convert --cue CUE [--disc disc] [--out assets]
+                                  [--names config/asset_names.txt]
   python3 tools/assets.py build --cue CUE --exe EXE --out DIR [--assets assets]
 
 convert reads disc/ (from `make extract`) and the cue sheet's audio
@@ -14,6 +15,10 @@ tracks, and writes:
   assets/dat/NNN.<ext>       every other NASCAR.DAT entry, unchanged
   assets/SYSTEM.CNF
   assets/manifest.json       entry order, name hashes, and file names
+
+config/asset_names.txt can give an entry or audio track a name, which
+replaces NNN or NN in its file names: `dat/005 = title_screen` writes
+dat/title_screen.png. The manifest records the names, so build follows.
 
 An entry is converted only if its converted form rebuilds it byte for
 byte; otherwise it stays raw. build packs NASCAR.DAT from the assets,
@@ -28,8 +33,10 @@ import argparse
 import csv
 import json
 import pathlib
+import re
 import struct
 import sys
+from collections.abc import Callable
 
 import cdda
 import cdimage
@@ -54,7 +61,40 @@ def read_file(root: pathlib.Path, name: str) -> bytes:
         sys.exit(f"{name}: missing from {root} (the manifest lists it; run convert again)")
 
 
-def convert_tim(data: bytes, out: pathlib.Path, stem: str) -> dict | None:
+NAME_LINE = re.compile(r"(dat/\d{3}|audio/\d{2})\s*=\s*([A-Za-z0-9_-]+)")
+
+
+def read_names(path: pathlib.Path) -> dict[str, str]:
+    """Return {"dat/NNN" or "audio/NN": name} from a names file, if it exists."""
+    if not path.is_file():
+        return {}
+    names = {}
+    for number, line in enumerate(path.read_text().splitlines(), start=1):
+        line = line.split("#")[0].strip()
+        if not line:
+            continue
+        match = NAME_LINE.fullmatch(line)
+        if not match:
+            sys.exit(f"{path}:{number}: expected `dat/NNN = name` or `audio/NN = name` (letters, digits, _ and -)")
+        if match.group(1) in names:
+            sys.exit(f"{path}:{number}: {match.group(1)} is named twice")
+        names[match.group(1)] = match.group(2)
+    return names
+
+
+def claimer(out: pathlib.Path) -> Callable[[str, str], pathlib.Path]:
+    """Return claim(path, owner), which exits if two owners want one file."""
+    owners = {}
+
+    def claim(path: str, owner: str) -> pathlib.Path:
+        if owners.setdefault(path, owner) != owner:
+            sys.exit(f"{path}: both {owners[path]} and {owner} want this file name; rename one in the names file")
+        return out / path
+
+    return claim
+
+
+def convert_tim(data: bytes, claim: Callable, stem: str, owner: str) -> dict | None:
     """Write stem.png and stem.json if data is a TIM that round-trips."""
     try:
         png, sidecar = tim.tim_to_png(tim.parse_tim(data))
@@ -62,12 +102,13 @@ def convert_tim(data: bytes, out: pathlib.Path, stem: str) -> dict | None:
             return None
     except (ValueError, struct.error):
         return None
-    (out / f"{stem}.png").write_bytes(png)
-    write_json(out / f"{stem}.json", sidecar)
-    return {"file": f"dat/{stem}.png", "sidecar": f"dat/{stem}.json"}
+    entry = {"file": f"dat/{stem}.png", "sidecar": f"dat/{stem}.json"}
+    claim(entry["file"], owner).write_bytes(png)
+    write_json(claim(entry["sidecar"], owner), sidecar)
+    return entry
 
 
-def convert_bundle(data: bytes, out: pathlib.Path, stem: str) -> dict | None:
+def convert_bundle(data: bytes, claim: Callable, stem: str, owner: str) -> dict | None:
     """Write a bundle of TIMs as stem-K.png files, if every part converts."""
     try:
         parts, meta = tim.split_bundle(data)
@@ -79,46 +120,57 @@ def convert_bundle(data: bytes, out: pathlib.Path, stem: str) -> dict | None:
         return None
     converted = []
     for k, part in enumerate(parts):
-        entry = convert_tim(part, out, f"{stem}-{k}")
+        entry = convert_tim(part, claim, f"{stem}-{k}", owner)
         if entry is None:
             return None
         converted.append(entry)
-    write_json(out / f"{stem}.json", meta)
+    write_json(claim(f"dat/{stem}.json", owner), meta)
     return {"kind": "bundle", "meta": f"dat/{stem}.json", "parts": converted}
 
 
-def convert(sheet: pathlib.Path, disc: pathlib.Path, out: pathlib.Path) -> None:
+def convert(
+    sheet: pathlib.Path, disc: pathlib.Path, out: pathlib.Path, names: dict[str, str] | None = None
+) -> None:
     index = disc / "dat" / "index.tsv"
     if not index.is_file():
         sys.exit(f"{index}: missing; run `make extract` first")
+    names = names or {}
     tracks = cue.parse_cue(sheet)
+    with index.open() as f:
+        rows = list(csv.DictReader(f, delimiter="\t"))
+    known = {f"audio/{t.number:02d}" for t in tracks[1:]} | {f"dat/{int(r['index']):03d}" for r in rows}
+    if unknown := sorted(set(names) - known):
+        sys.exit(f"the names file names {', '.join(unknown)}, which the disc doesn't have")
     (out / "audio").mkdir(parents=True, exist_ok=True)
     (out / "dat").mkdir(exist_ok=True)
+    claim = claimer(out)
 
     audio = []
     for track in tracks[1:]:
-        name = f"audio/{track.number:02d}.wav"
-        (out / name).write_bytes(cdda.raw_to_wav(track.path.read_bytes(), track.index01))
+        key = f"audio/{track.number:02d}"
+        name = f"audio/{names.get(key, f'{track.number:02d}')}.wav"
+        claim(name, key).write_bytes(cdda.raw_to_wav(track.path.read_bytes(), track.index01))
         audio.append(name)
         print(f"wrote {out / name}")
 
     entries = []
-    with index.open() as f:
-        for row in csv.DictReader(f, delimiter="\t"):
-            data = (disc / "dat" / row["file"]).read_bytes()
-            stem = f"{int(row['index']):03d}"
-            entry = None
-            if row["file"].endswith(".tim"):
-                entry = convert_tim(data, out / "dat", stem)
-                if entry:
-                    entry["kind"] = "tim"
-            elif row["file"].endswith(".bin"):
-                entry = convert_bundle(data, out / "dat", stem)
-            if entry is None:
-                (out / "dat" / row["file"]).write_bytes(data)
-                entry = {"kind": "raw", "file": f"dat/{row['file']}"}
-            entry["hash"] = row["hash"]
-            entries.append(entry)
+    for row in rows:
+        data = (disc / "dat" / row["file"]).read_bytes()
+        key = f"dat/{int(row['index']):03d}"
+        stem = names.get(key, key[4:])
+        entry = None
+        if row["file"].endswith(".tim"):
+            entry = convert_tim(data, claim, stem, key)
+            if entry:
+                entry["kind"] = "tim"
+        elif row["file"].endswith(".bin"):
+            entry = convert_bundle(data, claim, stem, key)
+        if entry is None:
+            name = f"dat/{stem}{pathlib.PurePath(row['file']).suffix}"
+            claim(name, key).write_bytes(data)
+            entry = {"kind": "raw", "file": name}
+        entry["hash"] = row["hash"]
+        entries.append(entry)
     print(f"wrote {len(entries)} NASCAR.DAT entries to {out / 'dat'}")
 
     (out / "SYSTEM.CNF").write_bytes((disc / "SYSTEM.CNF").read_bytes())
@@ -184,6 +236,7 @@ def main() -> None:
     c.add_argument("--cue", type=pathlib.Path, required=True)
     c.add_argument("--disc", type=pathlib.Path, default=pathlib.Path("disc"))
     c.add_argument("--out", type=pathlib.Path, default=pathlib.Path("assets"))
+    c.add_argument("--names", type=pathlib.Path, default=pathlib.Path("config/asset_names.txt"))
     b = commands.add_parser("build")
     b.add_argument("--cue", type=pathlib.Path, required=True)
     b.add_argument("--exe", type=pathlib.Path, required=True)
@@ -191,7 +244,7 @@ def main() -> None:
     b.add_argument("--assets", type=pathlib.Path, default=pathlib.Path("assets"))
     args = parser.parse_args()
     if args.command == "convert":
-        convert(args.cue, args.disc, args.out)
+        convert(args.cue, args.disc, args.out, read_names(args.names))
     else:
         build(args.cue, args.exe, args.assets, args.out)
 

@@ -16,6 +16,26 @@ CUE = ROOT / "NASCAR 98 (USA)" / "NASCAR 98 (USA).cue"
 DISC = ROOT / "disc"
 
 
+class NamesTest(unittest.TestCase):
+    def read(self, text: str) -> dict[str, str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "names.txt"
+            path.write_text(text)
+            return assets.read_names(path)
+
+    def test_names_file_is_parsed(self) -> None:
+        names = self.read("# comment\n\ndat/005 = title_screen  # inline\naudio/02 = race_one\n")
+        self.assertEqual(names, {"dat/005": "title_screen", "audio/02": "race_one"})
+
+    def test_missing_names_file_is_empty(self) -> None:
+        self.assertEqual(assets.read_names(pathlib.Path("/nonexistent/names.txt")), {})
+
+    def test_bad_lines_are_rejected(self) -> None:
+        for text in ("dat/5 = x\n", "dat/005 = has space\n", "dat/005\n", "dat/005 = a\ndat/005 = b\n"):
+            with self.subTest(text=text), self.assertRaises(SystemExit):
+                self.read(text)
+
+
 class MissingDiscTest(unittest.TestCase):
     def test_missing_disc_directory_message(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -65,6 +85,29 @@ class AssetsTest(unittest.TestCase):
                 self.assertNotEqual(edited[span], original[span])
             else:
                 self.assertEqual(edited[span], original[span], i)
+
+    def test_custom_names_rename_files_and_build_follows(self) -> None:
+        manifest = assets.load_manifest(self.out)
+        raw = next(i for i, e in enumerate(manifest["dat"]) if e["kind"] == "raw")
+        names = {"dat/005": "title_screen", f"dat/{raw:03d}": "some_data", "dat/000": "logos", "audio/02": "race_one"}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = pathlib.Path(tmp)
+            assets.convert(CUE, DISC, out, names)
+            entries = assets.load_manifest(out)["dat"]
+            self.assertEqual(entries[5]["file"], "dat/title_screen.png")
+            self.assertEqual(entries[5]["sidecar"], "dat/title_screen.json")
+            self.assertEqual(entries[raw]["file"], "dat/some_data" + pathlib.Path(manifest["dat"][raw]["file"]).suffix)
+            self.assertEqual(entries[0]["parts"][1]["file"], "dat/logos-1.png")
+            self.assertEqual(assets.load_manifest(out)["audio"][0], "audio/race_one.wav")
+            self.assertTrue((out / "dat" / "title_screen.png").is_file())
+            dat, _ = assets.build_dat(out)
+        self.assertEqual(dat, (DISC / "NASCAR.DAT").read_bytes())
+
+    def test_duplicate_file_names_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(SystemExit) as caught:
+                assets.convert(CUE, DISC, pathlib.Path(tmp), {"dat/005": "same", "dat/040": "same"})
+        self.assertIn("same.png", str(caught.exception.code))
 
     def test_missing_asset_is_an_error(self) -> None:
         entry = next(e for e in assets.load_manifest(self.out)["dat"] if e["kind"] == "raw")

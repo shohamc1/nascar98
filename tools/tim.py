@@ -21,6 +21,11 @@ Alpha carries the semi-transparency (STP) bit of each 15-bit colour word:
 
 On the way back, alpha below 64 gives 0x0000, 64 to 191 sets STP, and 192
 or more is opaque.
+
+A 16-bit TIM with no STP bit set anywhere, such as a full-screen
+background, gives an opaque RGB PNG instead, with 0x0000 as black: the
+game copies these straight to the screen, where 0x0000 shows as black.
+The sidecar marks it "opaque", and black converts back to 0x0000.
 """
 
 import dataclasses
@@ -116,6 +121,11 @@ def rgba_to_word(r: int, g: int, b: int, a: int) -> int:
     return word or 0x8000
 
 
+def opaque_word(r: int, g: int, b: int, a: int) -> int:
+    """Return the colour word for a pixel of an opaque image: black is 0x0000."""
+    return rgba_to_word(r, g, b, a) & 0x7FFF
+
+
 RGBA = [bytes(word_to_rgba(w)) for w in range(0x10000)]
 
 
@@ -139,11 +149,14 @@ def tim_to_png(tim: Tim) -> tuple[bytes, dict]:
     width = pixel_width(tim.bpp, tim.w)
     size = (width, tim.h)
     save = {}
+    opaque = tim.bpp == 16 and not any(high & 0x80 for high in tim.pixels[1::2])
     if tim.bpp == 24:
         image = Image.frombytes("RGB", size, tim.pixels)
     elif tim.bpp == 16:
         words = struct.unpack(f"<{len(tim.pixels) // 2}H", tim.pixels)
         image = Image.frombytes("RGBA", size, b"".join(RGBA[w] for w in words))
+        if opaque:
+            image = image.convert("RGB")
     else:
         if tim.bpp == 4:
             indexes = bytes(i for byte in tim.pixels for i in (byte & 15, byte >> 4))
@@ -169,6 +182,7 @@ def tim_to_png(tim: Tim) -> tuple[bytes, dict]:
         "trailing": tim.trailing.hex(),
         "bnum": tim.bnum,
         "clut": None,
+        "opaque": opaque,
     }
     if tim.clut:
         c = tim.clut
@@ -250,8 +264,9 @@ def png_to_tim(png: bytes, sidecar: dict) -> Tim:
         tim.pixels = image.convert("RGB").tobytes()
     elif bpp == 16:
         rgba = read_rgba(image)
+        to_word = opaque_word if sidecar.get("opaque") else rgba_to_word
         tim.pixels = struct.pack(
-            f"<{width * h}H", *(rgba_to_word(*rgba[i : i + 4]) for i in range(0, len(rgba), 4))
+            f"<{width * h}H", *(to_word(*rgba[i : i + 4]) for i in range(0, len(rgba), 4))
         )
     else:
         if image.mode == "P":

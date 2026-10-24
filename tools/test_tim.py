@@ -59,6 +59,23 @@ class TimTest(unittest.TestCase):
         struct.pack_into("<4H", data, 20, 0x0000, 0x8000, 0x7FFF, 0x801F)
         self.assertEqual(round_trip(bytes(data)), bytes(data))
 
+    def test_16bpp_without_stp_is_opaque_rgb(self) -> None:
+        data = bytearray(make_tim(2, 4, 1, None))
+        struct.pack_into("<4H", data, 20, 0x0000, 0x001F, 0x7FFF, 0x0400)
+        png, sidecar = tim.tim_to_png(tim.parse_tim(bytes(data)))
+        image = Image.open(io.BytesIO(png))
+        self.assertEqual(image.mode, "RGB")
+        self.assertEqual(image.getpixel((0, 0)), (0, 0, 0))
+        self.assertTrue(sidecar["opaque"])
+        self.assertEqual(round_trip(bytes(data)), bytes(data))
+
+    def test_16bpp_with_stp_keeps_alpha(self) -> None:
+        data = bytearray(make_tim(2, 2, 1, None))
+        struct.pack_into("<2H", data, 20, 0x0000, 0x801F)
+        png, sidecar = tim.tim_to_png(tim.parse_tim(bytes(data)))
+        self.assertEqual(Image.open(io.BytesIO(png)).mode, "RGBA")
+        self.assertFalse(sidecar["opaque"])
+
     def test_round_trip_24bpp(self) -> None:
         data = make_tim(3, 3, 2, None)
         self.assertEqual(round_trip(data), data)

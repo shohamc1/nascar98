@@ -1,0 +1,12 @@
+# Names for the files `make assets` writes. Each line names one NASCAR.DAT
+# entry or CD audio track, and the name replaces its number in the file
+# names under assets/:
+#
+#   dat/005 = title_screen     writes assets/dat/title_screen.png
+#   audio/02 = race_one        writes assets/audio/race_one.wav
+#
+# Names use letters, digits, _ and -, and every file name must be unique.
+# A bundle's images get -0, -1, and so on after the name.
+#
+# Name things before you edit them: `make assets` rewrites every file it
+# converts, and files under an old name stay behind until you delete them.
