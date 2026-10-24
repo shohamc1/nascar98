@@ -10,3 +10,232 @@
 #
 # Name things before you edit them: `make assets` rewrites every file it
 # converts, and files under an old name stay behind until you delete them.
+
+# Boot and front end
+dat/000 = title_screen
+dat/001 = intro_video_1
+dat/002 = intro_video_2
+dat/005 = menu_background
+dat/006 = menu_track_models
+dat/007 = menu_car_models
+dat/008 = menu_car_images
+dat/009 = menu_graphics
+dat/010 = driver_portraits
+dat/011 = credits_and_bios
+dat/012 = credits_development_video
+dat/013 = credits_production_video
+
+# Sound banks. SoundReloadVab loads the front-end pair (3, 4) and SoundLoadVab the race pair (62, 63).
+dat/003 = menu_vab_head
+dat/004 = menu_vab_body
+dat/062 = race_vab_body
+dat/063 = race_vab_head
+
+# Race and HUD data
+dat/064 = hud_sprites
+dat/167 = race_car_models
+
+# Videos for a top-three finish in the season standings
+dat/058 = season_1st_video
+dat/059 = season_2nd_video
+dat/060 = season_3rd_video
+
+# Per-track entries, in disc order. TrackLoad in src/game.c loads geometry,
+# textures, sky, and the three replays as six consecutive entries, then the
+# surface entry from 168 to 184. The card and video are entries 14 + 2*N and
+# 15 + 2*N, where N is the menu index (Atlanta is 0).
+
+# Belmont
+dat/016 = track_belmont_card
+dat/017 = track_belmont_video
+dat/065 = track_belmont_geometry
+dat/066 = track_belmont_textures
+dat/067 = track_belmont_sky
+dat/068 = track_belmont_replay0
+dat/069 = track_belmont_replay1
+dat/070 = track_belmont_replay2
+dat/168 = track_belmont_surface
+
+# Salt Basin
+dat/022 = track_salt_basin_card
+dat/023 = track_salt_basin_video
+dat/071 = track_salt_basin_geometry
+dat/072 = track_salt_basin_textures
+dat/073 = track_salt_basin_sky
+dat/074 = track_salt_basin_replay0
+dat/075 = track_salt_basin_replay1
+dat/076 = track_salt_basin_replay2
+dat/169 = track_salt_basin_surface
+
+# Willow Lane
+dat/034 = track_willow_lane_card
+dat/035 = track_willow_lane_video
+dat/077 = track_willow_lane_geometry
+dat/078 = track_willow_lane_textures
+dat/079 = track_willow_lane_sky
+dat/080 = track_willow_lane_replay0
+dat/081 = track_willow_lane_replay1
+dat/082 = track_willow_lane_replay2
+dat/170 = track_willow_lane_surface
+
+# Pine Ridge
+dat/028 = track_pine_ridge_card
+dat/029 = track_pine_ridge_video
+dat/083 = track_pine_ridge_geometry
+dat/084 = track_pine_ridge_textures
+dat/085 = track_pine_ridge_sky
+dat/086 = track_pine_ridge_replay0
+dat/087 = track_pine_ridge_replay1
+dat/088 = track_pine_ridge_replay2
+dat/171 = track_pine_ridge_surface
+
+# Ranch Tower
+dat/044 = track_ranch_tower_card
+dat/045 = track_ranch_tower_video
+dat/089 = track_ranch_tower_geometry
+dat/090 = track_ranch_tower_textures
+dat/091 = track_ranch_tower_sky
+dat/092 = track_ranch_tower_replay0
+dat/093 = track_ranch_tower_replay1
+dat/094 = track_ranch_tower_replay2
+dat/172 = track_ranch_tower_surface
+
+# Cedar Woods
+dat/040 = track_cedar_woods_card
+dat/041 = track_cedar_woods_video
+dat/095 = track_cedar_woods_geometry
+dat/096 = track_cedar_woods_textures
+dat/097 = track_cedar_woods_sky
+dat/098 = track_cedar_woods_replay0
+dat/099 = track_cedar_woods_replay1
+dat/100 = track_cedar_woods_replay2
+dat/173 = track_cedar_woods_surface
+
+# Michigan
+dat/030 = track_michigan_card
+dat/031 = track_michigan_video
+dat/101 = track_michigan_geometry
+dat/102 = track_michigan_textures
+dat/103 = track_michigan_sky
+dat/104 = track_michigan_replay0
+dat/105 = track_michigan_replay1
+dat/106 = track_michigan_replay2
+dat/174 = track_michigan_surface
+
+# Sears Point
+dat/024 = track_sears_point_card
+dat/025 = track_sears_point_video
+dat/107 = track_sears_point_geometry
+dat/108 = track_sears_point_textures
+dat/109 = track_sears_point_sky
+dat/110 = track_sears_point_replay0
+dat/111 = track_sears_point_replay1
+dat/112 = track_sears_point_replay2
+dat/175 = track_sears_point_surface
+
+# Watkins Glen
+dat/038 = track_watkins_glen_card
+dat/039 = track_watkins_glen_video
+dat/113 = track_watkins_glen_geometry
+dat/114 = track_watkins_glen_textures
+dat/115 = track_watkins_glen_sky
+dat/116 = track_watkins_glen_replay0
+dat/117 = track_watkins_glen_replay1
+dat/118 = track_watkins_glen_replay2
+dat/176 = track_watkins_glen_surface
+
+# Pocono
+dat/036 = track_pocono_card
+dat/037 = track_pocono_video
+dat/119 = track_pocono_geometry
+dat/120 = track_pocono_textures
+dat/121 = track_pocono_sky
+dat/122 = track_pocono_replay0
+dat/123 = track_pocono_replay1
+dat/124 = track_pocono_replay2
+dat/177 = track_pocono_surface
+
+# Talladega
+dat/042 = track_talladega_card
+dat/043 = track_talladega_video
+dat/125 = track_talladega_geometry
+dat/126 = track_talladega_textures
+dat/127 = track_talladega_sky
+dat/128 = track_talladega_replay0
+dat/129 = track_talladega_replay1
+dat/130 = track_talladega_replay2
+dat/178 = track_talladega_surface
+
+# Atlanta
+dat/014 = track_atlanta_card
+dat/015 = track_atlanta_video
+dat/131 = track_atlanta_geometry
+dat/132 = track_atlanta_textures
+dat/133 = track_atlanta_sky
+dat/134 = track_atlanta_replay0
+dat/135 = track_atlanta_replay1
+dat/136 = track_atlanta_replay2
+dat/179 = track_atlanta_surface
+
+# Charlotte
+dat/026 = track_charlotte_card
+dat/027 = track_charlotte_video
+dat/137 = track_charlotte_geometry
+dat/138 = track_charlotte_textures
+dat/139 = track_charlotte_sky
+dat/140 = track_charlotte_replay0
+dat/141 = track_charlotte_replay1
+dat/142 = track_charlotte_replay2
+dat/180 = track_charlotte_surface
+
+# Bristol
+dat/020 = track_bristol_card
+dat/021 = track_bristol_video
+dat/143 = track_bristol_geometry
+dat/144 = track_bristol_textures
+dat/145 = track_bristol_sky
+dat/146 = track_bristol_replay0
+dat/147 = track_bristol_replay1
+dat/148 = track_bristol_replay2
+dat/181 = track_bristol_surface
+
+# Suzuka
+dat/046 = track_suzuka_card
+dat/047 = track_suzuka_video
+dat/149 = track_suzuka_geometry
+dat/150 = track_suzuka_textures
+dat/151 = track_suzuka_sky
+dat/152 = track_suzuka_replay0
+dat/153 = track_suzuka_replay1
+dat/154 = track_suzuka_replay2
+dat/182 = track_suzuka_surface
+
+# California
+dat/032 = track_california_card
+dat/033 = track_california_video
+dat/155 = track_california_geometry
+dat/156 = track_california_textures
+dat/157 = track_california_sky
+dat/158 = track_california_replay0
+dat/159 = track_california_replay1
+dat/160 = track_california_replay2
+dat/183 = track_california_surface
+
+# Texas
+dat/018 = track_texas_card
+dat/019 = track_texas_video
+dat/161 = track_texas_geometry
+dat/162 = track_texas_textures
+dat/163 = track_texas_sky
+dat/164 = track_texas_replay0
+dat/165 = track_texas_replay1
+dat/166 = track_texas_replay2
+dat/184 = track_texas_surface
+
+# CD audio, named after the ISO directory (TRACK1.DA to TRACK4.DA, MENU.DA, FLIRTIN.DA)
+audio/02 = music_track1
+audio/03 = music_track2
+audio/04 = music_track3
+audio/05 = music_track4
+audio/06 = music_menu
+audio/07 = music_flirtin
