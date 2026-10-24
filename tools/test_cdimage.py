@@ -7,6 +7,7 @@ half a minute.
 import hashlib
 import pathlib
 import random
+import struct
 import tempfile
 import unittest
 
@@ -26,6 +27,24 @@ NAMES = ("SYSTEM.CNF", "SLUS_005.21", "NASCAR.DAT")
 def da_extents(track1: pathlib.Path) -> dict[str, int]:
     volume = iso9660.parse_volume(track1)
     return {path: r.lba for path, r, _ in volume.walk() if path.endswith(".DA")}
+
+
+def lui_ori(value: int) -> bytes:
+    return struct.pack("<II", 0x3C040000 | value >> 16, 0x34840000 | value & 0xFFFF)
+
+
+class PatchAudioStartsTest(unittest.TestCase):
+    def test_patch_rewrites_each_constant(self) -> None:
+        old, new = [104009, 115896], [104014, 115901]
+        exe = b"\0" * 8 + lui_ori(old[0]) + b"\0" * 12 + lui_ori(old[1])
+        patched = cdimage.patch_audio_starts(exe, old, new)
+        self.assertEqual(patched, b"\0" * 8 + lui_ori(new[0]) + b"\0" * 12 + lui_ori(new[1]))
+
+    def test_missing_or_repeated_constant_is_an_error(self) -> None:
+        with self.assertRaises(ValueError):
+            cdimage.patch_audio_starts(bytes(64), [104009], [104010])
+        with self.assertRaises(ValueError):
+            cdimage.patch_audio_starts(lui_ori(104009) * 2, [104009], [104010])
 
 
 @unittest.skipUnless(CUE.is_file() and DISC.is_dir(), "needs the disc image and disc/ (make extract)")
@@ -93,7 +112,8 @@ class CdimageTest(unittest.TestCase):
                 sector = f.read(cdsector.SECTOR)
                 if sector[18] & 0x20:
                     continue  # Form 2, copied raw
-                self.assertEqual(cdsector.encode_form1(lba, sector[16:24], sector[24:2072]), sector, lba)
+                rebuilt = [cdsector.encode_form1(lba, sector[16:24], sector[24:2072], covered) for covered in (False, True)]
+                self.assertIn(sector, rebuilt, lba)
 
 
 if __name__ == "__main__":

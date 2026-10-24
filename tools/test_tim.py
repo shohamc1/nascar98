@@ -59,8 +59,10 @@ class TimTest(unittest.TestCase):
         struct.pack_into("<4H", data, 20, 0x0000, 0x8000, 0x7FFF, 0x801F)
         self.assertEqual(round_trip(bytes(data)), bytes(data))
 
-    def test_16bpp_without_stp_is_opaque_rgb(self) -> None:
-        data = bytearray(make_tim(2, 4, 1, None))
+    def test_full_screen_16bpp_without_stp_is_opaque_rgb(self) -> None:
+        data = bytearray(make_tim(2, 320, 240, None))
+        for i in range(20, len(data), 2):
+            data[i + 1] &= 0x7F  # clear every STP bit
         struct.pack_into("<4H", data, 20, 0x0000, 0x001F, 0x7FFF, 0x0400)
         png, sidecar = tim.tim_to_png(tim.parse_tim(bytes(data)))
         image = Image.open(io.BytesIO(png))
@@ -68,6 +70,20 @@ class TimTest(unittest.TestCase):
         self.assertEqual(image.getpixel((0, 0)), (0, 0, 0))
         self.assertTrue(sidecar["opaque"])
         self.assertEqual(round_trip(bytes(data)), bytes(data))
+
+    def test_small_16bpp_sprite_keeps_transparency(self) -> None:
+        data = bytearray(make_tim(2, 4, 1, None))
+        struct.pack_into("<4H", data, 20, 0x0000, 0x001F, 0x7FFF, 0x0400)
+        png, sidecar = tim.tim_to_png(tim.parse_tim(bytes(data)))
+        image = Image.open(io.BytesIO(png))
+        self.assertEqual(image.mode, "RGBA")
+        self.assertEqual(image.getpixel((0, 0))[3], 0)
+        self.assertFalse(sidecar["opaque"])
+
+    def test_indexed_tim_without_clut_is_rejected(self) -> None:
+        data = struct.pack("<II", 0x10, 1) + struct.pack("<I4H", 12 + 4, 0, 0, 2, 1) + bytes(4)
+        with self.assertRaises(ValueError):
+            tim.parse_tim(data)
 
     def test_16bpp_with_stp_keeps_alpha(self) -> None:
         data = bytearray(make_tim(2, 2, 1, None))

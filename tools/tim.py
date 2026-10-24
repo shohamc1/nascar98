@@ -22,9 +22,10 @@ Alpha carries the semi-transparency (STP) bit of each 15-bit colour word:
 On the way back, alpha below 64 gives 0x0000, 64 to 191 sets STP, and 192
 or more is opaque.
 
-A 16-bit TIM with no STP bit set anywhere, such as a full-screen
-background, gives an opaque RGB PNG instead, with 0x0000 as black: the
-game copies these straight to the screen, where 0x0000 shows as black.
+A full-screen (320x240) 16-bit TIM with no STP bit set anywhere gives an
+opaque RGB PNG instead, with 0x0000 as black: the game copies these
+straight to the screen, where 0x0000 shows as black. Smaller images are
+sprites, where 0x0000 is transparent, so they keep alpha.
 The sidecar marks it "opaque", and black converts back to 0x0000.
 """
 
@@ -37,6 +38,7 @@ from PIL import Image
 MAGIC = 0x10
 BPP = {0: 4, 1: 8, 2: 16, 3: 24}
 PIXELS_PER_WORD = {4: 4, 8: 2, 16: 1}
+FULL_SCREEN = (320, 240)
 
 
 class SizeMismatch(ValueError):
@@ -91,6 +93,8 @@ def parse_tim(data: bytes) -> Tim:
         rect, words, bnum, at = read_block(data, at)
         clut = Clut(*rect, words, bnum)
     rect, words, bnum, at = read_block(data, at)
+    if BPP[flag & 7] <= 8 and clut is None:
+        raise ValueError(f"{BPP[flag & 7]}-bit TIM has no CLUT")
     return Tim(BPP[flag & 7], clut, *rect, words, data[at:], bnum)
 
 
@@ -149,7 +153,11 @@ def tim_to_png(tim: Tim) -> tuple[bytes, dict]:
     width = pixel_width(tim.bpp, tim.w)
     size = (width, tim.h)
     save = {}
-    opaque = tim.bpp == 16 and not any(high & 0x80 for high in tim.pixels[1::2])
+    opaque = (
+        tim.bpp == 16
+        and (width, tim.h) == FULL_SCREEN
+        and not any(high & 0x80 for high in tim.pixels[1::2])
+    )
     if tim.bpp == 24:
         image = Image.frombytes("RGB", size, tim.pixels)
     elif tim.bpp == 16:

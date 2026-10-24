@@ -7,7 +7,7 @@
 #   make report    write build/report.json for decomp.dev
 #   make format    run clang-format on the C sources and our own headers
 #   make test-tools  run the unit tests for tools/*.py
-#   make assets    convert the disc's files to editable ones in assets/
+#   make assets    convert the disc's files to editable ones in assets/ (FORCE=1 to redo)
 #   make image     build NASCAR.DAT and a disc image from assets/ in build/image
 #   make check-assets  convert, build, and compare with the original disc
 
@@ -569,14 +569,21 @@ IMAGE_DIR := build/image
 
 assets:
 	@test -n "$(CUE)" || (echo "Set CUE=path/to/NASCAR 98 (USA).cue"; exit 1)
-	$(PYTHON) tools/assets.py convert --cue "$(CUE)"
+	$(PYTHON) tools/assets.py convert --cue "$(CUE)" $(if $(FORCE),--force)
 
 image: $(EXE)
 	@test -n "$(CUE)" || (echo "Set CUE=path/to/NASCAR 98 (USA).cue"; exit 1)
 	$(PYTHON) tools/assets.py build --cue "$(CUE)" --exe $(EXE) --out $(IMAGE_DIR)
 
-check-assets: assets image
-	cd $(IMAGE_DIR) && shasum -c ../../config/disc.sha1 ../../config/NASCAR.DAT.sha1
+# Converts and builds in its own directory, so your edits in assets/ and
+# build/image stay untouched.
+CHECK_DIR := build/check-assets
+
+check-assets: $(EXE)
+	@test -n "$(CUE)" || (echo "Set CUE=path/to/NASCAR 98 (USA).cue"; exit 1)
+	$(PYTHON) tools/assets.py convert --cue "$(CUE)" --out $(CHECK_DIR)/assets --force
+	$(PYTHON) tools/assets.py build --cue "$(CUE)" --exe $(EXE) --assets $(CHECK_DIR)/assets --out $(CHECK_DIR)/image
+	cd $(CHECK_DIR)/image && shasum -c ../../../config/disc.sha1 ../../../config/NASCAR.DAT.sha1
 
 split:
 	$(PYTHON) -m splat split $(SPLAT_CFG)

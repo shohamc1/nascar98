@@ -3,13 +3,17 @@
 import io
 import pathlib
 import shutil
+import struct
 import tempfile
 import unittest
 
 from PIL import Image
 
 import assets
+import cdda
 import datfile
+import extract
+import iso9660
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CUE = ROOT / "NASCAR 98 (USA)" / "NASCAR 98 (USA).cue"
@@ -58,8 +62,45 @@ class AssetsTest(unittest.TestCase):
         cls.tmp.cleanup()
 
     def test_convert_is_idempotent(self) -> None:
-        assets.convert(CUE, DISC, self.out)
+        assets.convert(CUE, DISC, self.out, force=True)
         self.assertEqual((self.out / "manifest.json").read_bytes(), self.manifest)
+
+    def test_convert_keeps_existing_assets_without_force(self) -> None:
+        with self.assertRaises(SystemExit) as caught:
+            assets.convert(CUE, DISC, self.out)
+        self.assertIn("--force", str(caught.exception.code))
+
+    def test_names_differing_only_in_case_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(SystemExit):
+                assets.convert(CUE, DISC, pathlib.Path(tmp), {"dat/005": "Same", "dat/040": "same"})
+
+    def test_sound_bank_on_a_sector_boundary_is_padded(self) -> None:
+        entry = assets.load_manifest(self.out)["dat"][4]
+        path = self.out / entry["file"]
+        saved = path.read_bytes()
+        self.addCleanup(path.write_bytes, saved)
+        path.write_bytes((saved + bytes(61440))[:61440])
+        _, table = assets.build_dat(self.out)
+        self.assertEqual(table[4].size, 61444)
+
+    def test_build_moves_audio_starts_in_the_exe(self) -> None:
+        wav = self.out / assets.load_manifest(self.out)["audio"][0]
+        saved = wav.read_bytes()
+        self.addCleanup(wav.write_bytes, saved)
+        wav.write_bytes(cdda.raw_to_wav(cdda.wav_to_raw(saved, 0) + bytes(75 * 2352), 0))
+        with tempfile.TemporaryDirectory() as tmp:
+            out = pathlib.Path(tmp)
+            assets.build(CUE, DISC / "SLUS_005.21", self.out, out)
+            track1 = out / "NASCAR 98 (USA) (Track 1).bin"
+            volume = iso9660.parse_volume(track1)
+            starts = sorted(r.lba for p, r, _ in volume.walk() if p.endswith(".DA"))
+            disc = extract.Disc(track1)
+            exe = next(disc.read(lba, size) for name, lba, size in disc.files() if name == "SLUS_005.21")
+            disc.f.close()
+        self.assertEqual(starts[1] - starts[0], 11887 + 75)
+        for start in starts:
+            self.assertEqual(exe.count(struct.pack("<II", 0x3C040000 | start >> 16, 0x34840000 | start & 0xFFFF)), 1)
 
     def test_unedited_dat_matches_disc(self) -> None:
         dat, _ = assets.build_dat(self.out)

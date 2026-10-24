@@ -13,6 +13,7 @@ With unedited files and WAVs, every track hashes as config/disc.sha1 lists.
 
 import dataclasses
 import pathlib
+import struct
 
 import cdda
 import cdsector
@@ -63,6 +64,41 @@ def ecc_covers_header(lba: int, sector: bytes) -> bool:
     raise ValueError(f"filler sector {lba} isn't a Form 1 sector this tool can rebuild")
 
 
+def lui_ori(value: int) -> bytes:
+    """Return `lui $a0, hi; ori $a0, $a0, lo`, which loads value into $a0."""
+    return struct.pack("<II", 0x3C040000 | value >> 16, 0x34840000 | value & 0xFFFF)
+
+
+def patch_audio_starts(exe: bytes, old: list[int], new: list[int]) -> bytes:
+    """Return exe with each audio start sector in old replaced by its new one.
+
+    CdPlayAudioTrack (src/cd.c) loads the six INDEX 01 sectors as immediates,
+    and never reads CDTRACKS/*.DA, so the code must move with the audio.
+    """
+    for before, after in zip(old, new):
+        pattern = lui_ori(before)
+        if exe.count(pattern) != 1:
+            raise ValueError(f"the EXE doesn't load audio start {before} exactly once")
+        exe = exe.replace(pattern, lui_ori(after))
+    return exe
+
+
+def original_audio_starts(frame: dict, volume: iso9660.Volume) -> list[tuple[int, str]]:
+    """Return (lba, path) of the records that point past the data track, in order."""
+    return sorted((r.lba, path) for path, r, _ in volume.walk() if not r.is_dir and r.lba >= frame["sectors"])
+
+
+def audio_layout(frame: dict, files: dict[str, bytes], wavs: list[bytes]) -> tuple[list[bytes], list[int]]:
+    """Return each audio track's raw bytes and its first sector (its pregap)."""
+    audio = [cdda.wav_to_raw(wav, PREGAP) for wav in wavs]
+    starts = []
+    at = sum(count for _, _, count in layout(frame, files))
+    for raw in audio:
+        starts.append(at)
+        at += len(raw) // SECTOR
+    return audio, starts
+
+
 def layout(frame: dict, files: dict[str, bytes]) -> list[tuple[dict, int, int]]:
     """Return (extent, new lba, new count) for each extent of the frame."""
     placed = []
@@ -95,26 +131,20 @@ def build_image(
                 return new + lba - extent["lba"]
         raise ValueError(f"LBA {lba} isn't in a metadata extent")
 
-    audio = [cdda.wav_to_raw(wav, PREGAP) for wav in wavs]
-    starts = []
-    at = track1_sectors
-    for raw in audio:
-        starts.append(at)
-        at += len(raw) // SECTOR
+    audio, starts = audio_layout(frame, files, wavs)
+    at = starts[-1] + len(audio[-1]) // SECTOR if audio else track1_sectors
 
     relocations = {}
     for extent, new, _ in placed:
         if extent["kind"] == "file":
             relocations[extent["name"]] = (new, len(files[extent["name"]]))
-    outside = []
     for path, record, _ in volume.walk():
         if record.is_dir:
             relocations[path] = (moved(record.lba), record.size)
-        elif record.lba >= frame["sectors"]:
-            outside.append((record.lba, path))
+    outside = original_audio_starts(frame, volume)
     if len(outside) > len(audio):
         raise ValueError(f"{len(outside)} records point past the data track, but there are {len(audio)} audio tracks")
-    for (_, path), start, raw in zip(sorted(outside), starts, audio):
+    for (_, path), start, raw in zip(outside, starts, audio):
         relocations[path] = (start + PREGAP, (len(raw) // SECTOR - PREGAP) * USER)
     volume = volume.relocate(relocations, volume_sectors=at)
     volume = dataclasses.replace(volume, path_table_lbas=tuple(moved(l) if l else 0 for l in volume.path_table_lbas))

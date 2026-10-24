@@ -27,8 +27,9 @@ class DatfileTest(unittest.TestCase):
         for part, entry in zip(parts, entries):
             at = entry.sector * 2048
             self.assertEqual(dat[end:at].count(0), at - end)
-            self.assertEqual(dat[at : at + entry.size], part)
-            end = at + entry.size
+            self.assertEqual(entry.size, len(part) + -len(part) % 4)
+            self.assertEqual(dat[at : at + len(part)], part)
+            end = at + len(part)
         self.assertEqual(dat[end:].count(0), len(dat) - end)
 
     def test_growing_an_entry_shifts_later_sectors(self) -> None:
@@ -51,6 +52,28 @@ class DatfileTest(unittest.TestCase):
         _, after = datfile.pack_dat(parts)
         self.assertNotEqual(after[2].checksum, before[2].checksum)
         self.assertEqual(after[:2] + after[3:], before[:2] + before[3:])
+
+    def test_pack_pads_entries_to_whole_words(self) -> None:
+        dat, entries = datfile.pack_dat([b"\x01\x02\x03", b"\x04"])
+        self.assertEqual([e.size for e in entries], [4, 4])
+        self.assertEqual(dat[:4], b"\x01\x02\x03\x00")
+
+    def test_find_table_locates_it_anywhere(self) -> None:
+        entries = self.entries()
+        exe = bytes(100) + datfile.build_table(entries) + bytes(100)
+        self.assertEqual(datfile.find_table(exe, entries), 100)
+        with self.assertRaises(ValueError):
+            datfile.find_table(bytes(5000), entries)
+        with self.assertRaises(ValueError):
+            datfile.find_table(exe + exe, entries)
+
+    def test_patch_at_an_offset(self) -> None:
+        entries = self.entries()
+        exe = bytes(100) + datfile.build_table(entries) + bytes(100)
+        moved = [datfile.DatEntry(e.sector + 1, e.size, e.checksum) for e in entries]
+        patched = datfile.patch_exe_table(exe, moved, 100)
+        self.assertEqual(datfile.read_table(patched, 100), moved)
+        self.assertEqual(patched[:100] + patched[-100:], bytes(200))
 
     def exe(self) -> bytes:
         return random.Random(9).randbytes(datfile.TABLE_FILE_OFFSET + datfile.TABLE_SIZE + 64)

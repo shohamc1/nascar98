@@ -7,6 +7,9 @@ which is file offset 0x86B40. The checksum is the 32-bit sum of every
 little-endian word in the entry's sectors, zero padding included. FileRead
 (src/cd.c) checks it after each read and hangs on a mismatch, so an
 edited entry needs its checksum recomputed.
+
+Entries are padded with zeros to whole 32-bit words. Some loaders place
+an entry just below a fixed top address, so an odd size would misalign it.
 """
 
 import dataclasses
@@ -26,11 +29,17 @@ class DatEntry:
     checksum: int
 
 
-def read_table(exe: bytes) -> list[DatEntry]:
-    return [
-        DatEntry(*RECORD.unpack_from(exe, TABLE_FILE_OFFSET + RECORD.size * i))
-        for i in range(TABLE_COUNT)
-    ]
+def read_table(exe: bytes, offset: int = TABLE_FILE_OFFSET) -> list[DatEntry]:
+    return [DatEntry(*RECORD.unpack_from(exe, offset + RECORD.size * i)) for i in range(TABLE_COUNT)]
+
+
+def find_table(exe: bytes, entries: list[DatEntry]) -> int:
+    """Return the file offset of the table holding entries; it must appear once."""
+    table = build_table(entries)
+    offset = exe.find(table)
+    if offset < 0 or exe.find(table, offset + 1) >= 0:
+        raise ValueError("the EXE doesn't hold the original file table exactly once")
+    return offset
 
 
 def build_table(entries: list[DatEntry]) -> bytes:
@@ -39,12 +48,12 @@ def build_table(entries: list[DatEntry]) -> bytes:
     return b"".join(RECORD.pack(e.sector, e.size, e.checksum) for e in entries)
 
 
-def patch_exe_table(exe: bytes, entries: list[DatEntry]) -> bytes:
-    """Return exe with its file table replaced by entries."""
-    end = TABLE_FILE_OFFSET + TABLE_SIZE
+def patch_exe_table(exe: bytes, entries: list[DatEntry], offset: int = TABLE_FILE_OFFSET) -> bytes:
+    """Return exe with the file table at offset replaced by entries."""
+    end = offset + TABLE_SIZE
     if len(exe) < end:
         raise ValueError(f"EXE is {len(exe)} bytes, too short to hold the file table")
-    return exe[:TABLE_FILE_OFFSET] + build_table(entries) + exe[end:]
+    return exe[:offset] + build_table(entries) + exe[end:]
 
 
 def checksum(payload: bytes) -> int:
@@ -58,6 +67,7 @@ def pack_dat(payloads: list[bytes]) -> tuple[bytes, list[DatEntry]]:
     out = bytearray()
     entries = []
     for payload in payloads:
+        payload += bytes(-len(payload) % 4)
         entries.append(DatEntry(len(out) // SECTOR, len(payload), checksum(payload)))
         out += payload + bytes(-len(payload) % SECTOR)
     return bytes(out), entries
