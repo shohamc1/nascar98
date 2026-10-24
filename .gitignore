@@ -1,5 +1,6 @@
 # Copyrighted game data. Supply your own disc; `make extract` fills disc/.
 /disc/
+/assets/
 /NASCAR 98 (USA)/
 *.bin
 *.cue

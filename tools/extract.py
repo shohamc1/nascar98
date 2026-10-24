@@ -3,8 +3,8 @@
 
 Usage: python3 tools/extract.py "NASCAR 98 (USA).cue" disc
 
-Reads the data track named by the cue sheet (MODE2/2352), checks it against
-config/disc.sha1, and writes:
+Checks every track named by the cue sheet against config/disc.sha1, then
+reads the data track (track 1, MODE2/2352) and writes:
 
   disc/SLUS_005.21, disc/SYSTEM.CNF, disc/NASCAR.DAT  the ISO 9660 files
   disc/dat/NNN.<ext>                                   NASCAR.DAT's entries
@@ -16,9 +16,10 @@ Everything written here is copyrighted. disc/ is gitignored: keep it so.
 
 import hashlib
 import pathlib
-import re
 import struct
 import sys
+
+import cue
 
 SECTOR = 2352
 USER_DATA = 24  # sync (12) + header (4) + XA subheader (8)
@@ -28,20 +29,34 @@ EXE_VRAM = 0x80012000
 EXE_HEADER = 0x800
 
 
-def read_cue(cue: pathlib.Path) -> pathlib.Path:
-    """Return the path of the cue sheet's first (data) track."""
-    match = re.search(r'FILE "([^"]+)" BINARY\s+TRACK 01 MODE2/2352', cue.read_text())
-    if not match:
-        sys.exit(f"{cue}: track 1 must be MODE2/2352")
-    return cue.parent / match.group(1)
-
-
 def sha1(path: pathlib.Path) -> str:
     h = hashlib.sha1()
     with path.open("rb") as f:
         for block in iter(lambda: f.read(1 << 20), b""):
             h.update(block)
     return h.hexdigest()
+
+
+def read_hashes(path: pathlib.Path) -> dict[str, str]:
+    """Return {file name: SHA-1} from a file of `shasum` lines."""
+    hashes = {}
+    for line in path.read_text().splitlines():
+        if line.strip():
+            digest, name = line.split(None, 1)
+            hashes[name.lstrip("*")] = digest
+    return hashes
+
+
+def verify_tracks(tracks: list[cue.Track], hashes: dict[str, str]) -> None:
+    """Exit with a message unless every track file exists and hashes as listed."""
+    for track in tracks:
+        print(f"checking {track.path.name}")
+        if not track.path.is_file():
+            sys.exit(f"{track.path}: missing (the cue sheet names it)")
+        if track.path.name not in hashes:
+            sys.exit(f"{track.path.name}: no SHA-1 in config/disc.sha1")
+        if sha1(track.path) != hashes[track.path.name]:
+            sys.exit(f"{track.path}: SHA-1 differs from config/disc.sha1 (wrong dump or region)")
 
 
 class Disc:
@@ -106,14 +121,15 @@ def guess_ext(data: bytes) -> str:
 def main() -> None:
     if len(sys.argv) != 3:
         sys.exit(__doc__)
-    cue, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
-    track = read_cue(cue)
-    expected = pathlib.Path("config/disc.sha1").read_text().split()[0]
-    print(f"checking {track.name}")
-    if sha1(track) != expected:
-        sys.exit(f"{track}: SHA-1 differs from config/disc.sha1 (wrong dump or region)")
+    sheet, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+    if not sheet.is_file():
+        sys.exit(f"{sheet}: no such cue sheet")
+    tracks = cue.parse_cue(sheet)
+    if not tracks or tracks[0].mode != "MODE2/2352":
+        sys.exit(f"{sheet}: track 1 must be MODE2/2352")
+    verify_tracks(tracks, read_hashes(pathlib.Path("config/disc.sha1")))
 
-    disc = Disc(track)
+    disc = Disc(tracks[0].path)
     out.mkdir(parents=True, exist_ok=True)
     for name, lba, size in disc.files():
         if name.startswith("CDTRACKS/"):

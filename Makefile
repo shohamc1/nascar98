@@ -6,6 +6,7 @@
 #   make expected  snapshot a matching build for objdiff
 #   make report    write build/report.json for decomp.dev
 #   make format    run clang-format on the C sources and our own headers
+#   make test-tools  run the unit tests for tools/*.py
 
 SHELL := bash
 .SHELLFLAGS := -o pipefail -c
@@ -545,7 +546,7 @@ PSYQ36_URL  := https://github.com/mkst/esa/releases/download/psyq-binaries/psyq3
 PSYQ36_EXE  := tools/cc/psyq-3.6/CC1PSX.EXE
 PSYQ36_SHA1 := 6da49839dd22aa2f3aea678b46447bad7a16859a
 
-.PHONY: all check extract split expected report format tools standin clean distclean
+.PHONY: all check extract split expected report format tools standin clean distclean test-tools
 .DELETE_ON_ERROR:
 
 all: $(EXE)
@@ -557,6 +558,9 @@ check: $(EXE)
 extract:
 	@test -n "$(CUE)" || (echo "Set CUE=path/to/NASCAR 98 (USA).cue"; exit 1)
 	$(PYTHON) tools/extract.py "$(CUE)" disc
+
+test-tools:
+	$(PYTHON) -m unittest discover -s tools -p 'test_*.py'
 
 split:
 	$(PYTHON) -m splat split $(SPLAT_CFG)
