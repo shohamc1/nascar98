@@ -45,12 +45,12 @@ void CdDisableDebug(void) {
     CdSetDebug(0);
 }
 
-extern s32 D_800A2F74;
-extern s32 D_800A37CC;
-extern CdlLOC D_800BDEBC[];
-extern s32 D_80098340[];
-extern s32 D_800A45A8[];
-extern s32 D_800A45AC[];
+extern s32 gCdTocRead;
+extern s32 gCurrentFileId;
+extern CdlLOC gCdToc[];
+extern s32 gDatFileTable[];
+extern s32 gCurrentFilePos[];
+extern s32 gCurrentFileSize[];
 
 void *FileOpen(s32 fileId, void *mode) {
     u8 pad[0x40];
@@ -58,18 +58,18 @@ void *FileOpen(s32 fileId, void *mode) {
     void *pos;
     s32 value;
 
-    if (D_800A2F74 == 0) {
-        CdGetToc(D_800BDEBC);
-        D_800A2F74 = 1;
+    if (gCdTocRead == 0) {
+        CdGetToc(gCdToc);
+        gCdTocRead = 1;
     }
-    CdIntToPos(D_80098340[fileId * 3] + 0x13C, D_800A45A8);
+    CdIntToPos(gDatFileTable[fileId * 3] + 0x13C, gCurrentFilePos);
     while (CdSync(1, result) == 0) {
         VSync(0);
     }
-    value = D_80098340[fileId * 3 + 1];
-    D_800A45AC[0] = value;
-    D_800A37CC = fileId;
-    pos = &D_800A45AC[-1];
+    value = gDatFileTable[fileId * 3 + 1];
+    gCurrentFileSize[0] = value;
+    gCurrentFileId = fileId;
+    pos = &gCurrentFileSize[-1];
     return pos;
 }
 
@@ -78,9 +78,9 @@ void FileClose(void) {
 
 /* MATCHED 2026-10-11 (w2i). Two keys beyond the 2026-10-07 draft:
  * 1. The file-table accesses must each use a pairwise-distinct symbol
- *    name for the same address (seek D_80098340, checksum compare
+ *    name for the same address (seek gDatFileTable, checksum compare
  *    D_80098348.NON_MATCHING, first FntPrint D_80098348, size print
- *    D_80098344.NON_MATCHING, sector print D_80098340.NON_MATCHING):
+ *    D_80098344.NON_MATCHING, sector print gDatFileTable.NON_MATCHING):
  *    a shared name let gcc CSE a sym base pointer into a sixth
  *    call-saved reg (s5), squeezing buf out of s2.
  * 2. result[] is 0x10 bytes here (8 elsewhere in cd.c): the extra 8
@@ -96,7 +96,7 @@ static const char sFileSizeFormat[] = "Size: %d\n";
 static const char sFileLocationFormat[] = "Location: %d\n";
 extern s32 D_80098348nm[] asm("D_80098348.NON_MATCHING");
 extern s32 D_80098344nm[] asm("D_80098344.NON_MATCHING");
-extern s32 D_80098340w4[] asm("D_80098340.NON_MATCHING");
+extern s32 D_80098340w4[] asm("gDatFileTable.NON_MATCHING");
 extern s32 D_80098348fp[] asm("D_80098348");
 
 s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
@@ -126,7 +126,7 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
     retry:
         while (CdControl(2, (u_char *)hnd, 0) == 0) {
         }
-        CdSeekToSector(D_80098340[D_800A37CC * 3] + 0x13C);
+        CdSeekToSector(gDatFileTable[gCurrentFileId * 3] + 0x13C);
         CdRead(sectors, buffer, 0x80);
         do {
             status = CdReadSync(1, 0);
@@ -147,7 +147,7 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
         } while (i < words);
     }
     retries += 1;
-    if (D_80098348nm[D_800A37CC * 3] != total) {
+    if (D_80098348nm[gCurrentFileId * 3] != total) {
         if (retries < 0x32) {
             CdControl(9, 0, 0);
             CdSync(0, result);
@@ -158,11 +158,12 @@ s32 FileRead(s32 buffer, s32 size, s32 count, s32 handle) {
         }
         GraphicsInit();
         do {
-            FntPrint(sChecksumFailureFormat, D_80098348fp[D_800A37CC * 3],
+            FntPrint(sChecksumFailureFormat, D_80098348fp[gCurrentFileId * 3],
                      total);
-            FntPrint(sFileInfoFormat, buffer & 0x7FFFFFFF, D_800A37CC);
-            FntPrint(sFileSizeFormat, D_80098344nm[D_800A37CC * 3]);
-            FntPrint(sFileLocationFormat, D_80098340w4[D_800A37CC * 3] + 0x13C);
+            FntPrint(sFileInfoFormat, buffer & 0x7FFFFFFF, gCurrentFileId);
+            FntPrint(sFileSizeFormat, D_80098344nm[gCurrentFileId * 3]);
+            FntPrint(sFileLocationFormat,
+                     D_80098340w4[gCurrentFileId * 3] + 0x13C);
         } while (0);
         FntFlush(-1);
         while (1) {
@@ -206,21 +207,21 @@ void *FileLoadToHeap(s32 fileId) {
     s32 size;
     void *buffer;
 
-    if (D_800A2F74 == 0) {
-        CdGetToc(D_800BDEBC);
-        D_800A2F74 = 1;
+    if (gCdTocRead == 0) {
+        CdGetToc(gCdToc);
+        gCdTocRead = 1;
     }
-    CdIntToPos(D_80098340[fileId * 3] + 0x13C, D_800A45A8);
+    CdIntToPos(gDatFileTable[fileId * 3] + 0x13C, gCurrentFilePos);
     while (CdSync(1, result) == 0) {
         VSync(0);
     }
-    value = D_80098340[fileId * 3 + 1];
-    D_800A37CC = fileId;
-    D_800A45AC[0] = value;
+    value = gDatFileTable[fileId * 3 + 1];
+    gCurrentFileId = fileId;
+    gCurrentFileSize[0] = value;
     size = (value + 0x7FF) >> 11 << 11;
     buffer = HeapAlloc(size);
     if (buffer != 0) {
-        FileRead(buffer, 1, size, D_800A45A8);
+        FileRead(buffer, 1, size, gCurrentFilePos);
     }
     return buffer;
 }
@@ -230,18 +231,18 @@ void CdLoadFileByIndex(s32 buffer, s32 fileId) {
     u8 result[8];
     s32 value;
 
-    if (D_800A2F74 == 0) {
-        CdGetToc(D_800BDEBC);
-        D_800A2F74 = 1;
+    if (gCdTocRead == 0) {
+        CdGetToc(gCdToc);
+        gCdTocRead = 1;
     }
-    CdIntToPos(D_80098340[fileId * 3] + 0x13C, D_800A45A8);
+    CdIntToPos(gDatFileTable[fileId * 3] + 0x13C, gCurrentFilePos);
     while (CdSync(1, result) == 0) {
         VSync(0);
     }
-    value = D_80098340[fileId * 3 + 1];
-    D_800A37CC = fileId;
-    D_800A45AC[0] = value;
-    FileRead(buffer, 1, value, D_800A45A8);
+    value = gDatFileTable[fileId * 3 + 1];
+    gCurrentFileId = fileId;
+    gCurrentFileSize[0] = value;
+    FileRead(buffer, 1, value, gCurrentFilePos);
 }
 
 /* The retail layout needs four shapes that look odd in C:
@@ -253,11 +254,11 @@ void CdLoadFileByIndex(s32 buffer, s32 fileId) {
  *   negate reads s0. The store sits in both arms; cross-jumping merges them.
  */
 extern s32 CdGetToc(void *);
-extern CdlLOC D_800BDEC4[];
-extern s32 D_800A2F70;
+extern CdlLOC gCdAudioTrackPos[];
+extern s32 gCdAudioTrack;
 extern u8 D_800A2F9CAbsolute[];
 
-void func_8003CAE8(s32 arg0) {
+void CdPlayAudioTrack(s32 arg0) {
     CdlATV vol;
     u8 filter[4];
     volatile u_char result[0x30];
@@ -265,7 +266,7 @@ void func_8003CAE8(s32 arg0) {
     s32 remainder;
     CdlLOC *pos;
 
-    if (CdGetToc(D_800BDEBC) < 2) {
+    if (CdGetToc(gCdToc) < 2) {
         return;
     }
     filter[0] = 5;
@@ -278,19 +279,19 @@ void func_8003CAE8(s32 arg0) {
     if (arg0 < 0) {
         remainder = 0;
         remainder -= arg0;
-        D_800A2F70 = remainder + 2;
+        gCdAudioTrack = remainder + 2;
     } else {
-        D_800A2F70 = remainder + 2;
+        gCdAudioTrack = remainder + 2;
     }
-    pos = &D_800BDEC4[0];
+    pos = &gCdAudioTrackPos[0];
     CdIntToPos(0x19649, pos);
     lastPos = pos + 5;
-    CdIntToPos(0x1C4B8, D_800BDEC4 + 1);
-    CdIntToPos(0x1F278, D_800BDEC4 + 2);
-    CdIntToPos(0x2219A, D_800BDEC4 + 3);
-    CdIntToPos(0x250DB, D_800BDEC4 + 4);
+    CdIntToPos(0x1C4B8, gCdAudioTrackPos + 1);
+    CdIntToPos(0x1F278, gCdAudioTrackPos + 2);
+    CdIntToPos(0x2219A, gCdAudioTrackPos + 3);
+    CdIntToPos(0x250DB, gCdAudioTrackPos + 4);
     CdIntToPos(0x25EFF, lastPos);
-    CdControl(2, (u_char *)(D_800BDEC4 + D_800A2F70 - 2), 0);
+    CdControl(2, (u_char *)(gCdAudioTrackPos + gCdAudioTrack - 2), 0);
     if (D_800A2F9CAbsolute[0] != 0) {
         CdControlB(3, 0, 0);
     }
@@ -316,10 +317,10 @@ void CdStopIfPlaybackChanged(void) {
     CdControl(1, 0, D_800AE24C);
     param[0] = 0;
     CdControl(0x11, param, result);
-    if (result[0] == D_800A2F70) {
+    if (result[0] == gCdAudioTrack) {
         return;
     }
-    CdControl(2, (u_char *)&D_800BDEBC[D_800A2F70], 0);
+    CdControl(2, (u_char *)&gCdToc[gCdAudioTrack], 0);
     CdControl(3, 0, 0);
 }
 
@@ -364,28 +365,28 @@ void GraphicsLoadImagePointerTable(s32 fileId) {
     s32 i;
     s32 *src;
 
-    if (D_800A2F74 == 0) {
-        CdGetToc(D_800BDEBC);
-        D_800A2F74 = 1;
+    if (gCdTocRead == 0) {
+        CdGetToc(gCdToc);
+        gCdTocRead = 1;
     }
-    CdIntToPos(D_80098340[fileId * 3] + 0x13C, &D_800A45AC[-1]);
+    CdIntToPos(gDatFileTable[fileId * 3] + 0x13C, &gCurrentFileSize[-1]);
     while (CdSync(1, result) == 0) {
         VSync(0);
     }
-    value = D_80098340[fileId * 3 + 1];
-    pos = &D_800A45AC[-1];
-    D_800A37CC = fileId;
-    D_800A45AC[0] = value;
+    value = gDatFileTable[fileId * 3 + 1];
+    pos = &gCurrentFileSize[-1];
+    gCurrentFileId = fileId;
+    gCurrentFileSize[0] = value;
     if (pos == NULL) {
         SystemShowFatalError(sInputOpenError);
     }
-    posValue = D_800A45AC[0];
+    posValue = gCurrentFileSize[0];
     base = (0x1F4000 - posValue) | RAM_CACHED_BASE;
     FileRead(base, posValue, 1, pos);
     src = (s32 *)base;
     count = *src++;
     for (i = 0; i < count; i++) {
-        D_800B9F44[i] = *src++ + base;
+        gImagePointerTable[i] = *src++ + base;
     }
 }
 

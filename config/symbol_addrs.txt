@@ -1394,3 +1394,24 @@ gImageBankTextures = 0x800A36CC;
 gFontGlyphs = 0x800A35AC;
 gHudGlyphs = 0x80098BD0;
 gMovieContext = 0x800A3398;
+
+// CD access, NASCAR.DAT loaders, and the assets they load
+gDatFileTable = 0x80098340;
+gCurrentFileId = 0x800A37CC;
+gCurrentFilePos = 0x800A45A8;
+gCurrentFileSize = 0x800A45AC;
+gCdTocRead = 0x800A2F74;
+gCdToc = 0x800BDEBC;
+gCdAudioTrackPos = 0x800BDEC4;
+gCdAudioTrack = 0x800A2F70;
+gTrackShortNames = 0x8009A31C;
+gTrackSurfaceFileId = 0x800A3720;
+gImagePointerTable = 0x800B9F44;
+gMenuBackground = 0x800A37EC;
+CdPlayAudioTrack = 0x8003CAE8; // type:func
+RacePlayRandomMusic = 0x80014440; // type:func
+MediaShowTrackIntro = 0x8006EEE0; // type:func
+MenuLoadResources = 0x800539F0; // type:func
+MenuLoadCarModels = 0x80063874; // type:func
+MenuSetDriverPortrait = 0x800645A4; // type:func
+RaceLoadComputerReplay = 0x800367DC; // type:func

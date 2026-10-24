@@ -124,13 +124,13 @@ void GraphicsCompactOrderingTable(s32 tableAddress) {
 }
 
 void GameRunSession(void) {
-    extern s32 D_800A2F74[];
+    extern s32 gCdTocRead[];
     extern s32 D_800A2F54[];
     extern s32 D_800A2EC4Absolute[];
     extern u8 D_800A306DAbsolute[];
     extern s16 gCdVolumeAbsolute[];
     extern s8 D_800A2F9CAbsolute[];
-    extern s32 D_800A3720;
+    extern s32 gTrackSurfaceFileId;
     extern s32 D_800A3948;
     extern u8 D_800A3884[];
     extern s32 gSessionTypeAfter[] asm("gSessionType.NON_MATCHING");
@@ -180,7 +180,7 @@ void GameRunSession(void) {
     extern void TrackLoadResource(s32);
     extern void RacePlaceCarsOnStartingGrid(void);
     extern void HeapAllocateLargeBlock(void);
-    extern void func_80014440(void);
+    extern void RacePlayRandomMusic(void);
     extern void CdApplyMixVolume(void);
     extern void func_8002F2CC(void);
     /* Unpromoted u32 view: the u8 prototype would truncate the arguments. */
@@ -229,7 +229,7 @@ void GameRunSession(void) {
     s32 *timer;
     s32 ticks;
 
-    D_800A2F74[0] = 0;
+    gCdTocRead[0] = 0;
     D_8008CA28[0] = 0;
     D_800A2D10 = 0;
     D_800A2F54[0] = 0;
@@ -247,7 +247,7 @@ void GameRunSession(void) {
     func_800144B4();
     func_8002F514();
     func_8001636C();
-    TrackLoadResource(D_800A3720);
+    TrackLoadResource(gTrackSurfaceFileId);
     RacePlaceCarsOnStartingGrid();
     HeapAllocateLargeBlock();
     SsSetMVol(127, 127);
@@ -259,7 +259,7 @@ void GameRunSession(void) {
         } else {
             D_800A2F9CAbsolute[0] = 0;
         }
-        func_80014440();
+        RacePlayRandomMusic();
     }
     CdApplyMixVolume();
     func_8002F2CC();
@@ -656,7 +656,7 @@ void TextureLoadAll(void) {
     LoadImage(&rect, (u_long *)&env);
     GraphicsLoadImagePointerTable(0x40, (void *)STACK_BLOCK_80180000);
     for (i = 0; i < 0x16; i++) {
-        TextureLoadTim((void *)D_800B9F44[i]);
+        TextureLoadTim((void *)gImagePointerTable[i]);
     }
 }
 
@@ -760,7 +760,7 @@ void TrackLoad(u8 selectTrack) {
     extern s32 D_800A33C8;
     extern s32 D_800A3560[];
     extern s32 D_800A3598[];
-    extern s32 D_800A3720;
+    extern s32 gTrackSurfaceFileId;
     extern s32 D_800A3774[];
     extern s32 D_800A3820[];
     extern s32 D_800A394C[];
@@ -783,7 +783,7 @@ void TrackLoad(u8 selectTrack) {
     extern void TrackLoadFromFile(s32);
     extern void GraphicsLoadImageBank(s32);
     extern void CdLoadFileByIndex(s32, s32);
-    extern void func_800367DC(s32);
+    extern void RaceLoadComputerReplay(s32);
     extern s32 MathFixedDivide(s32, s32);
     extern void RenderDrawGeometryList(s32);
     extern char *strcat(char *, const char *);
@@ -946,14 +946,14 @@ void TrackLoad(u8 selectTrack) {
     D_800A2E34[0] = parameter1;
     switch (track) {
     case 1:
-        D_800A3720 = 0xA8;
+        gTrackSurfaceFileId = 0xA8;
         TrackLoadFromFile(0x41);
         GraphicsLoadImageBank(0x42);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x43);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x44);
-        func_800367DC(0x45);
-        func_800367DC(0x46);
+        RaceLoadComputerReplay(0x44);
+        RaceLoadComputerReplay(0x45);
+        RaceLoadComputerReplay(0x46);
         D_800A2E90[0] = 0x17;
         D_800A2F50Load = 0x1B1;
         D_800A2E1C[0] = 0xA;
@@ -961,82 +961,82 @@ void TrackLoad(u8 selectTrack) {
         D_800A2F84[0] = 1;
         break;
     case 4:
-        D_800A3720 = 0xA9;
+        gTrackSurfaceFileId = 0xA9;
         TrackLoadFromFile(0x47);
         GraphicsLoadImageBank(0x48);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x49);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x4A);
-        func_800367DC(0x4B);
-        func_800367DC(0x4C);
+        RaceLoadComputerReplay(0x4A);
+        RaceLoadComputerReplay(0x4B);
+        RaceLoadComputerReplay(0x4C);
         D_800A2E90[0] = 0x17;
         D_800A2F50Load = 0x1A7;
         D_800A2E1C[0] = 0xA;
         break;
     case 10:
-        D_800A3720 = 0xAA;
+        gTrackSurfaceFileId = 0xAA;
         TrackLoadFromFile(0x4D);
         GraphicsLoadImageBank(0x4E);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x4F);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x50);
-        func_800367DC(0x51);
-        func_800367DC(0x52);
+        RaceLoadComputerReplay(0x50);
+        RaceLoadComputerReplay(0x51);
+        RaceLoadComputerReplay(0x52);
         D_800A2E90[0] = 0x17;
         D_800A2F50Load = 0x19D;
         D_800A2E1C[0] = 0xA;
         D_800A2F84[0] = 1;
         break;
     case 7:
-        D_800A3720 = 0xAB;
+        gTrackSurfaceFileId = 0xAB;
         TrackLoadFromFile(0x53);
         GraphicsLoadImageBank(0x54);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x55);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x56);
-        func_800367DC(0x57);
-        func_800367DC(0x58);
+        RaceLoadComputerReplay(0x56);
+        RaceLoadComputerReplay(0x57);
+        RaceLoadComputerReplay(0x58);
         D_800A2F50Load = 0x198;
         D_800A2E90[0] = 0x17;
         D_800A2E1C[0] = 0xA;
         D_800A2F88[0] = 0x3520;
         break;
     case 15:
-        D_800A3720 = 0xAC;
+        gTrackSurfaceFileId = 0xAC;
         TrackLoadFromFile(0x59);
         GraphicsLoadImageBank(0x5A);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x5B);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x5C);
-        func_800367DC(0x5D);
-        func_800367DC(0x5E);
+        RaceLoadComputerReplay(0x5C);
+        RaceLoadComputerReplay(0x5D);
+        RaceLoadComputerReplay(0x5E);
         D_800A2E90[0] = 0x17;
         D_800A2F50Load = 0x17F;
         D_800A2E1C[0] = 0xA;
         D_800A2F84[0] = 1;
         break;
     case 13:
-        D_800A3720 = 0xAD;
+        gTrackSurfaceFileId = 0xAD;
         TrackLoadFromFile(0x5F);
         GraphicsLoadImageBank(0x60);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x61);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x62);
-        func_800367DC(0x63);
-        func_800367DC(0x64);
+        RaceLoadComputerReplay(0x62);
+        RaceLoadComputerReplay(0x63);
+        RaceLoadComputerReplay(0x64);
         D_800A2E90[0] = 0x17;
         D_800A2F50Load = 0x193;
         D_800A2E1C[0] = 0xA;
         break;
     case 8:
-        D_800A3720 = 0xAE;
+        gTrackSurfaceFileId = 0xAE;
         TrackLoadFromFile(0x65);
         GraphicsLoadImageBank(0x66);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x67);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x68);
-        func_800367DC(0x69);
-        func_800367DC(0x6A);
+        RaceLoadComputerReplay(0x68);
+        RaceLoadComputerReplay(0x69);
+        RaceLoadComputerReplay(0x6A);
         D_800A2E1C[0] = 8;
         D_800A2F50Load = 0x1C0;
         D_800A3820[0] = 0x14;
@@ -1045,14 +1045,14 @@ void TrackLoad(u8 selectTrack) {
         enabled = 1;
         goto trackFlags;
     case 5:
-        D_800A3720 = 0xAF;
+        gTrackSurfaceFileId = 0xAF;
         TrackLoadFromFile(0x6B);
         GraphicsLoadImageBank(0x6C);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x6D);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x6E);
-        func_800367DC(0x6F);
-        func_800367DC(0x70);
+        RaceLoadComputerReplay(0x6E);
+        RaceLoadComputerReplay(0x6F);
+        RaceLoadComputerReplay(0x70);
         D_800A2E1C[0] = 0xA;
         D_800A2E20[0] = 1;
         D_800A2F50Load = 0x193;
@@ -1062,14 +1062,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A3774[0] = -0xE;
         break;
     case 12:
-        D_800A3720 = 0xB0;
+        gTrackSurfaceFileId = 0xB0;
         TrackLoadFromFile(0x71);
         GraphicsLoadImageBank(0x72);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x73);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x74);
-        func_800367DC(0x75);
-        func_800367DC(0x76);
+        RaceLoadComputerReplay(0x74);
+        RaceLoadComputerReplay(0x75);
+        RaceLoadComputerReplay(0x76);
         D_800A2F50Load = 0x1B1;
         D_800A2E90[0] = 0x17;
         D_800A2E1C[0] = 0xA;
@@ -1079,14 +1079,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A2F84[0] = 1;
         break;
     case 11:
-        D_800A3720 = 0xB1;
+        gTrackSurfaceFileId = 0xB1;
         TrackLoadFromFile(0x77);
         GraphicsLoadImageBank(0x78);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x79);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x7A);
-        func_800367DC(0x7B);
-        func_800367DC(0x7C);
+        RaceLoadComputerReplay(0x7A);
+        RaceLoadComputerReplay(0x7B);
+        RaceLoadComputerReplay(0x7C);
         D_800A2E1C[0] = 6;
         D_800A2E20[0] = 1;
         D_800A2F50Load = 0x1C0;
@@ -1094,14 +1094,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A3598[0] = 2;
         break;
     case 14:
-        D_800A3720 = 0xB2;
+        gTrackSurfaceFileId = 0xB2;
         TrackLoadFromFile(0x7D);
         GraphicsLoadImageBank(0x7E);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x7F);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x80);
-        func_800367DC(0x81);
-        func_800367DC(0x82);
+        RaceLoadComputerReplay(0x80);
+        RaceLoadComputerReplay(0x81);
+        RaceLoadComputerReplay(0x82);
         D_800A2E1C[0] = 5;
         D_800A2E20[0] = 1;
         D_800A2EE8[0] = 1;
@@ -1112,14 +1112,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A3598[0] = 2;
         break;
     case 0:
-        D_800A3720 = 0xB3;
+        gTrackSurfaceFileId = 0xB3;
         TrackLoadFromFile(0x83);
         GraphicsLoadImageBank(0x84);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x85);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x86);
-        func_800367DC(0x87);
-        func_800367DC(0x88);
+        RaceLoadComputerReplay(0x86);
+        RaceLoadComputerReplay(0x87);
+        RaceLoadComputerReplay(0x88);
         D_800A2EE8[0] = 1;
         D_800A2F50Load = 0x1B1;
         D_800A2E90[0] = 0x17;
@@ -1131,14 +1131,14 @@ void TrackLoad(u8 selectTrack) {
     default:
         break;
     case 6:
-        D_800A3720 = 0xB4;
+        gTrackSurfaceFileId = 0xB4;
         TrackLoadFromFile(0x89);
         GraphicsLoadImageBank(0x8A);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x8B);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x8C);
-        func_800367DC(0x8D);
-        func_800367DC(0x8E);
+        RaceLoadComputerReplay(0x8C);
+        RaceLoadComputerReplay(0x8D);
+        RaceLoadComputerReplay(0x8E);
         D_800A2E1C[0] = 9;
         D_800A2E20[0] = 1;
         D_800A2EE8[0] = 1;
@@ -1147,14 +1147,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A3598[0] = 0;
         break;
     case 3:
-        D_800A3720 = 0xB5;
+        gTrackSurfaceFileId = 0xB5;
         TrackLoadFromFile(0x8F);
         GraphicsLoadImageBank(0x90);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x91);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x92);
-        func_800367DC(0x93);
-        func_800367DC(0x94);
+        RaceLoadComputerReplay(0x92);
+        RaceLoadComputerReplay(0x93);
+        RaceLoadComputerReplay(0x94);
         color0 = 0x505850;
         color1 = 0x383838;
         color2 = 0x808090;
@@ -1172,14 +1172,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A396C[0] = color2;
         break;
     case 16:
-        D_800A3720 = 0xB6;
+        gTrackSurfaceFileId = 0xB6;
         TrackLoadFromFile(0x95);
         GraphicsLoadImageBank(0x96);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x97);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x98);
-        func_800367DC(0x99);
-        func_800367DC(0x9A);
+        RaceLoadComputerReplay(0x98);
+        RaceLoadComputerReplay(0x99);
+        RaceLoadComputerReplay(0x9A);
         D_800A2E1C[0] = 8;
         D_800A2E20[0] = 1;
         D_800A2E90[0] = 0x17;
@@ -1188,14 +1188,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A3820[0] = 0x28;
         break;
     case 9:
-        D_800A3720 = 0xB7;
+        gTrackSurfaceFileId = 0xB7;
         TrackLoadFromFile(0x9B);
         GraphicsLoadImageBank(0x9C);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0x9D);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0x9E);
-        func_800367DC(0x9F);
-        func_800367DC(0xA0);
+        RaceLoadComputerReplay(0x9E);
+        RaceLoadComputerReplay(0x9F);
+        RaceLoadComputerReplay(0xA0);
         setting = 8;
         enabled = 1;
         D_800A2E1C[0] = setting;
@@ -1207,14 +1207,14 @@ void TrackLoad(u8 selectTrack) {
         D_800A3598[0] = 2;
         break;
     case 2:
-        D_800A3720 = 0xB8;
+        gTrackSurfaceFileId = 0xB8;
         TrackLoadFromFile(0xA1);
         GraphicsLoadImageBank(0xA2);
         CdLoadFileByIndex(STACK_BLOCK_801E0000, 0xA3);
         TextureLoadTim(STACK_BLOCK_801E0000);
-        func_800367DC(0xA4);
-        func_800367DC(0xA5);
-        func_800367DC(0xA6);
+        RaceLoadComputerReplay(0xA4);
+        RaceLoadComputerReplay(0xA5);
+        RaceLoadComputerReplay(0xA6);
         setting = 8;
         enabled = 1;
         D_800A2E1C[0] = setting;
@@ -1279,7 +1279,7 @@ s32 func_80014398(s32 arg0) {
     return value;
 }
 
-void func_80014440(void) {
+void RacePlayRandomMusic(void) {
     s32 value;
 
     value = RandomScaledGet(5);
@@ -1294,7 +1294,7 @@ void func_80014440(void) {
     if (gSessionTypeAbsolute[0] == -1) {
         value = 5;
     }
-    func_8003CAE8(value);
+    CdPlayAudioTrack(value);
 }
 
 extern u8 D_800A364Cw15[] asm("D_800A364C.NON_MATCHING");

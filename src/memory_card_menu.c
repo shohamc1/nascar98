@@ -58,7 +58,7 @@ extern char *strcpy(char *, const char *);
 extern u8 gPlayerDriver[];
 extern char *strcat(char *, char *);
 extern u8 *D_800AE178[];
-extern s32 D_8009A31C[];
+extern s32 gTrackShortNames[];
 extern void MenuUpdateObjectPosition(MenuObj *first, u8 friction);
 extern void MenuDrawObjectList(MenuObj *first, s32 value);
 extern u8 gSelectedTrack[];
@@ -115,7 +115,7 @@ void func_80067F34(s32 page, s32 track) {
     obj = D_800A360CAbsolute[page & 0xFF];
     MenuFontSetS32(2, 3);
     strcpy(buf, D_8009A474[0]);
-    strcat(buf, (char *)D_8009A31C[track & 0xFF]);
+    strcat(buf, (char *)gTrackShortNames[track & 0xFF]);
     w = MenuStringWidth(buf);
     sum = (0x140 - w) / 2;
     obj->x = sum;
@@ -130,7 +130,7 @@ void func_80067F34(s32 page, s32 track) {
         sum2 = (u16)obj->x + w;
         next->x = sum2;
         next->drawOffsetX = sum2;
-        string = (char *)D_8009A31C[track & 0xFF];
+        string = (char *)gTrackShortNames[track & 0xFF];
         pktH = next->primitive;
         pktH->font = 2;
         pktH->scale = 3;
@@ -286,7 +286,7 @@ void CardMenuCreateRecordTable(u8 track) {
         D_800A360CArr[page] = tail;
         MenuFontSetS32(2, 3);
         strcpy(buf, D_8009A474[0]);
-        strcat(buf, (char *)D_8009A31C[track]);
+        strcat(buf, (char *)gTrackShortNames[track]);
         w = (s16)MenuStringWidth(buf);
         x = (0x140 - w) / 2;
         tail->x = x;
@@ -320,7 +320,7 @@ void CardMenuCreateRecordTable(u8 track) {
             s32 str;
             MenuText *pkt;
             s32 hdr;
-            str = D_8009A31C[track];
+            str = gTrackShortNames[track];
             pkt = obj->primitive;
             hdr = obj->orderingDepth;
             pkt->font = 2;
@@ -871,7 +871,7 @@ void func_80068CE4(void) {
             flag = 0;
             switch (j) {
             case 0:
-                value = D_8009A31C[i];
+                value = gTrackShortNames[i];
                 break;
 
             case 1:
@@ -2598,7 +2598,7 @@ void func_8006BD68(void) {
     s32 dst;
     s32 src;
     s32 end;
-    extern char *D_8009A31CStr[] asm("D_8009A31C.NON_MATCHING");
+    extern char *D_8009A31CStr[] asm("gTrackShortNames.NON_MATCHING");
     extern u8 gSelectedTrackR[] asm("gSelectedTrack.NON_MATCHING");
     extern u8 D_800A306CR[] asm("D_800A306C.NON_MATCHING");
     extern u8 D_800A306ER[] asm("D_800A306E.NON_MATCHING");
@@ -2795,7 +2795,7 @@ void CardMenuBuildFileList(void) {
     D_800A3770 = 0;
 }
 
-extern char *D_8009A31CStr[] asm("D_8009A31C.NON_MATCHING");
+extern char *D_8009A31CStr[] asm("gTrackShortNames.NON_MATCHING");
 extern s32 D_8009A4D8[];
 void func_8006C668(s32 start, s32 arg1);
 
@@ -3265,7 +3265,7 @@ void func_8006CE64(void) {
 void CardMenuAppendTrackName(void) {
     if (D_800A358C < D_800A3968) {
         strcpy(D_800B0A2C + D_800A358C * 16,
-               (char *)D_8009A31C[gSelectedTrack[0]]);
+               (char *)gTrackShortNames[gSelectedTrack[0]]);
     }
 }
 

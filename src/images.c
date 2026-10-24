@@ -114,7 +114,7 @@ void GraphicsSelectImageBank(s32 index) {
     u32 base;
     volatile s32 pad[2];
 
-    image = (u8 *)D_800B9F44[index];
+    image = (u8 *)gImagePointerTable[index];
     D_800A368C = image;
     w = *(u16 *)image;
     h = ((ImageBankHeader *)image)->textureCount;

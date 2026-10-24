@@ -457,7 +457,7 @@ void func_8005E644(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 }
 
 void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
-    extern s32 D_8009A31C[];
+    extern s32 gTrackShortNames[];
     u8 index;
     u8 primIndex;
     MenuObj *object;
@@ -505,7 +505,7 @@ void func_8005E7F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     D_800A3740 = (s32 **)object;
     prim2->font = 2;
     prim2->scale = 2;
-    value = *(s32 *)((u8 *)D_8009A31C + offset);
+    value = *(s32 *)((u8 *)gTrackShortNames + offset);
     cur = (u8 *)D_800A3740;
     prim2->text = value;
     word = (u16)cur->x;
@@ -712,9 +712,9 @@ void MenuFormatLapCount(u8 arg0) {
 #endif
 #endif
 
-extern s32 D_8009A31C[];
+extern s32 gTrackShortNames[];
 void MenuSetTrackLabel(s32 index) {
-    D_800A3740[8][2] = D_8009A31C[index & 0xFF];
+    D_800A3740[8][2] = gTrackShortNames[index & 0xFF];
 }
 
 s32 MenuGetGridScale(u8 x, u8 y) {
@@ -4534,7 +4534,7 @@ extern u8 *D_800A3570_w42[] asm("D_800A3570.NON_MATCHING");
 extern u8 D_800AE88C_w42[] asm("D_800AE88C.NON_MATCHING");
 extern s32 D_800AE8C0_w42[] asm("D_800AE8C0.NON_MATCHING");
 
-void func_80063874(void) {
+void MenuLoadCarModels(void) {
     void *table;
     u8 *head;
     u8 *src;
@@ -4712,7 +4712,7 @@ void func_80063E7C(void) {
     s16 srcX;
     s16 tile;
 
-    func_80063874();
+    MenuLoadCarModels();
     D_800A2E84Absolute[0] = 0;
     entry = func_8002D874(-1, 0, 0, -1);
     entry->pos.x = -0x2EE;
@@ -4847,7 +4847,7 @@ extern MenuObj *D_800A3958[];
 extern MenuObj *D_800A3900[];
 extern u8 *D_800A35E0Alias[] asm("D_800A35E0Absolute");
 extern u8 DriverFindIndexById(s8);
-extern void func_800645A4(s32, s32);
+extern void MenuSetDriverPortrait(s32, s32);
 extern void ListSetRangeFields(MenuObj *, s32, s32, s16);
 
 void func_80064208(void) {
@@ -4930,7 +4930,7 @@ void func_80064208(void) {
 
     idx = (u8)D_800A39FC;
     D_800A3A14 = 0;
-    func_800645A4(0, idx);
+    MenuSetDriverPortrait(0, idx);
     entry = D_800A3744[D_800A3A14];
     D_800A39A0[0] = 0;
     D_800A38FC[0] = entry;
@@ -4952,7 +4952,7 @@ void func_80064208(void) {
     func_80063AE0(D_800A3A14, D_800A39FC);
 }
 
-void func_800645A4(s32 arg0, s32 arg1) {
+void MenuSetDriverPortrait(s32 arg0, s32 arg1) {
     MenuObj *node;
     POLY_FT4 *prim;
     MenuText *prim2;

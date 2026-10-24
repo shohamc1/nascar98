@@ -41,7 +41,7 @@ extern u8 gMenuObjectPoolCountAbsolute[];
 extern void SetPolyFT4(POLY_FT4 *);
 extern u8 *D_800A3428View asm("D_800A3428");
 void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode);
-void func_800539F0(void);
+void MenuLoadResources(void);
 void GraphicsInitDoubleBufferSwapped(void);
 void TextureLoadTim(void *timImage);
 
@@ -4791,7 +4791,7 @@ extern u8 D_800A3590;
 extern s32 gOrderingTableBankLui asm("gOrderingTableBankAbsolute");
 extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern char D_8008D4F4[];
-extern char *D_8009A31C[];
+extern char *gTrackShortNames[];
 extern char *D_8009AE60[];
 extern char *D_8009ADDC[];
 extern u8 gStandingsPlaceXRow[] asm("gStandingsPlaceX");
@@ -4806,7 +4806,7 @@ void MenuDrawStatistics(void) {
     top = (s8)D_800A3590 / 12;
     GraphicsSetColor(128, 128, 192);
     sprintfHud(text, D_8008D4F4, D_8009AD68[gSessionTypeAbsolute[0]][0],
-               D_8009AE60[0], D_8009A31C[D_800A2CE0[0]]);
+               D_8009AE60[0], gTrackShortNames[D_800A2CE0[0]]);
     if (gSplitScreenMode[0] == 0) {
         HudDrawTextS16(text, (s16)((320 - HudTextWidth((u8 *)text)) >> 1), 210,
                        0);
@@ -5136,7 +5136,7 @@ void MenuDrawTimingAndScoring(void) {
 
     GraphicsSetColor(128, 128, 192);
     sprintfHud(caption, D_8008D4F4, gPlayerCar[0]->name, D_8009A3F8[0],
-               D_8009A31C[D_800A2CE0[0]]);
+               gTrackShortNames[D_800A2CE0[0]]);
     titleTable = D_8009AE70;
     width = HudTextWidth((u8 *)titleTable[0]);
     title = titleTable[0];
@@ -7562,7 +7562,7 @@ extern u8 gCdVolume;
 extern u8 D_800A3950;
 extern u8 D_800A3644;
 extern u8 gScreenStateSmall;
-extern s32 D_800A37EC;
+extern s32 gMenuBackground;
 extern u16 *D_800A35F0;
 extern s32 D_800A305C;
 extern RECT D_800A3710[2];
@@ -7611,7 +7611,7 @@ void MenuRunFrontEnd(void) {
         }
         D_800A3061 = 0;
     }
-    func_800539F0();
+    MenuLoadResources();
     CdEnablePlaybackAndSetVolume();
     SsStart2();
     SsSetMVol(0x7F, 0x7F);
@@ -7638,7 +7638,7 @@ void MenuRunFrontEnd(void) {
     if (gScreenStateSmall == 0xC) {
         SetDispMask(0);
     }
-    TextureLoadTim(D_800A37EC);
+    TextureLoadTim(gMenuBackground);
     D_800A3710[0] = D_800A39B0[0];
     D_800A35F0 = (u16 *)D_800A36B4w6c[0];
     func_80053D40();
@@ -7866,13 +7866,13 @@ extern u8 D_800A305ANM asm("D_800A305A.NON_MATCHING");
 extern s32 D_800A37F0NM asm("D_800A37F0.NON_MATCHING");
 extern s32 D_800A3830NM asm("D_800A3830.NON_MATCHING");
 
-void func_800539F0(void) {
+void MenuLoadResources(void) {
     s32 *table;
     u8 i;
     void *base;
 
-    D_800A37EC = (s32)HeapAlloc(0x26000);
-    CdLoadFileByIndex(D_800A37EC, 5);
+    gMenuBackground = (s32)HeapAlloc(0x26000);
+    CdLoadFileByIndex(gMenuBackground, 5);
     MenuLoadOffsetResources(6);
     SceneInitPrimPools();
     i = 0;
@@ -9834,7 +9834,7 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern void func_80060008(u8);
     extern void MenuSetLinkedObjectLayoutByIndexKR() asm(
         "MenuSetLinkedObjectLayoutByIndex");
-    extern void func_800645A4(s8, s8);
+    extern void MenuSetDriverPortrait(s8, s8);
     extern void func_80067F34(s8, u8);
     extern void func_8006894C(s8, s32, s32, s32, s32);
     extern void MenuSetVolume(s16, s32);
@@ -10204,7 +10204,7 @@ dispatch:
         }
         tableByte = D_8009AD40[D_800A3594R2[0]];
         D_800A39FC[0] = tableByte;
-        func_800645A4(D_800A3A14R3[0], (s8)tableByte);
+        MenuSetDriverPortrait(D_800A3A14R3[0], (s8)tableByte);
         func_80063AE0(D_800A3A14R4[0], D_800A39FCR2[0]);
         D_800A38FCR2[0] = (MenuObj *)D_800A3744[D_800A3A14R5[0]];
         if (arg2 == 0) {
@@ -10644,7 +10644,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
     extern void MenuSetTrackLabel(u8);
     extern void MenuFormatLapCount(u8);
     extern void CardMenuClearNameCharacters(u8);
-    extern void func_8006EEE0(u8);
+    extern void MediaShowTrackIntro(u8);
     extern void func_8006D708(s32, u8, s32);
     extern void MenuSetAllObjectOrderingDepths(s32);
     extern void MoviePlayIndexedFile(u8);
@@ -10741,7 +10741,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             case 5:
                 next = 6;
                 if (D_800AD974[gSelectedTrackSmall] == 0) {
-                    func_8006EEE0(gSelectedTrackSmall);
+                    MediaShowTrackIntro(gSelectedTrackSmall);
                     D_800AD974Other[gSelectedTrackSmall] = 1;
                 }
                 break;
@@ -10806,7 +10806,7 @@ u8 MenuUpdateScreenState(u8 screen, u8 *previous, u8 action) {
             next = 11;
         } else if (*previous == 8) {
             next = 6;
-            func_8006EEE0(gSelectedTrackSmall);
+            MediaShowTrackIntro(gSelectedTrackSmall);
             D_800AD974[gSelectedTrackSmall] = 1;
         } else {
             next = *previous;
@@ -11064,10 +11064,10 @@ void func_80057BFC(void) {
     D_800A3548 = 0;
     MenuFreeResourceBlock();
     MenuFreeObjectBuffer();
-    if (D_800A37EC != 0) {
-        HeapFree((void *)D_800A37EC);
+    if (gMenuBackground != 0) {
+        HeapFree((void *)gMenuBackground);
     }
-    D_800A37EC = 0;
+    gMenuBackground = 0;
     if (gMenuObjectPoolLui != 0) {
         HeapFree((void *)gMenuObjectPoolLui);
     }
@@ -11706,9 +11706,9 @@ void func_80058D94(void) {
         fileBuf = (u8 *)D_800A3638;
         offsets = (s32 *)D_800A381C;
     }
-    D_800A37EC = (s32)(fileBuf + offsets[0]);
+    gMenuBackground = (s32)(fileBuf + offsets[0]);
     texBuf = HeapAlloc(0x25800);
-    TextureLoadTim((void *)D_800A37EC);
+    TextureLoadTim((void *)gMenuBackground);
     D_800A3710[0] = D_800A39B0[0];
     D_800A35F0 = (u16 *)D_800A36B4w6c[0];
     DrawSync(0);
@@ -11803,7 +11803,7 @@ void func_80058D94(void) {
     LoadImage(D_800A3710, (u_long *)texBuf);
     frame = 1;
     D_800A2F9C[0] = frame;
-    func_8003CAE8(5);
+    CdPlayAudioTrack(5);
     SsSetMVol(0x7F, 0x7F);
     D_800A3724 = frame;
     SetDispMask(1);
@@ -12078,7 +12078,7 @@ void GraphicsLoadPaletteRow(void) {
 
 void CdEnablePlaybackAndSetVolume(void) {
     D_800A2F9CAbsolute[0] = 1;
-    func_8003CAE8(3);
+    CdPlayAudioTrack(3);
     CdSetMixVolume(gCdVolume);
 }
 
@@ -12131,7 +12131,7 @@ void func_8005978C(void) {
     D_800A381C = buf + 4;
     D_800A3638 = buf;
     buf += next;
-    D_800A37EC = buf;
+    gMenuBackground = buf;
     TextureLoadTim((void *)buf);
     DrawSync(0);
     SetDefDispEnv(&env, 0x140, 0, 0x140, 0xF0);

@@ -425,7 +425,7 @@ extern void PadResetAndInitializeBuffersi(s32);
 asm(".globl RandomScaledGetVoid\nRandomScaledGetVoid = RandomScaledGet");
 asm(".globl PadResetAndInitializeBuffersi\nPadResetAndInitializeBuffersi = PadResetAndInitializeBuffers");
 
-void func_8006EEE0(s32 arg0) {
+void MediaShowTrackIntro(s32 arg0) {
     RECT rect;
     DISPENV disp;
     DRAWENV draw;
