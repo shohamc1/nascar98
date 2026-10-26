@@ -458,7 +458,7 @@ void EffectInitRandomOffsetTables(void) {
     s32 value;
     register s32 temp asm("a0");
     s32 value2;
-    s32 masked;
+    u16 masked;
     s32 value3;
     s32 prod;
     s32 prodlo;
@@ -496,7 +496,7 @@ void EffectInitRandomOffsetTables(void) {
                 do {
                 } while (0);
                 value = (temp * 0x6255) + 0x3619;
-                asm("andi %0, %1, 0xFFFF" : "=r"(masked) : "r"(value));
+                masked = (u16)value;
                 gRandomSeed16 = masked;
                 asm volatile("" ::: "memory");
                 value &= 0xFFFF;
@@ -514,7 +514,7 @@ void EffectInitRandomOffsetTables(void) {
                              : "=r"(off2)
                              : "r"(colOff), "r"(mo));
                 value = (temp * 0x6255) + 0x3619;
-                asm("andi %0, %1, 0xFFFF" : "=r"(masked) : "r"(value));
+                masked = (u16)value;
                 gRandomSeed16 = masked;
                 asm volatile("" ::: "memory");
                 value &= 0xFFFF;
