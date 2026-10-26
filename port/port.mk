@@ -19,16 +19,17 @@ PORT  := build/port
 ELF   := build/slus_005.21.elf
 UNDEF := build/undefined_syms_auto.txt
 
-WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding \
+WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding -fno-builtin \
                -nostdlibinc -Wno-incompatible-pointer-types -Wno-int-conversion \
                -Wno-incompatible-function-pointer-types \
-               -ferror-limit=0 -Iport/include -Iinclude -Ibuild
+               -ferror-limit=0 -include port_asm.h -Iport/include -Iinclude -Ibuild
 
 # Address spans of asm/data/data.data.s and bss.bss.s, and of the image.
 DATA_RANGES := --data-range 0x80090DC8:0x800A2CE0 --data-range 0x800A33C0:0x800BEBA4
 IMAGE       := --image 0x80010000:0x800CEFE0
 
 GAME_SRCS := $(wildcard src/*.c)
+NATIVES   := $(wildcard port/native/*.c)
 PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
 OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
 
@@ -50,15 +51,19 @@ $(PORT)/defined.txt: $(ELF)
 	@mkdir -p $(@D)
 	$(NM) --defined-only build/src/*.c.o | awk 'NF == 3' > $@
 
-# The filter reads every source at once (aliases cross files).
-$(PORT)/src/.stamp: $(GAME_SRCS) tools/port_filter.py Makefile $(UNDEF) \
+# The filter reads every source at once (aliases cross files), and swaps
+# in port/native/FUNC.c for each function whose MIPS asm carries behaviour.
+$(PORT)/src/.stamp: $(GAME_SRCS) $(NATIVES) tools/port_filter.py tools/port_asm.py Makefile $(UNDEF) \
                     $(PORT)/symbols.txt $(PORT)/defined.txt
 	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) \
 	  --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
-	  $(DATA_RANGES) $(IMAGE) $(GAME_SRCS) $(PORT)/src
+	  $(DATA_RANGES) $(IMAGE) --native-dir port/native $(GAME_SRCS) $(PORT)/src
 	@touch $@
 
 $(PORT_SRCS): $(PORT)/src/.stamp
+
+# memory_card.c calls strcat before declaring it (see port_prelude.h).
+$(PORT)/obj/memory_card.o: WASM_CFLAGS += -include port_prelude.h
 
 $(PORT)/obj/%.o: $(PORT)/src/%.c $(wildcard port/include/*.h port/include/*/*.h)
 	@mkdir -p $(@D)

@@ -200,6 +200,116 @@ class FilterSource(unittest.TestCase):
         text = 'void Dana(void) {\n    asm("" : : : "memory");\n}\n'
         self.assertEqual(self.run_filter(text), text)
 
+    def test_drop_padding_asm_in_function(self) -> None:
+        text = (
+            "s32 Dana(void) {\n"
+            '    asm(".rdata\\n.long 0\\n.text");\n'
+            '    __asm__ volatile(".section .rodata\\n"\n'
+            '                     ".word 0\\n"\n'
+            '                     ".section .text");\n'
+            "    return 1;\n"
+            "}\n"
+        )
+        self.assertEqual(self.run_filter(text), "s32 Dana(void) {\n    return 1;\n}\n")
+
+    def test_drop_gp_write(self) -> None:
+        text = (
+            "void Dana(s32 oldGp) {\n"
+            '    asm("addu $gp, %0, $zero" : : "r"(oldGp));\n'
+            '    asm("addu $gp, $a0, $zero");\n'
+            "}\n"
+        )
+        self.assertEqual(self.run_filter(text), "void Dana(s32 oldGp) {\n}\n")
+
+    def test_gp_relative_store(self) -> None:
+        out = self.run_filter('    asm volatile("sw\\t$zero, %gp_rel(gDana)($gp)");\n')
+        self.assertIn("PORT_STORE(u32, (u32)port_sym_gDana, 0u);", out)
+
+    def test_drop_nop_only(self) -> None:
+        text = 'void Dana(void) {\n    asm volatile(".set noreorder\\nnop\\n.set reorder");\n}\n'
+        self.assertEqual(self.run_filter(text), "void Dana(void) {\n}\n")
+
+    def test_gte_command(self) -> None:
+        text = '    asm volatile(\n        ".set\\tnoreorder\\n\\tnop\\n\\tnop\\n\\trtpt\\n\\t.set\\treorder");\n'
+        out = self.run_filter(text)
+        self.assertIn("PortGteCommand(0x4a280030u);", out)
+        self.assertNotIn("asm", out)
+
+    def test_gte_moves(self) -> None:
+        cases = {
+            '    asm volatile("mfc2 %0, $7\\n\\tnop" : "=r"(otz) : "0"(otz));\n': "PortGteRead(7)",
+            '    asm volatile("mtc2 %0, $8" : : "r"(ir0));\n': "PortGteWrite(8, port_o0)",
+            '    asm("cfc2 %1, $31" : "=r"(a), "=r"(flag));\n': "PortGteReadControl(31)",
+            '    asm("lwc2 $0, 0x8(%0)" : : "r"(v));\n': "PortGteWrite(0, PORT_LOAD(u32, (port_o0 + (u32)8)))",
+        }
+        for text, call in cases.items():
+            out = self.run_filter(text)
+            self.assertIn(call, out)
+            self.assertNotIn("asm", out)
+
+    def test_gte_in_macro(self) -> None:
+        text = (
+            "#define DanaStore(a, b) \\\n"
+            '    asm volatile("swc2 $17, 0(%0)\\n\\tswc2 $18, 0(%1)" \\\n'
+            '                 : \\\n'
+            '                 : "r"(a), "r"(b) \\\n'
+            '                 : "memory")\n'
+            "\n"
+            "s32 gDana;\n"
+        )
+        first, second, *rest = self.run_filter(text).split("\n")
+        self.assertEqual(first, "#define DanaStore(a, b) \\")
+        self.assertTrue(second.startswith("    { ") and second.endswith(" }"))
+        self.assertIn("PortGteRead(17)", second)
+        self.assertEqual(rest, ["", "s32 gDana;", ""])
+
+    def test_asm_symbol_extern(self) -> None:
+        out = self.run_filter('    asm("la %0, gDanaTable" : "=r"(p));\n')
+        self.assertIn('extern u8 port_sym_gDanaTable[] __asm__("gDanaTable");', out)
+        self.assertIn("PORT_OUT(p, port_o0);", out)
+
+    def test_asm_symbol_alias(self) -> None:
+        out = self.run_filter('    asm("la %0, gDanaAbs" : "=r"(p));\n', {"gDanaAbs": ("gDana", 0)})
+        self.assertIn('__asm__("gDana")', out)
+
+    def test_asm_symbol_offset_alias(self) -> None:
+        out = self.run_filter('    asm("la %0, gDanaTail" : "=r"(p));\n', {"gDanaTail": ("gDana", 4)})
+        self.assertIn("((u32)port_sym_gDana + 0x4)", out)
+
+    def test_asm_symbol_absolute(self) -> None:
+        out = self.run_filter('    asm("la %0, D_1F800004" : "=r"(p));\n', absolutes={"D_1F800004": 0x1F800004})
+        self.assertIn("(u32)0x1F800004", out)
+        self.assertNotIn("extern", out)
+
+    def test_asm_symbol_function(self) -> None:
+        out = pf.filter_source('    asm("la %0, DanaStep" : "=r"(p));\n', {}, {}, {"DanaStep"})
+        self.assertIn('extern void port_sym_DanaStep(void) __asm__("DanaStep");', out)
+
+    def test_gte_hard_register_kept(self) -> None:
+        text = '    asm volatile("mfc2 $8, $7");\n'
+        self.assertEqual(self.run_filter(text), text)
+
+    def test_instruction_asm_in_function_kept(self) -> None:
+        text = 'void Dana(void) {\n    asm(".set noreorder\\naddu $2, $3, $4\\n.set reorder");\n}\n'
+        self.assertEqual(self.run_filter(text), text)
+
+    def test_barrier_register_clobbers_dropped(self) -> None:
+        text = (
+            '    asm("" : "=r"(x) : "0"(y) : "v0");\n'
+            '    asm volatile("" : : "r"(z) : "$2", "memory", "a1");\n'
+            '    asm("" : : : "lo", "hi");\n'
+        )
+        self.assertEqual(
+            self.run_filter(text),
+            '    asm("" : "=r"(x) : "0"(y));\n'
+            '    asm volatile("" : : "r"(z) : "memory");\n'
+            '    asm("" : :);\n',
+        )
+
+    def test_instruction_clobbers_kept(self) -> None:
+        text = '    asm("addu $2, $3, $4" : : : "v0");\n'
+        self.assertEqual(self.run_filter(text), text)
+
     def test_drop_maspsx_hack(self) -> None:
         text = (
             "s32 gDana;\n"
@@ -222,6 +332,39 @@ class FilterSource(unittest.TestCase):
         absolutes = {"D_8008CA18": ("gDanaTable", 0x14)}
         once = self.run_filter(text, aliases, absolutes)
         self.assertEqual(self.run_filter(once, aliases, absolutes), once)
+
+
+class ReplaceFunctions(unittest.TestCase):
+    TEXT = (
+        "s32 gDana;\n"
+        "\n"
+        "/* Dana. */\n"
+        "s32 DanaStep(s32 x) {\n"
+        "    if (x) {\n"
+        '        asm("addu %0, %0, 1" : "+r"(x));\n'
+        "    }\n"
+        '    return x + "}"[0];\n'
+        "}\n"
+        "\n"
+        "void QuinnStep(void) {\n"
+        "}\n"
+    )
+
+    def test_replace_function(self) -> None:
+        native = "s32 DanaStep(s32 x) {\n    return x + 1;\n}\n"
+        out = pf.replace_functions(self.TEXT, {"DanaStep": native})
+        self.assertEqual(
+            out,
+            "s32 gDana;\n\n/* Dana. */\n" + native + "\nvoid QuinnStep(void) {\n}\n",
+        )
+
+    def test_prototype_untouched(self) -> None:
+        text = "s32 DanaStep(s32 x);\n" + self.TEXT
+        out = pf.replace_functions(text, {"DanaStep": "s32 DanaStep(s32 x) {}\n"})
+        self.assertTrue(out.startswith("s32 DanaStep(s32 x);\n"))
+
+    def test_override_for_other_file_ignored(self) -> None:
+        self.assertEqual(pf.replace_functions(self.TEXT, {"AveryStep": "x"}), self.TEXT)
 
 
 class Cli(unittest.TestCase):
@@ -267,6 +410,61 @@ class Cli(unittest.TestCase):
                 "#define D_801F3FF8 ((u32 *)0x801F3FF8)\n"
                 "extern u32 gAveryCount[];\n",
             )
+
+    def test_cli_filters_native_bodies(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            for name in ("Makefile", "abs.txt", "syms.txt", "defined.txt"):
+                (d / name).write_text("")
+            (d / "native").mkdir()
+            (d / "native" / "DanaStep.c").write_text(
+                'void DanaStep(void) {\n    register s32 x asm("a0");\n}\n'
+            )
+            (d / "a.c").write_text("void DanaStep(void) {\n}\n")
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tools" / "port_filter.py"),
+                    "--makefile", str(d / "Makefile"),
+                    "--absolutes", str(d / "abs.txt"),
+                    "--symbols", str(d / "syms.txt"),
+                    "--defined", str(d / "defined.txt"),
+                    "--image", "0x80010000:0x800CEFE0",
+                    "--native-dir", str(d / "native"),
+                    str(d / "a.c"), str(d / "out"),
+                ],
+                check=True,
+            )
+            self.assertEqual(
+                (d / "out" / "a.c").read_text(),
+                "void DanaStep(void) {\n    register s32 x;\n}\n",
+            )
+
+    def test_cli_rejects_stale_native(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            for name in ("Makefile", "abs.txt", "syms.txt", "defined.txt"):
+                (d / name).write_text("")
+            (d / "native").mkdir()
+            (d / "native" / "AveryStep.c").write_text("void AveryStep(void) {}\n")
+            (d / "a.c").write_text("void DanaStep(void) {\n}\n")
+            run = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tools" / "port_filter.py"),
+                    "--makefile", str(d / "Makefile"),
+                    "--absolutes", str(d / "abs.txt"),
+                    "--symbols", str(d / "syms.txt"),
+                    "--defined", str(d / "defined.txt"),
+                    "--image", "0x80010000:0x800CEFE0",
+                    "--native-dir", str(d / "native"),
+                    str(d / "a.c"), str(d / "out"),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(run.returncode, 0)
+            self.assertIn("AveryStep", run.stderr)
 
 
 if __name__ == "__main__":
