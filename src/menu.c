@@ -1625,6 +1625,22 @@ void MenuDrawLevelBars(s8 selectedColumn, u8 player) {
 extern MenuObj *D_800A3A68Store asm("D_800A3A68");
 extern s32 D_8009A2B0[];
 extern s32 D_8009A2BC[];
+static __inline__ MenuObj *MenuInitTexturedPrimitive(MenuObj *object, s32 depth,
+                                                     u8 texture, u8 semiTrans) {
+    POLY_FT4 *prim;
+
+    prim = (POLY_FT4 *)GraphicsAllocPolyFT4(texture);
+    SetPolyFT4(prim);
+    SetShadeTex(prim, 0);
+    prim->r0 = 0x80;
+    prim->g0 = 0x80;
+    prim->b0 = 0x80;
+    SetSemiTrans(prim, semiTrans);
+    object->primitive = prim;
+    object->orderingDepth = depth;
+    return object;
+}
+
 void func_800606D4(void) {
     MenuObj *entry;
     MenuObj *cur;
@@ -1801,7 +1817,6 @@ void func_800606D4(void) {
         u8 index;
         u8 primIndex;
         MenuObj *panel;
-        POLY_FT4 *face;
         MenuObj *frame;
         u8 *tile;
         u8 *tile2;
@@ -1826,17 +1841,7 @@ void func_800606D4(void) {
         panel->height = 5;
         panel->velocityX = 0;
         panel->velocityY = 0;
-        face = (POLY_FT4 *)(GraphicsAllocPolyFT4(1));
-        SetPolyFT4(face);
-        SetShadeTex(face, 0);
-        face->r0 = 0x80;
-        face->g0 = 0x80;
-        face->b0 = 0x80;
-        SetSemiTrans(face, 0);
-        cur = panel;
-        asm("" : "=r"(cur) : "0"(cur));
-        panel->primitive = face;
-        panel->orderingDepth = 1;
+        cur = MenuInitTexturedPrimitive(panel, 1, 1, 0);
         prim2 = (POLY_FT4 *)((u8 *)cur->primitive);
         cur->velocityX = 2;
         asm("" : "=r"(x3) : "0"(8));
