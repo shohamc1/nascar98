@@ -1412,7 +1412,7 @@ void SceneUpdateRoadStrip(Car *car) {
             }
         } else {
             s32 *origin;
-            register s32 lastSection asm("a0");
+            s32 lastSection;
             s32 sectionIndex;
             s32 length;
             s32 cameraZ;
@@ -1421,11 +1421,10 @@ void SceneUpdateRoadStrip(Car *car) {
 
             count = 0;
             sectionIndex = D_800A3440[slot] - D_800A3438;
-            /* Keep the subtraction separate from the length decrement. */
-            asm("" : "=r"(sectionIndex) : "0"(sectionIndex));
             length = gTrackSectionCount[0];
             lastSection = length - 1;
-            node = gTrackSections[0] + (sectionIndex + lastSection) % length;
+            sectionIndex += lastSection;
+            node = gTrackSections[0] + sectionIndex % length;
             distance = -distance;
             while (count < distance) {
                 section = node->section;
