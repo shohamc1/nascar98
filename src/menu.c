@@ -784,7 +784,6 @@ void func_8005ED74(u8 arg0, u8 arg1) {
     POLY_FT4 *pr4;
     POLY_F4 *pr5;
     POLY_FT4 *pr6;
-    POLY_F4 *pr7;
     POLY_FT4 *pr8;
     u8 *prC8;
     POLY_F4 *prC9;
@@ -957,7 +956,6 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         if (j < 2) {
             goto a2_L;
         }
-        asm("" : : "r"(pr2));
         list++;
         yBase = y1;
         i++;
@@ -1242,21 +1240,21 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         obj7->red = 0x20;
         obj7->green = 0x20;
         obj7->blue = 0x40;
-        pr7 = (POLY_F4 *)(GraphicsAllocPolyF4(1));
-        obj7->primitive = pr7;
-        SetPolyF4(pr7);
-        SetSemiTrans(pr7, 1);
-        pr7->r0 = 0x20;
-        pr7->g0 = 0x20;
-        pr7->b0 = 0x40;
-        pr7->y2 = 0x5A;
-        pr7->y3 = 0x5A;
-        pr7->x0 = 0;
-        pr7->y0 = yBase;
-        pr7->x1 = h;
-        pr7->y1 = yBase;
-        pr7->x2 = 0;
-        pr7->x3 = h;
+        pr2 = (POLY_F4 *)(GraphicsAllocPolyF4(1));
+        obj7->primitive = pr2;
+        SetPolyF4(pr2);
+        SetSemiTrans(pr2, 1);
+        pr2->r0 = 0x20;
+        pr2->g0 = 0x20;
+        pr2->b0 = 0x40;
+        pr2->y2 = 0x5A;
+        pr2->y3 = 0x5A;
+        pr2->x0 = 0;
+        pr2->y0 = yBase;
+        pr2->x1 = h;
+        pr2->y1 = yBase;
+        pr2->x2 = 0;
+        pr2->x3 = h;
         obj7->orderingDepth = 0x3FD;
         obj7->velocityX = k2b;
         obj7->x = -0x7D;
@@ -1265,7 +1263,6 @@ void func_8005ED74(u8 arg0, u8 arg1) {
         entry = obj7;
         j++;
     } while (j < 2);
-    asm("" : : "r"(pr7));
     k41 = 0x41;
     k32 = 0x32;
     k7 = 7;
