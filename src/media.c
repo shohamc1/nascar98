@@ -3137,11 +3137,33 @@ s32 AudioGetStreamStatus(void) {
     return D_800A351C[0x7B58 / 4];
 }
 
-s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
-              s32 arg6) {
+static __inline__ void AudioSetVoiceAttributes(s32 voice, s32 addr, s32 pitch) {
     SpuVoiceAttr va;
     SpuCommonAttr ca;
-    SpuCommonAttr *caarg;
+
+    ca.mask = 3;
+    ca.mvol.left = 0x3FFF;
+    ca.mvol.right = 0x3FFF;
+    SpuSetCommonAttr(&ca);
+    va.mask = 0xFF93;
+    va.voice = voice;
+    va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
+    va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
+    va.pitch = pitch;
+    va.addr = addr;
+    va.a_mode = 1;
+    va.s_mode = 1;
+    va.r_mode = 3;
+    va.ar = 0;
+    va.dr = 0;
+    va.sr = 0;
+    va.rr = 0;
+    va.sl = 0xF;
+    SpuSetVoiceAttr(&va);
+}
+
+s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
+              s32 arg6) {
     u32 off;
     s32 voice;
     s32 addr;
@@ -3181,50 +3203,11 @@ s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
     D_800A351C[0x7B7C / 4] = arg5;
     voice = D_800A351C[0x7B64 / 4];
     addr = D_800A351C[0x7B5C / 4];
-    ca.mask = 3;
-    ca.mvol.left = 0x3FFF;
-    ca.mvol.right = 0x3FFF;
-    SpuSetCommonAttr(&ca);
-    va.mask = 0xFF93;
-    va.voice = voice;
-    va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
-    va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
-    va.pitch = arg5;
-    va.addr = addr;
-    va.a_mode = 1;
-    va.s_mode = 1;
-    va.r_mode = 3;
-    va.ar = 0;
-    va.dr = 0;
-    va.sr = 0;
-    va.rr = 0;
-    va.sl = 0xF;
-    SpuSetVoiceAttr(&va);
+    AudioSetVoiceAttributes(voice, addr, arg5);
     rawVoice = D_800A351C[0x7B68 / 4];
     voice = rawVoice;
     addr = (base = D_800A351C[0x7B60 / 4]);
-    {
-        asm volatile("addiu %0, $sp, 0x50" : "=r"(caarg));
-        ca.mask = 3;
-        ca.mvol.left = 0x3FFF;
-        ca.mvol.right = 0x3FFF;
-        SpuSetCommonAttr(caarg);
-        va.mask = 0xFF93;
-        va.voice = voice;
-        va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
-        va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
-        va.pitch = arg5;
-        va.addr = addr;
-        va.a_mode = 1;
-        va.s_mode = 1;
-        va.r_mode = 3;
-        va.ar = 0;
-        va.dr = 0;
-        va.sr = 0;
-        va.rr = 0;
-        va.sl = 0xF;
-        SpuSetVoiceAttr(&va);
-    }
+    AudioSetVoiceAttributes(voice, addr, arg5);
     SwEnterCriticalSection();
     D_800A351C[0x7B14 / 4] = (s32)SpuSetIRQCallback(0);
     D_800A351C[0x7B18 / 4] = (s32)SpuSetTransferCallback(AudioTransferCallback);
