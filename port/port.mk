@@ -1,0 +1,65 @@
+# Native port build. Run from the repo root: make -f port/port.mk TARGET
+#
+# The game's C compiles to wasm32 with data at the retail addresses, and
+# wasm2c turns the module into host C (kb: native-port-pointer-model.md).
+# It needs the matching build's outputs, so run `make check` first.
+#
+# Targets:
+#   objects   compile the filtered game sources to build/port/obj/
+
+BREW_LLVM := $(shell brew --prefix llvm 2>/dev/null)
+WASM_CC   ?= $(BREW_LLVM)/bin/clang
+WASM_LD   ?= wasm-ld
+WASM2C    ?= wasm2c
+WASM2C_RT ?= $(shell brew --prefix wabt 2>/dev/null)/share/wabt/wasm2c
+PYTHON    ?= .venv/bin/python
+NM        ?= mipsel-linux-gnu-nm
+
+PORT  := build/port
+ELF   := build/slus_005.21.elf
+UNDEF := build/undefined_syms_auto.txt
+
+WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding \
+               -nostdlibinc -Wno-incompatible-pointer-types -Wno-int-conversion \
+               -Wno-incompatible-function-pointer-types \
+               -ferror-limit=0 -Iport/include -Iinclude -Ibuild
+
+# Address spans of asm/data/data.data.s and bss.bss.s, and of the image.
+DATA_RANGES := --data-range 0x80090DC8:0x800A2CE0 --data-range 0x800A33C0:0x800BEBA4
+IMAGE       := --image 0x80010000:0x800CEFE0
+
+GAME_SRCS := $(wildcard src/*.c)
+PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
+OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
+
+.PHONY: objects
+
+objects:
+	@fail=0; for o in $(OBJS); do \
+	  $(MAKE) -s -f port/port.mk $$o || { echo "FAIL $$o (log: $${o%.o}.log)"; fail=1; }; \
+	done; exit $$fail
+
+$(ELF) $(UNDEF):
+	@echo "port: $@ is missing: run make check first" >&2; exit 1
+
+$(PORT)/symbols.txt: $(ELF)
+	@mkdir -p $(@D)
+	$(NM) -S --defined-only $< > $@
+
+$(PORT)/defined.txt: $(ELF)
+	@mkdir -p $(@D)
+	$(NM) --defined-only build/src/*.c.o | awk 'NF == 3' > $@
+
+# The filter reads every source at once (aliases cross files).
+$(PORT)/src/.stamp: $(GAME_SRCS) tools/port_filter.py Makefile $(UNDEF) \
+                    $(PORT)/symbols.txt $(PORT)/defined.txt
+	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) \
+	  --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
+	  $(DATA_RANGES) $(IMAGE) $(GAME_SRCS) $(PORT)/src
+	@touch $@
+
+$(PORT_SRCS): $(PORT)/src/.stamp
+
+$(PORT)/obj/%.o: $(PORT)/src/%.c $(wildcard port/include/*.h port/include/*/*.h)
+	@mkdir -p $(@D)
+	$(WASM_CC) $(WASM_CFLAGS) -c $< -o $@ 2> $(@:.o=.log) || { tail -3 $(@:.o=.log) >&2; exit 1; }

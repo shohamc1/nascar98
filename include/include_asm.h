@@ -1,7 +1,8 @@
 #ifndef INCLUDE_ASM_H
 #define INCLUDE_ASM_H
 
-#if !defined(M2CTX) && !defined(PERMUTER)
+/* The native port (NATIVE) has no MIPS assembler: it takes the empty branch. */
+#if !defined(M2CTX) && !defined(PERMUTER) && !NATIVE
 
 #ifndef INCLUDE_ASM
 #define INCLUDE_ASM(FOLDER, NAME)                                              \
@@ -44,6 +45,6 @@ __asm__(".include \"include/labels.inc\"\n");
 #define INCLUDE_RODATA(FOLDER, NAME)
 #endif
 
-#endif /* !defined(M2CTX) && !defined(PERMUTER) */
+#endif /* !defined(M2CTX) && !defined(PERMUTER) && !NATIVE */
 
 #endif /* INCLUDE_ASM_H */
