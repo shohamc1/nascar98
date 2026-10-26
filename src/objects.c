@@ -16274,10 +16274,8 @@ void RaceUpdateLapProgress(void) {
         section = car->segment;
         if (section == -1) {
             previousSegment = car->lastSegment;
-            /* Keep the word load before its signed-short conversion. */
-            asm("" : "=r"(previousSegment) : "0"(previousSegment));
-            section = (s16)previousSegment;
             car->segment = previousSegment;
+            section = (s16)previousSegment;
         }
         if (car->lastSegment == 0 && section >= 11) {
             lap = (u16)car->lap - 1;
