@@ -449,7 +449,7 @@ void EffectInitRandomOffsetTables(void) {
     s32 base;
     s32 m3base;
     s32 m3;
-    s32 m1;
+    u16 m1;
     s32 m2;
     register s32 d1 asm("s1");
     register s32 d2 asm("s0");
@@ -481,7 +481,7 @@ void EffectInitRandomOffsetTables(void) {
         m3base = i << 3;
         d1 = base;
         asm volatile("addu %0, %1, $zero" : "=r"(d2) : "r"(base));
-        asm volatile("addu %0, %1, $zero" : "=r"(m1) : "r"(base));
+        m1 = base;
         asm volatile("addu %0, %1, $zero" : "=r"(d3) : "r"(base));
         midOff = 0;
         do {
