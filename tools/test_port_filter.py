@@ -321,6 +321,31 @@ class FilterSource(unittest.TestCase):
         )
         self.assertEqual(self.run_filter(text), "s32 gDana;\ns32 gQuinn;\n")
 
+    def test_maspsx_hack_data_becomes_c(self) -> None:
+        text = (
+            "void __maspsx_include_asm_hack_gDanaTable(void) {\n"
+            '    __asm__(".section .rodata # maspsx-keep \\n"\n'
+            '            "dlabel gDanaTable # maspsx-keep\\n"\n'
+            '            "    .word 0x00010002 # maspsx-keep\\n"\n'
+            '            "    .word 0xFFFB0000 # maspsx-keep\\n"\n'
+            '            "dlabel gQuinnTable # maspsx-keep\\n"\n'
+            '            "    .word 0x3 # maspsx-keep\\n"\n'
+            '            "    .section .text # maspsx-keep\\n");\n'
+            "}\n"
+        )
+        self.assertEqual(
+            self.run_filter(text),
+            'const u32 port_rodata_gDanaTable[] __asm__("gDanaTable") = {0x00010002, 0xFFFB0000};\n'
+            'const u32 port_rodata_gQuinnTable[] __asm__("gQuinnTable") = {0x3};\n',
+        )
+
+    def test_offset_label_on_fixed_address(self) -> None:
+        text = 'extern u32 gDana[] asm("gScratchpad+4");\nextern u32 *gQuinn[] asm("gScratchpad");\n'
+        self.assertEqual(
+            self.run_filter(text, absolutes={"gScratchpad": 0x1F800000}),
+            "#define gDana ((u32 *)0x1F800004)\n#define gQuinn ((u32 * *)0x1F800000)\n",
+        )
+
     def test_filter_is_idempotent(self) -> None:
         text = (
             '    register u8 *rec asm("a1");\n'
@@ -332,6 +357,138 @@ class FilterSource(unittest.TestCase):
         absolutes = {"D_8008CA18": ("gDanaTable", 0x14)}
         once = self.run_filter(text, aliases, absolutes)
         self.assertEqual(self.run_filter(once, aliases, absolutes), once)
+
+
+class Prototypes(unittest.TestCase):
+    def test_read_returns(self) -> None:
+        text = (
+            "void DanaStep(s32 x) {\n}\n"
+            "u8 *QuinnFind(Face *f,\n              s32 n) {\n    return 0;\n}\n"
+            "static void AveryHelp(void) {\n}\n"
+            "extern long SdkThing(int);\n"
+        )
+        self.assertEqual(
+            pf.read_returns(text),
+            {"DanaStep": "void", "QuinnFind": "u8 *", "SdkThing": "long"},
+        )
+
+    def test_read_knr_definition(self) -> None:
+        text = "void DanaStep(id, pitch) s8 id;\ns8 pitch;\n{\n}\n"
+        self.assertEqual(pf.read_returns(text), {"DanaStep": "void"})
+        self.assertEqual(pf.read_params(text), {"DanaStep": ["id", "pitch"]})
+
+    def test_return_table_priority(self) -> None:
+        headers = ["s32 DanaStep(void);\nvoid QuinnStep(void);\n"]
+        sources = [
+            "extern void AveryDraw(void);\nextern void DanaStep(void);\n",
+            "s8 QuinnStep(void) {\n}\nextern s32 AveryDraw(void);\n",
+        ]
+        # Definitions beat headers; headers beat other declarations; the
+        # first source declaration of an undefined function wins.
+        self.assertEqual(
+            pf.return_table(headers, sources), {"DanaStep": "s32", "QuinnStep": "s8", "AveryDraw": "void"}
+        )
+
+    def test_read_returns_by_label(self) -> None:
+        text = 's8 DanaStepBody(s32 arg0) asm("DanaStep");\ns8 DanaStepBody(s32 arg0) {\n}\n'
+        self.assertEqual(pf.read_returns(text), {"DanaStep": "s8"})
+
+    def test_read_params_by_label(self) -> None:
+        text = 's8 DanaStepBody(s32 arg0) asm("DanaStep");\ns8 DanaStepBody(s32 arg0) {\n}\n'
+        self.assertEqual(pf.read_params(text), {"DanaStep": ["s32 arg0"]})
+
+    def test_repair_declared_return(self) -> None:
+        text = "extern void QuinnFind(Face *f, s32 n);\n    extern s32 DanaStep(s32);\n"
+        returns = {"QuinnFind": "u8 *", "DanaStep": "void"}
+        self.assertEqual(
+            pf.repair_prototypes(text, returns),
+            "extern u8 *QuinnFind(Face *f, s32 n);\n    extern void DanaStep(s32);\n",
+        )
+
+    def test_matching_return_untouched(self) -> None:
+        text = "extern s32 *QuinnFind(Face *f, s32 n);\n"
+        self.assertEqual(pf.repair_prototypes(text, {"QuinnFind": "u8 *"}), text)
+
+    def test_implicit_void_call_declared(self) -> None:
+        text = '#include "common.h"\n\nvoid Avery(void) {\n    DanaStep(1);\n    x = QuinnCount();\n}\n'
+        returns = {"DanaStep": "void", "QuinnCount": "s32", "Avery": "void"}
+        self.assertEqual(
+            pf.repair_prototypes(text, returns),
+            '#include "common.h"\nvoid DanaStep();\n\nvoid Avery(void) {\n    DanaStep(1);\n    x = QuinnCount();\n}\n',
+        )
+
+    def test_implicit_declared_before_first_code(self) -> None:
+        text = '#include "common.h"\n/* x */\n\nvoid Avery(void) {\n    DanaStep(1);\n}\n#include "late.h"\n'
+        out = pf.repair_prototypes(text, {"DanaStep": "void", "Avery": "void"})
+        self.assertTrue(out.startswith('#include "common.h"\nvoid DanaStep();\n'))
+
+    def test_macro_call_not_declared(self) -> None:
+        text = "#define DanaStep(x) Avery2(x)\nvoid Avery(void) {\n    DanaStep(1);\n}\n"
+        self.assertEqual(pf.repair_prototypes(text, {"DanaStep": "void", "Avery": "void"}), text)
+
+    def test_header_macro_call_not_declared(self) -> None:
+        text = "void Avery(void) {\n    DanaStep(1);\n}\n"
+        out = pf.repair_prototypes(text, {"DanaStep": "void", "Avery": "void"}, macros={"DanaStep"})
+        self.assertEqual(out, text)
+
+    def test_header_declared_call_not_redeclared(self) -> None:
+        text = "void Avery(void) {\n    DanaStep(1);\n}\n"
+        out = pf.repair_prototypes(text, {"DanaStep": "void", "Avery": "void"}, {"DanaStep"})
+        self.assertEqual(out, text)
+
+    def test_declared_call_not_redeclared(self) -> None:
+        text = "extern void DanaStep(s32);\nvoid Avery(void) {\n    DanaStep(1);\n}\n"
+        self.assertEqual(pf.repair_prototypes(text, {"DanaStep": "void", "Avery": "void"}), text)
+
+
+class Arity(unittest.TestCase):
+    PARAMS = {"FileSeek": ["s32 offset"], "DanaInit": [], "QuinnSet": ["s32 a", "s32 b", "s32 c"]}
+
+    def test_read_params(self) -> None:
+        text = "s32 FileSeek(s32 offset) {\n}\nvoid DanaInit(void) {\n}\nvoid Avery(int n, ...);\n"
+        self.assertEqual(pf.read_params(text), {"FileSeek": ["s32 offset"], "DanaInit": [], "Avery": None})
+
+    def test_trim_call(self) -> None:
+        text = "    x = FileSeek(handle, f(a, b), 0);\n"
+        out, padded = pf.repair_arity(text, self.PARAMS)
+        self.assertEqual(out, "    x = FileSeek(handle);\n")
+        self.assertEqual(padded, [])
+
+    def test_pad_call_reports(self) -> None:
+        out, padded = pf.repair_arity("    QuinnSet(1);\n", self.PARAMS)
+        self.assertEqual(out, "    QuinnSet(1, 0, 0);\n")
+        self.assertEqual(padded, ["QuinnSet"])
+
+    def test_declaration_params_follow_definition(self) -> None:
+        text = "extern s32 FileSeek(s32, s32, s32);\nextern void DanaInit(s32 x);\nextern void QuinnSet(s32);\n"
+        out, _ = pf.repair_arity(text, self.PARAMS)
+        self.assertEqual(
+            out,
+            "extern s32 FileSeek(s32);\nextern void DanaInit(void);\nextern void QuinnSet(s32, s32, s32);\n",
+        )
+
+    def test_unprototyped_declaration_kept(self) -> None:
+        out, _ = pf.repair_arity("extern void DanaInit();\n    DanaInit(3);\n", self.PARAMS)
+        self.assertEqual(out, "extern void DanaInit();\n    DanaInit();\n")
+
+    def test_alias_label_resolves(self) -> None:
+        text = 'extern s32 FileSeekNoArgs(void) __asm__("FileSeek");\n    FileSeekNoArgs();\n'
+        out, padded = pf.repair_arity(text, self.PARAMS)
+        self.assertEqual(out, 'extern s32 FileSeekNoArgs(s32) __asm__("FileSeek");\n    FileSeekNoArgs(0);\n')
+        self.assertEqual(padded, ["FileSeekNoArgs"])
+
+    def test_variadic_declaration_follows_definition(self) -> None:
+        out, _ = pf.repair_arity("extern void DanaInit(s32, ...);\n    DanaInit(1);\n", self.PARAMS)
+        self.assertEqual(out, "extern void DanaInit(void);\n    DanaInit();\n")
+
+    def test_plain_asm_label_resolves(self) -> None:
+        text = 'extern void DanaInitRun(s8) asm(\n    "DanaInit");\n    DanaInitRun(0);\n'
+        out, _ = pf.repair_arity(text, self.PARAMS)
+        self.assertEqual(out, 'extern void DanaInitRun(void) asm(\n    "DanaInit");\n    DanaInitRun();\n')
+
+    def test_definition_untouched(self) -> None:
+        text = "void DanaInit(void) {\n    FileSeek(1);\n}\n"
+        self.assertEqual(pf.repair_arity(text, self.PARAMS)[0], text)
 
 
 class ReplaceFunctions(unittest.TestCase):

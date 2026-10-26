@@ -5,7 +5,8 @@
 # It needs the matching build's outputs, so run `make check` first.
 #
 # Targets:
-#   objects   compile the filtered game sources to build/port/obj/
+#   objects    compile the filtered game sources to build/port/obj/
+#   undefined  link without the port SDK and list what it must define
 
 BREW_LLVM := $(shell brew --prefix llvm 2>/dev/null)
 WASM_CC   ?= $(BREW_LLVM)/bin/clang
@@ -22,7 +23,7 @@ UNDEF := build/undefined_syms_auto.txt
 WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding -fno-builtin \
                -nostdlibinc -Wno-incompatible-pointer-types -Wno-int-conversion \
                -Wno-incompatible-function-pointer-types \
-               -ferror-limit=0 -include port_asm.h -Iport/include -Iinclude -Ibuild
+               -ferror-limit=0 -include port_asm.h -Iport/include -I$(PORT)/include -Iinclude -Ibuild
 
 # Address spans of asm/data/data.data.s and bss.bss.s, and of the image.
 DATA_RANGES := --data-range 0x80090DC8:0x800A2CE0 --data-range 0x800A33C0:0x800BEBA4
@@ -33,7 +34,16 @@ NATIVES   := $(wildcard port/native/*.c)
 PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
 OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
 
-.PHONY: objects FORCE
+# splat's data: initialised .data, .bss, and the .rodata that
+# INCLUDE_RODATA lines name.
+DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s \
+               $(shell sed -n 's/^INCLUDE_RODATA("\([^"]*\)", *\([A-Za-z_0-9]*\)).*/\1\/\2.s/p' $(GAME_SRCS))
+
+WASM_LDFLAGS := --global-base=2147549184 --initial-memory=2151677952 \
+                --max-memory=2151677952 -z stack-size=262144 --no-entry \
+                --export=PortStart --fatal-warnings
+
+.PHONY: objects undefined FORCE
 
 objects:
 	@fail=0; for o in $(OBJS); do \
@@ -56,9 +66,10 @@ $(PORT)/defined.txt: $(ELF)
 # It runs every time (whole-second mtimes miss same-second edits) and
 # rewrites only the outputs that change.
 $(PORT)/src/.stamp: FORCE $(UNDEF) $(PORT)/symbols.txt $(PORT)/defined.txt
-	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) \
+	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) --fixed build/fixed_addrs.ld \
 	  --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
-	  $(DATA_RANGES) $(IMAGE) --native-dir port/native $(GAME_SRCS) $(PORT)/src
+	  $(DATA_RANGES) $(IMAGE) --native-dir port/native --header-out $(PORT)/include \
+	  $(GAME_SRCS) $(PORT)/src
 	@touch $@
 
 $(PORT_SRCS): $(PORT)/src/.stamp
@@ -66,6 +77,36 @@ $(PORT_SRCS): $(PORT)/src/.stamp
 # memory_card.c calls strcat before declaring it (see port_prelude.h).
 $(PORT)/obj/memory_card.o: WASM_CFLAGS += -include port_prelude.h
 
-$(PORT)/obj/%.o: $(PORT)/src/%.c $(wildcard port/include/*.h port/include/*/*.h)
+# -MMD tracks the headers each object includes, filtered ones among them.
+$(PORT)/obj/%.o: $(PORT)/src/%.c
 	@mkdir -p $(@D)
-	$(WASM_CC) $(WASM_CFLAGS) -c $< -o $@ 2> $(@:.o=.log) || { tail -3 $(@:.o=.log) >&2; exit 1; }
+	$(WASM_CC) $(WASM_CFLAGS) -MMD -MP -c $< -o $@ 2> $(@:.o=.log) || { tail -3 $(@:.o=.log) >&2; exit 1; }
+
+-include $(OBJS:.o=.d)
+
+$(PORT)/sdk-defined.txt: $(ELF)
+	@mkdir -p $(@D)
+	$(NM) --defined-only build/src/psxsdk/*.c.o | awk 'NF == 3' > $@
+
+# Signatures of every port function, for function pointers in data.
+$(PORT)/objdump.txt: $(OBJS)
+	wasm-objdump -x $(OBJS) > $@
+
+$(PORT)/data.s: $(DATA_INPUTS) tools/port_data.py tools/port_filter.py $(PORT)/objdump.txt \
+                $(PORT)/symbols.txt $(PORT)/defined.txt $(PORT)/sdk-defined.txt $(UNDEF)
+	$(PYTHON) tools/port_data.py --signatures $(PORT)/objdump.txt --makefile Makefile \
+	  --absolutes $(UNDEF) --fixed build/fixed_addrs.ld --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
+	  --sdk-defined $(PORT)/sdk-defined.txt $(DATA_RANGES) $(IMAGE) $@ $(DATA_INPUTS)
+
+$(PORT)/data.o: $(PORT)/data.s
+	$(WASM_CC) --target=wasm32 -c $< -o $@
+
+# The symbols the port SDK must define: everything the game leaves undefined.
+# --no-gc-sections keeps every function live (nothing exports PortStart yet),
+# and any link error but an undefined symbol fails the target.
+undefined: $(OBJS) $(PORT)/data.o
+	@$(WASM_LD) $(filter-out --export=PortStart,$(WASM_LDFLAGS)) --no-gc-sections --error-limit=0 \
+	  $(OBJS) $(PORT)/data.o -o $(PORT)/undefined.wasm > $(PORT)/undefined.log 2>&1; \
+	  sed -n 's/.*undefined symbol: //p' $(PORT)/undefined.log | sort -u > $(PORT)/sdk-undefined.txt; \
+	  if grep 'error:' $(PORT)/undefined.log | grep -v 'undefined symbol' >&2; then exit 1; fi; \
+	  echo "$$(wc -l < $(PORT)/sdk-undefined.txt) undefined symbols: $(PORT)/sdk-undefined.txt"

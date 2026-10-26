@@ -15,12 +15,12 @@ void func_80060FD8(void) {
     extern u16 port_D_8009AEAC __asm__("D_8009AEAC");
     extern u8 port_D_8009AEB2 __asm__("D_8009AEB2");
     extern u8 port_D_800A3348 __asm__("D_800A3348");
-    extern u8 port_D_800A35EC __asm__("D_800A35EC");
+    extern u8 port_gMenuObjectPoolCount __asm__("gMenuObjectPoolCount");
     extern u8 port_D_800A3644 __asm__("D_800A3644");
     extern s32 port_D_800A3654 __asm__("D_800A3654");
-    extern s32 port_D_800A3678 __asm__("D_800A3678");
+    extern s32 port_gMenuObjectPool __asm__("gMenuObjectPool");
     extern u8 port_D_800A37BC __asm__("D_800A37BC");
-    extern u8 port_D_800A37D8 __asm__("D_800A37D8");
+    extern u8 port_gPadPictureMenuLists __asm__("gPadPictureMenuLists");
     extern void * port_D_800A37F8 __asm__("D_800A37F8");
     extern u8 port_D_800A37FC __asm__("D_800A37FC");
     extern u8 port_D_800A3888 __asm__("D_800A3888");
@@ -171,9 +171,9 @@ void func_80060FD8(void) {
     var_s4 = 0;
     var_s5 = 0;
     var_fp = 0;
-    temp_a0 = port_D_800A35EC;
-    port_D_800A35EC = temp_a0 + 1;
-    temp_v1 = port_D_800A3678 + (temp_a0 * 0x24);
+    temp_a0 = port_gMenuObjectPoolCount;
+    port_gMenuObjectPoolCount = temp_a0 + 1;
+    temp_v1 = port_gMenuObjectPool + (temp_a0 * 0x24);
     M2C_FIELD(temp_v1, s8 *, 4) = 0;
     M2C_FIELD(temp_v1, s8 *, 3) = 0;
     M2C_FIELD(temp_v1, s8 *, 2) = 0;
@@ -202,8 +202,8 @@ void func_80060FD8(void) {
     M2C_FIELD(temp_s0, s8 *, 2) = 2;
     M2C_FIELD(temp_s0, s8 *, 1) = 2;
     M2C_FIELD(temp_s0, s32 *, 8) = (s32) port_D_8009AC00;
-    func_8005A7B8(2, 2, port_D_800A3348, M2C_UNALIGNED32(M2C_FIELD(port_D_800A3348, M2C_UNK *, 0)), M2C_FIELD(port_D_800A3348, s8 *, 4), M2C_FIELD(port_D_800A3348, s8 *, 5), M2C_FIELD(port_D_800A3348, s8 *, 6));
-    M2C_FIELD(temp_v1, s16 *, 0x12) = func_8005B0E4(0x140, M2C_FIELD(temp_s0, s32 *, 8));
+    MenuFontSet(2, 2, port_D_800A3348, M2C_UNALIGNED32(M2C_FIELD(port_D_800A3348, M2C_UNK *, 0)), M2C_FIELD(port_D_800A3348, s8 *, 4), M2C_FIELD(port_D_800A3348, s8 *, 5), M2C_FIELD(port_D_800A3348, s8 *, 6));
+    M2C_FIELD(temp_v1, s16 *, 0x12) = MenuTextCenterOffset(0x140, M2C_FIELD(temp_s0, s32 *, 8));
     port_D_800A37F8 = temp_v1;
     var_v1 = 0x3C;
     if (port_D_800A3644 == 0) {
@@ -216,9 +216,9 @@ void func_80060FD8(void) {
             var_s7 = 0;
             var_a2 = 0x20;
 loop_5:
-            temp_v1_3 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_3 + 1;
-            temp_s0_2 = port_D_800A3678 + (temp_v1_3 * 0x24);
+            temp_v1_3 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_3 + 1;
+            temp_s0_2 = port_gMenuObjectPool + (temp_v1_3 * 0x24);
             M2C_FIELD(temp_s0_2, s16 *, 0) = 2;
             M2C_FIELD(temp_s0_2, s8 *, 4) = 0;
             M2C_FIELD(temp_s0_2, s16 *, 0x16) = 0x140;
@@ -239,7 +239,7 @@ loop_5:
             M2C_FIELD(temp_s0_2, s8 *, 3) = var_a2;
             M2C_FIELD(temp_s0_2, s8 *, 4) = 0x40;
             sp68 = (s32) var_a2;
-            temp_v0_2 = func_80057D50(1);
+            temp_v0_2 = GraphicsAllocPolyF4(1);
             M2C_FIELD(temp_s0_2, void **, 0x20) = temp_v0_2;
             SetPolyF4(temp_v0_2);
             SetSemiTrans(temp_v0_2, 1);
@@ -258,7 +258,7 @@ loop_5:
             M2C_FIELD(temp_s0_2, s16 *, 0x12) = -0xA0;
             M2C_FIELD(temp_s0_2, s16 *, 0x14) = (s16) (((s8) sp20 * 0x4C) + 3);
             if ((var_s7 << 0x18) == 0) {
-                (*(M2C_UNK *)(port_D_800A37D8 + (((s8) sp20 * 4)))) = temp_s0_2;
+                (*(M2C_UNK *)(port_gPadPictureMenuLists + (((s8) sp20 * 4)))) = temp_s0_2;
             } else {
                 M2C_FIELD(var_s5, void **, 0x1C) = temp_s0_2;
             }
@@ -298,9 +298,9 @@ block_15:
                     var_s4 = temp_s3 + 0x4D;
                 }
             }
-            temp_v1_4 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_4 + 1;
-            temp_s2 = port_D_800A3678 + (temp_v1_4 * 0x24);
+            temp_v1_4 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_4 + 1;
+            temp_s2 = port_gMenuObjectPool + (temp_v1_4 * 0x24);
             M2C_FIELD(temp_s2, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s2, s16 *, 0x14) = 0;
             M2C_FIELD(temp_s2, void **, 0x1C) = NULL;
@@ -320,7 +320,7 @@ block_15:
             M2C_FIELD(temp_s2, s8 *, 3) = 0x40;
             M2C_FIELD(temp_s2, s8 *, 4) = 0x40;
             M2C_FIELD(temp_s2, u16 *, 0x18) = (u16) sp30;
-            temp_v0_4 = func_80057D50(1, port_D_800A3678);
+            temp_v0_4 = GraphicsAllocPolyF4(1, port_gMenuObjectPool);
             M2C_FIELD(temp_s2, void **, 0x20) = temp_v0_4;
             SetPolyF4(temp_v0_4);
             SetSemiTrans(temp_v0_4, 0);
@@ -345,9 +345,9 @@ block_15:
             if (temp_v0_5 < 4) {
                 goto loop_10;
             }
-            temp_v1_5 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_5 + 1;
-            temp_s1 = port_D_800A3678 + (temp_v1_5 * 0x24);
+            temp_v1_5 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_5 + 1;
+            temp_s1 = port_gMenuObjectPool + (temp_v1_5 * 0x24);
             M2C_FIELD(temp_s1, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s1, s16 *, 0x14) = 0;
             M2C_FIELD(temp_s1, void **, 0x1C) = NULL;
@@ -364,7 +364,7 @@ block_15:
             M2C_FIELD(temp_s1, s16 *, 0x18) = 0x50;
             M2C_FIELD(temp_s1, s16 *, 0xE) = 0;
             M2C_FIELD(temp_s1, s16 *, 0x10) = 0;
-            temp_v0_6 = func_80057CCC(1, 0x74);
+            temp_v0_6 = GraphicsAllocPolyFT4(1, 0x74);
             SetPolyFT4(temp_v0_6);
             SetShadeTex(temp_v0_6, 0);
             M2C_FIELD(temp_v0_6, s8 *, 4) = 0x80;
@@ -374,13 +374,13 @@ block_15:
             M2C_FIELD(temp_s1, void **, 0x20) = temp_v0_6;
             M2C_FIELD(temp_s1, s16 *, 0x1A) = 2;
             M2C_FIELD(temp_s1, s16 *, 0x12) = -0x3A;
-            temp_v1_6 = port_D_800A35EC;
+            temp_v1_6 = port_gMenuObjectPoolCount;
             temp_s4 = (s8) sp20 * 0x4C;
             M2C_FIELD(temp_s1, s16 *, 0x14) = temp_s4;
             M2C_FIELD(temp_s2, void **, 0x1C) = temp_s1;
             (*(M2C_UNK *)(port_D_800A3A1C + (((s8) sp20 * 4)))) = temp_s1;
-            port_D_800A35EC = temp_v1_6 + 1;
-            temp_s2_2 = port_D_800A3678 + (temp_v1_6 * 0x24);
+            port_gMenuObjectPoolCount = temp_v1_6 + 1;
+            temp_s2_2 = port_gMenuObjectPool + (temp_v1_6 * 0x24);
             M2C_FIELD(temp_s2_2, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s2_2, s16 *, 0x14) = 0;
             M2C_FIELD(temp_s2_2, void **, 0x1C) = NULL;
@@ -400,14 +400,14 @@ block_15:
             M2C_FIELD(temp_s2_2, s8 *, 2) = 0;
             M2C_FIELD(temp_s2_2, s8 *, 3) = 0;
             M2C_FIELD(temp_s2_2, s8 *, 4) = 0;
-            temp_v0_7 = func_80057D50(1);
+            temp_v0_7 = GraphicsAllocPolyF4(1);
             M2C_FIELD(temp_s2_2, void **, 0x20) = temp_v0_7;
             SetPolyF4(temp_v0_7);
             SetSemiTrans(temp_v0_7, 1);
             M2C_FIELD(temp_v0_7, s8 *, 4) = 0;
             M2C_FIELD(temp_v0_7, s8 *, 5) = 0;
             M2C_FIELD(temp_v0_7, s8 *, 6) = 0;
-            temp_v1_7 = port_D_800A35EC;
+            temp_v1_7 = port_gMenuObjectPoolCount;
             var_s7_3 = 0;
             M2C_FIELD(temp_v0_7, s16 *, 8) = 0;
             M2C_FIELD(temp_v0_7, s16 *, 0xA) = 0;
@@ -421,8 +421,8 @@ block_15:
             M2C_FIELD(temp_s2_2, s16 *, 0x1A) = 1;
             M2C_FIELD(temp_s2_2, s16 *, 0x14) = (s16) (temp_s4 + 0x35);
             M2C_FIELD(temp_s1, void **, 0x1C) = temp_s2_2;
-            port_D_800A35EC = temp_v1_7 + 1;
-            temp_s0_3 = port_D_800A3678 + (temp_v1_7 * 0x24);
+            port_gMenuObjectPoolCount = temp_v1_7 + 1;
+            temp_s0_3 = port_gMenuObjectPool + (temp_v1_7 * 0x24);
             M2C_FIELD(temp_s0_3, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s0_3, s16 *, 0x14) = 0;
             M2C_FIELD(temp_s0_3, s32 *, 0x1C) = 0;
@@ -442,7 +442,7 @@ block_15:
             M2C_FIELD(temp_s0_3, s8 *, 2) = 0;
             M2C_FIELD(temp_s0_3, s8 *, 3) = 0;
             M2C_FIELD(temp_s0_3, s8 *, 4) = 0;
-            temp_v0_8 = func_80057D50(1);
+            temp_v0_8 = GraphicsAllocPolyF4(1);
             M2C_FIELD(temp_s0_3, void **, 0x20) = temp_v0_8;
             SetPolyF4(temp_v0_8);
             SetSemiTrans(temp_v0_8, 1);
@@ -461,14 +461,14 @@ block_15:
             M2C_FIELD(temp_s0_3, s16 *, 0x12) = -0xA0;
             M2C_FIELD(temp_s0_3, s16 *, 0x14) = (s16) (temp_s4 + 3);
             M2C_FIELD(temp_s2_2, void **, 0x1C) = temp_s0_3;
-            func_8005A7B8(2, 2);
+            MenuFontSet(2, 2);
             var_s5_2 = temp_s0_3;
-            temp_s1_2 = func_8005B0E4(0x140, port_D_8009A314) - 0xA0;
+            temp_s1_2 = MenuTextCenterOffset(0x140, port_D_8009A314) - 0xA0;
             temp_s3_2 = temp_s1_2 - 5;
 loop_22:
-            temp_a0_3 = port_D_800A35EC;
-            port_D_800A35EC = temp_a0_3 + 1;
-            temp_v1_8 = port_D_800A3678 + (temp_a0_3 * 0x24);
+            temp_a0_3 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_a0_3 + 1;
+            temp_v1_8 = port_gMenuObjectPool + (temp_a0_3 * 0x24);
             M2C_FIELD(temp_v1_8, s8 *, 4) = 0;
             M2C_FIELD(temp_v1_8, s8 *, 3) = 0;
             M2C_FIELD(temp_v1_8, s8 *, 2) = 0;
@@ -499,7 +499,7 @@ loop_22:
             M2C_FIELD(temp_s0_4, s8 *, 1) = 2;
             M2C_FIELD(temp_s0_4, s8 *, 3) = 0;
             if ((var_s7_3 << 0x18) != 0) {
-                M2C_FIELD(temp_v1_8, s16 *, 0x12) = (s16) (func_8005A8E0(port_D_8009A314) + temp_s1_2);
+                M2C_FIELD(temp_v1_8, s16 *, 0x12) = (s16) (MenuStringWidth(port_D_8009A314) + temp_s1_2);
                 M2C_FIELD(temp_v1_8, s16 *, 0) = 5;
                 M2C_FIELD(temp_s0_4, s32 *, 8) = 1;
             } else {
@@ -519,9 +519,9 @@ loop_27:
             var_a2_2 = 2;
             var_a3 = var_s7_4 == 0;
 loop_28:
-            temp_a0_5 = port_D_800A35EC;
-            port_D_800A35EC = temp_a0_5 + 1;
-            temp_v1_10 = port_D_800A3678 + (temp_a0_5 * 0x24);
+            temp_a0_5 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_a0_5 + 1;
+            temp_v1_10 = port_gMenuObjectPool + (temp_a0_5 * 0x24);
             M2C_FIELD(temp_v1_10, s8 *, 4) = 0;
             M2C_FIELD(temp_v1_10, s8 *, 3) = 0;
             M2C_FIELD(temp_v1_10, s8 *, 2) = 0;
@@ -565,7 +565,7 @@ loop_28:
                 goto loop_27;
             }
             temp_v1_13 = (s8) sp20 * 4;
-            var_s5_3 = (*(M2C_UNK *)(port_D_800A37D8 + (temp_v1_13)));
+            var_s5_3 = (*(M2C_UNK *)(port_gPadPictureMenuLists + (temp_v1_13)));
             var_a1 = 2 - temp_v1_13;
             if (var_s5_3 != NULL) {
                 var_a3 = (s8) sp20 * 0x140;
@@ -584,7 +584,7 @@ loop_28:
                 } while (var_s5_3 != NULL);
             }
             var_s4_2 = 0;
-            func_80062910(sp20, var_a1, var_a2_2, var_a3);
+            MenuUpdatePadPicture(sp20, var_a1, var_a2_2, var_a3);
             var_s7_5 = 0;
             temp_fp = sp40 >> 0x18;
             temp_s3_3 = (s8) sp20 * 4;
@@ -610,9 +610,9 @@ block_43:
                 sp30 = 6;
                 goto block_43;
             }
-            temp_v1_15 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_15 + 1;
-            temp_s0_6 = port_D_800A3678 + (temp_v1_15 * 0x24);
+            temp_v1_15 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_15 + 1;
+            temp_s0_6 = port_gMenuObjectPool + (temp_v1_15 * 0x24);
             M2C_FIELD(temp_s0_6, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s0_6, s16 *, 0x14) = 0;
             M2C_FIELD(temp_s0_6, s32 *, 0x1C) = 0;
@@ -629,7 +629,7 @@ block_43:
             M2C_FIELD(temp_s0_6, s16 *, 0xE) = 0;
             M2C_FIELD(temp_s0_6, s16 *, 0x10) = 0;
             M2C_FIELD(temp_s0_6, u16 *, 0x18) = (u16) sp30;
-            temp_v0_12 = func_80057CCC(1);
+            temp_v0_12 = GraphicsAllocPolyFT4(1);
             SetPolyFT4(temp_v0_12);
             SetShadeTex(temp_v0_12, 0);
             M2C_FIELD(temp_v0_12, s8 *, 4) = 0x80;
@@ -650,7 +650,7 @@ block_43:
             }
             temp_s2_3 = M2C_FIELD(temp_s0_6, void **, 0x20);
             M2C_FIELD(temp_s0_6, s16 *, 0x12) = 0x78;
-            M2C_FIELD(temp_s0_6, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_D_800A37D8 + (temp_s3_3))), u16 *, 0x14) + (var_s4_2 + 0x3A));
+            M2C_FIELD(temp_s0_6, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_gPadPictureMenuLists + (temp_s3_3))), u16 *, 0x14) + (var_s4_2 + 0x3A));
             if (var_s7_5 == 1) {
                 temp_s0_7 = M2C_FIELD(temp_s0_6, u16 *, 0x16);
                 M2C_FIELD(temp_s2_3, s16 *, 0xE) = GetClut(port_D_8009AEA4, port_D_8009AEA6);
@@ -689,9 +689,9 @@ block_43:
             temp_s4_2 = sp40 >> 0x18;
             sp50 = (s8) sp20 * 4;
 loop_55:
-            temp_v1_16 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_16 + 1;
-            temp_s0_9 = port_D_800A3678 + (temp_v1_16 * 0x24);
+            temp_v1_16 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_16 + 1;
+            temp_s0_9 = port_gMenuObjectPool + (temp_v1_16 * 0x24);
             M2C_FIELD(temp_s0_9, s16 *, 0) = 1;
             M2C_FIELD(temp_s0_9, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s0_9, s16 *, 0x14) = 0;
@@ -708,7 +708,7 @@ loop_55:
             M2C_FIELD(temp_s0_9, s16 *, 0x18) = 0x32;
             M2C_FIELD(temp_s0_9, s16 *, 0xE) = 0;
             M2C_FIELD(temp_s0_9, s16 *, 0x10) = 0;
-            temp_v0_14 = func_80057CCC(1);
+            temp_v0_14 = GraphicsAllocPolyFT4(1);
             SetPolyFT4(temp_v0_14);
             SetShadeTex(temp_v0_14, 0);
             M2C_FIELD(temp_v0_14, s8 *, 4) = 0x80;
@@ -723,7 +723,7 @@ loop_55:
                 M2C_FIELD(temp_s0_9, s16 *, 6) = -0x140;
             }
             M2C_FIELD(temp_s0_9, s16 *, 0x12) = (s16) (((s32) (var_s7_6 << 0x18) >> 0x13) + 0xFA);
-            M2C_FIELD(temp_s0_9, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_D_800A37D8 + (sp50))), u16 *, 0x14) + 7);
+            M2C_FIELD(temp_s0_9, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_gPadPictureMenuLists + (sp50))), u16 *, 0x14) + 7);
             temp_s2_4 = M2C_FIELD(temp_s0_9, void **, 0x20);
             M2C_FIELD(temp_s2_4, s16 *, 0xE) = GetClut(M2C_FIELD(port_D_8009AEB2, u16 *, 0), M2C_FIELD(port_D_8009AEB2, u16 *, 2));
             M2C_FIELD(temp_s2_4, s16 *, 0x16) = GetTPage(M2C_FIELD(port_D_8009AEB2, u16 *, 8), 0, M2C_FIELD(port_D_8009AEB2, u16 *, -4), M2C_FIELD(port_D_8009AEB2, u16 *, -2));
@@ -742,9 +742,9 @@ loop_55:
             if (temp_v0_15 < 2) {
                 goto loop_55;
             }
-            temp_a0_8 = port_D_800A35EC;
-            port_D_800A35EC = temp_a0_8 + 1;
-            temp_v1_17 = port_D_800A3678 + (temp_a0_8 * 0x24);
+            temp_a0_8 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_a0_8 + 1;
+            temp_v1_17 = port_gMenuObjectPool + (temp_a0_8 * 0x24);
             M2C_FIELD(temp_v1_17, s8 *, 4) = 0;
             M2C_FIELD(temp_v1_17, s8 *, 3) = 0;
             M2C_FIELD(temp_v1_17, s8 *, 2) = 0;
@@ -775,18 +775,18 @@ loop_55:
             }
             M2C_FIELD(temp_v1_17, s16 *, 0x12) = 8;
             temp_s0_10 = (s8) sp20 * 4;
-            temp_t0 = temp_s0_10 + port_D_800A37D8;
+            temp_t0 = temp_s0_10 + port_gPadPictureMenuLists;
             var_s7_7 = 0;
             M2C_FIELD(temp_v1_17, s16 *, 0x14) = (s16) (M2C_FIELD(*temp_t0, u16 *, 0x14) + 5);
             temp_s2_5 = sp40 >> 0x18;
-            func_80067EA4(temp_v1_17, 2, 2, port_D_8009AC08, 0, 1);
+            MenuSetTextObject(temp_v1_17, 2, 2, port_D_8009AC08, 0, 1);
             M2C_FIELD(var_s5_3, void **, 0x1C) = temp_v1_17;
             var_s5_4 = temp_v1_17;
             (*(M2C_UNK *)(port_D_800A3A84 + (temp_s0_10))) = var_s5_4;
 loop_63:
-            temp_a0_10 = port_D_800A35EC;
-            port_D_800A35EC = temp_a0_10 + 1;
-            temp_v1_19 = port_D_800A3678 + (temp_a0_10 * 0x24);
+            temp_a0_10 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_a0_10 + 1;
+            temp_v1_19 = port_gMenuObjectPool + (temp_a0_10 * 0x24);
             M2C_FIELD(temp_v1_19, s8 *, 4) = 0;
             M2C_FIELD(temp_v1_19, s8 *, 3) = 0;
             M2C_FIELD(temp_v1_19, s8 *, 2) = 0;
@@ -825,7 +825,7 @@ block_70:
                 M2C_FIELD(temp_v1_19, s16 *, 0x12) = var_v0_2;
                 M2C_FIELD(temp_v1_19, s16 *, 0x14) = (s16) (M2C_FIELD(*temp_t0, u16 *, 0x14) + 0x3C);
             }
-            func_80067EA4(temp_v1_19, 2, 2, (*(M2C_UNK *)(port_D_8009AC10 + (((s32) (var_s7_7 << 0x18) >> 0x16)))), 0, 1);
+            MenuSetTextObject(temp_v1_19, 2, 2, (*(M2C_UNK *)(port_D_8009AC10 + (((s32) (var_s7_7 << 0x18) >> 0x16)))), 0, 1);
             M2C_FIELD(var_s5_4, void **, 0x1C) = temp_v1_19;
             temp_v0_17 = var_s7_7 + 1;
             var_s7_7 = temp_v0_17;
@@ -833,9 +833,9 @@ block_70:
             if (temp_v0_17 < 3) {
                 goto loop_63;
             }
-            temp_v1_21 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_21 + 1;
-            temp_s0_11 = port_D_800A3678 + (temp_v1_21 * 0x24);
+            temp_v1_21 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_21 + 1;
+            temp_s0_11 = port_gMenuObjectPool + (temp_v1_21 * 0x24);
             M2C_FIELD(temp_s0_11, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s0_11, s16 *, 0x14) = 0;
             M2C_FIELD(temp_s0_11, s32 *, 0x1C) = 0;
@@ -856,7 +856,7 @@ block_70:
             temp_s2_6 = sp40 >> 0x18;
             M2C_FIELD(temp_s0_11, s16 *, 8) = (s16) temp_s2_6;
             M2C_FIELD(temp_s0_11, s16 *, 0xC) = (s16) temp_s2_6;
-            temp_v0_18 = func_80057D50(1);
+            temp_v0_18 = GraphicsAllocPolyF4(1);
             M2C_FIELD(temp_s0_11, void **, 0x20) = temp_v0_18;
             SetPolyF4(temp_v0_18);
             SetSemiTrans(temp_v0_18, 0);
@@ -884,14 +884,14 @@ block_70:
             temp_s2_8 = sp40 >> 0x18;
             temp_s3_4 = temp_s2_8 + 1;
             sp58 = (s32) (s8) sp20;
-            M2C_FIELD(temp_s0_11, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_D_800A37D8 + (temp_a0_12))), u16 *, 0x14) + 0x3B);
+            M2C_FIELD(temp_s0_11, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_gPadPictureMenuLists + (temp_a0_12))), u16 *, 0x14) + 0x3B);
             M2C_FIELD(var_s5_4, void **, 0x1C) = temp_s0_11;
             var_s5 = temp_s0_11;
             (*(M2C_UNK *)(port_D_800A37FC + (temp_a0_12))) = var_s5;
 loop_76:
-            temp_v1_22 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_22 + 1;
-            temp_s0_12 = port_D_800A3678 + (temp_v1_22 * 0x24);
+            temp_v1_22 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_22 + 1;
+            temp_s0_12 = port_gMenuObjectPool + (temp_v1_22 * 0x24);
             M2C_FIELD(temp_s0_12, s8 *, 2) = 0;
             M2C_FIELD(temp_s0_12, s16 *, 0x12) = 0;
             M2C_FIELD(temp_s0_12, s16 *, 0x14) = 0;
@@ -911,7 +911,7 @@ loop_76:
             M2C_FIELD(temp_s0_12, s8 *, 2) = 0x80;
             M2C_FIELD(temp_s0_12, s8 *, 3) = 0;
             M2C_FIELD(temp_s0_12, s8 *, 4) = 0;
-            temp_v0_19 = func_80057D50(1);
+            temp_v0_19 = GraphicsAllocPolyF4(1);
             M2C_FIELD(temp_s0_12, void **, 0x20) = temp_v0_19;
             SetPolyF4(temp_v0_19);
             SetSemiTrans(temp_v0_19, 0);
@@ -939,7 +939,7 @@ loop_76:
             M2C_FIELD(temp_s0_12, s16 *, 0x12) = var_v0_3;
             temp_v0_20 = var_s7_8 + 1;
             var_s7_8 = temp_v0_20;
-            M2C_FIELD(temp_s0_12, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_D_800A37D8 + (temp_a0_12))), u16 *, 0x14) + 0x37);
+            M2C_FIELD(temp_s0_12, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_gPadPictureMenuLists + (temp_a0_12))), u16 *, 0x14) + 0x37);
             M2C_FIELD(var_s5, void **, 0x1C) = temp_s0_12;
             var_s5 = temp_s0_12;
             if (temp_v0_20 < 2) {
@@ -960,9 +960,9 @@ loop_86:
             if ((var_s2_2 << 0x18) != 0) {
                 var_a1_2 = 3;
             }
-            temp_v1_23 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_23 + 1;
-            temp_s0_13 = port_D_800A3678 + (temp_v1_23 * 0x24);
+            temp_v1_23 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_23 + 1;
+            temp_s0_13 = port_gMenuObjectPool + (temp_v1_23 * 0x24);
             M2C_FIELD(temp_s0_13, s8 *, 2) = 0;
             M2C_FIELD(temp_s0_13, s8 *, 3) = 0;
             M2C_FIELD(temp_s0_13, s16 *, 0x18) = 6;
@@ -982,7 +982,7 @@ loop_86:
             M2C_FIELD(temp_s0_13, s16 *, 0x16) = var_a1_2;
             M2C_FIELD(temp_s0_13, s8 *, 3) = 0x80;
             M2C_FIELD(temp_s0_13, s8 *, 4) = 0x40;
-            temp_v0_21 = func_80057D50(1, (s32) var_a1_2);
+            temp_v0_21 = GraphicsAllocPolyF4(1, (s32) var_a1_2);
             M2C_FIELD(temp_s0_13, void **, 0x20) = temp_v0_21;
             SetPolyF3(temp_v0_21);
             SetSemiTrans(temp_v0_21, 0);
@@ -999,7 +999,7 @@ loop_86:
             var_fp += 0xF;
             temp_v0_22 = var_s2_2 + 1;
             var_s2_2 = temp_v0_22;
-            M2C_FIELD(temp_s0_13, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_D_800A37D8 + (sp60))), u16 *, 0x14) + 0x37);
+            M2C_FIELD(temp_s0_13, s16 *, 0x14) = (s16) (M2C_FIELD((*(M2C_UNK *)(port_gPadPictureMenuLists + (sp60))), u16 *, 0x14) + 0x37);
             M2C_FIELD(var_s5, void **, 0x1C) = temp_s0_13;
             var_s5 = temp_s0_13;
             if (temp_v0_22 < 2) {
@@ -1013,15 +1013,15 @@ loop_86:
             }
             var_s7_10 = 0;
             temp_s2_9 = sp40 >> 0x18;
-            var_s4 = M2C_FIELD((*(M2C_UNK *)(port_D_800A37D8 + (((s32) (sp20 << 0x18) >> 0x16)))), s16 *, 0x14) + 0x3A;
+            var_s4 = M2C_FIELD((*(M2C_UNK *)(port_gPadPictureMenuLists + (((s32) (sp20 << 0x18) >> 0x16)))), s16 *, 0x14) + 0x3A;
 loop_94:
             var_a1_3 = -3;
             if ((var_s7_10 << 0x18) != 0) {
                 var_a1_3 = 3;
             }
-            temp_v1_24 = port_D_800A35EC;
-            port_D_800A35EC = temp_v1_24 + 1;
-            temp_s0_14 = port_D_800A3678 + (temp_v1_24 * 0x24);
+            temp_v1_24 = port_gMenuObjectPoolCount;
+            port_gMenuObjectPoolCount = temp_v1_24 + 1;
+            temp_s0_14 = port_gMenuObjectPool + (temp_v1_24 * 0x24);
             M2C_FIELD(temp_s0_14, s8 *, 2) = 0;
             M2C_FIELD(temp_s0_14, s8 *, 3) = 0;
             M2C_FIELD(temp_s0_14, s16 *, 0x16) = 6;
@@ -1041,7 +1041,7 @@ loop_94:
             M2C_FIELD(temp_s0_14, s8 *, 2) = 0xFF;
             M2C_FIELD(temp_s0_14, s8 *, 3) = 0x80;
             M2C_FIELD(temp_s0_14, s8 *, 4) = 0x40;
-            temp_v0_24 = func_80057D50(1, (s32) var_a1_3);
+            temp_v0_24 = GraphicsAllocPolyF4(1, (s32) var_a1_3);
             M2C_FIELD(temp_s0_14, void **, 0x20) = temp_v0_24;
             SetPolyF3(temp_v0_24);
             SetSemiTrans(temp_v0_24, 0);

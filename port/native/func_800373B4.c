@@ -6,9 +6,9 @@ void func_800373B4(Car *arg0) {
     extern s32 port_D_800A2E4C __asm__("D_800A2E4C");
     extern s32 port_D_800A2E90 __asm__("D_800A2E90");
     extern s32 port_D_800A2E94 __asm__("D_800A2E94");
-    extern s32 port_D_800A2EA4 __asm__("D_800A2EA4");
+    extern s32 port_gSplitScreenMode __asm__("gSplitScreenMode");
     extern s32 port_D_800A2EAC __asm__("D_800A2EAC");
-    extern s32 port_D_800A2EB0 __asm__("D_800A2EB0");
+    extern s32 port_gSessionType __asm__("gSessionType");
     extern u8 port_D_800A2EDC __asm__("D_800A2EDC");
     extern u8 port_D_800A2EE0 __asm__("D_800A2EE0");
     extern u8 port_D_800A2F48 __asm__("D_800A2F48");
@@ -19,7 +19,7 @@ void func_800373B4(Car *arg0) {
     extern s32 port_D_800A2F84 __asm__("D_800A2F84");
     extern u8 port_D_800A3071 __asm__("D_800A3071");
     extern u8 port_D_800A3320 __asm__("D_800A3320");
-    extern void * port_D_800A3554 __asm__("D_800A3554");
+    extern void * port_gPlayerCar __asm__("gPlayerCar");
     extern s8 port_D_800A3564 __asm__("D_800A3564");
     extern s32 port_D_800A3598 __asm__("D_800A3598");
     extern void * port_D_800A35E0 __asm__("D_800A35E0");
@@ -29,17 +29,17 @@ void func_800373B4(Car *arg0) {
     extern u8 port_D_800A372C __asm__("D_800A372C");
     extern s8 port_D_800A3764 __asm__("D_800A3764");
     extern s32 port_D_800A37C0 __asm__("D_800A37C0");
-    extern void * port_D_800A3878 __asm__("D_800A3878");
+    extern void * port_gCarList __asm__("gCarList");
     extern s16 port_D_800A3910 __asm__("D_800A3910");
-    extern void * port_D_800A3960 __asm__("D_800A3960");
-    extern s32 port_D_800A3A2C __asm__("D_800A3A2C");
-    extern s32 port_D_800A3A34 __asm__("D_800A3A34");
+    extern void * port_gCrashCar __asm__("gCrashCar");
+    extern s32 port_gCosTable __asm__("gCosTable");
+    extern s32 port_gSinTable __asm__("gSinTable");
     extern void * port_D_800A3A64 __asm__("D_800A3A64");
     extern u8 port_D_800AE154 __asm__("D_800AE154");
     extern u8 port_D_800B1EA8 __asm__("D_800B1EA8");
-    extern s32 port_D_800BE974 __asm__("D_800BE974");
-    extern s32 port_D_800BE980 __asm__("D_800BE980");
-    extern u8 port_func_80025594 __asm__("func_80025594");
+    extern s32 port_gTrackSectionCount __asm__("gTrackSectionCount");
+    extern s32 port_gTrackSections __asm__("gTrackSections");
+    extern void port_CarResetMotionCounters(void *) __asm__("CarResetMotionCounters");
     extern s32 port_func_800A2CE0 __asm__("func_800A2CE0");
     s32 port_frame[50];
 #define sp10 ((s32 *)((u8 *)port_frame + 0x10))
@@ -231,7 +231,7 @@ block_10:
         if (port_D_800A2EAC != 0) {
 block_11:
             if (M2C_FIELD(arg0, u16 *, 0x360) == 4) {
-                temp_v0 = func_80045480(arg0, 0);
+                temp_v0 = CarGetTrackSide(arg0, 0);
                 if (temp_v0 == 1) {
                     port_D_800A2F54 = (s32) temp_v0;
                 }
@@ -251,7 +251,7 @@ block_11:
         sp48 &= 0x3FFF;
         sp58 = (temp_v1_2 >> 0x1F) ^ 1;
         if (port_D_800A2F58 != 0) {
-            if (port_D_800A2EB0 == 1) {
+            if (port_gSessionType == 1) {
                 M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(M2C_FIELD(arg0, s32 *, 0x84), MathFixedDivide(port_D_800A2F50 + 0x28, 0x198));
                 func_8002A1D0();
                 func_8002BC88(arg0);
@@ -284,7 +284,7 @@ block_11:
                     }
                 }
             }
-            if ((port_D_800A2EB0 != 1) && (port_func_800A2CE0 == 5)) {
+            if ((port_gSessionType != 1) && (port_func_800A2CE0 == 5)) {
                 M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(M2C_FIELD(arg0, s32 *, 0x84), MathFixedDivide(0x41, 0x64));
             }
         } else {
@@ -310,7 +310,7 @@ block_11:
                     if (port_D_800A2F5C >= 0) {
                         port_D_800A2F5C = -(port_D_800A2E94 * 0x258);
                     }
-                    temp_v1_3 = M2C_FIELD(port_D_800A3878, s8 *, 0x204);
+                    temp_v1_3 = M2C_FIELD(port_gCarList, s8 *, 0x204);
                     if (temp_v1_3 >= 0x15) {
                         var_v0_3 = M2C_FIELD(arg0, s16 *, 0xFA) * 0x10;
                     } else if (temp_v1_3 >= 0xD) {
@@ -330,8 +330,8 @@ block_11:
                 M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(M2C_FIELD(arg0, s32 *, 0x84), MathFixedDivide(0x60, 0x64));
             }
             if (M2C_FIELD(arg0, u8 *, 0x3FC) != 0) {
-                if (port_D_800A2EA4 == 0) {
-                    M2C_FIELD(arg0, s32 *, 0x84) = (s32) (M2C_FIELD(arg0, s32 *, 0x84) + M2C_FIELD(port_D_800A3554, s32 *, 0x22C));
+                if (port_gSplitScreenMode == 0) {
+                    M2C_FIELD(arg0, s32 *, 0x84) = (s32) (M2C_FIELD(arg0, s32 *, 0x84) + M2C_FIELD(port_gPlayerCar, s32 *, 0x22C));
                 } else {
                     M2C_FIELD(arg0, s32 *, 0x84) = (s32) (M2C_FIELD(arg0, s32 *, 0x84) + 0xC0000);
                 }
@@ -368,7 +368,7 @@ block_69:
                 if (M2C_FIELD(var_s1, u16 *, 0x3A4) & 0xF) {
                     goto block_69;
                 }
-                if (M2C_FIELD(var_s1, s32 *, 0x354) != port_func_80025594) {
+                if (M2C_FIELD(var_s1, s32 *, 0x354) != (s32)port_CarResetMotionCounters) {
                     goto block_69;
                 }
                 temp_v0_5 = func_8003702C(var_s1, arg0);
@@ -434,7 +434,7 @@ block_87:
         if ((port_D_800A2EDC != 0) && (temp_a1_4 = M2C_FIELD(arg0, u16 *, 0x3A4), ((temp_a1_4 & 0xF) != 0))) {
             temp_a0_6 = M2C_FIELD(arg0, u8 *, 0x3B7);
             if (temp_a0_6 != 0) {
-                if ((M2C_FIELD(arg0, M2C_UNK (**)(void *, s16), 0x354) == port_func_80025594) && (temp_a0_6 == 0x64) && (M2C_FIELD(arg0, s16 *, 0x1EC) != 0)) {
+                if ((M2C_FIELD(arg0, M2C_UNK (**)(void *, s16), 0x354) == (s32)port_CarResetMotionCounters) && (temp_a0_6 == 0x64) && (M2C_FIELD(arg0, s16 *, 0x1EC) != 0)) {
                     if (temp_a1_4 & 3) {
                         M2C_FIELD(arg0, s16 *, 0x102) = 0;
                     } else {
@@ -449,8 +449,8 @@ block_87:
                 func_80044114(arg0);
                 goto block_120;
             }
-            if ((port_D_800A3071 != 0) && (port_D_800A3910 == 0) && (port_D_800A3960 == NULL) && (port_D_800A2EB0 == 0)) {
-                func_800488A4(arg0, temp_a1_4);
+            if ((port_D_800A3071 != 0) && (port_D_800A3910 == 0) && (port_gCrashCar == NULL) && (port_gSessionType == 0)) {
+                SceneSetCameraTarget(arg0, temp_a1_4);
                 port_D_800A3764 = 1;
                 goto block_120;
             }
@@ -466,7 +466,7 @@ block_120:
             }
         } else {
 block_121:
-            if ((port_D_800A2E90 != 0) && (port_D_800A2EB0 != 1)) {
+            if ((port_D_800A2E90 != 0) && (port_gSessionType != 1)) {
                 if (port_D_800A2F54 != 1) {
                     if (sp50 == 0) {
                         var_s5 = 1;
@@ -649,12 +649,12 @@ block_188:
                             var_s3 = -2;
                         }
                         sp68 = 1;
-                    } else if ((port_D_800A3960 != NULL) && (M2C_FIELD(port_D_800A3960, s16 *, 0x1EC) != 0)) {
-                        if (func_8003702C(port_D_800A3960, arg0) < 0) {
-                            if (-func_8003702C(port_D_800A3960, arg0) < 5) {
+                    } else if ((port_gCrashCar != NULL) && (M2C_FIELD(port_gCrashCar, s16 *, 0x1EC) != 0)) {
+                        if (func_8003702C(port_gCrashCar, arg0) < 0) {
+                            if (-func_8003702C(port_gCrashCar, arg0) < 5) {
                                 goto block_212;
                             }
-                        } else if (func_8003702C(port_D_800A3960, arg0) < 5) {
+                        } else if (func_8003702C(port_gCrashCar, arg0) < 5) {
 block_212:
                             if (var_s3 == 0) {
                                 if (port_D_800A2F84 != 0) {
@@ -727,7 +727,7 @@ block_229:
                                 var_v0_13 = temp_a0_11 + 3;
                             }
                         }
-                        temp_v0_12 = ((var_v0_13 % (s32) port_D_800BE974) * 0x90) + port_D_800BE980;
+                        temp_v0_12 = ((var_v0_13 % (s32) port_gTrackSectionCount) * 0x90) + port_gTrackSections;
                         sp38 = M2C_FIELD(temp_v0_12, s32 *, 0x14);
                         sp40 = M2C_FIELD(temp_v0_12, s32 *, 0x18);
                     }
@@ -783,8 +783,8 @@ loop_270:
                         temp_s0_4 = temp_s5 * 4;
                         temp_s4 = temp_a3 - M2C_FIELD(temp_s1_2, s32 *, 0);
                         temp_s6 = M2C_FIELD(arg0, s32 *, 4) - temp_a2_3;
-                        temp_s0_5 = MathMultiplyFixed16(*(s32 *)(temp_s0_4 + port_D_800A3A2C), temp_s4 << 0x10);
-                        temp_v0_13 = (s32) (temp_s0_5 - MathMultiplyFixed16(*(s32 *)(temp_s0_4 + port_D_800A3A34), temp_s6 << 0x10)) >> 0x10;
+                        temp_s0_5 = MathMultiplyFixed16(*(s32 *)(temp_s0_4 + port_gCosTable), temp_s4 << 0x10);
+                        temp_v0_13 = (s32) (temp_s0_5 - MathMultiplyFixed16(*(s32 *)(temp_s0_4 + port_gSinTable), temp_s6 << 0x10)) >> 0x10;
                         temp_v1_12 = M2C_FIELD(M2C_FIELD(arg0, void **, 0x36C), s16 *, 0x1E) * 2;
                         if (temp_v0_13 >= 0) {
                             if (temp_v0_13 >= temp_v1_12) {
@@ -796,8 +796,8 @@ loop_270:
                         if (-temp_v0_13 < temp_v1_12) {
 block_274:
                             temp_s0_6 = temp_s5 * 4;
-                            temp_s0_7 = MathMultiplyFixed16(*(s32 *)(temp_s0_6 + port_D_800A3A34), temp_s4 << 0x10);
-                            temp_s0_8 = (s32) (temp_s0_7 + MathMultiplyFixed16(*(s32 *)(temp_s0_6 + port_D_800A3A2C), temp_s6 << 0x10)) >> 0x10;
+                            temp_s0_7 = MathMultiplyFixed16(*(s32 *)(temp_s0_6 + port_gSinTable), temp_s4 << 0x10);
+                            temp_s0_8 = (s32) (temp_s0_7 + MathMultiplyFixed16(*(s32 *)(temp_s0_6 + port_gCosTable), temp_s6 << 0x10)) >> 0x10;
                             temp_v1_13 = M2C_FIELD(M2C_FIELD(arg0, void **, 0x36C), s16 *, 0x22) * 2;
                             if (temp_s0_8 >= 0) {
                                 if (temp_s0_8 >= temp_v1_13) {
@@ -887,22 +887,22 @@ loop_296:
             sp48 = temp_v0_19;
             temp_a0_13 = temp_v0_19 * 4;
             temp_a1_5 = -M2C_FIELD(arg0, s8 *, 0x206);
-            temp_lo = ((s32) (*(s32 *)(temp_a0_13 + port_D_800A3A2C) * 0x1F4) >> 0x10) * temp_a1_5;
-            temp_lo_2 = ((s32) (*(s32 *)(temp_a0_13 + port_D_800A3A34) * 0x1F4) >> 0x10) * temp_a1_5;
+            temp_lo = ((s32) (*(s32 *)(temp_a0_13 + port_gCosTable) * 0x1F4) >> 0x10) * temp_a1_5;
+            temp_lo_2 = ((s32) (*(s32 *)(temp_a0_13 + port_gSinTable) * 0x1F4) >> 0x10) * temp_a1_5;
             temp_v1_14 = M2C_FIELD(arg0, s16 *, 0x24E);
             sp38 += temp_lo;
             sp40 += temp_lo_2;
             if (temp_v1_14 != -1) {
                 temp_a2_4 = M2C_FIELD(arg0, s16 *, 0x1E0);
                 var_a1_8 = temp_a2_4 - temp_v1_14;
-                temp_v1_15 = (s32) port_D_800BE974 >> 1;
+                temp_v1_15 = (s32) port_gTrackSectionCount >> 1;
                 if (var_a1_8 >= 0) {
                     var_v0_16 = var_a1_8 < temp_v1_15;
                 } else {
                     var_v0_16 = -var_a1_8 < temp_v1_15;
                 }
                 if (var_v0_16 == 0) {
-                    temp_v1_16 = temp_v1_14 + port_D_800BE974;
+                    temp_v1_16 = temp_v1_14 + port_gTrackSectionCount;
                     if (temp_v1_14 < temp_a2_4) {
                         temp_v0_20 = temp_v1_16 - temp_a2_4;
                         var_a1_8 = temp_v0_20;
@@ -911,7 +911,7 @@ loop_296:
                             goto block_315;
                         }
                     } else {
-                        temp_v1_17 = temp_a2_4 + port_D_800BE974;
+                        temp_v1_17 = temp_a2_4 + port_gTrackSectionCount;
                         temp_v0_21 = temp_v1_17 - temp_v1_14;
                         var_a1_8 = temp_v0_21;
                         if (temp_v0_21 < 0) {
@@ -921,10 +921,10 @@ block_315:
                         }
                     }
                 }
-                if ((var_a1_8 > 0) || (sp38 = M2C_FIELD(arg0, s32 *, 0x250), sp40 = M2C_FIELD(arg0, s32 *, 0x254), (func_800395BC(arg0, 1, temp_a2_4, port_D_800BE974) == 0))) {
+                if ((var_a1_8 > 0) || (sp38 = M2C_FIELD(arg0, s32 *, 0x250), sp40 = M2C_FIELD(arg0, s32 *, 0x254), (CarAvoidTraffic(arg0, 1, temp_a2_4, port_gTrackSectionCount) == 0))) {
                     M2C_FIELD(arg0, s16 *, 0x24E) = -1;
                 }
-            } else if (func_800395BC(arg0, 0, temp_lo, temp_lo_2) != 0) {
+            } else if (CarAvoidTraffic(arg0, 0, temp_lo, temp_lo_2) != 0) {
                 sp38 = M2C_FIELD(arg0, s32 *, 0x250);
                 sp40 = M2C_FIELD(arg0, s32 *, 0x254);
             }
@@ -939,14 +939,14 @@ block_315:
                 M2C_FIELD(arg0, s8 *, 0x201) = 0;
             }
             temp_v1_18 = M2C_FIELD(arg0, M2C_UNK (**)(void *, s16), 0x354);
-            if (temp_v1_18 == port_func_80025594) {
-                func_80036900(arg0, var_a1_9);
+            if (temp_v1_18 == (void *)port_CarResetMotionCounters) {
+                CarSteerTowardHeading(arg0, var_a1_9);
                 M2C_FIELD(arg0, u16 *, 0x104) = (u16) M2C_FIELD(arg0, s16 *, 0x114);
             } else {
                 temp_v1_18(arg0, var_a1_9);
             }
             M2C_FIELD(arg0, s16 *, 0x116) = (s16) (M2C_FIELD(arg0, s16 *, 0x114) * 4);
-            func_8001FAC0(arg0, M2C_FIELD(arg0, s16 *, 0x114) * 4);
+            MatrixSetRotationFromAngle(arg0, M2C_FIELD(arg0, s16 *, 0x114) * 4);
             func_8001FB28(arg0, (s16) M2C_FIELD(arg0, u16 *, 0x104));
             M2C_FIELD(arg0, s32 *, 0xB0) = (s32) ((s32) (M2C_FIELD(arg0, s32 *, 0x60) * M2C_FIELD(arg0, s16 *, 0x92)) >> 0x10);
             temp_a2_5 = M2C_FIELD(arg0, s32 *, 0xB0);
