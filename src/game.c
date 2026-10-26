@@ -1723,7 +1723,6 @@ typedef struct {
 } DiskFace;
 
 void TrackReadData(TrackResource *trackData, s32 file) {
-    register TrackResource *resource asm("s7");
     /* Only the first byte is accessed in the retail function. */
     char scratch[0x220];
     VECTOR maxBounds;
@@ -1838,7 +1837,6 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     u8 *outputUv;
     register u32 boundLimit;
 
-    resource = trackData;
     fileSize = FileSeek(file, 0, 2);
     fileData = (TrackFileHeader *)LOAD_BELOW_TOP(fileSize);
     FileSeek(file, 0, 0);
@@ -1861,22 +1859,22 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     nodeScale = 0xE1A8C537;
     nodeDataStart = (u8 *)fileData + nodesOffset;
     sectionHeaderData = (u8 *)fileData + sectionsOffset;
-    resource->vertexCount = (s32)vertexCount;
+    trackData->vertexCount = (s32)vertexCount;
     nodeData = nodeDataStart;
     sectionHeader = sectionHeaderData;
     asm volatile("lh %0,%2"
                  : "=r"(faceCount), "=r"(nodeScale)
                  : "m"(fileData->unk2), "1"(nodeScale), "g"(nodeData),
-                   "g"(sectionHeader), "m"(resource->vertexCount));
+                   "g"(sectionHeader), "m"(trackData->vertexCount));
     nodeCount =
         (s32)((u32)(sectionHeaderData - nodeDataStart) * nodeScale) >> 2;
     initText = gTrackInitMessage;
     asm("" : "=r"(initText) : "0"(initText));
     data = (u8 *)fileData + (s32)vertexOffset;
     diskFace = (u8 *)fileData + (s32)faceOffset;
-    resource->faceCount = (s32)faceCount;
+    trackData->faceCount = (s32)faceCount;
     diskObject = (TrackFileObject *)((u8 *)fileData + (s32)objectOffset);
-    resource->objectCount = (s32)fileData->objectCount;
+    trackData->objectCount = (s32)fileData->objectCount;
     copy16Data = (u8 *)fileData + copy16Offset;
     positionData = (u8 *)fileData + positionOffset;
     func_8001D218(initText, vertexOffset, faceOffset, objectOffset);
@@ -1899,12 +1897,12 @@ void TrackReadData(TrackResource *trackData, s32 file) {
         SystemShowFatalError(&gErrorTrackSpecialObjectAllocation);
     }
     i = 0;
-    allocatedObjects = HeapAlloc(resource->objectCount * 0x90);
+    allocatedObjects = HeapAlloc(trackData->objectCount * 0x90);
     objectData = allocatedObjects;
-    resource->objects = allocatedObjects;
+    trackData->objects = allocatedObjects;
     func_8001D218(gTrackReadVerticesMessage);
     boundLimit = 0x7FFF0000;
-    outputVertices = resource->vertices;
+    outputVertices = trackData->vertices;
     boundLimit |= 0xFFFF;
     D_800AE84C[0] = 0;
     D_800AE848[0] = 0;
@@ -1994,7 +1992,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     i = 0;
     func_8001D218(gTrackReadFacesMessage);
     scratch[0] = 0;
-    vertices = resource->vertices;
+    vertices = trackData->vertices;
     if (faceCount > 0) {
         errorText = (u8 *)errorBuffer;
         faceCode = 0x40;
@@ -2002,8 +2000,8 @@ void TrackReadData(TrackResource *trackData, s32 file) {
         faceFields = diskFace + 0x13;
         do {
             face = D_800A3A40 + runtimeFaceOffset;
-            *(u8 **)&face->next = (void *)resource->faces;
-            resource->faces = face;
+            *(u8 **)&face->next = (void *)trackData->faces;
+            trackData->faces = face;
             count = ((DiskFace *)diskFace)->vertexCount;
             face->vertexCount = count;
             if ((u32)count >= 5U) {
@@ -2097,8 +2095,8 @@ void TrackReadData(TrackResource *trackData, s32 file) {
             runtimeFaceOffset += 0x2C;
         } while (i < faceCount);
     }
-    count = resource->objectCount;
-    vertices = resource->vertices;
+    count = trackData->objectCount;
+    vertices = trackData->vertices;
     shade = 0x80;
     i = 0;
     if (count > 0) {
@@ -2164,7 +2162,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
             } else if (shade < 0x50) {
                 shade = 0x50;
             }
-            func_80015930((u8 *)sec, resource, shade);
+            func_80015930((u8 *)sec, trackData, shade);
             nextDataOffset = diskObject->corner[3];
             sec->unk78[0] = vertices + nextDataOffset * 8;
             nextDataOffset = diskObject->corner[2];
@@ -2195,12 +2193,12 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     {
         u8 *objects;
         i -= 1;
-        value0 = resource->objectCount;
+        value0 = trackData->objectCount;
         lastObjectOffset = i * 8;
         inputCopy16 = copy16Data;
         lastObjectOffset += i;
         i = 0;
-        resource->objectCount = value0 - 1;
+        trackData->objectCount = value0 - 1;
         objects = objectData;
         outputRecord = (u8 *)D_800BE72C;
         lastObjectOffset *= 16;
