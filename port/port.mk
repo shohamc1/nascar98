@@ -7,6 +7,7 @@
 # Targets:
 #   objects    compile the filtered game sources to build/port/obj/
 #   undefined  link without the port SDK and list what it must define
+#   module     link the game, port/sdk/, and the data into nascar98.wasm
 
 BREW_LLVM := $(shell brew --prefix llvm 2>/dev/null)
 WASM_CC   ?= $(BREW_LLVM)/bin/clang
@@ -15,6 +16,7 @@ WASM2C    ?= wasm2c
 WASM2C_RT ?= $(shell brew --prefix wabt 2>/dev/null)/share/wabt/wasm2c
 PYTHON    ?= .venv/bin/python
 NM        ?= mipsel-linux-gnu-nm
+WASM_NM   ?= $(BREW_LLVM)/bin/llvm-nm
 
 PORT  := build/port
 ELF   := build/slus_005.21.elf
@@ -33,6 +35,7 @@ GAME_SRCS := $(wildcard src/*.c)
 NATIVES   := $(wildcard port/native/*.c)
 PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
 OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
+SDK_OBJS  := $(patsubst port/sdk/%.c,$(PORT)/sdk/%.o,$(wildcard port/sdk/*.c))
 
 # splat's data: initialised .data, .bss, and the .rodata that
 # INCLUDE_RODATA lines name.
@@ -43,7 +46,7 @@ WASM_LDFLAGS := --global-base=2147549184 --initial-memory=2151677952 \
                 --max-memory=2151677952 -z stack-size=262144 --no-entry \
                 --export=PortStart --fatal-warnings
 
-.PHONY: objects undefined FORCE
+.PHONY: objects undefined module FORCE
 
 objects:
 	@fail=0; for o in $(OBJS); do \
@@ -82,15 +85,19 @@ $(PORT)/obj/%.o: $(PORT)/src/%.c
 	@mkdir -p $(@D)
 	$(WASM_CC) $(WASM_CFLAGS) -MMD -MP -c $< -o $@ 2> $(@:.o=.log) || { tail -3 $(@:.o=.log) >&2; exit 1; }
 
--include $(OBJS:.o=.d)
+$(PORT)/sdk/%.o: port/sdk/%.c
+	@mkdir -p $(@D)
+	$(WASM_CC) $(WASM_CFLAGS) -Iport/sdk -MMD -MP -c $< -o $@
+
+-include $(OBJS:.o=.d) $(SDK_OBJS:.o=.d)
 
 $(PORT)/sdk-defined.txt: $(ELF)
 	@mkdir -p $(@D)
 	$(NM) --defined-only build/src/psxsdk/*.c.o | awk 'NF == 3' > $@
 
 # Signatures of every port function, for function pointers in data.
-$(PORT)/objdump.txt: $(OBJS)
-	wasm-objdump -x $(OBJS) > $@
+$(PORT)/objdump.txt: $(OBJS) $(SDK_OBJS)
+	wasm-objdump -x $(OBJS) $(SDK_OBJS) > $@
 
 $(PORT)/data.s: $(DATA_INPUTS) tools/port_data.py tools/port_filter.py $(PORT)/objdump.txt \
                 $(PORT)/symbols.txt $(PORT)/defined.txt $(PORT)/sdk-defined.txt $(UNDEF)
@@ -102,11 +109,23 @@ $(PORT)/data.o: $(PORT)/data.s
 	$(WASM_CC) --target=wasm32 -c $< -o $@
 
 # The symbols the port SDK must define: everything the game leaves undefined.
-# --no-gc-sections keeps every function live (nothing exports PortStart yet),
-# and any link error but an undefined symbol fails the target.
+# --no-gc-sections keeps every function live, not just what PortStart
+# reaches, and any link error but an undefined symbol fails the target.
 undefined: $(OBJS) $(PORT)/data.o
 	@$(WASM_LD) $(filter-out --export=PortStart,$(WASM_LDFLAGS)) --no-gc-sections --error-limit=0 \
 	  $(OBJS) $(PORT)/data.o -o $(PORT)/undefined.wasm > $(PORT)/undefined.log 2>&1; \
 	  sed -n 's/.*undefined symbol: //p' $(PORT)/undefined.log | sort -u > $(PORT)/sdk-undefined.txt; \
 	  if grep 'error:' $(PORT)/undefined.log | grep -v 'undefined symbol' >&2; then exit 1; fi; \
 	  echo "$$(wc -l < $(PORT)/sdk-undefined.txt) undefined symbols: $(PORT)/sdk-undefined.txt"
+
+# port/sdk/ must define no symbol the game defines: the game's own code
+# and data win, and the SDK fills in only what the game leaves undefined.
+module: $(PORT)/nascar98.wasm
+
+$(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o
+	@$(WASM_NM) --defined-only --extern-only -j $(SDK_OBJS) | grep -v -e ':$$' -e '^$$' | sort -u > $(PORT)/sdk-symbols.txt
+	@$(WASM_NM) --defined-only --extern-only -j $(OBJS) $(PORT)/data.o | grep -v -e ':$$' -e '^$$' | sort -u | \
+	  comm -12 - $(PORT)/sdk-symbols.txt > $(PORT)/sdk-overlap.txt
+	@if [ -s $(PORT)/sdk-overlap.txt ]; then \
+	  echo "port/sdk defines game symbols:" $$(cat $(PORT)/sdk-overlap.txt) >&2; exit 1; fi
+	$(WASM_LD) $(WASM_LDFLAGS) $(OBJS) $(SDK_OBJS) $(PORT)/data.o -o $@
