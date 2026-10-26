@@ -33,7 +33,7 @@ NATIVES   := $(wildcard port/native/*.c)
 PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
 OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
 
-.PHONY: objects
+.PHONY: objects FORCE
 
 objects:
 	@fail=0; for o in $(OBJS); do \
@@ -53,8 +53,9 @@ $(PORT)/defined.txt: $(ELF)
 
 # The filter reads every source at once (aliases cross files), and swaps
 # in port/native/FUNC.c for each function whose MIPS asm carries behaviour.
-$(PORT)/src/.stamp: $(GAME_SRCS) $(NATIVES) tools/port_filter.py tools/port_asm.py Makefile $(UNDEF) \
-                    $(PORT)/symbols.txt $(PORT)/defined.txt
+# It runs every time (whole-second mtimes miss same-second edits) and
+# rewrites only the outputs that change.
+$(PORT)/src/.stamp: FORCE $(UNDEF) $(PORT)/symbols.txt $(PORT)/defined.txt
 	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) \
 	  --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
 	  $(DATA_RANGES) $(IMAGE) --native-dir port/native $(GAME_SRCS) $(PORT)/src

@@ -433,7 +433,9 @@ def main(argv: list[str]) -> int:
     out.mkdir(parents=True, exist_ok=True)
     for path, text in texts.items():
         text = replace_functions(filter_source(text, aliases, absolutes, functions), natives)
-        (out / path.name).write_text(text)
+        target = out / path.name
+        if not target.exists() or target.read_text() != text:
+            target.write_text(text)  # unchanged files keep their mtime
     return 0
 
 
