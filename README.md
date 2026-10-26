@@ -16,7 +16,7 @@ This repository holds no game data. You must supply your own disc image.
 
 ## Build
 
-You need Git, Make, Python 3.11 or newer, [uv](https://docs.astral.sh/uv/),
+You need Git, Make, Python 3.14 or newer, [uv](https://docs.astral.sh/uv/),
 and GNU binutils for little-endian MIPS.
 
 `make tools` downloads the Psy-Q 3.6 compiler, a DOS program that runs in

@@ -45,7 +45,7 @@ These are the paths you work with:
 
 1. Install `mipsel-linux-gnu-binutils` (Homebrew) or
    `binutils-mipsel-linux-gnu` (apt), `clang-format`, `uv`, and Python
-   3.11 or newer.
+   3.14 or newer.
 2. Install DOSBox-X (macOS: `brew install --cask dosbox-x`; Ubuntu 24.04
    or Debian 13: `apt install dosbox-x`). Run `make tools` to fetch the
    submodules, compilers, objdiff, and the Python environment. It downloads
