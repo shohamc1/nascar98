@@ -32,7 +32,9 @@ static struct {
 } sBlocks[MALLOC_BLOCKS];
 static int sBlockCount;
 
-/* Mixes FRAMES more samples into sAudio, handing a full buffer to the host. */
+void PortCdAudioMix(s16 *out, int frames);
+
+/* Mixes FRAMES more samples (CD audio and voices) into sAudio, handing a full buffer to the host. */
 static void Run(int frames)
 {
     int i;
@@ -44,6 +46,7 @@ static void Run(int frames)
     for (i = sAudioFrames * 2; i < (sAudioFrames + frames) * 2; i++) {
         sAudio[i] = 0;
     }
+    PortCdAudioMix(sAudio + sAudioFrames * 2, frames);
     PortSpuMix(sAudio + sAudioFrames * 2, frames);
     sAudioFrames += frames;
 }

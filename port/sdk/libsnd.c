@@ -310,9 +310,15 @@ void SsSetSerialAttr(char s_num, char attr, char mode)
     PORT_STUB(SsSetSerialAttr);
 }
 
+void PortCdSetVolume(int left, int right);
+
+/* Serial input 0 is the CD. */
 void SsSetSerialVol(short s_num, short voll, short volr)
 {
-    PORT_STUB(SsSetSerialVol);
+    PORT_TRACE(SsSetSerialVol);
+    if (s_num == 0) {
+        PortCdSetVolume(voll, volr);
+    }
 }
 
 void SsSetStereo(void)

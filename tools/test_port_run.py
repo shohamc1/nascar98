@@ -105,6 +105,17 @@ class Run(unittest.TestCase):
             self.assertEqual(magenta_pixels(d / "plain.bmp"), 0)
             self.assertGreater(magenta_pixels(d / "swap.bmp"), 100)
 
+    def test_title_music(self) -> None:
+        # The title screen plays a CD audio track: sound with no input.
+        with tempfile.TemporaryDirectory() as tmp:
+            wav = pathlib.Path(tmp) / "out.wav"
+            result = run(60, NASCAR98_FRAMES="300", NASCAR98_WAV=str(wav))
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            with wave.open(str(wav)) as w:
+                w.setpos(120 * 735)
+                music = w.readframes(120 * 735)
+            self.assertGreater(sum(1 for i in range(0, len(music), 2) if music[i : i + 2] != b"\0\0"), 50000)
+
     def test_menu_sounds(self) -> None:
         # X at frame 700 closes the memory card prompt with a sound effect.
         with tempfile.TemporaryDirectory() as tmp:

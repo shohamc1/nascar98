@@ -15,6 +15,11 @@ HOST_IMPORT(HostLog) void HostLog(const char *text);
 HOST_IMPORT(HostCdRead) int32_t HostCdRead(uint32_t lba, uint32_t count, void *dst);
 /* Reads the raw 2352-byte sector at LBA into DST: 0, or -1 past the end. */
 HOST_IMPORT(HostCdReadRaw) int32_t HostCdReadRaw(uint32_t lba, void *dst);
+/* Track TRACK's first sector (its file's start), or -1 past the last. */
+HOST_IMPORT(HostCdTrackStart) int32_t HostCdTrackStart(int32_t track);
+/* Reads FRAMES stereo samples of CD audio from FRAME (sector * 588 + offset)
+ * into DST: the count read, 0 in the data track or past the disc's end. */
+HOST_IMPORT(HostCdAudioRead) int32_t HostCdAudioRead(uint32_t frame, s16 *dst, uint32_t frames);
 /* Ends one frame: nonzero when the run must stop. */
 HOST_IMPORT(HostFrame) int32_t HostFrame(void);
 HOST_IMPORT(HostExit) void HostExit(int32_t code);

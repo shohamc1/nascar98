@@ -89,6 +89,16 @@ int HostCdReadRaw(unsigned lba, void *dst) {
     d[12] = (unsigned char)lba; /* header minute byte: the LBA, for the test */
     return lba >= 900 ? -1 : 0;
 }
+/* Tracks: 1 (data) at 0, 2 at 1000, 3 at 2000 to 3000; audio samples are 1000. */
+int HostCdTrackStart(int track) { return track == 1 ? 0 : track == 2 ? 1000 : track == 3 ? 2000 : -1; }
+static unsigned gAudioFrame;
+int HostCdAudioRead(unsigned frame, short *dst, unsigned frames) {
+    unsigned i;
+    gAudioFrame = frame;
+    if (frame < 1000 * 588 || frame >= 3000 * 588) return 0;
+    for (i = 0; i < frames * 2; i++) dst[i] = 1000;
+    return (int)frames;
+}
 """
 
 
@@ -108,6 +118,29 @@ class Libcd(unittest.TestCase):
             "    if (CdPosToInt(&p) != 0x19649) return 2;\n"
             "    CdIntToPos(0, &p);\n"
             "    if (p.minute != 0 || p.second != 2 || p.sector != 0) return 3;\n"
+        )
+
+    def test_audio_plays_from_setloc(self) -> None:
+        self.check(
+            "    static CdlLOC toc[100]; static short out[2 * 735]; u_char r[8]; CdlATV v; int i;\n"
+            "    void PortCdAudioMix(short *out, int frames);\n"
+            "    if (CdGetToc(toc) != 3) return 1;\n"
+            "    if (CdPosToInt(&toc[1]) != 0 || CdPosToInt(&toc[2]) != 1150 || CdPosToInt(&toc[3]) != 2150) return 2;\n"
+            "    CdControl(CdlSetloc, (u_char *)&toc[3], 0);\n"
+            "    CdControlB(CdlPlay, 0, 0);\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (out[0] != 1000 || out[1] != 1000 || gAudioFrame != 2150 * 588) return 3;\n"
+            "    CdControl(0x11, 0, r);  /* CdlGetlocP */\n"
+            "    if (r[0] != 3) return 4;\n"
+            "    v.val0 = v.val2 = 0x40; v.val1 = v.val3 = 0;\n"
+            "    CdMix(&v);\n"
+            "    for (i = 0; i < 2 * 735; i++) out[i] = 0;\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (out[0] != 500 || gAudioFrame != 2150 * 588 + 735) return 5;\n"
+            "    CdControlB(CdlPause, 0, 0);\n"
+            "    out[0] = 0;\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (out[0] != 0) return 6;\n"
         )
 
     def test_read_from_setloc(self) -> None:
@@ -328,6 +361,7 @@ class Spu(unittest.TestCase):
 LIBSPU_DRIVER = """
 #include <psxsdk/libspu.h>
 void HostAudioQueue(const s16 *samples, int frames) { (void)samples; (void)frames; }
+void PortCdAudioMix(s16 *out, int frames) { (void)out; (void)frames; }
 static unsigned char buf[0x300];
 static volatile int gState;
 /* The game's AudioTransferCallback: state 1 sends a second buffer, then 2;

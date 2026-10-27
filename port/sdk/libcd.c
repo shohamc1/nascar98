@@ -7,6 +7,10 @@
  * second. CdGetSector serves the current raw sector: from byte 24 (the
  * 2048 data bytes), or from byte 12 with CdlModeSize1 (header,
  * subheader, data, and EDC/ECC, 2340 bytes).
+ *
+ * CD audio: CdlPlay plays from the CdlSetloc position through the track
+ * files (HostCdAudioRead) and on into the next track, as the drive does;
+ * PortCdAudioMix adds it to each VBlank's sound under CdMix's volumes.
  */
 #include "host.h"
 #include <psxsdk/libcd.h>
@@ -26,6 +30,12 @@ static int sSectorReady;  /* a sector waits for CdReady to poll it */
 static u8 sPending[PENDING_MAX];
 static int sPendingCount;
 static u8 sResult[8];
+static int sPlaying;     /* CD audio */
+static u32 sAudioFrame;  /* the next stereo sample: sector * 588 + offset */
+static int sAtv[4] = {0x80, 0, 0x80, 0}; /* CdMix: L to L, L to R, R to R, R to L */
+static int sCdVolL = 0x7FFF, sCdVolR = 0x7FFF;
+static int sTrackStart[100]; /* each track file's first sector */
+static int sTracks = -1;
 static CdlCB sSyncCallback;
 static CdlCB sReadyCallback;
 static CdlCB sReadCallback;
@@ -68,10 +78,50 @@ int CdInit(void)
     return 1;
 }
 
+static void LoadToc(void)
+{
+    if (sTracks >= 0) {
+        return;
+    }
+    for (sTracks = 0; sTracks < 99; sTracks++) {
+        sTrackStart[sTracks + 1] = HostCdTrackStart(sTracks + 1);
+        if (sTrackStart[sTracks + 1] < 0) {
+            break;
+        }
+    }
+}
+
+/* The track that holds SECTOR. */
+static int TrackOf(int sector)
+{
+    int k;
+
+    LoadToc();
+    for (k = sTracks; k > 1 && sector < sTrackStart[k]; k--) {
+    }
+    return k;
+}
+
 /* Runs COM's effect now; its completion interrupt waits for the tick. */
-static int Command(u_char com, u_char *param, int queue)
+static int Command(u_char com, u_char *param, u_char *result, int queue)
 {
     switch (com) {
+    case CdlPlay:
+        LoadToc();
+        if (param && param[0] && FromBcd(param[0]) <= sTracks) {
+            sPosition = sTrackStart[FromBcd(param[0])] + 150;
+        }
+        sAudioFrame = (u32)sPosition * 588;
+        sPlaying = 1;
+        break;
+    case CdlGetlocP:
+        if (result) {
+            int sector = sPlaying ? (int)(sAudioFrame / 588) : sPosition;
+
+            result[0] = (u8)Bcd(TrackOf(sector));
+            result[1] = 1;
+        }
+        break;
     case CdlSetloc:
     case CdlSeekL:
     case CdlSeekP:
@@ -96,6 +146,7 @@ static int Command(u_char com, u_char *param, int queue)
     case CdlPause:
     case CdlStop:
     case CdlReset:
+        sPlaying = 0;
         sStreaming = 0;
         sSectorReady = 0;
         break;
@@ -110,14 +161,14 @@ int CdControlF(u_char com, u_char *param)
 {
     PORT_TRACE(CdControlF);
 
-    return Command(com, param, 1);
+    return Command(com, param, 0, 1);
 }
 
 int CdControl(u_char com, u_char *param, u_char *result)
 {
     PORT_TRACE(CdControl);
 
-    return Command(com, param, 1);
+    return Command(com, param, result, 1);
 }
 
 /* Blocking: the command has completed when it returns. */
@@ -125,7 +176,7 @@ int CdControlB(u_char com, u_char *param, u_char *result)
 {
     PORT_TRACE(CdControlB);
 
-    Command(com, param, 0);
+    Command(com, param, result, 0);
     if (com == CdlReadN || com == CdlReadS) {
         sStreamStarting = 0;
     }
@@ -255,16 +306,68 @@ void CdFlush(void)
     PORT_STUB(CdFlush);
 }
 
-s32 CdGetToc(s32 arg0)
+/* Each track's start, at LOC[TRACK]: audio tracks start after a 2-second pregap. */
+s32 CdGetToc(void *arg0)
 {
-    PORT_STUB(CdGetToc);
-    return 0;
+    CdlLOC *loc = (CdlLOC *)arg0;
+    int k;
+
+    PORT_TRACE(CdGetToc);
+    LoadToc();
+    for (k = 1; k <= sTracks; k++) {
+        CdIntToPos(k == 1 ? sTrackStart[k] : sTrackStart[k] + 150, &loc[k]);
+    }
+    return sTracks;
 }
 
 int CdMix(CdlATV *vol)
 {
-    PORT_STUB(CdMix);
-    return 0;
+    PORT_TRACE(CdMix);
+    sAtv[0] = vol->val0;
+    sAtv[1] = vol->val1;
+    sAtv[2] = vol->val2;
+    sAtv[3] = vol->val3;
+    return 1;
+}
+
+/* SsSetSerialVol's CD input volume, 0x7FFF full. */
+void PortCdSetVolume(int left, int right)
+{
+    sCdVolL = left;
+    sCdVolR = right;
+}
+
+static s16 Saturate(s32 v)
+{
+    return (s16)(v < -0x8000 ? -0x8000 : v > 0x7FFF ? 0x7FFF : v);
+}
+
+/* Adds FRAMES stereo samples of CD audio to OUT. */
+void PortCdAudioMix(s16 *out, int frames)
+{
+    static s16 buf[2 * 735];
+    int done = 0;
+
+    while (sPlaying && done < frames) {
+        int chunk = frames - done > 735 ? 735 : frames - done, n, i;
+
+        n = HostCdAudioRead(sAudioFrame, buf, (u32)chunk);
+        if (n <= 0) {
+            sPlaying = 0; /* past the last track */
+            break;
+        }
+        for (i = 0; i < n; i++) {
+            s32 l = buf[i * 2], r = buf[i * 2 + 1];
+            s32 left = (l * sAtv[0] + r * sAtv[3]) / 0x80 * sCdVolL / 0x7FFF;
+            s32 right = (r * sAtv[2] + l * sAtv[1]) / 0x80 * sCdVolR / 0x7FFF;
+            s16 *o = &out[(done + i) * 2];
+
+            o[0] = Saturate(o[0] + left);
+            o[1] = Saturate(o[1] + right);
+        }
+        sAudioFrame += (u32)n;
+        done += n;
+    }
 }
 
 CdlCB CdReadCallback(CdlCB func)

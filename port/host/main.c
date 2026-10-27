@@ -40,6 +40,10 @@ struct w2c_env {
 
 static w2c_nascar98 *sModule;
 static FILE *sTrack1;
+#define TRACKS 99
+static FILE *sTracks[TRACKS + 1]; /* [k]: Track k's file; [1] is sTrack1 */
+static long sTrackStart[TRACKS + 2]; /* [k]: Track k's first sector; [count + 1]: the disc's end */
+static int sTrackCount;
 static long sFrames, sFrameLimit;
 static unsigned sWatchdog = 10;
 static volatile int sHang;
@@ -191,6 +195,64 @@ u32 w2c_env_HostCdReadRaw(struct w2c_env *env, u32 lba, u32 dst)
         return (u32)-1;
     }
     return 0;
+}
+
+/* Finds Track 2, 3, ... beside Track 1 by name: the files of a .cue's
+ * "Track N" set, each starting where the one before ends. */
+static void OpenTracks(const char *track1)
+{
+    const char *at = strstr(track1, "Track 1");
+    char path[4096];
+    long end;
+    int k;
+
+    sTracks[1] = sTrack1;
+    fseek(sTrack1, 0, SEEK_END);
+    end = ftell(sTrack1) / RAW_SECTOR;
+    sTrackStart[1] = 0;
+    sTrackCount = 1;
+    for (k = 2; at && k <= TRACKS; k++) {
+        snprintf(path, sizeof(path), "%.*sTrack %d%s", (int)(at - track1), track1, k, at + strlen("Track 1"));
+        sTracks[k] = fopen(path, "rb");
+        if (!sTracks[k]) {
+            break;
+        }
+        sTrackStart[k] = end;
+        fseek(sTracks[k], 0, SEEK_END);
+        end += ftell(sTracks[k]) / RAW_SECTOR;
+        sTrackCount = k;
+    }
+    sTrackStart[sTrackCount + 1] = end;
+}
+
+u32 w2c_env_HostCdTrackStart(struct w2c_env *env, u32 track)
+{
+    (void)env;
+    return (s32)track >= 1 && (s32)track <= sTrackCount ? (u32)sTrackStart[track] : (u32)-1;
+}
+
+/* Reads up to FRAMES samples from one audio track: the caller asks again
+ * to run on into the next. */
+u32 w2c_env_HostCdAudioRead(struct w2c_env *env, u32 frame, u32 dst, u32 frames)
+{
+    u8 *out = Memory(env, dst, frames * 4);
+    long sector = (long)(frame / 588);
+    long left;
+    int k;
+
+    for (k = sTrackCount; k > 1 && sector < sTrackStart[k]; k--) {
+    }
+    if (k < 2 || sector >= sTrackStart[sTrackCount + 1]) {
+        return 0;
+    }
+    left = (sTrackStart[k + 1] - sTrackStart[k]) * 588 - (long)(frame - (u32)sTrackStart[k] * 588);
+    if ((long)frames > left) {
+        frames = (u32)left;
+    }
+    if (fseek(sTracks[k], (long)(frame - (u32)sTrackStart[k] * 588) * 4, SEEK_SET) != 0) {
+        return 0;
+    }
+    return (u32)fread(out, 4, frames, sTracks[k]);
 }
 
 u32 w2c_env_HostPadRead(struct w2c_env *env, u32 port)
@@ -406,6 +468,7 @@ int main(void)
                 track1);
         return 2;
     }
+    OpenTracks(track1);
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
     sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", 10);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;
