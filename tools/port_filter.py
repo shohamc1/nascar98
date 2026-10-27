@@ -47,7 +47,8 @@ Rules, applied in order:
      (tools/port_data.py), and clang would drop them as unreferenced.
  11. Put `PortPoll();` in each empty `while` or `do` loop body: the game
      busy-waits for flags that interrupts set, and the port's interrupts
-     only happen inside SDK calls.
+     only happen inside SDK calls. `do {} while (0);` is a scheduling
+     barrier, not a wait, and stays as it is.
 """
 
 import argparse
@@ -65,7 +66,7 @@ type Placement = tuple[str, int] | int
 NAME = r"[A-Za-z_][A-Za-z_0-9.]*"
 OFFSET = r"[+-](?:0x[0-9A-Fa-f]+|\d+)"
 
-EMPTY_LOOP = re.compile(r"\b(while \([^;{}]*\)|do) \{\s*\}")
+EMPTY_LOOP = re.compile(r"\b(while \([^;{}]*\)|do) \{\s*\}(?! while \(0\);)")
 STATIC_STRING = re.compile(r"^static const char (?=\w+\[)", re.M)
 DEFSYM = re.compile(rf"--defsym=({NAME})=({NAME})({OFFSET})?")
 ASSIGN = re.compile(rf"^\s*({NAME})\s*=\s*({NAME})\s*({OFFSET})?\s*$")

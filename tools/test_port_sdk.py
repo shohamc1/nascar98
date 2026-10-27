@@ -141,6 +141,9 @@ class Libcd(unittest.TestCase):
             "    out[0] = 0;\n"
             "    PortCdAudioMix(out, 735);\n"
             "    if (out[0] != 0) return 6;\n"
+            "    CdControlB(CdlPlay, 0, 0);  /* resumes where it paused */\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (gAudioFrame != 2152 * 588) return 7;\n"
         )
 
     def test_read_from_setloc(self) -> None:
@@ -477,6 +480,17 @@ int main(void) {
     for (i = 0; i < 128; i++) if (in[i] != out[i]) return 14;
     if (delete("bu00:BASLUS-00521DANA") != 1) return 15;
     if (firstfile("bu00:*", d) != 0) return 16;
+    /* Two files list in block order; deleting a 2-block file frees both blocks. */
+    if (close(open("bu00:QUINN", 0x20200)) < 0 || close(open("bu00:AVERY", 0x10200)) < 0) return 17;
+    if (firstfile("bu00:*", d) != d || strcmp(d[0].name, "QUINN") || d[0].head != 64) return 18;
+    if (nextfile(&d[1]) != &d[1] || strcmp(d[1].name, "AVERY") || d[1].head != 3 * 64) return 19;
+    if (nextfile(&d[2]) != 0) return 20;
+    if (delete("bu00:QUINN") != 1) return 21;
+    /* Blocks 1, 2, and 4 to 15 are free: 13 in a row don't fit, 12 do. */
+    if (open("bu00:DANA2", 13 << 16 | 0x200) != -1) return 22;
+    if (open("bu00:DANA2", 12 << 16 | 0x200) < 0) return 23;
+    if (firstfile("bu00:DANA2", d) != d || d[0].head != 4 * 64 || d[0].size != 12 * 8192) return 24;
+    if (open("bu00:DANA3", 2 << 16 | 0x200) < 0 || firstfile("bu00:DANA3", d) != d || d[0].head != 64) return 25;
     return 0;
 }
 """

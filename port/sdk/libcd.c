@@ -146,6 +146,9 @@ static int Command(u_char com, u_char *param, u_char *result, int queue)
     case CdlPause:
     case CdlStop:
     case CdlReset:
+        if (sPlaying) {
+            sPosition = (int)(sAudioFrame / 588); /* a bare CdlPlay resumes here */
+        }
         sPlaying = 0;
         sStreaming = 0;
         sSectorReady = 0;

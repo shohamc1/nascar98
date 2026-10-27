@@ -134,12 +134,14 @@ class FilterSource(unittest.TestCase):
             "    while (gDanaFlag == 0) {\n    }\n"
             "    do {\n\n    } while (QuinnBusy() & 0xFF);\n"
             "    while (gDanaFlag) {\n        x++;\n    }\n"
+            "    do {\n    } while (0);\n"
         )
         self.assertEqual(
             self.run_filter(text),
             "    while (gDanaFlag == 0) { PortPoll(); }\n"
             "    do { PortPoll(); } while (QuinnBusy() & 0xFF);\n"
-            "    while (gDanaFlag) {\n        x++;\n    }\n",
+            "    while (gDanaFlag) {\n        x++;\n    }\n"
+            "    do {\n    } while (0);\n",  # a scheduling barrier, not a wait
         )
 
     def test_map_existing_label(self) -> None:

@@ -4,7 +4,8 @@
  * Environment:
  *   NASCAR98_TRACK1    the disc's Track 1 (default: see DEFAULT_TRACK1)
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
- *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10)
+ *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10
+ *                      headless, 0 (off) in a window)
  *   NASCAR98_HEADLESS  1: no window; frames run as fast as they can
  *   NASCAR98_SCALE     render scale (default 3)
  *   NASCAR98_SCREENSHOT  FRAME:PATH saves the display as BMP at that frame
@@ -294,21 +295,28 @@ u32 w2c_env_HostCardRead(struct w2c_env *env, u32 slot, u32 sector, u32 dst)
     return 0;
 }
 
+/* Writes the image to a temporary file and renames it over the card, so
+ * an interrupted write never leaves a short card. */
 u32 w2c_env_HostCardWrite(struct w2c_env *env, u32 slot, u32 sector, u32 src)
 {
+    char tmp[4096 + 8];
     FILE *f;
+    int ok;
 
     if (slot > 1 || !sCardPresent[slot] || sector >= CARD_BYTES / 128) {
         return (u32)-1;
     }
     memcpy(sCards[slot] + sector * 128, Memory(env, src, 128), 128);
     SDL_CreateDirectory(sSaveDir);
-    f = fopen(sCardPaths[slot], "wb");
-    if (!f || fwrite(sCards[slot], 1, CARD_BYTES, f) != CARD_BYTES) {
-        fprintf(stderr, "nascar98: can't write \"%s\"\n", sCardPaths[slot]);
-    }
+    snprintf(tmp, sizeof(tmp), "%s.tmp", sCardPaths[slot]);
+    f = fopen(tmp, "wb");
+    ok = f && fwrite(sCards[slot], 1, CARD_BYTES, f) == CARD_BYTES;
     if (f) {
-        fclose(f);
+        ok = fclose(f) == 0 && ok;
+    }
+    if (!ok || !SDL_RenamePath(tmp, sCardPaths[slot])) {
+        fprintf(stderr, "nascar98: can't write \"%s\"\n", sCardPaths[slot]);
+        return (u32)-1;
     }
     return 0;
 }
@@ -529,9 +537,10 @@ int main(void)
     OpenTracks(track1);
     OpenCards();
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
-    sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", 10);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;
     sHeadless = EnvNumber("NASCAR98_HEADLESS", 0) != 0;
+    /* Off in a window: dragging it or sleeping the machine stops frames. */
+    sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", sHeadless ? 10 : 0);
     shot = getenv("NASCAR98_SCREENSHOT");
     if (shot && strchr(shot, ':')) {
         sShotFrame = strtol(shot, NULL, 10);
