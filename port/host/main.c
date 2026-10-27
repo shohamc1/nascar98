@@ -114,6 +114,45 @@ static void OnAlarm(int signal)
     _exit(3);
 }
 
+#ifdef _WIN32
+/* Windows has no alarm(): a thread checks the time of the last frame. */
+static SDL_AtomicU32 sLastFrame;
+
+static void Watch(void)
+{
+    SDL_SetAtomicU32(&sLastFrame, (Uint32)SDL_GetTicks());
+}
+
+static int SDLCALL Watchdog(void *unused)
+{
+    (void)unused;
+    for (;;) {
+        SDL_Delay(100);
+        if (sWatchdog && (Uint32)SDL_GetTicks() - SDL_GetAtomicU32(&sLastFrame) >= sWatchdog * 1000u) {
+            OnAlarm(0);
+        }
+    }
+    return 0;
+}
+
+static void StartWatchdog(void)
+{
+    Watch();
+    SDL_DetachThread(SDL_CreateThread(Watchdog, "watchdog", NULL));
+}
+#else
+static void Watch(void)
+{
+    alarm(sWatchdog);
+}
+
+static void StartWatchdog(void)
+{
+    signal(SIGALRM, OnAlarm);
+    alarm(sWatchdog);
+}
+#endif
+
 void w2c_env_HostLog(struct w2c_env *env, u32 text)
 {
     wasm_rt_memory_t *memory = w2c_nascar98_memory(env->module);
@@ -227,7 +266,7 @@ u32 w2c_env_HostFrame(struct w2c_env *env)
     (void)env;
     while (sHang) {
     }
-    alarm(sWatchdog);
+    Watch();
     if (GpuPresent()) {
         exit(0);
     }
@@ -312,8 +351,7 @@ int main(void)
     if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless) || PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
     }
-    signal(SIGALRM, OnAlarm);
-    alarm(sWatchdog);
+    StartWatchdog();
 
     wasm_rt_init();
     wasm2c_nascar98_instantiate(&module, &env);

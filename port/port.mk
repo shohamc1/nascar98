@@ -8,7 +8,8 @@
 #   objects    compile the filtered game sources to build/port/obj/
 #   undefined  link without the port SDK and list what it must define
 #   module     link the game, port/sdk/, and the data into nascar98.wasm
-#   nascar98   translate the module with wasm2c and build the native runner
+#   nascar98   translate the module with wasm2c and build the native runner;
+#              with HOST=windows, cross-compile nascar98.exe in Docker
 #   run        play the game in a window
 #   run-headless  run the runner for 600 frames without a window
 
@@ -148,7 +149,11 @@ $(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o $(PORT)/defined.txt po
 
 # wasm2c's output is one large file: -O1 builds it in about a quarter of
 # the time -O2 takes.
+ifeq ($(HOST),windows)
+nascar98: $(PORT)/windows/nascar98.exe
+else
 nascar98: $(PORT)/nascar98
+endif
 
 $(PORT)/nascar98_wasm.c: $(PORT)/nascar98.wasm
 	$(WASM2C) $< -n nascar98 -o $@
@@ -164,3 +169,18 @@ run-headless: $(PORT)/nascar98
 # Opens the game in a window.
 run: $(PORT)/nascar98
 	$(PORT)/nascar98
+
+# Windows: MinGW-w64 and SDL3's MinGW release in Docker (port/windows/).
+# The host's wasm2c runtime is copied in, so it matches the translated
+# module, and SDL3.dll goes beside the executable.
+WIN := $(PORT)/windows
+
+$(WIN)/nascar98.exe: $(PORT)/nascar98_wasm.c $(wildcard port/host/*.c port/host/*.h) port/windows/Dockerfile
+	@mkdir -p $(WIN)/wasm2c
+	cp $(WASM2C_RT)/wasm-rt-* $(WASM2C_INC)/wasm-rt*.h $(WIN)/wasm2c/
+	docker build -q -t nascar98-mingw port/windows
+	docker run --rm -v "$(CURDIR)":/src -w /src nascar98-mingw sh -c '\
+	  x86_64-w64-mingw32-gcc -O1 -I$(PORT) -Iport/host -I$(WIN)/wasm2c -I/opt/sdl3/include -o $@ \
+	    $(PORT)/nascar98_wasm.c port/host/*.c $(WIN)/wasm2c/wasm-rt-impl.c $(WIN)/wasm2c/wasm-rt-mem-impl.c \
+	    $(WIN)/wasm2c/wasm-rt-exceptions-impl.c -L/opt/sdl3/lib -lSDL3 -lm && \
+	  cp /opt/sdl3/bin/SDL3.dll $(WIN)/'
