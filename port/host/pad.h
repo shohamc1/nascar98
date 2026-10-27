@@ -2,6 +2,7 @@
 #ifndef PORT_HOST_PAD_H
 #define PORT_HOST_PAD_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* The digital pad's button bits, active high. */
@@ -24,6 +25,8 @@
 int PadInit(const char *script, int live);
 /* The buttons held on PORT (0 or 1) at FRAME; CONNECTED says if a pad is there. */
 uint16_t PadRead(int port, long frame, int *connected);
+/* The buttons the keyboard state KEYS (by SDL scancode) holds. */
+uint16_t PadMapKeys(const bool *keys);
 /* "start+cross" to its button bits. */
 uint16_t PadParseButtons(const char *text);
 
