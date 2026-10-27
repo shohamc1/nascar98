@@ -25,7 +25,7 @@ unsigned gPortCallNext;
 """
 
 
-def run_driver(source: str, driver: str, stubs: str = HOST_STUBS) -> subprocess.CompletedProcess:
+def run_driver(source: str | list[str], driver: str, stubs: str = HOST_STUBS) -> subprocess.CompletedProcess:
     with tempfile.TemporaryDirectory() as tmp:
         main = pathlib.Path(tmp) / "driver.c"
         main.write_text('#include "host.h"\n' + stubs + driver)
@@ -33,7 +33,9 @@ def run_driver(source: str, driver: str, stubs: str = HOST_STUBS) -> subprocess.
         flags = ["-std=gnu89", "-fno-builtin", "-nostdlibinc", "-w", "-DNATIVE=1"]
         flags += [f"-I{ROOT / d}" for d in ("port/sdk", "port/include", "build/port/include", "include", "build")]
         build = subprocess.run(
-            [CC, *flags, str(ROOT / source), str(main), "-o", str(exe)], capture_output=True, text=True
+            [CC, *flags, *(str(ROOT / s) for s in ([source] if isinstance(source, str) else source)), str(main), "-o", str(exe)],
+            capture_output=True,
+            text=True,
         )
         if build.returncode:
             raise AssertionError(build.stderr)

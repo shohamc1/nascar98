@@ -125,6 +125,10 @@ class FilterSource(unittest.TestCase):
             "    register u8 *src = (src);\n",
         )
 
+    def test_static_string_made_global(self) -> None:
+        text = 'static const char sDanaTitle[] = "DANA*";\n'
+        self.assertEqual(self.run_filter(text), '__attribute__((used)) const char sDanaTitle[] = "DANA*";\n')
+
     def test_map_existing_label(self) -> None:
         text = 'extern Car *gDanaLui asm("gDanaAbsolute");\n'
         out = self.run_filter(text, {"gDanaAbsolute": ("gDana", 0)})

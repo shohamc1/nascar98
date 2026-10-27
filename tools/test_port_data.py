@@ -134,6 +134,16 @@ class Emit(unittest.TestCase):
     def test_word_number_kept(self) -> None:
         self.assertIn("\t.int32 2147487744\n", self.emit(DATA))
 
+    def test_name_pointers(self) -> None:
+        items = pd.parse_splat(DATA)
+        named = pd.name_pointers(items, {0x80001000: "sQuinnTitle"}, [(0x80002000, 0x80003000)])
+        self.assertEqual([i.value for i in named if i.address == 0x8000100C], ["sQuinnTitle"])
+
+    def test_name_pointers_skips_data_ranges(self) -> None:
+        items = pd.parse_splat(DATA)
+        named = pd.name_pointers(items, {0x80001000: "sQuinnTitle"}, [(0x80001000, 0x80002000)])
+        self.assertEqual([i.value for i in named if i.address == 0x8000100C], [0x80001000])
+
     def test_function_gets_functype(self) -> None:
         out = self.emit(DATA)
         self.assertIn("\t.functype DanaStep (i32) -> (i32)\n", out)

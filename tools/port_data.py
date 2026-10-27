@@ -113,6 +113,21 @@ def size_of(item: Item) -> int:
     return SIZES[item.kind]
 
 
+def name_pointers(items: list[Item], starts: dict[int, str], data_ranges: list[tuple[int, int]]) -> list[Item]:
+    """Name each .word that holds the retail address of a symbol in STARTS.
+
+    Splat writes a pointer to a file-scope static (the menu text) as a
+    number; the port places that string elsewhere, so the word must
+    become a relocation. Words inside DATA_RANGES are already labelled.
+    """
+    return [
+        Item(i.kind, starts[i.value], i.address)
+        if i.kind == "word" and i.value in starts and not any(lo <= i.value < hi for lo, hi in data_ranges)
+        else i
+        for i in items
+    ]
+
+
 def emit_wasm(
     items: list[Item],
     section: str,
@@ -212,10 +227,18 @@ def main(argv: list[str]) -> int:
                 offset += extra
         return f"{target}+{offset}" if offset else target
 
+    # Retail addresses of game symbols, sized or not (nm -S omits the size
+    # of a static string), for the words splat left as numbers.
+    game = nm_names(args.defined)
+    starts = {}
+    for fields in (line.split() for line in args.symbols.read_text().splitlines()):
+        if len(fields) >= 3 and fields[-1] in game and args.image[0] <= int(fields[0], 16) < args.image[1]:
+            starts[int(fields[0], 16)] = fields[-1]
+
     zeroed: list[str] = []
     out = []
     for path in args.inputs:
-        items = parse_splat(path.read_text())
+        items = name_pointers(parse_splat(path.read_text()), starts, args.data_range)
         lo = min(i.address for i in items)
         hi = max(i.address + size_of(i) for i in items)
         extra = {a: n for n, a in absolutes.items() if lo <= a < hi}

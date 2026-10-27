@@ -140,6 +140,10 @@ $(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o $(PORT)/defined.txt po
 	  comm -12 - $(PORT)/sdk-symbols.txt > $(PORT)/sdk-overlap.txt
 	@if [ -s $(PORT)/sdk-overlap.txt ]; then \
 	  echo "port/sdk defines game symbols:" $$(cat $(PORT)/sdk-overlap.txt) >&2; exit 1; fi
+	@# Clang compiles a call whose types don't match the callee's definition
+	@# in the same file into a trap (a _bitcast_invalid stub): fail on any.
+	@if wasm-objdump -d $(OBJS) $(SDK_OBJS) | grep -m5 'call .*bitcast_invalid' >&2; then \
+	  echo "port: calls compiled to traps (see tools/port_filter.py rule 9)" >&2; exit 1; fi
 	$(WASM_LD) $(WASM_LDFLAGS) $(OBJS) $(SDK_OBJS) $(PORT)/data.o -o $@
 
 # wasm2c's output is one large file: -O1 builds it in about a quarter of
