@@ -477,6 +477,16 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
     }
 }
 
+/* The GPU skips a triangle more than 1023 wide or 511 tall; the game's
+ * vertices projected from behind the camera rely on it. */
+static int TooLarge(const Vertex *v)
+{
+    float x0 = SDL_min(v[0].x, SDL_min(v[1].x, v[2].x)), x1 = SDL_max(v[0].x, SDL_max(v[1].x, v[2].x));
+    float y0 = SDL_min(v[0].y, SDL_min(v[1].y, v[2].y)), y1 = SDL_max(v[0].y, SDL_max(v[1].y, v[2].y));
+
+    return x1 - x0 > 1023 || y1 - y0 > 511;
+}
+
 static void DrawPolygon(const uint32_t *w)
 {
     uint32_t code = w[0] >> 24;
@@ -510,7 +520,16 @@ static void DrawPolygon(const uint32_t *w)
             }
         }
     }
-    Emit(v, n, textured, semi, clutX, clutY);
+    if (n == 4 && !TooLarge(v) && !TooLarge(v + 1)) {
+        Emit(v, 4, textured, semi, clutX, clutY);
+        return;
+    }
+    if (!TooLarge(v)) {
+        Emit(v, 3, textured, semi, clutX, clutY);
+    }
+    if (n == 4 && !TooLarge(v + 1)) {
+        Emit(v + 1, 3, textured, semi, clutX, clutY);
+    }
 }
 
 static void DrawRectangle(const uint32_t *w)
@@ -556,6 +575,9 @@ static void DrawSegment(int x0, int y0, uint32_t c0, int x1, int y1, uint32_t c1
     float nx = len > 0 ? -dy / len * 0.5f : 0.5f, ny = len > 0 ? dx / len * 0.5f : 0.5f;
     Vertex v[4];
 
+    if (SDL_fabsf(dx) > 1023 || SDL_fabsf(dy) > 511) {
+        return; /* as for polygons */
+    }
     v[0].x = x0 + nx; v[0].y = y0 + ny; v[0].color = Color(c0, 0, 0, 1.0f);
     v[1].x = x1 + nx; v[1].y = y1 + ny; v[1].color = Color(c1, 0, 0, 1.0f);
     v[2].x = x0 - nx; v[2].y = y0 - ny; v[2].color = v[0].color;

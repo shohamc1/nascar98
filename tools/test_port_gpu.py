@@ -166,5 +166,28 @@ class Gpu(unittest.TestCase):
         )
 
 
+    def test_oversized_polygon_skipped(self) -> None:
+        # The GPU skips a polygon more than 1023 wide or 511 tall: games
+        # rely on it for vertices projected from behind the camera.
+        self.check(
+            "    uint32_t *p;\n"
+            "    if (GpuInit(1, 1)) return 1;\n"
+            "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
+            "    p = W(BASE + 0x100);\n"
+            "    p[0] = 0x06FFFFFFu;\n"
+            "    p[1] = 0xE3000000u;\n"
+            "    p[2] = 0xE4000000u | (239 << 10) | 319;\n"
+            "    p[3] = 0x20FFFFFFu;                          /* white F3 */\n"
+            "    p[4] = (50u << 16) | 200;\n"
+            "    p[5] = (60u << 16) | (uint16_t)(-1000 & 0x7FF);\n"
+            "    p[6] = (70u << 16) | 200;\n"
+            "    GpuDrawPrim(BASE + 0x100);\n"
+            "    if ((GpuTargetPixel(150, 60) & 0xFFFFFF) != 0) return 2;\n"
+            "    p[5] = (60u << 16) | 0;                     /* 200 wide: drawn */\n"
+            "    GpuDrawPrim(BASE + 0x100);\n"
+            "    if ((GpuTargetPixel(150, 60) & 0xFFFFFF) != 0xFFFFFFu) return 3;\n"
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
