@@ -32,7 +32,13 @@ typedef struct {
     u32 cycles;
 } PortSpuVoice;
 
+/* In the module, sound RAM lies above the console's 2 MB: in .bss it
+ * would move the game's heap into its fixed buffers (libapi.c). */
+#ifdef __wasm__
+#define gPortSpuRam ((u8 *)0x80200000u)
+#else
 extern u8 gPortSpuRam[PORT_SPU_RAM];
+#endif
 extern PortSpuVoice gPortSpuVoices[PORT_SPU_VOICES];
 extern s16 gPortSpuMainL, gPortSpuMainR; /* 0x3FFF is full volume */
 

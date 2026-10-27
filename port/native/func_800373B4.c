@@ -943,7 +943,8 @@ block_315:
                 CarSteerTowardHeading(arg0, var_a1_9);
                 M2C_FIELD(arg0, u16 *, 0x104) = (u16) M2C_FIELD(arg0, s16 *, 0x114);
             } else {
-                temp_v1_18(arg0, var_a1_9);
+                /* The callbacks are void (Car *): MIPS ignored a1, wasm checks types. */
+                ((void (*)(void *))temp_v1_18)(arg0);
             }
             M2C_FIELD(arg0, s16 *, 0x116) = (s16) (M2C_FIELD(arg0, s16 *, 0x114) * 4);
             MatrixSetRotationFromAngle(arg0, M2C_FIELD(arg0, s16 *, 0x114) * 4);

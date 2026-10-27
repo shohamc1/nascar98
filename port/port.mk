@@ -155,8 +155,11 @@ else
 nascar98: $(PORT)/nascar98
 endif
 
-$(PORT)/nascar98_wasm.c: $(PORT)/nascar98.wasm
+# port/host/mips_div.h replaces the division macros: MIPS doesn't trap.
+$(PORT)/nascar98_wasm.c: $(PORT)/nascar98.wasm port/host/mips_div.h
 	$(WASM2C) $< -n nascar98 -o $@
+	sed -i.bak '/^#define REM_U(x, y) DIVREM_U/r port/host/mips_div.h' $@ && rm $@.bak
+	@grep -q PORT_MIPS_DIV $@ || { echo "port: wasm2c's division macros changed: update port/host/mips_div.h" >&2; rm $@; exit 1; }
 
 $(PORT)/nascar98: $(PORT)/nascar98_wasm.c $(wildcard port/host/*.c port/host/*.h)
 	$(HOST_CC) -O1 -I$(PORT) -Iport/host -I$(WASM2C_RT) -I$(WASM2C_INC) $(SDL_CFLAGS) -o $@ \

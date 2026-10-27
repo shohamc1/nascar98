@@ -129,6 +129,19 @@ class FilterSource(unittest.TestCase):
         text = 'static const char sDanaTitle[] = "DANA*";\n'
         self.assertEqual(self.run_filter(text), '__attribute__((used)) const char sDanaTitle[] = "DANA*";\n')
 
+    def test_empty_loop_polls(self) -> None:
+        text = (
+            "    while (gDanaFlag == 0) {\n    }\n"
+            "    do {\n\n    } while (QuinnBusy() & 0xFF);\n"
+            "    while (gDanaFlag) {\n        x++;\n    }\n"
+        )
+        self.assertEqual(
+            self.run_filter(text),
+            "    while (gDanaFlag == 0) { PortPoll(); }\n"
+            "    do { PortPoll(); } while (QuinnBusy() & 0xFF);\n"
+            "    while (gDanaFlag) {\n        x++;\n    }\n",
+        )
+
     def test_map_existing_label(self) -> None:
         text = 'extern Car *gDanaLui asm("gDanaAbsolute");\n'
         out = self.run_filter(text, {"gDanaAbsolute": ("gDana", 0)})

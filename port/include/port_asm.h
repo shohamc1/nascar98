@@ -15,4 +15,7 @@
 #define PORT_STORE(T, a, v) (*(T *)(a) = (T)(v))
 #define PORT_OUT(lhs, v) ((lhs) = (__typeof__(lhs))(v))
 
+/* Lets a VBlank interrupt happen in a busy-wait loop (filter rule 11). */
+void PortPoll(void);
+
 #endif /* PORT_ASM_H */

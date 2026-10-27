@@ -5,7 +5,9 @@
  */
 #include "port_spu.h"
 
+#ifndef __wasm__
 u8 gPortSpuRam[PORT_SPU_RAM];
+#endif
 PortSpuVoice gPortSpuVoices[PORT_SPU_VOICES];
 s16 gPortSpuMainL = 0x3FFF, gPortSpuMainR = 0x3FFF;
 

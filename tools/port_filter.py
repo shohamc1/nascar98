@@ -44,6 +44,9 @@ Rules, applied in order:
  10. Make each file-scope `static const char NAME[]` global and used:
      .data points at these strings by retail address
      (tools/port_data.py), and clang would drop them as unreferenced.
+ 11. Put `PortPoll();` in each empty `while` or `do` loop body: the game
+     busy-waits for flags that interrupts set, and the port's interrupts
+     only happen inside SDK calls.
 """
 
 import argparse
@@ -61,6 +64,7 @@ type Placement = tuple[str, int] | int
 NAME = r"[A-Za-z_][A-Za-z_0-9.]*"
 OFFSET = r"[+-](?:0x[0-9A-Fa-f]+|\d+)"
 
+EMPTY_LOOP = re.compile(r"\b(while \([^;{}]*\)|do) \{\s*\}")
 STATIC_STRING = re.compile(r"^static const char (?=\w+\[)", re.M)
 DEFSYM = re.compile(rf"--defsym=({NAME})=({NAME})({OFFSET})?")
 ASSIGN = re.compile(rf"^\s*({NAME})\s*=\s*({NAME})\s*({OFFSET})?\s*$")
@@ -732,7 +736,7 @@ def fixed_label(m: re.Match, aliases: dict[str, Alias], absolutes: dict[str, Pla
 def filter_source(
     text: str, aliases: dict[str, Alias], absolutes: dict[str, Placement], functions: set[str] = frozenset()
 ) -> str:
-    """Apply rules 1 to 4 and 10 of the module docstring to one source file."""
+    """Apply rules 1 to 4, 10, and 11 of the module docstring to one source file."""
     text = HACK.sub(hack_data, text)
     text = FIXED_LABEL.sub(lambda m: fixed_label(m, aliases, absolutes), text)
     for start, end in reversed(asm_statements(text)):
@@ -748,6 +752,7 @@ def filter_source(
             text = text[:start] + indent + c + newline + text[end:]
     text = PIN.sub(r"\1", text)
     text = STATIC_STRING.sub("__attribute__((used)) const char ", text)
+    text = EMPTY_LOOP.sub(r"\1 { PortPoll(); }", text)
     text = drop_barrier_clobbers(text)
     text = LABEL.sub(lambda m: map_label(m, aliases), text)
     names = set(aliases) | set(absolutes)

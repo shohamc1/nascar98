@@ -119,6 +119,20 @@ class Run(unittest.TestCase):
                 tail = w.readframes(60 * 735)
             self.assertGreater(sum(1 for i in range(0, len(tail), 2) if tail[i : i + 2] != b"\0\0"), 1000)
 
+    def test_race_loads(self) -> None:
+        # Main menu, Single Race, Race Setup's Done, then Race, then Start
+        # at the loading screen, whose loop polls the pads with no VSync.
+        script = "0 -\n620 start\n625 -\n700 cross\n705 -\n760 cross\n765 -\n"
+        script += "".join(f"{f} down\n{f + 5} -\n" for f in (900, 940, 980, 1020)) + "1060 cross\n1065 -\n"
+        script += "".join(f"{f} down\n{f + 5} -\n" for f in (1200, 1240, 1280, 1320)) + "1360 cross\n1365 -\n"
+        script += "".join(f"{f} start\n{f + 5} -\n" for f in range(1500, 3000, 100))
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text(script)
+            result = run(120, NASCAR98_FRAMES="4000", NASCAR98_PAD=str(d / "pad.txt"))
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            self.assertIn("nascar98: stopped after 4000 frames", result.stderr)
+
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")
         self.assertEqual(result.returncode, 3, result.stderr[-2000:])
