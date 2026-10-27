@@ -17,11 +17,14 @@ RUNNER = ROOT / "build/port/nascar98"
 TRACK1 = ROOT / "NASCAR 98 (USA)/NASCAR 98 (USA) (Track 1).bin"
 
 
+SAVES = tempfile.TemporaryDirectory()  # memory cards stay out of the checkout
+
+
 def run(timeout: float, **env: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [str(RUNNER)],
         cwd=ROOT,
-        env={**os.environ, "NASCAR98_HEADLESS": "1", **env},
+        env={**os.environ, "NASCAR98_HEADLESS": "1", "NASCAR98_SAVES": SAVES.name, **env},
         capture_output=True,
         text=True,
         timeout=timeout,

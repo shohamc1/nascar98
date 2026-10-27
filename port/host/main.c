@@ -11,6 +11,8 @@
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
  *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
  *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
+ *   NASCAR98_SAVES     the directory of memory card images, card1.mcd and
+ *                      card2.mcd (default: saves)
  *   NASCAR98_WAV       records the sound to this WAV file
  *   NASCAR98_HANG      test only: the first frame never ends
  */
@@ -255,6 +257,62 @@ u32 w2c_env_HostCdAudioRead(struct w2c_env *env, u32 frame, u32 dst, u32 frames)
     return (u32)fread(out, 4, frames, sTracks[k]);
 }
 
+/* Memory cards: 128 KB images. Slot 1 always holds one, blank until the
+ * game writes it; slot 2 holds one only if card2.mcd exists. */
+#define CARD_BYTES (128 * 1024)
+static u8 sCards[2][CARD_BYTES];
+static int sCardPresent[2];
+static char sCardPaths[2][4096];
+static const char *sSaveDir;
+
+static void OpenCards(void)
+{
+    int i;
+
+    sSaveDir = getenv("NASCAR98_SAVES") && *getenv("NASCAR98_SAVES") ? getenv("NASCAR98_SAVES") : "saves";
+    for (i = 0; i < 2; i++) {
+        FILE *f;
+
+        snprintf(sCardPaths[i], sizeof(sCardPaths[i]), "%s/card%d.mcd", sSaveDir, i + 1);
+        f = fopen(sCardPaths[i], "rb");
+        sCardPresent[i] = f != NULL || i == 0;
+        if (f) {
+            if (fread(sCards[i], 1, CARD_BYTES, f) != CARD_BYTES) {
+                fprintf(stderr, "nascar98: \"%s\" is shorter than 128 KB\n", sCardPaths[i]);
+            }
+            fclose(f);
+        }
+    }
+}
+
+u32 w2c_env_HostCardRead(struct w2c_env *env, u32 slot, u32 sector, u32 dst)
+{
+    if (slot > 1 || !sCardPresent[slot] || sector >= CARD_BYTES / 128) {
+        return (u32)-1;
+    }
+    memcpy(Memory(env, dst, 128), sCards[slot] + sector * 128, 128);
+    return 0;
+}
+
+u32 w2c_env_HostCardWrite(struct w2c_env *env, u32 slot, u32 sector, u32 src)
+{
+    FILE *f;
+
+    if (slot > 1 || !sCardPresent[slot] || sector >= CARD_BYTES / 128) {
+        return (u32)-1;
+    }
+    memcpy(sCards[slot] + sector * 128, Memory(env, src, 128), 128);
+    SDL_CreateDirectory(sSaveDir);
+    f = fopen(sCardPaths[slot], "wb");
+    if (!f || fwrite(sCards[slot], 1, CARD_BYTES, f) != CARD_BYTES) {
+        fprintf(stderr, "nascar98: can't write \"%s\"\n", sCardPaths[slot]);
+    }
+    if (f) {
+        fclose(f);
+    }
+    return 0;
+}
+
 u32 w2c_env_HostPadRead(struct w2c_env *env, u32 port)
 {
     int connected = 0;
@@ -469,6 +527,7 @@ int main(void)
         return 2;
     }
     OpenTracks(track1);
+    OpenCards();
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
     sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", 10);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;

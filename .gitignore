@@ -26,3 +26,6 @@ __pycache__/
 /kb
 
 .DS_Store
+
+# The native port's memory card images (NASCAR98_SAVES)
+saves/

@@ -1,7 +1,7 @@
 /*
  * Psy-Q libapi for the port, and PortStart, the module's entry point.
- * Events keep their handlers, and VBlank (root counter 3) handlers run
- * each VBlank. The other stubs log their first call and return 0.
+ * Events live in events.c and the card's files in libcard.c. The other
+ * stubs log their first call and return 0.
  */
 #include "host.h"
 #include <psxsdk/libapi.h>
@@ -57,21 +57,6 @@ void ChangeClearPAD(long arg0)
     PORT_STUB(ChangeClearPAD);
 }
 
-int close(int fd)
-{
-    PORT_STUB(close);
-    return 0;
-}
-
-
-s32 delete(s32 arg0)
-{
-    PORT_STUB(delete);
-    return 0;
-}
-
-
-
 void EnterCriticalSection(void)
 {
     PORT_STUB(EnterCriticalSection);
@@ -82,24 +67,11 @@ void ExitCriticalSection(void)
     PORT_STUB(ExitCriticalSection);
 }
 
-struct DIRENTRY* firstfile(char* arg0, struct DIRENTRY* arg1)
-{
-    PORT_STUB(firstfile);
-    return 0;
-}
-
-long format(char* fs)
-{
-    PORT_STUB(format);
-    return 0;
-}
-
 s32 GetGp(void)
 {
     PORT_STUB(GetGp);
     return 0;
 }
-
 
 static u8 *sPadBuffers[2];
 static int sPadLengths[2];
@@ -137,19 +109,6 @@ void PortPadTick(void)
         buf[3] = ~read >> 8 & 0xFF;
     }
 }
-
-struct DIRENTRY* nextfile(struct DIRENTRY* arg0)
-{
-    PORT_STUB(nextfile);
-    return 0;
-}
-
-int open(const char* devname, int flag)
-{
-    PORT_STUB(open);
-    return 0;
-}
-
 
 long ResetRCnt(unsigned long arg0)
 {
@@ -193,93 +152,9 @@ void SwExitCriticalSection(void)
     PORT_STUB(SwExitCriticalSection);
 }
 
-long TestEvent(unsigned long event)
-{
-    PORT_STUB(TestEvent);
-    return 0;
-}
+#define EVENT_HSYNC 0xF2000001 /* RCntCNT1 */
 
-#define EVENTS 16
-#define EVENT_VBLANK 0xF2000003 /* RCntCNT3 */
-#define EVENT_HSYNC 0xF2000001  /* RCntCNT1 */
-
-static struct {
-    u32 cls;
-    void (*func)(void);
-    int open, enabled;
-} sEvents[EVENTS];
 static u32 sHsync;
-
-static int EventIndex(long event)
-{
-    int i = (int)(event & 0xFFFF);
-
-    return ((u32)event & 0xFFFF0000) == 0xF1000000 && i < EVENTS && sEvents[i].open ? i : -1;
-}
-
-long OpenEvent(unsigned long cls, long spec, long mode, long (*func)())
-{
-    int i;
-
-    PORT_TRACE(OpenEvent);
-    for (i = 0; i < EVENTS; i++) {
-        if (!sEvents[i].open) {
-            sEvents[i].cls = (u32)cls;
-            sEvents[i].func = (void (*)(void))func; /* the game's handlers are void */
-            sEvents[i].open = 1;
-            sEvents[i].enabled = 0;
-            return (long)(0xF1000000 | i);
-        }
-    }
-    return -1;
-}
-
-long EnableEvent(long event)
-{
-    int i = EventIndex(event);
-
-    PORT_TRACE(EnableEvent);
-    if (i < 0) {
-        return 0;
-    }
-    sEvents[i].enabled = 1;
-    return 1;
-}
-
-s32 DisableEvent(s32 event)
-{
-    int i = EventIndex(event);
-
-    PORT_TRACE(DisableEvent);
-    if (i < 0) {
-        return 0;
-    }
-    sEvents[i].enabled = 0;
-    return 1;
-}
-
-s32 CloseEvent(s32 event)
-{
-    int i = EventIndex(event);
-
-    PORT_TRACE(CloseEvent);
-    if (i < 0) {
-        return 0;
-    }
-    sEvents[i].open = 0;
-    return 1;
-}
-
-void PortEventsVBlank(void)
-{
-    int i;
-
-    for (i = 0; i < EVENTS; i++) {
-        if (sEvents[i].open && sEvents[i].enabled && sEvents[i].cls == EVENT_VBLANK && sEvents[i].func) {
-            sEvents[i].func();
-        }
-    }
-}
 
 /* The scanline counter moves 8 lines a read: the game waits for a phase
  * of the 263-line frame in a loop that only reads it. */

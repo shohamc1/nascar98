@@ -415,6 +415,80 @@ int main(void) {
         self.assertEqual(run.returncode, 0, f"the voice never finished\n{run.stderr}")
 
 
+CARD_STUBS = HOST_STUBS + """
+/* Slot 0 holds a card image in memory; slot 1 is empty. */
+static unsigned char gCard[128 * 1024];
+int HostCardRead(int slot, unsigned sector, void *dst) {
+    unsigned i;
+    if (slot != 0) return -1;
+    for (i = 0; i < 128; i++) ((unsigned char *)dst)[i] = gCard[sector * 128 + i];
+    return 0;
+}
+int HostCardWrite(int slot, unsigned sector, const void *src) {
+    unsigned i;
+    if (slot != 0) return -1;
+    for (i = 0; i < 128; i++) gCard[sector * 128 + i] = ((const unsigned char *)src)[i];
+    return 0;
+}
+"""
+
+CARD_DRIVER = """
+#include <psxsdk/libapi.h>
+#include <psxsdk/kernel.h>
+void _card_read(s32, s32, void *); void _card_write(s32, s32, void *);
+int open(const char *, int); int close(int); s32 delete(char *); long format(char *);
+static long gSw[4], gHw[4];
+static const long kSpecs[4] = {4, 0x8000, 0x100, 0x2000};
+/* The index of the one event of SET that fired, or -1; each fires once. */
+static int Fired(long *set) {
+    int i, hit = -1;
+    for (i = 0; i < 4; i++) if (TestEvent(set[i]) == 1) hit = hit == -1 ? i : 9;
+    return hit;
+}
+int main(void) {
+    struct DIRENTRY d[4];
+    static unsigned char out[128], in[128];
+    int i, fd;
+    for (i = 0; i < 4; i++) {
+        gSw[i] = OpenEvent(0xF4000001, kSpecs[i], 0x2000, 0); EnableEvent(gSw[i]);
+        gHw[i] = OpenEvent(0xF0000011, kSpecs[i], 0x2000, 0); EnableEvent(gHw[i]);
+    }
+    _card_info(0x10);
+    if (Fired(gSw) != 2) return 1;              /* no card in slot 2: timeout */
+    _card_info(0);
+    if (Fired(gSw) != 0 || Fired(gSw) != -1) return 2;  /* once */
+    _card_load(0);
+    if (Fired(gSw) != 1) return 3;              /* a blank card is unformatted */
+    if (format("bu00:") != 1) return 4;
+    _card_load(0);
+    if (Fired(gSw) != 0) return 5;
+    if (firstfile("bu00:*", d) != 0) return 6;
+    fd = open("bu00:BASLUS-00521DANA", 0x20200);
+    if (fd < 0 || close(fd) != fd) return 7;
+    if (open("bu00:BASLUS-00521DANA", 0x10200) != -1) return 8;  /* it exists */
+    if (firstfile("bu00:BASLUS*", d) != d || strcmp(d[0].name, "BASLUS-00521DANA")) return 9;
+    if (d[0].size != 2 * 8192 || d[0].head != 64) return 10;
+    if (nextfile(&d[1]) != 0) return 11;
+    for (i = 0; i < 128; i++) out[i] = (unsigned char)(i * 7);
+    _card_write(0, d[0].head + 65, out);
+    if (Fired(gHw) != 0) return 12;
+    _card_read(0, d[0].head + 65, in);
+    if (Fired(gHw) != 0) return 13;
+    for (i = 0; i < 128; i++) if (in[i] != out[i]) return 14;
+    if (delete("bu00:BASLUS-00521DANA") != 1) return 15;
+    if (firstfile("bu00:*", d) != 0) return 16;
+    return 0;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Card(unittest.TestCase):
+    def test_files_on_a_card_image(self) -> None:
+        run = run_driver(["port/sdk/libcard.c", "port/sdk/events.c"], CARD_DRIVER, CARD_STUBS)
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+
 @unittest.skipUnless(CC, "no host compiler")
 class Libgs(unittest.TestCase):
     def test_tim_with_clut(self) -> None:
