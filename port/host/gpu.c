@@ -50,6 +50,17 @@ static int sPageX, sPageY, sDepth, sAbr;
 static int sDispX, sDispY, sDispW = 320, sDispH = 240, sDisp24;
 static int sPackets, sPacketsLast;
 static CachedTexture sCache[CACHE_SIZE];
+static int sTrace = -1; /* NASCAR98_TRACE_GPU: log uploads and display changes */
+
+static int Tracing(void)
+{
+    if (sTrace < 0) {
+        const char *v = getenv("NASCAR98_TRACE_GPU");
+
+        sTrace = v && *v && *v != '0';
+    }
+    return sTrace;
+}
 static int sCacheNext;
 
 /* ---- module memory ---- */
@@ -727,6 +738,9 @@ void GpuLoadImage(uint32_t rect, uint32_t src)
     int x, y, w, h, j;
 
     ReadRect(rect, &x, &y, &w, &h);
+    if (Tracing()) {
+        fprintf(stderr, "gpu: LoadImage (%d, %d) %d x %d from %08X\n", x, y, w, h, src);
+    }
     if (w <= 0 || h <= 0 || !Valid(src, (uint32_t)(w * h * 2))) {
         return;
     }
@@ -825,6 +839,9 @@ void GpuSetDispEnv(uint32_t env)
         memcpy(flags, sMem + env + 16, 2);
     }
     sDisp24 = flags[1];
+    if (Tracing()) {
+        fprintf(stderr, "gpu: display (%d, %d) %d x %d%s\n", sDispX, sDispY, sDispW, sDispH, sDisp24 ? " 24-bit" : "");
+    }
     if (sDispW <= 0) {
         sDispW = 320;
     }
@@ -876,6 +893,9 @@ int GpuPresent(void)
     SDL_Event event;
     int closed = 0;
 
+    if (Tracing()) {
+        fprintf(stderr, "gpu: frame, %d packets\n", sPackets);
+    }
     sPacketsLast = sPackets;
     sPackets = 0;
     while (sWindow && SDL_PollEvent(&event)) {

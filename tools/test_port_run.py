@@ -51,7 +51,11 @@ class Run(unittest.TestCase):
             result = run(60, NASCAR98_FRAMES="600", NASCAR98_SCREENSHOT=f"600:{shot}")
             self.assertEqual(result.returncode, 0, result.stderr[-2000:])
             self.assertIn("nascar98: stopped after 600 frames", result.stderr)
-            self.assertEqual(shot.read_bytes()[:2], b"BM", result.stderr[-2000:])
+            data = shot.read_bytes()
+            self.assertEqual(data[:2], b"BM", result.stderr[-2000:])
+            # The title screen: a picture, not one flat colour.
+            pixels = data[int.from_bytes(data[10:14], "little") :]
+            self.assertGreater(len({pixels[i : i + 4] for i in range(0, len(pixels) - 4, 4)}), 1000)
 
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")

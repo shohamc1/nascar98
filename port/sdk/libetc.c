@@ -2,6 +2,8 @@
 #include "host.h"
 #include <psxsdk/libetc.h>
 
+void PortCdTick(void);
+
 static int sFrameCount;
 static Callback sVSyncCallback;
 
@@ -30,6 +32,7 @@ int VSync(int mode)
         HostExit(0);
     }
     sFrameCount++;
+    PortCdTick();
     if (sVSyncCallback) {
         sVSyncCallback();
     }

@@ -81,6 +81,12 @@ int HostFrame(void) { return 0; }
 void HostExit(int code) { (void)code; }
 const char *gPortCallRing[16];
 unsigned gPortCallNext;
+int HostCdReadRaw(unsigned lba, void *dst) {
+    unsigned char *d = dst; int i;
+    for (i = 0; i < 2352; i++) d[i] = (unsigned char)i;
+    d[12] = (unsigned char)lba; /* header minute byte: the LBA, for the test */
+    return lba >= 900 ? -1 : 0;
+}
 """
 
 
@@ -114,6 +120,155 @@ class Libcd(unittest.TestCase):
             "    CdRead(1, b, 0x80);\n"
             "    if (CdReadSync(1, 0) != -1) return 3;\n"
         )
+
+
+STREAM_STUBS = CD_STUBS
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class CdStream(unittest.TestCase):
+    def check(self, body: str) -> None:
+        driver = (
+            "#include <psxsdk/libcd.h>\n"
+            "void PortCdTick(void);\n"
+            "static int gSyncs, gReadys; static u8 gHead[12];\n"
+            "static void OnSync(u_char intr, u_char *r) { (void)r; gSyncs += intr == CdlComplete; }\n"
+            "static void OnReady(u_char intr, u_char *r) {\n"
+            "    (void)r; if (intr != CdlDataReady) return; gReadys++; CdGetSector(gHead, 3);\n"
+            "}\n"
+            "int main(void) {\n    CdlLOC p;\n    u_char mode = CdlModeSpeed | CdlModeSize1;\n"
+        )
+        run = run_driver("port/sdk/libcd.c", driver + body + "    return 0;\n}\n", STREAM_STUBS)
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+    def test_completion_waits_for_tick(self) -> None:
+        self.check(
+            "    CdSyncCallback(OnSync);\n"
+            "    CdIntToPos(100, &p);\n"
+            "    CdControlF(CdlSeekL, (u_char *)&p);\n"
+            "    if (gSyncs != 0) return 1;\n"
+            "    PortCdTick();\n"
+            "    if (gSyncs != 1) return 2;\n"
+            "    PortCdTick();\n"
+            "    if (gSyncs != 1) return 3;\n"
+        )
+
+    def test_stream_rate_and_raw_sectors(self) -> None:
+        # Double speed: 150 sectors a second, 2.5 a frame; Size1 serves bytes 12 on.
+        self.check(
+            "    int i;\n"
+            "    CdReadyCallback(OnReady);\n"
+            "    CdControlB(CdlSetmode, &mode, 0);\n"
+            "    CdIntToPos(100, &p);\n"
+            "    CdControlF(CdlReadN, (u_char *)&p);\n"
+            "    for (i = 0; i < 60; i++) PortCdTick();\n"
+            "    if (gReadys < 148 || gReadys > 150) return 1;\n"
+            "    if (gHead[0] != (u8)(100 + gReadys - 1) || gHead[1] != 13) return 2;\n"
+            "    CdControlF(CdlPause, 0);\n"
+            "    PortCdTick();\n"
+            "    i = gReadys;\n"
+            "    PortCdTick();\n"
+            "    if (gReadys != i) return 3;\n"
+        )
+
+    def test_stream_stops_at_end_of_track(self) -> None:
+        self.check(
+            "    int i;\n"
+            "    CdReadyCallback(OnReady);\n"
+            "    CdIntToPos(890, &p);\n"
+            "    CdControlF(CdlReadN, (u_char *)&p);\n"
+            "    for (i = 0; i < 60; i++) PortCdTick();\n"
+            "    if (gReadys != 10) return 1;\n"
+        )
+
+
+MDEC_DRIVER = """
+#include "host.h"
+void DecDCTReset(int mode);
+void DecDCTin(u32 *buf, int mode);
+void DecDCTout(u32 *buf, int size);
+static u32 in[1024];
+static u16 out[1024];
+static u16 *H;
+static void Block(int dc) { *H++ = (u16)(1 << 10 | (dc & 0x3FF)); *H++ = 0xFE00; }
+int DecDCToutCallback(void (*func)(void));
+static int gCalls;
+static void Next(void) { if (++gCalls == 1) DecDCTout((u32 *)(out + 256), 128); }
+static void BlockAc(int dc, int run, int level) {
+    *H++ = (u16)(1 << 10 | (dc & 0x3FF)); *H++ = (u16)(run << 10 | (level & 0x3FF)); *H++ = 0xFE00;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Mdec(unittest.TestCase):
+    def check(self, body: str) -> None:
+        run = run_driver("port/sdk/libpress.c", MDEC_DRIVER + "int main(void) {\n    int i;\n" + body + "    return 0;\n}\n")
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+    def test_dc_only_macroblock_is_flat_grey(self) -> None:
+        self.check(
+            "    H = (u16 *)(in + 1);\n"
+            "    Block(0); Block(0); Block(100); Block(100); Block(100); Block(100);\n"
+            "    in[0] = 0x38000000u | (u32)(((u8 *)H - (u8 *)(in + 1) + 3) / 4);\n"
+            "    DecDCTReset(0);\n"
+            "    DecDCTin(in, 0);\n"
+            "    DecDCTout((u32 *)out, 128);\n"
+            "    for (i = 1; i < 256; i++) if (out[i] != out[0]) return 1;\n"
+            "    if ((out[0] & 31) != ((out[0] >> 5) & 31) || (out[0] & 31) != ((out[0] >> 10) & 31)) return 2;\n"
+            "    if ((out[0] & 31) < 17 || (out[0] & 31) > 21) return 3; /* about 153 of 255 */\n"
+        )
+
+    def test_ac_term_varies_pixels(self) -> None:
+        self.check(
+            "    H = (u16 *)(in + 1);\n"
+            "    Block(0); Block(0); BlockAc(100, 0, 40); Block(100); Block(100); Block(100);\n"
+            "    in[0] = 0x38000000u | (u32)(((u8 *)H - (u8 *)(in + 1) + 3) / 4);\n"
+            "    DecDCTReset(0);\n"
+            "    DecDCTin(in, 0);\n"
+            "    DecDCTout((u32 *)out, 128);\n"
+            "    if (out[0] == out[7]) return 1;   /* the first Y block varies */\n"
+            "    if (out[8] != out[15]) return 2;  /* the second doesn't */\n"
+        )
+
+    def test_out_callback_chains(self) -> None:
+        # The out callback asks for the next strip; both get decoded.
+        self.check(
+            "    H = (u16 *)(in + 1);\n"
+            "    for (i = 0; i < 12; i++) Block(i < 6 ? (i >= 2 ? 100 : 0) : (i >= 8 ? -100 : 0));\n"
+            "    in[0] = 0x38000000u | (u32)(((u8 *)H - (u8 *)(in + 1) + 3) / 4);\n"
+            "    DecDCTReset(0);\n"
+            "    DecDCTin(in, 0);\n"
+            "    DecDCToutCallback(Next);\n"
+            "    DecDCTout((u32 *)out, 128);\n"
+            "    if (gCalls != 2) return 1;\n"
+            "    if (out[0] == out[256]) return 2;\n"
+        )
+
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Libgs(unittest.TestCase):
+    def test_tim_with_clut(self) -> None:
+        # An invented 4-bit TIM: flags 8, a 16-colour CLUT block, a pixel block.
+        driver = (
+            "void GsGetTimInfo(u32 *im, u32 *tim);\n"
+            "static u32 timData[64];\n"
+            "int main(void) {\n"
+            "    u32 info[8];\n"
+            "    timData[0] = 8;\n"
+            "    timData[1] = 12 + 32; timData[2] = 500u << 16 | 16; timData[3] = 1u << 16 | 16;\n"
+            "    timData[12] = 12 + 8; timData[13] = 0u << 16 | 640; timData[14] = 2u << 16 | 2;\n"
+            "    GsGetTimInfo(timData, info);\n"
+            "    if (info[0] != 8) return 1;\n"
+            "    if (info[1] != 640 || info[2] != (2u << 16 | 2)) return 2;\n"
+            "    if (info[3] != (u32)(timData + 15)) return 3;\n"
+            "    if (info[4] != (500u << 16 | 16) || info[5] != (1u << 16 | 16)) return 4;\n"
+            "    if (info[6] != (u32)(timData + 4)) return 5;\n"
+            "    return 0;\n}\n"
+        )
+        run = run_driver("port/sdk/libgs.c", driver)
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
 
 
 if __name__ == "__main__":

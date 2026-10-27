@@ -136,6 +136,16 @@ u32 w2c_env_HostCdRead(struct w2c_env *env, u32 lba, u32 count, u32 dst)
     return count;
 }
 
+u32 w2c_env_HostCdReadRaw(struct w2c_env *env, u32 lba, u32 dst)
+{
+    u8 *out = Memory(env, dst, RAW_SECTOR);
+
+    if (fseek(sTrack1, (long)lba * RAW_SECTOR, SEEK_SET) != 0 || fread(out, 1, RAW_SECTOR, sTrack1) != RAW_SECTOR) {
+        return (u32)-1;
+    }
+    return 0;
+}
+
 void w2c_env_HostGpuReset(struct w2c_env *env)
 {
     (void)env;

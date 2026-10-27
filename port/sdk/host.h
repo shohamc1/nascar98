@@ -13,6 +13,8 @@
 HOST_IMPORT(HostLog) void HostLog(const char *text);
 /* Reads COUNT 2048-byte sectors from LBA into DST: sectors read, or -1. */
 HOST_IMPORT(HostCdRead) int32_t HostCdRead(uint32_t lba, uint32_t count, void *dst);
+/* Reads the raw 2352-byte sector at LBA into DST: 0, or -1 past the end. */
+HOST_IMPORT(HostCdReadRaw) int32_t HostCdReadRaw(uint32_t lba, void *dst);
 /* Ends one frame: nonzero when the run must stop. */
 HOST_IMPORT(HostFrame) int32_t HostFrame(void);
 HOST_IMPORT(HostExit) void HostExit(int32_t code);
