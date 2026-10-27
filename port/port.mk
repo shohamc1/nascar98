@@ -42,7 +42,6 @@ DATA_RANGES := --data-range 0x80090DC8:0x800A2CE0 --data-range 0x800A33C0:0x800B
 IMAGE       := --image 0x80010000:0x800CEFE0
 
 GAME_SRCS := $(wildcard src/*.c)
-NATIVES   := $(wildcard port/native/*.c)
 PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
 OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
 SDK_OBJS  := $(patsubst port/sdk/%.c,$(PORT)/sdk/%.o,$(wildcard port/sdk/*.c))
@@ -75,14 +74,14 @@ $(PORT)/defined.txt: $(ELF)
 	@mkdir -p $(@D)
 	$(NM) --defined-only build/src/*.c.o | awk 'NF == 3' > $@
 
-# The filter reads every source at once (aliases cross files), and swaps
-# in port/native/FUNC.c for each function whose MIPS asm carries behaviour.
+# The filter reads every source at once (aliases cross files), and keeps
+# the #ifdef NATIVE body of each function whose MIPS asm carries behaviour.
 # It runs every time (whole-second mtimes miss same-second edits) and
 # rewrites only the outputs that change.
 $(PORT)/src/.stamp: FORCE $(UNDEF) $(PORT)/symbols.txt $(PORT)/defined.txt
 	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) --fixed build/fixed_addrs.ld \
 	  --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
-	  $(DATA_RANGES) $(IMAGE) --native-dir port/native --padded-ok port/padded-ok.txt --header-out $(PORT)/include \
+	  $(DATA_RANGES) $(IMAGE) --padded-ok port/padded-ok.txt --header-out $(PORT)/include \
 	  $(GAME_SRCS) $(PORT)/src
 	@touch $@
 

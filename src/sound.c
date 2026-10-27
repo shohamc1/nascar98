@@ -940,6 +940,126 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
     SoundSetSlotVolume(id, dx & 0xFF, dy & 0xFF);
 }
 
+#ifdef NATIVE
+void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
+    extern u8 D_800A2F9DSmall __asm__("D_800A2F9D");
+    Car *car;
+    Car *obj;
+    s32 camX;
+    s32 camY;
+    s32 camZ;
+    s32 dx;
+    s32 dy;
+    register s32 dz;
+    s32 dist;
+    register s32 fog;
+    s32 pan;
+    s32 q;
+    register s32 gain;
+    register s32 vol1;
+    register s32 vol2;
+    s16 out[2];
+    register s32 row;
+    register s32 scaled;
+    register s32 square;
+    s32 sum;
+    register s32 dySq;
+    register s32 prodB;
+    register s32 prodA;
+    register s32 one;
+    register s32 magic;
+    register s32 hi;
+    register s32 quot;
+    s32 sign;
+
+    camX = arg0->pos.x;
+    camY = arg0->pos.y;
+    camZ = arg0->pos.z;
+    car = arg0;
+    obj = arg1;
+    if (D_800A2F9DSmall == 0) {
+        return;
+    }
+    if (D_800A2EC0nm[0] - D_800BE890w16[0] < 10) {
+        return;
+    }
+    D_800BE890w16[0] = D_800A2EC0nm[0];
+    if (func_8003702C(car, obj) < 0) {
+        if (-func_8003702C(car, obj) >= 0x29) {
+            goto fail;
+        }
+    } else {
+        if (func_8003702C(car, obj) >= 0x29) {
+        fail:
+            SoundSetSlotVolume((s8)arg2, 0, 0);
+            return;
+        }
+    }
+    row = obj->pos.x;
+    dx = (row - camX) >> 4;
+    row = obj->pos.y;
+    dy = (row - camY) >> 4;
+    row = obj->pos.z;
+    dz = (row - camZ) >> 4;
+    sum = dx * dx;
+    dySq = dy * dy;
+    square = dz * dz;
+    sum = sum + dySq;
+    dist = MathSqrt(sum + square);
+    magic = 0x5D9F0000;
+    if (dist >= 0x579) {
+        SoundSetSlotVolume((s8)arg2, 0, 0);
+        return;
+    }
+    magic = magic | 0x7391;
+    scaled = (dist << 8) - dist;
+    /* mult scaled, magic; mfhi hi: the high word of the signed product. */
+    sign = scaled >> 31;
+    hi = (s32)(((s64)scaled * magic) >> 32);
+    quot = hi >> 9;
+    fog = quot - sign;
+    if (fog >= 0x100) {
+        fog = 0xFF;
+    }
+    VectorRotate2D((0x400 - car->heading) & 0x3FF, dx, dy, out);
+    pan = out[1];
+    if (pan > 0) {
+        q = MathFixedDivide(pan, dist);
+        gain = D_80098C00w16[fog];
+        one = 0x10000;
+        prodA = (q + one) * gain;
+        vol2 = prodA >> 16;
+        prodB = (one - q) * gain;
+        vol1 = prodB >> 16;
+    } else {
+        if (pan < 0) {
+            pan = -pan;
+        }
+        q = MathFixedDivide(pan, dist);
+        gain = D_80098C00w16[fog];
+        one = 0x10000;
+        prodA = (q + one) * gain;
+        vol1 = prodA >> 16;
+        prodB = (one - q) * gain;
+        vol2 = prodB >> 16;
+    }
+    if (vol2 >= 0x65) {
+        vol2 = 0x64;
+    }
+    if (vol1 >= 0x65) {
+        vol1 = 0x64;
+    }
+    if (D_800A306Cw16[0] != 0) {
+        if (vol1 < vol2) {
+            vol1 = vol2;
+        } else {
+            vol2 = vol1;
+        }
+    }
+    SoundPlaySlot((s8)arg2, (s8)arg3);
+    SoundSetSlotVolume((s8)arg2, (u8)vol2, (u8)vol1);
+}
+#else
 void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     extern u8 D_800A2F9DSmall;
     Car *car;
@@ -1058,6 +1178,7 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     SoundPlaySlot((s8)arg2, (s8)arg3);
     SoundSetSlotVolume((s8)arg2, (u8)vol2, (u8)vol1);
 }
+#endif
 
 extern u8 D_800A2F9D;
 extern Car *gPlayerCarnm[] asm("gPlayerCar.NON_MATCHING");
@@ -1168,6 +1289,192 @@ void func_80040AC8(Car *object) {
     }
 }
 
+#ifdef NATIVE
+void SoundUpdateCar(Car *car) {
+    extern u32 RandomGetScaled16(s32);
+    extern void SoundUpdateOpponentVoice(Car *, s32);
+    extern void func_800400D8Pair(Car *, Car *) asm("func_800400D8");
+    extern s8 D_800A354F[];
+    s32 i;
+    s32 distance;
+    s32 pitch;
+    s32 blend;
+    s32 id;
+    s32 volume;
+    s32 decayVolume;
+    s32 unusedHigh;
+    s32 sample;
+    s32 shiftedRpm;
+    s8 *clearFlags;
+    u16 rpm;
+    CarLink *next;
+    CarLink *previous;
+    s8 *flags;
+    s8 *fade;
+    s32 *handles;
+    s32 *positions;
+    s32 *pending;
+    s32 initialized;
+    s32 channel;
+    s32 one;
+    s32 minusOne;
+    s32 five;
+
+    if (D_800A2ED4[0] == 1) {
+        for (i = 0; i < 5; i++) {
+            SoundSetSlotVolume((s8)i, 0, 0);
+        }
+        for (i = 14; i < 18; i++) {
+            SoundStopSlot((s8)i);
+        }
+        return;
+    }
+    if (D_800A2EACAbsolute[0] == 0 || D_800A2EACAbsolute[0] >= 3) {
+        if (D_800A2EC8[0] == 0 && car->unk3B8 > 0) {
+            id = 20;
+            if (car != gPlayerCar[0]) {
+                id = 21;
+            }
+            if ((s8)car->unk3B9 == 0) {
+                car->unk3B8 -= 3;
+                if (car->unk3B8 <= 0) {
+                    car->unk3B8 = 0;
+                    SoundStopSlot((s8)id);
+                }
+            }
+            decayVolume = (car->unk3B8 * 4 + 31) & 0xFF;
+            SoundSetSlotVolume((s8)id, decayVolume, decayVolume);
+        }
+        func_80040AC8(car);
+        if (D_800A2F9D != 0) {
+            rpm = (u16)car->rpm;
+            pitch = ((s16)rpm + car->unk10A) / 100;
+            if ((s16)rpm >= 2001 && car->speed <= 0x95FFFF &&
+                D_800A2EC8[0] == 0 &&
+                RandomGetScaled16((s16)((s16)rpm / 1000)) == 0) {
+                pitch -= pitch / (s16)(car->rpm / 1700);
+            }
+            /* Retail keeps this unused filter calculation. */
+            blend = pitch + car->unk3BA + car->unk3BA + car->unk3BA + 3;
+            asm("" : : "r"(blend) : "memory");
+            if (car->rpm >= 7001 && D_800A2EC8[0] == 0 &&
+                RandomGetScaled16((s16)(car->rpm / 1000)) == 0) {
+                /* Retail also keeps this unused signed high product. */
+                register s32 magic;
+                u16 highRpm;
+                highRpm = (u16)car->rpm;
+                shiftedRpm = (u32)highRpm << 16;
+                asm("" : "=r"(shiftedRpm) : "0"(shiftedRpm));
+                sample = shiftedRpm >> 16;
+                magic = 0x134679AD;
+                /* mult sample, magic: the high word goes to unusedHigh. */
+                unusedHigh = (s32)(((s64)sample * magic) >> 32);
+                asm("" : : "r"(unusedHigh));
+            }
+            volume = 100;
+            if (car->driveInput >= 4097) {
+                volume = 127;
+            }
+            if (car->unk1CA + 7 < volume) {
+                car->unk1CA = car->unk1CA + 7;
+            } else if (volume < car->unk1CA - 3) {
+                car->unk1CA = car->unk1CA - 3;
+            } else {
+                car->unk1CA = volume;
+            }
+            if (car->unk1CA >= 128) {
+                car->unk1CA = 127;
+            }
+            volume = car->unk1CA;
+            pitch = (car->rpm + car->unk10A) / 110 - 32;
+            if (car->unk3CA >= 18) {
+                pitch = 78;
+            }
+            pitch += car->driveInput >> 11;
+            if (car->unk3BA + 7 < pitch) {
+                car->unk3BA = car->unk3BA + 7;
+            } else if (pitch < car->unk3BA - 5) {
+                car->unk3BA = car->unk3BA - 5;
+            } else {
+                car->unk3BA = pitch;
+            }
+            if (car->unk3BA >= 128) {
+                car->unk3BA = 127;
+            }
+            pitch = car->unk3BA;
+            if (car == gPlayerCar[0]) {
+                func_8003FA84(0, (s8)pitch);
+                SoundSetSlotVolume(0, volume & 0xFF, volume & 0xFF);
+            } else {
+                if (gPlayerCar[0]->unk3BA >= 125 && pitch >= 125) {
+                    pitch = 120;
+                }
+                SoundSetSlotVolume(1, volume & 0xFF, volume & 0xFF);
+                func_8003FA84(1, (s8)pitch);
+            }
+            i = 3;
+            if (D_800A2E94[0] == 24) {
+                next = (CarLink *)car->sectionLink.node.next;
+                previous = (CarLink *)car->sectionLink.node.previous;
+                clearFlags = D_800A354F;
+                D_800A39D0B = 0;
+                do {
+                    *clearFlags = 0;
+                    i--;
+                    clearFlags--;
+                } while (i >= 0);
+                for (i = 0; i < 4; i++) {
+                    distance = ABS(func_8003702C(car, next->car));
+                    if (distance < ABS(func_8003702C(car, previous->car))) {
+                        func_800400D8Pair(next->car, car);
+                        next = (CarLink *)next->node.next;
+                    } else {
+                        func_800400D8Pair(previous->car, car);
+                        previous = (CarLink *)previous->node.previous;
+                    }
+                }
+                channel = 0;
+                if (D_800A39D0B > 0) {
+                    initialized = 0;
+                    one = 1;
+                    minusOne = -1;
+                    five = 5;
+                    fade = D_800A2FA4B;
+                    handles = D_800BE988;
+                    positions = D_80098D00;
+                    flags = D_800A354CB;
+                    pending = D_800BA048B;
+                initializeChannel:
+                    if (*flags == 0 && *fade == 0) {
+                        *flags = one;
+                        *positions = *pending;
+                        *handles = minusOne;
+                        *fade = five;
+                        initialized++;
+                        pending++;
+                        if (initialized == D_800A39D0B) {
+                            goto channelsReady;
+                        }
+                    }
+                    fade++;
+                    handles++;
+                    positions++;
+                    channel++;
+                    flags++;
+                    if (channel < 4) {
+                        goto initializeChannel;
+                    }
+                }
+            channelsReady:
+                SoundUpdateOpponentVoice(car, 1);
+                SoundUpdateOpponentVoice(car, 2);
+                SoundUpdateOpponentVoice(car, 3);
+                SoundUpdateOpponentVoice(car, 4);
+            }
+        }
+    }
+}
+#else
 void SoundUpdateCar(Car *car) {
     extern u32 RandomGetScaled16(s32);
     extern void SoundUpdateOpponentVoice(Car *, s32);
@@ -1354,6 +1661,7 @@ void SoundUpdateCar(Car *car) {
         }
     }
 }
+#endif
 
 extern u8 D_800A2FA8;
 

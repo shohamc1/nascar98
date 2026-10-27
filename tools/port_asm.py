@@ -10,7 +10,7 @@ A statement is self-contained when values enter and leave only through
 its %N operands. Hard registers may appear only as scratch, named in the
 clobber list. translate() returns None for anything else: a call (jal), a
 register the statement reads without clobbering it, or an instruction it
-doesn't know. Those functions need a native body in port/native/.
+doesn't know. Those functions need an #ifdef NATIVE body in src/.
 
 The C uses macros from port/include/port_asm.h: PORT_VAL(x) turns an
 operand into a register value, PORT_LOAD/PORT_STORE access memory, and

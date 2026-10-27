@@ -267,7 +267,7 @@ def asm_stub_warning(func: str):
                           if l.startswith(("#ifdef", "#if "))), (None, ""))
             if guard[1] == "#if 1":
                 return None
-            if guard[1].startswith("#ifdef"):
+            if guard[1] == "#ifdef NON_MATCHING":
                 return (f"{func} is parked behind #ifdef NON_MATCHING at "
                         f"{src}:{guard[0] + 1}; this diff is the retail "
                         f"stub against itself — flip the guard to #if 1 "

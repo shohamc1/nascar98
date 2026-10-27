@@ -1,5 +1,5 @@
 /*
- * The m2c macros that native bodies in port/native/ use. m2c writes them
+ * The m2c macros that #ifdef NATIVE bodies in src/ use. m2c writes them
  * with --valid-syntax. Only macros with exact semantics are defined: any
  * other m2c macro is an unhandled instruction and must fail the build.
  */

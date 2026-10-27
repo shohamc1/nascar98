@@ -376,6 +376,29 @@ class FilterSource(unittest.TestCase):
         self.assertEqual(self.run_filter(once, aliases, absolutes), once)
 
 
+class NativeBranches(unittest.TestCase):
+    def test_keeps_the_native_branch(self) -> None:
+        text = (
+            "int a;\n"
+            "#ifdef NATIVE\n"
+            "void DanaStep(void) { PortPoll(); }\n"
+            "#if 0\nnested\n#endif\n"
+            "#else\n"
+            'INCLUDE_ASM("asm/nonmatchings/dana", DanaStep);\n'
+            "#endif\n"
+            "#ifndef NATIVE\nretail only\n#else\nport only\n#endif\n"
+            "#ifdef NON_MATCHING\ndraft\n#else\nstub\n#endif\n"
+        )
+        self.assertEqual(
+            pf.native_branches(text),
+            "int a;\n"
+            "void DanaStep(void) { PortPoll(); }\n"
+            "#if 0\nnested\n#endif\n"
+            "port only\n"
+            "#ifdef NON_MATCHING\ndraft\n#else\nstub\n#endif\n",
+        )
+
+
 class Prototypes(unittest.TestCase):
     def test_read_returns(self) -> None:
         text = (
@@ -547,39 +570,6 @@ class Arity(unittest.TestCase):
         self.assertEqual(pf.repair_arity(text, self.PARAMS)[0], text)
 
 
-class ReplaceFunctions(unittest.TestCase):
-    TEXT = (
-        "s32 gDana;\n"
-        "\n"
-        "/* Dana. */\n"
-        "s32 DanaStep(s32 x) {\n"
-        "    if (x) {\n"
-        '        asm("addu %0, %0, 1" : "+r"(x));\n'
-        "    }\n"
-        '    return x + "}"[0];\n'
-        "}\n"
-        "\n"
-        "void QuinnStep(void) {\n"
-        "}\n"
-    )
-
-    def test_replace_function(self) -> None:
-        native = "s32 DanaStep(s32 x) {\n    return x + 1;\n}\n"
-        out = pf.replace_functions(self.TEXT, {"DanaStep": native})
-        self.assertEqual(
-            out,
-            "s32 gDana;\n\n/* Dana. */\n" + native + "\nvoid QuinnStep(void) {\n}\n",
-        )
-
-    def test_prototype_untouched(self) -> None:
-        text = "s32 DanaStep(s32 x);\n" + self.TEXT
-        out = pf.replace_functions(text, {"DanaStep": "s32 DanaStep(s32 x) {}\n"})
-        self.assertTrue(out.startswith("s32 DanaStep(s32 x);\n"))
-
-    def test_override_for_other_file_ignored(self) -> None:
-        self.assertEqual(pf.replace_functions(self.TEXT, {"AveryStep": "x"}), self.TEXT)
-
-
 class Cli(unittest.TestCase):
     def test_cli_writes_filtered_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -624,34 +614,16 @@ class Cli(unittest.TestCase):
                 "extern u32 gAveryCount[];\n",
             )
 
-    def test_cli_filters_native_bodies(self) -> None:
+    def test_cli_filters_native_branch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
-            for name in ("Makefile", "abs.txt", "syms.txt", "defined.txt"):
-                (d / name).write_text("")
-            (d / "native").mkdir()
-            (d / "native" / "DanaStep.c").write_text(
-                'void DanaStep(void) {\n    register s32 x asm("a0");\n}\n'
+            (d / "a.c").write_text(
+                '#ifdef NATIVE\nvoid DanaStep(void) {\n    register s32 x asm("a0");\n}\n'
+                '#else\nINCLUDE_ASM("asm/nonmatchings/a", DanaStep);\n#endif\n'
             )
-            (d / "a.c").write_text("void DanaStep(void) {\n}\n")
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "tools" / "port_filter.py"),
-                    "--makefile", str(d / "Makefile"),
-                    "--absolutes", str(d / "abs.txt"),
-                    "--symbols", str(d / "syms.txt"),
-                    "--defined", str(d / "defined.txt"),
-                    "--image", "0x80010000:0x800CEFE0",
-                    "--native-dir", str(d / "native"),
-                    str(d / "a.c"), str(d / "out"),
-                ],
-                check=True,
-            )
-            self.assertEqual(
-                (d / "out" / "a.c").read_text(),
-                "void DanaStep(void) {\n    register s32 x;\n}\n",
-            )
+            run = self.run_cli(d)
+            self.assertEqual(run.returncode, 0, run.stderr)
+            self.assertEqual((d / "out" / "a.c").read_text(), "void DanaStep(void) {\n    register s32 x;\n}\n")
 
     def run_cli(self, d: pathlib.Path, *extra: str) -> subprocess.CompletedProcess:
         for name in ("Makefile", "abs.txt", "syms.txt", "defined.txt"):
@@ -678,14 +650,13 @@ class Cli(unittest.TestCase):
         # registers: callers must pass it, not lose it to trimming.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
-            (d / "native").mkdir()
-            (d / "native" / "DanaLoad.c").write_text("void DanaLoad(s32 fileId) {\n    FileOpen(fileId);\n}\n")
             (d / "a.c").write_text(
                 "void FileOpen(s32 fileId) {\n}\n"
-                "void DanaLoad(void) {\n    FileOpen();\n}\n"
+                "#ifdef NATIVE\nvoid DanaLoad(s32 fileId) {\n    FileOpen(fileId);\n}\n"
+                "#else\nvoid DanaLoad(void) {\n    FileOpen();\n}\n#endif\n"
                 "void Quinn(void) {\n    DanaLoad(0x44);\n}\n"
             )
-            run = self.run_cli(d, "--native-dir", str(d / "native"))
+            run = self.run_cli(d)
             self.assertEqual(run.returncode, 0, run.stderr)
             self.assertIn("    DanaLoad(0x44);\n", (d / "out" / "a.c").read_text())
 
@@ -700,32 +671,6 @@ class Cli(unittest.TestCase):
             (d / "padded.txt").write_text("a.c FileOpen\n")
             run = self.run_cli(d, "--padded-ok", str(d / "padded.txt"))
             self.assertEqual(run.returncode, 0, run.stderr)
-
-    def test_cli_rejects_stale_native(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            d = pathlib.Path(tmp)
-            for name in ("Makefile", "abs.txt", "syms.txt", "defined.txt"):
-                (d / name).write_text("")
-            (d / "native").mkdir()
-            (d / "native" / "AveryStep.c").write_text("void AveryStep(void) {}\n")
-            (d / "a.c").write_text("void DanaStep(void) {\n}\n")
-            run = subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "tools" / "port_filter.py"),
-                    "--makefile", str(d / "Makefile"),
-                    "--absolutes", str(d / "abs.txt"),
-                    "--symbols", str(d / "syms.txt"),
-                    "--defined", str(d / "defined.txt"),
-                    "--image", "0x80010000:0x800CEFE0",
-                    "--native-dir", str(d / "native"),
-                    str(d / "a.c"), str(d / "out"),
-                ],
-                capture_output=True,
-                text=True,
-            )
-            self.assertNotEqual(run.returncode, 0)
-            self.assertIn("AveryStep", run.stderr)
 
 
 if __name__ == "__main__":

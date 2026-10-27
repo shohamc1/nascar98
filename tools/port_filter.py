@@ -27,9 +27,10 @@ Rules, applied in order:
   3. Map an asm label on a declaration to its alias target.
   4. Give each declaration of an alias name the target's asm label, and
      turn each declaration of an absolute or offset name into a #define.
-  5. Replace the definition of each function that has a native body,
-     NATIVE_DIR/NAME.c, with that file. These are the functions whose
-     MIPS inline asm carries behaviour.
+  5. Keep the NATIVE branch of each `#ifdef NATIVE` (or `#ifndef
+     NATIVE`) block, before anything reads the source: a function whose
+     MIPS asm carries behaviour has its port body there, beside the
+     matching C or INCLUDE_ASM in the `#else` branch.
   6. Give each function declaration the return type of the game's
      definition (or the SDK header's) when they disagree in wasm kind:
      wasm checks signatures, so a void function declared s32 won't link.
@@ -664,12 +665,26 @@ def function_span(text: str, name: str) -> tuple[int, int] | None:
     return None
 
 
-def replace_functions(text: str, natives: dict[str, str]) -> str:
-    """Swap in each native body whose function this file defines."""
-    for name, body in natives.items():
-        if span := function_span(text, name):
-            text = text[: span[0]] + body + text[span[1] :]
-    return text
+def native_branches(text: str) -> str:
+    """Rule 5: resolve each #ifdef NATIVE and #ifndef NATIVE for the port."""
+    out, stack = [], []  # stack: one entry per open #if; None for other conditionals
+    for line in text.splitlines(keepends=True):
+        word = line.strip()
+        keep = all(s is None or s for s in stack)
+        if word in ("#ifdef NATIVE", "#ifndef NATIVE"):
+            stack.append(word == "#ifdef NATIVE")
+            continue
+        if word.startswith("#if"):
+            stack.append(None)
+        elif stack and stack[-1] is not None and word.startswith("#else"):
+            stack[-1] = not stack[-1]
+            continue
+        elif stack and word.startswith("#endif"):
+            if stack.pop() is not None:
+                continue
+        if keep:
+            out.append(line)
+    return "".join(out)
 
 
 def asm_symbol(
@@ -776,7 +791,6 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--defined", type=pathlib.Path, required=True)
     parser.add_argument("--data-range", type=parse_range, action="append", default=[])
     parser.add_argument("--image", type=parse_range, required=True)
-    parser.add_argument("--native-dir", type=pathlib.Path)
     parser.add_argument("--header-out", type=pathlib.Path, help="write repaired copies of include/ here")
     parser.add_argument("--padded-ok", type=pathlib.Path, help="FILE NAME lines: calls reviewed safe to pad with 0")
     parser.add_argument("paths", type=pathlib.Path, nargs="+")
@@ -784,7 +798,7 @@ def main(argv: list[str]) -> int:
     *sources, out = args.paths
 
     aliases = read_defsyms(args.makefile.read_text())
-    texts = {path: path.read_text() for path in sources}
+    texts = {path: native_branches(path.read_text()) for path in sources}
     for text in texts.values():
         aliases |= harvest_aliases(text)
     symbols = read_symbols(args.symbols.read_text())
@@ -808,16 +822,6 @@ def main(argv: list[str]) -> int:
     if errors := [f"{name}: {why}" for name, why in unplaced.items() if name in used]:
         sys.exit("port_filter: " + "\n".join(errors))
 
-    natives = {}
-    if args.native_dir:
-        natives = {
-            p.stem: filter_source(p.read_text(), aliases, absolutes, functions)
-            for p in sorted(args.native_dir.glob("*.c"))
-        }
-    found = {name for name in natives if any(function_span(text, name) for text in texts.values())}
-    if stale := sorted(set(natives) - found):
-        sys.exit("port_filter: no source defines " + ", ".join(stale))
-
     dirs = [pathlib.Path(d) for d in ("port/include", "include", "build")]
     params, header_names, header_macros, header_texts = {}, {}, {}, []
     for header in sorted(pathlib.Path("include").rglob("*.h")) + sorted(pathlib.Path("port/include").rglob("*.h")):
@@ -825,10 +829,10 @@ def main(argv: list[str]) -> int:
         header_names[header.resolve()] = set(read_returns(text))
         header_macros[header.resolve()] = function_macros(text)
         header_texts.append(text)
-    # A native body's signature wins: it can name arguments that the
-    # asm passed through registers and the matching C leaves out.
-    returns = return_table(header_texts, list(texts.values()) + list(natives.values()))
-    for text in list(texts.values()) + list(natives.values()):
+    # A NATIVE body's signature wins: rule 5 has already dropped the
+    # matching C, whose asm may pass arguments the C leaves out.
+    returns = return_table(header_texts, list(texts.values()))
+    for text in texts.values():
         defs = defined_functions(text)
         params |= {n: p for n, p in read_params(text).items() if n in defs}
 
@@ -853,7 +857,7 @@ def main(argv: list[str]) -> int:
     unreviewed = []
     out.mkdir(parents=True, exist_ok=True)
     for path, text in texts.items():
-        text = replace_functions(filter_source(text, aliases, absolutes, functions), natives)
+        text = filter_source(text, aliases, absolutes, functions)
         closure = include_closure(text, dirs)
         in_headers = set().union(*(header_names.get(h, set()) for h in closure))
         macros = set().union(*(header_macros.get(h, set()) for h in closure))

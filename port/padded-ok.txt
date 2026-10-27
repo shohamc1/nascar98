@@ -1,7 +1,7 @@
 # Calls tools/port_filter.py may pad with 0 arguments: FILE NAME, then why.
 # Each was checked against the retail asm (final review, 2026-10-27). Any
 # other padded call fails the filter: the asm may pass that argument
-# through a register, and then it needs a port/native/ override instead.
+# through a register, and then it needs an #ifdef NATIVE body instead.
 cd.c func_80041564 the callee writes arg2 and arg3 before reading them
 objects.c func_80041564 the callee writes arg2 and arg3 before reading them
 scene.c func_80041564 the callee writes arg2 and arg3 before reading them

@@ -381,6 +381,93 @@ extern u8 gTimeFormatMinSecMs[];
 extern s32 sprintfArgs(s8 *, u8 *, ...);
 asm(".globl sprintfArgs\nsprintfArgs = sprintf");
 
+#ifdef NATIVE
+void TextFormatTime(void *timeValue, s32 flags, s32 buffer) {
+    register s32 time;
+    s32 noSign;
+    register s32 blank;
+    register s32 hours;
+    s32 totalSeconds;
+    s32 mode;
+    register s32 minutes;
+    register s32 seconds;
+    s32 rem1000;
+    s32 msSign;
+    s32 msShift;
+    s32 millis;
+    s8 *out;
+    s32 sign;
+    typedef struct {
+        u8 bytes[10];
+    } TimeText10;
+
+    time = (s32)timeValue;
+    out = (s8 *)buffer;
+    noSign = 0;
+    if (flags < 0) {
+        noSign = 1;
+        asm("");
+    }
+    if (time == 0x7FFFFFFF) {
+        *(TimeText10 *)out = *(TimeText10 *)gTimeInvalidText;
+        return;
+    }
+    blank = noSign;
+    if (blank != 0) {
+        sign = ' ';
+    } else if (time < 0) {
+        time = -time;
+        sign = '-';
+    } else {
+        sign = '+';
+    }
+    /*
+     * Retail's two asm blocks, register for register. time is in 1/160 s
+     * ticks (pinned to $7 in the matching build). The magic multiplies
+     * divide by 576000 (hours), 160 (seconds), and 9600 (minutes).
+     */
+    {
+        s32 r2, r3, r4, r5, r6, r8, r10;
+        s64 hi3;
+
+        r8 = (s32)(((s64)time * 0x7482296B) >> 32);
+        r5 = (s32)(((s64)time * 0x66666667) >> 32);
+        r6 = time >> 31;
+        r2 = r8 >> 18;
+        r8 = (s32)(((s64)time * 0x1B4E81B5) >> 32);
+        r10 = r2 - r6;
+        r5 = (r5 >> 6) - r6;
+        r2 = time - r5 * 160;
+        r3 = r2 * 1000;
+        hi3 = (s64)r3 * 0x66666667;
+        r4 = (r8 >> 10) - r6;
+        hours = r10;
+        totalSeconds = r5;
+        minutes = r4 - r10 * 60;
+        seconds = r5 - r4 * 60;
+        rem1000 = r3;
+        mode = D_800A2EACAbsolute[0];
+        msSign = rem1000 >> 31;
+        msShift = (s32)(hi3 >> 32) >> 6;
+    }
+    millis = msShift - msSign;
+    if (mode != 0) {
+        if (hours != 0) {
+            sprintfArgs(out, gTimeFormatSignedHms, sign, hours, minutes,
+                        seconds);
+        } else if (minutes != 0) {
+            sprintfArgs(out, gTimeFormatSignedMinSecMs, sign, minutes, seconds,
+                        millis);
+        } else {
+            sprintfArgs(out, gTimeFormatSignedSecMs, sign, seconds, millis);
+        }
+    } else if (hours != 0) {
+        sprintfArgs(out, gTimeFormatHms, hours, minutes, seconds);
+    } else {
+        sprintfArgs(out, gTimeFormatMinSecMs, minutes, seconds, millis);
+    }
+}
+#else
 void TextFormatTime(void *timeValue, s32 flags, s32 buffer) {
     register s32 time asm("a3");
     s32 noSign;
@@ -448,6 +535,7 @@ void TextFormatTime(void *timeValue, s32 flags, s32 buffer) {
         sprintfArgs(out, gTimeFormatMinSecMs, minutes, seconds, millis);
     }
 }
+#endif
 
 asm(".globl func_80050028Text\nfunc_80050028Text = HudDrawText");
 __inline__ void func_80018768(void *arg0, s32 x, s32 y, s32 format) {
@@ -1325,6 +1413,339 @@ extern s8 *D_8009ADD8[];
 extern void func_80025730(Car *);
 
 /* Draw the car place, laps, speed, times, and panel primitives. */
+#ifdef NATIVE
+void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
+    s8 text[24];
+    register s32 byteValue;
+    s32 lapValue;
+    void *helperTime;
+    register s32 helperMode;
+    register s32 helperBuffer;
+    register POLY_FT4 *copyFrom;
+    POLY_FT4 *copyTo;
+    u8 *copyEnd;
+    register s32 numberArg;
+    s32 shiftedLap;
+    register s8 *start;
+    register s8 *string;
+    s32 len;
+    s32 number;
+    register s32 lap;
+    s32 fixedSpeed;
+    s32 yOffset;
+    s32 i;
+    s32 offset;
+    s32 x;
+    s32 y;
+    s32 baseY;
+    s32 width;
+    register s32 right;
+    register s32 barX;
+    register s32 bankOffset;
+    register u8 *quadBase;
+    s32 bottom;
+    s8 *p;
+    register u8 *quad;
+    POLY_F4 *barQuad;
+    s32 barY;
+    POLY_FT4 *prim;
+    u32 cursor;
+    register s16 *glyphWidth;
+    s32 scale;
+
+    if (car->cameraMode == 0 || D_800A2EACAbsolute[0] != 0) {
+        return;
+    }
+    switch (car->unk209) {
+    case 1:
+    case 3:
+        hideTimes = 1;
+        break;
+    }
+    gFontColorRed = 60;
+    gFontColorGreen = 100;
+    gFontColorBlue = 60;
+    byteValue = (u8)car->place;
+    len = 0;
+    yOffset = -(bank != 0) & 100;
+    y = 135 - yOffset;
+    /* Keep the byte conversion before the width tests. */
+    /* sll byteValue, 24; sra number, byteValue, 24 */
+    byteValue = (u32)byteValue << 24;
+    number = (s32)byteValue >> 24;
+    text[0] = 0;
+    if (number < 1000) {
+        len = 1;
+        text[0] = ' ';
+        text[1] = 0;
+    }
+    if (number < 100) {
+        text[len++] = ' ';
+        text[len] = 0;
+    }
+    if (number < 10) {
+        text[len++] = ' ';
+        text[len] = 0;
+    }
+    numberArg = number;
+    p = text;
+    TextFormatInt(numberArg, (u8 *)p + len);
+    x = 8;
+    if (text[0] != 0) {
+        do {
+            FontDrawGlyph(*p, x, y, 2);
+            p++;
+            x += D_800A2D8C;
+        } while (*p != 0);
+    }
+    lap = car->lap;
+    if (lap < 0)
+        lap = 0;
+    if (D_800A2EA8w15[0] < lap)
+        lap = D_800A2EA8w15[0];
+    len = 0;
+    y = 135 - yOffset;
+    /* Keep the full lap load before its signed halfword conversion. */
+    shiftedLap = (u32)lap << 16; /* sll */
+    lapValue = shiftedLap >> 16;
+    text[0] = 0;
+    if (lapValue < 1000) {
+        len = 1;
+        text[0] = ' ';
+        text[1] = 0;
+    }
+    if (lapValue < 100) {
+        text[len++] = ' ';
+        text[len] = 0;
+    }
+    if (lapValue < 10) {
+        text[len++] = ' ';
+        text[len] = 0;
+    }
+    numberArg = lapValue;
+    p = text;
+    TextFormatInt(numberArg, (u8 *)p + len);
+    x = 23;
+    if (text[0] != 0) {
+        do {
+            FontDrawGlyph(*p, x, y, 2);
+            p++;
+            x += D_800A2D8C;
+        } while (*p != 0);
+    }
+    baseY = 135 - yOffset;
+    FontDrawGlyph('-', 47, baseY, 2);
+    numberArg = D_800A2EA8w15[0];
+    text[0] = 0;
+
+    TextFormatInt((s16)numberArg, (u8 *)text);
+    x = 53;
+    y = baseY;
+    start = text;
+    if (text[0] != 0) {
+        p = start;
+        do {
+            FontDrawGlyph(*p, x, y, 2);
+            p++;
+            x += D_800A2D8C;
+        } while (*p != 0);
+    }
+    fixedSpeed = car->speed;
+    y = 181 - yOffset;
+    byteValue = car->unkF7;
+    if (fixedSpeed < 0)
+        fixedSpeed = 0;
+    /* Retail keeps this mask after the byte load. */
+    byteValue &= 255;
+    if (byteValue == 1)
+        number = ((fixedSpeed >> 16) * 336) / 550;
+    else
+        number = ((fixedSpeed >> 16) * 210) / 550;
+    len = 0;
+    text[0] = 0;
+    if (number < 100) {
+        len = 1;
+        text[0] = ' ';
+        text[1] = 0;
+    }
+    if (number < 10) {
+        text[len++] = ' ';
+        text[len] = 0;
+    }
+    numberArg = number;
+    p = text;
+    TextFormatInt(numberArg, (u8 *)p + len);
+    x = 34;
+    if (text[0] != 0) {
+        do {
+            FontDrawGlyph(*p, x, y, 2);
+            p++;
+            x += D_800A2D8C;
+        } while (*p != 0);
+    }
+    FontDrawGlyph((s8)((u8)car->gearIndex + '1'), 60, 190 - yOffset, 2);
+    if (hideTimes == 0) {
+        helperTime = (void *)car->unk258;
+        helperMode = 2;
+        helperBuffer = (s32)text;
+        asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
+        y = 135 - yOffset;
+        TextFormatTime(helperTime, helperMode, helperBuffer);
+        x = 252;
+        scale = 2;
+        start = text;
+        if (text[0] != 0) {
+            glyphWidth = (s16 *)&D_800A2D8CAbsolute[0];
+            p = start;
+            do {
+                FontDrawGlyph(*p, x, y, scale);
+                p++;
+                x += *glyphWidth;
+            } while (*p != 0);
+        }
+        helperTime = (void *)car->time;
+        helperMode = 2;
+        if ((s32)helperTime != 0x7FFFFFFF) {
+            helperBuffer = (s32)text;
+            asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
+            y = 159 - yOffset;
+            TextFormatTime(helperTime, helperMode, helperBuffer);
+            x = 252;
+            scale = 2;
+            start = text;
+            if (text[0] != 0) {
+                glyphWidth = (s16 *)&D_800A2D8CAbsolute[0];
+                p = start;
+                do {
+                    FontDrawGlyph(*p, x, y, scale);
+                    p++;
+                    x += *glyphWidth;
+                } while (*p != 0);
+            }
+        } else {
+            x = 258;
+            y = 159 - yOffset;
+            string = gTimeBlankText;
+            if (*string != 0) {
+                p = string;
+                do {
+                    FontDrawGlyph(*p, x, y, 2);
+                    p++;
+                    x += D_800A2D8C;
+                } while (*p != 0);
+            }
+        }
+        func_800183C0(car->unk260, 258, 183 - yOffset, 2);
+    }
+    i = 17;
+
+    offset = 680;
+    do {
+        bankOffset = bank * 720;
+        quadBase = offset + (u8 *)D_800AE29C;
+        quad = (u8 *)(bankOffset + (s32)quadBase);
+        barQuad = (POLY_F4 *)quad;
+        switch (i) {
+        case 2:
+            func_80019A00(car->rpm, quad, bank);
+            goto queue;
+        case 8:
+            if (car->wheel[0].unkC > 0xCE400)
+                goto next;
+            goto queue;
+        case 13:
+            width = (car->unk28C * 34) / 16000;
+            barY = 204;
+            barX = 31;
+            if (bank != 0)
+                barY = 104;
+            if (width >= 34)
+                width = 33;
+            right = width + 31;
+            width = 31;
+            asm("" : "=r"(width) : "0"(width));
+            barQuad->x2 = width;
+            barQuad->x0 = barX;
+            bottom = barY + 2;
+            barQuad->y0 = barY;
+            barQuad->x1 = right;
+            barQuad->y1 = barY;
+            barQuad->y2 = bottom;
+            barQuad->x3 = right;
+            barQuad->y3 = bottom;
+            goto queue;
+        case 4:
+        case 5:
+        case 6:
+        case 10:
+        case 11:
+        case 12:
+            if (hideTimes != 0)
+                goto next;
+            goto queue;
+        case 15:
+            if (car->unk28C > 0)
+                goto next;
+            goto queue;
+        case 16:
+            if (car->segment == -1)
+                break;
+            if (MathGetAngleDelta(car->heading,
+                                  gTrackSections[0][car->segment].angle) < 0) {
+                if (-MathGetAngleDelta(car->heading,
+                                       gTrackSections[0][car->segment].angle) <
+                    300)
+                    goto next;
+            } else {
+                if (MathGetAngleDelta(car->heading,
+                                      gTrackSections[0][car->segment].angle) <
+                    300)
+                    goto next;
+            }
+            goto queue;
+        case 17:
+            if (D_800A2EE0w15[0] == 0 || D_800A2EC8[0] != 0)
+                break;
+            if (car->unk3B7 != 0 || (car->unk3A4 & 15) == 0) {
+                if (*(void (**)(u8 *))((u8 *)car + 0x354) != func_80025730 ||
+                    car->unk1BC != 4)
+                    break;
+            }
+            string = D_8009ADD8[0];
+            x = 85;
+            y = 142 - yOffset;
+            if (*string != 0) {
+                p = string;
+                do {
+                    FontDrawGlyph(*p, x, y, 1);
+                    p++;
+                    x += D_800A2D8A;
+                } while (*p != 0);
+            }
+            goto queue;
+        default:
+        queue:
+            cursor = gPrimitiveCursor[0];
+            copyFrom = (POLY_FT4 *)quad;
+            copyEnd = (u8 *)copyFrom + 32;
+            asm("" : "=r"(prim) : "0"(cursor));
+            copyTo = prim;
+            gPrimitiveCursorLui = (u32)prim + 40;
+            asm("" : "=r"(copyTo) : "r"(copyFrom), "0"(copyTo));
+            *copyTo = *copyFrom;
+
+            AddPrim((u8 *)gOrderingTable[0], prim);
+            break;
+        }
+    next:
+        i--;
+        offset -= 40;
+    } while (i >= 0);
+    gFontColorRed = 128;
+    gFontColorGreen = 128;
+    gFontColorBlue = 128;
+}
+#else
 void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     s8 text[24];
     register s32 byteValue asm("v1");
@@ -1656,6 +2077,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     gFontColorGreen = 128;
     gFontColorBlue = 128;
 }
+#endif
 
 extern u8 *D_8009AE50[];
 extern void GraphicsSetColor(s32, s32, s32);
@@ -1717,6 +2139,151 @@ extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
 extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern void MenuDrawStatistics(void);
 extern void MenuDrawTimingAndScoring(void);
+#ifdef NATIVE
+void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
+    s32 frameExtent[2];
+    s32 y;
+    s32 arrowX;
+    s8 i;
+    s32 index;
+    s32 offset;
+    s32 x;
+    s32 rowY;
+    s32 rowY2;
+    s32 rowY3;
+    s32 cursorY;
+    s32 rowBias;
+    s32 arrowArg;
+    s32 volumeLimit;
+    u8 **labels;
+    u8 **choices;
+    u8 **volumeChoices;
+    register u8 **volumeLabels;
+
+    y = 40;
+    arrowX = 80;
+    if (flags & 8) {
+        MenuDrawStatistics();
+        return;
+    }
+    if (flags & 4) {
+        MenuDrawTimingAndScoring();
+        return;
+    }
+    if (gSplitScreenModew15[0] != 0) {
+        y = 20;
+        if (D_800A3620w18c[0] != 0) {
+            gOrderingTableLui += 0x1004;
+        } else {
+            y = 30;
+        }
+    }
+    GraphicsSetColor(128, 128, 128);
+    switch (D_800A39F0[0]) {
+    case 0:
+        i = 0;
+        labels = (u8 **)D_8009AD60;
+        do {
+            /* Keep the signed byte index in one register. */
+            index = (u32)i << 24;
+            index >>= 24;
+            offset = index * 4;
+            x = (s16)(((u32)(158 - HudTextWidth(*(
+                                       u8 **)(offset + (gSessionTypepanel * 24 +
+                                                        (s32)labels)))) >>
+                       1) +
+                      81);
+            offset += gSessionTypepanel * 24 + (s32)labels;
+            HudDrawText(*(u8 **)offset, x, index * 12 + y, 0);
+            i++;
+        } while ((s8)i < 2);
+        i = 4;
+        labels = (u8 **)D_8009AD60;
+        do {
+            /* Keep the signed byte index in one register. */
+            index = (s32)((u32)i << 24) >> 24; /* sll; sra */
+            offset = index * 4;
+            x = (s16)(((u32)(158 - HudTextWidth(*(
+                                       u8 **)(offset + (gSessionTypepanel * 24 +
+                                                        (s32)labels)))) >>
+                       1) +
+                      81);
+            offset += gSessionTypepanel * 24 + (s32)labels;
+            HudDrawText(*(u8 **)offset, x, index * 12 + y, 0);
+            i++;
+        } while ((s8)i < 6);
+        if (gSessionTypepanel == 2) {
+            GraphicsSetColor(32, 32, 32);
+        }
+        x = (s16)(((u32)(158 -
+                         HudTextWidth(D_8009AD68[gSessionTypepanel][0])) >>
+                   1) +
+                  81);
+        HudDrawText(D_8009AD68[gSessionTypepanel][0], x, y + 24, 0);
+        GraphicsSetColor(128, 128, 128);
+        if (gSplitScreenModew15[0] != 0) {
+            GraphicsSetColor(32, 32, 32);
+        }
+        x = (s16)(((u32)(158 -
+                         HudTextWidth(D_8009AD6C[gSessionTypepanel][0])) >>
+                   1) +
+                  81);
+        HudDrawText(D_8009AD6C[gSessionTypepanel][0], x, y + 36, 0);
+        break;
+    case 1:
+        choices = D_8009ADA8;
+        rowY = y;
+        asm("" : "=r"(rowY) : "0"(rowY));
+        HudDrawText(choices[0], 90, rowY, 0);
+        choices += 5;
+        cursorY = 13;
+        x = (s16)(230 - HudTextWidth(choices[D_800A2F9Dpanel]));
+        HudDrawText(choices[D_800A2F9Dpanel], x, rowY, 0);
+        GraphicsDrawRect(110, y + cursorY, gMusicVolumeAbsolute[0], 8, 0, 0,
+                         D_800A2F9Dpanel ? -128 : 0, 1);
+        GraphicsDrawRect(109, y + 12, 102, 10, -1, -1, -1, 1);
+        rowY2 = y + 24;
+        HudDrawText(D_8009ADAC[D_800A306Dpanel], 90, rowY2, 0);
+        x = (s16)(230 - HudTextWidth(D_8009ADBC[D_800A2F9Cpanel]));
+        HudDrawText(D_8009ADBC[D_800A2F9Cpanel], x, rowY2, 0);
+        GraphicsDrawRect(110, y + 37, gCdVolumeAbsolute[0], 8, 0, 0,
+                         D_800A2F9Cpanel ? -128 : 0, 1);
+        GraphicsDrawRect(109, y + 36, 102, 10, -1, -1, -1, 1);
+        rowY3 = y + 48;
+        volumeLabels = D_8009ADB4;
+        asm("" : "=r"(volumeLabels) : "0"(volumeLabels));
+        HudDrawText(volumeLabels[0], 90, rowY3, 0);
+        volumeLimit = 8;
+        volumeChoices = volumeLabels - 3;
+        x = (s16)(230 -
+                  HudTextWidth(volumeChoices[volumeLimit - D_800A306Cpanel]));
+        HudDrawText(volumeChoices[volumeLimit - D_800A306Cpanel], x, rowY3, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(volumeLabels[1])) >> 1) + 81);
+        HudDrawText(volumeLabels[1], x, y + 60, 0);
+        break;
+    case 2:
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009ADCC[0])) >> 1) + 81);
+        HudDrawText(D_8009ADCC[0], x, y + 12, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009ADD0)) >> 1) + 81);
+        HudDrawText(D_8009ADD0, x, y + 36, 0);
+        x = (s16)(((u32)(158 - HudTextWidth(D_8009ADD4)) >> 1) + 81);
+        HudDrawText(D_8009ADD4, x, y + 48, 0);
+        break;
+    }
+    GraphicsDrawDoubleBorderRect(81, y - 1, 158, 73, 0, 0, 0, 1);
+    arrowArg = arrowX - 1;
+    asm("" : : "r"(arrowArg));
+    cursorY = selection * 12;
+    rowBias = y + 5;
+    cursorY += rowBias;
+    MenuDrawArrow(arrowArg, cursorY, 0, 5);
+    MenuDrawArrow(arrowX | 160, cursorY, 1, 5);
+    if (D_800A3620w18c[0] != 0) {
+        gOrderingTableLui -= 0x1004;
+    }
+    /* Compiler control: preserve the retail frame extent. */
+}
+#else
 void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     s32 frameExtent[2];
     s32 y;
@@ -1860,6 +2427,7 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
     }
     /* Compiler control: preserve the retail frame extent. */
 }
+#endif
 
 extern s32 D_800A2EAC[];
 extern u8 gFormatIntegerDotInteger[];

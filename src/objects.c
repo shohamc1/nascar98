@@ -1001,6 +1001,89 @@ extern Car *gCarListw15[] asm("gCarList.NON_MATCHING");
 extern Car *D_800A3960w15[] asm("gCrashCar.NON_MATCHING");
 extern Car *gPlayerCar[];
 
+#ifdef NATIVE
+/* The matching C drops func_800442C8's frame; the asm leaves it in a1. */
+void ReplayStepForward(void) {
+    Car *node;
+    u8 *baseAddr;
+    register u8 *rec;
+    s32 count;
+    s32 offset;
+    u32 bits;
+    u32 w2;
+    register u16 val;
+    s32 v90;
+    s32 t114;
+    s32 i;
+
+    count = gReplayIndexSmall;
+    gReplayIndexSmall = (count + 1) % gReplayLengthSmall;
+    if (gReplayIndexSmall == gReplayHeadSmall) {
+        gReplayIndexSmall = count;
+        D_800A2ED4[0] = 1;
+        SoundStopConditionalSlots(0);
+        return;
+    }
+    count = gReplayIndexSmall * (D_800A2E94[0] + 6);
+    node = gCarListw15[0];
+    if (node != 0) {
+        offset = count * 20;
+        do {
+            if (node->type >= 0) {
+                rec = (u8 *)gReplayBufferSmall;
+                rec = (u8 *)(offset + (s32)rec);
+                node->pos.x = ((ReplayFrame *)rec)->x;
+                node->pos.y = ((ReplayFrame *)rec)->y;
+                func_800442C8(node, (ReplayFrame *)rec);
+                val = *(u16 *)(u8 *)(offset + gReplayBufferSmall + 0xE);
+                node->reverseSpeed = val & 0x7F;
+                baseAddr = (u8 *)gReplayBufferSmall;
+                v90 = (val >> 7) << 17;
+                node->speed = v90;
+                bits = *(s32 *)(u8 *)(offset + (s32)baseAddr + 8);
+                node->fineHeading = (bits >> 22) * 4;
+                val = bits >> 22;
+                node->steering = ((bits >> 14) & 0xFF) - 0x80;
+                node->gearIndex = (bits & 0x3F) >> 4;
+                node->unk3B9 = (bits & 0xF) >> 3;
+                node->sliding = (bits & 7) >> 2;
+                node->unk102 = val;
+                node->heading = val;
+                if ((bits & 3) == 1) {
+                    D_800A3960w15[0] = gPlayerCar[0];
+                } else if ((bits & 3) == 2) {
+                    D_800A3960w15[0] = gPlayerCar[0]->next;
+                } else {
+                    D_800A3960w15[0] = 0;
+                }
+                w2 = *(s32 *)(u8 *)(offset + gReplayBufferSmall + 0x10);
+                node->unkFE = ((w2 >> 20) - 0x800) * 2;
+                for (i = 0; i < 4; i++) {
+                    node->wheel[i].unk0 = (u16)node->unkFE;
+                }
+                t114 = node->heading;
+                node->unk388 = (w2 << 12) >> 22;
+                node->unk38A = w2 & 0x3FF;
+                func_8001F2C4(t114, 0, 0);
+                func_8001F828((s32 *)node);
+                MatrixStoreObjectBasis(node);
+                node->unk228 = 0;
+                node->movementHeading = (u16)node->heading;
+                CarUpdateEngineRpm(node);
+                offset += 0x14;
+                count += 1;
+            }
+            node = node->next;
+        } while (node != 0);
+    }
+    i = (gReplayIndexSmall + 1) % gReplayLengthSmall;
+    if (i == gReplayHeadSmall) {
+        D_800A2ED4[0] = 1;
+    }
+    func_8003667C((u8 *)gReplayBufferSmall + count * 20);
+    ReplayReadEffects((u8 *)gReplayBufferSmall + (count * 20 + 0x50));
+}
+#else
 void ReplayStepForward(void) {
     Car *node;
     u8 *baseAddr;
@@ -1081,7 +1164,92 @@ void ReplayStepForward(void) {
     func_8003667C((u8 *)gReplayBufferSmall + count * 20);
     ReplayReadEffects((u8 *)gReplayBufferSmall + (count * 20 + 0x50));
 }
+#endif
 
+#ifdef NATIVE
+/* The matching C drops func_800442C8's frame; the asm leaves it in a1. */
+void ReplayStepBack(void) {
+    Car *node;
+    register u8 *rec;
+    u8 *p;
+    s32 current;
+    s32 count;
+    u8 *baseAddr;
+    s32 offset;
+    u32 bits;
+    u32 w2;
+    s32 d;
+    s32 dm1;
+    register u16 val;
+    s32 v90;
+    s32 t114;
+    s32 i;
+
+    current = gReplayIndexSmall;
+    if (current != D_800A3804Small) {
+        d = gReplayLengthSmall;
+        dm1 = d - 1;
+        gReplayIndexSmall = (current + dm1) % d;
+    } else {
+        D_800A2ED4[0] = 1;
+        SoundStopConditionalSlots(0);
+    }
+    count = gReplayIndexSmall * (D_800A2E94[0] + 6);
+    node = gCarListw15[0];
+    if (node != 0) {
+        offset = count * 20;
+        do {
+            if (node->type >= 0) {
+                rec = (u8 *)gReplayBufferSmall;
+                rec = (u8 *)(offset + (s32)rec);
+                node->pos.x = ((ReplayFrame *)rec)->x;
+                node->pos.y = ((ReplayFrame *)rec)->y;
+                func_800442C8(node, (ReplayFrame *)rec);
+                val = *(u16 *)(u8 *)(offset + gReplayBufferSmall + 0xE);
+                node->reverseSpeed = val & 0x7F;
+                baseAddr = (u8 *)gReplayBufferSmall;
+                v90 = (val >> 7) << 17;
+                node->speed = v90;
+                bits = *(s32 *)(u8 *)(offset + (s32)baseAddr + 8);
+                node->fineHeading = (bits >> 22) * 4;
+                val = bits >> 22;
+                node->steering = ((bits >> 14) & 0xFF) - 0x80;
+                node->gearIndex = (bits & 0x3F) >> 4;
+                node->unk3B9 = (bits & 0xF) >> 3;
+                node->sliding = (bits & 7) >> 2;
+                node->unk102 = val;
+                node->heading = val;
+                if ((bits & 3) == 1) {
+                    D_800A3960w15[0] = gPlayerCar[0];
+                } else if ((bits & 3) == 2) {
+                    D_800A3960w15[0] = gPlayerCar[0]->next;
+                } else {
+                    D_800A3960w15[0] = 0;
+                }
+                w2 = *(s32 *)(u8 *)(offset + gReplayBufferSmall + 0x10);
+                node->unkFE = ((w2 >> 20) - 0x800) * 2;
+                for (i = 0; i < 4; i++) {
+                    node->wheel[i].unk0 = (u16)node->unkFE;
+                }
+                t114 = node->heading;
+                node->unk388 = (w2 << 12) >> 22;
+                node->unk38A = w2 & 0x3FF;
+                func_8001F2C4(t114, 0, 0);
+                func_8001F828((s32 *)node);
+                MatrixStoreObjectBasis(node);
+                node->unk228 = 0;
+                node->movementHeading = (u16)node->heading;
+                CarUpdateEngineRpm(node);
+                offset += 0x14;
+                count += 1;
+            }
+            node = node->next;
+        } while (node != 0);
+    }
+    func_8003667C((u8 *)gReplayBufferSmall + count * 20);
+    ReplayReadEffects((u8 *)gReplayBufferSmall + (count * 20 + 0x50));
+}
+#else
 void ReplayStepBack(void) {
     Car *node;
     register u8 *rec asm("a1");
@@ -1163,6 +1331,7 @@ void ReplayStepBack(void) {
     func_8003667C((u8 *)gReplayBufferSmall + count * 20);
     ReplayReadEffects((u8 *)gReplayBufferSmall + (count * 20 + 0x50));
 }
+#endif
 
 void ReplayStepForward(void);
 
@@ -2890,6 +3059,696 @@ extern void CollisionApplyImpulse(Car *, Car *, Vec3, s32,
 /* Resolves car-to-car contact and applies separation and velocity impulses.
  * Empty asm constraints retain the retail compiler register lifetimes.
  */
+#ifdef NATIVE
+/*
+ * MIPS O32 passes CollisionApplyImpulse's Vec3 by value in a2, a3, and the
+ * first stack word, so func_80026074 reads it as three s32s and the first
+ * flag as its sixth argument. wasm32 passes the struct by pointer instead.
+ */
+s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
+#define PortApplyImpulse(a, b, v, f, g)                                        \
+    func_80026074(a, b, (v).x, (v).y, (v).z, f)
+    Vec3 separation;
+    Vec3 direction;
+    Vec3 velocity;
+    Vec3 original;
+    Vec3 midpoint;
+    register s32 tmp0;
+    register s32 tmp1;
+    register s32 productX;
+    register s32 callA0;
+    register s32 callA1;
+    register s32 productY;
+    s32 impulseX;
+    s32 impulseY;
+    register s32 impulsePart;
+    s32 nextCallback;
+    s32 effectFlag;
+    register s32 beyondFar;
+    s32 scratchA0;
+    s32 carHeading;
+    s32 contactAngle;
+    s32 otherHeading;
+    s32 responseCode;
+    s32 headingDifference;
+    s32 collisionExtent;
+    s32 scratchA1;
+    s32 otherPositionY;
+    s32 relativeSpeed;
+    s32 work0;
+    register s32 work1;
+    register s32 work2;
+    register s32 work3;
+    s32 collisionHalfWidth;
+    s32 angleFromHalfTurn;
+    s32 meanSpeedA;
+    s32 meanSpeedB;
+    s32 wrappedHeadingDifference;
+    s32 work6;
+    s32 result;
+    s32 responseXInRange;
+    s32 overlapLimit;
+    s32 outsideCollisionWidth;
+    s32 newSpeedA;
+    s32 newSpeedB;
+    s32 responseYInRange;
+    s32 roundedHeadingDifference;
+    s32 scratchV1;
+    u32 speedSumA;
+    u32 speedSumB;
+    Car *car;
+    Car *otherCar;
+
+    car = firstCar;
+
+    otherCar = secondCar;
+
+    if (D_8008CA28[0] == 0) {
+        tmp0 = (s32)gPlayerCar[0];
+        if (otherCar == (u8 *)tmp0) {
+            otherCar = car;
+            car = (Car *)tmp0;
+        }
+    }
+    separation.x = (otherCar->pos.x) - (car->pos.x);
+    separation.y = (otherCar->pos.y) - (car->pos.y);
+    separation.z = (otherCar->pos.z) - (car->pos.z);
+    original = separation;
+    midpoint.x = (s32)((otherCar->pos.x) + (car->pos.x)) / 2;
+    midpoint.y = (s32)((otherCar->pos.y) + (car->pos.y)) / 2;
+    if (car->callback == (s32)func_80025730) {
+        contactAngle = (car->unk38A);
+        angleFromHalfTurn = contactAngle - 0x200;
+        if (angleFromHalfTurn >= 0) {
+            if (angleFromHalfTurn < 0x100) {
+                goto block_8;
+            }
+            goto block_9;
+        }
+        if ((0x200 - contactAngle) < 0x100) {
+        block_8:
+            tmp1 = car->heading;
+            tmp0 = 0x600 - tmp1;
+            work6 = tmp0 & 0x3FF;
+
+        } else {
+            goto block_9;
+        }
+    } else {
+    block_9:
+        tmp1 = car->heading;
+        tmp0 = 0x3FF;
+        work6 = tmp0 - tmp1;
+    }
+    tmp0 = (s32)gCosTableAbsolute[0];
+    work1 = work6 << 2;
+    callA1 = original.x;
+    tmp0 = work1 + tmp0;
+    callA0 = *(s32 *)tmp0;
+    tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
+    tmp1 = (s32)gSinTableAbsolute[0];
+    callA1 = original.y;
+    tmp1 = work1 + tmp1;
+    callA0 = *(s32 *)tmp1;
+    work0 = tmp0;
+    tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
+    tmp1 = gSinTableAbsolute2[0];
+    callA1 = original.x;
+    work0 -= tmp0;
+    work0 >>= 16;
+    separation.x = work0;
+    tmp1 = work1 + tmp1;
+    callA0 = *(s32 *)tmp1;
+    tmp0 = MathMultiplyFixed16(callA0, callA1 << 16);
+    tmp1 = gCosTableAbsolute2[0];
+    callA1 = original.y;
+    work1 += tmp1;
+    asm("" : "=r"(work1) : "0"(work1));
+    callA0 = *(s32 *)work1;
+    work0 = tmp0;
+    work0 += MathMultiplyFixed16(callA0, callA1 << 16);
+    work0 >>= 16;
+    separation.y = work0;
+    tmp0 = (s32)car->shape;
+    tmp0 = ((Model *)tmp0)->maxX;
+    tmp1 = separation.x;
+    collisionHalfWidth = tmp0 - 10;
+    tmp0 = collisionHalfWidth << 1;
+    scratchA0 = tmp0;
+    if (tmp1 >= 0) {
+        tmp0 = tmp0 < tmp1;
+    } else {
+        tmp0 = scratchA0 < -tmp1;
+    }
+    outsideCollisionWidth = tmp0;
+    result = 0;
+    if (outsideCollisionWidth == 0) {
+        work3 = MathMultiplyFixed16((otherCar->basis[0].x), 0xFA0);
+
+        work2 = MathMultiplyFixed16((otherCar->basis[1].x), 0xFA0);
+
+        tmp0 = MathMultiplyFixed16(otherCar->basis[2].x, 0xFA0);
+        tmp1 = pairCosTable3[0];
+        work1 = work6 << 2;
+        direction.z = tmp0;
+        tmp1 = work1 + tmp1;
+        callA0 = *(s32 *)tmp1;
+        work3 <<= 16;
+        tmp0 = MathMultiplyFixed16(callA0, work3);
+        tmp1 = pairSinTable3[0];
+        tmp1 = work1 + tmp1;
+        do {
+            callA0 = *(s32 *)tmp1;
+        } while (0);
+
+        work2 <<= 16;
+        do {
+            callA1 = work2;
+        } while (0);
+
+        work0 = tmp0;
+        tmp0 = MathMultiplyFixed16(callA0, callA1);
+        tmp1 = pairSinTable4[0];
+        work0 -= tmp0;
+        work0 >>= 16;
+        direction.x = work0;
+        tmp1 = work1 + tmp1;
+        callA0 = *(s32 *)tmp1;
+        tmp0 = MathMultiplyFixed16(callA0, work3);
+        tmp1 = pairCosTable4[0];
+        work1 += tmp1;
+        asm("" : "=r"(work1) : "0"(work1));
+        callA0 = *(s32 *)work1;
+        callA1 = work2;
+        work0 = tmp0;
+        work0 += MathMultiplyFixed16(callA0, callA1);
+        work0 >>= 16;
+        direction.y = work0;
+        tmp0 = car->velocityX;
+        productX = otherCar->velocityX;
+        tmp1 = direction.x;
+        scratchA0 = (s32)D_800A3668Absolute[0];
+        tmp0 -= productX;
+        productX = tmp0 * tmp0;
+        tmp1 = __builtin_abs(tmp1);
+        scratchA0 += tmp1;
+        work6 = *(u8 *)scratchA0;
+        velocity.x = tmp0;
+        tmp0 = car->velocityY;
+        tmp1 = otherCar->velocityY;
+        tmp0 -= tmp1;
+        productY = tmp0 * tmp0;
+        velocity.y = tmp0;
+        tmp1 = otherCar->velocityZ;
+        tmp0 = car->velocityZ;
+        tmp0 -= tmp1;
+        velocity.z = tmp0;
+        tmp0 = MathSqrt(productX + productY);
+        relativeSpeed = tmp0;
+        tmp1 = separation.y;
+        scratchA0 = car->type;
+        tmp0 = 1;
+        work2 = tmp1;
+        if (tmp1 < 0) {
+            work2 = -work2;
+        }
+        if ((scratchA0 == tmp0) && ((otherCar->type) == scratchA0)) {
+            tmp0 = (s32)car->shape;
+            tmp0 = ((Model *)tmp0)->maxY;
+            scratchV1 = tmp0 - 0x1E;
+        } else {
+            tmp0 = (s32)car->shape;
+            tmp0 = ((Model *)tmp0)->maxY;
+            scratchV1 = tmp0 - 0xF;
+        }
+        (car->unk1CE) = 0;
+        tmp0 = (u32)work6 < 0xA1;
+        scratchA1 = scratchV1 << 1;
+        if (tmp0 == 0) {
+            tmp0 = scratchA1 + scratchV1;
+            scratchV1 = (u32)tmp0 >> 31;
+            tmp0 = (tmp0 + scratchV1) >> 1;
+            tmp0 = work2 < tmp0;
+            if (tmp0 != 0) {
+                responseCode = 1;
+                if (relativeSpeed >= 0x12D) {
+                    tmp0 = car->type;
+                    goto block_125;
+                }
+                if (separation.x >= 0) {
+                    (car->unk1CE) = 2;
+                    tmp0 = collisionHalfWidth << 3;
+                    tmp1 = tmp0 + collisionHalfWidth;
+                    if (tmp1 < 0) {
+                        tmp1 += 3;
+                    }
+                    tmp0 = separation.x;
+                    callA0 = car->basis[0].x;
+                    tmp1 >>= 2;
+                    tmp0 -= tmp1;
+                    tmp1 = (u32)tmp0 >> 31;
+                    tmp0 += tmp1;
+                    work3 = tmp0 >> 1;
+                    (car->pos.x) = (s32)((car->pos.x) +
+                                         MathMultiplyFixed16(callA0, work3));
+                    (car->pos.y) =
+                        (s32)((car->pos.y) +
+                              MathMultiplyFixed16((car->basis[1].x), work3));
+                    (otherCar->pos.x) =
+                        (s32)((otherCar->pos.x) -
+                              MathMultiplyFixed16((car->basis[0].x), work3));
+                    (otherCar->pos.y) =
+                        (s32)((otherCar->pos.y) -
+                              MathMultiplyFixed16((car->basis[1].x), work3));
+                    if (direction.x > 0) {
+                        speedSumA = (otherCar->speed) + (car->speed);
+                        meanSpeedA =
+                            (s32)(speedSumA + (speedSumA >> 0x1F)) >> 1;
+                        if ((otherCar->type) != 0) {
+                            (otherCar->speed) = (s32)(meanSpeedA + 0xA0000);
+                        }
+                        if ((car->type) != 0) {
+                            newSpeedA = meanSpeedA + 0xFFF60000;
+                            goto block_40;
+                        }
+                    } else {
+                        tmp0 = otherCar->speed;
+                        tmp1 = car->speed;
+                        scratchA0 = otherCar->type;
+                        tmp0 += tmp1;
+                        if (tmp0 < 0) {
+                            tmp0 = -tmp0;
+                        }
+                        tmp1 = (u32)tmp0 >> 31;
+                        tmp0 += tmp1;
+                        tmp1 = tmp0 >> 1;
+                        if (scratchA0 != 0) {
+                            (otherCar->speed) = (s32)(tmp1 + 0xFFF60000);
+                        }
+                        if ((car->type) != 0) {
+                            newSpeedA = tmp1 + 0xA0000;
+                        block_40:
+                            (car->speed) = newSpeedA;
+                        }
+                    }
+                    func_80025DD4(otherCar, car);
+                    work0 = 1;
+                    if (relativeSpeed >= 0x2E) {
+                        if (relativeSpeed >= 0x79) {
+                            EffectSpawnAtCarPoint(otherCar, 7);
+                            if (RandomScaledGet(0xA) == 0) {
+                                callA1 = 0;
+                                if (separation.y > 0) {
+                                    callA0 = (s32)car;
+                                } else {
+                                    callA0 = (s32)car;
+                                    callA1 = 1;
+                                }
+                                EffectSpawnAtCarPoint((void *)callA0, callA1);
+                            }
+                        }
+                        if (RandomScaledGet(0xA) == 0) {
+                            callA0 = (s32)car;
+                            if (separation.y > 0) {
+                                asm("# positive contact side");
+                                callA1 = 5;
+                            } else {
+                                callA1 = 6;
+                            }
+                            EffectSpawnAtCarPoint((void *)callA0, callA1);
+                        }
+                        func_80043B68(car, 0);
+                        func_80043B68(car, 1);
+                        func_80043B68(otherCar, 2);
+                        func_80043B68(otherCar, 3);
+                        work0 = 1;
+                    }
+                    PortApplyImpulse(car, otherCar, velocity, work0, work0);
+                    tmp0 = car->heading;
+                    tmp1 = (s32)gCosTableAbsolute[0];
+                    tmp0 += 0x200;
+                    work6 = tmp0 & 0x3FF;
+                    scratchA0 = work6 << 2;
+                    tmp1 = scratchA0 + tmp1;
+                    tmp0 = *(s32 *)tmp1;
+                    impulseX = relativeSpeed * tmp0;
+                    tmp1 = (s32)gSinTableAbsolute[0];
+                    tmp0 = car->frontVelocityX;
+                    scratchA0 += tmp1;
+                    asm(""
+                        : "=r"(impulsePart)
+                        : "0"(impulseX), "r"(tmp0), "r"(scratchA0));
+                    tmp0 += impulsePart;
+                    car->frontVelocityX = tmp0;
+                    tmp0 = *(s32 *)scratchA0;
+                    impulseY = relativeSpeed * tmp0;
+                    tmp0 = car->frontVelocityY;
+                    asm("" : "=r"(impulsePart) : "0"(impulseY), "r"(tmp0));
+                    tmp0 += impulsePart;
+                    car->frontVelocityY = tmp0;
+                    result = 2;
+                    if ((otherCar->type) == work0) {
+                        func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                      separation.y);
+                        asm("# collision response 1");
+                        return 2;
+                    }
+                    return result;
+                }
+                (car->unk1CE) = 3;
+                tmp1 = separation.x;
+                tmp0 = collisionHalfWidth << 3;
+                tmp0 += collisionHalfWidth;
+                tmp1 = -tmp1;
+                if (tmp0 < 0) {
+                    tmp0 += 3;
+                }
+                callA0 = car->basis[0].x;
+                tmp0 >>= 2;
+                tmp0 = tmp1 - tmp0;
+                tmp1 = (u32)tmp0 >> 31;
+                tmp0 += tmp1;
+                work3 = tmp0 >> 1;
+                (car->pos.x) =
+                    (s32)((car->pos.x) - MathMultiplyFixed16(callA0, work3));
+                (car->pos.y) =
+                    (s32)((car->pos.y) -
+                          MathMultiplyFixed16((car->basis[1].x), work3));
+                (otherCar->pos.x) =
+                    (s32)((otherCar->pos.x) +
+                          MathMultiplyFixed16((car->basis[0].x), work3));
+                (otherCar->pos.y) =
+                    (s32)((otherCar->pos.y) +
+                          MathMultiplyFixed16((car->basis[1].x), work3));
+                if (direction.x > 0) {
+                    speedSumB = (otherCar->speed) + (car->speed);
+                    meanSpeedB = (s32)(speedSumB + (speedSumB >> 0x1F)) >> 1;
+                    if ((otherCar->type) != 0) {
+                        (otherCar->speed) = (s32)(meanSpeedB + 0xA0000);
+                    }
+                    if ((car->type) != 0) {
+                        newSpeedB = meanSpeedB + 0xFFF60000;
+                        goto block_69;
+                    }
+                } else {
+                    tmp0 = otherCar->speed;
+                    tmp1 = car->speed;
+                    scratchA0 = otherCar->type;
+                    tmp0 += tmp1;
+                    if (tmp0 < 0) {
+                        tmp0 = -tmp0;
+                    }
+                    tmp1 = (u32)tmp0 >> 31;
+                    tmp0 += tmp1;
+                    tmp1 = tmp0 >> 1;
+                    if (scratchA0 != 0) {
+                        (otherCar->speed) = (s32)(tmp1 + 0xFFF60000);
+                    }
+                    if ((car->type) != 0) {
+                        newSpeedB = tmp1 + 0xA0000;
+                    block_69:
+                        (car->speed) = newSpeedB;
+                    }
+                }
+                func_80025DD4(otherCar, car);
+                if (relativeSpeed < 0x2E) {
+                    effectFlag = 1;
+                    goto effectsDoneNegative;
+                }
+
+                if (relativeSpeed >= 0x79) {
+                    EffectSpawnAtCarPoint(otherCar, 7);
+                    if (RandomScaledGet(0xA) == 0) {
+                        callA1 = 0;
+                        if (separation.y > 0) {
+                            callA0 = (s32)car;
+                        } else {
+                            callA0 = (s32)car;
+                            callA1 = 1;
+                        }
+                        EffectSpawnAtCarPoint((void *)callA0, callA1);
+                    }
+                }
+                if (RandomScaledGet(0xA) == 0) {
+                    callA0 = (s32)car;
+                    if (separation.y > 0) {
+                        asm("# positive contact side");
+                        callA1 = 5;
+                    } else {
+                        callA1 = 6;
+                    }
+                    EffectSpawnAtCarPoint((void *)callA0, callA1);
+                }
+                func_80043B68(car, 0);
+                func_80043B68(car, 1);
+                func_80043B68(otherCar, 2);
+                func_80043B68(otherCar, 3);
+                effectFlag = 1;
+
+            effectsDoneNegative:
+                PortApplyImpulse(car, otherCar, velocity, 0, effectFlag);
+                return 2;
+            }
+            if (work2 < scratchA1) {
+                (car->unk1CE) = 4;
+                work2 = scratchA1 - work2;
+                work3 = 1;
+                if (separation.y > 0) {
+                    work2 = -work2;
+                }
+                work1 = MathMultiplyFixed16((car->basis[0].y), work2);
+
+                (car->pos.x) = (s32)((car->pos.x) + work1);
+                work0 = MathMultiplyFixed16((car->basis[1].y), work2);
+
+                (car->pos.y) = (s32)((car->pos.y) + work0);
+                (otherCar->pos.x) =
+                    (s32)((otherCar->pos.x) -
+                          MathMultiplyFixed16((car->basis[0].y), work2));
+                (otherCar->pos.y) =
+                    (s32)((otherCar->pos.y) -
+                          MathMultiplyFixed16((car->basis[1].y), work2));
+                func_80025DD4(otherCar, car);
+                nextCallback = (s32)ObjectSetResetCallback;
+                if ((((car->type) != work3) ||
+                     (nextCallback != (s32)func_80025730)) &&
+                    (((s32)car->callback) != (s32)func_80025730) &&
+                    ((car->mode) != 4)) {
+                    car->callback = (void (*)(Car *))nextCallback;
+                }
+                if ((car->type) == 0) {
+                    if ((otherCar->type) != 0) {
+                        carHeading = (car->heading);
+                        headingDifference = carHeading - (otherCar->heading);
+                        wrappedHeadingDifference = headingDifference + 0x400;
+                        roundedHeadingDifference = wrappedHeadingDifference;
+                        if (wrappedHeadingDifference < 0) {
+                            roundedHeadingDifference =
+                                headingDifference + 0x7FF;
+                        }
+                        if ((u32)((wrappedHeadingDifference -
+                                   ((roundedHeadingDifference >> 0xA) << 0xA)) -
+                                  0x101) < 0x1FFU) {
+                            otherHeading = (carHeading + 0x200) & 0x3FF;
+                        } else {
+                            otherHeading = carHeading;
+                        }
+                        (otherCar->heading) = otherHeading;
+                        otherCar->fineHeading =
+                            (s16)((s32)(otherHeading << 0x10) >> 0xE);
+                    }
+                    responseYInRange = work1 < 0x33;
+                } else {
+                    responseYInRange = work1 < 0x33;
+                }
+                if (responseYInRange == 0) {
+                    work1 = 0x32;
+
+                    goto block_105;
+                }
+                if (work1 < -0x32) {
+                    work1 = -0x32;
+                }
+            block_105:
+                responseXInRange = work0 < 0x33;
+                if (responseXInRange == 0) {
+                    work0 = 0x32;
+
+                } else if (work0 < -0x32) {
+                    work0 = -0x32;
+                }
+                if (separation.x >= -collisionHalfWidth) {
+                    (car->frontVelocityX) =
+                        (s32)((car->frontVelocityX) + (work1 << 0x11));
+                    (car->frontVelocityY) =
+                        (s32)((car->frontVelocityY) + (work0 << 0x11));
+                }
+                tmp0 = separation.x;
+                tmp0 = collisionHalfWidth < tmp0;
+                if (tmp0 != 0) {
+                    return 1;
+                }
+                tmp1 = car->rearVelocityX;
+                callA0 = car->rearVelocityY;
+                scratchA1 = car->type;
+                tmp0 = work1 << 16;
+                tmp1 += tmp0;
+                tmp0 = work0 << 16;
+                callA0 += tmp0;
+                car->rearVelocityX = tmp1;
+                car->rearVelocityY = callA0;
+                if (scratchA1 != 0) {
+                    goto sideReturnOne;
+                }
+                tmp1 = otherCar->type;
+                tmp0 = 1;
+                if (tmp1 == tmp0) {
+                    tmp1 = 0xFFFB0000;
+                    tmp0 = otherCar->speed;
+                    tmp0 += tmp1;
+                    otherCar->speed = tmp0;
+                sideReturnOne:
+                    asm("# side return one");
+                    tmp0 = 1;
+                }
+                return tmp0;
+            }
+            goto block_151;
+        }
+        tmp0 = separation.x;
+        collisionExtent = collisionHalfWidth + scratchV1;
+        if (tmp0 >= 0) {
+            asm("" : "=r"(scratchV1) : "0"(scratchV1));
+            tmp0 = collisionExtent < tmp0;
+            if (tmp0 != 0) {
+                asm("# positive lateral rejection");
+                return 0;
+            }
+            overlapLimit = collisionHalfWidth + scratchV1;
+            goto block_122;
+        }
+        asm("" : "=r"(scratchV1) : "0"(scratchV1));
+        tmp0 = -tmp0;
+        tmp0 = collisionExtent < tmp0;
+        result = 0;
+        if (tmp0 == 0) {
+            overlapLimit = collisionHalfWidth + scratchV1;
+        block_122:
+            if (work2 < overlapLimit) {
+                if (relativeSpeed >= 0x12D) {
+                    tmp0 = car->type;
+                    responseCode = 5;
+                block_125:
+                    callA0 = (s32)func_80025730;
+                    (car->unk1CE) = responseCode;
+                    if ((tmp0 != 1) && (((s32)car->callback) != callA0) &&
+                        ((car->mode) != 4)) {
+                        car->callback = (void (*)(Car *))callA0;
+                    }
+                    if (((otherCar->type) == 0)) {
+                        tmp0 = (s32)otherCar->callback;
+                        callA0 = (s32)func_80025730;
+                        if ((tmp0 != callA0) && ((otherCar->mode) != 4)) {
+                            otherCar->callback = (void (*)(Car *))callA0;
+                        }
+                    }
+                    result = 4;
+                    if ((car->type) == 0) {
+                        func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                      separation.y);
+                        return 4;
+                    }
+                    return result;
+                }
+                (car->unk1CE) = 6;
+                tmp0 = original.x;
+                tmp1 = tmp0 * tmp0;
+                tmp0 = original.y;
+                productY = tmp0 * tmp0;
+                work3 = MathSqrt(tmp1 + productY);
+                (car->pos.x) =
+                    (s32)(midpoint.x +
+                          ((s32)(MathFixedDivide((car->pos.x) - midpoint.x,
+                                                 work3) *
+                                 0x320) >>
+                           0x10));
+                (car->pos.y) =
+                    (s32)(midpoint.y +
+                          ((s32)(MathFixedDivide((car->pos.y) - midpoint.y,
+                                                 work3) *
+                                 0x320) >>
+                           0x10));
+                (otherCar->pos.x) =
+                    (s32)(midpoint.x +
+                          ((s32)(MathFixedDivide((otherCar->pos.x) - midpoint.x,
+                                                 work3) *
+                                 0x320) >>
+                           0x10));
+                otherPositionY =
+                    midpoint.y +
+                    ((s32)(MathFixedDivide((otherCar->pos.y) - midpoint.y,
+                                           work3) *
+                           0x320) >>
+                     0x10);
+                (otherCar->pos.y) = otherPositionY;
+                func_80025DD4(otherCar, car);
+                tmp1 = separation.x;
+                if (tmp1 >= -collisionHalfWidth) {
+                    PortApplyImpulse(car, otherCar, velocity, 1, 0);
+                    if ((separation.x < 0) && ((otherCar->type) != 0)) {
+                        (otherCar->speed) = 0;
+                    }
+                } else {
+                    beyondFar = collisionHalfWidth < tmp1;
+                    if (beyondFar == 0) {
+                        tmp0 = otherCar->velocityX;
+                        tmp1 = otherCar->velocityY;
+                        scratchA0 = (u32)tmp0 >> 31;
+                        tmp0 = (tmp0 + scratchA0) >> 1;
+                        work1 = tmp0 << 16;
+                        tmp0 = (u32)tmp1 >> 31;
+                        tmp1 += tmp0;
+                        tmp1 >>= 1;
+                        work0 = tmp1 << 16;
+                        asm volatile("" : : "r"(work1), "r"(work0));
+                        PortApplyImpulse(car, otherCar, velocity, 0, 1);
+                    }
+                }
+                nextCallback = (s32)CarApplyRandomHeadingImpulse;
+                if ((((car->type) != 1) ||
+                     (nextCallback != (s32)func_80025730)) &&
+                    (((s32)car->callback) != (s32)func_80025730) &&
+                    ((car->mode) != 4)) {
+                    car->callback = (void (*)(Car *))nextCallback;
+                }
+                result = 2;
+                if ((car->type) == 0) {
+                    func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                  separation.y);
+                    return 2;
+                }
+                return result;
+            }
+            if ((tmp0 = work2 < scratchA1) != 0) {
+                (car->unk1CE) = 7;
+                result = 3;
+                if ((otherCar->type) == 1) {
+                    func_8003AC18(otherCar, relativeSpeed, separation.x,
+                                  separation.y);
+                    return 3;
+                }
+                return result;
+            }
+        block_151:
+            result = 0;
+            return result;
+        }
+        return result;
+    }
+    return result;
+#undef PortApplyImpulse
+}
+#else
 s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     Vec3 separation;
     Vec3 direction;
@@ -3571,6 +4430,7 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
     }
     return result;
 }
+#endif
 s32 VectorProjectAgainstHeading(Vec3 *vector, s32 heading) {
     s32 index;
     s32 product;
@@ -5011,6 +5871,39 @@ Other:
     }
 }
 
+#ifdef NATIVE
+void func_800297D0(Car *car) {
+    /* Called without its car argument; a0 still holds it. */
+    extern void func_80031264NoArgs(Car *) asm("func_80031264");
+    extern void func_800294A8(void *);
+    extern s32 CarHandleWallCollision(Car *);
+    extern s32 D_800A2EC8NM[] __asm__("D_800A2EC8");
+
+    func_80031264NoArgs(car);
+    car->unk375 = 1;
+    func_800294A8(car);
+    if (gSessionTypeAbsolute[0] <= 0) {
+        if (func_80025A38(car) != 0) {
+            car->segment = TrackFindSectionForward(car->pos.x, car->pos.y,
+                                                   &car->regionIndex);
+        }
+    }
+    if (car->collisionPending != 0 || car->segment == -1) {
+        SoundPlaySlotAtVolume(car, 7, 8);
+        if (*(s32 *)&car->callback == (s32)func_80025730 &&
+            D_800A2EC8NM[0] == 0) {
+            car->pos.x = car->unkC;
+            car->pos.y = car->unk10;
+            car->pos.z = car->unk14;
+            car->speed = car->speed / 2;
+            car->movementHeading = ((u16)car->movementHeading + 0x200) & 0x3FF;
+        }
+        CarHandleWallCollision(car);
+        car->collisionPending = 0;
+        car->unk375 = 0;
+    }
+}
+#else
 void func_800297D0(Car *car) {
     /* Called without its car argument; a0 still holds it. */
     extern void func_80031264NoArgs(void) asm("func_80031264");
@@ -5042,6 +5935,7 @@ void func_800297D0(Car *car) {
         car->unk375 = 0;
     }
 }
+#endif
 
 void CarUpdateWheelVelocityComponents(Car *car) {
     /* Word views of the table pointers: retail reads all four the same
@@ -8198,6 +9092,71 @@ void CarKeepAllCarsOnTrack(void) {
 
 extern u8 D_800A2ED8;
 
+#ifdef NATIVE
+void func_8002EEFC(Car *arg0) {
+    s32 refX;
+    s32 refY;
+    s32 refZ;
+    s32 level;
+    s32 lod;
+    Car *node;
+    s32 dist;
+    s32 delta;
+    s32 ySq;
+    s32 zSq;
+
+    refX = ((Car *)D_800A38AC[0])->pos.x;
+    refY = ((Car *)D_800A38AC[0])->pos.y;
+    refZ = ((Car *)D_800A38AC[0])->pos.z;
+    node = gCarList;
+    if (node == NULL) {
+        return;
+    }
+    level = 4;
+    do {
+        if (node == arg0 && node->type == 0 && D_800A2ED8 == 0 &&
+            node->cameraMode == 0) {
+            node->unk374 = level;
+            node->model = (Model *)(*(u32 *)&node->shape + 0x110);
+        } else {
+            delta = node->pos.x;
+            dist = delta - refX;
+            dist = dist * dist;
+            delta = node->pos.y;
+            delta = delta - refY;
+            ySq = delta * delta;
+            delta = node->pos.z;
+            delta = delta - refZ;
+            zSq = delta * delta;
+            dist = dist + ySq;
+            dist = MathSqrt(dist + zSq);
+            if (dist < 0x7D0) {
+                node->unk374 = 0;
+            } else if (dist < 0x1770) {
+                node->unk374 = 1;
+            } else if (dist < 0x2EE0) {
+                node->unk374 = 2;
+            } else {
+                node->unk374 = 3;
+            }
+            if (D_800A2ED8 != 0) {
+                if ((s8)node->unk374 < 3) {
+                    node->unk374++; /* s8 field: the lvalue cast is its own width */
+                }
+            }
+            if (node->mode == level) {
+                node->unk374 = 0;
+            }
+            if (node == arg0) {
+                node->unk374 = 0;
+            }
+            lod = (s8)node->unk374;
+            node->model = (Model *)(*(u32 *)&node->shape + (lod * 0x44));
+        }
+        node = node->next;
+    } while (node != NULL);
+}
+#else
 void func_8002EEFC(Car *arg0) {
     s32 refX;
     s32 refY;
@@ -8261,6 +9220,7 @@ void func_8002EEFC(Car *arg0) {
         node = node->next;
     } while (node != NULL);
 }
+#endif
 
 extern void *D_800A2EA0Small;
 extern s32 D_800A2EC4;
@@ -9182,6 +10142,230 @@ extern s32 gOrderingTableFrame4Read[];
 extern s32 gOrderingTableFrame5Read[];
 extern s32 gOrderingTableFrame8Read[];
 
+#ifdef NATIVE
+void GraphicsDrawRaceViews(void) {
+    MATRIX rotation;
+    Car *drawCar;
+    s32 bank;
+    Car *mainCamera;
+    Car *secondCamera;
+    Car *insetCamera;
+    s32 secondTable;
+    s32 tableOffset;
+    s32 ticks;
+    s32 bankAfterDraw;
+    s32 bankAfterInset;
+    Car *car;
+    Car *insetCar;
+    Car *focusCar;
+
+    focusCar = gPlayerCarFrame[0];
+    func_8002FFB8(1);
+    if (D_800A2EDAFrame != 0) {
+        focusCar = D_800A2E9CFrame;
+        if (D_800A2EC0Frame >= 0x349) {
+            if ((focusCar->cameraMode) != 5) {
+                (focusCar->cameraAngle) =
+                    (s32)(((focusCar->heading) + 0x200) & 0x3FF);
+            }
+            (focusCar->cameraMode) = 5;
+        } else if (D_800A2EC0Frame >= 0x169) {
+            (focusCar->cameraMode) = 3;
+        }
+        if (D_800A2EC0Frame == ((D_800A2EC0Frame / 120) * 0x78)) {
+            if (RandomScaledGet(0x18) < 0) {
+                D_800A2E9CFrame =
+                    (Car *)(D_800A3984Frame[0] +
+                            ((-RandomScaledGet(0x18) + 1) * 0x500));
+            } else {
+                D_800A2E9CFrame =
+                    (Car *)(D_800A3984Frame[0] +
+                            ((RandomScaledGet(0x18) + 1) * 0x500));
+            }
+        }
+    }
+    ticks = GetRCnt(RCntCNT1);
+    D_800A2EA0Frame = focusCar;
+    D_800B9D54Frame[0] = ticks - D_800B9D54Frame[0];
+    mainCamera = D_800A38ACFrame1[0];
+    if (focusCar != mainCamera) {
+        mainCamera->segment =
+            (u16)focusCar->segment; /* s16 field, u16 lvalue cast */
+    } else {
+        (*(u16 *)&((Car *)D_800A38ACFrame2[0])->segment) =
+            TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
+                                    &focusCar->regionIndex);
+    }
+    MatrixSetIdentity((s32 *)D_800A38ACFrame3[0]);
+    if (D_800A2ED8Frame != 0) {
+        CameraUpdateForCar((Car *)D_800A38ACFrameCam1A[0], focusCar,
+                           D_800A2EC4Frame + 4);
+    } else {
+        CameraUpdateForCar((Car *)D_800A38ACFrameCam1B[0], focusCar,
+                           focusCar->cameraMode);
+    }
+    MatrixLoadObjectBasis((s32 *)D_800A38ACFrame5[0]);
+    MatrixBuildRotationFromTransform((s32 *)D_800A38ACFrame6[0],
+                                     (s32 *)&rotation);
+    rotation.t[2] = 0;
+    rotation.t[1] = 0;
+    rotation.t[0] = 0;
+    SetTransMatrix(&rotation);
+    SetRotMatrix(&rotation);
+    func_8002EEFC(focusCar);
+    CameraUpdateHorizon();
+    D_800A37B0Frame = D_800A2E98Frame;
+    D_800A2EBCFrame = 0;
+    if (D_800A3075Frame[0] != 0) {
+        D_800A2F08Frame = 0x352;
+    } else {
+        D_800A2F08Frame = 0x44C;
+    }
+    D_800A2E98Frame = 0;
+    if (gSplitScreenModeFrame == 2) {
+        D_800A2F0CFrame = 0x4E2;
+        D_800A2F10Frame = 0x44C;
+        D_800A2F08Frame = (D_800A2F08Frame * 0x46) / 100;
+        SetGeomScreen(0xD0);
+        D_800A2E8CFrame = 0x23;
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame1[0] == 0, 0);
+        D_800A2F3CFrame1[0] = 0x46;
+        SceneDrawView(gPlayerCarFrame[0]);
+        car = D_800A3558Frame[0];
+        if (car != NULL) {
+            do {
+                if ((car->type) >= 0) {
+                    (car->unk1E2) = (u16)((u16)car->unk1E6);
+                    (car->unk1E4) = (u16)((u16)car->unk1E8);
+                }
+                car = ((u8 *)car->next);
+            } while (car != NULL);
+        }
+        focusCar = gPlayerCarFrame[0]->next;
+        D_800A2F0CFrame = 0xA28;
+        D_800A2F10Frame = 0x992;
+        D_800A2ED9Frame = 1;
+        D_800A2EA0Frame = focusCar;
+        secondCamera = D_800A38ACFrame7[0];
+        if (focusCar != secondCamera) {
+            secondCamera->segment =
+                (u16)focusCar->segment; /* s16 field, u16 lvalue cast */
+        } else {
+            (*(u16 *)&((Car *)D_800A38ACFrame8[0])->segment) =
+                TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
+                                        &focusCar->regionIndex);
+        }
+        MatrixSetIdentity((s32 *)D_800A38ACFrame9[0]);
+        if (D_800A2ED8Frame != 0) {
+            CameraUpdateForCar((Car *)D_800A38ACFrameCam2A[0], focusCar,
+                               D_800A2EC4Frame + 4);
+        } else {
+            CameraUpdateForCar((Car *)D_800A38ACFrameCam2B[0], focusCar,
+                               focusCar->cameraMode);
+        }
+        MatrixLoadObjectBasis((s32 *)D_800A38ACFrame11[0]);
+        MatrixBuildRotationFromTransform((s32 *)D_800A38ACFrame12[0],
+                                         (s32 *)&rotation);
+        rotation.t[2] = 0;
+        rotation.t[1] = 0;
+        rotation.t[0] = 0;
+        SetTransMatrix(&rotation);
+        SetRotMatrix(&rotation);
+        func_8002EEFC(focusCar);
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame2[0] == 0, 1);
+        drawCar = (Car *)gPlayerCarFrame[0]->next;
+        bank = gOrderingTableBankFrame3Read[0] + 1;
+        secondTable = gOrderingTableFrame1[0] + 0x1000;
+        D_800A2F3CFrame2[0] = 0x3C;
+        gOrderingTableBankFrame3[0] = bank;
+        gOrderingTableFrame2[0] = secondTable;
+        SceneDrawView(drawCar);
+        D_800A2ED9Frame = 0;
+        bankAfterDraw = gOrderingTableBankFrame4[0] - 1;
+        gOrderingTableBankFrame5[0] = bankAfterDraw;
+        gOrderingTableFrame3[0] = gOrderingTableFrame3Read[0] - 0x1000;
+        GraphicsSetGeomOffsetForMode(bankAfterDraw == 0, 2);
+        D_800A2F3CFrame3[0] = 0x46;
+    } else if ((D_800A2EC4Frame != 0) && (D_800A2EC8Frame == 0)) {
+        D_800A2F10Frame = 0x578;
+        D_800A2F0CFrame = 0x708;
+        D_800A2F08Frame = (D_800A2F08Frame * 0x41) / 100;
+        SetGeomScreen(0xD0);
+        D_800A2E8CFrame = 0x23;
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame6[0] == 0, 3);
+        D_800A2F3CFrame4[0] = 0x82;
+        SceneDrawView(gPlayerCarFrame[0]);
+        insetCar = D_800A3558Frame[0];
+        if (insetCar != NULL) {
+            do {
+                if ((insetCar->type) >= 0) {
+                    (insetCar->unk1E2) = (u16)((u16)insetCar->unk1E6);
+                    (insetCar->unk1E4) = (u16)((u16)insetCar->unk1E8);
+                }
+                insetCar = ((u8 *)insetCar->next);
+            } while (insetCar != NULL);
+        }
+        D_800A2ED8Frame = 1;
+        SetGeomScreen(0x64);
+        D_800A2E8CFrame = 0xA;
+        GraphicsSetGeomOffsetForMode(gOrderingTableBankFrame7[0] == 0, 4);
+        D_800A2F3CFrame5[0] = 0x1E;
+        D_800A2F0CFrame = 0xA28;
+        D_800A2F10Frame = 0x9C4;
+        D_800A2F08Frame = (D_800A2F08Frame * 0x23) / 100;
+        func_8002F674();
+        focusCar = D_800A2E9CFrame;
+        D_800A2EA0Frame = focusCar;
+        insetCamera = D_800A38ACFrame13[0];
+        if (focusCar != insetCamera) {
+            insetCamera->segment =
+                (u16)focusCar->segment; /* s16 field, u16 lvalue cast */
+        } else {
+            (*(u16 *)&((Car *)D_800A38ACFrame14[0])->segment) =
+                TrackFindSectionForward((focusCar->pos.x), (focusCar->pos.y),
+                                        &focusCar->regionIndex);
+        }
+        MatrixSetIdentity((s32 *)D_800A38ACFrame15[0]);
+        if (D_800A2ED8Frame != 0) {
+            CameraUpdateForCar((Car *)D_800A38ACFrameCam3A[0], focusCar,
+                               D_800A2EC4Frame + 4);
+        } else {
+            CameraUpdateForCar((Car *)D_800A38ACFrameCam3B[0], focusCar,
+                               focusCar->cameraMode);
+        }
+        MatrixLoadObjectBasis((s32 *)D_800A38ACFrame17[0]);
+        MatrixBuildRotationFromTransform((s32 *)D_800A38ACFrame18[0],
+                                         (s32 *)&rotation);
+        rotation.t[2] = 0;
+        rotation.t[1] = 0;
+        rotation.t[0] = 0;
+        SetTransMatrix(&rotation);
+        SetRotMatrix(&rotation);
+        func_8002EEFC(focusCar);
+        gOrderingTableBankFrame8[0] = gOrderingTableBankFrame8Read[0] + 1;
+        gOrderingTableFrame4[0] = gOrderingTableFrame4Read[0] + 0x1000;
+        func_8002FFB8(1);
+        SceneDrawView(D_800A2E9CFrame);
+        bankAfterInset = gOrderingTableBankFrame9[0] - 1;
+        gOrderingTableBankFrame10[0] = bankAfterInset;
+        gOrderingTableFrame5[0] = gOrderingTableFrame5Read[0] - 0x1000;
+        GraphicsSetGeomOffsetForMode(bankAfterInset == 0, 3);
+        D_800A2F3CFrame6[0] = 0x82;
+        D_800A2ED8Frame = 0;
+    } else {
+        D_800A2F0CFrame = 0xA28;
+        D_800A2F10Frame = 0x898;
+        SetGeomScreen(0xD0);
+        D_800A2F3CFrame7[0] = 0x82;
+        D_800A2E8CFrame = D_800A3774Frame + 0x32;
+        tableOffset = gOrderingTableFrame6[0] + 0x28;
+        gOrderingTableFrame7[0] = tableOffset;
+        SceneDrawView(focusCar);
+        gOrderingTableFrame8[0] = gOrderingTableFrame8Read[0] - 0x28;
+    }
+    D_800B9D5CFrame[0] = GetRCnt(RCntCNT1) - D_800B9D5CFrame[0];
+}
+#else
 void GraphicsDrawRaceViews(void) {
     MATRIX rotation;
     Car *drawCar;
@@ -9401,6 +10585,7 @@ void GraphicsDrawRaceViews(void) {
     }
     D_800B9D5CFrame[0] = GetRCnt(RCntCNT1) - D_800B9D5CFrame[0];
 }
+#endif
 
 extern s32 D_800A3A80;
 /* The right-height block uses its own endpoint locals so leftHeight keeps
@@ -10352,6 +11537,136 @@ u8 *func_80032760(Face *entry, u8 *primitive, s32 remaining) {
     return entry;
 }
 
+#ifdef NATIVE
+void func_800328AC(void *objects, s32 count) {
+    register s32 v0s;
+    u8 *nextObject;
+    u8 *primitive;
+    u32 doublesided;
+    u8 *spad;
+    u32 flagMask;
+    u32 codeConst;
+    register u8 *ot;
+    register u8 *object;
+    register u8 *prim20;
+    s32 *vec0;
+    s32 *vec1;
+    s32 *vec2;
+    s32 gteWord;
+    register s32 w8;
+    register s32 wC;
+    register s32 w10;
+    register s32 w14;
+
+    nextObject = objects;
+    asm("" : "=r"(nextObject) : "0"(nextObject));
+    v0s = gOrderingTable[0];
+    primitive = (u8 *)gPrimitiveCursor[0];
+    doublesided = D_800A2DE0[0];
+    flagMask = 0x66000;
+    {
+        u32 port_cond = 0, port_discard = 0;
+        u32 port_hi = 0, port_lo = 0;
+        u64 port_wide = 0;
+        u32 port_o0 = 0;
+        port_o0 = ((u32)8064 << 16);
+        PORT_OUT(spad, port_o0);
+        (void)port_cond;
+        (void)port_discard;
+        (void)port_wide;
+    }
+    /* blez count, func_800328AC+0x1C0, with ot = v0s + 0x20 in the delay slot. */
+    PORT_OUT(ot, PORT_VAL(v0s) + 0x20);
+    if (count <= 0) {
+        goto done;
+    }
+    codeConst = 0x0C000000;
+    object = (u8 *)objects + 1;
+    prim20 = primitive + 0x20;
+    do {
+        vec0 = *(s32 **)&((Face *)(object - 0x1))->vertex[0];
+        vec1 = *(s32 **)&((Face *)(object - 0x1))->vertex[1];
+        vec2 = *(s32 **)&((Face *)(object - 0x1))->vertex[2];
+        gte_ldv3(vec0, vec1, vec2);
+        w8 = *(s32 *)&((Face *)(object - 0x1))->u0;
+        wC = *(s32 *)&((Face *)(object - 0x1))->u1;
+        gte_op(rtpt);
+        w10 = *(s32 *)&((Face *)(object - 0x1))->u2;
+        w14 = *(s32 *)&((Face *)(object - 0x1))->u3;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u0 = w8;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u1 = wC;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u2 = w10;
+        *(s32 *)&((POLY_GT4 *)(prim20 - 0x20))->u3 = w14;
+        gte_cfc2(gteWord, 31);
+        v0s = gteWord & flagMask;
+        if (v0s != 0) {
+            goto incr;
+        }
+        gte_op(nclip);
+        w8 = *(s32 *)&((Face *)(object - 0x1))->r0;
+        wC = w8 & 0xFF;
+        w8 >>= 8;
+        w10 = w8 & 0xFF;
+        w8 >>= 8;
+        w14 = w8 & 0xFF;
+        v0s = wC << 2;
+        v0s = v0s + (s32)spad;
+        wC = *(u32 *)v0s;
+        v0s = w10 << 2;
+        v0s = v0s + (s32)spad;
+        w10 = *(u32 *)v0s;
+        v0s = w14 << 2;
+        v0s = v0s + (s32)spad;
+        w14 = *(u32 *)v0s;
+        v0s = (w8 >> 6) & 0x3FC;
+        v0s = v0s + (s32)spad;
+        w8 = *(u32 *)v0s;
+        gte_mfc2_nonop(gteWord, 24);
+        if (doublesided != 0) {
+            if (gteWord >= 0) {
+                goto ok;
+            }
+            goto incr;
+        } else if (gteWord > 0) {
+            goto incr;
+        }
+    ok:
+        gte_op(avsz3);
+        v0s = 0x3C000000;
+        v0s = wC | v0s;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r3 = w14;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r2 = w8;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r0 = v0s;
+        *(u32 *)&((POLY_GT4 *)(prim20 - 0x20))->r1 = w10;
+        gte_stsxy3(primitive + 0x8, primitive + 0x14, primitive + 0x2C);
+        vec0 = *(s32 **)&((Face *)(object - 0x1))->vertex[3];
+        gte_ldv0(vec0);
+        gte_mfc2_nonop(gteWord, 7);
+        v0s = ((Face *)(object - 0x1))->depth;
+        gteWord = gteWord + v0s * 4;
+        gte_op(rtps);
+        w14 = gteWord >> 4;
+        w14 = w14 << 2;
+        w14 = w14 + (s32)ot;
+        v0s = *(u32 *)w14;
+        w8 = 0xFFFFFF;
+        w8 = (u32)primitive & w8;
+        v0s = v0s | codeConst;
+        *(u32 *)primitive = v0s;
+        *(u32 *)w14 = w8;
+        gte_stsxy(prim20);
+        prim20 += 0x34;
+        primitive += 0x34;
+    incr:
+        count--;
+        object += 0x2C;
+        nextObject += 0x2C;
+    } while (count > 0);
+done:
+    gPrimitiveCursor[0] = (u32)primitive;
+    /* Retail also returns nextObject in $v0; every caller ignores it. */
+}
+#else
 void func_800328AC(void *objects, s32 count) {
     register s32 v0s asm("v0");
     u8 *nextObject;
@@ -10472,6 +11787,7 @@ void func_800328AC(void *objects, s32 count) {
     gPrimitiveCursor[0] = (u32)primitive;
     asm volatile("addu $2, %0, $0" : : "r"(nextObject));
 }
+#endif
 
 s32 func_80032A90(u8 *arg0) {
     u8 *entry;
@@ -11106,6 +12422,16 @@ void GteStoreScreenCoordinates(void *vertex) {
     asm volatile("swc2 $14, 0x8(%0)\n\t.set\tnoreorder" : : "r"(vertex));
 }
 
+#ifdef NATIVE
+/* Retail (handwritten): mfc2 a2, $11; swc2 $14, 20(a0); srl; sh a2, 6(a0). */
+void GteStoreDepthAndScreenCoordinates(SVECTOR *vertex) {
+    u32 depth;
+
+    depth = PortGteRead(11);
+    *(u32 *)((u8 *)vertex + 20) = PortGteRead(14);
+    vertex->pad = depth >> 2;
+}
+#else
 void GteStoreDepthAndScreenCoordinates(SVECTOR *vertex) {
     register u32 depth asm("$6");
 
@@ -11115,7 +12441,27 @@ void GteStoreDepthAndScreenCoordinates(SVECTOR *vertex) {
     depth >>= 2;
     vertex->pad = depth;
 }
+#endif
 
+#ifdef NATIVE
+/*
+ * Retail (handwritten), after a RotTransPers3: each vertex gets its
+ * screen XY (SXY0 to SXY2) at byte 20 and its depth (SZ1 to SZ3) >> 2.
+ */
+void func_8003379C(SVECTOR *arg0, SVECTOR *arg1, SVECTOR *arg2) {
+    u32 depth;
+
+    depth = PortGteRead(17);
+    *(u32 *)((u8 *)arg0 + 20) = PortGteRead(12);
+    arg0->pad = depth >> 2;
+    depth = PortGteRead(18);
+    *(u32 *)((u8 *)arg1 + 20) = PortGteRead(13);
+    arg1->pad = depth >> 2;
+    depth = PortGteRead(19);
+    *(u32 *)((u8 *)arg2 + 20) = PortGteRead(14);
+    arg2->pad = depth >> 2;
+}
+#else
 void func_8003379C(SVECTOR *arg0, SVECTOR *arg1, SVECTOR *arg2) {
     register u32 depthA asm("$3");
     register u32 depthB;
@@ -11137,7 +12483,21 @@ void func_8003379C(SVECTOR *arg0, SVECTOR *arg1, SVECTOR *arg2) {
     depthA >>= 2;
     arg2->pad = depthA;
 }
+#endif
 
+#ifdef NATIVE
+s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {
+    s64 product;
+    u32 lo;
+    u32 hi;
+
+    /* mult arg0, arg1; mflo lo; mfhi hi */
+    product = (s64)arg0 * arg1;
+    lo = (u32)product;
+    hi = (u32)(product >> 32);
+    return (lo >> 16) | (hi << 16);
+}
+#else
 s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {
     u32 lo;
     u32 hi;
@@ -11147,7 +12507,21 @@ s32 MathMultiplyFixed16(s32 arg0, s32 arg1) {
     asm volatile("mfhi\t%0" : "=r"(hi) : : "hi");
     return (lo >> 16) | (hi << 16);
 }
+#endif
 
+#ifdef NATIVE
+/*
+ * Retail (handwritten): 1 when any of SZ0 to SZ2 is under 300, else
+ * whether SZ3 is.
+ */
+s32 func_800337EC(void) {
+    if ((s32)PortGteRead(16) < 300 || (s32)PortGteRead(17) < 300 ||
+        (s32)PortGteRead(18) < 300) {
+        return 1;
+    }
+    return (s32)PortGteRead(19) < 300;
+}
+#else
 s32 func_800337EC(void) {
     s32 sz0;
     s32 sz1;
@@ -11185,7 +12559,48 @@ s32 func_800337EC(void) {
 out:
     return 1;
 }
+#endif
 
+#ifdef NATIVE
+/*
+ * Retail (handwritten) classifies IR1 to IR3 into out[3]. When IR3 is not
+ * negative it branches into func_80033704's tail (bgez a2,
+ * func_80033704+0x20), which sets 0x1F for a near depth; its own copy of
+ * the tail runs only for a negative IR3 (clamped to 0) and sets 0x10.
+ */
+void func_8003382C(s16 *out) {
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 flags;
+    s32 nearFlags;
+
+    x = PortGteRead(9);
+    y = PortGteRead(10);
+    z = PortGteRead(11);
+    nearFlags = 0x1F;
+    if (z < 0) {
+        z = 0;
+        nearFlags = 0x10;
+    }
+    flags = 4;
+    if (z >= x) {
+        flags = (z < -x) << 1;
+    }
+    if (z < y) {
+        flags |= 1;
+    } else if (z < -y) {
+        flags |= 8;
+    }
+    if (z < 500) {
+        flags |= 0x100;
+        if (z < 5) {
+            flags |= nearFlags;
+        }
+    }
+    out[3] = flags;
+}
+#else
 void func_8003382C(s16 *out) {
     register s32 v1 asm("v1");
     register s32 a2;
@@ -11219,6 +12634,7 @@ void func_8003382C(s16 *out) {
     }
     out[3] = a1;
 }
+#endif
 
 /* End of the handwritten GTE module. */
 
@@ -13016,6 +14432,40 @@ extern void *FileOpenCall367DC(void) asm("FileOpen");
 extern s32 FileSeekCall367DC(void *, s32, s32) asm("FileSeek");
 extern void FileReadCall367DC(s32, s32, s32, void *) asm("FileRead");
 extern void FileCloseCall367DC(s32) asm("FileClose");
+#ifdef NATIVE
+/* The matching C drops the file ID; the asm passes its a0 straight to FileOpen. */
+void RaceLoadComputerReplay(s32 fileId) {
+    extern s32 D_800A2F54;
+    extern s32 D_800AE154[];
+    extern s32 D_800B1EA8[];
+    extern s32 D_800B60A4[];
+    void *handle;
+    void *buffer;
+    s32 size;
+    s32 idx;
+    s32 entry;
+
+    handle = FileOpenCall367DC(fileId, 0);
+    if (handle == NULL) {
+        SystemShowFatalError(gErrorRaceDataFileOpen);
+    }
+    size = FileSeekCall367DC(handle);
+    FileSeekCall367DC(handle);
+    buffer = HeapAlloc(((size + 0x7FF) >> 11) << 11);
+    D_800AE154[D_800A2F54] = (s32)buffer;
+    if (buffer == NULL) {
+        SystemShowFatalError(gErrorComputerReplayMemory);
+    }
+    FileReadCall367DC(D_800AE154[D_800A2F54], 1, size, handle);
+    idx = D_800A2F54;
+    entry = D_800AE154[idx];
+    D_800B60A4[idx] = entry;
+    D_800B1EA8[idx] = *(s32 *)entry;
+    D_800AE154[idx] = entry + 4;
+    D_800A2F54 = idx + 1;
+    FileCloseCall367DC();
+}
+#else
 void RaceLoadComputerReplay(void) {
     extern s32 D_800A2F54;
     extern s32 D_800AE154[];
@@ -13047,6 +14497,7 @@ void RaceLoadComputerReplay(void) {
     D_800A2F54 = idx + 1;
     FileCloseCall367DC((s32)handle);
 }
+#endif
 
 extern s32 D_800A2F4C;
 extern u8 D_800A2F58;
@@ -13619,6 +15070,1152 @@ __asm__(
     ".globl D_800A2E4C373B4\nD_800A2E4C373B4 = D_800A2E4C\n.globl D_800A2E90373B4\nD_800A2E90373B4 = D_800A2E90\n.globl D_800A2E94373B4\nD_800A2E94373B4 = D_800A2E94\n.globl gSplitScreenMode373B4\ngSplitScreenMode373B4 = gSplitScreenMode\n.globl D_800A2EAC373B4\nD_800A2EAC373B4 = D_800A2EAC\n.globl gSessionType373B4\ngSessionType373B4 = gSessionType\n.globl D_800A2EDC373B4\nD_800A2EDC373B4 = D_800A2EDC\n.globl D_800A2EE0373B4\nD_800A2EE0373B4 = D_800A2EE0\n.globl D_800A2F48373B4\nD_800A2F48373B4 = D_800A2F48\n.globl D_800A2F50373B4\nD_800A2F50373B4 = D_800A2F50\n.globl D_800A2F54373B4\nD_800A2F54373B4 = D_800A2F54\n.globl D_800A2F58373B4\nD_800A2F58373B4 = D_800A2F58\n.globl D_800A2F5C373B4\nD_800A2F5C373B4 = D_800A2F5C\n.globl D_800A2F84373B4\nD_800A2F84373B4 = D_800A2F84\n.globl D_800A3071373B4\nD_800A3071373B4 = D_800A3071\n.globl D_800A3320373B4\nD_800A3320373B4 = D_800A3320\n.globl gPlayerCar373B4\ngPlayerCar373B4 = gPlayerCar\n.globl D_800A3564373B4\nD_800A3564373B4 = D_800A3564\n.globl D_800A3598373B4\nD_800A3598373B4 = D_800A3598\n.globl D_800A35E0373B4\nD_800A35E0373B4 = D_800A35E0\n.globl D_800A3670373B4\nD_800A3670373B4 = D_800A3670\n.globl D_800A36A4373B4\nD_800A36A4373B4 = D_800A36A4\n.globl D_800A3728373B4\nD_800A3728373B4 = D_800A3728\n.globl D_800A372C373B4\nD_800A372C373B4 = D_800A372C\n.globl D_800A3764373B4\nD_800A3764373B4 = D_800A3764\n.globl D_800A37C0373B4\nD_800A37C0373B4 = D_800A37C0\n.globl gCarList373B4\ngCarList373B4 = gCarList\n.globl D_800A3910373B4\nD_800A3910373B4 = D_800A3910\n.globl D_800A3960373B4\nD_800A3960373B4 = gCrashCar\n.globl gCosTable373B4\ngCosTable373B4 = gCosTable\n.globl gSinTable373B4\ngSinTable373B4 = gSinTable\n.globl D_800A3A64373B4\nD_800A3A64373B4 = D_800A3A64\n.globl D_800AE154373B4\nD_800AE154373B4 = D_800AE154\n.globl D_800B1EA8373B4\nD_800B1EA8373B4 = D_800B1EA8\n.globl gTrackSectionCount373B4\ngTrackSectionCount373B4 = gTrackSectionCount\n.globl gTrackSections373B4\ngTrackSections373B4 = gTrackSections\n.globl func_800A2CE0373B4\nfunc_800A2CE0373B4 = func_800A2CE0\n");
 
 /* Update AI route speed, pace following, nearby lanes, and steering. */
+#ifdef NATIVE
+/* Native body from m2c --valid-syntax of the retail asm. */
+#include "port_m2c.h"
+
+void func_800373B4(Car *arg0) {
+    extern u8 port_D_8008D0F8 __asm__("D_8008D0F8");
+    extern s32 port_D_800A2E4C __asm__("D_800A2E4C");
+    extern s32 port_D_800A2E90 __asm__("D_800A2E90");
+    extern s32 port_D_800A2E94 __asm__("D_800A2E94");
+    extern s32 port_gSplitScreenMode __asm__("gSplitScreenMode");
+    extern s32 port_D_800A2EAC __asm__("D_800A2EAC");
+    extern s32 port_gSessionType __asm__("gSessionType");
+    extern u8 port_D_800A2EDC __asm__("D_800A2EDC");
+    extern u8 port_D_800A2EE0 __asm__("D_800A2EE0");
+    extern u8 port_D_800A2F48 __asm__("D_800A2F48");
+    extern s32 port_D_800A2F50 __asm__("D_800A2F50");
+    extern s32 port_D_800A2F54 __asm__("D_800A2F54");
+    extern u8 port_D_800A2F58 __asm__("D_800A2F58");
+    extern s32 port_D_800A2F5C __asm__("D_800A2F5C");
+    extern s32 port_D_800A2F84 __asm__("D_800A2F84");
+    extern u8 port_D_800A3071 __asm__("D_800A3071");
+    extern u8 port_D_800A3320 __asm__("D_800A3320");
+    extern void *port_gPlayerCar __asm__("gPlayerCar");
+    extern s8 port_D_800A3564 __asm__("D_800A3564");
+    extern s32 port_D_800A3598 __asm__("D_800A3598");
+    extern void *port_D_800A35E0 __asm__("D_800A35E0");
+    extern u8 port_D_800A3670 __asm__("D_800A3670");
+    extern s32 port_D_800A36A4 __asm__("D_800A36A4");
+    extern void *port_D_800A3728 __asm__("D_800A3728");
+    extern u8 port_D_800A372C __asm__("D_800A372C");
+    extern s8 port_D_800A3764 __asm__("D_800A3764");
+    extern s32 port_D_800A37C0 __asm__("D_800A37C0");
+    extern void *port_gCarList __asm__("gCarList");
+    extern s16 port_D_800A3910 __asm__("D_800A3910");
+    extern void *port_gCrashCar __asm__("gCrashCar");
+    extern s32 port_gCosTable __asm__("gCosTable");
+    extern s32 port_gSinTable __asm__("gSinTable");
+    extern void *port_D_800A3A64 __asm__("D_800A3A64");
+    extern u8 port_D_800AE154 __asm__("D_800AE154");
+    extern u8 port_D_800B1EA8 __asm__("D_800B1EA8");
+    extern s32 port_gTrackSectionCount __asm__("gTrackSectionCount");
+    extern s32 port_gTrackSections __asm__("gTrackSections");
+    extern void port_CarResetMotionCounters(void *) __asm__(
+        "CarResetMotionCounters");
+    extern s32 port_func_800A2CE0 __asm__("func_800A2CE0");
+    s32 port_frame[50];
+#define sp10 ((s32 *)((u8 *)port_frame + 0x10))
+#define sp14 (*(s32 *)((u8 *)port_frame + 0x14))
+#define sp18 (*(s32 *)((u8 *)port_frame + 0x18))
+#define sp20 (*(s32 *)((u8 *)port_frame + 0x20))
+#define sp24 (*(s32 *)((u8 *)port_frame + 0x24))
+#define sp28 (*(s32 *)((u8 *)port_frame + 0x28))
+#define sp2C (*(s32 *)((u8 *)port_frame + 0x2C))
+#define sp30 (*(s32 *)((u8 *)port_frame + 0x30))
+#define sp34 (*(s32 *)((u8 *)port_frame + 0x34))
+#define sp38 (*(s32 *)((u8 *)port_frame + 0x38))
+#define sp40 (*(s32 *)((u8 *)port_frame + 0x40))
+#define sp48 (*(s32 *)((u8 *)port_frame + 0x48))
+#define sp50 (*(u8 *)((u8 *)port_frame + 0x50))
+#define sp58 (*(u8 *)((u8 *)port_frame + 0x58))
+#define sp60 (*(s32 *)((u8 *)port_frame + 0x60))
+#define sp68 (*(u8 *)((u8 *)port_frame + 0x68))
+#define sp70 (*(u8 *)((u8 *)port_frame + 0x70))
+#define sp ((u8 *)port_frame)
+    M2C_UNK (*temp_v1_18)(void *, s16);
+    s16 temp_a0_11;
+    s16 temp_a2;
+    s16 temp_a2_4;
+    s16 temp_lo;
+    s16 temp_v1_14;
+    s16 var_a1_9;
+    s16 var_v0_4;
+    s32 *temp_a1_2;
+    s32 *var_a0_3;
+    s32 *var_a0_4;
+    s32 temp_a0_12;
+    s32 temp_a0_13;
+    s32 temp_a0_2;
+    s32 temp_a1;
+    s32 temp_a1_6;
+    s32 temp_a2_2;
+    s32 temp_a2_3;
+    s32 temp_a2_5;
+    s32 temp_a3;
+    s32 temp_a3_2;
+    s32 temp_hi;
+    s32 temp_lo_2;
+    s32 temp_s0;
+    s32 temp_s0_3;
+    s32 temp_s0_4;
+    s32 temp_s0_5;
+    s32 temp_s0_6;
+    s32 temp_s0_7;
+    s32 temp_s0_8;
+    s32 temp_s4;
+    s32 temp_s5;
+    s32 temp_s6;
+    s32 temp_v0_13;
+    s32 temp_v0_18;
+    s32 temp_v0_19;
+    s32 temp_v0_20;
+    s32 temp_v0_21;
+    s32 temp_v0_3;
+    s32 temp_v0_4;
+    s32 temp_v0_5;
+    s32 temp_v0_6;
+    s32 temp_v1;
+    s32 temp_v1_12;
+    s32 temp_v1_13;
+    s32 temp_v1_15;
+    s32 temp_v1_16;
+    s32 temp_v1_17;
+    s32 temp_v1_4;
+    s32 temp_v1_5;
+    s32 temp_v1_6;
+    s32 temp_v1_7;
+    s32 var_a0;
+    s32 var_a0_2;
+    s32 var_a1;
+    s32 var_a1_2;
+    s32 var_a1_3;
+    s32 var_a1_4;
+    s32 var_a1_5;
+    s32 var_a1_6;
+    s32 var_a1_7;
+    s32 var_a1_8;
+    s32 var_fp;
+    s32 var_s3_2;
+    s32 var_s3_3;
+    s32 var_s3_4;
+    s32 var_s5;
+    s32 var_s6;
+    s32 var_s7;
+    s32 var_v0;
+    s32 var_v0_10;
+    s32 var_v0_11;
+    s32 var_v0_13;
+    s32 var_v0_14;
+    s32 var_v0_16;
+    s32 var_v0_17;
+    s32 var_v0_2;
+    s32 var_v0_3;
+    s32 var_v0_5;
+    s32 var_v0_6;
+    s32 var_v0_7;
+    s32 var_v1;
+    s32 var_v1_3;
+    s32 var_v1_4;
+    s32 var_v1_5;
+    s32 var_v1_7;
+    s8 temp_a0_10;
+    s8 temp_a0_4;
+    s8 temp_a0_5;
+    s8 temp_a0_7;
+    s8 temp_a1_3;
+    s8 temp_a1_5;
+    s8 temp_v0;
+    s8 temp_v0_10;
+    s8 temp_v0_11;
+    s8 temp_v0_14;
+    s8 temp_v0_17;
+    s8 temp_v0_7;
+    s8 temp_v0_8;
+    s8 temp_v0_9;
+    s8 temp_v1_3;
+    s8 temp_v1_8;
+    s8 temp_v1_9;
+    s8 var_s3;
+    s8 var_v0_12;
+    u16 temp_a1_4;
+    u32 temp_v1_2;
+    u8 temp_a0_6;
+    u8 temp_v0_15;
+    u8 temp_v0_16;
+    u8 var_s4;
+    u8 var_v0_15;
+    u8 var_v0_8;
+    u8 var_v0_9;
+    u8 var_v1_2;
+    u8 var_v1_6;
+    void *temp_a0;
+    void *temp_a0_3;
+    void *temp_a0_8;
+    void *temp_a0_9;
+    void *temp_s0_2;
+    void *temp_s1;
+    void *temp_s1_2;
+    void *temp_v0_12;
+    void *temp_v0_2;
+    void *temp_v1_10;
+    void *temp_v1_11;
+    void *var_s1;
+    void *var_s1_2;
+    void *var_s1_3;
+    void *var_s1_4;
+    void *var_s1_5;
+
+    sp20 = M2C_FIELD(port_D_8008D0F8, s32 *, 0);
+    sp24 = M2C_FIELD(port_D_8008D0F8, s32 *, 4);
+    sp28 = M2C_FIELD(port_D_8008D0F8, s32 *, 8);
+    sp2C = M2C_FIELD(port_D_8008D0F8, s32 *, 0xC);
+    sp30 = M2C_FIELD(port_D_8008D0F8, s32 *, 0x10);
+    sp34 = M2C_FIELD(port_D_8008D0F8, s32 *, 0x14);
+    var_s7 = 0;
+    var_s5 = 0;
+    var_fp = 0;
+    sp68 = 0;
+    sp70 = 0;
+    if (M2C_FIELD(arg0, u8 *, 0xF4) != 0) {
+        if (M2C_FIELD(arg0, s16 *, 0x1EC) == 0) {
+            if (M2C_FIELD(arg0, M2C_UNK(**)(void *, s16), 0x354) ==
+                &func_80025730) {
+                M2C_FIELD(arg0, M2C_UNK(**)(void *, M2C_UNK *),
+                          0x350)(arg0, port_D_8008D0F8);
+                return;
+            }
+            func_8002D16C(arg0);
+            goto block_5;
+        }
+    block_5:
+        if (M2C_FIELD(arg0, u8 *, 0x268) != 0) {
+            func_8003DBA8(arg0);
+            M2C_FIELD(arg0, s16 *, 0x288) = 1;
+            return;
+        }
+        port_D_800A2F54 = 0;
+        if (func_8003E78C(arg0) & 0xFF) {
+            if (port_D_800A2EAC == 0) {
+                port_D_800A2F54 = 1;
+                goto block_10;
+            }
+            goto block_11;
+        }
+    block_10:
+        if (port_D_800A2EAC != 0) {
+        block_11:
+            if (M2C_FIELD(arg0, u16 *, 0x360) == 4) {
+                temp_v0 = CarGetTrackSide(arg0, 0);
+                if (temp_v0 == 1) {
+                    port_D_800A2F54 = (s32)temp_v0;
+                }
+            }
+        }
+        temp_a1 = port_D_800A2F54 * 4;
+        temp_hi = (s32)(M2C_FIELD(arg0, s16 *, 0x1E0) + 2) %
+                  (s32)(*(M2C_UNK *)(port_D_800B1EA8 + (temp_a1)));
+        temp_a1_2 = temp_a1 + port_D_800AE154;
+        temp_v1 = temp_hi * 0xC;
+        temp_a0 = temp_v1 + *temp_a1_2;
+        sp38 = M2C_FIELD(temp_a0, s32 *, 0);
+        sp40 = M2C_FIELD(temp_a0, s32 *, 4);
+        sp48 = (s32)M2C_FIELD(temp_a0, u16 *, 0xA);
+        M2C_FIELD(arg0, s32 *, 0x84) =
+            (s32)(M2C_FIELD(temp_a0, s16 *, 8) << 0x10);
+        temp_v1_2 = M2C_FIELD((temp_v1 + *temp_a1_2), u32 *, 8);
+        sp50 = ((temp_v1_2 >> 0x1E) ^ 1) & 1;
+        sp48 &= 0x3FFF;
+        sp58 = (temp_v1_2 >> 0x1F) ^ 1;
+        if (port_D_800A2F58 != 0) {
+            if (port_gSessionType == 1) {
+                M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                    M2C_FIELD(arg0, s32 *, 0x84),
+                    MathFixedDivide(port_D_800A2F50 + 0x28, 0x198));
+                func_8002A1D0();
+                func_8002BC88(arg0);
+                temp_a0_2 = M2C_FIELD(arg0, s32 *, 0x98);
+                if ((temp_a0_2 >> 0x10) < M2C_FIELD(arg0, s16 *, 0x86)) {
+                    M2C_FIELD(arg0, s32 *, 0x84) = temp_a0_2;
+                }
+                if ((M2C_FIELD(arg0, s32 *, 0x98) >> 0x10) <
+                    M2C_FIELD(arg0, s16 *, 0x92)) {
+                    M2C_FIELD(arg0, s32 *, 0x90) = M2C_FIELD(arg0, s32 *, 0x98);
+                }
+            } else {
+                var_a0 = 2;
+                if (port_D_800A36A4 >= 0x29) {
+                    var_a1 = 3;
+                } else {
+                    var_a0 = port_D_800A2F50;
+                    var_a1 = 0x1A7;
+                }
+                M2C_FIELD(arg0, s32 *, 0x84) =
+                    MathMultiplyFixed16(M2C_FIELD(arg0, s32 *, 0x84),
+                                        MathFixedDivide(var_a0, var_a1));
+            }
+            M2C_FIELD(arg0, s32 *, 0x22C) = 0;
+            if (arg0 != port_D_800A35E0) {
+                temp_v0_2 = M2C_FIELD(arg0, void **, 0x3E4);
+                if (temp_v0_2 != NULL) {
+                    temp_a0_3 = M2C_FIELD(temp_v0_2, void **, 8);
+                    if (M2C_FIELD(arg0, s16 *, 0x1E0) ==
+                        M2C_FIELD(temp_a0_3, s16 *, 0x1E0)) {
+                        temp_v0_3 =
+                            M2C_FIELD(temp_a0_3, s32 *, 0x90) + 0xFFFC0000;
+                        M2C_FIELD(arg0, s32 *, 0x90) = temp_v0_3;
+                        M2C_FIELD(arg0, s32 *, 0x84) = temp_v0_3;
+                    }
+                }
+            }
+            if ((port_gSessionType != 1) && (port_func_800A2CE0 == 5)) {
+                M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                    M2C_FIELD(arg0, s32 *, 0x84), MathFixedDivide(0x41, 0x64));
+            }
+        } else {
+            if ((M2C_FIELD(port_D_800A35E0, s16 *, 0x1EC) == 0) &&
+                (M2C_FIELD(port_D_800A35E0, s16 *, 0x284) >=
+                 M2C_FIELD(arg0, s16 *, 0x284)) &&
+                (port_D_800A2F54 != 1) &&
+                (temp_v0_4 = port_D_800A2F5C + 1, port_D_800A2F5C = temp_v0_4,
+                 (temp_v0_4 >= 0))) {
+                temp_a2 = M2C_FIELD(arg0, s16 *, 0xFA);
+                var_v0 = temp_a2 * 4;
+                if (temp_a2 < 0x10) {
+                    var_v1 = port_D_800A2F50 * 8;
+                } else {
+                    var_v0 = temp_a2 * 0xC;
+                    var_v1 = port_D_800A2F50 * 8;
+                }
+                M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                    M2C_FIELD(arg0, s32 *, 0x84),
+                    MathFixedDivide((var_v1 - var_v0) +
+                                        ((0x96 - port_D_800A3320) * 2),
+                                    0x198 * 8));
+                M2C_FIELD(arg0, s32 *, 0x22C) = 0x1E0000;
+                port_D_800A2F5C = port_D_800A2E94 * 0x190;
+            } else {
+                if (port_D_800A2F5C > 0) {
+                    port_D_800A2F5C -= 1;
+                    temp_a2_2 = (port_D_800A2F50 * 8) -
+                                (M2C_FIELD(arg0, s16 *, 0xFA) * 4);
+                    M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                        M2C_FIELD(arg0, s32 *, 0x84),
+                        MathFixedDivide(temp_a2_2 +
+                                            ((0x66 - port_D_800A3320) * 3),
+                                        0x198 * 8));
+                    var_v0_2 = 0x140000;
+                } else {
+                    if (port_D_800A2F5C >= 0) {
+                        port_D_800A2F5C = -(port_D_800A2E94 * 0x258);
+                    }
+                    temp_v1_3 = M2C_FIELD(port_gCarList, s8 *, 0x204);
+                    if (temp_v1_3 >= 0x15) {
+                        var_v0_3 = M2C_FIELD(arg0, s16 *, 0xFA) * 0x10;
+                    } else if (temp_v1_3 >= 0xD) {
+                        var_v0_3 = M2C_FIELD(arg0, s16 *, 0xFA) * 0xA;
+                    } else {
+                        var_v0_3 = M2C_FIELD(arg0, s16 *, 0xFA) * 4;
+                    }
+                    M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                        M2C_FIELD(arg0, s32 *, 0x84),
+                        MathFixedDivide((port_D_800A2F50 * 8) - var_v0_3,
+                                        0x198 * 8));
+                    var_v0_2 = 0xA0000;
+                }
+                M2C_FIELD(arg0, s32 *, 0x22C) = var_v0_2;
+            }
+            if (port_D_800A2F5C < -(port_D_800A2E94 * 0xC8)) {
+                M2C_FIELD(arg0, u8 *, 0x3FC) = 0U;
+                M2C_FIELD(arg0, s32 *, 0x22C) = 0;
+                port_D_800A2F5C += 1;
+                M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                    M2C_FIELD(arg0, s32 *, 0x84), MathFixedDivide(0x60, 0x64));
+            }
+            if (M2C_FIELD(arg0, u8 *, 0x3FC) != 0) {
+                if (port_gSplitScreenMode == 0) {
+                    M2C_FIELD(arg0, s32 *, 0x84) =
+                        (s32)(M2C_FIELD(arg0, s32 *, 0x84) +
+                              M2C_FIELD(port_gPlayerCar, s32 *, 0x22C));
+                } else {
+                    M2C_FIELD(arg0, s32 *, 0x84) =
+                        (s32)(M2C_FIELD(arg0, s32 *, 0x84) + 0xC0000);
+                }
+                M2C_FIELD(arg0, u8 *, 0x3FC) =
+                    (u8)(M2C_FIELD(arg0, u8 *, 0x3FC) - 1);
+            }
+        }
+        M2C_FIELD(arg0, s32 *, 0x84) =
+            MathMultiplyFixed16(M2C_FIELD(arg0, s32 *, 0x84),
+                                MathFixedDivide(port_D_800A2E4C, 0x64));
+        if (M2C_FIELD(arg0, u16 *, 0x3A4) & 0x1000) {
+            M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                M2C_FIELD(arg0, s32 *, 0x84), MathFixedDivide(1, 2));
+        }
+        if (M2C_FIELD(arg0, s32 *, 0x84) <= 0x31FFFF) {
+            M2C_FIELD(arg0, s32 *, 0x84) = 0x320000;
+        }
+        if (port_D_800A372C != 0) {
+            port_D_800A2F5C = -(port_D_800A2E94 * 0x190);
+            if (port_D_800A2F54 == 0) {
+                sp68 = 1;
+            }
+            if (M2C_FIELD(arg0, u16 *, 0x3A4) & 0xF) {
+                M2C_FIELD(arg0, s32 *, 0x84) = 0;
+            } else if (arg0 == port_D_800A3A64) {
+                M2C_FIELD(arg0, s32 *, 0x84) = 0xAC0000;
+            } else {
+                var_s1 = M2C_FIELD(M2C_FIELD(arg0, void **, 0x3F0), void **, 8);
+                var_v0_4 = M2C_FIELD(var_s1, s16 *, 0x288);
+                var_s4 = 0;
+            loop_70:
+                if (var_v0_4 != 0) {
+                block_69:
+                    var_s1 = M2C_FIELD(M2C_FIELD(var_s1, void **, 0x3F0),
+                                       void **, 8);
+                    var_v0_4 = M2C_FIELD(var_s1, s16 *, 0x288);
+                    goto loop_70;
+                }
+                if (M2C_FIELD(var_s1, u16 *, 0x3A4) & 0xF) {
+                    goto block_69;
+                }
+                if (M2C_FIELD(var_s1, s32 *, 0x354) !=
+                    (s32)port_CarResetMotionCounters) {
+                    goto block_69;
+                }
+                temp_v0_5 = func_8003702C(var_s1, arg0);
+                var_s6 = temp_v0_5;
+                temp_v0_6 = func_8003702C(port_D_800A3A64, arg0);
+                var_v0_5 = temp_v0_6 << 0x10;
+                if ((u32)(temp_v0_5 & 0xFFFF) < 0xBU) {
+                    temp_a0_4 = M2C_FIELD(var_s1, s8 *, 0x408);
+                    temp_a1_3 = M2C_FIELD(arg0, s8 *, 0x408);
+                    var_v0_5 = temp_v0_6 << 0x10;
+                    if (temp_a0_4 < temp_a1_3) {
+                        var_v0_5 = temp_v0_6 << 0x10;
+                        if (M2C_FIELD(var_s1, s8 *, 0x3FE) ==
+                            M2C_FIELD(arg0, s8 *, 0x3FE)) {
+                            if (((u32)((temp_v0_5 - 1) & 0xFFFF) < 2U) &&
+                                (temp_a1_3 == (temp_a0_4 + 1))) {
+                                var_s4 = 1;
+                            }
+                            sp60 = M2C_FIELD(var_s1, s32 *, 0x84);
+                            goto block_87;
+                        }
+                    }
+                }
+                temp_v1_4 = var_v0_5 >> 0x10;
+                var_v0_6 = 0 & 0xFF;
+                if (temp_v1_4 >= 0) {
+                    temp_a0_5 = M2C_FIELD(arg0, s8 *, 0x408);
+                    var_v0_6 = 0 & 0xFF;
+                    if ((temp_a0_5 + 0xA) >= temp_v1_4) {
+                        temp_v1_5 = temp_v0_6 - temp_a0_5;
+                        var_s6 = temp_v1_5;
+                        if (arg0 == port_D_800A37C0) {
+                            if ((u32)((temp_v1_5 - 1) & 0xFFFF) < 2U) {
+                                var_s4 = 1;
+                            }
+                        }
+                        sp60 = 0xAC0000;
+                    block_87:
+                        var_v0_6 = 1 & 0xFF;
+                    }
+                }
+                if (var_v0_6 != 0) {
+                    if (port_D_800A3670 != 0) {
+                        M2C_FIELD(arg0, u8 *, 0x401) = var_s4;
+                    } else {
+                        var_v1_2 = 0;
+                        if (M2C_FIELD(var_s1, u8 *, 0x401) != 0) {
+                            var_v1_2 = var_s4;
+                        }
+                        M2C_FIELD(arg0, u8 *, 0x401) = var_v1_2;
+                    }
+                    if ((s16)var_s6 >= 2) {
+                        M2C_FIELD(arg0, s32 *, 0x84) =
+                            (s32)(sp60 +
+                                  MathMultiplyFixed16(
+                                      M2C_FIELD(arg0, s32 *, 0x84) - sp60,
+                                      MathFixedDivide((s16)var_s6 - 1, 9)));
+                    } else {
+                        var_a0_2 = 5;
+                        M2C_FIELD(arg0, s32 *, 0x84) =
+                            MathMultiplyFixed16(sp60, MathFixedDivide(9, 0xA));
+                        if ((s16)var_s6 != 0) {
+                            var_a0_2 = 9;
+                        }
+                        M2C_FIELD(arg0, s32 *, 0x90) =
+                            MathMultiplyFixed16(M2C_FIELD(var_s1, s32 *, 0x90),
+                                                MathFixedDivide(var_a0_2, 0xA));
+                    }
+                }
+            }
+        }
+        if ((port_D_800A2EDC != 0) &&
+            (temp_a1_4 = M2C_FIELD(arg0, u16 *, 0x3A4),
+             ((temp_a1_4 & 0xF) != 0))) {
+            temp_a0_6 = M2C_FIELD(arg0, u8 *, 0x3B7);
+            if (temp_a0_6 != 0) {
+                if ((M2C_FIELD(arg0, M2C_UNK(**)(void *, s16), 0x354) ==
+                     (s32)port_CarResetMotionCounters) &&
+                    (temp_a0_6 == 0x64) &&
+                    (M2C_FIELD(arg0, s16 *, 0x1EC) != 0)) {
+                    if (temp_a1_4 & 3) {
+                        M2C_FIELD(arg0, s16 *, 0x102) = 0;
+                    } else {
+                        M2C_FIELD(arg0, s16 *, 0x102) = 1;
+                    }
+                    ObjectSetCallbackIfAllowed(arg0, &func_8003AA20);
+                }
+                M2C_FIELD(arg0, u8 *, 0x3B7) =
+                    (u8)(M2C_FIELD(arg0, u8 *, 0x3B7) - 1);
+                goto block_120;
+            }
+            if (port_D_800A2EE0 != 0) {
+                func_80044114(arg0);
+                goto block_120;
+            }
+            if ((port_D_800A3071 != 0) && (port_D_800A3910 == 0) &&
+                (port_gCrashCar == NULL) && (port_gSessionType == 0)) {
+                SceneSetCameraTarget(arg0, temp_a1_4);
+                port_D_800A3764 = 1;
+                goto block_120;
+            }
+            if (arg0 != port_D_800A3728) {
+                if (!(func_80037204(arg0) & 0xFF)) {
+                    port_D_800A3564 = 1;
+                    goto block_120;
+                }
+            } else {
+            block_120:
+                M2C_FIELD(arg0, s32 *, 0x84) = MathMultiplyFixed16(
+                    M2C_FIELD(arg0, s32 *, 0x84),
+                    MathFixedDivide((s32)M2C_FIELD(arg0, u8 *, 0x3B7), 0x64));
+                goto block_121;
+            }
+        } else {
+        block_121:
+            if ((port_D_800A2E90 != 0) && (port_gSessionType != 1)) {
+                if (port_D_800A2F54 != 1) {
+                    if (sp50 == 0) {
+                        var_s5 = 1;
+                    }
+                    var_s1_2 = arg0;
+                    if (sp58 == 0) {
+                        var_s5 |= 4;
+                    }
+                loop_128:
+                    var_s1_2 = M2C_FIELD(M2C_FIELD(var_s1_2, void **, 0x3F0),
+                                         void **, 8);
+                    var_v1_3 = 0;
+                    if (M2C_FIELD(var_s1_2, u8 *, 0x268) != 0) {
+                        var_v0_7 = 0;
+                    loop_130:
+                        var_v1_3 += 1;
+                        if (var_v0_7 < 3) {
+                            var_s1_2 =
+                                M2C_FIELD(M2C_FIELD(var_s1_2, void **, 0x3F0),
+                                          void **, 8);
+                            var_v0_7 = var_v1_3;
+                            if (M2C_FIELD(var_s1_2, u8 *, 0x268) != 0) {
+                                goto loop_130;
+                            }
+                        }
+                    }
+                    if (func_8003702C(var_s1_2, arg0) < 0) {
+                        var_a1_2 = -func_8003702C(var_s1_2, arg0);
+                    } else {
+                        var_a1_2 = func_8003702C(var_s1_2, arg0);
+                    }
+                    if (var_a1_2 < 2) {
+                        temp_v1_6 = 1 << (M2C_FIELD(var_s1_2, s8 *, 0x206) + 1);
+                        var_s5 |= temp_v1_6;
+                        var_fp |= temp_v1_6;
+                        if (var_s7 < 6) {
+                            M2C_FIELD(&(&sp10[0])[var_s7], void **, 0x10) =
+                                var_s1_2;
+                            var_s7 += 1;
+                            goto loop_128;
+                        }
+                    }
+                    var_s1_3 = arg0;
+                loop_139:
+                    var_s1_3 = M2C_FIELD(M2C_FIELD(var_s1_3, void **, 0x3F4),
+                                         void **, 8);
+                    var_v0_8 = M2C_FIELD(var_s1_3, u8 *, 0x268);
+                    var_v1_4 = 0;
+                loop_142:
+                    if ((var_v0_8 != 0) ||
+                        (M2C_FIELD(var_s1_3, s16 *, 0x1EC) == 0)) {
+                        var_v1_4 += 1;
+                        if (var_v1_4 < 2) {
+                            var_s1_3 =
+                                M2C_FIELD(M2C_FIELD(var_s1_3, void **, 0x3F4),
+                                          void **, 8);
+                            var_v0_8 = M2C_FIELD(var_s1_3, u8 *, 0x268);
+                            goto loop_142;
+                        }
+                    }
+                    if (func_8003702C(var_s1_3, arg0) < 0) {
+                        var_a1_3 = -func_8003702C(var_s1_3, arg0);
+                    } else {
+                        var_a1_3 = func_8003702C(var_s1_3, arg0);
+                    }
+                    if (var_a1_3 < 2) {
+                        temp_v1_7 = 1 << (M2C_FIELD(var_s1_3, s8 *, 0x206) + 1);
+                        var_s5 |= temp_v1_7;
+                        var_fp |= temp_v1_7;
+                        if (var_s7 < 6) {
+                            M2C_FIELD(&(&sp10[0])[var_s7], void **, 0x10) =
+                                var_s1_3;
+                            var_s7 += 1;
+                            goto loop_139;
+                        }
+                    }
+                    if ((var_s5 & 2) || ((var_s3 = 0, (port_D_800A2F58 != 0)) &&
+                                         (port_D_800A3598 == 0))) {
+                        temp_a0_7 = M2C_FIELD(arg0, s8 *, 0x206);
+                        var_s3 = temp_a0_7;
+                        if (var_s5 & (1 << (temp_a0_7 + 1))) {
+                            var_s1_4 = M2C_FIELD(
+                                M2C_FIELD(arg0, void **, 0x3F0), void **, 8);
+                            var_v0_9 = M2C_FIELD(var_s1_4, u8 *, 0x268);
+                            var_v1_5 = 0;
+                        loop_157:
+                            if ((var_v0_9 != 0) ||
+                                (M2C_FIELD(var_s1_4, s16 *, 0x1EC) == 0)) {
+                                var_v1_5 += 1;
+                                if (var_v1_5 < 3) {
+                                    var_s1_4 = M2C_FIELD(
+                                        M2C_FIELD(var_s1_4, void **, 0x3F0),
+                                        void **, 8);
+                                    var_v0_9 = M2C_FIELD(var_s1_4, u8 *, 0x268);
+                                    goto loop_157;
+                                }
+                            }
+                            temp_s0 = M2C_FIELD(arg0, s16 *, 0x92) -
+                                      M2C_FIELD(var_s1_4, s16 *, 0x92);
+                            if (temp_s0 >= 0x10) {
+                                if (func_8003702C(var_s1_4, arg0) < 0) {
+                                    var_a1_4 = -func_8003702C(var_s1_4, arg0);
+                                } else {
+                                    var_a1_4 = func_8003702C(var_s1_4, arg0);
+                                }
+                                if (var_a1_4 < 2) {
+                                    if (var_s5 != 7) {
+                                        temp_v1_8 =
+                                            M2C_FIELD(arg0, s8 *, 0x206);
+                                        if (temp_v1_8 != 0) {
+                                            if (temp_v1_8 <= 0) {
+                                                var_v0_10 = temp_s0 < 0x64;
+                                                if (temp_v1_8 != -1) {
+
+                                                } else {
+                                                    goto block_174;
+                                                }
+                                            } else {
+                                                var_v0_10 = temp_s0 < 0x64;
+                                                if (temp_v1_8 != 1) {
+
+                                                } else {
+                                                    goto block_174;
+                                                }
+                                            }
+                                        } else {
+                                            var_s3 = 1;
+                                            if (!(var_s5 & 1)) {
+                                                var_s3 = -1;
+                                            }
+                                        }
+                                    } else {
+                                        var_v0_10 = temp_s0 < 0x64;
+                                    block_174:
+                                        if (var_v0_10 != 0) {
+                                            M2C_FIELD(arg0, s32 *, 0x90) =
+                                                (s32)(M2C_FIELD(var_s1_4, s32 *,
+                                                                0x90) +
+                                                      0xFFFF0000);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    temp_a0_8 = M2C_FIELD(arg0, void **, 0x3F4);
+                    if (temp_a0_8 != NULL) {
+                        temp_s1 = M2C_FIELD(temp_a0_8, void **, 8);
+                        if (M2C_FIELD(temp_s1, s16 *, 0x1EC) == 0) {
+                            if (func_8003702C(temp_s1, arg0) < 0) {
+                                var_a1_5 = -func_8003702C(temp_s1, arg0);
+                            } else {
+                                var_a1_5 = func_8003702C(temp_s1, arg0);
+                            }
+                            if (((u32)(var_a1_5 - 2) < 4U) &&
+                                (M2C_FIELD(arg0, s32 *, 0x90) <
+                                 M2C_FIELD(temp_s1, s32 *, 0x90)) &&
+                                (temp_a0_9 = M2C_FIELD(arg0, void **, 0x3F0),
+                                 (temp_a0_9 != NULL))) {
+                                temp_s0_2 = M2C_FIELD(temp_a0_9, void **, 8);
+                                if (func_8003702C(temp_s0_2, arg0) < 0) {
+                                    var_a1_6 = -func_8003702C(temp_s0_2, arg0);
+                                } else {
+                                    var_a1_6 = func_8003702C(temp_s0_2, arg0);
+                                }
+                                var_v0_11 = 1 & 0xFF;
+                                if (var_a1_6 < 2) {
+                                    goto block_188;
+                                }
+                            } else {
+                            block_188:
+                                var_v0_11 = 0 & 0xFF;
+                            }
+                            if ((var_v0_11 != 0) &&
+                                (M2C_FIELD(arg0, s32 *, 0x90) > 0x01720000)) {
+                                if (M2C_FIELD(arg0, s8 *, 0x205) == 0) {
+                                    temp_v1_9 = M2C_FIELD(arg0, s8 *, 0x203);
+                                    temp_a0_10 =
+                                        M2C_FIELD(temp_s1, s8 *, 0x203);
+                                    if (temp_v1_9 < temp_a0_10) {
+                                        temp_v0_7 =
+                                            (u8)M2C_FIELD(arg0, s8 *, 0x206) -
+                                            1;
+                                        M2C_FIELD(arg0, s8 *, 0x206) =
+                                            temp_v0_7;
+                                        if (temp_v0_7 < -1) {
+                                            M2C_FIELD(arg0, s8 *, 0x206) = -1;
+                                        }
+                                    } else if (temp_a0_10 < temp_v1_9) {
+                                        temp_v0_8 =
+                                            (u8)M2C_FIELD(arg0, s8 *, 0x206) +
+                                            1;
+                                        M2C_FIELD(arg0, s8 *, 0x206) =
+                                            temp_v0_8;
+                                        if (temp_v0_8 >= 2) {
+                                            M2C_FIELD(arg0, s8 *, 0x206) = 1;
+                                        }
+                                    }
+                                    var_s3 = M2C_FIELD(arg0, s8 *, 0x206);
+                                    M2C_FIELD(arg0, s8 *, 0x205) =
+                                        (s8)M2C_FIELD(arg0, u16 *, 0x248);
+                                }
+                            }
+                            if (M2C_FIELD(arg0, s8 *, 0x205) > 0) {
+                                M2C_FIELD(arg0, s8 *, 0x205) =
+                                    (s8)(M2C_FIELD(arg0, s8 *, 0x205) - 1);
+                            }
+                        }
+                    }
+                    if (M2C_FIELD(arg0, u16 *, 0x3A4) & 0x1000) {
+                        var_s3 = 2;
+                        if (port_D_800A2F84 != 0) {
+                            var_s3 = -2;
+                        }
+                        sp68 = 1;
+                    } else if ((port_gCrashCar != NULL) &&
+                               (M2C_FIELD(port_gCrashCar, s16 *, 0x1EC) != 0)) {
+                        if (func_8003702C(port_gCrashCar, arg0) < 0) {
+                            if (-func_8003702C(port_gCrashCar, arg0) < 5) {
+                                goto block_212;
+                            }
+                        } else if (func_8003702C(port_gCrashCar, arg0) < 5) {
+                        block_212:
+                            if (var_s3 == 0) {
+                                if (port_D_800A2F84 != 0) {
+                                    if (sp50 == 0) {
+                                        var_s3 = 1;
+                                    }
+                                } else if (sp58 == 0) {
+                                    var_s3 = -1;
+                                }
+                            }
+                        }
+                    }
+                    if (port_D_800A372C != 0) {
+                        temp_v0_9 = M2C_FIELD(port_D_800A3728, s8 *, 0x203);
+                        if (temp_v0_9 >= 0) {
+                            if (temp_v0_9 < 4) {
+                                goto block_223;
+                            }
+                            goto block_229;
+                        }
+                        if (-temp_v0_9 < 4) {
+                        block_223:
+                            func_8003702C(port_D_800A3728, arg0);
+                            if (func_8003702C(port_D_800A3728, arg0) < 5) {
+                                temp_v0_10 =
+                                    M2C_FIELD(port_D_800A3728, s8 *, 0x203);
+                                if (temp_v0_10 != 0) {
+                                    var_s3 = -1;
+                                    if (temp_v0_10 > 0) {
+                                        var_s3 = 1;
+                                    }
+                                } else {
+                                    var_s3 = M2C_FIELD(arg0, s8 *, 0x3FE);
+                                }
+                                sp70 = 1;
+                            } else {
+                                goto block_229;
+                            }
+                        } else {
+                        block_229:
+                            if (M2C_FIELD(arg0, u8 *, 0x401) != 0) {
+                                temp_v0_11 = M2C_FIELD(arg0, s8 *, 0x400);
+                                if (temp_v0_11 == 0) {
+                                    var_v1_6 = 0;
+                                    if (M2C_FIELD(arg0, s8 *, 0x3FF) == 0) {
+                                        var_v1_6 =
+                                            (u8)M2C_FIELD(arg0, s8 *, 0x3FE);
+                                    }
+                                    M2C_FIELD(arg0, s8 *, 0x3FF) = (s8)var_v1_6;
+                                    temp_s0_3 =
+                                        M2C_FIELD(arg0, s8 *, 0x409) - 5;
+                                    if (RandomScaledGet(0xA) < 0) {
+                                        var_v0_12 =
+                                            temp_s0_3 - RandomScaledGet(0xA);
+                                    } else {
+                                        var_v0_12 =
+                                            temp_s0_3 + RandomScaledGet(0xA);
+                                    }
+                                } else {
+                                    var_v0_12 = temp_v0_11 - 1;
+                                }
+                                M2C_FIELD(arg0, s8 *, 0x400) = var_v0_12;
+                            }
+                            var_s3 = M2C_FIELD(arg0, s8 *, 0x3FF);
+                        }
+                    }
+                    if (sp68 != 0) {
+                        sp58 = 1;
+                        sp50 = 1;
+                        temp_a0_11 = M2C_FIELD(arg0, s16 *, 0x1E0);
+                        var_v0_13 = temp_a0_11 + 2;
+                        if (sp70 == 0) {
+                            var_v0_13 = temp_a0_11 + 2;
+                            if (M2C_FIELD(arg0, s16 *, 0x1EC) == 0) {
+                                var_v0_13 = temp_a0_11 + 3;
+                            }
+                        }
+                        temp_v0_12 =
+                            ((var_v0_13 % (s32)port_gTrackSectionCount) *
+                             0x90) +
+                            port_gTrackSections;
+                        sp38 = M2C_FIELD(temp_v0_12, s32 *, 0x14);
+                        sp40 = M2C_FIELD(temp_v0_12, s32 *, 0x18);
+                    }
+                    if ((var_s3 != 0) && ((var_s3 >= 0) || (sp50 != 0)) &&
+                        ((var_s3 <= 0) || (sp58 != 0))) {
+                        M2C_FIELD(arg0, s8 *, 0x206) = var_s3;
+                    } else {
+                        M2C_FIELD(arg0, s8 *, 0x206) = 0;
+                    }
+                    if (M2C_FIELD(arg0, s8 *, 0x206) < 0) {
+                        if (sp50 == 0) {
+                            M2C_FIELD(arg0, s8 *, 0x206) = 0;
+                            if (var_fp & 2) {
+                                var_s3_2 = 0;
+                                if (var_s7 > 0) {
+                                    var_a0_3 = &sp10[0];
+                                    do {
+                                        temp_v1_10 =
+                                            M2C_FIELD(var_a0_3, void **, 0x10);
+                                        if (M2C_FIELD(temp_v1_10, s8 *,
+                                                      0x206) == 0) {
+                                            M2C_FIELD(temp_v1_10, s8 *, 0x206) =
+                                                1;
+                                        }
+                                        var_s3_2 += 1;
+                                        var_a0_3 += 4;
+                                    } while (var_s3_2 < var_s7);
+                                }
+                            }
+                        }
+                    }
+                    if ((M2C_FIELD(arg0, s8 *, 0x206) > 0) && (sp58 == 0)) {
+                        M2C_FIELD(arg0, s8 *, 0x206) = 0;
+                        if (var_fp & 2) {
+                            var_s3_3 = 0;
+                            if (var_s7 > 0) {
+                                var_a0_4 = &sp10[0];
+                                do {
+                                    temp_v1_11 =
+                                        M2C_FIELD(var_a0_4, void **, 0x10);
+                                    if (M2C_FIELD(temp_v1_11, s8 *, 0x206) ==
+                                        0) {
+                                        M2C_FIELD(temp_v1_11, s8 *, 0x206) = -1;
+                                    }
+                                    var_s3_3 += 1;
+                                    var_a0_4 += 4;
+                                } while (var_s3_3 < var_s7);
+                            }
+                        }
+                    }
+                    var_s3_4 = 0;
+                    if (var_s7 > 0) {
+                        var_v0_14 = 0 * 4;
+                    loop_270:
+                        temp_s1_2 = M2C_FIELD((sp + var_v0_14), void **, 0x20);
+                        temp_a3 = M2C_FIELD(arg0, s32 *, 0);
+                        temp_a2_3 = M2C_FIELD(temp_s1_2, s32 *, 4);
+                        temp_s5 = 0x3FF - M2C_FIELD(arg0, s16 *, 0x114);
+                        temp_s0_4 = temp_s5 * 4;
+                        temp_s4 = temp_a3 - M2C_FIELD(temp_s1_2, s32 *, 0);
+                        temp_s6 = M2C_FIELD(arg0, s32 *, 4) - temp_a2_3;
+                        temp_s0_5 = MathMultiplyFixed16(
+                            *(s32 *)(temp_s0_4 + port_gCosTable),
+                            temp_s4 << 0x10);
+                        temp_v0_13 =
+                            (s32)(temp_s0_5 -
+                                  MathMultiplyFixed16(
+                                      *(s32 *)(temp_s0_4 + port_gSinTable),
+                                      temp_s6 << 0x10)) >>
+                            0x10;
+                        temp_v1_12 = M2C_FIELD(M2C_FIELD(arg0, void **, 0x36C),
+                                               s16 *, 0x1E) *
+                                     2;
+                        if (temp_v0_13 >= 0) {
+                            if (temp_v0_13 >= temp_v1_12) {
+                                var_s3_4 += 1;
+                                goto block_290;
+                            }
+                            goto block_274;
+                        }
+                        if (-temp_v0_13 < temp_v1_12) {
+                        block_274:
+                            temp_s0_6 = temp_s5 * 4;
+                            temp_s0_7 = MathMultiplyFixed16(
+                                *(s32 *)(temp_s0_6 + port_gSinTable),
+                                temp_s4 << 0x10);
+                            temp_s0_8 =
+                                (s32)(temp_s0_7 +
+                                      MathMultiplyFixed16(
+                                          *(s32 *)(temp_s0_6 + port_gCosTable),
+                                          temp_s6 << 0x10)) >>
+                                0x10;
+                            temp_v1_13 =
+                                M2C_FIELD(M2C_FIELD(arg0, void **, 0x36C),
+                                          s16 *, 0x22) *
+                                2;
+                            if (temp_s0_8 >= 0) {
+                                if (temp_s0_8 >= temp_v1_13) {
+                                    var_s3_4 += 1;
+                                    goto block_290;
+                                }
+                                goto block_278;
+                            }
+                            if (-temp_s0_8 < temp_v1_13) {
+                            block_278:
+                                if (temp_s0_8 < 0) {
+                                    temp_v0_14 =
+                                        (u8)M2C_FIELD(arg0, s8 *, 0x206) - 1;
+                                    M2C_FIELD(arg0, s8 *, 0x206) = temp_v0_14;
+                                    if (temp_v0_14 < -1) {
+                                        M2C_FIELD(arg0, s8 *, 0x206) = -1;
+                                    }
+                                    temp_v0_15 =
+                                        M2C_FIELD(temp_s1_2, u8 *, 0x206) + 1;
+                                    M2C_FIELD(temp_s1_2, u8 *, 0x206) =
+                                        temp_v0_15;
+                                    if ((s8)temp_v0_15 >= 2) {
+                                        M2C_FIELD(temp_s1_2, u8 *, 0x206) = 1U;
+                                    }
+                                } else {
+                                    temp_v0_16 =
+                                        M2C_FIELD(temp_s1_2, u8 *, 0x206) - 1;
+                                    M2C_FIELD(temp_s1_2, u8 *, 0x206) =
+                                        temp_v0_16;
+                                    if ((s8)temp_v0_16 < -1) {
+                                        M2C_FIELD(temp_s1_2, u8 *, 0x206) = -1U;
+                                    }
+                                    temp_v0_17 =
+                                        (u8)M2C_FIELD(arg0, s8 *, 0x206) + 1;
+                                    M2C_FIELD(arg0, s8 *, 0x206) = temp_v0_17;
+                                    if (temp_v0_17 >= 2) {
+                                        M2C_FIELD(arg0, s8 *, 0x206) = 1;
+                                    }
+                                }
+                                if ((s16)M2C_FIELD(arg0, u16 *, 0x248) >=
+                                    M2C_FIELD(temp_s1_2, s16 *, 0x248)) {
+                                    M2C_FIELD(temp_s1_2, s32 *, 0x90) =
+                                        (s32)(M2C_FIELD(temp_s1_2, s32 *,
+                                                        0x90) +
+                                              0xFFFF0000);
+                                } else {
+                                    M2C_FIELD(arg0, s32 *, 0x90) =
+                                        (s32)(M2C_FIELD(arg0, s32 *, 0x90) +
+                                              0xFFFF0000);
+                                }
+                            } else {
+                                goto block_289;
+                            }
+                        } else {
+                        block_289:
+                            var_s3_4 += 1;
+                        block_290:
+                            var_v0_14 = var_s3_4 * 4;
+                            if (var_s3_4 >= var_s7) {
+
+                            } else {
+                                goto loop_270;
+                            }
+                        }
+                    }
+                } else {
+                    goto block_293;
+                }
+            } else if (port_D_800A2F54 == 1) {
+            block_293:
+                M2C_FIELD(arg0, s8 *, 0x206) = 0;
+                var_s1_5 =
+                    M2C_FIELD(M2C_FIELD(arg0, void **, 0x3F0), void **, 8);
+                var_v0_15 = M2C_FIELD(var_s1_5, u8 *, 0x268);
+                var_v1_7 = 0;
+            loop_296:
+                if ((var_v0_15 != 0) ||
+                    (M2C_FIELD(var_s1_5, s16 *, 0x1EC) == 0)) {
+                    var_v1_7 += 1;
+                    if (var_v1_7 < 3) {
+                        var_s1_5 = M2C_FIELD(
+                            M2C_FIELD(var_s1_5, void **, 0x3F0), void **, 8);
+                        var_v0_15 = M2C_FIELD(var_s1_5, u8 *, 0x268);
+                        goto loop_296;
+                    }
+                }
+                if (func_8003702C(var_s1_5, arg0) < 0) {
+                    var_a1_7 = -func_8003702C(var_s1_5, arg0);
+                } else {
+                    var_a1_7 = func_8003702C(var_s1_5, arg0);
+                }
+                if (var_a1_7 < 2) {
+                    temp_a0_12 = M2C_FIELD(var_s1_5, s32 *, 0x90);
+                    if (temp_a0_12 > 0x640000) {
+                        temp_v0_18 = temp_a0_12 + 0xFFFB0000;
+                        M2C_FIELD(arg0, s32 *, 0x90) = temp_v0_18;
+                        M2C_FIELD(arg0, s32 *, 0x84) = temp_v0_18;
+                    }
+                }
+            }
+            temp_v0_19 = (sp48 + 0x300) & 0x3FF;
+            sp48 = temp_v0_19;
+            temp_a0_13 = temp_v0_19 * 4;
+            temp_a1_5 = -M2C_FIELD(arg0, s8 *, 0x206);
+            temp_lo =
+                ((s32)(*(s32 *)(temp_a0_13 + port_gCosTable) * 0x1F4) >> 0x10) *
+                temp_a1_5;
+            temp_lo_2 =
+                ((s32)(*(s32 *)(temp_a0_13 + port_gSinTable) * 0x1F4) >> 0x10) *
+                temp_a1_5;
+            temp_v1_14 = M2C_FIELD(arg0, s16 *, 0x24E);
+            sp38 += temp_lo;
+            sp40 += temp_lo_2;
+            if (temp_v1_14 != -1) {
+                temp_a2_4 = M2C_FIELD(arg0, s16 *, 0x1E0);
+                var_a1_8 = temp_a2_4 - temp_v1_14;
+                temp_v1_15 = (s32)port_gTrackSectionCount >> 1;
+                if (var_a1_8 >= 0) {
+                    var_v0_16 = var_a1_8 < temp_v1_15;
+                } else {
+                    var_v0_16 = -var_a1_8 < temp_v1_15;
+                }
+                if (var_v0_16 == 0) {
+                    temp_v1_16 = temp_v1_14 + port_gTrackSectionCount;
+                    if (temp_v1_14 < temp_a2_4) {
+                        temp_v0_20 = temp_v1_16 - temp_a2_4;
+                        var_a1_8 = temp_v0_20;
+                        if (temp_v0_20 >= 0) {
+                            var_v0_17 = temp_a2_4 - temp_v1_16;
+                            goto block_315;
+                        }
+                    } else {
+                        temp_v1_17 = temp_a2_4 + port_gTrackSectionCount;
+                        temp_v0_21 = temp_v1_17 - temp_v1_14;
+                        var_a1_8 = temp_v0_21;
+                        if (temp_v0_21 < 0) {
+                            var_v0_17 = temp_v1_14 - temp_v1_17;
+                        block_315:
+                            var_a1_8 = var_v0_17;
+                        }
+                    }
+                }
+                if ((var_a1_8 > 0) ||
+                    (sp38 = M2C_FIELD(arg0, s32 *, 0x250),
+                     sp40 = M2C_FIELD(arg0, s32 *, 0x254),
+                     (CarAvoidTraffic(arg0, 1, temp_a2_4,
+                                      port_gTrackSectionCount) == 0))) {
+                    M2C_FIELD(arg0, s16 *, 0x24E) = -1;
+                }
+            } else if (CarAvoidTraffic(arg0, 0, temp_lo, temp_lo_2) != 0) {
+                sp38 = M2C_FIELD(arg0, s32 *, 0x250);
+                sp40 = M2C_FIELD(arg0, s32 *, 0x254);
+            }
+            sp10[0] = sp38 - M2C_FIELD(arg0, s32 *, 0);
+            sp14 = sp40 - M2C_FIELD(arg0, s32 *, 4);
+            sp18 = -M2C_FIELD(arg0, s32 *, 8);
+            var_a1_9 = func_800358EC(&sp10[0]);
+            if (port_D_800A2F48 != 0) {
+                var_a1_9 = M2C_FIELD(arg0, s16 *, 0x114);
+                M2C_FIELD(arg0, s8 *, 0x201) = 1;
+            } else {
+                M2C_FIELD(arg0, s8 *, 0x201) = 0;
+            }
+            temp_v1_18 = M2C_FIELD(arg0, M2C_UNK(**)(void *, s16), 0x354);
+            if (temp_v1_18 == (void *)port_CarResetMotionCounters) {
+                CarSteerTowardHeading(arg0, var_a1_9);
+                M2C_FIELD(arg0, u16 *, 0x104) =
+                    (u16)M2C_FIELD(arg0, s16 *, 0x114);
+            } else {
+                /* The callbacks are void (Car *): MIPS ignored a1, wasm checks types. */
+                ((void (*)(void *))temp_v1_18)(arg0);
+            }
+            M2C_FIELD(arg0, s16 *, 0x116) =
+                (s16)(M2C_FIELD(arg0, s16 *, 0x114) * 4);
+            MatrixSetRotationFromAngle(arg0, M2C_FIELD(arg0, s16 *, 0x114) * 4);
+            func_8001FB28(arg0, (s16)M2C_FIELD(arg0, u16 *, 0x104));
+            M2C_FIELD(arg0, s32 *, 0xB0) =
+                (s32)((s32)(M2C_FIELD(arg0, s32 *, 0x60) *
+                            M2C_FIELD(arg0, s16 *, 0x92)) >>
+                      0x10);
+            temp_a2_5 = M2C_FIELD(arg0, s32 *, 0xB0);
+            M2C_FIELD(arg0, s32 *, 0xB4) =
+                (s32)((s32)(M2C_FIELD(arg0, s32 *, 0x6C) *
+                            M2C_FIELD(arg0, s16 *, 0x92)) >>
+                      0x10);
+            temp_a3_2 = M2C_FIELD(arg0, s32 *, 0xB4);
+            M2C_FIELD(arg0, s32 *, 0xB8) =
+                (s32)((s32)(M2C_FIELD(arg0, s32 *, 0x78) *
+                            M2C_FIELD(arg0, s16 *, 0x92)) >>
+                      0x10);
+            temp_a1_6 =
+                M2C_FIELD(arg0, s32 *, 8) + M2C_FIELD(arg0, s32 *, 0xB8);
+            M2C_FIELD(arg0, s32 *, 0) =
+                (s32)(M2C_FIELD(arg0, s32 *, 0) + temp_a2_5);
+            M2C_FIELD(arg0, s32 *, 4) =
+                (s32)(M2C_FIELD(arg0, s32 *, 4) + temp_a3_2);
+            M2C_FIELD(arg0, s32 *, 8) = temp_a1_6;
+            func_80029CB4(arg0);
+        }
+    }
+}
+#undef sp10
+#undef sp14
+#undef sp18
+#undef sp20
+#undef sp24
+#undef sp28
+#undef sp2C
+#undef sp30
+#undef sp34
+#undef sp38
+#undef sp40
+#undef sp48
+#undef sp50
+#undef sp58
+#undef sp60
+#undef sp68
+#undef sp70
+#undef sp
+#else
 void func_800373B4(Car *object) {
     Car *car;
     Car *middleOther;
@@ -15173,6 +17770,7 @@ void func_800373B4(Car *object) {
         }
     }
 }
+#endif
 
 void func_8003AA20(Car *car);
 void CarAdvanceResetTimer(Car *object);
@@ -15374,6 +17972,173 @@ extern Car *gCarListAbsolute[];
 extern s32 D_800AE154[];
 extern s32 func_80039274(Car *, Car *, u8);
 
+#ifdef NATIVE
+s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
+    s32 maxDistance;
+    s32 count;
+    Car *other;
+    s32 value;
+    s32 forward;
+    s32 lateral;
+    s8 leftAllowed;
+    s32 routeDistance;
+    s32 angle;
+    s32 cosine;
+    register s32 *cosTable;
+    s32 sine;
+    s32 dx;
+    s32 carX;
+    s32 dy;
+    s32 sideLimit;
+    s32 sideScale;
+    s32 backLimit;
+    s32 lateralLimit;
+    u32 flags;
+    s8 otherLane;
+
+    if (D_800A2F58 != 0) {
+        return 0;
+    }
+    if (car->speed == 0) {
+        return 0;
+    }
+    other = gCarListAbsolute[0];
+    for (count = 0; count < D_800A2EB4Absolute[0];
+         count++, other = other->next) {
+        if (car == other) {
+            continue;
+        }
+        value = car->speed - other->speed;
+        maxDistance = (value >> 16) / 50 + 1;
+        if (maxDistance >= 6) {
+            maxDistance = 5;
+        }
+        routeDistance = func_8003702C(other, car);
+        if (keepTarget & 0xFF) {
+            if (routeDistance < 3) {
+                return 0;
+            }
+        } else if (routeDistance < -1 || maxDistance < routeDistance) {
+            continue;
+        }
+        if (car->unk26C[14] == 0) {
+            if (ABS(other->unk203) >= 7) {
+                car->targetSegment = -1;
+                continue;
+            }
+        }
+        angle = 0x400;
+        angle -= car->heading;
+        cosTable = gCosTableAbsolute[0];
+        /* Keep the x loads after the table base and entry address. */
+        dx = other->pos.x;
+        maxDistance = angle & 0x3FF;
+        cosTable = (s32 *)((maxDistance * 4) + (u32)cosTable);
+        /* lw carX, pos.x; cosTable is unchanged. */
+        carX = car->pos.x;
+        cosine = *cosTable;
+        dx -= carX;
+        sine = gSinTableAbsolute[0][maxDistance];
+        dy = other->pos.y - car->pos.y;
+        forward = (cosine * dx - sine * dy) >> 16;
+        lateral = (sine * dx + cosine * dy) >> 16;
+        routeDistance = ABS(MathGetAngleDelta(car->heading, other->heading));
+        sideScale = (gSinTableAbsolute[0][routeDistance] * 250) >> 16;
+        if (sideScale < 0) {
+            sideScale = -sideScale;
+        }
+        sideLimit = sideScale + 400;
+        if (lateral >= 0 ? lateral >= 201 : -lateral >= 201) {
+            if (ABS(value) <= 0x36FFFF) {
+                if (value > 0) {
+                    backLimit = ((value >> 16) * 4) - 230;
+                } else {
+                    backLimit = -230;
+                }
+                lateralLimit = sideLimit + 20;
+                if ((lateral >= 0 ? lateral < lateralLimit
+                                  : -lateral < lateralLimit) &&
+                    backLimit < forward && forward < 1350 &&
+                    !(keepTarget & 0xFF)) {
+                    value = car->lane;
+                    func_80039B74(car, 0);
+                    maxDistance = (car->segment + 4) % gTrackSectionCount[0];
+                    flags = *(u32 *)&((RoutePoint *)D_800AE154[0])[maxDistance]
+                                 .speed >>
+                            30;
+                    leftAllowed = flags & 1;
+                    maxDistance = flags & 2;
+                    if (lateral > 0) {
+                        otherLane = other->lane;
+                        if (otherLane < car->lane && otherLane < -1) {
+                            car->lane = value;
+                            continue;
+                        }
+                        backLimit = func_80039274(car, other, 1);
+                        if (car->lane > 0 && maxDistance == 0) {
+                            backLimit = 1;
+                        }
+                    } else {
+                        otherLane = other->lane;
+                        if (otherLane > car->lane && otherLane >= 2) {
+                            car->lane = value;
+                            continue;
+                        }
+                        backLimit = func_80039274(car, other, 0);
+                        if (car->lane < 0 && leftAllowed == 0) {
+                            backLimit = 1;
+                        }
+                    }
+                    car->lane = value;
+                    if ((s8)backLimit != 0) {
+                        if (forward < 0) {
+                            car->speed = other->speed + 0x280000;
+                        } else {
+                            car->speed = other->speed - 0x280000;
+                        }
+                    }
+                    return 1;
+                }
+            }
+            if (sideLimit < ABS(lateral)) {
+                if (car->targetSegment != -1) {
+                    return 1;
+                }
+                continue;
+            }
+        }
+        if (value < 0 && other->speed > 0x320000) {
+            continue;
+        }
+        if (!(keepTarget & 0xFF)) {
+            if (routeDistance < 0) {
+                continue;
+            }
+            if (value > 0x460000) {
+                if (other->unk203 < 0) {
+                    func_800390A0((s32)car, (s32)other, 1, 1);
+                } else {
+                    func_800390A0((s32)car, (s32)other, 0, 1);
+                }
+            }
+        }
+        if ((u32)(forward - 1001) < 349) {
+            if (other->speed > 0xC80000) {
+                car->speed = other->speed - 0x10000;
+            } else if (other->speed > 0x3C0000) {
+                car->speed -= value / 20;
+            }
+        }
+        if (car->targetSegment != -1) {
+            if (car->speed < 0) {
+                car->speed = 0xA0000;
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
+#else
 s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
     s32 maxDistance;
     s32 count;
@@ -15540,6 +18305,7 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
     }
     return 0;
 }
+#endif
 
 void func_80039B74(Car *arg0, s32 arg1) {
     Car *obj = arg0;

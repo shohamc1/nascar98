@@ -905,6 +905,117 @@ typedef struct {
     u8 unkC[4];
 } MovieFrame;
 
+#ifdef NATIVE
+void func_8006FBB0Args(MovieFrame *frameData, s32 x, s16 y) {
+    MovieContext *st;
+    MovieContext *st2;
+    register u32 bsw;
+    u32 nsec;
+    u32 w8;
+    u32 cnt;
+    u32 word;
+    register u32 wA;
+    u32 w8hi;
+    u32 wAlo;
+    u32 w8lo;
+    u32 xv;
+    u32 mdecId;
+    register u32 prod;
+    volatile MovieContext *vst;
+    u32 mdecId2;
+    s32 magic;
+    u32 h16u;
+    s32 prod2;
+    u_long *outp;
+    s32 w32;
+    s32 h32;
+    u32 i;
+
+    word = frameData->header;
+    st = gMovieContext;
+
+    bsw = word >> 0x18;
+    bsw = bsw | ((word >> 8) & 0xFF00);
+    bsw = bsw | ((word & 0xFF00) << 8);
+    magic = bsw | (word << 0x18);
+    wA = frameData->height;
+    cnt = wA >> 8; /* srl */
+    wAlo = wA & 0xFF;
+    w8 = frameData->width;
+    wAlo = wAlo << 8;
+    bsw = cnt | wAlo;
+    cnt = st->unk118;
+    w8hi = w8 >> 8; /* srl */
+    w8lo = w8 & 0xFF;
+    w8lo = w8lo << 8;
+    nsec = w8hi | w8lo;
+    if (cnt == 0) {
+        wA = D_800A33A0;
+        mdecId = 0x4D444543;
+        asm("" : "=r"(xv) : "0"(x));
+        st->uploadRects[0].x = x;
+        st->uploadRects[0].y = y;
+        st->uploadRects[0].h = bsw;
+        st->uploadRects[1].y = y;
+        st->uploadRects[1].h = bsw;
+        /* mult nsec, wA: mflo below reads the product. */
+        st->uploadX = xv;
+        st->uploadY = y;
+        do {
+        } while (0);
+        st->uploadRects[1].x = x + wA * 0xA0;
+        st->imageWidth = wA * 8;
+        st->imageHeight = bsw;
+        st->activeRect = 0;
+        prod = nsec * wA; /* mflo */
+        w8 = prod >> 1;
+        st->uploadRects[0].w = w8;
+        st->uploadRects[1].w = w8;
+        if (magic == mdecId) {
+            func_800708D8((u8 *)frameData + 0x10,
+                          (s32)st->decodeBuffers[st->decodeBufferIndex]);
+        }
+        ((volatile MovieContext *)gMovieContext)->uploadComplete = 0;
+    } else {
+        st->uploadComplete = 0;
+        DecDCTin((u_long *)st->decodeBuffers[1 - st->decodeBufferIndex],
+                 D_800A339C);
+        st2 = gMovieContext;
+        bsw = *(u16 *)((u8 *)st2 + 0x20);  /* lhu */
+        h16u = *(u16 *)((u8 *)st2 + 0x22); /* lhu */
+        w32 = (s16)bsw;
+        h32 = (s16)h16u;
+        /* mult w32, h32: mflo below reads the product. */
+        outp = st2->imageBuffer;
+        prod2 = w32 * h32; /* mflo */
+        DecDCTout(outp, prod2 / 2);
+        mdecId2 = 0x4D444543;
+        if (magic == mdecId2) {
+            st2 = gMovieContext;
+            func_800708D8((u8 *)frameData + 0x10,
+                          (s32)st2->decodeBuffers[st2->decodeBufferIndex]);
+        }
+        DecDCToutSync(0);
+        vst = (volatile MovieContext *)gMovieContext;
+        i = 0;
+        if (vst->uploadComplete == 0) {
+            bsw = 0x30D40;
+        again:
+            if (i > bsw) {
+                goto done;
+            }
+            i++;
+            if (vst->uploadComplete == 0) {
+                goto again;
+            }
+        }
+    }
+done:
+    DecDCTReset(1);
+    gMovieContext->unk118 = gMovieContext->unk118 + 1;
+    gMovieContext->decodeBufferIndex = 1 - gMovieContext->decodeBufferIndex;
+}
+#else
 void func_8006FBB0Args(MovieFrame *frameData, s32 x, s16 y) {
     MovieContext *st;
     MovieContext *st2;
@@ -1014,6 +1125,7 @@ done:
     gMovieContext->unk118 = gMovieContext->unk118 + 1;
     gMovieContext->decodeBufferIndex = 1 - gMovieContext->decodeBufferIndex;
 }
+#endif
 asm(".globl func_8006FBB0\nfunc_8006FBB0 = func_8006FBB0Args");
 
 void func_8006FDDC(MovieFrame *frameData, s32 x, s16 y) {
@@ -1082,12 +1194,22 @@ void func_8006FDDC(MovieFrame *frameData, s32 x, s16 y) {
 void func_8006FBB0(void);
 extern void func_8006FDDCNoArgs(void);
 asm(".globl func_8006FDDCNoArgs\nfunc_8006FDDCNoArgs = func_8006FDDC");
+#ifdef NATIVE
+/* The asm leaves a0 to a2 alone, so both callees get the caller's frame. */
+void MovieDispatchFrameUpdate(MovieFrame *frameData, s32 x, s16 y) {
+    if (gMovieContext->unk12C)
+        func_8006FBB0Args(frameData, x, y);
+    else
+        func_8006FDDC(frameData, x, y);
+}
+#else
 void MovieDispatchFrameUpdate(void) {
     if (gMovieContext->unk12C)
         func_8006FBB0();
     else
         func_8006FDDCNoArgs();
 }
+#endif
 
 void VideoSwapDisplayAndDrawEnvironments(void) {
     s32 *s;
@@ -3162,6 +3284,112 @@ static __inline__ void AudioSetVoiceAttributes(s32 voice, s32 addr, s32 pitch) {
     SpuSetVoiceAttr(&va);
 }
 
+#ifdef NATIVE
+s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
+              s32 arg6) {
+    SpuVoiceAttr va;
+    SpuCommonAttr ca;
+    SpuCommonAttr *caarg;
+    u32 off;
+    s32 voice;
+    s32 addr;
+    u8 val;
+    u32 rawVoice;
+    s32 base;
+
+    if (arg0 == 0) {
+        goto bail;
+    }
+    if (arg2 == 0) {
+        goto bail;
+    }
+    if (arg4 == 0) {
+        goto bail;
+    }
+    if (arg1 == 0) {
+        goto bail;
+    }
+    if (arg3 == 0) {
+        goto bail;
+    }
+    D_800A351C = (volatile s32 *)arg0;
+    bzero(arg0, 0x7B80);
+    off = 0;
+    val = 2;
+    do {
+        ((u8 *)D_800A351C + off)[0x7811] = val;
+        off = off + 0x10;
+    } while (off < 0x300);
+    D_800A351C[0x7B3C / 4] = 1;
+    D_800A351C[0x7B58 / 4] = 0;
+    D_800A351C[0x7B5C / 4] = arg2;
+    D_800A351C[0x7B60 / 4] = arg4;
+    D_800A351C[0x7B64 / 4] = arg1;
+    D_800A351C[0x7B68 / 4] = arg3;
+    D_800A351C[0x7B7C / 4] = arg5;
+    voice = D_800A351C[0x7B64 / 4];
+    addr = D_800A351C[0x7B5C / 4];
+    ca.mask = 3;
+    ca.mvol.left = 0x3FFF;
+    ca.mvol.right = 0x3FFF;
+    SpuSetCommonAttr(&ca);
+    va.mask = 0xFF93;
+    va.voice = voice;
+    va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
+    va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
+    va.pitch = arg5;
+    va.addr = addr;
+    va.a_mode = 1;
+    va.s_mode = 1;
+    va.r_mode = 3;
+    va.ar = 0;
+    va.dr = 0;
+    va.sr = 0;
+    va.rr = 0;
+    va.sl = 0xF;
+    SpuSetVoiceAttr(&va);
+    rawVoice = D_800A351C[0x7B68 / 4];
+    voice = rawVoice;
+    addr = (base = D_800A351C[0x7B60 / 4]);
+    {
+        /* addiu caarg, $sp, 0x50: retail's stack slot for ca. */
+        caarg = &ca;
+        ca.mask = 3;
+        ca.mvol.left = 0x3FFF;
+        ca.mvol.right = 0x3FFF;
+        SpuSetCommonAttr(caarg);
+        va.mask = 0xFF93;
+        va.voice = voice;
+        va.volume.left = -(voice == D_800A351C[0x7B64 / 4]) & 0x3FFF;
+        va.volume.right = -(voice == D_800A351C[0x7B68 / 4]) & 0x3FFF;
+        va.pitch = arg5;
+        va.addr = addr;
+        va.a_mode = 1;
+        va.s_mode = 1;
+        va.r_mode = 3;
+        va.ar = 0;
+        va.dr = 0;
+        va.sr = 0;
+        va.rr = 0;
+        va.sl = 0xF;
+        SpuSetVoiceAttr(&va);
+    }
+    SwEnterCriticalSection();
+    D_800A351C[0x7B14 / 4] = (s32)SpuSetIRQCallback(0);
+    D_800A351C[0x7B18 / 4] = (s32)SpuSetTransferCallback(AudioTransferCallback);
+    D_800A351C[0x7B1C / 4] = arg6;
+    if (arg6 != 0) {
+        D_800A351C[0x7B10 / 4] =
+            (s32)((Callback (*)(Callback))VSyncCallback)(AudioVSyncCallback);
+    } else {
+        D_800A351C[0x7B10 / 4] = 0;
+    }
+    SwExitCriticalSection();
+    return 1;
+bail:
+    return 0;
+}
+#else
 s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
               s32 arg6) {
     u32 off;
@@ -3223,3 +3451,4 @@ s32 AudioInit(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5,
 bail:
     return 0;
 }
+#endif

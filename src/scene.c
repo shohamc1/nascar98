@@ -103,6 +103,45 @@ extern SVECTOR D_800992F4[];
 extern void SetPolyFT3(POLY_FT3 *prim);
 
 extern s32 *gCosTableAbsolute[];
+#ifdef NATIVE
+void func_80044BCC(s32 arg0) {
+    s32 v;
+    s32 typeIndex;
+    POLY_FT3 *prim;
+    s32 otz;
+    u32 *ot;
+
+    ot = (u32 *)(gOrderingTable[0] + 0x20);
+    prim = (POLY_FT3 *)((u8 *)gPrimitiveCursor[0]);
+    typeIndex = (s8)gCarListNM[0][arg0].driver;
+    gte_ldv3(D_800992E4, D_800992EC, D_800992F4);
+    gte_rtpt();
+    SetPolyFT3(prim);
+    SetShadeTex(prim, 1);
+    prim->clut = GetClut((typeIndex % 16) * 16 + 0x300, 0x3F - typeIndex / 16);
+    if (typeIndex < 12) {
+        prim->tpage = GetTPage(0, 0, (typeIndex % 4) * 64 + 0x300, 0);
+        v = typeIndex / 4;
+        v = v * 64 + 0x40;
+    } else {
+        prim->tpage = GetTPage(0, 0, (typeIndex % 4) * 64 + 0x300, 0x100);
+        v = ((typeIndex - 12) / 4) * 64;
+    }
+    prim->u1 = 0x20;
+    prim->u0 = 0;
+    prim->v0 = v;
+    prim->v1 = v;
+    prim->u2 = 0;
+    prim->v2 = v + 0x20;
+    gte_avsz3();
+    /* mfc2 otz, $7: the average Z from avsz3. */
+    otz = PortGteRead(7);
+    gte_stsxy3((u8 *)prim + 8, (u8 *)prim + 0x10, (u8 *)prim + 0x18);
+    GraphicsAddTaggedPrimitive(&ot[otz >> 4], (u32 *)prim, 0x07000000);
+    prim++;
+    gPrimitiveCursor[0] = (u32)prim;
+}
+#else
 void func_80044BCC(s32 arg0) {
     s32 v;
     s32 typeIndex;
@@ -139,10 +178,128 @@ void func_80044BCC(s32 arg0) {
     prim++;
     gPrimitiveCursor[0] = (u32)prim;
 }
+#endif
 
 extern void SetLineF4(u8 *prim);
 extern void SetLineF2(u8 *prim);
 
+#ifdef NATIVE
+void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
+    register u8 *prim;
+    register u8 *walker;
+    register u8 *pe;
+    s32 count;
+    u8 *rgb;
+    u8 g;
+    u8 b;
+    register u8 rv;
+    register u8 rtmp;
+    register s32 obt;
+    register u32 *a0arg;
+    register u32 *a1arg;
+    u32 a2arg;
+    u16 xy0;
+    u16 xy1;
+    u16 xy2;
+    u16 xy3;
+    u8 btmp;
+    register s32 gte;
+    register s32 otEntry;
+    volatile struct {
+        u8 r;
+        u8 pad1[7];
+        s32 otBase;
+        u8 pad2[4];
+    } st;
+#define r st.r
+#define otBase st.otBase
+    register s32 v0_;
+    register s32 v1_;
+    register s32 v2_;
+    register s32 w3;
+    register s32 masked;
+
+    otBase = (s32)gOrderingTable[0] + 0x20;
+    prim = (u8 *)gPrimitiveCursor[0];
+    rgb = arg2;
+    count = arg1;
+    rtmp = rgb[0];
+    r = rtmp;
+    g = rgb[1];
+    b = rgb[2];
+    if (count > 0) {
+        walker = arg0 + 0x24;
+        pe = prim + 0xE;
+        do {
+            v0_ = *(s32 *)&((Face *)(walker - 0x24))->vertex[0];
+            v1_ = *(s32 *)&((Face *)(walker - 0x24))->vertex[1];
+            v2_ = *(s32 *)&((Face *)(walker - 0x24))->vertex[2];
+            gte_ldv3(v0_, v1_, v2_);
+            gte_rtpt();
+            SetLineF4(prim);
+            gte_cfc2(gte, 31);
+            masked = gte & 0x66000;
+            if (masked != 0) {
+                goto next;
+            }
+            gte_nclip();
+            rv = r;
+            ((LINE_F4 *)(pe - 0xE))->g0 = g;
+            ((LINE_F4 *)(pe - 0xE))->b0 = b;
+            ((LINE_F4 *)(pe - 0xE))->r0 = rv;
+            gte_mfc2(gte, 24);
+            if (D_800A2DE0[0] != 0) {
+                if (gte < 0) {
+                    goto next;
+                }
+            } else {
+                if (gte > 0) {
+                    goto next;
+                }
+            }
+            gte_avsz3();
+            gte_mfc2(gte, 7);
+            gte += (s32)(s8) * (walker - 0x23) * 4;
+            gte_stsxy3(prim + 8, prim + 0xC, prim + 0x10);
+            w3 = *(s32 *)(walker);
+            gte_ldv0(w3);
+            gte_rtps();
+            gte_stsxy(prim + 0x14);
+            otEntry = gte >> 4;
+            otEntry = otEntry << 2;
+            obt = otBase;
+            otEntry = obt + otEntry;
+            GraphicsAddTaggedPrimitive((u32 *)otEntry, (u32 *)prim, 0x06000000);
+            prim += 0x1C;
+            pe += 0x1C;
+            SetLineF2(prim);
+            xy0 = ((LINE_F4 *)(pe - 0x2A))->y0;
+            xy1 = ((LINE_F4 *)(pe - 0x2A))->x3;
+            xy2 = ((LINE_F4 *)(pe - 0x2A))->y3;
+            ((LINE_F2 *)(pe - 0xE))->r0 = rgb[0];
+            xy3 = ((LINE_F4 *)(pe - 0x2A))->x0;
+            a0arg = (u32 *)otEntry;
+            ((LINE_F2 *)(pe - 0xE))->g0 = rgb[1];
+            btmp = rgb[2];
+            xy3 = ((LINE_F4 *)(pe - 0x2A))->x0;
+            a1arg = (u32 *)prim;
+            /* lui a2arg, 0x300 */
+            a2arg = 0x3000000;
+            prim += 0x10;
+            ((LINE_F2 *)(pe - 0xE))->y0 = xy0;
+            ((LINE_F2 *)(pe - 0xE))->x1 = xy1;
+            ((LINE_F2 *)(pe - 0xE))->y1 = xy2;
+            ((LINE_F2 *)(pe - 0xE))->x0 = xy3;
+            ((LINE_F2 *)(pe - 0xE))->b0 = btmp;
+            GraphicsAddTaggedPrimitive(a0arg, a1arg, a2arg);
+            pe += 0x10;
+        next:
+            walker += 0x2C;
+        } while (--count > 0);
+    }
+    gPrimitiveCursor[0] = (u32)prim;
+}
+#else
 void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
     register u8 *prim asm("$18");
     register u8 *walker asm("$20");
@@ -257,6 +414,7 @@ void func_80044DC4(u8 *arg0, s32 arg1, u8 *arg2) {
     }
     gPrimitiveCursor[0] = (u32)prim;
 }
+#endif
 
 extern s32 D_800A33F0;
 extern s32 D_800A33F4;
@@ -1073,6 +1231,240 @@ extern s16 D_800A45D8X[] asm("D_800A45D8");
 extern s16 D_800A45DA[];
 extern s16 D_800A45DC[];
 
+#ifdef NATIVE
+void SceneInitRoadStrip(void) {
+    u8 first[2];
+    SVECTOR rotation;
+    VECTOR result;
+    long flag;
+    s8 slot;
+    u16 nextSection;
+    s32 slotIndex;
+    s8 **base;
+    u8 *firstSlot;
+    u8 *firstBase;
+    u16 section;
+    s32 sectionIndex;
+    s8 index;
+    s8 *(*quadSlots)[];
+    s8 side;
+    register s8 otherSide;
+    TrackSection *node;
+    SceneRoadQuad *quad;
+    register s32 *origin;
+    s32 row;
+    register s16 x;
+    s16 y;
+    s32 z;
+    Car *car;
+    register s16 *sectionPtr;
+    register s16 *sectionBase;
+    s32 lookBehind;
+    s32 sectionPosition;
+    s32 count;
+
+    do {
+        quadSlots = &D_800A3444;
+    } while (0);
+
+    first[0] = 1;
+    first[1] = 1;
+    PushMatrix();
+    slot = 0;
+    if (D_800A3424 != 0) {
+        firstBase = first;
+        origin = D_800AE844;
+        do {
+            sectionBase = D_800A3440;
+            sectionPtr = sectionBase + slot;
+            if (slot != 0) {
+                car = D_800A3428View;
+            } else {
+                car = gPlayerCar[0];
+            }
+            section = (u16)car->segment;
+            lookBehind = D_800A3438;
+            *sectionPtr = section;
+            sectionPosition =
+                ((s16)section + lookBehind - 1) % gTrackSectionCount[0];
+            count = D_800A343C;
+            node = gTrackSections[0] + sectionPosition;
+            index = 0;
+            if (count > 0) {
+                s32 slotBits;
+                s32 slotOffset;
+
+                slotBits = (u32)(u8)slot << 24;
+                slotIndex = slotBits >> 24;
+                slotOffset = slotIndex * 4;
+                /* la base, D_800A3444 */
+                base = (s8 **)D_800A3444;
+                /* Unsigned negation preserves the address-add operand order. */
+                base = (s8 **)(slotOffset - -(u32)base);
+                firstSlot = firstBase + slotIndex;
+                do {
+                    s32 sectionValue;
+                    register s8 *quadBase;
+                    TrackSection *nodes;
+                    SVECTOR *rotationPtr;
+                    TrackSection *previousNode;
+
+                    previousNode = node->prev;
+                    section = node->section;
+                    nextSection = previousNode->section;
+                    quadBase = *base;
+                    rotation.vx = 0;
+                    rotationPtr = &rotation;
+                    nodes = gTrackSections[0];
+                    sectionValue = (s16)section;
+                    rotation.vy = nodes[sectionValue].angle * 4;
+                    sectionIndex = sectionValue;
+                    quad = (SceneRoadQuad *)quadBase + index;
+                    rotation.vz = 0;
+                    RotMatrix(rotationPtr, D_800992FC);
+                    SetRotMatrix(D_800992FC);
+                    SetTransMatrix(D_800992FC);
+                    side = 0;
+                    rotation.vy = 0;
+                    row = slotIndex * 12;
+                sideLoop:
+                    {
+                        otherSide = side + 2;
+                        rotation.vx = side ? -150 : 150;
+                        RotTrans(&rotation, &result, &flag);
+                        if (*firstSlot != 0) {
+                            register u8 *firstPoint;
+                            register SceneRoadPoint *firstCache;
+                            s32 cameraZ;
+
+                            x = (D_800AE15C[0][sectionIndex].x + result.vz >>
+                                 2) -
+                                origin[0];
+                            firstPoint = (u8 *)quad + side * sizeof(SVECTOR);
+                            firstCache = (SceneRoadPoint *)((u8 *)D_800A45C0 +
+                                                            (side * 6 + row));
+                            firstCache->x = x;
+                            ((SVECTOR *)(firstPoint + 0x30))->vx = x;
+                            y = (D_800AE15C[0][sectionIndex].y + result.vx >>
+                                 2) -
+                                origin[1];
+                            firstCache->y = y;
+                            ((SVECTOR *)(firstPoint + 0x30))->vy = y;
+                            cameraZ = origin[2];
+                            if (side) {
+                                z = gTrackSections[0][sectionIndex].height0 -
+                                    0x4000;
+                            } else {
+                                z = gTrackSections[0][sectionIndex].height1 -
+                                    0x4000;
+                            }
+                            firstCache->z = (z >> 2) - cameraZ;
+                            ((SVECTOR *)(firstPoint + 0x30))->vz =
+                                firstCache->z =
+                                    ((volatile SceneRoadPoint *)firstCache)->z;
+                            if (side) {
+                                *firstSlot = 0;
+                            }
+                        } else {
+                            register u8 *oldPoint;
+                            register s32 oldOffset;
+
+                            oldOffset = side * 6 + row;
+                            oldPoint = (u8 *)quad + side * sizeof(SVECTOR);
+                            ((SVECTOR *)(oldPoint + 0x30))->vx =
+                                *(s16 *)((u8 *)D_800A45D8X + oldOffset);
+                            ((SVECTOR *)(oldPoint + 0x30))->vy =
+                                *(s16 *)((u8 *)D_800A45DA + oldOffset);
+                            ((SVECTOR *)(oldPoint + 0x30))->vz =
+                                *(s16 *)((u8 *)D_800A45DC + oldOffset);
+                        }
+                        {
+                            register u8 *nextPoint;
+                            register SceneRoadPoint *nextCache;
+                            s32 cacheOffset;
+                            s32 cameraZ;
+                            s32 nextSectionIndex;
+
+                            nextSectionIndex = (s16)nextSection;
+                            x = (D_800AE15C[0][nextSectionIndex].x +
+                                     result.vz >>
+                                 2) -
+                                origin[0];
+                            cacheOffset = side * 6 + row;
+                            asm(""
+                                : "=r"(cacheOffset)
+                                : "0"(cacheOffset), "r"(x));
+                            nextCache = (SceneRoadPoint *)((u8 *)D_800A45D8 +
+                                                           cacheOffset);
+                            asm("" : "=r"(nextCache) : "0"(nextCache));
+                            nextPoint =
+                                (u8 *)quad + otherSide * sizeof(SVECTOR);
+                            nextCache->x = x;
+                            ((SVECTOR *)(nextPoint + 0x30))->vx = x;
+                            y = (D_800AE15C[0][nextSectionIndex].y +
+                                     result.vx >>
+                                 2) -
+                                origin[1];
+                            nextCache->y = y;
+                            ((SVECTOR *)(nextPoint + 0x30))->vy = y;
+                            cameraZ = origin[2];
+                            if (side) {
+                                z = gTrackSections[0][nextSectionIndex]
+                                        .height0 -
+                                    0x4000;
+                            } else {
+                                z = gTrackSections[0][nextSectionIndex]
+                                        .height1 -
+                                    0x4000;
+                            }
+                            nextCache->z = (z >> 2) - cameraZ;
+                            ((SVECTOR *)(nextPoint + 0x30))->vz = nextCache->z =
+                                ((volatile SceneRoadPoint *)nextCache)->z;
+                        }
+                        asm("" : : "r"(node), "r"(index), "r"(section));
+                        side++;
+                    }
+                    if (side < 2) {
+                        goto sideLoop;
+                    }
+                    {
+                        s32 previous;
+                        register s32 following;
+                        s32 currentIndex;
+                        s32 last;
+                        s8 *previousBase;
+
+                        count = D_800A343C;
+                        currentIndex = index;
+                        last = count - 1;
+                        previous = (currentIndex + last) % count;
+                        following = (currentIndex + 1) % count;
+                        quad->next = (SceneRoadQuad *)*base + previous;
+                        previousBase = *base;
+                        index++;
+                        quad->section = section;
+                        quad->prev = (SceneRoadQuad *)previousBase + following;
+                    }
+                    node = node->prev;
+                } while (index < count);
+            }
+            {
+                s32 tailCount;
+                s32 endOffset;
+
+                asm("" : : "r"((u8)slot), "r"(quadSlots) : "memory");
+                tailCount = D_800A343C;
+                D_800A344C[slot] = (SceneRoadQuad *)(*quadSlots)[slot];
+                endOffset = tailCount * 0x58 - 0x58;
+                D_800A3454[slot] =
+                    (SceneRoadQuad *)((u8 *)(*quadSlots)[slot] + endOffset);
+                slot++;
+            }
+        } while (slot < D_800A3424);
+    }
+    PopMatrix();
+}
+#else
 void SceneInitRoadStrip(void) {
     u8 first[2];
     SVECTOR rotation;
@@ -1307,6 +1699,7 @@ void SceneInitRoadStrip(void) {
     }
     PopMatrix();
 }
+#endif
 
 void SceneUpdateRoadStrip(Car *car) {
     SVECTOR rotation;
@@ -2839,6 +3232,335 @@ extern u8 D_800A798BWrite[];
 asm(".globl D_800A798BWrite\nD_800A798BWrite = D_800A798B");
 
 /* Keep address construction separate from the primitive stores. */
+#ifdef NATIVE
+void HudInitRacePrims(void) {
+    extern u8 D_800B0B7C[]; /* reached only from retail's asm */
+    HudTexture *tex;
+    POLY_FT4 *prim;
+    TILE *p3;
+    TILE *p4;
+    u8 *f4base;
+    s32 tileIndex;
+    s32 tileBytes;
+    s32 tileX;
+    u8 *tileHeightBase;
+    POLY_FT4 *heap;
+    Glyph *glyph;
+    s8 entry;
+    s8 col;
+    s8 line;
+    s8 j;
+    s8 row;
+    u16 *page;
+    s32 markerOffset;
+    u8 *driver;
+    u8 driverR;
+    register s32 line24;
+    s8 **slot;
+    s8 **lineSlot;
+    s32 glyphOffset;
+    s32 cornerOffset;
+    s32 value;
+    u8 *slotBase;
+    u8 *coord;
+    POLY_FT4 *driverCall;
+    u8 *driverBase;
+    u32 borderFlag;
+    u16 markerPage;
+    register u8 *mapCall;
+    POLY_FT4 *mapPrim;
+    register s32 view;
+    register u8 *coordX;
+    s32 coordinateValue;
+    register u8 *coordY;
+    register s32 yOffset;
+
+    D_800A3680[0] = 0;
+    D_800A3490 = 0;
+    D_800A2FD0[0] = -(gSplitScreenMode[0] != 0) & 0x92;
+    for (entry = 0; entry < D_800A3424; entry++) {
+        D_800A3485 = 0;
+        for (col = 0; col < 6; col++) {
+            {
+                register u8 *addressBase;
+
+                /* la addressBase, D_8009AE14; addu */
+                addressBase = D_8009AE14;
+                lineSlot = (s8 **)(addressBase + col * 4);
+            }
+            D_800A3485 += strlen((char *)*lineSlot);
+        }
+        D_800A3484Small = D_800A3485 + strlen((char *)D_8009AE2C[0]);
+        for (col = 0; col < 3; col += 2) {
+            line = 0;
+            heap = (POLY_FT4 *)((u8 *)HeapAlloc(D_800A3484Small * 0x28));
+            D_800A78C4[(s8)(entry + col)] = (s8 *)heap;
+            for (; line < 7; line++) {
+                j = 0;
+                line24 = line << 24;
+                {
+                    register u8 *addressBase;
+
+                    /* la addressBase, D_8009AE14; addu */
+                    addressBase = D_8009AE14;
+                    lineSlot = (s8 **)(addressBase + (line24 >> 22));
+                }
+                if ((*lineSlot)[0] != 0) {
+                    do {
+                        {
+                            register u8 *addressBase;
+
+                            do {
+                                glyphOffset = line24 >> 22;
+                            } while (0);
+                            addressBase = (u8 *)D_8009AE14;
+                            slot =
+                                (s8 **)((u32)(glyphOffset) - -(u32)addressBase);
+                        }
+                        glyph = &gHudGlyphs[(*slot)[j]];
+                        SetPolyFT4(heap);
+                        heap->clut = GetClut(0x390, 0x3C);
+                        heap->r0 = 0x80;
+                        heap->g0 = 0x80;
+                        heap->b0 = 0xC0;
+                        heap->tpage = GetTPage(0, 0, glyph->x, glyph->y);
+                        heap->u0 = glyph->u;
+                        heap->v0 = glyph->v;
+                        heap->u1 = glyph->u + *(u8 *)&glyph->width;
+                        heap->v1 = glyph->v;
+                        heap->u2 = glyph->u;
+                        heap->v2 = glyph->v + *(u8 *)&glyph->height;
+                        heap->u3 = glyph->u + *(u8 *)&glyph->width;
+                        heap->v3 = glyph->v + *(u8 *)&glyph->height;
+                        j++;
+                        heap++;
+                    } while ((*slot)[j] != 0);
+                }
+            }
+        }
+        row = entry;
+        func_8004AFE0(row, D_80099298, (u16 *)D_800A78C4[row]);
+        {
+            register u8 *addressBase;
+
+            /* la addressBase, D_800A78CC; addu */
+            addressBase = (u8 *)D_800A78CC;
+            slotBase = addressBase + row * 4;
+        }
+        func_8004AFE0(row, D_80099298, *(u16 **)slotBase);
+        D_800A3488 = strlen((char *)((s8 **)D_8009AE14)[0]);
+        prim = (POLY_FT4 *)((u8 *)D_800A78D4 + row * 0x28);
+        SetPolyFT4(prim);
+        SetSemiTrans(prim, 1);
+        prim->code |= 1;
+        prim->u0 = D_80090FF2[0];
+        prim->v0 = D_80090FF4[0];
+        prim->u1 = D_80090FF2a[0] + 0x3C;
+        prim->v1 = D_80090FF4a[0];
+        prim->u2 = D_80090FF2b[0];
+        prim->v2 = D_80090FF4b[0] + 0x3C;
+        prim->u3 = D_80090FF2c[0] + 0x3C;
+        prim->v3 = D_80090FF4c[0] + 0x3C;
+        prim->x0 = 0xF5;
+        prim->y0 = D_800A2FD0[row] + 0xA0;
+        prim->x1 = 0x131;
+        prim->y1 = D_800A2FD0[row] + 0xA0;
+        prim->x2 = 0xF5;
+        prim->y2 = D_800A2FD0[row] + 0xDC;
+        prim->x3 = 0x131;
+        prim->y3 = D_800A2FD0[row] + 0xDC;
+        *(u16 *)((u8 *)D_800A78E2 + row * 0x28) =
+            GetClut(D_80090FEE[0], D_80090FF0[0]);
+        tex = D_80090FEA;
+        asm("" : "=r"(view) : "0"((s32)row));
+        *(u16 *)((u8 *)D_800A78EA + row * 0x28) =
+            GetTPage(D_80090FF6[0], 0, tex->tpx, D_80090FEC[0]);
+        tex -= 14;
+        for (col = 0; col < 10; col++) {
+            {
+                register u8 *addressBase;
+
+                /* la addressBase, D_800A757C; addu with the column offset */
+                addressBase = (u8 *)D_800A757C;
+                mapCall = addressBase + col * 0x28;
+            }
+            mapCall = (u8 *)((u32)(view * 0x190) + (u32)mapCall);
+            SetPolyFT4((POLY_FT4 *)mapCall);
+            SetShadeTex(mapCall, 0);
+            {
+                register u8 *addressBase;
+
+                /* la addressBase, D_800A757C; addu */
+                addressBase = (u8 *)D_800A757C;
+                mapPrim = (POLY_FT4 *)(addressBase + view * 0x190 + col * 0x28);
+            }
+            mapPrim->r0 = 0x40;
+            mapPrim->g0 = 0x40;
+            mapPrim->b0 = 0x40;
+            mapPrim->u0 = tex->u + 0x60;
+            mapPrim->v0 = tex->v;
+            mapPrim->u1 = tex->u + 0x6F;
+            mapPrim->v1 = tex->v;
+            mapPrim->u2 = tex->u + 0x60;
+            mapPrim->v2 = tex->v + 0xF;
+            mapPrim->u3 = tex->u + 0x6F;
+            mapPrim->v3 = tex->v + 0xF;
+            *(u16 *)(view * 0x190 + col * 0x28 + (u8 *)D_800A7592) =
+                GetTPage(tex->tpage, 0, tex->tpx, tex->tpy);
+            {
+                register s32 cornerPrefix;
+
+                cornerPrefix = col * 12;
+                coord = (u8 *)gCosTableAbsolute[0];
+                cornerPrefix += col;
+                cornerPrefix = cornerPrefix * 8 + 0x828;
+                cornerOffset = cornerPrefix;
+            }
+            value = MathMultiplyFixed16(
+                0x370000, *(s32 *)((u32)cornerOffset + (u32)coord));
+            coordY = (u8 *)gSinTableMap0[0];
+            mapPrim->x0 = (value >> 0x10) + 0x12C;
+            coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
+            value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
+            asm("" : "=r"(yOffset) : "0"((s32)(u8)D_800A2FD0[view]));
+            coordX = (u8 *)gCosTableAbsolute[0];
+            value >>= 0x10;
+            yOffset = (s8)yOffset + 0xD7;
+            coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
+            value += yOffset;
+            asm("" : "=r"(value) : "0"(value), "r"(coordX));
+            mapPrim->y0 = value;
+            coordinateValue = *(s32 *)coordX;
+            value = MathMultiplyFixed16(0x370000, coordinateValue);
+            coordY = (u8 *)gSinTableMap1[0];
+            mapPrim->x1 = (value >> 0x10) + 0x130;
+            coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
+            value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
+            asm("" : "=r"(yOffset) : "0"((s32)(u8)D_800A2FD0[view]));
+            coordX = (u8 *)gCosTableAbsolute[0];
+            value >>= 0x10;
+            yOffset = (s8)yOffset + 0xD7;
+            coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
+            value += yOffset;
+            asm("" : "=r"(value) : "0"(value), "r"(coordX));
+            mapPrim->y1 = value;
+            coordinateValue = *(s32 *)coordX;
+            value = MathMultiplyFixed16(0x370000, coordinateValue);
+            coordY = (u8 *)gSinTableMap2[0];
+            mapPrim->x2 = (value >> 0x10) + 0x12C;
+            coordY = (u8 *)((u32)cornerOffset + (u32)coordY);
+            value = MathMultiplyFixed16(0x370000, *(s32 *)coordY);
+            coordX = (u8 *)gCosTableAbsolute[0];
+            mapPrim->y2 = (value >> 0x10) + D_800A2FD0[view] + 0xDB;
+            coordX = (u8 *)((u32)cornerOffset + (u32)coordX);
+            coordinateValue = *(s32 *)coordX;
+            value = MathMultiplyFixed16(0x370000, coordinateValue);
+            coordY = (u8 *)gSinTableMap3[0];
+            mapPrim->x3 = (value >> 0x10) + 0x130;
+            cornerOffset += (u32)coordY;
+            value = MathMultiplyFixed16(0x370000, *(s32 *)cornerOffset);
+            mapPrim->y3 = (value >> 0x10) + D_800A2FD0[view] + 0xDB;
+        }
+        col = 0;
+        tileIndex = (s8)entry;
+        tileBytes = tileIndex * 0x30;
+        f4base = (u8 *)D_800A7924;
+        /* Keep these locals multi-set so loop.c does not hoist their values. */
+        for (; col < 3; col++) {
+            p3 = (TILE *)((u8 *)((u32)(col * 0x10) + (u32)f4base));
+            p3 = (TILE *)((u32)tileBytes - -(u32)p3);
+            SetTile(p3);
+            SetSemiTrans(p3, 1);
+            p4 = (TILE *)((u8 *)((u32)tileBytes + (u32)(col * 0x10) +
+                                 (u32)f4base));
+            tileX = 0xD;
+            p4->x0 = tileX;
+            tileX = 0;
+            p4->y0 = D_800A2FD0[tileIndex] + 0xD3;
+            tileHeightBase = (u8 *)D_800A7932;
+            *(u16 *)(tileBytes + col * 0x10 + tileHeightBase) = 6;
+            tileHeightBase = 0;
+        }
+        {
+            register s32 tileRow;
+            u8 *green;
+            register u8 *red;
+            u8 *back;
+            s32 offset;
+            s32 color;
+
+            tileRow = (s8)entry;
+            red = (u8 *)D_800A7924;
+            offset = tileRow * 0x30;
+            green = (u8 *)((u32)offset + (u32)red);
+            do {
+                color = 0xFF;
+                red += 0x10;
+            } while (0);
+            red = (u8 *)((u32)offset + (u32)red);
+            {
+                register u8 *addressBase;
+
+                addressBase = (u8 *)D_800A7944;
+                back = (u8 *)((u32)(offset) - -(u32)addressBase);
+            }
+            ((TILE *)green)->r0 = 0;
+            ((TILE *)green)->g0 = color;
+            ((TILE *)green)->b0 = 0;
+            ((TILE *)red)->r0 = color;
+            ((TILE *)red)->g0 = 0;
+            ((TILE *)red)->b0 = 0;
+            ((TILE *)back)->r0 = 0;
+            ((TILE *)back)->g0 = 0;
+            ((TILE *)back)->b0 = 0;
+            ((TILE *)back)->x0 = 0xC;
+            ((TILE *)back)->y0 = D_800A2FD0[tileRow] + 0xD2;
+            ((TILE *)back)->w = 0x2A;
+            ((TILE *)back)->h = 8;
+        }
+    }
+    SetPolyFT4((POLY_FT4 *)D_800A789C);
+    SetSemiTrans((u8 *)D_800A789C, 1);
+    SetShadeTex((u8 *)D_800A789C, 0);
+    D_800A78B2[0] = GetTPage(tex->tpage, 3, tex->tpx, tex->tpy);
+    D_800A78A8[0] = tex->u + 0x60;
+    D_800A78A9[0] = tex->v + 0xF;
+    D_800A78B0[0] = tex->u + 0x6F;
+    D_800A78B1[0] = tex->v + 0xF;
+    D_800A78B8[0] = tex->u + 0x60;
+    D_800A78B9[0] = tex->v;
+    D_800A78C0[0] = tex->u + 0x6F;
+    D_800A78C1[0] = tex->v;
+    SetTile(D_800A7984);
+    borderFlag = D_800A798B[0];
+    driverBase = D_800B0B7C; /* la driverBase, D_800B0B7C */
+    D_800A7990[0] = 0x140;
+    D_800A798C[0] = 0;
+    D_800A798E[0] = 0;
+    D_800A7992[0] = 0xF0;
+    D_800A798BWrite[0] = borderFlag | 2;
+    page = (u16 *)D_80090F32;
+    asm("" : "=r"(page) : "0"(page));
+    SetPolyF4(D_800A7564);
+    for (entry = 0; entry < 2; entry++) {
+        for (col = 0; col < 0x18; col++) {
+            driverCall =
+                (POLY_FT4 *)((u8 *)((u32)(col * 0x28) + (u32)driverBase));
+            driverCall = (POLY_FT4 *)((u32)(entry * 0x3C0) - -(u32)driverCall);
+            SetPolyFT4(driverCall);
+            SetShadeTex(driverCall, 0);
+            markerPage = GetTPage(page[0], 0, page[-6], page[-5]);
+            markerOffset = (u32)col * 0x28 + (u32)entry * 0x3C0;
+            *(u16 *)(markerOffset + (u8 *)D_800B0B92) = markerPage;
+            driverR = D_800991E8[col * 3]; /* lbu */
+            driver = (u8 *)((u32)markerOffset + (u32)driverBase);
+            ((POLY_FT4 *)driver)->r0 = driverR;
+            ((POLY_FT4 *)driver)->g0 = D_800991E9[col * 3];
+            ((POLY_FT4 *)driver)->b0 = D_800991EA[col * 3];
+        }
+    }
+}
+#else
 void HudInitRacePrims(void) {
     HudTexture *tex;
     POLY_FT4 *prim;
@@ -3171,6 +3893,7 @@ void HudInitRacePrims(void) {
         }
     }
 }
+#endif
 extern s8 D_800A2FD0[];
 
 /* The `(u32)index + (u32)base` casts give retail's index-first `addu`
@@ -3278,6 +4001,642 @@ extern u8 D_800A2FDC[];
 extern s16 D_800A853C[], D_800A8544[], D_800A854C[], D_800A854E[];
 extern s16 D_800A8554[], D_800A8556[];
 
+#ifdef NATIVE
+void HudDrawDashboard(void) {
+    /* Preserve the temporary packet layout used by the draw loops. */
+    s16 points[16];
+    s16 angles[4];
+    s16 streakAngles[4];
+    s16 *cornerRows[2];
+    u32 intensityBytes[2];
+    u8 framePad[8];
+    register s32 product;
+    s32 productY;
+    register s32 next;
+    s32 cosine;
+    s32 sine;
+    s32 offset;
+    s32 count;
+    register s32 vertex;
+    register s32 i;
+    register s16 *point;
+    s16 *corner;
+    POLY_F4 *needle;
+    register u32 cachedAngle;
+    register s32 argA;
+    register s32 argB;
+    s32 callResult;
+    s32 nextVertex;
+    register s32 screenY;
+    register s16 *baseCorner;
+
+    if (gSplitScreenMode[0] == 0) {
+        i = 0;
+    copyHud1:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A8184 + (s16)i * 0x18);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
+            next = i + 1;
+            do {
+                i = next;
+            } while (0);
+
+            if ((s16)next < 2)
+                goto copyHud1;
+        }
+        i = 0;
+        PushMatrix();
+        func_800474A0();
+        do {
+            baseCorner = D_8009935C;
+
+            cornerRows[0] = baseCorner;
+            switch ((s16)i) {
+            case 0: {
+                Car *car;
+                s32 rpm;
+                s32 numerator;
+                register s32 quotient;
+                register s32 trueFactor;
+                register s32 falseFactor;
+                register s32 trueHigh;
+                register s32 falseHigh;
+                s64 wideProduct;
+
+                /* Scale the tachometer angle by 585/13250 or 658/13250. */
+                car = gPlayerCar[0];
+                rpm = car->unk402;
+                if (car->automatic != 0 || car->gearIndex == car->unk110) {
+                    trueFactor = 0x9E468F35;
+                    numerator = rpm * 585;
+                    /* mult numerator, trueFactor; mfhi trueHigh */
+                    wideProduct = (s64)numerator * trueFactor;
+                    trueHigh = (s32)(wideProduct >> 32);
+                    quotient = trueHigh + numerator;
+                } else {
+                    falseFactor = 0x9E468F35;
+                    numerator = rpm * 658;
+                    /* mult numerator, falseFactor; mfhi falseHigh */
+                    wideProduct = (s64)numerator * falseFactor;
+                    falseHigh = (s32)(wideProduct >> 32);
+                    quotient = falseHigh + numerator;
+                }
+                quotient >>= 13;
+                numerator >>= 31;
+                quotient -= numerator;
+                quotient += 256;
+                do {
+
+                    angles[0] = quotient;
+                } while (0);
+            }
+                baseCorner = D_8009936C;
+
+                cornerRows[0] = baseCorner;
+                break;
+            case 1:
+                if (D_800A2ED4[0] == 0) {
+                    if (RandomScaledGet(2)) {
+                        productY = -RandomScaledGet(gPlayerCar[0]->speed >> 20);
+                    } else {
+                        productY = RandomScaledGet(gPlayerCar[0]->speed >> 20);
+                    }
+                    productY += 0x300;
+                    D_800A3494 = productY;
+                    angles[0] = productY;
+                } else {
+                    cachedAngle = D_800A3494;
+
+                    angles[0] = cachedAngle;
+                }
+                break;
+            case 2: {
+                s32 speed;
+                s32 scaledSpeed;
+                register s32 factor;
+                register s32 high;
+                register s32 angleQuot;
+                s64 wideProduct;
+
+                /* Scale speed by 768/16000 for the speedometer angle. */
+                speed = gPlayerCar[0]->unk28C;
+                factor = 0x10624DD3;
+                scaledSpeed = speed * 768;
+                /* mult scaledSpeed, factor: mfhi below reads the high word. */
+                wideProduct = (s64)scaledSpeed * factor;
+                scaledSpeed >>= 31;
+                high = (s32)(wideProduct >> 32); /* mfhi */
+                angleQuot = high >> 10;
+                angleQuot -= scaledSpeed;
+                angleQuot += 0x180;
+                angleQuot &= 0x3FF;
+                angles[0] = angleQuot;
+                break;
+            }
+            case 3:
+                angles[0] =
+                    ((s32)((u8)gPlayerCar[0]->unk3FD << 24) >> 21) + 0x2D8;
+                break;
+            }
+            vertex = 0;
+            {
+                register u32 angleWord;
+                register s32 index;
+                register s32 *cosineTable;
+                register s32 *sineTable;
+                extern s32 *hudCosine __asm__("gCosTable");
+                extern s32 *hudSine __asm__("gSinTable");
+
+                index = i << 16;
+                angleWord = *(u16 *)angles;
+
+                offset = index >> 14;
+                cosineTable = hudCosine;
+                sineTable = hudSine;
+                index = (s32)(angleWord << 16) >> 14;
+                cosineTable = (s32 *)(index + (u32)cosineTable);
+                cosine = *cosineTable;
+                sineTable = (s32 *)(index + (u32)sineTable);
+                sine = *sineTable;
+            }
+        rotateCorner:
+            {
+                register s16 *base;
+
+                base = cornerRows[0];
+
+                count = (s32)(vertex << 16) >> 14;
+                corner = (s16 *)(count + (u32)base);
+
+                argB = corner[0];
+                argA = cosine;
+            }
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            argB = corner[1];
+            argA = sine;
+            product = callResult;
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            {
+                u32 centerX;
+
+                point = points;
+
+                centerX = *(u16 *)(offset + (u32)D_8009934C);
+                point = (s16 *)((u8 *)point + count);
+                asm("" : "=r"(point) : "0"(point), "r"(centerX), "r"(product));
+                product -= callResult;
+                product >>= 16;
+                centerX += product;
+                point[0] = centerX;
+                argB = corner[0];
+                argA = sine;
+            }
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            argB = corner[1];
+            argA = cosine;
+            product = callResult;
+            callResult = MathMultiplyFixed16(argA, argB << 16);
+            screenY = (u8)D_800A2FD4[0];
+
+            nextVertex = vertex + 1;
+            vertex = nextVertex;
+            asm("" : "=r"(nextVertex) : "0"(nextVertex));
+            argB = *(u16 *)(offset + (u32)D_8009934E);
+
+            product += callResult;
+            product >>= 16;
+            nextVertex = (s16)nextVertex < 4;
+            point[1] = (s8)screenY + (argB + product);
+            if (nextVertex)
+                goto rotateCorner;
+            {
+                register s32 copyIndex;
+                s32 copyOffset;
+                register u32 needleBase;
+
+                copyIndex = (s16)i;
+                needleBase = (u32)D_800A81B4;
+                copyOffset = copyIndex << 1;
+
+                argA = *(u16 *)points;
+                copyOffset += copyIndex;
+                copyOffset <<= 3;
+                needle = (POLY_F4 *)(copyOffset + needleBase);
+            }
+            needle->x0 = argA;
+            needle->y0 = points[1];
+            needle->x1 = points[2];
+            needle->y1 = points[3];
+            needle->x2 = points[4];
+            needle->y2 = points[5];
+            needle->x3 = points[6];
+            needle->y3 = points[7];
+            next = i + 1;
+            do {
+                i = next;
+            } while (0);
+
+        } while ((s16)next < 4);
+        D_800A3008 = D_800A3480 * -15;
+        RotMatrix(D_800A3004, D_800A7FC4);
+        SetRotMatrix(D_800A7FC4);
+        SetTransMatrix(D_800A7FC4);
+        {
+            u8 *dest;
+            register u8 *source;
+            register u8 *out;
+            u32 *ot;
+            s32 count;
+            s32 product;
+            struct PacketWords {
+                s32 w0;
+                s32 w1;
+                s32 w2;
+                s32 w3;
+                s32 w4;
+            };
+            struct PacketWords *from;
+            struct PrimitiveWords {
+                u32 tag, color, xy0, uv0, xy1, uv1, xy2, uv2, xy3, uv3;
+            };
+            struct PrimitiveWords *poly;
+            register s32 w0;
+            s32 w1;
+            register s32 w2;
+            s32 w3;
+            s32 w4;
+            register SVECTOR *p0;
+            register SVECTOR *p1;
+            register SVECTOR *p2;
+            /* Project the 36 dashboard quads through the GTE. */
+            dest = (u8 *)gHudPrimitiveCursor;
+            count = 36;
+            source = D_800A7995;
+            ot = (u32 *)gOrderingTable[0];
+            out = dest + 0x18;
+            do {
+                p0 = ((Face *)(source - 1))->vertex[0];
+                p1 = ((Face *)(source - 1))->vertex[1];
+                p2 = ((Face *)(source - 1))->vertex[2];
+                gte_ldv3(p0, p1, p2);
+                asm volatile(
+                    ".set\tnoreorder\n\tnop\n\tnop\n\trtpt\n\t.set\treorder");
+                asm volatile(
+                    ".set\tnoreorder\n\tnop\n\tnop\n\tavsz3\n\t.set\treorder");
+                from = (struct PacketWords *)(source + 3);
+                poly = (struct PrimitiveWords *)(out - 0x18);
+                w2 = from->w2;
+                w0 = from->w0;
+                w1 = from->w1;
+                w3 = from->w3;
+                w4 = from->w4;
+
+                poly->uv1 = w2;
+                poly->uv0 = w1;
+                poly->color = w0;
+                poly->uv2 = w3;
+                poly->uv3 = w4;
+                gte_stsxy3(dest + 8, dest + 0x10, dest + 0x20);
+                p0 = ((Face *)(source - 1))->vertex[3];
+                gte_ldv0(p0);
+                asm volatile(
+                    ".set\tnoreorder\n\tnop\n\tnop\n\trtps\n\t.set\treorder");
+                gte_stsxy(out);
+                argB = (s32)dest;
+                count--;
+                product = *(s8 *)source;
+                source += 0x2C;
+                out += 0x28;
+                dest += 0x28;
+                GraphicsAddTaggedPrimitive(ot + product, (u32 *)argB,
+                                           0x09000000);
+            } while (count > 0);
+            gHudPrimitiveCursor = (u32)dest;
+        }
+        i = 0;
+    copyHud2:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A81B4 + (s16)i * 24);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(gOrderingTable[0] + 8), entry);
+            next = i + 1;
+            do {
+                i = next;
+            } while (0);
+
+            if ((s16)next < 4)
+                goto copyHud2;
+        }
+        i = 0;
+    copyHud3:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = &D_800A8214[(s16)i];
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(gOrderingTable[0] + 16), entry);
+            next = i + 1;
+            do {
+                i = next;
+            } while (0);
+
+            if ((s16)next < 4)
+                goto copyHud3;
+        }
+        i = 0;
+    copyHud4:
+        {
+            u32 raw;
+            POLY_FT4 *entry;
+            POLY_FT4 *prim;
+            prim = (POLY_FT4 *)(D_800A82B4 + (s16)i * 40);
+            raw = gHudPrimitiveCursor;
+            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+            entry = (POLY_FT4 *)raw;
+            *entry = *prim;
+            AddPrim((void *)(gOrderingTable[0] + 16), entry);
+            next = i + 1;
+            do {
+                i = next;
+            } while (0);
+
+            if ((s16)next < 4)
+                goto copyHud4;
+        }
+        {
+            register s32 product;
+            s32 productX;
+            s32 rotatedX;
+            register s32 rowOffset;
+            u16 *center;
+
+            register u32 intensityValue;
+            register u32 reloadIntensity;
+            register u16 rawAngle;
+            register u32 shifted;
+            s32 signedAngle;
+            i = 0;
+            streakAngles[0] = (D_800A348C + 0x120) & 0x3FF;
+            do {
+                rawAngle = *(u16 *)streakAngles;
+                asm("" : "=r"(rawAngle) : "0"(rawAngle));
+                shifted = (u32)rawAngle << 16;
+                signedAngle = (s32)shifted >> 16;
+                if (signedAngle < 0x200) {
+                    if (signedAngle - 0x100 >= 0) {
+                        offset = (u32)(0x200 - signedAngle) >> 2;
+                    } else {
+                        offset = shifted >> 18;
+                    }
+                    intensityValue = offset & 0xFF;
+
+                    intensityBytes[0] = intensityValue;
+                    if (intensityValue >= 8) {
+                        {
+                            s32 index;
+                            register s32 width;
+                            register u32 angleWord;
+                            u32 centers;
+                            register u32 angleIndex;
+                            register u32 centerValue;
+                            extern s32 *hudCosine __asm__("gCosTable");
+                            extern s32 *hudSine __asm__("gSinTable");
+
+                            index = (s16)i;
+                            width = D_800A2FD8[index];
+                            asm("" : "=r"(width) : "0"(width));
+                            angleWord = *(u16 *)streakAngles;
+                            asm("" : "=r"(angleWord) : "0"(angleWord));
+                            argB = 0x200;
+                            centers = (u32)D_800A2FDC;
+
+                            center = (u16 *)(index * 2 + centers);
+                            centerValue = *center;
+                            callResult = index * 5;
+
+                            rowOffset = callResult << 3;
+                            product = intensityValue >> 1;
+
+                            product <<= 16;
+                            width = (s8)width;
+                            angleIndex = angleWord;
+                            argB -= angleIndex;
+                            argB >>= 7;
+                            centerValue -= width;
+                            centerValue = argB + centerValue;
+                            *(s16 *)(rowOffset + (u32)D_800A853C) = centerValue;
+
+                            do {
+                                callResult = D_800A2FD8[index];
+                            } while (0);
+
+                            asm("" : "=r"(callResult) : "0"(callResult));
+                            centerValue = *center;
+                            argA = (s32)hudCosine;
+                            callResult = (s8)callResult;
+                            centerValue += callResult;
+                            callResult = (s32)hudSine;
+                            angleIndex <<= 2;
+                            argB += centerValue;
+                            argA = angleIndex + argA;
+                            *(s16 *)(rowOffset + (u32)D_800A8544) = argB;
+                            cosine = *(s32 *)argA;
+                            argB = 0x640000;
+                            angleIndex += callResult;
+
+                            sine = *(s32 *)angleIndex;
+                        }
+                        callResult = MathMultiplyFixed16(cosine, argB);
+                        argB = product;
+                        productX = callResult;
+                        callResult = MathMultiplyFixed16(sine, argB);
+                        argA = sine;
+                        argB = 0x640000;
+
+                        rotatedX = callResult;
+                        callResult = HudMultiplyVoid(
+                            argA, argB); /* retail read it from v0 */
+                        argA = cosine;
+                        argB = product;
+                        product = callResult;
+                        callResult = HudMultiplyVoid(
+                            argA, argB); /* retail read it from v0 */
+                        argA = *center;
+                        screenY = (productX - rotatedX) >> 16;
+                        argA += screenY;
+                        *(s16 *)(rowOffset + (u32)D_800A854C) = argA;
+
+                        screenY = (u8)D_800A2FD4[0];
+                        asm("" : "=r"(screenY) : "0"(screenY));
+                        argA = (product + callResult) >> 16;
+                        screenY = (s8)screenY;
+                        screenY += 0x9E;
+                        argA += screenY;
+                        *(s16 *)(rowOffset + (u32)D_800A854E) = argA;
+
+                        screenY = *center;
+                        productX += rotatedX;
+                        productX >>= 16;
+                        screenY += productX;
+                        *(s16 *)(rowOffset + (u32)D_800A8554) = screenY;
+
+                        do {
+                            screenY = (u8)D_800A2FD4[0];
+                        } while (0);
+
+                        asm("" : "=r"(screenY) : "0"(screenY));
+                        product -= callResult;
+                        product >>= 16;
+                        screenY = (s8)screenY;
+                        screenY += 0x9E;
+                        product += screenY;
+                        *(s16 *)(rowOffset + (u32)D_800A8556) = product;
+
+                        reloadIntensity = intensityBytes[0];
+                        next = reloadIntensity < 33;
+
+                        if (!next)
+                            offset = 32;
+                        {
+                            u32 raw;
+                            POLY_FT4 *entry;
+                            register POLY_FT4 *prim;
+                            prim = (POLY_FT4 *)(rowOffset + (u32)D_800A8534);
+
+                            prim->r0 = offset;
+                            prim->g0 = offset;
+                            prim->b0 = offset;
+                            raw = gHudPrimitiveCursor;
+                            gHudPrimitiveCursor = raw + sizeof(POLY_FT4);
+                            entry = (POLY_FT4 *)raw;
+                            *entry = *prim;
+                            AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
+                        }
+                    }
+                }
+                {
+                    register u32 angleRaw;
+                    register u32 angleNext;
+
+                    angleRaw = *(u16 *)streakAngles;
+
+                    angleNext = (angleRaw + 0x3E0) & 0x3FF;
+                    streakAngles[0] = angleNext;
+                }
+                next = i + 1;
+                do {
+                    i = next;
+                } while (0);
+
+            } while ((s16)next < 3);
+        }
+        PopMatrix();
+    }
+    i = 0;
+copyHud5:
+    {
+        register u32 raw;
+        u32 mode;
+        s32 row;
+        register s32 copyOffset;
+        s32 modeOffset;
+        s32 rowOffset;
+        register POLY_FT4 *entry;
+        POLY_FT4 *copyDest;
+        u32 sourceBase;
+        POLY_FT4 *prim;
+        mode = D_800A2ED9[0];
+        row = (s16)i;
+
+        do {
+            raw = gHudPrimitiveCursor;
+        } while (0);
+
+        do {
+            modeOffset = mode * 240;
+        } while (0);
+
+        rowOffset = row * 40;
+
+        copyOffset = modeOffset + rowOffset;
+        entry = (POLY_FT4 *)raw;
+
+        copyDest = entry;
+
+        sourceBase = (u32)D_800A8354;
+        prim = (POLY_FT4 *)(copyOffset + sourceBase);
+        gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
+        *copyDest = *prim;
+        AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
+        next = i + 1;
+        do {
+            i = next;
+        } while (0);
+
+        if ((s16)next < 6)
+            goto copyHud5;
+    }
+    i = 0;
+copyHud6:
+    {
+        register u32 raw;
+        register u32 mode;
+        s32 row;
+        s32 copyOffset;
+        s32 modeOffset;
+        register POLY_FT4 *entry;
+        POLY_FT4 *copyDest;
+        u32 sourceBase;
+        POLY_FT4 *prim;
+        mode = D_800A2ED9[0];
+        row = (s16)i;
+        asm volatile("" : "=r"(row) : "0"(row), "r"(mode) : "memory");
+        raw = gHudPrimitiveCursor;
+        asm("" : "=r"(raw) : "0"(raw));
+        modeOffset = mode * 9;
+
+        do {
+            copyOffset = row * 3;
+        } while (0);
+
+        copyOffset += modeOffset;
+        copyOffset <<= 3;
+        entry = (POLY_FT4 *)raw;
+
+        copyDest = entry;
+
+        sourceBase = (u32)D_800A80F4;
+        prim = (POLY_FT4 *)(copyOffset + sourceBase);
+        gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
+        *copyDest = *prim;
+        AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
+        next = i + 1;
+        do {
+            i = next;
+        } while (0);
+
+        if ((s16)next < 3)
+            goto copyHud6;
+    }
+}
+#else
 void HudDrawDashboard(void) {
     /* Preserve the temporary packet layout used by the draw loops. */
     s16 points[16];
@@ -3919,6 +5278,7 @@ copyHud6:
             goto copyHud6;
     }
 }
+#endif
 
 void __maspsx_include_asm_hack_D_8008D4CC(void) {
     __asm__(".section .rodata # maspsx-keep \n"
@@ -5029,6 +6389,74 @@ extern char gTextSpaceDelimiter[];
 extern char *strcpy(char *, const char *);
 extern char *strtok(char *, const char *);
 
+#ifdef NATIVE
+void HudUpdateTrafficGapData(void) {
+    register s32 len;
+    register Car *car;
+    Car *e0;
+    register s32 prod2;
+    s32 prod1;
+    s32 refDist;
+    s32 rel;
+    s32 e01d6;
+    s32 car1d6;
+    s32 e0dist;
+    s32 cardist;
+    s32 other1d6;
+    s32 otherdist;
+    char *name2;
+    s32 t1;
+    s32 t2;
+
+    e0 = (u8 *)D_800A35E0[0];
+    len = gTrackSectionCount[0];
+    e01d6 = e0->lap;
+    /* mult e01d6, len: mflo below reads the product. */
+    car = gPlayerCar[0];
+    car1d6 = car->lap;
+    prod1 = e01d6 * len; /* mflo */
+    /* mult car1d6, len: mflo below reads the product. */
+    e0dist = e0->segment;
+    cardist = car->segment;
+    D_800A34C0 = 0; /* sw $zero, %gp_rel(D_800A34C0)($gp) */
+    D_800A34BC = 0; /* sw $zero, %gp_rel(D_800A34BC)($gp) */
+    refDist = prod1 + e0dist;
+    prod2 = car1d6 * len; /* mflo */
+    cardist = (u32)prod2 - -(u32)cardist;
+    if (refDist - cardist < len) {
+        if (car->place >= 2) {
+            e0 = (u8 *)((CarLink *)car->order.node.next)->car;
+            t1 = car->unk264;
+            t2 = e0->unk264;
+            car = (Car *)e0->name;
+            D_800A34BC = t1 - t2;
+            strcpy(D_800A8A4C, (char *)car);
+            D_800A34B4 = (s32)strtok(D_800A8A4C, gTextSpaceDelimiter);
+            D_800A34B4 = (s32)strtok((char *)0, gTextSpaceDelimiter);
+        }
+        asm volatile("" : : : "memory");
+        if (*(s32 *)&gPlayerCar[0]->order.node.previous != 0) {
+            e0 = (u8 *)((CarLink *)gPlayerCar[0]->order.node.previous)->car;
+            len = gTrackSectionCount[0];
+            other1d6 = e0->lap;
+            /* mult other1d6, len: mflo below reads the product. */
+            otherdist = e0->segment;
+            otherdist = other1d6 * len + otherdist; /* mflo $7; addu */
+            if (refDist - otherdist < len) {
+                rel = e0->unk264;
+                if (gPlayerCar[0]->place != 1) {
+                    rel -= gPlayerCar[0]->unk264;
+                }
+                name2 = e0->name;
+                D_800A34C0 = rel;
+                strcpy(D_800A8A60, name2);
+                D_800A34B8 = (s32)strtok(D_800A8A60, gTextSpaceDelimiter);
+                D_800A34B8 = (s32)strtok((char *)0, gTextSpaceDelimiter);
+            }
+        }
+    }
+}
+#else
 void HudUpdateTrafficGapData(void) {
     register s32 len asm("v1");
     register Car *car asm("a1");
@@ -5097,6 +6525,7 @@ void HudUpdateTrafficGapData(void) {
         }
     }
 }
+#endif
 
 extern char *D_8009A3F8[];
 extern char *D_8009AE70[];
@@ -8233,6 +9662,1485 @@ extern s8 D_800A3A25MainLoopSite79[] asm("D_800A3A25.MainLoop79");
 extern u8 D_800A3059MainLoopPostUp asm("D_800A3059.MainLoopPostUp");
 extern u8 D_800A3059MainLoopPostDown asm("D_800A3059.MainLoopPostDown");
 
+#ifdef NATIVE
+void func_80053D40(void) {
+    s32 newPad[2];
+    s32 oldPad[2];
+    u8 playerUnlockSteps[2];
+    s32 one;
+    s32 two;
+    s32 mode13;
+    u8 exitLoop;
+    u8 displayPhase;
+    s32 idleFrames;
+    s32 animationStartX;
+    s32 animationEndX;
+    s32 animationStepX;
+    s32 animationReverseStepX;
+    s32 *previousPadCursor;
+    register s32 *currentPadCursor;
+    s32 argument0;
+    s32 menuPhase;
+    s32 animateX;
+    s32 animateY;
+    s32 animateStep;
+    register MenuObj **animationNodeSlot;
+    s32 padBits;
+    s32 previousPadInverse;
+    s32 nextIdleFrames;
+    s32 cardMenuCode;
+    s32 nextBufferIndex;
+    s32 padBits0;
+    s32 playerPadBits;
+    s32 sequenceValue;
+    s32 unlockPhase;
+    s32 itemUp;
+    s32 itemDown;
+    s32 cardOperation;
+    s32 menuDirection;
+    s32 activePlayer;
+    s32 index;
+    s32 player;
+    s32 screenResult;
+    register s32 unlockStep;
+    s32 unlockDirectionBits;
+    s32 dialogScreen;
+    s32 actionSound;
+    s32 returnChannel;
+    u32 *orderingTable;
+    u8 *screenTable;
+    register u8 *sequenceCursor;
+    u8 *selectionCursor;
+    s32 screenResultByte;
+    u8 pulseTick;
+    u8 transitionPhase;
+    u8 nextItemUp;
+    u8 nextItemDown;
+    u8 nextScreen;
+    u8 pulsePhase;
+    u8 selection;
+    u8 currentSelection;
+    u8 sequencePhase;
+    u8 itemCursorUp;
+    u8 itemCursorDown;
+    u8 secondPlayerEnabled;
+    u8 menuCode;
+    s32 wrappedItemUp;
+
+    playerUnlockSteps[0] = 0;
+    playerUnlockSteps[1] = 0;
+    MenuObjResetPoolMainLoop();
+    func_8005DAD4MainLoop();
+    func_8005DFA0MainLoop();
+    idleFrames = 0;
+    if ((u8)gSelectedTrackMainLoop < 0x11U) {
+        screenTable = D_800AE178MainLoopSite1[gSelectedTrackMainLoop];
+    } else {
+        screenTable = *D_800AE178MainLoopSite2;
+    }
+    activePlayer = 0;
+    func_8005E4A4MainLoop(screenTable);
+    one = 1;
+    two = 2;
+    D_800A3608MainLoop = 0;
+    exitLoop = 0;
+    do {
+        {
+            s32 randomScale;
+            /* The original call retains the incoming a0 and ignores the result. */
+            asm("" : "=r"(randomScale));
+            RandomScaledGetMainLoop(randomScale);
+        }
+        func_80057DE8MainLoop();
+        func_80057E10MainLoop();
+        MenuObjRestorePoolCursorMainLoop();
+        argument0 = gScreenStateMainLoop;
+        asm("" : "=r"(argument0) : "0"(argument0));
+        if (argument0 == 0xFC) {
+            PadResetAndInitializeBuffersMainLoop(0);
+            func_8006DA40MainLoop();
+            D_800A3928MainLoop = 0;
+        } else if (argument0 == 9) {
+            if (*D_800A3A58MainLoopSite3 == 0) {
+                CardEnableAndTestEventsMainLoop();
+                if (CardResolveSlotMainLoop() & 0xFF) {
+                    CardLoadSaveTableMainLoop(0);
+                }
+                CardTestAndDisableEventsMainLoop();
+            }
+            CardMenuCreateRecordTableMainLoop((s32)gSelectedTrackMainLoop);
+        } else if (argument0 == 0xA) {
+            func_80068CE4MainLoop();
+        } else if (argument0 == 0xC) {
+            CardMenuCreateStandingsTableMainLoop();
+        } else if (argument0 == 0xE) {
+            func_80064208MainLoop();
+        } else if ((u32)(gScreenStateMainLoop - 0x10) < 2U) {
+            func_800697ECMainLoop(argument0 - 0x10);
+        } else {
+            func_80056C84MainLoop(argument0, activePlayer);
+            func_8005C124MainLoop(gScreenStateMainLoop, D_800A3059MainLoop);
+        }
+        MenuCreateItemRowMainLoop(gScreenStateMainLoop);
+        func_80056F04MainLoop((s32)gScreenStateMainLoop);
+        switch (gScreenStateMainLoop) {
+        case 0:
+            idleFrames = 0;
+            goto initializePads;
+        case 7:
+            secondPlayerEnabled = 0;
+            argument0 = activePlayer & 0xFF;
+            if (((D_800A3950MainLoop == 0xFB) || (D_800A3950MainLoop == 3)) &&
+                (D_800A3644MainLoop != 0)) {
+                secondPlayerEnabled = 1;
+            }
+            func_8005ED74MainLoop(argument0, secondPlayerEnabled);
+            /* End the old register lifetime before setting the pad index. */
+            asm volatile("" : "=r"(index));
+            index = 0;
+            if (D_800A3950MainLoop == 0xFB) {
+            case 1:
+                index = 0;
+                CardMenuBuildFileListMainLoop();
+                currentPadCursor = &newPad[0];
+            } else {
+                goto resetPadArray;
+            }
+            break;
+        case 2:
+        case 8:
+            index = 0;
+            D_800A3980MainLoop =
+                DriverFindIndexByIdMainLoop(gPlayerDriverMainLoop);
+            D_800A3981MainLoopSite5[0] =
+                DriverFindIndexByIdMainLoop(D_800A36E1MainLoopSite4[0]);
+            currentPadCursor = &newPad[0];
+            break;
+        case 5:
+            index = 0;
+            func_800606D4MainLoop();
+            func_80063180MainLoop((s32)D_800A3076MainLoop);
+            currentPadCursor = &newPad[0];
+            break;
+        case 13:
+            func_80060FD8MainLoop();
+            /* End the old register lifetime before setting the pad index. */
+            asm volatile("" : "=r"(index));
+            D_800A3684MainLoopSmall = 0;
+            index = 0;
+            if (D_800A3644MainLoop != 0) {
+                *D_800A3685MainLoopSite6 = 0;
+            } else {
+                *D_800A3685MainLoopSite7 = two;
+            }
+            goto resetPadArray;
+        case 3:
+        case 6:
+            RaceBuildQualifyingGridMainLoop(gSelectedTrackMainLoop);
+        default:
+        initializePads:
+            index = 0;
+        resetPadArray:
+            /* Keep pointer setup in the common reset path. */
+            asm volatile("" : "=r"(currentPadCursor));
+            currentPadCursor = &newPad[0];
+            break;
+        }
+        previousPadCursor = &oldPad[0];
+    readInitialPads:
+        InputGetPadButtonsMainLoop(index & 0xFF, previousPadCursor);
+        *currentPadCursor = 0;
+        currentPadCursor++;
+        index += 1;
+        previousPadCursor++;
+        if (index < 2) {
+            goto readInitialPads;
+        }
+        screenResult = 0;
+        D_800A305CMainLoop = 0;
+        unlockStep = 0;
+        if (gScreenStateMainLoop == 0xC) {
+            displayPhase = 0;
+        } else {
+            displayPhase = 0xFF;
+            SetDispMaskMainLoop(1);
+        }
+        if (!(screenResult & 0xFF)) {
+            mode13 = 13;
+            do {
+                CdStopIfPlaybackChangedMainLoop();
+                nextIdleFrames = idleFrames + 1;
+                idleFrames = nextIdleFrames;
+                if ((gScreenStateMainLoop == 0) && (nextIdleFrames >= 0x709)) {
+                    screenResult = 1;
+                    gScreenStateMainLoop = 0xFD;
+                }
+                pulseTick = D_800A3724MainLoop - 1;
+                D_800A3724MainLoop = pulseTick;
+                if (!(pulseTick & 0xFF)) {
+                    pulsePhase = D_800A305AMainLoop + 1;
+                    D_800A305AMainLoop = pulsePhase;
+                    if ((u32)(pulsePhase & 0xFF) >= 0x15U) {
+                        D_800A305AMainLoop = 0;
+                    }
+                    {
+                        register s32 pulseValue;
+                        s32 magnitude;
+                        s32 intensity;
+                        pulseValue = D_800A305AMainLoop;
+                        /* Intensity is 64 + 8 * abs(pulseValue - 10), modulo 256. */
+                        /* addiu; bgez with sll in the delay slot; ori; subu; sll; addiu; andi */
+                        magnitude = pulseValue - 10;
+                        if (magnitude < 0) {
+                            magnitude = 10 - pulseValue;
+                        }
+                        magnitude = magnitude * 8 + 64;
+                        intensity = magnitude & 255;
+                        MenuSetShadeColorsMainLoop(intensity, intensity, 0x19U);
+                    }
+                    D_800A3724MainLoop = 3;
+                }
+                nextBufferIndex = D_800A305CMainLoop == 0;
+                orderingTable =
+                    (nextBufferIndex << 0xC) + gOrderingTablesMainLoopSite8;
+                D_800A305CMainLoop = nextBufferIndex;
+                gOrderingTableBankMainLoopSite9[0] = nextBufferIndex;
+                gOrderingTableMainLoopSite10[0] = orderingTable;
+                ClearOTagRMainLoop(orderingTable, 0x400);
+                GraphicsSelectPrimitiveBufferMainLoop(
+                    (s32)(u8)D_800A305CMainLoop);
+                func_80057DFCMainLoop();
+                func_80057DD4MainLoop();
+                func_80053C00MainLoop((s32)(u8)D_800A305CMainLoop,
+                                      activePlayer & 0xFF);
+                DrawSyncMainLoop(0);
+                VSyncMainLoop(0);
+                GraphicsPutCurrentEnvironmentsMainLoop();
+                if (displayPhase == one) {
+                    SetDispMaskMainLoop(1);
+                    displayPhase = 2;
+                }
+                D_800A3710MainLoop = -(D_800A305CMainLoop != 0) & 0x140;
+                LoadImageMainLoop(&D_800A3710MainLoop, D_800A35F0MainLoop);
+                DrawOTagMainLoop(
+                    (u32 *)((u8 *)gOrderingTableMainLoopSite11[0] + 0xFFC));
+                if (displayPhase == 0) {
+                    displayPhase = 1;
+                }
+                PadResetAndInitializeBuffersMainLoop(0);
+                if (newPad[0] != 0) {
+                    idleFrames = 0;
+                }
+                if (gScreenStateMainLoop == 5) {
+                    padBits0 = func_80041B7CMainLoop(0);
+                    newPad[0] = padBits0;
+                    if ((padBits0 & 0x20) && (D_800A3076MainLoop == 0)) {
+                        unlockPhase = unlockStep & 0xFF;
+                        if (padBits0 & 0xF000) {
+                            if (unlockPhase == one) {
+                                goto sequenceOne;
+                            }
+                            if (unlockPhase < 2) {
+                                unlockDirectionBits = padBits0 & 0x1000;
+                                if (unlockPhase == 0) {
+                                    goto advanceUnlockStep;
+                                }
+                                goto sequenceDone;
+                            }
+                            if (unlockPhase == two) {
+                                goto sequenceTwo;
+                            }
+                            if (unlockPhase == 3) {
+                                goto sequenceLast;
+                            }
+                            goto sequenceDone;
+                        sequenceOne:
+                            unlockDirectionBits = padBits0 & 0x8000;
+                            goto advanceUnlockStep;
+                        sequenceTwo:
+                            unlockDirectionBits = padBits0 & 0x4000;
+                        advanceUnlockStep:
+                            if (unlockDirectionBits != 0) {
+                                unlockStep++;
+                            }
+                            goto sequenceDone;
+                        sequenceLast:
+                            if (padBits0 & 0x2000) {
+                                D_800A3076MainLoop = one;
+                                func_80063180MainLoop(1);
+                                SoundPlaySlotMainLoop(0, 8);
+                                goto resetUnlockStep;
+                            }
+                        sequenceDone:;
+                        }
+                    } else {
+                    resetUnlockStep:
+                        unlockStep = 0;
+                    }
+                } else if ((gScreenStateMainLoop == two) &&
+                           (D_800A3059MainLoop == one)) {
+                    index = 0;
+                    sequenceCursor = &playerUnlockSteps[0];
+                    selectionCursor = &gPlayerDriverMainLoop;
+                readPlayerUnlockSequence:
+                    if ((index != one) || (D_800A3644MainLoop != 0)) {
+                        selection = *selectionCursor;
+                        if ((selection == 5) || (selection == two)) {
+                            playerPadBits = func_80041B7CMainLoop(index);
+                            (&newPad[0])[index] = playerPadBits;
+                            if (playerPadBits & 0x40) {
+                                if (playerPadBits & 0x5000) {
+                                    sequencePhase = *sequenceCursor;
+                                    sequenceValue = sequencePhase & 0xFF;
+                                    if (sequenceValue == 0) {
+                                        goto playerSequenceFirst;
+                                    }
+                                    if (sequenceValue == one) {
+                                        goto playerSequenceSecond;
+                                    }
+                                    sequenceCursor++;
+                                    goto playerSequenceNext;
+                                playerSequenceFirst:
+                                    if (playerPadBits & 0x1000) {
+                                        *sequenceCursor = sequencePhase + 1;
+                                    }
+                                    goto advancePlayerUnlockSequence;
+                                playerSequenceSecond:
+                                    if (!(playerPadBits & 0x4000)) {
+                                        goto advancePlayerUnlockSequence;
+                                    }
+                                    currentSelection = *selectionCursor;
+                                    if (currentSelection == two) {
+                                        func_80063C34MainLoop(2, 0x19);
+                                        func_80063AE0MainLoop(index, 2);
+                                        D_800A3065MainLoop ^= 1;
+                                        *sequenceCursor = 0;
+                                        goto advancePlayerUnlockSequence;
+                                    }
+                                    if (currentSelection == 5) {
+                                        func_80063C34MainLoop(5, 0x18);
+                                        func_80063AE0MainLoop(index, 5);
+                                        D_800A3064MainLoop ^= 1;
+                                    }
+                                    goto resetPlayerUnlockSequence;
+                                } else {
+                                    goto advancePlayerUnlockSequence;
+                                }
+                            } else {
+                            resetPlayerUnlockSequence:
+                                *sequenceCursor = 0;
+                                goto advancePlayerUnlockSequence;
+                            }
+                        } else {
+                        advancePlayerUnlockSequence:
+                            sequenceCursor += 1;
+                        }
+                    playerSequenceNext:
+                        index += 1;
+                        selectionCursor += 1;
+                        if (index < 2) {
+                            goto readPlayerUnlockSequence;
+                        }
+                    }
+                }
+                if ((gScreenStateMainLoop == mode13) &&
+                    (D_800A3684MainLoopSmall == two) &&
+                    (ListHasClearFlagsMainLoop(
+                         *gPadPictureMenuListsMainLoopSite13) != 0) &&
+                    ((D_800A3644MainLoop == 0) ||
+                     ((*D_800A3685MainLoopSite12 == two) &&
+                      (ListHasClearFlagsMainLoop(*D_800A37DCMainLoopSite14) !=
+                       0)))) {
+                    screenResult = 1;
+                } else {
+                    player = 0;
+                    asm("" : "=r"(player) : "0"(player));
+                    index = player & 0xFF;
+                    do {
+                        if ((index == 0) || (D_800A3644MainLoop != 0)) {
+                            (&newPad[0])[index] = func_80041B7CMainLoop(index);
+                            if ((gScreenStateMainLoop == 7) &&
+                                (activePlayer == one)) {
+                                if (index != 0) {
+                                    newPad[0] = newPad[1];
+                                    oldPad[0] = oldPad[1];
+                                    goto handlePlayerInput;
+                                }
+                                goto nextPlayer;
+                            }
+                            if (player & 0xFF) {
+                                if (gScreenStateMainLoop != two) {
+                                    if (gScreenStateMainLoop == mode13) {
+                                        goto handlePlayerInput;
+                                    }
+                                    goto nextPlayer;
+                                }
+                                goto handlePlayerSelection;
+                            }
+                        handlePlayerInput:
+                        handlePlayerSelection:
+                            if (gScreenStateMainLoop == mode13) {
+                                index = player & 0xFF;
+                                if (newPad[index] &
+                                    ((u16)~oldPad[index] & 0x800)) {
+                                    transitionPhase =
+                                        D_800A3684MainLoopSite15[index];
+                                    if (transitionPhase == 0) {
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        if (PadTypeNeedsCalibrationMainLoop(
+                                                (s32)(u8)gPadTypeMainLoopSite16
+                                                    [index]) &
+                                            0xFF) {
+                                            func_80062874MainLoop(index, 1);
+                                            D_800A3684MainLoopSite17[index] =
+                                                one;
+                                            func_8006DE68MainLoop(
+                                                (u32)index,
+                                                (u32)(u8)gPadTypeMainLoopSite18
+                                                    [index]);
+                                            func_80062F04MainLoop(
+                                                index,
+                                                gPadTypeMainLoopSite20[index],
+                                                gPadLayoutMainLoopSite19
+                                                    [index]);
+                                            animationStartX = -0x140;
+                                            animationNodeSlot =
+                                                D_800A3888MainLoopSite21;
+                                            animationNodeSlot =
+                                                (MenuObj *
+                                                     *)((index * 4) +
+                                                        (u32)animationNodeSlot);
+                                            if (index != 0) {
+                                                animationStartX = 0x140;
+                                            }
+                                            animationStepX = 4;
+                                            if (index != 0) {
+                                                animationStepX = -4;
+                                            }
+                                            ListSetFieldsAndEnableMainLoop(
+                                                *animationNodeSlot,
+                                                animationStartX, 0,
+                                                animationStepX);
+                                        } else {
+                                            func_80062874MainLoop(index, 0);
+                                            D_800A3684MainLoopSite22[index] =
+                                                two;
+                                            goto updateSelectionPanel;
+                                        }
+                                    } else if (transitionPhase == one) {
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        PadCalibrateCenterMainLoop(
+                                            (u32)index,
+                                            (u32)(u8)
+                                                gPadTypeMainLoopSite24[index],
+                                            (u32)(u8)gPadLayoutMainLoopSite23
+                                                [index]);
+                                        func_80062874MainLoop(index, 0);
+                                        animationEndX = 0x140;
+                                        animationNodeSlot =
+                                            D_800A3888MainLoopSite25;
+                                        animationNodeSlot =
+                                            (MenuObj **)((index * 4) +
+                                                         (u32)
+                                                             animationNodeSlot);
+                                        if (index != 0) {
+                                            animationEndX = -0x140;
+                                        }
+                                        animationReverseStepX = -4;
+                                        if (index != 0) {
+                                            animationReverseStepX = 4;
+                                        }
+                                        ListSetFieldsAndEnableMainLoop(
+                                            *animationNodeSlot, 0,
+                                            animationEndX,
+                                            animationReverseStepX);
+                                        D_800A3684MainLoopSite26[index] = two;
+                                        D_800A36E4MainLoopSite27[index] = one;
+                                    updateSelectionPanel:
+                                        if ((D_800A3684MainLoopSmall != 0) &&
+                                            (*D_800A3685MainLoopSite28 != 0)) {
+                                            ListSetFieldsAndEnableMainLoop(
+                                                *D_800A37F8MainLoopSite29, 0,
+                                                0x140, 4);
+                                        }
+                                    }
+                                } else if ((PadTypeNeedsCalibrationMainLoop(
+                                                (s32)(u8)gPadTypeMainLoopSite31
+                                                    [index]) &
+                                            0xFF) &&
+                                           (D_800A3684MainLoopSite30[index] ==
+                                            one)) {
+                                    PadCalibrateRangeMainLoop(
+                                        (u32)index,
+                                        (u32)(u8)gPadTypeMainLoopSite33[index],
+                                        (u32)(u8)
+                                            gPadLayoutMainLoopSite32[index]);
+                                }
+                            }
+                            {
+                                register s32 previousPadZero;
+                                register s32 currentPadZero;
+                                /* Read both pads before forming the pressed-edge mask. */
+                                /* lw; lw; nor */
+                                previousPadZero = oldPad[0];
+                                currentPadZero = newPad[0];
+                                previousPadInverse = ~previousPadZero;
+                                if (currentPadZero &
+                                    ((u16)previousPadInverse & 0x40)) {
+                                    s32 confirmPivot;
+                                    s32 confirmMode;
+                                    screenResult = func_80056B5CMainLoop(
+                                        (s32)D_800A3059MainLoop,
+                                        (s32)gScreenStateMainLoop,
+                                        (s32)D_800A3950MainLoop);
+                                    if (screenResult & 0xFF) {
+
+                                        if ((u32)(gScreenStateMainLoop -
+                                                  0x10) >= 2U) {
+                                            SoundPlaySlotMainLoop(0, 3);
+                                        }
+                                    } else {
+                                        confirmPivot = 0x24;
+                                        confirmMode = gScreenStateMainLoop;
+                                        if (confirmMode == confirmPivot) {
+                                            goto confirmMode24;
+                                        }
+                                        if (confirmMode < 0x25) {
+                                            if (confirmMode == 0x21) {
+                                                goto confirmMode21;
+                                            }
+                                            if (confirmMode < 0x22) {
+                                                if (confirmMode == one) {
+                                                    goto confirmMode1;
+                                                }
+                                                if (confirmMode == 5) {
+                                                    goto confirmMode5;
+                                                }
+                                                goto finishInput;
+                                            }
+                                            if (confirmMode == 0x22) {
+                                                goto confirmMode22;
+                                            }
+                                            if (confirmMode == 0x23) {
+                                                goto confirmMode23;
+                                            }
+                                            goto finishInput;
+                                        }
+                                        if (confirmMode == 0x27) {
+                                            goto confirmMode25;
+                                        }
+                                        if (confirmMode < 0x28) {
+                                            if (confirmMode == 0x25) {
+                                                goto confirmMode25;
+                                            }
+                                            if (confirmMode == 0x26) {
+                                                goto confirmMode26;
+                                            }
+                                            goto finishInput;
+                                        }
+                                        if (confirmMode == 0x28) {
+                                            goto confirmMode28;
+                                        }
+                                        if (confirmMode != 0xFC) {
+                                            goto finishInput;
+                                        }
+                                    confirmModeFC:
+                                        {
+                                            s32 exitPhase;
+                                            s32 exitChannel;
+                                            s32 exitTone;
+                                            exitPhase = D_800A3928MainLoop;
+                                            if (exitPhase == 0) {
+                                                goto confirmExitStatus;
+                                            }
+                                            exitChannel = 0;
+                                            if (exitPhase == one) {
+                                                goto confirmExitSound;
+                                            }
+                                            goto finishInput;
+                                        confirmExitStatus:
+                                            exitPhase =
+                                                gCardMenuMessageMainLoop[0];
+                                            exitChannel = 0;
+                                            if (exitPhase != mode13) {
+                                                goto confirmExitSound;
+                                            }
+                                            exitTone = 4;
+                                            goto confirmExit;
+                                        confirmExitSound:
+                                            exitTone = 3;
+                                        confirmExit:
+                                            screenResult = 1;
+                                            SoundPlaySlotMainLoop(exitChannel,
+                                                                  exitTone);
+                                            goto finishInput;
+                                        }
+                                    confirmMode1:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        if ((D_800A3059MainLoop == two &&
+                                             D_800A3950MainLoop != 0) ||
+                                            D_800A3059MainLoop == one) {
+                                            CardEnableAndTestEventsMainLoop();
+                                            if ((CardProbeSlotsMainLoop() &
+                                                 0xFF) == two) {
+                                                gScreenStateMainLoop = 0x28;
+                                                CardMenuCenterSelectedTextMainLoop(
+                                                    5);
+                                                menuCode = 1;
+                                            } else {
+                                                menuCode =
+                                                    CardLoadNameListMainLoop(
+                                                        0xFF);
+                                            }
+                                            func_80057008MainLoop(menuCode &
+                                                                  0xFF);
+                                            CardTestAndDisableEventsMainLoop();
+                                            func_80057160MainLoop(1);
+                                        } else if (D_800A3059MainLoop == 6) {
+                                            if (D_800B9B84MainLoop[0] == 0) {
+                                                screenResult = 1;
+                                                goto finishInput;
+                                            }
+                                            CardMenuCenterSelectedTextMainLoop(
+                                                2);
+                                            gCardMenuMessageMainLoop[0] = 0x15;
+                                            CardMenuShowMessageMainLoop(0);
+                                            animateX = -0x78;
+                                            animateY = 0;
+                                            animateStep = 2;
+                                            dialogScreen = 0x25;
+                                            goto showConfirmDialog;
+                                        } else if (D_800A3059MainLoop == 0 &&
+                                                   D_800A3950MainLoop != 0) {
+                                            CardMenuCenterSelectedTextMainLoop(
+                                                4);
+                                            gCardMenuMessageMainLoop[0] = 0x18;
+                                            CardMenuShowMessageMainLoop(0);
+                                            animateX = -0x78;
+                                            animateY = 0;
+                                            animateStep = 2;
+                                            dialogScreen = 0x27;
+                                        showConfirmDialog:
+                                            gScreenStateMainLoop = dialogScreen;
+                                            CardMenuSetColorNodeLayoutMainLoop(
+                                                animateX, animateY,
+                                                animateStep);
+                                            MenuNegateLinkedObjectValuesMainLoop(
+                                                0);
+                                        }
+                                        goto finishInput;
+                                    confirmMode5:
+                                        if ((u32)(D_800A3059MainLoop - 2) <
+                                            2U) {
+                                            SoundPlaySlotMainLoop(0, 3);
+                                            if (D_800A3059MainLoop == 3) {
+                                                SoundRunSlotEnvelopeMainLoop(0,
+                                                                             1);
+                                                func_8003CCE0MainLoop(0);
+                                                D_800A2F9CMainLoop[0] = 0;
+                                            }
+                                            MenuCenterTextMainLoop(
+                                                D_800A3059MainLoop - 2);
+                                            MenuSetVolumeMainLoop(
+                                                (s16)D_800A3690MainLoop
+                                                    [D_800A3059MainLoop],
+                                                D_800A3059MainLoop - 2);
+                                            MenuSetLinkedObjectLayoutMainLoop(
+                                                -0x78, 0, 2);
+                                            gScreenStateMainLoop = 0x21;
+                                            MenuUpdateItemRowMainLoop(0x21);
+                                        }
+                                        goto finishInput;
+                                    confirmMode21:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        MenuSetLinkedObjectLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = 5;
+                                        MenuUpdateItemRowMainLoop(5);
+                                        if (D_800A3059MainLoop == 3) {
+                                            SoundRunSlotEnvelopeMainLoop(2, 1);
+                                            CdEnablePlaybackAndSetVolumeMainLoop();
+                                        }
+                                        goto finishInput;
+                                    confirmMode28:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        CardEnableAndTestEventsMainLoop();
+                                        cardMenuCode = CardLoadNameListMainLoop(
+                                            D_800A358CMainLoop[0]);
+                                        gScreenStateMainLoop = one;
+                                        func_80057008MainLoop(cardMenuCode &
+                                                              0xFF);
+                                        CardTestAndDisableEventsMainLoop();
+                                        func_80057160MainLoop(0);
+                                        goto finishInput;
+                                    confirmMode22:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        gScreenStateMainLoop = 0x23;
+                                        CardMenuAppendTrackNameMainLoop();
+                                        func_8006C9F8MainLoop();
+                                        gCardMenuMessageMainLoop[0] = 0;
+                                        MenuUpdateItemRowMainLoop(
+                                            gScreenStateMainLoop);
+                                        goto finishInput;
+                                    confirmMode23:
+                                        {
+                                            s32 scanPhase;
+                                            scanPhase = D_800A3928MainLoop;
+                                            returnChannel = 0;
+                                            if (scanPhase == 0) {
+                                                goto confirmScan;
+                                            }
+                                            actionSound = 3;
+                                            if (scanPhase == one) {
+                                                goto returnMainMenu;
+                                            }
+                                            goto finishInput;
+                                        confirmScan:
+                                            {
+                                                SoundPlaySlotMainLoop(0, 3);
+                                                if (func_8006D178MainLoop() ==
+                                                    0) {
+                                                    SoundStopSlotMainLoop(0);
+                                                } else {
+                                                    MenuHideCurrentObjectMainLoop();
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == 0) {
+                                                        if (CardMenuCheckTrackNameCapacityMainLoop() ==
+                                                            one) {
+                                                            goto refreshCardMenu;
+                                                        }
+                                                        if (gCardMenuMessageMainLoop
+                                                                [0] == 0) {
+                                                            goto updateCardStatus;
+                                                        }
+                                                    }
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == 0x10) {
+                                                    updateCardStatus:
+                                                        CardEnableAndTestEventsMainLoop();
+                                                        if (!(CardResolveSlotMainLoop() &
+                                                              0xFF)) {
+                                                            CardMenuShowMessageMainLoop(
+                                                                0);
+                                                            if (gCardMenuMessageMainLoop
+                                                                    [0] !=
+                                                                mode13) {
+                                                                D_800A3928MainLoop =
+                                                                    one;
+                                                            }
+                                                        }
+                                                        CardTestAndDisableEventsMainLoop();
+                                                        if (gCardMenuMessageMainLoop
+                                                                [0] == mode13) {
+                                                            goto finishInput;
+                                                        }
+                                                    }
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == mode13) {
+                                                        SoundStopSlotMainLoop(
+                                                            0);
+                                                        goto playBackSound;
+                                                    }
+                                                    goto checkCardMenuReady;
+                                                }
+                                            }
+                                            goto finishInput;
+                                        }
+                                    confirmMode24:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        menuPhase = D_800A3928MainLoop;
+                                        if (menuPhase == one) {
+                                            goto confirmStageOne;
+                                        }
+                                        if (menuPhase < 2) {
+                                            if (menuPhase == 0) {
+                                                goto confirmStageZero;
+                                            }
+                                            goto finishInput;
+                                        }
+                                        if (menuPhase == two) {
+                                            goto confirmStageTwo;
+                                        }
+                                        goto finishInput;
+                                    confirmStageZero:
+                                        gCardMenuMessageMainLoop[0] = 0x17;
+                                        cardOperation = 0;
+                                        goto startCardOperation;
+                                    confirmStageOne:
+                                        if (func_8006D258MainLoop() == one) {
+                                            gCardMenuMessageMainLoop[0] = 0x12;
+                                        }
+                                        D_800A3928MainLoop = two;
+                                    refreshCardMenu:
+                                        CardMenuShowMessageMainLoop(0);
+                                        goto finishInput;
+                                    confirmStageTwo:
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        if (D_800A3968MainLoop[0] != 0) {
+                                            D_800A3950MainLoop = 0x24;
+                                        }
+                                        goto finishMainMenuReturn;
+                                    confirmMode25:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        screenResult = 1;
+                                        gScreenStateMainLoop = screenResult;
+                                        goto finishInput;
+                                    confirmMode26:
+                                        SoundPlaySlotMainLoop(0, 3);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = 7;
+                                        RaceBuildQualifyingGridMainLoop(
+                                            gSelectedTrackMainLoop);
+                                        screenResult = 0xFF;
+                                        goto finishInput;
+                                    }
+                                    goto finishInput;
+                                }
+                                if (currentPadZero &
+                                    ((u16)previousPadInverse & 0x10)) {
+                                    if (gScreenStateMainLoop == 7) {
+
+                                        if (D_800A3950MainLoop == 0xFB) {
+                                            SoundPlaySlotMainLoop(0, 4);
+                                            gScreenStateMainLoop = 0x26;
+                                            gCardMenuMessageMainLoopSite51[0] =
+                                                0x16;
+                                            CardMenuShowMessageMainLoop(0);
+                                            CardMenuCenterSelectedTextMainLoop(
+                                                3);
+                                            CardMenuSetColorNodeLayoutMainLoop(
+                                                -0x78, 0, 2);
+                                        }
+                                    } else {
+                                        screenResult = func_80056B0CMainLoop(
+                                            (s32)gScreenStateMainLoop,
+                                            (s32)D_800A3950MainLoop);
+                                        if (screenResult & 0xFF) {
+                                            SoundPlaySlotMainLoop(0, 4);
+
+                                        } else {
+                                            goto storePadStates;
+                                        }
+                                    }
+                                    goto finishInput;
+                                }
+                                if (currentPadZero &
+                                    ((u16)previousPadInverse & 0x80)) {
+                                    s32 cancelPivot;
+                                    s32 cancelMode;
+                                    cancelPivot = 0x25;
+                                    cancelMode = gScreenStateMainLoop;
+                                    switch (cancelMode) {
+                                    case 0xFC:
+                                        if (gCardMenuMessageMainLoop[0] !=
+                                                two &&
+                                            D_800A3928MainLoop == 0) {
+                                            s32 cardStatus;
+                                            SoundPlaySlotMainLoop(0, 3);
+                                            CardEnableAndTestEventsMainLoop();
+                                            CardResolveSlotMainLoop();
+                                            cardStatus =
+                                                func_80069EB8MainLoop() & 0xFF;
+                                            if (cardStatus == 0) {
+                                                cardStatus = 4;
+                                            } else {
+                                                cardStatus = 0x13;
+                                            }
+                                            gCardMenuMessageMainLoop[0] =
+                                                cardStatus;
+                                            CardTestAndDisableEventsMainLoop();
+                                            cardOperation = 1;
+                                        startCardOperation:
+                                            CardMenuShowMessageMainLoop(
+                                                cardOperation);
+                                            D_800A3928MainLoop = one;
+                                        }
+                                        break;
+                                    case 0x23:
+                                        if (D_800A3928MainLoop == 0) {
+                                            if (gCardMenuMessageMainLoop[0] ==
+                                                    mode13 ||
+                                                (u32)(gCardMenuMessageMainLoop
+                                                          [0] -
+                                                      0x19) < 2U) {
+                                                SoundPlaySlotMainLoop(0, 3);
+                                                CardEnableAndTestEventsMainLoop();
+                                                if (!(func_80069EB8MainLoop() &
+                                                      0xFF)) {
+                                                    gCardMenuMessageMainLoop
+                                                        [0] = 4;
+                                                    CardMenuShowMessageMainLoop(
+                                                        0);
+                                                    D_800A3928MainLoop = one;
+                                                    MenuUpdateItemRowMainLoop(
+                                                        0xA);
+                                                } else {
+                                                    CardTestAndDisableEventsMainLoop();
+                                                checkCardMenuReady:
+                                                    if (gCardMenuMessageMainLoop
+                                                            [0] == 0) {
+                                                        CardMenuWriteSaveSlotMainLoop();
+                                                        CardMenuShowMessageMainLoop(
+                                                            0);
+                                                        D_800A3928MainLoop =
+                                                            one;
+                                                        MenuUpdateItemRowMainLoop(
+                                                            0xA);
+                                                    }
+                                                }
+                                            } else {
+                                                goto playBackSound;
+                                            }
+                                        }
+                                        break;
+                                    case 0x24:
+                                    playBackSound:
+                                        returnChannel = 0;
+                                        actionSound = 4;
+                                    returnMainMenu:
+                                        SoundPlaySlotMainLoop(returnChannel,
+                                                              actionSound);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                    finishMainMenuReturn:
+                                        gScreenStateMainLoop = one;
+                                        MenuUpdateItemRowMainLoop(1);
+                                        break;
+                                    case 0x22:
+                                    case 0x28:
+                                        goto playBackSound;
+                                    case 0x25:
+                                    case 0x27:
+                                        SoundPlaySlotMainLoop(0, 4);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = one;
+                                        break;
+                                    case 0x26:
+                                        SoundPlaySlotMainLoop(0, 4);
+                                        CardMenuSetColorNodeLayoutMainLoop(
+                                            0, -0x78, -2);
+                                        gScreenStateMainLoop = 7;
+                                        break;
+                                    }
+                                    goto finishInput;
+                                }
+                                /* End the old register lifetime before setting the pad index. */
+                                index = player & 0xFF;
+                                padBits = newPad[index];
+                                if (padBits &
+                                    ((u16)previousPadInverse & 0x20)) {
+
+                                    if (gScreenStateMainLoop == 0x23) {
+                                        func_8006CE64MainLoop();
+                                    }
+                                    goto finishInput;
+                                }
+                                if (padBits & 0x1000) {
+                                    register s32 padEdgeUp;
+                                    s32 blockedModeUp;
+                                    s32 cardModeUp;
+                                    s32 rawModeUp;
+                                    s32 modeUp;
+                                    blockedModeUp = 0x21;
+                                    /* Retain the raw mode byte and its comparison value. */
+                                    rawModeUp = (u8)gScreenStateMainLoop;
+                                    modeUp = rawModeUp & 255;
+                                    if ((modeUp != blockedModeUp) &&
+                                        (modeUp != 0xFC) &&
+                                        ((u32)(rawModeUp - 0x25) >= 2U) &&
+                                        (modeUp != mode13) &&
+                                        (modeUp != 0x27) && (modeUp != 0xE)) {
+                                        if (((u32)(rawModeUp - 9) < 2U) ||
+                                            (modeUp == 0xC) ||
+                                            ((u32)(rawModeUp - 0x10) < 2U)) {
+                                            func_80068AC4MainLoop(newPad[0],
+                                                                  oldPad[0], 1);
+
+                                            goto finishInput;
+                                        }
+                                        cardModeUp = 0x23;
+                                        if (modeUp == cardModeUp) {
+                                            if (D_800A3928MainLoop == one) {
+                                                goto nextPlayer;
+                                            }
+                                            if (D_800A3770MainLoopSite57[0] !=
+                                                0) {
+                                                goto nextPlayer;
+                                            }
+                                            menuDirection = 1;
+                                            goto moveCardCursor;
+                                        }
+                                        padEdgeUp = previousPadInverse & 0x1000;
+                                        if (currentPadZero & padEdgeUp) {
+                                            if ((modeUp == 0x22) ||
+                                                (modeUp == 0x24) ||
+                                                (modeUp == 0x28)) {
+                                                if (D_800A3770MainLoopSite58
+                                                        [0] == 0) {
+                                                    if (func_8006C700MainLoop(
+                                                            0,
+                                                            gScreenStateMainLoop ==
+                                                                0x22) &
+                                                        0xFF) {
+                                                        SoundPlaySlotMainLoop(
+                                                            0, 0);
+
+                                                    } else {
+                                                        goto storePadStates;
+                                                    }
+                                                    goto finishInput;
+                                                }
+                                            } else {
+                                                SoundPlaySlotMainLoop(0, 0);
+                                                wrappedItemUp =
+                                                    D_800A3059MainLoop;
+                                                if (wrappedItemUp == 0) {
+                                                    wrappedItemUp =
+                                                        D_800A38E8MainLoopSite59
+                                                            [0] -
+                                                        1;
+                                                } else {
+                                                    wrappedItemUp -= 1;
+                                                }
+                                                do {
+                                                    D_800A3059MainLoop =
+                                                        wrappedItemUp;
+                                                } while (0);
+
+                                                if (gScreenStateMainLoop ==
+                                                    two) {
+
+                                                    if (D_800A3988MainLoopSmall ==
+                                                        0) {
+                                                        if ((u32)(D_800A3059MainLoopPostUp -
+                                                                  4) < 2U) {
+                                                            D_800A3059MainLoopPostUp =
+                                                                3;
+
+                                                        } else {
+                                                            goto storePadStates;
+                                                        }
+                                                    }
+                                                    goto finishInput;
+                                                }
+                                                if ((gScreenStateMainLoop ==
+                                                     one) &&
+                                                    (D_800A3950MainLoop == 0)) {
+
+                                                    if ((u32)(D_800A3059MainLoopPostUp -
+                                                              2) < 4U) {
+                                                        D_800A3059MainLoopPostUp =
+                                                            one;
+
+                                                    } else {
+                                                        goto finishInput;
+                                                    }
+                                                } else {
+                                                    if (gScreenStateMainLoop ==
+                                                        3) {
+
+                                                        if (D_800A3644MainLoop !=
+                                                            0) {
+                                                            itemUp =
+                                                                D_800A3059MainLoopPostUp &
+                                                                0xFF;
+                                                            if (itemUp == 3) {
+                                                                D_800A3059MainLoopPostUp -=
+                                                                    2;
+
+                                                            } else if (itemUp ==
+                                                                       two) {
+                                                                D_800A3059MainLoopPostUp -=
+                                                                    1;
+
+                                                            } else {
+                                                                goto storePadStates;
+                                                            }
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if (gScreenStateMainLoop ==
+                                                        4) {
+                                                        itemCursorUp =
+                                                            D_800A3059MainLoopPostUp;
+
+                                                        if (D_800A3988MainLoopSite60
+                                                                [itemCursorUp &
+                                                                 0xFF] &
+                                                            0x80) {
+                                                            do {
+                                                                nextItemUp =
+                                                                    itemCursorUp -
+                                                                    1;
+                                                                D_800A3059MainLoopPostUp =
+                                                                    nextItemUp;
+                                                                itemCursorUp =
+                                                                    nextItemUp;
+                                                            } while (
+                                                                D_800A3988MainLoopSite61
+                                                                    [nextItemUp &
+                                                                     0xFF] &
+                                                                0x80);
+                                                        }
+                                                        goto finishInput;
+                                                    }
+
+                                                    if (gScreenStateMainLoop ==
+                                                        5) {
+
+                                                        if (D_800A3059MainLoopPostUp ==
+                                                            5) {
+
+                                                            if (D_800A3076MainLoop ==
+                                                                0) {
+                                                                D_800A3059MainLoopPostUp -=
+                                                                    1;
+                                                            }
+                                                            goto finishInput;
+                                                        }
+                                                    } else {
+                                                        goto finishInput;
+                                                    }
+                                                }
+                                                goto updatePreviousPad;
+                                            }
+                                        } else {
+                                            goto storePadStates;
+                                        }
+                                        goto nextPlayer;
+                                    }
+                                    goto nextPlayer;
+                                }
+                                if (padBits & 0x4000) {
+                                    register s32 padEdgeDown;
+                                    s32 blockedModeDown;
+                                    s32 cardModeDown;
+                                    s32 rawModeDown;
+                                    register s32 modeDown;
+                                    blockedModeDown = 0x21;
+                                    /* Retain the raw mode byte and its comparison value. */
+                                    rawModeDown = (u8)gScreenStateMainLoop;
+                                    modeDown = rawModeDown & 255;
+                                    if ((modeDown != blockedModeDown) &&
+                                        (modeDown != 0xFC) &&
+                                        ((u32)(rawModeDown - 0x25) >= 2U) &&
+                                        (modeDown != mode13) &&
+                                        (modeDown != 0x27) &&
+                                        (modeDown != 0xE)) {
+                                        if (((u32)(rawModeDown - 9) < 2U) ||
+                                            (modeDown == 0xC) ||
+                                            ((u32)(rawModeDown - 0x10) < 2U)) {
+                                            func_80068AC4MainLoop(newPad[0],
+                                                                  oldPad[0], 0);
+
+                                            goto finishInput;
+                                        }
+                                        cardModeDown = 0x23;
+                                        if (modeDown == cardModeDown) {
+                                            if (D_800A3928MainLoop == one) {
+                                                goto nextPlayer;
+                                            }
+                                            if (D_800A3770MainLoopSite62[0] !=
+                                                0) {
+                                                goto nextPlayer;
+                                            }
+                                            menuDirection = 0;
+                                        moveCardCursor:
+                                            player += 1;
+                                            /* guess: the asm passes leftover a1 and a2; func_8006CB80 tests
+                                             * arg1 & ~arg2 as a pad edge, so give it the pad states. */
+                                            func_8006CB80MainLoop(menuDirection,
+                                                                  newPad[0],
+                                                                  oldPad[0]);
+                                            oldPad[0] = newPad[0];
+                                        } else {
+                                            padEdgeDown =
+                                                previousPadInverse & 0x4000;
+                                            if (currentPadZero & padEdgeDown) {
+                                                if ((modeDown == 0x22) ||
+                                                    (modeDown == 0x24) ||
+                                                    (modeDown == 0x28)) {
+                                                    if (D_800A3770MainLoopSite63
+                                                            [0] == 0) {
+                                                        if (func_8006C700MainLoop(
+                                                                1,
+                                                                gScreenStateMainLoop ==
+                                                                    0x22) &
+                                                            0xFF) {
+                                                            SoundPlaySlotMainLoop(
+                                                                0, 1);
+
+                                                        } else {
+                                                            goto storePadStates;
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                } else {
+                                                    SoundPlaySlotMainLoop(0, 1);
+                                                    if ((D_800A3059MainLoop &
+                                                         0xFF) ==
+                                                        (D_800A38E8MainLoopSite64
+                                                             [0] -
+                                                         1)) {
+                                                        D_800A3059MainLoop = 0;
+                                                    } else {
+                                                        D_800A3059MainLoop += 1;
+                                                    }
+                                                    if (gScreenStateMainLoop ==
+                                                        two) {
+
+                                                        if (D_800A3988MainLoopSmall ==
+                                                            0) {
+
+                                                            if (D_800A3059MainLoopPostDown ==
+                                                                4) {
+                                                                /* Keep the two skip paths separate until the store. */
+                                                                asm volatile(
+                                                                    ""
+                                                                    :
+                                                                    :
+                                                                    : "memory");
+                                                                goto skipLockedItems;
+                                                            }
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if ((gScreenStateMainLoop ==
+                                                         one) &&
+                                                        (D_800A3950MainLoop ==
+                                                         0)) {
+                                                        if ((u32)(D_800A3059MainLoopPostDown -
+                                                                  2) < 4U) {
+                                                        skipLockedItems:
+                                                            D_800A3059MainLoopPostDown =
+                                                                6;
+
+                                                        } else {
+                                                            goto storePadStates;
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if (gScreenStateMainLoop ==
+                                                        3) {
+
+                                                        if (D_800A3644MainLoop !=
+                                                            0) {
+                                                            itemDown =
+                                                                D_800A3059MainLoopPostDown &
+                                                                0xFF;
+                                                            if (itemDown ==
+                                                                two) {
+                                                                D_800A3059MainLoopPostDown +=
+                                                                    2;
+
+                                                            } else if (
+                                                                itemDown ==
+                                                                gScreenStateMainLoop) {
+                                                                D_800A3059MainLoopPostDown +=
+                                                                    1;
+
+                                                            } else {
+                                                                goto storePadStates;
+                                                            }
+                                                        }
+                                                        goto finishInput;
+                                                    }
+                                                    if (gScreenStateMainLoop ==
+                                                        4) {
+                                                        itemCursorDown =
+                                                            D_800A3059MainLoopPostDown;
+
+                                                        if (D_800A3988MainLoopSite65
+                                                                [itemCursorDown &
+                                                                 0xFF] &
+                                                            0x80) {
+                                                            do {
+                                                                nextItemDown =
+                                                                    itemCursorDown +
+                                                                    1;
+                                                                D_800A3059MainLoopPostDown =
+                                                                    nextItemDown;
+                                                                itemCursorDown =
+                                                                    nextItemDown;
+                                                            } while (
+                                                                D_800A3988MainLoopSite66
+                                                                    [nextItemDown &
+                                                                     0xFF] &
+                                                                0x80);
+                                                        }
+                                                        goto finishInput;
+                                                    }
+
+                                                    if (gScreenStateMainLoop !=
+                                                        5) {
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A3059MainLoopPostDown !=
+                                                        gScreenStateMainLoop) {
+                                                        goto finishInput;
+                                                    }
+                                                    if (D_800A3076MainLoop !=
+                                                        0) {
+                                                        goto finishInput;
+                                                    }
+                                                    D_800A3059MainLoopPostDown =
+                                                        0;
+                                                    goto updatePreviousPad;
+                                                }
+                                            } else {
+                                                goto storePadStates;
+                                            }
+                                            goto nextPlayer;
+                                        }
+                                    } else {
+                                        goto nextPlayer;
+                                    }
+                                } else {
+                                    if (padBits & 0x8000) {
+                                        if (gScreenStateMainLoop == mode13 &&
+                                            (padBits &
+                                             ((u16)~oldPad[index] & 0x8000))) {
+                                            if (!(PadTypeNeedsCalibrationMainLoop(
+                                                      (u8)gPadTypeMainLoopSite68
+                                                          [index]) &
+                                                  0xFF) ||
+                                                D_800A3684MainLoopSite67
+                                                        [index] != one) {
+                                                if (D_800A3684MainLoopSite69
+                                                        [index] == 0) {
+                                                    SoundPlaySlotMainLoop(0, 2);
+                                                    {
+                                                        s32 variantCount;
+                                                        s32 variantValue;
+                                                        s32 countMinusOne;
+                                                        s32 variantRemainder;
+                                                        variantCount =
+                                                            D_800A3080MainLoopSite70
+                                                                [gPadTypeMainLoopSite71
+                                                                     [index]];
+                                                        variantValue =
+                                                            gPadLayoutMainLoopSite72
+                                                                [index];
+                                                        countMinusOne =
+                                                            variantCount - 1;
+                                                        variantValue +=
+                                                            countMinusOne;
+                                                        variantRemainder =
+                                                            variantValue %
+                                                            variantCount;
+                                                        gPadLayoutMainLoopSite72
+                                                            [index] =
+                                                                variantRemainder;
+                                                    }
+                                                }
+                                            }
+                                        } else if (gScreenStateMainLoop ==
+                                                       two &&
+                                                   D_800A3059MainLoop == one) {
+                                            MenuHandleOptionsInputMainLoop(
+                                                2, 1, 1, newPad[player & 0xFF],
+                                                oldPad[player & 0xFF],
+                                                player & 0xFF);
+                                        } else {
+                                            MenuHandleOptionsInputMainLoop(
+                                                gScreenStateMainLoop,
+                                                D_800A3059MainLoop, 1,
+                                                newPad[0], oldPad[0],
+                                                activePlayer);
+                                        }
+                                    } else if (padBits & 0x2000) {
+                                        if (gScreenStateMainLoop == mode13 &&
+                                            (padBits &
+                                             ((u16)~oldPad[index] & 0x2000))) {
+                                            if (!(PadTypeNeedsCalibrationMainLoop(
+                                                      (u8)gPadTypeMainLoopSite74
+                                                          [index]) &
+                                                  0xFF) ||
+                                                D_800A3684MainLoopSite73
+                                                        [index] != one) {
+                                                if (D_800A3684MainLoopSite75
+                                                        [index] == 0) {
+                                                    SoundPlaySlotMainLoop(0, 2);
+                                                    gPadLayoutMainLoopSite76[index] =
+                                                        (gPadLayoutMainLoopSite76
+                                                             [index] +
+                                                         1) %
+                                                        D_800A3080MainLoopSite77
+                                                            [gPadTypeMainLoopSite78
+                                                                 [index]];
+                                                }
+                                            }
+                                        } else if (gScreenStateMainLoop ==
+                                                       two &&
+                                                   D_800A3059MainLoop == one) {
+                                            MenuHandleOptionsInputMainLoop(
+                                                2, 1, 0, newPad[player & 0xFF],
+                                                oldPad[player & 0xFF],
+                                                player & 0xFF);
+                                        } else {
+                                            MenuHandleOptionsInputMainLoop(
+                                                gScreenStateMainLoop,
+                                                D_800A3059MainLoop, 0,
+                                                newPad[0], oldPad[0],
+                                                activePlayer);
+                                        }
+                                    }
+                                storePadStates:
+                                finishInput:
+
+                                updatePreviousPad:
+                                    oldPad[player & 0xFF] =
+                                        newPad[player & 0xFF];
+                                    goto nextPlayer;
+                                }
+                            }
+                        } else {
+                        nextPlayer:
+                            player += 1;
+                        }
+                        index = (u8)player;
+                    } while ((u32)(player & 0xFF) < 2U);
+                }
+            } while (!(screenResult & 0xFF));
+        }
+        DrawSyncMainLoop(0);
+        if (gScreenStateMainLoop == 7) {
+            func_80057DE8MainLoop();
+        }
+        screenResultByte = screenResult & 0xFF;
+        if (gScreenStateMainLoop != 0xFD) {
+            nextScreen = MenuUpdateScreenStateMainLoop(
+                gScreenStateMainLoop, &D_800A3950MainLoop, screenResultByte);
+            gScreenStateMainLoop = nextScreen;
+            if ((nextScreen & 0xFF) == 7) {
+                activePlayer = 0;
+            }
+            if ((D_800A3950MainLoop == 7) && !(activePlayer & 0xFF) &&
+                (D_800A3644MainLoop != 0) && (*D_800A3A25MainLoopSite79 != 0) &&
+                (screenResultByte != 0xFF)) {
+                activePlayer = 1;
+                D_800A3950MainLoop = nextScreen;
+                gScreenStateMainLoop = 7;
+                D_800A3059MainLoop = 0;
+            }
+        }
+        if ((gScreenStateMainLoop == 0xFF) || (gScreenStateMainLoop == 0xFD) ||
+            (gScreenStateMainLoop == 0xF8)) {
+            exitLoop = 1;
+        }
+    } while (exitLoop == 0);
+    VSyncMainLoop(0);
+    VSyncMainLoop(0);
+    do {
+
+    } while (func_8003F4FCMainLoop(0) & 0xFF);
+}
+#else
 void func_80053D40(void) {
     s32 newPad[2];
     s32 oldPad[2];
@@ -9704,6 +12612,7 @@ void func_80053D40(void) {
 
     } while (func_8003F4FCMainLoop(0) & 0xFF);
 }
+#endif
 
 void func_80055AA4(u8 arg0, s32 arg1) {
     extern u8 D_800A3644NM asm("D_800A3644.NON_MATCHING");
