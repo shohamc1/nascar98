@@ -441,6 +441,19 @@ def read_params(text: str) -> dict[str, list[str] | None]:
             params[name] = None
         else:
             params[name] = [] if raw in {"", "void"} else [p.strip() for p in split_top_level(raw)]
+            if m["knr"]:
+                # A K&R definition names its parameters, then types them.
+                typed = {}
+                for decl in m["knr"].split(";"):
+                    decl = " ".join(decl.split())
+                    if not decl:
+                        continue
+                    base, *rest = split_top_level(decl)
+                    d = re.match(r"^(.*?)([\s*]*[A-Za-z_]\w*)$", base)
+                    typed[d[2].strip(" *")] = base
+                    for extra in rest:
+                        typed[extra.strip(" *")] = f"{d[1].strip()} {extra.strip()}"
+                params[name] = [typed.get(p, f"int {p}") for p in params[name]]
         if m["end"] == "{":
             defined.add(name)
     return params
@@ -505,6 +518,90 @@ def repair_arity(text: str, params: dict[str, list[str] | None]) -> tuple[str, l
         args = args[:wanted] + ["0"] * (wanted - len(args))
         text = text[: open_paren + 1] + ", ".join(args) + text[i - 1 :]
     return text, padded[::-1]
+
+
+INT_TYPES = {
+    "s8", "u8", "s16", "u16", "s32", "u32", "s64", "u64", "char", "short", "int", "long",
+    "u_char", "u_short", "u_int", "u_long", "size_t",
+}
+TYPE_WORDS = INT_TYPES | {"signed", "unsigned", "const", "volatile", "void", "struct", "union", "enum"}
+
+
+def param_type(param: str, named: bool) -> str:
+    """The type in a parameter; NAMED says a trailing identifier is its name."""
+    param = re.sub(r"\s+", " ", param.strip())
+    if "(" in param:
+        return param  # a function pointer keeps its declarator
+    param = re.sub(r"\[[^]]*\]$", "*", param) if param.endswith("]") else param
+    m = re.match(r"^(.*?)\s*\b([A-Za-z_]\w*)$", param)
+    if m and m[1] and (named or m[2] not in TYPE_WORDS) and not m[1].endswith(("struct", "union", "enum")):
+        return m[1].strip()
+    return param
+
+
+def is_int_type(ctype: str) -> bool:
+    words = ctype.replace("*", " * ").split()
+    return "*" not in words and bool(words) and all(w in TYPE_WORDS for w in words) and "void" not in words
+
+
+def is_pointer_type(ctype: str) -> bool:
+    return "*" in ctype or "(" in ctype
+
+
+def canonical(def_type: str, decl_type: str | None) -> str:
+    """The type a declaration takes so its IR type matches the definition's."""
+    if is_int_type(def_type):
+        return def_type
+    if is_pointer_type(def_type):
+        return decl_type if decl_type and is_pointer_type(decl_type) else "void *"
+    return decl_type or def_type
+
+
+def repair_types(text: str, params: dict[str, list[str] | None], returns: dict[str, str]) -> str:
+    """Rule 9: give every declaration of a defined function its IR types.
+
+    Clang lowers s8 and s16 to i8 and i16, so two declarations of one
+    symbol in a file with different integer widths (or an integer where
+    the other has a pointer) make it compile the call into a trap.
+    """
+
+    here = {m["name"] for m in prototypes(text) if m["end"] == "{"}
+
+    def fix(m: re.Match) -> str:
+        if m["end"] != ";" or m["ret"].strip().split()[0] in NOT_TYPES or m["name"] in NOT_TYPES:
+            return m[0]
+        name = m["label"] or m["name"]
+        wanted = params.get(name)
+        if wanted is None:
+            return m[0]
+        raw = m["params"].strip()
+        have = [] if raw in {"", "void"} else [p for p in split_top_level(raw)]
+        if raw and len(have) != len(wanted):
+            return m[0]
+        if m["name"] in here:
+            # Beside its definition, C wants the very same types.
+            types = [param_type(d, True) for d in wanted]
+        else:
+            types = [
+                canonical(param_type(d, True), param_type(have[k], False) if raw else None)
+                for k, d in enumerate(wanted)
+            ]
+        new_params = ", ".join(types) if types else "void"
+        ret = m["ret"].strip()
+        prefix = re.match(r"^((?:extern|static)\s+)?", ret)[0]
+        body = ret[len(prefix):].strip()
+        new_ret = body
+        if name in returns:
+            want = returns[name].strip()
+            want = re.sub(r"^(extern|static)\s+", "", want)
+            new_ret = want if m["name"] in here else canonical(want, body) if want != "void" else "void"
+        head = m[0][: m.start("ret") - m.start()]
+        between = m[0][m.end("ret") - m.start() : m.start("params") - m.start()]
+        tail = m[0][m.end("params") - m.start() :]
+        sep = "" if new_ret.endswith("*") else " "
+        return head + prefix + new_ret + sep + between.lstrip(" \t") + new_params + tail
+
+    return PROTOTYPE.sub(fix, text)
 
 
 def include_closure(text: str, dirs: list[pathlib.Path], seen: set[pathlib.Path] | None = None) -> set[pathlib.Path]:
@@ -735,6 +832,7 @@ def main(argv: list[str]) -> int:
             text = filter_source(header.read_text(errors="replace"), aliases, absolutes, functions)
             text = repair_prototypes(text, returns, everything)
             text, _ = repair_arity(text, params)
+            text = repair_types(text, params, returns)
             write(args.header_out / header.relative_to("include"), text)
 
     allowed = set()
@@ -750,6 +848,7 @@ def main(argv: list[str]) -> int:
         macros = set().union(*(header_macros.get(h, set()) for h in closure))
         text = repair_prototypes(text, returns, in_headers, macros)
         text, padded = repair_arity(text, params)
+        text = repair_types(text, params, returns)
         unreviewed += [f"{path.name}: {name}()" for name in padded if (path.name, name) not in allowed]
         write(out / path.name, text)
     if unreviewed:

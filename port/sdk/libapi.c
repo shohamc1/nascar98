@@ -109,9 +109,41 @@ long GetRCnt(unsigned long arg0)
     return 0;
 }
 
-void InitPAD(s32 arg0, s32 arg1, s32 arg2, s32 arg3)
+static u8 *sPadBuffers[2];
+static int sPadLengths[2];
+
+/* The BIOS fills both buffers each frame; PortPadTick does that here. */
+void InitPAD(u8 *buf1, s32 len1, u8 *buf2, s32 len2)
 {
-    PORT_STUB(InitPAD);
+    PORT_TRACE(InitPAD);
+    sPadBuffers[0] = buf1;
+    sPadLengths[0] = len1;
+    sPadBuffers[1] = buf2;
+    sPadLengths[1] = len2;
+}
+
+/* Status 0 and ID 0x41 (digital pad), then the buttons, active low. */
+void PortPadTick(void)
+{
+    int port;
+
+    for (port = 0; port < 2; port++) {
+        u8 *buf = sPadBuffers[port];
+        u32 read;
+
+        if (!buf || sPadLengths[port] < 4) {
+            continue;
+        }
+        read = HostPadRead(port);
+        if (!(read & 0x10000)) {
+            buf[0] = 0xFF; /* nothing connected */
+            continue;
+        }
+        buf[0] = 0x00;
+        buf[1] = 0x41;
+        buf[2] = ~read & 0xFF;
+        buf[3] = ~read >> 8 & 0xFF;
+    }
 }
 
 struct DIRENTRY* nextfile(struct DIRENTRY* arg0)

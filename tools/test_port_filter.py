@@ -375,7 +375,7 @@ class Prototypes(unittest.TestCase):
     def test_read_knr_definition(self) -> None:
         text = "void DanaStep(id, pitch) s8 id;\ns8 pitch;\n{\n}\n"
         self.assertEqual(pf.read_returns(text), {"DanaStep": "void"})
-        self.assertEqual(pf.read_params(text), {"DanaStep": ["id", "pitch"]})
+        self.assertEqual(pf.read_params(text), {"DanaStep": ["s8 id", "s8 pitch"]})
 
     def test_return_table_priority(self) -> None:
         headers = ["s32 DanaStep(void);\nvoid QuinnStep(void);\n"]
@@ -388,6 +388,45 @@ class Prototypes(unittest.TestCase):
         self.assertEqual(
             pf.return_table(headers, sources), {"DanaStep": "s32", "QuinnStep": "s8", "AveryDraw": "void"}
         )
+
+    def test_repair_types_matches_definition(self) -> None:
+        # Two names for one symbol in a file must lower to one IR type, or
+        # clang turns the call into a trap: integer widths follow the
+        # definition, pointers stay pointers.
+        params = {"HudDraw": ["u8 *text", "s32 x", "s32 y", "s8 color"], "Quinn": ["s16 a"], "Avery": ["Car *car"]}
+        returns = {"HudDraw": "void", "Quinn": "s8", "Avery": "s32"}
+        text = (
+            'extern void DanaDraw(s8 *, s16, s16, s8) asm("HudDraw");\n'
+            "extern void HudDraw(u8 *, s32, s32, s8);\n"
+            "extern s32 Quinn();\n"
+            "void Avery(s32);\n"
+            "s8 Quinn(s16 a) {\n}\n"
+        )
+        self.assertEqual(
+            pf.repair_types(text, params, returns),
+            'extern void DanaDraw(s8 *, s32, s32, s8) asm("HudDraw");\n'
+            "extern void HudDraw(u8 *, s32, s32, s8);\n"
+            "extern s8 Quinn(s16);\n"
+            "s32 Avery(void *);\n"
+            "s8 Quinn(s16 a) {\n}\n",
+        )
+
+    def test_repair_types_same_file_uses_definition(self) -> None:
+        params = {"Dana": ["s32 *mem", "u32 count"]}
+        text = (
+            'extern void DanaArgs(u8 *, s32) asm("Dana");\n'
+            "extern s32 Dana();\ns32 Dana(s32 *mem, u32 count) {\n}\n"
+        )
+        # An alias under another C name needs only matching IR types.
+        self.assertEqual(
+            pf.repair_types(text, params, {"Dana": "s32"}),
+            'extern s32 DanaArgs(u8 *, u32) asm("Dana");\n'
+            "extern s32 Dana(s32 *, u32);\ns32 Dana(s32 *mem, u32 count) {\n}\n",
+        )
+
+    def test_read_params_knr_types(self) -> None:
+        text = "void DanaStep(id, pitch, count) s8 id;\ns8 pitch;\n{\n}\n"
+        self.assertEqual(pf.read_params(text), {"DanaStep": ["s8 id", "s8 pitch", "int count"]})
 
     def test_read_returns_by_label(self) -> None:
         text = 's8 DanaStepBody(s32 arg0) asm("DanaStep");\ns8 DanaStepBody(s32 arg0) {\n}\n'

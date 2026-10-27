@@ -57,6 +57,19 @@ class Run(unittest.TestCase):
             pixels = data[int.from_bytes(data[10:14], "little") :]
             self.assertGreater(len({pixels[i : i + 4] for i in range(0, len(pixels) - 4, 4)}), 1000)
 
+    def test_start_leaves_title(self) -> None:
+        # Start pressed at frame 620 moves on from the title; without it, the title stays.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text("0 -\n620 start\n625 -\n")
+            shots = []
+            for name, pad in (("idle", ""), ("start", str(d / "pad.txt"))):
+                shot = d / f"{name}.bmp"
+                result = run(60, NASCAR98_FRAMES="900", NASCAR98_SCREENSHOT=f"900:{shot}", NASCAR98_PAD=pad)
+                self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+                shots.append(shot.read_bytes())
+            self.assertNotEqual(shots[0], shots[1])
+
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")
         self.assertEqual(result.returncode, 3, result.stderr[-2000:])

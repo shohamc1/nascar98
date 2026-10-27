@@ -8,6 +8,7 @@
  *   NASCAR98_HEADLESS  1: no window; frames run as fast as they can
  *   NASCAR98_SCALE     render scale (default 3)
  *   NASCAR98_SCREENSHOT  FRAME:PATH saves the display as BMP at that frame
+ *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
  *   NASCAR98_HANG      test only: the first frame never ends
  */
 #include <SDL3/SDL.h>
@@ -18,6 +19,7 @@
 #include <unistd.h>
 
 #include "gpu.h"
+#include "pad.h"
 #include "nascar98_wasm.h"
 #include "wasm-rt-exceptions.h"
 #include "wasm-rt-impl.h"
@@ -144,6 +146,15 @@ u32 w2c_env_HostCdReadRaw(struct w2c_env *env, u32 lba, u32 dst)
         return (u32)-1;
     }
     return 0;
+}
+
+u32 w2c_env_HostPadRead(struct w2c_env *env, u32 port)
+{
+    int connected = 0;
+    uint16_t buttons = PadRead((int)port, sFrames, &connected);
+
+    (void)env;
+    return (u32)buttons | (connected ? 0x10000u : 0);
 }
 
 void w2c_env_HostGpuReset(struct w2c_env *env)
@@ -296,7 +307,7 @@ int main(void)
         sShotFrame = strtol(shot, NULL, 10);
         sShotPath = strchr(shot, ':') + 1;
     }
-    if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless)) {
+    if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless) || PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
     }
     signal(SIGALRM, OnAlarm);
