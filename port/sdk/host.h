@@ -1,6 +1,6 @@
 /*
- * The port SDK's view of the host: the four functions the wasm module
- * imports from "env". port/host/main.c supplies them.
+ * The port SDK's view of the host: the functions the wasm module imports
+ * from "env". port/host/main.c supplies them.
  */
 #ifndef PORT_SDK_HOST_H
 #define PORT_SDK_HOST_H
@@ -16,6 +16,16 @@ HOST_IMPORT(HostCdRead) int32_t HostCdRead(uint32_t lba, uint32_t count, void *d
 /* Ends one frame: nonzero when the run must stop. */
 HOST_IMPORT(HostFrame) int32_t HostFrame(void);
 HOST_IMPORT(HostExit) void HostExit(int32_t code);
+
+/* The GPU (port/host/gpu.h): pointers are module addresses. */
+HOST_IMPORT(HostGpuReset) void HostGpuReset(void);
+HOST_IMPORT(HostGpuLoadImage) void HostGpuLoadImage(const void *rect, const void *src);
+HOST_IMPORT(HostGpuStoreImage) void HostGpuStoreImage(const void *rect, void *dst);
+HOST_IMPORT(HostGpuMoveImage) void HostGpuMoveImage(const void *rect, int32_t x, int32_t y);
+HOST_IMPORT(HostGpuClearImage) void HostGpuClearImage(const void *rect, int32_t r, int32_t g, int32_t b);
+HOST_IMPORT(HostGpuDrawOTag) void HostGpuDrawOTag(const void *ot);
+HOST_IMPORT(HostGpuDrawPrim) void HostGpuDrawPrim(const void *prim);
+HOST_IMPORT(HostGpuSetDispEnv) void HostGpuSetDispEnv(const void *env);
 
 /*
  * The last 16 SDK functions entered, oldest first from gPortCallNext.

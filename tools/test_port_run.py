@@ -16,7 +16,12 @@ TRACK1 = ROOT / "NASCAR 98 (USA)/NASCAR 98 (USA) (Track 1).bin"
 
 def run(timeout: float, **env: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [str(RUNNER)], cwd=ROOT, env={**os.environ, **env}, capture_output=True, text=True, timeout=timeout
+        [str(RUNNER)],
+        cwd=ROOT,
+        env={**os.environ, "NASCAR98_HEADLESS": "1", **env},
+        capture_output=True,
+        text=True,
+        timeout=timeout,
     )
 
 
@@ -41,10 +46,12 @@ class Run(unittest.TestCase):
                 self.assertIn("NASCAR98_TRACK1", result.stderr)
 
     def test_boot_600_frames(self) -> None:
-        result = run(60, NASCAR98_FRAMES="600")
-        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
-        self.assertIn("DrawOTag", result.stderr)
-        self.assertIn("nascar98: stopped after 600 frames", result.stderr)
+        with tempfile.TemporaryDirectory() as tmp:
+            shot = pathlib.Path(tmp) / "shot.bmp"
+            result = run(60, NASCAR98_FRAMES="600", NASCAR98_SCREENSHOT=f"600:{shot}")
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            self.assertIn("nascar98: stopped after 600 frames", result.stderr)
+            self.assertEqual(shot.read_bytes()[:2], b"BM", result.stderr[-2000:])
 
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")

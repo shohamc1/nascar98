@@ -1,12 +1,18 @@
 /*
- * Psy-Q libgpu for the port: environments and ordering tables behave as
- * on the console, with no drawing. Every other function logs its first
- * call and returns 0.
+ * Psy-Q libgpu for the port. Environments and ordering tables behave as
+ * on the console; drawing and VRAM transfers go to the host's GPU
+ * (port/host/gpu.c). The debug font and callbacks log their first call
+ * and return 0.
  */
 #include "host.h"
 #include <psxsdk/libgpu.h>
 
-s32 sprintf(char *, char *, ...);
+/* Writes a primitive's length (in words after the tag) and its code. */
+static void SetLenCode(void *p, int len, int code)
+{
+    ((u8 *)p)[3] = len;
+    ((u8 *)p)[7] = code;
+}
 
 void AddPrim(void *ot, void *p)
 {
@@ -34,24 +40,14 @@ OT_TYPE *ClearOTagR(OT_TYPE *ot, int n)
 /* Walks the list as the GPU's DMA would, and logs its packet count. */
 void DrawOTag(OT_TYPE *p)
 {
-    char line[48];
-    u32 link = (u32)p & 0xFFFFFF;
-    int packets = 0, guard = 1 << 20;
-
     PORT_TRACE(DrawOTag);
-    while (link != 0xFFFFFF && --guard) {
-        u32 tag = *(u32 *)(link | 0x80000000);
-
-        packets += (tag >> 24) != 0;
-        link = tag & 0xFFFFFF;
-    }
-    sprintf(line, guard ? "DrawOTag: %d packets" : "DrawOTag: cycle after %d packets", packets);
-    HostLog(line);
+    HostGpuDrawOTag(p);
 }
 
 void DrawPrim(s32 arg0)
 {
-    PORT_STUB(DrawPrim);
+    PORT_TRACE(DrawPrim);
+    HostGpuDrawPrim((void *)arg0);
 }
 
 int DrawSync(int mode)
@@ -92,46 +88,51 @@ int FntPrint(const char* fmt, ...)
 
 u_short GetClut(int x, int y)
 {
-    PORT_STUB(GetClut);
-    return 0;
+    return (u_short)(y << 6 | ((x >> 4) & 0x3F));
 }
 
 u_short GetTPage(int tp, int abr, int x, int y)
 {
-    PORT_STUB(GetTPage);
+    return (u_short)((tp & 3) << 7 | (abr & 3) << 5 | (y & 0x100) >> 4 | (x & 0x3FF) >> 6 | (y & 0x200) << 2);
+}
+
+int LoadImage(RECT *rect, u_long *p)
+{
+    PORT_TRACE(LoadImage);
+    HostGpuLoadImage(rect, p);
     return 0;
 }
 
-int LoadImage(RECT* rect, u_long* p)
+int MoveImage(RECT *rect, int x, int y)
 {
-    PORT_STUB(LoadImage);
-    return 0;
-}
-
-int MoveImage(RECT* rect, int x, int y)
-{
-    PORT_STUB(MoveImage);
+    PORT_TRACE(MoveImage);
+    HostGpuMoveImage(rect, x, y);
     return 0;
 }
 
 DISPENV *PutDispEnv(DISPENV *env)
 {
     PORT_TRACE(PutDispEnv);
-
+    HostGpuSetDispEnv(env);
     return env;
 }
 
+/* As Psy-Q: the environment goes out as a DR_ENV packet, then isbg clears. */
 DRAWENV *PutDrawEnv(DRAWENV *env)
 {
     PORT_TRACE(PutDrawEnv);
-
+    SetDrawEnv(&env->dr_env, env);
+    HostGpuDrawPrim(&env->dr_env);
+    if (env->isbg) {
+        HostGpuClearImage(&env->clip, env->r0, env->g0, env->b0);
+    }
     return env;
 }
 
 int ResetGraph(int mode)
 {
     PORT_TRACE(ResetGraph);
-
+    HostGpuReset();
     return 0;
 }
 
@@ -184,9 +185,17 @@ void SetDispMask(int mask)
     PORT_TRACE(SetDispMask);
 }
 
-void SetDrawEnv(DR_ENV* dr_env, DRAWENV* env)
+void SetDrawEnv(DR_ENV *dr_env, DRAWENV *env)
 {
-    PORT_STUB(SetDrawEnv);
+    u32 *code = (u32 *)dr_env->code;
+    int x1 = env->clip.x + env->clip.w - 1, y1 = env->clip.y + env->clip.h - 1;
+
+    code[0] = 0xE3000000 | (env->clip.y & 0x3FF) << 10 | (env->clip.x & 0x3FF);
+    code[1] = 0xE4000000 | (y1 & 0x3FF) << 10 | (x1 & 0x3FF);
+    code[2] = 0xE5000000 | (env->ofs[1] & 0x7FF) << 11 | (env->ofs[0] & 0x7FF);
+    code[3] = 0xE1000000 | env->tpage | env->dtd << 9 | env->dfe << 10;
+    code[4] = 0xE2000000;
+    SetLenCode(dr_env, 5, ((u8 *)dr_env)[7]);
 }
 
 int SetGraphDebug(int level)
@@ -195,58 +204,72 @@ int SetGraphDebug(int level)
     return 0;
 }
 
-void SetLineF2(s32 arg0)
+void SetLineF2(void *p)
 {
-    PORT_STUB(SetLineF2);
+    PORT_TRACE(SetLineF2);
+    SetLenCode(p, 3, 0x40);
 }
 
-void SetLineF4(s32 arg0)
+void SetLineF4(void *p)
 {
-    PORT_STUB(SetLineF4);
+    PORT_TRACE(SetLineF4);
+    SetLenCode(p, 6, 0x4C);
+    ((u32 *)p)[6] = 0x55555555; /* the polyline's terminator */
 }
 
-void SetPolyF3(s32 arg0)
+void SetPolyF3(void *p)
 {
-    PORT_STUB(SetPolyF3);
+    PORT_TRACE(SetPolyF3);
+    SetLenCode(p, 4, 0x20);
 }
 
-void SetPolyF4(s32 arg0)
+void SetPolyF4(void *p)
 {
-    PORT_STUB(SetPolyF4);
+    PORT_TRACE(SetPolyF4);
+    SetLenCode(p, 5, 0x28);
 }
 
-void SetPolyFT3(s32 arg0)
+void SetPolyFT3(void *p)
 {
-    PORT_STUB(SetPolyFT3);
+    PORT_TRACE(SetPolyFT3);
+    SetLenCode(p, 7, 0x24);
 }
 
-void SetPolyFT4(s32 arg0)
+void SetPolyFT4(void *p)
 {
-    PORT_STUB(SetPolyFT4);
+    PORT_TRACE(SetPolyFT4);
+    SetLenCode(p, 9, 0x2C);
 }
 
-void SetPolyGT4(POLY_GT4* p)
+void SetPolyGT4(POLY_GT4 * p)
 {
-    PORT_STUB(SetPolyGT4);
+    PORT_TRACE(SetPolyGT4);
+    SetLenCode(p, 12, 0x3C);
 }
 
-void SetSemiTrans(void* p, int abe)
+void SetSemiTrans(void *p, int abe)
 {
-    PORT_STUB(SetSemiTrans);
+    u8 *code = (u8 *)p + 7;
+
+    *code = abe ? *code | 2 : *code & ~2;
 }
 
-void SetShadeTex(void* p, int tge)
+void SetShadeTex(void *p, int tge)
 {
-    PORT_STUB(SetShadeTex);
+    u8 *code = (u8 *)p + 7;
+
+    *code = tge ? *code | 1 : *code & ~1;
 }
 
-void SetTile(TILE* p)
+void SetTile(TILE * p)
 {
-    PORT_STUB(SetTile);
+    PORT_TRACE(SetTile);
+    SetLenCode(p, 3, 0x60);
 }
 
-int StoreImage(RECT* rect, u_long* p)
+int StoreImage(RECT *rect, u_long *p)
 {
-    PORT_STUB(StoreImage);
+    PORT_TRACE(StoreImage);
+    HostGpuStoreImage(rect, p);
     return 0;
 }

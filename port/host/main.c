@@ -5,14 +5,19 @@
  *   NASCAR98_TRACK1    the disc's Track 1 (default: see DEFAULT_TRACK1)
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
  *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10)
+ *   NASCAR98_HEADLESS  1: no window; frames run as fast as they can
+ *   NASCAR98_SCALE     render scale (default 3)
+ *   NASCAR98_SCREENSHOT  FRAME:PATH saves the display as BMP at that frame
  *   NASCAR98_HANG      test only: the first frame never ends
  */
+#include <SDL3/SDL.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "gpu.h"
 #include "nascar98_wasm.h"
 #include "wasm-rt-exceptions.h"
 #include "wasm-rt-impl.h"
@@ -33,6 +38,10 @@ static FILE *sTrack1;
 static long sFrames, sFrameLimit;
 static unsigned sWatchdog = 10;
 static volatile int sHang;
+static int sHeadless;
+static long sShotFrame = -1;
+static const char *sShotPath;
+static Uint64 sNextFrame;
 static char sRing[RING_LINES][RING_WIDTH];
 static unsigned sRingNext;
 
@@ -127,14 +136,88 @@ u32 w2c_env_HostCdRead(struct w2c_env *env, u32 lba, u32 count, u32 dst)
     return count;
 }
 
+void w2c_env_HostGpuReset(struct w2c_env *env)
+{
+    (void)env;
+    GpuReset();
+}
+
+void w2c_env_HostGpuLoadImage(struct w2c_env *env, u32 rect, u32 src)
+{
+    (void)env;
+    GpuLoadImage(rect, src);
+}
+
+void w2c_env_HostGpuStoreImage(struct w2c_env *env, u32 rect, u32 dst)
+{
+    (void)env;
+    GpuStoreImage(rect, dst);
+}
+
+void w2c_env_HostGpuMoveImage(struct w2c_env *env, u32 rect, u32 x, u32 y)
+{
+    (void)env;
+    GpuMoveImage(rect, (int32_t)x, (int32_t)y);
+}
+
+void w2c_env_HostGpuClearImage(struct w2c_env *env, u32 rect, u32 r, u32 g, u32 b)
+{
+    (void)env;
+    GpuClearImage(rect, (int)r, (int)g, (int)b);
+}
+
+void w2c_env_HostGpuDrawOTag(struct w2c_env *env, u32 ot)
+{
+    (void)env;
+    GpuDrawOTag(ot);
+}
+
+void w2c_env_HostGpuDrawPrim(struct w2c_env *env, u32 prim)
+{
+    (void)env;
+    GpuDrawPrim(prim);
+}
+
+void w2c_env_HostGpuSetDispEnv(struct w2c_env *env, u32 disp)
+{
+    (void)env;
+    GpuSetDispEnv(disp);
+}
+
+/* Holds a window run to 60 frames a second, NTSC's field rate. */
+static void Pace(void)
+{
+    const Uint64 frame = 1000000000ull / 60;
+    Uint64 now = SDL_GetTicksNS();
+
+    if (sNextFrame == 0 || now > sNextFrame + 4 * frame) {
+        sNextFrame = now;
+    }
+    if (sNextFrame > now) {
+        SDL_DelayPrecise(sNextFrame - now);
+    }
+    sNextFrame += frame;
+}
+
 u32 w2c_env_HostFrame(struct w2c_env *env)
 {
     (void)env;
     while (sHang) {
     }
     alarm(sWatchdog);
-    if (sFrameLimit > 0 && ++sFrames >= sFrameLimit) {
+    if (GpuPresent()) {
+        exit(0);
+    }
+    if (!sHeadless) {
+        Pace();
+    }
+    ++sFrames;
+    if (sFrames == sShotFrame && GpuScreenshot(sShotPath) != 0) {
+        fprintf(stderr, "nascar98: can't save the screenshot to \"%s\": %s\n", sShotPath, SDL_GetError());
+    }
+    if (sFrameLimit > 0 && sFrames >= sFrameLimit) {
         fprintf(stderr, "nascar98: stopped after %ld frames\n", sFrames);
+        PrintCalls();
         return 1;
     }
     return 0;
@@ -176,6 +259,7 @@ int main(void)
     static w2c_nascar98 module;
     struct w2c_env env = {&module};
     wasm_rt_trap_t trap;
+    const char *shot;
 
     if (!track1 || !*track1) {
         track1 = DEFAULT_TRACK1;
@@ -196,12 +280,22 @@ int main(void)
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
     sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", 10);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;
+    sHeadless = EnvNumber("NASCAR98_HEADLESS", 0) != 0;
+    shot = getenv("NASCAR98_SCREENSHOT");
+    if (shot && strchr(shot, ':')) {
+        sShotFrame = strtol(shot, NULL, 10);
+        sShotPath = strchr(shot, ':') + 1;
+    }
+    if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless)) {
+        return 5;
+    }
     signal(SIGALRM, OnAlarm);
     alarm(sWatchdog);
 
     wasm_rt_init();
     wasm2c_nascar98_instantiate(&module, &env);
     sModule = &module;
+    GpuSetMemory(w2c_nascar98_memory(&module)->data, w2c_nascar98_memory(&module)->size);
     trap = wasm_rt_impl_try();
     if (trap == WASM_RT_TRAP_NONE) {
         w2c_nascar98_PortStart(&module);

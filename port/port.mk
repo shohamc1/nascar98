@@ -9,7 +9,8 @@
 #   undefined  link without the port SDK and list what it must define
 #   module     link the game, port/sdk/, and the data into nascar98.wasm
 #   nascar98   translate the module with wasm2c and build the native runner
-#   run-headless  run the runner for 600 frames
+#   run        play the game in a window
+#   run-headless  run the runner for 600 frames without a window
 
 BREW_LLVM := $(shell brew --prefix llvm 2>/dev/null)
 WASM_CC   ?= $(BREW_LLVM)/bin/clang
@@ -20,6 +21,8 @@ WASM2C_RT ?= $(shell brew --prefix wabt 2>/dev/null)/share/wabt/wasm2c
 # WASM2C_INC to /usr/src/wasm2c: /usr/share/wabt/wasm2c lacks the .inc files.
 WASM2C_INC ?= $(WASM2C_RT)/../../../include
 HOST_CC   ?= cc
+SDL_CFLAGS ?= $(shell pkg-config --cflags sdl3)
+SDL_LIBS   ?= $(shell pkg-config --libs sdl3)
 PYTHON    ?= .venv/bin/python
 NM        ?= mipsel-linux-gnu-nm
 WASM_NM   ?= $(BREW_LLVM)/bin/llvm-nm
@@ -49,11 +52,11 @@ DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s \
                $(shell sed -n 's/^INCLUDE_RODATA("\([^"]*\)", *\([A-Za-z_0-9]*\)).*/\1\/\2.s/p' $(GAME_SRCS))
 
 WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
-                --max-memory=2151677952 -z stack-size=262144 --no-entry \
+                --max-memory=2151677952 -z stack-size=262144 --no-stack-first --no-entry \
                 --export=PortStart --export=gPortCallRing \
                 --export=gPortCallNext --fatal-warnings
 
-.PHONY: objects undefined module nascar98 run-headless FORCE
+.PHONY: objects undefined module nascar98 run run-headless FORCE
 
 objects:
 	@fail=0; for o in $(OBJS); do \
@@ -146,10 +149,14 @@ nascar98: $(PORT)/nascar98
 $(PORT)/nascar98_wasm.c: $(PORT)/nascar98.wasm
 	$(WASM2C) $< -n nascar98 -o $@
 
-$(PORT)/nascar98: $(PORT)/nascar98_wasm.c port/host/main.c
-	$(HOST_CC) -O1 -I$(PORT) -I$(WASM2C_RT) -I$(WASM2C_INC) -o $@ \
-	  $(PORT)/nascar98_wasm.c port/host/main.c $(WASM2C_RT)/wasm-rt-impl.c $(WASM2C_RT)/wasm-rt-mem-impl.c \
-	  $(WASM2C_RT)/wasm-rt-exceptions-impl.c -lm
+$(PORT)/nascar98: $(PORT)/nascar98_wasm.c $(wildcard port/host/*.c port/host/*.h)
+	$(HOST_CC) -O1 -I$(PORT) -Iport/host -I$(WASM2C_RT) -I$(WASM2C_INC) $(SDL_CFLAGS) -o $@ \
+	  $(PORT)/nascar98_wasm.c $(wildcard port/host/*.c) $(WASM2C_RT)/wasm-rt-impl.c \
+	  $(WASM2C_RT)/wasm-rt-mem-impl.c $(WASM2C_RT)/wasm-rt-exceptions-impl.c $(SDL_LIBS) -lm
 
 run-headless: $(PORT)/nascar98
-	NASCAR98_FRAMES=600 $(PORT)/nascar98
+	NASCAR98_HEADLESS=1 NASCAR98_FRAMES=600 $(PORT)/nascar98
+
+# Opens the game in a window.
+run: $(PORT)/nascar98
+	$(PORT)/nascar98
