@@ -8,12 +8,18 @@
 #   objects    compile the filtered game sources to build/port/obj/
 #   undefined  link without the port SDK and list what it must define
 #   module     link the game, port/sdk/, and the data into nascar98.wasm
+#   nascar98   translate the module with wasm2c and build the native runner
+#   run-headless  run the runner for 600 frames
 
 BREW_LLVM := $(shell brew --prefix llvm 2>/dev/null)
 WASM_CC   ?= $(BREW_LLVM)/bin/clang
 WASM_LD   ?= wasm-ld
 WASM2C    ?= wasm2c
 WASM2C_RT ?= $(shell brew --prefix wabt 2>/dev/null)/share/wabt/wasm2c
+# wasm-rt.h: Homebrew keeps it in include/. On Debian, set WASM2C_RT and
+# WASM2C_INC to /usr/src/wasm2c: /usr/share/wabt/wasm2c lacks the .inc files.
+WASM2C_INC ?= $(WASM2C_RT)/../../../include
+HOST_CC   ?= cc
 PYTHON    ?= .venv/bin/python
 NM        ?= mipsel-linux-gnu-nm
 WASM_NM   ?= $(BREW_LLVM)/bin/llvm-nm
@@ -42,11 +48,11 @@ SDK_OBJS  := $(patsubst port/sdk/%.c,$(PORT)/sdk/%.o,$(wildcard port/sdk/*.c))
 DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s \
                $(shell sed -n 's/^INCLUDE_RODATA("\([^"]*\)", *\([A-Za-z_0-9]*\)).*/\1\/\2.s/p' $(GAME_SRCS))
 
-WASM_LDFLAGS := --global-base=2147549184 --initial-memory=2151677952 \
+WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
                 --max-memory=2151677952 -z stack-size=262144 --no-entry \
                 --export=PortStart --fatal-warnings
 
-.PHONY: objects undefined module FORCE
+.PHONY: objects undefined module nascar98 run-headless FORCE
 
 objects:
 	@fail=0; for o in $(OBJS); do \
@@ -122,10 +128,25 @@ undefined: $(OBJS) $(PORT)/data.o
 # and data win, and the SDK fills in only what the game leaves undefined.
 module: $(PORT)/nascar98.wasm
 
-$(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o
+$(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o port/port.mk
 	@$(WASM_NM) --defined-only --extern-only -j $(SDK_OBJS) | grep -v -e ':$$' -e '^$$' | sort -u > $(PORT)/sdk-symbols.txt
 	@$(WASM_NM) --defined-only --extern-only -j $(OBJS) $(PORT)/data.o | grep -v -e ':$$' -e '^$$' | sort -u | \
 	  comm -12 - $(PORT)/sdk-symbols.txt > $(PORT)/sdk-overlap.txt
 	@if [ -s $(PORT)/sdk-overlap.txt ]; then \
 	  echo "port/sdk defines game symbols:" $$(cat $(PORT)/sdk-overlap.txt) >&2; exit 1; fi
 	$(WASM_LD) $(WASM_LDFLAGS) $(OBJS) $(SDK_OBJS) $(PORT)/data.o -o $@
+
+# wasm2c's output is one large file: -O1 builds it in about a quarter of
+# the time -O2 takes.
+nascar98: $(PORT)/nascar98
+
+$(PORT)/nascar98_wasm.c: $(PORT)/nascar98.wasm
+	$(WASM2C) $< -n nascar98 -o $@
+
+$(PORT)/nascar98: $(PORT)/nascar98_wasm.c port/host/main.c
+	$(HOST_CC) -O1 -I$(PORT) -I$(WASM2C_RT) -I$(WASM2C_INC) -o $@ \
+	  $(PORT)/nascar98_wasm.c port/host/main.c $(WASM2C_RT)/wasm-rt-impl.c $(WASM2C_RT)/wasm-rt-mem-impl.c \
+	  $(WASM2C_RT)/wasm-rt-exceptions-impl.c -lm
+
+run-headless: $(PORT)/nascar98
+	NASCAR98_FRAMES=600 $(PORT)/nascar98

@@ -141,10 +141,10 @@ long SetRCnt(unsigned long arg0, unsigned short arg1, long arg2)
     return 0;
 }
 
+/* With no pad attached, the buffers keep InitPAD's contents. */
 s32 StartPAD(void)
 {
-    PORT_STUB(StartPAD);
-    return 0;
+    return 1;
 }
 
 long StartRCnt(unsigned long arg0)
