@@ -597,6 +597,54 @@ class Cli(unittest.TestCase):
                 "void DanaStep(void) {\n    register s32 x;\n}\n",
             )
 
+    def run_cli(self, d: pathlib.Path, *extra: str) -> subprocess.CompletedProcess:
+        for name in ("Makefile", "abs.txt", "syms.txt", "defined.txt"):
+            if not (d / name).exists():
+                (d / name).write_text("")
+        return subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tools" / "port_filter.py"),
+                "--makefile", str(d / "Makefile"),
+                "--absolutes", str(d / "abs.txt"),
+                "--symbols", str(d / "syms.txt"),
+                "--defined", str(d / "defined.txt"),
+                "--image", "0x80010000:0x800CEFE0",
+                *extra,
+                str(d / "a.c"), str(d / "out"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_cli_native_signature_wins(self) -> None:
+        # A native body that names an argument the asm passed through
+        # registers: callers must pass it, not lose it to trimming.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "native").mkdir()
+            (d / "native" / "DanaLoad.c").write_text("void DanaLoad(s32 fileId) {\n    FileOpen(fileId);\n}\n")
+            (d / "a.c").write_text(
+                "void FileOpen(s32 fileId) {\n}\n"
+                "void DanaLoad(void) {\n    FileOpen();\n}\n"
+                "void Quinn(void) {\n    DanaLoad(0x44);\n}\n"
+            )
+            run = self.run_cli(d, "--native-dir", str(d / "native"))
+            self.assertEqual(run.returncode, 0, run.stderr)
+            self.assertIn("    DanaLoad(0x44);\n", (d / "out" / "a.c").read_text())
+
+    def test_cli_rejects_unlisted_padding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "a.c").write_text("void FileOpen(s32 fileId) {\n}\nvoid Dana(void) {\n    FileOpen();\n}\n")
+            (d / "padded.txt").write_text("# reviewed\n")
+            run = self.run_cli(d, "--padded-ok", str(d / "padded.txt"))
+            self.assertNotEqual(run.returncode, 0)
+            self.assertIn("a.c: FileOpen()", run.stderr)
+            (d / "padded.txt").write_text("a.c FileOpen\n")
+            run = self.run_cli(d, "--padded-ok", str(d / "padded.txt"))
+            self.assertEqual(run.returncode, 0, run.stderr)
+
     def test_cli_rejects_stale_native(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)

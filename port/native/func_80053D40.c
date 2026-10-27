@@ -1187,8 +1187,9 @@ void func_80053D40(void) {
                                             menuDirection = 0;
                                         moveCardCursor:
                                             player += 1;
-                                            func_8006CB80MainLoop(
-                                                menuDirection);
+                                            /* guess: the asm passes leftover a1 and a2; func_8006CB80 tests
+                                             * arg1 & ~arg2 as a pad edge, so give it the pad states. */
+                                            func_8006CB80MainLoop(menuDirection, newPad[0], oldPad[0]);
                                             oldPad[0] = newPad[0];
                                         } else {
                                             padEdgeDown =

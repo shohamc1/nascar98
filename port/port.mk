@@ -50,7 +50,8 @@ DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s \
 
 WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
                 --max-memory=2151677952 -z stack-size=262144 --no-entry \
-                --export=PortStart --fatal-warnings
+                --export=PortStart --export=gPortCallRing \
+                --export=gPortCallNext --fatal-warnings
 
 .PHONY: objects undefined module nascar98 run-headless FORCE
 
@@ -77,7 +78,7 @@ $(PORT)/defined.txt: $(ELF)
 $(PORT)/src/.stamp: FORCE $(UNDEF) $(PORT)/symbols.txt $(PORT)/defined.txt
 	$(PYTHON) tools/port_filter.py --makefile Makefile --absolutes $(UNDEF) --fixed build/fixed_addrs.ld \
 	  --symbols $(PORT)/symbols.txt --defined $(PORT)/defined.txt \
-	  $(DATA_RANGES) $(IMAGE) --native-dir port/native --header-out $(PORT)/include \
+	  $(DATA_RANGES) $(IMAGE) --native-dir port/native --padded-ok port/padded-ok.txt --header-out $(PORT)/include \
 	  $(GAME_SRCS) $(PORT)/src
 	@touch $@
 
@@ -115,22 +116,24 @@ $(PORT)/data.o: $(PORT)/data.s
 	$(WASM_CC) --target=wasm32 -c $< -o $@
 
 # The symbols the port SDK must define: everything the game leaves undefined.
-# --no-gc-sections keeps every function live, not just what PortStart
-# reaches, and any link error but an undefined symbol fails the target.
+# --no-gc-sections keeps every function live, not just what the exports
+# reach, and any link error but an undefined symbol fails the target.
 undefined: $(OBJS) $(PORT)/data.o
-	@$(WASM_LD) $(filter-out --export=PortStart,$(WASM_LDFLAGS)) --no-gc-sections --error-limit=0 \
+	@$(WASM_LD) $(filter-out --export=%,$(WASM_LDFLAGS)) --no-gc-sections --error-limit=0 \
 	  $(OBJS) $(PORT)/data.o -o $(PORT)/undefined.wasm > $(PORT)/undefined.log 2>&1; \
 	  sed -n 's/.*undefined symbol: //p' $(PORT)/undefined.log | sort -u > $(PORT)/sdk-undefined.txt; \
 	  if grep 'error:' $(PORT)/undefined.log | grep -v 'undefined symbol' >&2; then exit 1; fi; \
 	  echo "$$(wc -l < $(PORT)/sdk-undefined.txt) undefined symbols: $(PORT)/sdk-undefined.txt"
 
-# port/sdk/ must define no symbol the game defines: the game's own code
-# and data win, and the SDK fills in only what the game leaves undefined.
+# port/sdk/ must define no symbol the game defines, in the port's objects
+# or in the matching build (defined.txt), so a game function the filter
+# drops fails here instead of resolving to a stub.
 module: $(PORT)/nascar98.wasm
 
-$(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o port/port.mk
+$(PORT)/nascar98.wasm: $(OBJS) $(SDK_OBJS) $(PORT)/data.o $(PORT)/defined.txt port/port.mk
 	@$(WASM_NM) --defined-only --extern-only -j $(SDK_OBJS) | grep -v -e ':$$' -e '^$$' | sort -u > $(PORT)/sdk-symbols.txt
-	@$(WASM_NM) --defined-only --extern-only -j $(OBJS) $(PORT)/data.o | grep -v -e ':$$' -e '^$$' | sort -u | \
+	@{ $(WASM_NM) --defined-only --extern-only -j $(OBJS) $(PORT)/data.o | grep -v -e ':$$' -e '^$$'; \
+	  awk '{print $$NF}' $(PORT)/defined.txt; } | sort -u | \
 	  comm -12 - $(PORT)/sdk-symbols.txt > $(PORT)/sdk-overlap.txt
 	@if [ -s $(PORT)/sdk-overlap.txt ]; then \
 	  echo "port/sdk defines game symbols:" $$(cat $(PORT)/sdk-overlap.txt) >&2; exit 1; fi

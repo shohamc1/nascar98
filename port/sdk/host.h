@@ -17,10 +17,19 @@ HOST_IMPORT(HostCdRead) int32_t HostCdRead(uint32_t lba, uint32_t count, void *d
 HOST_IMPORT(HostFrame) int32_t HostFrame(void);
 HOST_IMPORT(HostExit) void HostExit(int32_t code);
 
-/* Logs "stub: NAME" the first time the enclosing function runs. */
+/*
+ * The last 16 SDK functions entered, oldest first from gPortCallNext.
+ * The module exports both, and the host's watchdog prints them.
+ */
+extern const char *gPortCallRing[16];
+extern u32 gPortCallNext;
+#define PORT_TRACE(name) (gPortCallRing[gPortCallNext++ & 15] = #name)
+
+/* Traces the call, and logs "stub: NAME" the first time it runs. */
 #define PORT_STUB(name)                                                                              \
     do {                                                                                           \
         static int portLogged;                                                                     \
+        PORT_TRACE(name);                                                                          \
         if (!portLogged) {                                                                         \
             portLogged = 1;                                                                        \
             HostLog("stub: " #name);                                                     \

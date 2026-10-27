@@ -12,6 +12,7 @@ void AddPrim(void *ot, void *p)
 {
     u32 *tag = ot, *prim = p;
 
+    PORT_TRACE(AddPrim);
     *prim = (*prim & 0xFF000000) | (*tag & 0xFFFFFF);
     *tag = (*tag & 0xFF000000) | ((u32)prim & 0xFFFFFF);
 }
@@ -22,6 +23,7 @@ OT_TYPE *ClearOTagR(OT_TYPE *ot, int n)
     extern u8 D_8009DB4C[];
     u32 *words = (u32 *)ot;
 
+    PORT_TRACE(ClearOTagR);
     while (--n > 0) {
         words[n] = (u32)&words[n - 1] & 0xFFFFFF;
     }
@@ -36,6 +38,7 @@ void DrawOTag(OT_TYPE *p)
     u32 link = (u32)p & 0xFFFFFF;
     int packets = 0, guard = 1 << 20;
 
+    PORT_TRACE(DrawOTag);
     while (link != 0xFFFFFF && --guard) {
         u32 tag = *(u32 *)(link | 0x80000000);
 
@@ -53,6 +56,8 @@ void DrawPrim(s32 arg0)
 
 int DrawSync(int mode)
 {
+    PORT_TRACE(DrawSync);
+
     return 0;
 }
 
@@ -111,21 +116,29 @@ int MoveImage(RECT* rect, int x, int y)
 
 DISPENV *PutDispEnv(DISPENV *env)
 {
+    PORT_TRACE(PutDispEnv);
+
     return env;
 }
 
 DRAWENV *PutDrawEnv(DRAWENV *env)
 {
+    PORT_TRACE(PutDrawEnv);
+
     return env;
 }
 
 int ResetGraph(int mode)
 {
+    PORT_TRACE(ResetGraph);
+
     return 0;
 }
 
 DISPENV *SetDefDispEnv(DISPENV *env, int x, int y, int w, int h)
 {
+    PORT_TRACE(SetDefDispEnv);
+
     env->disp.x = x;
     env->disp.y = y;
     env->disp.w = w;
@@ -144,6 +157,8 @@ DISPENV *SetDefDispEnv(DISPENV *env, int x, int y, int w, int h)
 /* As Psy-Q in NTSC mode (GetVideoMode() == 0). */
 DRAWENV *SetDefDrawEnv(DRAWENV *env, int x, int y, int w, int h)
 {
+    PORT_TRACE(SetDefDrawEnv);
+
     env->clip.x = x;
     env->clip.y = y;
     env->clip.w = w;
@@ -166,6 +181,7 @@ DRAWENV *SetDefDrawEnv(DRAWENV *env, int x, int y, int w, int h)
 
 void SetDispMask(int mask)
 {
+    PORT_TRACE(SetDispMask);
 }
 
 void SetDrawEnv(DR_ENV* dr_env, DRAWENV* env)

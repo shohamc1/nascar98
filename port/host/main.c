@@ -28,6 +28,7 @@ struct w2c_env {
     w2c_nascar98 *module;
 };
 
+static w2c_nascar98 *sModule;
 static FILE *sTrack1;
 static long sFrames, sFrameLimit;
 static unsigned sWatchdog = 10;
@@ -64,6 +65,31 @@ static void PrintRing(void)
     }
 }
 
+/* Writes the SDK's call ring (gPortCallRing in port/sdk/host.h), oldest first. */
+static void PrintCalls(void)
+{
+    static const char head[] = "nascar98: last SDK calls:\n";
+    wasm_rt_memory_t *memory = w2c_nascar98_memory(sModule);
+    u32 ring = *w2c_nascar98_gPortCallRing(sModule);
+    u32 next;
+    unsigned i;
+
+    write(2, head, sizeof(head) - 1);
+    memcpy(&next, memory->data + *w2c_nascar98_gPortCallNext(sModule), 4);
+    for (i = 0; i < 16; i++) {
+        u32 name;
+
+        memcpy(&name, memory->data + ring + 4 * ((next + i) & 15), 4);
+        if (name != 0 && name < memory->size) {
+            const char *s = (const char *)memory->data + name;
+
+            write(2, "  ", 2);
+            write(2, s, strnlen(s, 64));
+            write(2, "\n", 1);
+        }
+    }
+}
+
 static void OnAlarm(int signal)
 {
     static const char text[] = "nascar98: watchdog: no frame in NASCAR98_WATCHDOG seconds\n";
@@ -71,6 +97,7 @@ static void OnAlarm(int signal)
     (void)signal;
     write(2, text, sizeof(text) - 1);
     PrintRing();
+    PrintCalls();
     _exit(3);
 }
 
@@ -119,6 +146,23 @@ void w2c_env_HostExit(struct w2c_env *env, u32 code)
     exit((int)code);
 }
 
+/* Track 1 holds raw sectors with the ISO 9660 volume descriptor at 16. */
+static int IsDataTrack(FILE *file)
+{
+    static const char magic[] = "\1CD001";
+    char head[sizeof(magic) - 1];
+    long size;
+
+    if (fseek(file, 0, SEEK_END) != 0 || (size = ftell(file)) <= 0 || size % RAW_SECTOR != 0) {
+        return 0;
+    }
+    if (fseek(file, 16L * RAW_SECTOR + USER_DATA, SEEK_SET) != 0 ||
+        fread(head, 1, sizeof(head), file) != sizeof(head)) {
+        return 0;
+    }
+    return memcmp(head, magic, sizeof(head)) == 0;
+}
+
 static long EnvNumber(const char *name, long fallback)
 {
     const char *value = getenv(name);
@@ -142,6 +186,13 @@ int main(void)
                 track1);
         return 2;
     }
+    if (!IsDataTrack(sTrack1)) {
+        fprintf(stderr,
+                "nascar98: \"%s\" isn't the disc's Track 1 (no ISO 9660 volume in raw "
+                "2352-byte sectors): set NASCAR98_TRACK1 to its path\n",
+                track1);
+        return 2;
+    }
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
     sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", 10);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;
@@ -150,6 +201,7 @@ int main(void)
 
     wasm_rt_init();
     wasm2c_nascar98_instantiate(&module, &env);
+    sModule = &module;
     trap = wasm_rt_impl_try();
     if (trap == WASM_RT_TRAP_NONE) {
         w2c_nascar98_PortStart(&module);
@@ -158,5 +210,6 @@ int main(void)
     }
     fprintf(stderr, "nascar98: wasm trap: %s\n", wasm_rt_strerror(trap));
     PrintRing();
+    PrintCalls();
     return 4;
 }

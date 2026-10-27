@@ -1,0 +1,15 @@
+# Calls tools/port_filter.py may pad with 0 arguments: FILE NAME, then why.
+# Each was checked against the retail asm (final review, 2026-10-27). Any
+# other padded call fails the filter: the asm may pass that argument
+# through a register, and then it needs a port/native/ override instead.
+cd.c func_80041564 the callee writes arg2 and arg3 before reading them
+objects.c func_80041564 the callee writes arg2 and arg3 before reading them
+scene.c func_80041564 the callee writes arg2 and arg3 before reading them
+scene.c func_80041564Hud the callee writes arg2 and arg3 before reading them
+scene.c RandomScaledGetScene the result is discarded; the seed ignores scale
+media.c RandomScaledGetVoid the result is discarded; the seed ignores scale
+scene.c func_8005CCEC IDs 1 to 5 set min and max themselves
+memory_card.c func_8005CCECArgs IDs 1 to 5 set min and max themselves
+scene.c CardUpdateDriverRecords top is 0, so arg3 is never read
+util.c func_800167BC arg1 to arg3 are unused
+scene.c MenuStartVBlankEvent a0 is HeapCoalesce's aligned block pointer, so (u8)mode is never 2

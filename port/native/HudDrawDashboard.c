@@ -380,7 +380,6 @@ void HudDrawDashboard(void) {
             register s32 product;
             s32 productX;
             s32 rotatedX;
-            register s32 returnedValue;
             register s32 rowOffset;
             u16 *center;
 
@@ -468,13 +467,11 @@ void HudDrawDashboard(void) {
                         argB = 0x640000;
 
                         rotatedX = callResult;
-                        HudMultiplyVoid(argA, argB);
-                        callResult = returnedValue;
+                        callResult = HudMultiplyVoid(argA, argB); /* retail read it from v0 */
                         argA = cosine;
                         argB = product;
                         product = callResult;
-                        HudMultiplyVoid(argA, argB);
-                        callResult = returnedValue;
+                        callResult = HudMultiplyVoid(argA, argB); /* retail read it from v0 */
                         argA = *center;
                         screenY = (productX - rotatedX) >> 16;
                         argA += screenY;

@@ -20,6 +20,8 @@ void HostLog(const char *text) { (void)text; }
 int HostCdRead(unsigned lba, unsigned count, void *dst) { (void)lba; (void)count; (void)dst; return -1; }
 int HostFrame(void) { return 0; }
 void HostExit(int code) { (void)code; }
+const char *gPortCallRing[16];
+unsigned gPortCallNext;
 """
 
 
@@ -77,6 +79,8 @@ int HostCdRead(unsigned lba, unsigned count, void *dst) {
 }
 int HostFrame(void) { return 0; }
 void HostExit(int code) { (void)code; }
+const char *gPortCallRing[16];
+unsigned gPortCallNext;
 """
 
 

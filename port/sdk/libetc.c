@@ -7,6 +7,8 @@ static Callback sVSyncCallback;
 
 void *ResetCallback(void)
 {
+    PORT_TRACE(ResetCallback);
+
     return 0;
 }
 
@@ -19,6 +21,8 @@ long SetVideoMode(long mode)
 /* A negative MODE only reads the frame count, as on the console. */
 int VSync(int mode)
 {
+    PORT_TRACE(VSync);
+
     if (mode < 0) {
         return sFrameCount;
     }
@@ -34,5 +38,6 @@ int VSync(int mode)
 
 void VSyncCallback(Callback f)
 {
+    PORT_TRACE(VSyncCallback);
     sVSyncCallback = f;
 }

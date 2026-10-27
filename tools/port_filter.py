@@ -670,6 +670,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--image", type=parse_range, required=True)
     parser.add_argument("--native-dir", type=pathlib.Path)
     parser.add_argument("--header-out", type=pathlib.Path, help="write repaired copies of include/ here")
+    parser.add_argument("--padded-ok", type=pathlib.Path, help="FILE NAME lines: calls reviewed safe to pad with 0")
     parser.add_argument("paths", type=pathlib.Path, nargs="+")
     args = parser.parse_args(argv)
     *sources, out = args.paths
@@ -716,8 +717,10 @@ def main(argv: list[str]) -> int:
         header_names[header.resolve()] = set(read_returns(text))
         header_macros[header.resolve()] = function_macros(text)
         header_texts.append(text)
-    returns = return_table(header_texts, list(texts.values()))
-    for text in texts.values():
+    # A native body's signature wins: it can name arguments that the
+    # asm passed through registers and the matching C leaves out.
+    returns = return_table(header_texts, list(texts.values()) + list(natives.values()))
+    for text in list(texts.values()) + list(natives.values()):
         defs = defined_functions(text)
         params |= {n: p for n, p in read_params(text).items() if n in defs}
 
@@ -734,6 +737,11 @@ def main(argv: list[str]) -> int:
             text, _ = repair_arity(text, params)
             write(args.header_out / header.relative_to("include"), text)
 
+    allowed = set()
+    if args.padded_ok:
+        allowed = {tuple(line.split()[:2]) for line in args.padded_ok.read_text().splitlines()
+                   if line.strip() and not line.startswith("#")}
+    unreviewed = []
     out.mkdir(parents=True, exist_ok=True)
     for path, text in texts.items():
         text = replace_functions(filter_source(text, aliases, absolutes, functions), natives)
@@ -742,9 +750,11 @@ def main(argv: list[str]) -> int:
         macros = set().union(*(header_macros.get(h, set()) for h in closure))
         text = repair_prototypes(text, returns, in_headers, macros)
         text, padded = repair_arity(text, params)
-        for name in padded:
-            print(f"port_filter: {path.name}: {name}() padded with 0 arguments")
+        unreviewed += [f"{path.name}: {name}()" for name in padded if (path.name, name) not in allowed]
         write(out / path.name, text)
+    if unreviewed:
+        # A padded argument is often one the asm passed through a register.
+        sys.exit("port_filter: calls padded with 0, not in --padded-ok:\n  " + "\n  ".join(sorted(set(unreviewed))))
     return 0
 
 

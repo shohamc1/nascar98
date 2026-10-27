@@ -26,6 +26,8 @@ static int FromBcd(int value)
 
 CdlLOC *CdIntToPos(int i, CdlLOC *p)
 {
+    PORT_TRACE(CdIntToPos);
+
     i += 150;
     p->minute = Bcd(i / (60 * 75));
     p->second = Bcd(i / 75 % 60);
@@ -35,11 +37,14 @@ CdlLOC *CdIntToPos(int i, CdlLOC *p)
 
 int CdPosToInt(CdlLOC *p)
 {
+    PORT_TRACE(CdPosToInt);
+
     return (FromBcd(p->minute) * 60 + FromBcd(p->second)) * 75 + FromBcd(p->sector) - 150;
 }
 
 int CdInit(void)
 {
+    PORT_TRACE(CdInit);
     sStreaming = 0;
     sReadState = 0;
     return 1;
@@ -47,6 +52,8 @@ int CdInit(void)
 
 int CdControlF(u_char com, u_char *param)
 {
+    PORT_TRACE(CdControlF);
+
     switch (com) {
     case CdlSetloc:
     case CdlSeekL:
@@ -71,21 +78,29 @@ int CdControlF(u_char com, u_char *param)
 
 int CdControl(u_char com, u_char *param, u_char *result)
 {
+    PORT_TRACE(CdControl);
+
     return CdControlF(com, param);
 }
 
 int CdControlB(u_char com, u_char *param, u_char *result)
 {
+    PORT_TRACE(CdControlB);
+
     return CdControlF(com, param);
 }
 
 int CdSync(int mode, u_char *result)
 {
+    PORT_TRACE(CdSync);
+
     return CdlComplete;
 }
 
 int CdRead(int sectors, u_long *buf, int mode)
 {
+    PORT_TRACE(CdRead);
+
     sReadState = HostCdRead(sPosition, sectors, buf) == sectors ? 0 : -1;
     sPosition += sectors;
     return 1;
@@ -93,12 +108,16 @@ int CdRead(int sectors, u_long *buf, int mode)
 
 int CdReadSync(int mode, u_char *result)
 {
+    PORT_TRACE(CdReadSync);
+
     return sReadState;
 }
 
 /* While streaming, each call delivers the next sector to CdGetSector. */
 int CdReady(int mode, u_char *result)
 {
+    PORT_TRACE(CdReady);
+
     if (!sStreaming) {
         return CdlNoIntr;
     }
@@ -115,6 +134,7 @@ int CdGetSector(void *madr, int size)
 {
     u8 *dst = madr;
 
+    PORT_TRACE(CdGetSector);
     for (size *= 4; size > 0 && sSectorOffset < SECTOR_SIZE; size--) {
         *dst++ = sSector[sSectorOffset++];
     }

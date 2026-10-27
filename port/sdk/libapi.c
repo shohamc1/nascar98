@@ -5,6 +5,9 @@
 #include "host.h"
 #include <psxsdk/libapi.h>
 
+const char *gPortCallRing[16];
+u32 gPortCallNext;
+
 extern u8 __heap_base[]; /* wasm-ld: the end of the module's data */
 extern u32 __heapbase[];
 extern u32 D_8009B9C8[];
@@ -144,6 +147,8 @@ long SetRCnt(unsigned long arg0, unsigned short arg1, long arg2)
 /* With no pad attached, the buffers keep InitPAD's contents. */
 s32 StartPAD(void)
 {
+    PORT_TRACE(StartPAD);
+
     return 1;
 }
 
