@@ -249,6 +249,138 @@ class Mdec(unittest.TestCase):
 
 
 
+SPU_DRIVER = """
+#include "port_spu.h"
+static u8 blk[16];
+static s16 out[28], mix[2 * PORT_SPU_FRAME];
+static s32 o1, o2;
+static int gIrqs;
+static void Irq(void) { gIrqs++; }
+static int Loud(void) {
+    int i, n = 0;
+    for (i = 0; i < 2 * PORT_SPU_FRAME; i++) mix[i] = 0;
+    PortSpuMix(mix, PORT_SPU_FRAME);
+    for (i = 0; i < 2 * PORT_SPU_FRAME; i++) n += mix[i] != 0;
+    return n;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Spu(unittest.TestCase):
+    def check(self, body: str) -> None:
+        run = run_driver("port/sdk/spu.c", SPU_DRIVER + "int main(void) {\n    int i;\n" + body + "    return 0;\n}\n")
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+    def test_adpcm_block_decodes(self) -> None:
+        # Shift 0, filter 0: nibble 0xF is -4096 and 1 is 4096, low nibble first.
+        # Filter 1 adds old1 * 60 / 64: after 4096, a zero nibble gives 3840.
+        self.check(
+            "    blk[0] = 0x00; blk[2] = 0x1F;\n"
+            "    PortSpuDecodeBlock(blk, out, &o1, &o2);\n"
+            "    if (out[0] != -4096 || out[1] != 4096 || out[2] != 0) return 1;\n"
+            "    o1 = o2 = 0; blk[0] = 0x10; blk[2] = 0x01;\n"
+            "    PortSpuDecodeBlock(blk, out, &o1, &o2);\n"
+            "    if (out[0] != 4096 || out[1] != 3840) return 2;\n"
+            "    blk[0] = 0x0C; blk[2] = 0x07;\n"
+            "    PortSpuDecodeBlock(blk, out, &o1, &o2);\n"
+            "    if (out[0] != 7) return 3;  /* shift 12 */\n"
+        )
+
+    def test_voice_sounds_until_released(self) -> None:
+        # One looping block (start, end, repeat) of loud samples.
+        self.check(
+            "    blk[0] = 0x00; blk[1] = 7;\n"
+            "    for (i = 2; i < 16; i++) blk[i] = 0x77;\n"
+            "    PortSpuWriteRam(0x1000, blk, 16);\n"
+            "    gPortSpuMainL = gPortSpuMainR = 0x3FFF;\n"
+            "    gPortSpuVoices[3].start = 0x1000;\n"
+            "    gPortSpuVoices[3].pitch = 0x1000;\n"
+            "    gPortSpuVoices[3].adsr1 = 0x000F;  /* fastest linear attack, full sustain */\n"
+            "    gPortSpuVoices[3].adsr2 = 0x0000;  /* hold sustain, fastest linear release */\n"
+            "    gPortSpuVoices[3].volL = gPortSpuVoices[3].volR = 0x3FFF;\n"
+            "    if (Loud() != 0) return 1;\n"
+            "    PortSpuKey(1, 1 << 3);\n"
+            "    if (PortSpuKeyStatus(3) != 1) return 2;\n"
+            "    if (Loud() < PORT_SPU_FRAME) return 3;\n"
+            "    if (Loud() != 2 * PORT_SPU_FRAME) return 4;  /* the loop keeps it going */\n"
+            "    PortSpuKey(0, 1 << 3);\n"
+            "    if (PortSpuKeyStatus(3) != 2) return 5;\n"
+            "    for (i = 0; i < 10; i++) Loud();\n"
+            "    if (Loud() != 0) return 6;\n"
+            "    if (PortSpuKeyStatus(3) != 0) return 7;\n"
+        )
+
+    def test_irq_fires_at_address(self) -> None:
+        self.check(
+            "    blk[1] = 2;\n"
+            "    for (i = 0; i < 4; i++) PortSpuWriteRam(0x2000 + i * 16, blk, 16);\n"
+            "    gPortSpuVoices[0].start = 0x2000;\n"
+            "    gPortSpuVoices[0].pitch = 0x1000;\n"
+            "    gPortSpuVoices[0].adsr1 = 0x000F;\n"
+            "    PortSpuSetIrq(1, 0x2020, Irq);\n"
+            "    PortSpuKey(1, 1);\n"
+            "    for (i = 0; i < 80; i++) PortSpuMix(mix, 1);\n"
+            "    if (gIrqs != 1) return 1;  /* block 2 starts at sample 56 */\n"
+        )
+
+
+LIBSPU_DRIVER = """
+#include <psxsdk/libspu.h>
+void HostAudioQueue(const s16 *samples, int frames) { (void)samples; (void)frames; }
+static unsigned char buf[0x300];
+static volatile int gState;
+/* The game's AudioTransferCallback: state 1 sends a second buffer, then 2;
+ * the second completion ends the transfer with 0. */
+static void Done(void) {
+    if (gState == 1) {
+        SpuSetTransferStartAddr(0x2000);
+        SpuWrite(buf, sizeof(buf));
+        gState = 2;
+    } else if (gState == 2) {
+        gState = 0;
+    }
+}
+int main(void) {
+    SpuSetTransferCallback((void *)Done);
+    gState = 1;
+    SpuSetTransferStartAddr(0x1000);
+    SpuWrite(buf, sizeof(buf));
+    return gState;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Libspu(unittest.TestCase):
+    def test_transfer_callback_runs_after_the_writer(self) -> None:
+        run = run_driver(["port/sdk/libspu.c", "port/sdk/spu.c"], LIBSPU_DRIVER)
+        self.assertEqual(run.returncode, 0, f"state {run.returncode} after the transfer\n{run.stderr}")
+
+    def test_key_status_poll_lets_time_pass(self) -> None:
+        # The game waits for a released voice with a bare SpuGetKeyStatus loop.
+        driver = LIBSPU_DRIVER.split("int main(void)")[0] + """
+#include "port_spu.h"
+int main(void) {
+    long i;
+    buf[1] = 3;  /* end + repeat: loops forever */
+    SpuSetTransferStartAddr(0x1000);
+    SpuWrite(buf, 16);
+    gPortSpuVoices[0].start = 0x1000;
+    gPortSpuVoices[0].pitch = 0x1000;
+    gPortSpuVoices[0].adsr1 = 0x000F;
+    gPortSpuVoices[0].adsr2 = 0x0010;  /* a slow linear release */
+    SpuSetKey(1, 1);
+    SpuSetKey(0, 1);
+    for (i = 0; i < 100000 && SpuGetKeyStatus(1) != 0; i++) {
+    }
+    return i == 100000;
+}
+"""
+        run = run_driver(["port/sdk/libspu.c", "port/sdk/spu.c"], driver)
+        self.assertEqual(run.returncode, 0, f"the voice never finished\n{run.stderr}")
+
+
 @unittest.skipUnless(CC, "no host compiler")
 class Libgs(unittest.TestCase):
     def test_tim_with_clut(self) -> None:

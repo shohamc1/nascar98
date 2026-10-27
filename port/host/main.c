@@ -11,6 +11,7 @@
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
  *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
  *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
+ *   NASCAR98_WAV       records the sound to this WAV file
  *   NASCAR98_HANG      test only: the first frame never ends
  */
 #include <SDL3/SDL.h>
@@ -46,6 +47,9 @@ static int sHeadless;
 static long sShotFrame = -1;
 static const char *sShotPath;
 static Uint64 sNextFrame;
+static SDL_AudioStream *sAudio;
+static FILE *sWav;
+static u32 sWavBytes;
 static char sRing[RING_LINES][RING_WIDTH];
 static unsigned sRingNext;
 
@@ -196,6 +200,69 @@ u32 w2c_env_HostPadRead(struct w2c_env *env, u32 port)
 
     (void)env;
     return (u32)buttons | (connected ? 0x10000u : 0);
+}
+
+/* Queues a frame's sound; past a quarter second queued, drops it to catch up. */
+void w2c_env_HostAudioQueue(struct w2c_env *env, u32 samples, u32 frames)
+{
+    if (sWav) {
+        sWavBytes += (u32)fwrite(Memory(env, samples, frames * 4), 1, frames * 4, sWav);
+    }
+    if (sAudio && SDL_GetAudioStreamQueued(sAudio) < 44100 * 4 / 4) {
+        SDL_PutAudioStreamData(sAudio, Memory(env, samples, frames * 4), (int)frames * 4);
+    }
+}
+
+static void PutLe(u8 *p, u32 v, int n)
+{
+    int i;
+
+    for (i = 0; i < n; i++) {
+        p[i] = (u8)(v >> (i * 8));
+    }
+}
+
+/* Writes the WAV header for the samples so far (at exit, the final one). */
+static void WavHeader(void)
+{
+    u8 h[44] = "RIFF....WAVEfmt ....\1\0\2\0....\4\0\0\0\4\0\x10\0data....";
+
+    PutLe(h + 4, 36 + sWavBytes, 4);
+    PutLe(h + 16, 16, 4);
+    PutLe(h + 24, 44100, 4);
+    PutLe(h + 28, 44100 * 4, 4);
+    PutLe(h + 40, sWavBytes, 4);
+    fseek(sWav, 0, SEEK_SET);
+    fwrite(h, 1, sizeof(h), sWav);
+    fflush(sWav);
+    fseek(sWav, 0, SEEK_END);
+}
+
+static void OpenWav(const char *path)
+{
+    sWav = fopen(path, "wb");
+    if (!sWav) {
+        fprintf(stderr, "nascar98: can't write \"%s\"\n", path);
+        return;
+    }
+    WavHeader();
+    atexit(WavHeader);
+}
+
+static void OpenAudio(void)
+{
+    const SDL_AudioSpec spec = {SDL_AUDIO_S16LE, 2, 44100};
+
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+        fprintf(stderr, "nascar98: no sound: %s\n", SDL_GetError());
+        return;
+    }
+    sAudio = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+    if (!sAudio) {
+        fprintf(stderr, "nascar98: no sound: %s\n", SDL_GetError());
+        return;
+    }
+    SDL_ResumeAudioStreamDevice(sAudio);
 }
 
 void w2c_env_HostGpuReset(struct w2c_env *env)
@@ -350,6 +417,12 @@ int main(void)
     }
     if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless) || PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
+    }
+    if (!sHeadless) {
+        OpenAudio();
+    }
+    if (getenv("NASCAR98_WAV") && *getenv("NASCAR98_WAV")) {
+        OpenWav(getenv("NASCAR98_WAV"));
     }
     StartWatchdog();
 

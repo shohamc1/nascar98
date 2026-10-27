@@ -8,6 +8,7 @@ import pathlib
 import subprocess
 import tempfile
 import unittest
+import wave
 
 from PIL import Image
 
@@ -32,7 +33,8 @@ MAGENTA = (255, 0, 255, 255)
 
 def magenta_pixels(path: pathlib.Path) -> int:
     with Image.open(path) as image:
-        return sum(1 for r, g, b in image.convert("RGB").getdata() if r > 200 and g < 60 and b > 200)
+        rgb = image.convert("RGB").tobytes()
+    return sum(1 for i in range(0, len(rgb), 3) if rgb[i] > 200 and rgb[i + 1] < 60 and rgb[i + 2] > 200)
 
 
 @unittest.skipUnless(RUNNER.exists(), "no runner: make -f port/port.mk nascar98")
@@ -102,6 +104,20 @@ class Run(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr[-2000:])
             self.assertEqual(magenta_pixels(d / "plain.bmp"), 0)
             self.assertGreater(magenta_pixels(d / "swap.bmp"), 100)
+
+    def test_menu_sounds(self) -> None:
+        # X at frame 700 closes the memory card prompt with a sound effect.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text("0 -\n620 start\n625 -\n700 cross\n705 -\n")
+            result = run(60, NASCAR98_FRAMES="760", NASCAR98_PAD=str(d / "pad.txt"), NASCAR98_WAV=str(d / "out.wav"))
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            with wave.open(str(d / "out.wav")) as w:
+                self.assertEqual((w.getnchannels(), w.getframerate(), w.getsampwidth()), (2, 44100, 2))
+                self.assertAlmostEqual(w.getnframes(), 760 * 735, delta=735)  # the last VSync exits first
+                w.setpos(700 * 735)
+                tail = w.readframes(60 * 735)
+            self.assertGreater(sum(1 for i in range(0, len(tail), 2) if tail[i : i + 2] != b"\0\0"), 1000)
 
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")

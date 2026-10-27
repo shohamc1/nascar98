@@ -19,6 +19,9 @@ HOST_IMPORT(HostCdReadRaw) int32_t HostCdReadRaw(uint32_t lba, void *dst);
 HOST_IMPORT(HostFrame) int32_t HostFrame(void);
 HOST_IMPORT(HostExit) void HostExit(int32_t code);
 
+/* FRAMES stereo 16-bit samples at 44,100 Hz, left first. */
+HOST_IMPORT(HostAudioQueue) void HostAudioQueue(const s16 *samples, int32_t frames);
+
 /* Port 0 or 1's buttons, active high; bit 16 set when a pad is connected. */
 HOST_IMPORT(HostPadRead) uint32_t HostPadRead(int32_t port);
 

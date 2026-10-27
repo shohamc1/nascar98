@@ -2,6 +2,7 @@
 #include "host.h"
 #include <psxsdk/libetc.h>
 
+void PortAudioTick(void);
 void PortCdTick(void);
 void PortPadTick(void);
 
@@ -35,6 +36,7 @@ int VSync(int mode)
     sFrameCount++;
     PortPadTick();
     PortCdTick();
+    PortAudioTick();
     if (sVSyncCallback) {
         sVSyncCallback();
     }
