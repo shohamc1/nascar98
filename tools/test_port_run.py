@@ -32,6 +32,7 @@ def run(timeout: float, **env: str) -> subprocess.CompletedProcess:
 
 
 MAGENTA = (255, 0, 255, 255)
+WHITE_LIMIT = 50  # 525 with the reordered stores, 0 without
 
 
 def magenta_pixels(path: pathlib.Path) -> int:
@@ -143,9 +144,23 @@ class Run(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
             (d / "pad.txt").write_text(script)
-            result = run(120, NASCAR98_FRAMES="4000", NASCAR98_PAD=str(d / "pad.txt"))
+            shot = d / "race.bmp"
+            result = run(
+                120,
+                NASCAR98_FRAMES="4000",
+                NASCAR98_PAD=str(d / "pad.txt"),
+                NASCAR98_SCALE="1",
+                NASCAR98_SCREENSHOT=f"3990:{shot}",
+            )
             self.assertEqual(result.returncode, 0, result.stderr[-2000:])
             self.assertIn("nascar98: stopped after 4000 frames", result.stderr)
+            # Subdivided road quads take a corner UV from the scratchpad. When
+            # the port reorders the game's s32 and u16 stores there, the
+            # corner reads past the tile into white (0x7FFF) texels.
+            with Image.open(shot) as image:
+                rgb = image.convert("RGB").crop((0, 80, 320, 240)).tobytes()
+            white = sum(1 for i in range(0, len(rgb), 3) if rgb[i : i + 3] == b"\xf8\xf8\xf8")
+            self.assertLess(white, WHITE_LIMIT, "white texels on the road")
 
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")

@@ -32,7 +32,9 @@ PORT  := build/port
 ELF   := build/slus_005.21.elf
 UNDEF := build/undefined_syms_auto.txt
 
-WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding -fno-builtin \
+# The game writes the same memory through different pointer types (the
+# scratchpad as s32 and u16 words), as GCC 2.7.2 allowed.
+WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding -fno-builtin -fno-strict-aliasing \
                -nostdlibinc -Wno-incompatible-pointer-types -Wno-int-conversion \
                -Wno-incompatible-function-pointer-types \
                -ferror-limit=0 -include port_asm.h -Iport/include -I$(PORT)/include -Iinclude -Ibuild
