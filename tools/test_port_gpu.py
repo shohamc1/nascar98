@@ -6,6 +6,7 @@ The driver's main returns the number of the first failed check.
 import os
 import pathlib
 import shutil
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -28,6 +29,7 @@ PRELUDE = """
 #include <stdint.h>
 #include <string.h>
 #include "gpu.h"
+#include "textures.h"
 
 /* A fake module memory: wasm address A is mem[A - BASE]. */
 #define BASE 0x80100000u
@@ -46,7 +48,8 @@ def run_driver(body: str) -> subprocess.CompletedProcess:
         main.write_text(PRELUDE + "int main(void) {\n" + body + "    return 0;\n}\n")
         exe = pathlib.Path(tmp) / "driver"
         build = subprocess.run(
-            [CC, "-O1", f"-I{ROOT / 'port/host'}", str(ROOT / "port/host/gpu.c"), str(main), "-o", str(exe), *SDL],
+            [CC, "-O1", f"-I{ROOT / 'port/host'}", str(ROOT / "port/host/gpu.c"), str(ROOT / "port/host/textures.c"),
+             str(main), "-o", str(exe), *SDL],
             capture_output=True,
             text=True,
         )
@@ -60,6 +63,17 @@ class Gpu(unittest.TestCase):
     def check(self, body: str) -> None:
         run = run_driver(body)
         self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+    def test_texture_hash(self) -> None:
+        # 64-bit FNV-1a of x, y, w, h (little-endian u16s), then the pixels.
+        data = struct.pack("<4H2H", 1, 2, 2, 1, 0x1234, 0xABCD)
+        h = 0xCBF29CE484222325
+        for b in data:
+            h = (h ^ b) * 0x100000001B3 & (1 << 64) - 1
+        self.check(
+            "    static const uint16_t px[2] = {0x1234, 0xABCD};\n"
+            f"    if (TextureHash(1, 2, 2, 1, (const uint8_t *)px) != 0x{h:016X}ull) return 1;\n"
+        )
 
     def test_command_words(self) -> None:
         self.check(

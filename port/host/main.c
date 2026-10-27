@@ -9,6 +9,8 @@
  *   NASCAR98_SCALE     render scale (default 3)
  *   NASCAR98_SCREENSHOT  FRAME:PATH saves the display as BMP at that frame
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
+ *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
+ *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
  *   NASCAR98_HANG      test only: the first frame never ends
  */
 #include <SDL3/SDL.h>

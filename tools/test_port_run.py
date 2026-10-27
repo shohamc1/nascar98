@@ -9,6 +9,8 @@ import subprocess
 import tempfile
 import unittest
 
+from PIL import Image
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RUNNER = ROOT / "build/port/nascar98"
 TRACK1 = ROOT / "NASCAR 98 (USA)/NASCAR 98 (USA) (Track 1).bin"
@@ -23,6 +25,14 @@ def run(timeout: float, **env: str) -> subprocess.CompletedProcess:
         text=True,
         timeout=timeout,
     )
+
+
+MAGENTA = (255, 0, 255, 255)
+
+
+def magenta_pixels(path: pathlib.Path) -> int:
+    with Image.open(path) as image:
+        return sum(1 for r, g, b in image.convert("RGB").getdata() if r > 200 and g < 60 and b > 200)
 
 
 @unittest.skipUnless(RUNNER.exists(), "no runner: make -f port/port.mk nascar98")
@@ -69,6 +79,29 @@ class Run(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr[-2000:])
                 shots.append(shot.read_bytes())
             self.assertNotEqual(shots[0], shots[1])
+
+    def test_replacement_texture(self) -> None:
+        # Dump the uploads up to the memory card prompt, replace each one
+        # (but the 320 x 240 movie frames) with a 2x magenta copy, and find
+        # magenta on screen: the prompt's text samples a replacement.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text("0 -\n620 start\n625 -\n")
+            dump, textures = d / "dump", d / "textures"
+            dump.mkdir()
+            textures.mkdir()
+            env = {"NASCAR98_FRAMES": "700", "NASCAR98_PAD": str(d / "pad.txt")}
+            result = run(120, NASCAR98_DUMP_TEXTURES=str(dump), NASCAR98_SCREENSHOT=f"700:{d / 'plain.bmp'}", **env)
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            for png in dump.glob("*.png"):
+                with Image.open(png) as image:
+                    if image.size != (320, 240):
+                        Image.new("RGBA", (image.width * 2, image.height * 2), MAGENTA).save(textures / png.name)
+            self.assertTrue(any(textures.iterdir()))
+            result = run(120, NASCAR98_TEXTURES=str(textures), NASCAR98_SCREENSHOT=f"700:{d / 'swap.bmp'}", **env)
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            self.assertEqual(magenta_pixels(d / "plain.bmp"), 0)
+            self.assertGreater(magenta_pixels(d / "swap.bmp"), 100)
 
     def test_watchdog_fires(self) -> None:
         result = run(20, NASCAR98_WATCHDOG="1", NASCAR98_HANG="1")

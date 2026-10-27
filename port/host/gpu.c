@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "gpu.h"
+#include "textures.h"
 
 #define CACHE_SIZE 256
 
@@ -175,6 +176,7 @@ int GpuInit(int scale, int headless)
     SDL_SetTextureScaleMode(sUpload, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(sUpload, SDL_BLENDMODE_NONE);
     MakeBlendModes();
+    TexturesInit(sRenderer);
     GpuReset();
     return 0;
 }
@@ -200,6 +202,7 @@ void GpuShutdown(void)
     for (i = 0; i < CACHE_SIZE; i++) {
         DropTexture(&sCache[i]);
     }
+    TexturesShutdown();
     SDL_DestroyRenderer(sRenderer);
     if (sWindow) {
         SDL_DestroyWindow(sWindow);
@@ -233,11 +236,12 @@ static int Overlaps(int ax, int ay, int aw, int ah, int bx, int by, int bw, int 
     return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
 }
 
-/* Drops each cached page or CLUT that the VRAM rectangle touches. */
+/* Drops each cached page, CLUT, or replacement that the VRAM rectangle touches. */
 static void Invalidate(int x, int y, int w, int h)
 {
     int i;
 
+    TexturesForget(x, y, w, h);
     for (i = 0; i < CACHE_SIZE; i++) {
         CachedTexture *c = &sCache[i];
         int pageW = 64 << c->depth;
@@ -415,14 +419,28 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
 {
     static const int quad[6] = {0, 1, 2, 1, 2, 3};
     SDL_Vertex out[6];
-    int i, k, pass;
+    SDL_Texture *replacement = NULL;
+    SDL_FRect area;
+    int i, k, pass, ratio = 4 >> sDepth;
 
-    for (pass = 0; pass < (textured && semi ? 2 : 1); pass++) {
-        SDL_Texture *tex = NULL;
+    if (textured) {
+        float u0 = v[0].u, u1 = v[0].u, v0 = v[0].v, v1 = v[0].v;
+
+        for (i = 1; i < n; i++) {
+            u0 = SDL_min(u0, v[i].u);
+            u1 = SDL_max(u1, v[i].u);
+            v0 = SDL_min(v0, v[i].v);
+            v1 = SDL_max(v1, v[i].v);
+        }
+        replacement = TexturesFind(sPageX + u0 / ratio, sPageY + v0, sPageX + u1 / ratio, sPageY + v1, &area);
+    }
+    /* A replacement's alpha marks its clear texels: one pass draws it. */
+    for (pass = 0; pass < (textured && semi && !replacement ? 2 : 1); pass++) {
+        SDL_Texture *tex = replacement;
         SDL_BlendMode mode = sOpaqueBlend;
         float alpha = 1.0f;
 
-        if (textured) {
+        if (textured && !replacement) {
             /* Semi-transparent textured: STP-less texels first, opaque. */
             int kind = semi ? (pass == 0 ? 1 : 2) : 0;
 
@@ -431,7 +449,7 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
                 return;
             }
         }
-        if (semi && (!textured || pass == 1)) {
+        if (semi && (!textured || replacement || pass == 1)) {
             mode = sSemiBlend[sAbr];
             alpha = sAbr == 0 ? 0.5f : sAbr == 3 ? 0.25f : 1.0f;
         }
@@ -442,8 +460,13 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
             out[k].position.y = (float)(s->y * sScale);
             out[k].color = s->color;
             out[k].color.a *= alpha;
-            out[k].tex_coord.x = s->u / 256.0f;
-            out[k].tex_coord.y = s->v / 256.0f;
+            if (replacement) {
+                out[k].tex_coord.x = (sPageX + s->u / ratio - area.x) / area.w;
+                out[k].tex_coord.y = (sPageY + s->v - area.y) / area.h;
+            } else {
+                out[k].tex_coord.x = s->u / 256.0f;
+                out[k].tex_coord.y = s->v / 256.0f;
+            }
         }
         if (tex) {
             SDL_SetTextureBlendMode(tex, mode);
@@ -451,7 +474,6 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
             SDL_SetRenderDrawBlendMode(sRenderer, mode);
         }
         SDL_RenderGeometry(sRenderer, tex, out, n == 4 ? 6 : 3, NULL, 0);
-        (void)i;
     }
 }
 
@@ -755,6 +777,7 @@ void GpuLoadImage(uint32_t rect, uint32_t src)
         }
     }
     Invalidate(x, y, w, h);
+    TexturesUpload(x, y, w, h, sMem + src);
     Blit(x, y, w, h);
 }
 
