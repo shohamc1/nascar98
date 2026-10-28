@@ -83,6 +83,7 @@ def write_bmp(path: pathlib.Path, width: int, height: int, rgb: bytes) -> None:
 # libretro.h
 ENV_GET_CAN_DUPE = 3
 ENV_GET_SYSTEM_DIRECTORY = 9
+ENV_GET_VARIABLE = 15
 ENV_SET_PIXEL_FORMAT = 10
 ENV_GET_SAVE_DIRECTORY = 31
 RETRO_MEMORY_SYSTEM_RAM = 2
@@ -102,68 +103,99 @@ POLL_CB = ctypes.CFUNCTYPE(None)
 INPUT_CB = ctypes.CFUNCTYPE(ctypes.c_int16, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint)
 
 
+class Emulator:
+    """A libretro PSX core with the disc loaded and a pad script on port 1."""
+
+    def __init__(self, core: str, bios: str, pad: str, out: pathlib.Path, options: dict[str, str] | None = None) -> None:
+        system = out / "system"
+        system.mkdir(parents=True, exist_ok=True)
+        (system / "scph5501.bin").write_bytes(pathlib.Path(bios).read_bytes())
+        script = parse_pad(pathlib.Path(pad).read_text())
+        self.core = ctypes.CDLL(core)
+        self.frame = 0
+        self.input_frame: int | None = None  # the script's clock, if not frame
+        self.format = PIXEL_RGB565
+        self.video = None
+        system_dir = ctypes.c_char_p(str(system).encode())
+        values = {k.encode(): ctypes.c_char_p(v.encode()) for k, v in (options or {}).items()}
+
+        def environment(cmd: int, data: int) -> bool:
+            if cmd in (ENV_GET_SYSTEM_DIRECTORY, ENV_GET_SAVE_DIRECTORY):
+                ctypes.cast(data, ctypes.POINTER(ctypes.c_char_p))[0] = system_dir.value
+                return True
+            if cmd == ENV_SET_PIXEL_FORMAT:
+                self.format = ctypes.cast(data, ctypes.POINTER(ctypes.c_int))[0]
+                return self.format in (PIXEL_XRGB8888, PIXEL_RGB565)
+            if cmd == ENV_GET_VARIABLE:  # struct retro_variable { key, value }
+                pair = ctypes.cast(data, ctypes.POINTER(ctypes.c_char_p))
+                if pair[0] in values:
+                    pair[1] = values[pair[0]].value
+                    return True
+                return False
+            if cmd == ENV_GET_CAN_DUPE:
+                ctypes.cast(data, ctypes.POINTER(ctypes.c_bool))[0] = True
+                return True
+            return False
+
+        def video(data: int, width: int, height: int, pitch: int) -> None:
+            if data:
+                self.video = (ctypes.string_at(data, pitch * height), width, height, pitch)
+
+        def input_state(port: int, device: int, index: int, button: int) -> int:
+            if port != 0 or device != 1:  # RETRO_DEVICE_JOYPAD
+                return 0
+            clock = self.frame if self.input_frame is None else self.input_frame
+            return int(any(RETRO_IDS[n] == button for n in held(script, clock)))
+
+        core = self.core
+        self.callbacks = [
+            ENV_CB(environment), VIDEO_CB(video), AUDIO_CB(lambda l, r: None),
+            AUDIO_BATCH_CB(lambda d, n: n), POLL_CB(lambda: None), INPUT_CB(input_state),
+        ]  # fmt: skip
+        core.retro_set_environment(self.callbacks[0])
+        core.retro_init()
+        core.retro_set_video_refresh(self.callbacks[1])
+        core.retro_set_audio_sample(self.callbacks[2])
+        core.retro_set_audio_sample_batch(self.callbacks[3])
+        core.retro_set_input_poll(self.callbacks[4])
+        core.retro_set_input_state(self.callbacks[5])
+        core.retro_load_game.argtypes = [ctypes.POINTER(GameInfo)]
+        if not core.retro_load_game(ctypes.byref(GameInfo(str(CUE).encode(), None, 0, None))):
+            raise SystemExit("emu_compare: the core didn't load the disc")
+        core.retro_set_controller_port_device(0, 1)
+        core.retro_get_memory_data.restype = ctypes.c_void_p
+        self.ram_address = core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM)
+
+    def run(self) -> None:
+        """Runs one frame: up to the next VBlank."""
+        self.frame += 1
+        self.core.retro_run()
+
+    def ram(self) -> bytes:
+        return ctypes.string_at(self.ram_address, RAM_SIZE)
+
+    def write(self, address: int, data: bytes) -> None:
+        ctypes.memmove(self.ram_address + address - RAM_BASE, data, len(data))
+
+    def screenshot(self, path: pathlib.Path) -> None:
+        if self.video:
+            write_bmp(path, *to_rgb(self.format, *self.video))
+
+    def close(self) -> None:
+        self.core.retro_unload_game()
+        self.core.retro_deinit()
+
+
 def run_emu(args: argparse.Namespace) -> None:
     out = pathlib.Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
-    system = out / "system"
-    system.mkdir(exist_ok=True)
-    bios = system / "scph5501.bin"
-    bios.write_bytes(pathlib.Path(args.bios).read_bytes())
-    script = parse_pad(pathlib.Path(args.pad).read_text())
-    core = ctypes.CDLL(args.core)
-    system_dir = ctypes.c_char_p(str(system).encode())
-    state = {"format": PIXEL_RGB565, "frame": 0, "video": None}
-
-    def environment(cmd: int, data: int) -> bool:
-        if cmd in (ENV_GET_SYSTEM_DIRECTORY, ENV_GET_SAVE_DIRECTORY):
-            ctypes.cast(data, ctypes.POINTER(ctypes.c_char_p))[0] = system_dir.value
-            return True
-        if cmd == ENV_SET_PIXEL_FORMAT:
-            state["format"] = ctypes.cast(data, ctypes.POINTER(ctypes.c_int))[0]
-            return state["format"] in (PIXEL_XRGB8888, PIXEL_RGB565)
-        if cmd == ENV_GET_CAN_DUPE:
-            ctypes.cast(data, ctypes.POINTER(ctypes.c_bool))[0] = True
-            return True
-        return False
-
-    def video(data: int, width: int, height: int, pitch: int) -> None:
-        if data:
-            state["video"] = (ctypes.string_at(data, pitch * height), width, height, pitch)
-
-    def input_state(port: int, device: int, index: int, button: int) -> int:
-        if port != 0 or device != 1:  # RETRO_DEVICE_JOYPAD
-            return 0
-        names = held(script, state["frame"])
-        return int(any(RETRO_IDS[n] == button for n in names))
-
-    callbacks = [
-        ENV_CB(environment), VIDEO_CB(video), AUDIO_CB(lambda l, r: None),
-        AUDIO_BATCH_CB(lambda d, n: n), POLL_CB(lambda: None), INPUT_CB(input_state),
-    ]  # fmt: skip
-    core.retro_set_environment(callbacks[0])
-    core.retro_init()
-    core.retro_set_video_refresh(callbacks[1])
-    core.retro_set_audio_sample(callbacks[2])
-    core.retro_set_audio_sample_batch(callbacks[3])
-    core.retro_set_input_poll(callbacks[4])
-    core.retro_set_input_state(callbacks[5])
-    core.retro_load_game.argtypes = [ctypes.POINTER(GameInfo)]
-    if not core.retro_load_game(ctypes.byref(GameInfo(str(CUE).encode(), None, 0, None))):
-        raise SystemExit("emu_compare: the core didn't load the disc")
-    core.retro_set_controller_port_device(0, 1)
-    core.retro_get_memory_data.restype = ctypes.c_void_p
-    core.retro_get_memory_size.restype = ctypes.c_size_t
-    for frame in range(1, args.frames + 1):
-        state["frame"] = frame
-        core.retro_run()
-        if frame % args.every or frame < args.start:
+    emu = Emulator(args.core, args.bios, args.pad, out)
+    while emu.frame < args.frames:
+        emu.run()
+        if emu.frame % args.every or emu.frame < args.start:
             continue
-        ram = core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM)
-        (out / f"{frame:06d}.ram").write_bytes(ctypes.string_at(ram, RAM_SIZE))
-        if state["video"]:
-            write_bmp(out / f"{frame:06d}.bmp", *to_rgb(state["format"], *state["video"]))
-    core.retro_unload_game()
-    core.retro_deinit()
+        (out / f"{emu.frame:06d}.ram").write_bytes(emu.ram())
+        emu.screenshot(out / f"{emu.frame:06d}.bmp")
+    emu.close()
 
 
 def to_rgb(fmt: int, data: bytes, width: int, height: int, pitch: int) -> tuple[int, int, bytes]:
