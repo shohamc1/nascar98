@@ -1,9 +1,8 @@
 /*
  * The port's software GTE (see port_gte.h), after psx-spx's "Geometry
  * Transformation Engine" chapter: 32 data and 32 control registers and
- * every command, with the FLAG register's saturation and overflow bits.
- * Division is exact rather than the hardware's UNR table: enhanced, not
- * bit-exact.
+ * every command, with the FLAG register's saturation and overflow bits,
+ * and the hardware's UNR division.
  */
 #include "host.h"
 #include "port_gte.h"
@@ -132,16 +131,36 @@ static s16 Screen(s32 value, int bit)
     return (s16)value;
 }
 
-/* H / SZ3 in 16.16, limited to 0x1FFFF like the hardware. */
+/*
+ * H / SZ3 in 16.16, limited to 0x1FFFF, as the hardware divides: a
+ * reciprocal from the UNR table and two Newton-Raphson steps (psx-spx).
+ * The result can be one off the exact quotient, and screen coordinates
+ * follow it.
+ */
 static u32 Divide(void)
 {
-    u32 n;
+    static u8 sUnr[0x101];
+    u32 n, d, u;
+    int z;
 
     if (sSz[3] == 0 || sH >= sSz[3] * 2u) {
         sFlag |= 1u << 17;
         return 0x1FFFF;
     }
-    n = (u32)((((u64)sH << 16) + sSz[3] / 2) / sSz[3]);
+    if (sUnr[0] == 0) {
+        for (z = 0; z < 0x101; z++) {
+            s32 v = (0x40000 / (z + 0x100) + 1) / 2 - 0x101;
+            sUnr[z] = v < 0 ? 0 : (u8)v;
+        }
+    }
+    for (z = 0; !(sSz[3] << z & 0x8000); z++) {
+    }
+    n = (u32)sH << z;
+    d = (u32)sSz[3] << z;
+    u = sUnr[(d - 0x7FC0) >> 7] + 0x101;
+    d = (0x2000080 - d * u) >> 8;
+    d = (0x80 + d * u) >> 8;
+    n = (u32)(((u64)n * d + 0x8000) >> 16);
     return n > 0x1FFFF ? 0x1FFFF : n;
 }
 

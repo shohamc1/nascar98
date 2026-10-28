@@ -12,8 +12,10 @@
 /* Psy-Q's sine table: sin in the low half, cos in the high, 4096 per turn. */
 extern u32 D_8009E070[];
 
-static u32 sStack[MATRIX_STACK][8];
-static int sStackDepth;
+/* The matrix stack in game memory, as retail keeps it: eight control words
+ * an entry, and the depth in bytes. */
+extern u32 D_8009DD70[];
+extern s32 D_8009DD6C;
 
 void InitGeom(void)
 {
@@ -101,6 +103,8 @@ static MATRIX *Columns(MATRIX *in, MATRIX *out)
             out->m[i][j] = col[j][i];
         }
     }
+    /* Retail stores m[2][2] with swc2 $11: the pad after it takes IR3's sign. */
+    ((s16 *)out)[9] = (s16)(PortGteRead(11) >> 16);
     return out;
 }
 
@@ -135,29 +139,32 @@ MATRIX *TransMatrix(MATRIX *m, VECTOR *v)
 /* Saves the rotation and translation registers, 20 deep. */
 void PushMatrix(void)
 {
+    u32 *entry = D_8009DD70 + D_8009DD6C / 4;
     int i;
 
-    if (sStackDepth >= MATRIX_STACK) {
+    if (D_8009DD6C >= MATRIX_STACK * 0x20) {
         HostLog("libgte: PushMatrix overflow");
         return;
     }
     for (i = 0; i < 8; i++) {
-        sStack[sStackDepth][i] = PortGteReadControl(i);
+        entry[i] = PortGteReadControl(i);
     }
-    sStackDepth++;
+    D_8009DD6C += 0x20;
 }
 
 void PopMatrix(void)
 {
+    u32 *entry;
     int i;
 
-    if (sStackDepth <= 0) {
+    if (D_8009DD6C <= 0) {
         HostLog("libgte: PopMatrix underflow");
         return;
     }
-    sStackDepth--;
+    D_8009DD6C -= 0x20;
+    entry = D_8009DD70 + D_8009DD6C / 4;
     for (i = 0; i < 8; i++) {
-        PortGteWriteControl(i, sStack[sStackDepth][i]);
+        PortGteWriteControl(i, entry[i]);
     }
 }
 
@@ -253,31 +260,48 @@ void OuterProduct0(VECTOR *v0, VECTOR *v1, VECTOR *v2)
     PortGteWriteControl(4, r4);
 }
 
-static u32 SquareRoot(u64 n)
-{
-    u64 x = n, y = (x + 1) / 2;
+/* Reciprocal square roots, 0x40 to 0xFF in 1.7, as 1.12 (game data). */
+extern s16 D_8009DBD4[];
 
-    if (n < 2) {
-        return (u32)n;
+/*
+ * Retail's normaliser (func_8007C548), step for step: SQR, LZCS on the
+ * sum of squares, a reciprocal square root from the table, GPF, then a
+ * shift. The GTE keeps the registers it leaves.
+ */
+static void Normalise(s32 v[3])
+{
+    s32 sum, zeros, shift, scaled;
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        PortGteWrite(9 + i, (u32)v[i]);
     }
-    while (y < x) {
-        x = y;
-        y = (x + n / x) / 2;
+    PortGteCommand(0x4AA00428u); /* SQR sf=0 */
+    sum = (s32)(PortGteRead(25) + PortGteRead(26) + PortGteRead(27));
+    PortGteWrite(30, (u32)sum);
+    zeros = (s32)(PortGteRead(31) & ~1u);
+    shift = (31 - zeros) >> 1;
+    scaled = zeros >= 24 ? (s32)((u32)sum << (zeros - 24)) : sum >> (24 - zeros);
+    PortGteWrite(8, (u32)(s32)D_8009DBD4[scaled - 0x40]);
+    for (i = 0; i < 3; i++) {
+        PortGteWrite(9 + i, (u32)v[i]);
     }
-    return (u32)x;
+    PortGteCommand(0x4B90003Du); /* GPF sf=0 */
+    for (i = 0; i < 3; i++) {
+        v[i] = (s32)PortGteRead(25 + i) >> (shift & 31);
+    }
 }
 
 /* V1 = V0 scaled to length 4096 (1.0 in 4.12). */
 void VectorNormal(VECTOR *v0, VECTOR *v1, s32 unused)
 {
-    s64 x = v0->vx, y = v0->vy, z = v0->vz;
-    u32 len = SquareRoot((u64)(x * x + y * y + z * z));
+    s32 v[3];
 
-    if (len == 0) {
-        v1->vx = v1->vy = v1->vz = 0;
-        return;
-    }
-    v1->vx = (long)(x * 4096 / len);
-    v1->vy = (long)(y * 4096 / len);
-    v1->vz = (long)(z * 4096 / len);
+    v[0] = v0->vx;
+    v[1] = v0->vy;
+    v[2] = v0->vz;
+    Normalise(v);
+    v1->vx = v[0];
+    v1->vy = v[1];
+    v1->vz = v[2];
 }
