@@ -9,6 +9,9 @@
  *   NASCAR98_HEADLESS  1: no window; frames run as fast as they can
  *   NASCAR98_SCALE     render scale (default 3)
  *   NASCAR98_SCREENSHOT  FRAME:PATH saves the display as BMP at that frame
+ *   NASCAR98_DUMP      EVERY:DIR writes main RAM (DIR/FRAME.ram) and the
+ *                      display (DIR/FRAME.bmp) every EVERY frames
+ *   NASCAR98_DUMP_START  the first frame NASCAR98_DUMP writes (default 0)
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
  *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
  *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
@@ -53,6 +56,8 @@ static volatile int sHang;
 static int sHeadless;
 static long sShotFrame = -1;
 static const char *sShotPath;
+static long sDumpEvery, sDumpStart;
+static const char *sDumpDir;
 static Uint64 sNextFrame;
 static SDL_AudioStream *sAudio;
 static FILE *sWav;
@@ -456,6 +461,23 @@ static void Pace(void)
     sNextFrame += frame;
 }
 
+/* Main RAM as the console holds it, for tools/emu_compare.py. */
+static void Dump(struct w2c_env *env)
+{
+    char path[1024];
+    FILE *f;
+
+    snprintf(path, sizeof(path), "%s/%06ld.ram", sDumpDir, sFrames);
+    f = fopen(path, "wb");
+    if (!f || fwrite(Memory(env, 0x80000000u, 0x200000), 1, 0x200000, f) != 0x200000) {
+        fprintf(stderr, "nascar98: can't write \"%s\"\n", path);
+        exit(2);
+    }
+    fclose(f);
+    snprintf(path, sizeof(path), "%s/%06ld.bmp", sDumpDir, sFrames);
+    GpuScreenshot(path);
+}
+
 u32 w2c_env_HostFrame(struct w2c_env *env)
 {
     (void)env;
@@ -471,6 +493,9 @@ u32 w2c_env_HostFrame(struct w2c_env *env)
     ++sFrames;
     if (sFrames == sShotFrame && GpuScreenshot(sShotPath) != 0) {
         fprintf(stderr, "nascar98: can't save the screenshot to \"%s\": %s\n", sShotPath, SDL_GetError());
+    }
+    if (sDumpEvery > 0 && sFrames >= sDumpStart && sFrames % sDumpEvery == 0) {
+        Dump(env);
     }
     if (sFrameLimit > 0 && sFrames >= sFrameLimit) {
         fprintf(stderr, "nascar98: stopped after %ld frames\n", sFrames);
@@ -545,6 +570,12 @@ int main(void)
     if (shot && strchr(shot, ':')) {
         sShotFrame = strtol(shot, NULL, 10);
         sShotPath = strchr(shot, ':') + 1;
+    }
+    shot = getenv("NASCAR98_DUMP");
+    if (shot && strchr(shot, ':')) {
+        sDumpEvery = strtol(shot, NULL, 10);
+        sDumpDir = strchr(shot, ':') + 1;
+        sDumpStart = EnvNumber("NASCAR98_DUMP_START", 0);
     }
     if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless) || PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
