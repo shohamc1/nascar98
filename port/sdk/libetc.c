@@ -10,6 +10,7 @@ void PortAudioTick(void);
 void PortEventsVBlank(void);
 void PortCdTick(void);
 void PortPadTick(void);
+void PortHsyncVBlank(void);
 
 #define POLLS_PER_VBLANK 64
 
@@ -49,6 +50,7 @@ int VSync(int mode)
 void PortVBlank(void)
 {
     sPolls = 0;
+    PortHsyncVBlank();
     if (HostFrame()) {
         HostExit(0);
     }

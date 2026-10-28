@@ -418,6 +418,53 @@ int main(void) {
         self.assertEqual(run.returncode, 0, f"the voice never finished\n{run.stderr}")
 
 
+TIMING_DRIVER = """
+#include <psxsdk/libapi.h>
+#include <psxsdk/libetc.h>
+#define RCntCNT1 0xF2000001
+void PortAudioTick(void) {}
+void PortEventsVBlank(void) {}
+void PortCdTick(void) {}
+uint32_t HostPadRead(int32_t port) { (void)port; return 0; }
+u8 __heap_base[4];
+u32 __heapbase[1], D_8009B9C8[1], D_800A2FBC, D_800A2FC0;
+void GameMain(void) __asm__("func_80012108");
+void GameMain(void) {}
+
+/* The race loop (game.c): wait until LINES scanlines have passed since the
+ * frame began, then flip on the next VBlank. Returns the VBlanks it took. */
+static int Frame(unsigned lines) {
+    int start = VSync(-1);
+    long ticks = GetRCnt(RCntCNT1);
+    while ((unsigned long)(GetRCnt(RCntCNT1) - ticks) < lines) {
+    }
+    VSync(0);
+    return VSync(-1) - start;
+}
+
+int main(void) {
+    int i;
+    VSync(0);
+    for (i = 0; i < 4; i++) {
+        if (Frame(530) != 3) return 1 + i;
+    }
+    for (i = 0; i < 4; i++) {
+        if (Frame(270) != 2) return 10 + i;
+    }
+    return 0;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Timing(unittest.TestCase):
+    def test_scanline_wait_sets_the_frame_rate(self) -> None:
+        # 530 lines is just over two 263-line fields, so the console's race
+        # runs at 20 frames a second; 270 lines gives 30.
+        run = run_driver(["port/sdk/libapi.c", "port/sdk/libetc.c"], TIMING_DRIVER)
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+
 CARD_STUBS = HOST_STUBS + """
 /* Slot 0 holds a card image in memory; slot 1 is empty. */
 static unsigned char gCard[128 * 1024];

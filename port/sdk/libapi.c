@@ -154,17 +154,33 @@ void SwExitCriticalSection(void)
 
 #define EVENT_HSYNC 0xF2000001 /* RCntCNT1 */
 
-static u32 sHsync;
+#define FIELD_LINES 263
 
-/* The scanline counter moves 8 lines a read: the game waits for a phase
- * of the 263-line frame in a loop that only reads it. */
+static u32 sHsync, sFieldStart;
+
+void PortVBlank(void);
+
+/* Each VBlank starts a field: the counter moves to the field's first line. */
+void PortHsyncVBlank(void)
+{
+    sFieldStart += FIELD_LINES;
+    if ((s32)(sHsync - sFieldStart) < 0) {
+        sHsync = sFieldStart;
+    }
+}
+
+/* The scanline counter moves 8 lines a read, and the VBlank comes after a
+ * field's 263 lines. The race waits for 530 lines a frame, just over two
+ * fields, so it flips on the third VBlank: 20 frames a second. */
 long GetRCnt(unsigned long spec)
 {
     PORT_TRACE(GetRCnt);
     if (spec != EVENT_HSYNC) {
         return 0;
     }
-    PortPoll();
     sHsync += 8;
+    if (sHsync - sFieldStart >= FIELD_LINES) {
+        PortVBlank();
+    }
     return (long)(sHsync & 0xFFFF);
 }
