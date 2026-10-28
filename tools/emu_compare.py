@@ -186,11 +186,27 @@ class Emulator:
         self.core.retro_deinit()
 
 
+def parse_poke(text: str | None, port: bool) -> tuple[int, list[tuple[int, int]]] | None:
+    """FRAME:NAME=VALUE[,NAME=VALUE...], with each name's address on that side."""
+    if not text:
+        return None
+    frame, _, rest = text.partition(":")
+    words = []
+    for item in rest.split(","):
+        name, _, value = item.partition("=")
+        words.append((symbol(name, port), int(value, 0)))
+    return int(frame), words
+
+
 def run_emu(args: argparse.Namespace) -> None:
     out = pathlib.Path(args.out)
     emu = Emulator(args.core, args.bios, args.pad, out)
+    poke = parse_poke(args.poke, False)
     while emu.frame < args.frames:
         emu.run()
+        if poke and emu.frame == poke[0]:
+            for address, value in poke[1]:
+                emu.write(address, struct.pack("<I", value))
         if emu.frame % args.every or emu.frame < args.start:
             continue
         (out / f"{emu.frame:06d}.ram").write_bytes(emu.ram())
@@ -218,6 +234,8 @@ def run_port(args: argparse.Namespace) -> None:
     env = dict(os.environ, NASCAR98_HEADLESS="1", NASCAR98_SCALE="1", NASCAR98_FRAMES=str(args.frames))
     env.update(NASCAR98_PAD=str(pathlib.Path(args.pad).resolve()), NASCAR98_DUMP=f"{args.every}:{out.resolve()}")
     env["NASCAR98_DUMP_START"] = str(args.start)
+    if poke := parse_poke(args.poke, True):
+        env["NASCAR98_POKE"] = f"{poke[0]}:" + ",".join(f"{a:#x}={v:#x}" for a, v in poke[1])
     env["NASCAR98_SAVES"] = str((out / "saves").resolve())
     (out / "saves").mkdir(exist_ok=True)
     subprocess.run([str(ROOT / "build/port/nascar98")], env=env, cwd=ROOT, check=False)
@@ -386,6 +404,7 @@ def main() -> None:
         p.add_argument("--frames", type=int, required=True)
         p.add_argument("--every", type=int, default=30)
         p.add_argument("--start", type=int, default=0, help="first frame to dump")
+        p.add_argument("--poke", help="FRAME:NAME=VALUE[,NAME=VALUE...] writes words after that frame")
         p.add_argument("out")
         if name == "emu":
             p.add_argument("--core", required=True)

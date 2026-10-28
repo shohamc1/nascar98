@@ -12,6 +12,8 @@
  *   NASCAR98_DUMP      EVERY:DIR writes main RAM (DIR/FRAME.ram) and the
  *                      display (DIR/FRAME.bmp) every EVERY frames
  *   NASCAR98_DUMP_START  the first frame NASCAR98_DUMP writes (default 0)
+ *   NASCAR98_POKE      FRAME:ADDR=VALUE[,ADDR=VALUE...] writes 32-bit words
+ *                      at the end of that frame (to line runs up)
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
  *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
  *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
@@ -58,6 +60,8 @@ static long sShotFrame = -1;
 static const char *sShotPath;
 static long sDumpEvery, sDumpStart;
 static const char *sDumpDir;
+static long sPokeFrame = -1;
+static const char *sPokes;
 static Uint64 sNextFrame;
 static SDL_AudioStream *sAudio;
 static FILE *sWav;
@@ -461,6 +465,31 @@ static void Pace(void)
     sNextFrame += frame;
 }
 
+/* Writes NASCAR98_POKE's ADDR=VALUE words, little-endian. */
+static void Poke(struct w2c_env *env)
+{
+    const char *at = sPokes;
+
+    while (at && *at) {
+        char *end;
+        u32 address = (u32)strtoul(at, &end, 0);
+        u32 value;
+        u8 *word;
+
+        if (*end != '=') {
+            fprintf(stderr, "nascar98: bad NASCAR98_POKE at \"%s\"\n", at);
+            exit(2);
+        }
+        value = (u32)strtoul(end + 1, &end, 0);
+        word = Memory(env, address, 4);
+        word[0] = (u8)value;
+        word[1] = (u8)(value >> 8);
+        word[2] = (u8)(value >> 16);
+        word[3] = (u8)(value >> 24);
+        at = *end == ',' ? end + 1 : NULL;
+    }
+}
+
 /* Main RAM as the console holds it, for tools/emu_compare.py. */
 static void Dump(struct w2c_env *env)
 {
@@ -493,6 +522,9 @@ u32 w2c_env_HostFrame(struct w2c_env *env)
     ++sFrames;
     if (sFrames == sShotFrame && GpuScreenshot(sShotPath) != 0) {
         fprintf(stderr, "nascar98: can't save the screenshot to \"%s\": %s\n", sShotPath, SDL_GetError());
+    }
+    if (sFrames == sPokeFrame) {
+        Poke(env);
     }
     if (sDumpEvery > 0 && sFrames >= sDumpStart && sFrames % sDumpEvery == 0) {
         Dump(env);
@@ -576,6 +608,11 @@ int main(void)
         sDumpEvery = strtol(shot, NULL, 10);
         sDumpDir = strchr(shot, ':') + 1;
         sDumpStart = EnvNumber("NASCAR98_DUMP_START", 0);
+    }
+    shot = getenv("NASCAR98_POKE");
+    if (shot && strchr(shot, ':')) {
+        sPokeFrame = strtol(shot, NULL, 10);
+        sPokes = strchr(shot, ':') + 1;
     }
     if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless) || PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
