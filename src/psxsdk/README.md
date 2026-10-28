@@ -107,6 +107,6 @@ THE SOFTWARE.
 (Copyright 1989, 1992, 1993, 1994, 1995 Free Software Foundation).
 This code uses GPL version 2 or later with the original library linking
 exception. Its notice is before the implementation; the license is in
-`COPYING.libgcc`. The existing 256-byte leading-zero table stays in its
-rodata carrier. One three-instruction multiply block gives the low and
-high results independent output registers. The division logic is C89.
+`COPYING.libgcc`. The 256-byte leading-zero table is a C array. One
+three-instruction multiply block gives the low and high results independent
+output registers. The division logic is C89.

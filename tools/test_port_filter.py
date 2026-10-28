@@ -363,24 +363,6 @@ class FilterSource(unittest.TestCase):
         )
         self.assertEqual(self.run_filter(text), "s32 gDana;\ns32 gQuinn;\n")
 
-    def test_maspsx_hack_data_becomes_c(self) -> None:
-        text = (
-            "void __maspsx_include_asm_hack_gDanaTable(void) {\n"
-            '    __asm__(".section .rodata # maspsx-keep \\n"\n'
-            '            "dlabel gDanaTable # maspsx-keep\\n"\n'
-            '            "    .word 0x00010002 # maspsx-keep\\n"\n'
-            '            "    .word 0xFFFB0000 # maspsx-keep\\n"\n'
-            '            "dlabel gQuinnTable # maspsx-keep\\n"\n'
-            '            "    .word 0x3 # maspsx-keep\\n"\n'
-            '            "    .section .text # maspsx-keep\\n");\n'
-            "}\n"
-        )
-        self.assertEqual(
-            self.run_filter(text),
-            'const u32 port_rodata_gDanaTable[] __asm__("gDanaTable") = {0x00010002, 0xFFFB0000};\n'
-            'const u32 port_rodata_gQuinnTable[] __asm__("gQuinnTable") = {0x3};\n',
-        )
-
     def test_offset_label_on_fixed_address(self) -> None:
         text = 'extern u32 gDana[] asm("gScratchpad+4");\nextern u32 *gQuinn[] asm("gScratchpad");\n'
         self.assertEqual(

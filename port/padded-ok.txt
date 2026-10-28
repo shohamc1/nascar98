@@ -5,7 +5,7 @@
 cd.c func_80041564 the callee writes arg2 and arg3 before reading them
 objects.c func_80041564 the callee writes arg2 and arg3 before reading them
 scene.c func_80041564 the callee writes arg2 and arg3 before reading them
-scene.c func_80041564Hud the callee writes arg2 and arg3 before reading them
+scene_effects.c func_80041564Hud the callee writes arg2 and arg3 before reading them
 scene.c RandomScaledGetScene the result is discarded; the seed ignores scale
 media.c RandomScaledGetVoid the result is discarded; the seed ignores scale
 scene.c func_8005CCEC IDs 1 to 5 set min and max themselves

@@ -8,8 +8,8 @@ Usage: python3 tools/port_data.py --signatures OBJDUMP.txt \\
     --data-range LO:HI [--data-range ...] --image LO:HI OUT.s IN.s...
 
 The game's initialised data and .bss still come from splat's .s files
-(asm/data/, plus the .rodata files that INCLUDE_RODATA names). Each input
-becomes one wasm section with every label at its retail offset. Items are
+in asm/data/. Each input becomes one wasm section with every label at its
+retail offset. Items are
 placed by the retail addresses in splat's comments, so padding follows
 the original layout. A .word that names a symbol becomes a relocation:
 for a function, wasm needs its signature (.functype), read from

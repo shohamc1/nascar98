@@ -666,10 +666,6 @@ GEOMETRY_BUFFER = 0x801C0000; // absolute:True fixed_address
 SOUND_BANK_BUFFER = 0x80140000; // absolute:True fixed_address
 
 // Data labels tracked so guarded drafts can reference them directly (wave 6-8 requests).
-D_8008CFC0 = 0x8008CFC0; // force_not_migration:True
-gHudTimeInvalidText = 0x8008D500; // force_not_migration:True
-gHudTimeFormatHms = 0x8008D50C; // force_not_migration:True
-gHudTimeFormatMinSecMs = 0x8008D51C; // force_not_migration:True
 D_800A2DEC = 0x800A2DEC;
 D_800A2DF0 = 0x800A2DF0;
 D_800A2DF4 = 0x800A2DF4;
@@ -702,8 +698,6 @@ D_800B0A2C = 0x800B0A2C;
 SCRATCHPAD_BASE = 0x1F800000; // absolute:True fixed_address allow_duplicated:True
 RAM_CACHED_BASE = 0x80000000; // absolute:True fixed_address
 
-// Parked draft support: preserve rodata when its C body is enabled.
-D_8008CFE0 = 0x8008CFE0; // force_not_migration:True
 
 // MDEC tables and command packets, checked through DecDCTGetEnv/PutEnv.
 gMdecLumaQuantTable = 0x800A2BA0;

@@ -730,20 +730,6 @@ def translate_asm(
     return "{ " + "".join(e + " " for e in externs.values()) + c[2:]
 
 
-def hack_data(m: re.Match) -> str:
-    """Return C data for each dlabel in a maspsx rodata hack; padding has none."""
-    lines, words = [], None
-    for line in STRING.findall(m[0]):
-        line = line.split("#")[0].strip()
-        if line.startswith("dlabel "):
-            words = []
-            lines.append((line.split()[1], words))
-        elif line.startswith(".word") and words is not None:
-            words += [w.strip() for w in line[len(".word") :].split(",")]
-    # ponytail: one array per label; merge them if code indexes past a label.
-    return "".join(f'const u32 port_rodata_{n}[] __asm__("{n}") = {{{", ".join(w)}}};\n' for n, w in lines)
-
-
 def fixed_label(m: re.Match, aliases: dict[str, Alias], absolutes: dict[str, Placement]) -> str:
     """Rewrite an extern whose asm label is BASE+N on an absolute BASE."""
     target, offset = resolve(m["base"], aliases)
@@ -760,7 +746,7 @@ def filter_source(
     text: str, aliases: dict[str, Alias], absolutes: dict[str, Placement], functions: set[str] = frozenset()
 ) -> str:
     """Apply rules 1 to 4, and 10 to 12, of the module docstring to one source file."""
-    text = HACK.sub(hack_data, text)
+    text = HACK.sub("", text)
     text = FIXED_LABEL.sub(lambda m: fixed_label(m, aliases, absolutes), text)
     for start, end in reversed(asm_statements(text)):
         text = text[:start] + text[end:]

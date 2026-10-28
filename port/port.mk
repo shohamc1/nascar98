@@ -51,10 +51,8 @@ PORT_SRCS := $(GAME_SRCS:src/%=$(PORT)/src/%)
 OBJS      := $(GAME_SRCS:src/%.c=$(PORT)/obj/%.o)
 SDK_OBJS  := $(patsubst port/sdk/%.c,$(PORT)/sdk/%.o,$(wildcard port/sdk/*.c))
 
-# splat's data: initialised .data, .bss, and the .rodata that
-# INCLUDE_RODATA lines name.
-DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s \
-               $(shell sed -n 's/^INCLUDE_RODATA("\([^"]*\)", *\([A-Za-z_0-9]*\)).*/\1\/\2.s/p' $(GAME_SRCS))
+# splat's initialised .data and .bss. Rodata is defined in the C sources.
+DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s
 
 WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
                 --max-memory=2151677952 -z stack-size=262144 --no-stack-first --no-entry \
