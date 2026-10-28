@@ -34,6 +34,8 @@ def run(timeout: float, **env: str) -> subprocess.CompletedProcess:
 
 MAGENTA = (255, 0, 255, 255)
 WHITE_LIMIT = 50  # 525 with the reordered stores, 0 without
+# Start during the EA Sports movie skips both intro movies.
+SKIP_MOVIES = "0 -\n100 start\n105 -\n"
 
 
 def magenta_pixels(path: pathlib.Path) -> int:
@@ -138,11 +140,22 @@ class Run(unittest.TestCase):
             pixels = data[int.from_bytes(data[10:14], "little") :]
             self.assertGreater(len({pixels[i : i + 4] for i in range(0, len(pixels) - 4, 4)}), 1000)
 
+    def test_intro_movie_plays(self) -> None:
+        # With no input, frame 150 shows the EA Sports movie: a white card.
+        with tempfile.TemporaryDirectory() as tmp:
+            shot = pathlib.Path(tmp) / "shot.bmp"
+            result = run(60, NASCAR98_FRAMES="150", NASCAR98_SCALE="1", NASCAR98_SCREENSHOT=f"150:{shot}")
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            with Image.open(shot) as image:
+                rgb = image.convert("RGB").tobytes()
+            white = sum(1 for i in range(0, len(rgb), 3) if min(rgb[i : i + 3]) > 200)
+            self.assertGreater(white, len(rgb) // 3 // 2, "not the EA Sports movie")
+
     def test_start_leaves_title(self) -> None:
         # Start pressed at frame 620 moves on from the title; without it, the title stays.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
-            (d / "pad.txt").write_text("0 -\n620 start\n625 -\n")
+            (d / "pad.txt").write_text(SKIP_MOVIES + "620 start\n625 -\n")
             shots = []
             for name, pad in (("idle", ""), ("start", str(d / "pad.txt"))):
                 shot = d / f"{name}.bmp"
@@ -157,7 +170,7 @@ class Run(unittest.TestCase):
         # magenta on screen: the prompt's text samples a replacement.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
-            (d / "pad.txt").write_text("0 -\n620 start\n625 -\n")
+            (d / "pad.txt").write_text(SKIP_MOVIES + "620 start\n625 -\n")
             dump, textures = d / "dump", d / "textures"
             dump.mkdir()
             textures.mkdir()
@@ -178,10 +191,12 @@ class Run(unittest.TestCase):
         # The title screen plays a CD audio track: sound with no input.
         with tempfile.TemporaryDirectory() as tmp:
             wav = pathlib.Path(tmp) / "out.wav"
-            result = run(60, NASCAR98_FRAMES="300", NASCAR98_WAV=str(wav))
+            pad = pathlib.Path(tmp) / "pad.txt"
+            pad.write_text(SKIP_MOVIES)
+            result = run(60, NASCAR98_FRAMES="450", NASCAR98_WAV=str(wav), NASCAR98_PAD=str(pad))
             self.assertEqual(result.returncode, 0, result.stderr[-2000:])
             with wave.open(str(wav)) as w:
-                w.setpos(120 * 735)
+                w.setpos(300 * 735)
                 music = w.readframes(120 * 735)
             self.assertGreater(sum(1 for i in range(0, len(music), 2) if music[i : i + 2] != b"\0\0"), 50000)
 
@@ -189,7 +204,7 @@ class Run(unittest.TestCase):
         # X at frame 700 closes the memory card prompt with a sound effect.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
-            (d / "pad.txt").write_text("0 -\n620 start\n625 -\n700 cross\n705 -\n")
+            (d / "pad.txt").write_text(SKIP_MOVIES + "620 start\n625 -\n700 cross\n705 -\n")
             result = run(60, NASCAR98_FRAMES="760", NASCAR98_PAD=str(d / "pad.txt"), NASCAR98_WAV=str(d / "out.wav"))
             self.assertEqual(result.returncode, 0, result.stderr[-2000:])
             with wave.open(str(d / "out.wav")) as w:
@@ -202,7 +217,7 @@ class Run(unittest.TestCase):
     def test_race_loads(self) -> None:
         # Main menu, Single Race, Race Setup's Done, then Race, then Start
         # at the loading screen, whose loop polls the pads with no VSync.
-        script = "0 -\n620 start\n625 -\n700 cross\n705 -\n760 cross\n765 -\n"
+        script = SKIP_MOVIES + "620 start\n625 -\n700 cross\n705 -\n760 cross\n765 -\n"
         script += "".join(f"{f} down\n{f + 5} -\n" for f in (900, 940, 980, 1020)) + "1060 cross\n1065 -\n"
         script += "".join(f"{f} down\n{f + 5} -\n" for f in (1200, 1240, 1280, 1320)) + "1360 cross\n1365 -\n"
         script += "".join(f"{f} start\n{f + 5} -\n" for f in range(1500, 3000, 100))

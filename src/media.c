@@ -2277,6 +2277,10 @@ u8 *func_800719FC(s32 *arg0) {
     pre[0x440 / 4];
     pre[0x444 / 4];
     for (;;) {
+#ifdef NATIVE
+        /* The console's CD interrupts fill the ring while this spins. */
+        PortPoll();
+#endif
         stream = (volatile s32 *)gCdStream;
         avail = (stream[0x448 / 4] << 11) -
                 ((stream[0x440 / 4] << 11) + stream[0x444 / 4]);
