@@ -92,6 +92,21 @@ void func_80062F6C(s32 arg0, s32 arg1);
 void func_800641EC(void);
 void MenuSetTextObject(MenuObj *obj, u8 a, u8 b, s32 c, u8 d, s32 e);
 
+static __inline__ MenuObj *CardInitRecordCell(MenuObj *obj, s32 value, u8 center) {
+    s32 depth;
+    MenuText *text;
+
+    depth = obj->orderingDepth;
+    text = obj->primitive;
+    text->font = 2;
+    text->scale = 3;
+    text->text = value;
+    text->center = center;
+    text->otz = depth;
+    obj->orderingDepth = depth;
+    return obj->next;
+}
+
 void func_80067F34(s32 page, s32 track) {
     extern char *D_8009A474[];
     extern s32 D_8009AC80[];
@@ -147,10 +162,6 @@ void func_80067F34(s32 page, s32 track) {
         do {
             j = 0;
             do {
-                s32 hdrL;
-                MenuText *pktL;
-                s32 flagL;
-                s32 t;
                 switch (j) {
                 case 0:
                     k = 0;
@@ -193,21 +204,7 @@ void func_80067F34(s32 page, s32 track) {
                                  ->best;
                     break;
                 }
-                flagL = 0;
-                if (j != 0) {
-                    t = j != 5;
-                    flagL = t;
-                    asm("" : : "r"(t));
-                }
-                hdrL = obj->orderingDepth;
-                pktL = obj->primitive;
-                pktL->font = 2;
-                pktL->scale = 3;
-                pktL->text = value;
-                pktL->center = flagL;
-                pktL->otz = hdrL;
-                obj->orderingDepth = hdrL;
-                obj = obj->next;
+                obj = CardInitRecordCell(obj, value, j != 0 && j != 5);
                 j++;
             } while (j < 6);
             i++;

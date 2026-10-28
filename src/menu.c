@@ -1776,6 +1776,40 @@ static __inline__ MenuObj *MenuInitTexturedPrimitive(MenuObj *object, s32 depth,
     return object;
 }
 
+static __inline__ MenuObj *MenuInitTextNode(MenuObj *frame, s32 left, s32 top) {
+    u8 *packetBase;
+    u8 primIndex;
+    MenuObj *cur;
+    u8 *tile;
+
+    frame->drawOffsetX = 0;
+    frame->drawOffsetY = 0;
+    frame->next = 0;
+    frame->blue = 0;
+    frame->green = 0;
+    frame->red = 0;
+    frame->orderingDepth = 0;
+    frame->kind = 0;
+    frame->targetX = left;
+    frame->x = left;
+    frame->targetY = top;
+    frame->y = top;
+    frame->velocityX = 0;
+    primIndex = D_800A37BC;
+    cur = frame;
+    packetBase = (u8 *)D_800A3654;
+    tile = packetBase;
+    cur->velocityY = 0;
+    cur->orderingDepth = 0;
+    D_800A37BC = primIndex + 1;
+    tile += primIndex * 12;
+    cur->primitive = tile;
+    tile[0] = 0;
+    tile[3] = 0;
+    ((MenuText *)tile)->otz = 0;
+    return cur;
+}
+
 void func_800606D4(void) {
     MenuObj *entry;
     MenuObj *cur;
@@ -1797,7 +1831,6 @@ void func_800606D4(void) {
     {
         u8 index;
         MenuObj *object;
-        u8 *prim;
         u16 w;
         u16 h;
         index = gMenuObjectPoolCount++;
@@ -1820,18 +1853,7 @@ void func_800606D4(void) {
         object->height = idx2;
         object->velocityX = 0;
         object->velocityY = 0;
-        prim = GraphicsAllocPolyFT4(1);
-        SetPolyFT4((POLY_FT4 *)prim);
-        SetShadeTex(prim, 0);
-        prim[4] = 0x80;
-        prim[5] = 0x80;
-        prim[6] = 0x80;
-        SetSemiTrans(prim, 0);
-        entry = object;
-        entry->primitive = prim;
-        do {
-            entry->orderingDepth = new_var3;
-        } while (0);
+        entry = MenuInitTexturedPrimitive(object, new_var3, 1, 0);
 
         prim2 = (POLY_FT4 *)((u8 *)entry->primitive);
         entry->velocityX = 0;
@@ -1950,10 +1972,8 @@ void func_800606D4(void) {
 
     {
         u8 index;
-        u8 primIndex;
         MenuObj *panel;
         MenuObj *frame;
-        u8 *tile;
         u8 *tile2;
         u16 w;
         u16 h;
@@ -1999,34 +2019,7 @@ void func_800606D4(void) {
         frame = &gMenuObjectPool[index];
         row->next = cur;
         gMenuObjectPoolCount = index + 1;
-        frame->drawOffsetX = 0;
-        frame->drawOffsetY = 0;
-        frame->next = 0;
-        frame->blue = 0;
-        frame->green = 0;
-        frame->red = 0;
-        frame->orderingDepth = 0;
-        frame->kind = 0;
-        frame->targetX = 0;
-        frame->x = 0;
-        frame->targetY = 0xB1;
-        frame->y = 0xB1;
-        frame->velocityX = 0;
-        do {
-            primIndex = D_800A37BC;
-        } while (0);
-
-        cur = frame;
-        tile = (u8 *)D_800A3654;
-        cur->velocityY = 0;
-        cur->orderingDepth = 0;
-        asm volatile("" : : "r"(primIndex));
-        D_800A37BC = primIndex + 1;
-        tile += primIndex * 12;
-        cur->primitive = tile;
-        tile[0] = 0;
-        tile[3] = 0;
-        ((MenuText *)tile)->otz = 0;
+        cur = MenuInitTextNode(frame, 0, 0xB1);
         tile2 = cur->primitive;
         width = 0xCA;
         two = 2;

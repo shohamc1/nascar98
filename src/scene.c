@@ -750,6 +750,36 @@ extern s32 gProjectileOriginX asm("D_800AE844");
 extern s32 gProjectileOriginY asm("D_800AE848");
 extern s32 gProjectileOriginZ asm("D_800AE84C");
 
+static __inline__ void SceneDrawProjectileQuad(ProjectileQuad *drawQuad,
+                                               POLY_FT4 *prim, u32 *ot) {
+    register s32 color asm("v0");
+    s32 uv0, uv1, uv2, uv3;
+
+    gte_ldv3(drawQuad->vertex[0], drawQuad->vertex[1], drawQuad->vertex[2]);
+    gte_rtpt();
+    gte_avsz3();
+    uv1 = drawQuad->uv[1];
+
+    do {
+        color = drawQuad->color;
+    } while (0);
+
+    uv0 = drawQuad->uv[0];
+    uv2 = drawQuad->uv[2];
+    uv3 = drawQuad->uv[3];
+    *(u32 *)&prim->u1 = uv1;
+    *(u32 *)&prim->u0 = uv0;
+    *(u32 *)&prim->r0 = color;
+    *(u32 *)&prim->u2 = uv2;
+    *(u32 *)&prim->u3 = uv3;
+    gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
+    gte_ldv0(drawQuad->vertex[3]);
+    gte_rtps();
+    gte_stsxy(&prim->x2);
+    GraphicsAddTaggedPrimitive(ot + ((s8 *)&drawQuad->tag)[1], (u32 *)prim,
+                               0x09000000);
+}
+
 void SceneUpdateProjectiles(Car *owner) {
     Car *other;
     s8 player;
@@ -770,14 +800,8 @@ void SceneUpdateProjectiles(Car *owner) {
     Projectile *pool;
     ProjectileQuad *drawQuad;
     POLY_FT4 *prim;
-    register POLY_FT4 *primArg asm("a1");
     u32 *ot;
     s32 renderCount;
-    register s32 color asm("v0");
-    s32 uv0;
-    s32 uv1;
-    s32 uv2;
-    s32 uv3;
     void (*callback)(void);
 
     if (D_800A2FC8 == 0 || D_800A2EC8[0] != 0 || D_800A372C != 0 ||
@@ -890,32 +914,8 @@ void SceneUpdateProjectiles(Car *owner) {
             drawQuad =
                 (ProjectileQuad *)(effectIndex * 0x80 + (u32)pool + 0x10);
             do {
-                gte_ldv3(drawQuad->vertex[0], drawQuad->vertex[1],
-                         drawQuad->vertex[2]);
-                gte_rtpt();
-                gte_avsz3();
-                uv1 = drawQuad->uv[1];
-
-                do {
-                    color = drawQuad->color;
-                } while (0);
-
-                uv0 = drawQuad->uv[0];
-                uv2 = drawQuad->uv[2];
-                uv3 = drawQuad->uv[3];
-                *(u32 *)&prim->u1 = uv1;
-                *(u32 *)&prim->u0 = uv0;
-                *(u32 *)&prim->r0 = color;
-                *(u32 *)&prim->u2 = uv2;
-                *(u32 *)&prim->u3 = uv3;
-                gte_stsxy3(&prim->x0, &prim->x1, &prim->x3);
-                gte_ldv0(drawQuad->vertex[3]);
-                gte_rtps();
-                gte_stsxy(&prim->x2);
-                primArg = prim;
+                SceneDrawProjectileQuad(drawQuad, prim, ot);
                 renderCount--;
-                GraphicsAddTaggedPrimitive(ot + ((s8 *)&drawQuad->tag)[1],
-                                           (u32 *)primArg, 0x09000000);
                 drawQuad++;
                 prim++;
             } while (renderCount > 0);

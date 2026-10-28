@@ -2977,7 +2977,7 @@ void AudioQueueAdpcm(StreamChunk *block) {
     tailState[1] = tailState[1] + size;
 }
 
-void func_80072FE4(u8 *dst, u8 *src, u32 n) {
+__inline__ void AudioCopyAdpcmBlocks(u8 *dst, u8 *src, u32 n) {
     u32 i;
 
     for (i = 0; i < n; i += 15) {
@@ -3033,8 +3033,8 @@ void func_80072FE4(u8 *dst, u8 *src, u32 n) {
     }
 
 void AudioQueueStereoAdpcm(StreamChunk *block) {
-    /* Compiler frame extent; retail does not access these bytes. */
-    u8 frameExtent[0x30];
+    /* Compiler frame extent; the inline copy adds 8 unused bytes. */
+    u8 frameExtent[0x28];
     u32 pollTail;
     u32 pollHead;
     u32 headerWord;
@@ -3107,7 +3107,7 @@ void AudioQueueStereoAdpcm(StreamChunk *block) {
     } else {
         leftDestination =
             (u8 *)(((u32)spaceState[1] % 0x3C00) + (u32)spaceState) + 0x10;
-        COPY_ADPCM_BLOCKS(leftSource, leftDestination, firstLength, "a1");
+        AudioCopyAdpcmBlocks(leftDestination, leftSource, firstLength);
         leftBase = (u8 *)D_800A351C;
         {
             u8 *copySource = leftSource + firstLength;

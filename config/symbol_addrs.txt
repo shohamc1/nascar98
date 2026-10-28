@@ -1257,6 +1257,7 @@ AudioCountActiveStreamBuffers = 0x80072B4C; // type:func
 AudioGetStreamReadPosition = 0x80072B88; // type:func
 AudioGetStreamWritePosition = 0x80072B9C; // type:func
 AudioGetStreamFreeSpace = 0x80072BB0; // type:func
+AudioCopyAdpcmBlocks = 0x80072FE4; // type:func
 AudioBeginStreamUpdate = 0x80073948; // type:func
 AudioEndStreamUpdate = 0x80073978; // type:func
 AudioResetStreamState = 0x8007398C; // type:func
