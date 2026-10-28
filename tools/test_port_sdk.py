@@ -418,6 +418,52 @@ int main(void) {
         self.assertEqual(run.returncode, 0, f"the voice never finished\n{run.stderr}")
 
 
+LIBSND_DRIVER = """
+#include <psxsdk/libsnd.h>
+void HostAudioQueue(const s16 *samples, int frames) { (void)samples; (void)frames; }
+void PortCdAudioMix(s16 *out, int frames) { (void)out; (void)frames; }
+void PortCdSetVolume(int left, int right) { (void)left; (void)right; }
+/* A version 6 VAB: 4 programs with 2, 0, 1 and 3 tones, then VAG sizes
+ * 0, 0x10, 0x20, 8 and 0x40 (8-byte units) after the 4 tone blocks. */
+static unsigned char vab[0x820 + 4 * 16 * 32 + 512];
+static void Put16(unsigned char *p, unsigned v) { p[0] = v; p[1] = v >> 8; }
+static unsigned Get16(const unsigned char *p) { return p[0] | p[1] << 8; }
+static unsigned Get32(const unsigned char *p) { return Get16(p) | Get16(p + 2) << 16; }
+int main(void) {
+    static const unsigned char tones[4] = {2, 0, 1, 3};
+    static const unsigned sizes[5] = {0, 0x10, 0x20, 8, 0x40};
+    unsigned char *prog = vab + 0x20, *vag = vab + 0x820 + 4 * 16 * 32;
+    int i;
+    for (i = 0; i < (int)sizeof(vab); i++) vab[i] = 0xFF;  /* reserved words */
+    for (i = 0; i < 128; i++) prog[i * 16] = i < 4 ? tones[i] : 0;
+    for (i = 0; i < 512; i++) vag[i] = 0;                   /* 256 VAG sizes */
+    Put16(vab, 0x4270); Put16(vab + 2, 0x5641); vab[4] = 6;  /* "pBAV" v6 */
+    Put16(vab + 0x12, 4); Put16(vab + 0x16, 4);              /* ps, vs */
+    for (i = 0; i < 5; i++) Put16(vag + i * 2, sizes[i]);
+    if (SsVabOpenHead(vab, -1) != 0) return 1;
+    /* reserved1: the index of each program's first tone block. */
+    if (Get32(prog + 8) != 0 || Get32(prog + 16 + 8) != 1 || Get32(prog + 32 + 8) != 1) return 2;
+    if (Get32(prog + 48 + 8) != 2 || Get32(prog + 127 * 16 + 8) != 3) return 3;
+    /* reserved2 and 3: each VAG's end in sound RAM >> 3, from 0x1010. */
+    if (Get16(prog + 12) != 0x202 || Get16(prog + 14) != 0x212) return 4;
+    if (Get16(prog + 16 + 12) != 0x232 || Get16(prog + 16 + 14) != 0x23A) return 5;
+    if (Get16(prog + 32 + 12) != 0x27A) return 6;
+    return 0;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Libsnd(unittest.TestCase):
+    def test_open_head_writes_the_header_like_retail(self) -> None:
+        # Retail's SsVabOpenHead writes into the header in main RAM: each
+        # program's first tone block and its VAGs' sound RAM addresses. The
+        # race later allocates its cars over a freed header, and a car's
+        # unset fields (flags) keep those values.
+        run = run_driver(["port/sdk/libsnd.c", "port/sdk/libspu.c", "port/sdk/spu.c"], LIBSND_DRIVER)
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
+
+
 TIMING_DRIVER = """
 #include <psxsdk/libapi.h>
 #include <psxsdk/libetc.h>
@@ -454,6 +500,36 @@ int main(void) {
     return 0;
 }
 """
+
+
+HEAP_DRIVER = """
+void PortAudioTick(void) {}
+void PortEventsVBlank(void) {}
+void PortCdTick(void) {}
+uint32_t HostPadRead(int32_t port) { (void)port; return 0; }
+u8 __heap_base[4];
+u32 __heapbase[1], D_8009B9C8[1], D_800A2FBC = 0x2000, D_800A2FC0 = 0x200000;
+void GameMain(void) __asm__("func_80012108");
+void GameMain(void) {}
+void PortStart(void);
+int main(void) {
+    PortStart();
+    if (__heapbase[0] != 0x800BEBA0) return 1;
+    if (D_8009B9C8[0] != 0x13F458) return 2;
+    return 0;
+}
+"""
+
+
+@unittest.skipUnless(CC, "no host compiler")
+class Heap(unittest.TestCase):
+    def test_heap_starts_where_retail_does(self) -> None:
+        # HeapAlloc doesn't clear memory, and a car's unset fields (flags
+        # among them) keep what the heap held before. The console's heap
+        # starts at .bss's end, 0x800BEBA0, with 0x13F458 bytes; starting
+        # it anywhere else gives the cars other leftovers.
+        run = run_driver(["port/sdk/libapi.c", "port/sdk/libetc.c"], HEAP_DRIVER)
+        self.assertEqual(run.returncode, 0, f"check {run.returncode} failed\n{run.stderr}")
 
 
 @unittest.skipUnless(CC, "no host compiler")

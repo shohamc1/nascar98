@@ -11,7 +11,7 @@ void PortPoll(void);
 const char *gPortCallRing[16];
 u32 gPortCallNext;
 
-#define IMAGE_END 0x000CEFE0 /* physical; the EXE's .bss ends here */
+#define HEAP_START 0x000BEBA0 /* physical: retail's __heapbase, .bss's end */
 
 extern u8 __heap_base[]; /* wasm-ld: the end of the module's data */
 extern u32 __heapbase[];
@@ -22,22 +22,24 @@ int main(void) __asm__("func_80012108");
 
 /*
  * Does what crt0's __SN_ENTRY_POINT does, less the .bss loop: the wasm
- * data segment starts zeroed. The wasm stack lies below __heap_base, so
- * the heap runs from there to the top of RAM less the game's stack size.
+ * data segment starts zeroed. The heap runs from retail's start to the top
+ * of RAM less the game's stack size; the wasm stack lies below
+ * __heap_base, under it.
  */
 void PortStart(void)
 {
-    u32 start = (u32)__heap_base & 0x1FFFFFFF;
+    u32 end = (u32)__heap_base & 0x1FFFFFFF;
 
-    /* Retail's heap starts at the image's end; one that starts later runs
-     * into the fixed buffers above it (memory_map.h). Large port buffers
-     * belong above the console's 2 MB instead (port_spu.h). */
-    if (start > IMAGE_END) {
-        HostLog("port: the module's data ends past the retail image: move large buffers above 2 MB");
+    /* HeapAlloc doesn't clear memory, so a heap at retail's address gives
+     * each allocation the leftovers it has on the console (a car's flags
+     * among them). Large port buffers belong above the console's 2 MB
+     * (port_spu.h). */
+    if (end > HEAP_START) {
+        HostLog("port: the module's data ends past retail's heap: move large buffers above 2 MB");
         HostExit(6);
     }
-    D_8009B9C8[0] = D_800A2FC0 - 8 - D_800A2FBC - start;
-    __heapbase[0] = start | 0x80000000;
+    D_8009B9C8[0] = D_800A2FC0 - 8 - D_800A2FBC - HEAP_START;
+    __heapbase[0] = HEAP_START | 0x80000000;
     InitHeap((void *)(__heapbase[0] + 4), D_8009B9C8[0]);
     main();
 }

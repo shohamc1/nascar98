@@ -70,6 +70,39 @@ static const u8 *Tone(const Vab *vab, int prog, int tone)
     return vab->head + 0x820 + (block * 16 + tone) * 32;
 }
 
+static void Write16(u8 *p, u32 v)
+{
+    p[0] = (u8)v;
+    p[1] = (u8)(v >> 8);
+}
+
+/*
+ * What retail's SsVabOpenHeadWithMode writes into the header in main RAM:
+ * each program's first tone block in reserved1 (offset 8), and the end of
+ * each VAG in sound RAM >> 3 in its program's reserved2 and reserved3
+ * (offsets 12 and 14, two VAGs a program). The game frees the header and
+ * reuses the memory, so later allocations see these bytes.
+ */
+static void WriteProgramFields(u8 *addr, u32 base)
+{
+    u8 *prog = addr + 0x20;
+    int programs = addr[0] == 'p' && Read16(addr + 4) >= 5 ? 128 : 64;
+    int vags = addr[0x16];
+    const u8 *sizes = addr + 0x20 + programs * 16 + Read16(addr + 0x12) * 16 * 32;
+    u32 end = 0;
+    int i, block = 0;
+
+    for (i = 0; i < programs; i++) {
+        Write16(prog + i * 16 + 8, block);
+        Write16(prog + i * 16 + 10, 0);
+        block += prog[i * 16] != 0;
+    }
+    for (i = 0; i <= vags; i++) {
+        end += (u32)Read16(sizes + i * 2) << (Read16(addr + 4) >= 5 ? 3 : 2);
+        Write16(prog + i / 2 * 16 + (i & 1 ? 14 : 12), (base + end) >> 3);
+    }
+}
+
 s32 SsVabOpenHead(u8 *addr, s32 vabId)
 {
     Vab *vab;
@@ -100,6 +133,7 @@ s32 SsVabOpenHead(u8 *addr, s32 vabId)
         vab->vag[i] = at;
         at += (u32)Read16(sizes + i * 2) << 3;
     }
+    WriteProgramFields(addr, vab->base);
     return vabId;
 }
 
