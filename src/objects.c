@@ -15075,7 +15075,7 @@ __asm__(
 #include "port_m2c.h"
 
 void func_800373B4(Car *arg0) {
-    extern u8 port_D_8008D0F8 __asm__("D_8008D0F8");
+    extern u8 port_D_8008D0F8[] __asm__("D_8008D0F8");
     extern s32 port_D_800A2E4C __asm__("D_800A2E4C");
     extern s32 port_D_800A2E90 __asm__("D_800A2E90");
     extern s32 port_D_800A2E94 __asm__("D_800A2E94");
@@ -15108,8 +15108,8 @@ void func_800373B4(Car *arg0) {
     extern s32 port_gCosTable __asm__("gCosTable");
     extern s32 port_gSinTable __asm__("gSinTable");
     extern void *port_D_800A3A64 __asm__("D_800A3A64");
-    extern u8 port_D_800AE154 __asm__("D_800AE154");
-    extern u8 port_D_800B1EA8 __asm__("D_800B1EA8");
+    extern u8 port_D_800AE154[] __asm__("D_800AE154");
+    extern u8 port_D_800B1EA8[] __asm__("D_800B1EA8");
     extern s32 port_gTrackSectionCount __asm__("gTrackSectionCount");
     extern s32 port_gTrackSections __asm__("gTrackSections");
     extern void port_CarResetMotionCounters(void *) __asm__(

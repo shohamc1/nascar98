@@ -2187,7 +2187,7 @@ void func_80060FD8(void) {
     extern s32 port_D_8009A314 __asm__("D_8009A314");
     extern s32 port_D_8009AC00 __asm__("D_8009AC00");
     extern s32 port_D_8009AC08 __asm__("D_8009AC08");
-    extern u8 port_D_8009AC10 __asm__("D_8009AC10");
+    extern u8 port_D_8009AC10[] __asm__("D_8009AC10");
     extern u16 port_D_8009AEA0 __asm__("D_8009AEA0");
     extern u16 port_D_8009AEA2 __asm__("D_8009AEA2");
     extern u16 port_D_8009AEA4 __asm__("D_8009AEA4");
@@ -2195,19 +2195,19 @@ void func_80060FD8(void) {
     extern u8 port_D_8009AEA8 __asm__("D_8009AEA8");
     extern u8 port_D_8009AEAA __asm__("D_8009AEAA");
     extern u16 port_D_8009AEAC __asm__("D_8009AEAC");
-    extern u8 port_D_8009AEB2 __asm__("D_8009AEB2");
-    extern u8 port_D_800A3348 __asm__("D_800A3348");
+    extern u8 port_D_8009AEB2[] __asm__("D_8009AEB2");
+    extern u8 port_D_800A3348[] __asm__("D_800A3348");
     extern u8 port_gMenuObjectPoolCount __asm__("gMenuObjectPoolCount");
     extern u8 port_D_800A3644 __asm__("D_800A3644");
     extern s32 port_D_800A3654 __asm__("D_800A3654");
     extern s32 port_gMenuObjectPool __asm__("gMenuObjectPool");
     extern u8 port_D_800A37BC __asm__("D_800A37BC");
-    extern u8 port_gPadPictureMenuLists __asm__("gPadPictureMenuLists");
+    extern u8 port_gPadPictureMenuLists[] __asm__("gPadPictureMenuLists");
     extern void *port_D_800A37F8 __asm__("D_800A37F8");
-    extern u8 port_D_800A37FC __asm__("D_800A37FC");
-    extern u8 port_D_800A3888 __asm__("D_800A3888");
-    extern u8 port_D_800A3A1C __asm__("D_800A3A1C");
-    extern u8 port_D_800A3A84 __asm__("D_800A3A84");
+    extern u8 port_D_800A37FC[] __asm__("D_800A37FC");
+    extern u8 port_D_800A3888[] __asm__("D_800A3888");
+    extern u8 port_D_800A3A1C[] __asm__("D_800A3A1C");
+    extern u8 port_D_800A3A84[] __asm__("D_800A3A84");
     s32 port_frame[38];
 #define sp20 (*(u8 *)((u8 *)port_frame + 0x20))
 #define sp28 (*(s32 *)((u8 *)port_frame + 0x28))
