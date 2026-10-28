@@ -127,7 +127,30 @@ class FilterSource(unittest.TestCase):
 
     def test_static_string_made_global(self) -> None:
         text = 'static const char sDanaTitle[] = "DANA*";\n'
-        self.assertEqual(self.run_filter(text), '__attribute__((used)) const char sDanaTitle[] = "DANA*";\n')
+        self.assertEqual(
+            self.run_filter(text),
+            '__attribute__((used)) const char sDanaTitle[] __attribute__((aligned(4))) = "DANA*";\n',
+        )
+
+    def test_byte_array_word_aligned(self) -> None:
+        # GCC 2.7.2's MIPS DATA_ALIGNMENT puts a global byte array on a word.
+        text = (
+            'char gDanaName[4] = "A";\n'
+            "u8 D_800A2FA8[8] = {0};\n"
+            "static s8 sQuinn[] = {1, 2};\n"
+            "u8 gGrid[4][3];\n"
+            "s16 gWidths[2];\n"
+            "    u8 text[24];\n"
+        )
+        self.assertEqual(
+            self.run_filter(text),
+            'char gDanaName[4] __attribute__((aligned(4))) = "A";\n'
+            "u8 D_800A2FA8[8] __attribute__((aligned(4))) = {0};\n"
+            "static s8 sQuinn[] __attribute__((aligned(4))) = {1, 2};\n"
+            "u8 gGrid[4][3];\n"
+            "s16 gWidths[2];\n"
+            "    u8 text[24];\n",
+        )
 
     def test_empty_loop_polls(self) -> None:
         text = (

@@ -33,8 +33,11 @@ ELF   := build/slus_005.21.elf
 UNDEF := build/undefined_syms_auto.txt
 
 # The game writes the same memory through different pointer types (the
-# scratchpad as s32 and u16 words), as GCC 2.7.2 allowed.
+# scratchpad as s32 and u16 words), as GCC 2.7.2 allowed. It also reads
+# past one global into the next, so globals set to 0 stay in .data beside
+# their neighbours, as GCC 2.7.2 put them, and the link keeps them all.
 WASM_CFLAGS := --target=wasm32 -O2 -std=gnu89 -DNATIVE=1 -ffreestanding -fno-builtin -fno-strict-aliasing \
+               -fno-zero-initialized-in-bss \
                -nostdlibinc -Wno-incompatible-pointer-types -Wno-int-conversion \
                -Wno-incompatible-function-pointer-types \
                -ferror-limit=0 -include port_asm.h -Iport/include -I$(PORT)/include -Iinclude -Ibuild
@@ -56,7 +59,7 @@ DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s \
 WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
                 --max-memory=2151677952 -z stack-size=262144 --no-stack-first --no-entry \
                 --export=PortStart --export=gPortCallRing \
-                --export=gPortCallNext --fatal-warnings
+                --export=gPortCallNext --no-gc-sections --fatal-warnings
 
 .PHONY: objects undefined module nascar98 run run-headless FORCE
 

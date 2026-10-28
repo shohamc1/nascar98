@@ -49,6 +49,9 @@ Rules, applied in order:
      busy-waits for flags that interrupts set, and the port's interrupts
      only happen inside SDK calls. `do {} while (0);` is a scheduling
      barrier, not a wait, and stays as it is.
+ 12. Word-align each file-scope byte array, as GCC 2.7.2's MIPS
+     DATA_ALIGNMENT does: the game reads past one global into the next,
+     so globals must keep their retail neighbours.
 """
 
 import argparse
@@ -68,6 +71,10 @@ OFFSET = r"[+-](?:0x[0-9A-Fa-f]+|\d+)"
 
 EMPTY_LOOP = re.compile(r"\b(while \([^;{}]*\)|do) \{\s*\}(?! while \(0\);)")
 STATIC_STRING = re.compile(r"^static const char (?=\w+\[)", re.M)
+BYTE_ARRAY = re.compile(
+    r"^((?:__attribute__\(\(used\)\) |static )?(?:const )?(?:char|u8|s8|unsigned char|signed char) \w+\[[^\]]*\])(?= *[=;])",
+    re.M,
+)
 DEFSYM = re.compile(rf"--defsym=({NAME})=({NAME})({OFFSET})?")
 ASSIGN = re.compile(rf"^\s*({NAME})\s*=\s*({NAME})\s*({OFFSET})?\s*$")
 ABSOLUTE = re.compile(r"^\s*(\w+)\s*=\s*(0x[0-9A-Fa-f]+)\s*;", re.M)
@@ -752,7 +759,7 @@ def fixed_label(m: re.Match, aliases: dict[str, Alias], absolutes: dict[str, Pla
 def filter_source(
     text: str, aliases: dict[str, Alias], absolutes: dict[str, Placement], functions: set[str] = frozenset()
 ) -> str:
-    """Apply rules 1 to 4, 10, and 11 of the module docstring to one source file."""
+    """Apply rules 1 to 4, and 10 to 12, of the module docstring to one source file."""
     text = HACK.sub(hack_data, text)
     text = FIXED_LABEL.sub(lambda m: fixed_label(m, aliases, absolutes), text)
     for start, end in reversed(asm_statements(text)):
@@ -768,6 +775,7 @@ def filter_source(
             text = text[:start] + indent + c + newline + text[end:]
     text = PIN.sub(r"\1", text)
     text = STATIC_STRING.sub("__attribute__((used)) const char ", text)
+    text = BYTE_ARRAY.sub(r"\1 __attribute__((aligned(4)))", text)
     text = EMPTY_LOOP.sub(r"\1 { PortPoll(); }", text)
     text = drop_barrier_clobbers(text)
     text = LABEL.sub(lambda m: map_label(m, aliases), text)

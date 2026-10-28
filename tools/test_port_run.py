@@ -4,6 +4,7 @@ Each test skips when the runner or the disc is missing.
 """
 
 import os
+import re
 import pathlib
 import subprocess
 import tempfile
@@ -39,6 +40,41 @@ def magenta_pixels(path: pathlib.Path) -> int:
     with Image.open(path) as image:
         rgb = image.convert("RGB").tobytes()
     return sum(1 for i in range(0, len(rgb), 3) if rgb[i] > 200 and rgb[i + 1] < 60 and rgb[i + 2] > 200)
+
+
+MAP = ROOT / "build/port/nascar98.map"
+
+
+def retail_addresses() -> dict[str, int]:
+    text = (ROOT / "config/symbol_addrs.txt").read_text()
+    return {m[1]: int(m[2], 16) for m in re.finditer(r"^(\w+) = 0x([0-9A-Fa-f]+);", text, re.M)}
+
+
+def port_addresses() -> dict[str, int]:
+    found = {}
+    for line in MAP.read_text().splitlines():
+        parts = line.split()
+        if len(parts) == 4 and re.fullmatch(r"[0-9a-f]{8}", parts[0]):
+            found[parts[3]] = int(parts[0], 16)
+    return found
+
+
+@unittest.skipUnless(MAP.exists(), "no link map: make -f port/port.mk nascar98")
+class Layout(unittest.TestCase):
+    def test_globals_keep_retail_neighbours(self) -> None:
+        # The game reads past one global into the next, as GCC laid them
+        # out: FontDrawString takes glyph widths from D_800A2D88[scale].
+        retail, port = retail_addresses(), port_addresses()
+        names = re.findall(r"^[A-Za-z_][\w ]*?\b(\w+)(?:\[[^\]]*\])* = ", (ROOT / "src/globals.c").read_text(), re.M)
+        moved = []
+        for a, b in zip(names, names[1:]):
+            ra = int(a[2:], 16) if re.fullmatch(r"D_[0-9A-F]{8}", a) else retail.get(a)
+            rb = int(b[2:], 16) if re.fullmatch(r"D_[0-9A-F]{8}", b) else retail.get(b)
+            if ra is None or rb is None or not 0 < rb - ra <= 16:
+                continue
+            if a not in port or b not in port or port[b] - port[a] != rb - ra:
+                moved.append(f"{a} -> {b}")
+        self.assertEqual(moved, [])
 
 
 @unittest.skipUnless(RUNNER.exists(), "no runner: make -f port/port.mk nascar98")
