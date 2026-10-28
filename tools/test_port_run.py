@@ -222,9 +222,16 @@ class Run(unittest.TestCase):
             # Subdivided road quads take a corner UV from the scratchpad. When
             # the port reorders the game's s32 and u16 stores there, the
             # corner reads past the tile into white (0x7FFF) texels.
+            # The player's car, whose logo is white, sits in x 80 to 224,
+            # y 100 to 199.
             with Image.open(shot) as image:
-                rgb = image.convert("RGB").crop((0, 80, 320, 240)).tobytes()
-            white = sum(1 for i in range(0, len(rgb), 3) if rgb[i : i + 3] == b"\xf8\xf8\xf8")
+                rgb = image.convert("RGB")
+                white = sum(
+                    1
+                    for y in range(80, 240)
+                    for x in range(320)
+                    if not (80 <= x < 225 and 100 <= y < 200) and rgb.getpixel((x, y)) == (248, 248, 248)
+                )
             self.assertLess(white, WHITE_LIMIT, "white texels on the road")
 
     def test_watchdog_fires(self) -> None:

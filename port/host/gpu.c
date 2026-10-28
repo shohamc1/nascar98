@@ -33,6 +33,7 @@ typedef struct {
 static SDL_Window *sWindow;
 static SDL_Renderer *sRenderer;
 static SDL_Surface *sHeadlessSurface;
+static SDL_Window *sHiddenWindow; /* headless: a GPU renderer, for its blend modes */
 static SDL_Texture *sTarget;
 static SDL_Texture *sScratch;
 static SDL_Texture *sUpload; /* the VRAM shadow as XBGR1555, for uploads */
@@ -150,8 +151,16 @@ int GpuInit(int scale, int headless)
 {
     sScale = scale < 1 ? 1 : scale;
     if (headless) {
-        sHeadlessSurface = SDL_CreateSurface(4, 4, SDL_PIXELFORMAT_RGBA8888);
-        sRenderer = sHeadlessSurface ? SDL_CreateSoftwareRenderer(sHeadlessSurface) : NULL;
+        /* SDL's software renderer can't subtract (blend mode 2): use it
+         * only without a video device. */
+        if (SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+            sHiddenWindow = SDL_CreateWindow("NASCAR 98", 320, 240, SDL_WINDOW_HIDDEN);
+            sRenderer = sHiddenWindow ? SDL_CreateRenderer(sHiddenWindow, NULL) : NULL;
+        }
+        if (!sRenderer) {
+            sHeadlessSurface = SDL_CreateSurface(4, 4, SDL_PIXELFORMAT_RGBA8888);
+            sRenderer = sHeadlessSurface ? SDL_CreateSoftwareRenderer(sHeadlessSurface) : NULL;
+        }
     } else {
         if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
             fprintf(stderr, "nascar98: SDL video: %s\n", SDL_GetError());
@@ -208,11 +217,15 @@ void GpuShutdown(void)
     if (sWindow) {
         SDL_DestroyWindow(sWindow);
     }
+    if (sHiddenWindow) {
+        SDL_DestroyWindow(sHiddenWindow);
+    }
     if (sHeadlessSurface) {
         SDL_DestroySurface(sHeadlessSurface);
     }
     sRenderer = NULL;
     sWindow = NULL;
+    sHiddenWindow = NULL;
     sHeadlessSurface = NULL;
 }
 

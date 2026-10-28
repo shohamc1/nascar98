@@ -194,6 +194,29 @@ class Gpu(unittest.TestCase):
             "    if ((px & 0xFF) < 0xBE || (px & 0xFF) > 0xC2) return 3;\n"
         )
 
+    def test_headless_subtracts(self) -> None:
+        # Blend mode 2 subtracts: skid marks darken the road a little.
+        # SDL's software renderer can't, so headless runs need a GPU one.
+        self.check(
+            "    uint32_t *p;\n"
+            "    if (GpuInit(1, 1)) return 1;\n"
+            "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
+            "    p = W(BASE + 0x100);\n"
+            "    p[0] = 0x0AFFFFFFu;\n"
+            "    p[1] = 0xE3000000u;\n"
+            "    p[2] = 0xE4000000u | (239 << 10) | 319;\n"
+            "    p[3] = 0x60383838u;                 /* grey tile */\n"
+            "    p[4] = (10 << 16) | 10;\n"
+            "    p[5] = (20 << 16) | 20;\n"
+            "    p[6] = 0xE1000000u | 2 << 5;        /* B - F */\n"
+            "    p[7] = 0x62080808u;                 /* semi-transparent tile */\n"
+            "    p[8] = (10 << 16) | 10;\n"
+            "    p[9] = (20 << 16) | 20;\n"
+            "    p[10] = 0;\n"
+            "    GpuDrawPrim(BASE + 0x100);\n"
+            "    if ((GpuTargetPixel(15, 15) & 0xFFFFFF) != 0x303030u) return 2;\n"
+        )
+
     def test_oversized_polygon_skipped(self) -> None:
         # The GPU skips a polygon more than 1023 wide or 511 tall: games
         # rely on it for vertices projected from behind the camera.
