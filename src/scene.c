@@ -8751,8 +8751,14 @@ loop2:
     {
         register s16 *c asm("$5");
 
+#ifdef NATIVE
+        /* Retail's spelling below adds coords to a null-based pointer,
+         * which clang may drop as undefined behaviour. */
+        c = (s16 *)coords + i;
+#else
         c = (s16 *)(i * 2);
         c = (s16 *)((u8 *)c + (s32)coords);
+#endif
         c[0] = ((arg0->pos.x + vec.vx) >> 2) - ref[0];
         c[4] = ((arg0->pos.y + vec.vy) >> 2) - ref[1];
         c[8] = ((arg0->pos.z + vec.vz) >> 2) - ref[2];

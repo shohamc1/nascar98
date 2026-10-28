@@ -77,6 +77,35 @@ class Layout(unittest.TestCase):
         self.assertEqual(moved, [])
 
 
+SCRATCHPAD = range(0x1F800000, 0x1F800400)
+
+
+@unittest.skipUnless((ROOT / "build/port/src").exists(), "no filtered sources: make -f port/port.mk objects")
+class UndefinedBehaviour(unittest.TestCase):
+    def test_no_pointer_arithmetic_from_null(self) -> None:
+        # GCC 2.7.2 adds to a null-based pointer as it would to any other;
+        # clang marks the result poison and may drop the stores through it
+        # (func_800525A8's skid marks read stale stack). Only scratchpad
+        # addresses may serve as an integer base.
+        import emu_swap
+
+        found = []
+        with tempfile.TemporaryDirectory() as tmp:
+            for src in sorted((ROOT / "build/port/src").glob("*.c")):
+                extra = ["-include", "port_prelude.h"] if src.stem == "memory_card" else []
+                ir = pathlib.Path(tmp) / f"{src.stem}.ll"
+                cmd = [str(emu_swap.LLVM / "clang"), "--target=wasm32", *emu_swap.CFLAGS, *extra, "-S", "-emit-llvm", str(src), "-o", str(ir)]
+                subprocess.run(cmd, cwd=ROOT, check=True, capture_output=True)
+                func = None
+                for line in ir.read_text().splitlines():
+                    if m := re.match(r"define .*@(\w+)\(", line):
+                        func = m[1]
+                    m = re.search(r"getelementptr inbounds[^,]*, ptr (null|inttoptr \(i32 (\d+) to ptr\)), i32 %", line)
+                    if m and (m[2] is None or int(m[2]) not in SCRATCHPAD):
+                        found.append(f"{src.stem}: {func}")
+        self.assertEqual(sorted(set(found)), [])
+
+
 @unittest.skipUnless(RUNNER.exists(), "no runner: make -f port/port.mk nascar98")
 @unittest.skipUnless(TRACK1.exists(), "no disc")
 class Run(unittest.TestCase):
