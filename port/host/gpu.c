@@ -2,8 +2,9 @@
  * The host's PlayStation GPU (see gpu.h). Primitives draw with
  * SDL_RenderGeometry into a render target covering all of VRAM at
  * sScale times its size; textures decode from the 16-bit VRAM shadow.
- * Enhanced, not bit-exact: no dithering, mask bit, or texture window,
- * and colour modulation above 1.0 (vertex colour > 0x80) clamps.
+ * Enhanced, not bit-exact: no dithering, mask bit, or texture window.
+ * Texture modulation above 1.0 (vertex colour > 0x80) draws as a second,
+ * additive pass of the excess.
  */
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -395,9 +396,10 @@ static SDL_FColor Color(uint32_t word, int textured, int raw, float alpha)
     } else {
         float scale = textured ? 1.0f / 128.0f : 1.0f / 255.0f;
 
-        c.r = SDL_min((word & 0xFF) * scale, 1.0f);
-        c.g = SDL_min(((word >> 8) & 0xFF) * scale, 1.0f);
-        c.b = SDL_min(((word >> 16) & 0xFF) * scale, 1.0f);
+        /* Up to 2.0 when textured; Emit splits off the part above 1.0. */
+        c.r = (word & 0xFF) * scale;
+        c.g = ((word >> 8) & 0xFF) * scale;
+        c.b = ((word >> 16) & 0xFF) * scale;
     }
     c.a = alpha;
     return c;
@@ -421,7 +423,7 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
     SDL_Vertex out[6];
     SDL_Texture *replacement = NULL;
     SDL_FRect area;
-    int i, k, pass, ratio = 4 >> sDepth;
+    int i, k, pass, ratio = 4 >> sDepth, bright = 0;
 
     if (textured) {
         float u0 = v[0].u, u1 = v[0].u, v0 = v[0].v, v1 = v[0].v;
@@ -439,6 +441,7 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
         SDL_Texture *tex = replacement;
         SDL_BlendMode mode = sOpaqueBlend;
         float alpha = 1.0f;
+        int blended = semi && (!textured || replacement || pass == 1);
 
         if (textured && !replacement) {
             /* Semi-transparent textured: STP-less texels first, opaque. */
@@ -449,7 +452,7 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
                 return;
             }
         }
-        if (semi && (!textured || replacement || pass == 1)) {
+        if (blended) {
             mode = sSemiBlend[sAbr];
             alpha = sAbr == 0 ? 0.5f : sAbr == 3 ? 0.25f : 1.0f;
         }
@@ -458,8 +461,11 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
 
             out[k].position.x = (float)(s->x * sScale);
             out[k].position.y = (float)(s->y * sScale);
-            out[k].color = s->color;
-            out[k].color.a *= alpha;
+            out[k].color.r = SDL_min(s->color.r, 1.0f);
+            out[k].color.g = SDL_min(s->color.g, 1.0f);
+            out[k].color.b = SDL_min(s->color.b, 1.0f);
+            out[k].color.a = s->color.a * alpha;
+            bright |= s->color.r > 1.0f || s->color.g > 1.0f || s->color.b > 1.0f;
             if (replacement) {
                 out[k].tex_coord.x = (sPageX + s->u / ratio - area.x) / area.w;
                 out[k].tex_coord.y = (sPageY + s->v - area.y) / area.h;
@@ -473,6 +479,19 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
         } else {
             SDL_SetRenderDrawBlendMode(sRenderer, mode);
         }
+        SDL_RenderGeometry(sRenderer, tex, out, n == 4 ? 6 : 3, NULL, 0);
+        if (!bright || !tex) {
+            continue;
+        }
+        /* Add texel * (colour - 1.0), weighted and signed as the first pass. */
+        for (k = 0; k < (n == 4 ? 6 : 3); k++) {
+            const Vertex *s = &v[n == 4 ? quad[k] : k];
+
+            out[k].color.r = SDL_max(s->color.r - 1.0f, 0.0f);
+            out[k].color.g = SDL_max(s->color.g - 1.0f, 0.0f);
+            out[k].color.b = SDL_max(s->color.b - 1.0f, 0.0f);
+        }
+        SDL_SetTextureBlendMode(tex, sSemiBlend[blended && sAbr == 2 ? 2 : 1]);
         SDL_RenderGeometry(sRenderer, tex, out, n == 4 ? 6 : 3, NULL, 0);
     }
 }

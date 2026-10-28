@@ -166,6 +166,34 @@ class Gpu(unittest.TestCase):
         )
 
 
+    def test_colour_above_0x80_brightens_texels(self) -> None:
+        # Colour 0x80 leaves a texel as it is; 0xC0 makes it 1.5 times
+        # brighter. The HUD labels use 0xC0 blue.
+        self.check(
+            "    uint32_t *p;\n"
+            "    uint16_t *v;\n"
+            "    int x, y;\n"
+            "    unsigned px;\n"
+            "    if (GpuInit(1, 1)) return 1;\n"
+            "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
+            "    v = GpuVram();\n"
+            "    for (y = 0; y < 8; y++)\n"
+            "        for (x = 0; x < 8; x++) v[y * 1024 + 640 + x] = 0x4210; /* grey 128 */\n"
+            "    p = W(BASE + 0x100);\n"
+            "    p[0] = 0x07FFFFFFu;\n"
+            "    p[1] = 0xE3000000u;\n"
+            "    p[2] = 0xE4000000u | (239 << 10) | 319;\n"
+            "    p[3] = 0xE1000000u | 2 << 7 | 10;   /* page (640, 0), 15-bit */\n"
+            "    p[4] = 0x64C08080u;                 /* textured sprite */\n"
+            "    p[5] = (20 << 16) | 10;\n"
+            "    p[6] = 0;\n"
+            "    p[7] = (8 << 16) | 8;\n"
+            "    GpuDrawPrim(BASE + 0x100);\n"
+            "    px = GpuTargetPixel(12, 22) & 0xFFFFFF;\n"
+            "    if (px >> 16 != 0x80 || (px >> 8 & 0xFF) != 0x80) return 2;\n"
+            "    if ((px & 0xFF) < 0xBE || (px & 0xFF) > 0xC2) return 3;\n"
+        )
+
     def test_oversized_polygon_skipped(self) -> None:
         # The GPU skips a polygon more than 1023 wide or 511 tall: games
         # rely on it for vertices projected from behind the camera.
