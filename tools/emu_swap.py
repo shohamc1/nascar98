@@ -11,6 +11,13 @@ the EXE is in RAM, it writes a hook over the start of RaceUpdateFrame,
 which runs once a game frame. The hook stops the CPU until the frontend
 has hashed RAM, so every sync point reads RAM at the same instruction.
 
+--hook VSync syncs on every VSync(0) instead, from boot through the menus
+and back. It skips the calls from WAIT_LOOPS, whose count depends on the
+CD, and the stall locks each game frame to an emulator frame, so the pad
+script keeps the emulator's frames (--sync-frames 0). A CD sector that
+lands a few cycles later still differs for a sync or two: a difference
+counts only once it lasts --persist syncs.
+
 With --swap, the function's code in the port (the filtered source in
 build/port/src/, #ifdef NATIVE bodies included) is compiled for MIPS I
 with clang, linked against the retail ELF's symbols, and jumped to from
@@ -39,8 +46,16 @@ EXE = ROOT / "build/SLUS_005.21"
 WORK = ROOT / "build/swap"
 SWAP_BASE = 0x801F6000  # to 0x801FD000: zero for a whole race
 SWAP_LIMIT = 0x801FD000
+HEAP_LIMIT = 0x801F6000  # HeapAlloc's ceiling (include/memory_map.h)
 SYNC_FLAG = SWAP_BASE
 HOOK_SITE = "RaceUpdateFrame"
+# With --hook VSync, the waits that loop on the CD or a stream, and the
+# movie player: their VSync count depends on how fast the code ran, so
+# they don't sync.
+WAIT_LOOPS = ["FileOpen", "FileRead", "FileLoadToHeap", "CdLoadFileByIndex", "GraphicsLoadImagePointerTable",
+              "func_8006F200", "MdecStreamShutdown", "VideoSwapDisplayAndDrawEnvironments", "MoviePlay",
+              "func_800703D0", "func_8007012C", "func_80071BE8"]  # fmt: skip
+SKIP_CALLERS: list[str] = []
 PAGE = 0x1000
 # RAM that changes with how long the code took, not with what it did: the
 # BIOS's interrupt context, game.c's frame timer (D_800A3708, D_800A370C,
@@ -53,13 +68,21 @@ PAGE = 0x1000
 # sets (old stack), and what the VBlank interrupt counts or fills: the
 # hook waits for a frame boundary, so a run that reaches it a few cycles
 # later sees one more VBlank (libetc's D_8009BDC4 and D_8009CE84, libgpu's
-# D_8009DBA8, libsnd's voice state from _svm_sreg_buf to _svm_envx_hist,
-# which its VSync callback updates, and gPadBuffers).
+# alarm and its poll count, D_8009DBA8 and D_8009DBAC, libsnd's voice state from _svm_sreg_buf to _svm_envx_hist,
+# which its VSync callback updates, and gPadBuffers), and what the menus'
+# VBlank event callbacks animate (D_800A3930, D_800A3760, D_800A3940,
+# D_800A3A44, and the display bank D_800A36A0): they skip a VBlank while
+# the GPU is still drawing. libspu's D_800A26A4 counts polls of the SPU.
+# libgpu queues a command only while the GPU is busy (its ring indices
+# D_8009DB94 to D_8009DBA0, and the ring at D_800BC54C), and run entries
+# stay in the ring.
 TIMING = [
-    (0x8009CE84, 0x8009CE88), (0x8009DBA8, 0x8009DBAC), (0x800AD224, 0x800AD8E4), (0x800B9DF4, 0x800B9E0C),
+    (0x8009CE84, 0x8009CE88), (0x8009DBA8, 0x8009DBB0), (0x800AD224, 0x800AD8E4), (0x800B9DF4, 0x800B9E0C),
     (0x800A3708, 0x800A3710), (0x800B9D54, 0x800B9DA4), (0x800A38A0, 0x800A38A4), (0x8009BDC0, 0x8009BE04), (0x8009BDC8, 0x8009BE04),
     (0x8009BE04, 0x8009CE30), (0x8009BDA0, 0x8009BDAC), (0x800A4544, 0x800A4548), (0x80000000, 0x80010000), (0x800A2D00, 0x800A2D04), (0x800A370C, 0x800A3710),
-    (0x8009BA7C, 0x8009BAA0), (0x800A8CB8, 0x800A8CD8),
+    (0x8009BA7C, 0x8009BAA0), (0x800A8CB8, 0x800A8CD8), (0x800A3930, 0x800A3934),
+    (0x800A3760, 0x800A3764), (0x800A3940, 0x800A3944), (0x800A3A44, 0x800A3A48),
+    (0x800A36A0, 0x800A36A1), (0x800A26A4, 0x800A26A8), (0x8009DB94, 0x8009DBA4), (0x800BC54C, 0x800BDD4C),
 ]  # fmt: skip
 LLVM = pathlib.Path(subprocess.run(["brew", "--prefix", "llvm"], capture_output=True, text=True).stdout.strip()) / "bin"
 TARGET = ["--target=mipsel-unknown-none-elf", "-march=mips1", "-mabi=32", "-mno-abicalls", "-fno-pic", "-G0", "-mno-check-zero-division"]
@@ -277,8 +300,20 @@ swap_count: .word 0
 swap_calls: .space 4 * MAX_SWAPS
 swap_sp: .word swap_stack
 swap_stack: .space 32 * 16
+swap_armed: .word 1     # 0: run straight through (--arm-frame)
+swap_ra: .word 0        # the syncing call's return address, for syncs.txt
     .globl swap_hook
 swap_hook:
+    la $t0, swap_armed
+    lw $t0, 0($t0)
+    nop
+    beqz $t0, 2f
+    nop
+    bnez $a0, 2f        # VSync(-1) and the like poll; only VSync(0) waits
+    nop
+    # SKIP_CALLERS
+    la $t0, swap_ra
+    sw $ra, 0($t0)
     lui $t0, 0x{SYNC_FLAG >> 16:04x}
     ori $t0, $t0, 0x{SYNC_FLAG & 0xFFFF:04x}
     lw $t1, 4($t0)
@@ -311,6 +346,11 @@ FLUSH = SYNC_FLAG + 8  # set by the frontend after it patches code
 def nm(path: pathlib.Path) -> dict[str, int]:
     out = subprocess.run(["mipsel-linux-gnu-nm", str(path)], capture_output=True, text=True, check=True).stdout
     return {f[2]: int(f[0], 16) for f in (line.split() for line in out.splitlines()) if len(f) == 3}
+
+
+def function_sizes() -> dict[str, int]:
+    out = subprocess.run(["mipsel-linux-gnu-nm", "-S", str(ELF)], capture_output=True, text=True).stdout
+    return {f[3]: int(f[1], 16) for f in (line.split() for line in out.splitlines()) if len(f) == 4}
 
 
 def exe_words(address: int, count: int) -> bytes:
@@ -440,9 +480,14 @@ def build(funcs: list[str], symbols: dict[str, int], soft_gte: bool = False, che
             lines += [f"j swap_impl_{func}", "nop"]
     for name in wraps:
         lines += gte_stub(f"__wrap_{name}", f"__real_{name}", "swap_gte_out", "swap_gte_in")
-    (WORK / "hook.s").write_text(HOOK_S + "".join(f"    {line}\n" for line in lines))
+    sizes = function_sizes()
+    ranges = {name: (symbols[name], symbols[name] + sizes[name]) for name in SKIP_CALLERS}
+    # A swapped wait loop runs from the swap area: its range is known
+    # after a first link, which a same-sized second hook then uses.
+    own_waits = [name for name in SKIP_CALLERS if name in funcs]
+    swapped = {name: (0, 0) for name in own_waits}
+    tail = lines
     objects.insert(0, WORK / "hook.o")
-    run([str(LLVM / "clang"), *TARGET, "-c", str(WORK / "hook.s"), "-o", str(objects[0])])
     script = WORK / "swap.ld"
     lines = [f'PROVIDE("{name}" = 0x{address:08X});' for name, address in symbols.items()]
     lines += [
@@ -458,7 +503,24 @@ def build(funcs: list[str], symbols: dict[str, int], soft_gte: bool = False, che
     script.write_text("\n".join(lines) + "\n")
     elf = WORK / "swap.elf"
     wrap_flags = [f"--wrap={name}" for name in wraps]
-    run(["mipsel-linux-gnu-ld", "-T", str(script), "-e", "swap_hook", *wrap_flags, "-o", str(elf), *map(str, objects)])
+    for _ in range(2 if own_waits else 1):
+        skip = []
+        for lo, hi in [*ranges.values(), *swapped.values()]:
+            # 2f: run straight through when $ra is inside
+            skip += [f"lui $t1, 0x{lo >> 16:04x}", f"ori $t1, $t1, 0x{lo & 0xFFFF:04x}", "sltu $t2, $ra, $t1",
+                     "bnez $t2, 3f", "nop", f"lui $t1, 0x{hi >> 16:04x}", f"ori $t1, $t1, 0x{hi & 0xFFFF:04x}",
+                     "sltu $t2, $ra, $t1", "bnez $t2, 2f", "nop", "3:"]  # fmt: skip
+        hook = HOOK_S.replace("    # SKIP_CALLERS\n", "".join(f"    {line}\n" for line in skip))
+        (WORK / "hook.s").write_text(hook + "".join(f"    {line}\n" for line in tail))
+        run([str(LLVM / "clang"), *TARGET, "-c", str(WORK / "hook.s"), "-o", str(objects[0])])
+        run(["mipsel-linux-gnu-ld", "-T", str(script), "-e", "swap_hook", *wrap_flags, "-o", str(elf), *map(str, objects)])
+        # Sizes aren't always in the symbol table: a function ends where
+        # the next symbol starts.
+        linked = subprocess.run(["mipsel-linux-gnu-nm", "-n", str(elf)], capture_output=True, text=True).stdout
+        rows = [(int(f[0], 16), f[-1]) for f in (line.split() for line in linked.splitlines()) if len(f) == 3]
+        for (start, name), (end, _) in zip(rows, rows[1:]):
+            if name.removeprefix("swap_impl_") in swapped:
+                swapped[name.removeprefix("swap_impl_")] = (start, end)
     copies = subprocess.run(["mipsel-linux-gnu-nm", "-S", str(elf)], capture_output=True, text=True).stdout
     mutable = [line for line in copies.splitlines() if re.match(r"\S+ \S+ [dDbB] ", line) and line.split()[-1] not in own]
     if mutable:
@@ -491,6 +553,27 @@ def sound_ranges() -> list[tuple[int, int]]:
     return ranges
 
 
+def dead_heap(ram: bytes, symbols: dict[str, int]) -> list[tuple[int, int]]:
+    """HeapAlloc's free blocks and the space past its break: what a freed
+    buffer held there (a movie's, say) depends on timing until reused."""
+    word = lambda a: struct.unpack_from("<I", ram, a - ec.RAM_BASE)[0]
+    block, brk = word(symbols["gHeapBase"]), word(symbols["gHeapBreak"])
+    if not (ec.RAM_BASE <= block <= brk <= HEAP_LIMIT):
+        return []
+    dead = [(brk, HEAP_LIMIT)]
+    while block < brk:
+        size = word(block) & ~1
+        if word(block) & 1:
+            dead.append((block + 4, block + 4 + size))
+        block += size + 4
+    return dead
+
+
+def baseline_frames(baseline: str) -> list[int]:
+    path = pathlib.Path(baseline) / "syncs.txt"
+    return [int(line.split()[1]) for line in path.read_text().splitlines()] if path.exists() else []
+
+
 def page_hashes(ram: bytes) -> bytes:
     out = bytearray()
     for offset in range(0, ec.RAM_SIZE, PAGE):
@@ -500,7 +583,9 @@ def page_hashes(ram: bytes) -> bytes:
 
 
 def run_swap(args: argparse.Namespace) -> None:
-    global WORK
+    global WORK, HOOK_SITE, SKIP_CALLERS
+    HOOK_SITE = args.hook
+    SKIP_CALLERS = WAIT_LOOPS if args.hook == "VSync" else []
     if args.work:  # parallel runs each need their own
         WORK = pathlib.Path(args.work).resolve()
     out = pathlib.Path(args.out)
@@ -515,12 +600,25 @@ def run_swap(args: argparse.Namespace) -> None:
     baseline = (pathlib.Path(args.baseline) / "hashes.bin").read_bytes() if args.baseline else None
     dump_syncs = {int(k) for k in args.dump_syncs.split(",")} if args.dump_syncs else set()
     hashes = open(out / "hashes.bin", "wb")
+    trace = open(out / "syncs.txt", "w")
     # Overclocking keeps slow swapped code inside the frame: a frame that
     # overran would change the VBlank counts the game reads.
     emu = ec.Emulator(args.core, args.bios, args.pad, out, {"beetle_psx_cpu_freq_scale": f"{args.overclock}%"})
     patched, sync, previous, stop, first_sync = False, 0, None, None, None
+    streak, transients = None, []  # the first sync of the current run of differences
+    last_sync, offset = None, 0
+    hold = args.hook == "VSync" and not args.sync_frames
+    # The baseline's frame for each sync: a load that ran a frame longer
+    # shifts this run, and the pad script shifts with it.
+    timeline = baseline_frames(args.baseline) if hold and args.baseline else []
     record = len(page_hashes(bytes(ec.RAM_SIZE)))
     while emu.frame < args.frames:
+        # The race reads the pad partway through its three-VBlank frame,
+        # so slower code would see a later input: hold the pad as it was
+        # at the last sync, unless the game has stopped syncing (a load).
+        if hold:
+            held = last_sync is not None and emu.frame - last_sync < 8
+            emu.input_frame = (last_sync if held else emu.frame) - offset
         emu.run()
         if args.shots and emu.frame % args.shots == 0:
             emu.screenshot(out / f"{emu.frame:06d}.bmp")
@@ -528,30 +626,39 @@ def run_swap(args: argparse.Namespace) -> None:
             ram = emu.ram()
             if all(ram[a - ec.RAM_BASE : a - ec.RAM_BASE + 8] == w for a, w in expected.items()):
                 emu.write(SWAP_BASE, blob)
+                if args.arm_frame:
+                    emu.write(placed["swap_armed"], bytes(4))
                 for address, words in patches.items():
                     if address == symbols[HOOK_SITE] or not args.from_race:
                         emu.write(address, words)
                 patched = True
                 print(f"frame {emu.frame}: patched {', '.join(args.swap) or 'the hook only'} ({len(blob)} bytes)")
             continue
+        if args.arm_frame and emu.frame == args.arm_frame:
+            emu.write(placed["swap_armed"], struct.pack("<I", 1))
         ram = emu.ram()
         if not struct.unpack_from("<I", ram, SYNC_FLAG - ec.RAM_BASE)[0]:
             continue
         sync += 1
+        last_sync = emu.frame
+        if sync <= len(timeline):
+            offset = emu.frame - timeline[sync - 1]
+        trace.write(f"{sync} {emu.frame} {struct.unpack_from('<I', ram, placed['swap_ra'] - ec.RAM_BASE)[0]:08X}\n")
         if args.from_race and sync == 1:  # the CPU waits in the hook
             for address, words in patches.items():
                 emu.write(address, words)
             emu.write(FLUSH, struct.pack("<I", 1))
             print(f"sync 1 (frame {emu.frame}): patched {', '.join(args.swap)}")
-        # From the first sync on, the pad script runs on game frames (three
+        # From the first sync on, the pad script runs on syncs (--sync-frames
         # VBlanks each), so an input lands on the same frame in every run.
         if first_sync is None:
             first_sync = emu.frame
-        emu.input_frame = first_sync + 3 * sync
+        if args.sync_frames:
+            emu.input_frame = first_sync + args.sync_frames * sync
         restored = bytearray(ram)
         for address, words in expected.items():  # the patches aren't the game's state
             restored[address - ec.RAM_BASE : address - ec.RAM_BASE + 8] = words
-        for start, end in masked:
+        for start, end in masked + dead_heap(ram, symbols):
             restored[start - ec.RAM_BASE : end - ec.RAM_BASE] = bytes(end - start)
         ram = bytes(restored)
         digest = page_hashes(ram)
@@ -564,12 +671,21 @@ def run_swap(args: argparse.Namespace) -> None:
                 print(f"sync {sync}: past the baseline's end")
                 break
             pages = [i for i in range(0, record, 8) if digest[i : i + 8] != theirs[i : i + 8]]
-            if pages:
-                print(f"sync {sync} (frame {emu.frame}): first difference, in "
-                      + ", ".join(f"0x{ec.RAM_BASE + i // 8 * PAGE:08X}" for i in pages[:16]))  # fmt: skip
+            # A CD sector or DMA that lands a few cycles later differs for a
+            # sync or two, then converges: only a run of --persist counts.
+            if pages and streak is None:
+                streak, where = sync, (emu.frame, pages)
                 if previous is not None:
                     (out / f"sync_{sync - 1:06d}.ram").write_bytes(previous)
                 (out / f"sync_{sync:06d}.ram").write_bytes(ram)
+            elif not pages and streak is not None:
+                transients.append(streak)
+                (out / f"sync_{streak - 1:06d}.ram").unlink(missing_ok=True)
+                (out / f"sync_{streak:06d}.ram").unlink(missing_ok=True)
+                streak = None
+            if streak is not None and sync - streak + 1 >= args.persist:
+                print(f"sync {streak} (frame {where[0]}): first difference, in "
+                      + ", ".join(f"0x{ec.RAM_BASE + i // 8 * PAGE:08X}" for i in where[1][:16]))  # fmt: skip
                 stop = sync + args.after
         if stop is not None and sync >= stop:
             break
@@ -585,9 +701,15 @@ def run_swap(args: argparse.Namespace) -> None:
     (out / "end.ram").write_bytes(emu.ram())
     emu.screenshot(out / "end.bmp")
     hashes.close()
+    trace.close()
     emu.close()
     for i, func in enumerate(args.swap):
         print(f"{func}: {calls[i]} calls")
+    if transients:
+        print(f"{len(transients)} transient differences, from syncs " + ", ".join(map(str, transients[:20])))
+    if streak is not None and stop is None:
+        print(f"sync {streak}: a difference still open at the end")
+        stop = sync
     if baseline is not None and stop is None:
         print(f"{sync} syncs, no difference")
     else:
@@ -661,7 +783,11 @@ def main() -> None:
                    help="swap from the race's first frame: the intro before it runs on VBlanks, so slow code changes it")
     p.add_argument("--delay", type=int, default=0, help="loop this many times on each call (hardware GTE only)")
     p.add_argument("--check-gte", action="store_true", help="--soft-gte, checking each GTE access against the console (slow)")
+    p.add_argument("--hook", default=HOOK_SITE, help="the function whose entry syncs (VSync reaches menus)")
+    p.add_argument("--arm-frame", type=int, default=0, help="the frame the hook starts to sync (after the movies)")
+    p.add_argument("--sync-frames", type=int, default=3, help="pad script frames per sync; 0 keeps the emulator's frames")
     p.add_argument("--baseline", help="a run without the swap, to compare each sync against")
+    p.add_argument("--persist", type=int, default=30, help="syncs a difference must last to count")
     p.add_argument("--after", type=int, default=2, help="syncs to run past the first difference")
     p.add_argument("--shots", type=int, default=0, help="write a screenshot every K frames")
     p.add_argument("--dump-syncs", help="comma-separated sync numbers to write in full")
