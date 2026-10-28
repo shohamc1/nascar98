@@ -26,7 +26,7 @@ void SpuSetTransferStartAddr(s32);
 
 extern s32 gOrderingTable[];
 extern void HeapFree(void *ptr);
-extern u8 D_800A2F9CLui asm("D_800A2F9CAbsolute");
+extern u8 gCdAudioEnabledLui asm("gCdAudioEnabledAbsolute");
 extern void SoundPlaySlot(s8, s8);
 extern void SsSetMute(s32);
 s32 VSync(s32);
@@ -490,9 +490,9 @@ void MediaShowTrackIntro(s32 arg0) {
 void MoviePlayIndexedFile(s32 fileIndex) {
     s32 pad[6];
 
-    if (D_800A2F9CLui != 0) {
+    if (gCdAudioEnabledLui != 0) {
         func_8003CCE0(0);
-        D_800A2F9CLui = 0;
+        gCdAudioEnabledLui = 0;
     }
     MoviePlayFile((fileIndex & 0xFF) + 0x3A, 0, 0);
     CdEnablePlaybackAndSetVolume();
@@ -501,9 +501,9 @@ void MoviePlayIndexedFile(s32 fileIndex) {
 
 extern u8 gCdVolumeAbsoluteU8[] asm("gCdVolumeAbsolute");
 void MoviePlayIndexedFileAlternate(s32 arg) {
-    if (D_800A2F9CLui != 0) {
+    if (gCdAudioEnabledLui != 0) {
         func_8003CCE0(0);
-        D_800A2F9CLui = 0;
+        gCdAudioEnabledLui = 0;
     }
     MoviePlayFile((arg & 0xFF) + 0xC, 0, 0);
     CdEnablePlaybackAndSetVolume();

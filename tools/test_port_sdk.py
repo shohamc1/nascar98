@@ -146,6 +146,29 @@ class Libcd(unittest.TestCase):
             "    if (gAudioFrame != 2152 * 588) return 7;\n"
         )
 
+    def test_data_access_stops_audio(self) -> None:
+        # The drive plays or reads, not both: a load ends the menu music.
+        self.check(
+            "    static CdlLOC toc[100]; static short out[2 * 735];\n"
+            "    void PortCdAudioMix(short *out, int frames);\n"
+            "    CdGetToc(toc);\n"
+            "    CdControl(CdlSetloc, (u_char *)&toc[2], 0);\n"
+            "    CdControlB(CdlPlay, 0, 0);\n"
+            "    CdIntToPos(316, &p);\n"
+            "    CdControl(CdlSetloc, (u_char *)&p, 0);\n"
+            "    CdRead(1, b, 0x80);\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (out[0] != 0) return 1;\n"
+            "    CdControlB(CdlPlay, (u_char *)\"\\x02\", 0);\n"
+            "    CdControlB(CdlSeekL, (u_char *)&p, 0);\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (out[0] != 0) return 2;\n"
+            "    CdControlB(CdlPlay, (u_char *)\"\\x02\", 0);\n"
+            "    CdControlF(CdlReadN, (u_char *)&p);\n"
+            "    PortCdAudioMix(out, 735);\n"
+            "    if (out[0] != 0) return 3;\n"
+        )
+
     def test_read_from_setloc(self) -> None:
         self.check(
             "    CdIntToPos(316, &p);\n"

@@ -84,7 +84,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A35E0Absolute=D_800A35E0 \
             --defsym=D_800A372CAbsolute=D_800A372C \
             --defsym=D_800A3910Absolute=D_800A3910 \
-            --defsym=D_800A2F9CAbsolute=D_800A2F9C \
+            --defsym=gCdAudioEnabledAbsolute=gCdAudioEnabled \
             --defsym=D_800A2E6CAbsolute=D_800A2E6C \
             --defsym=D_800A2F50Absolute=D_800A2F50 \
             --defsym=D_800A2F50Absolute2=D_800A2F50 \
@@ -114,8 +114,8 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=gCosTableAbsolute=gCosTable \
             --defsym=gSinTableSmall=gSinTable \
             --defsym=gSinTableAbsolute=gSinTable \
-            --defsym=D_800A2F9DSmall=D_800A2F9D \
-            --defsym=D_800A2F9DAbsolute=D_800A2F9D \
+            --defsym=gSoundEffectsEnabledSmall=gSoundEffectsEnabled \
+            --defsym=gSoundEffectsEnabledAbsolute=gSoundEffectsEnabled \
             --defsym=gCdVolumeAbsolute=gCdVolume \
             --defsym=D_800A2EACSmall=D_800A2EAC \
             --defsym=D_800A2EACAbsolute=D_800A2EAC \
@@ -450,8 +450,8 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A2F84.NON_MATCHING=D_800A2F84 \
             --defsym=gMusicVolumeScaled.NON_MATCHING=gMusicVolumeScaled \
             --defsym=gStereoEnabled.NON_MATCHING=gStereoEnabled \
-            --defsym=D_800A2F9C.NON_MATCHING=D_800A2F9C \
-            --defsym=D_800A2F9D.NON_MATCHING=D_800A2F9D \
+            --defsym=gCdAudioEnabled.NON_MATCHING=gCdAudioEnabled \
+            --defsym=gSoundEffectsEnabled.NON_MATCHING=gSoundEffectsEnabled \
             --defsym=D_800A2FA4.NON_MATCHING=D_800A2FA4 \
             --defsym=gFormatInteger.NON_MATCHING=gFormatInteger \
             --defsym=D_800A305A.NON_MATCHING=D_800A305A \
@@ -461,7 +461,7 @@ LDFLAGS  := -nostdlib --no-check-sections -T $(LD_SCRIPT) \
             --defsym=D_800A3068.NON_MATCHING=D_800A3068 \
             --defsym=D_800A3069.NON_MATCHING=D_800A3069 \
             --defsym=D_800A306C.NON_MATCHING=D_800A306C \
-            --defsym=D_800A306D.NON_MATCHING=D_800A306D \
+            --defsym=gCdAnnouncer.NON_MATCHING=gCdAnnouncer \
             --defsym=D_800A306E.NON_MATCHING=D_800A306E \
             --defsym=D_800A306F.NON_MATCHING=D_800A306F \
             --defsym=D_800A3070.NON_MATCHING=D_800A3070 \
@@ -491,7 +491,7 @@ LDFLAGS += \
             --defsym=gStereoEnabledAbsolute=gStereoEnabled \
             --defsym=D_800A2FC8Absolute=D_800A2FC8 \
             --defsym=D_800A306CAbsolute=D_800A306C \
-            --defsym=D_800A306DAbsolute=D_800A306D \
+            --defsym=gCdAnnouncerAbsolute=gCdAnnouncer \
             --defsym=gPlayerCarAbsolute=gPlayerCar \
             --defsym=D_800A3590Absolute=D_800A3590 \
             --defsym=D_800A35A8Absolute=D_800A35A8 \
@@ -718,7 +718,7 @@ LDFLAGS += --defsym=D_800A3980Small=D_800A3980 \
            --defsym=gPrimitiveCursorAbsolute2=gPrimitiveCursor \
            --defsym=gMusicVolumeAbsolute3=gMusicVolume \
            --defsym=D_800A2F3CAbsolute2=D_800A2F3C \
-           --defsym=D_800A306DAbsolute2=D_800A306D \
+           --defsym=gCdAnnouncerAbsolute2=gCdAnnouncer \
            --defsym=D_800A38ACAbsolute2=D_800A38AC \
            --defsym=D_800A38ACAbsolute3=D_800A38AC \
            --defsym=D_800A38ACAbsolute4=D_800A38AC \

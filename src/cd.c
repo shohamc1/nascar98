@@ -256,7 +256,7 @@ void CdLoadFileByIndex(s32 buffer, s32 fileId) {
 extern s32 CdGetToc(void *);
 extern CdlLOC gCdAudioTrackPos[];
 extern s32 gCdAudioTrack;
-extern u8 D_800A2F9CAbsolute[];
+extern u8 gCdAudioEnabledAbsolute[];
 
 void CdPlayAudioTrack(s32 arg0) {
     CdlATV vol;
@@ -292,7 +292,7 @@ void CdPlayAudioTrack(s32 arg0) {
     CdIntToPos(0x250DB, gCdAudioTrackPos + 4);
     CdIntToPos(0x25EFF, lastPos);
     CdControl(2, (u_char *)(gCdAudioTrackPos + gCdAudioTrack - 2), 0);
-    if (D_800A2F9CAbsolute[0] != 0) {
+    if (gCdAudioEnabledAbsolute[0] != 0) {
         CdControlB(3, 0, 0);
     }
     vol.val3 = 0x7F;
@@ -308,7 +308,7 @@ void CdStopIfPlaybackChanged(void) {
     u_char param[8];
     u_char result[8];
 
-    if (D_800A2F9CAbsolute[0] == 0) {
+    if (gCdAudioEnabledAbsolute[0] == 0) {
         return;
     }
     if (D_800A2EC8[0] != 0) {

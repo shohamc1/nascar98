@@ -942,7 +942,7 @@ void SoundUpdateOpponentVoice(Car *car, s32 id) {
 
 #ifdef NATIVE
 void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
-    extern u8 D_800A2F9DSmall __asm__("D_800A2F9D");
+    extern u8 gSoundEffectsEnabledSmall __asm__("gSoundEffectsEnabled");
     Car *car;
     Car *obj;
     s32 camX;
@@ -977,7 +977,7 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     camZ = arg0->pos.z;
     car = arg0;
     obj = arg1;
-    if (D_800A2F9DSmall == 0) {
+    if (gSoundEffectsEnabledSmall == 0) {
         return;
     }
     if (D_800A2EC0nm[0] - D_800BE890w16[0] < 10) {
@@ -1061,7 +1061,7 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
 }
 #else
 void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
-    extern u8 D_800A2F9DSmall;
+    extern u8 gSoundEffectsEnabledSmall;
     Car *car;
     Car *obj;
     s32 camX;
@@ -1096,7 +1096,7 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     camZ = arg0->pos.z;
     car = arg0;
     obj = arg1;
-    if (D_800A2F9DSmall == 0) {
+    if (gSoundEffectsEnabledSmall == 0) {
         return;
     }
     if (D_800A2EC0nm[0] - D_800BE890w16[0] < 10) {
@@ -1180,14 +1180,14 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
 }
 #endif
 
-extern u8 D_800A2F9D;
+extern u8 gSoundEffectsEnabled;
 extern Car *gPlayerCarnm[] asm("gPlayerCar.NON_MATCHING");
 
 void func_800409A0(Car *object) {
     s32 id;
     Car *player;
 
-    if (D_800A2F9D == 0) {
+    if (gSoundEffectsEnabled == 0) {
         return;
     }
     if (object == gPlayerCar[0]) {
@@ -1346,7 +1346,7 @@ void SoundUpdateCar(Car *car) {
             SoundSetSlotVolume((s8)id, decayVolume, decayVolume);
         }
         func_80040AC8(car);
-        if (D_800A2F9D != 0) {
+        if (gSoundEffectsEnabled != 0) {
             rpm = (u16)car->rpm;
             pitch = ((s16)rpm + car->unk10A) / 100;
             if ((s16)rpm >= 2001 && car->speed <= 0x95FFFF &&
@@ -1531,7 +1531,7 @@ void SoundUpdateCar(Car *car) {
             SoundSetSlotVolume((s8)id, decayVolume, decayVolume);
         }
         func_80040AC8(car);
-        if (D_800A2F9D != 0) {
+        if (gSoundEffectsEnabled != 0) {
             rpm = (u16)car->rpm;
             pitch = ((s16)rpm + car->unk10A) / 100;
             if ((s16)rpm >= 2001 && car->speed <= 0x95FFFF &&
@@ -1666,7 +1666,7 @@ void SoundUpdateCar(Car *car) {
 extern u8 D_800A2FA8;
 
 void func_80041328(void) {
-    if (D_800A2F9D == 0) {
+    if (gSoundEffectsEnabled == 0) {
         SoundSetSlotVolume(0, 0, 0);
         if (gSplitScreenMode[0] == 2) {
             SoundSetSlotVolume(1, 0, 0);
@@ -1690,12 +1690,12 @@ void SoundMuteFiveSlots(void) {
 }
 
 void func_80041414(void) {
-    extern u8 D_800A2F9C;
-    D_800A2F9C = !D_800A2F9C;
+    extern u8 gCdAudioEnabled;
+    gCdAudioEnabled = !gCdAudioEnabled;
 }
 
 void func_8004142C(void) {
-    D_800A2F9D = D_800A2F9D == 0;
+    gSoundEffectsEnabled = gSoundEffectsEnabled == 0;
 }
 
 void SoundMuteAllSlots(s32 includeExtraSlots) {
@@ -1713,7 +1713,7 @@ void SoundMuteAllSlots(s32 includeExtraSlots) {
 }
 
 void SoundPlaySlotAtVolume(void *arg0, s32 slot, s32 type) {
-    if (D_800A2F9D == 0) {
+    if (gSoundEffectsEnabled == 0) {
         if (D_800A2EC8[0] == 0)
             return;
         if (type == 6)
@@ -1744,7 +1744,7 @@ void func_80041564(Car *arg0, s32 arg1, s32 arg2, s32 arg3) {
     if (D_800A2EDAAbsolute[0] != 0) {
         return;
     }
-    if (D_800A2F9D == 0) {
+    if (gSoundEffectsEnabled == 0) {
         return;
     }
     if (D_800A397C[0] == 2) {
@@ -1988,7 +1988,7 @@ void SoundShutdownAll(void) {
     VSync(0);
     VSync(0);
     SoundShutdown();
-    if (D_800A2F9D == 0) {
+    if (gSoundEffectsEnabled == 0) {
         SsSetMute(0);
     }
 }

@@ -11,6 +11,7 @@
  * CD audio: CdlPlay plays from the CdlSetloc position through the track
  * files (HostCdAudioRead) and on into the next track, as the drive does;
  * PortCdAudioMix adds it to each VBlank's sound under CdMix's volumes.
+ * A seek or a data read stops it.
  */
 #include "host.h"
 #include <psxsdk/libcd.h>
@@ -123,17 +124,23 @@ static int Command(u_char com, u_char *param, u_char *result, int queue)
         }
         break;
     case CdlSetloc:
+        if (param) {
+            sPosition = CdPosToInt((CdlLOC *)param);
+        }
+        break;
     case CdlSeekL:
     case CdlSeekP:
         if (param) {
             sPosition = CdPosToInt((CdlLOC *)param);
         }
+        sPlaying = 0; /* the drive plays or seeks, not both */
         break;
     case CdlReadN:
     case CdlReadS:
         if (param) {
             sPosition = CdPosToInt((CdlLOC *)param);
         }
+        sPlaying = 0;
         sStreaming = 1;
         sStreamStarting = 1;
         sSectorHalves = 0;
@@ -197,6 +204,7 @@ int CdRead(int sectors, u_long *buf, int mode)
 {
     PORT_TRACE(CdRead);
 
+    sPlaying = 0; /* a load ends CD audio, as on the drive */
     sReadState = HostCdRead(sPosition, sectors, buf) == sectors ? 0 : -1;
     sPosition += sectors;
     return 1;

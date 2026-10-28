@@ -2132,10 +2132,10 @@ extern s16 gCdVolumeAbsolute[];
 extern s16 gMusicVolumeAbsolute[];
 extern s8 D_800A39F0[];
 extern s32 gSessionTypepanel asm("gSessionTypeAbsolute");
-extern u8 D_800A2F9Cpanel asm("D_800A2F9CAbsolute");
-extern u8 D_800A2F9Dpanel asm("D_800A2F9DAbsolute");
+extern u8 gCdAudioEnabledpanel asm("gCdAudioEnabledAbsolute");
+extern u8 gSoundEffectsEnabledpanel asm("gSoundEffectsEnabledAbsolute");
 extern u8 D_800A306Cpanel asm("D_800A306CAbsolute");
-extern u8 D_800A306Dpanel asm("D_800A306DAbsolute");
+extern u8 gCdAnnouncerpanel asm("gCdAnnouncerAbsolute");
 extern s32 gOrderingTableLui asm("gOrderingTableAbsolute");
 extern void MenuDrawStatistics(void);
 extern void MenuDrawTimingAndScoring(void);
@@ -2237,17 +2237,17 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
         HudDrawText(choices[0], 90, rowY, 0);
         choices += 5;
         cursorY = 13;
-        x = (s16)(230 - HudTextWidth(choices[D_800A2F9Dpanel]));
-        HudDrawText(choices[D_800A2F9Dpanel], x, rowY, 0);
+        x = (s16)(230 - HudTextWidth(choices[gSoundEffectsEnabledpanel]));
+        HudDrawText(choices[gSoundEffectsEnabledpanel], x, rowY, 0);
         GraphicsDrawRect(110, y + cursorY, gMusicVolumeAbsolute[0], 8, 0, 0,
-                         D_800A2F9Dpanel ? -128 : 0, 1);
+                         gSoundEffectsEnabledpanel ? -128 : 0, 1);
         GraphicsDrawRect(109, y + 12, 102, 10, -1, -1, -1, 1);
         rowY2 = y + 24;
-        HudDrawText(D_8009ADAC[D_800A306Dpanel], 90, rowY2, 0);
-        x = (s16)(230 - HudTextWidth(D_8009ADBC[D_800A2F9Cpanel]));
-        HudDrawText(D_8009ADBC[D_800A2F9Cpanel], x, rowY2, 0);
+        HudDrawText(D_8009ADAC[gCdAnnouncerpanel], 90, rowY2, 0);
+        x = (s16)(230 - HudTextWidth(D_8009ADBC[gCdAudioEnabledpanel]));
+        HudDrawText(D_8009ADBC[gCdAudioEnabledpanel], x, rowY2, 0);
         GraphicsDrawRect(110, y + 37, gCdVolumeAbsolute[0], 8, 0, 0,
-                         D_800A2F9Cpanel ? -128 : 0, 1);
+                         gCdAudioEnabledpanel ? -128 : 0, 1);
         GraphicsDrawRect(109, y + 36, 102, 10, -1, -1, -1, 1);
         rowY3 = y + 48;
         volumeLabels = D_8009ADB4;
@@ -2381,17 +2381,17 @@ void MenuDrawPausePanel(void *unused, s32 selection, s32 flags) {
         HudDrawText(choices[0], 90, rowY, 0);
         choices += 5;
         cursorY = 13;
-        x = (s16)(230 - HudTextWidth(choices[D_800A2F9Dpanel]));
-        HudDrawText(choices[D_800A2F9Dpanel], x, rowY, 0);
+        x = (s16)(230 - HudTextWidth(choices[gSoundEffectsEnabledpanel]));
+        HudDrawText(choices[gSoundEffectsEnabledpanel], x, rowY, 0);
         GraphicsDrawRect(110, y + cursorY, gMusicVolumeAbsolute[0], 8, 0, 0,
-                         D_800A2F9Dpanel ? -128 : 0, 1);
+                         gSoundEffectsEnabledpanel ? -128 : 0, 1);
         GraphicsDrawRect(109, y + 12, 102, 10, -1, -1, -1, 1);
         rowY2 = y + 24;
-        HudDrawText(D_8009ADAC[D_800A306Dpanel], 90, rowY2, 0);
-        x = (s16)(230 - HudTextWidth(D_8009ADBC[D_800A2F9Cpanel]));
-        HudDrawText(D_8009ADBC[D_800A2F9Cpanel], x, rowY2, 0);
+        HudDrawText(D_8009ADAC[gCdAnnouncerpanel], 90, rowY2, 0);
+        x = (s16)(230 - HudTextWidth(D_8009ADBC[gCdAudioEnabledpanel]));
+        HudDrawText(D_8009ADBC[gCdAudioEnabledpanel], x, rowY2, 0);
         GraphicsDrawRect(110, y + 37, gCdVolumeAbsolute[0], 8, 0, 0,
-                         D_800A2F9Cpanel ? -128 : 0, 1);
+                         gCdAudioEnabledpanel ? -128 : 0, 1);
         GraphicsDrawRect(109, y + 36, 102, 10, -1, -1, -1, 1);
         rowY3 = y + 48;
         volumeLabels = D_8009ADB4;

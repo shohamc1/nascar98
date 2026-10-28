@@ -30,6 +30,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import wave
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAM_BASE = 0x80000000
@@ -149,10 +150,16 @@ class Emulator:
             clock = self.frame if self.input_frame is None else self.input_frame
             return int(any(RETRO_IDS[n] == button for n in held(script, clock)))
 
+        def audio(data: int, frames: int) -> int:
+            if self.sound is not None:
+                self.sound += ctypes.string_at(data, frames * 4)
+            return frames
+
         core = self.core
+        self.sound: bytearray | None = None  # stereo s16 at 44.1 kHz, once set
         self.callbacks = [
             ENV_CB(environment), VIDEO_CB(video), AUDIO_CB(lambda l, r: None),
-            AUDIO_BATCH_CB(lambda d, n: n), POLL_CB(lambda: None), INPUT_CB(input_state),
+            AUDIO_BATCH_CB(audio), POLL_CB(lambda: None), INPUT_CB(input_state),
         ]  # fmt: skip
         core.retro_set_environment(self.callbacks[0])
         core.retro_init()
@@ -213,6 +220,7 @@ def run_emu(args: argparse.Namespace) -> None:
     poke = parse_poke(args.poke, False)
     if args.card:
         emu.load_card(pathlib.Path(args.card).read_bytes())
+    emu.sound = bytearray()
     while emu.frame < args.frames:
         emu.run()
         if poke and emu.frame == poke[0]:
@@ -223,6 +231,11 @@ def run_emu(args: argparse.Namespace) -> None:
         (out / f"{emu.frame:06d}.ram").write_bytes(emu.ram())
         emu.screenshot(out / f"{emu.frame:06d}.bmp")
     (out / "card1.mcd").write_bytes(emu.card())  # the port's name for it
+    with wave.open(str(out / "audio.wav"), "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(44100)
+        w.writeframes(emu.sound)
     emu.close()
 
 
@@ -248,6 +261,7 @@ def run_port(args: argparse.Namespace) -> None:
     env["NASCAR98_DUMP_START"] = str(args.start)
     if poke := parse_poke(args.poke, True):
         env["NASCAR98_POKE"] = f"{poke[0]}:" + ",".join(f"{a:#x}={v:#x}" for a, v in poke[1])
+    env["NASCAR98_WAV"] = str((out / "audio.wav").resolve())
     env["NASCAR98_SAVES"] = str((out / "saves").resolve())
     (out / "saves").mkdir(exist_ok=True)
     if args.card:

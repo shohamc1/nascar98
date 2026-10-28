@@ -46,7 +46,7 @@ void GraphicsInitDoubleBufferSwapped(void);
 void TextureLoadTim(void *timImage);
 
 extern s32 strlen(char *);
-extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
+extern u8 gSoundEffectsEnabledw15[] asm("gSoundEffectsEnabled.NON_MATCHING");
 
 extern s32 gOrderingTable[];
 extern s32 D_800A2EC0nm[] asm("D_800A2EC0.NON_MATCHING");
@@ -66,7 +66,7 @@ extern Car *D_800A35E0[];
 extern void CarInitDefaults(Car *car);
 extern Car *gCarListnm[] asm("gCarList.NON_MATCHING");
 extern void FileRead(s32 buffer, s32 size, s32 count, s32 handle);
-extern u8 D_800A2F9CAbsolute[];
+extern u8 gCdAudioEnabledAbsolute[];
 extern void SoundPlaySlot(s8, s8);
 s32 VSync(s32);
 extern void PushMatrix(void);

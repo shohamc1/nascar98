@@ -26,7 +26,7 @@ extern s32 D_800A38ACAbsolute2[];
 extern s32 D_800A38ACAbsolute3[];
 extern s32 D_800A38ACAbsolute4[];
 extern s32 D_800A38ACAbsolute5[];
-extern char D_800A306DAbsolute2[];
+extern char gCdAnnouncerAbsolute2[];
 extern s32 D_800A2F3CAbsolute2[];
 extern s32 D_800A2D08Absolute3[];
 extern s32 D_800A2D08Absolute4[];
@@ -1400,8 +1400,8 @@ extern s32 D_800A2EC8Lui asm("D_800A2EC8Absolute");
 extern FarVar gFarFlag3A60 asm("D_800A3A60");
 extern FarVar gFarWord357C asm("D_800A357C");
 extern FarVar gFarWord357E asm("D_800A357E");
-extern FarVar gFarFlag306D asm("D_800A306D");
-extern FarVar gFarFlag2F9D asm("D_800A2F9D");
+extern FarVar gFarFlag306D asm("gCdAnnouncer");
+extern FarVar gFarFlag2F9D asm("gSoundEffectsEnabled");
 extern s32 D_800A2ECC[];
 extern s32 D_800A2ED0[];
 extern s8 D_800A3620;
@@ -1556,11 +1556,11 @@ extern s32 D_800A2ECCControl asm("D_800A2ECCAbsolute");
 extern s32 D_800A2ED0Control asm("D_800A2ED0Absolute");
 extern s32 D_800A2ED4Control asm("D_800A2ED4Absolute");
 extern u8 gStereoEnabledControl asm("gStereoEnabledAbsolute");
-extern u8 D_800A2F9CControl asm("D_800A2F9CAbsolute");
-extern u8 D_800A2F9DControl asm("D_800A2F9DAbsolute");
+extern u8 gCdAudioEnabledControl asm("gCdAudioEnabledAbsolute");
+extern u8 gSoundEffectsEnabledControl asm("gSoundEffectsEnabledAbsolute");
 extern s8 D_800A2FC8Control asm("D_800A2FC8Absolute");
 extern u8 D_800A306CControl asm("D_800A306CAbsolute");
-extern u8 D_800A306DControl asm("D_800A306DAbsolute");
+extern u8 gCdAnnouncerControl asm("gCdAnnouncerAbsolute");
 extern Car *gPlayerCarControl asm("gPlayerCarAbsolute");
 extern s8 D_800A3590Control asm("D_800A3590Absolute");
 extern s8 D_800A3620Control asm("D_800A3620");
@@ -1627,7 +1627,7 @@ void func_80023454(void) {
             if (keyMask) {
                 SoundPlaySlot(toneChannel, 9);
                 if (D_800A39F0Control == 1 && D_800A2ECCControl == 3 &&
-                    D_800A306DControl == 0 && D_800A2F9CControl != 0) {
+                    gCdAnnouncerControl == 0 && gCdAudioEnabledControl != 0) {
                     func_8003CCE0(0);
                 }
                 selectionDividend = D_800A2ECCControl + 5;
@@ -1654,12 +1654,12 @@ void func_80023454(void) {
                 goto done;
             previousSoundState:
                 if (selectionIndex == navigationState &&
-                    D_800A2F9DControl != 0) {
+                    gSoundEffectsEnabledControl != 0) {
                 handleSlider:
                     SoundRunSlotEnvelope(0, 10);
                     goto done;
                 }
-                if (D_800A2ECCControl == 3 && D_800A306DControl == 0) {
+                if (D_800A2ECCControl == 3 && gCdAnnouncerControl == 0) {
                 startMusic:
                     func_8003CCE0(1);
                 }
@@ -1671,7 +1671,7 @@ void func_80023454(void) {
                     goto block_49;
                 SoundPlaySlot(toneChannel, 9);
                 if (D_800A39F0Control == 1 && D_800A2ECCControl == 3 &&
-                    D_800A306DControl == 0 && D_800A2F9CControl != 0) {
+                    gCdAnnouncerControl == 0 && gCdAudioEnabledControl != 0) {
                     func_8003CCE0(0);
                 }
                 selectionDividend = D_800A2ECCControl + 1;
@@ -1703,11 +1703,12 @@ void func_80023454(void) {
                 }
                 goto done;
             nextSoundState:
-                if (selectionIndex == navigationState && D_800A2F9DControl != 0)
+                if (selectionIndex == navigationState &&
+                    gSoundEffectsEnabledControl != 0)
                     goto handleSlider;
                 asm("" : : : "memory");
-                if (D_800A2ECCControl == 3 && D_800A306DControl == 0 &&
-                    D_800A2F9CControl != 0)
+                if (D_800A2ECCControl == 3 && gCdAnnouncerControl == 0 &&
+                    gCdAudioEnabledControl != 0)
                     goto startMusic;
                 goto done;
             paritySelection:
@@ -1741,12 +1742,12 @@ void func_80023454(void) {
                         case 0:
                             D_800A2EC8Control = 0;
                             D_800A2ED4Control = 0;
-                            if (D_800A2F9DControl == 0) {
+                            if (gSoundEffectsEnabledControl == 0) {
                                 SsSetMute(1);
                             }
                             func_80041328();
-                            if (D_800A306DControl == 0) {
-                                func_8003CCE0(D_800A2F9CControl);
+                            if (gCdAnnouncerControl == 0) {
+                                func_8003CCE0(gCdAudioEnabledControl);
                             }
                             if (gPlayerCarControl->unk268 == 0) {
                                 gPlayerCarControl->cameraMode =
@@ -1856,8 +1857,8 @@ void func_80023454(void) {
                             D_800A2EC8Control = 0;
                             D_800A2ED4Control = 0;
                             SoundMuteAllSlots(1);
-                            if (D_800A306DControl == 0) {
-                                func_8003CCE0(D_800A2F9CControl);
+                            if (gCdAnnouncerControl == 0) {
+                                func_8003CCE0(gCdAudioEnabledControl);
                             }
                             D_800A3A94Control = 0;
                             if (D_800A2EACControl == 0) {
@@ -1875,7 +1876,7 @@ void func_80023454(void) {
             block_104:
                 if (D_800A39F0Control == 1) {
                     if ((D_800A2ECCControl == D_800A39F0Control) &&
-                        (D_800A2F9DControl != 0)) {
+                        (gSoundEffectsEnabledControl != 0)) {
                         SoundRunSlotEnvelope(1, 0xA);
                     }
                     keyMask = ~D_800A2DF8Control & 0xA000;
@@ -1884,7 +1885,8 @@ void func_80023454(void) {
                         case 0:
                             SoundPlaySlot(10, 10);
                             func_8004142C();
-                            enabledVolume = -(D_800A2F9DControl != 0) & 50;
+                            enabledVolume =
+                                -(gSoundEffectsEnabledControl != 0) & 50;
                             gMusicVolumeControl = enabledVolume;
                             gMusicVolumeScaledControl =
                                 enabledVolume * 127 / 100;
@@ -1892,7 +1894,7 @@ void func_80023454(void) {
                         case 2:
                             SoundPlaySlot(10, 10);
                             func_80041414();
-                            if (D_800A2F9CControl == 0) {
+                            if (gCdAudioEnabledControl == 0) {
                                 gCdVolumeControl = 0;
                             } else {
                                 gCdVolumeControl = 50;
@@ -1916,7 +1918,7 @@ void func_80023454(void) {
                     if (heldDirections != 0) {
                         switch (D_800A2ECCControl) {
                         case 1:
-                            if (D_800A2F9DControl != 0) {
+                            if (gSoundEffectsEnabledControl != 0) {
                                 volume = gMusicVolumeControlPointer;
                                 if (buttons & 0x8000) {
                                     volumeResult = gMusicVolumeControl;
@@ -1949,7 +1951,7 @@ void func_80023454(void) {
                             }
                             break;
                         case 3:
-                            if (D_800A2F9CControl != 0) {
+                            if (gCdAudioEnabledControl != 0) {
                                 volume = gCdVolumeControlPointer;
                                 if (buttons & 0x8000) {
                                     volumeResult = gCdVolumeControl;
@@ -2042,7 +2044,7 @@ void func_80023454(void) {
 void CdApplyMixVolume(void) {
     CdlATV vol;
 
-    if (D_800A306DAbsolute2[0] == 0) {
+    if (gCdAnnouncerAbsolute2[0] == 0) {
         vol.val0 = vol.val1 = vol.val2 = vol.val3 =
             gCdVolumeAbsolute3[0] * 125 / 100;
         CdMix(&vol);

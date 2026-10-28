@@ -16821,7 +16821,7 @@ extern Car *gRankCarList[] asm("gCarListAbsolute");
 extern Car *gRankPlayerCar[] asm("gPlayerCarAbsolute");
 extern s32 D_800A2EA8Absolute[];
 extern u8 D_800A2EF0Absolute asm("D_800A2EF0Absolute");
-extern u8 D_800A306DAbsolute[];
+extern u8 gCdAnnouncerAbsolute[];
 
 /* Returns nonzero when car is further along its track section than other. */
 __inline__ u8 CarIsAheadOnSection(Car *car, Car *other) {
@@ -16968,7 +16968,7 @@ void RaceUpdatePositions(u8 force) {
                     func_80041564(player, 0x24);
                 } else if (player->place < prevPlace[assist] &&
                            prevPlace[assist] < 16) {
-                    if ((D_800A306DAbsolute[0] != 0 ||
+                    if ((gCdAnnouncerAbsolute[0] != 0 ||
                          player->place < prevPlace[assist] - 1) &&
                         ((CarLink *)player->order.node.previous)->car->unk268 ==
                             0) {

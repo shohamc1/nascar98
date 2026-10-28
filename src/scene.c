@@ -38,7 +38,7 @@ void HudDrawTime(s32 time, s16 x, s16 y, s8 color, u8 mode);
 void MenuLoadResources(void);
 void GraphicsInitDoubleBufferSwapped(void);
 void TextureLoadTim(void *timImage);
-extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
+extern u8 gSoundEffectsEnabledw15[] asm("gSoundEffectsEnabled.NON_MATCHING");
 extern s32 gOrderingTable[];
 extern s32 *gSinTableAbsolute[];
 extern u8 D_800A3680[];
@@ -48,7 +48,7 @@ extern s32 D_800A37B4Absolute[];
 extern void SetPolyF4(u8 *prim);
 extern Car *D_800A35E0[];
 extern void FileRead(s32 buffer, s32 size, s32 count, s32 handle);
-extern u8 D_800A2F9CAbsolute[];
+extern u8 gCdAudioEnabledAbsolute[];
 extern void SoundPlaySlot(s8, s8);
 s32 VSync(s32);
 extern u8 D_800A2EE0[];
@@ -3856,7 +3856,7 @@ void SoundStopConditionalSlots(s8 arg0) {
 void func_8005301C(void) {
     Car *obj;
 
-    if (D_800A2F9Dw15[0] == 0) {
+    if (gSoundEffectsEnabledw15[0] == 0) {
         return;
     }
     obj = gPlayerCar[0];
@@ -4298,7 +4298,7 @@ void func_80053C00(s32 arg0, s32 arg1) {
     }
 }
 
-__asm__("D_800A2F9C.MainLoop = D_800A2F9C\n"
+__asm__("gCdAudioEnabled.MainLoop = gCdAudioEnabled\n"
         "D_800A3059.MainLoop = D_800A3059\n"
         "D_800A305A.MainLoop = D_800A305A\n"
         "gSelectedTrack.MainLoop = gSelectedTrack\n"
@@ -4486,7 +4486,7 @@ void PadCalibrateRangeMainLoop(u32, u32, u32) asm("PadCalibrateRange");
 void PadCalibrateCenterMainLoop(u32, u32, u32) asm("PadCalibrateCenter");
 void RaceBuildQualifyingGridMainLoop(u8) asm("RaceBuildQualifyingGrid");
 void func_8005C124MainLoop(u8, u8) asm("func_8005C124");
-extern s8 D_800A2F9CMainLoop[] asm("D_800A2F9C.MainLoop");
+extern s8 gCdAudioEnabledMainLoop[] asm("gCdAudioEnabled.MainLoop");
 extern u8 D_800A3059MainLoop asm("D_800A3059.MainLoop");
 extern u8 D_800A305AMainLoop asm("D_800A305A.MainLoop");
 extern u8 gSelectedTrackMainLoop asm("gSelectedTrack.MainLoop");
@@ -5248,7 +5248,7 @@ void func_80053D40(void) {
                                                 SoundRunSlotEnvelopeMainLoop(0,
                                                                              1);
                                                 func_8003CCE0MainLoop(0);
-                                                D_800A2F9CMainLoop[0] = 0;
+                                                gCdAudioEnabledMainLoop[0] = 0;
                                             }
                                             MenuCenterTextMainLoop(
                                                 D_800A3059MainLoop - 2);
@@ -6723,7 +6723,7 @@ void func_80053D40(void) {
                                                 SoundRunSlotEnvelopeMainLoop(0,
                                                                              1);
                                                 func_8003CCE0MainLoop(0);
-                                                D_800A2F9CMainLoop[0] = 0;
+                                                gCdAudioEnabledMainLoop[0] = 0;
                                             }
                                             MenuCenterTextMainLoop(
                                                 D_800A3059MainLoop - 2);
@@ -7614,7 +7614,7 @@ void MenuHandleOptionsInput(u8 arg0, s32 arg1, u8 arg2, s32 arg3, s32 arg4,
     extern u8 D_800A3076;
     extern u8 D_800A3077;
     extern u8 D_800A306C;
-    extern u8 D_800A306DNM asm("D_800A306D.NON_MATCHING");
+    extern u8 gCdAnnouncerNM asm("gCdAnnouncer.NON_MATCHING");
     extern u8 D_800A306E;
     extern u8 D_800A306F;
     extern u8 D_800A3070;
@@ -7948,7 +7948,7 @@ dispatch:
             D_800A3988P[1] = D_800A3988[1] ^ 1;
             D_800A306C = D_800A306C ^ 1;
             func_8005C8D8(1);
-            if (D_800A306DNM != 0) {
+            if (gCdAnnouncerNM != 0) {
                 gStereoEnabledNM[0] = 0;
                 SsSetMono();
             } else {
@@ -9459,7 +9459,7 @@ extern DISPENV D_800BDE18put[] asm("D_800BDE18");
 extern s32 D_800A3904[];
 extern u8 D_800A3A48;
 extern u8 D_800A3724;
-extern u8 D_800A2F9C[];
+extern u8 gCdAudioEnabled[];
 extern DRAWENV D_800BDDA8[];
 extern DISPENV D_800BDE18[];
 extern s32 D_800A3638;
@@ -9621,7 +9621,7 @@ void func_80058D94(void) {
     } while (end >= (u8 *)dst);
     LoadImage(D_800A3710, (u_long *)texBuf);
     frame = 1;
-    D_800A2F9C[0] = frame;
+    gCdAudioEnabled[0] = frame;
     CdPlayAudioTrack(5);
     SsSetMVol(0x7F, 0x7F);
     D_800A3724 = frame;
@@ -9896,7 +9896,7 @@ void GraphicsLoadPaletteRow(void) {
 #endif
 
 void CdEnablePlaybackAndSetVolume(void) {
-    D_800A2F9CAbsolute[0] = 1;
+    gCdAudioEnabledAbsolute[0] = 1;
     CdPlayAudioTrack(3);
     CdSetMixVolume(gCdVolume);
 }

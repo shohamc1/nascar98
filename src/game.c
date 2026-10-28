@@ -127,9 +127,9 @@ void GameRunSession(void) {
     extern s32 gCdTocRead[];
     extern s32 D_800A2F54[];
     extern s32 D_800A2EC4Absolute[];
-    extern u8 D_800A306DAbsolute[];
+    extern u8 gCdAnnouncerAbsolute[];
     extern s16 gCdVolumeAbsolute[];
-    extern s8 D_800A2F9CAbsolute[];
+    extern s8 gCdAudioEnabledAbsolute[];
     extern s32 gTrackSurfaceFileId;
     extern s32 D_800A3948;
     extern u8 D_800A3884[];
@@ -251,13 +251,13 @@ void GameRunSession(void) {
     RacePlaceCarsOnStartingGrid();
     HeapAllocateLargeBlock();
     SsSetMVol(127, 127);
-    if (D_800A306DAbsolute[0] != 0 && gSessionTypeAbsolute[0] != -1) {
-        D_800A2F9CAbsolute[0] = 0;
+    if (gCdAnnouncerAbsolute[0] != 0 && gSessionTypeAbsolute[0] != -1) {
+        gCdAudioEnabledAbsolute[0] = 0;
     } else {
         if (gCdVolumeAbsolute[0] != 0) {
-            D_800A2F9CAbsolute[0] = 1;
+            gCdAudioEnabledAbsolute[0] = 1;
         } else {
-            D_800A2F9CAbsolute[0] = 0;
+            gCdAudioEnabledAbsolute[0] = 0;
         }
         RacePlayRandomMusic();
     }
@@ -1303,8 +1303,8 @@ extern s32 D_800A2E90w15[] asm("D_800A2E90.NON_MATCHING");
 extern s32 D_800A2EA8w15[] asm("D_800A2EA8.NON_MATCHING");
 extern s16 gMusicVolumew15[] asm("gMusicVolume.NON_MATCHING");
 extern s16 gCdVolumew15[] asm("gCdVolume.NON_MATCHING");
-extern u8 D_800A2F9Dw15[] asm("D_800A2F9D.NON_MATCHING");
-extern u8 D_800A2F9Cw15[] asm("D_800A2F9C.NON_MATCHING");
+extern u8 gSoundEffectsEnabledw15[] asm("gSoundEffectsEnabled.NON_MATCHING");
+extern u8 gCdAudioEnabledw15[] asm("gCdAudioEnabled.NON_MATCHING");
 extern u8 D_800A2EDCw15[] asm("D_800A2EDC.NON_MATCHING");
 extern u8 D_800A2EE0w15[] asm("D_800A2EE0.NON_MATCHING");
 extern u8 D_800A2EE4w15[] asm("D_800A2EE4.NON_MATCHING");
@@ -1410,14 +1410,14 @@ dispatchDone:
         D_800A2EA8w15[0] = 999;
     }
     if (gMusicVolumew15[0] != 0) {
-        D_800A2F9Dw15[0] = 1;
+        gSoundEffectsEnabledw15[0] = 1;
     } else {
-        D_800A2F9Dw15[0] = 0;
+        gSoundEffectsEnabledw15[0] = 0;
     }
     if (gCdVolumew15[0] != 0) {
-        D_800A2F9Cw15[0] = 1;
+        gCdAudioEnabledw15[0] = 1;
     } else {
-        D_800A2F9Cw15[0] = 0;
+        gCdAudioEnabledw15[0] = 0;
     }
     if (D_800A2EDCw15[0] == 0) {
         D_800A2EE0w15[0] = 0;

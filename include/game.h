@@ -89,7 +89,7 @@ extern s32 D_800A2ED4[];
 extern u8 D_800A2ED9[];
 extern u8 D_800A2EDC[];
 extern s32 D_800A2F10[];
-extern u8 D_800A2F9DAbsolute[];
+extern u8 gSoundEffectsEnabledAbsolute[];
 extern char gTextPositiveSign[];
 extern u8 D_800A3068[];
 extern u8 D_800A3069[];

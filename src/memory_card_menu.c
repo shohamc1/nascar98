@@ -40,7 +40,7 @@ extern u8 gPlayerDriverAbsolute4[];
 extern u8 D_800A3072AbsoluteU8[] asm("D_800A3072Absolute");
 extern u8 D_800A306FAbsoluteU8[] asm("D_800A306FAbsolute");
 extern u8 D_800A306EAbsoluteU8[] asm("D_800A306EAbsolute");
-extern u8 D_800A306DAbsoluteU8[] asm("D_800A306DAbsolute");
+extern u8 gCdAnnouncerAbsoluteU8[] asm("gCdAnnouncerAbsolute");
 extern u8 D_800A306CAbsoluteU8[] asm("D_800A306CAbsolute");
 
 void func_8006BD68(void);
@@ -92,7 +92,8 @@ void func_80062F6C(s32 arg0, s32 arg1);
 void func_800641EC(void);
 void MenuSetTextObject(MenuObj *obj, u8 a, u8 b, s32 c, u8 d, s32 e);
 
-static __inline__ MenuObj *CardInitRecordCell(MenuObj *obj, s32 value, u8 center) {
+static __inline__ MenuObj *CardInitRecordCell(MenuObj *obj, s32 value,
+                                              u8 center) {
     s32 depth;
     MenuText *text;
 
@@ -2266,7 +2267,7 @@ void func_8006B3E0(s32 arg0, s32 arg1, s32 arg2) {
 }
 
 extern u8 *volatile D_800A3604Vol asm("D_800A3604.NON_MATCHING");
-extern u8 D_800A306D[];
+extern u8 gCdAnnouncer[];
 extern u8 D_800A3078[];
 extern u8 gMusicVolumeScaledR[] asm("gMusicVolumeScaled.NON_MATCHING");
 extern u8 gStereoEnabledR[] asm("gStereoEnabled.NON_MATCHING");
@@ -2328,7 +2329,7 @@ void CardMenuSaveSettings(void) {
     s32 i;
 
     D_800A3604Vol[0] = D_800A3073[-3] << 7 | D_800A306CAbsoluteU8[0] << 6 |
-                       D_800A306DAbsoluteU8[0] << 5 |
+                       gCdAnnouncerAbsoluteU8[0] << 5 |
                        D_800A306FAbsoluteU8[0] << 2 | D_800A306EAbsoluteU8[0];
     D_800A3604Vol[0xB] =
         D_800A3073[2] << 2 | D_800A3072AbsoluteU8[0] << 1 | D_800A3073[-2] & 1;
@@ -2627,7 +2628,7 @@ void func_8006BD68(void) {
     D_800B9B74[0] = gSelectedTrackR[0];
     D_800B9B75[0] =
         D_800A306ER[0] |
-        (D_800A3070R[0] << 7 | D_800A306CR[0] << 6 | D_800A306D[0] << 5 |
+        (D_800A3070R[0] << 7 | D_800A306CR[0] << 6 | gCdAnnouncer[0] << 5 |
          D_800A3068[0] << 4 | D_800A3069[0] << 3 | D_800A306FR[0] << 2);
     D_800B9B82[0] =
         D_800A3075[0] << 2 | D_800A3072R[0] << 1 | D_800A3071R[0] & 1;
