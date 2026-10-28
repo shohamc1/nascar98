@@ -178,9 +178,21 @@ class Executes(unittest.TestCase):
         for p, expected in ((14, "96 96"), (3, "120 120"), (-30, "384 128")):
             self.check(statement, f"s32 m, i, p = {p};", 'printf("%d %d", m, i);', expected)
 
-    def test_reorder_branch_has_no_delay_slot(self) -> None:
+    def test_branch_has_a_delay_slot_by_default(self) -> None:
+        # maspsx assembles every function under .set noreorder, so inline
+        # asm runs the instruction after a branch on both paths, as retail's
+        # func_8002BD48 does with the mult after its bnez.
         self.check(
             'asm("beqz %1, 1f\\n\\taddiu %0, %0, 1\\n1:\\n\\taddiu %0, %0, 2" : "=r"(x) : "r"(c), "0"(x));',
+            "s32 x = 0, c = 0;",
+            'printf("%d", x);',
+            "3",
+        )
+
+    def test_set_reorder_branch_has_no_delay_slot(self) -> None:
+        self.check(
+            'asm(".set\\treorder\\n\\tbeqz %1, 1f\\n\\taddiu %0, %0, 1\\n1:\\n\\taddiu %0, %0, 2"'
+            ' : "=r"(x) : "r"(c), "0"(x));',
             "s32 x = 0, c = 0;",
             'printf("%d", x);',
             "2",

@@ -3,8 +3,10 @@
 The matching build keeps some instruction sequences as GCC inline asm.
 The native port has no MIPS, so tools/port_filter.py asks translate() for
 an equivalent C block. The block models the statement exactly: 32-bit
-registers, HI/LO, loads and stores, local branches, and the delay slot of
-a branch under `.set noreorder`.
+registers, HI/LO, loads and stores, local branches, and branch delay
+slots: maspsx assembles every function under `.set noreorder`, so a
+branch's next instruction runs on both paths unless the asm sets
+`.set reorder`.
 
 A statement is self-contained when values enter and leave only through
 its %N operands. Hard registers may appear only as scratch, named in the
@@ -366,7 +368,9 @@ class Translator:
             hits = [i for i, n in labels if n == token]
             return names[hits[0]] if hits else self.missing(token)
 
-        noreorder = False
+        # maspsx assembles each function under .set noreorder, inline asm
+        # included: a branch's next instruction is its delay slot.
+        noreorder = True
         i = 0
         while i < len(items):
             label, op, args = items[i]
