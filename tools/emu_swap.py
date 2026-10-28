@@ -612,6 +612,7 @@ def run_swap(args: argparse.Namespace) -> None:
     # shifts this run, and the pad script shifts with it.
     timeline = baseline_frames(args.baseline) if hold and args.baseline else []
     record = len(page_hashes(bytes(ec.RAM_SIZE)))
+    poke = ec.parse_poke(args.poke, False)
     while emu.frame < args.frames:
         # The race reads the pad partway through its three-VBlank frame,
         # so slower code would see a later input: hold the pad as it was
@@ -620,6 +621,11 @@ def run_swap(args: argparse.Namespace) -> None:
             held = last_sync is not None and emu.frame - last_sync < 8
             emu.input_frame = (last_sync if held else emu.frame) - offset
         emu.run()
+        # On the pad script's frames, so the poke follows the baseline too.
+        if poke and emu.frame - offset >= poke[0]:
+            for address, value in poke[1]:
+                emu.write(address, struct.pack("<I", value))
+            poke = None
         if args.shots and emu.frame % args.shots == 0:
             emu.screenshot(out / f"{emu.frame:06d}.bmp")
         if not patched:
@@ -791,6 +797,7 @@ def main() -> None:
     p.add_argument("--after", type=int, default=2, help="syncs to run past the first difference")
     p.add_argument("--shots", type=int, default=0, help="write a screenshot every K frames")
     p.add_argument("--dump-syncs", help="comma-separated sync numbers to write in full")
+    p.add_argument("--poke", help="FRAME:NAME=VALUE[,NAME=VALUE...] writes words after that pad script frame")
     p.add_argument("out")
     p = sub.add_parser("diff")
     p.add_argument("a")

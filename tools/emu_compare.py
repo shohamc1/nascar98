@@ -26,6 +26,7 @@ import html
 import os
 import pathlib
 import re
+import shutil
 import struct
 import subprocess
 import sys
@@ -86,6 +87,7 @@ ENV_GET_SYSTEM_DIRECTORY = 9
 ENV_GET_VARIABLE = 15
 ENV_SET_PIXEL_FORMAT = 10
 ENV_GET_SAVE_DIRECTORY = 31
+RETRO_MEMORY_SAVE_RAM = 0  # Beetle's card in slot 1
 RETRO_MEMORY_SYSTEM_RAM = 2
 PIXEL_XRGB8888 = 1
 PIXEL_RGB565 = 2
@@ -177,6 +179,13 @@ class Emulator:
     def write(self, address: int, data: bytes) -> None:
         ctypes.memmove(self.ram_address + address - RAM_BASE, data, len(data))
 
+    def card(self) -> bytes:
+        size = self.core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM)
+        return ctypes.string_at(self.core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), size)
+
+    def load_card(self, data: bytes) -> None:
+        ctypes.memmove(self.core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), data, len(data))
+
     def screenshot(self, path: pathlib.Path) -> None:
         if self.video:
             write_bmp(path, *to_rgb(self.format, *self.video))
@@ -202,6 +211,8 @@ def run_emu(args: argparse.Namespace) -> None:
     out = pathlib.Path(args.out)
     emu = Emulator(args.core, args.bios, args.pad, out)
     poke = parse_poke(args.poke, False)
+    if args.card:
+        emu.load_card(pathlib.Path(args.card).read_bytes())
     while emu.frame < args.frames:
         emu.run()
         if poke and emu.frame == poke[0]:
@@ -211,6 +222,7 @@ def run_emu(args: argparse.Namespace) -> None:
             continue
         (out / f"{emu.frame:06d}.ram").write_bytes(emu.ram())
         emu.screenshot(out / f"{emu.frame:06d}.bmp")
+    (out / "card1.mcd").write_bytes(emu.card())  # the port's name for it
     emu.close()
 
 
@@ -238,6 +250,8 @@ def run_port(args: argparse.Namespace) -> None:
         env["NASCAR98_POKE"] = f"{poke[0]}:" + ",".join(f"{a:#x}={v:#x}" for a, v in poke[1])
     env["NASCAR98_SAVES"] = str((out / "saves").resolve())
     (out / "saves").mkdir(exist_ok=True)
+    if args.card:
+        shutil.copyfile(args.card, out / "saves/card1.mcd")
     subprocess.run([str(ROOT / "build/port/nascar98")], env=env, cwd=ROOT, check=False)
 
 
@@ -405,6 +419,7 @@ def main() -> None:
         p.add_argument("--every", type=int, default=30)
         p.add_argument("--start", type=int, default=0, help="first frame to dump")
         p.add_argument("--poke", help="FRAME:NAME=VALUE[,NAME=VALUE...] writes words after that frame")
+        p.add_argument("--card", help="a 128 KB card image to start with in slot 1 (out/card1.mcd has the last)")
         p.add_argument("out")
         if name == "emu":
             p.add_argument("--core", required=True)
