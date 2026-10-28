@@ -45,7 +45,7 @@ void CarUpdateEngineRpm(Car *obj);
 void func_8003667C(u32 *list);
 void func_80041328(void);
 void func_8002B538(Car *arg0);
-void func_8002D16C(Car *car);
+void CarUpdateDraft(Car *car);
 void func_8002B258(Car *arg0);
 void func_8003A440(void);
 void CarUpdateAi(Car *arg0);

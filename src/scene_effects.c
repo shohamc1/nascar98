@@ -2665,11 +2665,11 @@ typedef struct HudVertex {
     s16 y;
 } HudVertex;
 
-extern s16 D_800A38E4[];
+extern s16 gDraftDistance[];
 extern s32 gOrderingTableAbsolute[];
 extern s32 D_800A39C4nm[] asm("D_800A39C4.NON_MATCHING");
 extern s32 D_800A39CCnm[] asm("D_800A39CC.NON_MATCHING");
-extern s32 D_800A2E50[];
+extern s32 gDraftRange[];
 extern s8 *D_800A78C4[];
 extern u8 D_800A3490;
 extern u8 D_800A3485;
@@ -2692,8 +2692,8 @@ extern u16 D_800A7574[];
 extern u16 D_800A7576[];
 extern u16 D_800A7578[];
 extern u16 D_800A757A[];
-extern POLY_FT4 D_800A757C[];
-extern POLY_FT4 D_800A770C[];
+extern POLY_FT4 gHudDraftLamps[];
+extern POLY_FT4 gHudDraftLamps2[];
 extern TILE D_800A7924[];
 extern TILE D_800A7954[];
 extern u8 D_800A78D4[];
@@ -2763,43 +2763,45 @@ void HudDrawCar(Car *car, s16 yOffset) {
         split = 1;
     }
     if (D_800A2ED4[0] == 0) {
-        if (car->unk3FC != 0) {
-            level =
-                (s32)((D_800A2E50[0] - D_800A38E4[0]) * 10) / D_800A2E50[0] + 2;
+        if (car->draftTimer != 0) {
+            level = (s32)((gDraftRange[0] - gDraftDistance[0]) * 10) /
+                        gDraftRange[0] +
+                    2;
         } else {
             level = 0;
         }
         if (level >= 11) {
             level = 10;
         }
-        cur = car->unk3FD;
+        cur = car->draftLevel;
         if (cur < level) {
-            car->unk3FD = cur + 1;
+            car->draftLevel = cur + 1;
         } else if (level < cur) {
-            car->unk3FD = cur - 1;
+            car->draftLevel = cur - 1;
         }
         if (D_800A372C != 0 && (u8)car->unk401 != 0) {
-            car->unk402 =
-                car->unk402 <= car->rpm - 0x64
-                    ? car->unk402 + 0x64
-                    : (car->unk402 >= car->rpm + 0x64 ? car->unk402 - 0x64
-                                                      : car->rpm);
-            car->unk40C = car->speed - 0x10000 >= car->unk40C
-                              ? car->unk40C + 0x10000
-                              : (car->unk40C >= car->speed + 0x10000
-                                     ? car->unk40C - 0x10000
-                                     : car->speed);
+            car->displayRpm = car->displayRpm <= car->rpm - 0x64
+                                  ? car->displayRpm + 0x64
+                                  : (car->displayRpm >= car->rpm + 0x64
+                                         ? car->displayRpm - 0x64
+                                         : car->rpm);
+            car->displaySpeed = car->speed - 0x10000 >= car->displaySpeed
+                                    ? car->displaySpeed + 0x10000
+                                    : (car->displaySpeed >= car->speed + 0x10000
+                                           ? car->displaySpeed - 0x10000
+                                           : car->speed);
         } else {
-            car->unk402 =
-                car->unk402 <= car->rpm - 0x3E8
-                    ? car->unk402 + 0x3E8
-                    : (car->unk402 >= car->rpm + 0x3E8 ? car->unk402 - 0x3E8
-                                                       : car->rpm);
-            car->unk40C = car->speed - 0x140000 >= car->unk40C
-                              ? car->unk40C + 0x140000
-                              : (car->unk40C >= car->speed + 0x140000
-                                     ? car->unk40C - 0x140000
-                                     : car->speed);
+            car->displayRpm = car->displayRpm <= car->rpm - 0x3E8
+                                  ? car->displayRpm + 0x3E8
+                                  : (car->displayRpm >= car->rpm + 0x3E8
+                                         ? car->displayRpm - 0x3E8
+                                         : car->rpm);
+            car->displaySpeed =
+                car->speed - 0x140000 >= car->displaySpeed
+                    ? car->displaySpeed + 0x140000
+                    : (car->displaySpeed >= car->speed + 0x140000
+                           ? car->displaySpeed - 0x140000
+                           : car->speed);
         }
         /* D_800A3480 eases toward the target by 1, 4 or 8 a frame and is then
          * clamped. The three stores in the first arms name the byte three ways
@@ -2849,19 +2851,19 @@ void HudDrawCar(Car *car, s16 yOffset) {
             gOrderingTableAbsolute[0] = gOrderingTable[0] + 4;
             if (split) {
                 if (car == gPlayerCar[0]) {
-                    seg = D_800A757C;
+                    seg = gHudDraftLamps;
                     needle = D_800A78D4;
                     tiles = D_800A7924;
                 } else {
-                    seg = D_800A770C;
+                    seg = gHudDraftLamps2;
                     needle = D_800A78FC;
                     tiles = D_800A7954;
                 }
-                for (i = 0; i < car->unk3FD; i++) {
+                for (i = 0; i < car->draftLevel; i++) {
                     seg[i].b0 = 0xFF;
                     GraphicsAddPolyFT4((u8 *)&seg[i]);
                 }
-                for (i = car->unk3FD; i < 10; i++) {
+                for (i = car->draftLevel; i < 10; i++) {
                     seg[i].b0 = 0x40;
                     GraphicsAddPolyFT4((u8 *)&seg[i]);
                 }
@@ -2872,7 +2874,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
                 for (i = 0; i < 3; i++) {
                     GraphicsAddPolyFT4((u8 *)&tiles[i]);
                 }
-                ang = (car->unk402 * 0x1F40) / 13250 + 0x3E8;
+                ang = (car->displayRpm * 0x1F40) / 13250 + 0x3E8;
                 scaled = (s16)ang << 8;
                 idx = (car->automatic != 0 || car->gearIndex == car->unk110 ||
                                D_800A2F58Absolute[0] != 0
@@ -2954,7 +2956,7 @@ void HudDrawCar(Car *car, s16 yOffset) {
             func_80018768((void *)car->time, layout->unk14,
                           layout->unk16 + yOffset, 2);
             if (split) {
-                func_800188B0(car->unk40C, car->unkF7, layout->unk0,
+                func_800188B0(car->displaySpeed, car->unkF7, layout->unk0,
                               layout->unk2 + yOffset, 2);
                 func_80018B18(car->gearIndex + 1, layout->unk18,
                               layout->unk1A + yOffset, 2);
@@ -3380,8 +3382,8 @@ void HudInitRacePrims(void) {
             {
                 register u8 *addressBase;
 
-                /* la addressBase, D_800A757C; addu with the column offset */
-                addressBase = (u8 *)D_800A757C;
+                /* la addressBase, gHudDraftLamps; addu with the column offset */
+                addressBase = (u8 *)gHudDraftLamps;
                 mapCall = addressBase + col * 0x28;
             }
             mapCall = (u8 *)((u32)(view * 0x190) + (u32)mapCall);
@@ -3390,8 +3392,8 @@ void HudInitRacePrims(void) {
             {
                 register u8 *addressBase;
 
-                /* la addressBase, D_800A757C; addu */
-                addressBase = (u8 *)D_800A757C;
+                /* la addressBase, gHudDraftLamps; addu */
+                addressBase = (u8 *)gHudDraftLamps;
                 mapPrim = (POLY_FT4 *)(addressBase + view * 0x190 + col * 0x28);
             }
             mapPrim->r0 = 0x40;
@@ -3707,7 +3709,7 @@ void HudInitRacePrims(void) {
             {
                 register u8 *addressBase asm("$8");
 
-                asm("lui %1,%%hi(D_800A757C)\naddiu %1,%1,%%lo(D_800A757C)\naddu %0,%3,%1"
+                asm("lui %1,%%hi(gHudDraftLamps)\naddiu %1,%1,%%lo(gHudDraftLamps)\naddu %0,%3,%1"
                     : "=r"(mapCall), "=&r"(addressBase)
                     : "r"(view * 0x190), "r"(col * 0x28));
             }
@@ -3717,7 +3719,7 @@ void HudInitRacePrims(void) {
             {
                 register u8 *addressBase asm("$8");
 
-                asm("lui %1,%%hi(D_800A757C)\naddiu %1,%1,%%lo(D_800A757C)\naddu %0,%2,%1"
+                asm("lui %1,%%hi(gHudDraftLamps)\naddiu %1,%1,%%lo(gHudDraftLamps)\naddu %0,%2,%1"
                     : "=r"(mapPrim), "=&r"(addressBase)
                     : "r"(view * 0x190 + col * 0x28));
             }
@@ -3972,16 +3974,16 @@ void func_8004AFE0(s8 arg0, u16 *arg1, u16 *arg2) {
 void func_8004B128(Car *arg0) {
     s8 value;
 
-    if (arg0->unk3FC != 0) {
-        value = (D_800A2E50[0] - D_800A38E4[0]) * 10 / D_800A2E50[0] + 2;
+    if (arg0->draftTimer != 0) {
+        value = (gDraftRange[0] - gDraftDistance[0]) * 10 / gDraftRange[0] + 2;
     } else {
         value = 0;
     }
     if (value >= 0xB) {
         value = 0xA;
     }
-    arg0->unk3FD = value;
-    arg0->unk402 = (u16)arg0->rpm;
+    arg0->draftLevel = value;
+    arg0->displayRpm = (u16)arg0->rpm;
 }
 
 /* These calls keep the preceding result in the delay slot. */
@@ -4072,7 +4074,7 @@ void HudDrawDashboard(void) {
 
                 /* Scale the tachometer angle by 585/13250 or 658/13250. */
                 car = gPlayerCar[0];
-                rpm = car->unk402;
+                rpm = car->displayRpm;
                 if (car->automatic != 0 || car->gearIndex == car->unk110) {
                     trueFactor = 0x9E468F35;
                     numerator = rpm * 585;
@@ -4142,7 +4144,7 @@ void HudDrawDashboard(void) {
             }
             case 3:
                 angles[0] =
-                    ((s32)((u8)gPlayerCar[0]->unk3FD << 24) >> 21) + 0x2D8;
+                    ((s32)((u8)gPlayerCar[0]->draftLevel << 24) >> 21) + 0x2D8;
                 break;
             }
             vertex = 0;
@@ -4707,7 +4709,7 @@ void HudDrawDashboard(void) {
 
                 /* Scale the tachometer angle by 585/13250 or 658/13250. */
                 car = gPlayerCar[0];
-                rpm = car->unk402;
+                rpm = car->displayRpm;
                 if (car->automatic != 0 || car->gearIndex == car->unk110) {
                     trueFactor = 0x9E468F35;
                     numerator = rpm * 585;
@@ -4783,7 +4785,7 @@ void HudDrawDashboard(void) {
             }
             case 3:
                 angles[0] =
-                    ((s32)((u8)gPlayerCar[0]->unk3FD << 24) >> 21) + 0x2D8;
+                    ((s32)((u8)gPlayerCar[0]->draftLevel << 24) >> 21) + 0x2D8;
                 break;
             }
             vertex = 0;

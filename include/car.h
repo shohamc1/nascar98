@@ -309,18 +309,18 @@ typedef struct Car {
     struct Car *next; /* 0x3E0 */
     CarLink order; /* 0x3E4 */
     CarLink sectionLink; /* 0x3F0 */
-    u8 unk3FC; /* 0x3FC */
-    s8 unk3FD; /* 0x3FD */
+    u8 draftTimer; /* 0x3FC: 1 while drafting; 0x28 on the drafted car, counting down */
+    s8 draftLevel; /* 0x3FD: draft lamps lit on the HUD, 0 to 10 */
     s8 unk3FE; /* 0x3FE */
     s8 unk3FF; /* 0x3FF */
     s8 unk400; /* 0x400 */
     s8 unk401; /* 0x401 */
-    s16 unk402; /* 0x402 */
+    s16 displayRpm; /* 0x402: rpm eased for the tachometer */
     struct Car *unk404; /* 0x404 */
     s8 unk408; /* 0x408 */
     s8 unk409; /* 0x409 */
     u8 unk40A[0x2];
-    s32 unk40C; /* 0x40C */
+    s32 displaySpeed; /* 0x40C: speed eased for the HUD */
     u8 reverseSpeed; /* 0x410 */
     u8 unk411[0x3];
     s32 unk414; /* 0x414 */

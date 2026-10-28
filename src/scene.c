@@ -2382,7 +2382,7 @@ s32 RaceUpdateCaution(void) {
             player = gPlayerCarLui;
             player->reverseSpeed = 0;
             player->unk120 = 0;
-            gPlayerCarLui->unk3FC = 0;
+            gPlayerCarLui->draftTimer = 0;
             side = CarGetTrackSide(gPlayerCarLui, 0);
             if (side == 1) {
                 gPlayerCarLui->unk26C[14] = 1;

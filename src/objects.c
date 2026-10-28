@@ -39,7 +39,7 @@ void func_800365B8(s32 *out);
 void CarUpdateEngineRpm(Car *obj);
 void func_8003667C(u32 *list);
 void func_8002B538(Car *arg0);
-void func_8002D16C(Car *car);
+void CarUpdateDraft(Car *car);
 void func_8002B258(Car *arg0);
 void func_8003A440(void);
 void CarUpdateAi(Car *arg0);
@@ -3637,7 +3637,7 @@ void CarUpdatePhysicsAndPosition(Car *car) {
     s32 b;
     s32 c;
 
-    func_8002D16C(car);
+    CarUpdateDraft(car);
     func_8002B538(car);
     func_80029A78(car);
     CarApplyCorneringDrag(car);
@@ -4116,7 +4116,7 @@ void CarUpdatePlayer(Car *object) {
         (car->unk37C) = work;
     }
     func_8002B258(car);
-    func_8002D16C(car);
+    CarUpdateDraft(car);
     func_8002B538(car);
     func_80029A78(car);
     CarApplyCorneringDrag(car);
@@ -4146,12 +4146,12 @@ extern s32 D_800A2E54;
 extern s16 D_800A2E58;
 extern s32 D_800A2E5C;
 extern s32 D_800A3A04;
-extern s32 D_800A2E50;
+extern s32 gDraftRange;
 
 void func_8002A954(void) {
     D_800A2E44 = 0x5D;
     D_800A2E48 = 0x1A;
-    D_800A2E50 = (D_800A331D[0] - 0x32) * 0x50;
+    gDraftRange = (D_800A331D[0] - 0x32) * 0x50;
     D_800A2E20[0] = D_800A3320[0];
     D_800A2E54 = (0x70 - D_800A331F[0]) * 0x10000;
     D_800A2E4C = (D_800A331C[0] + 0xC8) / 3;
@@ -5574,7 +5574,7 @@ s32 func_8002CF1C(void) {
     return 2000;
 }
 
-extern s16 D_800A38E4;
+extern s16 gDraftDistance;
 typedef struct {
     s32 x, y, z;
 } Delta3;
@@ -5586,7 +5586,7 @@ s32 CarTestDraft(Car *arg0, Car *arg1) {
      * limit above each ABS split. */
     extern struct {
         s32 dist;
-    } cull asm("D_800A2E50");
+    } cull asm("gDraftRange");
     Delta3 delta;
     u32 unused[8]; /* retail reserves 32 bytes of locals nothing touches */
     Delta3 rot;
@@ -5617,7 +5617,7 @@ s32 CarTestDraft(Car *arg0, Car *arg1) {
             if (delta.x > 0) {
                 arg0->speedBoost =
                     MathFixedDivide(cull.dist - delta.x, D_800A2E58);
-                D_800A38E4 = ABS(delta.x);
+                gDraftDistance = ABS(delta.x);
                 return 1;
             }
         }
@@ -5627,14 +5627,14 @@ s32 CarTestDraft(Car *arg0, Car *arg1) {
 
 s32 CarTestDraft(Car *, Car *);
 
-void func_8002D16C(Car *car) {
+void CarUpdateDraft(Car *car) {
     Car *other;
     s32 flag;
     s32 flag40;
     s32 value;
     s32 newValue;
 
-    car->unk3FC = 0;
+    car->draftTimer = 0;
     if (0x8BFFFF < car->speed) {
         if (D_800A2E94[0] >= 2) {
             other = ((CarLink *)car->sectionLink.node.next)->car;
@@ -5649,11 +5649,11 @@ void func_8002D16C(Car *car) {
                         goto decay;
                     }
                     if ((CarTestDraft(car, other) & 0xFF) != 0) {
-                        car->unk3FC = flag;
+                        car->draftTimer = flag;
                         if (other->type == 0) {
                             return;
                         }
-                        other->unk3FC = flag40;
+                        other->draftTimer = flag40;
                         return;
                     }
                     other = ((CarLink *)other->sectionLink.node.next)->car;
@@ -5893,9 +5893,9 @@ void CarInitDefaults(Car *car) {
     car->penalty = 0;
     car->unk3D0 = 0;
     car->unk3CA = 0;
-    car->unk3FC = 0;
-    car->unk3FD = 0;
-    car->unk402 = 0x2EE0;
+    car->draftTimer = 0;
+    car->draftLevel = 0;
+    car->displayRpm = 0x2EE0;
     car->reverseSpeed = 0;
     car->unk41A = 0;
     car->unk418 = 0;
@@ -12618,7 +12618,7 @@ extern void func_8001FB28373B4(Car *, s16) asm("func_8001FB28");
 extern void func_80029CB4373B4(Car *) asm("func_80029CB4");
 extern void func_8002A1D0373B4(Car *) asm("func_8002A1D0");
 extern void func_8002BC88373B4(Car *) asm("func_8002BC88");
-extern void func_8002D16C373B4(Car *) asm("func_8002D16C");
+extern void CarUpdateDraft373B4(Car *) asm("CarUpdateDraft");
 extern s32 func_800358EC373B4(s32 *) asm("func_800358EC");
 extern void CarSteerTowardHeading373B4(Car *, s32) asm("CarSteerTowardHeading");
 extern s32 func_8003702C373B4(Car *, Car *) asm("func_8003702C");
@@ -12852,7 +12852,7 @@ void func_800373B4(Car *arg0) {
                           0x350)(arg0, port_D_8008D0F8);
                 return;
             }
-            func_8002D16C(arg0);
+            CarUpdateDraft(arg0);
             goto block_5;
         }
     block_5:
@@ -13959,7 +13959,7 @@ void func_800373B4(Car *object) {
                 car->update(car);
                 return;
             }
-            func_8002D16C373B4(car);
+            CarUpdateDraft373B4(car);
             goto block_5;
         }
     block_5:
@@ -14186,7 +14186,7 @@ void func_800373B4(Car *object) {
                 (car->speedBoost) = varV02;
             }
             if (D_800A2F5C373B4 < -(D_800A2E94373B4[0] * 0xC8)) {
-                (car->unk3FC) = 0U;
+                (car->draftTimer) = 0U;
                 tempV04 = D_800A2F5C373B4;
                 (car->speedBoost) = 0;
                 tempV04 += 1;
@@ -14194,14 +14194,14 @@ void func_800373B4(Car *object) {
                 (car->unk84) = MathMultiplyFixed16373B4(
                     (car->unk84), MathFixedDivide373B4(0x60, 0x64));
             }
-            if ((car->unk3FC) != 0) {
+            if ((car->draftTimer) != 0) {
                 if (gSplitScreenMode373B4[0] == 0) {
                     (car->unk84) =
                         (s32)((car->unk84) + (gPlayerCar373B4[0]->speedBoost));
                 } else {
                     (car->unk84) = (s32)((car->unk84) + 0xC0000);
                 }
-                (car->unk3FC) = (u8)((car->unk3FC) - 1);
+                (car->draftTimer) = (u8)((car->draftTimer) - 1);
             }
         }
         (car->unk84) = MathMultiplyFixed16373B4(
@@ -16198,7 +16198,7 @@ void func_8003A440(void) {
                         func_8002A1FC(node);
                     }
                 }
-                node->unk40C = node->speed;
+                node->displaySpeed = node->speed;
             }
             node = node->next;
         } while (node != NULL);

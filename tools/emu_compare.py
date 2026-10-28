@@ -273,6 +273,8 @@ def symbol(name: str, port: bool) -> int:
     if port:
         text = (ROOT / "build/port/nascar98.map").read_text()
         m = re.search(rf"^([0-9a-f]{{8}})\s+\S+\s+\S+\s+{re.escape(name)}$", text, re.M)
+        if not m and re.fullmatch(r"D_[0-9A-F]{8}", name):
+            return int(name[2:], 16)  # heap: the port keeps the console's layout
     elif re.fullmatch(r"D_[0-9A-F]{8}", name):
         return int(name[2:], 16)
     else:
