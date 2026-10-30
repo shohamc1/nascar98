@@ -11167,17 +11167,14 @@ void CameraUpdateHorizon(void) {
     }
     {
         s32 horizonOffset;
-        register s32 horizonEnd asm("v1");
         horizonOffset = b >> 8;
         a = 0xA0 - (a >> 8);
         gHorizonLeftY = a;
-        horizonEnd = gCameraBaseScreenY + horizonOffset;
-        /* Keep the sum separate from its shifted input. */
-        asm("" : "=&r"(horizonEnd) : "0"(horizonEnd), "r"(horizonOffset));
-        gHorizonRightY = horizonEnd;
-        dy = gCameraBaseScreenY - horizonEnd;
+        y = gCameraBaseScreenY + horizonOffset;
+        gHorizonRightY = y;
     }
     if (a != 0xA0) {
+        dy = gCameraBaseScreenY - y;
         dx = 0xA0 - a;
         a = MathFixedDivide(dy, dx);
         gHorizonLeftY =
