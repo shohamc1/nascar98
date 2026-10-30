@@ -2409,9 +2409,8 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     asm volatile(""
                  :
                  : "g"(vertexOffset), "g"(faceOffset), "g"(objectOffset),
-                   "g"(copy16Offset), "g"(positionOffset), "g"(nodesOffset),
-                   "g"(sectionsOffset), "g"(vertexCount)
-                 : "memory");
+                   "g"(nodesOffset), "g"(sectionsOffset), "g"(vertexCount));
+
     /* Inverse of 135 for the aligned 540-byte node records. */
     nodeScale = 0xE1A8C537;
     nodeDataStart = (u8 *)fileData + nodesOffset;

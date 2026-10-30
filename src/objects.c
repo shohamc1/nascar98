@@ -1645,15 +1645,13 @@ s32 CarHandlePairCollision(Car *firstCar, Car *secondCar) {
                     tmp1 = (s32)gSinTableAbsolute[0];
                     tmp0 = car->frontVelocityX;
                     scratchA0 += tmp1;
-                    asm(""
-                        : "=r"(impulsePart)
-                        : "0"(impulseX), "r"(tmp0), "r"(scratchA0));
+                    asm("" : "=r"(impulsePart) : "0"(impulseX));
                     tmp0 += impulsePart;
                     car->frontVelocityX = tmp0;
                     tmp0 = *(s32 *)scratchA0;
                     impulseY = relativeSpeed * tmp0;
                     tmp0 = car->frontVelocityY;
-                    asm("" : "=r"(impulsePart) : "0"(impulseY), "r"(tmp0));
+                    asm("" : "=r"(impulsePart) : "0"(impulseY));
                     tmp0 += impulsePart;
                     car->frontVelocityY = tmp0;
                     result = 2;
@@ -2678,7 +2676,7 @@ s32 CarHandleWallCollision(Car *object) {
                 normalHeading3 = contact->angle + 0x100;
             }
             value1 = normalHeading3 & 0x3FF;
-            asm volatile("" : "=r"(value1) : "0"(value1) : "memory");
+            asm("" : "=r"(value1) : "0"(value1));
             reverseHeading5 = 0x400;
             reverseHeading5 = (reverseHeading5 - value1) & 0x3FF;
             cosTable = gContactCosTable;
@@ -3938,7 +3936,7 @@ void CarUpdatePlayer(Car *object) {
     steeringLimit = incomingS1;
     D_800A2E24PlayerStep = 0x01EF0000 - ((D_800A2E1CPlayerStep - 3) * 0x30000);
     unkF8 = (u8) * (s8 *)&car->unkF8;
-    asm("" : : "r"(unkF8) : "s3");
+    asm("" : ::"s3");
     do {
         controlFlags = (*(u32 *)&car->flags);
     } while (0);
@@ -4059,10 +4057,10 @@ void CarUpdatePlayer(Car *object) {
     } else {
         /* Retail retains a second analog read and a discarded offset. */
         analogProduct = -((car->unk3C5) * steeringLimit);
-        asm("" : "=r"(car) : "0"(car), "r"(analogProduct));
+        asm("" : "=r"(car) : "0"(car));
         analogSample = car->unk3C5;
         (*(u16 *)&car->steering) = (u16)(analogProduct / 112);
-        asm("" : : "r"(analogSample), "m"(*(u16 *)&car->steering) : "v0");
+        asm("" : : "m"(*(u16 *)&car->steering) : "v0");
         centeredAnalog = analogSample - 128;
         asm("" : : "r"(centeredAnalog));
     }
@@ -5224,7 +5222,7 @@ noSliding:
     }
     headingValue = car->heading;
     frontXValue = car->rearVelocityX;
-    asm volatile("" : : "r"(headingValue), "r"(frontXValue));
+    asm volatile("" :);
     cosBase = gFarCosTable.unk[0];
     initialYaw = 1024;
     headingValue = initialYaw - headingValue;
@@ -10292,10 +10290,10 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     SubdivisionVertex *mid;
     register POLY_FT4 *packet asm("v0");
     grid = vertices;
-    asm("" : : "r"(grid) : "t5");
+    asm("" : : "r"(grid));
     prim = primCursor;
     level = recursionLevel;
-    asm volatile("" : : "r"(grid), "r"(prim), "r"(level));
+    asm volatile("" :);
     /* Reuse the eight scratch values in the GTE routine's order. The empty
    * constraints keep the UV arithmetic and corner loads in that order. */
     work0 = grid[0].x;
@@ -10361,7 +10359,7 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     work2 += work0;
     work2 >>= 1;
     grid[4].z = work2;
-    asm volatile("" : : "m"(grid[4].z) : "memory");
+    asm volatile("" : : "m"(grid[4].z));
     work0 = grid[2].y;
     work2 = grid[8].y;
     right = grid + 5;
@@ -10380,14 +10378,14 @@ u8 *GraphicsSubdivideTexturedQuad(SubdivisionVertex *vertices, u8 *primCursor,
     work0 >>= 1;
     grid[5].x = work3;
     grid[5].y = work0;
-    asm volatile("" : : "m"(grid[5].y) : "memory");
+    asm volatile("" : : "m"(grid[5].y));
     work0 = grid[2].z;
     work1 = grid[8].z;
     work2 = grid[2].u;
     work4 = grid[8].u;
     work3 = grid[2].v;
     work5 = grid[8].v;
-    asm volatile("" : : "r"(work5) : "memory");
+    asm volatile("" : : "r"(work5));
     do {
         center = grid + 4;
     } while (0);

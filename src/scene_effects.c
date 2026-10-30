@@ -1627,8 +1627,7 @@ void SceneInitRoadStrip(void) {
                             cacheOffset = side * 6 + row;
                             asm(""
                                 : "=r"(cacheOffset)
-                                : "0"(cacheOffset), "r"(x)
-                                : "v0");
+                                : "0"(cacheOffset), "r"(x));
                             nextCache = (SceneRoadPoint *)((u8 *)D_800A45D8 +
                                                            cacheOffset);
                             asm("" : "=r"(nextCache) : "0"(nextCache) : "a0");
@@ -1769,7 +1768,7 @@ void SceneUpdateRoadStrip(Car *car) {
                         origin[0];
                     row = slot * 12 + side * 6;
                     /* Build the cache pointer after x is ready. */
-                    asm("" : "=r"(row) : "0"(row), "r"(x) : "v0", "a1");
+                    asm("" : "=r"(row) : "0"(row), "r"(x) : "a1");
                     cache = (SceneRoadPoint *)((u8 *)D_800A45C0 + row);
                     pointOffset = side * 8;
                     point = (SVECTOR *)(pointOffset + (u32)points);
@@ -1842,7 +1841,7 @@ void SceneUpdateRoadStrip(Car *car) {
                     x = (D_800AE15C[0][(s16)section].x + result.vz >> 2) -
                         origin[0];
                     row = slot * 12 + side * 6;
-                    asm("" : "=r"(row) : "0"(row), "r"(x) : "v0", "a0");
+                    asm("" : "=r"(row) : "0"(row), "r"(x));
                     cache = (SceneRoadPoint *)((u8 *)D_800A45D8 + row);
                     pointOffset = otherSide * 8;
                     point = (SVECTOR *)(pointOffset + (u32)points);
@@ -4833,7 +4832,7 @@ void HudDrawDashboard(void) {
 
                 centerX = *(u16 *)(offset + (u32)D_8009934C);
                 point = (s16 *)((u8 *)point + count);
-                asm("" : "=r"(point) : "0"(point), "r"(centerX), "r"(product));
+                asm("" : "=r"(point) : "0"(point), "r"(product));
                 product -= callResult;
                 product >>= 16;
                 centerX += product;

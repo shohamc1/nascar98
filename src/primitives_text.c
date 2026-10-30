@@ -81,7 +81,7 @@ void func_80017E08(void) {
         prim->tpage = GetTPage(2, 0, 0x300, 0);
         x0v = (12 * (i % 4)) + 0xD0;
         y0vA = (16 * (i / 4)) + 0x158;
-        asm volatile("" : : "r"(i), "r"(offsetA));
+        asm volatile("" :);
         x1v = (12 * (i % 4)) + 0xDB;
         y2vA = (16 * (i / 4)) + 0x168;
         prim->u0 = x0v;
@@ -1939,7 +1939,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
         helperMode = 2;
         if ((s32)helperTime != 0x7FFFFFFF) {
             helperBuffer = (s32)text;
-            asm("" : : "r"(helperTime), "r"(helperMode), "r"(helperBuffer));
+            asm("" : : "r"(helperBuffer));
             y = 159 - yOffset;
             TextFormatTime(helperTime, helperMode, helperBuffer);
             x = 252;

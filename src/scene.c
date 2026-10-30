@@ -1416,7 +1416,7 @@ void HudUpdateTrafficGapData(void) {
             D_800A34B4 = (s32)strtok(D_800A8A4C, gTextSpaceDelimiter);
             D_800A34B4 = (s32)strtok((char *)0, gTextSpaceDelimiter);
         }
-        asm volatile("" : : : "memory");
+        asm volatile("" :);
         if (*(s32 *)&gPlayerCar[0]->order.node.previous != 0) {
             e0 = (u8 *)((CarLink *)gPlayerCar[0]->order.node.previous)->car;
             len = gTrackSectionCount[0];
@@ -1685,7 +1685,7 @@ void MenuDrawLapStatistics(s8 lap, s8 mode) {
             setting = *(s8 *)((u8 *)D_800A8A74[lap] + setupIndex);
             valueBuffer = valueText;
             /* Set the buffer argument before the sign test. */
-            asm("" : : "r"(valueBuffer), "r"(setting));
+            asm("" :);
             valueFormat = gFormatIntegerDotIntegerMenu;
             if (setting < 0) {
                 setting = -setting;
@@ -2832,7 +2832,7 @@ void SceneSkyFadeDraw(void) {
             }
             result = (u8)D_800A34D4;
             argument = D_800A34D8;
-            asm("" : "=r"(result) : "0"(result), "r"(argument));
+            asm("" : "=r"(result) : "0"(result));
             result = (s8)result;
             yBase = result + 0x122;
             result = 0x280 - argument;
@@ -2940,7 +2940,7 @@ void SceneSkyFadeDraw(void) {
             argument = (s32)gSinTableNext[0];
             asm(""
                 : "=r"(byteValue), "=r"(argument)
-                : "0"(byteValue), "1"(argument), "r"(result));
+                : "0"(byteValue), "1"(argument));
             do {
                 yStep = 0x3C;
             } while (0);
@@ -2953,7 +2953,7 @@ void SceneSkyFadeDraw(void) {
             byteValue = 0x2D0000;
             asm(""
                 : "=r"(factor), "=r"(byteValue)
-                : "0"(factor), "1"(byteValue), "r"(argument), "r"(result));
+                : "0"(factor), "1"(byteValue));
             gradA = result + byteValue;
             result = MathMultiplyFixed16(argument, factor);
         }
@@ -3000,7 +3000,7 @@ void SceneSkyFadeDraw(void) {
             primitive = D_800A8B4C;
             asm(""
                 : "=r"(factor), "=r"(primitive)
-                : "0"(factor), "1"(primitive), "r"(argument), "r"(result));
+                : "0"(factor), "1"(primitive));
             primitive[0] = yBase + (result >> 16);
             result = MathMultiplyFixed16(argument, factor);
             factor = home.entryA;
@@ -3077,7 +3077,7 @@ void SceneSkyFadeDraw(void) {
                     result = MathMultiplyFixed16(gradA, factor);
                     {
                         register s32 table asm("v1");
-                        asm("" : "=r"(t2) : "0"(t2), "r"(result));
+                        asm("" : "=r"(t2) : "0"(t2));
                         t2 <<= 24;
                         argument = t2 >> 24;
                         asm(""
@@ -3180,7 +3180,7 @@ void SceneSkyFadeDraw(void) {
             primitive = D_800A8B04;
             asm(""
                 : "=r"(factor), "=r"(primitive)
-                : "0"(factor), "1"(primitive), "r"(argument), "r"(result));
+                : "0"(factor), "1"(primitive));
             primitive[0] = yBase + (result >> 16);
             result = MathMultiplyFixed16(argument, factor);
             factor = home.entryA;
@@ -3257,7 +3257,7 @@ void SceneSkyFadeDraw(void) {
                     result = MathMultiplyFixed16(gradA, factor);
                     {
                         register s32 table asm("v1");
-                        asm("" : "=r"(t2) : "0"(t2), "r"(result));
+                        asm("" : "=r"(t2) : "0"(t2));
                         t2 <<= 24;
                         argument = t2 >> 24;
                         asm(""
@@ -3391,10 +3391,8 @@ void SceneSkyFadeDraw(void) {
         accum = callOut;
         callOut = MathMultiplyFixed16(argA, argB);
         buf = (s16 *)((u8 *)home.buf + signedI);
-        asm(""
-            : "=r"(buf), "=r"(accum)
-            : "0"(buf), "1"(accum), "r"(callOut)
-            : "memory");
+        asm("" : "=r"(buf), "=r"(accum) : "0"(buf), "1"(accum));
+
         scratch1 = D_800A34DC;
         accum -= callOut;
         accum >>= 16;
@@ -7283,11 +7281,9 @@ void func_80053D40(void) {
                                                             if (D_800A3059MainLoopPostDown ==
                                                                 4) {
                                                                 /* Keep the two skip paths separate until the store. */
-                                                                asm volatile(
-                                                                    ""
-                                                                    :
-                                                                    :
-                                                                    : "memory");
+                                                                asm volatile(""
+                                                                             :);
+
                                                                 goto skipLockedItems;
                                                             }
                                                         }

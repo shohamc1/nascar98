@@ -2044,11 +2044,8 @@ void CdUpdateStream(void) {
             restartPosition = (u8 *)restartReadRecord + 0x24;
             restartReadStream[0x450 / 4] = readBuffer;
             restartReadStream[0x454 / 4] = readSectors;
-            asm(""
-                :
-                : "r"(readBuffer), "r"(restartReadRecord), "r"(restartPosition),
-                  "r"(readSectors)
-                : "memory");
+            asm("" : : "r"(restartReadRecord) : "memory");
+
             SwEnterCriticalSection();
             restartReadQueue = (volatile s32 *)gCdStream;
             ((s32 *)restartReadQueue)[restartReadQueue[0x40C / 4]++ + 2] =
@@ -2087,10 +2084,8 @@ void CdUpdateStream(void) {
         contiguousSectors -= availableLimit;
         /* Keep both values until the minimum has been selected. */
         availableLimit = availableSectors;
-        asm(""
-            : "=r"(availableLimit)
-            : "0"(availableLimit), "r"(availableSectors),
-              "r"(contiguousSectors));
+        asm("" : "=r"(availableLimit) : "0"(availableLimit));
+
         test = availableLimit < contiguousSectors;
         if (test) {
             availableSectors = availableLimit;
@@ -2124,10 +2119,8 @@ void CdUpdateStream(void) {
 
             refillPosition = pendingPosition;
             refillSeekStream[0x418 / 4] = requestState;
-            asm(""
-                :
-                : "r"(refillRecord), "r"(refillPosition), "r"(refillSeekStream)
-                : "memory");
+            asm("" : : "r"(refillRecord) : "memory");
+
             SwEnterCriticalSection();
             refillSeekQueue = (volatile s32 *)gCdStream;
             ((s32 *)refillSeekQueue)[refillSeekQueue[0x40C / 4]++ + 2] =
@@ -2164,7 +2157,7 @@ void CdUpdateStream(void) {
 
                 refillReadStream[0x454 / 4] = readSectors;
             } while (0);
-            asm("" : : "r"(readBuffer), "r"(readPosition) : "memory");
+            asm("" : : "r"(readPosition) : "memory");
             SwEnterCriticalSection();
             refillReadQueue = (volatile s32 *)gCdStream;
             ((s32 *)refillReadQueue)[refillReadQueue[0x40C / 4]++ + 2] =

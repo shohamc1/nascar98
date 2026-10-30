@@ -2092,7 +2092,7 @@ void func_800606D4(void) {
         entry->next = cur;
         entry = cur;
     } while ((s32)p < (s32)(table + 2));
-    asm("" : : "r"(two), "r"(two));
+    asm("" : : "r"(two));
 }
 
 typedef struct PanelChild {
@@ -3930,7 +3930,7 @@ panelLoop:
                            "$20", "$31", "memory");
             textCenterX = MenuTextCenterOffset(0x140, textWord) - 0xA0;
         }
-        asm volatile("" : "=r"(textCenterX) : "0"(textCenterX));
+        asm("" : "=r"(textCenterX) : "0"(textCenterX));
         textLeftX = textCenterX - 5;
     loopC:
         {
@@ -5065,7 +5065,7 @@ panelLoop:
                         : "m"(triangleOffset.value)
                         : "$11");
                     rowX += 0xF;
-                    asm volatile("" : : "r"(rowX) : "memory");
+                    asm volatile("" : : "r"(rowX));
                     currentNode->drawOffsetY =
                         (u16)panelNode->drawOffsetY + 0x37;
                     previousNode->next = currentNode;
