@@ -11185,12 +11185,9 @@ void CameraUpdateHorizon(void) {
         gHorizonRightY =
             gHorizonLeftY + (MathMultiplyFixed16(a, 0x1800000) >> 16);
         if (dy != 0) {
-            {
-                register s32 dxSquared asm("v0");
-                dxSquared = dx * dx;
-                y = dy * dy;
-                b = MathSqrt(dxSquared + y);
-            }
+            yaw = dx * dx;
+            y = dy * dy;
+            b = MathSqrt(yaw + y);
             a = MathFixedDivide(dx, b);
             D_800A36A8 =
                 -(MathMultiplyFixed16(-MathFixedDivide(dy, b), 0x580000) >> 16);
