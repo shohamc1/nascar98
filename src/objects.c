@@ -13779,11 +13779,14 @@ void func_800373B4(Car *object) {
     s32 middleFlag;
     s32 middleRandomLimit;
 
-    s32 collisionCarX;
-    s32 collisionCarY;
+    /* Reuse the collision snapshots for final Y/Z motion work. */
+    s32 coordinateWork0;
+    s32 coordinateWork1;
     s32 collisionArgument0;
-    register s32 collisionArgument1 asm("$5");
-    register s32 collisionNeighborY asm("$6");
+    /* Use the projection argument for the final Z position. */
+    s32 coordinateArgument;
+    /* Use the neighbor Y, segment value, and X step in separate phases. */
+    s32 carWork;
     register s32 collisionTableBase asm("$3");
     s32 collisionTableOffset;
     s32 collisionReturn;
@@ -13837,16 +13840,12 @@ void func_800373B4(Car *object) {
     } workspace;
 
     void (*tempV118)(Car *, s32);
-    s32 tempA22;
     s32 sectionValue;
     s32 tailMinusOne;
     s32 tailSegment;
     s32 tailRouteLength;
     register s32 tailTargetValue asm("$9");
-    s32 motionStepY;
-    s32 motionStepZ;
     Car *tailCarArg;
-    register s32 tailPositionZ asm("$5");
 
     s32 varV04;
     register s32 tempA012 asm("$4");
@@ -14822,31 +14821,31 @@ void func_800373B4(Car *object) {
                     loop_270:
                         overlappingCar = workspace.nearby.cars[neighborState];
                         do {
-                            collisionCarX = car->pos.x;
-                            collisionCarY = car->pos.y;
+                            coordinateWork0 = car->pos.x;
+                            coordinateWork1 = car->pos.y;
                             collisionArgument0 = car->heading;
                         } while (0);
                         collisionTableBase = (s32)gCosTable373B4[0];
-                        collisionArgument1 = overlappingCar->pos.x;
-                        collisionNeighborY = overlappingCar->pos.y;
+                        coordinateArgument = overlappingCar->pos.x;
+                        carWork = overlappingCar->pos.y;
                         reverseAngle = 0x3FF - collisionArgument0;
                         collisionTableOffset = reverseAngle << 2;
                         collisionTableBase =
                             collisionTableOffset + collisionTableBase;
                         collisionArgument0 = *(s32 *)collisionTableBase;
-                        deltaX = collisionCarX - collisionArgument1;
-                        collisionArgument1 = deltaX << 16;
-                        deltaY = collisionCarY - collisionNeighborY;
+                        deltaX = coordinateWork0 - coordinateArgument;
+                        coordinateArgument = deltaX << 16;
+                        deltaY = coordinateWork1 - carWork;
                         collisionReturn = MathMultiplyFixed16373B4(
-                            collisionArgument0, collisionArgument1);
+                            collisionArgument0, coordinateArgument);
                         collisionTableBase = (s32)gSinTable373B4[0];
                         collisionTableOffset =
                             (u32)collisionTableOffset + (u32)collisionTableBase;
                         collisionArgument0 = *(s32 *)collisionTableOffset;
-                        collisionArgument1 = (u32)deltaY << 16;
+                        coordinateArgument = (u32)deltaY << 16;
                         lateralSinProduct = collisionReturn;
                         collisionReturn = MathMultiplyFixed16373B4(
-                            collisionArgument0, collisionArgument1);
+                            collisionArgument0, coordinateArgument);
                         lateralSinProduct -= collisionReturn;
                         lateralGap = lateralSinProduct >> 16;
                         tempV112 = (car->model->maxX) * 2;
@@ -14864,17 +14863,17 @@ void func_800373B4(Car *object) {
                             collisionTableOffset = reverseAngle << 2;
                             collisionArgument0 =
                                 gSinTable373B4[0][reverseAngle];
-                            collisionArgument1 = deltaX << 16;
+                            coordinateArgument = deltaX << 16;
                             collisionReturn = MathMultiplyFixed16373B4(
-                                collisionArgument0, collisionArgument1);
+                                collisionArgument0, coordinateArgument);
                             collisionTableBase = (s32)gCosTable373B4[0];
                             collisionTableOffset = (u32)collisionTableOffset +
                                                    (u32)collisionTableBase;
                             collisionArgument0 = *(s32 *)collisionTableOffset;
-                            collisionArgument1 = (u32)deltaY << 16;
+                            coordinateArgument = (u32)deltaY << 16;
                             longitudinalGap = collisionReturn;
                             collisionReturn = MathMultiplyFixed16373B4(
-                                collisionArgument0, collisionArgument1);
+                                collisionArgument0, coordinateArgument);
                             longitudinalGap += collisionReturn;
                             longitudinalGap >>= 16;
                             tempV113 = (car->model->maxY) * 2;
@@ -15018,10 +15017,10 @@ void func_800373B4(Car *object) {
                            "memory");
             workspace.targetY = tailTargetValue;
             if (sectionValue != tailMinusOne) {
-                tempA22 = (car->segment);
+                carWork = (car->segment);
                 tailRouteLength = gTrackSectionCount373B4[0];
                 tailSegment = sectionValue;
-                varA18 = tempA22 - tailSegment;
+                varA18 = carWork - tailSegment;
                 tempV115 = tailRouteLength >> 1;
                 if (varA18 >= 0) {
                     varV016 = varA18 < tempV115;
@@ -15030,15 +15029,15 @@ void func_800373B4(Car *object) {
                 }
                 if (varV016 == 0) {
                     wrappedSegment = tailSegment + tailRouteLength;
-                    if (tailSegment < tempA22) {
-                        wrappedGap = wrappedSegment - tempA22;
+                    if (tailSegment < carWork) {
+                        wrappedGap = wrappedSegment - carWork;
                         varA18 = wrappedGap;
                         if (wrappedGap >= 0) {
-                            wrappedGap = tempA22 - wrappedSegment;
+                            wrappedGap = carWork - wrappedSegment;
                             goto block_315;
                         }
                     } else {
-                        wrappedSegment = tempA22 + tailRouteLength;
+                        wrappedSegment = carWork + tailRouteLength;
                         wrappedGap = wrappedSegment - tailSegment;
                         varA18 = wrappedGap;
                         if (wrappedGap < 0) {
@@ -15092,49 +15091,51 @@ void func_800373B4(Car *object) {
             func_8001FB28373B4(car, (s16)(car->movementHeading));
             /* Keep the three low-product windows. */
             asm volatile(".set\tnoreorder\n"
-                         "lh         %3, 0x92(%7)\n"
-                         "lw         %2, 0x60(%7)\n"
+                         "lh         $v1, 0x92(%3)\n"
+                         "lw         $v0, 0x60(%3)\n"
                          "nop\n"
-                         "mult       %2, %3\n"
-                         "lh         %3, 0x92(%7)\n"
-                         "lw         %2, 0x6C(%7)\n"
-                         "mflo       %1\n"
-                         "nop\n"
-                         "nop\n"
-                         "mult       %2, %3\n"
-                         "lh         %3, 0x92(%7)\n"
-                         "lw         %2, 0x78(%7)\n"
+                         "mult       $v0, $v1\n"
+                         "lh         $v1, 0x92(%3)\n"
+                         "lw         $v0, 0x6C(%3)\n"
                          "mflo       %0\n"
                          "nop\n"
                          "nop\n"
-                         "mult       %2, %3\n"
-                         "sra        %2, %1, 16\n"
-                         "sw         %2, 0xB0(%7)\n"
-                         "lw         %4, 0xB0(%7)\n"
-                         "sra        %2, %0, 16\n"
-                         "sw         %2, 0xB4(%7)\n"
-                         "lw         %5, 0xB4(%7)\n"
-                         "lw         %1, 0x8(%7)\n"
-                         "mflo       %3\n"
-                         "sra        %2, %3, 16\n"
-                         "sw         %2, 0xB8(%7)\n"
-                         "lw         %2, 0x0(%7)\n"
-                         "lw         %3, 0x4(%7)\n"
-                         "lw         %6, 0xB8(%7)\n"
-                         "addu       %0, %7, $zero\n"
+                         "mult       $v0, $v1\n"
+                         "lh         $v1, 0x92(%3)\n"
+                         "lw         $v0, 0x78(%3)\n"
+                         "mflo       $a0\n"
+                         "nop\n"
+                         "nop\n"
+                         "mult       $v0, $v1\n"
+                         "sra        $v0, %0, 16\n"
+                         "sw         $v0, 0xB0(%3)\n"
+                         "lw         %1, 0xB0(%3)\n"
+                         "sra        $v0, $a0, 16\n"
+                         "sw         $v0, 0xB4(%3)\n"
+                         "lw         %2, 0xB4(%3)\n"
+                         "lw         %0, 0x8(%3)\n"
+                         "mflo       $v1\n"
+                         "sra        $v0, $v1, 16\n"
+                         "sw         $v0, 0xB8(%3)\n"
                          ".set\tnoreorder\n"
-                         : "=&r"(tailCarArg), "=&r"(tailPositionZ),
-                           "=&r"(varV0), "=&r"(tempV112),
-                           "=&r"(collisionNeighborY), "=&r"(motionStepY),
-                           "=&r"(motionStepZ)
+                         : "=&r"(coordinateArgument), "=&r"(carWork),
+                           "=&r"(coordinateWork0)
                          : "r"(car)
-                         : "hi", "lo", "accum", "memory");
-            varV0 = (u32)varV0 + (u32)collisionNeighborY;
-            tempV112 = (u32)tempV112 + (u32)motionStepY;
-            tailPositionZ = (u32)tailPositionZ + (u32)motionStepZ;
+                         : "$2", "$3", "$4", "hi", "lo", "accum", "memory");
+            varV0 = car->pos.x;
+            tempV112 = car->pos.y;
+            coordinateWork1 = car->velocityZ;
+            tailCarArg = car;
+            varV0 = ((u32)varV0) + ((u32)carWork);
+            /* Keep the unsigned sum in retail operand order. */
+            coordinateWork0 = (u32)tempV112 - -(u32)coordinateWork0;
+            tempV112 = coordinateWork0;
+            coordinateArgument =
+                ((u32)coordinateArgument) + ((u32)coordinateWork1);
             tailCarArg->pos.x = varV0;
             tailCarArg->pos.y = tempV112;
-            tailCarArg->pos.z = tailPositionZ;
+            tailCarArg->pos.z = coordinateArgument;
+
             func_80029CB4373B4(tailCarArg);
         }
     }
