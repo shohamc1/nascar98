@@ -1545,7 +1545,6 @@ s32 func_800708D8Ret(void *source, s32 outputAddress) {
     u32 bits;
     u32 quant;
     u32 block;
-    register u32 nw asm("$7");
     register u32 nw2 asm("$4");
     u32 nwp;
     u32 sym;
@@ -1561,11 +1560,11 @@ s32 func_800708D8Ret(void *source, s32 outputAddress) {
     tbl2 = D_800A33AC;
     bitpos = 0;
     out[0] = src[0];
-    nw = src[1];
+    sym = src[1];
     tbl1v = (u16 *)(tbl1 + 0x2000);
     tbl2v = (u16 *)(tbl2 + 0x200);
     out++;
-    *out++ = nw;
+    *out++ = sym;
     quant = src[2] << 10;
     nwp = src[4];
     nwp <<= 16;
@@ -1580,10 +1579,11 @@ outer_loop:
     bitpos += 10;
     bits <<= 10;
     if (bitpos & 0x10) {
-        nw = *src;
+        sym = *src;
         bitpos &= 0xF;
         src++;
-        bits |= nw << bitpos;
+        sym <<= bitpos;
+        bits |= sym;
     } else {
         bitpos &= 0xF;
     }
@@ -1605,13 +1605,13 @@ inner_loop:
         block = bits >> 23;
         lenp = tbl2 + block;
         scale = block * 2;
-        nw = (u32)((u8 *)tbl2v + scale);
+        sym = (u32)((u8 *)tbl2v + scale);
     } else {
         lenp = tbl1 + block;
         scale = block * 2;
-        nw = (u32)((u8 *)tbl1v + scale);
+        sym = (u32)((u8 *)tbl1v + scale);
     }
-    sym = *(u16 *)nw;
+    sym = *(u16 *)sym;
     do {
     } while (0);
     len = *lenp;

@@ -1074,14 +1074,13 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     register s32 fog asm("s3");
     s32 pan;
     s32 q;
-    register s32 gain asm("a0");
     register s32 vol1 asm("s1");
     register s32 vol2 asm("s2");
     s16 out[2];
-    register s32 row asm("v0");
+    s32 row;
     register s32 scaled asm("v0");
     register s32 square asm("t1");
-    s32 sum;
+    s32 value;
     register s32 dySq asm("v1");
     register s32 prodB asm("t1");
     register s32 prodA asm("v1");
@@ -1119,12 +1118,13 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     row = obj->pos.y;
     dy = (row - camY) >> 4;
     row = obj->pos.z;
-    dz = (row - camZ) >> 4;
-    sum = dx * dx;
+    row -= camZ;
+    dz = row >> 4;
+    value = dx * dx;
     dySq = dy * dy;
     square = dz * dz;
-    sum = sum + dySq;
-    dist = MathSqrt(sum + square);
+    value = value + dySq;
+    dist = MathSqrt(value + square);
     magic = 0x5D9F0000;
     if (dist >= 0x579) {
         SoundSetSlotVolume((s8)arg2, 0, 0);
@@ -1144,22 +1144,22 @@ void func_800406D0(Car *arg0, Car *arg1, s32 arg2, s32 arg3) {
     pan = out[1];
     if (pan > 0) {
         q = MathFixedDivide(pan, dist);
-        gain = D_80098C00w16[fog];
+        value = D_80098C00w16[fog];
         one = 0x10000;
-        prodA = (q + one) * gain;
+        prodA = (q + one) * value;
         vol2 = prodA >> 16;
-        prodB = (one - q) * gain;
+        prodB = (one - q) * value;
         vol1 = prodB >> 16;
     } else {
         if (pan < 0) {
             pan = -pan;
         }
         q = MathFixedDivide(pan, dist);
-        gain = D_80098C00w16[fog];
+        value = D_80098C00w16[fog];
         one = 0x10000;
-        prodA = (q + one) * gain;
+        prodA = (q + one) * value;
         vol1 = prodA >> 16;
-        prodB = (one - q) * gain;
+        prodB = (one - q) * value;
         vol2 = prodB >> 16;
     }
     if (vol2 >= 0x65) {
