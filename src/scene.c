@@ -6073,7 +6073,6 @@ void func_80053D40(void) {
     s32 animateStep;
     register MenuObj **animationNodeSlot asm("v0");
     s32 padBits;
-    s32 previousPadInverse;
     s32 nextIdleFrames;
     s32 cardMenuCode;
     s32 nextBufferIndex;
@@ -6271,14 +6270,17 @@ void func_80053D40(void) {
                         D_800A305AMainLoop = 0;
                     }
                     {
-                        register s32 pulseValue asm("v1");
+                        s32 pulseValue;
                         s32 magnitude;
                         s32 intensity;
                         pulseValue = D_800A305AMainLoop;
                         /* Intensity is 64 + 8 * abs(pulseValue - 10), modulo 256. */
-                        asm(".set\tnoreorder\n\tnop\n\taddiu\t%0,%2,-10\n\tbgez\t%0,1f\n\tsll\t%0,%0,3\n\tori\t%0,$zero,10\n\tsubu\t%0,%0,%2\n\tsll\t%0,%0,3\n1:\n\taddiu\t%0,%0,64\n\tandi\t%1,%0,255"
-                            : "=&r"(magnitude), "=r"(intensity)
-                            : "r"(pulseValue));
+                        magnitude = pulseValue - 10;
+                        if (magnitude < 0) {
+                            magnitude = 10 - pulseValue;
+                        }
+                        magnitude = magnitude * 8 + 64;
+                        intensity = magnitude & 255;
                         MenuSetShadeColorsMainLoop(intensity, intensity, 0x19U);
                     }
                     D_800A3724MainLoop = 3;
@@ -6561,16 +6563,13 @@ void func_80053D40(void) {
                                 }
                             }
                             {
-                                register s32 previousPadZero asm("a2");
-                                register s32 currentPadZero asm("a1");
-                                /* Read both pads before forming the pressed-edge mask. */
-                                asm("lw\t%0,%3\n\tlw\t%1,%4\n\tnor\t%2,$zero,%0"
-                                    : "=r"(previousPadZero),
-                                      "=r"(currentPadZero),
-                                      "=r"(previousPadInverse)
-                                    : "m"(oldPad[0]), "m"(newPad[0]));
-                                if (currentPadZero &
-                                    ((u16)previousPadInverse & 0x40)) {
+                                s32 currentPadBits;
+                                /* Reuse the animation values after their final call. */
+                                animationEndX = oldPad[0];
+                                currentPadBits = newPad[0];
+                                animationStepX = ~animationEndX;
+                                if (currentPadBits &
+                                    ((u16)animationStepX & 0x40)) {
                                     s32 confirmPivot;
                                     s32 confirmMode;
                                     screenResult = func_80056B5CMainLoop(
@@ -6884,8 +6883,8 @@ void func_80053D40(void) {
                                     }
                                     goto finishInput;
                                 }
-                                if (currentPadZero &
-                                    ((u16)previousPadInverse & 0x10)) {
+                                if (currentPadBits &
+                                    ((u16)animationStepX & 0x10)) {
                                     if (gScreenStateMainLoop == 7) {
 
                                         if (D_800A3950MainLoop == 0xFB) {
@@ -6912,8 +6911,8 @@ void func_80053D40(void) {
                                     }
                                     goto finishInput;
                                 }
-                                if (currentPadZero &
-                                    ((u16)previousPadInverse & 0x80)) {
+                                if (currentPadBits &
+                                    ((u16)animationStepX & 0x80)) {
                                     s32 cancelPivot;
                                     s32 cancelMode;
                                     cancelPivot = 0x25;
@@ -7017,7 +7016,7 @@ void func_80053D40(void) {
                                 index = player & 0xFF;
                                 padBits = newPad[index];
                                 if (padBits &
-                                    ((u16)previousPadInverse & 0x20)) {
+                                    ((u16)animationStepX & 0x20)) {
 
                                     if (gScreenStateMainLoop == 0x23) {
                                         func_8006CE64MainLoop();
@@ -7025,7 +7024,7 @@ void func_80053D40(void) {
                                     goto finishInput;
                                 }
                                 if (padBits & 0x1000) {
-                                    register s32 padEdgeUp asm("v0");
+                                    s32 padEdgeUp;
                                     s32 blockedModeUp;
                                     s32 cardModeUp;
                                     s32 rawModeUp;
@@ -7059,8 +7058,8 @@ void func_80053D40(void) {
                                             menuDirection = 1;
                                             goto moveCardCursor;
                                         }
-                                        padEdgeUp = previousPadInverse & 0x1000;
-                                        if (currentPadZero & padEdgeUp) {
+                                        padEdgeUp = animationStepX & 0x1000;
+                                        if (currentPadBits & padEdgeUp) {
                                             if ((modeUp == 0x22) ||
                                                 (modeUp == 0x24) ||
                                                 (modeUp == 0x28)) {
@@ -7201,7 +7200,7 @@ void func_80053D40(void) {
                                     goto nextPlayer;
                                 }
                                 if (padBits & 0x4000) {
-                                    register s32 padEdgeDown asm("v0");
+                                    s32 padEdgeDown;
                                     s32 blockedModeDown;
                                     s32 cardModeDown;
                                     s32 rawModeDown;
@@ -7241,8 +7240,8 @@ void func_80053D40(void) {
                                             oldPad[0] = newPad[0];
                                         } else {
                                             padEdgeDown =
-                                                previousPadInverse & 0x4000;
-                                            if (currentPadZero & padEdgeDown) {
+                                                animationStepX & 0x4000;
+                                            if (currentPadBits & padEdgeDown) {
                                                 if ((modeDown == 0x22) ||
                                                     (modeDown == 0x24) ||
                                                     (modeDown == 0x28)) {
