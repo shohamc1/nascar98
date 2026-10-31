@@ -13896,10 +13896,10 @@ void func_800373B4(Car *object) {
     s32 varV06;
     register s32 varV07 asm("$2");
     s32 varV1;
-    s32 varV13;
-    s32 varV14;
-    s32 varV15;
-    s32 varV17;
+    s32 forwardSkips;
+    s32 backwardSkips;
+    s32 blockingSkips;
+    s32 paceSkips;
     s32 tempA07;
     s8 tempV0;
     s32 tempV010;
@@ -13915,18 +13915,17 @@ void func_800373B4(Car *object) {
     u16 tempA13;
     u8 **tempA1;
     Car *aheadOfFollowingCar;
-    Car *followingCar;
+    Car *nearbyCar;
     Car *paceLeader;
     register Car *forwardNeighbor asm("$17");
     register Car *backwardNeighbor asm("$17");
-    Car *blockingCar;
     register Car *paceAheadCar asm("$17");
     u8 tempA06;
     u8 tempV015;
     u8 tempV016;
     register u8 followAllowed asm("$20");
     register s32 varV08 asm("$2");
-    register s32 varV09 asm("$2");
+    register s32 laneTest asm("$2");
     u8 varV12;
     register s32 varV16 asm("$3");
     void *tempA03;
@@ -14403,35 +14402,15 @@ void func_800373B4(Car *object) {
                         blockedLaneMask |= 4;
                     }
                 loop_128:
-                    /* Keep the capped link walk and filter order. */
-                    asm volatile(".set\tnoreorder\n"
-                                 ".LnearbyForward80037EF4:\n"
-                                 "lw         $v0, 0x3F0(%0)\n"
-                                 "nop\n"
-                                 "lw         %0, 0x8($v0)\n"
-                                 "nop\n"
-                                 "lbu        $v0, 0x268(%0)\n"
-                                 "nop\n"
-                                 "beqz       $v0, .LnearbyForward80037F44\n"
-                                 "addu      %1, $zero, $zero\n"
-                                 "addu       $v0, %1, $zero\n"
-                                 ".LnearbyForward80037F18:\n"
-                                 "slti       $v0, $v0, 0x3\n"
-                                 "beqz       $v0, .LnearbyForward80037F44\n"
-                                 "addiu     %1, %1, 0x1\n"
-                                 "lw         $v0, 0x3F0(%0)\n"
-                                 "nop\n"
-                                 "lw         %0, 0x8($v0)\n"
-                                 "nop\n"
-                                 "lbu        $v0, 0x268(%0)\n"
-                                 "nop\n"
-                                 "bnez       $v0, .LnearbyForward80037F18\n"
-                                 "addu      $v0, %1, $zero\n"
-                                 ".LnearbyForward80037F44:\n"
-                                 ".set\tnoreorder\n"
-                                 : "=r"(forwardNeighbor), "=r"(varV13)
-                                 : "0"(forwardNeighbor)
-                                 : "$2", "memory");
+                    forwardNeighbor =
+                        ((CarLink *)forwardNeighbor->sectionLink.node.next)
+                            ->car;
+                    forwardSkips = 0;
+                    while (forwardNeighbor->unk268 != 0 && forwardSkips++ < 3) {
+                        forwardNeighbor =
+                            ((CarLink *)forwardNeighbor->sectionLink.node.next)
+                                ->car;
+                    }
                     if (func_8003702C373B4(forwardNeighbor, car) < 0) {
                         varA12 = -func_8003702C373B4(forwardNeighbor, car);
                     } else {
@@ -14454,38 +14433,18 @@ void func_800373B4(Car *object) {
                     }
                     backwardNeighbor = car;
                 loop_139:
-                    /* Keep the capped link walk and filter order. */
-                    asm volatile(".set\tnoreorder\n"
-                                 ".LnearbyBackward80037FBC:\n"
-                                 "lw         $v0, 0x3F4(%0)\n"
-                                 "nop\n"
-                                 "lw         %0, 0x8($v0)\n"
-                                 "nop\n"
-                                 "lbu        $v0, 0x268(%0)\n"
-                                 "j          .LnearbyBackward80037FF8\n"
-                                 "addu      %1, $zero, $zero\n"
-                                 ".LnearbyBackward80037FD8:\n"
-                                 "slti       $v0, $v0, 0x2\n"
-                                 "beqz       $v0, .LnearbyBackward80038014\n"
-                                 "addiu     %1, %1, 0x1\n"
-                                 "lw         $v0, 0x3F4(%0)\n"
-                                 "nop\n"
-                                 "lw         %0, 0x8($v0)\n"
-                                 "nop\n"
-                                 "lbu        $v0, 0x268(%0)\n"
-                                 ".LnearbyBackward80037FF8:\n"
-                                 "nop\n"
-                                 "bnez       $v0, .LnearbyBackward80037FD8\n"
-                                 "addu      $v0, %1, $zero\n"
-                                 "lh         $v0, 0x1EC(%0)\n"
-                                 "nop\n"
-                                 "beqz       $v0, .LnearbyBackward80037FD8\n"
-                                 "addu      $v0, %1, $zero\n"
-                                 ".LnearbyBackward80038014:\n"
-                                 ".set\tnoreorder\n"
-                                 : "=r"(backwardNeighbor), "=r"(varV14)
-                                 : "0"(backwardNeighbor)
-                                 : "$2", "memory");
+                    backwardNeighbor =
+                        ((CarLink *)backwardNeighbor->sectionLink.node.previous)
+                            ->car;
+                    backwardSkips = 0;
+                    while ((backwardNeighbor->unk268 != 0 ||
+                            backwardNeighbor->type == 0) &&
+                           backwardSkips++ < 2) {
+                        backwardNeighbor =
+                            ((CarLink *)
+                                 backwardNeighbor->sectionLink.node.previous)
+                                ->car;
+                    }
                     if (func_8003702C373B4(backwardNeighbor, car) < 0) {
                         varA13 = -func_8003702C373B4(backwardNeighbor, car);
                     } else {
@@ -14511,119 +14470,79 @@ void func_800373B4(Car *object) {
                         ((desiredLane = 0, (D_800A2F58373B4 != 0)) &&
                          (D_800A3598373B4[0] == 0))) {
                         tempA07 = (car->lane);
-                        varV09 = 1;
+                        laneTest = 1;
                         tempV18 = tempA07 + 1;
-                        varV09 <<= tempV18;
-                        varV09 = blockedLaneMask & varV09;
+                        laneTest <<= tempV18;
+                        laneTest = blockedLaneMask & laneTest;
                         desiredLane = tempA07;
-                        if (varV09 != 0) {
+                        if (laneTest != 0) {
                             /* Skip up to three unavailable cars ahead. */
-                            asm volatile(".set\tnoreorder\n\t"
-                                         "lw\t$2,0x3F0(%2)\n\t"
-                                         "sll\t$0,$0,0\n\t"
-                                         "lw\t%0,8($2)\n\t"
-                                         "sll\t$0,$0,0\n\t"
-                                         "lbu\t$2,0x268(%0)\n\t"
-                                         "j\t32f\n\t"
-                                         "addu\t%1,$0,$0\n\t"
-                                         "31:\n\t"
-                                         "slti\t$2,$2,3\n\t"
-                                         "beqz\t$2,33f\n\t"
-                                         "addiu\t%1,%1,1\n\t"
-                                         "lw\t$2,0x3F0(%0)\n\t"
-                                         "sll\t$0,$0,0\n\t"
-                                         "lw\t%0,8($2)\n\t"
-                                         "sll\t$0,$0,0\n\t"
-                                         "lbu\t$2,0x268(%0)\n\t"
-                                         "32:\n\t"
-                                         "sll\t$0,$0,0\n\t"
-                                         "bnez\t$2,31b\n\t"
-                                         "addu\t$2,%1,$0\n\t"
-                                         "lh\t$2,0x1EC(%0)\n\t"
-                                         "sll\t$0,$0,0\n\t"
-                                         "beqz\t$2,31b\n\t"
-                                         "addu\t$2,%1,$0\n\t"
-                                         "33:\n\t"
-                                         ".set\treorder\n\t"
-                                         : "=r"(blockingCar), "=r"(varV15)
-                                         : "r"(car)
-                                         : "$2", "memory");
-                            asm("lh $2,0x92(%1)\n\tlh $3,0x92(%2)\n\tsll $0,$0,0\n\tsubu %0,$2,$3"
-                                : "=r"(tempS0)
-                                : "r"(car), "r"(blockingCar)
-                                : "$2", "$3", "memory");
+                            nearbyCar =
+                                ((CarLink *)car->sectionLink.node.next)->car;
+                            blockingSkips = 0;
+                            while ((nearbyCar->unk268 != 0 ||
+                                    nearbyCar->type == 0) &&
+                                   blockingSkips++ < 3) {
+                                nearbyCar =
+                                    ((CarLink *)nearbyCar->sectionLink.node.next)
+                                        ->car;
+                            }
+                            tempS0 = (car->speed >> 16) -
+                                     (nearbyCar->speed >> 16);
                             if (tempS0 >= 0x10) {
-                                if (func_8003702C373B4(blockingCar, car) < 0) {
+                                if (func_8003702C373B4(nearbyCar, car) < 0) {
                                     varA14 =
-                                        -func_8003702C373B4(blockingCar, car);
+                                        -func_8003702C373B4(nearbyCar, car);
                                 } else {
                                     varA14 =
-                                        func_8003702C373B4(blockingCar, car);
+                                        func_8003702C373B4(nearbyCar, car);
                                 }
-                                /* Change the lane only when its mask permits it.
-                                     * Cars already in an outer lane follow a slower leader. */
-                                asm volatile(".set\tnoreorder\n\t"
-                                             "slti\t$2,%6,2\n\t"
-                                             "beqz\t$2,38f\n\t"
-                                             "ori\t$2,$0,7\n\t"
-                                             "beq\t%3,$2,36f\n\t"
-                                             "sll\t$0,$0,0\n\t"
-                                             "lb\t$3,0x206(%1)\n\t"
-                                             "sll\t$0,$0,0\n\t"
-                                             "beqz\t$3,35f\n\t"
-                                             "sll\t$0,$0,0\n\t"
-                                             "bgtz\t$3,34f\n\t"
-                                             "ori\t$2,$0,1\n\t"
-                                             "addiu\t$2,$0,-1\n\t"
-                                             "beq\t$3,$2,37f\n\t"
-                                             "slti\t$2,%4,100\n\t"
-                                             "j\t38f\n\t"
-                                             "sll\t$0,$0,0\n\t"
-                                             "34:\n\t"
-                                             "beq\t$3,$2,37f\n\t"
-                                             "slti\t$2,%4,100\n\t"
-                                             "j\t38f\n\t"
-                                             "sll\t$0,$0,0\n\t"
-                                             "35:\n\t"
-                                             "andi\t$2,%3,1\n\t"
-                                             "bnez\t$2,38f\n\t"
-                                             "ori\t%0,$0,1\n\t"
-                                             "j\t38f\n\t"
-                                             "addiu\t%0,$0,-1\n\t"
-                                             "36:\n\t"
-                                             "slti\t$2,%4,100\n\t"
-                                             "37:\n\t"
-                                             "beqz\t$2,38f\n\t"
-                                             "lui\t$3,0xFFFF\n\t"
-                                             "lw\t$2,0x90(%2)\n\t"
-                                             "sll\t$0,$0,0\n\t"
-                                             "addu\t$2,$2,$3\n\t"
-                                             "sw\t$2,0x90(%1)\n\t"
-                                             "38:\n\t"
-                                             ".set\treorder\n\t"
-                                             : "=r"(desiredLane)
-                                             : "r"(car), "r"(blockingCar),
-                                               "r"(blockedLaneMask),
-                                               "r"(tempS0), "0"(desiredLane),
-                                               "r"(varA14)
-                                             : "$2", "$3", "memory");
+                                laneTest = varA14 < 2;
+                                if (laneTest) {
+                                    if (blockedLaneMask != 7) {
+                                        s32 currentLane;
+
+                                        currentLane = car->lane;
+                                        if (currentLane != 0) {
+                                            if (currentLane <= 0) {
+                                                if (currentLane == -1) {
+                                                    goto laneSpeedCheck;
+                                                }
+                                            } else if (currentLane == 1) {
+                                                goto laneSpeedCheck;
+                                            }
+                                        } else {
+                                            desiredLane = 1;
+                                            if (!(blockedLaneMask & 1)) {
+                                                desiredLane = -1;
+                                            }
+                                        }
+                                        goto laneSpeedDone;
+                                    }
+                                laneSpeedCheck:
+                                    if (tempS0 < 100) {
+                                        car->speed =
+                                            (u32)nearbyCar->speed - 0x10000;
+                                    }
+                                }
                             }
                         }
                     }
+                laneSpeedDone:
                     tempA08 = ((u8 *)car->sectionLink.node.previous);
                     if (tempA08 != NULL) {
-                        followingCar = (((CarLink *)tempA08)->car);
+                        nearbyCar = (((CarLink *)tempA08)->car);
                         followAllowed = 1;
-                        if ((followingCar->type) == 0) {
-                            if (func_8003702C373B4(followingCar, car) < 0) {
-                                varA15 = -func_8003702C373B4(followingCar, car);
+                        if ((nearbyCar->type) == 0) {
+                            if (func_8003702C373B4(nearbyCar, car) < 0) {
+                                varA15 = -func_8003702C373B4(nearbyCar, car);
                             } else {
-                                varA15 = func_8003702C373B4(followingCar, car);
+                                varA15 = func_8003702C373B4(nearbyCar, car);
                             }
                             varV011 = (u32)varA15 - 2 < 4;
                             if (varV011 == 0)
                                 goto pressureNotAllowed;
-                            tempV112 = followingCar->speed;
+                            tempV112 = nearbyCar->speed;
                             varV011 = car->speed;
                             if (varV011 >= tempV112)
                                 goto pressureNotAllowed;
@@ -14652,47 +14571,27 @@ void func_800373B4(Car *object) {
                                 if (pressureTimerValue != 0)
                                     goto pressureTimerCheck;
                                 {
-                                    /* Move one lane toward the faster following car,
-                                     * then clamp to either outer lane. */
-                                    asm volatile(".set\tnoreorder\n\t"
-                                                 "lb\t$3,0x203(%1)\n\t"
-                                                 "lb\t$4,0x203(%2)\n\t"
-                                                 "sll\t$0,$0,0\n\t"
-                                                 "slt\t$2,$3,$4\n\t"
-                                                 "beqz\t$2,41f\n\t"
-                                                 "slt\t$2,$4,$3\n\t"
-                                                 "lbu\t$2,0x206(%1)\n\t"
-                                                 "sll\t$0,$0,0\n\t"
-                                                 "addiu\t$2,$2,-1\n\t"
-                                                 "sb\t$2,0x206(%1)\n\t"
-                                                 "sll\t$2,$2,24\n\t"
-                                                 "sra\t$2,$2,24\n\t"
-                                                 "slti\t$2,$2,-1\n\t"
-                                                 "beqz\t$2,42f\n\t"
-                                                 "addiu\t$2,$0,-1\n\t"
-                                                 "j\t42f\n\t"
-                                                 "sb\t$2,0x206(%1)\n\t"
-                                                 "41:\n\t"
-                                                 "beqz\t$2,42f\n\t"
-                                                 "sll\t$0,$0,0\n\t"
-                                                 "lbu\t$2,0x206(%1)\n\t"
-                                                 "sll\t$0,$0,0\n\t"
-                                                 "addiu\t$2,$2,1\n\t"
-                                                 "sb\t$2,0x206(%1)\n\t"
-                                                 "sll\t$2,$2,24\n\t"
-                                                 "sra\t$2,$2,24\n\t"
-                                                 "slti\t$2,$2,2\n\t"
-                                                 "bnez\t$2,42f\n\t"
-                                                 "ori\t$2,$0,1\n\t"
-                                                 "sb\t$2,0x206(%1)\n\t"
-                                                 "42:\n\t"
-                                                 "lhu\t$2,0x248(%1)\n\t"
-                                                 "lb\t%0,0x206(%1)\n\t"
-                                                 "sb\t$2,0x205(%1)\n\t"
-                                                 ".set\treorder\n\t"
-                                                 : "=r"(desiredLane)
-                                                 : "r"(car), "r"(followingCar)
-                                                 : "$2", "$3", "$4", "memory");
+                                    s32 carOffset;
+                                    s32 followingOffset;
+                                    s8 nextLane;
+
+                                    carOffset = car->unk203;
+                                    followingOffset = nearbyCar->unk203;
+                                    if (carOffset < followingOffset) {
+                                        nextLane = (u8)car->lane - 1;
+                                        car->lane = nextLane;
+                                        if (nextLane < -1) {
+                                            car->lane = -1;
+                                        }
+                                    } else if (followingOffset < carOffset) {
+                                        nextLane = (u8)car->lane + 1;
+                                        car->lane = nextLane;
+                                        if (nextLane >= 2) {
+                                            car->lane = 1;
+                                        }
+                                    }
+                                    desiredLane = car->lane;
+                                    car->assistRank = (u16)car->unk248;
                                 }
                             }
                             pressureTimerValue = car->assistRank;
@@ -15085,37 +14984,14 @@ void func_800373B4(Car *object) {
                 }
             } else if (D_800A2F54373B4 == 1) {
             block_293:
-                /* Clear the lane and find an active car ahead, with a cap of three. */
-                asm volatile(".set\tnoreorder\n\t"
-                             "lw\t$2,0x3F0(%2)\n\t"
-                             "sb\t$0,0x206(%2)\n\t"
-                             "lw\t%0,8($2)\n\t"
-                             "sll\t$0,$0,0\n\t"
-                             "lbu\t$2,0x268(%0)\n\t"
-                             "j\t52f\n\t"
-                             "addu\t%1,$0,$0\n\t"
-                             "51:\n\t"
-                             "slti\t$2,$2,3\n\t"
-                             "beqz\t$2,53f\n\t"
-                             "addiu\t%1,%1,1\n\t"
-                             "lw\t$2,0x3F0(%0)\n\t"
-                             "sll\t$0,$0,0\n\t"
-                             "lw\t%0,8($2)\n\t"
-                             "sll\t$0,$0,0\n\t"
-                             "lbu\t$2,0x268(%0)\n\t"
-                             "52:\n\t"
-                             "sll\t$0,$0,0\n\t"
-                             "bnez\t$2,51b\n\t"
-                             "addu\t$2,%1,$0\n\t"
-                             "lh\t$2,0x1EC(%0)\n\t"
-                             "sll\t$0,$0,0\n\t"
-                             "beqz\t$2,51b\n\t"
-                             "addu\t$2,%1,$0\n\t"
-                             "53:\n\t"
-                             ".set\treorder\n\t"
-                             : "=r"(paceAheadCar), "=r"(varV17)
-                             : "r"(car)
-                             : "$2", "memory");
+                car->lane = 0;
+                paceAheadCar = ((CarLink *)car->sectionLink.node.next)->car;
+                paceSkips = 0;
+                while ((paceAheadCar->unk268 != 0 || paceAheadCar->type == 0) &&
+                       paceSkips++ < 3) {
+                    paceAheadCar =
+                        ((CarLink *)paceAheadCar->sectionLink.node.next)->car;
+                }
                 if (func_8003702C373B4(paceAheadCar, car) < 0) {
                     varA17 = -func_8003702C373B4(paceAheadCar, car);
                     goto collisionPaceResume;
@@ -15229,22 +15105,17 @@ void func_800373B4(Car *object) {
                 tailTargetValue = car->avoidY;
                 workspace.targetY = tailTargetValue;
             }
-            asm volatile(".set\tnoreorder\n"
-                         "lw         $v0, 0x0(%4)\n"
-                         "lw         $t1, %2\n"
-                         "nop\n"
-                         "subu       $v0, $t1, $v0\n"
-                         "sw         $v0, %0\n"
-                         "lw         $v0, 0x4(%4)\n"
-                         "lw         $t1, %3\n"
-                         "nop\n"
-                         "subu       $v0, $t1, $v0\n"
-                         "sw         $v0, %1\n"
-                         ".set\tnoreorder\n"
-                         : "=m"(workspace.delta[0]), "=m"(workspace.delta[1])
-                         : "m"(workspace.targetX), "m"(workspace.targetY),
-                           "r"(car)
-                         : "$2", "$9", "memory");
+            {
+                u32 coordinate;
+                coordinate = car->pos.x;
+                tailTargetValue = workspace.targetX;
+                coordinate = (u32)tailTargetValue - coordinate;
+                workspace.delta[0] = coordinate;
+                coordinate = car->pos.y;
+                tailTargetValue = workspace.targetY;
+                coordinate = (u32)tailTargetValue - coordinate;
+                workspace.delta[1] = coordinate;
+            }
             workspace.delta[2] = -(car->pos.z);
             varA19 = func_800358EC373B4(&workspace.delta[0]);
             if (D_800A2F48373B4[0] != 0) {
