@@ -13810,8 +13810,6 @@ void func_800373B4(Car *object) {
     s32 speedResult;
     u8 *playerCar;
     s32 slowDelta;
-    u32 routeRaceMode;
-    register u32 routeLeftFlag asm("$3");
     register s32 routeDenominator asm("$5");
     s32 routeSelection;
     struct {
@@ -13848,7 +13846,6 @@ void func_800373B4(Car *object) {
     Car *tailCarArg;
 
     s32 varV04;
-    register s32 tempA012 asm("$4");
     s32 tempA02;
     s32 tempS0;
     s32 tempS03;
@@ -13866,9 +13863,8 @@ void func_800373B4(Car *object) {
     register s32 tempV113 asm("$3");
     s32 tempV115;
     s32 wrappedSegment;
-    s32 laneBit;
-    register s32 varA0 asm("$4");
-    s32 varA02;
+    s32 laneValue;
+    s32 argumentWork;
     s32 varA1;
 
     register s32 varA18 asm("$5");
@@ -13886,7 +13882,6 @@ void func_800373B4(Car *object) {
     s32 backwardSkips;
     s32 blockingSkips;
     s32 paceSkips;
-    s32 tempA07;
     s8 tempV0;
     s32 tempV010;
     s32 tempV011;
@@ -13894,7 +13889,6 @@ void func_800373B4(Car *object) {
     s8 tempV017;
     s32 tempV09;
     s32 tempV13;
-    s32 tempV18;
     register s32 tempV19 asm("$3");
     s32 desiredLane;
     s32 varV012;
@@ -13910,7 +13904,6 @@ void func_800373B4(Car *object) {
     u8 tempV015;
     u8 tempV016;
     register u8 followAllowed asm("$20");
-    register s32 laneTest asm("$2");
     u8 varV12;
     register s32 varV16 asm("$3");
     void *tempA03;
@@ -13963,71 +13956,72 @@ void func_800373B4(Car *object) {
         /* Route index, target coordinates, and lane permission bits. */
         asm volatile(".set noat\n\t"
                      ".set\tnoreorder\n\t"
-                     "lw\t$7,D_800A2F54373B4\n\t"
-                     "lh\t$2,0x1E0(%9)\n\t"
-                     "sll\t$5,$7,2\n\t"
+                     "lw\t%7,D_800A2F54373B4\n\t"
+                     "lh\t%4,0x1E0(%9)\n\t"
+                     "sll\t%6,%7,2\n\t"
                      "lui\t$1,%%hi(D_800B1EA8)\n\t"
-                     "addu\t$1,$1,$5\n\t"
-                     "lw\t$3,%%lo(D_800B1EA8)($1)\n\t"
-                     "addiu\t$2,$2,2\n\t"
-                     "div\t$0,$2,$3\n\t"
-                     "bnez\t$3,1f\n\t"
+                     "addu\t$1,$1,%6\n\t"
+                     "lw\t%5,%%lo(D_800B1EA8)($1)\n\t"
+                     "addiu\t%4,%4,2\n\t"
+                     "div\t$0,%4,%5\n\t"
+                     "bnez\t%5,1f\n\t"
                      "sll\t$0,$0,0\n\t"
                      "break\t0x1C00\n\t"
                      "1:\n\t"
                      "addiu\t$1,$0,-1\n\t"
-                     "bne\t$3,$1,2f\n\t"
+                     "bne\t%5,$1,2f\n\t"
                      "lui\t$1,0x8000\n\t"
-                     "bne\t$2,$1,2f\n\t"
+                     "bne\t%4,$1,2f\n\t"
                      "sll\t$0,$0,0\n\t"
                      "break\t0x1800\n\t"
                      "2:\n\t"
                      "mfhi\t$6\n\t"
-                     "lui\t$2,%%hi(D_800AE154)\n\t"
-                     "addiu\t$2,$2,%%lo(D_800AE154)\n\t"
-                     "addu\t$5,$5,$2\n\t"
-                     "lw\t$4,0($5)\n\t"
-                     "sll\t$3,$6,1\n\t"
-                     "addu\t$3,$3,$6\n\t"
-                     "sll\t$3,$3,2\n\t"
-                     "addu\t$4,$3,$4\n\t"
-                     "lw\t$9,0($4)\n\t"
+                     "lui\t%4,%%hi(D_800AE154)\n\t"
+                     "addiu\t%4,%4,%%lo(D_800AE154)\n\t"
+                     "addu\t%6,%6,%4\n\t"
+                     "lw\t$4,0(%6)\n\t"
+                     "sll\t%5,$6,1\n\t"
+                     "addu\t%5,%5,$6\n\t"
+                     "sll\t%5,%5,2\n\t"
+                     "addu\t$4,%5,$4\n\t"
+                     "lw\t%8,0($4)\n\t"
                      "sll\t$0,$0,0\n\t"
-                     "sw\t$9,%0\n\t"
-                     "lw\t$9,4($4)\n\t"
+                     "sw\t%8,%0\n\t"
+                     "lw\t%8,4($4)\n\t"
                      "sll\t$0,$0,0\n\t"
-                     "sw\t$9,%1\n\t"
-                     "lh\t$2,8($4)\n\t"
+                     "sw\t%8,%1\n\t"
+                     "lh\t%4,8($4)\n\t"
                      "lhu\t$4,10($4)\n\t"
-                     "sll\t$2,$2,16\n\t"
+                     "sll\t%4,%4,16\n\t"
                      "sw\t$4,%2\n\t"
-                     "sw\t$2,0x84(%9)\n\t"
-                     "lw\t$2,0($5)\n\t"
+                     "sw\t%4,0x84(%9)\n\t"
+                     "lw\t%4,0(%6)\n\t"
                      "sll\t$0,$0,0\n\t"
-                     "addu\t$3,$3,$2\n\t"
-                     "lw\t$3,8($3)\n\t"
-                     "lw\t$9,%2\n\t"
-                     "srl\t$2,$3,30\n\t"
-                     "xori\t$2,$2,1\n\t"
-                     "andi\t$2,$2,1\n\t"
-                     "sb\t$2,%3\n\t"
-                     "lbu\t$2,D_800A2F58373B4\n\t"
-                     "ori\t$5,$0,0x198\n\t"
+                     "addu\t%5,%5,%4\n\t"
+                     "lw\t%5,8(%5)\n\t"
+                     "lw\t%8,%2\n\t"
+                     "srl\t%4,%5,30\n\t"
+                     "xori\t%4,%4,1\n\t"
+                     "andi\t%4,%4,1\n\t"
+                     "sb\t%4,%3\n\t"
+                     "lbu\t%4,D_800A2F58373B4\n\t"
+                     "ori\t%6,$0,0x198\n\t"
                      ".set at\n\t"
                      : "=m"(workspace.targetX), "=m"(workspace.targetY),
                        "=m"(workspace.heading), "=m"(workspace.allowRight),
-                       "=r"(routeRaceMode), "=r"(routeLeftFlag),
-                       "=r"(routeDenominator), "=r"(routeSelection),
-                       "=r"(tailTargetValue)
+                       "=&r"(controlValue), "=&r"(laneValue),
+                       "=&r"(routeDenominator), "=&r"(routeSelection),
+                       "=&r"(tailTargetValue)
                      : "r"(car)
                      : "$1", "$4", "$6", "hi", "lo", "accum", "memory");
         do {
             tailTargetValue &= 0x3FFF;
             workspace.heading = tailTargetValue;
         } while (0);
-        routeLeftFlag = ((u32)routeLeftFlag >> 31) ^ 1;
-        workspace.allowLeft = routeLeftFlag;
-        if (routeRaceMode != 0) {
+        laneValue = (u32)laneValue >> 31;
+        laneValue ^= 1;
+        workspace.allowLeft = laneValue;
+        if (controlValue != 0) {
             if (gSessionType373B4[0] == 1) {
                 (car->unk84) = MathMultiplyFixed16373B4(
                     (car->unk84), MathFixedDivide373B4(D_800A2F50373B4 + 0x28,
@@ -14042,15 +14036,15 @@ void func_800373B4(Car *object) {
                     (car->speed) = (car->maxSpeed);
                 }
             } else {
-                varA0 = 2;
+                argumentWork = 2;
                 if (D_800A36A4373B4 >= 0x29) {
                     varA1 = 3;
                 } else {
-                    varA0 = D_800A2F50373B4;
+                    argumentWork = D_800A2F50373B4;
                     varA1 = 0x1A7;
                 }
                 (car->unk84) = MathMultiplyFixed16373B4(
-                    (car->unk84), MathFixedDivide373B4(varA0, varA1));
+                    (car->unk84), MathFixedDivide373B4(argumentWork, varA1));
             }
             playerCar = D_800A35E0373B4[0];
             (car->speedBoost) = 0;
@@ -14083,18 +14077,18 @@ void func_800373B4(Car *object) {
                     if (paceValue < 16) {
                         varV0 = paceValue * 4;
                         varV1 = D_800A2F50373B4;
-                        varA0 = D_800A3320[0];
+                        argumentWork = D_800A3320[0];
                         varV1 = (u32)varV1 << 3;
                     } else {
                         varV1 = D_800A2F50373B4;
                         tirePenalty = paceValue * 3;
-                        varA0 = D_800A3320[0];
+                        argumentWork = D_800A3320[0];
                         varV0 = tirePenalty * 4;
                         varV1 = (u32)varV1 << 3;
                     }
                     varV1 = (u32)varV1 - varV0;
                 }
-                varV0 = 0x96 - varA0;
+                varV0 = 0x96 - argumentWork;
                 varV0 <<= 1;
                 asm("addu\t%0,%1,%2" : "=r"(varV0) : "r"(varV1), "r"(varV0));
                 speedResult = MathMultiplyFixed16373B4(
@@ -14109,7 +14103,7 @@ void func_800373B4(Car *object) {
                 if (paceTimer > 0) {
                     paceValue = D_800A2F50373B4;
                     tireAge2 = car->unkFA;
-                    varA0 = D_800A3320373B4[0];
+                    argumentWork = D_800A3320373B4[0];
                     routeDenominator <<= 3;
                     paceTimer -= 1;
                     do {
@@ -14120,12 +14114,14 @@ void func_800373B4(Car *object) {
                     paceValue <<= 3;
                     tireAge2 <<= 2;
                     paceValue -= tireAge2;
-                    varV0 -= varA0;
-                    varA0 = varV0 * 3;
+                    varV0 -= argumentWork;
+                    argumentWork = (u32)varV0 << 1;
+                    argumentWork = (u32)argumentWork + (u32)varV0;
                     do {
                         car->unk84 = MathMultiplyFixed16373B4(
-                            car->unk84, MathFixedDivide373B4(paceValue + varA0,
-                                                             routeDenominator));
+                            car->unk84,
+                            MathFixedDivide373B4(paceValue + argumentWork,
+                                                 routeDenominator));
                     } while (0);
                     controlValue = 0x140000;
                 } else {
@@ -14277,11 +14273,11 @@ void func_800373B4(Car *object) {
                         paceDistance = (s16)paceGap;
                         if (paceDistance >= 2) {
                             varV0 = MathFixedDivide373B4(paceDistance - 1, 9);
-                            varA0 = car->unk84;
+                            argumentWork = car->unk84;
                             paceBase = workspace.paceSpeed;
                             varA1 = varV0;
-                            varV0 = MathMultiplyFixed16373B4(varA0 - paceBase,
-                                                             varA1);
+                            varV0 = MathMultiplyFixed16373B4(
+                                argumentWork - paceBase, varA1);
                             paceBase = workspace.paceSpeed;
                             varV0 = paceBase + varV0;
                             car->unk84 = varV0;
@@ -14289,13 +14285,13 @@ void func_800373B4(Car *object) {
                             speedResult = MathMultiplyFixed16373B4(
                                 workspace.paceSpeed,
                                 MathFixedDivide373B4(9, 10));
-                            varA02 = 5;
+                            argumentWork = 5;
                             car->unk84 = speedResult;
                             if (paceDistance != 0)
-                                varA02 = 9;
+                                argumentWork = 9;
                             car->speed = MathMultiplyFixed16373B4(
                                 paceLeader->speed,
-                                MathFixedDivide373B4(varA02, 10));
+                                MathFixedDivide373B4(argumentWork, 10));
                         }
                     }
                 }
@@ -14378,12 +14374,12 @@ void func_800373B4(Car *object) {
                     }
                     controlValue = coordinateArgument < 2;
                     if (controlValue != 0) {
-                        laneBit = 1;
+                        laneValue = 1;
                         controlValue = forwardNeighbor->lane;
                         controlValue += 1;
-                        laneBit <<= controlValue;
-                        blockedLaneMask |= laneBit;
-                        nearbyLaneMask |= laneBit;
+                        laneValue <<= controlValue;
+                        blockedLaneMask |= laneValue;
+                        nearbyLaneMask |= laneValue;
                         if (nearbyCount < 6) {
                             workspace.nearby.cars[nearbyCount] =
                                 forwardNeighbor;
@@ -14414,12 +14410,12 @@ void func_800373B4(Car *object) {
                     }
                     controlValue = coordinateArgument < 2;
                     if (controlValue != 0) {
-                        laneBit = 1;
+                        laneValue = 1;
                         controlValue = backwardNeighbor->lane;
                         controlValue += 1;
-                        laneBit <<= controlValue;
-                        blockedLaneMask |= laneBit;
-                        nearbyLaneMask |= laneBit;
+                        laneValue <<= controlValue;
+                        blockedLaneMask |= laneValue;
+                        nearbyLaneMask |= laneValue;
                         if (nearbyCount < 6) {
                             workspace.nearby.cars[nearbyCount] =
                                 backwardNeighbor;
@@ -14431,13 +14427,12 @@ void func_800373B4(Car *object) {
                     if ((blockedLaneMask & 2) ||
                         ((desiredLane = 0, (D_800A2F58373B4 != 0)) &&
                          (D_800A3598373B4[0] == 0))) {
-                        tempA07 = (car->lane);
-                        laneTest = 1;
-                        tempV18 = tempA07 + 1;
-                        laneTest <<= tempV18;
-                        laneTest = blockedLaneMask & laneTest;
-                        desiredLane = tempA07;
-                        if (laneTest != 0) {
+                        argumentWork = (car->lane);
+                        controlValue = 1;
+                        laneValue = argumentWork + 1;
+                        controlValue <<= laneValue;
+                        desiredLane = argumentWork;
+                        if ((blockedLaneMask & controlValue) != 0) {
                             /* Skip up to three unavailable cars ahead. */
                             nearbyCar =
                                 ((CarLink *)car->sectionLink.node.next)->car;
@@ -14459,8 +14454,8 @@ void func_800373B4(Car *object) {
                                     coordinateArgument =
                                         func_8003702C373B4(nearbyCar, car);
                                 }
-                                laneTest = coordinateArgument < 2;
-                                if (laneTest) {
+                                controlValue = coordinateArgument < 2;
+                                if (controlValue) {
                                     if (blockedLaneMask != 7) {
                                         s32 currentLane;
 
@@ -14965,9 +14960,9 @@ void func_800373B4(Car *object) {
             collisionPaceResume:
                 controlValue = coordinateArgument < 2;
                 if (controlValue != 0) {
-                    tempA012 = (paceAheadCar->speed);
-                    if (tempA012 > 0x640000) {
-                        controlValue = tempA012 + 0xFFFB0000;
+                    argumentWork = (paceAheadCar->speed);
+                    if (argumentWork > 0x640000) {
+                        controlValue = argumentWork + 0xFFFB0000;
                         (car->speed) = controlValue;
                         (car->unk84) = controlValue;
                     }
