@@ -13866,8 +13866,7 @@ void func_800373B4(Car *object) {
     register s32 tempV113 asm("$3");
     s32 tempV115;
     s32 wrappedSegment;
-    s32 tempV16;
-    s32 tempV17;
+    s32 laneBit;
     register s32 varA0 asm("$4");
     s32 varA02;
     s32 varA1;
@@ -13879,12 +13878,9 @@ void func_800373B4(Car *object) {
     s32 paceGap;
     s32 nearbyCount;
     register s32 varV0 asm("$2");
-    register s32 varV011 asm("$2");
     s32 varV016;
-    register s32 varV02 asm("$2");
     s32 tirePenalty;
     s32 varV06;
-    register s32 varV07 asm("$2");
     s32 varV1;
     s32 forwardSkips;
     s32 backwardSkips;
@@ -13914,7 +13910,6 @@ void func_800373B4(Car *object) {
     u8 tempV015;
     u8 tempV016;
     register u8 followAllowed asm("$20");
-    register s32 varV08 asm("$2");
     register s32 laneTest asm("$2");
     u8 varV12;
     register s32 varV16 asm("$3");
@@ -14127,10 +14122,12 @@ void func_800373B4(Car *object) {
                     paceValue -= tireAge2;
                     varV0 -= varA0;
                     varA0 = varV0 * 3;
-                    car->unk84 = MathMultiplyFixed16373B4(
-                        car->unk84, MathFixedDivide373B4(paceValue + varA0,
-                                                         routeDenominator));
-                    varV02 = 0x140000;
+                    do {
+                        car->unk84 = MathMultiplyFixed16373B4(
+                            car->unk84, MathFixedDivide373B4(paceValue + varA0,
+                                                             routeDenominator));
+                    } while (0);
+                    controlValue = 0x140000;
                 } else {
                     if (paceTimer >= 0) {
                         D_800A2F5C373B4 = -(D_800A2E94373B4[0] * 0x258);
@@ -14146,13 +14143,16 @@ void func_800373B4(Car *object) {
                             tirePenalty = (car->unkFA) * 4;
                         }
                     }
-                    (car->unk84) = MathMultiplyFixed16373B4(
-                        (car->unk84),
-                        MathFixedDivide373B4((D_800A2F50373B4 * 8) - tirePenalty,
-                                             routeDenominator << 3));
-                    varV02 = 0xA0000;
+                    do {
+                        (car->unk84) = MathMultiplyFixed16373B4(
+                            (car->unk84),
+                            MathFixedDivide373B4((D_800A2F50373B4 * 8) -
+                                                     tirePenalty,
+                                                 routeDenominator << 3));
+                    } while (0);
+                    controlValue = 0xA0000;
                 }
-                (car->speedBoost) = varV02;
+                (car->speedBoost) = controlValue;
             }
             if (D_800A2F5C373B4 < -(D_800A2E94373B4[0] * 0xC8)) {
                 (car->draftTimer) = 0U;
@@ -14345,14 +14345,18 @@ void func_800373B4(Car *object) {
             if ((D_800A2E90373B4[0] != 0) && (gSessionType373B4[0] != 1)) {
                 if (D_800A2F54373B4 != 1) {
                     trackCenterFlag = workspace.allowRight;
-                    asm("addu %0,%1,$0" : "=r"(varV07) : "r"(trackCenterFlag));
-                    if (varV07 == 0) {
+                    asm("addu %0,%1,$0"
+                        : "=r"(controlValue)
+                        : "r"(trackCenterFlag));
+                    if (controlValue == 0) {
                         blockedLaneMask |= 1;
                     }
                     trackCenterFlag = workspace.allowLeft;
-                    asm("addu %0,%1,$0" : "=r"(varV07) : "r"(trackCenterFlag));
+                    asm("addu %0,%1,$0"
+                        : "=r"(controlValue)
+                        : "r"(trackCenterFlag));
                     forwardNeighbor = car;
-                    if (varV07 == 0) {
+                    if (controlValue == 0) {
                         blockedLaneMask |= 4;
                     }
                 loop_128:
@@ -14372,14 +14376,14 @@ void func_800373B4(Car *object) {
                         coordinateArgument =
                             func_8003702C373B4(forwardNeighbor, car);
                     }
-                    varV07 = coordinateArgument < 2;
-                    if (varV07 != 0) {
-                        tempV16 = 1;
-                        varV07 = forwardNeighbor->lane;
-                        varV07 += 1;
-                        tempV16 <<= varV07;
-                        blockedLaneMask |= tempV16;
-                        nearbyLaneMask |= tempV16;
+                    controlValue = coordinateArgument < 2;
+                    if (controlValue != 0) {
+                        laneBit = 1;
+                        controlValue = forwardNeighbor->lane;
+                        controlValue += 1;
+                        laneBit <<= controlValue;
+                        blockedLaneMask |= laneBit;
+                        nearbyLaneMask |= laneBit;
                         if (nearbyCount < 6) {
                             workspace.nearby.cars[nearbyCount] =
                                 forwardNeighbor;
@@ -14408,14 +14412,14 @@ void func_800373B4(Car *object) {
                         coordinateArgument =
                             func_8003702C373B4(backwardNeighbor, car);
                     }
-                    varV08 = coordinateArgument < 2;
-                    if (varV08 != 0) {
-                        tempV17 = 1;
-                        varV08 = backwardNeighbor->lane;
-                        varV08 += 1;
-                        tempV17 <<= varV08;
-                        blockedLaneMask |= tempV17;
-                        nearbyLaneMask |= tempV17;
+                    controlValue = coordinateArgument < 2;
+                    if (controlValue != 0) {
+                        laneBit = 1;
+                        controlValue = backwardNeighbor->lane;
+                        controlValue += 1;
+                        laneBit <<= controlValue;
+                        blockedLaneMask |= laneBit;
+                        nearbyLaneMask |= laneBit;
                         if (nearbyCount < 6) {
                             workspace.nearby.cars[nearbyCount] =
                                 backwardNeighbor;
@@ -14499,12 +14503,13 @@ void func_800373B4(Car *object) {
                                 coordinateArgument =
                                     func_8003702C373B4(nearbyCar, car);
                             }
-                            varV011 = (u32)coordinateArgument - 2 < 4;
-                            if (varV011 == 0)
+                            controlValue = (u32)coordinateArgument - 2 < 4;
+                            if (controlValue == 0)
                                 goto pressureNotAllowed;
                             tempV112 = nearbyCar->speed;
-                            varV011 = car->speed;
-                            if (varV011 >= tempV112)
+                            controlValue = car->speed;
+                            controlValue = controlValue < tempV112;
+                            if (controlValue == 0)
                                 goto pressureNotAllowed;
                             tempA09 = (u8 *)car->sectionLink.node.next;
                             if (tempA09 != NULL) {
@@ -14518,15 +14523,16 @@ void func_800373B4(Car *object) {
                                     coordinateArgument = func_8003702C373B4(
                                         aheadOfFollowingCar, car);
                                 }
-                                varV011 = coordinateArgument < 2;
-                                if (varV011 == 0)
+                                controlValue = coordinateArgument < 2;
+                                if (controlValue == 0)
                                     goto pressureAllowed;
                             }
                         pressureNotAllowed:
                             followAllowed = 0;
                         pressureAllowed:
-                            varV011 = followAllowed & 0xFF;
-                            if ((varV011 != 0) && ((car->speed) > 0x01720000)) {
+                            controlValue = followAllowed & 0xFF;
+                            if ((controlValue != 0) &&
+                                ((car->speed) > 0x01720000)) {
                                 pressureTimerValue = car->assistRank;
                                 if (pressureTimerValue != 0)
                                     goto pressureTimerCheck;
