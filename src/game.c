@@ -796,16 +796,14 @@ void TrackLoad(u8 selectTrack) {
     s32 buttons;
     s32 offset;
     s32 adjustment;
-    s32 product;
-    s32 base;
     s32 limit;
     s32 scaled;
     s32 setting0;
-    s32 setting1;
+    s32 value;
     s32 enabled;
     register s32 color0 asm("a2");
-    register s32 color1 asm("a1");
-    register s32 color2 asm("a0");
+    s32 color1;
+    s32 color2;
     s32 setting;
     s32 parameter0;
     s32 parameter1;
@@ -1229,25 +1227,25 @@ void TrackLoad(u8 selectTrack) {
     adjustment =
         ((D_80090DCA[offset] - D_80090DC8[offset]) * (100 - D_800A3320[0])) /
         50;
-    base = D_80090DCC[offset - 2];
+    /* Reuse the palette values after their stores are complete. */
+    color1 = D_80090DCC[offset - 2];
     D_800A2E74[0] = D_800A3320[0];
     D_800A2F50Increment += 20;
     D_800A2F50Load = adjustment;
     {
         s32 quotient;
-        register s32 baseSpeed asm("v1");
-        quotient = MathFixedDivide(base + adjustment, base);
-        baseSpeed = D_80090DCE[offset - 3];
-        product = baseSpeed * quotient;
+        quotient = MathFixedDivide(color1 + adjustment, color1);
+        value = D_80090DCE[offset - 3];
+        color2 = value * quotient;
     }
     scaled = D_80090DD2[offset] * gTrackSectionCount[0];
     setting0 = D_80090DD4[offset];
-    setting1 = D_80090DD6[offset];
+    value = D_80090DD6[offset];
     D_800A2E60[0] = setting0;
-    D_800A2E64[0] = setting1;
-    D_800A2F50Load = product >> 16;
+    D_800A2E64[0] = value;
+    D_800A2F50Load = color2 >> 16;
     D_800A2F88[0] = scaled;
-    RenderDrawGeometryList(product);
+    RenderDrawGeometryList(color2);
     func_800A2CE0 = track;
 }
 
