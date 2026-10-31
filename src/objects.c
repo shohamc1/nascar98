@@ -3876,17 +3876,15 @@ void CarUpdatePlayer(Car *object) {
     s32 incomingS1;
     s32 steeringLimit;
     s32 cameraQuotientInput;
-    s32 headingQuotientInput;
+    s32 angleValue;
     s32 headingBase;
     s8 cameraMode;
     s8 leftStep;
     s8 rightStep;
     s8 nextLeftStep;
     s8 nextRightStep;
-    register s32 centerRightAngle asm("v0");
     u16 leftAngle;
     register u16 rightAngle asm("v0");
-    register s32 centerLeftAngle asm("v0");
     u8 nextCamera;
 
     car = object;
@@ -4042,15 +4040,15 @@ void CarUpdatePlayer(Car *object) {
             (*(s8 *)&car->unk208) = 0;
             centerAngle = steeringValue;
             if (steeringValue > 0) {
-                centerLeftAngle = centerAngle - 8;
-                (*(u16 *)&car->steering) = centerLeftAngle;
-                if ((centerLeftAngle << 16) < 0) {
+                angleValue = centerAngle - 8;
+                (*(u16 *)&car->steering) = angleValue;
+                if ((angleValue << 16) < 0) {
                     (*(u16 *)&car->steering) = 0U;
                 }
             } else {
-                centerRightAngle = centerAngle + 8;
-                (*(u16 *)&car->steering) = centerRightAngle;
-                if ((centerRightAngle << 0x10) > 0) {
+                angleValue = centerAngle + 8;
+                (*(u16 *)&car->steering) = angleValue;
+                if ((angleValue << 0x10) > 0) {
                     (*(u16 *)&car->steering) = 0U;
                 }
             }
@@ -4093,11 +4091,11 @@ void CarUpdatePlayer(Car *object) {
         }
         headingBase = headingInput + 0x400;
     }
-    headingQuotientInput = headingBase;
+    angleValue = headingBase;
     if (headingBase < 0) {
-        headingQuotientInput = headingInput + 0x7FF;
+        angleValue = headingInput + 0x7FF;
     }
-    headingInput = headingQuotientInput >> 10;
+    headingInput = angleValue >> 10;
     work = headingInput << 10;
     headingInput = headingBase - work;
     (car->unk1D0) = (s16)headingInput;

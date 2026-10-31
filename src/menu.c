@@ -3327,6 +3327,7 @@ void func_80060FD8(void) {
 #undef sp
 #else
 void func_80060FD8(void) {
+    u8 *trianglePrimitive;
     /* These are the observed fifth and sixth stack argument homes. */
     struct {
         s32 fifth;
@@ -4972,7 +4973,6 @@ panelLoop:
             s32 allocateMode;
             register s32 nodeBlue asm("$12");
             MenuObj *node;
-            register u8 *primitive asm("$17");
             MenuObj *panelNode;
             asm volatile(".set\tnoreorder\n"
                          "lw\t$t4, 0x40($sp)\n"
@@ -4999,51 +4999,51 @@ panelLoop:
                     widthDelta = triangleColumn != 0 ? 3 : -3;
                     asm volatile(".set\tnoreorder\n"
                                  "lbu\t$v1, gMenuObjectPoolCount\n"
-                                 "lw\t$s0, gMenuObjectPool\n"
-                                 "ori\t$a0, $zero, 0x1\n"
+                                 "lw\t%0, gMenuObjectPool\n"
+                                 "ori\t%1, $zero, 0x1\n"
                                  "addiu\t$v0, $v1, 0x1\n"
                                  "sb\t$v0, gMenuObjectPoolCount\n"
                                  "sll\t$v0, $v1, 3\n"
                                  "addu\t$v0, $v0, $v1\n"
                                  "sll\t$v0, $v0, 2\n"
-                                 "addu\t$s0, $s0, $v0\n"
+                                 "addu\t%0, %0, $v0\n"
                                  "ori\t$v0, $zero, 0x8\n"
                                  "ori\t$t3, $zero, 0x6\n"
-                                 "sb\t$zero, 0x2($s0)\n"
-                                 "ori\t$t4, $zero, 0xFF\n"
-                                 "sb\t$zero, 0x3($s0)\n"
-                                 "sh\t$t3, 0x18($s0)\n"
+                                 "sb\t$zero, 0x2(%0)\n"
+                                 "ori\t%2, $zero, 0xFF\n"
+                                 "sb\t$zero, 0x3(%0)\n"
+                                 "sh\t$t3, 0x18(%0)\n"
                                  "ori\t$t3, $zero, 0x80\n"
-                                 "sb\t$zero, 0x4($s0)\n"
-                                 "sb\t$t4, 0x2($s0)\n"
-                                 "ori\t$t4, $zero, 0x40\n"
-                                 "sh\t$zero, 0x12($s0)\n"
-                                 "sh\t$zero, 0x14($s0)\n"
-                                 "sw\t$zero, 0x1C($s0)\n"
-                                 "sh\t$zero, 0x1A($s0)\n"
-                                 "sh\t$v0, 0x0($s0)\n"
-                                 "sh\t$zero, 0x6($s0)\n"
-                                 "sh\t$zero, 0xA($s0)\n"
-                                 "sh\t$s3, 0x8($s0)\n"
-                                 "sh\t$s3, 0xC($s0)\n"
-                                 "sh\t$zero, 0xE($s0)\n"
-                                 "sh\t$zero, 0x10($s0)\n"
-                                 "sh\t$a1, 0x16($s0)\n"
-                                 "sb\t$t3, 0x3($s0)\n"
-                                 : "=r"(node), "=r"(allocateMode),
-                                   "=r"(nodeBlue)
+                                 "sb\t$zero, 0x4(%0)\n"
+                                 "sb\t%2, 0x2(%0)\n"
+                                 "ori\t%2, $zero, 0x40\n"
+                                 "sh\t$zero, 0x12(%0)\n"
+                                 "sh\t$zero, 0x14(%0)\n"
+                                 "sw\t$zero, 0x1C(%0)\n"
+                                 "sh\t$zero, 0x1A(%0)\n"
+                                 "sh\t$v0, 0x0(%0)\n"
+                                 "sh\t$zero, 0x6(%0)\n"
+                                 "sh\t$zero, 0xA(%0)\n"
+                                 "sh\t%4, 0x8(%0)\n"
+                                 "sh\t%4, 0xC(%0)\n"
+                                 "sh\t$zero, 0xE(%0)\n"
+                                 "sh\t$zero, 0x10(%0)\n"
+                                 "sh\t%3, 0x16(%0)\n"
+                                 "sb\t$t3, 0x3(%0)\n"
+                                 : "=&r"(node), "=&r"(allocateMode),
+                                   "=&r"(nodeBlue)
                                  : "r"(widthDelta), "r"(colorS)
                                  : "$2", "$3", "$11", "memory");
                     node->blue = nodeBlue;
-                    primitive = GraphicsAllocPolyF4(allocateMode);
-                    node->primitive = primitive;
-                    SetPolyF3(primitive);
-                    SetSemiTrans(primitive, 0);
+                    trianglePrimitive = GraphicsAllocPolyF4(allocateMode);
+                    node->primitive = trianglePrimitive;
+                    SetPolyF3(trianglePrimitive);
+                    SetSemiTrans(trianglePrimitive, 0);
                     asm volatile("" : "=r"(currentNode) : "0"(node));
                     asm volatile(
-                        ".set\tnoreorder\nori $t3,$zero,0xFF\nori $t4,$zero,0x80\nsb $t3,4($s1)\nori $t3,$zero,0x40\nsb $t4,5($s1)\nsb $t3,6($s1)"
+                        ".set\tnoreorder\nori $t3,$zero,0xFF\nori $t4,$zero,0x80\nsb $t3,4(%0)\nori $t3,$zero,0x40\nsb $t4,5(%0)\nsb $t3,6(%0)"
                         :
-                        : "r"(primitive)
+                        : "r"(trianglePrimitive)
                         : "$11", "$12", "memory");
                     asm volatile(".set\tnoreorder\n"
                                  "beqz\t$s4, .LTriangleNestedC60_14\n"
@@ -5088,7 +5088,6 @@ panelLoop:
             register s32 heightDelta asm("$5");
             s32 allocateMode;
             MenuObj *node;
-            register u8 *primitive asm("$17");
             register s32 red asm("$12");
             register s32 green asm("$11");
             asm volatile(".set\tnoreorder\n"
@@ -5096,17 +5095,17 @@ panelLoop:
                          "nop\t\n"
                          "sll\t$v0, $t3, 24\n"
                          "sra\t$v0, $v0, 22\n"
-                         "addu\t$v0, $v0, $t4\n"
+                         "addu\t$v0, $v0, %4\n"
                          "lw\t$v0, 0x0($v0)\n"
-                         "lw\t$t4, 0x40($sp)\n"
+                         "lw\t%4, 0x40($sp)\n"
                          "lh\t$v0, 0x14($v0)\n"
-                         "addu\t$s7, $zero, $zero\n"
-                         "ori\t$s3, $zero, 0x40\n"
-                         "sra\t$s2, $t4, 24\n"
-                         "addiu\t$s4, $v0, 0x3A\n"
+                         "addu\t%3, $zero, $zero\n"
+                         "ori\t%2, $zero, 0x40\n"
+                         "sra\t%0, %4, 24\n"
+                         "addiu\t%1, $v0, 0x3A\n"
                          ".set\treorder\n"
-                         : "=r"(colorS), "=r"(xpos), "=r"(blue),
-                           "=r"(initialArrowIndex), "=r"(panelTableBase)
+                         : "=&r"(colorS), "=&r"(xpos), "=&r"(blue),
+                           "=&r"(initialArrowIndex), "=&r"(panelTableBase)
                          : "m"(panelIndex.value), "m"(colorHome.value),
                            "4"(panelTableBase)
                          : "$2", "$3", "$11", "memory");
@@ -5115,51 +5114,51 @@ panelLoop:
                 heightDelta = arrowIndex != 0 ? 3 : -3;
                 asm volatile(".set\tnoreorder\n"
                              "lbu\t$v1, gMenuObjectPoolCount\n"
-                             "lw\t$s0, gMenuObjectPool\n"
-                             "ori\t$a0, $zero, 0x1\n"
+                             "lw\t%0, gMenuObjectPool\n"
+                             "ori\t%1, $zero, 0x1\n"
                              "addiu\t$v0, $v1, 0x1\n"
                              "sb\t$v0, gMenuObjectPoolCount\n"
                              "sll\t$v0, $v1, 3\n"
                              "addu\t$v0, $v0, $v1\n"
                              "sll\t$v0, $v0, 2\n"
-                             "addu\t$s0, $s0, $v0\n"
+                             "addu\t%0, %0, $v0\n"
                              "ori\t$v0, $zero, 0x7\n"
                              "ori\t$t3, $zero, 0x6\n"
-                             "sb\t$zero, 0x2($s0)\n"
+                             "sb\t$zero, 0x2(%0)\n"
                              "ori\t$t4, $zero, 0xFF\n"
-                             "sb\t$zero, 0x3($s0)\n"
-                             "sh\t$t3, 0x16($s0)\n"
+                             "sb\t$zero, 0x3(%0)\n"
+                             "sh\t$t3, 0x16(%0)\n"
                              "ori\t$t3, $zero, 0x80\n"
-                             "sh\t$zero, 0x12($s0)\n"
-                             "sh\t$zero, 0x14($s0)\n"
-                             "sw\t$zero, 0x1C($s0)\n"
-                             "sb\t$zero, 0x4($s0)\n"
-                             "sh\t$zero, 0x1A($s0)\n"
-                             "sh\t$v0, 0x0($s0)\n"
-                             "sh\t$zero, 0x6($s0)\n"
-                             "sh\t$zero, 0xA($s0)\n"
-                             "sh\t$s2, 0x8($s0)\n"
-                             "sh\t$s2, 0xC($s0)\n"
-                             "sh\t$zero, 0xE($s0)\n"
-                             "sh\t$zero, 0x10($s0)\n"
-                             "sh\t$a1, 0x18($s0)\n"
-                             "sb\t$t4, 0x2($s0)\n"
-                             "sb\t$t3, 0x3($s0)\n"
+                             "sh\t$zero, 0x12(%0)\n"
+                             "sh\t$zero, 0x14(%0)\n"
+                             "sw\t$zero, 0x1C(%0)\n"
+                             "sb\t$zero, 0x4(%0)\n"
+                             "sh\t$zero, 0x1A(%0)\n"
+                             "sh\t$v0, 0x0(%0)\n"
+                             "sh\t$zero, 0x6(%0)\n"
+                             "sh\t$zero, 0xA(%0)\n"
+                             "sh\t%3, 0x8(%0)\n"
+                             "sh\t%3, 0xC(%0)\n"
+                             "sh\t$zero, 0xE(%0)\n"
+                             "sh\t$zero, 0x10(%0)\n"
+                             "sh\t%2, 0x18(%0)\n"
+                             "sb\t$t4, 0x2(%0)\n"
+                             "sb\t$t3, 0x3(%0)\n"
                              ".set\treorder\n"
-                             : "=r"(node), "=r"(allocateMode)
-                             : "r"(heightDelta), "r"(colorS), "r"(blue)
+                             : "=&r"(node), "=&r"(allocateMode)
+                             : "r"(heightDelta), "r"(colorS)
                              : "$2", "$3", "$11", "$12", "memory");
                 node->blue = blue;
-                primitive = GraphicsAllocPolyF4(allocateMode);
-                node->primitive = primitive;
-                SetPolyF3(primitive);
-                SetSemiTrans(primitive, 0);
+                trianglePrimitive = GraphicsAllocPolyF4(allocateMode);
+                node->primitive = trianglePrimitive;
+                SetPolyF3(trianglePrimitive);
+                SetSemiTrans(trianglePrimitive, 0);
                 asm volatile("" : "=r"(currentNode) : "0"(node));
                 red = 0xFF;
                 green = 0x80;
-                primitive[4] = red;
-                primitive[5] = green;
-                primitive[6] = blue;
+                trianglePrimitive[4] = red;
+                trianglePrimitive[5] = green;
+                trianglePrimitive[6] = blue;
                 currentNode->orderingDepth = 0;
                 asm volatile(".set\tnoreorder\n"
                              "lbu\t$t4, 0x20($sp)\n"
