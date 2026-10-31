@@ -13895,21 +13895,17 @@ void func_800373B4(Car *object) {
     u16 tempA13;
     u8 **tempA1;
     Car *aheadOfFollowingCar;
-    Car *nearbyCar;
     Car *paceLeader;
-    register Car *forwardNeighbor asm("$17");
-    register Car *backwardNeighbor asm("$17");
-    register Car *paceAheadCar asm("$17");
     u8 tempA06;
     u8 tempV015;
     u8 tempV016;
-    register u8 followAllowed asm("$20");
+    u8 followAllowed;
     u8 varV12;
     register s32 varV16 asm("$3");
     void *tempA03;
     void *tempA08;
     void *tempA09;
-    register Car *overlappingCar;
+    register Car *neighborCar;
     register void *tempV02;
 
     car = object;
@@ -14351,74 +14347,70 @@ void func_800373B4(Car *object) {
                     asm("addu %0,%1,$0"
                         : "=r"(controlValue)
                         : "r"(trackCenterFlag));
-                    forwardNeighbor = car;
+                    neighborCar = car;
                     if (controlValue == 0) {
                         blockedLaneMask |= 4;
                     }
                 loop_128:
-                    forwardNeighbor =
-                        ((CarLink *)forwardNeighbor->sectionLink.node.next)
-                            ->car;
+                    neighborCar =
+                        ((CarLink *)neighborCar->sectionLink.node.next)->car;
                     forwardSkips = 0;
-                    while (forwardNeighbor->unk268 != 0 && forwardSkips++ < 3) {
-                        forwardNeighbor =
-                            ((CarLink *)forwardNeighbor->sectionLink.node.next)
+                    while (neighborCar->unk268 != 0 && forwardSkips++ < 3) {
+                        neighborCar =
+                            ((CarLink *)neighborCar->sectionLink.node.next)
                                 ->car;
                     }
-                    if (func_8003702C373B4(forwardNeighbor, car) < 0) {
+                    if (func_8003702C373B4(neighborCar, car) < 0) {
                         coordinateArgument =
-                            -func_8003702C373B4(forwardNeighbor, car);
+                            -func_8003702C373B4(neighborCar, car);
                     } else {
                         coordinateArgument =
-                            func_8003702C373B4(forwardNeighbor, car);
+                            func_8003702C373B4(neighborCar, car);
                     }
                     controlValue = coordinateArgument < 2;
                     if (controlValue != 0) {
                         laneValue = 1;
-                        controlValue = forwardNeighbor->lane;
+                        controlValue = neighborCar->lane;
                         controlValue += 1;
                         laneValue <<= controlValue;
                         blockedLaneMask |= laneValue;
                         nearbyLaneMask |= laneValue;
                         if (nearbyCount < 6) {
-                            workspace.nearby.cars[nearbyCount] =
-                                forwardNeighbor;
+                            workspace.nearby.cars[nearbyCount] = neighborCar;
                             nearbyCount += 1;
                             goto loop_128;
                         }
                     }
-                    backwardNeighbor = car;
+                    neighborCar = car;
                 loop_139:
-                    backwardNeighbor =
-                        ((CarLink *)backwardNeighbor->sectionLink.node.previous)
+                    neighborCar =
+                        ((CarLink *)neighborCar->sectionLink.node.previous)
                             ->car;
                     backwardSkips = 0;
-                    while ((backwardNeighbor->unk268 != 0 ||
-                            backwardNeighbor->type == 0) &&
-                           backwardSkips++ < 2) {
-                        backwardNeighbor =
-                            ((CarLink *)
-                                 backwardNeighbor->sectionLink.node.previous)
+                    while (
+                        (neighborCar->unk268 != 0 || neighborCar->type == 0) &&
+                        backwardSkips++ < 2) {
+                        neighborCar =
+                            ((CarLink *)neighborCar->sectionLink.node.previous)
                                 ->car;
                     }
-                    if (func_8003702C373B4(backwardNeighbor, car) < 0) {
+                    if (func_8003702C373B4(neighborCar, car) < 0) {
                         coordinateArgument =
-                            -func_8003702C373B4(backwardNeighbor, car);
+                            -func_8003702C373B4(neighborCar, car);
                     } else {
                         coordinateArgument =
-                            func_8003702C373B4(backwardNeighbor, car);
+                            func_8003702C373B4(neighborCar, car);
                     }
                     controlValue = coordinateArgument < 2;
                     if (controlValue != 0) {
                         laneValue = 1;
-                        controlValue = backwardNeighbor->lane;
+                        controlValue = neighborCar->lane;
                         controlValue += 1;
                         laneValue <<= controlValue;
                         blockedLaneMask |= laneValue;
                         nearbyLaneMask |= laneValue;
                         if (nearbyCount < 6) {
-                            workspace.nearby.cars[nearbyCount] =
-                                backwardNeighbor;
+                            workspace.nearby.cars[nearbyCount] = neighborCar;
                             nearbyCount += 1;
                             goto loop_139;
                         }
@@ -14434,25 +14426,26 @@ void func_800373B4(Car *object) {
                         desiredLane = argumentWork;
                         if ((blockedLaneMask & controlValue) != 0) {
                             /* Skip up to three unavailable cars ahead. */
-                            nearbyCar =
+                            neighborCar =
                                 ((CarLink *)car->sectionLink.node.next)->car;
                             blockingSkips = 0;
-                            while ((nearbyCar->unk268 != 0 ||
-                                    nearbyCar->type == 0) &&
+                            while ((neighborCar->unk268 != 0 ||
+                                    neighborCar->type == 0) &&
                                    blockingSkips++ < 3) {
-                                nearbyCar =
-                                    ((CarLink *)nearbyCar->sectionLink.node.next)
+                                neighborCar =
+                                    ((CarLink *)
+                                         neighborCar->sectionLink.node.next)
                                         ->car;
                             }
-                            tempS0 = (car->speed >> 16) -
-                                     (nearbyCar->speed >> 16);
+                            tempS0 =
+                                (car->speed >> 16) - (neighborCar->speed >> 16);
                             if (tempS0 >= 0x10) {
-                                if (func_8003702C373B4(nearbyCar, car) < 0) {
+                                if (func_8003702C373B4(neighborCar, car) < 0) {
                                     coordinateArgument =
-                                        -func_8003702C373B4(nearbyCar, car);
+                                        -func_8003702C373B4(neighborCar, car);
                                 } else {
                                     coordinateArgument =
-                                        func_8003702C373B4(nearbyCar, car);
+                                        func_8003702C373B4(neighborCar, car);
                                 }
                                 controlValue = coordinateArgument < 2;
                                 if (controlValue) {
@@ -14479,7 +14472,7 @@ void func_800373B4(Car *object) {
                                 laneSpeedCheck:
                                     if (tempS0 < 100) {
                                         car->speed =
-                                            (u32)nearbyCar->speed - 0x10000;
+                                            (u32)neighborCar->speed - 0x10000;
                                     }
                                 }
                             }
@@ -14488,20 +14481,20 @@ void func_800373B4(Car *object) {
                 laneSpeedDone:
                     tempA08 = ((u8 *)car->sectionLink.node.previous);
                     if (tempA08 != NULL) {
-                        nearbyCar = (((CarLink *)tempA08)->car);
+                        neighborCar = (((CarLink *)tempA08)->car);
                         followAllowed = 1;
-                        if ((nearbyCar->type) == 0) {
-                            if (func_8003702C373B4(nearbyCar, car) < 0) {
+                        if ((neighborCar->type) == 0) {
+                            if (func_8003702C373B4(neighborCar, car) < 0) {
                                 coordinateArgument =
-                                    -func_8003702C373B4(nearbyCar, car);
+                                    -func_8003702C373B4(neighborCar, car);
                             } else {
                                 coordinateArgument =
-                                    func_8003702C373B4(nearbyCar, car);
+                                    func_8003702C373B4(neighborCar, car);
                             }
                             controlValue = (u32)coordinateArgument - 2 < 4;
                             if (controlValue == 0)
                                 goto pressureNotAllowed;
-                            tempV112 = nearbyCar->speed;
+                            tempV112 = neighborCar->speed;
                             controlValue = car->speed;
                             controlValue = controlValue < tempV112;
                             if (controlValue == 0)
@@ -14537,7 +14530,7 @@ void func_800373B4(Car *object) {
                                     s8 nextLane;
 
                                     carOffset = car->unk203;
-                                    followingOffset = nearbyCar->unk203;
+                                    followingOffset = neighborCar->unk203;
                                     if (carOffset < followingOffset) {
                                         nextLane = (u8)car->lane - 1;
                                         car->lane = nextLane;
@@ -14821,15 +14814,15 @@ void func_800373B4(Car *object) {
                     neighborState = 0;
                     if (nearbyCount > 0) {
                     loop_270:
-                        overlappingCar = workspace.nearby.cars[neighborState];
+                        neighborCar = workspace.nearby.cars[neighborState];
                         do {
                             coordinateWork0 = car->pos.x;
                             coordinateWork1 = car->pos.y;
                             collisionArgument0 = car->heading;
                         } while (0);
                         collisionTableBase = (s32)gCosTable373B4[0];
-                        coordinateArgument = overlappingCar->pos.x;
-                        carWork = overlappingCar->pos.y;
+                        coordinateArgument = neighborCar->pos.x;
+                        carWork = neighborCar->pos.y;
                         reverseAngle = 0x3FF - collisionArgument0;
                         collisionTableOffset = reverseAngle << 2;
                         collisionTableBase =
@@ -14896,16 +14889,16 @@ void func_800373B4(Car *object) {
                                     if ((s8)tempV014 < -1) {
                                         (car->lane) = -1;
                                     }
-                                    tempV015 = overlappingCar->lane + 1;
-                                    (overlappingCar->lane) = tempV015;
+                                    tempV015 = neighborCar->lane + 1;
+                                    (neighborCar->lane) = tempV015;
                                     if ((s8)tempV015 >= 2) {
-                                        overlappingCar->lane = 1U;
+                                        neighborCar->lane = 1U;
                                     }
                                 } else {
-                                    tempV016 = overlappingCar->lane - 1;
-                                    (overlappingCar->lane) = tempV016;
+                                    tempV016 = neighborCar->lane - 1;
+                                    (neighborCar->lane) = tempV016;
                                     if ((s8)tempV016 < -1) {
-                                        overlappingCar->lane = -1U;
+                                        neighborCar->lane = -1U;
                                     }
                                     tempV017 = (u8)(car->lane) + 1;
                                     (car->lane) = tempV017;
@@ -14913,13 +14906,13 @@ void func_800373B4(Car *object) {
                                         (car->lane) = 1;
                                     }
                                 }
-                                collisionNeighborOrder = overlappingCar->unk248;
+                                collisionNeighborOrder = neighborCar->unk248;
                                 collisionCarOrder = car->unk248;
                                 if (collisionCarOrder <
                                     collisionNeighborOrder) {
                                     goto collisionSlowCar;
                                 }
-                                overlappingCar->speed -= 0x10000;
+                                neighborCar->speed -= 0x10000;
                                 goto collisionDone;
                             } else {
                                 goto block_289;
@@ -14941,26 +14934,26 @@ void func_800373B4(Car *object) {
             } else if (D_800A2F54373B4 == 1) {
             block_293:
                 car->lane = 0;
-                paceAheadCar = ((CarLink *)car->sectionLink.node.next)->car;
+                neighborCar = ((CarLink *)car->sectionLink.node.next)->car;
                 paceSkips = 0;
-                while ((paceAheadCar->unk268 != 0 || paceAheadCar->type == 0) &&
+                while ((neighborCar->unk268 != 0 || neighborCar->type == 0) &&
                        paceSkips++ < 3) {
-                    paceAheadCar =
-                        ((CarLink *)paceAheadCar->sectionLink.node.next)->car;
+                    neighborCar =
+                        ((CarLink *)neighborCar->sectionLink.node.next)->car;
                 }
-                if (func_8003702C373B4(paceAheadCar, car) < 0) {
-                    coordinateArgument = -func_8003702C373B4(paceAheadCar, car);
+                if (func_8003702C373B4(neighborCar, car) < 0) {
+                    coordinateArgument = -func_8003702C373B4(neighborCar, car);
                     goto collisionPaceResume;
                 collisionSlowCar:
                     car->speed -= 0x10000;
                     goto collisionDone;
                 } else {
-                    coordinateArgument = func_8003702C373B4(paceAheadCar, car);
+                    coordinateArgument = func_8003702C373B4(neighborCar, car);
                 }
             collisionPaceResume:
                 controlValue = coordinateArgument < 2;
                 if (controlValue != 0) {
-                    argumentWork = (paceAheadCar->speed);
+                    argumentWork = (neighborCar->speed);
                     if (argumentWork > 0x640000) {
                         controlValue = argumentWork + 0xFFFB0000;
                         (car->speed) = controlValue;
@@ -14970,49 +14963,49 @@ void func_800373B4(Car *object) {
             }
         collisionDone:
             asm volatile(".set\tnoreorder\n"
-                         "lw         $t1, %1\n"
-                         "lui        $v1, %%hi(gCosTable)\n"
-                         "lw         $v1, %%lo(gCosTable)($v1)\n"
-                         "addiu      $v0, $t1, 0x300\n"
-                         "andi       $v0, $v0, 0x3FF\n"
-                         "sw         $v0, %1\n"
-                         "sll        $a0, $v0, 2\n"
-                         "addu       $v1, $a0, $v1\n"
-                         "lw         $v1, 0x0($v1)\n"
+                         "lw         %3, %1\n"
+                         "lui        %0, %%hi(gCosTable)\n"
+                         "lw         %0, %%lo(gCosTable)(%0)\n"
+                         "addiu      %4, %3, 0x300\n"
+                         "andi       %4, %4, 0x3FF\n"
+                         "sw         %4, %1\n"
+                         "sll        $a0, %4, 2\n"
+                         "addu       %0, $a0, %0\n"
+                         "lw         %0, 0x0(%0)\n"
                          "lb         $a1, 0x206(%5)\n"
-                         "sll        $v0, $v1, 5\n"
-                         "subu       $v0, $v0, $v1\n"
-                         "sll        $v0, $v0, 2\n"
-                         "addu       $v0, $v0, $v1\n"
-                         "sll        $v0, $v0, 2\n"
-                         "lui        $v1, %%hi(gSinTable)\n"
-                         "lw         $v1, %%lo(gSinTable)($v1)\n"
-                         "sra        $v0, $v0, 16\n"
+                         "sll        %4, %0, 5\n"
+                         "subu       %4, %4, %0\n"
+                         "sll        %4, %4, 2\n"
+                         "addu       %4, %4, %0\n"
+                         "sll        %4, %4, 2\n"
+                         "lui        %0, %%hi(gSinTable)\n"
+                         "lw         %0, %%lo(gSinTable)(%0)\n"
+                         "sra        %4, %4, 16\n"
                          "negu       $a1, $a1\n"
-                         "mult       $v0, $a1\n"
-                         "addu       $a0, $a0, $v1\n"
-                         "lw         $v1, 0x0($a0)\n"
+                         "mult       %4, $a1\n"
+                         "addu       $a0, $a0, %0\n"
+                         "lw         %0, 0x0($a0)\n"
                          "nop\n"
-                         "sll        $v0, $v1, 5\n"
-                         "subu       $v0, $v0, $v1\n"
-                         "sll        $v0, $v0, 2\n"
-                         "addu       $v0, $v0, $v1\n"
+                         "sll        %4, %0, 5\n"
+                         "subu       %4, %4, %0\n"
+                         "sll        %4, %4, 2\n"
+                         "addu       %4, %4, %0\n"
                          "mflo       $a2\n"
-                         "sll        $v0, $v0, 2\n"
-                         "sra        $v0, $v0, 16\n"
-                         "mult       $v0, $a1\n"
-                         "lw         $t1, %2\n"
-                         "lh         $v1, 0x24E(%5)\n"
-                         "addu       $t1, $t1, $a2\n"
-                         "sw         $t1, %2\n"
-                         "lw         $t1, %8\n"
-                         "addiu      $v0, $zero, -0x1\n"
+                         "sll        %4, %4, 2\n"
+                         "sra        %4, %4, 16\n"
+                         "mult       %4, $a1\n"
+                         "lw         %3, %2\n"
+                         "lh         %0, 0x24E(%5)\n"
+                         "addu       %3, %3, $a2\n"
+                         "sw         %3, %2\n"
+                         "lw         %3, %8\n"
+                         "addiu      %4, $zero, -0x1\n"
                          "mflo       $a3\n"
-                         "addu       $t1, $t1, $a3\n"
+                         "addu       %3, %3, $a3\n"
                          ".set\tnoreorder\n"
-                         : "=r"(sectionValue), "=m"(workspace.heading),
-                           "=m"(workspace.targetX), "=r"(tailTargetValue),
-                           "=r"(tailMinusOne)
+                         : "=&r"(sectionValue), "=m"(workspace.heading),
+                           "=m"(workspace.targetX), "=&r"(tailTargetValue),
+                           "=&r"(tailMinusOne)
                          : "r"(car), "m"(workspace.heading),
                            "m"(workspace.targetX), "m"(workspace.targetY)
                          : "$4", "$5", "$6", "$7", "hi", "lo", "accum",
