@@ -13792,7 +13792,7 @@ void func_800373B4(Car *object) {
     s32 collisionCarOrder;
 
     u32 active;
-    s32 paceMatch;
+    s32 neighborState;
     s32 paceCarGap;
     s32 paceDistance;
     register s32 paceBase asm("$9");
@@ -13810,7 +13810,6 @@ void func_800373B4(Car *object) {
     u32 routeRaceMode;
     register u32 routeLeftFlag asm("$3");
     register s32 routeDenominator asm("$5");
-    s64 multiplierState;
     s32 routeSelection;
     struct {
         s32 delta[3];
@@ -13844,6 +13843,8 @@ void func_800373B4(Car *object) {
     s32 tailSegment;
     s32 tailRouteLength;
     register s32 tailTargetValue asm("$9");
+    s32 motionStepY;
+    s32 motionStepZ;
     Car *tailCarArg;
     register s32 tailPositionZ asm("$5");
 
@@ -13857,7 +13858,7 @@ void func_800373B4(Car *object) {
     s32 deltaX;
     s32 reverseAngle;
     s32 deltaY;
-    register s32 lateralGap asm("$2");
+    s32 lateralGap;
     register s32 tempV018 asm("$2");
     s32 wrappedGap;
     s32 tempV03;
@@ -13880,7 +13881,6 @@ void func_800373B4(Car *object) {
     register s32 varA18 asm("$5");
     s32 varA19;
     s32 nearbyLaneMask;
-    register s32 overlapIndex asm("$19");
     s32 blockedLaneMask;
     s32 paceGap;
     s32 nearbyCount;
@@ -14197,7 +14197,7 @@ void func_800373B4(Car *object) {
             if (car->unk3A4 & 0xF) {
                 car->unk84 = 0;
             } else {
-                paceMatch = 0;
+                neighborState = 0;
                 if (car == D_800A3A64373B4[0]) {
                     car->unk84 = 0xAC0000;
                 } else {
@@ -14245,7 +14245,7 @@ void func_800373B4(Car *object) {
                         }
                         paceBase = paceLeader->unk84;
                         workspace.paceSpeed = paceBase;
-                        paceMatch = 1;
+                        neighborState = 1;
                         goto paceChoice;
                     checkPaceCar:
                         sectionValue = (s16)paceCarGap;
@@ -14264,10 +14264,10 @@ void func_800373B4(Car *object) {
                         }
                         paceBase = 0xAC0000;
                         workspace.paceSpeed = paceBase;
-                        paceMatch = 1;
+                        neighborState = 1;
                     }
                 paceChoice:
-                    varV06 = (u8)paceMatch;
+                    varV06 = (u8)neighborState;
                     if (varV06 != 0) {
                         if (D_800A3670373B4[0] != 0) {
                             car->unk401 = followAllowed;
@@ -14584,20 +14584,22 @@ void func_800373B4(Car *object) {
                                 block_212:
                                     if (desiredLane == 0) {
                                         if (D_800A2F84373B4[0] != 0) {
-                                            asm volatile(
-                                                "lbu $9,%1\n\tnop\n\taddu %0,$9,$zero"
-                                                : "=r"(middleFlag)
-                                                : "m"(workspace.allowRight)
-                                                : "$9", "memory");
+                                            trackCenterFlag =
+                                                workspace.allowRight;
+                                            asm volatile("addu %0,%1,$zero"
+                                                         : "=&r"(middleFlag)
+                                                         : "r"(trackCenterFlag)
+                                                         : "memory");
                                             if (middleFlag == 0) {
                                                 desiredLane = 1;
                                             }
                                         } else {
-                                            asm volatile(
-                                                "lbu $9,%1\n\tnop\n\taddu %0,$9,$zero"
-                                                : "=r"(middleFlag)
-                                                : "m"(workspace.allowLeft)
-                                                : "$9", "memory");
+                                            trackCenterFlag =
+                                                workspace.allowLeft;
+                                            asm volatile("addu %0,%1,$zero"
+                                                         : "=&r"(middleFlag)
+                                                         : "r"(trackCenterFlag)
+                                                         : "memory");
                                             if (middleFlag == 0) {
                                                 desiredLane = -1;
                                             }
@@ -14814,10 +14816,11 @@ void func_800373B4(Car *object) {
                                    "m"(workspace.allowRight),
                                    "m"(workspace.allowLeft), "m"(workspace)
                                  : "$2", "$3", "$4", "$5", "$9", "memory");
-                    overlapIndex = 0;
+                    /* Reuse the completed pace choice as the overlap index. */
+                    neighborState = 0;
                     if (nearbyCount > 0) {
                     loop_270:
-                        overlappingCar = workspace.nearby.cars[overlapIndex];
+                        overlappingCar = workspace.nearby.cars[neighborState];
                         do {
                             collisionCarX = car->pos.x;
                             collisionCarY = car->pos.y;
@@ -14849,8 +14852,9 @@ void func_800373B4(Car *object) {
                         tempV112 = (car->model->maxX) * 2;
                         collisionWidthCopy = tempV112;
                         if (lateralGap >= 0) {
-                            if (lateralGap >= tempV112) {
-                                overlapIndex += 1;
+                            lateralGap = lateralGap < tempV112;
+                            if (lateralGap == 0) {
+                                neighborState += 1;
                                 goto block_290;
                             }
                             goto block_274;
@@ -14878,7 +14882,7 @@ void func_800373B4(Car *object) {
                             if (longitudinalGap >= 0) {
                                 lateralGap = longitudinalGap < tempV113;
                                 if (lateralGap == 0) {
-                                    overlapIndex += 1;
+                                    neighborState += 1;
                                     goto block_290;
                                 }
                                 goto block_278;
@@ -14921,9 +14925,9 @@ void func_800373B4(Car *object) {
                             }
                         } else {
                         block_289:
-                            overlapIndex += 1;
+                            neighborState += 1;
                         block_290:
-                            if (overlapIndex >= nearbyCount) {
+                            if (neighborState >= nearbyCount) {
 
                             } else {
                                 goto loop_270;
@@ -14974,7 +14978,7 @@ void func_800373B4(Car *object) {
                          "sll        $a0, $v0, 2\n"
                          "addu       $v1, $a0, $v1\n"
                          "lw         $v1, 0x0($v1)\n"
-                         "lb         $a1, 0x206(%6)\n"
+                         "lb         $a1, 0x206(%5)\n"
                          "sll        $v0, $v1, 5\n"
                          "subu       $v0, $v0, $v1\n"
                          "sll        $v0, $v0, 2\n"
@@ -14997,20 +15001,21 @@ void func_800373B4(Car *object) {
                          "sra        $v0, $v0, 16\n"
                          "mult       $v0, $a1\n"
                          "lw         $t1, %2\n"
-                         "lh         $v1, 0x24E(%6)\n"
+                         "lh         $v1, 0x24E(%5)\n"
                          "addu       $t1, $t1, $a2\n"
                          "sw         $t1, %2\n"
-                         "lw         $t1, %9\n"
+                         "lw         $t1, %8\n"
                          "addiu      $v0, $zero, -0x1\n"
                          "mflo       $a3\n"
                          "addu       $t1, $t1, $a3\n"
                          ".set\tnoreorder\n"
                          : "=r"(sectionValue), "=m"(workspace.heading),
                            "=m"(workspace.targetX), "=r"(tailTargetValue),
-                           "=r"(tailMinusOne), "=x"(multiplierState)
+                           "=r"(tailMinusOne)
                          : "r"(car), "m"(workspace.heading),
                            "m"(workspace.targetX), "m"(workspace.targetY)
-                         : "$4", "$5", "$6", "$7", "accum", "memory");
+                         : "$4", "$5", "$6", "$7", "hi", "lo", "accum",
+                           "memory");
             workspace.targetY = tailTargetValue;
             if (sectionValue != tailMinusOne) {
                 tempA22 = (car->segment);
@@ -15085,48 +15090,50 @@ void func_800373B4(Car *object) {
             car->fineHeading = (s16)((car->heading) * 4);
             MatrixSetRotationFromAngle373B4(car, (car->heading) * 4);
             func_8001FB28373B4(car, (s16)(car->movementHeading));
-            /* Keep the three low-product windows and position stores. */
+            /* Keep the three low-product windows. */
             asm volatile(".set\tnoreorder\n"
-                         "lh         $v1, 0x92(%3)\n"
-                         "lw         $v0, 0x60(%3)\n"
+                         "lh         %3, 0x92(%7)\n"
+                         "lw         %2, 0x60(%7)\n"
                          "nop\n"
-                         "mult       $v0, $v1\n"
-                         "lh         $v1, 0x92(%3)\n"
-                         "lw         $v0, 0x6C(%3)\n"
-                         "mflo       $a1\n"
-                         "nop\n"
-                         "nop\n"
-                         "mult       $v0, $v1\n"
-                         "lh         $v1, 0x92(%3)\n"
-                         "lw         $v0, 0x78(%3)\n"
-                         "mflo       $a0\n"
+                         "mult       %2, %3\n"
+                         "lh         %3, 0x92(%7)\n"
+                         "lw         %2, 0x6C(%7)\n"
+                         "mflo       %1\n"
                          "nop\n"
                          "nop\n"
-                         "mult       $v0, $v1\n"
-                         "sra        $v0, $a1, 16\n"
-                         "sw         $v0, 0xB0(%3)\n"
-                         "lw         $a2, 0xB0(%3)\n"
-                         "sra        $v0, $a0, 16\n"
-                         "sw         $v0, 0xB4(%3)\n"
-                         "lw         $a3, 0xB4(%3)\n"
-                         "lw         $a1, 0x8(%3)\n"
-                         "mflo       $v1\n"
-                         "sra        $v0, $v1, 16\n"
-                         "sw         $v0, 0xB8(%3)\n"
-                         "lw         $v0, 0x0(%3)\n"
-                         "lw         $v1, 0x4(%3)\n"
-                         "lw         $t0, 0xB8(%3)\n"
-                         "addu       $a0, %3, $zero\n"
-                         "addu       $v0, $v0, $a2\n"
-                         "addu       $v1, $v1, $a3\n"
-                         "addu       $a1, $a1, $t0\n"
-                         "sw         $v0, 0x0($a0)\n"
-                         "sw         $v1, 0x4($a0)\n"
+                         "mult       %2, %3\n"
+                         "lh         %3, 0x92(%7)\n"
+                         "lw         %2, 0x78(%7)\n"
+                         "mflo       %0\n"
+                         "nop\n"
+                         "nop\n"
+                         "mult       %2, %3\n"
+                         "sra        %2, %1, 16\n"
+                         "sw         %2, 0xB0(%7)\n"
+                         "lw         %4, 0xB0(%7)\n"
+                         "sra        %2, %0, 16\n"
+                         "sw         %2, 0xB4(%7)\n"
+                         "lw         %5, 0xB4(%7)\n"
+                         "lw         %1, 0x8(%7)\n"
+                         "mflo       %3\n"
+                         "sra        %2, %3, 16\n"
+                         "sw         %2, 0xB8(%7)\n"
+                         "lw         %2, 0x0(%7)\n"
+                         "lw         %3, 0x4(%7)\n"
+                         "lw         %6, 0xB8(%7)\n"
+                         "addu       %0, %7, $zero\n"
                          ".set\tnoreorder\n"
-                         : "=r"(tailCarArg), "=r"(tailPositionZ),
-                           "=x"(multiplierState)
+                         : "=&r"(tailCarArg), "=&r"(tailPositionZ),
+                           "=&r"(varV0), "=&r"(tempV112),
+                           "=&r"(collisionNeighborY), "=&r"(motionStepY),
+                           "=&r"(motionStepZ)
                          : "r"(car)
-                         : "$2", "$3", "$6", "$7", "$8", "accum", "memory");
+                         : "hi", "lo", "accum", "memory");
+            varV0 = (u32)varV0 + (u32)collisionNeighborY;
+            tempV112 = (u32)tempV112 + (u32)motionStepY;
+            tailPositionZ = (u32)tailPositionZ + (u32)motionStepZ;
+            tailCarArg->pos.x = varV0;
+            tailCarArg->pos.y = tempV112;
             tailCarArg->pos.z = tailPositionZ;
             func_80029CB4373B4(tailCarArg);
         }
