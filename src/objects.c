@@ -13801,7 +13801,7 @@ void func_800373B4(Car *object) {
     s32 pressureTimerValue;
     s32 standingTest;
     s32 paceTimer;
-    s32 timerBase;
+    s32 paceValue;
     s32 tireAge2;
     s32 counterScale;
     s32 speedResult;
@@ -13892,7 +13892,7 @@ void func_800373B4(Car *object) {
     s32 varV016;
     register s32 varV017 asm("$2");
     register s32 varV02 asm("$2");
-    s32 varV03;
+    s32 tirePenalty;
     s32 varV06;
     register s32 varV07 asm("$2");
     s32 varV1;
@@ -14028,18 +14028,19 @@ void func_800373B4(Car *object) {
                      "sb\t$2,%3\n\t"
                      "lbu\t$2,D_800A2F58373B4\n\t"
                      "ori\t$5,$0,0x198\n\t"
-                     "andi\t$9,$9,0x3FFF\n\t"
-                     "sw\t$9,%2\n\t"
-                     "srl\t$3,$3,31\n\t"
-                     "xori\t$3,$3,1\n\t"
                      ".set at\n\t"
                      : "=m"(workspace.targetX), "=m"(workspace.targetY),
                        "=m"(workspace.heading), "=m"(workspace.allowRight),
                        "=r"(routeRaceMode), "=r"(routeLeftFlag),
                        "=r"(routeDenominator), "=r"(routeSelection),
-                       "=x"(multiplierState)
+                       "=r"(tailTargetValue)
                      : "r"(car)
-                     : "$1", "$4", "$6", "$9", "accum", "memory");
+                     : "$1", "$4", "$6", "hi", "lo", "accum", "memory");
+        do {
+            tailTargetValue &= 0x3FFF;
+            workspace.heading = tailTargetValue;
+        } while (0);
+        routeLeftFlag = ((u32)routeLeftFlag >> 31) ^ 1;
         workspace.allowLeft = routeLeftFlag;
         if (routeRaceMode != 0) {
             if (gSessionType373B4[0] == 1) {
@@ -14092,33 +14093,22 @@ void func_800373B4(Car *object) {
                 (routeSelection != 1) &&
                 (tempV04 = D_800A2F5C373B4 + 1, D_800A2F5C373B4 = tempV04,
                  (tempV04 >= 0))) {
-                /* Tire-age penalty and driver aggression. */
-                asm volatile(".set noat\n\t"
-                             ".set\tnoreorder\n\t"
-                             "lh\t$6,0xFA(%3)\n\t"
-                             "sll\t$0,$0,0\n\t"
-                             "slti\t$2,$6,16\n\t"
-                             "beqz\t$2,3f\n\t"
-                             "sll\t$2,$6,2\n\t"
-                             "lw\t$3,D_800A2F50373B4\n\t"
-                             "lui\t$4,%%hi(D_800A3320)\n\t"
-                             "lbu\t$4,%%lo(D_800A3320)($4)\n\t"
-                             "j\t4f\n\t"
-                             "sll\t$3,$3,3\n\t"
-                             "3:\n\t"
-                             "lw\t$3,D_800A2F50373B4\n\t"
-                             "sll\t$2,$6,1\n\t"
-                             "addu\t$2,$2,$6\n\t"
-                             "lui\t$4,%%hi(D_800A3320)\n\t"
-                             "lbu\t$4,%%lo(D_800A3320)($4)\n\t"
-                             "sll\t$2,$2,2\n\t"
-                             "sll\t$3,$3,3\n\t"
-                             "4:\n\t"
-                             "subu\t$3,$3,$2\n\t"
-                             ".set at\n\t"
-                             : "=r"(varV0), "=r"(varV1), "=r"(varA0)
-                             : "r"(car)
-                             : "$6", "memory");
+                {
+                    paceValue = car->unkFA;
+                    if (paceValue < 16) {
+                        varV0 = paceValue * 4;
+                        varV1 = D_800A2F50373B4;
+                        varA0 = D_800A3320[0];
+                        varV1 = (u32)varV1 << 3;
+                    } else {
+                        varV1 = D_800A2F50373B4;
+                        tirePenalty = paceValue * 3;
+                        varA0 = D_800A3320[0];
+                        varV0 = tirePenalty * 4;
+                        varV1 = (u32)varV1 << 3;
+                    }
+                    varV1 = (u32)varV1 - varV0;
+                }
                 varV0 = 0x96 - varA0;
                 varV0 <<= 1;
                 asm("addu\t%0,%1,%2" : "=r"(varV0) : "r"(varV1), "r"(varV0));
@@ -14132,7 +14122,7 @@ void func_800373B4(Car *object) {
             } else {
                 paceTimer = D_800A2F5C373B4;
                 if (paceTimer > 0) {
-                    timerBase = D_800A2F50373B4;
+                    paceValue = D_800A2F50373B4;
                     tireAge2 = car->unkFA;
                     varA0 = D_800A3320373B4[0];
                     routeDenominator <<= 3;
@@ -14142,13 +14132,13 @@ void func_800373B4(Car *object) {
                     } while (0);
 
                     varV0 = 0x66;
-                    timerBase <<= 3;
+                    paceValue <<= 3;
                     tireAge2 <<= 2;
-                    timerBase -= tireAge2;
+                    paceValue -= tireAge2;
                     varV0 -= varA0;
                     varA0 = varV0 * 3;
                     car->unk84 = MathMultiplyFixed16373B4(
-                        car->unk84, MathFixedDivide373B4(timerBase + varA0,
+                        car->unk84, MathFixedDivide373B4(paceValue + varA0,
                                                          routeDenominator));
                     varV02 = 0x140000;
                 } else {
@@ -14157,18 +14147,18 @@ void func_800373B4(Car *object) {
                     }
                     tempV13 = (gCarList373B4[0]->place);
                     if (tempV13 >= 0x15) {
-                        varV03 = (car->unkFA) * 0x10;
+                        tirePenalty = (car->unkFA) * 0x10;
                     } else {
                         standingTest = tempV13 < 0xD;
                         if (standingTest == 0) {
-                            varV03 = (car->unkFA) * 0xA;
+                            tirePenalty = (car->unkFA) * 0xA;
                         } else {
-                            varV03 = (car->unkFA) * 4;
+                            tirePenalty = (car->unkFA) * 4;
                         }
                     }
                     (car->unk84) = MathMultiplyFixed16373B4(
                         (car->unk84),
-                        MathFixedDivide373B4((D_800A2F50373B4 * 8) - varV03,
+                        MathFixedDivide373B4((D_800A2F50373B4 * 8) - tirePenalty,
                                              routeDenominator << 3));
                     varV02 = 0xA0000;
                 }
