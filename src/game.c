@@ -2323,7 +2323,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
     s32 vertexCount;
     s32 vertexIndex;
     s32 faceMode;
-    register s32 lastCorner asm("v1");
+    register s32 lastCorner;
     register s32 nextDataOffset;
     register s32 randomValue;
     register s32 shadeBase;
@@ -2736,8 +2736,7 @@ void TrackReadData(TrackResource *trackData, s32 file) {
             nextDataOffset = objectFaceCount * 2 + 2;
             diskObject =
                 (TrackFileObject *)(objectFaceIndices + nextDataOffset);
-            lastCorner = (s32)vertices + lastCorner * 8;
-            sec->unk78[5] = (u8 *)lastCorner;
+            sec->unk78[5] = vertices + lastCorner * 8;
             sec++;
         } while (i < count);
         asm volatile(""

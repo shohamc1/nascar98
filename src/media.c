@@ -1923,7 +1923,6 @@ void CdUpdateStream(void) {
     s32 availableLimit;
     s32 contiguousSectors;
     s32 remainingSectors;
-    register s32 *restartRecord asm("a0");
     s32 *activeRecord;
     s32 *refillRecord;
     s32 *bufferRecord;
@@ -2016,9 +2015,9 @@ void CdUpdateStream(void) {
             CdIntToPos(CdPosToInt(loc) + restartSector,
                        (CdlLOC *)restartPosition);
             restartSeekStream = gCdStream;
-            restartRecord = (s32 *)restartSeekStream[0x430 / 4];
+            loc = (CdlLOC *)restartSeekStream[0x430 / 4];
             restartSeekStream[0x418 / 4] = 2;
-            restartPosition = (u8 *)restartRecord + 0x24;
+            restartPosition = (u8 *)loc + 0x24;
 
             SwEnterCriticalSection();
             restartSeekQueue = (volatile s32 *)gCdStream;
