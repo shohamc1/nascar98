@@ -5417,13 +5417,10 @@ noSliding:
             *(s32 *)(tableOffset + gFarCosTable.unk[0]), limitedRearX);
         fixedValue = MathMultiplyFixed16(
             *(s32 *)(tableOffset + gFarSinTable.unk[0]), local.axleVelocity.vy);
-        asm("lui %0,%%hi(gSinTable)\n\tlw %0,%%lo(gSinTable)(%0)"
-            : "=r"(gripBase));
+        gripBase = pairSinTable4[0];
         car->rearVelocityX = limitedRearXProduct - fixedValue;
         frontXValue = local.axleVelocity.vx;
-        asm("addu %0,%1,%0"
-            : "=r"(gripBase)
-            : "r"(tableOffset), "0"(gripBase), "r"(frontXValue));
+        gripBase = tableOffset + gripBase;
         limitedRearYProduct =
             MathMultiplyFixed16(*((s32 *)gripBase), frontXValue);
         car->rearVelocityY =
@@ -12587,11 +12584,13 @@ extern u8 *D_800A35E0373B4[];
 extern u8 D_800A3670373B4[];
 extern s32 D_800A36A4373B4;
 extern u8 *D_800A3728373B4[];
+/* Separate names keep reload addresses out of saved registers. */
+extern Car *D_800A3728[];
 extern u8 D_800A372C373B4[];
 extern s8 D_800A3764373B4[];
 extern Car *gCarList373B4[];
 extern s16 D_800A3910373B4[];
-extern u8 *D_800A3960373B4[];
+extern Car *gCrashCar373B4[];
 extern s32 *gCosTable373B4[];
 extern s32 *gSinTable373B4[];
 extern Car *D_800A3A64373B4[];
@@ -12623,7 +12622,7 @@ extern void CarResetMotionCounters373B4(void) asm("CarResetMotionCounters");
 extern void func_80025730373B4(void) asm("func_80025730");
 extern void func_8003AA20373B4(void) asm("func_8003AA20");
 __asm__(
-    ".globl D_800A2E4C373B4\nD_800A2E4C373B4 = D_800A2E4C\n.globl D_800A2E90373B4\nD_800A2E90373B4 = D_800A2E90\n.globl D_800A2E94373B4\nD_800A2E94373B4 = D_800A2E94\n.globl gSplitScreenMode373B4\ngSplitScreenMode373B4 = gSplitScreenMode\n.globl D_800A2EAC373B4\nD_800A2EAC373B4 = D_800A2EAC\n.globl gSessionType373B4\ngSessionType373B4 = gSessionType\n.globl D_800A2EDC373B4\nD_800A2EDC373B4 = D_800A2EDC\n.globl D_800A2EE0373B4\nD_800A2EE0373B4 = D_800A2EE0\n.globl D_800A2F48373B4\nD_800A2F48373B4 = D_800A2F48\n.globl D_800A2F50373B4\nD_800A2F50373B4 = D_800A2F50\n.globl D_800A2F54373B4\nD_800A2F54373B4 = D_800A2F54\n.globl D_800A2F58373B4\nD_800A2F58373B4 = D_800A2F58\n.globl D_800A2F5C373B4\nD_800A2F5C373B4 = D_800A2F5C\n.globl D_800A2F84373B4\nD_800A2F84373B4 = D_800A2F84\n.globl D_800A3071373B4\nD_800A3071373B4 = D_800A3071\n.globl D_800A3320373B4\nD_800A3320373B4 = D_800A3320\n.globl gPlayerCar373B4\ngPlayerCar373B4 = gPlayerCar\n.globl D_800A3564373B4\nD_800A3564373B4 = D_800A3564\n.globl D_800A3598373B4\nD_800A3598373B4 = D_800A3598\n.globl D_800A35E0373B4\nD_800A35E0373B4 = D_800A35E0\n.globl D_800A3670373B4\nD_800A3670373B4 = D_800A3670\n.globl D_800A36A4373B4\nD_800A36A4373B4 = D_800A36A4\n.globl D_800A3728373B4\nD_800A3728373B4 = D_800A3728\n.globl D_800A372C373B4\nD_800A372C373B4 = D_800A372C\n.globl D_800A3764373B4\nD_800A3764373B4 = D_800A3764\n.globl D_800A37C0373B4\nD_800A37C0373B4 = D_800A37C0\n.globl gCarList373B4\ngCarList373B4 = gCarList\n.globl D_800A3910373B4\nD_800A3910373B4 = D_800A3910\n.globl D_800A3960373B4\nD_800A3960373B4 = gCrashCar\n.globl gCosTable373B4\ngCosTable373B4 = gCosTable\n.globl gSinTable373B4\ngSinTable373B4 = gSinTable\n.globl D_800A3A64373B4\nD_800A3A64373B4 = D_800A3A64\n.globl D_800AE154373B4\nD_800AE154373B4 = D_800AE154\n.globl D_800B1EA8373B4\nD_800B1EA8373B4 = D_800B1EA8\n.globl gTrackSectionCount373B4\ngTrackSectionCount373B4 = gTrackSectionCount\n.globl gTrackSections373B4\ngTrackSections373B4 = gTrackSections\n.globl func_800A2CE0373B4\nfunc_800A2CE0373B4 = func_800A2CE0\n");
+    ".globl D_800A2E4C373B4\nD_800A2E4C373B4 = D_800A2E4C\n.globl D_800A2E90373B4\nD_800A2E90373B4 = D_800A2E90\n.globl D_800A2E94373B4\nD_800A2E94373B4 = D_800A2E94\n.globl gSplitScreenMode373B4\ngSplitScreenMode373B4 = gSplitScreenMode\n.globl D_800A2EAC373B4\nD_800A2EAC373B4 = D_800A2EAC\n.globl gSessionType373B4\ngSessionType373B4 = gSessionType\n.globl D_800A2EDC373B4\nD_800A2EDC373B4 = D_800A2EDC\n.globl D_800A2EE0373B4\nD_800A2EE0373B4 = D_800A2EE0\n.globl D_800A2F48373B4\nD_800A2F48373B4 = D_800A2F48\n.globl D_800A2F50373B4\nD_800A2F50373B4 = D_800A2F50\n.globl D_800A2F54373B4\nD_800A2F54373B4 = D_800A2F54\n.globl D_800A2F58373B4\nD_800A2F58373B4 = D_800A2F58\n.globl D_800A2F5C373B4\nD_800A2F5C373B4 = D_800A2F5C\n.globl D_800A2F84373B4\nD_800A2F84373B4 = D_800A2F84\n.globl D_800A3071373B4\nD_800A3071373B4 = D_800A3071\n.globl D_800A3320373B4\nD_800A3320373B4 = D_800A3320\n.globl gPlayerCar373B4\ngPlayerCar373B4 = gPlayerCar\n.globl D_800A3564373B4\nD_800A3564373B4 = D_800A3564\n.globl D_800A3598373B4\nD_800A3598373B4 = D_800A3598\n.globl D_800A35E0373B4\nD_800A35E0373B4 = D_800A35E0\n.globl D_800A3670373B4\nD_800A3670373B4 = D_800A3670\n.globl D_800A36A4373B4\nD_800A36A4373B4 = D_800A36A4\n.globl D_800A3728373B4\nD_800A3728373B4 = D_800A3728\n.globl D_800A372C373B4\nD_800A372C373B4 = D_800A372C\n.globl D_800A3764373B4\nD_800A3764373B4 = D_800A3764\n.globl D_800A37C0373B4\nD_800A37C0373B4 = D_800A37C0\n.globl gCarList373B4\ngCarList373B4 = gCarList\n.globl D_800A3910373B4\nD_800A3910373B4 = D_800A3910\n.globl gCrashCar373B4\ngCrashCar373B4 = gCrashCar\n.globl gCosTable373B4\ngCosTable373B4 = gCosTable\n.globl gSinTable373B4\ngSinTable373B4 = gSinTable\n.globl D_800A3A64373B4\nD_800A3A64373B4 = D_800A3A64\n.globl D_800AE154373B4\nD_800AE154373B4 = D_800AE154\n.globl D_800B1EA8373B4\nD_800B1EA8373B4 = D_800B1EA8\n.globl gTrackSectionCount373B4\ngTrackSectionCount373B4 = gTrackSectionCount\n.globl gTrackSections373B4\ngTrackSections373B4 = gTrackSections\n.globl func_800A2CE0373B4\nfunc_800A2CE0373B4 = func_800A2CE0\n");
 
 /* Update AI route speed, pace following, nearby lanes, and steering. */
 #ifdef NATIVE
@@ -14370,7 +14369,7 @@ void func_800373B4(Car *object) {
                 goto block_120;
             }
             if ((D_800A3071373B4[0] != 0) && (D_800A3910373B4[0] == 0) &&
-                (D_800A3960373B4[0] == NULL) && (gSessionType373B4[0] == 0)) {
+                (gCrashCar373B4[0] == NULL) && (gSessionType373B4[0] == 0)) {
                 SceneSetCameraTarget373B4(car);
                 D_800A3764373B4[0] = 1;
                 goto block_120;
@@ -14715,20 +14714,12 @@ void func_800373B4(Car *object) {
                         middleOther = gCrashCar[0];
                         if ((middleOther != NULL) && (middleOther->type != 0)) {
                             if (func_8003702C373B4(middleOther, car) < 0) {
-                                asm volatile(
-                                    "lui %0,%%hi(gCrashCar)\n\tlw %0,%%lo(gCrashCar)(%0)"
-                                    : "=r"(middleOther)
-                                    :
-                                    : "memory");
+                                middleOther = gCrashCar373B4[0];
                                 if (-func_8003702C373B4(middleOther, car) < 5) {
                                     goto block_212;
                                 }
                             } else {
-                                asm volatile(
-                                    "lui %0,%%hi(gCrashCar)\n\tlw %0,%%lo(gCrashCar)(%0)"
-                                    : "=r"(middleOther)
-                                    :
-                                    : "memory");
+                                middleOther = gCrashCar373B4[0];
                                 if (func_8003702C373B4(middleOther, car) < 5) {
                                 block_212:
                                     if (desiredLane == 0) {
@@ -14766,17 +14757,9 @@ void func_800373B4(Car *object) {
                         }
                         if (-tempV09 < 4) {
                         block_223:
-                            asm volatile(
-                                "lui %0,%%hi(D_800A3728)\n\tlw %0,%%lo(D_800A3728)(%0)"
-                                : "=r"(middleOther)
-                                :
-                                : "memory");
+                            middleOther = D_800A3728[0];
                             func_8003702C373B4(middleOther, car);
-                            asm volatile(
-                                "lui %0,%%hi(D_800A3728)\n\tlw %0,%%lo(D_800A3728)(%0)"
-                                : "=r"(middleOther)
-                                :
-                                : "memory");
+                            middleOther = (Car *)D_800A3728373B4[0];
                             if (func_8003702C373B4(middleOther, car) < 5) {
                                 tempV010 =
                                     (((Car *)D_800A3728373B4[0])->unk203);
