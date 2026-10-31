@@ -13783,7 +13783,7 @@ void func_800373B4(Car *object) {
     s32 coordinateWork0;
     s32 coordinateWork1;
     s32 collisionArgument0;
-    /* Use the projection argument for the final Z position. */
+    /* Use neighbor gaps, projection arguments, then the final Z position. */
     s32 coordinateArgument;
     /* Use the neighbor Y, segment value, and X step in separate phases. */
     s32 carWork;
@@ -13858,10 +13858,10 @@ void func_800373B4(Car *object) {
     s32 reverseAngle;
     s32 deltaY;
     s32 lateralGap;
-    register s32 tempV018 asm("$2");
+
     s32 wrappedGap;
     s32 tempV03;
-    s32 tempV04;
+    s32 controlValue;
     register s32 tempV112 asm("$3");
     register s32 tempV113 asm("$3");
     s32 tempV115;
@@ -13871,12 +13871,7 @@ void func_800373B4(Car *object) {
     register s32 varA0 asm("$4");
     s32 varA02;
     s32 varA1;
-    register s32 varA12 asm("$5");
-    register s32 varA13 asm("$5");
-    register s32 varA14 asm("$5");
-    register s32 varA15 asm("$5");
-    register s32 varA16 asm("$5");
-    register s32 varA17 asm("$5");
+
     register s32 varA18 asm("$5");
     s32 varA19;
     s32 nearbyLaneMask;
@@ -14086,8 +14081,8 @@ void func_800373B4(Car *object) {
                 ((((Car *)D_800A35E0373B4[0])->unk26C[12]) >=
                  (car->unk26C[12])) &&
                 (routeSelection != 1) &&
-                (tempV04 = D_800A2F5C373B4 + 1, D_800A2F5C373B4 = tempV04,
-                 (tempV04 >= 0))) {
+                (controlValue = D_800A2F5C373B4 + 1,
+                 D_800A2F5C373B4 = controlValue, (controlValue >= 0))) {
                 {
                     paceValue = car->unkFA;
                     if (paceValue < 16) {
@@ -14161,10 +14156,10 @@ void func_800373B4(Car *object) {
             }
             if (D_800A2F5C373B4 < -(D_800A2E94373B4[0] * 0xC8)) {
                 (car->draftTimer) = 0U;
-                tempV04 = D_800A2F5C373B4;
+                controlValue = D_800A2F5C373B4;
                 (car->speedBoost) = 0;
-                tempV04 += 1;
-                D_800A2F5C373B4 = tempV04;
+                controlValue += 1;
+                D_800A2F5C373B4 = controlValue;
                 (car->unk84) = MathMultiplyFixed16373B4(
                     (car->unk84), MathFixedDivide373B4(0x60, 0x64));
             }
@@ -14371,11 +14366,13 @@ void func_800373B4(Car *object) {
                                 ->car;
                     }
                     if (func_8003702C373B4(forwardNeighbor, car) < 0) {
-                        varA12 = -func_8003702C373B4(forwardNeighbor, car);
+                        coordinateArgument =
+                            -func_8003702C373B4(forwardNeighbor, car);
                     } else {
-                        varA12 = func_8003702C373B4(forwardNeighbor, car);
+                        coordinateArgument =
+                            func_8003702C373B4(forwardNeighbor, car);
                     }
-                    varV07 = varA12 < 2;
+                    varV07 = coordinateArgument < 2;
                     if (varV07 != 0) {
                         tempV16 = 1;
                         varV07 = forwardNeighbor->lane;
@@ -14405,11 +14402,13 @@ void func_800373B4(Car *object) {
                                 ->car;
                     }
                     if (func_8003702C373B4(backwardNeighbor, car) < 0) {
-                        varA13 = -func_8003702C373B4(backwardNeighbor, car);
+                        coordinateArgument =
+                            -func_8003702C373B4(backwardNeighbor, car);
                     } else {
-                        varA13 = func_8003702C373B4(backwardNeighbor, car);
+                        coordinateArgument =
+                            func_8003702C373B4(backwardNeighbor, car);
                     }
-                    varV08 = varA13 < 2;
+                    varV08 = coordinateArgument < 2;
                     if (varV08 != 0) {
                         tempV17 = 1;
                         varV08 = backwardNeighbor->lane;
@@ -14450,13 +14449,13 @@ void func_800373B4(Car *object) {
                                      (nearbyCar->speed >> 16);
                             if (tempS0 >= 0x10) {
                                 if (func_8003702C373B4(nearbyCar, car) < 0) {
-                                    varA14 =
+                                    coordinateArgument =
                                         -func_8003702C373B4(nearbyCar, car);
                                 } else {
-                                    varA14 =
+                                    coordinateArgument =
                                         func_8003702C373B4(nearbyCar, car);
                                 }
-                                laneTest = varA14 < 2;
+                                laneTest = coordinateArgument < 2;
                                 if (laneTest) {
                                     if (blockedLaneMask != 7) {
                                         s32 currentLane;
@@ -14494,11 +14493,13 @@ void func_800373B4(Car *object) {
                         followAllowed = 1;
                         if ((nearbyCar->type) == 0) {
                             if (func_8003702C373B4(nearbyCar, car) < 0) {
-                                varA15 = -func_8003702C373B4(nearbyCar, car);
+                                coordinateArgument =
+                                    -func_8003702C373B4(nearbyCar, car);
                             } else {
-                                varA15 = func_8003702C373B4(nearbyCar, car);
+                                coordinateArgument =
+                                    func_8003702C373B4(nearbyCar, car);
                             }
-                            varV011 = (u32)varA15 - 2 < 4;
+                            varV011 = (u32)coordinateArgument - 2 < 4;
                             if (varV011 == 0)
                                 goto pressureNotAllowed;
                             tempV112 = nearbyCar->speed;
@@ -14511,13 +14512,13 @@ void func_800373B4(Car *object) {
                                     (((CarLink *)tempA09)->car);
                                 if (func_8003702C373B4(aheadOfFollowingCar,
                                                        car) < 0) {
-                                    varA16 = -func_8003702C373B4(
+                                    coordinateArgument = -func_8003702C373B4(
                                         aheadOfFollowingCar, car);
                                 } else {
-                                    varA16 = func_8003702C373B4(
+                                    coordinateArgument = func_8003702C373B4(
                                         aheadOfFollowingCar, car);
                                 }
-                                varV011 = varA16 < 2;
+                                varV011 = coordinateArgument < 2;
                                 if (varV011 == 0)
                                     goto pressureAllowed;
                             }
@@ -14557,8 +14558,8 @@ void func_800373B4(Car *object) {
                         pressureTimerCheck:
                             tempV19 = pressureTimerValue;
                             if (pressureTimerValue > 0) {
-                                tempV018 = tempV19 - 1;
-                                car->assistRank = tempV018;
+                                controlValue = tempV19 - 1;
+                                car->assistRank = controlValue;
                             }
                         }
                     }
@@ -14947,22 +14948,22 @@ void func_800373B4(Car *object) {
                         ((CarLink *)paceAheadCar->sectionLink.node.next)->car;
                 }
                 if (func_8003702C373B4(paceAheadCar, car) < 0) {
-                    varA17 = -func_8003702C373B4(paceAheadCar, car);
+                    coordinateArgument = -func_8003702C373B4(paceAheadCar, car);
                     goto collisionPaceResume;
                 collisionSlowCar:
                     car->speed -= 0x10000;
                     goto collisionDone;
                 } else {
-                    varA17 = func_8003702C373B4(paceAheadCar, car);
+                    coordinateArgument = func_8003702C373B4(paceAheadCar, car);
                 }
             collisionPaceResume:
-                tempV018 = varA17 < 2;
-                if (tempV018 != 0) {
+                controlValue = coordinateArgument < 2;
+                if (controlValue != 0) {
                     tempA012 = (paceAheadCar->speed);
                     if (tempA012 > 0x640000) {
-                        tempV018 = tempA012 + 0xFFFB0000;
-                        (car->speed) = tempV018;
-                        (car->unk84) = tempV018;
+                        controlValue = tempA012 + 0xFFFB0000;
+                        (car->speed) = controlValue;
+                        (car->unk84) = controlValue;
                     }
                 }
             }
