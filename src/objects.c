@@ -13780,7 +13780,7 @@ void func_800373B4(Car *object) {
     s32 middleRandomLimit;
 
     s32 collisionCarX;
-    register s32 collisionCarY asm("$8");
+    s32 collisionCarY;
     s32 collisionArgument0;
     register s32 collisionArgument1 asm("$5");
     register s32 collisionNeighborY asm("$6");
@@ -13856,18 +13856,16 @@ void func_800373B4(Car *object) {
     s32 longitudinalGap;
     s32 deltaX;
     s32 reverseAngle;
-    register s32 deltaY asm("$22");
+    s32 deltaY;
     register s32 lateralGap asm("$2");
     register s32 tempV018 asm("$2");
-    s32 tempV020;
-    s32 tempV021;
+    s32 wrappedGap;
     s32 tempV03;
     s32 tempV04;
     register s32 tempV112 asm("$3");
     register s32 tempV113 asm("$3");
     s32 tempV115;
-    register s32 tempV116 asm("$3");
-    s32 tempV117;
+    s32 wrappedSegment;
     s32 tempV16;
     s32 tempV17;
     register s32 varA0 asm("$4");
@@ -13888,9 +13886,7 @@ void func_800373B4(Car *object) {
     s32 nearbyCount;
     register s32 varV0 asm("$2");
     register s32 varV011 asm("$2");
-    s32 overlapOffset;
     s32 varV016;
-    register s32 varV017 asm("$2");
     register s32 varV02 asm("$2");
     s32 tirePenalty;
     s32 varV06;
@@ -14206,11 +14202,10 @@ void func_800373B4(Car *object) {
                     car->unk84 = 0xAC0000;
                 } else {
                     paceLeader = ((CarLink *)car->sectionLink.node.next)->car;
-                    asm("lh\t%0,0x288(%1)"
-                        : "=r"(varV04)
-                        : "r"(paceLeader)
-                        : "$20");
-                    followAllowed = 0;
+                    do {
+                        varV04 = paceLeader->unk26C[14];
+                        followAllowed = 0;
+                    } while (0);
                     goto paceLevelCheck;
                 paceNextCar:
                     paceLeader =
@@ -14822,25 +14817,16 @@ void func_800373B4(Car *object) {
                     overlapIndex = 0;
                     if (nearbyCount > 0) {
                     loop_270:
-                        asm volatile(
-                            "addu %0,$sp,%0\n\t"
-                            "lw %1,0x20(%0)\n\t"
-                            "lw %2,0(%9)\n\t"
-                            "lw %3,4(%9)\n\t"
-                            "lh %4,0x114(%9)\n\t"
-                            "lui %5,%%hi(gCosTable373B4)\n\t"
-                            "lw %5,%%lo(gCosTable373B4)(%5)\n\t"
-                            "li %0,0x3FF\n\t"
-                            "lw %6,0(%1)\n\t"
-                            "lw %7,4(%1)"
-                            : "=r"(overlapOffset), "=r"(overlappingCar),
-                              "=r"(collisionCarX), "=r"(collisionCarY),
-                              "=r"(collisionArgument0),
-                              "=r"(collisionTableBase),
-                              "=r"(collisionArgument1), "=r"(collisionNeighborY)
-                            : "0"(overlapIndex * 4), "r"(car)
-                            : "memory");
-                        reverseAngle = overlapOffset - collisionArgument0;
+                        overlappingCar = workspace.nearby.cars[overlapIndex];
+                        do {
+                            collisionCarX = car->pos.x;
+                            collisionCarY = car->pos.y;
+                            collisionArgument0 = car->heading;
+                        } while (0);
+                        collisionTableBase = (s32)gCosTable373B4[0];
+                        collisionArgument1 = overlappingCar->pos.x;
+                        collisionNeighborY = overlappingCar->pos.y;
+                        reverseAngle = 0x3FF - collisionArgument0;
                         collisionTableOffset = reverseAngle << 2;
                         collisionTableBase =
                             collisionTableOffset + collisionTableBase;
@@ -15038,22 +15024,22 @@ void func_800373B4(Car *object) {
                     varV016 = -varA18 < tempV115;
                 }
                 if (varV016 == 0) {
-                    tempV116 = tailSegment + tailRouteLength;
+                    wrappedSegment = tailSegment + tailRouteLength;
                     if (tailSegment < tempA22) {
-                        tempV020 = tempV116 - tempA22;
-                        varA18 = tempV020;
-                        if (tempV020 >= 0) {
-                            varV017 = tempA22 - tempV116;
+                        wrappedGap = wrappedSegment - tempA22;
+                        varA18 = wrappedGap;
+                        if (wrappedGap >= 0) {
+                            wrappedGap = tempA22 - wrappedSegment;
                             goto block_315;
                         }
                     } else {
-                        tempV117 = tempA22 + tailRouteLength;
-                        tempV021 = tempV117 - tailSegment;
-                        varA18 = tempV021;
-                        if (tempV021 < 0) {
-                            varV017 = tailSegment - tempV117;
+                        wrappedSegment = tempA22 + tailRouteLength;
+                        wrappedGap = wrappedSegment - tailSegment;
+                        varA18 = wrappedGap;
+                        if (wrappedGap < 0) {
+                            wrappedGap = tailSegment - wrappedSegment;
                         block_315:
-                            varA18 = varV017;
+                            varA18 = wrappedGap;
                         }
                     }
                 }
