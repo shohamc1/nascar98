@@ -2056,7 +2056,7 @@ s32 CarHandleWallCollision(Car *object) {
     register s32 yVelocity asm("$3");
     register s32 halfProduct asm("$2");
     s32 halfSign;
-    register s32 frontCoefficient asm("$2");
+    s32 frontCoefficient;
     s32 carHeading;
     register s32 tailSpeed asm("$6");
     register s32 tailSpeed2 asm("$2");
@@ -2133,7 +2133,7 @@ s32 CarHandleWallCollision(Car *object) {
     s32 rightRearEffect;
     s32 normalHeading;
     register s32 regionResult asm("$3");
-    register s32 impactSpeed asm("$3");
+    s32 impactSpeed;
     register u32 distance asm("$4");
     register s32 quarterY asm("$3");
     s32 *regionHome;
@@ -2696,7 +2696,8 @@ s32 CarHandleWallCollision(Car *object) {
             }
             impactSpeed >>= 2;
             projectedVelocity = impactSpeed << 1;
-            impactSpeed = projectedVelocity + impactSpeed;
+            /* Unsigned negation keeps the sum operand order. */
+            impactSpeed = projectedVelocity - -(u32)impactSpeed;
             if (impactSpeed < 0) {
                 impactSpeed += 3;
             }
@@ -2715,7 +2716,7 @@ s32 CarHandleWallCollision(Car *object) {
             }
             frontCoefficient = (s32)gContactCosTable;
             normalAddress = value1 << 2;
-            frontCoefficient = normalAddress + frontCoefficient;
+            frontCoefficient = normalAddress - -(u32)frontCoefficient;
             frontCoefficient = *(volatile s32 *)frontCoefficient;
             impulseX = frontCoefficient * impulse;
             sinSubtract = gContactSinTable;
@@ -15689,7 +15690,7 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
     s32 routeDistance;
     s32 angle;
     s32 cosine;
-    register s32 *cosTable asm("v1");
+    s32 *cosTable;
     s32 sine;
     s32 dx;
     s32 carX;
@@ -15738,7 +15739,8 @@ s32 CarAvoidTraffic(Car *car, s32 keepTarget) {
         /* Keep the x loads after the table base and entry address. */
         dx = other->pos.x;
         maxDistance = angle & 0x3FF;
-        cosTable = (s32 *)((maxDistance * 4) + (u32)cosTable);
+        /* Unsigned negation keeps the index first. */
+        cosTable = (s32 *)((maxDistance * 4) - -(u32)cosTable);
         asm("lw %0,%2"
             : "=r"(carX), "=r"(cosTable)
             : "m"(car->pos.x), "1"(cosTable));

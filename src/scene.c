@@ -3076,7 +3076,7 @@ void SceneSkyFadeDraw(void) {
                     }
                     result = MathMultiplyFixed16(gradA, factor);
                     {
-                        register s32 table asm("v1");
+                        s32 table;
                         asm("" : "=r"(t2) : "0"(t2));
                         t2 <<= 24;
                         argument = t2 >> 24;
@@ -3088,7 +3088,8 @@ void SceneSkyFadeDraw(void) {
                         result = yBase + result;
                         result -= argument;
                         D_800A8B84[0] = result;
-                        table = idx + table;
+                        /* Unsigned negation keeps the index first. */
+                        table = idx - -(u32)table;
                         factor = *(s32 *)table;
                     }
                     result = MathMultiplyFixed16(gradA, factor);
@@ -3256,7 +3257,7 @@ void SceneSkyFadeDraw(void) {
                     }
                     result = MathMultiplyFixed16(gradA, factor);
                     {
-                        register s32 table asm("v1");
+                        s32 table;
                         asm("" : "=r"(t2) : "0"(t2));
                         t2 <<= 24;
                         argument = t2 >> 24;
@@ -3268,7 +3269,7 @@ void SceneSkyFadeDraw(void) {
                         result = yBase + result;
                         result -= argument;
                         D_800A8B24[0] = result;
-                        table = idx + table;
+                        table = idx - -(u32)table;
                         factor = *(s32 *)table;
                     }
                     result = MathMultiplyFixed16(gradA, factor);
@@ -3364,8 +3365,8 @@ void SceneSkyFadeDraw(void) {
         register s32 accum asm("s0");
         s32 argA;
         s32 argB;
-        register s32 scratch0 asm("v0");
-        register s32 scratch1 asm("v1");
+        s32 scratch0;
+        s32 scratch1;
         s32 callOut;
         s32 nextI;
         loopI = 0;
@@ -3379,14 +3380,14 @@ void SceneSkyFadeDraw(void) {
         lookupOffset = signedI << 3;
         argA = home.entryA;
         scratch0 <<= 5;
-        scratch0 = lookupOffset + scratch0;
+        scratch0 = lookupOffset - -(u32)scratch0;
         argB = *(s32 *)((u8 *)D_8009937C + scratch0);
         signedI <<= 2;
         callOut = MathMultiplyFixed16(argA, argB);
         scratch1 = D_800A34DC;
         argA = home.entryB;
         scratch1 <<= 5;
-        scratch1 = lookupOffset + scratch1;
+        scratch1 = lookupOffset - -(u32)scratch1;
         argB = *(s32 *)((u8 *)D_80099380 + scratch1);
         accum = callOut;
         callOut = MathMultiplyFixed16(argA, argB);
@@ -3400,7 +3401,7 @@ void SceneSkyFadeDraw(void) {
         buf[0] = accum;
         argA = home.entryB;
         scratch1 <<= 5;
-        scratch1 = lookupOffset + scratch1;
+        scratch1 = lookupOffset - -(u32)scratch1;
         argB = *(s32 *)((u8 *)D_8009937C + scratch1);
         callOut = MathMultiplyFixed16(argA, argB);
         scratch1 = D_800A34DC;
