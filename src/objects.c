@@ -13839,7 +13839,7 @@ void func_800373B4(Car *object) {
 
     void (*tempV118)(Car *, s32);
     s32 tempA22;
-    s32 tempV114;
+    s32 sectionValue;
     s32 tailMinusOne;
     s32 tailSegment;
     s32 tailRouteLength;
@@ -14237,77 +14237,52 @@ void func_800373B4(Car *object) {
                     tempS0 = func_8003702C373B4(paceLeader, car);
                     paceGap = tempS0;
                     paceCarGap = func_8003702C373B4(D_800A3A64373B4[0], car);
-                    asm volatile("" : : "r"(paceGap));
-                    /* Select the leader or pace car and retain their gap.
-                     * The C distance calls preserve both saved flags. */
-                    asm volatile(".set noat\n\t"
-                                 ".set\tnoreorder\n\t"
-                                 "andi\t$2,%6,0xFFFF\n\t"
-                                 "sltiu\t$2,$2,11\n\t"
-                                 "beqz\t$2,10f\n\t"
-                                 "sll\t$2,%7,16\n\t"
-                                 "lb\t$4,0x408(%5)\n\t"
-                                 "lb\t$5,0x408(%4)\n\t"
-                                 "sll\t$0,$0,0\n\t"
-                                 "slt\t$2,$4,$5\n\t"
-                                 "beqz\t$2,10f\n\t"
-                                 "sll\t$2,%7,16\n\t"
-                                 "lb\t$3,0x3FE(%5)\n\t"
-                                 "lb\t$2,0x3FE(%4)\n\t"
-                                 "sll\t$0,$0,0\n\t"
-                                 "bne\t$3,$2,10f\n\t"
-                                 "sll\t$2,%7,16\n\t"
-                                 "addiu\t$2,%6,-1\n\t"
-                                 "andi\t$2,$2,0xFFFF\n\t"
-                                 "sltiu\t$2,$2,2\n\t"
-                                 "beqz\t$2,11f\n\t"
-                                 "addiu\t$2,$4,1\n\t"
-                                 "bne\t$5,$2,11f\n\t"
-                                 "sll\t$0,$0,0\n\t"
-                                 "ori\t%2,$0,1\n\t"
-                                 "11:\n\t"
-                                 "lw\t$9,0x84(%5)\n\t"
-                                 "ori\t%1,$0,1\n\t"
-                                 "j\t14f\n\t"
-                                 "sw\t$9,%0\n\t"
-                                 "10:\n\t"
-                                 "sra\t$3,$2,16\n\t"
-                                 "bltz\t$3,.LpaceChoice373B4\n\t"
-                                 "andi\t$2,%1,0xFF\n\t"
-                                 "lb\t$4,0x408(%4)\n\t"
-                                 "sll\t$0,$0,0\n\t"
-                                 "addiu\t$2,$4,10\n\t"
-                                 "slt\t$2,$2,$3\n\t"
-                                 "bnez\t$2,.LpaceChoice373B4\n\t"
-                                 "andi\t$2,%1,0xFF\n\t"
-                                 "lui\t$2,%%hi(D_800A37C0)\n\t"
-                                 "lw\t$2,%%lo(D_800A37C0)($2)\n\t"
-                                 "subu\t$3,%7,$4\n\t"
-                                 "bne\t%4,$2,12f\n\t"
-                                 "addu\t%3,$3,$0\n\t"
-                                 "addiu\t$2,$3,-1\n\t"
-                                 "andi\t$2,$2,0xFFFF\n\t"
-                                 "sltiu\t$2,$2,2\n\t"
-                                 "beqz\t$2,13f\n\t"
-                                 "lui\t$9,0xAC\n\t"
-                                 "ori\t%2,$0,1\n\t"
-                                 "12:\n\t"
-                                 "lui\t$9,0xAC\n\t"
-                                 "13:\n\t"
-                                 "sw\t$9,%0\n\t"
-                                 "ori\t%1,$0,1\n\t"
-                                 "14:\n\t"
-                                 ".set at\n\t"
-                                 ".set\treorder\n\t"
-                                 : "=m"(workspace.paceSpeed), "=r"(paceMatch),
-                                   "=r"(followAllowed), "=r"(paceGap)
-                                 : "r"(car), "r"(paceLeader), "r"(tempS0),
-                                   "r"(paceCarGap), "1"(paceMatch),
-                                   "2"(followAllowed)
-                                 : "$2", "$3", "$4", "$5", "$9", "memory");
-                    asm("andi %0,%1,0xFF\n.LpaceChoice373B4:"
-                        : "=r"(varV06)
-                        : "r"(paceMatch));
+                    {
+                        extern Car *D_800A37C0[];
+                        s32 leaderOrder;
+                        s32 carOrder;
+                        s32 fallbackCarOrder;
+
+                        if ((u16)tempS0 >= 11) {
+                            goto checkPaceCar;
+                        }
+                        leaderOrder = paceLeader->unk408;
+                        carOrder = car->unk408;
+                        if (leaderOrder >= carOrder) {
+                            goto checkPaceCar;
+                        }
+                        if (paceLeader->unk3FE != car->unk3FE) {
+                            goto checkPaceCar;
+                        }
+                        if ((u16)((u32)tempS0 - 1) < 2 &&
+                            carOrder == leaderOrder + 1) {
+                            followAllowed = 1;
+                        }
+                        paceBase = paceLeader->unk84;
+                        workspace.paceSpeed = paceBase;
+                        paceMatch = 1;
+                        goto paceChoice;
+                    checkPaceCar:
+                        sectionValue = (s16)paceCarGap;
+                        if (sectionValue < 0) {
+                            goto paceChoice;
+                        }
+                        fallbackCarOrder = car->unk408;
+                        if (fallbackCarOrder + 10 < sectionValue) {
+                            goto paceChoice;
+                        }
+                        sectionValue = (u32)paceCarGap - (u32)fallbackCarOrder;
+                        paceGap = sectionValue;
+                        if (car == D_800A37C0[0] &&
+                            (u16)((u32)sectionValue - 1) < 2) {
+                            followAllowed = 1;
+                        }
+                        paceBase = 0xAC0000;
+                        workspace.paceSpeed = paceBase;
+                        paceMatch = 1;
+                    }
+                paceChoice:
+                    varV06 = (u8)paceMatch;
                     if (varV06 != 0) {
                         if (D_800A3670373B4[0] != 0) {
                             car->unk401 = followAllowed;
@@ -15054,17 +15029,17 @@ void func_800373B4(Car *object) {
                          "mflo       $a3\n"
                          "addu       $t1, $t1, $a3\n"
                          ".set\tnoreorder\n"
-                         : "=r"(tempV114), "=m"(workspace.heading),
+                         : "=r"(sectionValue), "=m"(workspace.heading),
                            "=m"(workspace.targetX), "=r"(tailTargetValue),
                            "=r"(tailMinusOne), "=x"(multiplierState)
                          : "r"(car), "m"(workspace.heading),
                            "m"(workspace.targetX), "m"(workspace.targetY)
                          : "$4", "$5", "$6", "$7", "accum", "memory");
             workspace.targetY = tailTargetValue;
-            if (tempV114 != tailMinusOne) {
+            if (sectionValue != tailMinusOne) {
                 tempA22 = (car->segment);
                 tailRouteLength = gTrackSectionCount373B4[0];
-                tailSegment = tempV114;
+                tailSegment = sectionValue;
                 varA18 = tempA22 - tailSegment;
                 tempV115 = tailRouteLength >> 1;
                 if (varA18 >= 0) {
