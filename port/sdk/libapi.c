@@ -88,6 +88,9 @@ void InitPAD(u8 *buf1, s32 len1, u8 *buf2, s32 len2)
     sPadLengths[1] = len2;
 }
 
+/* src/menu_text.c: names keyboard keys in the prompts while KEYBOARD. */
+void PortMenuTextUpdate(s32 keyboard);
+
 /* Status 0 and ID 0x41 (digital pad), then the buttons, active low. */
 void PortPadTick(void)
 {
@@ -101,6 +104,9 @@ void PortPadTick(void)
             continue;
         }
         read = HostPadRead(port);
+        if (port == 0) {
+            PortMenuTextUpdate(read >> 17 & 1);
+        }
         if (!(read & 0x10000)) {
             buf[0] = 0xFF; /* nothing connected */
             continue;

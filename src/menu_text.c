@@ -4,6 +4,16 @@
  * The `*` suffixes and the control-glyph characters belong to the text. */
 #include "common.h"
 
+/* The port names keyboard keys in these prompts when the keyboard was used
+ * last (PortMenuTextUpdate, below), so there they have room to grow. */
+#ifdef NATIVE
+#define PROMPT_SIZE 256
+/* Global and used, as tools/port_filter.py makes the other strings. */
+#define PROMPT(name) __attribute__((used)) char name[PROMPT_SIZE]
+#else
+#define PROMPT(name) static const char name[]
+#endif
+
 const char gMenuCreditsStar[] = "CREDITS*";
 static const char sMenuNascarOptionsStar[] = "NASCAR OPTIONS*";
 static const char sMenuGameOptionsStar[] = "GAME OPTIONS*";
@@ -89,17 +99,17 @@ static const char sMenuSoundFxVolume[] = "Sound FX Volume";
 static const char sMenuCdVolume[] = "CD Volume";
 static const char sMenuDevelopmentStar[] = "DEVELOPMENT*";
 static const char sMenuProductionStar[] = "PRODUCTION*";
-static const char sMenuPressXToExitTo[] = "Press X to exit, }~ to change";
-static const char sMenuXSaveClearToChangeText[] =
+PROMPT(sMenuPressXToExitTo) = "Press X to exit, }~ to change";
+PROMPT(sMenuXSaveClearToChangeText) =
     "X = save, ^ = clear, `{}~ to change, \\ = cancel";
-static const char sMenuPressXToSelectToText[] =
+PROMPT(sMenuPressXToSelectToText) =
     "Press X to select, `{ to change, \\ to cancel";
-static const char sMenuPressXToExitTo2[] = "Press X to exit, `{ to scroll";
-static const char sMenuPressXToExit[] = "Press X to exit";
-static const char sMenuPressXToSelectToText2[] =
+PROMPT(sMenuPressXToExitTo2) = "Press X to exit, `{ to scroll";
+PROMPT(sMenuPressXToExit) = "Press X to exit";
+PROMPT(sMenuPressXToSelectToText2) =
     "Press X to select, }~ to change, \\ to cancel";
-static const char sMenuPressXToSelectTo[] = "Press X to select, }~ to change";
-static const char sMenuPressXToSelect[] = "Press X to select";
+PROMPT(sMenuPressXToSelectTo) = "Press X to select, }~ to change";
+PROMPT(sMenuPressXToSelect) = "Press X to select";
 static const char sMenuPressIToExitTo[] = "Press I to exit, }~ to change";
 static const char sMenuISaveClearToChangeText[] =
     "I = save, ^ = clear, `{ }~ to change, II = cancel";
@@ -161,17 +171,17 @@ static const char sMenuInterstateBatteries500[] = "Interstate Batteries 500";
 static const char sMenuEaSports500[] = "EA Sports 500";
 static const char sMenuPrimestar500[] = "Primestar 500";
 static const char sMenuProvisional[] = "Provisional";
-static const char sMenuPressStart[] = "Press Start";
+PROMPT(sMenuPressStart) = "Press Start";
 static const char sMenuPosition[] = "Position";
 static const char sMenuProvisionalGrid[] = "Provisional Grid";
-static const char sMenuPressStartToQualify[] = "Press Start to Qualify";
-static const char sMenuPressStartToPractice[] = "Press Start to Practice";
+PROMPT(sMenuPressStartToQualify) = "Press Start to Qualify";
+PROMPT(sMenuPressStartToPractice) = "Press Start to Practice";
 static const char sMenuRoadCourse[] = "Road Course";
 static const char sMenuTrackSize[] = "Track Size: ";
 static const char sMenuTrackType[] = "Track Type: ";
 static const char sMenuLoading[] = "Loading...";
 static const char sMenuEaSportsNascarChallenge[] = "EA Sports NASCAR Challenge";
-static const char sMenuPressStartToRace[] = "Press Start to Race";
+PROMPT(sMenuPressStartToRace) = "Press Start to Race";
 static const char sMenuStartingGrid[] = "Starting Grid";
 static const char sMenu1390Miles2238[] = "1.390 Miles/2.238 Km";
 static const char sMenu2184Miles3516[] = "2.184 Miles/3.516 Km";
@@ -213,53 +223,53 @@ static const char sMenuSteerRight2[] = "Steer right";
 static const char sMenuDownshift[] = "Downshift";
 static const char sMenuMenuControl[] = "menu control";
 static const char sMenuToggleDisplay[] = "Toggle Display";
-static const char sMenuMemoryCardInSlot2Text[] =
+PROMPT(sMenuMemoryCardInSlot2Text) =
     "Memory card in \nSlot 2 is full.\nPlease free up a \n"
     "slot if you want\nto save. \nPress X to exit";
-static const char sMenuMemoryCardInSlot1Text[] =
+PROMPT(sMenuMemoryCardInSlot1Text) =
     "Memory card in \nSlot 1 is full.\nPlease free up a \n"
     "slot if you want\nto save. \nPress X to exit";
-static const char sMenuMemoryCardInSlot2Text2[] =
+PROMPT(sMenuMemoryCardInSlot2Text2) =
     "Memory card in \nSlot 2 is full.\nPlease free up a \n"
     "slot if you want\nexhibition stats\nsaved. \nPress X to exit";
-static const char sMenuMemoryCardInSlot1Text2[] =
+PROMPT(sMenuMemoryCardInSlot1Text2) =
     "Memory card in \nSlot 1 is full.\nPlease free up a \n"
     "slot if you want\nexhibition stats\nsaved. \nPress X to exit";
-static const char sMenuPleaseInsertMemoryCardIfText[] =
+PROMPT(sMenuPleaseInsertMemoryCardIfText) =
     "Please insert \nmemory card if \nyou want \nexhibition stats \n"
     "saved. \nPress X to exit";
-static const char sMenuMemoryCardInSlot2Text3[] =
+PROMPT(sMenuMemoryCardInSlot2Text3) =
     "Memory Card \nin slot 2\nis unformatted.  \nPress \\ to format, \n"
     "X to cancel";
-static const char sMenuMemoryCardInSlot1Text3[] =
+PROMPT(sMenuMemoryCardInSlot1Text3) =
     "Memory Card \nin slot 1\nis unformatted.  \nPress \\ to format, \n"
     "X to cancel";
-static const char sMenuAllPreviouslyUnsavedDataWillText[] =
+PROMPT(sMenuAllPreviouslyUnsavedDataWillText) =
     "All previously \nunsaved data \nwill be lost.\nAre you sure you \n"
     "want to begin a\nnew season? \nX=Yes, \\= No";
-static const char sMenuAllPreviouslyUnsavedDataWillText2[] =
+PROMPT(sMenuAllPreviouslyUnsavedDataWillText2) =
     "All previously \nunsaved data \nwill be lost.\nAre you sure you \n"
     "want to load?\nX = Yes, \\= No";
-static const char sMenuYouWillLoseYourQualifyingText[] =
+PROMPT(sMenuYouWillLoseYourQualifyingText) =
     "You will lose your \nqualifying position.\nAre you sure you\n"
     "want to exit?\nX = Yes, \\ = No";
-static const char sMenuAreYouSureYouWantText[] =
+PROMPT(sMenuAreYouSureYouWantText) =
     "Are you sure \nyou want to end \nthe season? \nX = Yes, \\ = No";
 static const char sMenuNoPreviouslySavedSeason[] =
     "No previously \nsaved season";
-static const char sMenuMemoryCardSuccessfullyFormattedPressText[] =
+PROMPT(sMenuMemoryCardSuccessfullyFormattedPressText) =
     "Memory card \nsuccessfully \nformatted. \nPress X to exit";
 static const char sMenuSeasonSuccessfullyLoaded[] =
     "Season successfully \nloaded";
 static const char sMenuSeasonSuccessfullySaved[] =
     "Season successfully \nsaved";
-static const char sMenuSaveOverAPreviouslySavedText[] =
+PROMPT(sMenuSaveOverAPreviouslySavedText) =
     "Save over a \npreviously \nsaved season? \nX = Yes, \\ = No";
-static const char sMenuCardInSlotHasBeenText[] =
+PROMPT(sMenuCardInSlotHasBeenText) =
     "Card in slot \nhas been replaced. \nPress X to exit.";
 static const char sMenuUnableToAllocateLoadSave[] =
     "Unable to allocate \nload/save buffer";
-static const char sMenuMemoryCardIsUnformattedPressText[] =
+PROMPT(sMenuMemoryCardIsUnformattedPressText) =
     "Memory Card \nis unformatted.  \nPress \\ to format, \nX to cancel";
 static const char sMenuUnableToDeleteCorruptFile[] =
     "Unable to delete \ncorrupt file";
@@ -273,7 +283,7 @@ static const char sMenuUnableToReadFromCard[] = "Unable to read \nfrom card";
 static const char sMenuUnableToOpenFile[] = "Unable to open file";
 static const char sMenuUnableToCreateFileCardText[] =
     "Unable to create \nfile.  Card may \nbe full";
-static const char sMenuErrorOccurredWhileTryingToText[] =
+PROMPT(sMenuErrorOccurredWhileTryingToText) =
     "Error occurred while \ntrying to format.\n Press X to exit";
 static const char sMenuErrorOccurredWhileCheckingForText[] =
     "Error occurred while \nchecking for format";
@@ -323,24 +333,24 @@ static const char sMenuMemoryCardIsUnformattedPressText2[] =
 static const char sMenuErrorOccurredWhileTryingToText2[] =
     "Error occurred while \ntrying to format.\n Press I to exit";
 static const char sMenuSteering[] = "Steering";
-static const char sMenuToCalibrateTheSteeringMoveText[] =
+PROMPT(sMenuToCalibrateTheSteeringMoveText) =
     "To calibrate the steering, move the left \n"
     "joystick left and right several times.\n"
     "To calibrate acceleration and braking, move \n"
     "the right joystick up and down several times.\n"
     "Release both joysticks and press Start \nwhen done.";
-static const char sMenuToCalibrateTheNegconTwistText[] =
+PROMPT(sMenuToCalibrateTheNegconTwistText) =
     "To calibrate the NeGcon, twist the controller \n"
     "in each direction several times.\n"
     "To calibrate the buttons, press each of \n"
     "the red buttons several times.\n"
     "Release all and press Start when done.";
-static const char sMenuToCalibrateTheSteeringWheelText[] =
+PROMPT(sMenuToCalibrateTheSteeringWheelText) =
     "To calibrate the steering wheel, turn the \n"
     "wheel in each direction several times.\n"
     "To calibrate the pedals, push down on \neach pedal several times.\n"
     "Release all and press Start when done.";
-static const char sMenuToSwitchConfigurationsStartToText[] =
+PROMPT(sMenuToSwitchConfigurationsStartToText) =
     "}~ to switch configurations, Start to exit.";
 static const char sMenuControllerSetup[] = "CONTROLLER SETUP";
 static const char sMenuChadLittle[] = "Chad Little";
@@ -431,3 +441,101 @@ static const char sMenu2ndBestLap[] = "2ND BEST LAP";
 /* Retail ends this block with one zero word, ahead of memory_card.c's first
  * jump table. No code reads it. */
 asm(".rdata\n.long 0\n.text");
+
+#ifdef NATIVE
+static char *const sPrompts[] = {
+    sMenuPressXToExitTo,
+    sMenuXSaveClearToChangeText,
+    sMenuPressXToSelectToText,
+    sMenuPressXToExitTo2,
+    sMenuPressXToExit,
+    sMenuPressXToSelectToText2,
+    sMenuPressXToSelectTo,
+    sMenuPressXToSelect,
+    sMenuPressStart,
+    sMenuPressStartToQualify,
+    sMenuPressStartToPractice,
+    sMenuPressStartToRace,
+    sMenuMemoryCardInSlot2Text,
+    sMenuMemoryCardInSlot1Text,
+    sMenuMemoryCardInSlot2Text2,
+    sMenuMemoryCardInSlot1Text2,
+    sMenuPleaseInsertMemoryCardIfText,
+    sMenuMemoryCardInSlot2Text3,
+    sMenuMemoryCardInSlot1Text3,
+    sMenuAllPreviouslyUnsavedDataWillText,
+    sMenuAllPreviouslyUnsavedDataWillText2,
+    sMenuYouWillLoseYourQualifyingText,
+    sMenuAreYouSureYouWantText,
+    sMenuMemoryCardSuccessfullyFormattedPressText,
+    sMenuSaveOverAPreviouslySavedText,
+    sMenuCardInSlotHasBeenText,
+    sMenuMemoryCardIsUnformattedPressText,
+    sMenuErrorOccurredWhileTryingToText,
+    sMenuToCalibrateTheSteeringMoveText,
+    sMenuToCalibrateTheNegconTwistText,
+    sMenuToCalibrateTheSteeringWheelText,
+    sMenuToSwitchConfigurationsStartToText,
+};
+static char sPromptsPad[sizeof(sPrompts) / sizeof(sPrompts[0])][PROMPT_SIZE];
+
+/* Copies the pad prompt TEXT to OUT with keyboard keys for its buttons
+ * (port/host/pad.c): X (cross) is Enter, \\ (square) Space, ^ (circle)
+ * V, and Start Esc. The arrow glyphs match the arrow keys. */
+static void PromptToKeyboard(const char *text, char *out) {
+    char *end = out + PROMPT_SIZE - 1;
+    const char *key;
+    s32 isWord, size;
+
+    for (; *text != 0 && out < end; text++) {
+        isWord = text[0] == 'X' ||
+                 (text[0] == 'S' && text[1] == 't' && text[2] == 'a' &&
+                  text[3] == 'r' && text[4] == 't');
+        size = text[0] == 'X' ? 1 : 5;
+        key = NULL;
+        if (isWord &&
+            !((text[size] | 0x20) >= 'a' && (text[size] | 0x20) <= 'z')) {
+            key = text[0] == 'X' ? "Enter" : "Esc";
+            text += size - 1;
+        } else if (*text == '\\') {
+            key = "Space";
+        } else if (*text == '^') {
+            key = "V";
+        }
+        if (key == NULL) {
+            *out++ = *text;
+            continue;
+        }
+        while (*key != 0 && out < end) {
+            *out++ = *key++;
+        }
+    }
+    *out = 0;
+}
+
+static void PromptCopy(char *out, const char *text) {
+    while ((*out++ = *text++) != 0) {
+    }
+}
+
+/* Shows the prompts for the keyboard (KEYBOARD set) or the pad. */
+void PortMenuTextUpdate(s32 keyboard) {
+    static s32 shown;
+    u32 i;
+
+    if (keyboard == shown) {
+        return;
+    }
+    shown = keyboard;
+    for (i = 0; i < sizeof(sPrompts) / sizeof(sPrompts[0]); i++) {
+        if (sPromptsPad[i][0] == 0) {
+            PromptCopy(sPromptsPad[i], sPrompts[i]);
+        }
+        if (keyboard) {
+            PromptToKeyboard(sPromptsPad[i], sPrompts[i]);
+        } else {
+            PromptCopy(sPrompts[i], sPromptsPad[i]);
+        }
+    }
+}
+#endif

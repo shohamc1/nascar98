@@ -36,6 +36,16 @@ MAGENTA = (255, 0, 255, 255)
 WHITE_LIMIT = 50  # 525 with the reordered stores, 0 without
 # Start during the EA Sports movie skips both intro movies.
 SKIP_MOVIES = "0 -\n100 start\n105 -\n"
+# From the title through race setup into a single race: on track by 2300.
+RACE_PAD = SKIP_MOVIES + "".join(
+    f"{frame} {button}\n{frame + 5} -\n"
+    for frame, button in [(620, "start"), (700, "cross"), (760, "cross")]
+    + [(900 + 40 * i, "down") for i in range(4)]
+    + [(1060, "cross")]
+    + [(1200 + 40 * i, "down") for i in range(4)]
+    + [(1360, "cross")]
+    + [(1500 + 100 * i, "start") for i in range(8)]
+)
 
 
 def magenta_pixels(path: pathlib.Path) -> int:
@@ -217,6 +227,39 @@ class Run(unittest.TestCase):
             self.assertGreater(len(files), 4)
             for name in files:
                 self.assertEqual((d / "image" / name).read_bytes(), (d / "disc" / name).read_bytes(), name)
+
+    def test_keyboard_prompts(self) -> None:
+        # With the keyboard, the race setup prompt names Enter, not X: only
+        # the prompt line at the bottom changes.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text(SKIP_MOVIES + "620 start\n625 -\n700 cross\n705 -\n760 cross\n765 -\n")
+            shots = []
+            for keyboard in ("0", "1"):
+                shot = d / f"{keyboard}.bmp"
+                env = {"NASCAR98_KEYBOARD": keyboard, "NASCAR98_SCALE": "1", "NASCAR98_PAD": str(d / "pad.txt")}
+                result = run(60, NASCAR98_FRAMES="890", NASCAR98_SCREENSHOT=f"890:{shot}", **env)
+                self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+                with Image.open(shot) as image:
+                    shots.append(image.convert("RGB"))
+            width, height = shots[0].size
+            top = (0, 0, width, height - 30)
+            self.assertEqual(shots[0].crop(top).tobytes(), shots[1].crop(top).tobytes())
+            self.assertNotEqual(shots[0].tobytes(), shots[1].tobytes())
+
+    def test_draw_distance(self) -> None:
+        # At 200%, the race draws more of the track ahead than at 100%.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text(RACE_PAD)
+            shots = []
+            for distance in ("100", "200"):
+                shot = d / f"{distance}.bmp"
+                env = {"NASCAR98_DRAW_DISTANCE": distance, "NASCAR98_SCALE": "1", "NASCAR98_PAD": str(d / "pad.txt")}
+                result = run(120, NASCAR98_FRAMES="2300", NASCAR98_SCREENSHOT=f"2300:{shot}", **env)
+                self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+                shots.append(shot.read_bytes())
+            self.assertNotEqual(shots[0], shots[1])
 
     def test_menu_sounds(self) -> None:
         # X at frame 700 closes the memory card prompt with a sound effect.

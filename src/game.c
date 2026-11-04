@@ -123,6 +123,20 @@ void GraphicsCompactOrderingTable(s32 tableAddress) {
     } while (count != 0);
 }
 
+/* A race frame's primitive bank. Past 100% draw distance the port draws
+ * more primitives than the heap block holds, so it uses two larger banks
+ * above the console's 2 MB (past the SPU's RAM, port/sdk/port_spu.h). */
+#ifdef NATIVE
+extern s32 gPortDrawDistance;
+#define PORT_PRIMS 0x80280000u
+#define PORT_PRIMS_BANK 0x80000
+#define RACE_PRIMS(bank)                                                       \
+    (gPortDrawDistance > 100 ? PORT_PRIMS + (bank) * PORT_PRIMS_BANK           \
+                             : (u32)(D_800A3A8C + (bank) * 0x1ADB0))
+#else
+#define RACE_PRIMS(bank) (u32)(D_800A3A8C + (bank) * 0x1ADB0)
+#endif
+
 void GameRunSession(void) {
     extern s32 gCdTocRead[];
     extern s32 D_800A2F54[];
@@ -310,7 +324,7 @@ void GameRunSession(void) {
         bank = bank == 0;
         gOrderingTable = (u8 *)((bank << 13) + (u32)tables);
         gOrderingTableBank = bank * 2;
-        D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+        D_800A3570 = RACE_PRIMS(bank);
         gPrimitiveCursorRun = D_800A3570;
         ClearOTagR((u_long *)gOrderingTable, 0x400);
         ClearOTagR(
@@ -401,7 +415,7 @@ void GameRunSession(void) {
     DrawSync(0);
     if (gSessionTypeAfter[0] == -1 && D_800A2D0F == 0) {
         ot = gOrderingTables;
-        D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+        D_800A3570 = RACE_PRIMS(bank);
         gPrimitiveCursorRun = D_800A3570;
         ClearOTagR((u_long *)(ot + (gOrderingTableBank << 12)), 0x400);
         GraphicsSetColor(255, 128, 64);
@@ -434,7 +448,7 @@ void GameRunSession(void) {
         if (mode == 2) {
             RaceSetPlayerFirstStanding();
             if (D_800A2D0E == 0) {
-                D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+                D_800A3570 = RACE_PRIMS(bank);
                 gPrimitiveCursorRun = D_800A3570;
                 ClearOTagR(
                     (u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
@@ -452,7 +466,7 @@ void GameRunSession(void) {
             SetDispMask(0);
             goto displayDone;
         }
-        D_800A3570 = (u32)(D_800A3A8C + bank * 0x1ADB0);
+        D_800A3570 = RACE_PRIMS(bank);
         gPrimitiveCursorRun = D_800A3570;
         ClearOTagR((u_long *)(gOrderingTables + (gOrderingTableBank << 12)),
                    0x400);

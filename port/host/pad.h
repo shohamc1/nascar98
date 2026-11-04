@@ -25,6 +25,10 @@
 int PadInit(const char *script, int live);
 /* The buttons held on PORT (0 or 1) at FRAME; CONNECTED says if a pad is there. */
 uint16_t PadRead(int port, long frame, int *connected);
+/* 1 when port 1's last input came from the keyboard (before any input:
+ * when no gamepad is connected); 0 when it came from a gamepad. A script's
+ * input counts as the keyboard only with NASCAR98_KEYBOARD=1. */
+int PadKeyboardLast(void);
 /* The buttons the keyboard state KEYS (by SDL scancode) holds. */
 uint16_t PadMapKeys(const bool *keys);
 /* "start+cross" to its button bits. */

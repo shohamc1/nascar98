@@ -12,6 +12,7 @@ typedef struct {
     int width, height;            /* the window, or 0 x 0 for 320 x 240 times the scale */
     int fullscreen;
     int aspectW, aspectH; /* race display aspect: 4:3 keeps the console's view */
+    int drawDistance;     /* percent of the console's road sections ahead */
 } Settings;
 
 /* Fills SETTINGS with the defaults, then with the settings file's values. */

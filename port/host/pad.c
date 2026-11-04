@@ -167,8 +167,24 @@ uint16_t PadMapKeys(const bool *keys) {
     return buttons;
 }
 
+/* 1 when port 1's last input came from the keyboard; -1 before any. */
+static int sKeyboard = -1;
+
+int PadKeyboardLast(void) {
+    if (sScriptLength >= 0) {
+        const char *keyboard = getenv("NASCAR98_KEYBOARD");
+
+        return keyboard && *keyboard == '1';
+    }
+    if (sKeyboard < 0) {
+        OpenGamepads();
+        return sGamepads[0] == NULL;
+    }
+    return sKeyboard;
+}
+
 uint16_t PadRead(int port, long frame, int *connected) {
-    uint16_t buttons = 0;
+    uint16_t buttons = 0, keys = 0;
     size_t i;
 
     if (sScriptLength >= 0) {
@@ -183,7 +199,7 @@ uint16_t PadRead(int port, long frame, int *connected) {
     OpenGamepads();
     *connected = port == 0 || sGamepads[1] != NULL;
     if (port == 0 && SDL_WasInit(SDL_INIT_VIDEO)) {
-        buttons |= PadMapKeys(SDL_GetKeyboardState(NULL));
+        keys = PadMapKeys(SDL_GetKeyboardState(NULL));
     }
     if (sGamepads[port]) {
         SDL_Gamepad *g = sGamepads[port];
@@ -213,5 +229,8 @@ uint16_t PadRead(int port, long frame, int *connected) {
             buttons |= PAD_DOWN;
         }
     }
-    return buttons;
+    if (keys || buttons) {
+        sKeyboard = keys != 0;
+    }
+    return buttons | keys;
 }

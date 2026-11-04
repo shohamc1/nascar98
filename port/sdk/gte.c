@@ -40,6 +40,10 @@ static u32 sFlag;
 s32 gPortWideX = 0x1000;
 s32 gPortRaceView;
 
+/* The main race view's draw distance in percent (GraphicsDrawRaceViews
+ * in src/objects.c); the host writes it, and 100 keeps the console's. */
+s32 gPortDrawDistance = 100;
+
 static s64 Mac123(int i, s64 value)
 {
     /* MAC1 to MAC3 keep 44 bits; overflow sets bits 30-28 and 27-25. */

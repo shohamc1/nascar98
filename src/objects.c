@@ -7703,6 +7703,8 @@ extern s32 gOrderingTableFrame5Read[];
 extern s32 gOrderingTableFrame8Read[];
 
 #ifdef NATIVE
+/* The port's draw distance in percent (port/sdk/gte.c). */
+extern s32 gPortDrawDistance;
 void GraphicsDrawRaceViews(void) {
     MATRIX rotation;
     Car *drawCar;
@@ -7918,6 +7920,14 @@ void GraphicsDrawRaceViews(void) {
         SetGeomScreen(0xD0);
         D_800A2F3CFrame7[0] = 0x82;
         D_800A2E8CFrame = D_800A3774Frame + 0x32;
+        /* The port's draw distance: more road sections ahead and behind,
+         * with the scenery detail and primitive budgets to match. */
+        if (gPortDrawDistance > 100) {
+            D_800A2E8CFrame = D_800A2E8CFrame * gPortDrawDistance / 100;
+            D_800A2F08Frame = D_800A2F08Frame * gPortDrawDistance / 100;
+            D_800A2F0CFrame = D_800A2F0CFrame * gPortDrawDistance / 100;
+            D_800A2F10Frame = D_800A2F10Frame * gPortDrawDistance / 100;
+        }
         tableOffset = gOrderingTableFrame6[0] + 0x28;
         gOrderingTableFrame7[0] = tableOffset;
         SceneDrawView(focusCar);

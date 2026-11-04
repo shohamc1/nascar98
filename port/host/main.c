@@ -15,6 +15,8 @@
  *   NASCAR98_FULLSCREEN  1: fullscreen
  *   NASCAR98_ASPECT    W:H of race frames (default 4:3 headless): wider
  *                      shows more of the track, the HUD at the edges
+ *   NASCAR98_DRAW_DISTANCE  percent of the console's road sections drawn
+ *                      ahead (100 to 400; default 100 headless)
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
  *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10
  *                      headless, 0 (off) in a window)
@@ -28,6 +30,8 @@
  *   NASCAR98_POKE      FRAME:ADDR=VALUE[,ADDR=VALUE...] writes 32-bit words
  *                      at the end of that frame (to line runs up)
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
+ *   NASCAR98_KEYBOARD  1: prompts name keyboard keys during a NASCAR98_PAD
+ *                      script (live input picks by the last device used)
  *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
  *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
  *   NASCAR98_SAVES     the directory of memory card images, card1.mcd and
@@ -591,7 +595,8 @@ u32 w2c_env_HostPadRead(struct w2c_env *env, u32 port)
     uint16_t buttons = PadRead((int)port, sFrames, &connected);
 
     (void)env;
-    return (u32)buttons | (connected ? 0x10000u : 0);
+    /* Bit 17: the keyboard was used last, so prompts name its keys. */
+    return (u32)buttons | (connected ? 0x10000u : 0) | (port == 0 && PadKeyboardLast() ? 0x20000u : 0);
 }
 
 /* Queues a frame's sound; past a quarter second queued, drops it to catch up. */
@@ -841,6 +846,11 @@ static void EnvSettings(Settings *settings)
         exit(2);
     }
     settings->fullscreen = (int)EnvNumber("NASCAR98_FULLSCREEN", settings->fullscreen) != 0;
+    settings->drawDistance = (int)EnvNumber("NASCAR98_DRAW_DISTANCE", settings->drawDistance);
+    if (settings->drawDistance < 100 || settings->drawDistance > 400) {
+        fprintf(stderr, "nascar98: NASCAR98_DRAW_DISTANCE must be 100 to 400, not %d\n", settings->drawDistance);
+        exit(2);
+    }
 }
 
 int main(void)
@@ -859,6 +869,7 @@ int main(void)
         memset(&settings, 0, sizeof(settings));
         settings.aspectW = 4;
         settings.aspectH = 3;
+        settings.drawDistance = 100;
     } else {
         SettingsLoad(&settings);
     }
@@ -945,6 +956,7 @@ opened:
         s32 wideX = aspect > 4.0f / 3.0f ? (s32)(4096.0f * 4 / 3 / aspect + 0.5f) : 0x1000;
 
         memcpy(Memory(&env, *w2c_nascar98_gPortWideX(&module), 4), &wideX, 4);
+        memcpy(Memory(&env, *w2c_nascar98_gPortDrawDistance(&module), 4), &settings.drawDistance, 4);
         GpuSetWide(aspect, (const int32_t *)Memory(&env, *w2c_nascar98_gPortRaceView(&module), 4));
     }
     trap = wasm_rt_impl_try();

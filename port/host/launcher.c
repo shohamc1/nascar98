@@ -16,7 +16,7 @@
 #define ROW_H 22
 #define CHAR 8 /* SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE */
 
-enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_START, ROW_QUIT, ROWS };
+enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_START, ROW_QUIT, ROWS };
 
 static const int kResolutions[][2] = {
     {640, 480}, {960, 720}, {1280, 720}, {1280, 960}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160},
@@ -25,6 +25,9 @@ static const int kResolutions[][2] = {
 
 static const int kAspects[][2] = {{4, 3}, {16, 10}, {16, 9}, {21, 9}};
 #define ASPECTS ((int)(sizeof(kAspects) / sizeof(kAspects[0])))
+
+static const int kDistances[] = {100, 150, 200, 300, 400};
+#define DISTANCES ((int)(sizeof(kDistances) / sizeof(kDistances[0])))
 
 /* The file dialog may answer on another thread. */
 static SDL_AtomicInt sPicked;
@@ -71,6 +74,7 @@ void SettingsLoad(Settings *settings)
     settings->height = 720;
     settings->aspectW = 16;
     settings->aspectH = 9;
+    settings->drawDistance = 200;
     while (f && fgets(line, sizeof(line), f)) {
         char *value = strchr(line, '=');
 
@@ -87,6 +91,8 @@ void SettingsLoad(Settings *settings)
             settings->fullscreen = atoi(value) != 0;
         } else if (strcmp(line, "aspect") == 0) {
             SettingsParsePair(value, ':', &settings->aspectW, &settings->aspectH);
+        } else if (strcmp(line, "draw_distance") == 0) {
+            settings->drawDistance = atoi(value);
         }
     }
     if (f) {
@@ -105,8 +111,9 @@ void SettingsSave(const Settings *settings)
         SDL_free(path);
         return;
     }
-    fprintf(f, "disc=%s\nresolution=%dx%d\nfullscreen=%d\naspect=%d:%d\n", settings->disc, settings->width,
-            settings->height, settings->fullscreen, settings->aspectW, settings->aspectH);
+    fprintf(f, "disc=%s\nresolution=%dx%d\nfullscreen=%d\naspect=%d:%d\ndraw_distance=%d\n", settings->disc,
+            settings->width, settings->height, settings->fullscreen, settings->aspectW, settings->aspectH,
+            settings->drawDistance);
     fclose(f);
     SDL_free(path);
 }
@@ -151,6 +158,14 @@ static void Cycle(Settings *settings, int row, int step)
         i = i < 0 ? 0 : (i + step + ASPECTS) % ASPECTS;
         settings->aspectW = kAspects[i][0];
         settings->aspectH = kAspects[i][1];
+    } else if (row == ROW_DISTANCE) {
+        int i = 0;
+
+        while (i < DISTANCES && kDistances[i] != settings->drawDistance) {
+            i++;
+        }
+        i = i == DISTANCES ? 0 : (i + step + DISTANCES) % DISTANCES;
+        settings->drawDistance = kDistances[i];
     }
 }
 
@@ -182,7 +197,7 @@ static void Text(SDL_Renderer *renderer, float x, float y, const char *text)
 static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, const char *editing, const char *status)
 {
     char value[64], disc[48];
-    const char *labels[ROWS] = {"Disc", "Resolution", "Display", "Aspect ratio", "Start", "Quit"};
+    const char *labels[ROWS] = {"Disc", "Resolution", "Display", "Aspect ratio", "Draw distance", "Start", "Quit"};
     size_t length = strlen(settings->disc);
     int i;
 
@@ -218,6 +233,9 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
             snprintf(value, sizeof(value), "< %d x %d >", settings->width, settings->height);
         } else if (i == ROW_DISPLAY) {
             snprintf(value, sizeof(value), "< %s >", settings->fullscreen ? "Fullscreen" : "Window");
+        } else if (i == ROW_DISTANCE) {
+            snprintf(value, sizeof(value), "< %d%%%s >", settings->drawDistance,
+                     settings->drawDistance == 100 ? " (original)" : "");
         } else {
             snprintf(value, sizeof(value), "< %d:%d%s >", settings->aspectW, settings->aspectH,
                      settings->aspectW * 3 == settings->aspectH * 4 ? " (original)" : "");
