@@ -10,6 +10,7 @@
 #   make assets    convert the disc's files to editable ones in assets/ (FORCE=1 to redo)
 #   make image     build NASCAR.DAT and a disc image from assets/ in build/image
 #   make check-assets  convert, build, and compare with the original disc
+#   make port      build the native port and open it (port/port.mk run)
 
 SHELL := bash
 .SHELLFLAGS := -o pipefail -c
@@ -549,7 +550,7 @@ PSYQ36_URL  := https://github.com/mkst/esa/releases/download/psyq-binaries/psyq3
 PSYQ36_EXE  := tools/cc/psyq-3.6/CC1PSX.EXE
 PSYQ36_SHA1 := 6da49839dd22aa2f3aea678b46447bad7a16859a
 
-.PHONY: all check extract split expected report format tools standin clean distclean test-tools assets image check-assets
+.PHONY: all check extract split expected report format tools standin clean distclean test-tools assets image check-assets port
 .DELETE_ON_ERROR:
 
 all: $(EXE)
@@ -561,6 +562,9 @@ check: $(EXE)
 extract:
 	@test -n "$(CUE)" || (echo "Set CUE=path/to/NASCAR 98 (USA).cue"; exit 1)
 	$(PYTHON) tools/extract.py "$(CUE)" disc
+
+port:
+	$(MAKE) -f port/port.mk run
 
 test-tools:
 	$(PYTHON) -m unittest discover -s tools -p 'test_*.py'
