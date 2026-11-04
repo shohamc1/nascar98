@@ -1,13 +1,25 @@
 /*
  * The native runner: instantiates the wasm2c module and calls PortStart.
  *
+ * In a window, the launcher (launcher.c) runs first and saves its
+ * settings; NASCAR98_LAUNCHER=0 skips it. Headless runs ignore the
+ * settings file, so only the environment steers them.
+ *
  * Environment:
- *   NASCAR98_TRACK1    the disc's Track 1 (default: see DEFAULT_TRACK1)
+ *   NASCAR98_TRACK1    the disc's .cue sheet or Track 1 (default: the
+ *                      launcher's choice, else DEFAULT_TRACK1)
+ *   NASCAR98_LAUNCHER  0: start the game without the launcher
+ *   NASCAR98_RESOLUTION  WIDTHxHEIGHT of the window, or of the render in
+ *                      fullscreen
+ *   NASCAR98_FULLSCREEN  1: fullscreen
+ *   NASCAR98_ASPECT    W:H of race frames (default 4:3 headless): wider
+ *                      shows more of the track, the HUD at the edges
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
  *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10
  *                      headless, 0 (off) in a window)
  *   NASCAR98_HEADLESS  1: no window; frames run as fast as they can
- *   NASCAR98_SCALE     render scale (default 3)
+ *   NASCAR98_SCALE     render scale (default: the resolution's height /
+ *                      240, rounded up; 3 headless)
  *   NASCAR98_SCREENSHOT  FRAME:PATH saves the display as BMP at that frame
  *   NASCAR98_DUMP      EVERY:DIR writes main RAM (DIR/FRAME.ram) and the
  *                      display (DIR/FRAME.bmp) every EVERY frames
@@ -30,6 +42,7 @@
 #include <unistd.h>
 
 #include "gpu.h"
+#include "launcher.h"
 #include "pad.h"
 #include "nascar98_wasm.h"
 #include "wasm-rt-exceptions.h"
@@ -209,8 +222,49 @@ u32 w2c_env_HostCdReadRaw(struct w2c_env *env, u32 lba, u32 dst)
     return 0;
 }
 
-/* Finds Track 2, 3, ... beside Track 1 by name: the files of a .cue's
- * "Track N" set, each starting where the one before ends. */
+static char sCueFiles[TRACKS][4096]; /* a .cue sheet's FILE names, as paths */
+static int sCueCount;
+
+/* Reads the FILE lines of the .cue sheet at CUE into sCueFiles: 0, or 1
+ * when it can't be read or names no file. */
+static int ReadCue(const char *cue)
+{
+    const char *slash = strrchr(cue, '/'), *backslash = strrchr(cue, '\\');
+    int dir = slash || backslash ? (int)((slash > backslash ? slash : backslash) - cue + 1) : 0;
+    char line[4096 + 32];
+    FILE *f = fopen(cue, "r");
+
+    while (f && sCueCount < TRACKS && fgets(line, sizeof(line), f)) {
+        char *name = line + strspn(line, " \t"), *end;
+
+        if (strncmp(name, "FILE ", 5) != 0) {
+            continue;
+        }
+        name += 5 + strspn(name + 5, " \t");
+        if (*name == '"') {
+            end = strchr(++name, '"');
+        } else {
+            end = name + strcspn(name, " \t\r\n");
+        }
+        if (!end) {
+            continue;
+        }
+        *end = '\0';
+        /* Relative names are beside the sheet. */
+        if (*name == '/' || *name == '\\' || (name[0] && name[1] == ':')) {
+            snprintf(sCueFiles[sCueCount++], sizeof(sCueFiles[0]), "%s", name);
+        } else {
+            snprintf(sCueFiles[sCueCount++], sizeof(sCueFiles[0]), "%.*s%s", dir, cue, name);
+        }
+    }
+    if (f) {
+        fclose(f);
+    }
+    return sCueCount == 0;
+}
+
+/* Opens Track 2, 3, ...: the .cue sheet's files, or else the files beside
+ * Track 1 named like it, each starting where the one before ends. */
 static void OpenTracks(const char *track1)
 {
     const char *at = strstr(track1, "Track 1");
@@ -223,8 +277,13 @@ static void OpenTracks(const char *track1)
     end = ftell(sTrack1) / RAW_SECTOR;
     sTrackStart[1] = 0;
     sTrackCount = 1;
-    for (k = 2; at && k <= TRACKS; k++) {
-        snprintf(path, sizeof(path), "%.*sTrack %d%s", (int)(at - track1), track1, k, at + strlen("Track 1"));
+    for (k = 2; (sCueCount ? k <= sCueCount : at != NULL) && k <= TRACKS; k++) {
+        if (sCueCount) {
+            snprintf(path, sizeof(path), "%s", sCueFiles[k - 1]);
+        } else {
+            snprintf(path, sizeof(path), "%.*sTrack %d%s", (int)(at - track1), track1, k,
+                     at + strlen("Track 1"));
+        }
         sTracks[k] = fopen(path, "rb");
         if (!sTracks[k]) {
             break;
@@ -567,16 +626,61 @@ static long EnvNumber(const char *name, long fallback)
     return value && *value ? strtol(value, NULL, 10) : fallback;
 }
 
+/* Applies the environment over SETTINGS; a bad value exits 2. */
+static void EnvSettings(Settings *settings)
+{
+    const char *value = getenv("NASCAR98_TRACK1");
+
+    if (value && *value) {
+        snprintf(settings->disc, sizeof(settings->disc), "%s", value);
+    }
+    value = getenv("NASCAR98_RESOLUTION");
+    if (value && *value && SettingsParsePair(value, 'x', &settings->width, &settings->height)) {
+        fprintf(stderr, "nascar98: NASCAR98_RESOLUTION must be WIDTHxHEIGHT, not \"%s\"\n", value);
+        exit(2);
+    }
+    value = getenv("NASCAR98_ASPECT");
+    if (value && *value && SettingsParsePair(value, ':', &settings->aspectW, &settings->aspectH)) {
+        fprintf(stderr, "nascar98: NASCAR98_ASPECT must be W:H, not \"%s\"\n", value);
+        exit(2);
+    }
+    settings->fullscreen = (int)EnvNumber("NASCAR98_FULLSCREEN", settings->fullscreen) != 0;
+}
+
 int main(void)
 {
-    const char *track1 = getenv("NASCAR98_TRACK1");
+    const char *track1;
     static w2c_nascar98 module;
+    static Settings settings;
     struct w2c_env env = {&module};
     wasm_rt_trap_t trap;
     const char *shot;
+    size_t length;
+    int scale;
 
-    if (!track1 || !*track1) {
-        track1 = DEFAULT_TRACK1;
+    sHeadless = EnvNumber("NASCAR98_HEADLESS", 0) != 0;
+    if (sHeadless) {
+        memset(&settings, 0, sizeof(settings));
+        settings.aspectW = 4;
+        settings.aspectH = 3;
+    } else {
+        SettingsLoad(&settings);
+    }
+    EnvSettings(&settings);
+    if (!sHeadless && EnvNumber("NASCAR98_LAUNCHER", 1)) {
+        if (LauncherRun(&settings)) {
+            return 0;
+        }
+        SettingsSave(&settings);
+    }
+    track1 = *settings.disc ? settings.disc : DEFAULT_TRACK1;
+    length = strlen(track1);
+    if (length > 4 && SDL_strcasecmp(track1 + length - 4, ".cue") == 0) {
+        if (ReadCue(track1)) {
+            fprintf(stderr, "nascar98: can't read a FILE line from \"%s\"\n", track1);
+            return 2;
+        }
+        track1 = sCueFiles[0];
     }
     sTrack1 = fopen(track1, "rb");
     if (!sTrack1) {
@@ -595,7 +699,6 @@ int main(void)
     OpenCards();
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;
-    sHeadless = EnvNumber("NASCAR98_HEADLESS", 0) != 0;
     /* Off in a window: dragging it or sleeping the machine stops frames. */
     sWatchdog = (unsigned)EnvNumber("NASCAR98_WATCHDOG", sHeadless ? 10 : 0);
     shot = getenv("NASCAR98_SCREENSHOT");
@@ -614,7 +717,10 @@ int main(void)
         sPokeFrame = strtol(shot, NULL, 10);
         sPokes = strchr(shot, ':') + 1;
     }
-    if (GpuInit((int)EnvNumber("NASCAR98_SCALE", 3), sHeadless) || PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
+    scale = sHeadless || settings.height <= 0 ? 3 : (settings.height + 239) / 240;
+    scale = (int)EnvNumber("NASCAR98_SCALE", scale);
+    if (GpuInit(scale, sHeadless, settings.width, settings.height, settings.fullscreen) ||
+        PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
     }
     if (!sHeadless) {
@@ -629,6 +735,14 @@ int main(void)
     wasm2c_nascar98_instantiate(&module, &env);
     sModule = &module;
     GpuSetMemory(w2c_nascar98_memory(&module)->data, w2c_nascar98_memory(&module)->size);
+    {
+        /* Widescreen: the GTE squeezes race X by 4:3 over the aspect. */
+        float aspect = (float)settings.aspectW / (float)settings.aspectH;
+        s32 wideX = aspect > 4.0f / 3.0f ? (s32)(4096.0f * 4 / 3 / aspect + 0.5f) : 0x1000;
+
+        memcpy(Memory(&env, *w2c_nascar98_gPortWideX(&module), 4), &wideX, 4);
+        GpuSetWide(aspect, (const int32_t *)Memory(&env, *w2c_nascar98_gPortRaceView(&module), 4));
+    }
     trap = wasm_rt_impl_try();
     if (trap == WASM_RT_TRAP_NONE) {
         w2c_nascar98_PortStart(&module);

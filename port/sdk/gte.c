@@ -31,6 +31,15 @@ static s32 sDqb;
 static s16 sZsf3, sZsf4;
 static u32 sFlag;
 
+/*
+ * Widescreen: while the race loop sets gPortRaceView, RTPS scales each
+ * projected X about OFX by gPortWideX (4.12 fixed point), so a frame
+ * the host shows wider holds a wider field of view. The host writes
+ * gPortWideX; 0x1000 keeps the console's projection.
+ */
+s32 gPortWideX = 0x1000;
+s32 gPortRaceView;
+
 static s64 Mac123(int i, s64 value)
 {
     /* MAC1 to MAC3 keep 44 bits; overflow sets bits 30-28 and 27-25. */
@@ -186,7 +195,11 @@ static void Rtps(int v, int sf, int lm, int last)
     sSxy[0][1] = sSxy[1][1];
     sSxy[1][0] = sSxy[2][0];
     sSxy[1][1] = sSxy[2][1];
-    SetMac0((s64)div * sIr[1] + sOfx);
+    mac3 = (s64)div * sIr[1];
+    if (gPortRaceView && gPortWideX != 0x1000) {
+        mac3 = mac3 * gPortWideX >> 12;
+    }
+    SetMac0(mac3 + sOfx);
     sSxy[2][0] = Screen(sMac[0] >> 16, 14);
     SetMac0((s64)div * sIr[2] + sOfy);
     sSxy[2][1] = Screen(sMac[0] >> 16, 13);

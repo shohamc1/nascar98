@@ -213,6 +213,10 @@ void GameRunSession(void) {
     extern void MenuDrawResults(s32);
     extern void func_80066CFC(void);
     extern void MenuStartVBlankEventAlternate(void);
+#ifdef NATIVE
+    /* The port widens the 3D view of race frames (port/sdk/gte.c). */
+    extern s32 gPortRaceView;
+#endif
     extern void SystemStopCounterAfterVSync(void);
     SessionTiming *timings;
     u8 *ot;
@@ -329,6 +333,9 @@ void GameRunSession(void) {
         func_8001475C();
         D_800A2D14 = D_800A33C0;
         D_800A2D18 = D_800A33C4;
+#ifdef NATIVE
+        gPortRaceView = 1;
+#endif
         RaceUpdateFrame();
         GraphicsDrawRaceViews();
         timings->elapsed = GetRCnt(0xF2000001) - D_800A3708;
@@ -384,6 +391,9 @@ void GameRunSession(void) {
                           &sync, 0);
         }
     } while (D_800A2D0C == 0);
+#ifdef NATIVE
+    gPortRaceView = 0;
+#endif
     if (gSessionTypeAbsolute[0] == 2) {
         func_8003CF04();
     }

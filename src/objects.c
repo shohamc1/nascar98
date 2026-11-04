@@ -11659,7 +11659,18 @@ __inline__ void CameraProjectPointToScreen(s32 *src, s32 *outX, s32 *outY) {
     s32 value;
 
     value = MathFixedDivide(src[0], src[2]);
+#ifdef NATIVE
+    {
+        /* Widescreen narrows X as the port's GTE does (port/sdk/gte.c). */
+        extern s32 gPortWideX;
+        extern s32 gPortRaceView;
+        s32 x = MathMultiplyFixed16(value & -0x10, 0xD00000) >> 16;
+
+        outX[0] = (gPortRaceView ? x * gPortWideX >> 12 : x) + 0xA0;
+    }
+#else
     outX[0] = (MathMultiplyFixed16(value & -0x10, 0xD00000) >> 16) + 0xA0;
+#endif
     value = MathFixedDivide(src[1], src[2]);
     outY[0] =
         (MathMultiplyFixed16(value & -0x10, 0xD00000) >> 16) + D_800A2F3C[0];

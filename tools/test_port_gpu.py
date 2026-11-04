@@ -99,7 +99,7 @@ class Gpu(unittest.TestCase):
     def test_texel_decode(self) -> None:
         self.check(
             "    uint16_t *v;\n"
-            "    if (GpuInit(1, 1)) return 1;\n"
+            "    if (GpuInit(1, 1, 0, 0, 0)) return 1;\n"
             "    v = GpuVram();\n"
             "    v[500 * 1024 + 16 + 1] = 0x001F;          /* CLUT entry 1: red */\n"
             "    v[500 * 1024 + 16 + 2] = 0x8000 | 0x7C00; /* entry 2: blue, STP */\n"
@@ -117,7 +117,7 @@ class Gpu(unittest.TestCase):
         # A textured sprite caches its page; an upload over the page drops it.
         self.check(
             "    uint32_t *p;\n"
-            "    if (GpuInit(1, 1)) return 1;\n"
+            "    if (GpuInit(1, 1, 0, 0, 0)) return 1;\n"
             "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
             "    p = W(BASE + 0x100);\n"
             "    p[0] = 0x05FFFFFFu;               /* tag: 5 words, end */\n"
@@ -143,7 +143,7 @@ class Gpu(unittest.TestCase):
             "    uint32_t *p;\n"
             "    uint16_t *src;\n"
             "    int i;\n"
-            "    if (GpuInit(1, 1)) return 1;\n"
+            "    if (GpuInit(1, 1, 0, 0, 0)) return 1;\n"
             "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
             "    Rect(BASE + 0x40, 0, 0, 320, 240);\n"
             "    *(uint8_t *)(mem + 0x50) = 0; /* isinter, isrgb24 off */\n"
@@ -174,7 +174,7 @@ class Gpu(unittest.TestCase):
             "    uint16_t *v;\n"
             "    int x, y;\n"
             "    unsigned px;\n"
-            "    if (GpuInit(1, 1)) return 1;\n"
+            "    if (GpuInit(1, 1, 0, 0, 0)) return 1;\n"
             "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
             "    v = GpuVram();\n"
             "    for (y = 0; y < 8; y++)\n"
@@ -199,7 +199,7 @@ class Gpu(unittest.TestCase):
         # SDL's software renderer can't, so headless runs need a GPU one.
         self.check(
             "    uint32_t *p;\n"
-            "    if (GpuInit(1, 1)) return 1;\n"
+            "    if (GpuInit(1, 1, 0, 0, 0)) return 1;\n"
             "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
             "    p = W(BASE + 0x100);\n"
             "    p[0] = 0x0AFFFFFFu;\n"
@@ -222,7 +222,7 @@ class Gpu(unittest.TestCase):
         # rely on it for vertices projected from behind the camera.
         self.check(
             "    uint32_t *p;\n"
-            "    if (GpuInit(1, 1)) return 1;\n"
+            "    if (GpuInit(1, 1, 0, 0, 0)) return 1;\n"
             "    GpuSetMemory(mem - BASE, (uint64_t)BASE + sizeof(mem));\n"
             "    p = W(BASE + 0x100);\n"
             "    p[0] = 0x06FFFFFFu;\n"

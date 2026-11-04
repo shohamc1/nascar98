@@ -57,7 +57,7 @@ DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s
 WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
                 --max-memory=2151677952 -z stack-size=262144 --no-stack-first --no-entry \
                 --export=PortStart --export=gPortCallRing \
-                --export=gPortCallNext --no-gc-sections --fatal-warnings
+                --export=gPortCallNext --export=gPortWideX --export=gPortRaceView --no-gc-sections --fatal-warnings
 
 .PHONY: objects undefined module nascar98 run run-headless FORCE
 

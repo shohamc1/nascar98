@@ -13,8 +13,15 @@
 #define GPU_VRAM_WIDTH 1024
 #define GPU_VRAM_HEIGHT 512
 
-/* Opens a window, or an offscreen renderer when HEADLESS is nonzero. */
-int GpuInit(int scale, int headless);
+/* Opens a WIDTH x HEIGHT window (0: 320 x 240 times SCALE), fullscreen
+ * when FULLSCREEN is nonzero, or an offscreen renderer when HEADLESS is
+ * nonzero. SCALE is the render scale, lowered to fit the GPU's textures. */
+int GpuInit(int scale, int headless, int width, int height, int fullscreen);
+/* Shows race frames at ASPECT (width / height) while *RACE_VIEW is
+ * nonzero, the GTE having widened their 3D view; the HUD keeps its shape. */
+void GpuSetWide(float aspect, const int32_t *raceView);
+/* Nonzero while a wide race frame shows. */
+int GpuWide(void);
 void GpuShutdown(void);
 void GpuSetMemory(uint8_t *base, uint64_t size);
 

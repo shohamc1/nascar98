@@ -55,6 +55,31 @@ static int sPackets, sPacketsLast;
 static CachedTexture sCache[CACHE_SIZE];
 static int sTrace = -1; /* NASCAR98_TRACE_GPU: log uploads and display changes */
 
+/*
+ * Widescreen (GpuSetWide). Race frames show at sAspect, with the 3D
+ * squeezed by the GTE; the HUD's ordering table slots draw as groups
+ * shrunk by sSqueeze and pinned to the left edge, centre, or right edge.
+ */
+#define HUD_SLOTS 3
+#define HUD_MAX 4096
+#define HUD_MARGIN 6
+static float sAspect = 4.0f / 3.0f;
+static float sSqueeze = 1.0f;
+static const int32_t *sRaceView;
+static float sXScale = 1.0f, sXShift; /* Emit's x -> x * sXScale + sXShift */
+static int sMeasure;                  /* Emit only grows the bounds below */
+static float sMinX, sMinY, sMaxX, sMaxY;
+
+typedef struct {
+    float x0, y0, x1, y1; /* x1 < x0: nothing drawn */
+} Box;
+
+/* Drawing areas narrower than the display: [0] this frame, [1] the last.
+ * The mirror's view sets its area after the HUD around it draws. */
+#define VIEWS 8
+static Box sViews[2][VIEWS];
+static int sViewsNow, sViewsLast;
+
 static int Tracing(void)
 {
     if (sTrace < 0) {
@@ -147,7 +172,14 @@ static void MakeBlendModes(void)
     }
 }
 
-int GpuInit(int scale, int headless)
+void GpuSetWide(float aspect, const int32_t *raceView)
+{
+    sAspect = aspect > 4.0f / 3.0f ? aspect : 4.0f / 3.0f;
+    sSqueeze = 4.0f / 3.0f / sAspect;
+    sRaceView = raceView;
+}
+
+int GpuInit(int scale, int headless, int width, int height, int fullscreen)
 {
     sScale = scale < 1 ? 1 : scale;
     if (headless) {
@@ -166,15 +198,27 @@ int GpuInit(int scale, int headless)
             fprintf(stderr, "nascar98: SDL video: %s\n", SDL_GetError());
             return 1;
         }
-        sWindow = SDL_CreateWindow("NASCAR 98", 320 * sScale, 240 * sScale, SDL_WINDOW_RESIZABLE);
+        sWindow = SDL_CreateWindow("NASCAR 98", width > 0 ? width : 320 * sScale, height > 0 ? height : 240 * sScale,
+                                   SDL_WINDOW_RESIZABLE | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
         sRenderer = sWindow ? SDL_CreateRenderer(sWindow, NULL) : NULL;
         if (sRenderer) {
             SDL_SetRenderVSync(sRenderer, 0);
+        }
+        if (fullscreen) {
+            SDL_HideCursor();
         }
     }
     if (!sRenderer) {
         fprintf(stderr, "nascar98: SDL renderer: %s\n", SDL_GetError());
         return 1;
+    }
+    {
+        int max = (int)SDL_GetNumberProperty(SDL_GetRendererProperties(sRenderer),
+                                             SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 0);
+
+        while (max > 0 && sScale > 1 && GPU_VRAM_WIDTH * sScale > max) {
+            sScale--;
+        }
     }
     sTarget = MakeTarget(GPU_VRAM_WIDTH * sScale, GPU_VRAM_HEIGHT * sScale);
     sUpload = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_XBGR1555, SDL_TEXTUREACCESS_STREAMING, GPU_VRAM_WIDTH,
@@ -438,6 +482,15 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
     SDL_FRect area;
     int i, k, pass, ratio = 4 >> sDepth, bright = 0;
 
+    if (sMeasure) {
+        for (i = 0; i < n; i++) {
+            sMinX = SDL_min(sMinX, v[i].x);
+            sMaxX = SDL_max(sMaxX, v[i].x);
+            sMinY = SDL_min(sMinY, v[i].y);
+            sMaxY = SDL_max(sMaxY, v[i].y);
+        }
+        return;
+    }
     if (textured) {
         float u0 = v[0].u, u1 = v[0].u, v0 = v[0].v, v1 = v[0].v;
 
@@ -472,7 +525,7 @@ static void Emit(const Vertex *v, int n, int textured, int semi, int clutX, int 
         for (k = 0; k < (n == 4 ? 6 : 3); k++) {
             const Vertex *s = &v[n == 4 ? quad[k] : k];
 
-            out[k].position.x = (float)(s->x * sScale);
+            out[k].position.x = (s->x * sXScale + sXShift) * sScale;
             out[k].position.y = (float)(s->y * sScale);
             out[k].color.r = SDL_min(s->color.r, 1.0f);
             out[k].color.g = SDL_min(s->color.g, 1.0f);
@@ -728,7 +781,7 @@ static void RunPacket(const uint32_t *w, int n)
             words = DrawLine(w + at, n - at);
         } else if (code >= 0x60 && code < 0x80) {
             DrawRectangle(w + at);
-        } else if (code == 0x02) {
+        } else if (code == 0x02 && !sMeasure) {
             FillRect(w[at + 1] & 0x3F0, (w[at + 1] >> 16) & 0x1FF, ((w[at + 2] & 0x3FF) + 15) & ~15,
                      (w[at + 2] >> 16) & 0x1FF, w[at] & 0xFF, (w[at] >> 8) & 0xFF, (w[at] >> 16) & 0xFF);
         } else if (code == 0xE1) {
@@ -741,6 +794,14 @@ static void RunPacket(const uint32_t *w, int n)
             sAreaX1 = w[at] & 0x3FF;
             sAreaY1 = (w[at] >> 10) & 0x1FF;
             ApplyClip();
+            if (!sMeasure && sAreaX1 - sAreaX0 + 1 < sDispW - 8 && sViewsNow < VIEWS) {
+                /* Within its buffer: the next frame draws in the other one,
+                 * a display width across. */
+                Box *view = &sViews[0][sViewsNow++];
+
+                view->x0 = (float)(sAreaX0 % sDispW), view->y0 = (float)sAreaY0;
+                view->x1 = view->x0 + (float)(sAreaX1 - sAreaX0), view->y1 = (float)sAreaY1;
+            }
         } else if (code == 0xE5) {
             sOffsetX = SignExtend11(w[at]);
             sOffsetY = SignExtend11(w[at] >> 11);
@@ -772,19 +833,172 @@ void GpuDrawPrim(uint32_t prim)
     RunTagged(prim);
 }
 
+int GpuWide(void)
+{
+    return sSqueeze < 1.0f && sRaceView && *sRaceView;
+}
+
+typedef struct {
+    int start, end; /* packets [start, end) */
+    Box box;
+    float anchor; /* 0 left, 0.5 centre, 1 right; < 0 keeps the group as drawn */
+} HudGroup;
+
+static int Empty(const Box *b)
+{
+    return b->x1 < b->x0;
+}
+
+/* Boxes A and B overlap, or come within HUD_MARGIN of each other. */
+static int Touch(const Box *a, const Box *b)
+{
+    return b->x0 <= a->x1 + HUD_MARGIN && b->x1 >= a->x0 - HUD_MARGIN && b->y0 <= a->y1 + HUD_MARGIN &&
+           b->y1 >= a->y0 - HUD_MARGIN;
+}
+
+/* Bounds the vertices of the packet at PRIM, drawing nothing. */
+static void Measure(uint32_t prim, Box *box)
+{
+    int areaX0 = sAreaX0, areaY0 = sAreaY0, areaX1 = sAreaX1, areaY1 = sAreaY1;
+    int offsetX = sOffsetX, offsetY = sOffsetY;
+    int pageX = sPageX, pageY = sPageY, depth = sDepth, abr = sAbr;
+
+    sMinX = sMinY = 1e9f;
+    sMaxX = sMaxY = -1e9f;
+    sMeasure = 1;
+    RunTagged(prim);
+    sMeasure = 0;
+    sPackets--;
+    box->x0 = sMinX, box->y0 = sMinY, box->x1 = sMaxX, box->y1 = sMaxY;
+    sAreaX0 = areaX0, sAreaY0 = areaY0, sAreaX1 = areaX1, sAreaY1 = areaY1;
+    sOffsetX = offsetX, sOffsetY = offsetY;
+    sPageX = pageX, sPageY = pageY, sDepth = depth, sAbr = abr;
+    ApplyClip();
+}
+
+/*
+ * Draws the HUD's packets in order, in groups: a packet joins the group
+ * before it when it touches the packet before it (the glyphs of a string,
+ * a gauge and its needle). A group keeps its true shape on the wide
+ * display and stays as near the edge it sat by as it was, except:
+ *   - a group as wide as the screen (a fade) stretches with the 3D;
+ *   - a group around a drawing area narrower than the display (the
+ *     rear-view mirror, a second ordering table) stays as drawn, so it
+ *     frames the view, whose 3D the GTE widened too;
+ *   - a small group beside a wide centred one, within its height (the
+ *     pause menu's arrows), stays with it.
+ */
+static void DrawHud(const uint32_t *prims, int n)
+{
+    static Box boxes[HUD_MAX];
+    static HudGroup groups[HUD_MAX];
+    float width = (float)(sAreaX1 - sAreaX0 + 1), left = (float)sAreaX0;
+    int i, j, k, count = 0;
+
+    for (i = 0; i < n; i++) {
+        Measure(prims[i], &boxes[i]);
+    }
+    for (i = 0; i < n; i = j) {
+        HudGroup *g = &groups[count++];
+        float centre;
+
+        g->start = i;
+        g->box = boxes[i];
+        for (j = i + 1; j < n && !Empty(&boxes[j - 1]) && !Empty(&boxes[j]) && Touch(&boxes[j - 1], &boxes[j]);
+             j++) {
+            g->box.x0 = SDL_min(g->box.x0, boxes[j].x0), g->box.y0 = SDL_min(g->box.y0, boxes[j].y0);
+            g->box.x1 = SDL_max(g->box.x1, boxes[j].x1), g->box.y1 = SDL_max(g->box.y1, boxes[j].y1);
+        }
+        g->end = j;
+        centre = (g->box.x0 + g->box.x1) / 2 - left;
+        g->anchor = centre < width / 3 ? 0.0f : centre > width * 2 / 3 ? 1.0f : 0.5f;
+        if (Empty(&g->box) || g->box.x1 - g->box.x0 >= width - 8) {
+            g->anchor = -1;
+        }
+        for (k = 0; k < sViewsLast && g->anchor >= 0; k++) {
+            const Box *v = &sViews[1][k];
+
+            if (g->box.x0 - left <= v->x0 && g->box.x1 - left >= v->x1 && g->box.y0 <= v->y0 &&
+                g->box.y1 >= v->y1) {
+                g->anchor = -1;
+            }
+        }
+    }
+    for (i = 0; i < count; i++) {
+        HudGroup *g = &groups[i];
+
+        for (k = 0; k < count && g->anchor >= 0 && g->anchor != 0.5f; k++) {
+            const Box *c = &groups[k].box;
+
+            if (groups[k].anchor == 0.5f && c->x1 - c->x0 >= width / 3 && g->box.y0 >= c->y0 &&
+                g->box.y1 <= c->y1 && g->box.x0 < c->x1 + width / 8 && g->box.x1 > c->x0 - width / 8) {
+                g->anchor = 0.5f;
+            }
+        }
+    }
+    for (i = 0; i < count; i++) {
+        const HudGroup *g = &groups[i];
+
+        if (g->anchor >= 0) {
+            /* x' = x0 + (x - x0) * squeeze + width * (1 - squeeze) * anchor */
+            sXScale = sSqueeze;
+            sXShift = left * (1 - sSqueeze) + width * (1 - sSqueeze) * g->anchor;
+        }
+        if (Tracing()) {
+            fprintf(stderr, "gpu: hud group of %d, x %.0f to %.0f, y %.0f to %.0f, anchor %.1f\n", g->end - g->start,
+                    g->box.x0, g->box.x1, g->box.y0, g->box.y1, g->anchor);
+        }
+        for (j = g->start; j < g->end; j++) {
+            RunTagged(prims[j]);
+        }
+        sXScale = 1.0f;
+        sXShift = 0.0f;
+    }
+}
+
+/* Table entries are empty tags at word steps below the head. */
+static int IsEntry(uint32_t head, uint32_t address)
+{
+    return address <= head && head - address < 0x10000 && (head - address) % 4 == 0 && Read32(address) >> 24 == 0;
+}
+
+/*
+ * Walks a reverse-linked ordering table from its last entry, OT. Entry 0
+ * is the last entry the walk meets, so a first pass finds the table's
+ * base; on wide race frames, the packets of the first HUD_SLOTS entries
+ * go to DrawHud.
+ */
 void GpuDrawOTag(uint32_t ot)
 {
-    uint32_t link = ot & 0xFFFFFF;
-    int guard = 1 << 20;
+    static uint32_t hud[HUD_MAX];
+    uint32_t head = (ot & 0xFFFFFF) | 0x80000000u, base = 0, entry = head, link;
+    int guard, n = 0, wide = GpuWide();
 
     SDL_SetRenderTarget(sRenderer, sTarget);
     ApplyClip();
-    while (link != 0xFFFFFF && --guard) {
+    for (link = ot & 0xFFFFFF, guard = 1 << 20; wide && link != 0xFFFFFF && --guard;) {
         uint32_t address = link | 0x80000000u;
 
-        RunTagged(address);
+        if (IsEntry(head, address)) {
+            base = address;
+        }
         link = Read32(address) & 0xFFFFFF;
     }
+    for (link = ot & 0xFFFFFF, guard = 1 << 20; link != 0xFFFFFF && --guard;) {
+        uint32_t address = link | 0x80000000u;
+
+        link = Read32(address) & 0xFFFFFF;
+        if (IsEntry(head, address)) {
+            entry = address;
+            continue;
+        }
+        if (wide && entry - base < HUD_SLOTS * 4 && n < HUD_MAX) {
+            hud[n++] = address;
+            continue;
+        }
+        RunTagged(address);
+    }
+    DrawHud(hud, n);
 }
 
 /* ---- VRAM transfers ---- */
@@ -975,6 +1189,12 @@ int GpuPresent(void)
     }
     sPacketsLast = sPackets;
     sPackets = 0;
+    if (sPacketsLast > 0) {
+        /* The race draws one frame in three VBlanks. */
+        memcpy(sViews[1], sViews[0], sizeof(sViews[0]));
+        sViewsLast = sViewsNow;
+        sViewsNow = 0;
+    }
     while (sWindow && SDL_PollEvent(&event)) {
         if (event.type == SDL_EVENT_QUIT) {
             closed = 1;
@@ -986,13 +1206,15 @@ int GpuPresent(void)
         int ww, wh;
         float w, h;
 
+        float aspect = GpuWide() ? sAspect : 4.0f / 3.0f;
+
         SDL_GetRenderOutputSize(sRenderer, &ww, &wh);
-        /* 4:3 whatever the display width, letterboxed. */
+        /* 4:3, or the wide aspect in a race, letterboxed or pillarboxed. */
         w = (float)ww;
-        h = w * 3 / 4;
+        h = w / aspect;
         if (h > wh) {
             h = (float)wh;
-            w = h * 4 / 3;
+            w = h * aspect;
         }
         dst.x = (ww - w) / 2;
         dst.y = (wh - h) / 2;
@@ -1070,6 +1292,17 @@ int GpuScreenshot(const char *path)
 
                 ((uint8_t *)s->pixels)[j * s->pitch + i] = i & 1 ? c >> 8 : c & 0xFF;
             }
+        }
+    }
+    if (s && GpuWide()) {
+        /* Shown wide: save it as the window shows it. */
+        SDL_Surface *wide = SDL_CreateSurface((int)(s->h * sAspect + 0.5f), s->h, s->format);
+
+        if (wide && SDL_BlitSurfaceScaled(s, NULL, wide, NULL, SDL_SCALEMODE_LINEAR)) {
+            SDL_DestroySurface(s);
+            s = wide;
+        } else if (wide) {
+            SDL_DestroySurface(wide);
         }
     }
     if (!s) {
