@@ -19,7 +19,8 @@ void SettingsLoad(Settings *settings);
 void SettingsSave(const Settings *settings);
 /* Parses "WIDTHxHEIGHT" or "W:H" into two positive numbers: 0 on success. */
 int SettingsParsePair(const char *text, char separator, int *a, int *b);
-/* Shows the launcher: 0 when the player starts the game, 1 when they quit. */
-int LauncherRun(Settings *settings);
+/* Shows the launcher: 0 when the player starts the game, 1 when they quit.
+ * EXTRACTED hides the Disc row: the game reads disc/ instead. */
+int LauncherRun(Settings *settings, int extracted);
 
 #endif /* PORT_HOST_LAUNCHER_H */

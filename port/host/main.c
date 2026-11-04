@@ -6,8 +6,9 @@
  * settings file, so only the environment steers them.
  *
  * Environment:
- *   NASCAR98_TRACK1    the disc's .cue sheet or Track 1 (default: the
- *                      launcher's choice, else DEFAULT_TRACK1)
+ *   NASCAR98_TRACK1    the disc's .cue sheet or Track 1 (default: disc/
+ *                      when `make extract` filled it, else the launcher's
+ *                      choice, else DEFAULT_TRACK1)
  *   NASCAR98_LAUNCHER  0: start the game without the launcher
  *   NASCAR98_RESOLUTION  WIDTHxHEIGHT of the window, or of the render in
  *                      fullscreen
@@ -198,14 +199,137 @@ void w2c_env_HostLog(struct w2c_env *env, u32 text)
     sRingNext = (sRingNext + 1) % RING_LINES;
 }
 
+/*
+ * Track 1 from disc/: `make extract` writes its files and layout.tsv,
+ * which gives each file's first sector. A sector no file holds reads as
+ * zeros, and raw reads rebuild the rest of the sector around the data:
+ * sync, header, subheader, EDC, and ECC, as a MODE2 form 1 sector.
+ */
+#define DISC_DIR "disc/"
+#define DISC_FILES 8
+
+static struct {
+    long lba, size;
+    FILE *file;
+} sDiscFiles[DISC_FILES];
+static int sDiscFileCount;
+static long sDiscSectors; /* Track 1's length; 0 when reading the image */
+
+/* Reads the 2048 data bytes of sector LBA: 0, or -1 past Track 1's end. */
+static int ReadData(long lba, u8 *out)
+{
+    static int warned;
+    int i;
+
+    if (!sDiscSectors) {
+        return fseek(sTrack1, lba * RAW_SECTOR + USER_DATA, SEEK_SET) != 0 ||
+                       fread(out, 1, SECTOR, sTrack1) != SECTOR
+                   ? -1
+                   : 0;
+    }
+    if (lba < 0 || lba >= sDiscSectors) {
+        return -1;
+    }
+    memset(out, 0, SECTOR);
+    for (i = 0; i < sDiscFileCount; i++) {
+        long at = (lba - sDiscFiles[i].lba) * SECTOR;
+
+        if (at >= 0 && at < sDiscFiles[i].size) {
+            fseek(sDiscFiles[i].file, at, SEEK_SET);
+            fread(out, 1, sDiscFiles[i].size - at < SECTOR ? (size_t)(sDiscFiles[i].size - at) : SECTOR,
+                  sDiscFiles[i].file);
+            return 0;
+        }
+    }
+    if (!warned) {
+        warned = 1;
+        fprintf(stderr, "nascar98: no file in " DISC_DIR " holds sector %ld; it reads as zeros\n", lba);
+    }
+    return 0;
+}
+
+static u8 Bcd(long value)
+{
+    return (u8)(value / 10 << 4 | value % 10);
+}
+
+/* The CD-ROM error codes (ECMA-130 annexes A and B). */
+static u32 sEdcTable[256];
+static u8 sEccF[256], sEccB[256];
+
+static void InitEcc(void)
+{
+    u32 i, j, edc;
+
+    for (i = 0; i < 256; i++) {
+        j = (i << 1) ^ (i & 0x80 ? 0x11D : 0);
+        sEccF[i] = (u8)j;
+        sEccB[i ^ j] = (u8)i;
+        edc = i;
+        for (j = 0; j < 8; j++) {
+            edc = (edc >> 1) ^ (edc & 1 ? 0xD8018001 : 0);
+        }
+        sEdcTable[i] = edc;
+    }
+}
+
+/* One set of Reed-Solomon parity: P (86 columns) or Q (52 diagonals). */
+static void EccBlock(const u8 *src, u32 majorCount, u32 minorCount, u32 majorMult, u32 minorInc, u8 *dst)
+{
+    u32 size = majorCount * minorCount, major, minor;
+
+    for (major = 0; major < majorCount; major++) {
+        u32 index = (major >> 1) * majorMult + (major & 1);
+        u8 a = 0, b = 0;
+
+        for (minor = 0; minor < minorCount; minor++) {
+            u8 value = src[index];
+
+            index += minorInc;
+            if (index >= size) {
+                index -= size;
+            }
+            a ^= value;
+            b ^= value;
+            a = sEccF[a];
+        }
+        a = sEccB[sEccF[a] ^ b];
+        dst[major] = a;
+        dst[major + majorCount] = a ^ b;
+    }
+}
+
+/* Fills the EDC and ECC of the MODE2 form 1 SECTOR. */
+static void SealSector(u8 *sector)
+{
+    u8 header[4];
+    u32 edc = 0;
+    int i;
+
+    if (!sEdcTable[1]) {
+        InitEcc();
+    }
+    for (i = 16; i < 16 + 8 + SECTOR; i++) {
+        edc = (edc >> 8) ^ sEdcTable[(edc ^ sector[i]) & 0xFF];
+    }
+    for (i = 0; i < 4; i++) {
+        sector[16 + 8 + SECTOR + i] = (u8)(edc >> (8 * i));
+    }
+    /* MODE2's ECC counts the header as zeros. */
+    memcpy(header, sector + 12, 4);
+    memset(sector + 12, 0, 4);
+    EccBlock(sector + 12, 86, 24, 2, 86, sector + 0x81C);
+    EccBlock(sector + 12, 52, 43, 86, 88, sector + 0x8C8);
+    memcpy(sector + 12, header, 4);
+}
+
 u32 w2c_env_HostCdRead(struct w2c_env *env, u32 lba, u32 count, u32 dst)
 {
     u8 *out = Memory(env, dst, count * SECTOR);
     u32 i;
 
     for (i = 0; i < count; i++) {
-        if (fseek(sTrack1, (long)(lba + i) * RAW_SECTOR + USER_DATA, SEEK_SET) != 0 ||
-            fread(out + i * SECTOR, 1, SECTOR, sTrack1) != SECTOR) {
+        if (ReadData((long)(lba + i), out + i * SECTOR) != 0) {
             return (u32)-1;
         }
     }
@@ -214,11 +338,83 @@ u32 w2c_env_HostCdRead(struct w2c_env *env, u32 lba, u32 count, u32 dst)
 
 u32 w2c_env_HostCdReadRaw(struct w2c_env *env, u32 lba, u32 dst)
 {
+    /* Sync, then the header and subheader of a MODE2 form 1 data sector. */
+    static const u8 kHead[USER_DATA] = {0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0,
+                                        0, 0, 0, 2, 0, 0, 8, 0, 0, 0, 8, 0};
     u8 *out = Memory(env, dst, RAW_SECTOR);
+    long msf = (long)lba + 150; /* the address counts the 2-second lead-in */
 
-    if (fseek(sTrack1, (long)lba * RAW_SECTOR, SEEK_SET) != 0 || fread(out, 1, RAW_SECTOR, sTrack1) != RAW_SECTOR) {
+    if (!sDiscSectors) {
+        if (fseek(sTrack1, (long)lba * RAW_SECTOR, SEEK_SET) != 0 ||
+            fread(out, 1, RAW_SECTOR, sTrack1) != RAW_SECTOR) {
+            return (u32)-1;
+        }
+        return 0;
+    }
+    /* A failed read leaves the buffer as it was, as past the image's end. */
+    if (ReadData((long)lba, out + USER_DATA) != 0) {
         return (u32)-1;
     }
+    memcpy(out, kHead, USER_DATA);
+    out[12] = Bcd(msf / 4500);
+    out[13] = Bcd(msf / 75 % 60);
+    out[14] = Bcd(msf % 75);
+    SealSector(out);
+    return 0;
+}
+
+/* Opens disc/ from its layout.tsv: 0, or 1 when a data file is missing.
+ * Audio tracks open as far as they exist, as beside an image. */
+static int OpenDisc(void)
+{
+    char line[4096 + 64], name[4096], path[sizeof(DISC_DIR) + 4096];
+    FILE *layout = fopen(DISC_DIR "layout.tsv", "r");
+    long lba, size, end = 0;
+    int audio = 0;
+
+    sTrackStart[1] = 0;
+    sTrackCount = 1;
+    while (layout && fgets(line, sizeof(line), layout)) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (sscanf(line, "sectors\t%ld", &end) == 1) {
+            sDiscSectors = end;
+        } else if (sscanf(line, "data\t%ld\t%ld\t%4095[^\t]", &lba, &size, name) == 3 &&
+                   sDiscFileCount < DISC_FILES) {
+            snprintf(path, sizeof(path), DISC_DIR "%s", name);
+            sDiscFiles[sDiscFileCount].lba = lba;
+            sDiscFiles[sDiscFileCount].size = size;
+            if (!(sDiscFiles[sDiscFileCount++].file = fopen(path, "rb"))) {
+                sDiscSectors = 0;
+                break;
+            }
+        } else if (sscanf(line, "audio\t%ld\t%4095[^\t]", &lba, name) == 2 && !audio && sTrackCount < TRACKS) {
+            snprintf(path, sizeof(path), DISC_DIR "%s", name);
+            sTracks[sTrackCount + 1] = fopen(path, "rb");
+            if (!sTracks[sTrackCount + 1]) {
+                audio = 1; /* later tracks would start in the wrong place */
+                continue;
+            }
+            sTrackStart[++sTrackCount] = lba;
+            fseek(sTracks[sTrackCount], 0, SEEK_END);
+            end = lba + ftell(sTracks[sTrackCount]) / RAW_SECTOR;
+        }
+    }
+    if (layout) {
+        fclose(layout);
+    }
+    if (!sDiscSectors || sDiscFileCount == 0) {
+        while (sDiscFileCount > 0) {
+            if (sDiscFiles[--sDiscFileCount].file) {
+                fclose(sDiscFiles[sDiscFileCount].file);
+            }
+        }
+        while (sTrackCount > 1) {
+            fclose(sTracks[sTrackCount--]);
+        }
+        sDiscSectors = 0;
+        return 1;
+    }
+    sTrackStart[sTrackCount + 1] = end > sDiscSectors ? end : sDiscSectors;
     return 0;
 }
 
@@ -656,7 +852,7 @@ int main(void)
     wasm_rt_trap_t trap;
     const char *shot;
     size_t length;
-    int scale;
+    int scale, extracted;
 
     sHeadless = EnvNumber("NASCAR98_HEADLESS", 0) != 0;
     if (sHeadless) {
@@ -666,12 +862,17 @@ int main(void)
     } else {
         SettingsLoad(&settings);
     }
+    track1 = getenv("NASCAR98_TRACK1");
+    extracted = !(track1 && *track1) && OpenDisc() == 0;
     EnvSettings(&settings);
     if (!sHeadless && EnvNumber("NASCAR98_LAUNCHER", 1)) {
-        if (LauncherRun(&settings)) {
+        if (LauncherRun(&settings, extracted)) {
             return 0;
         }
         SettingsSave(&settings);
+    }
+    if (extracted) {
+        goto opened;
     }
     track1 = *settings.disc ? settings.disc : DEFAULT_TRACK1;
     length = strlen(track1);
@@ -684,7 +885,9 @@ int main(void)
     }
     sTrack1 = fopen(track1, "rb");
     if (!sTrack1) {
-        fprintf(stderr, "nascar98: can't open Track 1 at \"%s\": set NASCAR98_TRACK1 to its path\n",
+        fprintf(stderr,
+                "nascar98: can't open Track 1 at \"%s\": run make extract, or set NASCAR98_TRACK1 to "
+                "its path\n",
                 track1);
         return 2;
     }
@@ -696,6 +899,7 @@ int main(void)
         return 2;
     }
     OpenTracks(track1);
+opened:
     OpenCards();
     sFrameLimit = EnvNumber("NASCAR98_FRAMES", 0);
     sHang = EnvNumber("NASCAR98_HANG", 0) != 0;

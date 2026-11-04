@@ -200,6 +200,24 @@ class Run(unittest.TestCase):
                 music = w.readframes(120 * 735)
             self.assertGreater(sum(1 for i in range(0, len(music), 2) if music[i : i + 2] != b"\0\0"), 50000)
 
+    @unittest.skipUnless((ROOT / "disc/layout.tsv").exists(), "no disc/layout.tsv: make extract")
+    def test_extracted_disc_matches_image(self) -> None:
+        # disc/ (the default) and the image give the same RAM, frames, and
+        # sound through the EA Sports movie's stream, loads, and title music.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text(SKIP_MOVIES)
+            for name, track1 in (("image", str(TRACK1.parent / "NASCAR 98 (USA).cue")), ("disc", "")):
+                (d / name).mkdir()
+                env = {"NASCAR98_FRAMES": "450", "NASCAR98_PAD": str(d / "pad.txt"), "NASCAR98_SCALE": "1"}
+                result = run(60, NASCAR98_TRACK1=track1, NASCAR98_DUMP=f"150:{d / name}", NASCAR98_WAV=str(d / name / "out.wav"), **env)
+                self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+                self.assertNotIn("reads as zeros", result.stderr)
+            files = sorted(p.name for p in (d / "image").iterdir())
+            self.assertGreater(len(files), 4)
+            for name in files:
+                self.assertEqual((d / "image" / name).read_bytes(), (d / "disc" / name).read_bytes(), name)
+
     def test_menu_sounds(self) -> None:
         # X at frame 700 closes the memory card prompt with a sound effect.
         with tempfile.TemporaryDirectory() as tmp:

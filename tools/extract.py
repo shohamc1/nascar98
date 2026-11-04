@@ -8,6 +8,12 @@ reads the data track (track 1, MODE2/2352) and writes:
 
   disc/SLUS_005.21, disc/SYSTEM.CNF, disc/NASCAR.DAT  the ISO 9660 files
   disc/dat/NNN.<ext>                                   NASCAR.DAT's entries
+  disc/audio/trackNN.bin                               the CD audio tracks
+  disc/layout.tsv                                      where each sits
+
+The native port plays from disc/ through layout.tsv, so it needs no image:
+"sectors N" gives track 1's length, "data LBA SIZE PATH" a file's first
+sector, and "audio LBA PATH" an audio track's (all in disc order).
 
 NASCAR.DAT has no directory of its own. The EXE holds its file table: 185
 records of {sector, size, checksum} at 0x80098340 (see datfile.py).
@@ -16,6 +22,7 @@ Everything written here is copyrighted. disc/ is gitignored: keep it so.
 
 import hashlib
 import pathlib
+import shutil
 import struct
 import sys
 
@@ -121,11 +128,24 @@ def main() -> None:
 
     disc = Disc(tracks[0].path)
     out.mkdir(parents=True, exist_ok=True)
+    layout = [f"sectors\t{tracks[0].path.stat().st_size // SECTOR}"]
     for name, lba, size in disc.files():
         if name.startswith("CDTRACKS/"):
             continue  # pointers into the CD audio tracks
         (out / name).write_bytes(disc.read(lba, size))
+        layout.append(f"data\t{lba}\t{size}\t{name}")
         print(f"wrote {out / name}")
+
+    (out / "audio").mkdir(exist_ok=True)
+    lba = 0
+    for track in tracks:
+        if track.number > 1:
+            name = f"audio/track{track.number:02d}.bin"
+            shutil.copyfile(track.path, out / name)
+            layout.append(f"audio\t{lba}\t{name}")
+            print(f"wrote {out / name}")
+        lba += track.path.stat().st_size // SECTOR
+    (out / "layout.tsv").write_text("\n".join(layout) + "\n")
 
     exe = (out / "SLUS_005.21").read_bytes()
     dat = (out / "NASCAR.DAT").read_bytes()

@@ -154,6 +154,16 @@ static void Cycle(Settings *settings, int row, int step)
     }
 }
 
+/* The first row shown: Resolution when the game reads disc/, so no disc
+ * image is needed. */
+static int sFirst;
+
+/* Moves ROW by STEP through the rows shown, wrapping at the ends. */
+static int Move(int row, int step)
+{
+    return sFirst + (row - sFirst + step + ROWS - sFirst) % (ROWS - sFirst);
+}
+
 static int DiscExists(const char *path)
 {
     FILE *f = *path ? fopen(path, "rb") : NULL;
@@ -182,8 +192,8 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
     SDL_SetRenderDrawColor(renderer, 255, 200, 40, 255);
     Text(renderer, (CANVAS_W / 3 - 9 * CHAR) / 2.0f, 8, "NASCAR 98");
     SDL_SetRenderScale(renderer, 1, 1);
-    for (i = 0; i < ROWS; i++) {
-        float y = (float)(ROW_Y0 + i * ROW_H);
+    for (i = sFirst; i < ROWS; i++) {
+        float y = (float)(ROW_Y0 + (i - sFirst) * ROW_H);
 
         if (i == row) {
             SDL_FRect bar = {16, y - 7, CANVAS_W - 32, ROW_H - 2};
@@ -222,14 +232,16 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
     SDL_RenderPresent(renderer);
 }
 
-int LauncherRun(Settings *settings)
+int LauncherRun(Settings *settings, int extracted)
 {
     static const SDL_DialogFileFilter filters[] = {{"Disc image (.cue, .bin)", "cue;bin"}, {"All files", "*"}};
     SDL_Window *window;
     SDL_Renderer *renderer;
     char editing[16];
     const char *status = "";
-    int row = DiscExists(settings->disc) ? ROW_START : ROW_DISC, isEditing = 0, result = -1;
+    int row = extracted || DiscExists(settings->disc) ? ROW_START : ROW_DISC, isEditing = 0, result = -1;
+
+    sFirst = extracted ? ROW_RESOLUTION : ROW_DISC;
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         fprintf(stderr, "nascar98: SDL video: %s\n", SDL_GetError());
@@ -285,8 +297,8 @@ int LauncherRun(Settings *settings)
                     break;
                 }
                 switch (event.key.key) {
-                case SDLK_UP: row = (row + ROWS - 1) % ROWS; break;
-                case SDLK_DOWN: row = (row + 1) % ROWS; break;
+                case SDLK_UP: row = Move(row, -1); break;
+                case SDLK_DOWN: row = Move(row, 1); break;
                 case SDLK_LEFT: step = -1; break;
                 case SDLK_RIGHT: step = 1; break;
                 case SDLK_RETURN:
@@ -298,8 +310,8 @@ int LauncherRun(Settings *settings)
                 break;
             case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
                 switch (event.gbutton.button) {
-                case SDL_GAMEPAD_BUTTON_DPAD_UP: row = (row + ROWS - 1) % ROWS; break;
-                case SDL_GAMEPAD_BUTTON_DPAD_DOWN: row = (row + 1) % ROWS; break;
+                case SDL_GAMEPAD_BUTTON_DPAD_UP: row = Move(row, -1); break;
+                case SDL_GAMEPAD_BUTTON_DPAD_DOWN: row = Move(row, 1); break;
                 case SDL_GAMEPAD_BUTTON_DPAD_LEFT: step = -1; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: step = 1; break;
                 case SDL_GAMEPAD_BUTTON_SOUTH: activate = 1; break;
@@ -315,7 +327,7 @@ int LauncherRun(Settings *settings)
                 SDL_ConvertEventToRenderCoordinates(renderer, &event);
                 x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                 y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
-                hit = (int)((y - ROW_Y0 + 7) / ROW_H);
+                hit = sFirst + (int)((y - ROW_Y0 + 7) / ROW_H);
                 if (isEditing || y < ROW_Y0 - 7 || hit >= ROWS || x < 16 || x > CANVAS_W - 16) {
                     break;
                 }
@@ -345,7 +357,7 @@ int LauncherRun(Settings *settings)
                 SDL_StartTextInput(window);
                 break;
             case ROW_START:
-                if (DiscExists(settings->disc)) {
+                if (extracted || DiscExists(settings->disc)) {
                     result = 0;
                 } else {
                     status = "Choose the disc's .cue or Track 1 .bin";
