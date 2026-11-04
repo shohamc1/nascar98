@@ -2765,6 +2765,12 @@ extern s32 D_800A2DF4Absolute[];
 extern s32 D_800A2DF0Absolute[];
 extern s32 gOrderingTableBankSmall[];
 void SceneSkyFadeDraw(void) {
+    u32 x0;
+    u32 y0;
+    u32 x1;
+    u32 y1;
+    s32 dy;
+    s32 paletteOffset;
     extern s32 D_800A2F00wC[] asm("D_800A2F00");
     extern s32 gCosTablewC[] asm("gCosTable");
     extern u8 *gSinTablewC[] asm("gSinTable");
@@ -2862,7 +2868,7 @@ void SceneSkyFadeDraw(void) {
                 table = gSinTablewC[0];
                 result = (argument - 0x280) << 4;
             }
-            asm("" : "=r"(table) : "0"(table), "r"(result));
+            asm("" : "=r"(table) : "0"(table));
             table += result;
             argument = *(s32 *)table;
         }
@@ -3039,7 +3045,6 @@ void SceneSkyFadeDraw(void) {
                 if (result != 0) {
                     u16 *secondPrimitive;
                     {
-                        register s32 paletteOffset asm("a1");
                         register s32 screenShift asm("a0");
                         s32 value;
                         register u32 fade asm("t4");
@@ -3135,18 +3140,13 @@ void SceneSkyFadeDraw(void) {
                 } else {
                     {
                         register s32 dx asm("t1");
-                        s32 dy;
                         register s32 yBits asm("t0");
-                        register u32 x0 asm("v0");
-                        register u32 y0 asm("v1");
-                        register u32 x1 asm("a1");
-                        register u32 y1 asm("a2");
                         dx = xShift >> 24;
                         yBits = shade << 24;
                         dy = yBits >> 24;
                         asm(""
                             : "=r"(xShift), "=r"(yBits)
-                            : "0"(xShift), "1"(yBits), "r"(dx), "r"(dy));
+                            : "0"(xShift), "1"(yBits));
                         xShift >>= 24;
                         yBits >>= 24;
                         x0 = primitive[0];
@@ -3154,10 +3154,14 @@ void SceneSkyFadeDraw(void) {
                         x1 = primitive[4];
                         y1 = primitive[5];
                         idx = (s32)primitive - 8;
-                        D_800A8B5C[0] = x0 - dx;
-                        D_800A8B5E[0] = y0 + dy;
-                        D_800A8B64[0] = x1 - xShift;
-                        D_800A8B66[0] = y1 + yBits;
+                        x0 -= dx;
+                        D_800A8B5C[0] = x0;
+                        y0 += dy;
+                        D_800A8B5E[0] = y0;
+                        x1 -= xShift;
+                        D_800A8B64[0] = x1;
+                        y1 += yBits;
+                        D_800A8B66[0] = y1;
                     }
                     argument = idx;
                     GraphicsAddPolyFT4((u8 *)argument);
@@ -3220,7 +3224,6 @@ void SceneSkyFadeDraw(void) {
                 if (result != 0) {
                     u16 *secondPrimitive;
                     {
-                        register s32 paletteOffset asm("a1");
                         register s32 screenShift asm("a0");
                         s32 value;
                         register u32 fade asm("t4");
@@ -3315,18 +3318,13 @@ void SceneSkyFadeDraw(void) {
                 } else {
                     {
                         register s32 dx asm("t1");
-                        s32 dy;
                         register s32 yBits asm("t0");
-                        register u32 x0 asm("v0");
-                        register u32 y0 asm("v1");
-                        register u32 x1 asm("a1");
-                        register u32 y1 asm("a2");
                         dx = xShift >> 24;
                         yBits = shade << 24;
                         dy = yBits >> 24;
                         asm(""
                             : "=r"(xShift), "=r"(yBits)
-                            : "0"(xShift), "1"(yBits), "r"(dx), "r"(dy));
+                            : "0"(xShift), "1"(yBits));
                         xShift >>= 24;
                         yBits >>= 24;
                         x0 = primitive[0];
@@ -3335,10 +3333,14 @@ void SceneSkyFadeDraw(void) {
                         y1 = primitive[3];
                         idx = (s32)primitive - 8;
                         argument = idx;
-                        D_800A8B0C[0] = x0 - dx;
-                        D_800A8B0E[0] = y0 + dy;
-                        D_800A8B10[0] = x1 - xShift;
-                        D_800A8B12[0] = y1 + yBits;
+                        x0 -= dx;
+                        D_800A8B0C[0] = x0;
+                        y0 += dy;
+                        D_800A8B0E[0] = y0;
+                        x1 -= xShift;
+                        D_800A8B10[0] = x1;
+                        y1 += yBits;
+                        D_800A8B12[0] = y1;
                     }
                     GraphicsAddPolyFT4((u8 *)argument);
                     if (gSplitScreenModeAbsolute[0] != 0) {
@@ -7016,8 +7018,7 @@ void func_80053D40(void) {
                                 /* End the old register lifetime before setting the pad index. */
                                 index = player & 0xFF;
                                 padBits = newPad[index];
-                                if (padBits &
-                                    ((u16)animationStepX & 0x20)) {
+                                if (padBits & ((u16)animationStepX & 0x20)) {
 
                                     if (gScreenStateMainLoop == 0x23) {
                                         func_8006CE64MainLoop();

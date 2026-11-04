@@ -4639,6 +4639,7 @@ copyHud6:
 }
 #else
 void HudDrawDashboard(void) {
+    POLY_FT4 *copyEntry;
     /* Preserve the temporary packet layout used by the draw loops. */
     s16 points[16];
     s16 angles[4];
@@ -5201,7 +5202,7 @@ copyHud5:
         register s32 copyOffset asm("v1");
         s32 modeOffset;
         s32 rowOffset;
-        register POLY_FT4 *entry asm("t0");
+
         POLY_FT4 *copyDest;
         u32 sourceBase;
         POLY_FT4 *prim;
@@ -5219,15 +5220,15 @@ copyHud5:
         rowOffset = row * 40;
 
         copyOffset = modeOffset + rowOffset;
-        entry = (POLY_FT4 *)raw;
+        copyEntry = (POLY_FT4 *)raw;
 
-        copyDest = entry;
+        copyDest = copyEntry;
 
         sourceBase = (u32)D_800A8354;
         prim = (POLY_FT4 *)(copyOffset + sourceBase);
-        gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
+        gHudPrimitiveCursor = (u32)copyEntry + sizeof(POLY_FT4);
         *copyDest = *prim;
-        AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
+        AddPrim((void *)(gOrderingTable[0] + 0x10), copyEntry);
         next = i + 1;
         do {
             i = next;
@@ -5244,15 +5245,14 @@ copyHud6:
         s32 row;
         s32 copyOffset;
         s32 modeOffset;
-        register POLY_FT4 *entry asm("t0");
+
         POLY_FT4 *copyDest;
         u32 sourceBase;
         POLY_FT4 *prim;
         mode = D_800A2ED9[0];
         row = (s16)i;
-        asm volatile("" : "=r"(row) : "0"(row), "r"(mode) : "memory");
+        asm volatile("" : "=r"(row) : "0"(row) : "memory");
         raw = gHudPrimitiveCursor;
-        asm("" : "=r"(raw) : "0"(raw));
         modeOffset = mode * 9;
 
         do {
@@ -5261,15 +5261,15 @@ copyHud6:
 
         copyOffset += modeOffset;
         copyOffset <<= 3;
-        entry = (POLY_FT4 *)raw;
+        copyEntry = (POLY_FT4 *)raw;
 
-        copyDest = entry;
+        copyDest = copyEntry;
 
         sourceBase = (u32)D_800A80F4;
         prim = (POLY_FT4 *)(copyOffset + sourceBase);
-        gHudPrimitiveCursor = (u32)entry + sizeof(POLY_FT4);
+        gHudPrimitiveCursor = (u32)copyEntry + sizeof(POLY_FT4);
         *copyDest = *prim;
-        AddPrim((void *)(gOrderingTable[0] + 0x10), entry);
+        AddPrim((void *)(gOrderingTable[0] + 0x10), copyEntry);
         next = i + 1;
         do {
             i = next;

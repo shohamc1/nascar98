@@ -3019,9 +3019,9 @@ __inline__ void AudioCopyAdpcmBlocks(u8 *dst, u8 *src, u32 n) {
         } while (copyCount < (length));                                        \
     }
 
-#define COPY_ADPCM_BLOCKS(src, dst, length, srcReg)                            \
+#define COPY_ADPCM_BLOCKS(src, dst, length)                                    \
     {                                                                          \
-        register u8 *copySource asm(srcReg) = (src);                           \
+        u8 *copySource = (src);                                                \
         u8 *copyDestination = (dst);                                           \
         u32 copyCount = 0;                                                     \
         COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,         \
@@ -3055,6 +3055,7 @@ void AudioQueueStereoAdpcm(StreamChunk *block) {
     volatile u32 *pollState;
     register volatile u32 *spaceState asm("a3");
     volatile u32 *rightState;
+    volatile u32 *wrappedRightState;
     volatile u32 *tailState;
 
     headerWord = block->size;
@@ -3115,15 +3116,16 @@ void AudioQueueStereoAdpcm(StreamChunk *block) {
             COPY_ADPCM_BLOCKS_BODY(copySource, copyDestination, copyCount,
                                    secondLength);
         }
-        rightState = (volatile u32 *)D_800A351C;
-        rightDestination =
-            (u8 *)(((u32)rightState[1] % 0x3C00) + (u32)rightState) + 0x3C10;
-        COPY_ADPCM_BLOCKS(rightSource, rightDestination, firstLength, "a2");
+        wrappedRightState = (volatile u32 *)D_800A351C;
+        rightDestination = (u8 *)(((u32)wrappedRightState[1] % 0x3C00) +
+                                  (u32)wrappedRightState) +
+                           0x3C10;
+        COPY_ADPCM_BLOCKS(rightSource, rightDestination, firstLength);
         rightBase = (u8 *)D_800A351C;
         {
             u8 *copySource = rightSource + firstLength;
             u8 *copyDestination;
-            register u32 copyCount asm("a2") = 0;
+            u32 copyCount = 0;
 
             lastLength = encodedLength - firstLength;
             copyDestination = rightBase + 0x3C10;

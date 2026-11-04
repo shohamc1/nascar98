@@ -1483,12 +1483,11 @@ void SoundUpdateCar(Car *car) {
     s32 i;
     s32 distance;
     s32 pitch;
-    s32 blend;
+    s32 rpmWork;
     s32 id;
     s32 volume;
     s32 decayVolume;
     s32 unusedHigh;
-    s32 sample;
     s32 shiftedRpm;
     s8 *clearFlags;
     u16 rpm;
@@ -1540,8 +1539,8 @@ void SoundUpdateCar(Car *car) {
                 pitch -= pitch / (s16)(car->rpm / 1700);
             }
             /* Retail keeps this unused filter calculation. */
-            blend = pitch + car->unk3BA + car->unk3BA + car->unk3BA + 3;
-            asm("" : : "r"(blend) : "memory");
+            rpmWork = pitch + car->unk3BA + car->unk3BA + car->unk3BA + 3;
+            asm("" : : "r"(rpmWork) : "memory");
             if (car->rpm >= 7001 && D_800A2EC8[0] == 0 &&
                 RandomGetScaled16((s16)(car->rpm / 1000)) == 0) {
                 /* Retail also keeps this unused signed high product. */
@@ -1550,11 +1549,11 @@ void SoundUpdateCar(Car *car) {
                 highRpm = (u16)car->rpm;
                 shiftedRpm = (u32)highRpm << 16;
                 asm("" : "=r"(shiftedRpm) : "0"(shiftedRpm) : "v0");
-                sample = shiftedRpm >> 16;
+                rpmWork = shiftedRpm >> 16;
                 magic = 0x134679AD;
                 asm("mult %1,%2"
                     : "=h"(unusedHigh)
-                    : "r"(sample), "r"(magic), "r"(shiftedRpm)
+                    : "r"(rpmWork), "r"(magic)
                     : "lo");
                 asm("" : : "r"(unusedHigh));
             }

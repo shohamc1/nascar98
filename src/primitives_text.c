@@ -1748,7 +1748,7 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
 #else
 void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     s8 text[24];
-    register s32 byteValue asm("v1");
+    s32 panelValue;
     s32 lapValue;
     void *helperTime;
     register s32 helperMode asm("a1");
@@ -1770,10 +1770,8 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     s32 x;
     s32 y;
     s32 baseY;
-    s32 width;
     register s32 right asm("v0");
     register s32 barX asm("a2");
-    register s32 bankOffset asm("v1");
     register u8 *quadBase asm("v0");
     s32 bottom;
     s8 *p;
@@ -1797,14 +1795,14 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     gFontColorRed = 60;
     gFontColorGreen = 100;
     gFontColorBlue = 60;
-    byteValue = (u8)car->place;
+    panelValue = (u8)car->place;
     len = 0;
     yOffset = -(bank != 0) & 100;
     y = 135 - yOffset;
-    /* Keep the byte conversion before the width tests. */
+    /* Keep the byte conversion before the digit-count tests. */
     asm("sll %1,%1,24\n\tsra %0,%1,24"
-        : "=&r"(number), "=r"(byteValue)
-        : "1"(byteValue));
+        : "=&r"(number), "=r"(panelValue)
+        : "1"(panelValue));
     text[0] = 0;
     if (number < 1000) {
         len = 1;
@@ -1884,12 +1882,12 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
     }
     fixedSpeed = car->speed;
     y = 181 - yOffset;
-    byteValue = car->unkF7;
+    panelValue = car->unkF7;
     if (fixedSpeed < 0)
         fixedSpeed = 0;
     /* Retail keeps this mask after the byte load. */
-    byteValue &= 255;
-    if (byteValue == 1)
+    panelValue &= 255;
+    if (panelValue == 1)
         number = ((fixedSpeed >> 16) * 336) / 550;
     else
         number = ((fixedSpeed >> 16) * 210) / 550;
@@ -1973,9 +1971,12 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
 
     offset = 680;
     do {
-        bankOffset = bank * 720;
+        /* Each bank occupies 720 bytes. */
+        panelValue = bank * 48;
+        panelValue -= bank * 3;
+        panelValue *= 16;
         quadBase = offset + (u8 *)D_800AE29C;
-        quad = (u8 *)(bankOffset + (s32)quadBase);
+        quad = (u8 *)(panelValue + (s32)quadBase);
         barQuad = (POLY_F4 *)quad;
         switch (i) {
         case 2:
@@ -1986,17 +1987,17 @@ void HudDrawCarPanel(Car *car, s32 bank, s32 hideTimes) {
                 goto next;
             goto queue;
         case 13:
-            width = (car->unk28C * 34) / 16000;
+            panelValue = (car->unk28C * 34) / 16000;
             barY = 204;
             barX = 31;
             if (bank != 0)
                 barY = 104;
-            if (width >= 34)
-                width = 33;
-            right = width + 31;
-            width = 31;
-            asm("" : "=r"(width) : "0"(width));
-            barQuad->x2 = width;
+            if (panelValue >= 34)
+                panelValue = 33;
+            right = panelValue + 31;
+            panelValue = 31;
+            asm("" : "=r"(panelValue) : "0"(panelValue));
+            barQuad->x2 = panelValue;
             barQuad->x0 = barX;
             bottom = barY + 2;
             barQuad->y0 = barY;
