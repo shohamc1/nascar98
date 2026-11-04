@@ -54,10 +54,10 @@ SDK_OBJS  := $(patsubst port/sdk/%.c,$(PORT)/sdk/%.o,$(wildcard port/sdk/*.c))
 # splat's initialised .data and .bss. Rodata is defined in the C sources.
 DATA_INPUTS := asm/data/data.data.s asm/data/bss.bss.s
 
-WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2151677952 \
-                --max-memory=2151677952 -z stack-size=262144 --no-stack-first --no-entry \
+WASM_LDFLAGS := --global-base=2147557376 --initial-memory=2214592512 \
+                --max-memory=2214592512 -z stack-size=262144 --no-stack-first --no-entry \
                 --export=PortStart --export=gPortCallRing \
-                --export=gPortCallNext --export=gPortWideX --export=gPortRaceView --export=gPortDrawDistance --no-gc-sections --fatal-warnings
+                --export=gPortCallNext --export=gPortWideX --export=gPortRaceView --export=gPortFullDraw --no-gc-sections --fatal-warnings
 
 .PHONY: objects undefined module nascar98 run run-headless FORCE
 

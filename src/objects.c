@@ -6416,6 +6416,15 @@ void EffectUpdateAndDrawParticles(void);
 void SceneDrawSunGlare(Car *car);
 void func_80036264(void);
 
+/* A walk stops a little past the first section wholly off screen; the
+ * port's full draw walks on, so the far side of the track shows too. */
+#ifdef NATIVE
+extern s32 gPortFullDraw;
+#define WALK_STOPS (!gPortFullDraw)
+#else
+#define WALK_STOPS 1
+#endif
+
 /* Draws the road for one car's view: narrows the clip limits in the split
  * modes, walks the track sections ahead of and behind the car, projects each
  * with func_8001D108 until one is off screen, then hands the visible run
@@ -6496,7 +6505,7 @@ void SceneDrawView(Car *arg0) {
     } else {
         for (i = 0; i <= D_800A2E8CFrame; i++) {
             func_8001D108(ahead);
-            if (ahead->culled != 0 && i >= 9) {
+            if (ahead->culled != 0 && i >= 9 && WALK_STOPS) {
                 ahead = ahead->next;
                 func_8001D108(ahead);
                 ahead = ahead->next;
@@ -6507,7 +6516,7 @@ void SceneDrawView(Car *arg0) {
     }
     for (i = 0; i <= D_800A2E8CFrame; i++) {
         func_8001D108(back);
-        if (i >= 9 && back->culled != 0) {
+        if (i >= 9 && back->culled != 0 && WALK_STOPS) {
             back = back->prev;
             func_8001D108(back);
             back = back->prev;
@@ -7703,8 +7712,8 @@ extern s32 gOrderingTableFrame5Read[];
 extern s32 gOrderingTableFrame8Read[];
 
 #ifdef NATIVE
-/* The port's draw distance in percent (port/sdk/gte.c). */
-extern s32 gPortDrawDistance;
+/* The port draws the whole track when set (port/sdk/gte.c). */
+extern s32 gPortFullDraw;
 void GraphicsDrawRaceViews(void) {
     MATRIX rotation;
     Car *drawCar;
@@ -7920,13 +7929,14 @@ void GraphicsDrawRaceViews(void) {
         SetGeomScreen(0xD0);
         D_800A2F3CFrame7[0] = 0x82;
         D_800A2E8CFrame = D_800A3774Frame + 0x32;
-        /* The port's draw distance: more road sections ahead and behind,
-         * with the scenery detail and primitive budgets to match. */
-        if (gPortDrawDistance > 100) {
-            D_800A2E8CFrame = D_800A2E8CFrame * gPortDrawDistance / 100;
-            D_800A2F08Frame = D_800A2F08Frame * gPortDrawDistance / 100;
-            D_800A2F0CFrame = D_800A2F0CFrame * gPortDrawDistance / 100;
-            D_800A2F10Frame = D_800A2F10Frame * gPortDrawDistance / 100;
+        /* The port's full draw: half the track ahead and half behind (the
+         * two walks add five sections), with no scenery detail or
+         * primitive budget short of the 16 MB banks (src/game.c). */
+        if (gPortFullDraw) {
+            D_800A2E8CFrame = (gTrackSectionCount[0] - 5) / 2;
+            D_800A2F08Frame = 0x7FFFFFFF;
+            D_800A2F0CFrame = 0x1000000 / 40 - 0x2000;
+            D_800A2F10Frame = 0x1000000 / 40 - 0x2000;
         }
         tableOffset = gOrderingTableFrame6[0] + 0x28;
         gOrderingTableFrame7[0] = tableOffset;

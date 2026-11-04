@@ -40,9 +40,10 @@ static u32 sFlag;
 s32 gPortWideX = 0x1000;
 s32 gPortRaceView;
 
-/* The main race view's draw distance in percent (GraphicsDrawRaceViews
- * in src/objects.c); the host writes it, and 100 keeps the console's. */
-s32 gPortDrawDistance = 100;
+/* Set, the race draws the whole track (SceneDrawView and
+ * GraphicsDrawRaceViews in src/objects.c); the host writes it, and 0 keeps
+ * the console's draw distance. */
+s32 gPortFullDraw;
 
 static s64 Mac123(int i, s64 value)
 {

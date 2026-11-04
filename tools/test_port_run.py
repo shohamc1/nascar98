@@ -248,14 +248,14 @@ class Run(unittest.TestCase):
             self.assertNotEqual(shots[0].tobytes(), shots[1].tobytes())
 
     def test_draw_distance(self) -> None:
-        # At 200%, the race draws more of the track ahead than at 100%.
+        # With the whole track drawn, the race shows more than the console's.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
             (d / "pad.txt").write_text(RACE_PAD)
             shots = []
-            for distance in ("100", "200"):
-                shot = d / f"{distance}.bmp"
-                env = {"NASCAR98_DRAW_DISTANCE": distance, "NASCAR98_SCALE": "1", "NASCAR98_PAD": str(d / "pad.txt")}
+            for full in ("0", "1"):
+                shot = d / f"{full}.bmp"
+                env = {"NASCAR98_FULL_DRAW": full, "NASCAR98_SCALE": "1", "NASCAR98_PAD": str(d / "pad.txt")}
                 result = run(120, NASCAR98_FRAMES="2300", NASCAR98_SCREENSHOT=f"2300:{shot}", **env)
                 self.assertEqual(result.returncode, 0, result.stderr[-2000:])
                 shots.append(shot.read_bytes())

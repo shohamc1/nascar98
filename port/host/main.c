@@ -15,8 +15,8 @@
  *   NASCAR98_FULLSCREEN  1: fullscreen
  *   NASCAR98_ASPECT    W:H of race frames (default 4:3 headless): wider
  *                      shows more of the track, the HUD at the edges
- *   NASCAR98_DRAW_DISTANCE  percent of the console's road sections drawn
- *                      ahead (100 to 400; default 100 headless)
+ *   NASCAR98_FULL_DRAW  1: races draw the whole track; 0: the console's
+ *                      draw distance (default 0 headless)
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
  *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10
  *                      headless, 0 (off) in a window)
@@ -846,11 +846,7 @@ static void EnvSettings(Settings *settings)
         exit(2);
     }
     settings->fullscreen = (int)EnvNumber("NASCAR98_FULLSCREEN", settings->fullscreen) != 0;
-    settings->drawDistance = (int)EnvNumber("NASCAR98_DRAW_DISTANCE", settings->drawDistance);
-    if (settings->drawDistance < 100 || settings->drawDistance > 400) {
-        fprintf(stderr, "nascar98: NASCAR98_DRAW_DISTANCE must be 100 to 400, not %d\n", settings->drawDistance);
-        exit(2);
-    }
+    settings->fullDraw = (int)EnvNumber("NASCAR98_FULL_DRAW", settings->fullDraw) != 0;
 }
 
 int main(void)
@@ -869,7 +865,7 @@ int main(void)
         memset(&settings, 0, sizeof(settings));
         settings.aspectW = 4;
         settings.aspectH = 3;
-        settings.drawDistance = 100;
+        settings.fullDraw = 0;
     } else {
         SettingsLoad(&settings);
     }
@@ -956,7 +952,7 @@ opened:
         s32 wideX = aspect > 4.0f / 3.0f ? (s32)(4096.0f * 4 / 3 / aspect + 0.5f) : 0x1000;
 
         memcpy(Memory(&env, *w2c_nascar98_gPortWideX(&module), 4), &wideX, 4);
-        memcpy(Memory(&env, *w2c_nascar98_gPortDrawDistance(&module), 4), &settings.drawDistance, 4);
+        memcpy(Memory(&env, *w2c_nascar98_gPortFullDraw(&module), 4), &settings.fullDraw, 4);
         GpuSetWide(aspect, (const int32_t *)Memory(&env, *w2c_nascar98_gPortRaceView(&module), 4));
     }
     trap = wasm_rt_impl_try();

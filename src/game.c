@@ -123,16 +123,17 @@ void GraphicsCompactOrderingTable(s32 tableAddress) {
     } while (count != 0);
 }
 
-/* A race frame's primitive bank. Past 100% draw distance the port draws
- * more primitives than the heap block holds, so it uses two larger banks
- * above the console's 2 MB (past the SPU's RAM, port/sdk/port_spu.h). */
+/* A race frame's primitive bank. With the whole track drawn the port
+ * draws far more primitives than the heap block holds, so it uses two
+ * 16 MB banks above the console's RAM, inside the memory port/port.mk
+ * gives the module. */
 #ifdef NATIVE
-extern s32 gPortDrawDistance;
-#define PORT_PRIMS 0x80280000u
-#define PORT_PRIMS_BANK 0x80000
+extern s32 gPortFullDraw;
+#define PORT_PRIMS 0x80400000u
+#define PORT_PRIMS_BANK 0x1000000
 #define RACE_PRIMS(bank)                                                       \
-    (gPortDrawDistance > 100 ? PORT_PRIMS + (bank) * PORT_PRIMS_BANK           \
-                             : (u32)(D_800A3A8C + (bank) * 0x1ADB0))
+    (gPortFullDraw ? PORT_PRIMS + (bank) * PORT_PRIMS_BANK                     \
+                   : (u32)(D_800A3A8C + (bank) * 0x1ADB0))
 #else
 #define RACE_PRIMS(bank) (u32)(D_800A3A8C + (bank) * 0x1ADB0)
 #endif
