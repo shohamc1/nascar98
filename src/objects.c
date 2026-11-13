@@ -8021,12 +8021,13 @@ void GraphicsDrawRaceViews(void) {
         D_800A2E8CFrame = D_800A3774Frame + 0x32;
         /* The port's full draw: half the track ahead and half behind (the
          * two walks add five sections), with no scenery detail or
-         * primitive budget short of the 16 MB banks (src/game.c). */
+         * primitive budget short of the 6 MB banks (src/game.c), counted
+         * in POLY_GT4s, the largest primitive at 52 bytes. */
         if (gPortFullDraw) {
             D_800A2E8CFrame = (gTrackSectionCount[0] - 5) / 2;
             D_800A2F08Frame = 0x7FFFFFFF;
-            D_800A2F0CFrame = 0x1000000 / 40 - 0x2000;
-            D_800A2F10Frame = 0x1000000 / 40 - 0x2000;
+            D_800A2F0CFrame = 0x600000 / 52 - 0x2000;
+            D_800A2F10Frame = 0x600000 / 52 - 0x2000;
         }
         tableOffset = gOrderingTableFrame6[0] + 0x28;
         gOrderingTableFrame7[0] = tableOffset;
