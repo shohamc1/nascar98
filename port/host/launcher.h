@@ -15,6 +15,7 @@ typedef struct {
     int fullDraw;         /* 1 draws the whole track, 0 the console's distance */
     int skipMovies;       /* 1 skips the intro movies at boot */
     int analog;           /* 1: a gamepad steers and accelerates in proportion */
+    int rumble;           /* 1 rumbles the gamepad when the player's car hits something */
 } Settings;
 
 /* Fills SETTINGS with the defaults, then with the settings file's values. */

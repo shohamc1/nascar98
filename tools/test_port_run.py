@@ -309,6 +309,26 @@ class Run(unittest.TestCase):
                 tail = w.readframes(60 * 735)
             self.assertGreater(sum(1 for i in range(0, len(tail), 2) if tail[i : i + 2] != b"\0\0"), 1000)
 
+    def test_rumble_on_wall_hit(self) -> None:
+        # The race's rolling start runs the player's car into the wall, and
+        # steering right keeps it there: port 1 rumbles, never in the menus.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text(RACE_PAD + "2400 cross+right\n")
+            traces = []
+            for rumble in ("1", "0"):
+                trace = d / f"{rumble}.txt"
+                env = {"NASCAR98_RUMBLE": rumble, "NASCAR98_TRACE_RUMBLE": str(trace), "NASCAR98_PAD": str(d / "pad.txt")}
+                result = run(120, NASCAR98_FRAMES="3000", **env)
+                self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+                traces.append([tuple(map(int, line.split())) for line in trace.read_text().splitlines()])
+            self.assertGreater(len(traces[0]), 0)
+            for frame, player, strength in traces[0]:
+                self.assertGreaterEqual(frame, 1500, "a rumble before the race")
+                self.assertEqual(player, 0)
+                self.assertTrue(0 < strength <= 0xFFFF, strength)
+            self.assertEqual(traces[1], [])
+
     def test_race_loads(self) -> None:
         # Main menu, Single Race, Race Setup's Done, then Race, then Start
         # at the loading screen, whose loop polls the pads with no VSync.

@@ -575,6 +575,48 @@ void func_80025F40(Car *arg0, s32 arg1) {
     func_8003644C(1, x2, y2, pos[2] + RandomScaledGet(50));
 }
 
+#ifdef NATIVE
+/* port/sdk/host.h: rumbles player PLAYER's pad for a hit of STRENGTH. */
+void HostPadRumble(s32 player, s32 strength)
+    __attribute__((import_module("env"), import_name("HostPadRumble")));
+
+/*
+ * Rumbles the pad of CAR's driver when a human drives it (type 0): player
+ * 1 drives gPlayerCar[0], player 2 the car after it in split screen.
+ * STRENGTH is the speed lost or the impulse, 16.16. Replays don't rumble.
+ */
+static void PortRumbleCar(Car *car, s32 strength) {
+    extern s32 D_800A397C[];
+
+    if (car->type != 0 || D_800A397C[0] == 2 || strength <= 0) {
+        return;
+    }
+    HostPadRumble(car == gPlayerCar[0] ? 0 : 1, strength);
+}
+
+/*
+ * A wall hit's strength, from the car BEFORE and AFTER it: the speed it
+ * took or, where the response pushes the axles instead, the larger change
+ * in an axle's velocity, 16.16.
+ */
+static s32 PortWallHitStrength(Car *before, Car *after) {
+    s32 strength = before->speed - after->speed;
+    s32 front = ABS(after->frontVelocityX - before->frontVelocityX) +
+                ABS(after->frontVelocityY - before->frontVelocityY);
+    s32 rear = ABS(after->rearVelocityX - before->rearVelocityX) +
+               ABS(after->rearVelocityY - before->rearVelocityY);
+
+    if (front > strength) {
+        strength = front;
+    }
+    if (rear > strength) {
+        strength = rear;
+    }
+    return strength;
+}
+#endif
+
+/* Applies a contact impulse (arg2, arg3) to two cars in opposite senses. */
 void func_80026074(Car *arg0, Car *arg1, s32 arg2, s32 arg3, s32 arg4,
                    s32 arg5) {
     s32 ld5;
@@ -611,6 +653,10 @@ void func_80026074(Car *arg0, Car *arg1, s32 arg2, s32 arg3, s32 arg4,
         *(u32 *)&arg1->rearVelocityX += *(volatile s32 *)&arg2 << 16;
         arg1->rearVelocityY += *(volatile s32 *)&arg3 << 16;
     }
+#ifdef NATIVE
+    PortRumbleCar(arg0, (ABS(arg2) + ABS(arg3)) << 16);
+    PortRumbleCar(arg1, (ABS(arg2) + ABS(arg3)) << 16);
+#endif
 }
 
 extern s32 pairCosTable3[] asm("gCosTableSmall");
@@ -3454,6 +3500,8 @@ void func_800297D0(Car *car) {
         }
     }
     if (car->collisionPending != 0 || car->segment == -1) {
+        Car before = *car;
+
         SoundPlaySlotAtVolume(car, 7, 8);
         if (*(s32 *)&car->callback == (s32)func_80025730 &&
             D_800A2EC8NM[0] == 0) {
@@ -3464,6 +3512,7 @@ void func_800297D0(Car *car) {
             car->movementHeading = ((u16)car->movementHeading + 0x200) & 0x3FF;
         }
         CarHandleWallCollision(car);
+        PortRumbleCar(car, PortWallHitStrength(&before, car));
         car->collisionPending = 0;
         car->unk375 = 0;
     }

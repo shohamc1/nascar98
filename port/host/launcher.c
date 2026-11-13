@@ -13,11 +13,11 @@
 
 #define CANVAS_W 400
 #define CANVAS_H 300
-#define ROW_Y0 80
-#define ROW_H 22
+#define ROW_Y0 56
+#define ROW_H 17
 #define CHAR 8 /* SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE */
 
-enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_MOVIES, ROW_ANALOG, ROW_CONTROLS, ROW_START, ROW_QUIT, ROWS };
+enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_MOVIES, ROW_ANALOG, ROW_RUMBLE, ROW_CONTROLS, ROW_START, ROW_QUIT, ROWS };
 
 /* The Controls screen: one row per action, then Reset and Back. */
 #define CONTROL_Y0 44
@@ -82,6 +82,7 @@ void SettingsLoad(Settings *settings)
     settings->fullDraw = 1;
     PadResetBindings();
     settings->analog = 1;
+    settings->rumble = 1;
     while (f && fgets(line, sizeof(line), f)) {
         char *value = strchr(line, '=');
 
@@ -104,6 +105,8 @@ void SettingsLoad(Settings *settings)
             settings->skipMovies = strcmp(value, "skip") == 0;
         } else if (strcmp(line, "analog_steering") == 0) {
             settings->analog = atoi(value) != 0;
+        } else if (strcmp(line, "vibration") == 0) {
+            settings->rumble = atoi(value) != 0;
         } else {
             PadSetting(line, value);
         }
@@ -129,6 +132,7 @@ void SettingsSave(const Settings *settings)
             settings->fullDraw ? "full" : "original");
     fprintf(f, "intro_movies=%s\n", settings->skipMovies ? "skip" : "play");
     fprintf(f, "analog_steering=%d\n", settings->analog);
+    fprintf(f, "vibration=%d\n", settings->rumble);
     PadSaveSettings(f);
     fclose(f);
     SDL_free(path);
@@ -180,6 +184,8 @@ static void Cycle(Settings *settings, int row, int step)
         settings->skipMovies = !settings->skipMovies;
     } else if (row == ROW_ANALOG) {
         settings->analog = !settings->analog;
+    } else if (row == ROW_RUMBLE) {
+        settings->rumble = !settings->rumble;
     }
 }
 
@@ -211,7 +217,7 @@ static void Text(SDL_Renderer *renderer, float x, float y, const char *text)
 static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, const char *editing, const char *status)
 {
     char value[64], disc[48];
-    const char *labels[ROWS] = {"Disc", "Resolution", "Display", "Aspect ratio", "Draw distance", "Intro movies", "Analog steering", "Controls", "Start", "Quit"};
+    const char *labels[ROWS] = {"Disc", "Resolution", "Display", "Aspect ratio", "Draw distance", "Intro movies", "Analog steering", "Vibration", "Controls", "Start", "Quit"};
     size_t length = strlen(settings->disc);
     int i;
 
@@ -253,6 +259,8 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
             snprintf(value, sizeof(value), "< %s >", settings->skipMovies ? "Skip" : "Play");
         } else if (i == ROW_ANALOG) {
             snprintf(value, sizeof(value), "< %s >", settings->analog ? "On" : "Off");
+        } else if (i == ROW_RUMBLE) {
+            snprintf(value, sizeof(value), "< %s >", settings->rumble ? "On" : "Off");
         } else if (i == ROW_CONTROLS) {
             SDL_strlcpy(value, "Keyboard and gamepad", sizeof(value));
         } else {

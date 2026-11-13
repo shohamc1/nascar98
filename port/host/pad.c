@@ -444,3 +444,10 @@ uint32_t PadReadAnalog(int port, long frame) {
     lt = held & PAD_SQUARE ? 255 : Trigger(lt);
     return 0x1000000u | (uint32_t)lt << 16 | (uint32_t)rt << 8 | (uint8_t)steer;
 }
+
+void PadRumble(int port, uint16_t strength, uint32_t ms) {
+    OpenGamepads();
+    if (port >= 0 && port < 2 && sGamepads[port]) {
+        SDL_RumbleGamepad(sGamepads[port], strength, strength, ms);
+    }
+}

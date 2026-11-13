@@ -33,6 +33,9 @@ HOST_IMPORT(HostPadRead) uint32_t HostPadRead(int32_t port);
 /* Port 0 or 1's analog steering (bits 0 to 7, signed), throttle (8 to 15),
  * and brake (16 to 23) with bit 24 set, or 0 while the pad is digital. */
 HOST_IMPORT(HostPadAnalog) uint32_t HostPadAnalog(int32_t port);
+/* Rumbles player PLAYER's (0 or 1) gamepad for a hit of STRENGTH: the speed
+ * lost or the impulse, 16.16. src/objects.c calls it. */
+HOST_IMPORT(HostPadRumble) void HostPadRumble(int32_t player, int32_t strength);
 
 /* The GPU (port/host/gpu.h): pointers are module addresses. */
 HOST_IMPORT(HostGpuReset) void HostGpuReset(void);

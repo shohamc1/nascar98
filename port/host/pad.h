@@ -64,5 +64,8 @@ void PadSaveSettings(FILE *f);
 /* The key the menu prompts name for the pad button BIT: its action's key,
  * or the fixed Return or Space while that action keeps its default. */
 const char *PadPromptKey(uint16_t bit);
+/* Rumbles PORT's gamepad at STRENGTH (0 to 0xFFFF) for MS milliseconds;
+ * does nothing without one. */
+void PadRumble(int port, uint16_t strength, uint32_t ms);
 
 #endif /* PORT_HOST_PAD_H */

@@ -19,6 +19,10 @@
  *                      draw distance (default 0 headless)
  *   NASCAR98_SKIP_MOVIES  1: boot skips the intro movies and opens on the
  *                      title; 0: plays them (default 0 headless)
+ *   NASCAR98_RUMBLE    1: the gamepad rumbles when the player's car hits a
+ *                      wall or a car; 0: it doesn't (default 1)
+ *   NASCAR98_TRACE_RUMBLE  writes a "FRAME PLAYER STRENGTH" line to this file
+ *                      for each rumble, with or without a gamepad
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
  *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10
  *                      headless, 0 (off) in a window)
@@ -617,6 +621,38 @@ u32 w2c_env_HostPadAnalog(struct w2c_env *env, u32 port)
     return PadReadAnalog((int)port, sFrames);
 }
 
+/* The hit (16.16 speed lost or impulse) that rumbles at full strength: a
+ * hard wall hit takes about 150, scraping a wall 40 to 90 a contact. */
+#define RUMBLE_FULL (160 << 16)
+#define RUMBLE_MS 200
+
+static int sRumble;
+static FILE *sRumbleTrace;
+static long sRumbleUntil[2];
+static u32 sRumbleLevel[2];
+
+/* A hit rumbles for RUMBLE_MS. Hits in that time rumble again only when
+ * harder, so scraping a wall pulses at the scrape's strength. */
+void w2c_env_HostPadRumble(struct w2c_env *env, u32 player, u32 strength)
+{
+    u32 level;
+
+    (void)env;
+    if (!sRumble || player > 1 || (s32)strength <= 0) {
+        return;
+    }
+    level = (s32)strength >= RUMBLE_FULL ? 0xFFFF : (u32)((uint64_t)strength * 0xFFFF / RUMBLE_FULL);
+    if (level == 0 || (sFrames < sRumbleUntil[player] && level <= sRumbleLevel[player])) {
+        return;
+    }
+    sRumbleUntil[player] = sFrames + RUMBLE_MS * 60 / 1000;
+    sRumbleLevel[player] = level;
+    if (sRumbleTrace) {
+        fprintf(sRumbleTrace, "%ld %u %u\n", sFrames, player, level);
+    }
+    PadRumble((int)player, (uint16_t)level, RUMBLE_MS);
+}
+
 /* Queues a frame's sound; past a quarter second queued, drops it to catch up. */
 void w2c_env_HostAudioQueue(struct w2c_env *env, u32 samples, u32 frames)
 {
@@ -867,6 +903,7 @@ static void EnvSettings(Settings *settings)
     settings->fullDraw = (int)EnvNumber("NASCAR98_FULL_DRAW", settings->fullDraw) != 0;
     settings->skipMovies = (int)EnvNumber("NASCAR98_SKIP_MOVIES", settings->skipMovies) != 0;
     settings->analog = (int)EnvNumber("NASCAR98_ANALOG", settings->analog) != 0;
+    settings->rumble = (int)EnvNumber("NASCAR98_RUMBLE", settings->rumble) != 0;
 }
 
 int main(void)
@@ -886,6 +923,7 @@ int main(void)
         settings.aspectW = 4;
         settings.aspectH = 3;
         settings.fullDraw = 0;
+        settings.rumble = 1;
     } else {
         SettingsLoad(&settings);
     }
@@ -960,6 +998,15 @@ opened:
     }
     if (getenv("NASCAR98_WAV") && *getenv("NASCAR98_WAV")) {
         OpenWav(getenv("NASCAR98_WAV"));
+    }
+    sRumble = settings.rumble;
+    if (getenv("NASCAR98_TRACE_RUMBLE") && *getenv("NASCAR98_TRACE_RUMBLE")) {
+        sRumbleTrace = fopen(getenv("NASCAR98_TRACE_RUMBLE"), "w");
+        if (!sRumbleTrace) {
+            fprintf(stderr, "nascar98: can't write \"%s\"\n", getenv("NASCAR98_TRACE_RUMBLE"));
+            return 2;
+        }
+        setvbuf(sRumbleTrace, NULL, _IOLBF, 0);
     }
     StartWatchdog();
 
