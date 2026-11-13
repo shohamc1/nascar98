@@ -888,8 +888,10 @@ static void Measure(uint32_t prim, Box *box)
  *   - a group around a drawing area narrower than the display (the
  *     rear-view mirror, a second ordering table) stays as drawn, so it
  *     frames the view, whose 3D the GTE widened too;
- *   - a small group beside a wide centred one, within its height (the
- *     pause menu's arrows), stays with it.
+ *   - a small group beside a wide centred one, within its height and
+ *     hugging it (the pause menu's arrows), stays with it. The edge HUD's
+ *     best lap and fuel gauge also sit within that height when the split
+ *     time's panel shows, but they sit a few dozen pixels clear of it.
  */
 static void DrawHud(const uint32_t *prims, int n)
 {
@@ -934,7 +936,7 @@ static void DrawHud(const uint32_t *prims, int n)
             const Box *c = &groups[k].box;
 
             if (groups[k].anchor == 0.5f && c->x1 - c->x0 >= width / 3 && g->box.y0 >= c->y0 &&
-                g->box.y1 <= c->y1 && g->box.x0 < c->x1 + width / 8 && g->box.x1 > c->x0 - width / 8) {
+                g->box.y1 <= c->y1 && g->box.x0 < c->x1 + HUD_MARGIN * 2 && g->box.x1 > c->x0 - HUD_MARGIN * 2) {
                 g->anchor = 0.5f;
             }
         }
