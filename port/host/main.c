@@ -17,6 +17,8 @@
  *                      shows more of the track, the HUD at the edges
  *   NASCAR98_FULL_DRAW  1: races draw the whole track; 0: the console's
  *                      draw distance (default 0 headless)
+ *   NASCAR98_SKIP_MOVIES  1: boot skips the intro movies and opens on the
+ *                      title; 0: plays them (default 0 headless)
  *   NASCAR98_FRAMES    exit 0 after this many frames; 0 runs forever
  *   NASCAR98_WATCHDOG  seconds without a frame before exiting 3 (default 10
  *                      headless, 0 (off) in a window)
@@ -847,6 +849,7 @@ static void EnvSettings(Settings *settings)
     }
     settings->fullscreen = (int)EnvNumber("NASCAR98_FULLSCREEN", settings->fullscreen) != 0;
     settings->fullDraw = (int)EnvNumber("NASCAR98_FULL_DRAW", settings->fullDraw) != 0;
+    settings->skipMovies = (int)EnvNumber("NASCAR98_SKIP_MOVIES", settings->skipMovies) != 0;
 }
 
 int main(void)
@@ -953,6 +956,7 @@ opened:
 
         memcpy(Memory(&env, *w2c_nascar98_gPortWideX(&module), 4), &wideX, 4);
         memcpy(Memory(&env, *w2c_nascar98_gPortFullDraw(&module), 4), &settings.fullDraw, 4);
+        memcpy(Memory(&env, *w2c_nascar98_gPortSkipMovies(&module), 4), &settings.skipMovies, 4);
         GpuSetWide(aspect, (const int32_t *)Memory(&env, *w2c_nascar98_gPortRaceView(&module), 4));
     }
     trap = wasm_rt_impl_try();

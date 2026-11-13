@@ -9467,6 +9467,16 @@ extern s32 RandomScaledGetScene(void);
 asm(".globl PadResetAndInitializeBuffersScene\nPadResetAndInitializeBuffersScene = PadResetAndInitializeBuffers");
 asm(".globl RandomScaledGetScene\nRandomScaledGetScene = RandomScaledGet");
 
+#ifdef NATIVE
+/* Set, the boot skips the EA Sports movie and the 3D intro and opens on
+ * the title; the host writes it. */
+s32 gPortSkipMovies;
+#endif
+
+/* The title screen. At boot it plays the EA Sports movie (file 1), then
+ * the 3D intro (file 2) unless Start skipped the first. Back from a
+ * session that main marks -2 or -3 in gSessionTypeAbsolute, it plays
+ * neither. */
 void func_80058D94(void) {
     extern s32 FileSeekScene(s32, s32, s32) asm("FileSeek");
     extern void FileCloseScene(s32) asm("FileClose");
@@ -9563,7 +9573,11 @@ void func_80058D94(void) {
     xy[13] = 0xD1;
     xy[16] = xb;
     xy[17] = 0xD1;
+#ifdef NATIVE
+    if (cond == 0 && !gPortSkipMovies) {
+#else
     if (cond == 0) {
+#endif
         SsStart2();
         frame = MoviePlayFile(1, 0, 1);
         if ((frame & 0xFF) != 0 || (D_800A3904[0] & 0x800) <= 0) {

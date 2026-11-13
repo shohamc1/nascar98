@@ -161,6 +161,20 @@ class Run(unittest.TestCase):
             white = sum(1 for i in range(0, len(rgb), 3) if min(rgb[i : i + 3]) > 200)
             self.assertGreater(white, len(rgb) // 3 // 2, "not the EA Sports movie")
 
+    def test_skip_movies(self) -> None:
+        # NASCAR98_SKIP_MOVIES=1 shows the title by frame 60: the same
+        # picture that Start at frame 100 reaches by 620. With no input and
+        # no option, the movies run until frame 6151.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            (d / "pad.txt").write_text(SKIP_MOVIES)
+            skip, start = d / "skip.bmp", d / "start.bmp"
+            result = run(60, NASCAR98_FRAMES="60", NASCAR98_SKIP_MOVIES="1", NASCAR98_SCREENSHOT=f"60:{skip}")
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            result = run(60, NASCAR98_FRAMES="620", NASCAR98_PAD=str(d / "pad.txt"), NASCAR98_SCREENSHOT=f"620:{start}")
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            self.assertEqual(skip.read_bytes(), start.read_bytes())
+
     def test_start_leaves_title(self) -> None:
         # Start pressed at frame 620 moves on from the title; without it, the title stays.
         with tempfile.TemporaryDirectory() as tmp:

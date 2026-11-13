@@ -16,7 +16,7 @@
 #define ROW_H 22
 #define CHAR 8 /* SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE */
 
-enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_START, ROW_QUIT, ROWS };
+enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_MOVIES, ROW_START, ROW_QUIT, ROWS };
 
 static const int kResolutions[][2] = {
     {640, 480}, {960, 720}, {1280, 720}, {1280, 960}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160},
@@ -90,6 +90,8 @@ void SettingsLoad(Settings *settings)
             SettingsParsePair(value, ':', &settings->aspectW, &settings->aspectH);
         } else if (strcmp(line, "draw_distance") == 0) {
             settings->fullDraw = strcmp(value, "original") != 0;
+        } else if (strcmp(line, "intro_movies") == 0) {
+            settings->skipMovies = strcmp(value, "skip") == 0;
         }
     }
     if (f) {
@@ -111,6 +113,7 @@ void SettingsSave(const Settings *settings)
     fprintf(f, "disc=%s\nresolution=%dx%d\nfullscreen=%d\naspect=%d:%d\ndraw_distance=%s\n", settings->disc,
             settings->width, settings->height, settings->fullscreen, settings->aspectW, settings->aspectH,
             settings->fullDraw ? "full" : "original");
+    fprintf(f, "intro_movies=%s\n", settings->skipMovies ? "skip" : "play");
     fclose(f);
     SDL_free(path);
 }
@@ -157,6 +160,8 @@ static void Cycle(Settings *settings, int row, int step)
         settings->aspectH = kAspects[i][1];
     } else if (row == ROW_DISTANCE) {
         settings->fullDraw = !settings->fullDraw;
+    } else if (row == ROW_MOVIES) {
+        settings->skipMovies = !settings->skipMovies;
     }
 }
 
@@ -188,7 +193,8 @@ static void Text(SDL_Renderer *renderer, float x, float y, const char *text)
 static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, const char *editing, const char *status)
 {
     char value[64], disc[48];
-    const char *labels[ROWS] = {"Disc", "Resolution", "Display", "Aspect ratio", "Draw distance", "Start", "Quit"};
+    const char *labels[ROWS] = {"Disc",          "Resolution",   "Display", "Aspect ratio",
+                                "Draw distance", "Intro movies", "Start",   "Quit"};
     size_t length = strlen(settings->disc);
     int i;
 
@@ -226,6 +232,8 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
             snprintf(value, sizeof(value), "< %s >", settings->fullscreen ? "Fullscreen" : "Window");
         } else if (i == ROW_DISTANCE) {
             snprintf(value, sizeof(value), "< %s >", settings->fullDraw ? "Full track" : "Original");
+        } else if (i == ROW_MOVIES) {
+            snprintf(value, sizeof(value), "< %s >", settings->skipMovies ? "Skip" : "Play");
         } else {
             snprintf(value, sizeof(value), "< %d:%d%s >", settings->aspectW, settings->aspectH,
                      settings->aspectW * 3 == settings->aspectH * 4 ? " (original)" : "");

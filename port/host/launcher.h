@@ -13,6 +13,7 @@ typedef struct {
     int fullscreen;
     int aspectW, aspectH; /* race display aspect: 4:3 keeps the console's view */
     int fullDraw;         /* 1 draws the whole track, 0 the console's distance */
+    int skipMovies;       /* 1 skips the intro movies at boot */
 } Settings;
 
 /* Fills SETTINGS with the defaults, then with the settings file's values. */
