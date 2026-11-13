@@ -125,12 +125,14 @@ void GraphicsCompactOrderingTable(s32 tableAddress) {
 
 /* A race frame's primitive bank. With the whole track drawn the port
  * draws far more primitives than the heap block holds, so it uses two
- * 16 MB banks above the console's RAM, inside the memory port/port.mk
- * gives the module. */
+ * 6 MB banks above the console's RAM and the SPU's (port/sdk/port_spu.h).
+ * Ordering table links hold 24 bits, so both banks end below 0x81000000:
+ * a bank at 0x81400000 links as 0x400000, which reads as the other bank,
+ * and the race flickers. GraphicsDrawRaceViews sizes its budget to match. */
 #ifdef NATIVE
 extern s32 gPortFullDraw;
 #define PORT_PRIMS 0x80400000u
-#define PORT_PRIMS_BANK 0x1000000
+#define PORT_PRIMS_BANK 0x600000
 #define RACE_PRIMS(bank)                                                       \
     (gPortFullDraw ? PORT_PRIMS + (bank) * PORT_PRIMS_BANK                     \
                    : (u32)(D_800A3A8C + (bank) * 0x1ADB0))
