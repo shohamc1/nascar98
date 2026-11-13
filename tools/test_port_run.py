@@ -277,23 +277,25 @@ class Run(unittest.TestCase):
 
     def test_analog_steering(self) -> None:
         # A half-pulled trigger and a stick a half left reach the player's
-        # car in proportion; with the keyboard, the pad stays digital.
+        # car in proportion; with the keyboard, or the D-pad alone, the pad
+        # stays digital.
         with tempfile.TemporaryDirectory() as tmp:
             d = pathlib.Path(tmp)
-            (d / "pad.txt").write_text(RACE_PAD + "2400 lx=-64+rt=128\n")
             cars = []
-            for keyboard in ("0", "1"):
-                (d / keyboard).mkdir()
-                env = {"NASCAR98_ANALOG": "1", "NASCAR98_KEYBOARD": keyboard, "NASCAR98_PAD": str(d / "pad.txt")}
-                result = run(120, NASCAR98_FRAMES="2450", NASCAR98_DUMP=f"2450:{d / keyboard}", NASCAR98_DUMP_START="2450", NASCAR98_SCALE="1", **env)
+            for name, line, keyboard in (("stick", "lx=-64+rt=128", "0"), ("keys", "lx=-64+rt=128", "1"), ("dpad", "left+cross", "0")):
+                (d / name).mkdir()
+                (d / name / "pad.txt").write_text(RACE_PAD + f"2400 {line}\n")
+                env = {"NASCAR98_ANALOG": "1", "NASCAR98_KEYBOARD": keyboard, "NASCAR98_PAD": str(d / name / "pad.txt")}
+                result = run(120, NASCAR98_FRAMES="2450", NASCAR98_DUMP=f"2450:{d / name}", NASCAR98_DUMP_START="2450", NASCAR98_SCALE="1", **env)
                 self.assertEqual(result.returncode, 0, result.stderr[-2000:])
-                ram = (d / keyboard / "002450.ram").read_bytes()
+                ram = (d / name / "002450.ram").read_bytes()
                 car = int.from_bytes(ram[port_addresses()["gPlayerCar"] - 0x80000000 :][:4], "little") - 0x80000000
                 cars.append((int.from_bytes(ram[car + 0x3BC : car + 0x3C0], "little"), ram[car + 0x3C4], ram[car + 0x3C5]))
             # driveInput is 128 / 255 in 16.16; unk3C4 7 takes the analog
             # path; unk3C5 is -64 past the dead zone of 8, scaled to 127.
             self.assertEqual(cars[0], (0x8080, 7, 256 - 59))
             self.assertEqual(cars[1][1:], (4, 0))
+            self.assertEqual(cars[2][1], 4)
 
     def test_menu_sounds(self) -> None:
         # X at frame 700 closes the memory card prompt with a sound effect.

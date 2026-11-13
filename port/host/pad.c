@@ -438,10 +438,18 @@ uint32_t PadReadAnalog(int port, long frame) {
     } else {
         return 0;
     }
+    steer = Stick(lx);
+    rt = Trigger(rt);
+    lt = Trigger(lt);
+    /* With the stick and triggers at rest, the pad stays digital, so the
+     * D-pad keeps the game's steering ramp. */
+    if (steer == 0 && rt == 0 && lt == 0) {
+        return 0;
+    }
     /* The D-pad and the accelerate and brake buttons give full travel. */
-    steer = held & PAD_LEFT ? -127 : held & PAD_RIGHT ? 127 : Stick(lx);
-    rt = held & PAD_CROSS ? 255 : Trigger(rt);
-    lt = held & PAD_SQUARE ? 255 : Trigger(lt);
+    steer = held & PAD_LEFT ? -127 : held & PAD_RIGHT ? 127 : steer;
+    rt = held & PAD_CROSS ? 255 : rt;
+    lt = held & PAD_SQUARE ? 255 : lt;
     return 0x1000000u | (uint32_t)lt << 16 | (uint32_t)rt << 8 | (uint8_t)steer;
 }
 
