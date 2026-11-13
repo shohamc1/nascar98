@@ -3,7 +3,9 @@
  * second gamepad drives port 2. NASCAR98_PAD=SCRIPT replays a file of
  * "FRAME BUTTON[+BUTTON...]" lines instead: from FRAME on, those buttons
  * are held ("-" holds none). Buttons use the pad's bit order, so the
- * result is the active-high form of the word the BIOS writes.
+ * result is the active-high form of the word the BIOS writes. A line can
+ * also set the analog axes (PadReadAnalog): lx=-128 to 127, rt= and lt=
+ * 0 to 255.
  */
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -90,9 +92,11 @@ static int sBound; /* 0 until the first binding call: the defaults apply */
 static struct {
     long frame;
     uint16_t buttons;
+    int lx, rt, lt;
 } sScript[SCRIPT_MAX];
 static int sScriptLength = -1; /* -1: live input */
 static SDL_Gamepad *sGamepads[2];
+static uint16_t sGamepadButtons[2]; /* the buttons alone, not the axes */
 
 uint16_t PadParseButtons(const char *text) {
     uint16_t buttons = 0;
@@ -109,6 +113,15 @@ uint16_t PadParseButtons(const char *text) {
         }
     }
     return buttons;
+}
+
+/* Reads "lx=N", "rt=N", and "lt=N" tokens of TEXT into script line K. */
+static void ParseAxes(const char *text, int k) {
+    const char *p;
+
+    sScript[k].lx = (p = strstr(text, "lx=")) ? atoi(p + 3) : 0;
+    sScript[k].rt = (p = strstr(text, "rt=")) ? atoi(p + 3) : 0;
+    sScript[k].lt = (p = strstr(text, "lt=")) ? atoi(p + 3) : 0;
 }
 
 int PadInit(const char *script, int live) {
@@ -131,6 +144,7 @@ int PadInit(const char *script, int live) {
             }
             sScript[sScriptLength].frame = frame;
             sScript[sScriptLength].buttons = PadParseButtons(rest);
+            ParseAxes(rest, sScriptLength);
             sScriptLength++;
         }
         fclose(f);
@@ -348,6 +362,7 @@ uint16_t PadRead(int port, long frame, int *connected) {
                 buttons |= kActions[i].bit;
             }
         }
+        sGamepadButtons[port] = buttons;
         /* The right trigger accelerates, the left brakes. */
         if (SDL_GetGamepadAxis(g, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > STICK) {
             buttons |= PAD_CROSS;
@@ -372,4 +387,60 @@ uint16_t PadRead(int port, long frame, int *connected) {
         sKeyboard = keys != 0;
     }
     return buttons | keys;
+}
+
+/* Analog steering (PadReadAnalog). */
+#define DEAD_ZONE 8 /* of the stick's 128 and the triggers' 255 */
+
+static int sAnalog;
+
+void PadSetAnalog(int on) { sAnalog = on; }
+
+/* Zeroes X (-128 to 127) inside the dead zone and scales the rest to
+ * -127 to 127. */
+static int Stick(int x) {
+    if (x > -DEAD_ZONE && x < DEAD_ZONE) {
+        return 0;
+    }
+    x = (x + (x < 0 ? DEAD_ZONE : -DEAD_ZONE)) * 127 / (128 - DEAD_ZONE);
+    return x < -127 ? -127 : x > 127 ? 127 : x;
+}
+
+/* Zeroes a trigger's X (0 to 255) inside the dead zone. */
+static int Trigger(int x) { return x < DEAD_ZONE ? 0 : x > 255 ? 255 : x; }
+
+uint32_t PadReadAnalog(int port, long frame) {
+    int lx = 0, rt = 0, lt = 0, steer;
+    uint16_t held = 0;
+
+    if (!sAnalog || (port == 0 && PadKeyboardLast())) {
+        return 0;
+    }
+    if (sScriptLength >= 0) {
+        int k;
+
+        if (port != 0) {
+            return 0;
+        }
+        for (k = 0; k < sScriptLength && sScript[k].frame <= frame; k++) {
+            lx = sScript[k].lx;
+            rt = sScript[k].rt;
+            lt = sScript[k].lt;
+            held = sScript[k].buttons;
+        }
+    } else if (sGamepads[port]) {
+        SDL_Gamepad *g = sGamepads[port];
+
+        lx = SDL_GetGamepadAxis(g, SDL_GAMEPAD_AXIS_LEFTX) / 256;
+        rt = SDL_GetGamepadAxis(g, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) / 128;
+        lt = SDL_GetGamepadAxis(g, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) / 128;
+        held = sGamepadButtons[port];
+    } else {
+        return 0;
+    }
+    /* The D-pad and the accelerate and brake buttons give full travel. */
+    steer = held & PAD_LEFT ? -127 : held & PAD_RIGHT ? 127 : Stick(lx);
+    rt = held & PAD_CROSS ? 255 : Trigger(rt);
+    lt = held & PAD_SQUARE ? 255 : Trigger(lt);
+    return 0x1000000u | (uint32_t)lt << 16 | (uint32_t)rt << 8 | (uint8_t)steer;
 }

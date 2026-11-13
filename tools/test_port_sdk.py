@@ -495,6 +495,7 @@ void PortAudioTick(void) {}
 void PortEventsVBlank(void) {}
 void PortCdTick(void) {}
 uint32_t HostPadRead(int32_t port) { (void)port; return 0; }
+uint32_t HostPadAnalog(int32_t port) { (void)port; return 0; }
 void PortMenuTextUpdate(int32_t keyboard) { (void)keyboard; }
 u8 __heap_base[4];
 u32 __heapbase[1], D_8009B9C8[1], D_800A2FBC, D_800A2FC0;
@@ -531,6 +532,7 @@ void PortAudioTick(void) {}
 void PortEventsVBlank(void) {}
 void PortCdTick(void) {}
 uint32_t HostPadRead(int32_t port) { (void)port; return 0; }
+uint32_t HostPadAnalog(int32_t port) { (void)port; return 0; }
 void PortMenuTextUpdate(int32_t keyboard) { (void)keyboard; }
 u8 __heap_base[4];
 u32 __heapbase[1], D_8009B9C8[1], D_800A2FBC = 0x2000, D_800A2FC0 = 0x200000;

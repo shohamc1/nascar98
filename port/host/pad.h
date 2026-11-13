@@ -34,6 +34,12 @@ int PadKeyboardLast(void);
 uint16_t PadMapKeys(const bool *keys);
 /* "start+cross" to its button bits. */
 uint16_t PadParseButtons(const char *text);
+/* ON (1) makes PadReadAnalog report a gamepad's axes. */
+void PadSetAnalog(int on);
+/* PORT's steering (bits 0 to 7, signed, -127 left to 127 right), throttle
+ * (8 to 15), and brake (16 to 23), 0 to 255, with bit 24 set; 0 when
+ * analog steering is off or port 1 last used the keyboard. */
+uint32_t PadReadAnalog(int port, long frame);
 
 /* The actions a player can bind one key and one gamepad button to, in the
  * launcher's order (pad.c's kActions). */

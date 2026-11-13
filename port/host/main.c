@@ -34,6 +34,9 @@
  *   NASCAR98_PAD       a script of "FRAME BUTTON[+BUTTON...]" lines for port 1
  *   NASCAR98_KEYBOARD  1: prompts name keyboard keys during a NASCAR98_PAD
  *                      script (live input picks by the last device used)
+ *   NASCAR98_ANALOG    1: a gamepad's left stick steers and its triggers
+ *                      accelerate and brake in proportion; 0: digital, as
+ *                      the keyboard (default 0 headless)
  *   NASCAR98_TEXTURES  a directory of replacement HASH.png files (textures.c)
  *   NASCAR98_DUMP_TEXTURES  writes each upload there as HASH.png
  *   NASCAR98_SAVES     the directory of memory card images, card1.mcd and
@@ -607,6 +610,13 @@ void w2c_env_HostPadKeyName(struct w2c_env *env, u32 bit, u32 dst, u32 size)
     SDL_strlcpy((char *)Memory(env, dst, size), PadPromptKey((uint16_t)bit), size);
 }
 
+/* Port PORT's analog axes (pad.h's PadReadAnalog), or 0 for digital. */
+u32 w2c_env_HostPadAnalog(struct w2c_env *env, u32 port)
+{
+    (void)env;
+    return PadReadAnalog((int)port, sFrames);
+}
+
 /* Queues a frame's sound; past a quarter second queued, drops it to catch up. */
 void w2c_env_HostAudioQueue(struct w2c_env *env, u32 samples, u32 frames)
 {
@@ -856,6 +866,7 @@ static void EnvSettings(Settings *settings)
     settings->fullscreen = (int)EnvNumber("NASCAR98_FULLSCREEN", settings->fullscreen) != 0;
     settings->fullDraw = (int)EnvNumber("NASCAR98_FULL_DRAW", settings->fullDraw) != 0;
     settings->skipMovies = (int)EnvNumber("NASCAR98_SKIP_MOVIES", settings->skipMovies) != 0;
+    settings->analog = (int)EnvNumber("NASCAR98_ANALOG", settings->analog) != 0;
 }
 
 int main(void)
@@ -943,6 +954,7 @@ opened:
         PadInit(getenv("NASCAR98_PAD"), !sHeadless)) {
         return 5;
     }
+    PadSetAnalog(settings.analog);
     if (!sHeadless) {
         OpenAudio();
     }

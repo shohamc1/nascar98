@@ -77,6 +77,7 @@ s32 GetGp(void)
 
 static u8 *sPadBuffers[2];
 static int sPadLengths[2];
+static u32 sPadAnalog[2];
 
 /* The BIOS fills both buffers each frame; PortPadTick does that here. */
 void InitPAD(u8 *buf1, s32 len1, u8 *buf2, s32 len2)
@@ -104,6 +105,7 @@ void PortPadTick(void)
             continue;
         }
         read = HostPadRead(port);
+        sPadAnalog[port] = HostPadAnalog(port);
         if (port == 0) {
             PortMenuTextUpdate(read >> 17 & 1);
         }
@@ -128,6 +130,19 @@ long SetRCnt(unsigned long arg0, unsigned short arg1, long arg2)
 {
     PORT_STUB(SetRCnt);
     return 0;
+}
+
+/* src/objects.c: the gamepad's steering (-127 to 127), throttle, and
+ * brake (0 to 255) from the last VBlank, while analog steering is on and
+ * the gamepad was used last; otherwise 0, for a digital pad. */
+s32 PortPadAnalog(s32 port, s8 *steer, u8 *throttle, u8 *brake)
+{
+    u32 analog = port == 0 || port == 1 ? sPadAnalog[port] : 0;
+
+    *steer = (s8)analog;
+    *throttle = analog >> 8;
+    *brake = analog >> 16;
+    return analog >> 24;
 }
 
 /* With no pad attached, the buffers keep InitPAD's contents. */

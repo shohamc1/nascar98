@@ -3692,10 +3692,20 @@ extern u8 D_800A3764w15f[] asm("D_800A3764.NON_MATCHING");
 extern u8 D_800A372Cw15f[] asm("D_800A372C.NON_MATCHING");
 extern s16 D_800A35A4w15f[] asm("D_800A35A4.NON_MATCHING");
 
+#ifdef NATIVE
+/* port/sdk/libapi.c: a gamepad's stick and triggers, or 0 for digital. */
+s32 PortPadAnalog(s32 port, s8 *steer, u8 *throttle, u8 *brake);
+#endif
+
 s32 func_80029EF8(Car *obj) {
     s32 flags;
     s32 v;
     s32 c4;
+#ifdef NATIVE
+    s8 steer;
+    u8 throttle;
+    u8 brake;
+#endif
 
     c4 = obj->unk3C4;
     v = obj->slot;
@@ -3703,6 +3713,37 @@ s32 func_80029EF8(Car *obj) {
         obj->unk3C4 = gPadTypew15f[v];
     }
     flags = PadMapButtons((u8)obj->slot);
+#ifdef NATIVE
+    /* The port's pad stays digital (type 4), so the menus, prompts, and
+     * buttons work as before, while a gamepad's stick and triggers drive
+     * the analog path below. Any type but 4 makes CarUpdatePlayer steer
+     * by unk3C5 and func_8002B258 brake by unk3C0. The neGcon's brake
+     * (unk3C7 / 2000, from 0xE6 up) is an eighth of the digital pad's;
+     * the trigger's spans the digital pad's, from no brake to all of it. */
+    if (gPadTypew15f[obj->slot] == 4) {
+        obj->unk3C4 = 4;
+        if (PortPadAnalog(obj->slot, &steer, &throttle, &brake)) {
+            obj->unk3C4 = 7;
+            obj->unk3C5 = steer;
+            obj->steering = -((steer << 2) * (D_800A2E1C + 2)) / 128;
+            obj->driveInput = MathFixedDivide(throttle, 0xFF);
+            obj->unk3C0 = MathFixedDivide(brake, 0xFF);
+            flags &= ~(0x40 | 0x80 | 0x200 | 0x8000);
+            if (throttle != 0) {
+                flags |= 0x40;
+            }
+            if (brake != 0) {
+                flags |= 0x80;
+            }
+            if (obj->steering >= 2) {
+                flags |= 0x8000;
+            } else if (obj->steering < -1) {
+                flags |= 0x200;
+            }
+            goto afterStatus;
+        }
+    }
+#endif
     v = obj->unk3C4;
     if (v == 2) {
         goto twoFiveSeven;

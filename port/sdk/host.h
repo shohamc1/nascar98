@@ -30,6 +30,9 @@ HOST_IMPORT(HostAudioQueue) void HostAudioQueue(const s16 *samples, int32_t fram
 /* Port 0 or 1's buttons, active high; bit 16 set when a pad is connected,
  * bit 17 when the keyboard was used last. */
 HOST_IMPORT(HostPadRead) uint32_t HostPadRead(int32_t port);
+/* Port 0 or 1's analog steering (bits 0 to 7, signed), throttle (8 to 15),
+ * and brake (16 to 23) with bit 24 set, or 0 while the pad is digital. */
+HOST_IMPORT(HostPadAnalog) uint32_t HostPadAnalog(int32_t port);
 
 /* The GPU (port/host/gpu.h): pointers are module addresses. */
 HOST_IMPORT(HostGpuReset) void HostGpuReset(void);
