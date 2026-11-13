@@ -601,6 +601,12 @@ u32 w2c_env_HostPadRead(struct w2c_env *env, u32 port)
     return (u32)buttons | (connected ? 0x10000u : 0) | (port == 0 && PadKeyboardLast() ? 0x20000u : 0);
 }
 
+/* Writes the prompts' name for the key bound to the pad button BIT. */
+void w2c_env_HostPadKeyName(struct w2c_env *env, u32 bit, u32 dst, u32 size)
+{
+    SDL_strlcpy((char *)Memory(env, dst, size), PadPromptKey((uint16_t)bit), size);
+}
+
 /* Queues a frame's sound; past a quarter second queued, drops it to catch up. */
 void w2c_env_HostAudioQueue(struct w2c_env *env, u32 samples, u32 frames)
 {

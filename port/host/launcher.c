@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "launcher.h"
+#include "pad.h"
 
 #define CANVAS_W 400
 #define CANVAS_H 300
@@ -16,7 +17,14 @@
 #define ROW_H 22
 #define CHAR 8 /* SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE */
 
-enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_MOVIES, ROW_START, ROW_QUIT, ROWS };
+enum { ROW_DISC, ROW_RESOLUTION, ROW_DISPLAY, ROW_ASPECT, ROW_DISTANCE, ROW_MOVIES, ROW_CONTROLS, ROW_START, ROW_QUIT, ROWS };
+
+/* The Controls screen: one row per action, then Reset and Back. */
+#define CONTROL_Y0 44
+#define CONTROL_H 14
+#define CONTROL_RESET PAD_ACTIONS
+#define CONTROL_BACK (PAD_ACTIONS + 1)
+#define CONTROL_ROWS (PAD_ACTIONS + 2)
 
 static const int kResolutions[][2] = {
     {640, 480}, {960, 720}, {1280, 720}, {1280, 960}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160},
@@ -72,6 +80,7 @@ void SettingsLoad(Settings *settings)
     settings->aspectW = 16;
     settings->aspectH = 9;
     settings->fullDraw = 1;
+    PadResetBindings();
     while (f && fgets(line, sizeof(line), f)) {
         char *value = strchr(line, '=');
 
@@ -92,6 +101,8 @@ void SettingsLoad(Settings *settings)
             settings->fullDraw = strcmp(value, "original") != 0;
         } else if (strcmp(line, "intro_movies") == 0) {
             settings->skipMovies = strcmp(value, "skip") == 0;
+        } else {
+            PadSetting(line, value);
         }
     }
     if (f) {
@@ -114,6 +125,7 @@ void SettingsSave(const Settings *settings)
             settings->width, settings->height, settings->fullscreen, settings->aspectW, settings->aspectH,
             settings->fullDraw ? "full" : "original");
     fprintf(f, "intro_movies=%s\n", settings->skipMovies ? "skip" : "play");
+    PadSaveSettings(f);
     fclose(f);
     SDL_free(path);
 }
@@ -193,8 +205,7 @@ static void Text(SDL_Renderer *renderer, float x, float y, const char *text)
 static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, const char *editing, const char *status)
 {
     char value[64], disc[48];
-    const char *labels[ROWS] = {"Disc",          "Resolution",   "Display", "Aspect ratio",
-                                "Draw distance", "Intro movies", "Start",   "Quit"};
+    const char *labels[ROWS] = {"Disc", "Resolution", "Display", "Aspect ratio", "Draw distance", "Intro movies", "Controls", "Start", "Quit"};
     size_t length = strlen(settings->disc);
     int i;
 
@@ -234,6 +245,8 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
             snprintf(value, sizeof(value), "< %s >", settings->fullDraw ? "Full track" : "Original");
         } else if (i == ROW_MOVIES) {
             snprintf(value, sizeof(value), "< %s >", settings->skipMovies ? "Skip" : "Play");
+        } else if (i == ROW_CONTROLS) {
+            SDL_strlcpy(value, "Keyboard and gamepad", sizeof(value));
         } else {
             snprintf(value, sizeof(value), "< %d:%d%s >", settings->aspectW, settings->aspectH,
                      settings->aspectW * 3 == settings->aspectH * 4 ? " (original)" : "");
@@ -248,6 +261,46 @@ static void Draw(SDL_Renderer *renderer, const Settings *settings, int row, cons
     SDL_RenderPresent(renderer);
 }
 
+/* The Controls screen: ROW is selected, and CAPTURING waits for its key. */
+static void DrawControls(SDL_Renderer *renderer, int row, int capturing)
+{
+    char value[16];
+    int i;
+
+    SDL_SetRenderDrawColor(renderer, 16, 20, 32, 255);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 255, 200, 40, 255);
+    Text(renderer, 24, 16, "Controls");
+    SDL_SetRenderDrawColor(renderer, 140, 150, 170, 255);
+    Text(renderer, 184, 28, "Key");
+    Text(renderer, 280, 28, "Gamepad");
+    for (i = 0; i < CONTROL_ROWS; i++) {
+        float y = (float)(CONTROL_Y0 + i * CONTROL_H);
+
+        if (i == row) {
+            SDL_FRect bar = {16, y - 3, CANVAS_W - 32, CONTROL_H};
+
+            SDL_SetRenderDrawColor(renderer, capturing ? 120 : 50, 70, capturing ? 50 : 120, 255);
+            SDL_RenderFillRect(renderer, &bar);
+        }
+        SDL_SetRenderDrawColor(renderer, 230, 230, 240, 255);
+        if (i >= PAD_ACTIONS) {
+            Text(renderer, 24, y, i == CONTROL_RESET ? "Reset to defaults" : "Back");
+            continue;
+        }
+        Text(renderer, 24, y, PadActionLabel(i));
+        /* The columns hold 11 and 13 characters. */
+        snprintf(value, sizeof(value), "%.11s", PadKeyName(i));
+        Text(renderer, 184, y, value);
+        snprintf(value, sizeof(value), "%.13s", PadButtonName(i));
+        Text(renderer, 280, y, value);
+    }
+    SDL_SetRenderDrawColor(renderer, 140, 150, 170, 255);
+    Text(renderer, 24, CANVAS_H - 24,
+         capturing ? "Press a key or gamepad button, Esc cancels" : "Arrows choose, Enter rebinds, Esc goes back");
+    SDL_RenderPresent(renderer);
+}
+
 int LauncherRun(Settings *settings, int extracted)
 {
     static const SDL_DialogFileFilter filters[] = {{"Disc image (.cue, .bin)", "cue;bin"}, {"All files", "*"}};
@@ -256,6 +309,7 @@ int LauncherRun(Settings *settings, int extracted)
     char editing[16];
     const char *status = "";
     int row = extracted || DiscExists(settings->disc) ? ROW_START : ROW_DISC, isEditing = 0, result = -1;
+    int controls = 0, control = 0, capturing = 0;
 
     sFirst = extracted ? ROW_RESOLUTION : ROW_DISC;
 
@@ -273,7 +327,7 @@ int LauncherRun(Settings *settings, int extracted)
     SDL_SetRenderLogicalPresentation(renderer, CANVAS_W, CANVAS_H, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     while (result < 0) {
         SDL_Event event;
-        int activate = 0, step = 0;
+        int activate = 0, step = 0, move = 0, back = 0;
 
         if (SDL_GetAtomicInt(&sPicked)) {
             SDL_SetAtomicInt(&sPicked, 0);
@@ -297,6 +351,15 @@ int LauncherRun(Settings *settings, int extracted)
                 }
                 break;
             case SDL_EVENT_KEY_DOWN:
+                if (capturing) {
+                    if (!event.key.repeat) {
+                        if (event.key.scancode != SDL_SCANCODE_ESCAPE) {
+                            PadBindKey(control, event.key.scancode);
+                        }
+                        capturing = 0;
+                    }
+                    break;
+                }
                 if (isEditing) {
                     if (event.key.key == SDLK_BACKSPACE && *editing) {
                         editing[strlen(editing) - 1] = '\0';
@@ -313,25 +376,35 @@ int LauncherRun(Settings *settings, int extracted)
                     break;
                 }
                 switch (event.key.key) {
-                case SDLK_UP: row = Move(row, -1); break;
-                case SDLK_DOWN: row = Move(row, 1); break;
+                case SDLK_UP: move = -1; break;
+                case SDLK_DOWN: move = 1; break;
                 case SDLK_LEFT: step = -1; break;
                 case SDLK_RIGHT: step = 1; break;
                 case SDLK_RETURN:
                 case SDLK_KP_ENTER:
                 case SDLK_SPACE: activate = 1; break;
-                case SDLK_ESCAPE: result = 1; break;
+                case SDLK_ESCAPE: back = 1; break;
                 default: break;
                 }
                 break;
             case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+                if (capturing) {
+                    PadBindButton(control, event.gbutton.button);
+                    capturing = 0;
+                    break;
+                }
                 switch (event.gbutton.button) {
-                case SDL_GAMEPAD_BUTTON_DPAD_UP: row = Move(row, -1); break;
-                case SDL_GAMEPAD_BUTTON_DPAD_DOWN: row = Move(row, 1); break;
+                case SDL_GAMEPAD_BUTTON_DPAD_UP: move = -1; break;
+                case SDL_GAMEPAD_BUTTON_DPAD_DOWN: move = 1; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_LEFT: step = -1; break;
                 case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: step = 1; break;
                 case SDL_GAMEPAD_BUTTON_SOUTH: activate = 1; break;
-                case SDL_GAMEPAD_BUTTON_START: row = ROW_START, activate = 1; break;
+                case SDL_GAMEPAD_BUTTON_EAST: back = controls; break;
+                case SDL_GAMEPAD_BUTTON_START:
+                    if (!controls) {
+                        row = ROW_START, activate = 1;
+                    }
+                    break;
                 default: break;
                 }
                 break;
@@ -343,6 +416,14 @@ int LauncherRun(Settings *settings, int extracted)
                 SDL_ConvertEventToRenderCoordinates(renderer, &event);
                 x = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.x : event.button.x;
                 y = event.type == SDL_EVENT_MOUSE_MOTION ? event.motion.y : event.button.y;
+                if (controls) {
+                    hit = (int)((y - CONTROL_Y0 + 3) / CONTROL_H);
+                    if (!capturing && y >= CONTROL_Y0 - 3 && hit < CONTROL_ROWS && x >= 16 && x <= CANVAS_W - 16) {
+                        control = hit;
+                        activate = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+                    }
+                    break;
+                }
                 hit = sFirst + (int)((y - ROW_Y0 + 7) / ROW_H);
                 if (isEditing || y < ROW_Y0 - 7 || hit >= ROWS || x < 16 || x > CANVAS_W - 16) {
                     break;
@@ -351,12 +432,28 @@ int LauncherRun(Settings *settings, int extracted)
                 if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
                     /* Left click steps forward, right click back. */
                     step = event.button.button == SDL_BUTTON_RIGHT ? -1 : 1;
-                    activate = row == ROW_DISC || row >= ROW_START;
+                    activate = row == ROW_DISC || row >= ROW_CONTROLS;
                 }
                 break;
             }
             default: break;
             }
+        }
+        if (controls) {
+            control = (control + move + CONTROL_ROWS) % CONTROL_ROWS;
+            if (back || (activate && control == CONTROL_BACK)) {
+                controls = 0;
+            } else if (activate && control == CONTROL_RESET) {
+                PadResetBindings();
+            } else if (activate) {
+                capturing = 1;
+            }
+            DrawControls(renderer, control, capturing);
+            continue;
+        }
+        row = Move(row, move);
+        if (back) {
+            result = 1;
         }
         if (step && !isEditing) {
             Cycle(settings, row, step);
@@ -379,6 +476,10 @@ int LauncherRun(Settings *settings, int extracted)
                     status = "Choose the disc's .cue or Track 1 .bin";
                     row = ROW_DISC;
                 }
+                break;
+            case ROW_CONTROLS:
+                controls = 1;
+                control = 0;
                 break;
             case ROW_QUIT: result = 1; break;
             default: Cycle(settings, row, 1); break;

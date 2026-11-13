@@ -36,51 +36,53 @@ static const struct {
 };
 
 /*
- * A modern racing layout over the game's default controls (layout 0):
- * cross accelerates and confirms, square brakes, triangle goes back, R2
- * shifts up, R1 shifts down, L1 and circle change the camera.
+ * The actions a player can rebind (in the launcher, saved in settings.ini),
+ * with their defaults: a modern racing layout over the game's default
+ * controls (layout 0). Cross accelerates and confirms, square brakes,
+ * triangle goes back, R2 shifts up, R1 shifts down, circle cycles the
+ * camera.
+ */
+static const struct {
+    const char *name, *label;
+    uint16_t bit;
+    SDL_Scancode key;
+    SDL_GamepadButton button;
+} kActions[PAD_ACTIONS] = {
+    {"accelerate", "Accelerate, confirm", PAD_CROSS, SDL_SCANCODE_W, SDL_GAMEPAD_BUTTON_SOUTH},
+    {"brake", "Brake", PAD_SQUARE, SDL_SCANCODE_S, SDL_GAMEPAD_BUTTON_WEST},
+    {"back", "Back", PAD_TRIANGLE, SDL_SCANCODE_BACKSPACE, SDL_GAMEPAD_BUTTON_EAST},
+    {"camera", "Camera", PAD_CIRCLE, SDL_SCANCODE_V, SDL_GAMEPAD_BUTTON_RIGHT_STICK},
+    {"camera_l1", "Camera (L1)", PAD_L1, SDL_SCANCODE_C, SDL_GAMEPAD_BUTTON_NORTH},
+    {"shift_up", "Shift up", PAD_R2, SDL_SCANCODE_E, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER},
+    {"shift_down", "Shift down", PAD_R1, SDL_SCANCODE_Q, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER},
+    {"pause", "Pause", PAD_START, SDL_SCANCODE_ESCAPE, SDL_GAMEPAD_BUTTON_START},
+    {"select", "Select", PAD_SELECT, SDL_SCANCODE_TAB, SDL_GAMEPAD_BUTTON_BACK},
+    {"steer_left", "Steer left", PAD_LEFT, SDL_SCANCODE_A, SDL_GAMEPAD_BUTTON_DPAD_LEFT},
+    {"steer_right", "Steer right", PAD_RIGHT, SDL_SCANCODE_D, SDL_GAMEPAD_BUTTON_DPAD_RIGHT},
+    {"up", "Up", PAD_UP, SDL_SCANCODE_UP, SDL_GAMEPAD_BUTTON_DPAD_UP},
+    {"down", "Down", PAD_DOWN, SDL_SCANCODE_DOWN, SDL_GAMEPAD_BUTTON_DPAD_DOWN},
+};
+
+/*
+ * Fixed keys, so menus stay reachable whatever the bindings: each works
+ * unless an action is bound to it. The prompts name Enter and Space while
+ * accelerate and brake keep their default keys.
  */
 static const struct {
     SDL_Scancode key;
     uint16_t bit;
 } kKeys[] = {
-    {SDL_SCANCODE_W, PAD_CROSS},
-    {SDL_SCANCODE_S, PAD_SQUARE},
-    {SDL_SCANCODE_A, PAD_LEFT},
-    {SDL_SCANCODE_D, PAD_RIGHT},
+    {SDL_SCANCODE_RETURN, PAD_CROSS},
+    {SDL_SCANCODE_SPACE, PAD_SQUARE},
     {SDL_SCANCODE_UP, PAD_UP},
     {SDL_SCANCODE_DOWN, PAD_DOWN},
     {SDL_SCANCODE_LEFT, PAD_LEFT},
     {SDL_SCANCODE_RIGHT, PAD_RIGHT},
-    {SDL_SCANCODE_RETURN, PAD_CROSS},
-    {SDL_SCANCODE_SPACE, PAD_SQUARE},
-    {SDL_SCANCODE_BACKSPACE, PAD_TRIANGLE},
-    {SDL_SCANCODE_ESCAPE, PAD_START},
-    {SDL_SCANCODE_E, PAD_R2},
-    {SDL_SCANCODE_Q, PAD_R1},
-    {SDL_SCANCODE_C, PAD_L1},
-    {SDL_SCANCODE_V, PAD_CIRCLE},
-    {SDL_SCANCODE_TAB, PAD_SELECT},
 };
 
-static const struct {
-    SDL_GamepadButton button;
-    uint16_t bit;
-} kGamepadButtons[] = {
-    {SDL_GAMEPAD_BUTTON_SOUTH, PAD_CROSS},
-    {SDL_GAMEPAD_BUTTON_EAST, PAD_TRIANGLE},
-    {SDL_GAMEPAD_BUTTON_WEST, PAD_SQUARE},
-    {SDL_GAMEPAD_BUTTON_NORTH, PAD_L1},
-    {SDL_GAMEPAD_BUTTON_RIGHT_STICK, PAD_CIRCLE},
-    {SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, PAD_R2},
-    {SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, PAD_R1},
-    {SDL_GAMEPAD_BUTTON_START, PAD_START},
-    {SDL_GAMEPAD_BUTTON_BACK, PAD_SELECT},
-    {SDL_GAMEPAD_BUTTON_DPAD_UP, PAD_UP},
-    {SDL_GAMEPAD_BUTTON_DPAD_RIGHT, PAD_RIGHT},
-    {SDL_GAMEPAD_BUTTON_DPAD_DOWN, PAD_DOWN},
-    {SDL_GAMEPAD_BUTTON_DPAD_LEFT, PAD_LEFT},
-};
+static SDL_Scancode sKeys[PAD_ACTIONS];
+static SDL_GamepadButton sButtons[PAD_ACTIONS];
+static int sBound; /* 0 until the first binding call: the defaults apply */
 
 #define COUNT(a) (sizeof(a) / sizeof((a)[0]))
 #define STICK 16000
@@ -155,12 +157,148 @@ static void OpenGamepads(void) {
     SDL_free(ids);
 }
 
+static void Bindings(void) {
+    if (!sBound) {
+        PadResetBindings();
+    }
+}
+
+void PadResetBindings(void) {
+    int i;
+
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        sKeys[i] = kActions[i].key;
+        sButtons[i] = kActions[i].button;
+    }
+    sBound = 1;
+}
+
+/* Binds ACTION to KEY or BUTTON (one is -1). The action that had it takes
+ * ACTION's old one, so each key and button stays on one action. */
+static void Bind(int action, int key, int button) {
+    int i;
+
+    Bindings();
+    if (action < 0 || action >= PAD_ACTIONS) {
+        return;
+    }
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        if (key >= 0 && (int)sKeys[i] == key) {
+            sKeys[i] = sKeys[action];
+        }
+        if (button >= 0 && (int)sButtons[i] == button) {
+            sButtons[i] = sButtons[action];
+        }
+    }
+    if (key >= 0) {
+        sKeys[action] = (SDL_Scancode)key;
+    }
+    if (button >= 0) {
+        sButtons[action] = (SDL_GamepadButton)button;
+    }
+}
+
+void PadBindKey(int action, int key) {
+    if (key > SDL_SCANCODE_UNKNOWN && key < SDL_SCANCODE_COUNT && *SDL_GetScancodeName((SDL_Scancode)key)) {
+        Bind(action, key, -1);
+    }
+}
+
+void PadBindButton(int action, int button) {
+    if (button > SDL_GAMEPAD_BUTTON_INVALID && button < SDL_GAMEPAD_BUTTON_COUNT) {
+        Bind(action, -1, button);
+    }
+}
+
+const char *PadActionLabel(int action) {
+    return kActions[action].label;
+}
+
+const char *PadKeyName(int action) {
+    Bindings();
+    return SDL_GetScancodeName(sKeys[action]);
+}
+
+const char *PadButtonName(int action) {
+    Bindings();
+    return SDL_GetGamepadStringForButton(sButtons[action]);
+}
+
+int PadSetting(const char *name, const char *value) {
+    int i;
+
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        if (strncmp(name, "key_", 4) == 0 && strcmp(name + 4, kActions[i].name) == 0) {
+            PadBindKey(i, SDL_GetScancodeFromName(value));
+            return 1;
+        }
+        if (strncmp(name, "button_", 7) == 0 && strcmp(name + 7, kActions[i].name) == 0) {
+            PadBindButton(i, SDL_GetGamepadButtonFromString(value));
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void PadSaveSettings(FILE *f) {
+    int i;
+
+    Bindings();
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        fprintf(f, "key_%s=%s\n", kActions[i].name, SDL_GetScancodeName(sKeys[i]));
+    }
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        fprintf(f, "button_%s=%s\n", kActions[i].name, SDL_GetGamepadStringForButton(sButtons[i]));
+    }
+}
+
+/* The action bound to KEY, or -1. */
+static int KeyAction(SDL_Scancode key) {
+    int i;
+
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        if (sKeys[i] == key) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* The prompts' short names for Return and Escape. */
+static const char *PromptName(SDL_Scancode key) {
+    return key == SDL_SCANCODE_RETURN ? "Enter" : key == SDL_SCANCODE_ESCAPE ? "Esc" : SDL_GetScancodeName(key);
+}
+
+const char *PadPromptKey(uint16_t bit) {
+    size_t i;
+    int action;
+
+    Bindings();
+    for (action = 0; action < PAD_ACTIONS && kActions[action].bit != bit; action++) {
+    }
+    if (action == PAD_ACTIONS) {
+        return "?";
+    }
+    for (i = 0; i < COUNT(kKeys); i++) {
+        if (kKeys[i].bit == bit && sKeys[action] == kActions[action].key && KeyAction(kKeys[i].key) < 0) {
+            return PromptName(kKeys[i].key);
+        }
+    }
+    return PromptName(sKeys[action]);
+}
+
 uint16_t PadMapKeys(const bool *keys) {
     uint16_t buttons = 0;
     size_t i;
 
+    Bindings();
+    for (i = 0; i < PAD_ACTIONS; i++) {
+        if (keys[sKeys[i]]) {
+            buttons |= kActions[i].bit;
+        }
+    }
     for (i = 0; i < COUNT(kKeys); i++) {
-        if (keys[kKeys[i].key]) {
+        if (keys[kKeys[i].key] && KeyAction(kKeys[i].key) < 0) {
             buttons |= kKeys[i].bit;
         }
     }
@@ -204,9 +342,10 @@ uint16_t PadRead(int port, long frame, int *connected) {
     if (sGamepads[port]) {
         SDL_Gamepad *g = sGamepads[port];
 
-        for (i = 0; i < COUNT(kGamepadButtons); i++) {
-            if (SDL_GetGamepadButton(g, kGamepadButtons[i].button)) {
-                buttons |= kGamepadButtons[i].bit;
+        Bindings();
+        for (i = 0; i < PAD_ACTIONS; i++) {
+            if (SDL_GetGamepadButton(g, sButtons[i])) {
+                buttons |= kActions[i].bit;
             }
         }
         /* The right trigger accelerates, the left brakes. */

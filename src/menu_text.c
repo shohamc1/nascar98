@@ -479,9 +479,16 @@ static char *const sPrompts[] = {
 };
 static char sPromptsPad[sizeof(sPrompts) / sizeof(sPrompts[0])][PROMPT_SIZE];
 
-/* Copies the pad prompt TEXT to OUT with keyboard keys for its buttons
- * (port/host/pad.c): X (cross) is Enter, \\ (square) Space, ^ (circle)
- * V, and Start Esc. The arrow glyphs match the arrow keys. */
+/* The host (port/host/main.c) names the key bound to the pad button BIT. */
+__attribute__((import_module("env"), import_name("HostPadKeyName"))) void
+HostPadKeyName(u32 bit, char *dst, s32 size);
+
+/* The keys for X (cross), \\ (square), ^ (circle), and Start. */
+static char sPromptKeys[4][32];
+
+/* Copies the pad prompt TEXT to OUT with the bound keyboard keys for its
+ * buttons (by default Enter, Space, V, and Esc). The arrow glyphs match
+ * the arrow keys. */
 static void PromptToKeyboard(const char *text, char *out) {
     char *end = out + PROMPT_SIZE - 1;
     const char *key;
@@ -495,12 +502,12 @@ static void PromptToKeyboard(const char *text, char *out) {
         key = NULL;
         if (isWord &&
             !((text[size] | 0x20) >= 'a' && (text[size] | 0x20) <= 'z')) {
-            key = text[0] == 'X' ? "Enter" : "Esc";
+            key = text[0] == 'X' ? sPromptKeys[0] : sPromptKeys[3];
             text += size - 1;
         } else if (*text == '\\') {
-            key = "Space";
+            key = sPromptKeys[1];
         } else if (*text == '^') {
-            key = "V";
+            key = sPromptKeys[2];
         }
         if (key == NULL) {
             *out++ = *text;
@@ -527,6 +534,12 @@ void PortMenuTextUpdate(s32 keyboard) {
         return;
     }
     shown = keyboard;
+    if (sPromptKeys[0][0] == 0) {
+        HostPadKeyName(0x4000, sPromptKeys[0], sizeof(sPromptKeys[0]));
+        HostPadKeyName(0x8000, sPromptKeys[1], sizeof(sPromptKeys[1]));
+        HostPadKeyName(0x2000, sPromptKeys[2], sizeof(sPromptKeys[2]));
+        HostPadKeyName(0x0008, sPromptKeys[3], sizeof(sPromptKeys[3]));
+    }
     for (i = 0; i < sizeof(sPrompts) / sizeof(sPrompts[0]); i++) {
         if (sPromptsPad[i][0] == 0) {
             PromptCopy(sPromptsPad[i], sPrompts[i]);

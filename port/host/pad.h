@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 /* The digital pad's button bits, active high. */
 #define PAD_SELECT 0x0001
@@ -33,5 +34,29 @@ int PadKeyboardLast(void);
 uint16_t PadMapKeys(const bool *keys);
 /* "start+cross" to its button bits. */
 uint16_t PadParseButtons(const char *text);
+
+/* The actions a player can bind one key and one gamepad button to, in the
+ * launcher's order (pad.c's kActions). */
+#define PAD_ACTIONS 13
+/* Puts every action back on its default key and button. */
+void PadResetBindings(void);
+/* Binds ACTION to the SDL scancode KEY or SDL_GamepadButton BUTTON; an
+ * unknown one changes nothing. The action that had it takes ACTION's old
+ * one. */
+void PadBindKey(int action, int key);
+void PadBindButton(int action, int button);
+const char *PadActionLabel(int action);
+/* SDL's names for ACTION's key and button, as settings.ini stores them. */
+const char *PadKeyName(int action);
+const char *PadButtonName(int action);
+/* Applies the settings.ini line NAME=VALUE ("key_brake=B",
+ * "button_brake=x"): 1 when NAME is a binding, 0 when it isn't. A bad
+ * VALUE keeps the binding. */
+int PadSetting(const char *name, const char *value);
+/* Writes every binding as settings.ini lines. */
+void PadSaveSettings(FILE *f);
+/* The key the menu prompts name for the pad button BIT: its action's key,
+ * or the fixed Return or Space while that action keeps its default. */
+const char *PadPromptKey(uint16_t bit);
 
 #endif /* PORT_HOST_PAD_H */
