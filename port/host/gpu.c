@@ -202,7 +202,10 @@ int GpuInit(int scale, int headless, int width, int height, int fullscreen)
                                    SDL_WINDOW_RESIZABLE | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
         sRenderer = sWindow ? SDL_CreateRenderer(sWindow, NULL) : NULL;
         if (sRenderer) {
-            SDL_SetRenderVSync(sRenderer, 0);
+            /* Without VSync, Windows shows each frame as soon as it's
+             * presented, mid-scan, and the picture tears. Pace() still
+             * holds the game to 60 frames a second on faster displays. */
+            SDL_SetRenderVSync(sRenderer, 1);
         }
         if (fullscreen) {
             SDL_HideCursor();
